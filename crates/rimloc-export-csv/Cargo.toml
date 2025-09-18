@@ -1,0 +1,10 @@
+[package]
+name = "rimloc-export-csv"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+csv = { workspace = true }
+color-eyre = { workspace = true }
+rimloc-core = { path = "../rimloc-core" }

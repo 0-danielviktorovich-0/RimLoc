@@ -1,0 +1,15 @@
+[package]
+name = "rimloc-cli"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+color-eyre = { workspace = true }
+walkdir = { workspace = true }
+rimloc-core = { path = "../rimloc-core" }
+rimloc-parsers-xml = { path = "../rimloc-parsers-xml" }
+rimloc-export-csv = { path = "../rimloc-export-csv" }
+# rimloc-export-po = { path = "../rimloc-export-po" }
