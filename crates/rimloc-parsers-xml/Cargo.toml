@@ -1,0 +1,11 @@
+[package]
+name = "rimloc-parsers-xml"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+roxmltree = { workspace = true }
+walkdir = { workspace = true }
+anyhow = { workspace = true }
+rimloc-core = { path = "../rimloc-core" }

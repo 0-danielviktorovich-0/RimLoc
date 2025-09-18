@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = [
+"crates/rimloc-core",
+"crates/rimloc-parsers-xml",
+"crates/rimloc-export-csv",
+"crates/rimloc-export-po",
+"crates/rimloc-cli",
+]
+
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+authors = ["Ваше имя"]
+
+
+[workspace.dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+walkdir = "2"
+roxmltree = "0.20" # удобный read-only XML парсер
+quick-xml = "0.36" # оставим для будущего потокового парсинга
+csv = "1"
+clap = { version = "4", features = ["derive"] }
+color-eyre = "0.6"
