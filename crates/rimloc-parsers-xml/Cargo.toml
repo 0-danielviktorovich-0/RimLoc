@@ -5,7 +5,6 @@ edition = "2021"
 
 
 [dependencies]
-roxmltree = { workspace = true }
 walkdir = { workspace = true }
-anyhow = { workspace = true }
+quick-xml = { workspace = true }
 rimloc-core = { path = "../rimloc-core" }
