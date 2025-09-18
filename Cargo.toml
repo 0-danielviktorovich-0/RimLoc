@@ -11,8 +11,8 @@ members = [
 
 [workspace.package]
 edition = "2021"
-license = "MIT"
-authors = ["Ваше имя"]
+license = "GNU GPL"
+authors = ["Daniel Viktorovich"]
 
 
 [workspace.dependencies]
