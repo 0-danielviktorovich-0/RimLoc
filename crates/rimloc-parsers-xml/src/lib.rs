@@ -143,3 +143,36 @@ fn extract_with_lines(xml: &str, path: &Path) -> Result<Vec<TransUnit>> {
 
     Ok(out)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+    use std::fs;
+    use std::io::Write;
+
+    #[test]
+    fn scan_keyed_xml_extracts_units_with_lines() {
+        let dir = tempdir().unwrap();
+        let lang_root = dir.path().join("Languages").join("English");
+        let keyed = lang_root.join("Keyed");
+        fs::create_dir_all(&keyed).unwrap();
+
+        let xml_path = keyed.join("Test.xml");
+        let mut f = fs::File::create(&xml_path).unwrap();
+        writeln!(f, r#"<LanguageData>"#).unwrap();
+        writeln!(f, r#"  <Greeting>Hello</Greeting>"#).unwrap();
+        writeln!(f, r#"  <Farewell>Bye</Farewell>"#).unwrap();
+        writeln!(f, r#"</LanguageData>"#).unwrap();
+
+        // Корень указываем как Languages/<locale>
+        let units = scan_keyed_xml(&lang_root).unwrap();
+
+        assert!(units.iter().any(|u| u.key == "Greeting" && u.source.as_deref() == Some("Hello")));
+        assert!(units.iter().any(|u| u.key == "Farewell" && u.source.as_deref() == Some("Bye")));
+
+        let g = units.iter().find(|u| u.key == "Greeting").unwrap();
+        assert!(g.path.to_string_lossy().ends_with("Keyed/Test.xml"));
+        assert!(g.line.unwrap_or(0) > 0);
+    }
+}
