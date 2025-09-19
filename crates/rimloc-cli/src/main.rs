@@ -25,8 +25,11 @@ enum Commands {
         /// Записать результат в CSV-файл (stdout, если не указан)
         #[arg(long)]
         out_csv: Option<PathBuf>,
+        /// Язык (например: ru, ja, de). Если указан, добавится колонка 'lang'
+        #[arg(long)]
+        lang: Option<String>,
     },
-    
+
     /// Проверить строки на ошибки/замечания
     Validate {
         /// Путь к корню мода (или Languages/<locale>)
@@ -42,7 +45,11 @@ enum Commands {
         /// Путь к результирующему .po
         #[arg(long)]
         out_po: PathBuf,
-    },    
+        /// Язык перевода (например: ru, ja, de)
+        #[arg(long)]
+        lang: Option<String>,
+    },
+   
 }
 
 fn main() -> Result<()> {
@@ -55,17 +62,18 @@ fn main() -> Result<()> {
         && std::env::var_os("NO_COLOR").is_none();
 
     match cli.cmd {
-        Commands::Scan { root, out_csv } => {
+        Commands::Scan { root, out_csv, lang } => {
             let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
             if let Some(path) = out_csv {
-                let file = std::fs::File::create(path)?;
-                rimloc_export_csv::write_csv(file, &units)?;
-            } else {
-                let stdout = std::io::stdout();
-                let lock = stdout.lock();
-                rimloc_export_csv::write_csv(lock, &units)?;
-            }
+            let file = std::fs::File::create(path)?;
+            rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
+        } else {
+            let stdout = std::io::stdout();
+            let lock = stdout.lock();
+            rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
         }
+        }
+
 
         Commands::Validate { root } => {
             let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
@@ -111,9 +119,9 @@ fn main() -> Result<()> {
             }
         }
         
-        Commands::ExportPo { root, out_po } => {
+        Commands::ExportPo { root, out_po, lang } => {
             let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
-            rimloc_export_po::write_po(&out_po, &units)?;
+            rimloc_export_po::write_po(&out_po, &units, lang.as_deref())?;
             println!("✔ PO saved to {}", out_po.display());
         }
     

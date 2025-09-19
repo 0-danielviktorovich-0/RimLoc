@@ -363,6 +363,7 @@ dependencies = [
  "owo-colors",
  "rimloc-core",
  "rimloc-export-csv",
+ "rimloc-export-po",
  "rimloc-parsers-xml",
  "rimloc-validate",
  "walkdir",
