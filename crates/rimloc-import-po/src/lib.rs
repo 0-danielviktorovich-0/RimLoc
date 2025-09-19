@@ -1,21 +1,21 @@
 use color_eyre::eyre::{Result, eyre};
 use quick_xml::events::{BytesEnd, BytesStart, Event};
 use quick_xml::Writer;
+use regex::Regex;
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
-use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct PoEntry {
-    pub key: String,                 // msgctxt
-    pub value: String,               // msgstr
-    pub reference: Option<String>,   // строка после "#: " (может быть с :line)
+    pub key: String,               // msgctxt
+    pub value: String,             // msgstr
+    pub reference: Option<String>, // строка после "#: " (может быть с :line)
 }
 
 /// Очень простой парсер .po: собираем reference + msgctxt + msgstr.
-/// Поддерживает многострочный msgstr. Заголовки/комментарии кроме "#:" игнорим.
+/// Поддерживает многострочный msgstr. Заголовки/комментарии (кроме "#:") игнорим.
 pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
     let file = File::open(po_path)?;
     let reader = BufReader::new(file);
@@ -31,7 +31,6 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
         let lt = l.trim();
 
         if lt.starts_with("#:") {
-            // Берём первую ссылку в блоке (хватает для восстановления пути)
             if cur_ref.is_none() {
                 let r = lt.trim_start_matches("#:").trim().to_string();
                 cur_ref = Some(r);
@@ -60,7 +59,6 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
         }
 
         if lt.is_empty() {
-            // Конец блока
             if let (Some(k), Some(v)) = (&cur_ctxt, &cur_str) {
                 if !v.trim().is_empty() {
                     out.push(PoEntry {
@@ -77,7 +75,6 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
         }
     }
 
-    // Хвост
     if let (Some(k), Some(v)) = (cur_ctxt, cur_str) {
         if !v.trim().is_empty() {
             out.push(PoEntry {
@@ -131,8 +128,7 @@ pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) ->
         quick_xml::events::BytesDecl::new("1.0", Some("UTF-8"), None),
     ))?;
 
-    let start = BytesStart::new("LanguageData");
-    w.write_event(Event::Start(start))?;
+    w.write_event(Event::Start(BytesStart::new("LanguageData")))?;
 
     for (key, value) in entries {
         let tag = BytesStart::new(key.as_str());
@@ -146,11 +142,73 @@ pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) ->
     Ok(())
 }
 
-/// Построить мод-перевод:
-/// - создаёт About/About.xml
-/// - раскладывает записи по файлам в Languages/<lang>/<subpath>
-///   где <subpath> берётся из reference "#: .../Languages/<srcLang>/<subpath>:line"
-pub fn build_translation_mod(po_path: &Path, out_mod: &Path, lang: &str, mod_name: &str, package_id: &str, rw_version: &str) -> Result<()> {
+/// Преобразовать ISO-коды/алиасы в имя папки RimWorld (Languages/<DirName>).
+pub fn rimworld_lang_dir(lang: &str) -> String {
+    let l = lang.trim().to_lowercase().replace('_', "-");
+
+    let known_names = [
+        "English","Russian","Japanese","Korean","French","German","Spanish",
+        "SpanishLatin","Portuguese","PortugueseBrazilian","Polish","Italian",
+        "Turkish","Ukrainian","Czech","Hungarian","Dutch","Romanian","Thai",
+        "Greek","ChineseSimplified","ChineseTraditional",
+    ];
+    if let Some(&n) = known_names.iter().find(|&&n| n.eq_ignore_ascii_case(lang)) {
+        return n.to_string();
+    }
+
+    match l.as_str() {
+        "en" | "en-us" | "en-gb" => "English".into(),
+        "ru" | "ru-ru" => "Russian".into(),
+        "ja" | "ja-jp" => "Japanese".into(),
+        "ko" | "ko-kr" => "Korean".into(),
+        "fr" | "fr-fr" | "fr-ca" => "French".into(),
+        "de" | "de-de" => "German".into(),
+        "es" | "es-es" => "Spanish".into(),
+        "es-419" | "es-mx" | "es-ar" | "es-cl" | "es-co" | "es-pe" => "SpanishLatin".into(),
+        "pt" | "pt-pt" => "Portuguese".into(),
+        "pt-br" => "PortugueseBrazilian".into(),
+        "pl" | "pl-pl" => "Polish".into(),
+        "it" | "it-it" => "Italian".into(),
+        "tr" | "tr-tr" => "Turkish".into(),
+        "uk" | "uk-ua" => "Ukrainian".into(),
+        "cs" | "cs-cz" => "Czech".into(),
+        "hu" | "hu-hu" => "Hungarian".into(),
+        "nl" | "nl-nl" => "Dutch".into(),
+        "ro" | "ro-ro" => "Romanian".into(),
+        "th" | "th-th" => "Thai".into(),
+        "el" | "el-gr" => "Greek".into(),
+        "zh" | "zh-cn" | "zh-sg" | "zh-hans" => "ChineseSimplified".into(),
+        "zh-tw" | "zh-hk" | "zh-mo" | "zh-hant" => "ChineseTraditional".into(),
+        _ => {
+            // fallback: "pt-br" -> "PtBr"
+            let mut s = String::new();
+            let mut upper_next = true;
+            for ch in l.chars() {
+                if ch == '-' {
+                    upper_next = true;
+                    continue;
+                }
+                if upper_next {
+                    s.push(ch.to_ascii_uppercase());
+                    upper_next = false;
+                } else {
+                    s.push(ch);
+                }
+            }
+            s
+        }
+    }
+}
+
+/// Собрать мод-перевод (авто-выбор папки языка по --lang).
+pub fn build_translation_mod(
+    po_path: &Path,
+    out_mod: &Path,
+    lang: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<()> {
     // 1) читаем po
     let entries = read_po_entries(po_path)?;
 
@@ -161,20 +219,17 @@ pub fn build_translation_mod(po_path: &Path, out_mod: &Path, lang: &str, mod_nam
     for e in entries {
         let rel_subpath: PathBuf = if let Some(r) = &e.reference {
             if let Some(caps) = re.captures(r) {
-                // caps[1] = исходный язык (можно игнорировать), caps[2] = относительный путь внутри Languages/<srcLang>/
                 PathBuf::from(&caps[2])
             } else {
-                // нет совпадения — шлём в Keyed/_Imported.xml
                 PathBuf::from("Keyed/_Imported.xml")
             }
         } else {
             PathBuf::from("Keyed/_Imported.xml")
         };
-
         grouped.entry(rel_subpath).or_default().push((e.key, e.value));
     }
 
-    // 3) создаём About/About.xml
+    // 3) About/About.xml
     let about_dir = out_mod.join("About");
     fs::create_dir_all(&about_dir)?;
     let about_xml = about_dir.join("About.xml");
@@ -193,9 +248,69 @@ pub fn build_translation_mod(po_path: &Path, out_mod: &Path, lang: &str, mod_nam
         package_id, mod_name, rw_version
     )?;
 
-    // 4) пишем файлы в Languages/<lang>/...
+    // 4) имя папки языка
+    let lang_dir = rimworld_lang_dir(lang);
+
+    // 5) записываем файлы
     for (rel, items) in grouped {
-        let out_path = out_mod.join("Languages").join(lang).join(rel);
+        let out_path = out_mod.join("Languages").join(&lang_dir).join(rel);
+        write_language_data_xml(&out_path, &items)?;
+    }
+
+    Ok(())
+}
+
+/// То же, что build_translation_mod, но принимает ГОТОВОЕ имя папки языка (например, "Russian").
+pub fn build_translation_mod_with_langdir(
+    po_path: &Path,
+    out_mod: &Path,
+    lang_dir: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<()> {
+    // 1) читаем po
+    let entries = read_po_entries(po_path)?;
+
+    // 2) группируем по относительным путям
+    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
+    let re = Regex::new(r"/Languages/([^/]+)/(.+?)(?::\d+)?$").unwrap();
+
+    for e in entries {
+        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
+            if let Some(caps) = re.captures(r) {
+                PathBuf::from(&caps[2])
+            } else {
+                PathBuf::from("Keyed/_Imported.xml")
+            }
+        } else {
+            PathBuf::from("Keyed/_Imported.xml")
+        };
+        grouped.entry(rel_subpath).or_default().push((e.key, e.value));
+    }
+
+    // 3) About/About.xml
+    let about_dir = out_mod.join("About");
+    fs::create_dir_all(&about_dir)?;
+    let about_xml = about_dir.join("About.xml");
+    let mut f = File::create(&about_xml)?;
+    write!(
+        f,
+        r#"<ModMetaData>
+  <packageId>{}</packageId>
+  <name>{}</name>
+  <description>Auto-generated translation mod</description>
+  <supportedVersions>
+    <li>{}</li>
+  </supportedVersions>
+</ModMetaData>
+"#,
+        package_id, mod_name, rw_version
+    )?;
+
+    // 4) записываем файлы в указанную папку lang_dir
+    for (rel, items) in grouped {
+        let out_path = out_mod.join("Languages").join(lang_dir).join(rel);
         write_language_data_xml(&out_path, &items)?;
     }
 
