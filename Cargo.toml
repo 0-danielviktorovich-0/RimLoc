@@ -6,6 +6,7 @@ members = [
 "crates/rimloc-export-csv",
 "crates/rimloc-export-po",
 "crates/rimloc-cli",
+"crates/rimloc-validate",
 ]
 
 
