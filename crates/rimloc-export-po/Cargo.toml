@@ -3,7 +3,6 @@ name = "rimloc-export-po"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
 color-eyre = { workspace = true }
 rimloc-core = { path = "../rimloc-core" }
