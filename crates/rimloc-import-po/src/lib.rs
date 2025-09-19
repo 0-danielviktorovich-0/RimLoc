@@ -316,3 +316,48 @@ pub fn build_translation_mod_with_langdir(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn maps_iso_codes_to_rimworld_dirs() {
+        assert_eq!(rimworld_lang_dir("ru"), "Russian");
+        assert_eq!(rimworld_lang_dir("ja"), "Japanese");
+        assert_eq!(rimworld_lang_dir("en"), "English");
+        assert_eq!(rimworld_lang_dir("pt-br"), "PortugueseBrazilian");
+        assert_eq!(rimworld_lang_dir("zh-hant"), "ChineseTraditional");
+        // уже каноническое имя
+        assert_eq!(rimworld_lang_dir("Russian"), "Russian");
+        // fallback для неизвестных кодов
+        assert_eq!(rimworld_lang_dir("xx"), "Xx");
+        assert_eq!(rimworld_lang_dir("pt-ao"), "PtAo");
+    }
+
+    #[test]
+    fn parse_po_string_unescapes_sequences() {
+        assert_eq!(super::parse_po_string(r#""a\"b\\c\n\t\r""#).unwrap(), "a\"b\\c\n\t\r");
+    }
+
+    #[test]
+    fn read_po_entries_parses_reference_ctxt_and_str() {
+        // создаём временный .po с одной записью
+        let mut tmp = NamedTempFile::new().unwrap();
+        writeln!(tmp, r#"#: /Mods/My/Stuff/Languages/English/Keyed/A.xml:3"#).unwrap();
+        writeln!(tmp, r#"msgctxt "Greeting""#).unwrap();
+        writeln!(tmp, r#"msgstr "Привет""#).unwrap();
+        writeln!(tmp, "").unwrap(); // пустая строка завершает запись
+
+        let entries = read_po_entries(tmp.path()).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].key, "Greeting");
+        assert_eq!(entries[0].value, "Привет");
+        assert!(entries[0].reference
+            .as_ref()
+            .unwrap()
+            .contains("Languages/English/Keyed/A.xml:3"));
+    }
+}
