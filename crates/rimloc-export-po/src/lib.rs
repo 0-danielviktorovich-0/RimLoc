@@ -24,7 +24,7 @@ fn escape_po(s: &str) -> String {
 /// Записать единый .po файл с заголовком и всеми TransUnit.
 /// msgctxt = ключ, msgid = исходный текст (source), msgstr = "" (пусто, готово к переводу)
 /// В комментарии `#:` пишем ссылку `path:line`.
-pub fn write_po(path: &Path, units: &[TransUnit]) -> Result<()> {
+pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<()> {
     let file = File::create(path)?;
     let mut w = BufWriter::new(file);
 
@@ -36,7 +36,11 @@ pub fn write_po(path: &Path, units: &[TransUnit]) -> Result<()> {
     writeln!(w, "\"PO-Revision-Date: \\n\"")?;
     writeln!(w, "\"Last-Translator: \\n\"")?;
     writeln!(w, "\"Language-Team: \\n\"")?;
-    writeln!(w, "\"Language: \\n\"")?;
+    if let Some(l) = lang {
+        writeln!(w, "\"Language: {}\\n\"", l)?;
+    } else {
+        writeln!(w, "\"Language: \\n\"")?;
+    }
     writeln!(w, "\"MIME-Version: 1.0\\n\"")?;
     writeln!(w, "\"Content-Type: text/plain; charset=UTF-8\\n\"")?;
     writeln!(w, "\"Content-Transfer-Encoding: 8bit\\n\"")?;
@@ -47,21 +51,16 @@ pub fn write_po(path: &Path, units: &[TransUnit]) -> Result<()> {
         let key = &u.key;
         let msgid = u.source.as_deref().unwrap_or("");
 
-        // Пропуск полностью пустых записей в качестве msgid? Оставим: иногда важно зафиксировать пустые.
-        // Ссылка на исходник
         if let Some(line) = u.line {
             writeln!(w, "#: {}:{}", u.path.display(), line)?;
         } else {
             writeln!(w, "#: {}", u.path.display())?;
         }
 
-        // Контекст = ключ
         writeln!(w, "msgctxt \"{}\"", escape_po(key))?;
-        // Исходный текст
         writeln!(w, "msgid \"{}\"", escape_po(msgid))?;
-        // Перевод пока пустой
         writeln!(w, "msgstr \"\"")?;
-        writeln!(w)?; // разделительная пустая строка
+        writeln!(w)?;
     }
 
     w.flush()?;
