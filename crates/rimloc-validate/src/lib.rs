@@ -69,3 +69,45 @@ pub fn validate(units: &[TransUnit]) -> Result<Vec<ValidationMessage>> {
 
     Ok(messages)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*; // подтянет validate(..) и типы из этого же крейта
+    use rimloc_core::TransUnit;
+    use std::path::PathBuf;
+
+    fn tu(key: &str, src: Option<&str>, line: u32) -> TransUnit {
+        TransUnit {
+            key: key.to_string(),
+            source: src.map(|s| s.to_string()),
+            path: PathBuf::from("Dummy/Keyed/Bad.xml"),
+            line: Some(line),
+        }
+    }
+
+    #[test]
+    fn detects_duplicate_and_empty_and_placeholders() {
+        // два одинаковых ключа -> duplicate
+        // пустая строка -> empty
+        // плейсхолдеры -> placeholder-check
+        let units = vec![
+            tu("DuplicateKey", Some("Hello"), 3),
+            tu("DuplicateKey", Some("World"), 5), // дубликат
+            tu("EmptyKey", Some("   "), 7),       // пустое значение (или None)
+            tu("WithPlaceholders", Some("Value {NAME} %d"), 11),
+        ];
+
+        let msgs = validate(&units).expect("validate should succeed");
+
+        // ожидаем три вида сообщений
+        let kinds: std::collections::HashSet<_> =
+            msgs.iter().map(|m| m.kind.as_str()).collect();
+
+        assert!(kinds.contains("duplicate"), "should report duplicate");
+        assert!(kinds.contains("empty"), "should report empty");
+        assert!(kinds.contains("placeholder-check"), "should report placeholders");
+
+        // и суммарно хотя бы 3 сообщения
+        assert!(msgs.len() >= 3, "should have at least 3 messages");
+    }
+}
