@@ -1,0 +1,10 @@
+[package]
+name = "rimloc-import-po"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quick-xml = { workspace = true }
+rimloc-core = { path = "../rimloc-core" }
+color-eyre = { workspace = true }
+regex = "1"
