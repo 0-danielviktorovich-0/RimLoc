@@ -8,3 +8,4 @@ quick-xml = { workspace = true }
 rimloc-core = { path = "../rimloc-core" }
 color-eyre = { workspace = true }
 regex = "1"
+tempfile = "3"
