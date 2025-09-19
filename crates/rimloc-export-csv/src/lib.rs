@@ -25,3 +25,41 @@ pub fn write_csv<W: Write>(writer: W, units: &[TransUnit], lang: Option<&str>) -
     wtr.flush()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rimloc_core::TransUnit;
+    use std::path::PathBuf;
+
+    fn unit(key: &str, src: &str) -> TransUnit {
+        TransUnit {
+            key: key.into(),
+            source: Some(src.into()),
+            path: PathBuf::from("/mod/Languages/English/Keyed/X.xml"),
+            line: Some(42),
+        }
+    }
+
+    #[test]
+    fn csv_without_lang_column() {
+        let units = vec![unit("A", "Hello"), unit("B", "World")];
+        let mut buf: Vec<u8> = Vec::new();
+        write_csv(&mut buf, &units, None).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+
+        assert!(s.lines().next().unwrap().starts_with("key,source,path,line"));
+        assert!(s.contains("A,Hello,/mod/Languages/English/Keyed/X.xml,42"));
+    }
+
+    #[test]
+    fn csv_with_lang_column() {
+        let units = vec![unit("A", "Hello")];
+        let mut buf: Vec<u8> = Vec::new();
+        write_csv(&mut buf, &units, Some("ru")).unwrap();
+        let s = String::from_utf8(buf).unwrap();
+
+        assert!(s.lines().next().unwrap().starts_with("lang,key,source,path,line"));
+        assert!(s.contains("ru,A,Hello,/mod/Languages/English/Keyed/X.xml,42"));
+    }
+}
