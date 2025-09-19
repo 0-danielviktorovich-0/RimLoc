@@ -364,6 +364,7 @@ dependencies = [
  "rimloc-core",
  "rimloc-export-csv",
  "rimloc-export-po",
+ "rimloc-import-po",
  "rimloc-parsers-xml",
  "rimloc-validate",
  "walkdir",
@@ -392,6 +393,16 @@ name = "rimloc-export-po"
 version = "0.1.0"
 dependencies = [
  "color-eyre",
+ "rimloc-core",
+]
+
+[[package]]
+name = "rimloc-import-po"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "quick-xml",
+ "regex",
  "rimloc-core",
 ]
 
