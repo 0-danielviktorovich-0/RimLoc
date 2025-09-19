@@ -66,3 +66,37 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
     w.flush()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rimloc_core::TransUnit;
+    use std::fs;
+    use std::path::PathBuf;
+    use tempfile::NamedTempFile;
+
+    fn unit(key: &str, src: &str, line: usize) -> TransUnit {
+        TransUnit {
+            key: key.into(),
+            source: Some(src.into()),
+            path: PathBuf::from("/Mod/Languages/English/Keyed/A.xml"),
+            line: Some(line as u32),
+        }
+    }
+
+    #[test]
+    fn po_contains_header_context_and_references() {
+        let tmp = NamedTempFile::new().unwrap();
+        let units = vec![
+            unit("Greeting", "Hello", 3),
+            unit("Farewell", "Bye", 7),
+        ];
+        write_po(tmp.path(), &units, Some("ru")).unwrap();
+
+        let s = fs::read_to_string(tmp.path()).unwrap();
+        assert!(s.contains(r#""Language: ru\n""#));
+        assert!(s.contains(r#"msgctxt "Greeting""#));
+        assert!(s.contains(r#"msgid "Hello""#));
+        assert!(s.contains(r#"#: /Mod/Languages/English/Keyed/A.xml:3"#));
+    }
+}
