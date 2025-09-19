@@ -13,5 +13,5 @@ owo-colors = "4"
 rimloc-core = { path = "../rimloc-core" }
 rimloc-parsers-xml = { path = "../rimloc-parsers-xml" }
 rimloc-export-csv = { path = "../rimloc-export-csv" }
-# rimloc-export-po = { path = "../rimloc-export-po" }
+rimloc-export-po = { path = "../rimloc-export-po" }
 rimloc-validate = { path = "../rimloc-validate" }
