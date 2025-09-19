@@ -26,12 +26,23 @@ enum Commands {
         #[arg(long)]
         out_csv: Option<PathBuf>,
     },
+    
     /// Проверить строки на ошибки/замечания
     Validate {
         /// Путь к корню мода (или Languages/<locale>)
         #[arg(short, long)]
         root: PathBuf,
     },
+
+    /// Экспорт извлечённых строк в единый .po файл
+    ExportPo {
+        /// Путь к корню мода (или Languages/<locale>)
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Путь к результирующему .po
+        #[arg(long)]
+        out_po: PathBuf,
+    },    
 }
 
 fn main() -> Result<()> {
@@ -99,6 +110,13 @@ fn main() -> Result<()> {
                 }
             }
         }
+        
+        Commands::ExportPo { root, out_po } => {
+            let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
+            rimloc_export_po::write_po(&out_po, &units)?;
+            println!("✔ PO saved to {}", out_po.display());
+        }
+    
     }
 
     Ok(())
