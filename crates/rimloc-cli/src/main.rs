@@ -49,7 +49,39 @@ enum Commands {
         #[arg(long)]
         lang: Option<String>,
     },
-   
+    
+    /// Импорт из .po в LanguageData XML (MVP: один файл)
+    ImportPo {
+        /// Путь к входному .po
+        #[arg(long)]
+        po: PathBuf,
+        /// Путь к выходному XML (например: Languages/ru/Keyed/_Imported.xml)
+        #[arg(long)]
+        out_xml: PathBuf,
+    },
+
+    /// Собрать отдельный мод-перевод из .po
+    BuildMod {
+        /// Входной .po
+        #[arg(long)]
+        po: PathBuf,
+        /// Папка для выходного мода (будет создана)
+        #[arg(long)]
+        out_mod: PathBuf,
+        /// Язык перевода (например: ru)
+        #[arg(long)]
+        lang: String,
+        /// Имя мода (About/name)
+        #[arg(long, default_value = "RimLoc Translation")]
+        name: String,
+        /// PackageId мода (About/packageId)
+        #[arg(long, default_value = "yourname.rimloc.translation")]
+        package_id: String,
+        /// Версия RimWorld
+        #[arg(long, default_value = "1.5")]
+        rw_version: String,
+    },
+    
 }
 
 fn main() -> Result<()> {
@@ -123,6 +155,30 @@ fn main() -> Result<()> {
             let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
             rimloc_export_po::write_po(&out_po, &units, lang.as_deref())?;
             println!("✔ PO saved to {}", out_po.display());
+        }
+        
+        Commands::ImportPo { po, out_xml } => {
+            // читаем записи из .po (key/msgctxt, value/msgstr, reference опционально)
+            let entries = rimloc_import_po::read_po_entries(&po)?;
+            if entries.is_empty() {
+                println!("ℹ В .po нет непустых переводов — ничего не импортировано");
+            } else {
+                // для XML-импорта нужен просто (key, value)
+                let pairs: Vec<(String, String)> =
+                    entries.into_iter().map(|e| (e.key, e.value)).collect();
+
+                // опционально можно отсортировать:
+                // let mut pairs = pairs;
+                // pairs.sort_by(|a, b| a.0.cmp(&b.0));
+
+                rimloc_import_po::write_language_data_xml(&out_xml, &pairs)?;
+                println!("✔ XML сохранён в {}", out_xml.display());
+            }
+        }
+
+        Commands::BuildMod { po, out_mod, lang, name, package_id, rw_version } => {
+            rimloc_import_po::build_translation_mod(&po, &out_mod, &lang, &name, &package_id, &rw_version)?;
+            println!("✔ Translation mod built at {}", out_mod.display());
         }
     
     }
