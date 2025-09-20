@@ -1,0 +1,9 @@
+fallback_language = "en"
+
+[fluent]
+# Папка с ресурсами Fluent
+assets_dir = "i18n"
+# Языки, которые реально есть в проекте
+available_languages = ["en", "ru"]
+# Имя домена соответствует имени файлов .ftl (rimloc.ftl → rimloc)
+domain = "rimloc"
