@@ -28,3 +28,6 @@ quick-xml = "0.36" # оставим для будущего потокового
 csv = "1"
 clap = { version = "4", features = ["derive"] }
 color-eyre = "0.6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
