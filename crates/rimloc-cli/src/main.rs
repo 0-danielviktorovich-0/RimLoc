@@ -94,37 +94,41 @@ enum Commands {
     },
 
     /// Собрать отдельный мод-перевод из .po
-    BuildMod {
-        /// Входной .po
-        #[arg(long)]
-        po: PathBuf,
-        
-        /// Папка для выходного мода (будет создана)
-        #[arg(long)]
-        out_mod: PathBuf,
-        
-        /// Язык перевода (например: ru)
-        #[arg(long)]
-        lang: String,
-        
-        /// Имя мода (About/name)
-        #[arg(long, default_value = "RimLoc Translation")]
-        name: String,
-        
-        /// PackageId мода (About/packageId)
-        #[arg(long, default_value = "yourname.rimloc.translation")]
-        package_id: String,
-        
-        /// Версия RimWorld
-        #[arg(long, default_value = "1.5")]
-        rw_version: String,
+BuildMod {
+    /// Входной .po
+    #[arg(long)]
+    po: PathBuf,
 
-        /// (Необязательно) Явное имя папки языка в RimWorld (например: Russian).
-        /// Если не задано — выбирается автоматически по --lang.
-        #[arg(long)]
-        lang_dir: Option<String>,
-        
-    },
+    /// Папка для выходного мода (будет создана)
+    #[arg(long)]
+    out_mod: PathBuf,
+
+    /// Язык перевода (например: ru)
+    #[arg(long)]
+    lang: String,
+
+    /// Имя мода (About/name)
+    #[arg(long, default_value = "RimLoc Translation")]
+    name: String,
+
+    /// PackageId мода (About/packageId)
+    #[arg(long, default_value = "yourname.rimloc.translation")]
+    package_id: String,
+
+    /// Версия RimWorld
+    #[arg(long, default_value = "1.5")]
+    rw_version: String,
+
+    /// (Необязательно) Явное имя папки языка (например: Russian).
+    /// Если не задано — выбирается автоматически по --lang.
+    #[arg(long)]
+    lang_dir: Option<String>,
+
+    /// Сухой прогон (ничего не записывать, только показать структуру)
+    #[arg(long, default_value_t = false)]
+    dry_run: bool,
+},
+
     
 }
 
@@ -341,20 +345,20 @@ fn main() -> Result<()> {
             println!("✔ Импорт выполнен в {}", root.display());
         }
 
-        Commands::BuildMod { po, out_mod, lang, name, package_id, rw_version, lang_dir } => {
-            // Если пользователь задал --lang-dir, используем его; иначе — автокарта.
+        Commands::BuildMod { po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run } => {
             let lang_folder = lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
 
-            // Временно «подменим» lang для сборки:
-            // добавим новый метод build_translation_mod_with_langdir, чтобы явно передать имя папки.
-            rimloc_import_po::build_translation_mod_with_langdir(
-                &po, &out_mod, &lang_folder, &name, &package_id, &rw_version
-            )?;
-            println!("✔ Translation mod built at {}", out_mod.display());
+            if dry_run {
+                rimloc_import_po::build_translation_mod_dry_run(
+                    &po, &out_mod, &lang_folder, &name, &package_id, &rw_version
+                )?;
+            } else {
+                rimloc_import_po::build_translation_mod_with_langdir(
+                    &po, &out_mod, &lang_folder, &name, &package_id, &rw_version
+                )?;
+                println!("✔ Translation mod built at {}", out_mod.display());
+            }
         }
-
-    
     }
-
     Ok(())
 }
