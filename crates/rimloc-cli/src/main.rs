@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::io::IsTerminal;
 use tracing::{info, warn, error, debug};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
-use tracing_appender::rolling;
 use tracing_subscriber::Layer;
+use tracing_error::ErrorLayer;
 
 
 #[derive(Parser)]
@@ -39,13 +39,31 @@ enum Commands {
     },
 
     /// Экспорт извлечённых строк в единый .po файл
+    ///
+    /// Можно ограничить исходный язык:
+    ///   --source-lang-dir English    (папка в Languages/)
+    ///   или
+    ///   --source-lang en             (ISO-код; будет сопоставлен к имени папки)
     ExportPo {
+        /// Путь к корню мода (или Languages/<locale>)
         #[arg(short, long)]
         root: PathBuf,
+
+        /// Путь к результирующему .po
         #[arg(long)]
         out_po: PathBuf,
+
+        /// Язык перевода (пишем в заголовок PO), например: ru, ja, de
         #[arg(long)]
         lang: Option<String>,
+
+        /// Исходный язык по ISO-коду (en, ru, ja...). Будет преобразован через rimworld_lang_dir.
+        #[arg(long)]
+        source_lang: Option<String>,
+
+        /// Имя папки исходного языка (например: English). Приоритет выше, чем у --source-lang.
+        #[arg(long)]
+        source_lang_dir: Option<String>,
     },
 
     /// Импорт .po: либо в один XML, либо раскладкой по структуре существующего мода
@@ -91,6 +109,24 @@ enum Commands {
     },
 }
 
+fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
+    let mut comps = path.components();
+
+    // Ищем компонент "Languages" (без учёта регистра)
+    while let Some(c) = comps.next() {
+        let s = c.as_os_str().to_string_lossy();
+        if s.eq_ignore_ascii_case("Languages") {
+            // следующий компонент должен быть <lang_dir> (чувствительно к регистру как в FS)
+            if let Some(lang) = comps.next() {
+                let lang_s = lang.as_os_str().to_string_lossy();
+                return lang_s == lang_dir;
+            }
+            return false;
+        }
+    }
+    false
+}
+
 trait Runnable {
     fn run(self, use_color: bool) -> Result<()>;
 }
@@ -99,6 +135,8 @@ impl Runnable for Commands {
     fn run(self, use_color: bool) -> Result<()> {
         let cmd_name = format!("{:?}", self);
         info!("▶ Starting command: {}", cmd_name);
+        let span = tracing::info_span!("cmd", name = %cmd_name);
+        let _enter = span.enter();
 
         let result = match self {
             Commands::Scan { root, out_csv, lang } => {
@@ -161,10 +199,38 @@ impl Runnable for Commands {
                 Ok(())
             }
 
-            Commands::ExportPo { root, out_po, lang } => {
-                debug!("ExportPo args: root={:?} out_po={:?} lang={:?}", root, out_po, lang);
+            Commands::ExportPo { root, out_po, lang, source_lang, source_lang_dir } => {
+                debug!(
+                    "ExportPo args: root={:?} out_po={:?} lang={:?} source_lang={:?} source_lang_dir={:?}",
+                    root, out_po, lang, source_lang, source_lang_dir
+                );
+
+                // 1) Сканируем все юниты
                 let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
-                rimloc_export_po::write_po(&out_po, &units, lang.as_deref())?;
+
+                // 2) Определяем папку исходного языка:
+                //    - если задан --source-lang-dir → берём его
+                //    - иначе если задан --source-lang → маппим в rimworld_lang_dir(...)
+                //    - иначе по умолчанию "English"
+                let src_dir = if let Some(dir) = source_lang_dir {
+                    dir
+                } else if let Some(code) = source_lang {
+                    rimloc_import_po::rimworld_lang_dir(&code)
+                } else {
+                    "English".to_string()
+                };
+                info!("Exporting from {}", src_dir);
+
+                // 3) Фильтруем только те записи, чей путь находится под Languages/<src_dir>/
+                let filtered: Vec<_> = units
+                    .into_iter()
+                    .filter(|u| is_under_languages_dir(&u.path, &src_dir))
+                    .collect();
+
+                info!("Exporting {} unit(s) from {}", filtered.len(), src_dir);
+
+                // 4) Пишем PO (язык назначения как и раньше — опциональное поле в заголовке)
+                rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;
                 println!("✔ PO saved to {}", out_po.display());
                 Ok(())
             }
@@ -258,7 +324,7 @@ impl Runnable for Commands {
 
                 use regex::Regex;
                 use std::collections::HashMap;
-                let re = Regex::new(r"/Languages/([^/]+)/(?P<rel>.+?)(?::\d+)?$").unwrap();
+                let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$").unwrap();
                 let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
 
                 for e in entries {
@@ -331,9 +397,16 @@ impl Runnable for Commands {
 }
 
 fn init_tracing() {
-    let file_appender = rolling::daily("logs", "rimloc.log");
+    use std::fs;
+
+    // гарантируем, что каталог есть
+    let _ = fs::create_dir_all("logs");
+
+    // Лог в файл (daily rotation в logs/rimloc.log) — всегда DEBUG и выше
+    let file_appender = tracing_appender::rolling::daily("logs", "rimloc.log");
     let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
 
+    // Лог в консоль — уровень управляем через RUST_LOG (по умолчанию INFO)
     let console_layer = fmt::layer()
         .with_target(false)
         .with_writer(std::io::stdout)
@@ -341,6 +414,7 @@ fn init_tracing() {
             EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"))
         );
 
+    // Лог в файл — фиксированно DEBUG
     let file_layer = fmt::layer()
         .with_ansi(false)
         .with_target(true)
@@ -350,12 +424,21 @@ fn init_tracing() {
     tracing_subscriber::registry()
         .with(console_layer)
         .with(file_layer)
+        .with(ErrorLayer::default()) // ← вот сюда добавляем
         .init();
+
 }
 
 fn main() -> Result<()> {
-    color_eyre::install()?;
+    color_eyre::config::HookBuilder::default()
+        .capture_span_trace_by_default(true)  // писать span-трассу в отчёты об ошибках
+        .install()?;
+
     init_tracing();
+
+    info!("rimloc started • version={} • logdir=logs/ • RUST_LOG={:?}",
+          env!("CARGO_PKG_VERSION"),
+          std::env::var("RUST_LOG").ok());
 
     let cli = Cli::parse();
 

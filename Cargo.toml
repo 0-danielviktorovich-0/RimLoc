@@ -27,7 +27,7 @@ roxmltree = "0.20" # удобный read-only XML парсер
 quick-xml = "0.36" # оставим для будущего потокового парсинга
 csv = "1"
 clap = { version = "4", features = ["derive"] }
-color-eyre = "0.6"
+color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2"

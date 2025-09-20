@@ -66,14 +66,13 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
 
         if lt.is_empty() {
             if let (Some(k), Some(v)) = (&cur_ctxt, &cur_str) {
-                if !v.trim().is_empty() {
-                    out.push(PoEntry {
-                        key: k.clone(),
-                        value: v.clone(),
-                        reference: cur_ref.clone(),
-                    });
-                }
+                out.push(PoEntry {
+                key: k.clone(),
+                value: v.clone(),
+                reference: cur_ref.clone(),
+                });
             }
+
             cur_ref = None;
             cur_ctxt = None;
             cur_str = None;
@@ -82,13 +81,11 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
     }
 
     if let (Some(k), Some(v)) = (cur_ctxt, cur_str) {
-        if !v.trim().is_empty() {
-            out.push(PoEntry {
-                key: k,
-                value: v,
-                reference: cur_ref,
-            });
-        }
+    out.push(PoEntry {
+        key: k,
+        value: v,
+        reference: cur_ref,
+    });
     }
 
     Ok(out)
@@ -220,7 +217,7 @@ pub fn build_translation_mod(
 
     // 2) группируем по относительным путям
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"/Languages/([^/]+)/(.+?)(?::\d+)?$").unwrap();
+    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
 
     for e in entries {
         let rel_subpath: PathBuf = if let Some(r) = &e.reference {
@@ -280,7 +277,7 @@ pub fn build_translation_mod_with_langdir(
 
     // 2) группируем по относительным путям
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"/Languages/([^/]+)/(.+?)(?::\d+)?$").unwrap();
+    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
 
     for e in entries {
         let rel_subpath: PathBuf = if let Some(r) = &e.reference {
@@ -339,7 +336,7 @@ pub fn build_translation_mod_dry_run(
     use std::collections::HashMap;
     use regex::Regex;
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"/Languages/([^/]+)/(.+?)(?::\d+)?$").unwrap();
+    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
 
     for e in entries {
         let rel_subpath: PathBuf = if let Some(r) = &e.reference {
