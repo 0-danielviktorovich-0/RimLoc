@@ -476,6 +476,7 @@ dependencies = [
  "rimloc-validate",
  "tracing",
  "tracing-appender",
+ "tracing-error",
  "tracing-subscriber",
  "walkdir",
 ]

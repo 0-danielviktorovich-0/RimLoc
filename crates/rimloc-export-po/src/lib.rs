@@ -23,9 +23,9 @@ fn escape_po(s: &str) -> String {
 }
 
 fn rel_from_languages(path_str: &str) -> Option<String> {
-    // Вырезаем подстроку после /Languages/<locale>/
-    // пример: /.../Languages/English/Keyed/Bad.xml -> Keyed/Bad.xml
-    let re = Regex::new(r"/Languages/[^/]+/(.+)$").unwrap();
+    // Вырезаем подстроку после .../Languages/<locale>/  (кроссплатформенно)
+    // Поддерживает и '/' и '\', а также отсутствие префикса каталога.
+    let re = Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](.+)$").unwrap();
     re.captures(path_str)
         .and_then(|c| c.get(1))
         .map(|m| m.as_str().to_string())
