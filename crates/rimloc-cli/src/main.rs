@@ -9,6 +9,8 @@ use tracing_subscriber::Layer;
 use tracing_error::ErrorLayer;
 use once_cell::sync::OnceCell;
 use tracing_appender::non_blocking::WorkerGuard;
+use regex::Regex;
+use std::collections::BTreeSet;
 
 static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 
@@ -52,6 +54,16 @@ enum Commands {
         /// Имя папки исходного языка (например: English)
         #[arg(long)]
         source_lang_dir: Option<String>,
+    },
+
+    /// Проверить .po на совпадение плейсхолдеров (msgid vs msgstr)
+    ValidatePo {
+        /// Путь к .po
+        #[arg(long)]
+        po: PathBuf,
+        /// Строгий режим: вернуть ошибку (exit code 1), если найдены несовпадения
+        #[arg(long, default_value_t = false)]
+        strict: bool,
     },
 
     /// Экспорт извлечённых строк в единый .po файл
@@ -143,6 +155,130 @@ fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
     false
 }
 
+/// Извлечь плейсхолдеры: %d, %s, %1$d, %02d, а также {NAME}/{0}
+fn extract_placeholders(s: &str) -> BTreeSet<String> {
+    let mut set = BTreeSet::new();
+
+    // %d, %s, %1$d, %02d, %i, %f — базового набора достаточно
+    let re_pct = Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap();
+    for m in re_pct.find_iter(s) {
+        set.insert(m.as_str().to_string());
+    }
+
+    // {NAME}, {0}, {Any-Thing}
+    let re_brace = Regex::new(r"\{[^}]+\}").unwrap();
+    for m in re_brace.find_iter(s) {
+        set.insert(m.as_str().to_string());
+    }
+
+    set
+}
+
+/// Простой парсер .po только для msgid/msgstr (+ msgctxt и #: reference по возможности).
+/// Возвращает вектор кортежей: (msgctxt, msgid, msgstr, reference)
+fn parse_po_basic(path: &std::path::Path) -> color_eyre::eyre::Result<Vec<(Option<String>, String, String, Option<String>)>> {
+    use std::fs::File;
+    use std::io::{BufRead, BufReader};
+
+    let f = File::open(path)?;
+    let rdr = BufReader::new(f);
+
+    let mut entries = Vec::new();
+    let mut ctx: Option<String> = None;
+    let mut id = String::new();
+    let mut strv = String::new();
+    let mut refv: Option<String> = None;
+
+    enum Mode { None, InId, InStr }
+    let mut mode = Mode::None;
+
+    fn unquote_po(s: &str) -> String {
+        // снимаем кавычки и экранирование \" \\ \n \t \r
+        let mut out = String::new();
+        let raw = s.trim();
+        let raw = raw.strip_prefix('"').unwrap_or(raw);
+        let raw = raw.strip_suffix('"').unwrap_or(raw);
+        let mut chars = raw.chars().peekable();
+        while let Some(c) = chars.next() {
+            if c == '\\' {
+                if let Some(n) = chars.next() {
+                    match n {
+                        'n' => out.push('\n'),
+                        't' => out.push('\t'),
+                        'r' => out.push('\r'),
+                        '\\' => out.push('\\'),
+                        '"' => out.push('"'),
+                        _ => { out.push('\\'); out.push(n); }
+                    }
+                } else {
+                    out.push('\\');
+                }
+            } else {
+                out.push(c);
+            }
+        }
+        out
+    }
+
+    let mut push_if_complete = |ctx: &mut Option<String>, id: &mut String, strv: &mut String, refv: &mut Option<String>| {
+        if !id.is_empty() || !strv.is_empty() {
+            entries.push((ctx.clone(), std::mem::take(id), std::mem::take(strv), refv.clone()));
+            *ctx = None;
+            *refv = None;
+        }
+    };
+
+    for line in rdr.lines() {
+        let line = line?;
+        let t = line.trim();
+
+        if t.is_empty() {
+            push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
+            mode = Mode::None;
+            continue;
+        }
+
+        if let Some(rest) = t.strip_prefix("msgctxt ") {
+            push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
+            ctx = Some(unquote_po(rest));
+            mode = Mode::None;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgid ") {
+            push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
+            id = unquote_po(rest);
+            mode = Mode::InId;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgstr ") {
+            strv = unquote_po(rest);
+            mode = Mode::InStr;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("#: ") {
+            refv = Some(rest.to_string());
+            continue;
+        }
+
+        match mode {
+            Mode::InId | Mode::InStr => {
+                if t.starts_with('"') {
+                    let chunk = unquote_po(t);
+                    match mode {
+                        Mode::InId => id.push_str(&chunk),
+                        Mode::InStr => strv.push_str(&chunk),
+                        _ => {}
+                    }
+                }
+            }
+            Mode::None => {}
+        }
+    }
+
+    push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
+    Ok(entries)
+}
+
 trait Runnable {
     fn run(self, use_color: bool) -> Result<()>;
 }
@@ -183,13 +319,20 @@ impl Runnable for Commands {
                 };
 
                 if let Some(path) = out_csv {
-            let file = std::fs::File::create(path)?;
-                rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
-            } else {
-                let stdout = std::io::stdout();
-                let lock = stdout.lock();
-                rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
-            }
+                    let file = std::fs::File::create(&path)?;
+                    rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
+                    if use_color { use owo_colors::OwoColorize; eprintln!("{} CSV saved to {}", "✔".green(), path.display()); }
+                    else { eprintln!("✔ CSV saved to {}", path.display()); }
+                } else {
+                    // Печатаем CSV в stdout; подсказку выводим в stderr, чтобы не мешать пайплайнам
+                    if std::io::stdout().is_terminal() {
+                        if use_color { use owo_colors::OwoColorize; eprintln!("{} Printing CSV to stdout…", "ℹ".cyan()); }
+                        else { eprintln!("ℹ Printing CSV to stdout…"); }
+                    }
+                    let stdout = std::io::stdout();
+                    let lock = stdout.lock();
+                    rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
+                }
             Ok(())
             }
 
@@ -247,6 +390,63 @@ impl Runnable for Commands {
                 Ok(())
             }
 
+            Commands::ValidatePo { po, strict } => {
+                debug!("ValidatePo args: po={:?} strict={}", po, strict);
+
+                let entries = parse_po_basic(&po)?;
+                let mut mismatches = Vec::new();
+                let mut checked = 0usize;
+
+                for (ctx, msgid, msgstr, reference) in entries {
+                    // пустые msgstr обычно означают "не переведено" — пропустим
+                    if msgstr.trim().is_empty() { continue; }
+                    checked += 1;
+
+                    let src_ph = extract_placeholders(&msgid);
+                    let dst_ph = extract_placeholders(&msgstr);
+
+                    if src_ph != dst_ph {
+                        mismatches.push((ctx, reference, msgid, msgstr, src_ph, dst_ph));
+                    }
+                }
+
+                if mismatches.is_empty() {
+                    if use_color {
+                        use owo_colors::OwoColorize;
+                        println!("{} Плейсхолдеры в порядке ({} записей).", "✔".green(), checked);
+                    } else {
+                        println!("✔ Placeholders OK ({} entries).", checked);
+                    }
+                    Ok(())
+                } else {
+                    for (ctx, reference, id, strv, src_ph, dst_ph) in &mismatches {
+                        if use_color {
+                            use owo_colors::OwoColorize;
+                            println!(
+                                "{} Несовпадение плейсхолдеров{}{}",
+                                "✖".red(),
+                                ctx.as_ref().map(|c| format!(" [ctxt: {}]", c.blue())).unwrap_or_default(),
+                                reference.as_ref().map(|r| format!("  {}", r.purple())).unwrap_or_default(),
+                            );
+                            println!("    {}", format!("msgid : {}", id).white());
+                            println!("    {}", format!("msgstr: {}", strv).white());
+                            println!("{}", format!("    ожидалось: {:?}", src_ph).yellow());
+                            println!("{}", format!("    получено : {:?}", dst_ph).cyan());
+                        } else {
+                            println!("✖ Placeholder mismatch [ctxt:{:?}] {:?}\n    msgid : {}\n    msgstr: {}\n    expected: {:?}\n    got     : {:?}", ctx, reference, id, strv, src_ph, dst_ph);
+                        }
+                    }
+                    if use_color { use owo_colors::OwoColorize; println!("{} Всего несоответствий: {}", "✖".red(), mismatches.len()); }
+                    else { println!("✖ Mismatches: {}", mismatches.len()); }
+
+                    if strict {
+                        color_eyre::eyre::bail!("placeholder mismatches found");
+                    } else {
+                        Ok(())
+                    }
+                }
+            }
+
             Commands::ExportPo { root, out_po, lang, source_lang, source_lang_dir } => {
                 debug!(
                     "ExportPo args: root={:?} out_po={:?} lang={:?} source_lang={:?} source_lang_dir={:?}",
@@ -279,7 +479,8 @@ impl Runnable for Commands {
 
                 // 4) Пишем PO (язык назначения как и раньше — опциональное поле в заголовке)
                 rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;
-                println!("✔ PO saved to {}", out_po.display());
+                if use_color { use owo_colors::OwoColorize; println!("{} PO saved to {}", "✔".green(), out_po.display()); }
+                else { println!("✔ PO saved to {}", out_po.display()); }
                 Ok(())
             }
 
@@ -307,7 +508,9 @@ impl Runnable for Commands {
                     entries.retain(|e| !e.value.trim().is_empty());
                     debug!("Filtered empty: {} -> {}", before, entries.len());
                     if entries.is_empty() {
-                        warn!("PO содержит только пустые строки. Добавьте --keep-empty, если хотите импортировать их как заглушки.");
+                        if use_color { use owo_colors::OwoColorize; println!("{} Нечего импортировать (все строки пустые; добавьте --keep-empty, если нужны заглушки)", "ℹ".cyan()); }
+                        else { println!("ℹ Нечего импортировать (все строки пустые; добавьте --keep-empty, если нужны заглушки)"); }
+                        return Ok(());
                     }
                 }
 
@@ -330,7 +533,8 @@ impl Runnable for Commands {
                     let pairs: Vec<(String, String)> =
                         entries.into_iter().map(|e| (e.key, e.value)).collect();
                     rimloc_import_po::write_language_data_xml(&out, &pairs)?;
-                    println!("✔ XML сохранён в {}", out.display());
+                    if use_color { use owo_colors::OwoColorize; println!("{} XML сохранён в {}", "✔".green(), out.display()); }
+                    else { println!("✔ XML сохранён в {}", out.display()); }
                     return Ok(());
                 }
 
@@ -414,7 +618,8 @@ impl Runnable for Commands {
                     rimloc_import_po::write_language_data_xml(&out_path, &items)?;
                 }
 
-                println!("✔ Импорт выполнен в {}", root.display());
+                if use_color { use owo_colors::OwoColorize; println!("{} Импорт выполнен в {}", "✔".green(), root.display()); }
+                else { println!("✔ Импорт выполнен в {}", root.display()); }
                 Ok(())
             }
 
@@ -432,7 +637,8 @@ impl Runnable for Commands {
                     rimloc_import_po::build_translation_mod_with_langdir(
                         &po, &out_mod, &lang_folder, &name, &package_id, &rw_version
                     )?;
-                    println!("✔ Translation mod built at {}", out_mod.display());
+                    if use_color { use owo_colors::OwoColorize; println!("{} Translation mod built at {}", "✔".green(), out_mod.display()); }
+                    else { println!("✔ Translation mod built at {}", out_mod.display()); }
                 }
                 Ok(())
             }
