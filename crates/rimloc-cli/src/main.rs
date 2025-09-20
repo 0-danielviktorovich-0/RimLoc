@@ -50,14 +50,47 @@ enum Commands {
         lang: Option<String>,
     },
     
-    /// Импорт из .po в LanguageData XML (MVP: один файл)
+    /// Импорт .po: либо в ОДИН файл, либо раскладкой в существующий мод
+    ///
+    /// Варианты:
+    ///   A) --out-xml <файл>                       → записывает всё в один XML
+    ///   B) --mod-root <папка> [--lang/--lang-dir] → раскладывает по структуре мода
     ImportPo {
         /// Путь к входному .po
         #[arg(long)]
         po: PathBuf,
-        /// Путь к выходному XML (например: Languages/ru/Keyed/_Imported.xml)
+
+        /// (Вариант A) Путь к выходному XML (один файл, например: Languages/Russian/Keyed/_Imported.xml)
+        #[arg(long, conflicts_with = "mod_root")]
+        out_xml: Option<PathBuf>,
+
+        /// (Вариант B) Корень существующего мода (где лежат About, Languages, …)
+        #[arg(long, conflicts_with = "out_xml")]
+        mod_root: Option<PathBuf>,
+
+        /// Код языка (ru/ja/de). Если не задан --lang-dir, то по нему выбирается имя папки языка.
         #[arg(long)]
-        out_xml: PathBuf,
+        lang: Option<String>,
+
+        /// Явное имя папки языка (например: Russian). Имеет приоритет над --lang.
+        #[arg(long)]
+        lang_dir: Option<String>,
+
+        /// Сохранять пустые переводы (msgstr == "" ). По умолчанию пустые пропускаем.
+        #[arg(long, default_value_t = false)]
+        keep_empty: bool,
+
+        /// Сухой прогон: только показать план (куда и сколько ключей пойдёт), файлы не записывать.
+        #[arg(long, default_value_t = false)]
+        dry_run: bool,
+
+        /// Если файл назначения существует — создать .bak рядом (до перезаписи).
+        #[arg(long, default_value_t = false)]
+        backup: bool,
+
+        /// Принудительно писать всё в один файл _Imported.xml даже при --mod-root
+        #[arg(long, default_value_t = false)]
+        single_file: bool,
     },
 
     /// Собрать отдельный мод-перевод из .po
@@ -168,23 +201,144 @@ fn main() -> Result<()> {
             println!("✔ PO saved to {}", out_po.display());
         }
         
-        Commands::ImportPo { po, out_xml } => {
-            // читаем записи из .po (key/msgctxt, value/msgstr, reference опционально)
-            let entries = rimloc_import_po::read_po_entries(&po)?;
-            if entries.is_empty() {
-                println!("ℹ В .po нет непустых переводов — ничего не импортировано");
-            } else {
-                // для XML-импорта нужен просто (key, value)
+        Commands::ImportPo {
+            po,
+            out_xml,
+            mod_root,
+            lang,
+            lang_dir,
+            keep_empty,
+            dry_run,
+            backup,
+            single_file,
+        } => {
+            use owo_colors::OwoColorize;
+            use std::fs;
+
+            // Читаем .po как записи (key/msgctxt, value/msgstr, optional reference)
+            let mut entries = rimloc_import_po::read_po_entries(&po)?;
+
+            // Фильтр пустых переводов (по умолчанию пропускаем пустые msgstr)
+            if !keep_empty {
+                entries.retain(|e| !e.value.trim().is_empty());
+            }
+
+            // Вариант A: явный один файл (out_xml задан)
+            if let Some(out) = out_xml {
+                if dry_run {
+                    println!(
+                        "DRY-RUN: записали бы {} ключ(ей) в {}",
+                        entries.len(),
+                        out.display()
+                    );
+                    return Ok(());
+                }
+
+                // backup при необходимости
+                if backup && out.exists() {
+                    let bak = out.with_extension("xml.bak");
+                    fs::copy(&out, &bak)?;
+                    eprintln!("backup: {} → {}", out.display(), bak.display());
+                }
+
+                // (key,value) пары
                 let pairs: Vec<(String, String)> =
                     entries.into_iter().map(|e| (e.key, e.value)).collect();
 
-                // опционально можно отсортировать:
-                // let mut pairs = pairs;
-                // pairs.sort_by(|a, b| a.0.cmp(&b.0));
-
-                rimloc_import_po::write_language_data_xml(&out_xml, &pairs)?;
-                println!("✔ XML сохранён в {}", out_xml.display());
+                rimloc_import_po::write_language_data_xml(&out, &pairs)?;
+                println!("✔ XML сохранён в {}", out.display());
+                return Ok(());
             }
+
+            // Вариант B: раскладка по структуре мода
+            let Some(root) = mod_root else {
+                // Ничего не задано: подскажем как правильно
+                eprintln!(
+                    "{} ни --out-xml, ни --mod-root не указаны.\n\
+                     Укажите ОДНО из:\n  --out-xml <файл>\n  ИЛИ\n  --mod-root <путь_к_моду> [--lang ru | --lang-dir Russian]",
+                    "Ошибка:".red()
+                );
+                std::process::exit(2);
+            };
+
+            // Определяем имя папки языка
+            let lang_folder = if let Some(dir) = lang_dir {
+                dir
+            } else if let Some(code) = lang {
+                rimloc_import_po::rimworld_lang_dir(&code)
+            } else {
+                // разумный дефолт
+                "Russian".to_string()
+            };
+
+            // Если попросили «в один файл» даже с mod_root
+            if single_file {
+                let out = root.join("Languages").join(&lang_folder).join("Keyed").join("_Imported.xml");
+
+                if dry_run {
+                    println!(
+                        "DRY-RUN: записали бы {} ключ(ей) в {}",
+                        entries.len(),
+                        out.display()
+                    );
+                    return Ok(());
+                }
+
+                if backup && out.exists() {
+                    let bak = out.with_extension("xml.bak");
+                    fs::copy(&out, &bak)?;
+                    eprintln!("backup: {} → {}", out.display(), bak.display());
+                }
+
+                let pairs: Vec<(String, String)> =
+                    entries.into_iter().map(|e| (e.key, e.value)).collect();
+                rimloc_import_po::write_language_data_xml(&out, &pairs)?;
+                println!("✔ XML сохранён в {}", out.display());
+                return Ok(());
+            }
+
+            // Иначе: раскладываем по reference (DefInjected/..., Keyed/..., и т.д.)
+            use regex::Regex;
+            use std::collections::HashMap;
+            let re = Regex::new(r"/Languages/([^/]+)/(?P<rel>.+?)(?::\d+)?$").unwrap();
+            let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
+
+            for e in entries {
+                let rel = e.reference.as_ref()
+                    .and_then(|r| re.captures(r))
+                    .and_then(|c| c.name("rel").map(|m| PathBuf::from(m.as_str())))
+                    .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml"));
+                grouped.entry(rel).or_default().push((e.key, e.value));
+            }
+
+            // Сухой прогон?
+            if dry_run {
+                println!("DRY-RUN план:");
+                let mut keys_total = 0usize;
+                let mut paths: Vec<_> = grouped.keys().cloned().collect();
+                paths.sort();
+                for rel in paths {
+                    let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
+                    keys_total += n;
+                    println!("  {}  ({} ключей)", root.join("Languages").join(&lang_folder).join(&rel).display(), n);
+                }
+                println!("ИТОГО: {} ключ(ей)", keys_total);
+                return Ok(());
+            }
+
+            // Запись по файлам
+            for (rel, items) in grouped {
+                let out_path = root.join("Languages").join(&lang_folder).join(&rel);
+                // backup, если нужно
+                if backup && out_path.exists() {
+                    let bak = out_path.with_extension("xml.bak");
+                    fs::copy(&out_path, &bak)?;
+                    eprintln!("backup: {} → {}", out_path.display(), bak.display());
+                }
+                rimloc_import_po::write_language_data_xml(&out_path, &items)?;
+            }
+
+            println!("✔ Импорт выполнен в {}", root.display());
         }
 
         Commands::BuildMod { po, out_mod, lang, name, package_id, rw_version, lang_dir } => {
