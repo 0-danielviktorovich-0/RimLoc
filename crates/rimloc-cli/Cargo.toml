@@ -27,3 +27,8 @@ i18n-embed = { version = "0.16", features = ["fluent-system", "desktop-requester
 i18n-embed-fl = "0.10"
 unic-langid = "0.9"
 rust-embed = { version = "8.7", features = ["include-exclude"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.10"

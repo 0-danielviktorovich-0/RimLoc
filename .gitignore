@@ -6,3 +6,4 @@
 # Files for testing functionality
 /test
 /logs
+/crates/rimloc-cli/logs/
