@@ -466,6 +466,7 @@ dependencies = [
  "anyhow",
  "clap",
  "color-eyre",
+ "once_cell",
  "owo-colors",
  "regex",
  "rimloc-core",
