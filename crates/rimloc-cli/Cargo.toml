@@ -17,3 +17,6 @@ rimloc-export-po = { path = "../rimloc-export-po" }
 rimloc-validate = { path = "../rimloc-validate" }
 rimloc-import-po = { path = "../rimloc-import-po" }
 regex = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
