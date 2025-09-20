@@ -16,4 +16,4 @@ rimloc-export-csv = { path = "../rimloc-export-csv" }
 rimloc-export-po = { path = "../rimloc-export-po" }
 rimloc-validate = { path = "../rimloc-validate" }
 rimloc-import-po = { path = "../rimloc-import-po" }
-
+regex = "1"
