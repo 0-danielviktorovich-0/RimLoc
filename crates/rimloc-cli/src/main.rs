@@ -7,6 +7,10 @@ use tracing::{info, warn, error, debug};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 use tracing_subscriber::Layer;
 use tracing_error::ErrorLayer;
+use once_cell::sync::OnceCell;
+use tracing_appender::non_blocking::WorkerGuard;
+
+static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 
 
 #[derive(Parser)]
@@ -30,12 +34,24 @@ enum Commands {
         out_csv: Option<PathBuf>,
         #[arg(long)]
         lang: Option<String>,
+        /// Исходный язык по ISO-коду (en, ru, ja...)
+        #[arg(long)]
+        source_lang: Option<String>,
+        /// Имя папки исходного языка (например: English). Приоритет выше.
+        #[arg(long)]
+        source_lang_dir: Option<String>,
     },
 
     /// Проверить строки на ошибки/замечания
     Validate {
         #[arg(short, long)]
         root: PathBuf,
+        /// Исходный язык по ISO-коду
+        #[arg(long)]
+        source_lang: Option<String>,
+        /// Имя папки исходного языка (например: English)
+        #[arg(long)]
+        source_lang_dir: Option<String>,
     },
 
     /// Экспорт извлечённых строк в единый .po файл
@@ -139,23 +155,59 @@ impl Runnable for Commands {
         let _enter = span.enter();
 
         let result = match self {
-            Commands::Scan { root, out_csv, lang } => {
+            Commands::Scan { root, out_csv, lang, source_lang, source_lang_dir } => {
                 debug!("Scan args: root={:?} out_csv={:?} lang={:?}", root, out_csv, lang);
+
                 let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
-                if let Some(path) = out_csv {
-                    let file = std::fs::File::create(path)?;
-                    rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
+
+                // опциональный фильтр по исходному языку (папка в Languages)
+                let units = if let Some(dir) = source_lang_dir.clone() {
+                    let before = units.len();
+                    let filtered: Vec<_> = units
+                    .into_iter()
+                    .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
+                    .collect();
+                    info!("Scan: filtered {} -> {} by source_lang_dir={}", before, filtered.len(), dir);
+                    filtered
+                } else if let Some(code) = source_lang.clone() {
+                    let dir = rimloc_import_po::rimworld_lang_dir(&code);
+                    let before = units.len();
+                    let filtered: Vec<_> = units
+                        .into_iter()
+                        .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
+                        .collect();
+                    info!("Scan: filtered by source_lang={} → dir={}: {} -> {}", code, dir, before, filtered.len());
+                    filtered
                 } else {
-                    let stdout = std::io::stdout();
-                    let lock = stdout.lock();
-                    rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
-                }
-                Ok(())
+                    units
+                };
+
+                if let Some(path) = out_csv {
+            let file = std::fs::File::create(path)?;
+                rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
+            } else {
+                let stdout = std::io::stdout();
+                let lock = stdout.lock();
+                rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
+            }
+            Ok(())
             }
 
-            Commands::Validate { root } => {
+            Commands::Validate { root, source_lang, source_lang_dir } => {
                 debug!("Validate args: root={:?}", root);
-                let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
+
+                let mut units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
+
+                // опциональный фильтр по исходному языку
+                if let Some(dir) = source_lang_dir.as_ref() {
+                    units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
+                    info!("Validate: filtered by source_lang_dir={}, remaining={}", dir, units.len());
+                } else if let Some(code) = source_lang.as_ref() {
+                    let dir = rimloc_import_po::rimworld_lang_dir(code);
+                    units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
+                    info!("Validate: filtered by source_lang={} → dir={}, remaining={}", code, dir, units.len());
+                }
+
                 let msgs = validate(&units)?;
                 if msgs.is_empty() {
                     println!("✔ Всё чисто, ошибок не найдено");
@@ -164,11 +216,7 @@ impl Runnable for Commands {
                         if !use_color {
                             println!(
                                 "[{}] {} ({}:{}) — {}",
-                                m.kind,
-                                m.key,
-                                m.path,
-                                m.line.unwrap_or(0),
-                                m.message
+                                m.kind, m.key, m.path, m.line.unwrap_or(0), m.message
                             );
                         } else {
                             use owo_colors::OwoColorize;
@@ -258,6 +306,9 @@ impl Runnable for Commands {
                     let before = entries.len();
                     entries.retain(|e| !e.value.trim().is_empty());
                     debug!("Filtered empty: {} -> {}", before, entries.len());
+                    if entries.is_empty() {
+                        warn!("PO содержит только пустые строки. Добавьте --keep-empty, если хотите импортировать их как заглушки.");
+                    }
                 }
 
                 if let Some(out) = out_xml {
@@ -404,7 +455,10 @@ fn init_tracing() {
 
     // Лог в файл (daily rotation в logs/rimloc.log) — всегда DEBUG и выше
     let file_appender = tracing_appender::rolling::daily("logs", "rimloc.log");
-    let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
+    let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
+    // держим guard живым до завершения процесса
+    let _ = LOG_GUARD.set(guard);
+
 
     // Лог в консоль — уровень управляем через RUST_LOG (по умолчанию INFO)
     let console_layer = fmt::layer()
