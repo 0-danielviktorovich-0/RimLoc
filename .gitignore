@@ -2,4 +2,5 @@
 # Rust build artifacts
 /target
 
-
+# Files for testing functionality
+/test
