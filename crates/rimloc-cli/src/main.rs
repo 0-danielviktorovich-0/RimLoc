@@ -1,4 +1,5 @@
 use rimloc_validate::validate;
+include!(concat!(env!("OUT_DIR"), "/supported_locales.rs"));
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 use std::path::PathBuf;
@@ -7,10 +8,78 @@ use tracing::{info, warn, error, debug};
 use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 use tracing_subscriber::Layer;
 use tracing_error::ErrorLayer;
-use once_cell::sync::OnceCell;
 use tracing_appender::non_blocking::WorkerGuard;
 use regex::Regex;
 use std::collections::BTreeSet;
+use i18n_embed::fluent::FluentLanguageLoader;
+use i18n_embed::DesktopLanguageRequester;
+use unic_langid::LanguageIdentifier;
+use rust_embed::RustEmbed;
+use once_cell::sync::OnceCell;
+use i18n_embed::LanguageRequester;
+
+
+#[derive(RustEmbed)]
+#[folder = "i18n"]
+#[include = "**/*.ftl"]
+struct Localizations;
+
+
+static LANG_LOADER: OnceCell<FluentLanguageLoader> = OnceCell::new();
+
+fn init_i18n() {
+    // создаём загрузчик Fluent
+    let loader = FluentLanguageLoader::new("rimloc", "en".parse().expect("valid fallback lang"));
+
+    // выбираем языки, запрошенные системой/пользователем
+    let req = DesktopLanguageRequester::new();
+    let requested: Vec<LanguageIdentifier> = req.requested_languages();
+
+    // Оставляем только поддерживаемые (по языковому коду), + гарантируем fallback `en`
+    let mut to_load: Vec<LanguageIdentifier> = requested
+        .into_iter()
+        .filter(|id| SUPPORTED_LOCALES.contains(&id.language.as_str()))
+        .collect();
+    let fallback: LanguageIdentifier = "en".parse().expect("valid fallback lang");
+    if !to_load.iter().any(|i| i == &fallback) {
+        to_load.push(fallback);
+    }
+
+    // грузим в loader ресурсы из вшитых ассетов (см. #[derive(RustEmbed)] выше)
+    i18n_embed::select(&loader, &Localizations, &to_load)
+        .expect("failed to initialize i18n");
+
+    // сохраняем глобально
+    let _ = LANG_LOADER.set(loader);
+}
+
+fn set_ui_lang(lang: Option<&str>) {
+    if let Some(code) = lang {
+        if let Ok(id) = code.parse::<LanguageIdentifier>() {
+            // проверяем, поддерживаем ли такой базовый язык
+            if SUPPORTED_LOCALES.contains(&id.language.as_str()) {
+                let langs = [id];
+                if let Some(loader) = LANG_LOADER.get() {
+                    let _ = i18n_embed::select(loader, &Localizations, &langs);
+                }
+            } else {
+                // игнорируем неподдерживаемый код, оставляя текущую локаль
+                tracing::warn!(?code, "ui_lang not supported, keeping current locale");
+            }
+        }
+    }
+}
+
+macro_rules! tr {
+    ($msg:literal $(, $k:ident = $v:expr )* $(,)?) => {{
+        let loader = LANG_LOADER.get().expect("i18n not initialized");
+        i18n_embed_fl::fl!(loader, $msg $(, $k = $v )* )
+    }};
+    ($msg:literal) => {{
+        let loader = LANG_LOADER.get().expect("i18n not initialized");
+        i18n_embed_fl::fl!(loader, $msg)
+    }}
+}
 
 static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 
@@ -24,6 +93,10 @@ struct Cli {
 
     #[command(subcommand)]
     cmd: Commands,
+    
+    /// Язык интерфейса (ui): ru или en (по умолчанию — системный)
+    #[arg(long, global = true)]
+    ui_lang: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -321,13 +394,13 @@ impl Runnable for Commands {
                 if let Some(path) = out_csv {
                     let file = std::fs::File::create(&path)?;
                     rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
-                    if use_color { use owo_colors::OwoColorize; eprintln!("{} CSV saved to {}", "✔".green(), path.display()); }
-                    else { eprintln!("✔ CSV saved to {}", path.display()); }
+                    if use_color { use owo_colors::OwoColorize; eprintln!("{} {}", "✔".green(), tr!("scan-csv-saved", path = path.display().to_string())); }
+                    else { eprintln!("✔ {}", tr!("scan-csv-saved", path = path.display().to_string())); }
                 } else {
                     // Печатаем CSV в stdout; подсказку выводим в stderr, чтобы не мешать пайплайнам
                     if std::io::stdout().is_terminal() {
-                        if use_color { use owo_colors::OwoColorize; eprintln!("{} Printing CSV to stdout…", "ℹ".cyan()); }
-                        else { eprintln!("ℹ Printing CSV to stdout…"); }
+                        if use_color { use owo_colors::OwoColorize; eprintln!("{} {}", "ℹ".cyan(), tr!("scan-csv-stdout")); }
+                        else { eprintln!("ℹ {}", tr!("scan-csv-stdout")); }
                     }
                     let stdout = std::io::stdout();
                     let lock = stdout.lock();
@@ -353,7 +426,7 @@ impl Runnable for Commands {
 
                 let msgs = validate(&units)?;
                 if msgs.is_empty() {
-                    println!("✔ Всё чисто, ошибок не найдено");
+                    println!("✔ {}", tr!("validate-clean"));
                 } else {
                     for m in msgs {
                         if !use_color {
@@ -398,7 +471,8 @@ impl Runnable for Commands {
                 let mut checked = 0usize;
 
                 for (ctx, msgid, msgstr, reference) in entries {
-                    // пустые msgstr обычно означают "не переведено" — пропустим
+                    // пропускаем заголовок PO (msgid "") и пустые переводы
+                    if msgid.is_empty() { continue; }
                     if msgstr.trim().is_empty() { continue; }
                     checked += 1;
 
@@ -413,31 +487,41 @@ impl Runnable for Commands {
                 if mismatches.is_empty() {
                     if use_color {
                         use owo_colors::OwoColorize;
-                        println!("{} Плейсхолдеры в порядке ({} записей).", "✔".green(), checked);
+                        println!("{} {}", "✔".green(), tr!("validate-po-ok", count = checked));
                     } else {
-                        println!("✔ Placeholders OK ({} entries).", checked);
+                        println!("✔ {}", tr!("validate-po-ok", count = checked));
                     }
                     Ok(())
                 } else {
                     for (ctx, reference, id, strv, src_ph, dst_ph) in &mismatches {
+                        let ctxt_s = ctx.as_deref().unwrap_or("");
+                        let ref_s  = reference.as_deref().unwrap_or("");
+
                         if use_color {
                             use owo_colors::OwoColorize;
                             println!(
-                                "{} Несовпадение плейсхолдеров{}{}",
+                                "{} {}",
                                 "✖".red(),
-                                ctx.as_ref().map(|c| format!(" [ctxt: {}]", c.blue())).unwrap_or_default(),
-                                reference.as_ref().map(|r| format!("  {}", r.purple())).unwrap_or_default(),
+                                tr!("validate-po-mismatch", ctxt = ctxt_s.to_string(), reference = ref_s.to_string())
                             );
-                            println!("    {}", format!("msgid : {}", id).white());
-                            println!("    {}", format!("msgstr: {}", strv).white());
-                            println!("{}", format!("    ожидалось: {:?}", src_ph).yellow());
-                            println!("{}", format!("    получено : {:?}", dst_ph).cyan());
+                            println!("    {}", tr!("validate-po-msgid",  value = id));
+                            println!("    {}", tr!("validate-po-msgstr", value = strv));
+                            println!("{}",   tr!("validate-po-expected", ph = format!("{:?}", src_ph)));
+                            println!("{}",   tr!("validate-po-got",      ph = format!("{:?}", dst_ph)));
                         } else {
-                            println!("✖ Placeholder mismatch [ctxt:{:?}] {:?}\n    msgid : {}\n    msgstr: {}\n    expected: {:?}\n    got     : {:?}", ctx, reference, id, strv, src_ph, dst_ph);
+                            println!("✖ {}", tr!("validate-po-mismatch", ctxt = ctxt_s.to_string(), reference = ref_s.to_string()));
+                            println!("    {}", tr!("validate-po-msgid",  value = id));
+                            println!("    {}", tr!("validate-po-msgstr", value = strv));
+                            println!("{}",     tr!("validate-po-expected", ph = format!("{:?}", src_ph)));
+                            println!("{}",     tr!("validate-po-got",      ph = format!("{:?}", dst_ph)));
                         }
                     }
-                    if use_color { use owo_colors::OwoColorize; println!("{} Всего несоответствий: {}", "✖".red(), mismatches.len()); }
-                    else { println!("✖ Mismatches: {}", mismatches.len()); }
+                    if use_color {
+                        use owo_colors::OwoColorize;
+                        println!("{} {}", "✖".red(), tr!("validate-po-total-mismatches", count = mismatches.len()));
+                    } else {
+                        println!("✖ {}", tr!("validate-po-total-mismatches", count = mismatches.len()));
+                    }
 
                     if strict {
                         color_eyre::eyre::bail!("placeholder mismatches found");
@@ -479,8 +563,8 @@ impl Runnable for Commands {
 
                 // 4) Пишем PO (язык назначения как и раньше — опциональное поле в заголовке)
                 rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;
-                if use_color { use owo_colors::OwoColorize; println!("{} PO saved to {}", "✔".green(), out_po.display()); }
-                else { println!("✔ PO saved to {}", out_po.display()); }
+                if use_color { use owo_colors::OwoColorize; println!("{} {}", "✔".green(), tr!("export-po-saved", path = out_po.display().to_string())); }
+                else { println!("✔ {}", tr!("export-po-saved", path = out_po.display().to_string())); }
                 Ok(())
             }
 
@@ -508,19 +592,15 @@ impl Runnable for Commands {
                     entries.retain(|e| !e.value.trim().is_empty());
                     debug!("Filtered empty: {} -> {}", before, entries.len());
                     if entries.is_empty() {
-                        if use_color { use owo_colors::OwoColorize; println!("{} Нечего импортировать (все строки пустые; добавьте --keep-empty, если нужны заглушки)", "ℹ".cyan()); }
-                        else { println!("ℹ Нечего импортировать (все строки пустые; добавьте --keep-empty, если нужны заглушки)"); }
+                        if use_color { use owo_colors::OwoColorize; println!("{} {}", "ℹ".cyan(), tr!("import-nothing-to-do")); }
+                        else { println!("ℹ {}", tr!("import-nothing-to-do")); }
                         return Ok(());
                     }
                 }
 
                 if let Some(out) = out_xml {
                     if dry_run {
-                        println!(
-                            "DRY-RUN: записали бы {} ключ(ей) в {}",
-                            entries.len(),
-                            out.display()
-                        );
+                        println!("{}", tr!("dry-run-would-write", count = entries.len(), path = out.display().to_string()));
                         return Ok(());
                     }
 
@@ -533,13 +613,12 @@ impl Runnable for Commands {
                     let pairs: Vec<(String, String)> =
                         entries.into_iter().map(|e| (e.key, e.value)).collect();
                     rimloc_import_po::write_language_data_xml(&out, &pairs)?;
-                    if use_color { use owo_colors::OwoColorize; println!("{} XML сохранён в {}", "✔".green(), out.display()); }
-                    else { println!("✔ XML сохранён в {}", out.display()); }
+                    println!("✔ {}", tr!("xml-saved", path = out.display().to_string()));
                     return Ok(());
                 }
 
                 let Some(root) = mod_root else {
-                    eprintln!("Ошибка: нужно указать --out-xml или --mod-root");
+                    eprintln!("{}", tr!("import-need-target"));
                     std::process::exit(2);
                 };
 
@@ -556,11 +635,7 @@ impl Runnable for Commands {
                     let out = root.join("Languages").join(&lang_folder).join("Keyed").join("_Imported.xml");
 
                     if dry_run {
-                        println!(
-                            "DRY-RUN: записали бы {} ключ(ей) в {}",
-                            entries.len(),
-                            out.display()
-                        );
+                        println!("{}", tr!("dry-run-would-write", count = entries.len(), path = out.display().to_string()));
                         return Ok(());
                     }
 
@@ -573,11 +648,10 @@ impl Runnable for Commands {
                     let pairs: Vec<(String, String)> =
                         entries.into_iter().map(|e| (e.key, e.value)).collect();
                     rimloc_import_po::write_language_data_xml(&out, &pairs)?;
-                    println!("✔ XML сохранён в {}", out.display());
+                    println!("✔ {}", tr!("xml-saved", path = out.display().to_string()));
                     return Ok(());
                 }
 
-                use regex::Regex;
                 use std::collections::HashMap;
                 let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$").unwrap();
                 let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
@@ -591,7 +665,7 @@ impl Runnable for Commands {
                 }
 
                 if dry_run {
-                    println!("DRY-RUN план:");
+                    println!("{}", tr!("import-dry-run-header"));
                     let mut keys_total = 0usize;
                     let mut paths: Vec<_> = grouped.keys().cloned().collect();
                     paths.sort();
@@ -604,7 +678,7 @@ impl Runnable for Commands {
                             n
                         );
                     }
-                    println!("ИТОГО: {} ключ(ей)", keys_total);
+                    println!("{}", tr!("import-total-keys", n = keys_total));
                     return Ok(());
                 }
 
@@ -618,8 +692,8 @@ impl Runnable for Commands {
                     rimloc_import_po::write_language_data_xml(&out_path, &items)?;
                 }
 
-                if use_color { use owo_colors::OwoColorize; println!("{} Импорт выполнен в {}", "✔".green(), root.display()); }
-                else { println!("✔ Импорт выполнен в {}", root.display()); }
+                if use_color { use owo_colors::OwoColorize; println!("{} {}", "✔".green(), tr!("import-done", root = root.display().to_string())); }
+                else { println!("✔ {}", tr!("import-done", root = root.display().to_string())); }
                 Ok(())
             }
 
@@ -630,6 +704,7 @@ impl Runnable for Commands {
                 let lang_folder = lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
 
                 if dry_run {
+                    println!("{}", tr!("build-dry-run-header"));
                     rimloc_import_po::build_translation_mod_dry_run(
                         &po, &out_mod, &lang_folder, &name, &package_id, &rw_version
                     )?;
@@ -637,8 +712,8 @@ impl Runnable for Commands {
                     rimloc_import_po::build_translation_mod_with_langdir(
                         &po, &out_mod, &lang_folder, &name, &package_id, &rw_version
                     )?;
-                    if use_color { use owo_colors::OwoColorize; println!("{} Translation mod built at {}", "✔".green(), out_mod.display()); }
-                    else { println!("✔ Translation mod built at {}", out_mod.display()); }
+                    if use_color { use owo_colors::OwoColorize; println!("{} {}", "✔".green(), tr!("build-done", out = out_mod.display().to_string())); }
+                    else { println!("✔ {}", tr!("build-done", out = out_mod.display().to_string())); }
                 }
                 Ok(())
             }
@@ -684,7 +759,7 @@ fn init_tracing() {
     tracing_subscriber::registry()
         .with(console_layer)
         .with(file_layer)
-        .with(ErrorLayer::default()) // ← вот сюда добавляем
+        .with(ErrorLayer::default())
         .init();
 
 }
@@ -695,12 +770,18 @@ fn main() -> Result<()> {
         .install()?;
 
     init_tracing();
+    init_i18n();
 
-    info!("rimloc started • version={} • logdir=logs/ • RUST_LOG={:?}",
-          env!("CARGO_PKG_VERSION"),
-          std::env::var("RUST_LOG").ok());
+    // Избегаем временного значения в аргументах макроса (E0716)
+    let rustlog: String = std::env::var("RUST_LOG").unwrap_or_else(|_| "None".to_string());
 
+    info!("{}", tr!("app-started",
+        version = env!("CARGO_PKG_VERSION"),
+        logdir  = "logs/",
+        rustlog = rustlog.as_str()
+    ));
     let cli = Cli::parse();
+    set_ui_lang(cli.ui_lang.as_deref());
 
     let use_color = !cli.no_color
         && std::io::stdout().is_terminal()
