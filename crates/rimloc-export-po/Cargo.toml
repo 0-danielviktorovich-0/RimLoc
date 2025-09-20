@@ -7,3 +7,4 @@ edition = "2021"
 color-eyre = { workspace = true }
 rimloc-core = { path = "../rimloc-core" }
 tempfile = "3"
+regex = "1"
