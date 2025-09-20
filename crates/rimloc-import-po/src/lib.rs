@@ -39,7 +39,13 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
         }
 
         if lt.starts_with("msgctxt") {
-            cur_ctxt = Some(parse_po_string(lt.strip_prefix("msgctxt").unwrap_or(""))?);
+            let raw = parse_po_string(lt.strip_prefix("msgctxt").unwrap_or(""))?;
+             // Если msgctxt имеет вид "Key|Path:Line", оставляем только "Key"
+            let key = raw
+                .split_once('|')
+                .map(|(k, _)| k.to_string())
+                .unwrap_or(raw);
+            cur_ctxt = Some(key);
             in_msgstr = false;
             continue;
         }

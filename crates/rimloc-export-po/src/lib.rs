@@ -3,6 +3,7 @@ use rimloc_core::TransUnit;
 use std::fs::File;
 use std::io::{Write, BufWriter};
 use std::path::Path;
+use regex::Regex;
 
 fn escape_po(s: &str) -> String {
     // Простейшее экранирование для PO-строк (достаточно для MVP):
@@ -21,9 +22,19 @@ fn escape_po(s: &str) -> String {
     out
 }
 
+fn rel_from_languages(path_str: &str) -> Option<String> {
+    // Вырезаем подстроку после /Languages/<locale>/
+    // пример: /.../Languages/English/Keyed/Bad.xml -> Keyed/Bad.xml
+    let re = Regex::new(r"/Languages/[^/]+/(.+)$").unwrap();
+    re.captures(path_str)
+        .and_then(|c| c.get(1))
+        .map(|m| m.as_str().to_string())
+}
+
 /// Записать единый .po файл с заголовком и всеми TransUnit.
-/// msgctxt = ключ, msgid = исходный текст (source), msgstr = "" (пусто, готово к переводу)
-/// В комментарии `#:` пишем ссылку `path:line`.
+/// msgctxt = "<key>|<relative_path_from_Languages>:<line>" (уникальный контекст для Poedit)
+/// msgid   = исходный текст (source), msgstr = "" (пусто, готово к переводу)
+/// В комментарии `#:` пишем ссылку `path:line` (для импорта/раскладки по файлам).
 pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<()> {
     let file = File::create(path)?;
     let mut w = BufWriter::new(file);
@@ -51,13 +62,27 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
         let key = &u.key;
         let msgid = u.source.as_deref().unwrap_or("");
 
+        // #: абсолютный (или полный) путь + строка — как было
         if let Some(line) = u.line {
             writeln!(w, "#: {}:{}", u.path.display(), line)?;
         } else {
             writeln!(w, "#: {}", u.path.display())?;
         }
 
-        writeln!(w, "msgctxt \"{}\"", escape_po(key))?;
+        // msgctxt: делаем уникальным: "<key>|<relative_path>:<line?>"
+        let path_str = u.path.to_string_lossy();
+        let rel = rel_from_languages(&path_str)
+            .unwrap_or_else(|| {
+                u.path
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("Unknown.xml")
+                    .to_string()
+            });
+        let line_suffix = u.line.map(|l| format!(":{}", l)).unwrap_or_default();
+        let ctx = format!("{}|{}{}", key, rel, line_suffix);
+
+        writeln!(w, "msgctxt \"{}\"", escape_po(&ctx))?;
         writeln!(w, "msgid \"{}\"", escape_po(msgid))?;
         writeln!(w, "msgstr \"\"")?;
         writeln!(w)?;
@@ -94,9 +119,13 @@ mod tests {
         write_po(tmp.path(), &units, Some("ru")).unwrap();
 
         let s = fs::read_to_string(tmp.path()).unwrap();
+        // заголовок
         assert!(s.contains(r#""Language: ru\n""#));
-        assert!(s.contains(r#"msgctxt "Greeting""#));
-        assert!(s.contains(r#"msgid "Hello""#));
+        // #: ссылка
         assert!(s.contains(r#"#: /Mod/Languages/English/Keyed/A.xml:3"#));
+        // msgctxt с пайпом и относительным путём
+        assert!(s.contains(r#"msgctxt "Greeting|Keyed/A.xml:3""#));
+        // msgid
+        assert!(s.contains(r#"msgid "Hello""#));
     }
 }
