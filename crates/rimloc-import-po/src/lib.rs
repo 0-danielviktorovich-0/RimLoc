@@ -317,6 +317,66 @@ pub fn build_translation_mod_with_langdir(
     Ok(())
 }
 
+/// Сухой прогон сборки мода перевода:
+/// показывает, какие файлы будут созданы, и сколько ключей в каждом.
+/// Ничего не записывает на диск.
+pub fn build_translation_mod_dry_run(
+    po_path: &Path,
+    out_mod: &Path,
+    lang_dir: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<()> {
+    let entries = read_po_entries(po_path)?;
+
+    use std::collections::HashMap;
+    use regex::Regex;
+    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
+    let re = Regex::new(r"/Languages/([^/]+)/(.+?)(?::\d+)?$").unwrap();
+
+    for e in entries {
+        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
+            if let Some(caps) = re.captures(r) {
+                PathBuf::from(&caps[2])
+            } else {
+                PathBuf::from("Keyed/_Imported.xml")
+            }
+        } else {
+            PathBuf::from("Keyed/_Imported.xml")
+        };
+
+        grouped.entry(rel_subpath).or_default().push((e.key, e.value));
+    }
+
+    println!("=== DRY RUN: сборка мода перевода ===");
+    println!("Имя мода: {}", mod_name);
+    println!("PackageId: {}", package_id);
+    println!("RimWorld версия: {}", rw_version);
+    println!("Папка мода: {}", out_mod.display());
+    println!("Язык: {}", lang_dir);
+    println!("-----------------------------------");
+
+    let mut total_keys = 0usize;
+    let mut paths: Vec<_> = grouped.keys().cloned().collect();
+    paths.sort();
+    for rel in paths {
+        let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
+        total_keys += n;
+        println!(
+            "  {} ({} ключей)",
+            out_mod.join("Languages").join(lang_dir).join(&rel).display(),
+            n
+        );
+    }
+
+    println!("-----------------------------------");
+    println!("ИТОГО: {} ключей будет записано", total_keys);
+
+    Ok(())
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
