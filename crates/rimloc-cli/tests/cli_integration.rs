@@ -76,10 +76,27 @@ fn validate_detects_issues_in_bad_xml() {
     cmd.args(["validate", "--root"])
         .arg(fixture("test/TestMod"));
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("DuplicateKey"))
-        .stdout(predicate::str::contains("EmptyKey"));
+    // Capture output to count categories
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+
+    // High-level category presence (user-facing labels)
+    assert!(out.contains("[duplicate]"), "expected [duplicate] category in output");
+    assert!(out.contains("[empty]"), "expected [empty] category in output");
+    assert!(out.contains("[placeholder-check]"), "expected [placeholder-check] category in output");
+
+    // Specific validator item names present
+    assert!(out.contains("DuplicateKey"), "expected DuplicateKey items listed");
+    assert!(out.contains("EmptyKey"), "expected EmptyKey items listed");
+    assert!(out.contains("Placeholder"), "expected Placeholder items listed");
+
+    // At least one occurrence of each category
+    let dup_count = out.matches("[duplicate]").count();
+    let empty_count = out.matches("[empty]").count();
+    let ph_count = out.matches("[placeholder-check]").count();
+    assert!(dup_count >= 1, "expected at least 1 duplicate, found {}", dup_count);
+    assert!(empty_count >= 1, "expected at least 1 empty, found {}", empty_count);
+    assert!(ph_count >= 1, "expected at least 1 placeholder issue, found {}", ph_count);
 }
 
 #[test]
@@ -201,6 +218,17 @@ fn build_mod_creates_minimal_structure() {
         .map(|rd| rd.flatten().any(|e| e.path().extension().map(|s| s == "xml").unwrap_or(false)))
         .unwrap_or(false);
     assert!(has_any_xml, "at least one XML file must be generated under Keyed/");
+
+    // Validate content of About/About.xml includes expected metadata
+    let about_content = fs::read_to_string(&about).expect("About/About.xml should be readable");
+    assert!(
+        about_content.contains("<name>RimLoc Translation</name>"),
+        "About/About.xml should contain correct <name>"
+    );
+    assert!(
+        about_content.contains("<packageId>yourname.rimloc.translation</packageId>"),
+        "About/About.xml should contain correct <packageId>"
+    );
 }
 
 #[test]
