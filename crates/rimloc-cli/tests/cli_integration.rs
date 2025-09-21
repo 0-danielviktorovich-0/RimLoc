@@ -69,3 +69,26 @@ fn import_po_dry_run_prints_indicator() {
         .success()
         .stdout(predicate::str::contains("DRY-RUN"));
 }
+
+#[test]
+fn validate_detects_issues_in_bad_xml() {
+    let mut cmd = bin_cmd();
+    cmd.args(["validate", "--root"])
+        .arg(fixture("test/TestMod"));
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("DuplicateKey"))
+        .stdout(predicate::str::contains("EmptyKey"));
+}
+
+#[test]
+fn import_po_requires_target() {
+    let mut cmd = bin_cmd();
+    cmd.args(["import-po", "--po"])
+        .arg(fixture("test/ok.po"));
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("нужно указать либо --out-xml, либо --mod-root"));
+}
