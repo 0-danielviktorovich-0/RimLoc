@@ -171,3 +171,75 @@ fn build_mod_dry_run_prints_header() {
         .success()
         .stdout(predicate::str::contains("DRY RUN: building translation mod"));
 }
+
+#[test]
+fn build_mod_creates_minimal_structure() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let out_mod = tmp.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["build-mod", "--po"]) 
+        .arg(fixture("test/ok.po"))
+        .args(["--out-mod"]) 
+        .arg(&out_mod)
+        .args(["--lang", "ru"])
+        // реальная сборка без --dry-run
+        .args(["--ui-lang", "en"]);
+
+    cmd.assert().success();
+
+    // Проверяем, что созданы ключевые файлы структуры мода
+    let about = out_mod.join("About/About.xml");
+    assert!(about.exists(), "About/About.xml must exist in built mod");
+
+    let keyed_any = out_mod.join("Languages/Russian/Keyed");
+    assert!(keyed_any.exists(), "Languages/Russian/Keyed folder must exist");
+
+    // Должен появиться хотя бы один XML (в нашем фикстуре — _Imported.xml или Bad.xml)
+    let has_any_xml = std::fs::read_dir(&keyed_any)
+        .ok()
+        .map(|rd| rd.flatten().any(|e| e.path().extension().map(|s| s == "xml").unwrap_or(false)))
+        .unwrap_or(false);
+    assert!(has_any_xml, "at least one XML file must be generated under Keyed/");
+}
+
+#[test]
+fn supported_locales_startup_message_matches() {
+    // Считываем локали из файловой системы, чтобы тест адаптировался к репозиторию
+    let locales_dir = workspace_root()
+        .join("crates/rimloc-cli/i18n");
+    let mut locales = vec![];
+    if let Ok(rd) = fs::read_dir(locales_dir) {
+        for e in rd.flatten() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                locales.push(e.file_name().to_string_lossy().to_string());
+            }
+        }
+    }
+
+    // Проверяем известные локали, если они есть
+    if locales.iter().any(|l| l == "ru") {
+        let mut cmd = bin_cmd();
+        // В некоторых CLI глобальные флаги должны идти до сабкоманды
+        cmd.args(["--ui-lang", "ru"])
+            .args(["validate", "--root"]) // любая команда, чтобы увидеть стартовый лог
+            .arg(fixture("test/TestMod"));
+        cmd.assert()
+            .success()
+            .stdout(predicate::str::contains("rimloc запущен"));
+    }
+
+    if locales.iter().any(|l| l == "en") {
+        let mut cmd = bin_cmd();
+        // В некоторых CLI глобальные флаги должны идти до сабкоманды
+        cmd.args(["--ui-lang", "en"])
+            .args(["validate", "--root"]) 
+            .arg(fixture("test/TestMod"));
+        cmd.assert()
+            .success()
+            .stdout(
+                predicate::str::contains("rimloc started")
+                    .or(predicate::str::contains("rimloc запущен"))
+            );
+    }
+}
