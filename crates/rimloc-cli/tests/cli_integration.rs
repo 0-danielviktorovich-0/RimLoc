@@ -1,7 +1,6 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::{fs, path::PathBuf, process::Command};
-use std::collections::HashSet;
 
 fn bin_cmd() -> Command {
     Command::cargo_bin("rimloc-cli").expect("binary rimloc-cli should be built by cargo")
@@ -245,7 +244,74 @@ fn supported_locales_startup_message_matches() {
     }
 }
 
-fn load_ftl_keys(locale: &str) -> HashSet<String> {
+fn extract_fluent_vars(s: &str) -> std::collections::BTreeSet<String> {
+    // Find tokens like { $var } without regex
+    let mut vars = std::collections::BTreeSet::new();
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i + 3 < bytes.len() {
+        if bytes[i] == b'{' {
+            // skip spaces to potential '$'
+            let mut j = i + 1;
+            while j + 1 < bytes.len() && bytes[j].is_ascii_whitespace() {
+                j += 1;
+            }
+            if j < bytes.len() && bytes[j] == b'$' {
+                // read identifier
+                j += 1;
+                let start = j;
+                while j < bytes.len()
+                    && (bytes[j].is_ascii_alphanumeric() || bytes[j] == b'_' || bytes[j] == b'-')
+                {
+                    j += 1;
+                }
+                if j > start {
+                    let name = &s[start..j];
+                    vars.insert(name.to_string());
+                }
+            }
+        }
+        i += 1;
+    }
+    vars
+}
+
+fn diff_locale_maps(
+    en: &std::collections::BTreeMap<String, String>,
+    other: &std::collections::BTreeMap<String, String>,
+) -> (
+    Vec<String>,
+    Vec<String>,
+    Vec<(
+        String,
+        std::collections::BTreeSet<String>,
+        std::collections::BTreeSet<String>,
+    )>,
+) {
+    use std::collections::BTreeSet;
+
+    let en_keys: BTreeSet<_> = en.keys().cloned().collect();
+    let other_keys: BTreeSet<_> = other.keys().cloned().collect();
+
+    let missing: Vec<_> = en_keys.difference(&other_keys).cloned().collect();
+    let extra: Vec<_> = other_keys.difference(&en_keys).cloned().collect();
+
+    // Parameter set mismatches on common keys
+    let common: Vec<_> = en_keys.intersection(&other_keys).cloned().collect();
+    let mut arg_mismatches = Vec::new();
+    for k in common {
+        let en_vars = extract_fluent_vars(en.get(&k).unwrap());
+        let ot_vars = extract_fluent_vars(other.get(&k).unwrap());
+        if en_vars != ot_vars {
+            arg_mismatches.push((k, en_vars, ot_vars));
+        }
+    }
+
+    (missing, extra, arg_mismatches)
+}
+
+/// Load FTL as key -> value map (trims both sides around '=')
+fn load_ftl_map(locale: &str) -> std::collections::BTreeMap<String, String> {
     let ftl_path = workspace_root()
         .join("crates/rimloc-cli/i18n")
         .join(locale)
@@ -253,12 +319,19 @@ fn load_ftl_keys(locale: &str) -> HashSet<String> {
     let content = fs::read_to_string(ftl_path)
         .unwrap_or_else(|_| panic!("Missing FTL file for locale {}", locale));
 
-    content
-        .lines()
-        .filter(|line| !line.trim().is_empty() && !line.starts_with('#'))
-        .filter_map(|line| line.split('=').next())
-        .map(|s| s.trim().to_string())
-        .collect()
+    let mut map = std::collections::BTreeMap::new();
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        if let Some(eq) = line.find('=') {
+            let key = line[..eq].trim().to_string();
+            let val = line[eq + 1..].trim().to_string();
+            map.insert(key, val);
+        }
+    }
+    map
 }
 
 #[test]
@@ -273,17 +346,40 @@ fn all_locales_have_same_keys() {
         }
     }
 
-    assert!(locales.contains(&"en".to_string()), "English locale must exist as reference");
+    assert!(
+        locales.contains(&"en".to_string()),
+        "English locale must exist as reference"
+    );
 
-    let reference_keys = load_ftl_keys("en");
+    let reference = load_ftl_map("en");
+
     for loc in locales {
-        let keys = load_ftl_keys(&loc);
-        let missing: Vec<_> = reference_keys.difference(&keys).collect();
-        assert!(
-            missing.is_empty(),
-            "Locale {} is missing keys: {:?}",
-            loc, missing
-        );
+        if loc == "en" {
+            continue;
+        }
+        let map = load_ftl_map(&loc);
+        let (missing, extra, arg_mismatches) = diff_locale_maps(&reference, &map);
+
+        if !missing.is_empty() || !extra.is_empty() || !arg_mismatches.is_empty() {
+            let mut msg = String::new();
+            msg.push_str(&format!("Locale {} has issues:\n", loc));
+            if !missing.is_empty() {
+                msg.push_str(&format!("  • Missing keys ({}): {:?}\n", missing.len(), missing));
+            }
+            if !extra.is_empty() {
+                msg.push_str(&format!("  • Extra keys ({}): {:?}\n", extra.len(), extra));
+            }
+            if !arg_mismatches.is_empty() {
+                msg.push_str(&format!(
+                    "  • Keys with argument set mismatch ({}):\n",
+                    arg_mismatches.len()
+                ));
+                for (k, en_vars, ot_vars) in arg_mismatches {
+                    msg.push_str(&format!("    - {}\n      en: {:?}\n      {}: {:?}\n", k, en_vars, loc, ot_vars));
+                }
+            }
+            panic!("{}", msg);
+        }
     }
 }
 

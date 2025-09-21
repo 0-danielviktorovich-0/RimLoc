@@ -27,6 +27,17 @@ struct Localizations;
 
 static LANG_LOADER: OnceCell<FluentLanguageLoader> = OnceCell::new();
 
+macro_rules! tr {
+    ($msg:literal $(, $k:ident = $v:expr )* $(,)?) => {{
+        let loader = LANG_LOADER.get().expect("i18n not initialized");
+        i18n_embed_fl::fl!(loader, $msg $(, $k = $v )* )
+    }};
+    ($msg:literal) => {{
+        let loader = LANG_LOADER.get().expect("i18n not initialized");
+        i18n_embed_fl::fl!(loader, $msg)
+    }}
+}
+
 fn init_i18n() {
     // создаём загрузчик Fluent
     let loader = FluentLanguageLoader::new("rimloc", "en".parse().expect("valid fallback lang"));
@@ -64,21 +75,10 @@ fn set_ui_lang(lang: Option<&str>) {
                 }
             } else {
                 // игнорируем неподдерживаемый код, оставляя текущую локаль
-                tracing::warn!(?code, "ui_lang not supported, keeping current locale");
+                tracing::warn!(?code, "{}", tr!("ui-lang-unsupported"));
             }
         }
     }
-}
-
-macro_rules! tr {
-    ($msg:literal $(, $k:ident = $v:expr )* $(,)?) => {{
-        let loader = LANG_LOADER.get().expect("i18n not initialized");
-        i18n_embed_fl::fl!(loader, $msg $(, $k = $v )* )
-    }};
-    ($msg:literal) => {{
-        let loader = LANG_LOADER.get().expect("i18n not initialized");
-        i18n_embed_fl::fl!(loader, $msg)
-    }}
 }
 
 static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
@@ -442,11 +442,17 @@ impl Runnable for Commands {
                                 "placeholder-check" => "ℹ",
                                 _ => "•",
                             };
+                            let kind_label = match m.kind.as_str() {
+                                "duplicate" => tr!("kind-duplicate"),
+                                "empty" => tr!("kind-empty"),
+                                "placeholder-check" => tr!("kind-placeholder-check"),
+                                _ => m.kind.as_str().into(),
+                            };
                             let colored_kind: String = match m.kind.as_str() {
-                                "duplicate" => format!("{}", m.kind.yellow()),
-                                "empty" => format!("{}", m.kind.red()),
-                                "placeholder-check" => format!("{}", m.kind.cyan()),
-                                _ => format!("{}", m.kind.white()),
+                                "duplicate" => format!("{}", kind_label.yellow()),
+                                "empty" => format!("{}", kind_label.red()),
+                                "placeholder-check" => format!("{}", kind_label.cyan()),
+                                _ => format!("{}", kind_label.white()),
                             };
                             println!(
                                 "{} [{}] {} ({}:{}) — {}",
@@ -524,7 +530,7 @@ impl Runnable for Commands {
                     }
 
                     if strict {
-                        color_eyre::eyre::bail!("placeholder mismatches found");
+                        color_eyre::eyre::bail!(tr!("validate-po-error"));
                     } else {
                         Ok(())
                     }
