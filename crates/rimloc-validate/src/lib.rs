@@ -1,7 +1,7 @@
 use color_eyre::eyre::Result;
 use regex::Regex;
 use rimloc_core::TransUnit;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Результат одной проверки
 #[derive(Debug)]
@@ -9,8 +9,16 @@ pub struct ValidationMessage {
     pub key: String,
     pub path: String,
     pub line: Option<u32>,
+    /// Машиночитаемый тип проблемы: "duplicate" | "empty" | "placeholder-check"
     pub kind: String,
+    /// Свободный текст НЕ предназначен для вывода конечному пользователю из библиотеки.
+    /// Оставляем для обратной совместимости; CLI должен локализовать на своей стороне.
     pub message: String,
+    /// Доп. поля для локализованного вывода на стороне CLI:
+    /// - для duplicate: сколько раз уже встречался ключ до текущего вхождения
+    pub duplicate_count: Option<usize>,
+    /// - для placeholder-check: какие плейсхолдеры обнаружены (в исходном тексте)
+    pub placeholders: Option<std::collections::BTreeSet<String>>,
 }
 
 /// Запустить все валидации
@@ -26,7 +34,9 @@ pub fn validate(units: &[TransUnit]) -> Result<Vec<ValidationMessage>> {
                 path: u.path.display().to_string(),
                 line: u.line,
                 kind: "duplicate".into(),
-                message: format!("ключ встречается повторно (всего уже {count} раз)"),
+                message: String::new(),
+                duplicate_count: Some(*count),
+                placeholders: None,
             });
         }
         *seen.entry(&u.key).or_insert(0) += 1;
@@ -40,16 +50,20 @@ pub fn validate(units: &[TransUnit]) -> Result<Vec<ValidationMessage>> {
                 path: u.path.display().to_string(),
                 line: u.line,
                 kind: "empty".into(),
-                message: "пустое значение".into(),
+                message: String::new(),
+                duplicate_count: None,
+                placeholders: None,
             });
         }
     }
 
     // --- Проверка плейсхолдеров ---
+    use std::collections::BTreeSet;
     let re = Regex::new(r"(\{\w+\}|\{\d+\}|%s|%d)").unwrap();
     for u in units {
         let text = u.source.as_deref().unwrap_or("");
-        let placeholders: HashSet<_> = re.find_iter(text).map(|m| m.as_str().to_string()).collect();
+        let placeholders: BTreeSet<String> =
+            re.find_iter(text).map(|m| m.as_str().to_string()).collect();
 
         // пока у нас нет перевода отдельно от source,
         // поэтому просто проверяем, что плейсхолдеры существуют (как подсказка)
@@ -59,7 +73,9 @@ pub fn validate(units: &[TransUnit]) -> Result<Vec<ValidationMessage>> {
                 path: u.path.display().to_string(),
                 line: u.line,
                 kind: "placeholder-check".into(),
-                message: format!("найдены плейсхолдеры: {:?}", placeholders),
+                message: String::new(),
+                duplicate_count: None,
+                placeholders: Some(placeholders),
             });
         }
     }
