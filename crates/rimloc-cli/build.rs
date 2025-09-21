@@ -14,8 +14,10 @@ fn main() {
                     .ok()
                     .into_iter()
                     .flat_map(|rd| rd.flatten())
-                    .any(|e| e.path().extension().map(|e| e=="ftl").unwrap_or(false));
-                if has_ftl { locales.push(name); }
+                    .any(|e| e.path().extension().map(|e| e == "ftl").unwrap_or(false));
+                if has_ftl {
+                    locales.push(name);
+                }
             }
         }
     }
@@ -29,6 +31,6 @@ fn main() {
     );
     fs::write(&dst, body).unwrap();
 
-    // чтобы пересобирать при изменениях i18n/
-    println!("cargo:rerun-if-changed=i18n");
+    cargo_emit::rerun_if_changed!("i18n/");
+    cargo_emit::rerun_if_changed!("build.rs");
 }

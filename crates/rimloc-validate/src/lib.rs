@@ -1,7 +1,7 @@
-use rimloc_core::TransUnit;
-use regex::Regex;
-use std::collections::{HashMap, HashSet};
 use color_eyre::eyre::Result;
+use regex::Regex;
+use rimloc_core::TransUnit;
+use std::collections::{HashMap, HashSet};
 
 /// Результат одной проверки
 #[derive(Debug)]
@@ -49,10 +49,7 @@ pub fn validate(units: &[TransUnit]) -> Result<Vec<ValidationMessage>> {
     let re = Regex::new(r"(\{\w+\}|\{\d+\}|%s|%d)").unwrap();
     for u in units {
         let text = u.source.as_deref().unwrap_or("");
-        let placeholders: HashSet<_> = re
-            .find_iter(text)
-            .map(|m| m.as_str().to_string())
-            .collect();
+        let placeholders: HashSet<_> = re.find_iter(text).map(|m| m.as_str().to_string()).collect();
 
         // пока у нас нет перевода отдельно от source,
         // поэтому просто проверяем, что плейсхолдеры существуют (как подсказка)
@@ -100,12 +97,14 @@ mod tests {
         let msgs = validate(&units).expect("validate should succeed");
 
         // ожидаем три вида сообщений
-        let kinds: std::collections::HashSet<_> =
-            msgs.iter().map(|m| m.kind.as_str()).collect();
+        let kinds: std::collections::HashSet<_> = msgs.iter().map(|m| m.kind.as_str()).collect();
 
         assert!(kinds.contains("duplicate"), "should report duplicate");
         assert!(kinds.contains("empty"), "should report empty");
-        assert!(kinds.contains("placeholder-check"), "should report placeholders");
+        assert!(
+            kinds.contains("placeholder-check"),
+            "should report placeholders"
+        );
 
         // и суммарно хотя бы 3 сообщения
         assert!(msgs.len() >= 3, "should have at least 3 messages");

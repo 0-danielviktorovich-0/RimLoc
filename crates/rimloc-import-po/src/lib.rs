@@ -1,4 +1,4 @@
-use color_eyre::eyre::{Result, eyre};
+use color_eyre::eyre::{eyre, Result};
 use quick_xml::events::{BytesEnd, BytesStart, Event};
 use quick_xml::Writer;
 use regex::Regex;
@@ -6,6 +6,12 @@ use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
+
+// Library crates in RimLoc must not emit user-facing output directly.
+// Use a no-op macro here; the CLI is responsible for all UI.
+macro_rules! ui_print {
+    ($($arg:tt)*) => {{ /* no-op in library */ }};
+}
 
 #[derive(Debug, Clone)]
 pub struct PoEntry {
@@ -40,7 +46,7 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
 
         if lt.starts_with("msgctxt") {
             let raw = parse_po_string(lt.strip_prefix("msgctxt").unwrap_or(""))?;
-             // Если msgctxt имеет вид "Key|Path:Line", оставляем только "Key"
+            // Если msgctxt имеет вид "Key|Path:Line", оставляем только "Key"
             let key = raw
                 .split_once('|')
                 .map(|(k, _)| k.to_string())
@@ -67,9 +73,9 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
         if lt.is_empty() {
             if let (Some(k), Some(v)) = (&cur_ctxt, &cur_str) {
                 out.push(PoEntry {
-                key: k.clone(),
-                value: v.clone(),
-                reference: cur_ref.clone(),
+                    key: k.clone(),
+                    value: v.clone(),
+                    reference: cur_ref.clone(),
                 });
             }
 
@@ -81,11 +87,11 @@ pub fn read_po_entries(po_path: &Path) -> Result<Vec<PoEntry>> {
     }
 
     if let (Some(k), Some(v)) = (cur_ctxt, cur_str) {
-    out.push(PoEntry {
-        key: k,
-        value: v,
-        reference: cur_ref,
-    });
+        out.push(PoEntry {
+            key: k,
+            value: v,
+            reference: cur_ref,
+        });
     }
 
     Ok(out)
@@ -127,9 +133,11 @@ pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) ->
     let file = File::create(out_path)?;
     let mut w = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
 
-    w.write_event(Event::Decl(
-        quick_xml::events::BytesDecl::new("1.0", Some("UTF-8"), None),
-    ))?;
+    w.write_event(Event::Decl(quick_xml::events::BytesDecl::new(
+        "1.0",
+        Some("UTF-8"),
+        None,
+    )))?;
 
     w.write_event(Event::Start(BytesStart::new("LanguageData")))?;
 
@@ -150,10 +158,28 @@ pub fn rimworld_lang_dir(lang: &str) -> String {
     let l = lang.trim().to_lowercase().replace('_', "-");
 
     let known_names = [
-        "English","Russian","Japanese","Korean","French","German","Spanish",
-        "SpanishLatin","Portuguese","PortugueseBrazilian","Polish","Italian",
-        "Turkish","Ukrainian","Czech","Hungarian","Dutch","Romanian","Thai",
-        "Greek","ChineseSimplified","ChineseTraditional",
+        "English",
+        "Russian",
+        "Japanese",
+        "Korean",
+        "French",
+        "German",
+        "Spanish",
+        "SpanishLatin",
+        "Portuguese",
+        "PortugueseBrazilian",
+        "Polish",
+        "Italian",
+        "Turkish",
+        "Ukrainian",
+        "Czech",
+        "Hungarian",
+        "Dutch",
+        "Romanian",
+        "Thai",
+        "Greek",
+        "ChineseSimplified",
+        "ChineseTraditional",
     ];
     if let Some(&n) = known_names.iter().find(|&&n| n.eq_ignore_ascii_case(lang)) {
         return n.to_string();
@@ -229,7 +255,10 @@ pub fn build_translation_mod(
         } else {
             PathBuf::from("Keyed/_Imported.xml")
         };
-        grouped.entry(rel_subpath).or_default().push((e.key, e.value));
+        grouped
+            .entry(rel_subpath)
+            .or_default()
+            .push((e.key, e.value));
     }
 
     // 3) About/About.xml
@@ -289,7 +318,10 @@ pub fn build_translation_mod_with_langdir(
         } else {
             PathBuf::from("Keyed/_Imported.xml")
         };
-        grouped.entry(rel_subpath).or_default().push((e.key, e.value));
+        grouped
+            .entry(rel_subpath)
+            .or_default()
+            .push((e.key, e.value));
     }
 
     // 3) About/About.xml
@@ -325,16 +357,16 @@ pub fn build_translation_mod_with_langdir(
 /// Ничего не записывает на диск.
 pub fn build_translation_mod_dry_run(
     po_path: &Path,
-    out_mod: &Path,
-    lang_dir: &str,
-    mod_name: &str,
-    package_id: &str,
-    rw_version: &str,
+    _out_mod: &Path,
+    _lang_dir: &str,
+    _mod_name: &str,
+    _package_id: &str,
+    _rw_version: &str,
 ) -> Result<()> {
     let entries = read_po_entries(po_path)?;
 
-    use std::collections::HashMap;
     use regex::Regex;
+    use std::collections::HashMap;
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
     let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
 
@@ -349,36 +381,42 @@ pub fn build_translation_mod_dry_run(
             PathBuf::from("Keyed/_Imported.xml")
         };
 
-        grouped.entry(rel_subpath).or_default().push((e.key, e.value));
+        grouped
+            .entry(rel_subpath)
+            .or_default()
+            .push((e.key, e.value));
     }
 
-    println!("=== DRY RUN: сборка мода перевода ===");
-    println!("Имя мода: {}", mod_name);
-    println!("PackageId: {}", package_id);
-    println!("RimWorld версия: {}", rw_version);
-    println!("Папка мода: {}", out_mod.display());
-    println!("Язык: {}", lang_dir);
-    println!("-----------------------------------");
+    ui_print!("=== DRY RUN: сборка мода перевода ===");
+    ui_print!("Имя мода: {}", _mod_name);
+    ui_print!("PackageId: {}", _package_id);
+    ui_print!("RimWorld версия: {}", _rw_version);
+    ui_print!("Папка мода: {}", _out_mod.display());
+    ui_print!("Язык: {}", _lang_dir);
+    ui_print!("-----------------------------------");
 
-    let mut total_keys = 0usize;
+    let mut _total_keys = 0usize;
     let mut paths: Vec<_> = grouped.keys().cloned().collect();
     paths.sort();
     for rel in paths {
         let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
-        total_keys += n;
-        println!(
+        _total_keys += n;
+        ui_print!(
             "  {} ({} ключей)",
-            out_mod.join("Languages").join(lang_dir).join(&rel).display(),
+            _out_mod
+                .join("Languages")
+                .join(_lang_dir)
+                .join(&rel)
+                .display(),
             n
         );
     }
 
-    println!("-----------------------------------");
-    println!("ИТОГО: {} ключей будет записано", total_keys);
+    ui_print!("-----------------------------------");
+    ui_print!("ИТОГО: {} ключей будет записано", _total_keys);
 
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -402,7 +440,10 @@ mod tests {
 
     #[test]
     fn parse_po_string_unescapes_sequences() {
-        assert_eq!(super::parse_po_string(r#""a\"b\\c\n\t\r""#).unwrap(), "a\"b\\c\n\t\r");
+        assert_eq!(
+            super::parse_po_string(r#""a\"b\\c\n\t\r""#).unwrap(),
+            "a\"b\\c\n\t\r"
+        );
     }
 
     #[test]
@@ -418,7 +459,8 @@ mod tests {
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].key, "Greeting");
         assert_eq!(entries[0].value, "Привет");
-        assert!(entries[0].reference
+        assert!(entries[0]
+            .reference
             .as_ref()
             .unwrap()
             .contains("Languages/English/Keyed/A.xml:3"));

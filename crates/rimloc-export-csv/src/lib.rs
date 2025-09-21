@@ -1,6 +1,6 @@
+use color_eyre::eyre::Result;
 use rimloc_core::TransUnit;
 use std::io::Write;
-use color_eyre::eyre::Result;
 
 pub fn write_csv<W: Write>(writer: W, units: &[TransUnit], lang: Option<&str>) -> Result<()> {
     let mut wtr = csv::Writer::from_writer(writer);
@@ -48,7 +48,11 @@ mod tests {
         write_csv(&mut buf, &units, None).unwrap();
         let s = String::from_utf8(buf).unwrap();
 
-        assert!(s.lines().next().unwrap().starts_with("key,source,path,line"));
+        assert!(s
+            .lines()
+            .next()
+            .unwrap()
+            .starts_with("key,source,path,line"));
         assert!(s.contains("A,Hello,/mod/Languages/English/Keyed/X.xml,42"));
     }
 
@@ -59,7 +63,11 @@ mod tests {
         write_csv(&mut buf, &units, Some("ru")).unwrap();
         let s = String::from_utf8(buf).unwrap();
 
-        assert!(s.lines().next().unwrap().starts_with("lang,key,source,path,line"));
+        assert!(s
+            .lines()
+            .next()
+            .unwrap()
+            .starts_with("lang,key,source,path,line"));
         assert!(s.contains("ru,A,Hello,/mod/Languages/English/Keyed/X.xml,42"));
     }
 }

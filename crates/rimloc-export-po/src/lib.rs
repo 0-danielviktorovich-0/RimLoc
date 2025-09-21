@@ -1,9 +1,9 @@
 use color_eyre::eyre::Result;
+use regex::Regex;
 use rimloc_core::TransUnit;
 use std::fs::File;
-use std::io::{Write, BufWriter};
+use std::io::{BufWriter, Write};
 use std::path::Path;
-use regex::Regex;
 
 fn escape_po(s: &str) -> String {
     // Простейшее экранирование для PO-строк (достаточно для MVP):
@@ -12,11 +12,11 @@ fn escape_po(s: &str) -> String {
     for ch in s.chars() {
         match ch {
             '\\' => out.push_str("\\\\"),
-            '"'  => out.push_str("\\\""),
+            '"' => out.push_str("\\\""),
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
-            _    => out.push(ch),
+            _ => out.push(ch),
         }
     }
     out
@@ -71,14 +71,13 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
 
         // msgctxt: делаем уникальным: "<key>|<relative_path>:<line?>"
         let path_str = u.path.to_string_lossy();
-        let rel = rel_from_languages(&path_str)
-            .unwrap_or_else(|| {
-                u.path
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("Unknown.xml")
-                    .to_string()
-            });
+        let rel = rel_from_languages(&path_str).unwrap_or_else(|| {
+            u.path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("Unknown.xml")
+                .to_string()
+        });
         let line_suffix = u.line.map(|l| format!(":{}", l)).unwrap_or_default();
         let ctx = format!("{}|{}{}", key, rel, line_suffix);
 
@@ -112,10 +111,7 @@ mod tests {
     #[test]
     fn po_contains_header_context_and_references() {
         let tmp = NamedTempFile::new().unwrap();
-        let units = vec![
-            unit("Greeting", "Hello", 3),
-            unit("Farewell", "Bye", 7),
-        ];
+        let units = vec![unit("Greeting", "Hello", 3), unit("Farewell", "Bye", 7)];
         write_po(tmp.path(), &units, Some("ru")).unwrap();
 
         let s = fs::read_to_string(tmp.path()).unwrap();

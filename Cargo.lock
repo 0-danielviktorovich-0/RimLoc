@@ -161,6 +161,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-emit"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1582e1c9e755dd6ad6b224dcffb135d199399a4568d454bd89fe515ca8425695"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -855,6 +861,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
+ "cargo-emit",
  "clap",
  "color-eyre",
  "i18n-embed",
@@ -925,6 +932,7 @@ dependencies = [
  "quick-xml",
  "rimloc-core",
  "tempfile",
+ "tracing",
  "walkdir",
 ]
 

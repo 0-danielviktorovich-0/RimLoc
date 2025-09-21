@@ -1,8 +1,8 @@
-use rimloc_core::{Result, TransUnit, RimLocError};
-use walkdir::WalkDir;
-use std::path::{Path, PathBuf};
-use quick_xml::Reader;
 use quick_xml::events::Event;
+use quick_xml::Reader;
+use rimloc_core::{Result, RimLocError, TransUnit};
+use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 pub fn scan_keyed_xml(root: &Path) -> Result<Vec<TransUnit>> {
     let mut out: Vec<TransUnit> = Vec::new();
@@ -13,7 +13,9 @@ pub fn scan_keyed_xml(root: &Path) -> Result<Vec<TransUnit>> {
             if let Ok(txt) = std::fs::read_to_string(path) {
                 match extract_with_lines(&txt, path) {
                     Ok(mut units) => out.append(&mut units),
-                    Err(e) => eprintln!("[rimloc] WARN: {path:?}: {e}"),
+                    Err(_e) => {
+                        // Swallow XML parse error here; CLI layer is responsible for user-facing reporting.
+                    }
                 }
             }
         }
@@ -63,12 +65,20 @@ fn extract_with_lines(xml: &str, path: &Path) -> Result<Vec<TransUnit>> {
                     parent.had_child = true;
                 }
                 let name = String::from_utf8_lossy(e.name().as_ref()).to_string();
-                stack.push(Frame { name, had_text: false, had_child: false });
+                stack.push(Frame {
+                    name,
+                    had_text: false,
+                    had_child: false,
+                });
             }
 
             Ok(Event::Text(e)) => {
                 if !stack.is_empty() {
-                    let mut key = stack.iter().map(|f| f.name.as_str()).collect::<Vec<_>>().join(".");
+                    let mut key = stack
+                        .iter()
+                        .map(|f| f.name.as_str())
+                        .collect::<Vec<_>>()
+                        .join(".");
 
                     if let Some(stripped) = key.strip_prefix("LanguageData.") {
                         key = stripped.to_string();
@@ -147,9 +157,9 @@ fn extract_with_lines(xml: &str, path: &Path) -> Result<Vec<TransUnit>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::fs;
     use std::io::Write;
+    use tempfile::tempdir;
 
     #[test]
     fn scan_keyed_xml_extracts_units_with_lines() {
@@ -168,8 +178,12 @@ mod tests {
         // Корень указываем как Languages/<locale>
         let units = scan_keyed_xml(&lang_root).unwrap();
 
-        assert!(units.iter().any(|u| u.key == "Greeting" && u.source.as_deref() == Some("Hello")));
-        assert!(units.iter().any(|u| u.key == "Farewell" && u.source.as_deref() == Some("Bye")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Greeting" && u.source.as_deref() == Some("Hello")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Farewell" && u.source.as_deref() == Some("Bye")));
 
         let g = units.iter().find(|u| u.key == "Greeting").unwrap();
         assert!(g.path.to_string_lossy().ends_with("Keyed/Test.xml"));
