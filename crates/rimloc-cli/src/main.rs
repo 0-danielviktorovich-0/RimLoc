@@ -1,3 +1,6 @@
+// Clippy: simplify complex tuple types
+type PoEntry = (Option<String>, String, String, Option<String>);
+
 use rimloc_validate::validate;
 include!(concat!(env!("OUT_DIR"), "/supported_locales.rs"));
 use clap::{Parser, Subcommand};
@@ -277,9 +280,7 @@ fn extract_placeholders(s: &str) -> BTreeSet<String> {
 
 /// Простой парсер .po только для msgid/msgstr (+ msgctxt и #: reference по возможности).
 /// Возвращает вектор кортежей: (msgctxt, msgid, msgstr, reference)
-fn parse_po_basic(
-    path: &std::path::Path,
-) -> color_eyre::eyre::Result<Vec<(Option<String>, String, String, Option<String>)>> {
+fn parse_po_basic(path: &std::path::Path) -> color_eyre::eyre::Result<Vec<PoEntry>> {
     use std::fs::File;
     use std::io::{BufRead, BufReader};
 

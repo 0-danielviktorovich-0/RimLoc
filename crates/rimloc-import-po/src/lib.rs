@@ -453,7 +453,7 @@ mod tests {
         writeln!(tmp, r#"#: /Mods/My/Stuff/Languages/English/Keyed/A.xml:3"#).unwrap();
         writeln!(tmp, r#"msgctxt "Greeting""#).unwrap();
         writeln!(tmp, r#"msgstr "Привет""#).unwrap();
-        writeln!(tmp, "").unwrap(); // пустая строка завершает запись
+        writeln!(tmp).unwrap(); // пустая строка завершает запись
 
         let entries = read_po_entries(tmp.path()).unwrap();
         assert_eq!(entries.len(), 1);
