@@ -746,6 +746,76 @@ fn load_ftl_lines(locale: &str) -> Vec<String> {
 }
 
 #[test]
+fn validation_detail_keys_exist_in_locales() {
+    // Ensure new detailed validation message keys exist and have the same arg set across locales.
+    let required_keys = [
+        "validate-detail-duplicate",
+        "validate-detail-empty",
+        "validate-detail-placeholder",
+    ];
+    // Expected placeholder set:
+    let expected_vars: BTreeSet<String> = ["validator", "path", "line", "message"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+
+    // reference EN
+    let en_map = load_ftl_map("en");
+    for k in &required_keys {
+        assert!(
+            en_map.contains_key(*k),
+            "{}",
+            ti18n!("test-ftl-key-missing", key = *k, lang = "en")
+        );
+        let vars = extract_fluent_vars(en_map.get(*k).unwrap());
+        assert_eq!(
+            vars,
+            expected_vars,
+            "{}",
+            ti18n!(
+                "test-ftl-args-mismatch",
+                key = *k,
+                expected = format!("{:?}", expected_vars),
+                got = format!("{:?}", vars)
+            )
+        );
+    }
+
+    // All other locales must contain the same keys and arg sets
+    let locales_dir = workspace_root().join("crates/rimloc-cli/i18n");
+    if let Ok(rd) = fs::read_dir(locales_dir) {
+        for e in rd.flatten() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                let loc = e.file_name().to_string_lossy().to_string();
+                if loc == "en" {
+                    continue;
+                }
+                let map = load_ftl_map(&loc);
+                for k in &required_keys {
+                    assert!(
+                        map.contains_key(*k),
+                        "{}",
+                        ti18n!("test-ftl-key-missing", key = *k, lang = &loc)
+                    );
+                    let vars = extract_fluent_vars(map.get(*k).unwrap());
+                    assert_eq!(
+                        vars,
+                        expected_vars,
+                        "{}",
+                        ti18n!(
+                            "test-ftl-args-mismatch",
+                            key = *k,
+                            expected = format!("{:?}", expected_vars),
+                            got = format!("{:?}", vars)
+                        )
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn ftl_key_order_matches_en() {
     let en = load_ftl_lines("en");
 

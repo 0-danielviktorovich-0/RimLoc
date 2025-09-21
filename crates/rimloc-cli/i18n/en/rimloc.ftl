@@ -94,6 +94,17 @@ category-empty = empty
 category-placeholder-check = placeholder-check
 
 
+# === validation details (per-item messages; not yet used by runtime) ===
+# Placeholders are standardized across locales:
+# - $validator : short validator name, e.g., DuplicateKey, EmptyKey, Placeholder
+# - $path      : file path
+# - $line      : line number (numeric)
+# - $message   : human-readable explanation (already localized within validator)
+validate-detail-duplicate = [duplicate] { $validator } ({ $path }:{ $line }) — { $message }
+validate-detail-empty = [empty] { $validator } ({ $path }:{ $line }) — { $message }
+validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $line }) — { $message }
+
+
 # === CLI help localization ===
 # Top-level
 help-about = RimWorld localization toolkit (Rust)
