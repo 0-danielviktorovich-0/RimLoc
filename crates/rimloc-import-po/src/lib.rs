@@ -7,12 +7,6 @@ use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 
-// Library crates in RimLoc must not emit user-facing output directly.
-// Use a no-op macro here; the CLI is responsible for all UI.
-macro_rules! ui_print {
-    ($($arg:tt)*) => {{ /* no-op in library */ }};
-}
-
 #[derive(Debug, Clone)]
 pub struct PoEntry {
     pub key: String,               // msgctxt
@@ -352,17 +346,29 @@ pub fn build_translation_mod_with_langdir(
     Ok(())
 }
 
+/// A dry-run plan describing what would be written during build-mod
+#[derive(Debug, Clone)]
+pub struct DryRunPlan {
+    pub mod_name: String,
+    pub package_id: String,
+    pub rw_version: String,
+    pub out_mod: PathBuf,
+    pub lang_dir: String,
+    pub files: Vec<(PathBuf, usize)>,
+    pub total_keys: usize,
+}
+
 /// Сухой прогон сборки мода перевода:
 /// показывает, какие файлы будут созданы, и сколько ключей в каждом.
 /// Ничего не записывает на диск.
 pub fn build_translation_mod_dry_run(
     po_path: &Path,
-    _out_mod: &Path,
-    _lang_dir: &str,
-    _mod_name: &str,
-    _package_id: &str,
-    _rw_version: &str,
-) -> Result<()> {
+    out_mod: &Path,
+    lang_dir: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<DryRunPlan> {
     let entries = read_po_entries(po_path)?;
 
     use regex::Regex;
@@ -380,42 +386,32 @@ pub fn build_translation_mod_dry_run(
         } else {
             PathBuf::from("Keyed/_Imported.xml")
         };
-
         grouped
             .entry(rel_subpath)
             .or_default()
             .push((e.key, e.value));
     }
 
-    ui_print!("=== DRY RUN: сборка мода перевода ===");
-    ui_print!("Имя мода: {}", _mod_name);
-    ui_print!("PackageId: {}", _package_id);
-    ui_print!("RimWorld версия: {}", _rw_version);
-    ui_print!("Папка мода: {}", _out_mod.display());
-    ui_print!("Язык: {}", _lang_dir);
-    ui_print!("-----------------------------------");
-
-    let mut _total_keys = 0usize;
+    let mut total_keys = 0usize;
+    let mut files = Vec::new();
     let mut paths: Vec<_> = grouped.keys().cloned().collect();
     paths.sort();
     for rel in paths {
         let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
-        _total_keys += n;
-        ui_print!(
-            "  {} ({} ключей)",
-            _out_mod
-                .join("Languages")
-                .join(_lang_dir)
-                .join(&rel)
-                .display(),
-            n
-        );
+        total_keys += n;
+        let full_path = out_mod.join("Languages").join(lang_dir).join(&rel);
+        files.push((full_path, n));
     }
 
-    ui_print!("-----------------------------------");
-    ui_print!("ИТОГО: {} ключей будет записано", _total_keys);
-
-    Ok(())
+    Ok(DryRunPlan {
+        mod_name: mod_name.to_string(),
+        package_id: package_id.to_string(),
+        rw_version: rw_version.to_string(),
+        out_mod: out_mod.to_path_buf(),
+        lang_dir: lang_dir.to_string(),
+        files,
+        total_keys,
+    })
 }
 
 #[cfg(test)]

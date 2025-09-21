@@ -931,8 +931,7 @@ impl Runnable for Commands {
                     lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
 
                 if dry_run {
-                    ui_out!("build-dry-run-header");
-                    rimloc_import_po::build_translation_mod_dry_run(
+                    let plan = rimloc_import_po::build_translation_mod_dry_run(
                         &po,
                         &out_mod,
                         &lang_folder,
@@ -940,6 +939,25 @@ impl Runnable for Commands {
                         &package_id,
                         &rw_version,
                     )?;
+                    ui_out!("build-dry-run-header");
+                    ui_out!("build-name", value = plan.mod_name);
+                    ui_out!("build-package-id", value = plan.package_id);
+                    ui_out!("build-rw-version", value = plan.rw_version);
+                    ui_out!(
+                        "build-mod-folder",
+                        value = plan.out_mod.display().to_string()
+                    );
+                    ui_out!("build-language", value = plan.lang_dir);
+                    ui_out!("build-divider");
+                    for (path, n) in plan.files {
+                        ui_out!(
+                            "import-dry-run-line",
+                            path = path.display().to_string(),
+                            n = n
+                        );
+                    }
+                    ui_out!("build-divider");
+                    ui_out!("build-summary", n = plan.total_keys);
                 } else {
                     rimloc_import_po::build_translation_mod_with_langdir(
                         &po,
