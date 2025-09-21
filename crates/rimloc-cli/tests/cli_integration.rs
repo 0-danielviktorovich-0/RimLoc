@@ -92,3 +92,24 @@ fn import_po_requires_target() {
         .failure()
         .stderr(predicate::str::contains("нужно указать либо --out-xml, либо --mod-root"));
 }
+
+#[test]
+fn help_in_english_when_ui_lang_en() {
+    let mut cmd = bin_cmd();
+    cmd.args(["--help", "--ui-lang", "en"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("RimWorld localization toolkit"));
+}
+
+#[test]
+fn import_error_in_english_when_ui_lang_en() {
+    let mut cmd = bin_cmd();
+    cmd.args(["import-po", "--po"])
+        .arg(fixture("test/ok.po"))
+        .args(["--ui-lang", "en"]);
+
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("either --out-xml or --mod-root must be specified"));
+}
