@@ -276,6 +276,24 @@ fn extract_fluent_vars(s: &str) -> std::collections::BTreeSet<String> {
     vars
 }
 
+fn section_for_key(key: &str) -> &'static str {
+    // Map by common prefixes used in FTL keys to improve error messages in tests
+    if key.starts_with("validate-po-") { return "validate-po"; }
+    if key.starts_with("build-") { return "build-mod details"; }
+    if key.starts_with("import-") { return "import-po"; }
+    if key.starts_with("scan-") { return "scan"; }
+    if key.starts_with("xml-") { return "xml"; }
+    if key.starts_with("export-po-") { return "export-po"; }
+    if key.starts_with("category-") { return "validation categories"; }
+    if key.starts_with("kind-") { return "validation kinds"; }
+    if key.starts_with("warn-") || key.starts_with("ui-lang-") || key.starts_with("err-") { return "warnings/errors"; }
+    if key == "app-started" { return "startup"; }
+    if key == "validate-clean" { return "validate"; }
+    if key == "dry-run-would-write" { return "dry-run"; }
+    // default bucket
+    "misc"
+}
+
 fn diff_locale_maps(
     en: &std::collections::BTreeMap<String, String>,
     other: &std::collections::BTreeMap<String, String>,
@@ -364,10 +382,26 @@ fn all_locales_have_same_keys() {
             let mut msg = String::new();
             msg.push_str(&format!("Locale {} has issues:\n", loc));
             if !missing.is_empty() {
-                msg.push_str(&format!("  • Missing keys ({}): {:?}\n", missing.len(), missing));
+                use std::collections::BTreeMap;
+                let mut by_sec: BTreeMap<&str, Vec<&String>> = BTreeMap::new();
+                for k in &missing {
+                    by_sec.entry(section_for_key(k)).or_default().push(k);
+                }
+                msg.push_str(&format!("  • Missing keys ({} total):\n", missing.len()));
+                for (sec, items) in by_sec {
+                    msg.push_str(&format!("    - in section {} ({}): {:?}\n", sec, items.len(), items));
+                }
             }
             if !extra.is_empty() {
-                msg.push_str(&format!("  • Extra keys ({}): {:?}\n", extra.len(), extra));
+                use std::collections::BTreeMap;
+                let mut by_sec: BTreeMap<&str, Vec<&String>> = BTreeMap::new();
+                for k in &extra {
+                    by_sec.entry(section_for_key(k)).or_default().push(k);
+                }
+                msg.push_str(&format!("  • Extra keys ({} total):\n", extra.len()));
+                for (sec, items) in by_sec {
+                    msg.push_str(&format!("    - in section {} ({}): {:?}\n", sec, items.len(), items));
+                }
             }
             if !arg_mismatches.is_empty() {
                 msg.push_str(&format!(
