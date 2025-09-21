@@ -1,6 +1,13 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
+use std::collections::BTreeSet;
 use std::{fs, path::PathBuf, process::Command};
+
+// clippy: factor complex tuple types
+type Paths = Vec<String>;
+type Lines = Vec<String>;
+type ArgMismatchEntry = (String, BTreeSet<String>, BTreeSet<String>);
+type DiffResult = (Paths, Lines, Vec<ArgMismatchEntry>);
 
 // -----------------------------------------------------------------------------
 // Test-only i18n loader: reads crates/rimloc-cli/i18n/{loc}/rimloc-tests.ftl
@@ -172,22 +179,66 @@ fn validate_detects_issues_in_bad_xml() {
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
 
     // High-level category presence (user-facing labels)
-    assert!(out.contains("[duplicate]"), "{}", ti18n!("test-validate-dup-category"));
-    assert!(out.contains("[empty]"), "{}", ti18n!("test-validate-empty-category"));
-    assert!(out.contains("[placeholder-check]"), "{}", ti18n!("test-validate-ph-category"));
+    assert!(
+        out.contains("[duplicate]"),
+        "{}",
+        ti18n!("test-validate-dup-category")
+    );
+    assert!(
+        out.contains("[empty]"),
+        "{}",
+        ti18n!("test-validate-empty-category")
+    );
+    assert!(
+        out.contains("[placeholder-check]"),
+        "{}",
+        ti18n!("test-validate-ph-category")
+    );
 
     // Specific validator item names present
-    assert!(out.contains("DuplicateKey"), "{}", ti18n!("test-validate-dup-items"));
-    assert!(out.contains("EmptyKey"), "{}", ti18n!("test-validate-empty-items"));
-    assert!(out.contains("Placeholder"), "{}", ti18n!("test-validate-ph-items"));
+    assert!(
+        out.contains("DuplicateKey"),
+        "{}",
+        ti18n!("test-validate-dup-items")
+    );
+    assert!(
+        out.contains("EmptyKey"),
+        "{}",
+        ti18n!("test-validate-empty-items")
+    );
+    assert!(
+        out.contains("Placeholder"),
+        "{}",
+        ti18n!("test-validate-ph-items")
+    );
 
     // At least one occurrence of each category
     let dup_count = out.matches("[duplicate]").count();
     let empty_count = out.matches("[empty]").count();
     let ph_count = out.matches("[placeholder-check]").count();
-    assert!(dup_count >= 1, "{}", ti18n!("test-validate-atleast-duplicates", min = 1, count = dup_count));
-    assert!(empty_count >= 1, "{}", ti18n!("test-validate-atleast-empty", min = 1, count = empty_count));
-    assert!(ph_count >= 1, "{}", ti18n!("test-validate-atleast-placeholder", min = 1, count = ph_count));
+    assert!(
+        dup_count >= 1,
+        "{}",
+        ti18n!(
+            "test-validate-atleast-duplicates",
+            min = 1,
+            count = dup_count
+        )
+    );
+    assert!(
+        empty_count >= 1,
+        "{}",
+        ti18n!("test-validate-atleast-empty", min = 1, count = empty_count)
+    );
+    assert!(
+        ph_count >= 1,
+        "{}",
+        ti18n!(
+            "test-validate-atleast-placeholder",
+            min = 1,
+            count = ph_count
+        )
+    );
 }
 
 #[test]
@@ -262,7 +313,11 @@ fn import_single_file_dry_run_path() {
     assert!(
         combined.contains("Languages/Russian/Keyed/_Imported.xml"),
         "{}",
-        ti18n!("test-importpo-expected-path-not-found", out = out, err = err)
+        ti18n!(
+            "test-importpo-expected-path-not-found",
+            out = out,
+            err = err
+        )
     );
 }
 
@@ -303,13 +358,20 @@ fn build_mod_creates_minimal_structure() {
 
     // Проверяем, что созданы ключевые файлы структуры мода
     let about = out_mod.join("About/About.xml");
-    assert!(about.exists(), "{}", ti18n!("test-build-path-must-exist", path = "About/About.xml"));
+    assert!(
+        about.exists(),
+        "{}",
+        ti18n!("test-build-path-must-exist", path = "About/About.xml")
+    );
 
     let keyed_any = out_mod.join("Languages/Russian/Keyed");
     assert!(
         keyed_any.exists(),
         "{}",
-        ti18n!("test-build-folder-must-exist", path = "Languages/Russian/Keyed")
+        ti18n!(
+            "test-build-folder-must-exist",
+            path = "Languages/Russian/Keyed"
+        )
     );
 
     // Должен появиться хотя бы один XML (в нашем фикстуре — _Imported.xml или Bad.xml)
@@ -320,19 +382,31 @@ fn build_mod_creates_minimal_structure() {
                 .any(|e| e.path().extension().map(|s| s == "xml").unwrap_or(false))
         })
         .unwrap_or(false);
-    assert!(has_any_xml, "{}", ti18n!("test-build-xml-under-path", path = "Keyed/"));
+    assert!(
+        has_any_xml,
+        "{}",
+        ti18n!("test-build-xml-under-path", path = "Keyed/")
+    );
 
     // Validate content of About/About.xml includes expected metadata
     let about_content = fs::read_to_string(&about).expect(&ti18n!("test-build-about-readable"));
     assert!(
         about_content.contains("<name>RimLoc Translation</name>"),
         "{}",
-        ti18n!("test-build-should-contain-tag", path = "About/About.xml", tag = "<name>")
+        ti18n!(
+            "test-build-should-contain-tag",
+            path = "About/About.xml",
+            tag = "<name>"
+        )
     );
     assert!(
         about_content.contains("<packageId>yourname.rimloc.translation</packageId>"),
         "{}",
-        ti18n!("test-build-should-contain-tag", path = "About/About.xml", tag = "<packageId>")
+        ti18n!(
+            "test-build-should-contain-tag",
+            path = "About/About.xml",
+            tag = "<packageId>"
+        )
     );
 }
 
@@ -451,26 +525,16 @@ fn section_for_key(key: &str) -> &'static str {
 fn diff_locale_maps(
     en: &std::collections::BTreeMap<String, String>,
     other: &std::collections::BTreeMap<String, String>,
-) -> (
-    Vec<String>,
-    Vec<String>,
-    Vec<(
-        String,
-        std::collections::BTreeSet<String>,
-        std::collections::BTreeSet<String>,
-    )>,
-) {
-    use std::collections::BTreeSet;
-
+) -> DiffResult {
     let en_keys: BTreeSet<_> = en.keys().cloned().collect();
     let other_keys: BTreeSet<_> = other.keys().cloned().collect();
 
-    let missing: Vec<_> = en_keys.difference(&other_keys).cloned().collect();
-    let extra: Vec<_> = other_keys.difference(&en_keys).cloned().collect();
+    let missing: Paths = en_keys.difference(&other_keys).cloned().collect();
+    let extra: Lines = other_keys.difference(&en_keys).cloned().collect();
 
     // Parameter set mismatches on common keys
     let common: Vec<_> = en_keys.intersection(&other_keys).cloned().collect();
-    let mut arg_mismatches = Vec::new();
+    let mut arg_mismatches: Vec<ArgMismatchEntry> = Vec::new();
     for k in common {
         let en_vars = extract_fluent_vars(en.get(&k).unwrap());
         let ot_vars = extract_fluent_vars(other.get(&k).unwrap());
@@ -488,8 +552,12 @@ fn load_ftl_map(locale: &str) -> std::collections::BTreeMap<String, String> {
         .join("crates/rimloc-cli/i18n")
         .join(locale)
         .join("rimloc.ftl");
-    let content = fs::read_to_string(&ftl_path)
-        .unwrap_or_else(|_| panic!("{}", ti18n!("test-ftl-failed-read", path = ftl_path.display())));
+    let content = fs::read_to_string(&ftl_path).unwrap_or_else(|_| {
+        panic!(
+            "{}",
+            ti18n!("test-ftl-failed-read", path = ftl_path.display())
+        )
+    });
 
     let mut map = std::collections::BTreeMap::new();
     for line in content.lines() {
@@ -804,6 +872,9 @@ fn no_hardcoded_user_strings_anywhere() {
     let root = workspace_root();
     let offenders = scan_for_hardcoded_user_strings_in(&root, true);
     if !offenders.is_empty() {
-        panic!("{}", ti18n!("test-nonlocalized-found", offenders = offenders.join("\n")));
+        panic!(
+            "{}",
+            ti18n!("test-nonlocalized-found", offenders = offenders.join("\n"))
+        );
     }
 }
