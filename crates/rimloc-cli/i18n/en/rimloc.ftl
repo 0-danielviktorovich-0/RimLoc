@@ -69,7 +69,7 @@ build-divider = -----------------------------------
 build-summary = TOTAL: { $n } key(s) will be written
 
 # === warnings / errors ===
-ui-lang-unsupported = UI language code is not supported; using system/default locale
+ui-lang-unsupported = UI language code is not supported; using system/default locale (requested: { $code }).
 warn-unsupported-ui-lang = ⚠ Unsupported UI language: { $lang }. Using system default.
 err-placeholder-mismatches = placeholder mismatches detected
 validate-po-error = placeholder mismatches detected

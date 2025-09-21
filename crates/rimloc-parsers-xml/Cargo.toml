@@ -9,3 +9,4 @@ walkdir = { workspace = true }
 quick-xml = { workspace = true }
 rimloc-core = { path = "../rimloc-core" }
 tempfile = "3"
+tracing = "0.1"

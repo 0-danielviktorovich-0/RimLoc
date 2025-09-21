@@ -4,9 +4,9 @@ use std::path::PathBuf;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransUnit {
     pub key: String,
-    pub source: Option<String>,   // исходное значение/подсказка
-    pub path: PathBuf,            // файл, где найден ключ
-    pub line: Option<u32>,        // строка в файле, если известна
+    pub source: Option<String>, // исходное значение/подсказка
+    pub path: PathBuf,          // файл, где найден ключ
+    pub line: Option<u32>,      // строка в файле, если известна
 }
 
 #[derive(Debug, thiserror::Error)]
