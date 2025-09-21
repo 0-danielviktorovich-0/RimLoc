@@ -1,6 +1,7 @@
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use std::{fs, path::PathBuf, process::Command};
+use std::collections::HashSet;
 
 fn bin_cmd() -> Command {
     Command::cargo_bin("rimloc-cli").expect("binary rimloc-cli should be built by cargo")
@@ -241,5 +242,65 @@ fn supported_locales_startup_message_matches() {
                 predicate::str::contains("rimloc started")
                     .or(predicate::str::contains("rimloc запущен"))
             );
+    }
+}
+
+fn load_ftl_keys(locale: &str) -> HashSet<String> {
+    let ftl_path = workspace_root()
+        .join("crates/rimloc-cli/i18n")
+        .join(locale)
+        .join("rimloc.ftl");
+    let content = fs::read_to_string(ftl_path)
+        .unwrap_or_else(|_| panic!("Missing FTL file for locale {}", locale));
+
+    content
+        .lines()
+        .filter(|line| !line.trim().is_empty() && !line.starts_with('#'))
+        .filter_map(|line| line.split('=').next())
+        .map(|s| s.trim().to_string())
+        .collect()
+}
+
+#[test]
+fn all_locales_have_same_keys() {
+    let locales_dir = workspace_root().join("crates/rimloc-cli/i18n");
+    let mut locales = vec![];
+    if let Ok(rd) = fs::read_dir(locales_dir) {
+        for e in rd.flatten() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                locales.push(e.file_name().to_string_lossy().to_string());
+            }
+        }
+    }
+
+    assert!(locales.contains(&"en".to_string()), "English locale must exist as reference");
+
+    let reference_keys = load_ftl_keys("en");
+    for loc in locales {
+        let keys = load_ftl_keys(&loc);
+        let missing: Vec<_> = reference_keys.difference(&keys).collect();
+        assert!(
+            missing.is_empty(),
+            "Locale {} is missing keys: {:?}",
+            loc, missing
+        );
+    }
+}
+
+#[test]
+fn each_locale_runs_help_successfully() {
+    let locales_dir = workspace_root().join("crates/rimloc-cli/i18n");
+    if let Ok(rd) = fs::read_dir(locales_dir) {
+        for e in rd.flatten() {
+            if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                let loc = e.file_name().to_string_lossy().to_string();
+                let mut cmd = bin_cmd();
+                cmd.args(["--ui-lang", &loc])
+                    .arg("--help");
+                cmd.assert()
+                    .success()
+                    .stdout(predicate::str::contains("RimWorld").or(predicate::str::contains("RimLoc")));
+            }
+        }
     }
 }
