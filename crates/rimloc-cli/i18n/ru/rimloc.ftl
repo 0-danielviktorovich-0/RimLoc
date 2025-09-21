@@ -93,6 +93,17 @@ category-duplicate = дубликат
 category-empty = пустое
 category-placeholder-check = проверка-плейсхолдеров
 
+
+# === детальные сообщения валидации (на элемент) ===
+# Стандартизированные плейсхолдеры по локалям:
+# - $validator : короткое имя валидатора, напр. DuplicateKey, EmptyKey, Placeholder
+# - $path      : путь к файлу
+# - $line      : номер строки (число)
+# - $message   : человекочитаемое объяснение (может быть локализовано самим валидатором)
+validate-detail-duplicate = [duplicate] { $validator } ({ $path }:{ $line }) — { $message }
+validate-detail-empty = [empty] { $validator } ({ $path }:{ $line }) — { $message }
+validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $line }) — { $message }
+
 # === локализация справки CLI ===
 # Топ-уровень
 help-about = Набор инструментов локализации RimWorld (Rust)
