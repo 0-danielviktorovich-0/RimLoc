@@ -672,10 +672,10 @@ impl Runnable for Commands {
                     for rel in paths {
                         let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
                         keys_total += n;
+                        let full_path = root.join("Languages").join(&lang_folder).join(&rel);
                         println!(
-                            "  {}  ({} ключей)",
-                            root.join("Languages").join(&lang_folder).join(&rel).display(),
-                            n
+                            "{}",
+                            tr!("import-dry-run-line", path = full_path.display().to_string(), n = n)
                         );
                     }
                     println!("{}", tr!("import-total-keys", n = keys_total));

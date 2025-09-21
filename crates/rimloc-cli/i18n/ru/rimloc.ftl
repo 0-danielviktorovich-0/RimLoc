@@ -35,3 +35,4 @@ validate-po-summary = Итого несовпадений: { $count }
 
 # === import-po аргументы ===
 import-need-target = Ошибка: нужно указать либо --out-xml, либо --mod-root
+import-dry-run-line = { $path }  ({ $n } ключ(ей))

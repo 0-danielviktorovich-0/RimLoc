@@ -35,3 +35,4 @@ validate-po-summary = Total mismatches: { $count }
 
 # import argument validation
 import-need-target = Error: either --out-xml or --mod-root must be specified
+import-dry-run-line = { $path }  ({ $n } key(s))
