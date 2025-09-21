@@ -113,3 +113,61 @@ fn import_error_in_english_when_ui_lang_en() {
         .failure()
         .stderr(predicate::str::contains("either --out-xml or --mod-root must be specified"));
 }
+#[test]
+fn validate_po_ok() {
+    let mut cmd = bin_cmd();
+    cmd.args(["validate-po", "--po"])
+        .arg(fixture("test/ok.po"))
+        .args(["--ui-lang", "en"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Placeholders OK"));
+}
+
+#[test]
+fn validate_po_strict_mismatch() {
+    let mut cmd = bin_cmd();
+    cmd.args(["validate-po", "--po"])
+        .arg(fixture("test/bad.po"))
+        .arg("--strict")
+        .args(["--ui-lang", "en"]);
+
+    cmd.assert()
+        .failure()
+        .stdout(predicate::str::contains("Total mismatches"));
+}
+
+#[test]
+fn import_single_file_dry_run_path() {
+    let mut cmd = bin_cmd();
+    cmd.args(["import-po", "--po"])
+        .arg(fixture("test/ok.po"))
+        .args(["--mod-root"])
+        .arg(fixture("test/TestMod"))
+        .arg("--single-file")
+        .arg("--dry-run");
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Languages/Russian/Keyed/_Imported.xml"));
+}
+
+#[test]
+fn build_mod_dry_run_prints_header() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let out_mod = tmp.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["build-mod", "--po"])
+        .arg(fixture("test/ok.po"))
+        .args(["--out-mod"])
+        .arg(&out_mod)
+        .args(["--lang", "ru"])
+        .arg("--dry-run")
+        .args(["--ui-lang", "en"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("DRY RUN: building translation mod"));
+}
