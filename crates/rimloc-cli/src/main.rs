@@ -3,7 +3,7 @@ type PoEntry = (Option<String>, String, String, Option<String>);
 
 use rimloc_validate::validate;
 include!(concat!(env!("OUT_DIR"), "/supported_locales.rs"));
-use clap::{Parser, Subcommand};
+use clap::{Command as ClapCommand, Parser, Subcommand};
 use color_eyre::eyre::Result;
 use i18n_embed::fluent::FluentLanguageLoader;
 use i18n_embed::DesktopLanguageRequester;
@@ -52,7 +52,13 @@ macro_rules! ui_info {
 }
 macro_rules! ui_warn {
     ($k:literal $(, $n:ident = $v:expr )* $(,)?) => {{
-        println!("⚠ {}", tr!($k $(, $n = $v )* ));
+        // Show icon only in interactive terminals and when not explicitly disabled.
+        let show_icon = std::io::stdout().is_terminal() && std::env::var_os("NO_ICONS").is_none();
+        if show_icon {
+            eprintln!("⚠ {}", tr!($k $(, $n = $v )* ));
+        } else {
+            eprintln!("{}", tr!($k $(, $n = $v )* ));
+        }
     }};
 }
 #[allow(unused_macros)]
@@ -103,36 +109,143 @@ fn set_ui_lang(lang: Option<&str>) {
                 }
             } else {
                 // игнорируем неподдерживаемый код, оставляя текущую локаль
-                ui_warn!("ui-lang-unsupported", code = code.to_string());
+                ui_warn!("ui-lang-unsupported");
             }
         }
     }
 }
 
+/// Pre-scan CLI args to obtain --ui-lang (before we build localized clap Command)
+fn pre_scan_ui_lang() -> Option<String> {
+    let mut prev_is_flag = false;
+    let mut found: Option<String> = None;
+    for arg in std::env::args_os().skip(1) {
+        if prev_is_flag {
+            found = Some(arg.to_string_lossy().into_owned());
+            break;
+        }
+        if let Some(s) = arg.to_str() {
+            if s == "--ui-lang" {
+                prev_is_flag = true;
+                continue;
+            }
+            if let Some(rest) = s.strip_prefix("--ui-lang=") {
+                found = Some(rest.to_string());
+                break;
+            }
+        }
+    }
+    found
+}
+
+/// Apply localized texts (about/help) to the clap Command using tr!()
+fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
+    // Top-level about
+    // Expect FTL key: help-about
+    cmd = cmd.about(tr!("help-about"));
+
+    // Top-level args: --no-color, --ui-lang
+    cmd = cmd.mut_arg("no_color", |a| a.help(tr!("help-no-color")));
+    cmd = cmd.mut_arg("ui_lang", |a| a.help(tr!("help-ui-lang")));
+
+    // Subcommands
+    for sc in cmd.get_subcommands_mut() {
+        match sc.get_name() {
+            "scan" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-scan-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-scan-root")));
+                owned = owned.mut_arg("out_csv", |a| a.help(tr!("help-scan-out-csv")));
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-scan-lang")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-scan-source-lang")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-scan-source-lang-dir"))
+                });
+                *sc = owned;
+            }
+            "validate" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-validate-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-validate-root")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-validate-source-lang")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-validate-source-lang-dir"))
+                });
+                *sc = owned;
+            }
+            "validate-po" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-validatepo-about"));
+                owned = owned.mut_arg("po", |a| a.help(tr!("help-validatepo-po")));
+                owned = owned.mut_arg("strict", |a| a.help(tr!("help-validatepo-strict")));
+                *sc = owned;
+            }
+            "export-po" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-exportpo-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-exportpo-root")));
+                owned = owned.mut_arg("out_po", |a| a.help(tr!("help-exportpo-out-po")));
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-exportpo-lang")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-exportpo-source-lang")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-exportpo-source-lang-dir"))
+                });
+                *sc = owned;
+            }
+            "import-po" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-importpo-about"));
+                owned = owned.mut_arg("po", |a| a.help(tr!("help-importpo-po")));
+                owned = owned.mut_arg("out_xml", |a| a.help(tr!("help-importpo-out-xml")));
+                owned = owned.mut_arg("mod_root", |a| a.help(tr!("help-importpo-mod-root")));
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-importpo-lang")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-importpo-lang-dir")));
+                owned = owned.mut_arg("keep_empty", |a| a.help(tr!("help-importpo-keep-empty")));
+                owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-importpo-dry-run")));
+                owned = owned.mut_arg("backup", |a| a.help(tr!("help-importpo-backup")));
+                owned = owned.mut_arg("single_file", |a| a.help(tr!("help-importpo-single-file")));
+                *sc = owned;
+            }
+            "build-mod" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-buildmod-about"));
+                owned = owned.mut_arg("po", |a| a.help(tr!("help-buildmod-po")));
+                owned = owned.mut_arg("out_mod", |a| a.help(tr!("help-buildmod-out-mod")));
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-buildmod-lang")));
+                owned = owned.mut_arg("name", |a| a.help(tr!("help-buildmod-name")));
+                owned = owned.mut_arg("package_id", |a| a.help(tr!("help-buildmod-package-id")));
+                owned = owned.mut_arg("rw_version", |a| a.help(tr!("help-buildmod-rw-version")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-buildmod-lang-dir")));
+                owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-buildmod-dry-run")));
+                *sc = owned;
+            }
+            _ => {}
+        }
+    }
+
+    cmd
+}
+
 static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 
 #[derive(Parser)]
-#[command(
-    name = "rimloc",
-    version,
-    about = "RimWorld localization toolkit (Rust)"
-)]
+#[command(name = "rimloc", version)]
 struct Cli {
-    /// Выключить цветной вывод
+    /// Disable colored output (help text is localized via FTL at runtime).
     #[arg(long)]
     no_color: bool,
 
     #[command(subcommand)]
     cmd: Commands,
 
-    /// Язык интерфейса (ui): ru или en (по умолчанию — системный)
+    /// UI language override (e.g., "ru" or "en"); help text localized via FTL.
     #[arg(long, global = true)]
     ui_lang: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Сканировать папку мода и извлечь Keyed XML
+    /// Scan a mod folder and extract Keyed XML (help localized via FTL).
     Scan {
         #[arg(short, long)]
         root: PathBuf,
@@ -140,65 +253,60 @@ enum Commands {
         out_csv: Option<PathBuf>,
         #[arg(long)]
         lang: Option<String>,
-        /// Исходный язык по ISO-коду (en, ru, ja...)
+        /// Source language by ISO code (e.g., en, ru, ja).
         #[arg(long)]
         source_lang: Option<String>,
-        /// Имя папки исходного языка (например: English). Приоритет выше.
+        /// Source language folder name (e.g., "English"). Takes precedence.
         #[arg(long)]
         source_lang_dir: Option<String>,
     },
 
-    /// Проверить строки на ошибки/замечания
+    /// Validate strings and report issues (help localized via FTL).
     Validate {
         #[arg(short, long)]
         root: PathBuf,
-        /// Исходный язык по ISO-коду
+        /// Source language by ISO code.
         #[arg(long)]
         source_lang: Option<String>,
-        /// Имя папки исходного языка (например: English)
+        /// Source language folder name (e.g., "English").
         #[arg(long)]
         source_lang_dir: Option<String>,
     },
 
-    /// Проверить .po на совпадение плейсхолдеров (msgid vs msgstr)
+    /// Validate .po placeholder consistency (msgid vs msgstr); help via FTL.
     ValidatePo {
-        /// Путь к .po
+        /// Path to .po file.
         #[arg(long)]
         po: PathBuf,
-        /// Строгий режим: вернуть ошибку (exit code 1), если найдены несовпадения
+        /// Strict mode: return non-zero exit if mismatches are found.
         #[arg(long, default_value_t = false)]
         strict: bool,
     },
 
-    /// Экспорт извлечённых строк в единый .po файл
-    ///
-    /// Можно ограничить исходный язык:
-    ///   --source-lang-dir English    (папка в Languages/)
-    ///   или
-    ///   --source-lang en             (ISO-код; будет сопоставлен к имени папки)
+    /// Export extracted strings to a single .po file (help localized via FTL).
     ExportPo {
-        /// Путь к корню мода (или Languages/<locale>)
+        /// Path to mod root (or Languages/<locale>).
         #[arg(short, long)]
         root: PathBuf,
 
-        /// Путь к результирующему .po
+        /// Output .po path.
         #[arg(long)]
         out_po: PathBuf,
 
-        /// Язык перевода (пишем в заголовок PO), например: ru, ja, de
+        /// Target translation language for PO header, e.g., ru, ja, de.
         #[arg(long)]
         lang: Option<String>,
 
-        /// Исходный язык по ISO-коду (en, ru, ja...). Будет преобразован через rimworld_lang_dir.
+        /// Source language by ISO code (mapped via rimworld_lang_dir).
         #[arg(long)]
         source_lang: Option<String>,
 
-        /// Имя папки исходного языка (например: English). Приоритет выше, чем у --source-lang.
+        /// Source language folder name (e.g., "English"). Takes precedence over --source-lang.
         #[arg(long)]
         source_lang_dir: Option<String>,
     },
 
-    /// Импорт .po: либо в один XML, либо раскладкой по структуре существующего мода
+    /// Import .po into a single XML or into an existing mod's structure (help via FTL).
     ImportPo {
         #[arg(long)]
         po: PathBuf,
@@ -220,7 +328,7 @@ enum Commands {
         single_file: bool,
     },
 
-    /// Собрать отдельный мод-перевод из .po
+    /// Build a standalone translation mod from a .po file (help via FTL).
     BuildMod {
         #[arg(long)]
         po: PathBuf,
@@ -405,7 +513,7 @@ trait Runnable {
 impl Runnable for Commands {
     fn run(self, use_color: bool) -> Result<()> {
         let cmd_name = format!("{:?}", self);
-        info!("▶ Starting command: {}", cmd_name);
+        info!(event = "cmd_start", cmd = %cmd_name);
         let span = tracing::info_span!("cmd", name = %cmd_name);
         let _enter = span.enter();
 
@@ -417,10 +525,7 @@ impl Runnable for Commands {
                 source_lang,
                 source_lang_dir,
             } => {
-                debug!(
-                    "Scan args: root={:?} out_csv={:?} lang={:?}",
-                    root, out_csv, lang
-                );
+                debug!(event = "scan_args", root = ?root, out_csv = ?out_csv, lang = ?lang);
 
                 let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
 
@@ -431,12 +536,7 @@ impl Runnable for Commands {
                         .into_iter()
                         .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
                         .collect();
-                    info!(
-                        "Scan: filtered {} -> {} by source_lang_dir={}",
-                        before,
-                        filtered.len(),
-                        dir
-                    );
+                    info!(event = "scan_filtered_by_dir", before = before, after = filtered.len(), source_lang_dir = %dir);
                     filtered
                 } else if let Some(code) = source_lang.clone() {
                     let dir = rimloc_import_po::rimworld_lang_dir(&code);
@@ -445,13 +545,7 @@ impl Runnable for Commands {
                         .into_iter()
                         .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
                         .collect();
-                    info!(
-                        "Scan: filtered by source_lang={} → dir={}: {} -> {}",
-                        code,
-                        dir,
-                        before,
-                        filtered.len()
-                    );
+                    info!(event = "scan_filtered_by_code", source_lang = %code, source_dir = %dir, before = before, after = filtered.len());
                     filtered
                 } else {
                     units
@@ -478,27 +572,18 @@ impl Runnable for Commands {
                 source_lang,
                 source_lang_dir,
             } => {
-                debug!("Validate args: root={:?}", root);
+                debug!(event = "validate_args", root = ?root);
 
                 let mut units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
 
                 // опциональный фильтр по исходному языку
                 if let Some(dir) = source_lang_dir.as_ref() {
                     units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
-                    info!(
-                        "Validate: filtered by source_lang_dir={}, remaining={}",
-                        dir,
-                        units.len()
-                    );
+                    info!(event = "validate_filtered_by_dir", source_lang_dir = %dir, remaining = units.len());
                 } else if let Some(code) = source_lang.as_ref() {
                     let dir = rimloc_import_po::rimworld_lang_dir(code);
                     units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
-                    info!(
-                        "Validate: filtered by source_lang={} → dir={}, remaining={}",
-                        code,
-                        dir,
-                        units.len()
-                    );
+                    info!(event = "validate_filtered_by_code", source_lang = %code, source_dir = %dir, remaining = units.len());
                 }
 
                 let msgs = validate(&units)?;
@@ -551,7 +636,7 @@ impl Runnable for Commands {
             }
 
             Commands::ValidatePo { po, strict } => {
-                debug!("ValidatePo args: po={:?} strict={}", po, strict);
+                debug!(event = "validate_po_args", po = ?po, strict = strict);
 
                 let entries = parse_po_basic(&po)?;
                 let mut mismatches = Vec::new();
@@ -653,10 +738,7 @@ impl Runnable for Commands {
                 source_lang,
                 source_lang_dir,
             } => {
-                debug!(
-                    "ExportPo args: root={:?} out_po={:?} lang={:?} source_lang={:?} source_lang_dir={:?}",
-                    root, out_po, lang, source_lang, source_lang_dir
-                );
+                debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir);
 
                 // 1) Сканируем все юниты
                 let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
@@ -672,7 +754,7 @@ impl Runnable for Commands {
                 } else {
                     "English".to_string()
                 };
-                info!("Exporting from {}", src_dir);
+                info!(event = "export_from", source_dir = %src_dir);
 
                 // 3) Фильтруем только те записи, чей путь находится под Languages/<src_dir>/
                 let filtered: Vec<_> = units
@@ -680,7 +762,7 @@ impl Runnable for Commands {
                     .filter(|u| is_under_languages_dir(&u.path, &src_dir))
                     .collect();
 
-                info!("Exporting {} unit(s) from {}", filtered.len(), src_dir);
+                info!(event = "export_units", count = filtered.len(), source_dir = %src_dir);
 
                 // 4) Пишем PO (язык назначения как и раньше — опциональное поле в заголовке)
                 rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;
@@ -699,18 +781,20 @@ impl Runnable for Commands {
                 backup,
                 single_file,
             } => {
-                debug!("ImportPo args: po={:?} out_xml={:?} mod_root={:?} lang={:?} lang_dir={:?} keep_empty={} dry_run={} backup={} single_file={}",
-                    po, out_xml, mod_root, lang, lang_dir, keep_empty, dry_run, backup, single_file
-                );
+                debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file);
                 use std::fs;
 
                 let mut entries = rimloc_import_po::read_po_entries(&po)?;
-                debug!("Loaded {} entries from PO", entries.len());
+                debug!(event = "import_po_loaded", entries = entries.len());
 
                 if !keep_empty {
                     let before = entries.len();
                     entries.retain(|e| !e.value.trim().is_empty());
-                    debug!("Filtered empty: {} -> {}", before, entries.len());
+                    debug!(
+                        event = "import_po_filtered_empty",
+                        before = before,
+                        after = entries.len()
+                    );
                     if entries.is_empty() {
                         ui_info!("import-nothing-to-do");
                         return Ok(());
@@ -730,7 +814,7 @@ impl Runnable for Commands {
                     if backup && out.exists() {
                         let bak = out.with_extension("xml.bak");
                         fs::copy(&out, &bak)?;
-                        warn!("backup: {} → {}", out.display(), bak.display());
+                        warn!(event = "backup", from = %out.display(), to = %bak.display());
                     }
 
                     let pairs: Vec<(String, String)> =
@@ -752,7 +836,7 @@ impl Runnable for Commands {
                 } else {
                     "Russian".to_string()
                 };
-                debug!("Resolved lang folder: {}", lang_folder);
+                debug!(event = "resolved_lang_folder", lang_folder = %lang_folder);
 
                 if single_file {
                     let out = root
@@ -773,7 +857,7 @@ impl Runnable for Commands {
                     if backup && out.exists() {
                         let bak = out.with_extension("xml.bak");
                         fs::copy(&out, &bak)?;
-                        warn!("backup: {} → {}", out.display(), bak.display());
+                        warn!(event = "backup", from = %out.display(), to = %bak.display());
                     }
 
                     let pairs: Vec<(String, String)> =
@@ -823,7 +907,7 @@ impl Runnable for Commands {
                     if backup && out_path.exists() {
                         let bak = out_path.with_extension("xml.bak");
                         std::fs::copy(&out_path, &bak)?;
-                        warn!("backup: {} → {}", out_path.display(), bak.display());
+                        warn!(event = "backup", from = %out_path.display(), to = %bak.display());
                     }
                     rimloc_import_po::write_language_data_xml(&out_path, &items)?;
                 }
@@ -842,9 +926,7 @@ impl Runnable for Commands {
                 lang_dir,
                 dry_run,
             } => {
-                debug!("BuildMod args: po={:?} out_mod={:?} lang={} name={} package_id={} rw_version={} lang_dir={:?} dry_run={}",
-                    po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run
-                );
+                debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run);
                 let lang_folder =
                     lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
 
@@ -874,8 +956,8 @@ impl Runnable for Commands {
         };
 
         match &result {
-            Ok(_) => info!("✔ Finished command: {}", cmd_name),
-            Err(e) => error!("✖ Command {} failed: {:?}", cmd_name, e),
+            Ok(_) => info!(event = "cmd_ok", cmd = %cmd_name),
+            Err(e) => error!(event = "cmd_error", cmd = %cmd_name, error = ?e),
         }
 
         result
@@ -925,17 +1007,19 @@ fn main() -> Result<()> {
     // Избегаем временного значения в аргументах макроса (E0716)
     let rustlog: String = std::env::var("RUST_LOG").unwrap_or_else(|_| "None".to_string());
 
-    info!(
-        "{}",
-        tr!(
-            "app-started",
-            version = env!("CARGO_PKG_VERSION"),
-            logdir = "logs/",
-            rustlog = rustlog.as_str()
-        )
-    );
-    let cli = Cli::parse();
-    set_ui_lang(cli.ui_lang.as_deref());
+    // Pre-read --ui-lang from raw args so that help can be localized
+    let pre_ui_lang = pre_scan_ui_lang();
+    set_ui_lang(pre_ui_lang.as_deref());
+
+    info!(event = "app_started", version = env!("CARGO_PKG_VERSION"), logdir = "logs/", rustlog = %rustlog);
+
+    // Build localized clap::Command and parse
+    let mut cmd = <Cli as clap::CommandFactory>::command();
+    cmd = localize_command(cmd);
+
+    let matches = cmd.get_matches();
+    let cli =
+        <Cli as clap::FromArgMatches>::from_arg_matches(&matches).unwrap_or_else(|e| e.exit());
 
     let use_color =
         !cli.no_color && std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();

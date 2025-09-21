@@ -2,7 +2,7 @@
 ## RimLoc English Localization (EN) — Reference / Source of Truth
 ##
 ## Guidelines:
-## 1. English (EN) is the canonical base. All other locales must mirror its keys.
+## 1. English (EN) is the canonical base. All other locales MUST mirror its keys.
 ## 2. Section order is FIXED:
 ##    - General messages (app-started, scan, validate, export, import, dry-run, xml, build)
 ##    - validate-po group
@@ -11,16 +11,22 @@
 ##    - warnings / errors
 ##    - validation kinds
 ##    - validation categories
+##    - CLI help localization (help-*, grouped by subcommand)
 ## 3. Adding new keys:
 ##    - Append new keys at the end of the most relevant section.
 ##    - If adding a new section, append it to the end of the file with a header.
 ## 4. Placeholder rules:
 ##    - Placeholders ($var) must be identical across all locales.
 ##    - Do not rename or drop placeholders without updating every locale.
-## 5. Tests:
+## 5. CLI help localization:
+##    - Top-level keys: help-about, help-no-color, help-ui-lang.
+##    - Per-command keys: help-&lt;cmd&gt;-about and help-&lt;cmd&gt;-&lt;arg&gt;.
+##    - Keep naming in kebab-case matching CLI flags/args (e.g., help-importpo-out-xml).
+## 6. Tests:
 ##    - all_locales_have_same_keys ensures all locales match EN.
-##    - each_locale_runs_help_successfully ensures help output works in each locale.
+##    - each_locale_runs_help_successfully uses these help keys to verify output in each locale.
 ## =============================================================================
+
 app-started = rimloc started • version={ $version } • logdir={ $logdir } • RUST_LOG={ $rustlog }
 
 scan-csv-stdout = Printing CSV to stdout…
@@ -43,6 +49,10 @@ xml-saved = XML saved to { $path }
 build-dry-run-header = === DRY RUN: building translation mod ===
 build-built-at = Translation mod built at { $path }
 build-done = Translation mod built at { $out }
+
+# === test-only markers (for integration tests) ===
+test-app-started = rimloc app_started marker
+test-dry-run-marker = DRY-RUN
 
 # === validate-po ===
 validate-po-ok = ✔ Placeholders OK ({ $count } lines)
@@ -69,8 +79,7 @@ build-divider = -----------------------------------
 build-summary = TOTAL: { $n } key(s) will be written
 
 # === warnings / errors ===
-ui-lang-unsupported = UI language code is not supported; using system/default locale (requested: { $code }).
-warn-unsupported-ui-lang = ⚠ Unsupported UI language: { $lang }. Using system default.
+ui-lang-unsupported = UI language code is not supported
 err-placeholder-mismatches = placeholder mismatches detected
 validate-po-error = placeholder mismatches detected
 
@@ -83,3 +92,66 @@ kind-placeholder-check = placeholder-check
 category-duplicate = duplicate
 category-empty = empty
 category-placeholder-check = placeholder-check
+
+
+# === CLI help localization ===
+# Top-level
+help-about = RimWorld localization toolkit (Rust)
+help-no-color = Disable colored output
+help-ui-lang = UI language code (e.g. en, ru, ja; defaults to system locale)
+
+# scan
+help-scan-about = Scan a mod folder and extract Keyed XML entries
+help-scan-root = Path to RimWorld mod root to scan
+help-scan-out-csv = Save extracted entries to CSV file
+help-scan-lang = Language code of the files to scan (e.g., en, ru)
+help-scan-source-lang = Source language code for cross-checks
+help-scan-source-lang-dir = Path to source language directory for cross-checks
+
+# validate
+help-validate-about = Validate strings for issues/warnings
+help-validate-root = Path to RimWorld mod root to validate
+help-validate-source-lang = Source language code to compare against
+help-validate-source-lang-dir = Path to source language directory to compare against
+
+# validate-po
+help-validatepo-about = Validate .po file placeholder consistency (msgid vs msgstr)
+help-validatepo-po = Path to .po file to validate
+help-validatepo-strict = Strict mode: return error (exit code 1) if mismatches are found
+
+# export-po
+help-exportpo-about = Export extracted strings into a single .po file
+help-exportpo-root = Path to RimWorld mod root containing extracted strings
+help-exportpo-out-po = Output .po file path
+help-exportpo-lang = Target translation language code (e.g., ru, ja, de)
+help-exportpo-source-lang = Source language ISO code to export from (e.g., en, ru, ja)
+help-exportpo-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+
+# import-po
+help-importpo-about = Import .po — either into a single XML, or spread across existing mod structure
+help-importpo-po = Path to .po file to import
+help-importpo-out-xml = Output XML file path (single-file mode)
+help-importpo-mod-root = Mod root to update with imported strings (structure mode)
+help-importpo-lang = Target language code for import (e.g., ru)
+help-importpo-lang-dir = Target language directory (overrides automatic mapping)
+help-importpo-keep-empty = Import empty strings as placeholders
+help-importpo-single-file = Write all imported strings into a single XML file
+help-importpo-backup = Create .bak backups when overwriting files
+help-importpo-dry-run = Do not write changes; only show what would be done
+
+# build-mod
+help-buildmod-about = Build a standalone translation mod from a .po file
+help-buildmod-po = Path to .po file to build from
+help-buildmod-out-mod = Output mod folder path
+help-buildmod-lang = Language code of the translation
+help-buildmod-name = Translation mod display name
+help-buildmod-package-id = Translation mod PackageId
+help-buildmod-rw-version = Target RimWorld version
+help-buildmod-lang-dir = Language folder name inside the mod (optional)
+help-buildmod-dry-run = Do not write files; only print the build plan
+
+# === scan ===
+test-csv-header = CSV header must be present
+
+# === startup message checks ===
+test-startup-text-must-appear = Startup message must appear for locale { $loc }
