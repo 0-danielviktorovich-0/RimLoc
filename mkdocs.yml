@@ -57,10 +57,10 @@ extra:
   edit_uri: edit/main/docs/
   alternate:
     - name: English
-      link: /
+      link: .
       lang: en
     - name: Русский
-      link: /ru/
+      link: ru/
       lang: ru
   social:
     - icon: fontawesome/brands/github
