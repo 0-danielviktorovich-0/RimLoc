@@ -50,7 +50,7 @@ jobs:
           path: site
 
   deploy-prod:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'danielviktorovich/RimLoc'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == '0-danielviktorovich-0/RimLoc'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -61,7 +61,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   deploy-preview:
-    if: github.event_name == 'pull_request' && github.repository == 'danielviktorovich/RimLoc' && github.event.pull_request.head.repo.fork == false
+    if: github.event_name == 'pull_request' && github.repository == '0-danielviktorovich-0/RimLoc' && github.event.pull_request.head.repo.fork == false
     needs: build
     runs-on: ubuntu-latest
     environment:
