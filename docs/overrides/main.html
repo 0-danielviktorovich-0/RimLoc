@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+  {{ super() }}
+  {# Inject <link rel="alternate"> for language variants #}
+  {% if config.extra and config.extra.alternate %}
+    {% for alt in config.extra.alternate %}
+      {% if alt.link and alt.lang %}
+<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.link }}" />
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}
