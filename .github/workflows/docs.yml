@@ -1,3 +1,6 @@
+# Deploy is allowed only in the upstream repo to avoid failures in forks.
+# Forks still run the build (MkDocs) so maintainers can verify docs compile.
+# Preview deploys are skipped for forked PRs (no Pages permissions on GITHUB_TOKEN).
 name: docs
 
 on:
@@ -43,7 +46,7 @@ jobs:
           path: site
 
   deploy-prod:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'danielviktorovich/RimLoc'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -54,7 +57,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   deploy-preview:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.repository == 'danielviktorovich/RimLoc' && github.event.pull_request.head.repo.fork == false
     needs: build
     runs-on: ubuntu-latest
     environment:
