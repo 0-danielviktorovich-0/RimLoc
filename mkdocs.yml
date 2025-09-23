@@ -34,7 +34,6 @@ theme:
 plugins:
   - search
   - i18n:
-      default_language: en
       docs_structure: folder
       reconfigure_material: true
       languages:
@@ -42,7 +41,7 @@ plugins:
           name: English
           default: true
           build: true
-          link: /RimLoc/  
+          link: /RimLoc/
         - locale: ru
           name: Русский
           build: true
@@ -66,6 +65,14 @@ extra:
       link: https://crates.io/crates/rimloc-cli
     - icon: fontawesome/solid/book
       link: https://0-danielviktorovich-0.github.io/RimLoc/
+  # Force correct language links for project pages on GitHub Pages
+  alternate:
+    - name: English
+      link: /RimLoc/
+      lang: en
+    - name: Русский
+      link: /RimLoc/ru/
+      lang: ru
 
 markdown_extensions:
   - admonition
