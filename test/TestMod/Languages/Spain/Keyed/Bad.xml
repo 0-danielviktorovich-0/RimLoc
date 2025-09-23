@@ -1,0 +1,6 @@
+<LanguageData>
+  <DuplicateKey>Hello</DuplicateKey>
+  <DuplicateKey>Hello again</DuplicateKey>
+  <EmptyKey></EmptyKey>
+  <Placeholder>Welcome, {NAME}! You have %d messages.</Placeholder>
+</LanguageData>

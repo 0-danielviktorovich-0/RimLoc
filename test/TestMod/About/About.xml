@@ -1,0 +1,7 @@
+<ModMetaData>
+  <name>Test Mod</name>
+  <packageId>test.mod</packageId>
+  <supportedVersions>
+    <li>1.5</li>
+  </supportedVersions>
+</ModMetaData>
