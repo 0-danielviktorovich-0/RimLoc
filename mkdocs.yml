@@ -1,0 +1,81 @@
+site_name: RimLoc Docs
+site_description: Toolkit for working with RimWorld translations
+site_url: https://0-danielviktorovich-0.github.io/RimLoc/
+repo_url: https://github.com/0-danielviktorovich-0/RimLoc
+repo_name: 0-danielviktorovich-0/RimLoc
+edit_uri: edit/main/docs/
+
+copyright: "© 2025 RimLoc Project"
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.integrate
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+    language: material/translate
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: folder
+      languages:
+        - locale: en
+          name: English
+          build: true
+          default: true
+        - locale: ru
+          name: Русский
+          build: true
+
+nav:
+  - Home: index.md
+  - CLI:
+      - Overview: cli/index.md
+      - Scan: cli/scan.md
+      - Validate: cli/validate.md
+      - Validate PO: cli/validate_po.md
+      - Export/Import: cli/export_import.md
+
+extra:
+  edit_uri: edit/main/docs/
+  alternate:
+    - name: English
+      link: /
+      lang: en
+    - name: Русский
+      link: /ru/
+      lang: ru
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/0-danielviktorovich-0/RimLoc
+    - icon: fontawesome/brands/rust
+      link: https://crates.io/crates/rimloc-cli
+    - icon: fontawesome/solid/book
+      link: https://0-danielviktorovich-0.github.io/RimLoc/
+
+markdown_extensions:
+  - admonition
+  - def_list
+  - footnotes
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
