@@ -8,3 +8,5 @@ edition = "2021"
 serde = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
+csv = "1.3"
+color-eyre = "0.6"

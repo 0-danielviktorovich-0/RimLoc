@@ -1,8 +1,6 @@
 use color_eyre::eyre::{eyre, Result};
 use quick_xml::events::{BytesEnd, BytesStart, Event};
 use quick_xml::Writer;
-use regex::Regex;
-use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
@@ -118,6 +116,36 @@ fn parse_po_string(s: &str) -> Result<String> {
     Ok(out)
 }
 
+/// Group PO entries by relative RimWorld path (e.g., Keyed/_Imported.xml)
+fn group_entries_by_rel_path(
+    entries: Vec<PoEntry>,
+) -> std::collections::HashMap<std::path::PathBuf, Vec<(String, String)>> {
+    use regex::Regex;
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
+    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
+
+    for e in entries {
+        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
+            if let Some(caps) = re.captures(r) {
+                PathBuf::from(&caps[2])
+            } else {
+                PathBuf::from("Keyed/_Imported.xml")
+            }
+        } else {
+            PathBuf::from("Keyed/_Imported.xml")
+        };
+        grouped
+            .entry(rel_subpath)
+            .or_default()
+            .push((e.key, e.value));
+    }
+
+    grouped
+}
+
 /// Сгенерировать LanguageData XML из пар <key, value>.
 pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) -> Result<()> {
     if let Some(parent) = out_path.parent() {
@@ -223,43 +251,16 @@ pub fn rimworld_lang_dir(lang: &str) -> String {
     }
 }
 
-/// Собрать мод-перевод (авто-выбор папки языка по --lang).
-pub fn build_translation_mod(
-    po_path: &Path,
-    out_mod: &Path,
-    lang: &str,
-    mod_name: &str,
+fn write_about_xml(
+    about_xml: &std::path::Path,
     package_id: &str,
+    mod_name: &str,
     rw_version: &str,
 ) -> Result<()> {
-    // 1) читаем po
-    let entries = read_po_entries(po_path)?;
+    use std::fs::File;
+    use std::io::Write;
 
-    // 2) группируем по относительным путям
-    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
-
-    for e in entries {
-        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
-            if let Some(caps) = re.captures(r) {
-                PathBuf::from(&caps[2])
-            } else {
-                PathBuf::from("Keyed/_Imported.xml")
-            }
-        } else {
-            PathBuf::from("Keyed/_Imported.xml")
-        };
-        grouped
-            .entry(rel_subpath)
-            .or_default()
-            .push((e.key, e.value));
-    }
-
-    // 3) About/About.xml
-    let about_dir = out_mod.join("About");
-    fs::create_dir_all(&about_dir)?;
-    let about_xml = about_dir.join("About.xml");
-    let mut f = File::create(&about_xml)?;
+    let mut f = File::create(about_xml)?;
     write!(
         f,
         r#"<ModMetaData>
@@ -273,6 +274,29 @@ pub fn build_translation_mod(
 "#,
         package_id, mod_name, rw_version
     )?;
+    Ok(())
+}
+
+/// Собрать мод-перевод (авто-выбор папки языка по --lang).
+pub fn build_translation_mod(
+    po_path: &Path,
+    out_mod: &Path,
+    lang: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<()> {
+    // 1) читаем po
+    let entries = read_po_entries(po_path)?;
+
+    // 2) группируем по относительным путям
+    let grouped = group_entries_by_rel_path(entries);
+
+    // 3) About/About.xml
+    let about_dir = out_mod.join("About");
+    fs::create_dir_all(&about_dir)?;
+    let about_xml = about_dir.join("About.xml");
+    write_about_xml(&about_xml, package_id, mod_name, rw_version)?;
 
     // 4) имя папки языка
     let lang_dir = rimworld_lang_dir(lang);
@@ -299,43 +323,13 @@ pub fn build_translation_mod_with_langdir(
     let entries = read_po_entries(po_path)?;
 
     // 2) группируем по относительным путям
-    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
-
-    for e in entries {
-        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
-            if let Some(caps) = re.captures(r) {
-                PathBuf::from(&caps[2])
-            } else {
-                PathBuf::from("Keyed/_Imported.xml")
-            }
-        } else {
-            PathBuf::from("Keyed/_Imported.xml")
-        };
-        grouped
-            .entry(rel_subpath)
-            .or_default()
-            .push((e.key, e.value));
-    }
+    let grouped = group_entries_by_rel_path(entries);
 
     // 3) About/About.xml
     let about_dir = out_mod.join("About");
     fs::create_dir_all(&about_dir)?;
     let about_xml = about_dir.join("About.xml");
-    let mut f = File::create(&about_xml)?;
-    write!(
-        f,
-        r#"<ModMetaData>
-  <packageId>{}</packageId>
-  <name>{}</name>
-  <description>Auto-generated translation mod</description>
-  <supportedVersions>
-    <li>{}</li>
-  </supportedVersions>
-</ModMetaData>
-"#,
-        package_id, mod_name, rw_version
-    )?;
+    write_about_xml(&about_xml, package_id, mod_name, rw_version)?;
 
     // 4) записываем файлы в указанную папку lang_dir
     for (rel, items) in grouped {
@@ -371,26 +365,7 @@ pub fn build_translation_mod_dry_run(
 ) -> Result<DryRunPlan> {
     let entries = read_po_entries(po_path)?;
 
-    use regex::Regex;
-    use std::collections::HashMap;
-    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
-
-    for e in entries {
-        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
-            if let Some(caps) = re.captures(r) {
-                PathBuf::from(&caps[2])
-            } else {
-                PathBuf::from("Keyed/_Imported.xml")
-            }
-        } else {
-            PathBuf::from("Keyed/_Imported.xml")
-        };
-        grouped
-            .entry(rel_subpath)
-            .or_default()
-            .push((e.key, e.value));
-    }
+    let grouped = group_entries_by_rel_path(entries);
 
     let mut total_keys = 0usize;
     let mut files = Vec::new();
