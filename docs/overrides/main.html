@@ -2,12 +2,17 @@
 
 {% block extrahead %}
   {{ super() }}
-  {# Inject <link rel="alternate"> for language variants #}
-  {% if config.extra and config.extra.alternate %}
-    {% for alt in config.extra.alternate %}
-      {% if alt.link and alt.lang %}
-<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.link }}" />
+  {# Add <link rel="alternate" hreflang="..."> for SEO/i18n #}
+  {% if page.alternate %}
+    {% set default_lang = config.theme.language | default('en') %}
+    {% for alt in page.alternate %}
+      {% if alt.link %}
+        <link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.link | url }}" />
       {% endif %}
     {% endfor %}
+    {% set default_alt = (page.alternate | selectattr('lang', 'equalto', default_lang) | list | first) %}
+    {% if default_alt and default_alt.link %}
+      <link rel="alternate" hreflang="x-default" href="{{ default_alt.link | url }}" />
+    {% endif %}
   {% endif %}
 {% endblock %}
