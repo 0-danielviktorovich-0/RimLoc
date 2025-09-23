@@ -161,6 +161,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("source_lang_dir", |a| {
                     a.help(tr!("help-scan-source-lang-dir"))
                 });
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-scan-format")));
                 *sc = owned;
             }
             "validate" => {
@@ -171,6 +172,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("source_lang_dir", |a| {
                     a.help(tr!("help-validate-source-lang-dir"))
                 });
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-validate-format")));
                 *sc = owned;
             }
             "validate-po" => {
@@ -178,6 +180,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.about(tr!("help-validatepo-about"));
                 owned = owned.mut_arg("po", |a| a.help(tr!("help-validatepo-po")));
                 owned = owned.mut_arg("strict", |a| a.help(tr!("help-validatepo-strict")));
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-validatepo-format")));
                 *sc = owned;
             }
             "export-po" => {
@@ -227,6 +230,19 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
 }
 
 static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
+const DEFAULT_LOGDIR: &str = "logs";
+
+fn resolve_log_dir() -> std::path::PathBuf {
+    if let Ok(val) = std::env::var("RIMLOC_LOGDIR") {
+        let trimmed = val.trim();
+        if !trimmed.is_empty() {
+            return std::path::PathBuf::from(trimmed);
+        }
+    }
+    std::env::current_dir()
+        .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        .join(DEFAULT_LOGDIR)
+}
 
 #[derive(Parser)]
 #[command(name = "rimloc", version)]
@@ -259,6 +275,9 @@ enum Commands {
         /// Source language folder name (e.g., "English"). Takes precedence.
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Output format: "csv" (default), or "json".
+        #[arg(long, default_value = "csv", value_parser = ["csv", "json"])]
+        format: String,
     },
 
     /// Validate strings and report issues (help localized via FTL).
@@ -271,6 +290,9 @@ enum Commands {
         /// Source language folder name (e.g., "English").
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Output format: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
     },
 
     /// Validate .po placeholder consistency (msgid vs msgstr); help via FTL.
@@ -281,6 +303,9 @@ enum Commands {
         /// Strict mode: return non-zero exit if mismatches are found.
         #[arg(long, default_value_t = false)]
         strict: bool,
+        /// Output format for results: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
     },
 
     /// Export extracted strings to a single .po file (help localized via FTL).
@@ -524,6 +549,7 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                format,
             } => {
                 debug!(event = "scan_args", root = ?root, out_csv = ?out_csv, lang = ?lang);
 
@@ -551,18 +577,43 @@ impl Runnable for Commands {
                     units
                 };
 
-                if let Some(path) = out_csv {
-                    let file = std::fs::File::create(&path)?;
-                    rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
-                    ui_info!("scan-csv-saved", path = path.display().to_string());
-                } else {
-                    // Печатаем CSV в stdout; подсказку выводим в stderr, чтобы не мешать пайплайнам
-                    if std::io::stdout().is_terminal() {
-                        ui_info!("scan-csv-stdout");
+                match format.as_str() {
+                    "csv" => {
+                        if let Some(path) = out_csv {
+                            let file = std::fs::File::create(&path)?;
+                            rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
+                            ui_info!("scan-csv-saved", path = path.display().to_string());
+                        } else {
+                            // Печатаем CSV в stdout; подсказку выводим в stderr, чтобы не мешать пайплайнам
+                            if std::io::stdout().is_terminal() {
+                                ui_info!("scan-csv-stdout");
+                            }
+                            let stdout = std::io::stdout();
+                            let lock = stdout.lock();
+                            rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
+                        }
                     }
-                    let stdout = std::io::stdout();
-                    let lock = stdout.lock();
-                    rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
+                    "json" => {
+                        #[derive(serde::Serialize)]
+                        struct JsonUnit<'a> {
+                            path: String,
+                            line: Option<usize>,
+                            key: &'a str,
+                            value: Option<&'a str>,
+                        }
+                        let items: Vec<JsonUnit> = units
+                            .iter()
+                            .map(|u| JsonUnit {
+                                path: u.path.display().to_string(),
+                                line: u.line,
+                                key: u.key.as_str(),
+                                value: u.source.as_deref(),
+                            })
+                            .collect();
+                        // Всегда печатаем JSON в stdout; игнорируем --out-csv
+                        serde_json::to_writer(std::io::stdout().lock(), &items)?;
+                    }
+                    _ => unreachable!(),
                 }
                 Ok(())
             }
@@ -571,6 +622,7 @@ impl Runnable for Commands {
                 root,
                 source_lang,
                 source_lang_dir,
+                format,
             } => {
                 debug!(event = "validate_args", root = ?root);
 
@@ -587,6 +639,28 @@ impl Runnable for Commands {
                 }
 
                 let msgs = validate(&units)?;
+                if format == "json" {
+                    #[derive(serde::Serialize)]
+                    struct JsonMsg<'a> {
+                        kind: &'a str,
+                        key: &'a str,
+                        path: &'a str,
+                        line: Option<usize>,
+                        message: &'a str,
+                    }
+                    let items: Vec<JsonMsg> = msgs
+                        .iter()
+                        .map(|m| JsonMsg {
+                            kind: m.kind.as_str(),
+                            key: m.key.as_str(),
+                            path: m.path.as_str(),
+                            line: m.line,
+                            message: m.message.as_str(),
+                        })
+                        .collect();
+                    serde_json::to_writer(std::io::stdout().lock(), &items)?;
+                    return Ok(());
+                }
                 if msgs.is_empty() {
                     ui_ok!("validate-clean");
                 } else {
@@ -608,22 +682,12 @@ impl Runnable for Commands {
                                 "placeholder-check" => "ℹ",
                                 _ => "•",
                             };
-                            let kind_label = match m.kind.as_str() {
-                                "duplicate" => tr!("kind-duplicate"),
-                                "empty" => tr!("kind-empty"),
-                                "placeholder-check" => tr!("kind-placeholder-check"),
-                                _ => m.kind.as_str().into(),
-                            };
-                            let colored_kind: String = match m.kind.as_str() {
-                                "duplicate" => format!("{}", kind_label.yellow()),
-                                "empty" => format!("{}", kind_label.red()),
-                                "placeholder-check" => format!("{}", kind_label.cyan()),
-                                _ => format!("{}", kind_label.white()),
-                            };
+                            // Plain ASCII token for tests (no ANSI inside brackets)
+                            let plain_kind_token = m.kind.as_str();
                             println!(
                                 "{} [{}] {} ({}:{}) — {}",
                                 tag,
-                                colored_kind,
+                                plain_kind_token,
                                 m.key.green(),
                                 m.path.blue(),
                                 m.line.unwrap_or(0).to_string().magenta(),
@@ -635,7 +699,7 @@ impl Runnable for Commands {
                 Ok(())
             }
 
-            Commands::ValidatePo { po, strict } => {
+            Commands::ValidatePo { po, strict, format } => {
                 debug!(event = "validate_po_args", po = ?po, strict = strict);
 
                 let entries = parse_po_basic(&po)?;
@@ -660,6 +724,33 @@ impl Runnable for Commands {
                     }
                 }
 
+                if format == "json" {
+                    #[derive(serde::Serialize)]
+                    struct PoMismatch<'a> {
+                        context: Option<&'a str>,
+                        reference: Option<&'a str>,
+                        msgid: &'a str,
+                        msgstr: &'a str,
+                        expected_placeholders: Vec<String>,
+                        got_placeholders: Vec<String>,
+                    }
+                    let items: Vec<PoMismatch> = mismatches
+                        .iter()
+                        .map(|(ctx, reference, id, strv, src_ph, dst_ph)| PoMismatch {
+                            context: ctx.as_deref(),
+                            reference: reference.as_deref(),
+                            msgid: id.as_str(),
+                            msgstr: strv.as_str(),
+                            expected_placeholders: src_ph.iter().cloned().collect(),
+                            got_placeholders: dst_ph.iter().cloned().collect(),
+                        })
+                        .collect();
+                    serde_json::to_writer(std::io::stdout().lock(), &items)?;
+                    if strict && !items.is_empty() {
+                        color_eyre::eyre::bail!(tr!("validate-po-error"));
+                    }
+                    return Ok(());
+                }
                 if mismatches.is_empty() {
                     if use_color {
                         use owo_colors::OwoColorize;
@@ -985,11 +1076,12 @@ impl Runnable for Commands {
 fn init_tracing() {
     use std::fs;
 
+    let log_dir: String = std::env::var("RIMLOC_LOG_DIR").unwrap_or_else(|_| "logs".to_string());
     // гарантируем, что каталог есть
-    let _ = fs::create_dir_all("logs");
+    let _ = fs::create_dir_all(&log_dir);
 
     // Лог в файл (daily rotation в logs/rimloc.log) — всегда DEBUG и выше
-    let file_appender = tracing_appender::rolling::daily("logs", "rimloc.log");
+    let file_appender = tracing_appender::rolling::daily(&log_dir, "rimloc.log");
     let (file_writer, guard) = tracing_appender::non_blocking(file_appender);
     // держим guard живым до завершения процесса
     let _ = LOG_GUARD.set(guard);
@@ -997,7 +1089,7 @@ fn init_tracing() {
     // Лог в консоль — уровень управляем через RUST_LOG (по умолчанию INFO)
     let console_layer = fmt::layer()
         .with_target(false)
-        .with_writer(std::io::stdout)
+        .with_writer(std::io::stderr)
         .with_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")));
 
     // Лог в файл — фиксированно DEBUG
@@ -1016,20 +1108,36 @@ fn init_tracing() {
 
 fn main() -> Result<()> {
     color_eyre::config::HookBuilder::default()
-        .capture_span_trace_by_default(true) // писать span-трассу в отчёты об ошибках
+        .capture_span_trace_by_default(true)
         .install()?;
 
     init_tracing();
     init_i18n();
 
-    // Избегаем временного значения в аргументах макроса (E0716)
-    let rustlog: String = std::env::var("RUST_LOG").unwrap_or_else(|_| "None".to_string());
-
     // Pre-read --ui-lang from raw args so that help can be localized
     let pre_ui_lang = pre_scan_ui_lang();
     set_ui_lang(pre_ui_lang.as_deref());
 
-    info!(event = "app_started", version = env!("CARGO_PKG_VERSION"), logdir = "logs/", rustlog = %rustlog);
+    // --- Startup banner (должен быть только один раз!) ---
+    let version = env!("CARGO_PKG_VERSION");
+    let rustlog = std::env::var("RUST_LOG").unwrap_or_else(|_| "None".to_string());
+    let rustlog_ref = rustlog.as_str();
+    let logdir = resolve_log_dir();
+
+    ui_out!(
+        "app-started",
+        version = version,
+        logdir = resolve_log_dir().display().to_string(),
+        rustlog = rustlog_ref
+    );
+
+    info!(
+        event = "app_started",
+        version = version,
+        logdir = %logdir.display(),
+        rustlog = %rustlog
+    );
+    // --- End of startup banner ---
 
     // Build localized clap::Command and parse
     let mut cmd = <Cli as clap::CommandFactory>::command();
