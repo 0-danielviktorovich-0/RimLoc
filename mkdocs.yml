@@ -35,6 +35,7 @@ plugins:
   - search
   - i18n:
       docs_structure: folder
+      reconfigure_material: true
       languages:
         - locale: en
           name: English
@@ -55,13 +56,6 @@ nav:
 
 extra:
   edit_uri: edit/main/docs/
-  alternate:
-    - name: English
-      link: .
-      lang: en
-    - name: Русский
-      link: ru/
-      lang: ru
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/0-danielviktorovich-0/RimLoc
