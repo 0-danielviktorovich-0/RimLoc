@@ -8,6 +8,7 @@ copyright: "© 2025 RimLoc Project"
 
 theme:
   name: material
+  custom_dir: docs/overrides
   language: en
   features:
     - navigation.sections
@@ -62,6 +63,14 @@ extra:
       link: https://crates.io/crates/rimloc-cli
     - icon: fontawesome/solid/book
       link: https://0-danielviktorovich-0.github.io/RimLoc/
+  # Explicit alternate links for search engines and UAs
+  alternate:
+    - name: English
+      link: https://0-danielviktorovich-0.github.io/RimLoc/
+      lang: en
+    - name: Русский
+      link: https://0-danielviktorovich-0.github.io/RimLoc/ru/
+      lang: ru
 
 markdown_extensions:
   - admonition
