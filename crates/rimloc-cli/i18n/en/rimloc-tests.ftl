@@ -75,3 +75,5 @@ test-fallback-locale-expected =
     ```
     { $stdout }
     ```
+# === startup ===
+test-startup-text-must-appear = startup text must appear for { $loc }
