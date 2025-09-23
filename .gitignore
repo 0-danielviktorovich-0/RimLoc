@@ -1,9 +1,11 @@
 .DS_Store
+.venv
+
 
 # Rust build artifacts
 /target
 
 # Files for testing functionality
-/test
 /logs
 /crates/rimloc-cli/logs/
+/site/

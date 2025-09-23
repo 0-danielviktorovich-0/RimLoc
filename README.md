@@ -1,126 +1,47 @@
-
-
 # RimLoc
 
-Toolkit for working with RimWorld translations.
+[English](README.md) | [Русский](docs/readme/README.ru.md)
 
-**What it does**
+[![Build](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml) [![Crates.io](https://img.shields.io/crates/v/rimloc)](https://crates.io/crates/rimloc) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](LICENSE)
 
-- Scan RimWorld XML (`Keyed/DefInjected`) and produce translation units.
-- Validate translations: duplicate keys, empty strings, placeholder mismatches, etc.
-- Export translations to **PO** / **CSV**.
-- Import translations from **PO** into a target mod (supports a dry‑run preview).
-- All CLI output is localized via **Fluent**; resources are embedded with **rust-embed**.
+RimLoc is a Rust-based toolkit for RimWorld localization and mod translation management.  
+It helps modders scan XML, validate translation quality, and export/import to PO/CSV across Linux, macOS, and Windows.
 
----
-
-## Quick start
+## Installation
 
 ```bash
-# Build the CLI
-cargo build -p rimloc-cli
-
-# See available commands
-cargo run -p rimloc-cli -- --help
+cargo install rimloc-cli
 ```
 
-### Typical commands
+## Features
 
-```bash
-# Scan XML and print CSV to stdout
-cargo run -p rimloc-cli -- scan --xml-root ./test/TestMod
+- Scan RimWorld XML and extract translation units  
+- Validate duplicates, empty strings, placeholders  
+- Export/Import to PO / CSV  
+- CLI localized with Fluent (English + Russian)  
 
-# Validate a mod's XML (shows categories like duplicate/empty/placeholder-check)
-cargo run -p rimloc-cli -- validate --xml-root ./test/TestMod
-
-# Export PO from XML
-cargo run -p rimloc-cli -- export-po --xml-root ./test/TestMod --out ./test/out.po
-
-# Import PO into a target mod (dry run)
-cargo run -p rimloc-cli -- import-po --po ./test/ok.po --target ./test/TestMod --dry-run
-```
-
-### UI language
-
-CLI messages are localized with **Fluent** and bundled in the binary.
-
-- Default locale: auto-detected from the OS.
-- Override for the current run:
-  ```bash
-  RIMLOC_UI_LANG=en cargo run -p rimloc-cli -- --help
-  ```
-- If your terminal has issues with ANSI/emoji, you can disable colors:
-  ```bash
-  cargo run -p rimloc-cli -- --no-color --help
-  ```
-
----
-
-## i18n stack (what’s used)
-
-- **Fluent** (`.ftl`) – message format and grammar.
-- **i18n-embed** + **i18n-embed-fl** – runtime loading and the `fl!` macro.
-- **rust-embed** – embeds `.ftl` files into the CLI binary.
-- Tests ensure:
-  - All locales have the same keys and order as `en`.
-  - No user-facing strings are hardcoded in the codebase (even in tests).
-  - CLI help and diagnostics are localized.
-
-Translation resources live in:
+## Example
 
 ```
-crates/rimloc-cli/i18n/<lang>/rimloc.ftl
-crates/rimloc-cli/i18n/<lang>/rimloc-tests.ftl
+rimloc-cli scan --root ./TestMod
 ```
 
----
+### Demo (asciinema)
 
-## Development
+[![asciicast](https://asciinema.org/a/your-demo-id.svg)](https://asciinema.org/a/your-demo-id)
 
-Requirements: latest stable Rust toolchain.
+### Screenshot
 
-Format, lint, run tests:
+![CLI validation example](docs/readme/demo-validation.png)
 
-```bash
-cargo fmt --all
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test -p rimloc-cli --test cli_integration
-```
+<!-- TODO: Add screenshot or asciinema demo of CLI output once available -->
 
-Useful one‑offs:
+## Documentation
 
-```bash
-# Run a single integration test with output
-cargo test -p rimloc-cli --test cli_integration -- --nocapture validate_detects_issues_in_bad_xml
-```
-
-**Policy:** Any code that prints or otherwise shows messages to the user **must** go through i18n keys (Fluent). No hardcoded user strings.
-
----
-
-## Repository layout (excerpt)
-
-```
-crates/
-  rimloc-cli/         # CLI binary with i18n resources
-  rimloc-core/        # core types & helpers reused across crates
-  rimloc-parsers-xml/ # XML parsing utilities
-  rimloc-export-po/   # PO export
-  rimloc-export-csv/  # CSV export
-  rimloc-import-po/   # PO import
-  rimloc-validate/    # validation logic reused by CLI
-test/                 # sample XML/PO data used by tests
-gui/                  # placeholder for future Tauri GUI
-```
-
----
-
-## Contributing
-
-PRs are welcome. Please keep i18n rules intact (no hardcoded UI strings), and run `fmt`, `clippy`, and tests before submitting.
+👉 Full docs: [RimLoc Docs](https://0-danielviktorovich-0.github.io/RimLoc/)
 
 ---
 
 ## License
 
-GNU GPL — see `LICENSE`.
+GNU GPL — see [LICENSE](LICENSE).
