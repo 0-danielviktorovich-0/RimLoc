@@ -4,7 +4,6 @@ version = "0.2.0"
 edition = "2021"
 build = "build.rs"
 
-
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
@@ -28,11 +27,27 @@ i18n-embed-fl = "0.10"
 unic-langid = "0.9"
 rust-embed = { version = "8.7", features = ["include-exclude"] }
 
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.10"
 once_cell = "1.19"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [build-dependencies]
 cargo-emit = "0.2"
+
+[package.metadata.i18n]
+# This section documents the i18n workflow for contributors.
+# It is not used by the compiler; it’s here for easy discovery.
+readme_notes = """
+RimLoc uses the Fluent + i18n-embed + rust-embed stack.
+- Translations live under `i18n/{lang}/rimloc.ftl` (and `rimloc-tests.ftl` for tests).
+- Add new messages by adding Fluent keys; keep `en` as the source of truth.
+- Run `cargo i18n` (if installed) to validate structure.
+- Binary embeds all FTL files at build time via rust-embed.
+"""

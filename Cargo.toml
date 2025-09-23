@@ -1,21 +1,19 @@
 [workspace]
 resolver = "2"
 members = [
-"crates/rimloc-core",
-"crates/rimloc-parsers-xml",
-"crates/rimloc-export-csv",
-"crates/rimloc-export-po",
-"crates/rimloc-cli",
-"crates/rimloc-validate",
-"crates/rimloc-import-po",
+    "crates/rimloc-core",
+    "crates/rimloc-parsers-xml",
+    "crates/rimloc-export-csv",
+    "crates/rimloc-export-po",
+    "crates/rimloc-cli",
+    "crates/rimloc-validate",
+    "crates/rimloc-import-po",
 ]
-
 
 [workspace.package]
 edition = "2021"
 license = "GNU GPL"
 authors = ["Daniel Viktorovich"]
-
 
 [workspace.dependencies]
 anyhow = "1"
@@ -31,4 +29,3 @@ color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2"
-

@@ -1,9 +1,19 @@
+# i18n configuration for cargo-i18n / i18n-config
+#
+# Runtime loading is handled via i18n-embed + rust-embed in the binary,
+# while this file informs tooling (e.g., `cargo i18n`) about where Fluent
+# resources live and which language to use as a fallback.
+
 fallback_language = "en"
 
 [fluent]
-# Папка с ресурсами Fluent
+# Directory that contains per-locale subfolders with one or more `.ftl` files.
 assets_dir = "i18n"
-# Языки, которые реально есть в проекте
+
+# The languages we ship in-tree.
 available_languages = ["en", "ru"]
-# Имя домена соответствует имени файлов .ftl (rimloc.ftl → rimloc)
+
+# Main domain used by the CLI for user-visible messages (rimloc.ftl -> "rimloc").
+# NOTE: test-specific messages may live in `rimloc-tests.ftl`. Those are consumed
+# by tests and do not need to be declared here as a separate domain.
 domain = "rimloc"
