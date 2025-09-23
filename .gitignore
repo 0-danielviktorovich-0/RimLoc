@@ -1,11 +1,46 @@
-.DS_Store
-.venv
+# === Rust / Cargo ===
+/target/
+**/*.rs.bk
+*.pdb
 
-
-# Rust build artifacts
-/target
-
-# Files for testing functionality
-/logs
+# === Logs ===
+/logs/
 /crates/rimloc-cli/logs/
+/*.log
+*.log.*
+
+# === Test sandboxes (генерятся тестами, хранить не нужно) ===
+test/*
+!test/*.po
+!test/**/*.xml
+
+# exclude only generated artifacts
+test/out.po
+test/*_debug.po
+test/RussianTranslation/
+test/TestMod/Russian/
+
+# === IDE / Editor ===
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*.tmp
+
+# === OS junk ===
+.DS_Store
+Thumbs.db
+
+# === Python venv ===
+.venv/
+
+# === Documentation builds ===
 /site/
+/docs_build/
+/mkdocs_build/
+/*.html
+
+# === Diff/debug helpers ===
+/staged.diff
+/unstaged.diff
