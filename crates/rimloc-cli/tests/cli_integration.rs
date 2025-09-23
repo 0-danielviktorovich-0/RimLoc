@@ -8,12 +8,6 @@ include!(concat!(env!("OUT_DIR"), "/supported_locales.rs"));
 mod helpers;
 use helpers::*;
 
-// clippy: factor complex tuple types
-type Paths = Vec<String>;
-type Lines = Vec<String>;
-type ArgMismatchEntry = (String, BTreeSet<String>, BTreeSet<String>);
-type DiffResult = (Paths, Lines, Vec<ArgMismatchEntry>);
-
 mod tests_i18n;
 
 /// Macro for test i18n lookups with named args: ti18n!("key", name = expr, ...)
@@ -71,9 +65,13 @@ fn help_works() {
             .unwrap_or_else(|| panic!("{}", ti18n!("test-help-about-key-required")));
 
         let out = run_ok(&["--ui-lang", lang, "--help"]);
-        assert_contains_with_context(
+        let ftl_path = i18n_dir.join(lang).join("rimloc.ftl");
+        assert_has!(
             &out.stdout,
             &expected,
+            &ftl_path,
+            lang,
+            "help-about",
             &ti18n!("test-help-about-must-be-localized", lang = lang),
         );
     }
@@ -86,7 +84,14 @@ fn scan_outputs_csv_header() {
     let assert = cmd.assert().success();
     // Проверяем только заголовок CSV — он не локализуется
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    assert_contains_with_context(&out, "key,source,path,line", &ti18n!("test-csv-header"));
+    assert_has!(
+        &out,
+        "key,source,path,line",
+        std::path::Path::new("n/a"),
+        CTX_NONE,
+        "csv-header",
+        &ti18n!("test-csv-header"),
+    );
 }
 
 #[test]
@@ -102,8 +107,11 @@ fn export_po_creates_file() {
 
     cmd.assert().success();
 
-    let meta = fs::metadata(&out_po).expect(&ti18n!("test-outpo-exist"));
-    assert!(meta.len() > 0, "{}", ti18n!("test-outpo-not-empty"));
+    assert_file_nonempty(
+        &out_po,
+        &ti18n!("test-outpo-not-empty"),
+        "out-po-nonempty",
+    );
 }
 
 #[test]
@@ -130,67 +138,49 @@ fn validate_detects_issues_in_bad_xml() {
     // Capture output to count categories
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let bad_xml_en = fixture("test/TestMod/Languages/English/Keyed/Bad.xml");
 
-    // High-level category presence (user-facing labels)
-    assert!(
-        out.contains("[duplicate]"),
-        "{}",
-        ti18n!("test-validate-dup-category")
-    );
-    assert!(
-        out.contains("[empty]"),
-        "{}",
-        ti18n!("test-validate-empty-category")
-    );
-    assert!(
-        out.contains("[placeholder-check]"),
-        "{}",
-        ti18n!("test-validate-ph-category")
+    assert_all_present(
+        &out,
+        &[
+            ("[duplicate]", bad_xml_en.as_path(), "DuplicateKey"),
+            ("[empty]", bad_xml_en.as_path(), "EmptyKey"),
+            ("[placeholder-check]", bad_xml_en.as_path(), "Placeholder"),
+            ("DuplicateKey", bad_xml_en.as_path(), "DuplicateKey"),
+            ("EmptyKey", bad_xml_en.as_path(), "EmptyKey"),
+            ("Placeholder", bad_xml_en.as_path(), "Placeholder"),
+        ],
+        CTX_NONE,
+        &ti18n!("test-validate-badxml"),
     );
 
-    // Specific validator item names present
-    assert!(
-        out.contains("DuplicateKey"),
-        "{}",
-        ti18n!("test-validate-dup-items")
+    // At least one occurrence of each category (rich diagnostics)
+    assert_count_at_least(
+        &out,
+        "[duplicate]",
+        1,
+        &ti18n!("test-validate-atleast-duplicates", min = 1, count = out.matches("[duplicate]").count()),
+        CTX_NONE,
+        bad_xml_en.as_path(),
+        "category-[duplicate]",
     );
-    assert!(
-        out.contains("EmptyKey"),
-        "{}",
-        ti18n!("test-validate-empty-items")
+    assert_count_at_least(
+        &out,
+        "[empty]",
+        1,
+        &ti18n!("test-validate-atleast-empty", min = 1, count = out.matches("[empty]").count()),
+        CTX_NONE,
+        bad_xml_en.as_path(),
+        "category-[empty]",
     );
-    assert!(
-        out.contains("Placeholder"),
-        "{}",
-        ti18n!("test-validate-ph-items")
-    );
-
-    // At least one occurrence of each category
-    let dup_count = out.matches("[duplicate]").count();
-    let empty_count = out.matches("[empty]").count();
-    let ph_count = out.matches("[placeholder-check]").count();
-    assert!(
-        dup_count >= 1,
-        "{}",
-        ti18n!(
-            "test-validate-atleast-duplicates",
-            min = 1,
-            count = dup_count
-        )
-    );
-    assert!(
-        empty_count >= 1,
-        "{}",
-        ti18n!("test-validate-atleast-empty", min = 1, count = empty_count)
-    );
-    assert!(
-        ph_count >= 1,
-        "{}",
-        ti18n!(
-            "test-validate-atleast-placeholder",
-            min = 1,
-            count = ph_count
-        )
+    assert_count_at_least(
+        &out,
+        "[placeholder-check]",
+        1,
+        &ti18n!("test-validate-atleast-placeholder", min = 1, count = out.matches("[placeholder-check]").count()),
+        CTX_NONE,
+        bad_xml_en.as_path(),
+        "category-[placeholder-check]",
     );
 }
 
@@ -207,18 +197,41 @@ fn import_po_requires_target() {
 
     let assert = cmd.assert().failure();
     let stderr = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
+    // use std::path::Path;  // <-- REMOVE this line
+    let ftl_path_en = i18n_dir.join("en").join("rimloc.ftl");
 
-    let fell_back = stderr.contains(&expected_en)
-        || expected_ru
-            .as_ref()
-            .map(|s| stderr.contains(s))
-            .unwrap_or(false);
-
-    assert!(
-        fell_back,
-        "{}",
-        ti18n!("test-fallback-locale-expected", stdout = &stderr)
-    );
+    if stderr.contains(&expected_en) {
+        assert_contains_in_outputs(
+            "",
+            &stderr,
+            &expected_en,
+            &ti18n!("test-fallback-locale-expected", stdout = &stderr),
+            "en",
+            &ftl_path_en,
+            "import-need-target",
+        );
+    } else if let Some(expected_ru) = expected_ru.as_ref() {
+        let ftl_path_ru = i18n_dir.join("ru").join("rimloc.ftl");
+        assert_contains_in_outputs(
+            "",
+            &stderr,
+            expected_ru,
+            &ti18n!("test-fallback-locale-expected", stdout = &stderr),
+            "ru",
+            &ftl_path_ru,
+            "import-need-target",
+        );
+    } else {
+        assert_contains_in_outputs(
+            "",
+            &stderr,
+            &expected_en,
+            &ti18n!("test-fallback-locale-expected", stdout = &stderr),
+            "en",
+            &ftl_path_en,
+            "import-need-target",
+        );
+    }
 }
 
 #[test]
@@ -238,9 +251,18 @@ fn import_error_in_english_when_ui_lang_en() {
     let expected_en = read_ftl_message(&i18n_dir, "en", "import-need-target")
         .expect("FTL(en) must contain `import-need-target`");
 
-    cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains(&expected_en));
+    let assert = cmd.assert().failure();
+    let stderr = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
+    let ftl_path_en = i18n_dir.join("en").join("rimloc.ftl");
+    assert_contains_in_outputs(
+        "",
+        &stderr,
+        &expected_en,
+        &ti18n!("test-import-error-en"),
+        "en",
+        &ftl_path_en,
+        "import-need-target",
+    );
 }
 #[test]
 fn validate_po_ok() {
@@ -249,9 +271,16 @@ fn validate_po_ok() {
         .arg(fixture("test/ok.po"))
         .args(["--ui-lang", "en"]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Placeholders OK"));
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let ok_po = fixture("test/ok.po");
+    assert_contains_file(
+        &out,
+        "Placeholders OK",
+        &ti18n!("test-validate-po-ok"),
+        ok_po.as_path(),
+        "validate-po-ok",
+    );
 }
 
 #[test]
@@ -262,9 +291,16 @@ fn validate_po_strict_mismatch() {
         .arg("--strict")
         .args(["--ui-lang", "en"]);
 
-    cmd.assert()
-        .failure()
-        .stdout(predicate::str::contains("Total mismatches"));
+    let assert = cmd.assert().failure();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let po_path = fixture("test/bad.po");
+    assert_contains_file(
+        &out,
+        "Total mismatches",
+        &ti18n!("test-validate-po-strict"),
+        po_path.as_path(),
+        "validate-po-mismatch",
+    );
 }
 
 #[test]
@@ -281,14 +317,15 @@ fn import_single_file_dry_run_path() {
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
     let err = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
     let combined = format!("{}{}", out, err);
-    assert!(
-        combined.contains("Languages/Russian/Keyed/_Imported.xml"),
-        "{}",
-        ti18n!(
-            "test-importpo-expected-path-not-found",
-            out = out,
-            err = err
-        )
+    // use std::path::Path;
+    let expected_rel = "Languages/Russian/Keyed/_Imported.xml";
+    let expected_abs = fixture("test/TestMod").join(expected_rel);
+    assert_contains_file(
+        &combined,
+        expected_rel,
+        &ti18n!("test-importpo-expected-path-not-found", out = out, err = err),
+        expected_abs.as_path(),
+        "import-single-file",
     );
 }
 
@@ -306,10 +343,25 @@ fn build_mod_dry_run_prints_header() {
         .arg("--dry-run")
         .args(["--ui-lang", "en"]);
 
-    cmd.assert()
-        .success()
-        // locale-agnostic token present in all languages, accept both DRY-RUN and DRY RUN
-        .stdout(predicate::str::contains("DRY-RUN").or(predicate::str::contains("DRY RUN")));
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    if out.contains("DRY-RUN") {
+        assert_contains_file(
+            &out,
+            "DRY-RUN",
+            &ti18n!("test-build-header"),
+            out_mod.as_path(),
+            "dry-run-would-write",
+        );
+    } else {
+        assert_contains_file(
+            &out,
+            "DRY RUN",
+            &ti18n!("test-build-header"),
+            out_mod.as_path(),
+            "dry-run-would-write",
+        );
+    }
 }
 
 #[test]
@@ -330,55 +382,36 @@ fn build_mod_creates_minimal_structure() {
 
     // Проверяем, что созданы ключевые файлы структуры мода
     let about = out_mod.join("About/About.xml");
-    assert!(
-        about.exists(),
-        "{}",
-        ti18n!("test-build-path-must-exist", path = "About/About.xml")
+    assert_path_exists(
+        about.as_path(),
+        &ti18n!("test-build-path-must-exist", path = "About/About.xml"),
+        "about-path",
     );
 
     let keyed_any = out_mod.join("Languages/Russian/Keyed");
-    assert!(
-        keyed_any.exists(),
-        "{}",
-        ti18n!(
-            "test-build-folder-must-exist",
-            path = "Languages/Russian/Keyed"
-        )
+    assert_path_exists(
+        keyed_any.as_path(),
+        &ti18n!("test-build-folder-must-exist", path = "Languages/Russian/Keyed"),
+        "keyed-folder",
     );
 
-    // Должен появиться хотя бы один XML (в нашем фикстуре — _Imported.xml или Bad.xml)
-    let has_any_xml = std::fs::read_dir(&keyed_any)
-        .ok()
-        .map(|rd| {
-            rd.flatten()
-                .any(|e| e.path().extension().map(|s| s == "xml").unwrap_or(false))
-        })
-        .unwrap_or(false);
-    assert!(
-        has_any_xml,
-        "{}",
-        ti18n!("test-build-xml-under-path", path = "Keyed/")
+    // Должен появиться хотя бы один XML под Keyed/
+    assert_dir_contains_xml(
+        keyed_any.as_path(),
+        &ti18n!("test-build-xml-under-path", path = "Keyed/"),
+        "build-xml-under-path",
     );
 
     // Validate content of About/About.xml includes expected metadata
     let about_content = fs::read_to_string(&about).expect(&ti18n!("test-build-about-readable"));
-    assert!(
-        about_content.contains("<name>RimLoc Translation</name>"),
-        "{}",
-        ti18n!(
-            "test-build-contain-tag",
-            path = "About/About.xml",
-            tag = "<name>"
-        )
-    );
-    assert!(
-        about_content.contains("<packageId>yourname.rimloc.translation</packageId>"),
-        "{}",
-        ti18n!(
-            "test-build-contain-tag",
-            path = "About/About.xml",
-            tag = "<packageId>"
-        )
+    assert_all_present(
+        &about_content,
+        &[
+            ("<name>RimLoc Translation</name>", about.as_path(), "about-name-tag"),
+            ("<packageId>yourname.rimloc.translation</packageId>", about.as_path(), "about-packageId-tag"),
+        ],
+        CTX_NONE,
+        &ti18n!("test-build-about-tags"),
     );
 }
 
@@ -405,7 +438,22 @@ fn supported_locales_startup_message_matches() {
         // expected localized fragment from FTL (fallback to en)
         let expected = read_ftl_message(&i18n_dir, &loc, "app-started")
             .or_else(|| read_ftl_message(&i18n_dir, "en", "app-started"))
-            .unwrap_or_else(|| panic!("{}", ti18n!("test-app-started-key-required")));
+            .unwrap_or_else(|| {
+                let ftl_path_en = i18n_dir.join("en").join("rimloc.ftl");
+                let ftl_path_ru = i18n_dir.join("ru").join("rimloc.ftl");
+                assert_ftl_key_present_all(
+                    &[("en", &ftl_path_en), ("ru", &ftl_path_ru)],
+                    "app-started",
+                );
+                panic!("{}", ti18n!("test-app-started-key-required"));
+            });
+
+        // Derive a tolerant snippet: take text before the first bullet "•" or before the first placeholder "{".
+        let expected_snip = {
+            let s = &expected;
+            let cut_at = s.find('•').or_else(|| s.find('{')).unwrap_or(s.len());
+            s[..cut_at].trim().to_string()
+        };
 
         let mut cmd = bin_cmd();
         // global flags first, then a simple subcommand to produce startup output
@@ -416,10 +464,14 @@ fn supported_locales_startup_message_matches() {
         let assert = cmd.assert().success();
         let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
         let clean = strip_ansi(&out);
-        if !(clean.contains("app_started") || clean.contains(&expected)) {
-            assert_contains_with_context(
+        if !(clean.contains("app_started") || clean.contains(&expected) || clean.contains(&expected_snip)) {
+            let ftl_path = i18n_dir.join(&loc).join("rimloc.ftl");
+            assert_has!(
                 &out,
-                &expected,
+                &expected_snip,
+                &ftl_path,
+                &loc,
+                "app-started",
                 &ti18n!("test-startup-text-must-appear", loc = &loc),
             );
         }
@@ -500,30 +552,6 @@ fn section_for_key(key: &str) -> &'static str {
     "misc"
 }
 
-fn diff_locale_maps(
-    en: &std::collections::BTreeMap<String, String>,
-    other: &std::collections::BTreeMap<String, String>,
-) -> DiffResult {
-    let en_keys: BTreeSet<_> = en.keys().cloned().collect();
-    let other_keys: BTreeSet<_> = other.keys().cloned().collect();
-
-    let missing: Paths = en_keys.difference(&other_keys).cloned().collect();
-    let extra: Lines = other_keys.difference(&en_keys).cloned().collect();
-
-    // Parameter set mismatches on common keys
-    let common: Vec<_> = en_keys.intersection(&other_keys).cloned().collect();
-    let mut arg_mismatches: Vec<ArgMismatchEntry> = Vec::new();
-    for k in common {
-        let en_vars = extract_fluent_vars(en.get(&k).unwrap());
-        let ot_vars = extract_fluent_vars(other.get(&k).unwrap());
-        if en_vars != ot_vars {
-            arg_mismatches.push((k, en_vars, ot_vars));
-        }
-    }
-
-    (missing, extra, arg_mismatches)
-}
-
 /// Load FTL as key -> value map (trims both sides around '=')
 fn load_ftl_map(locale: &str) -> std::collections::BTreeMap<String, String> {
     // Собираем ключи из всех .ftl, пользуясь нашим кэшем
@@ -535,7 +563,7 @@ fn load_ftl_map(locale: &str) -> std::collections::BTreeMap<String, String> {
 fn all_locales_have_same_keys() {
     let locales_dir = workspace_root().join("crates/rimloc-cli/i18n");
     let mut locales = vec![];
-    if let Ok(rd) = fs::read_dir(locales_dir) {
+    if let Ok(rd) = fs::read_dir(&locales_dir) {
         for e in rd.flatten() {
             if e.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 locales.push(e.file_name().to_string_lossy().to_string());
@@ -550,63 +578,21 @@ fn all_locales_have_same_keys() {
     );
 
     let reference = load_ftl_map("en");
-
     for loc in locales {
-        if loc == "en" {
-            continue;
-        }
+        if loc == "en" { continue; }
         let map = load_ftl_map(&loc);
-        let (missing, extra, arg_mismatches) = diff_locale_maps(&reference, &map);
+        // путь к FTL — для контекста в падении
+        let ftl_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("i18n").join(&loc).join("rimloc.ftl");
 
-        if !missing.is_empty() || !extra.is_empty() || !arg_mismatches.is_empty() {
-            let mut msg = String::new();
-            msg.push_str(&format!("Locale {} has issues:\n", loc));
-            if !missing.is_empty() {
-                use std::collections::BTreeMap;
-                let mut by_sec: BTreeMap<&str, Vec<&String>> = BTreeMap::new();
-                for k in &missing {
-                    by_sec.entry(section_for_key(k)).or_default().push(k);
-                }
-                msg.push_str(&format!("  • Missing keys ({} total):\n", missing.len()));
-                for (sec, items) in by_sec {
-                    msg.push_str(&format!(
-                        "    - in section {} ({}): {:?}\n",
-                        sec,
-                        items.len(),
-                        items
-                    ));
-                }
-            }
-            if !extra.is_empty() {
-                use std::collections::BTreeMap;
-                let mut by_sec: BTreeMap<&str, Vec<&String>> = BTreeMap::new();
-                for k in &extra {
-                    by_sec.entry(section_for_key(k)).or_default().push(k);
-                }
-                msg.push_str(&format!("  • Extra keys ({} total):\n", extra.len()));
-                for (sec, items) in by_sec {
-                    msg.push_str(&format!(
-                        "    - in section {} ({}): {:?}\n",
-                        sec,
-                        items.len(),
-                        items
-                    ));
-                }
-            }
-            if !arg_mismatches.is_empty() {
-                msg.push_str(&format!(
-                    "  • Keys with argument set mismatch ({}):\n",
-                    arg_mismatches.len()
-                ));
-                for (k, en_vars, ot_vars) in arg_mismatches {
-                    msg.push_str(&format!(
-                        "    - {}\n      en: {:?}\n      {}: {:?}\n",
-                        k, en_vars, loc, ot_vars
-                    ));
-                }
-            }
-            panic!("{}", ti18n!("test-nonlocalized-found", offenders = msg));
-        }
+        assert_locale_diff(
+            &loc,
+            &reference,
+            &map,
+            &ftl_path,
+            section_for_key,
+            &ti18n!("test-nonlocalized-found"),
+        );
     }
 }
 
@@ -636,6 +622,7 @@ fn warn_on_unsupported_ui_lang() {
     let err = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
     let combined = format!("{}{}", out, err);
     let clean = strip_ansi(&combined);
+    let ui_lang = "xx";
 
     // Build a robust set of expected warning snippets from FTL,
     // covering possible keys used by different locales.
@@ -680,14 +667,8 @@ fn warn_on_unsupported_ui_lang() {
             .collect::<Vec<_>>()
             .join("\n");
 
-        panic!(
-            "{}\n\
-             --- diagnostics ---\n\
-             cleaned_output (first 800 chars):\n{}\n\
-             combined_output (first 800 chars):\n{}\n\
-             --- raw stdout (first 800) ---\n{}\n\
-             --- raw stderr (first 800) ---\n{}\n\
-             --- expected snippets ({} total) ---\n{}\n",
+        let diag = format!(
+            "{}\n--- diagnostics ---\ncleaned_output (first 800 chars):\n{}\ncombined_output (first 800 chars):\n{}\n--- raw stdout (first 800) ---\n{}\n--- raw stderr (first 800) ---\n{}\n--- expected snippets ({} total) ---\n{}\n",
             ti18n!("test-warn-unsupported-lang"),
             clean_head,
             combined_head,
@@ -695,6 +676,16 @@ fn warn_on_unsupported_ui_lang() {
             stderr_head,
             expected_snippets.len(),
             snippets_list
+        );
+
+        let ftl_path_en = i18n_dir.join("en").join("rimloc.ftl");
+        fail_with_context!(
+            ui_lang,
+            &ftl_path_en,
+            "ui-lang-unsupported",
+            &diag,
+            "<any of expected warning snippets>",
+            &combined,
         );
     }
 }
@@ -713,17 +704,37 @@ fn unknown_locale_falls_back_to_real_locale_help() {
     let out = run_ok(&["--ui-lang", "xx", "--help"]);
 
     // Должен сработать fallback и появиться строка хотя бы из одной реальной локали
-    let fell_back = out.stdout.contains(&expected_en)
-        || expected_ru
-            .as_ref()
-            .map(|s| out.stdout.contains(s))
-            .unwrap_or(false);
-
-    assert!(
-        fell_back,
-        "{}",
-        ti18n!("test-fallback-locale-expected", stdout = &out.stdout)
-    );
+    let ftl_path_en = i18n_dir.join("en").join("rimloc.ftl");
+    if out.stdout.contains(&expected_en) {
+        assert_has!(
+            &out.stdout,
+            &expected_en,
+            &ftl_path_en,
+            "en",
+            "help-about",
+            &ti18n!("test-fallback-locale-expected", stdout = &out.stdout),
+        );
+    } else if let Some(expected_ru) = expected_ru.as_ref() {
+        let ftl_path_ru = i18n_dir.join("ru").join("rimloc.ftl");
+        assert_has!(
+            &out.stdout,
+            expected_ru,
+            &ftl_path_ru,
+            "ru",
+            "help-about",
+            &ti18n!("test-fallback-locale-expected", stdout = &out.stdout),
+        );
+    } else {
+        // Neither EN nor RU matched — anchor diagnostics to EN
+        assert_has!(
+            &out.stdout,
+            &expected_en,
+            &ftl_path_en,
+            "en",
+            "help-about",
+            &ti18n!("test-fallback-locale-expected", stdout = &out.stdout),
+        );
+    }
 }
 
 fn load_ftl_lines(locale: &str) -> Vec<String> {
@@ -762,22 +773,26 @@ fn validation_detail_keys_exist_in_locales() {
     // reference EN
     let en_map = load_ftl_map("en");
     for k in &required_keys {
-        assert!(
-            en_map.contains_key(*k),
-            "{}",
-            ti18n!("test-ftl-key-missing", key = *k, lang = "en")
+        assert_map_contains_key(
+            &en_map,
+            *k,
+            "en",
+            std::path::Path::new("crates/rimloc-cli/i18n/en/rimloc.ftl"),
+            &ti18n!("test-ftl-key-missing", key = *k, lang = "en"),
         );
         let vars = extract_fluent_vars(en_map.get(*k).unwrap());
-        assert_eq!(
-            vars,
-            expected_vars,
-            "{}",
-            ti18n!(
+        assert_set_eq(
+            &vars,
+            &expected_vars,
+            &ti18n!(
                 "test-ftl-args-mismatch",
                 key = *k,
                 expected = format!("{:?}", expected_vars),
                 got = format!("{:?}", vars)
-            )
+            ),
+            "en",
+            std::path::Path::new("crates/rimloc-cli/i18n/en/rimloc.ftl"),
+            *k,
         );
     }
 
@@ -792,22 +807,26 @@ fn validation_detail_keys_exist_in_locales() {
                 }
                 let map = load_ftl_map(&loc);
                 for k in &required_keys {
-                    assert!(
-                        map.contains_key(*k),
-                        "{}",
-                        ti18n!("test-ftl-key-missing", key = *k, lang = &loc)
+                    assert_map_contains_key(
+                        &map,
+                        *k,
+                        &loc,
+                        std::path::Path::new("crates/rimloc-cli/i18n/rimloc.ftl"),
+                        &ti18n!("test-ftl-key-missing", key = *k, lang = &loc),
                     );
                     let vars = extract_fluent_vars(map.get(*k).unwrap());
-                    assert_eq!(
-                        vars,
-                        expected_vars,
-                        "{}",
-                        ti18n!(
+                    assert_set_eq(
+                        &vars,
+                        &expected_vars,
+                        &ti18n!(
                             "test-ftl-args-mismatch",
                             key = *k,
                             expected = format!("{:?}", expected_vars),
                             got = format!("{:?}", vars)
-                        )
+                        ),
+                        &loc,
+                        std::path::Path::new("crates/rimloc-cli/i18n/rimloc.ftl"),
+                        *k,
                     );
                 }
             }
@@ -1037,9 +1056,14 @@ fn no_hardcoded_user_strings_anywhere() {
     let root = workspace_root();
     let offenders = scan_for_hardcoded_user_strings_in(&root, false);
     if !offenders.is_empty() {
-        panic!(
-            "{}",
-            ti18n!("test-nonlocalized-found", offenders = offenders.join("\n"))
+        let joined = offenders.join("\n");
+        fail_with_context!(
+            CTX_NONE,
+            &root,
+            "nonlocalized-user-strings",
+            &ti18n!("test-nonlocalized-found", offenders = joined.clone()),
+            "<forbidden macro with user-facing string>",
+            &joined,
         );
     }
 }
@@ -1076,20 +1100,25 @@ fn help_lists_localized_subcommands() {
     ];
 
     for &lang in SUPPORTED_LOCALES.iter() {
-        let mut expected_snippets = Vec::new();
+        // Собираем пары (ожидаемый текст, ftl_key) с fallback на en
+        let mut expected_pairs: Vec<(String, &str)> = Vec::new();
         for &(_, ftl_key) in &cmds {
             if let Some(txt) = read_ftl_message(&i18n_dir, lang, ftl_key)
                 .or_else(|| read_ftl_message(&i18n_dir, "en", ftl_key))
             {
-                expected_snippets.push(txt);
+                expected_pairs.push((txt, ftl_key));
             }
         }
 
         let out = run_ok(&["--ui-lang", lang, "--help"]);
-        for snip in expected_snippets {
-            assert_contains_with_context(
+        let ftl_path = i18n_dir.join(lang).join("rimloc.ftl");
+        for (snip, ftl_key) in expected_pairs {
+            assert_has!(
                 &out.stdout,
                 &snip,
+                &ftl_path,
+                lang,
+                ftl_key,
                 &ti18n!("test-help-must-list-snip", snip = snip, lang = lang),
             );
         }
@@ -1198,9 +1227,15 @@ fn all_tr_keys_exist_in_en_ftl() {
     walk(&root, &en_map, &mut missing);
 
     if !missing.is_empty() {
-        panic!(
-            "{}",
-            ti18n!("test-nonlocalized-found", offenders = missing.join("\n"))
+        let joined = missing.join("\n");
+        let root = workspace_root();
+        fail_with_context!(
+            CTX_NONE,
+            &root,
+            "tr-keys-missing-in-en",
+            &ti18n!("test-nonlocalized-found", offenders = joined.clone()),
+            "<tr!(\"...\") key not in en FTL>",
+            &joined,
         );
     }
 }
