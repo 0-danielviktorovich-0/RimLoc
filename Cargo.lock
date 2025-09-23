@@ -877,6 +877,8 @@ dependencies = [
  "rimloc-parsers-xml",
  "rimloc-validate",
  "rust-embed",
+ "serde",
+ "serde_json",
  "tempfile",
  "tracing",
  "tracing-appender",
@@ -891,6 +893,8 @@ name = "rimloc-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "color-eyre",
+ "csv",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -929,6 +933,7 @@ dependencies = [
 name = "rimloc-parsers-xml"
 version = "0.1.0"
 dependencies = [
+ "color-eyre",
  "quick-xml",
  "rimloc-core",
  "tempfile",
@@ -1060,6 +1065,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.145"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "402a6f66d8c709116cf22f558eab210f5a50187f702eb4d7e5ef38d9a7f1c79c"
+dependencies = [
+ "itoa",
+ "memchr",
+ "ryu",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
