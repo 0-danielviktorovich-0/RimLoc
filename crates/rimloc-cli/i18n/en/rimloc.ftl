@@ -1,5 +1,5 @@
 ## =============================================================================
-## RimLoc English Localization (EN) — Reference / Source of Truth
+## RimLoc English Localization (EN)  -  Reference / Source of Truth
 ##
 ## Guidelines:
 ## 1. English (EN) is the canonical base. All other locales MUST mirror its keys.
@@ -27,9 +27,9 @@
 ##    - each_locale_runs_help_successfully uses these help keys to verify output in each locale.
 ## =============================================================================
 
-app-started = rimloc started • version={ $version } • logdir={ $logdir } • RUST_LOG={ $rustlog }
+app-started = rimloc started - version={ $version } - logdir={ $logdir } - RUST_LOG={ $rustlog }
 
-scan-csv-stdout = Printing CSV to stdout…
+scan-csv-stdout = Printing CSV to stdout...
 scan-csv-saved = CSV saved to { $path }
 
 validate-clean = All clean, no errors found
@@ -100,9 +100,9 @@ category-placeholder-check = placeholder-check
 # - $path      : file path
 # - $line      : line number (numeric)
 # - $message   : human-readable explanation (already localized within validator)
-validate-detail-duplicate = [duplicate] { $validator } ({ $path }:{ $line }) — { $message }
-validate-detail-empty = [empty] { $validator } ({ $path }:{ $line }) — { $message }
-validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $line }) — { $message }
+validate-detail-duplicate = [duplicate] { $validator } ({ $path }:{ $line })  -  { $message }
+validate-detail-empty = [empty] { $validator } ({ $path }:{ $line })  -  { $message }
+validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $line })  -  { $message }
 
 
 # === CLI help localization ===
@@ -118,17 +118,20 @@ help-scan-out-csv = Save extracted entries to CSV file
 help-scan-lang = Language code of the files to scan (e.g., en, ru)
 help-scan-source-lang = Source language code for cross-checks
 help-scan-source-lang-dir = Path to source language directory for cross-checks
+help-scan-format = Output format: "csv" (default) or "json"
 
 # validate
 help-validate-about = Validate strings for issues/warnings
 help-validate-root = Path to RimWorld mod root to validate
 help-validate-source-lang = Source language code to compare against
 help-validate-source-lang-dir = Path to source language directory to compare against
+help-validate-format = Output format: "text" (default) or "json"
 
 # validate-po
 help-validatepo-about = Validate .po file placeholder consistency (msgid vs msgstr)
 help-validatepo-po = Path to .po file to validate
 help-validatepo-strict = Strict mode: return error (exit code 1) if mismatches are found
+help-validatepo-format = Output format: "text" (default) or "json"
 
 # export-po
 help-exportpo-about = Export extracted strings into a single .po file
@@ -139,7 +142,7 @@ help-exportpo-source-lang = Source language ISO code to export from (e.g., en, r
 help-exportpo-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
 
 # import-po
-help-importpo-about = Import .po — either into a single XML, or spread across existing mod structure
+help-importpo-about = Import .po  -  either into a single XML, or spread across existing mod structure
 help-importpo-po = Path to .po file to import
 help-importpo-out-xml = Output XML file path (single-file mode)
 help-importpo-mod-root = Mod root to update with imported strings (structure mode)

@@ -1,9 +1,9 @@
 ## ====================================================================
 ## RimLoc FTL стандарт оформления (RU)
 ## --------------------------------------------------------------------
-## 1) Источник истины — английский файл en/rimloc.ftl.
+## 1) Источник истины  -  английский файл en/rimloc.ftl.
 ##    Все локали ДОЛЖНЫ содержать те же самые ключи.
-## 2) Порядок секций — ЗАФИКСИРОВАН:
+## 2) Порядок секций  -  ЗАФИКСИРОВАН:
 ##    - Общие сообщения (app-started, scan, validate, export, import, dry-run, xml, build)
 ##    - блок validate-po
 ##    - проверка аргументов import
@@ -14,22 +14,22 @@
 ##    - локализация справки CLI (help-*, сгруппированные по подкомандам)
 ## 3) Добавление новых ключей:
 ##    - В существующем блоке добавляйте НОВЫЕ ключи В КОНЕЦ блока.
-##    - Если появляется новый блок — добавьте весь блок В КОНЕЦ файла с заголовком.
+##    - Если появляется новый блок  -  добавьте весь блок В КОНЕЦ файла с заголовком.
 ## 4) Плейсхолдеры:
 ##    - Имена плейсхолдеров ($var) должны совпадать во всех локалях.
 ##    - Нельзя переименовывать/удалять плейсхолдеры без обновления всех локалей.
 ## 5) Локализация справки CLI:
 ##    - Топ-уровень: help-about, help-no-color, help-ui-lang.
 ##    - Для подкоманд: help-&lt;cmd&gt;-about и help-&lt;cmd&gt;-&lt;arg&gt;.
-##    - Имена — в kebab-case, совпадают с флагами/аргументами CLI (например, help-importpo-out-xml).
+##    - Имена  -  в kebab-case, совпадают с флагами/аргументами CLI (например, help-importpo-out-xml).
 ## 6) Тесты:
 ##    - `all_locales_have_same_keys` проверяет совпадение ключей с EN.
 ##    - `each_locale_runs_help_successfully` использует help-ключи для проверки вывода.
 ## ====================================================================
 
-app-started = rimloc запущен • версия={ $version } • logdir={ $logdir } • RUST_LOG={ $rustlog }
+app-started = rimloc запущен - версия={ $version } - logdir={ $logdir } - RUST_LOG={ $rustlog }
 
-scan-csv-stdout = Печать CSV в stdout…
+scan-csv-stdout = Печать CSV в stdout...
 scan-csv-saved = CSV сохранён в { $path }
 
 validate-clean = Всё чисто, ошибок не найдено
@@ -100,9 +100,9 @@ category-placeholder-check = проверка-плейсхолдеров
 # - $path      : путь к файлу
 # - $line      : номер строки (число)
 # - $message   : человекочитаемое объяснение (может быть локализовано самим валидатором)
-validate-detail-duplicate = [duplicate] { $validator } ({ $path }:{ $line }) — { $message }
-validate-detail-empty = [empty] { $validator } ({ $path }:{ $line }) — { $message }
-validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $line }) — { $message }
+validate-detail-duplicate = [duplicate] { $validator } ({ $path }:{ $line })  -  { $message }
+validate-detail-empty = [empty] { $validator } ({ $path }:{ $line })  -  { $message }
+validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $line })  -  { $message }
 
 # === локализация справки CLI ===
 # Топ-уровень
@@ -117,17 +117,20 @@ help-scan-out-csv = Сохранить извлечённые записи в CS
 help-scan-lang = Код языка файлов для сканирования (например, en, ru)
 help-scan-source-lang = Код исходного языка для перекрёстных проверок
 help-scan-source-lang-dir = Путь к директории исходного языка для перекрёстных проверок
+help-scan-format = Формат вывода: «csv» (по умолчанию) или «json»
 
 # validate
 help-validate-about = Проверить строки на ошибки/предупреждения
 help-validate-root = Путь к корню мода RimWorld для проверки
 help-validate-source-lang = Код исходного языка для сравнения
 help-validate-source-lang-dir = Путь к директории исходного языка для сравнения
+help-validate-format = Формат вывода: «text» (по умолчанию) или «json»
 
 # validate-po
 help-validatepo-about = Проверить согласованность плейсхолдеров в .po (msgid vs msgstr)
 help-validatepo-po = Путь к .po файлу для проверки
 help-validatepo-strict = Строгий режим: вернуть ошибку (код 1), если найдены несовпадения
+help-validatepo-format = Формат вывода: «text» (по умолчанию) или «json»
 
 # export-po
 help-exportpo-about = Экспортировать извлечённые строки в единый .po файл
@@ -138,7 +141,7 @@ help-exportpo-source-lang = ISO-код исходного языка для эк
 help-exportpo-source-lang-dir = Имя папки исходного языка (например, English). Перекрывает --source-lang
 
 # import-po
-help-importpo-about = Импорт .po — в один XML или по структуре существующего мода
+help-importpo-about = Импорт .po  -  в один XML или по структуре существующего мода
 help-importpo-po = Путь к .po файлу для импорта
 help-importpo-out-xml = Путь выходного XML (режим одного файла)
 help-importpo-mod-root = Корень мода для обновления импортированными строками (структурный режим)
