@@ -1,0 +1,8 @@
+msgid ""
+msgstr ""
+"Language: ru\n"
+
+#: ./test/TestMod/Languages/English/Keyed/Bad.xml:5
+msgctxt "Placeholder"
+msgid "Welcome, {NAME}! You have %d messages."
+msgstr "Добро пожаловать, {NAME}! У тебя %s сообщений."
