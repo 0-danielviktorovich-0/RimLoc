@@ -42,9 +42,11 @@ plugins:
           name: English
           default: true
           build: true
+          link: /RimLoc/  
         - locale: ru
           name: Русский
           build: true
+          link: /RimLoc/ru/
 
 nav:
   - Home: index.md
