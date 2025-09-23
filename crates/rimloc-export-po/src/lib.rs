@@ -1,5 +1,5 @@
-use color_eyre::eyre::Result;
 use regex::Regex;
+use rimloc_core::Result;
 use rimloc_core::TransUnit;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -104,7 +104,7 @@ mod tests {
             key: key.into(),
             source: Some(src.into()),
             path: PathBuf::from("/Mod/Languages/English/Keyed/A.xml"),
-            line: Some(line as u32),
+            line: Some(line),
         }
     }
 

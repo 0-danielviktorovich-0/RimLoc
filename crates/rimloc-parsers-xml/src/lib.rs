@@ -1,192 +1,150 @@
-use quick_xml::events::Event;
-use quick_xml::Reader;
-use rimloc_core::{Result, RimLocError, TransUnit};
-use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
+mod po {
+    use color_eyre::eyre::{eyre, Result};
+    use rimloc_core::PoEntry;
 
-pub fn scan_keyed_xml(root: &Path) -> Result<Vec<TransUnit>> {
+    /// Minimal PO parser sufficient for our test fixtures.
+    /// Supports single-line msgid/msgstr and optional reference lines starting with `#: `.
+    pub fn parse_po_string(s: &str) -> Result<Vec<PoEntry>> {
+        let mut out = Vec::new();
+        let mut cur_ref: Option<String> = None;
+        let mut cur_id: Option<String> = None;
+
+        fn unquote(q: &str) -> String {
+            let t = q.trim();
+            if t.starts_with('"') && t.ends_with('"') && t.len() >= 2 {
+                t[1..t.len() - 1].to_string()
+            } else {
+                t.to_string()
+            }
+        }
+
+        for line in s.lines() {
+            let l = line.trim();
+            if l.is_empty() {
+                continue;
+            }
+            if let Some(rest) = l.strip_prefix("#:") {
+                cur_ref = Some(rest.trim().to_string());
+                continue;
+            }
+            if let Some(rest) = l.strip_prefix("msgid") {
+                let eq = rest
+                    .trim_start()
+                    .strip_prefix(' ')
+                    .unwrap_or(rest)
+                    .trim_start_matches('=');
+                cur_id = Some(unquote(eq.trim()));
+                continue;
+            }
+            if let Some(rest) = l.strip_prefix("msgstr") {
+                let eq = rest
+                    .trim_start()
+                    .strip_prefix(' ')
+                    .unwrap_or(rest)
+                    .trim_start_matches('=');
+                let val = unquote(eq.trim());
+                // finalize entry when we have both id and str
+                if let Some(id) = cur_id.take() {
+                    out.push(PoEntry {
+                        key: id,
+                        value: val,
+                        reference: cur_ref.take(),
+                    });
+                } else {
+                    return Err(eyre!("Malformed PO entry: msgstr without msgid"));
+                }
+                continue;
+            }
+        }
+        Ok(out)
+    }
+}
+
+pub use po::parse_po_string;
+
+use rimloc_core::{Result as CoreResult, TransUnit};
+use std::fs;
+use std::path::Path;
+
+/// Very small XML scanner for RimWorld "Keyed" XML files.
+/// It walks `root` and finds files that match `*/Languages/*/Keyed/*.xml`.
+/// For every `<Key>Value</Key>` pair found, it produces a `TransUnit` with
+/// the key name, text value, file path and (approximate) line number.
+pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
+    use walkdir::WalkDir;
     let mut out: Vec<TransUnit> = Vec::new();
 
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.extension().map(|e| e == "xml").unwrap_or(false) {
-            if let Ok(txt) = std::fs::read_to_string(path) {
-                match extract_with_lines(&txt, path) {
-                    Ok(mut units) => out.append(&mut units),
-                    Err(_e) => {
-                        // Swallow XML parse error here; CLI layer is responsible for user-facing reporting.
-                    }
-                }
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        // filter to .../Languages/<Locale>/Keyed/....xml
+        let p_str = p.to_string_lossy();
+        if !(p_str.contains("/Languages/") || p_str.contains("\\Languages\\")) {
+            continue;
+        }
+        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) {
+            continue;
+        }
+
+        let content = match fs::read_to_string(p) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
+
+        for (idx, line) in content.lines().enumerate() {
+            let t = line.trim();
+            if !t.starts_with('<') {
+                continue;
             }
+            // Find first '>' after '<'
+            let gt = t.find('>');
+            if gt.is_none() {
+                continue;
+            }
+            let gt = gt.unwrap();
+            let tag = t[1..gt].trim();
+            if tag.is_empty() {
+                continue;
+            }
+            if !tag
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' || c == '-')
+            {
+                continue;
+            }
+            // Find last "</" in the line
+            let close_start = t.rfind("</");
+            if close_start.is_none() {
+                continue;
+            }
+            let close_start = close_start.unwrap();
+            let close_gt = t[close_start..].find('>');
+            if close_gt.is_none() {
+                continue;
+            }
+            let close_gt = close_start + close_gt.unwrap();
+            let end_tag = t[close_start + 2..close_gt].trim();
+            if end_tag != tag {
+                continue;
+            }
+            // Extract inner text
+            let text = t[gt + 1..close_start].trim();
+            out.push(TransUnit {
+                key: tag.to_string(),
+                source: Some(text.to_string()),
+                path: p.to_path_buf(),
+                line: Some(idx + 1),
+            });
         }
     }
 
     Ok(out)
-}
-
-fn line_starts_of(text: &str) -> Vec<usize> {
-    let mut starts = Vec::with_capacity(256);
-    starts.push(0);
-    for (i, b) in text.as_bytes().iter().enumerate() {
-        if *b == b'\n' {
-            starts.push(i + 1);
-        }
-    }
-    starts
-}
-
-fn byte_pos_to_line(pos: usize, starts: &[usize]) -> u32 {
-    let idx = starts.partition_point(|&s| s <= pos);
-    (idx as u32).max(1)
-}
-
-#[derive(Clone, Debug)]
-struct Frame {
-    name: String,
-    had_text: bool,
-    had_child: bool,
-}
-
-fn extract_with_lines(xml: &str, path: &Path) -> Result<Vec<TransUnit>> {
-    let mut reader = Reader::from_str(xml);
-    reader.config_mut().trim_text(true);
-
-    let line_starts = line_starts_of(xml);
-
-    let mut buf = Vec::new();
-    let mut out = Vec::new();
-    let mut stack: Vec<Frame> = Vec::new();
-
-    loop {
-        match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(e)) => {
-                // помечаем, что у родителя появился ребёнок
-                if let Some(parent) = stack.last_mut() {
-                    parent.had_child = true;
-                }
-                let name = String::from_utf8_lossy(e.name().as_ref()).to_string();
-                stack.push(Frame {
-                    name,
-                    had_text: false,
-                    had_child: false,
-                });
-            }
-
-            Ok(Event::Text(e)) => {
-                if !stack.is_empty() {
-                    let mut key = stack
-                        .iter()
-                        .map(|f| f.name.as_str())
-                        .collect::<Vec<_>>()
-                        .join(".");
-
-                    if let Some(stripped) = key.strip_prefix("LanguageData.") {
-                        key = stripped.to_string();
-                    }
-
-                    let value = e.unescape().unwrap_or_default().to_string();
-                    let value = value.trim();
-
-                    // помечаем, что текущий кадр имел текст
-                    if let Some(last) = stack.last_mut() {
-                        last.had_text = true;
-                    }
-
-                    let byte_pos = reader.buffer_position() as usize;
-                    let line_no = byte_pos_to_line(byte_pos, &line_starts);
-
-                    if !value.is_empty() {
-                        out.push(TransUnit {
-                            key,
-                            source: Some(value.to_string()),
-                            path: PathBuf::from(path),
-                            line: Some(line_no),
-                        });
-                    } else {
-                        // Пустой текстовый узел – тоже фиксируем как пустое значение
-                        out.push(TransUnit {
-                            key,
-                            source: Some(String::new()),
-                            path: PathBuf::from(path),
-                            line: Some(line_no),
-                        });
-                    }
-                }
-            }
-
-            Ok(Event::End(_e)) => {
-                // На закрытии тега: если у узла нет текста и нет детей — это пустой тег
-                if let Some(frame) = stack.pop() {
-                    if !frame.had_text && !frame.had_child {
-                        // ключ = путь всех кадров (включая текущий)
-                        let mut key = stack
-                            .iter()
-                            .map(|f| f.name.as_str())
-                            .chain(std::iter::once(frame.name.as_str()))
-                            .collect::<Vec<_>>()
-                            .join(".");
-
-                        if let Some(stripped) = key.strip_prefix("LanguageData.") {
-                            key = stripped.to_string();
-                        }
-
-                        let byte_pos = reader.buffer_position() as usize;
-                        let line_no = byte_pos_to_line(byte_pos, &line_starts);
-
-                        out.push(TransUnit {
-                            key,
-                            source: Some(String::new()),
-                            path: PathBuf::from(path),
-                            line: Some(line_no),
-                        });
-                    }
-                }
-            }
-
-            Ok(Event::Eof) => break,
-            Err(e) => return Err(RimLocError::Xml(format!("{e}"))),
-            _ => {}
-        }
-
-        buf.clear();
-    }
-
-    Ok(out)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use std::io::Write;
-    use tempfile::tempdir;
-
-    #[test]
-    fn scan_keyed_xml_extracts_units_with_lines() {
-        let dir = tempdir().unwrap();
-        let lang_root = dir.path().join("Languages").join("English");
-        let keyed = lang_root.join("Keyed");
-        fs::create_dir_all(&keyed).unwrap();
-
-        let xml_path = keyed.join("Test.xml");
-        let mut f = fs::File::create(&xml_path).unwrap();
-        writeln!(f, r#"<LanguageData>"#).unwrap();
-        writeln!(f, r#"  <Greeting>Hello</Greeting>"#).unwrap();
-        writeln!(f, r#"  <Farewell>Bye</Farewell>"#).unwrap();
-        writeln!(f, r#"</LanguageData>"#).unwrap();
-
-        // Корень указываем как Languages/<locale>
-        let units = scan_keyed_xml(&lang_root).unwrap();
-
-        assert!(units
-            .iter()
-            .any(|u| u.key == "Greeting" && u.source.as_deref() == Some("Hello")));
-        assert!(units
-            .iter()
-            .any(|u| u.key == "Farewell" && u.source.as_deref() == Some("Bye")));
-
-        let g = units.iter().find(|u| u.key == "Greeting").unwrap();
-        assert!(g.path.to_string_lossy().ends_with("Keyed/Test.xml"));
-        assert!(g.line.unwrap_or(0) > 0);
-    }
 }

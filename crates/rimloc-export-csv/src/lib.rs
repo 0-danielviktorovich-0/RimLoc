@@ -1,5 +1,4 @@
-use color_eyre::eyre::Result;
-use rimloc_core::TransUnit;
+use rimloc_core::{Result, TransUnit};
 use std::io::Write;
 
 pub fn write_csv<W: Write>(writer: W, units: &[TransUnit], lang: Option<&str>) -> Result<()> {
@@ -29,7 +28,6 @@ pub fn write_csv<W: Write>(writer: W, units: &[TransUnit], lang: Option<&str>) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rimloc_core::TransUnit;
     use std::path::PathBuf;
 
     fn unit(key: &str, src: &str) -> TransUnit {
