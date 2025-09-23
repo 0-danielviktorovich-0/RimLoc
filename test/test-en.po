@@ -1,0 +1,42 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: rimloc 0.1\n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ./test/TestMod/Languages/English/Keyed/Bad.xml:2
+msgctxt "DuplicateKey|Keyed/Bad.xml:2"
+msgid "Hello"
+msgstr ""
+
+#: ./test/TestMod/Languages/English/Keyed/Bad.xml:3
+msgctxt "DuplicateKey|Keyed/Bad.xml:3"
+msgid "Hello again"
+msgstr ""
+
+#: ./test/TestMod/Languages/English/Keyed/Bad.xml:4
+msgctxt "EmptyKey|Keyed/Bad.xml:4"
+msgid ""
+msgstr ""
+
+#: ./test/TestMod/Languages/English/Keyed/Bad.xml:5
+msgctxt "Placeholder|Keyed/Bad.xml:5"
+msgid "Welcome, {NAME}! You have %d messages."
+msgstr ""
+
+#: ./test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml:2
+msgctxt "Apparel_Parka.label|DefInjected/ThingDef/Apparel.xml:2"
+msgid "Parka"
+msgstr ""
+
+#: ./test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml:3
+msgctxt "Apparel_Parka.description|DefInjected/ThingDef/Apparel.xml:3"
+msgid "A warm parka for cold climates."
+msgstr ""
+
