@@ -1,6 +1,5 @@
 site_name: RimLoc Docs
 site_description: Toolkit for working with RimWorld translations
-site_url: https://0-danielviktorovich-0.github.io/RimLoc/
 repo_url: https://github.com/0-danielviktorovich-0/RimLoc
 repo_name: 0-danielviktorovich-0/RimLoc
 edit_uri: edit/main/docs/
@@ -41,11 +40,9 @@ plugins:
           name: English
           default: true
           build: true
-          link: /RimLoc/
         - locale: ru
           name: Русский
           build: true
-          link: /RimLoc/ru/
 
 nav:
   - Home: index.md
@@ -65,14 +62,6 @@ extra:
       link: https://crates.io/crates/rimloc-cli
     - icon: fontawesome/solid/book
       link: https://0-danielviktorovich-0.github.io/RimLoc/
-  # Force correct language links for project pages on GitHub Pages
-  alternate:
-    - name: English
-      link: /RimLoc/
-      lang: en
-    - name: Русский
-      link: /RimLoc/ru/
-      lang: ru
 
 markdown_extensions:
   - admonition
