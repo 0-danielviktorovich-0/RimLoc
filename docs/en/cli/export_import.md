@@ -45,6 +45,12 @@ rimloc-cli export-po --out ./out
 ```
 *Export strings into multiple `.po` files organized according to the mod structure, saved under `./out/`.*
 
+**Tips:**
+
+- Without `--out`, the command prints PO content to stdout—redirect it to capture the file.
+- Combine with `--root` to target a specific mod when running outside the repository.
+- Use `--dry-run` to preview which files would be created without writing to disk.
+
 ---
 
 ## Import PO
@@ -82,6 +88,12 @@ rimloc-cli import-po --po mymod.po --out ./out
 ```
 *Import translations from `mymod.po` and write the resulting XML files to the `./out` directory.*
 
+**Tips:**
+
+- `--dry-run` is the safest way to inspect the changes before overwriting any XML.
+- Specify `--mod-root` to point at the original mod if you need context for key lookups.
+- Provide `--lang` when importing a language different from the PO file name.
+
 ---
 
 ## See also
@@ -89,3 +101,9 @@ rimloc-cli import-po --po mymod.po --out ./out
 - **[Scan XML](scan.md)** — Extract Keyed entries to work with.
 - **[Validate](validate.md)** — Check duplicates, empty values, and placeholders in RimWorld mod XML files.
 - **[Validate PO](validate_po.md)** — Check `.po` files for placeholder mismatches and strict mode issues.
+
+## Troubleshooting
+
+- **Missing keys on import** – run `scan` first and ensure the PO file was generated from the same mod structure.
+- **Output directory left empty** – remember that `--out` points to the destination for generated XML; drop it to update files in place.
+- **PO encoding issues** – PO files must be UTF-8; use `msgconv --output=utf-8` if a translator tool saved a different encoding.

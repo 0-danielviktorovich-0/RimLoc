@@ -47,3 +47,14 @@ rimloc-cli validate-po --po Mods/MyMod/Translations/en.po --strict --format json
 ## Output
 
 The command outputs a detailed report of errors and warnings found in the PO file, helping maintain high-quality and consistent translations for your mod. In `text` format, the output uses symbols such as ✖ for errors, ⚠ for warnings, and ℹ for informational messages. In `json` format, the output consists of structured objects representing the validation results.
+
+## Exit codes
+
+- `0` — no blocking placeholder mismatches were found (warnings may remain in non-strict mode).
+- `1` — at least one error was detected (or warning when `--strict` is enabled).
+
+## Troubleshooting
+
+- **`placeholder-mismatch` errors** – placeholders must match exactly, including case and braces; confirm the translator kept tokens such as `{0}` or `%s` intact.
+- **Strict mode fails builds** – drop `--strict` locally to review warnings, then fix the offending entries before enabling it in CI.
+- **Cannot locate PO file** – pass an absolute path or run from the repository root so relative paths resolve as expected.
