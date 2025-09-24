@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://0-danielviktorovich-0.github.io/RimLoc/
+    about: Check the docs first; many workflows and flags are documented with examples.

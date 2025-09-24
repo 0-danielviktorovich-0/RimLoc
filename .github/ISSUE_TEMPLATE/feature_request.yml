@@ -1,0 +1,38 @@
+name: Feature Request
+description: Suggest an idea for RimLoc
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem would this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the change in behavior and CLI/API surface
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples and prior art
+      description: Commands, flags, or tools that inspired this feature
+    validations:
+      required: false
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation strategy
+      description: How should we test and document this feature?
+    validations:
+      required: false
