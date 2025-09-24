@@ -1,6 +1,10 @@
 pub use rimloc_core::parse_simple_po as parse_po_string;
 
+use quick_xml::events::Event;
+use quick_xml::Reader;
 use rimloc_core::{Result as CoreResult, TransUnit};
+use std::borrow::Cow;
+use std::convert::TryFrom;
 use std::fs;
 use std::path::Path;
 
@@ -11,6 +15,17 @@ use std::path::Path;
 pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
     use walkdir::WalkDir;
     let mut out: Vec<TransUnit> = Vec::new();
+
+    fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
+        if starts.is_empty() {
+            return None;
+        }
+        match starts.binary_search(&offset) {
+            Ok(idx) => Some(idx + 1),
+            Err(idx) if idx > 0 => Some(idx),
+            _ => Some(1),
+        }
+    }
 
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
@@ -36,51 +51,86 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
             Ok(s) => s,
             Err(_) => continue,
         };
+        let mut line_starts = Vec::new();
+        line_starts.push(0usize);
+        for (idx, _) in content.match_indices('\n') {
+            line_starts.push(idx + 1);
+        }
 
-        for (idx, line) in content.lines().enumerate() {
-            let t = line.trim();
-            if !t.starts_with('<') {
-                continue;
+        let mut reader = Reader::from_str(&content);
+        reader.config_mut().trim_text(true);
+        let mut buf = Vec::new();
+        struct ElementFrame {
+            name: String,
+            line: Option<usize>,
+            has_text: bool,
+        }
+        let mut stack: Vec<ElementFrame> = Vec::new();
+
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(e)) => {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let offset = reader.buffer_position();
+                    let offset = usize::try_from(offset).unwrap_or(usize::MAX);
+                    let line = line_for_offset(offset, &line_starts);
+                    stack.push(ElementFrame {
+                        name,
+                        line,
+                        has_text: false,
+                    });
+                }
+                Ok(Event::End(_)) => {
+                    if let Some(frame) = stack.pop() {
+                        if stack.len() == 1 && !frame.has_text && !frame.name.is_empty() {
+                            out.push(TransUnit {
+                                key: frame.name,
+                                source: Some(String::new()),
+                                path: p.to_path_buf(),
+                                line: frame.line,
+                            });
+                        }
+                    }
+                }
+                Ok(Event::Text(t)) => {
+                    let text = t
+                        .unescape()
+                        .unwrap_or_else(|_| {
+                            Cow::Owned(String::from_utf8_lossy(t.as_ref()).into_owned())
+                        })
+                        .trim()
+                        .to_string();
+                    if stack.len() == 2 {
+                        if let Some(frame) = stack.last_mut() {
+                            frame.has_text = true;
+                            out.push(TransUnit {
+                                key: frame.name.clone(),
+                                source: Some(text),
+                                path: p.to_path_buf(),
+                                line: frame.line,
+                            });
+                        }
+                    }
+                }
+                Ok(Event::CData(t)) => {
+                    let text = String::from_utf8_lossy(t.as_ref()).trim().to_string();
+                    if stack.len() == 2 {
+                        if let Some(frame) = stack.last_mut() {
+                            frame.has_text = true;
+                            out.push(TransUnit {
+                                key: frame.name.clone(),
+                                source: Some(text),
+                                path: p.to_path_buf(),
+                                line: frame.line,
+                            });
+                        }
+                    }
+                }
+                Ok(Event::Eof) => break,
+                Err(_) => break,
+                _ => {}
             }
-            // Find first '>' after '<'
-            let gt = t.find('>');
-            if gt.is_none() {
-                continue;
-            }
-            let gt = gt.unwrap();
-            let tag = t[1..gt].trim();
-            if tag.is_empty() {
-                continue;
-            }
-            if !tag
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' || c == '-')
-            {
-                continue;
-            }
-            // Find last "</" in the line
-            let close_start = t.rfind("</");
-            if close_start.is_none() {
-                continue;
-            }
-            let close_start = close_start.unwrap();
-            let close_gt = t[close_start..].find('>');
-            if close_gt.is_none() {
-                continue;
-            }
-            let close_gt = close_start + close_gt.unwrap();
-            let end_tag = t[close_start + 2..close_gt].trim();
-            if end_tag != tag {
-                continue;
-            }
-            // Extract inner text
-            let text = t[gt + 1..close_start].trim();
-            out.push(TransUnit {
-                key: tag.to_string(),
-                source: Some(text.to_string()),
-                path: p.to_path_buf(),
-                line: Some(idx + 1),
-            });
+            buf.clear();
         }
     }
 
