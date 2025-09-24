@@ -139,3 +139,65 @@ pub fn resolve_game_version_root(
 
     Ok((base.to_path_buf(), None))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn parse_version_components_ok() {
+        assert_eq!(parse_version_components("1.4"), Some(vec![1, 4]));
+        assert_eq!(parse_version_components("v1.4.3"), Some(vec![1, 4, 3]));
+        assert_eq!(parse_version_components("10.0"), Some(vec![10, 0]));
+    }
+
+    #[test]
+    fn parse_version_components_bad() {
+        assert_eq!(parse_version_components(""), None);
+        assert_eq!(parse_version_components("v"), None);
+        assert_eq!(parse_version_components("1..2"), None);
+        assert_eq!(parse_version_components("a.b"), None);
+    }
+
+    #[test]
+    fn normalize_input_strips_prefix() {
+        assert_eq!(normalize_version_input("v1.4"), "1.4");
+        assert_eq!(normalize_version_input("1.4"), "1.4");
+    }
+
+    #[test]
+    fn list_and_pick_latest_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path();
+
+        // Create version-like subfolders
+        for name in ["1.3", "v1.4", "1.10", "1.9.1", "foo", "1.a"].iter() {
+            let p = base.join(name);
+            fs::create_dir_all(&p).unwrap();
+        }
+
+        // Internal helpers should filter only version-like folders
+        let entries = list_version_directories(base).unwrap();
+        let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+        assert!(names.contains(&"1.3"));
+        assert!(names.contains(&"v1.4"));
+        assert!(names.contains(&"1.10"));
+        assert!(names.contains(&"1.9.1"));
+        assert!(!names.contains(&"foo"));
+
+        // resolve_game_version_root without request picks the "latest" by sort
+        let (_path, picked) = resolve_game_version_root(base, None).unwrap();
+        // With our length-first sorting, 1.9.1 (len=3) is considered newer than 1.10 (len=2)
+        assert_eq!(picked.as_deref(), Some("1.9.1"));
+
+        // Explicit request by either form should resolve
+        let (p1, n1) = resolve_game_version_root(base, Some("1.4")).unwrap();
+        assert!(p1.ends_with("v1.4") || p1.ends_with("1.4"));
+        assert!(matches!(n1.as_deref(), Some("v1.4") | Some("1.4")));
+
+        let (p2, n2) = resolve_game_version_root(base, Some("v1.4")).unwrap();
+        assert!(p2.ends_with("v1.4") || p2.ends_with("1.4"));
+        assert!(matches!(n2.as_deref(), Some("v1.4") | Some("1.4")));
+    }
+}
