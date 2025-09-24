@@ -211,6 +211,34 @@ cargo flamegraph -p rimloc-cli -- --quiet scan --root ./test/TestMod --format js
 
 Скоро добавим скриншоты/GIF процесса «Run workflow» (встроим в доки, когда будут готовы).
 
+### Проверка подписи (cosign, keyless)
+
+Каждый архив подписан через Sigstore/cosign по OIDC GitHub (без приватных ключей). Рядом с артефактом лежат `.sig` и `.pem`.
+
+Базовая проверка:
+
+```bash
+cosign verify-blob \
+  --certificate dist/<ASSET>.pem \
+  --signature   dist/<ASSET>.sig \
+  dist/<ASSET>
+```
+
+Строгая проверка (с проверкой идентичности workflow в GitHub):
+
+```bash
+cosign verify-blob \
+  --certificate-identity-regexp "https://github.com/.+/.+/.github/workflows/(release-dev|release-dev-auto).yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --certificate dist/<ASSET>.pem \
+  --signature   dist/<ASSET>.sig \
+  dist/<ASSET>
+```
+
+### SBOM
+
+Для каждого артефакта генерируется SPDX JSON SBOM (`.spdx.json`) при помощи Syft. Его можно использовать для просмотра зависимостей/лицензий и сканирования уязвимостей (`grype`, `trivy`).
+
 ### Профилирование в Windows (WPA/ETW)
 
 В Windows нет нативного `perf`/`dtrace`, но можно писать ETW‑трейсы и смотреть их в WPA:

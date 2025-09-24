@@ -65,7 +65,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl]
+        include:
+          - target: x86_64-unknown-linux-gnu
+            builder: cargo
+          - target: aarch64-unknown-linux-gnu
+            builder: cargo
+          - target: x86_64-unknown-linux-musl
+            builder: cargo
+          - target: aarch64-unknown-linux-musl
+            builder: cross
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
@@ -79,12 +87,15 @@ jobs:
           sudo apt-get update
           if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]]; then sudo apt-get install -y gcc-aarch64-linux-gnu; fi
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then sudo apt-get install -y musl-tools; fi
+      - name: Install cross
+        if: matrix.builder == 'cross'
+        run: cargo install cross --git https://github.com/cross-rs/cross
       - name: Build (rimloc-cli)
         env:
           CARGO_TERM_COLOR: always
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: |
-          cargo build --release -p rimloc-cli --target ${{ matrix.target }}
+          if [[ "${{ matrix.builder }}" == "cross" ]]; then cross build --release -p rimloc-cli --target ${{ matrix.target }}; else cargo build --release -p rimloc-cli --target ${{ matrix.target }}; fi
       - name: Package
         shell: bash
         run: |
@@ -95,12 +106,35 @@ jobs:
           install -m 0755 "$BIN" "$NAME/"
           cp -a README.md LICENSE "$NAME/"
           tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
+          cp "dist/$NAME.tar.gz" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz"
           echo "Built dist/$NAME.tar.gz"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Sign artifact (cosign keyless)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          cosign sign-blob --yes \
+            --output-signature "dist/$NAME.tar.gz.sig" \
+            --output-certificate "dist/$NAME.tar.gz.pem" \
+            "dist/$NAME.tar.gz"
+      - name: Install Syft (SBOM)
+        shell: bash
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin
+      - name: Generate SBOM (SPDX)
+        shell: bash
+        run: |
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          syft packages "dist/$NAME.tar.gz" -o spdx-json > "dist/$NAME.spdx.json"
       - name: Upload assets
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.create_release.outputs.tag }}
-          files: dist/*
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
 
   macos:
     needs: create_release
@@ -133,6 +167,26 @@ jobs:
           cp -a README.md LICENSE "$NAME/"
           tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
           echo "Built dist/$NAME.tar.gz"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Sign artifact (cosign keyless)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          cosign sign-blob --yes \
+            --output-signature "dist/$NAME.tar.gz.sig" \
+            --output-certificate "dist/$NAME.tar.gz.pem" \
+            "dist/$NAME.tar.gz"
+      - name: Install Syft (SBOM)
+        shell: bash
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin
+      - name: Generate SBOM (SPDX)
+        shell: bash
+        run: |
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          syft packages "dist/$NAME.tar.gz" -o spdx-json > "dist/$NAME.spdx.json"
       - name: Upload assets
         uses: softprops/action-gh-release@v1
         with:
@@ -166,7 +220,32 @@ jobs:
           cp "$BIN" "$NAME/"
           cp -a README.md LICENSE "$NAME/"
           (cd "$NAME" && 7z a -tzip "../dist/$NAME.zip" *)
+          cp "dist/$NAME.zip" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip"
           echo "Built dist/$NAME.zip"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Sign artifact (cosign keyless)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          cosign sign-blob --yes \
+            --output-signature "dist/$NAME.zip.sig" \
+            --output-certificate "dist/$NAME.zip.pem" \
+            "dist/$NAME.zip"
+      - name: Install Syft (Windows)
+        shell: powershell
+        run: |
+          $version = "v1.5.0"
+          $arch = "windows_amd64"
+          if ("${{ matrix.target }}" -like "aarch64*") { $arch = "windows_arm64" }
+          Invoke-WebRequest -Uri "https://github.com/anchore/syft/releases/download/$version/syft_$version_$arch.zip" -OutFile syft.zip
+          7z x syft.zip -o"$PWD\syft"
+      - name: Generate SBOM (SPDX)
+        shell: powershell
+        run: |
+          $NAME = "rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}"
+          .\syft\syft.exe packages "dist/$NAME.zip" -o spdx-json | Out-File -FilePath "dist/$NAME.spdx.json" -Encoding utf8
       - name: Upload assets
         uses: softprops/action-gh-release@v1
         with:
