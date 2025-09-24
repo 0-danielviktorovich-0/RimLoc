@@ -16,6 +16,18 @@ Rust code uses the default 4-space rustfmt profile; rely on `cargo fmt` instead 
 ## Testing Guidelines
 Prefer unit tests alongside the code they assert. Integration tests for the CLI live in `crates/rimloc-cli/tests`; group scenarios in descriptive modules and reuse helpers from `helpers.rs`. Add sample XML or PO fixtures to `test/` and clean up temporary files via `tempfile`. Run `cargo test --features <feature>` if you introduce gated functionality, and cover new subcommands or exporters.
 
+### Testing policy (mandatory)
+- After any change (code or docs), run local checks before committing:
+  - `cargo build --workspace`
+  - `cargo test --workspace` (append `-- --nocapture` when investigating)
+  - `cargo fmt && cargo clippy --workspace --all-targets -- -D warnings`
+- If you touch docs under `docs/`, preview or build the site:
+  - `mkdocs serve` locally from a virtualenv, or
+  - `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build` to validate links.
+- If you modify i18n keys, run `cargo test --package rimloc-cli -- tests_i18n` to verify key integrity across locales.
+- If you change CLI flags or behavior, update integration tests in `crates/rimloc-cli/tests` and rerun the whole test suite.
+- Automated agents must also execute these checks and report a short summary of results back to the user.
+
 ## Documentation Workflow
 - Run `mkdocs serve` from the repo root while editing; it mirrors `docs/en/` and `docs/ru/` with live reload.
 - Keep English and Russian pages structurally aligned—add the same sections to both locales in the same commit.
