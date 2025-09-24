@@ -11,7 +11,7 @@ Scan a RimWorld mod directory to extract translation units from `Languages/*/{Ke
 ## Synopsis
 
 ```bash
-rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--lang <CODE>] \
+rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
                  [--source-lang <CODE>] [--source-lang-dir <DIR>] \
                  [--format <csv|json>]
 ```
@@ -22,6 +22,7 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--lang <CODE>] \
 |----------------------|-----------------------------------------------------|----------|
 | `-r, --root <PATH>`  | Path to the RimWorld mod root directory to scan. **Required**. | Yes      |
 | `--out-csv <FILE>`   | Save extracted entries to a CSV file (includes header). | No       |
+| `--out-json <FILE>`  | Save extracted entries to a JSON file (requires `--format json`). | No       |
 | `--lang <CODE>`      | Language code to scan (e.g. `en`, `ru`). If omitted, all languages are scanned. | No       |
 | `--source-lang <CODE>` | Source language code for cross-checks (optional). | No       |
 | `--source-lang-dir <DIR>` | Explicit path to source language directory (optional). | No       |
@@ -32,6 +33,9 @@ Path to the RimWorld mod root directory to scan. **Required**.
 
 ### `--out-csv <FILE>`
 Save extracted entries to a CSV file (includes header).
+
+### `--out-json <FILE>`
+Persist JSON output to disk (requires `--format json`). The command still prints results to stdout unless you redirect it.
 
 ### `--lang <CODE>`
 Language code to scan (e.g. `en`, `ru`). If omitted, all languages are scanned.
@@ -48,7 +52,7 @@ Output format to stdout. Default is `csv`.
 Output formats:
 
 - `csv` — prints CSV to stdout (use `--out-csv` to save to a file as well).  
-- `json` — prints a JSON array of translation units to stdout.
+- `json` — prints a JSON array of translation units to stdout; combine with `--out-json` to keep a copy on disk.
 
 Each translation unit has the following structure:
 ```json
@@ -73,6 +77,12 @@ Scan only English and save results to CSV file:
 rimloc-cli scan --root ./test/TestMod --lang en --out-csv out.csv
 ```
 *Extracts English entries and writes them to `out.csv`.*
+
+Persist JSON output alongside stdout:
+```bash
+rimloc-cli scan --root ./test/TestMod --format json --out-json ./logs/scan.json
+```
+*Writes `scan.json` to disk while still emitting JSON to stdout.*
 
 Print CSV output directly to stdout:
 ```bash

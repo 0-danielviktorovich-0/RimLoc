@@ -25,6 +25,9 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 | `--ui-lang`          | Язык сообщений интерфейса                               | Нет         |
 | `--help`             | Показать справку                                        | Нет         |
 
+!!! tip
+    Без `--source-lang` и `--source-lang-dir` RimLoc ищет исходные строки в `Languages/English`.
+
 ## Выполняемые проверки
 
 - *empty* — обнаружение пустых значений  

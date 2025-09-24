@@ -16,19 +16,21 @@ RimLoc CLI bundles everything needed to inventory, validate, and exchange RimWor
 
 1. **Scan** your mod to extract translation units.
 2. **Validate** XML to catch duplicates, empty values, and placeholder drift.
-3. **Export PO/CSV** packages for translators or CAT tools.
+3. **Export PO** packages for translators or CAT tools.
 4. **Review translations** and run **Validate PO** to ensure placeholders match.
 5. **Import PO** back into XML, then run **Validate** again before shipping.
+6. *(Optional)* **Build Mod** to scaffold a translation-only RimWorld mod from the final `.po` file.
 
 ## Command summary
 
 | Command | Purpose | Frequent options |
 |---------|---------|------------------|
-| [`scan`](scan.md) | Harvest translation units from XML. | `--lang`, `--format`, `--out-csv` |
-| [`validate`](validate.md) | QA check XML for duplicates, empties, placeholders. | `--format`, `--ui-lang` |
+| [`scan`](scan.md) | Harvest translation units from XML. | `--lang`, `--format`, `--out-csv`, `--out-json` |
+| [`validate`](validate.md) | QA check XML for duplicates, empties, placeholders. | `--format`, `--source-lang`, `--source-lang-dir` |
 | [`validate-po`](validate_po.md) | Compare placeholders inside PO files. | `--po`, `--strict`, `--format` |
-| [`export-po`](export_import.md#export-po) | Produce PO/CSV bundles for translators. | `--out`, `--single-po`, `--dry-run` |
-| [`import-po`](export_import.md#import-po) | Apply PO changes back to XML. | `--po`, `--out`, `--dry-run` |
+| [`export-po`](export_import.md#export-po) | Produce a single PO bundle for translators. | `--root`, `--out-po`, `--lang` |
+| [`import-po`](export_import.md#import-po) | Apply PO changes back to XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file` |
+| [`build-mod`](build_mod.md) | Scaffold a translation-only RimWorld mod from a PO file. | `--out-mod`, `--package-id`, `--dry-run` |
 
 ## Helpful patterns
 
@@ -40,8 +42,11 @@ rimloc-cli validate --root ./path/to/mod --format text
 rimloc-cli validate --root ./path/to/mod --format json | jq '.[] | select(.level=="error")'
 
 # Export and immediately validate resulting PO placeholders
-rimloc-cli export-po --root ./path/to/mod --single-po --out ./out/mymod.po
+rimloc-cli export-po --root ./path/to/mod --out-po ./out/mymod.po --lang ru
 rimloc-cli validate-po --po ./out/mymod.po --strict
+
+# Preview the translation-only mod RimLoc would build from that PO
+rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru --dry-run
 ```
 
 ## Troubleshooting
