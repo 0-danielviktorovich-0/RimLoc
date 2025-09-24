@@ -61,6 +61,7 @@ nav:
   - Testing: testing.md
   - Guides:
       - Placeholders: guide/placeholders.md
+      - PO Files 101: guide/po_files.md
   - Community:
       - Issue Guidelines: community/issues.md
       - Pull Requests: community/pull_requests.md

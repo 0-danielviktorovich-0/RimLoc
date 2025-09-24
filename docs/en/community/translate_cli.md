@@ -61,6 +61,11 @@ EN: Invalid value: %s
 DE: Ungültiger Wert: %s
 ```
 
+## Helpful editors
+
+- PO files: Poedit (Windows/macOS/Linux), Gtranslator (GNOME), Lokalize (KDE), or VS Code with gettext extensions.
+- FTL files (Fluent): VS Code extensions for “Fluent/FTL” provide syntax highlighting and basic checks. Any text editor works, but highlighting helps.
+
 ## Friendly checklist
 
 - [ ] Keys unchanged (only values translated)
