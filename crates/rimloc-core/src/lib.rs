@@ -1,3 +1,4 @@
+use color_eyre::eyre::eyre;
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -34,4 +35,60 @@ pub struct PoEntry {
 pub enum RimLocError {
     #[error("{0}")]
     Other(String),
+}
+
+/// Parse a minimal subset of PO syntax used across the workspace.
+/// Supports single-line `msgid`/`msgstr` pairs and optional reference lines (`#: ...`).
+pub fn parse_simple_po(input: &str) -> Result<Vec<PoEntry>> {
+    let mut entries = Vec::new();
+    let mut cur_ref: Option<String> = None;
+    let mut cur_id: Option<String> = None;
+
+    fn unquote(raw: &str) -> String {
+        let trimmed = raw.trim();
+        if trimmed.starts_with('"') && trimmed.ends_with('"') && trimmed.len() >= 2 {
+            trimmed[1..trimmed.len() - 1].to_string()
+        } else {
+            trimmed.to_string()
+        }
+    }
+
+    for line in input.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix("#:") {
+            cur_ref = Some(rest.trim().to_string());
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix("msgid") {
+            let eq = rest
+                .trim_start()
+                .strip_prefix(' ')
+                .unwrap_or(rest)
+                .trim_start_matches('=');
+            cur_id = Some(unquote(eq.trim()));
+            continue;
+        }
+        if let Some(rest) = trimmed.strip_prefix("msgstr") {
+            let eq = rest
+                .trim_start()
+                .strip_prefix(' ')
+                .unwrap_or(rest)
+                .trim_start_matches('=');
+            let val = unquote(eq.trim());
+            if let Some(id) = cur_id.take() {
+                entries.push(PoEntry {
+                    key: id,
+                    value: val,
+                    reference: cur_ref.take(),
+                });
+            } else {
+                return Err(eyre!("Malformed PO entry: msgstr without msgid"));
+            }
+        }
+    }
+
+    Ok(entries)
 }
