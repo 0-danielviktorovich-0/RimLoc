@@ -1,0 +1,80 @@
+name: Bug Report
+description: Report a problem with RimLoc CLI or libraries
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please include logs and JSON outputs when possible.
+  - type: input
+    id: command
+    attributes:
+      label: Full command
+      description: The exact command you ran
+      placeholder: rimloc-cli validate --root ./Mods/MyMod --format json --ui-lang en
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened (error messages, screenshots)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and output
+      description: |
+        - Paste console output (prefer `--ui-lang en`, set `NO_COLOR=1`, `NO_ICONS=1`).
+        - Attach `logs/rimloc.log` (set `RIMLOC_LOG_DIR` if needed, use `RUST_LOG=debug` for more details).
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: json
+    attributes:
+      label: JSON outputs
+      description: For `--format json` or `scan --format json`, paste a minimal excerpt
+      render: json
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproducible example
+      description: A tiny mod snippet or a couple of XML/PO files that reproduce the issue
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: RimLoc version
+      placeholder: rimloc-cli --version
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment variables
+      description: RUST_LOG, RIMLOC_LOG_DIR, NO_COLOR, NO_ICONS
+      placeholder: RUST_LOG=debug, RIMLOC_LOG_DIR=./logs, NO_COLOR=1, NO_ICONS=1
+    validations:
+      required: false
