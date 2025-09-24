@@ -61,6 +61,9 @@ rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang r
 - Переходите напрямую: [Сканирование](cli/scan.md) · [Проверка](cli/validate.md) · [Проверка PO](cli/validate_po.md) · [Экспорт / Импорт](cli/export_import.md) · [Сборка мода](cli/build_mod.md)
 - Обновляйте документацию локально через `mkdocs serve`, редактируя файлы в `docs/en/` и `docs/ru/`.
 
+!!! tip "Помогите перевести RimLoc"
+    Хотите видеть RimLoc на своём языке? Загляните в раздел [Localization](community/localization.md). Перевод можно сделать прямо через веб‑редактор GitHub без локальной настройки.
+
 !!! tip "Где находится исходный код CLI?"
     Бинарные файлы лежат в `crates/rimloc-cli`, а фикстуры для экспериментов — в каталоге `test/`.
 
