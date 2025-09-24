@@ -32,5 +32,11 @@ Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(sco
 - Do not bump versions, shuffle modules, or update generated artifacts unless explicitly part of the task.
 - This rule applies to humans and to automated agents working in this repo — agents must obey it as well.
 
+### No‑revert policy (mandatory)
+- Do not revert or discard changes without explicit consent from the maintainer/author.
+- Exceptions: only when strictly required to fix broken builds/tests, or when the revert is necessary to complete the current fix/feature. State the rationale clearly in the commit body.
+- If you encounter unrelated, uncommitted local changes, ask whether to keep, commit, or drop them. Do not silently undo them.
+- When a revert is required, use a dedicated commit that references the original commit/PR (e.g., `revert: <hash> <subject>`). Avoid mixing reverts with functional changes.
+
 ## Localization Workflow Notes
 Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at build time. Update the English source, mirror changes to other locales, and run `cargo i18n` (if available) or `cargo test --package rimloc-cli -- tests_i18n` to confirm key integrity.
