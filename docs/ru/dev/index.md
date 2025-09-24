@@ -185,3 +185,66 @@ cargo flamegraph -p rimloc-cli -- --quiet scan --root ./test/TestMod --format js
 - Профилируйте сборку `--release`.
 - Суужайте сценарий до одной команды (`scan` на большом моде и т.п.).
 - Используйте `tracing` + `RUST_LOG=debug`, чтобы сопоставлять горячие места с логами.
+
+### Профилирование в Windows (WPA/ETW)
+
+В Windows нет нативного `perf`/`dtrace`, но можно писать ETW‑трейсы и смотреть их в WPA:
+
+- Установите Windows Performance Toolkit (WPT) через установщик Windows SDK (выберите компонент «Windows Performance Toolkit»).
+
+Запись из PowerShell:
+
+```powershell
+# Запустить лёгкий CPU‑профиль
+wpr -start CPU -filemode
+
+# В другом окне — выполнить нагрузку
+cargo run -q -p rimloc-cli -- --quiet scan --root .\test\TestMod --format json > $null
+
+# Остановить запись и сохранить трейc
+wpr -stop rimloc.etl
+```
+
+Откройте `rimloc.etl` в Windows Performance Analyzer (WPA) и изучите CPU Usage (Sampled) и стеки вызовов.
+
+Альтернатива: PerfView (https://github.com/microsoft/perfview)
+
+```powershell
+PerfView.exe run /NoGui /AcceptEULA -- cargo run -p rimloc-cli -- --quiet validate --root .\test\TestMod --format text
+```
+
+Вариант через WSL2: используйте Linux‑инструменты (`perf`, `cargo flamegraph`) внутри WSL2, указав путь к репозиторию.
+
+## Отладка тестов в VS Code/VSCodium
+
+CodeLLDB умеет запускать тесты через Cargo. Пример `launch.json` для отладки конкретного теста:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug test: cli_integration::validate_json_emits_structured_issues",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": ["test", "--no-run", "--package", "rimloc-cli", "--test", "cli_integration"],
+        "filter": { "name": "cli_integration", "kind": "test" }
+      },
+      "args": ["--nocapture", "validate_json_emits_structured_issues"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug" },
+      "console": "integratedTerminal"
+    }
+  ]
+}
+```
+
+Если версия CodeLLDB не поддерживает `cargo`‑launcher, сначала соберите тесты и укажите путь к бинарнику в `target/debug/deps/`:
+
+```bash
+cargo test -p rimloc-cli --test cli_integration --no-run
+ls target/debug/deps/cli_integration-*
+```
+
+Затем пропишите этот путь в `program` и передайте `args`: `["--nocapture", "validate_json_emits_structured_issues"]`.

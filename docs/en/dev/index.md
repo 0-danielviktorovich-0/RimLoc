@@ -188,3 +188,66 @@ General tips:
 - Profile release builds: `cargo build --release`.
 - Narrow down workloads to a single subcommand (e.g., `scan` on a bigger mod).
 - Use `tracing` spans (already enabled) + `RUST_LOG=debug` to correlate hot paths with logs.
+
+### Windows profiling (WPA/ETW)
+
+Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
+
+- Install Windows Performance Toolkit (WPT) via the Windows 10/11 SDK installer (select “Windows Performance Toolkit”).
+
+Record from a terminal:
+
+```powershell
+# Start a lightweight CPU profile
+wpr -start CPU -filemode
+
+# Run the workload in another terminal
+runscript: cargo run -q -p rimloc-cli -- --quiet scan --root .\test\TestMod --format json > $null
+
+# Stop recording and write the trace
+wpr -stop rimloc.etl
+```
+
+Open `rimloc.etl` in Windows Performance Analyzer (WPA), inspect CPU Usage (Sampled) and call stacks.
+
+Alternative: PerfView (https://github.com/microsoft/perfview)
+
+```powershell
+PerfView.exe run /NoGui /AcceptEULA -- cargo run -p rimloc-cli -- --quiet validate --root .\test\TestMod --format text
+```
+
+WSL2 option: run Linux tools (`perf`, `cargo flamegraph`) inside WSL2 and point to the same repo path.
+
+## Debugging test binaries in VS Code/VSCodium
+
+CodeLLDB can launch tests directly via Cargo. Example `launch.json` config to debug a specific test:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug test: cli_integration::validate_json_emits_structured_issues",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": ["test", "--no-run", "--package", "rimloc-cli", "--test", "cli_integration"],
+        "filter": { "name": "cli_integration", "kind": "test" }
+      },
+      "args": ["--nocapture", "validate_json_emits_structured_issues"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug" },
+      "console": "integratedTerminal"
+    }
+  ]
+}
+```
+
+If your CodeLLDB version does not support the `cargo` launcher, build tests first and point `program` to the test binary under `target/debug/deps/` (hash suffix changes per build):
+
+```bash
+cargo test -p rimloc-cli --test cli_integration --no-run
+ls target/debug/deps/cli_integration-*
+```
+
+Then set `program` to that path and use `args`: `["--nocapture", "validate_json_emits_structured_issues"]`.
