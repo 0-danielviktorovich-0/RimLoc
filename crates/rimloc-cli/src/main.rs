@@ -105,7 +105,9 @@ fn pre_scan_ui_lang() -> Option<String> {
 fn pre_scan_quiet() -> bool {
     for arg in std::env::args_os().skip(1) {
         if let Some(s) = arg.to_str() {
-            if s == "--quiet" { return true; }
+            if s == "--quiet" {
+                return true;
+            }
         }
     }
     false
@@ -730,9 +732,8 @@ fn main() -> Result<()> {
 
     let quiet_pre = pre_scan_quiet();
 
-    let show_banner = std::io::stdout().is_terminal()
-        && std::env::var_os("NO_BANNER").is_none()
-        && !quiet_pre;
+    let show_banner =
+        std::io::stdout().is_terminal() && std::env::var_os("NO_BANNER").is_none() && !quiet_pre;
     if show_banner {
         ui_out!(
             "app-started",
