@@ -11,9 +11,11 @@ use i18n_embed::LanguageRequester;
 use once_cell::sync::OnceCell;
 use regex::Regex;
 use rust_embed::RustEmbed;
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::io::IsTerminal;
-use std::path::PathBuf;
+use std::fs;
+use std::io::{ErrorKind, IsTerminal};
+use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 use tracing::{debug, error, info, warn};
 use tracing_appender::non_blocking::WorkerGuard;
@@ -28,6 +30,143 @@ use unic_langid::LanguageIdentifier;
 struct Localizations;
 
 static LANG_LOADER: OnceCell<FluentLanguageLoader> = OnceCell::new();
+
+#[derive(Debug, Clone)]
+struct VersionEntry {
+    name: String,
+    components: Vec<u32>,
+    path: PathBuf,
+}
+
+fn parse_version_components(name: &str) -> Option<Vec<u32>> {
+    let trimmed = name.trim_start_matches('v');
+    if trimmed.is_empty() {
+        return None;
+    }
+    let mut parts = Vec::new();
+    for part in trimmed.split('.') {
+        if part.is_empty() {
+            return None;
+        }
+        let value: u32 = part.parse().ok()?;
+        parts.push(value);
+    }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts)
+    }
+}
+
+fn normalize_version_input(raw: &str) -> String {
+    raw.trim_start_matches('v').to_string()
+}
+
+fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    let normalized = normalize_version_input(requested);
+    if requested.starts_with('v') {
+        candidates.push(requested.trim().to_string());
+        candidates.push(normalized.clone());
+    } else {
+        candidates.push(normalized.clone());
+        candidates.push(format!("v{}", normalized));
+    }
+    for name in candidates.into_iter() {
+        if name.is_empty() {
+            continue;
+        }
+        let candidate = base.join(&name);
+        if candidate.is_dir() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+fn list_version_directories(base: &Path) -> color_eyre::Result<Vec<VersionEntry>> {
+    let mut entries = Vec::new();
+    let read_dir = match fs::read_dir(base) {
+        Ok(iter) => iter,
+        Err(err) if err.kind() == ErrorKind::NotFound => return Ok(entries),
+        Err(err) => return Err(err.into()),
+    };
+    for entry in read_dir {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let name_os = entry.file_name();
+        let name = match name_os.to_str() {
+            Some(s) => s,
+            None => continue,
+        };
+        if let Some(components) = parse_version_components(name) {
+            entries.push(VersionEntry {
+                name: name.to_string(),
+                components,
+                path: entry.path(),
+            });
+        }
+    }
+    Ok(entries)
+}
+
+fn is_version_directory(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|s| s.to_str())
+        .and_then(parse_version_components)
+        .is_some()
+}
+
+fn resolve_game_version_root(
+    base: &Path,
+    requested: Option<&str>,
+) -> color_eyre::Result<(PathBuf, Option<String>)> {
+    if is_version_directory(base) {
+        let name = base
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string());
+        return Ok((base.to_path_buf(), name));
+    }
+
+    let mut entries = list_version_directories(base)?;
+
+    if let Some(req) = requested {
+        if let Some(path) = find_version_directory(base, req) {
+            let name = path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string());
+            return Ok((path, name));
+        } else {
+            return Err(color_eyre::eyre::eyre!(
+                "Requested version '{}' not found under {}",
+                req,
+                base.display()
+            ));
+        }
+    }
+
+    if entries.is_empty() {
+        return Ok((base.to_path_buf(), None));
+    }
+
+    entries.sort_by(|a, b| {
+        let len_cmp = a.components.len().cmp(&b.components.len());
+        if len_cmp != Ordering::Equal {
+            return len_cmp;
+        }
+        a.components.cmp(&b.components)
+    });
+
+    if let Some(entry) = entries.last() {
+        return Ok((entry.path.clone(), Some(entry.name.clone())));
+    }
+
+    Ok((base.to_path_buf(), None))
+}
 
 macro_rules! tr {
     ($msg:literal $(, $k:ident = $v:expr )* $(,)?) => {{
@@ -164,6 +303,10 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                     a.help(tr!("help-scan-source-lang-dir"))
                 });
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-scan-format")));
+                owned = owned.mut_arg("game_version", |a| a.help(tr!("help-scan-game-version")));
+                owned = owned.mut_arg("include_all_versions", |a| {
+                    a.help(tr!("help-scan-include-all"))
+                });
                 *sc = owned;
             }
             "validate" => {
@@ -175,6 +318,12 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                     a.help(tr!("help-validate-source-lang-dir"))
                 });
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-validate-format")));
+                owned = owned.mut_arg("game_version", |a| {
+                    a.help(tr!("help-validate-game-version"))
+                });
+                owned = owned.mut_arg("include_all_versions", |a| {
+                    a.help(tr!("help-validate-include-all"))
+                });
                 *sc = owned;
             }
             "validate-po" => {
@@ -195,6 +344,12 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("source_lang_dir", |a| {
                     a.help(tr!("help-exportpo-source-lang-dir"))
                 });
+                owned = owned.mut_arg("game_version", |a| {
+                    a.help(tr!("help-exportpo-game-version"))
+                });
+                owned = owned.mut_arg("include_all_versions", |a| {
+                    a.help(tr!("help-exportpo-include-all"))
+                });
                 *sc = owned;
             }
             "import-po" => {
@@ -209,6 +364,9 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-importpo-dry-run")));
                 owned = owned.mut_arg("backup", |a| a.help(tr!("help-importpo-backup")));
                 owned = owned.mut_arg("single_file", |a| a.help(tr!("help-importpo-single-file")));
+                owned = owned.mut_arg("game_version", |a| {
+                    a.help(tr!("help-importpo-game-version"))
+                });
                 *sc = owned;
             }
             "build-mod" => {
@@ -282,6 +440,12 @@ enum Commands {
         /// Output format: "csv" (default), or "json".
         #[arg(long, default_value = "csv", value_parser = ["csv", "json"])]
         format: String,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
+        /// Include all version subfolders (disable auto-pick of latest).
+        #[arg(long, default_value_t = false)]
+        include_all_versions: bool,
     },
 
     /// Validate strings and report issues (help localized via FTL).
@@ -297,6 +461,12 @@ enum Commands {
         /// Output format: "text" (default) or "json".
         #[arg(long, default_value = "text", value_parser = ["text", "json"])]
         format: String,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
+        /// Include all version subfolders (disable auto-pick of latest).
+        #[arg(long, default_value_t = false)]
+        include_all_versions: bool,
     },
 
     /// Validate .po placeholder consistency (msgid vs msgstr); help via FTL.
@@ -333,6 +503,12 @@ enum Commands {
         /// Source language folder name (e.g., "English"). Takes precedence over --source-lang.
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
+        /// Include all version subfolders (disable auto-pick of latest).
+        #[arg(long, default_value_t = false)]
+        include_all_versions: bool,
     },
 
     /// Import .po into a single XML or into an existing mod's structure (help via FTL).
@@ -355,6 +531,9 @@ enum Commands {
         backup: bool,
         #[arg(long, default_value_t = false)]
         single_file: bool,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
     },
 
     /// Build a standalone translation mod from a .po file (help via FTL).
@@ -557,6 +736,8 @@ impl Runnable for Commands {
                 source_lang,
                 source_lang_dir,
                 format,
+                game_version,
+                include_all_versions,
             } => {
                 debug!(
                     event = "scan_args",
@@ -564,10 +745,21 @@ impl Runnable for Commands {
                     out_csv = ?out_csv,
                     out_json = ?out_json,
                     lang = ?lang,
-                    format = %format
+                    format = %format,
+                    game_version = ?game_version,
+                    include_all_versions = include_all_versions
                 );
 
-                let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
+                let (scan_root, selected_version) = if include_all_versions {
+                    (root.clone(), None)
+                } else {
+                    resolve_game_version_root(&root, game_version.as_deref())?
+                };
+                if let Some(ver) = selected_version.as_deref() {
+                    info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
+                }
+
+                let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
 
                 // опциональный фильтр по исходному языку (папка в Languages)
                 let units = if let Some(dir) = source_lang_dir.clone() {
@@ -651,10 +843,21 @@ impl Runnable for Commands {
                 source_lang,
                 source_lang_dir,
                 format,
+                game_version,
+                include_all_versions,
             } => {
-                debug!(event = "validate_args", root = ?root);
+                debug!(event = "validate_args", root = ?root, game_version = ?game_version, include_all_versions = include_all_versions);
 
-                let mut units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
+                let (scan_root, selected_version) = if include_all_versions {
+                    (root.clone(), None)
+                } else {
+                    resolve_game_version_root(&root, game_version.as_deref())?
+                };
+                if let Some(ver) = selected_version.as_deref() {
+                    info!(event = "validate_version_resolved", version = ver, path = %scan_root.display());
+                }
+
+                let mut units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
 
                 // опциональный фильтр по исходному языку
                 if let Some(dir) = source_lang_dir.as_ref() {
@@ -856,11 +1059,22 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                game_version,
+                include_all_versions,
             } => {
-                debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir);
+                debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, game_version = ?game_version, include_all_versions = include_all_versions);
+
+                let (scan_root, selected_version) = if include_all_versions {
+                    (root.clone(), None)
+                } else {
+                    resolve_game_version_root(&root, game_version.as_deref())?
+                };
+                if let Some(ver) = selected_version.as_deref() {
+                    info!(event = "export_version_resolved", version = ver, path = %scan_root.display());
+                }
 
                 // 1) Сканируем все юниты
-                let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
+                let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
 
                 // 2) Определяем папку исходного языка:
                 //    - если задан --source-lang-dir → берём его
@@ -899,8 +1113,9 @@ impl Runnable for Commands {
                 dry_run,
                 backup,
                 single_file,
+                game_version,
             } => {
-                debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file);
+                debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file, game_version = ?game_version);
                 use std::fs;
 
                 let mut entries = rimloc_import_po::read_po_entries(&po)?;
@@ -943,10 +1158,15 @@ impl Runnable for Commands {
                     return Ok(());
                 }
 
-                let Some(root) = mod_root else {
+                let Some(base_root) = mod_root else {
                     ui_info!("import-need-target");
                     std::process::exit(2);
                 };
+                let (root, selected_version) =
+                    resolve_game_version_root(&base_root, game_version.as_deref())?;
+                if let Some(ver) = selected_version.as_deref() {
+                    info!(event = "import_version_resolved", version = ver, path = %root.display());
+                }
 
                 let lang_folder = if let Some(dir) = lang_dir {
                     dir
