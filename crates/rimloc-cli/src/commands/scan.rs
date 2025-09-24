@@ -34,7 +34,7 @@ pub fn run_scan(
         tracing::info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
+    let mut units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
 
     fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
         let mut comps = path.components();
@@ -53,22 +53,52 @@ pub fn run_scan(
 
     let units = if let Some(dir) = source_lang_dir.clone() {
         let before = units.len();
-        let filtered: Vec<_> = units
+        let mut filtered: Vec<_> = units
             .into_iter()
             .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
             .collect();
+        filtered.sort_by(|a, b| (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            )));
         tracing::info!(event = "scan_filtered_by_dir", before = before, after = filtered.len(), source_lang_dir = %dir);
         filtered
     } else if let Some(code) = source_lang.clone() {
         let dir = rimloc_import_po::rimworld_lang_dir(&code);
         let before = units.len();
-        let filtered: Vec<_> = units
+        let mut filtered: Vec<_> = units
             .into_iter()
             .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
             .collect();
+        filtered.sort_by(|a, b| (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            )));
         tracing::info!(event = "scan_filtered_by_code", source_lang = %code, source_dir = %dir, before = before, after = filtered.len());
         filtered
     } else {
+        units.sort_by(|a, b| (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            )));
         units
     };
 
