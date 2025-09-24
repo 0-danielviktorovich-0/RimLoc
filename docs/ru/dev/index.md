@@ -195,6 +195,22 @@ cargo flamegraph -p rimloc-cli -- --quiet scan --root ./test/TestMod --format js
 - Суужайте сценарий до одной команды (`scan` на большом моде и т.п.).
 - Используйте `tracing` + `RUST_LOG=debug`, чтобы сопоставлять горячие места с логами.
 
+## Публикация dev‑пререлиза (GitHub Actions)
+
+Есть два способа выложить мультиархивные dev‑сборки:
+
+1) Вручную (Release — dev pre‑release):
+   - GitHub → Actions → «Release (dev pre-release)» → «Run workflow».
+   - Тег вычисляется из версии Cargo и короткого SHA (например, `v0.0.1-dev.ab12c34`).
+   - Артефакты для Linux/macOS/Windows (x86_64 + aarch64; для Linux есть ещё x86_64‑musl).
+2) Автоматически (Nightly Dev Pre-release):
+   - Пуш в ветку `develop`.
+   - CI создаёт/обновляет пререлиз с такой же схемой тега.
+
+В тело релиза добавляются SHA коммита и список целей. При необходимости можно отредактировать описание после завершения CI.
+
+Скоро добавим скриншоты/GIF процесса «Run workflow» (встроим в доки, когда будут готовы).
+
 ### Профилирование в Windows (WPA/ETW)
 
 В Windows нет нативного `perf`/`dtrace`, но можно писать ETW‑трейсы и смотреть их в WPA:
