@@ -110,3 +110,81 @@ rimloc-cli --quiet import-po --po ./out/MyMod.po --out-xml ./out/MyMod.ru.xml
 rimloc-cli --quiet build-mod --po ./out/MyMod.po --out-mod ./dist/MyMod-ru --lang ru --dedupe
 ```
 
+## VS Code / VSCodium setup
+
+VS Code and VSCodium (telemetry‑free build of VS Code) work equally well for Rust. Recommended extensions:
+
+- rust‑analyzer (official Rust language support)
+- CodeLLDB (debugger)
+- Even Better TOML (Cargo.toml)
+- Fluent (FTL) syntax highlight (e.g., "Fluent Support")
+
+Place these files under `.vscode/` (VSCodium also reads them):
+
+Example `tasks.json`:
+
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "cargo build", "type": "shell", "command": "cargo build --workspace" },
+    { "label": "cargo test",  "type": "shell", "command": "cargo test --workspace" },
+    { "label": "cargo clippy", "type": "shell", "command": "cargo clippy --workspace --all-targets -- -D warnings" },
+    { "label": "cargo fmt",    "type": "shell", "command": "cargo fmt" },
+    { "label": "mkdocs serve", "type": "shell", "command": "python -m venv .venv && . .venv/bin/activate && pip install -r requirements-docs.txt && mkdocs serve" }
+  ]
+}
+```
+
+Example `launch.json` (debug `rimloc-cli`):
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug rimloc-cli (scan)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/rimloc-cli",
+      "args": ["--quiet", "scan", "--root", "${workspaceFolder}/test/TestMod", "--format", "json"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
+      "preLaunchTask": "cargo build"
+    },
+    {
+      "name": "Debug rimloc-cli (validate)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/rimloc-cli",
+      "args": ["--quiet", "validate", "--root", "${workspaceFolder}/test/TestMod", "--format", "text"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
+      "preLaunchTask": "cargo build"
+    }
+  ]
+}
+```
+
+Tips:
+
+- Add a "cargo test" compound task or a test launch with `program`: `${workspaceFolder}/target/debug/rimloc-cli-<hash>` if you debug test binaries.
+- VSCodium users can reuse the same `.vscode/` folder.
+
+## Profiling tips
+
+For quick CPU flamegraphs:
+
+```bash
+cargo install flamegraph
+# Linux needs `perf` (sudo apt install linux-tools-...)
+# macOS needs dtrace (run as root) or use Instruments
+
+cargo flamegraph -p rimloc-cli -- --quiet scan --root ./test/TestMod --format json
+```
+
+General tips:
+
+- Profile release builds: `cargo build --release`.
+- Narrow down workloads to a single subcommand (e.g., `scan` on a bigger mod).
+- Use `tracing` spans (already enabled) + `RUST_LOG=debug` to correlate hot paths with logs.
