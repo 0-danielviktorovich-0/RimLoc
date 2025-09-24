@@ -140,9 +140,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.create_release.outputs.tag }}
-          files: |
-            dist/*.tar.gz
-            dist/*.zip
+          files: dist/*
 
   macos:
     needs: create_release
