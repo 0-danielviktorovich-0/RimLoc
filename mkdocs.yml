@@ -58,7 +58,7 @@ nav:
       - Export/Import: cli/export_import.md
 
 exclude_docs: |
-  readme/README.ru.md
+  readme/**
 
 extra:
   edit_uri: edit/main/docs/
