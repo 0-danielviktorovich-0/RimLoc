@@ -214,6 +214,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("rw_version", |a| a.help(tr!("help-buildmod-rw-version")));
                 owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-buildmod-lang-dir")));
                 owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-buildmod-dry-run")));
+                owned = owned.mut_arg("dedupe", |a| a.help(tr!("help-buildmod-dedupe")));
                 *sc = owned;
             }
             _ => {}
@@ -393,6 +394,9 @@ enum Commands {
         lang_dir: Option<String>,
         #[arg(long, default_value_t = false)]
         dry_run: bool,
+        /// Remove duplicate keys within a single XML file (last wins)
+        #[arg(long, default_value_t = false)]
+        dedupe: bool,
     },
 }
 
@@ -642,8 +646,9 @@ impl Runnable for Commands {
                 rw_version,
                 lang_dir,
                 dry_run,
+                dedupe,
             } => commands::build_mod::run_build_mod(
-                po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run,
+                po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run, dedupe,
             ),
         };
 

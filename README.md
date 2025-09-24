@@ -84,6 +84,7 @@ rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version 
 ## Documentation & Support
 
 - Browse the full docs: [RimLoc Docs](https://0-danielviktorovich-0.github.io/RimLoc/)
+- Filing issues? See the short [Issue Guidelines](docs/en/community/issues.md) for what to include.
 - Command reference lives under `docs/en/cli/` (with Russian mirrors in `docs/ru/cli/`).
 - Sample fixtures for experimenting are under `test/`.
 - Report issues or request features via [GitHub Issues](https://github.com/0-danielviktorovich-0/RimLoc/issues).

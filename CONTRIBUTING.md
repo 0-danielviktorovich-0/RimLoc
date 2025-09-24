@@ -97,7 +97,7 @@ refactor(po): centralize simple PO parsing in rimloc-core
 5. Respond to review feedback promptly; keep discussions respectful and actionable.
 
 ## Reporting Issues & Feature Requests
-- Use GitHub Issues with clear steps, expected vs actual behaviour, and environment details.
+- Use GitHub Issues with clear steps, expected vs actual behaviour, and environment details. See the [Issue Guidelines](docs/en/community/issues.md) for the checklist and examples.
 - For translation or localisation issues, mention the locale and provide sample strings.
 - Security vulnerabilities should be reported privately to the maintainer (see repository contact info).
 
