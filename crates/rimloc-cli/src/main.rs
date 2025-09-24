@@ -254,7 +254,7 @@ struct Cli {
     ui_lang: Option<String>,
 
     /// Suppress startup banner and non-essential stdout messages.
-    #[arg(long, global = true)]
+    #[arg(long, global = true, visible_alias = "no-banner")]
     quiet: bool,
 }
 

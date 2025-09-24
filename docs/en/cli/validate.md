@@ -25,6 +25,7 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 | `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
 | `--include-all-versions` | Validate all version subfolders instead of auto-picking the latest. | No |
 | `--ui-lang`            | Language for the UI messages                                     | No       |
+| `--quiet`              | Suppress startup banner and non-essential stdout (alias: `--no-banner`) | No       |
 | `--help`               | Show help message                                                 | No       |
 
 !!! tip

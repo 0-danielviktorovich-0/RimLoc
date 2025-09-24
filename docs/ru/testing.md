@@ -30,11 +30,14 @@ RimLoc пишет диагностику в stderr и в лог-файл с ро
 
 - `RUST_LOG=info|debug|trace` — уровень подробности в консоли (по умолчанию `info`).
 - `RIMLOC_LOG_DIR=./logs` — директория для ежедневных логов (по умолчанию `./logs`).
+- `RIMLOC_LOG_FORMAT=json` — переключить файловый лог в структурированный JSON (по умолчанию `text`).
 - Для чистого копипаста можно отключить украшения UI:
   - `NO_COLOR=1` — без ANSI-цветов,
   - `NO_ICONS=1` — без символов ✔/⚠/✖.
 
 При старте RimLoc печатает баннер с версией, `RIMLOC_LOG_DIR` и текущим `RUST_LOG` — это сразу даёт контекст в отчётах.
+
+Совет для автоматизации: используйте `--quiet` вместе с `--format json`, чтобы stdout оставался машинно‑читаемым, а диагностические сообщения шли в stderr/лог.
 
 ## Сквозные проверки CLI
 
@@ -113,4 +116,3 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-docs.txt
 mkdocs serve
 ```
-

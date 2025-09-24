@@ -32,6 +32,12 @@ RimLoc CLI объединяет инструменты для сбора, про
 | [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
 | [`build-mod`](build_mod.md) | Собирает самостоятельный мод-перевод. | `--out-mod`, `--package-id`, `--dry-run` |
 
+## Глобальные опции
+
+- `--ui-lang <LANG>` — язык сообщений (например, `en`, `ru`).
+- `--no-color` — отключить ANSI‑цвета в терминале.
+- `--quiet` — скрыть стартовый баннер и несущ. сообщения в stdout (алиас: `--no-banner`). Рекомендуется для JSON‑конвейеров.
+
 ## Полезные паттерны
 
 ```bash
