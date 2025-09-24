@@ -13,7 +13,7 @@ title: Команда Scan
 ```bash
 rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
                  [--source-lang <CODE>] [--source-lang-dir <DIR>] \
-                 [--format <csv|json>]
+                 [--format <csv|json>] [--game-version <VER>] [--include-all-versions]
 ```
 
 ## Опции
@@ -27,6 +27,8 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 | `--source-lang <CODE>`   | Код исходного языка для дополнительных проверок (опционально).             | Нет         |
 | `--source-lang-dir <DIR>`| Явный путь к директории исходного языка (опционально).                      | Нет         |
 | `--format <csv|json>`    | Формат вывода в stdout. По умолчанию — `csv`.                              | Нет         |
+| `--game-version <VER>`   | Папка версии, по которой работать (например, `1.4`, `v1.4`). Если не указано — берётся последняя. | Нет |
+| `--include-all-versions` | Сканировать все подпапки версий под корнем, отключая авто-выбор последней. | Нет |
 
 ### `-r, --root <PATH>`
 Путь к корневой директории мода RimWorld для сканирования. **Обязательно**.

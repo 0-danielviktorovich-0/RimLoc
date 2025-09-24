@@ -56,6 +56,21 @@ rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang r
 | `rimloc-cli import-po` | Вернуть переводы из PO обратно в XML. | `rimloc-cli import-po --po ./out/mymod.po --mod-root ./path/to/mod --dry-run` |
 | `rimloc-cli build-mod` | Собрать автономный мод-перевод. | `rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru` |
 
+### Версионные папки
+
+Если мод использует поддиректории версий (например, `1.4`, `1.5`, `v1.6`), можно явно выбрать нужную или обработать все:
+
+```bash
+# Сканировать конкретную версию (если не указано — выбирается последняя)
+rimloc-cli scan --root ./Mods/MyMod --game-version 1.4
+
+# Проверить все версии под корнем мода
+rimloc-cli validate --root ./Mods/MyMod --include-all-versions
+
+# Экспорт с учётом версионной структуры
+rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version v1.6
+```
+
 ### Demo (asciinema)
 
 [![asciicast](https://asciinema.org/a/your-demo-id.svg)](https://asciinema.org/a/your-demo-id)

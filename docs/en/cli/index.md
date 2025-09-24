@@ -25,11 +25,11 @@ RimLoc CLI bundles everything needed to inventory, validate, and exchange RimWor
 
 | Command | Purpose | Frequent options |
 |---------|---------|------------------|
-| [`scan`](scan.md) | Harvest translation units from XML. | `--lang`, `--format`, `--out-csv`, `--out-json` |
-| [`validate`](validate.md) | QA check XML for duplicates, empties, placeholders. | `--format`, `--source-lang`, `--source-lang-dir` |
+| [`scan`](scan.md) | Harvest translation units from XML. | `--lang`, `--format`, `--out-csv`, `--out-json`, `--game-version`, `--include-all-versions` |
+| [`validate`](validate.md) | QA check XML for duplicates, empties, placeholders. | `--format`, `--source-lang`, `--source-lang-dir`, `--game-version`, `--include-all-versions` |
 | [`validate-po`](validate_po.md) | Compare placeholders inside PO files. | `--po`, `--strict`, `--format` |
-| [`export-po`](export_import.md#export-po) | Produce a single PO bundle for translators. | `--root`, `--out-po`, `--lang` |
-| [`import-po`](export_import.md#import-po) | Apply PO changes back to XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file` |
+| [`export-po`](export_import.md#export-po) | Produce a single PO bundle for translators. | `--root`, `--out-po`, `--lang`, `--game-version`, `--include-all-versions` |
+| [`import-po`](export_import.md#import-po) | Apply PO changes back to XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
 | [`build-mod`](build_mod.md) | Scaffold a translation-only RimWorld mod from a PO file. | `--out-mod`, `--package-id`, `--dry-run` |
 
 ## Helpful patterns
