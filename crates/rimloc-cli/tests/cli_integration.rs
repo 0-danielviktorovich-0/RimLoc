@@ -186,18 +186,21 @@ fn validate_json_emits_structured_issues() {
     // In quiet mode stdout must be a clean JSON array
     let json_slice = out.as_str();
     let msgs: Vec<JsonMsg> = serde_json::from_str(json_slice).expect("valid JSON diagnostics");
-    assert!(
-        !msgs.is_empty(),
-        "expected at least one issue in fixture"
-    );
+    assert!(!msgs.is_empty(), "expected at least one issue in fixture");
     let allowed = ["duplicate", "empty", "placeholder-check"];
     for m in msgs {
-        assert!(allowed.contains(&m.kind.as_str()), "unexpected kind: {}", m.kind);
+        assert!(
+            allowed.contains(&m.kind.as_str()),
+            "unexpected kind: {}",
+            m.kind
+        );
         assert!(!m.key.is_empty(), "key must be non-empty");
         assert!(!m.path.is_empty(), "path must be non-empty");
         assert!(!m.message.is_empty(), "message must be non-empty");
         // Touch optional line to avoid dead_code warnings and ensure it's a valid number if present
-        if let Some(l) = m.line { let _ = l; }
+        if let Some(l) = m.line {
+            let _ = l;
+        }
     }
 }
 
@@ -241,7 +244,10 @@ fn export_po_respects_version_selection() {
 
     let s = fs::read_to_string(&out_po).expect("read out.po");
     // msgid contains source text, not the key
-    assert!(s.contains("msgid \"Old\""), "PO must contain 'Old' from v1.5");
+    assert!(
+        s.contains("msgid \"Old\""),
+        "PO must contain 'Old' from v1.5"
+    );
     assert!(
         !s.contains("msgid \"New\""),
         "PO must not contain 'New' from v1.6 when version=1.5"
@@ -251,7 +257,9 @@ fn export_po_respects_version_selection() {
 #[test]
 fn scan_errors_on_missing_version() {
     let mut cmd = bin_cmd();
-    cmd.args(["--quiet"]).args(["scan", "--root"]).arg(fixture("test/TestMod"))
+    cmd.args(["--quiet"])
+        .args(["scan", "--root"])
+        .arg(fixture("test/TestMod"))
         .args(["--game-version", "9.9"]);
     cmd.assert().failure();
 }
@@ -261,8 +269,11 @@ fn export_po_errors_on_missing_version() {
     let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
     let out_po = tmp.path().join("out.po");
     let mut cmd = bin_cmd();
-    cmd.args(["--quiet"]).args(["export-po", "--root"]).arg(fixture("test/TestMod"))
-        .args(["--out-po"]).arg(&out_po)
+    cmd.args(["--quiet"])
+        .args(["export-po", "--root"])
+        .arg(fixture("test/TestMod"))
+        .args(["--out-po"])
+        .arg(&out_po)
         .args(["--game-version", "0.0"]);
     cmd.assert().failure();
 }
@@ -271,11 +282,17 @@ fn export_po_errors_on_missing_version() {
 fn scan_csv_adds_lang_column_when_lang_passed() {
     // When --lang is provided, CSV should add a lang column as the first header
     let mut cmd = bin_cmd();
-    cmd.args(["--quiet"]).args(["scan", "--root"]).arg(fixture("test/TestMod"))
+    cmd.args(["--quiet"])
+        .args(["scan", "--root"])
+        .arg(fixture("test/TestMod"))
         .args(["--lang", "ru"]);
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    assert!(out.lines().next().unwrap_or("").starts_with("lang,key,source,path,line"));
+    assert!(out
+        .lines()
+        .next()
+        .unwrap_or("")
+        .starts_with("lang,key,source,path,line"));
 }
 
 #[test]
@@ -297,21 +314,23 @@ fn scan_filters_by_source_lang_and_dir() {
     let root = tmp.path();
 
     // Create Languages/English/Keyed and Languages/Russian/Keyed
-    let en_keyed = root
-        .join("Languages")
-        .join("English")
-        .join("Keyed");
-    let ru_keyed = root
-        .join("Languages")
-        .join("Russian")
-        .join("Keyed");
+    let en_keyed = root.join("Languages").join("English").join("Keyed");
+    let ru_keyed = root.join("Languages").join("Russian").join("Keyed");
     fs::create_dir_all(&en_keyed).unwrap();
     fs::create_dir_all(&ru_keyed).unwrap();
 
     let mut f_en = fs::File::create(en_keyed.join("A.xml")).unwrap();
-    writeln!(f_en, "<LanguageData>\n  <K_EN>Hello</K_EN>\n</LanguageData>\n").unwrap();
+    writeln!(
+        f_en,
+        "<LanguageData>\n  <K_EN>Hello</K_EN>\n</LanguageData>\n"
+    )
+    .unwrap();
     let mut f_ru = fs::File::create(ru_keyed.join("B.xml")).unwrap();
-    writeln!(f_ru, "<LanguageData>\n  <K_RU>Привет</K_RU>\n</LanguageData>\n").unwrap();
+    writeln!(
+        f_ru,
+        "<LanguageData>\n  <K_RU>Привет</K_RU>\n</LanguageData>\n"
+    )
+    .unwrap();
 
     // 1) No filters => both keys
     let mut cmd = bin_cmd();
@@ -331,7 +350,10 @@ fn scan_filters_by_source_lang_and_dir() {
         let _ = u.value.as_deref();
     }
     let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
-    assert_eq!(keys, ["K_EN", "K_RU"].into_iter().map(String::from).collect());
+    assert_eq!(
+        keys,
+        ["K_EN", "K_RU"].into_iter().map(String::from).collect()
+    );
 
     // 2) Filter by --source-lang en => only English
     let mut cmd = bin_cmd();
@@ -417,7 +439,10 @@ fn import_po_single_file_writes_and_backup() {
     let bak = out_xml.with_extension("xml.bak");
     assert!(bak.exists(), "expected .bak backup to be created");
     let s = fs::read_to_string(&out_xml).expect("read imported xml");
-    assert!(s.contains("<K_NEW>Привет</K_NEW>"), "imported value must appear");
+    assert!(
+        s.contains("<K_NEW>Привет</K_NEW>"),
+        "imported value must appear"
+    );
 }
 
 #[test]
