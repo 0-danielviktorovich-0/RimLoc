@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-
 pub const CTX_NONE: &str = "n/a";
 
 #[macro_export]
@@ -242,7 +241,7 @@ pub fn assert_contains_with_context(
         msg.push_str(&format!("[needle]    {needle}\n"));
         msg.push_str(&format!("[expected]  {ctx_expected}\n"));
         msg.push_str(&format!("[locale]    {ctx_locale}\n"));
-        msg.push_str("\n");
+        msg.push('\n');
 
         // Старый head(10)
         msg.push_str("--- head(10) ---\n");
@@ -290,7 +289,14 @@ pub fn assert_contains_in_outputs(
     ctx_key: &str,
 ) {
     let combined = format!("{}{}", stdout, stderr);
-    assert_contains_with_context(&combined, needle, context_msg, ctx_locale, ctx_file, ctx_key);
+    assert_contains_with_context(
+        &combined,
+        needle,
+        context_msg,
+        ctx_locale,
+        ctx_file,
+        ctx_key,
+    );
 }
 
 /// Проверить, что в тексте присутствуют **все** заданные элементы (needle, file, key)
@@ -426,7 +432,14 @@ pub fn assert_set_eq(
         extra
     );
     // Use empty needle and haystack since we compare sets, not substrings
-    fail_with_context!(ctx_locale, ctx_file, ctx_key, &detail, "<set-diff>", "<no-haystack>");
+    fail_with_context!(
+        ctx_locale,
+        ctx_file,
+        ctx_key,
+        &detail,
+        "<set-diff>",
+        "<no-haystack>"
+    );
 }
 
 /// Assert that a key exists in a map; useful for FTL key presence checks.
@@ -487,7 +500,7 @@ fn extract_fluent_vars(s: &str) -> std::collections::BTreeSet<String> {
 pub fn assert_locale_diff(
     loc: &str,
     reference: &std::collections::BTreeMap<String, String>, // en
-    other: &std::collections::BTreeMap<String, String>,      // loc
+    other: &std::collections::BTreeMap<String, String>,     // loc
     ctx_file: &std::path::Path,
     section_for_key: fn(&str) -> &'static str,
     context_msg: &str,
@@ -498,31 +511,42 @@ pub fn assert_locale_diff(
     let other_keys: BTreeSet<_> = other.keys().cloned().collect();
 
     // allowlist (опционально): crates/rimloc-cli/tests/i18n_allowlist.toml
-    let allowlist: std::collections::BTreeSet<String> = (|| {
+    let allowlist: std::collections::BTreeSet<String> = {
         let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests")
             .join("i18n_allowlist.toml");
         let mut set = BTreeSet::new();
         if let Ok(text) = std::fs::read_to_string(&p) {
             // очень простой формат: строки "loc:key" или "[loc]\nkey=1"
-            for line in text.lines().map(|l| l.trim()).filter(|l| !l.is_empty() && !l.starts_with('#')) {
+            for line in text
+                .lines()
+                .map(|l| l.trim())
+                .filter(|l| !l.is_empty() && !l.starts_with('#'))
+            {
                 if let Some((l, k)) = line.split_once(':') {
-                    if l == loc { set.insert(k.to_string()); }
+                    if l == loc {
+                        set.insert(k.to_string());
+                    }
                 }
             }
         }
         set
-    })();
+    };
 
-    let missing: Vec<String> =
-        en_keys.difference(&other_keys).filter(|k| !allowlist.contains(*k)).cloned().collect();
+    let missing: Vec<String> = en_keys
+        .difference(&other_keys)
+        .filter(|k| !allowlist.contains(*k))
+        .cloned()
+        .collect();
     let extra: Vec<String> = other_keys.difference(&en_keys).cloned().collect();
 
     // параметрические несовпадения на общих ключах
     let common: Vec<_> = en_keys.intersection(&other_keys).cloned().collect();
     let mut arg_mismatches: Vec<(String, BTreeSet<String>, BTreeSet<String>)> = Vec::new();
     for k in common {
-        if allowlist.contains(&k) { continue; }
+        if allowlist.contains(&k) {
+            continue;
+        }
         let en_vars = extract_fluent_vars(reference.get(&k).unwrap());
         let ot_vars = extract_fluent_vars(other.get(&k).unwrap());
         if en_vars != ot_vars {
@@ -541,28 +565,52 @@ pub fn assert_locale_diff(
     let cap = 20usize; // сколько элементов выводить в каждой группе
     if !missing.is_empty() {
         let mut by_sec: BTreeMap<&str, Vec<&String>> = BTreeMap::new();
-        for k in &missing { by_sec.entry(section_for_key(k)).or_default().push(k); }
+        for k in &missing {
+            by_sec.entry(section_for_key(k)).or_default().push(k);
+        }
         msg.push_str(&format!("  • Missing keys ({} total):\n", missing.len()));
         for (sec, items) in by_sec {
             let shown = items.len().min(cap);
-            msg.push_str(&format!("    - in section {} ({}): {:?}\n", sec, items.len(), &items[..shown]));
-            if items.len() > cap { msg.push_str(&format!("      +{} more…\n", items.len() - cap)); }
+            msg.push_str(&format!(
+                "    - in section {} ({}): {:?}\n",
+                sec,
+                items.len(),
+                &items[..shown]
+            ));
+            if items.len() > cap {
+                msg.push_str(&format!("      +{} more…\n", items.len() - cap));
+            }
         }
     }
     if !extra.is_empty() {
         let mut by_sec: BTreeMap<&str, Vec<&String>> = BTreeMap::new();
-        for k in &extra { by_sec.entry(section_for_key(k)).or_default().push(k); }
+        for k in &extra {
+            by_sec.entry(section_for_key(k)).or_default().push(k);
+        }
         msg.push_str(&format!("  • Extra keys ({} total):\n", extra.len()));
         for (sec, items) in by_sec {
             let shown = items.len().min(cap);
-            msg.push_str(&format!("    - in section {} ({}): {:?}\n", sec, items.len(), &items[..shown]));
-            if items.len() > cap { msg.push_str(&format!("      +{} more…\n", items.len() - cap)); }
+            msg.push_str(&format!(
+                "    - in section {} ({}): {:?}\n",
+                sec,
+                items.len(),
+                &items[..shown]
+            ));
+            if items.len() > cap {
+                msg.push_str(&format!("      +{} more…\n", items.len() - cap));
+            }
         }
     }
     if !arg_mismatches.is_empty() {
-        msg.push_str(&format!("  • Keys with argument set mismatch ({}):\n", arg_mismatches.len()));
+        msg.push_str(&format!(
+            "  • Keys with argument set mismatch ({}):\n",
+            arg_mismatches.len()
+        ));
         for (i, (k, en_vars, ot_vars)) in arg_mismatches.iter().enumerate().take(cap) {
-            msg.push_str(&format!("    - {}\n      en: {:?}\n      {}: {:?}\n", k, en_vars, loc, ot_vars));
+            msg.push_str(&format!(
+                "    - {}\n      en: {:?}\n      {}: {:?}\n",
+                k, en_vars, loc, ot_vars
+            ));
             if i + 1 == cap && arg_mismatches.len() > cap {
                 msg.push_str(&format!("      +{} more…\n", arg_mismatches.len() - cap));
                 break;
@@ -584,15 +632,26 @@ pub fn assert_locale_diff(
         let payload = Mismatch {
             missing: &missing,
             extra: &extra,
-            arg_mismatches: arg_mismatches.iter()
+            arg_mismatches: arg_mismatches
+                .iter()
                 .map(|(k, a, b)| (k, a.iter().cloned().collect(), b.iter().cloned().collect()))
                 .collect(),
         };
-        let _ = std::fs::write(&file, serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string()));
+        let _ = std::fs::write(
+            &file,
+            serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".to_string()),
+        );
     }
 
     // Единый формат падения
-    fail_with_context!(loc, ctx_file, "<locale-diff>", context_msg, "<locale-mismatch>", &msg);
+    fail_with_context!(
+        loc,
+        ctx_file,
+        "<locale-diff>",
+        context_msg,
+        "<locale-mismatch>",
+        &msg
+    );
 }
 
 /// Упрощённый макрос для вызова [`assert_contains_with_context`].
@@ -600,7 +659,7 @@ pub fn assert_locale_diff(
 #[macro_export]
 macro_rules! assert_has {
     ($out:expr, $needle:expr, $path:expr, $ctx_locale:expr, $ctx_key:expr, $ctx_expected:expr $(,)?) => {
-        crate::helpers::assert_contains_with_context(
+        $crate::helpers::assert_contains_with_context(
             $out,
             $needle,
             $ctx_expected,
@@ -640,10 +699,7 @@ pub fn assert_ftl_key_present_all(locales: &[(&str, &std::path::Path)], key: &st
                 .join("\n");
             panic!(
                 "[{}] {:?} отсутствует ключ = {}\n--- available keys ---\n{}\n--- end of list ---",
-                locale,
-                ftl_path,
-                key,
-                list
+                locale, ftl_path, key, list
             );
         }
     }
@@ -678,11 +734,7 @@ pub fn assert_success_with_context(
 }
 
 /// Assert file exists and non-empty; on failure show size and folder listing.
-pub fn assert_file_nonempty(
-    path: &std::path::Path,
-    context_msg: &str,
-    ctx_key: &str,
-) {
+pub fn assert_file_nonempty(path: &std::path::Path, context_msg: &str, ctx_key: &str) {
     if !path.exists() {
         assert_path_exists(path, context_msg, ctx_key); // выбросит подробную панику
         return; // на всякий
@@ -698,7 +750,10 @@ pub fn assert_file_nonempty(
         let _ = std::fs::read_dir(dir).map(|rd| {
             for e in rd.flatten() {
                 let p = e.path();
-                let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("<non-utf8>");
+                let name = p
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("<non-utf8>");
                 let sz = std::fs::metadata(&p).ok().map(|m| m.len()).unwrap_or(0);
                 listing.push_str(&format!(" - {} ({} B)\n", name, sz));
             }
@@ -708,21 +763,27 @@ pub fn assert_file_nonempty(
         "{}\n--- file ---\n{:?}\nsize=0 B\n--- siblings ---\n{}",
         context_msg, path, listing
     );
-    fail_with_context!(CTX_NONE, path, ctx_key, &detail, "<non-empty file>", "<empty file>");
+    fail_with_context!(
+        CTX_NONE,
+        path,
+        ctx_key,
+        &detail,
+        "<non-empty file>",
+        "<empty file>"
+    );
 }
 
 /// Assert that directory contains at least one *.xml; otherwise print directory listing.
-pub fn assert_dir_contains_xml(
-    dir: &std::path::Path,
-    context_msg: &str,
-    ctx_key: &str,
-) {
+pub fn assert_dir_contains_xml(dir: &std::path::Path, context_msg: &str, ctx_key: &str) {
     let mut xmls = Vec::new();
     let mut listing = String::new();
     if let Ok(rd) = std::fs::read_dir(dir) {
         for e in rd.flatten() {
             let p = e.path();
-            let name = p.file_name().and_then(|s| s.to_str()).unwrap_or("<non-utf8>");
+            let name = p
+                .file_name()
+                .and_then(|s| s.to_str())
+                .unwrap_or("<non-utf8>");
             let sz = std::fs::metadata(&p).ok().map(|m| m.len()).unwrap_or(0);
             listing.push_str(&format!(" - {} ({} B)\n", name, sz));
             if p.extension().and_then(|s| s.to_str()) == Some("xml") {
@@ -737,5 +798,12 @@ pub fn assert_dir_contains_xml(
         "{}\n--- dir ---\n{:?}\n--- listing ---\n{}",
         context_msg, dir, listing
     );
-    fail_with_context!(CTX_NONE, dir, ctx_key, &detail, "<*.xml present>", "<no xml files>");
+    fail_with_context!(
+        CTX_NONE,
+        dir,
+        ctx_key,
+        &detail,
+        "<*.xml present>",
+        "<no xml files>"
+    );
 }
