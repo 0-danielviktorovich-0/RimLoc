@@ -63,6 +63,8 @@ nav:
       - Placeholders: guide/placeholders.md
   - Community:
       - Issue Guidelines: community/issues.md
+      - Pull Requests: community/pull_requests.md
+      - Localization: community/localization.md
 
 exclude_docs: |
   readme/**
