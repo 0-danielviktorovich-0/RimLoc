@@ -25,6 +25,9 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 | `--ui-lang`          | Language for the UI messages                             | No       |
 | `--help`             | Show help message                                       | No       |
 
+!!! tip
+    If neither `--source-lang` nor `--source-lang-dir` is provided, RimLoc assumes the baseline files live under `Languages/English`.
+
 ## Checks performed
 
 - *empty* — detects empty values  

@@ -11,7 +11,7 @@ title: Команда Scan
 ## Синопсис
 
 ```bash
-rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--lang <CODE>] \
+rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
                  [--source-lang <CODE>] [--source-lang-dir <DIR>] \
                  [--format <csv|json>]
 ```
@@ -22,6 +22,7 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--lang <CODE>] \
 |-------------------------|-----------------------------------------------------------------------------|-------------|
 | `-r, --root <PATH>`      | Путь к корневой директории мода RimWorld для сканирования.                  | Да          |
 | `--out-csv <FILE>`       | Сохранить извлечённые записи в CSV-файл (включая заголовок).                | Нет         |
+| `--out-json <FILE>`      | Сохранить извлечённые записи в JSON-файл (требует `--format json`).        | Нет         |
 | `--lang <CODE>`          | Код языка для сканирования (например, `en`, `ru`). Если не указан, сканируются все языки. | Нет         |
 | `--source-lang <CODE>`   | Код исходного языка для дополнительных проверок (опционально).             | Нет         |
 | `--source-lang-dir <DIR>`| Явный путь к директории исходного языка (опционально).                      | Нет         |
@@ -32,6 +33,9 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--lang <CODE>] \
 
 ### `--out-csv <FILE>`
 Сохранить извлечённые записи в CSV-файл (включая заголовок).
+
+### `--out-json <FILE>`
+Сохранить JSON-вывод в файл (нужно указать `--format json`). Команда всё равно печатает результат в stdout, пока вы его не перенаправите.
 
 ### `--lang <CODE>`
 Код языка для сканирования (например, `en`, `ru`). Если не указан, сканируются все языки.
@@ -48,7 +52,7 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--lang <CODE>] \
 Форматы вывода:
 
 - `csv` — выводит CSV в stdout (используйте `--out-csv` для сохранения в файл).  
-- `json` — выводит JSON-массив единиц перевода в stdout.
+- `json` — выводит JSON-массив единиц перевода в stdout; добавьте `--out-json`, чтобы сохранить копию на диске.
 
 Каждая единица перевода имеет следующую структуру:
 ```json
@@ -73,6 +77,12 @@ rimloc-cli scan --root ./test/TestMod --format json | jq .
 rimloc-cli scan --root ./test/TestMod --lang en --out-csv out.csv
 ```
 *Извлекает английские записи и записывает их в `out.csv`.*
+
+Сохранять JSON и оставлять вывод в консоли:
+```bash
+rimloc-cli scan --root ./test/TestMod --format json --out-json ./logs/scan.json
+```
+*Создаёт `scan.json`, одновременно печатая JSON в stdout.*
 
 Вывести CSV напрямую в stdout:
 ```bash

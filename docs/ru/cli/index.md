@@ -16,19 +16,21 @@ RimLoc CLI объединяет инструменты для сбора, про
 
 1. **Scan** — извлекает строки из мода.
 2. **Validate** — ловит дубликаты, пустоты и несоответствия плейсхолдеров.
-3. **Export PO/CSV** — готовит пакет для переводчиков или CAT-инструментов.
+3. **Export PO** — готовит пакет для переводчиков или CAT-инструментов.
 4. **Validate PO** — сверяет плейсхолдеры в переведённых PO-файлах.
 5. **Import PO** — возвращает переводы в XML и позволяет снова прогнать `validate` перед релизом.
+6. *(Опционально)* **Build Mod** — собирает автономный мод-перевод из итогового `.po` файла.
 
 ## Сводная таблица
 
 | Команда | Назначение | Частые опции |
 |---------|------------|--------------|
-| [`scan`](scan.md) | Собирает единицы перевода из XML. | `--lang`, `--format`, `--out-csv` |
-| [`validate`](validate.md) | Проверяет XML на дубликаты, пустоты и плейсхолдеры. | `--format`, `--ui-lang` |
+| [`scan`](scan.md) | Собирает единицы перевода из XML. | `--lang`, `--format`, `--out-csv`, `--out-json` |
+| [`validate`](validate.md) | Проверяет XML на дубликаты, пустоты и плейсхолдеры. | `--format`, `--source-lang`, `--source-lang-dir` |
 | [`validate-po`](validate_po.md) | Сравнивает плейсхолдеры в PO-файлах. | `--po`, `--strict`, `--format` |
-| [`export-po`](export_import.md#export-po) | Формирует пакеты PO/CSV для переводчиков. | `--out`, `--single-po`, `--dry-run` |
-| [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--po`, `--out`, `--dry-run` |
+| [`export-po`](export_import.md#export-po) | Формирует единый PO-файл для переводчиков. | `--root`, `--out-po`, `--lang` |
+| [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file` |
+| [`build-mod`](build_mod.md) | Собирает самостоятельный мод-перевод. | `--out-mod`, `--package-id`, `--dry-run` |
 
 ## Полезные паттерны
 
@@ -40,8 +42,11 @@ rimloc-cli validate --root ./path/to/mod --format text
 rimloc-cli validate --root ./path/to/mod --format json | jq '.[] | select(.level=="error")'
 
 # Экспортировать и тут же проверить плейсхолдеры в PO
-rimloc-cli export-po --root ./path/to/mod --single-po --out ./out/mymod.po
+rimloc-cli export-po --root ./path/to/mod --out-po ./out/mymod.po --lang ru
 rimloc-cli validate-po --po ./out/mymod.po --strict
+
+# Посмотреть, каким будет готовый мод-перевод
+rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru --dry-run
 ```
 
 ## Решение проблем

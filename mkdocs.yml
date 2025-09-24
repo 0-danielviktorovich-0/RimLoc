@@ -57,6 +57,7 @@ nav:
       - Validate: cli/validate.md
       - Validate PO: cli/validate_po.md
       - Export/Import: cli/export_import.md
+      - Build Mod: cli/build_mod.md
 
 exclude_docs: |
   readme/**

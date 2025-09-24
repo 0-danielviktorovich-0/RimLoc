@@ -11,6 +11,7 @@ RimLoc — это инструмент на Rust для локализации �
 - Автоматически находит все строки `Keyed`/`DefInjected` и держит их в актуальном виде.
 - Предупреждает о дубликатах, пустых значениях и несоответствиях плейсхолдеров до релиза.
 - Конвертирует XML в удобные для переводчиков форматы PO и CSV и обратно.
+- Сразу собирает отдельный мод-перевод из готового `.po` файла.
 - CLI уже локализован (английский и русский) и использует стек Fluent.
 
 ## Быстрый старт за 5 минут
@@ -21,24 +22,39 @@ git clone https://github.com/0-danielviktorovich-0/RimLoc.git
 cd RimLoc
 rimloc-cli scan --root ./test/TestMod --format json | jq '.[0]'
 rimloc-cli validate --root ./test/TestMod
-rimloc-cli export-po --out ./logs/TestMod.po --single-po
+rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
+rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru --dry-run
 ```
 
 1. Установите CLI из crates.io.
 2. Воспользуйтесь тестовым модом `test/TestMod` (или своим модом).
 3. `scan` выводит найденные строки; с `jq` удобно смотреть структуру.
 4. `validate` подсвечивает пустые значения, дубликаты и ошибки плейсхолдеров (код возврата 1 при ошибках).
-5. `export-po` формирует пакет для переводчиков, готовый к отдаче или коммиту.
+5. `export-po` формирует единый `.po` для передачи переводчикам.
+6. `build-mod` в режиме `--dry-run` показывает, каким будет готовый мод-перевод.
+
+Нужно подготовить пакет для переводчиков?
+
+```bash
+rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
+```
+
+Хотите собрать отдельный мод-перевод?
+
+```bash
+rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru
+```
 
 ## Основные команды
 
 | Команда | Когда использовать | Пример |
 |---------|--------------------|--------|
-| `rimloc-cli scan` | Собрать строки из модов в CSV или JSON. | `rimloc-cli scan --root ./path/to/mod --format json` |
+| `rimloc-cli scan` | Собрать строки из модов в CSV или JSON. | `rimloc-cli scan --root ./path/to/mod --format json --out-json ./logs/scan.json` |
 | `rimloc-cli validate` | Проверить XML на дубликаты, пустоты и плейсхолдеры. | `rimloc-cli validate --root ./path/to/mod --format text` |
 | `rimloc-cli validate-po` | Убедиться, что переводы в PO сохранили плейсхолдеры. | `rimloc-cli validate-po --po ./translations/ru.po --strict` |
-| `rimloc-cli export-po` | Подготовить PO/CSV для переводчиков. | `rimloc-cli export-po --out ./out --single-po` |
-| `rimloc-cli import-po` | Вернуть переводы из PO обратно в XML. | `rimloc-cli import-po --po ./out/mymod.po --out ./Languages` |
+| `rimloc-cli export-po` | Подготовить единый PO-файл для переводчиков. | `rimloc-cli export-po --root ./path/to/mod --out-po ./out/mymod.po --lang ru` |
+| `rimloc-cli import-po` | Вернуть переводы из PO обратно в XML. | `rimloc-cli import-po --po ./out/mymod.po --mod-root ./path/to/mod --dry-run` |
+| `rimloc-cli build-mod` | Собрать автономный мод-перевод. | `rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru` |
 
 ### Demo (asciinema)
 
