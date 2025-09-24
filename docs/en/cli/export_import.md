@@ -30,10 +30,10 @@ rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang
 
 **Examples**
 
-Export the bundled fixture in Russian:
+Export the bundled fixture in Russian (quiet to keep stdout clean):
 
 ```bash
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
+rimloc-cli --quiet export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
 ```
 
 Export Japanese strings that live under `Languages/Japanese`:
@@ -90,23 +90,23 @@ rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [--game-ve
 Preview the files that would change inside an existing mod:
 
 ```bash
-rimloc-cli import-po \
+rimloc-cli --quiet import-po \
   --po ./build/MyMod.ja.po \
   --mod-root ./Mods/MyMod \
   --lang ja \
   --dry-run
 ```
 
-Write a single XML file for manual review:
+Write a single XML file for manual review (quiet to keep stdout minimal):
 
 ```bash
-rimloc-cli import-po --po ./logs/TestMod.po --out-xml ./out/TestMod.ru.xml --keep-empty
+rimloc-cli --quiet import-po --po ./logs/TestMod.po --out-xml ./out/TestMod.ru.xml --keep-empty
 ```
 
 Update a mod in-place while keeping backups:
 
 ```bash
-rimloc-cli import-po \
+rimloc-cli --quiet import-po \
   --po ./build/MyMod.ja.po \
   --mod-root ./Mods/MyMod \
   --lang ja \
@@ -116,7 +116,7 @@ rimloc-cli import-po \
 Route everything into `_Imported.xml` (for translators without the full mod):
 
 ```bash
-rimloc-cli import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --single-file
+rimloc-cli --quiet import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --single-file
 ```
 
 **Tips**

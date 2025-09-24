@@ -28,10 +28,10 @@ rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang
 
 **Примеры**
 
-Экспортировать тестовый мод на русский:
+Экспортировать тестовый мод на русский (с `--quiet`, чтобы stdout оставался чистым):
 
 ```bash
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
+rimloc-cli --quiet export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
 ```
 
 Получить японскую локализацию из `Languages/Japanese`:
@@ -87,23 +87,23 @@ rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [опци�
 Посмотреть, какие файлы изменятся в моде:
 
 ```bash
-rimloc-cli import-po \
+rimloc-cli --quiet import-po \
   --po ./build/MyMod.ja.po \
   --mod-root ./Mods/MyMod \
   --lang ja \
   --dry-run
 ```
 
-Записать переводы в один XML для ручной проверки:
+Записать переводы в один XML для ручной проверки (тихий режим для минимального stdout):
 
 ```bash
-rimloc-cli import-po --po ./logs/TestMod.po --out-xml ./out/TestMod.ru.xml --keep-empty
+rimloc-cli --quiet import-po --po ./logs/TestMod.po --out-xml ./out/TestMod.ru.xml --keep-empty
 ```
 
 Обновить мод на месте и сохранить резервные копии:
 
 ```bash
-rimloc-cli import-po \
+rimloc-cli --quiet import-po \
   --po ./build/MyMod.ja.po \
   --mod-root ./Mods/MyMod \
   --lang ja \
@@ -113,7 +113,7 @@ rimloc-cli import-po \
 Сложить всё в `_Imported.xml` (полезно, если нет исходных файлов):
 
 ```bash
-rimloc-cli import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --single-file
+rimloc-cli --quiet import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --single-file
 ```
 
 **Советы**

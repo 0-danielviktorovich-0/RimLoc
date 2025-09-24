@@ -70,7 +70,7 @@ Each translation unit has the following structure:
 
 Extract all languages and print JSON output:
 ```bash
-rimloc-cli scan --root ./test/TestMod --format json | jq .
+rimloc-cli --quiet scan --root ./test/TestMod --format json | jq .
 ```
 *Scans all languages and outputs translation units as JSON.*
 
@@ -82,7 +82,7 @@ rimloc-cli scan --root ./test/TestMod --lang en --out-csv out.csv
 
 Persist JSON output alongside stdout:
 ```bash
-rimloc-cli scan --root ./test/TestMod --format json --out-json ./logs/scan.json
+rimloc-cli --quiet scan --root ./test/TestMod --format json --out-json ./logs/scan.json
 ```
 *Writes `scan.json` to disk while still emitting JSON to stdout.*
 
