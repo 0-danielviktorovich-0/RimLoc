@@ -11,6 +11,7 @@ test-binary-built = бинарник rimloc-cli должен собиратьс�
 test-tempdir = tempdir
 test-outpo-exist = файл out.po должен существовать
 test-outpo-not-empty = файл out.po не должен быть пустым
+test-json-not-empty = JSON-файл не должен быть пустым
 
 # validate (категории и элементы)
 test-validate-dup-category = в выводе ожидается категория [duplicate]

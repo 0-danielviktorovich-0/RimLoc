@@ -95,6 +95,59 @@ fn scan_outputs_csv_header() {
 }
 
 #[test]
+fn scan_writes_json_file() {
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    struct JsonUnit {
+        key: String,
+        value: Option<String>,
+        path: String,
+        line: Option<usize>,
+    }
+
+    let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
+    let out_json = tmp.path().join("scan.json");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"])
+        .arg(fixture("test/TestMod"))
+        .args(["--format", "json"])
+        .args(["--out-json"])
+        .arg(&out_json);
+
+    let _assert = cmd.assert().success();
+    assert_file_nonempty(
+        &out_json,
+        &ti18n!("test-json-not-empty"),
+        "out-json-nonempty",
+    );
+    let contents = std::fs::read_to_string(&out_json).expect("read json");
+    let units: Vec<JsonUnit> = serde_json::from_str(&contents).expect("valid json output");
+    assert!(!units.is_empty(), "json should contain at least one unit");
+    // Проверяем, что ключи и путь присутствуют в объекте
+    let first = &units[0];
+    assert!(
+        !first.key.is_empty(),
+        "expected first JSON unit to contain a key"
+    );
+    assert!(
+        first.path.contains("Languages"),
+        "expected JSON path to reference Languages directory"
+    );
+    if let Some(val) = &first.value {
+        assert!(
+            !val.trim().is_empty(),
+            "expected JSON unit value to be non-empty when present"
+        );
+    }
+    assert!(
+        first.line.is_some(),
+        "expected JSON unit to include line information"
+    );
+}
+
+#[test]
 fn export_po_creates_file() {
     let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
     let out_po = tmp.path().join("out.po");

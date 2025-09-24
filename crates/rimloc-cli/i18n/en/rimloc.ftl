@@ -31,6 +31,8 @@ app-started = rimloc started - version={ $version } - logdir={ $logdir } - RUST_
 
 scan-csv-stdout = Printing CSV to stdout...
 scan-csv-saved = CSV saved to { $path }
+scan-json-stdout = Printing JSON to stdout...
+scan-json-saved = JSON saved to { $path }
 
 validate-clean = All clean, no errors found
 
@@ -115,6 +117,7 @@ help-ui-lang = UI language code (e.g. en, ru, ja; defaults to system locale)
 help-scan-about = Scan a mod folder and extract Keyed XML entries
 help-scan-root = Path to RimWorld mod root to scan
 help-scan-out-csv = Save extracted entries to CSV file
+help-scan-out-json = Save extracted entries to JSON file (use with --format json)
 help-scan-lang = Language code of the files to scan (e.g., en, ru)
 help-scan-source-lang = Source language code for cross-checks
 help-scan-source-lang-dir = Path to source language directory for cross-checks

@@ -157,6 +157,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.about(tr!("help-scan-about"));
                 owned = owned.mut_arg("root", |a| a.help(tr!("help-scan-root")));
                 owned = owned.mut_arg("out_csv", |a| a.help(tr!("help-scan-out-csv")));
+                owned = owned.mut_arg("out_json", |a| a.help(tr!("help-scan-out-json")));
                 owned = owned.mut_arg("lang", |a| a.help(tr!("help-scan-lang")));
                 owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-scan-source-lang")));
                 owned = owned.mut_arg("source_lang_dir", |a| {
@@ -268,6 +269,8 @@ enum Commands {
         root: PathBuf,
         #[arg(long)]
         out_csv: Option<PathBuf>,
+        #[arg(long, conflicts_with = "out_csv")]
+        out_json: Option<PathBuf>,
         #[arg(long)]
         lang: Option<String>,
         /// Source language by ISO code (e.g., en, ru, ja).
@@ -549,12 +552,20 @@ impl Runnable for Commands {
             Commands::Scan {
                 root,
                 out_csv,
+                out_json,
                 lang,
                 source_lang,
                 source_lang_dir,
                 format,
             } => {
-                debug!(event = "scan_args", root = ?root, out_csv = ?out_csv, lang = ?lang);
+                debug!(
+                    event = "scan_args",
+                    root = ?root,
+                    out_csv = ?out_csv,
+                    out_json = ?out_json,
+                    lang = ?lang,
+                    format = %format
+                );
 
                 let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
 
@@ -582,6 +593,11 @@ impl Runnable for Commands {
 
                 match format.as_str() {
                     "csv" => {
+                        if out_json.is_some() {
+                            return Err(color_eyre::eyre::eyre!(
+                                "--out-json is only supported when --format json"
+                            ));
+                        }
                         if let Some(path) = out_csv {
                             let file = std::fs::File::create(&path)?;
                             rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
@@ -604,7 +620,7 @@ impl Runnable for Commands {
                             key: &'a str,
                             value: Option<&'a str>,
                         }
-                        let items: Vec<JsonUnit> = units
+                        let items: Vec<JsonUnit<'_>> = units
                             .iter()
                             .map(|u| JsonUnit {
                                 path: u.path.display().to_string(),
@@ -613,8 +629,17 @@ impl Runnable for Commands {
                                 value: u.source.as_deref(),
                             })
                             .collect();
-                        // Всегда печатаем JSON в stdout; игнорируем --out-csv
-                        serde_json::to_writer(std::io::stdout().lock(), &items)?;
+
+                        if let Some(path) = out_json {
+                            let file = std::fs::File::create(&path)?;
+                            serde_json::to_writer_pretty(file, &items)?;
+                            ui_info!("scan-json-saved", path = path.display().to_string());
+                        } else {
+                            if std::io::stdout().is_terminal() {
+                                ui_info!("scan-json-stdout");
+                            }
+                            serde_json::to_writer(std::io::stdout().lock(), &items)?;
+                        }
                     }
                     _ => unreachable!(),
                 }
