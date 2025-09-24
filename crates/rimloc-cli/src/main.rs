@@ -170,11 +170,11 @@ fn resolve_game_version_root(
 
 macro_rules! tr {
     ($msg:literal $(, $k:ident = $v:expr )* $(,)?) => {{
-        let loader = LANG_LOADER.get().expect("i18n not initialized");
+        let loader = $crate::LANG_LOADER.get().expect("i18n not initialized");
         i18n_embed_fl::fl!(loader, $msg $(, $k = $v )* )
     }};
     ($msg:literal) => {{
-        let loader = LANG_LOADER.get().expect("i18n not initialized");
+        let loader = $crate::LANG_LOADER.get().expect("i18n not initialized");
         i18n_embed_fl::fl!(loader, $msg)
     }}
 }
@@ -212,6 +212,11 @@ macro_rules! ui_out {
         println!("{}", tr!($k $(, $n = $v )* ));
     }};
 }
+
+mod commands;
+mod placeholders;
+mod po;
+mod version;
 
 fn init_i18n() {
     // создаём загрузчик Fluent
@@ -738,105 +743,17 @@ impl Runnable for Commands {
                 format,
                 game_version,
                 include_all_versions,
-            } => {
-                debug!(
-                    event = "scan_args",
-                    root = ?root,
-                    out_csv = ?out_csv,
-                    out_json = ?out_json,
-                    lang = ?lang,
-                    format = %format,
-                    game_version = ?game_version,
-                    include_all_versions = include_all_versions
-                );
-
-                let (scan_root, selected_version) = if include_all_versions {
-                    (root.clone(), None)
-                } else {
-                    resolve_game_version_root(&root, game_version.as_deref())?
-                };
-                if let Some(ver) = selected_version.as_deref() {
-                    info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
-                }
-
-                let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
-
-                // опциональный фильтр по исходному языку (папка в Languages)
-                let units = if let Some(dir) = source_lang_dir.clone() {
-                    let before = units.len();
-                    let filtered: Vec<_> = units
-                        .into_iter()
-                        .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
-                        .collect();
-                    info!(event = "scan_filtered_by_dir", before = before, after = filtered.len(), source_lang_dir = %dir);
-                    filtered
-                } else if let Some(code) = source_lang.clone() {
-                    let dir = rimloc_import_po::rimworld_lang_dir(&code);
-                    let before = units.len();
-                    let filtered: Vec<_> = units
-                        .into_iter()
-                        .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
-                        .collect();
-                    info!(event = "scan_filtered_by_code", source_lang = %code, source_dir = %dir, before = before, after = filtered.len());
-                    filtered
-                } else {
-                    units
-                };
-
-                match format.as_str() {
-                    "csv" => {
-                        if out_json.is_some() {
-                            return Err(color_eyre::eyre::eyre!(
-                                "--out-json is only supported when --format json"
-                            ));
-                        }
-                        if let Some(path) = out_csv {
-                            let file = std::fs::File::create(&path)?;
-                            rimloc_export_csv::write_csv(file, &units, lang.as_deref())?;
-                            ui_info!("scan-csv-saved", path = path.display().to_string());
-                        } else {
-                            // Печатаем CSV в stdout; подсказку выводим в stderr, чтобы не мешать пайплайнам
-                            if std::io::stdout().is_terminal() {
-                                ui_info!("scan-csv-stdout");
-                            }
-                            let stdout = std::io::stdout();
-                            let lock = stdout.lock();
-                            rimloc_export_csv::write_csv(lock, &units, lang.as_deref())?;
-                        }
-                    }
-                    "json" => {
-                        #[derive(serde::Serialize)]
-                        struct JsonUnit<'a> {
-                            path: String,
-                            line: Option<usize>,
-                            key: &'a str,
-                            value: Option<&'a str>,
-                        }
-                        let items: Vec<JsonUnit<'_>> = units
-                            .iter()
-                            .map(|u| JsonUnit {
-                                path: u.path.display().to_string(),
-                                line: u.line,
-                                key: u.key.as_str(),
-                                value: u.source.as_deref(),
-                            })
-                            .collect();
-
-                        if let Some(path) = out_json {
-                            let file = std::fs::File::create(&path)?;
-                            serde_json::to_writer_pretty(file, &items)?;
-                            ui_info!("scan-json-saved", path = path.display().to_string());
-                        } else {
-                            if std::io::stdout().is_terminal() {
-                                ui_info!("scan-json-stdout");
-                            }
-                            serde_json::to_writer(std::io::stdout().lock(), &items)?;
-                        }
-                    }
-                    _ => unreachable!(),
-                }
-                Ok(())
-            }
+            } => commands::scan::run_scan(
+                root,
+                out_csv,
+                out_json,
+                lang,
+                source_lang,
+                source_lang_dir,
+                format,
+                game_version,
+                include_all_versions,
+            ),
 
             Commands::Validate {
                 root,
