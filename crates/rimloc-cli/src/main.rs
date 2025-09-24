@@ -1,22 +1,18 @@
-// Clippy: simplify complex tuple types
-type PoEntry = (Option<String>, String, String, Option<String>);
+//
 
 // use rimloc_validate::validate; // moved into commands
 include!(concat!(env!("OUT_DIR"), "/supported_locales.rs"));
+use crate::placeholders::extract_placeholders;
+use crate::po::parse_po_basic;
 use clap::{Command as ClapCommand, Parser, Subcommand};
 use color_eyre::eyre::Result;
 use i18n_embed::fluent::FluentLanguageLoader;
 use i18n_embed::DesktopLanguageRequester;
 use i18n_embed::LanguageRequester;
 use once_cell::sync::OnceCell;
-use regex::Regex;
 use rust_embed::RustEmbed;
-use std::cmp::Ordering;
-use std::collections::BTreeSet;
-use std::fs;
-use std::io::{ErrorKind, IsTerminal};
-use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
+use std::io::IsTerminal;
+use std::path::PathBuf;
 use tracing::{debug, error, info};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_error::ErrorLayer;
@@ -31,194 +27,9 @@ struct Localizations;
 
 static LANG_LOADER: OnceCell<FluentLanguageLoader> = OnceCell::new();
 
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-struct VersionEntry {
-    name: String,
-    components: Vec<u32>,
-    path: PathBuf,
-}
-
-#[allow(dead_code)]
-fn parse_version_components(name: &str) -> Option<Vec<u32>> {
-    let trimmed = name.trim_start_matches('v');
-    if trimmed.is_empty() {
-        return None;
-    }
-    let mut parts = Vec::new();
-    for part in trimmed.split('.') {
-        if part.is_empty() {
-            return None;
-        }
-        let value: u32 = part.parse().ok()?;
-        parts.push(value);
-    }
-    if parts.is_empty() {
-        None
-    } else {
-        Some(parts)
-    }
-}
-
-#[allow(dead_code)]
-fn normalize_version_input(raw: &str) -> String {
-    raw.trim_start_matches('v').to_string()
-}
-
-#[allow(dead_code)]
-fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
-    let mut candidates = Vec::new();
-    let normalized = normalize_version_input(requested);
-    if requested.starts_with('v') {
-        candidates.push(requested.trim().to_string());
-        candidates.push(normalized.clone());
-    } else {
-        candidates.push(normalized.clone());
-        candidates.push(format!("v{}", normalized));
-    }
-    for name in candidates.into_iter() {
-        if name.is_empty() {
-            continue;
-        }
-        let candidate = base.join(&name);
-        if candidate.is_dir() {
-            return Some(candidate);
-        }
-    }
-    None
-}
-
-#[allow(dead_code)]
-fn list_version_directories(base: &Path) -> color_eyre::Result<Vec<VersionEntry>> {
-    let mut entries = Vec::new();
-    let read_dir = match fs::read_dir(base) {
-        Ok(iter) => iter,
-        Err(err) if err.kind() == ErrorKind::NotFound => return Ok(entries),
-        Err(err) => return Err(err.into()),
-    };
-    for entry in read_dir {
-        let entry = entry?;
-        if !entry.file_type()?.is_dir() {
-            continue;
-        }
-        let name_os = entry.file_name();
-        let name = match name_os.to_str() {
-            Some(s) => s,
-            None => continue,
-        };
-        if let Some(components) = parse_version_components(name) {
-            entries.push(VersionEntry {
-                name: name.to_string(),
-                components,
-                path: entry.path(),
-            });
-        }
-    }
-    Ok(entries)
-}
-
-#[allow(dead_code)]
-fn is_version_directory(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|s| s.to_str())
-        .and_then(parse_version_components)
-        .is_some()
-}
-
-#[allow(dead_code)]
-fn resolve_game_version_root(
-    base: &Path,
-    requested: Option<&str>,
-) -> color_eyre::Result<(PathBuf, Option<String>)> {
-    if is_version_directory(base) {
-        let name = base
-            .file_name()
-            .and_then(|s| s.to_str())
-            .map(|s| s.to_string());
-        return Ok((base.to_path_buf(), name));
-    }
-
-    let mut entries = list_version_directories(base)?;
-
-    if let Some(req) = requested {
-        if let Some(path) = find_version_directory(base, req) {
-            let name = path
-                .file_name()
-                .and_then(|s| s.to_str())
-                .map(|s| s.to_string());
-            return Ok((path, name));
-        } else {
-            return Err(color_eyre::eyre::eyre!(
-                "Requested version '{}' not found under {}",
-                req,
-                base.display()
-            ));
-        }
-    }
-
-    if entries.is_empty() {
-        return Ok((base.to_path_buf(), None));
-    }
-
-    entries.sort_by(|a, b| {
-        let len_cmp = a.components.len().cmp(&b.components.len());
-        if len_cmp != Ordering::Equal {
-            return len_cmp;
-        }
-        a.components.cmp(&b.components)
-    });
-
-    if let Some(entry) = entries.last() {
-        return Ok((entry.path.clone(), Some(entry.name.clone())));
-    }
-
-    Ok((base.to_path_buf(), None))
-}
-
-macro_rules! tr {
-    ($msg:literal $(, $k:ident = $v:expr )* $(,)?) => {{
-        let loader = $crate::LANG_LOADER.get().expect("i18n not initialized");
-        i18n_embed_fl::fl!(loader, $msg $(, $k = $v )* )
-    }};
-    ($msg:literal) => {{
-        let loader = $crate::LANG_LOADER.get().expect("i18n not initialized");
-        i18n_embed_fl::fl!(loader, $msg)
-    }}
-}
-
-// Centralized, localized UI output helpers
-macro_rules! ui_ok {
-    ($k:literal $(, $n:ident = $v:expr )* $(,)?) => {{
-        println!("✔ {}", tr!($k $(, $n = $v )* ));
-    }};
-}
-macro_rules! ui_info {
-    ($k:literal $(, $n:ident = $v:expr )* $(,)?) => {{
-        eprintln!("ℹ {}", tr!($k $(, $n = $v )* ));
-    }};
-}
-macro_rules! ui_warn {
-    ($k:literal $(, $n:ident = $v:expr )* $(,)?) => {{
-        // Show icon only in interactive terminals and when not explicitly disabled.
-        let show_icon = std::io::stdout().is_terminal() && std::env::var_os("NO_ICONS").is_none();
-        if show_icon {
-            eprintln!("⚠ {}", tr!($k $(, $n = $v )* ));
-        } else {
-            eprintln!("{}", tr!($k $(, $n = $v )* ));
-        }
-    }};
-}
-#[allow(unused_macros)]
-macro_rules! ui_err {
-    ($k:literal $(, $n:ident = $v:expr )* $(,)?) => {{
-        eprintln!("✖ {}", tr!($k $(, $n = $v )* ));
-    }};
-}
-macro_rules! ui_out {
-    ($k:literal $(, $n:ident = $v:expr )* $(,)?) => {{
-        println!("{}", tr!($k $(, $n = $v )* ));
-    }};
-}
+// UI helpers and localization macros
+#[macro_use]
+mod ui;
 
 mod commands;
 mod placeholders;
@@ -405,7 +216,8 @@ static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 const DEFAULT_LOGDIR: &str = "logs";
 
 fn resolve_log_dir() -> std::path::PathBuf {
-    if let Ok(val) = std::env::var("RIMLOC_LOGDIR") {
+    // Prefer RIMLOC_LOG_DIR (underscore). This matches init_tracing.
+    if let Ok(val) = std::env::var("RIMLOC_LOG_DIR") {
         let trimmed = val.trim();
         if !trimmed.is_empty() {
             return std::path::PathBuf::from(trimmed);
@@ -588,146 +400,7 @@ fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
     false
 }
 
-/// Извлечь плейсхолдеры: %d, %s, %1$d, %02d, а также {NAME}/{0}
-fn extract_placeholders(s: &str) -> BTreeSet<String> {
-    let mut set = BTreeSet::new();
-
-    // %d, %s, %1$d, %02d, %i, %f — базового набора достаточно
-    static RE_PCT: OnceLock<Regex> = OnceLock::new();
-    let re_pct = RE_PCT.get_or_init(|| Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
-    for m in re_pct.find_iter(s) {
-        set.insert(m.as_str().to_string());
-    }
-
-    // {NAME}, {0}, {Any-Thing}
-    static RE_BRACE: OnceLock<Regex> = OnceLock::new();
-    let re_brace = RE_BRACE.get_or_init(|| Regex::new(r"\{[^}]+\}").unwrap());
-    for m in re_brace.find_iter(s) {
-        set.insert(m.as_str().to_string());
-    }
-
-    set
-}
-
-/// Простой парсер .po только для msgid/msgstr (+ msgctxt и #: reference по возможности).
-/// Возвращает вектор кортежей: (msgctxt, msgid, msgstr, reference)
-fn parse_po_basic(path: &std::path::Path) -> color_eyre::eyre::Result<Vec<PoEntry>> {
-    use std::fs::File;
-    use std::io::{BufRead, BufReader};
-
-    let f = File::open(path)?;
-    let rdr = BufReader::new(f);
-
-    let mut entries = Vec::new();
-    let mut ctx: Option<String> = None;
-    let mut id = String::new();
-    let mut strv = String::new();
-    let mut refv: Option<String> = None;
-
-    enum Mode {
-        None,
-        InId,
-        InStr,
-    }
-    let mut mode = Mode::None;
-
-    fn unquote_po(s: &str) -> String {
-        // снимаем кавычки и экранирование \" \\ \n \t \r
-        let mut out = String::new();
-        let raw = s.trim();
-        let raw = raw.strip_prefix('"').unwrap_or(raw);
-        let raw = raw.strip_suffix('"').unwrap_or(raw);
-        let mut chars = raw.chars().peekable();
-        while let Some(c) = chars.next() {
-            if c == '\\' {
-                if let Some(n) = chars.next() {
-                    match n {
-                        'n' => out.push('\n'),
-                        't' => out.push('\t'),
-                        'r' => out.push('\r'),
-                        '\\' => out.push('\\'),
-                        '"' => out.push('"'),
-                        _ => {
-                            out.push('\\');
-                            out.push(n);
-                        }
-                    }
-                } else {
-                    out.push('\\');
-                }
-            } else {
-                out.push(c);
-            }
-        }
-        out
-    }
-
-    let mut push_if_complete = |ctx: &mut Option<String>,
-                                id: &mut String,
-                                strv: &mut String,
-                                refv: &mut Option<String>| {
-        if !id.is_empty() || !strv.is_empty() {
-            entries.push((
-                ctx.clone(),
-                std::mem::take(id),
-                std::mem::take(strv),
-                refv.clone(),
-            ));
-            *ctx = None;
-            *refv = None;
-        }
-    };
-
-    for line in rdr.lines() {
-        let line = line?;
-        let t = line.trim();
-
-        if t.is_empty() {
-            push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
-            mode = Mode::None;
-            continue;
-        }
-
-        if let Some(rest) = t.strip_prefix("msgctxt ") {
-            push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
-            ctx = Some(unquote_po(rest));
-            mode = Mode::None;
-            continue;
-        }
-        if let Some(rest) = t.strip_prefix("msgid ") {
-            push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
-            id = unquote_po(rest);
-            mode = Mode::InId;
-            continue;
-        }
-        if let Some(rest) = t.strip_prefix("msgstr ") {
-            strv = unquote_po(rest);
-            mode = Mode::InStr;
-            continue;
-        }
-        if let Some(rest) = t.strip_prefix("#: ") {
-            refv = Some(rest.to_string());
-            continue;
-        }
-
-        match mode {
-            Mode::InId | Mode::InStr => {
-                if t.starts_with('"') {
-                    let chunk = unquote_po(t);
-                    match mode {
-                        Mode::InId => id.push_str(&chunk),
-                        Mode::InStr => strv.push_str(&chunk),
-                        _ => {}
-                    }
-                }
-            }
-            Mode::None => {}
-        }
-    }
-
-    push_if_complete(&mut ctx, &mut id, &mut strv, &mut refv);
-    Ok(entries)
-}
+// placeholder and po helpers moved to modules
 
 trait Runnable {
     fn run(self, use_color: bool) -> Result<()>;
