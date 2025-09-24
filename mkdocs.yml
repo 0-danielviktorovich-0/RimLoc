@@ -59,6 +59,7 @@ nav:
       - Export/Import: cli/export_import.md
       - Build Mod: cli/build_mod.md
   - Testing: testing.md
+  - Developer Guide: dev/index.md
   - Guides:
       - Placeholders: guide/placeholders.md
       - PO Files 101: guide/po_files.md
