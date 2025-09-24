@@ -24,6 +24,7 @@ rimloc-cli build-mod --po <FILE> --out-mod <DIR> --lang <CODE> [options]
 | `--rw-version <VERSION>` | Target RimWorld version placed in `About.xml` (defaults to `1.5`). | No |
 | `--lang-dir <DIR>` | Explicit language folder name inside the mod (overrides the code-based default). | No |
 | `--dry-run` | Print the planned layout without writing files. | No |
+| `--dedupe` | Remove duplicate keys within a single XML file (last wins). | No |
 
 ## Examples
 
@@ -37,7 +38,7 @@ rimloc-cli build-mod \
   --dry-run
 ```
 
-Generate a release-ready Russian translation mod with custom metadata:
+Generate a release-ready Russian translation mod with custom metadata (and deduplicate keys):
 
 ```bash
 rimloc-cli build-mod \
@@ -46,7 +47,8 @@ rimloc-cli build-mod \
   --lang ru \
   --name "TestMod — Russian" \
   --package-id author.testmod.ru \
-  --rw-version 1.5
+  --rw-version 1.5 \
+  --dedupe
 ```
 
 ## Output

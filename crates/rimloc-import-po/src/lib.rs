@@ -142,6 +142,19 @@ fn group_entries_by_rel_path(
     grouped
 }
 
+fn dedupe_last_wins(items: &[(String, String)]) -> Vec<(String, String)> {
+    use std::collections::HashSet;
+    let mut seen: HashSet<&str> = HashSet::new();
+    let mut out: Vec<(String, String)> = Vec::new();
+    for (k, v) in items.iter().rev() {
+        if seen.insert(k.as_str()) {
+            out.push((k.clone(), v.clone()));
+        }
+    }
+    out.reverse();
+    out
+}
+
 /// Сгенерировать LanguageData XML из пар <key, value>.
 pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) -> Result<()> {
     if let Some(parent) = out_path.parent() {
@@ -336,6 +349,35 @@ pub fn build_translation_mod_with_langdir(
     Ok(())
 }
 
+/// Build translation mod with options
+pub fn build_translation_mod_with_langdir_opts(
+    po_path: &Path,
+    out_mod: &Path,
+    lang_dir: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+    dedupe: bool,
+) -> Result<()> {
+    let entries = read_po_entries(po_path)?;
+    let mut grouped = group_entries_by_rel_path(entries);
+
+    let about_dir = out_mod.join("About");
+    fs::create_dir_all(&about_dir)?;
+    let about_xml = about_dir.join("About.xml");
+    write_about_xml(&about_xml, package_id, mod_name, rw_version)?;
+
+    for (rel, mut items) in grouped.drain() {
+        if dedupe {
+            items = dedupe_last_wins(&items);
+        }
+        let out_path = out_mod.join("Languages").join(lang_dir).join(rel);
+        write_language_data_xml(&out_path, &items)?;
+    }
+
+    Ok(())
+}
+
 /// A dry-run plan describing what would be written during build-mod
 #[derive(Debug, Clone)]
 pub struct DryRunPlan {
@@ -369,6 +411,46 @@ pub fn build_translation_mod_dry_run(
     paths.sort();
     for rel in paths {
         let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
+        total_keys += n;
+        let full_path = out_mod.join("Languages").join(lang_dir).join(&rel);
+        files.push((full_path, n));
+    }
+
+    Ok(DryRunPlan {
+        mod_name: mod_name.to_string(),
+        package_id: package_id.to_string(),
+        rw_version: rw_version.to_string(),
+        out_mod: out_mod.to_path_buf(),
+        lang_dir: lang_dir.to_string(),
+        files,
+        total_keys,
+    })
+}
+
+/// Dry-run variant with options
+pub fn build_translation_mod_dry_run_opts(
+    po_path: &Path,
+    out_mod: &Path,
+    lang_dir: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+    dedupe: bool,
+) -> Result<DryRunPlan> {
+    let entries = read_po_entries(po_path)?;
+    let grouped = group_entries_by_rel_path(entries);
+
+    let mut total_keys = 0usize;
+    let mut files = Vec::new();
+    let mut paths: Vec<_> = grouped.keys().cloned().collect();
+    paths.sort();
+    for rel in paths {
+        let mut n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
+        if dedupe {
+            if let Some(items) = grouped.get(&rel) {
+                n = dedupe_last_wins(items).len();
+            }
+        }
         total_keys += n;
         let full_path = out_mod.join("Languages").join(lang_dir).join(&rel);
         files.push((full_path, n));

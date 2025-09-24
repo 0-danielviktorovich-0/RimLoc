@@ -173,6 +173,7 @@ help-buildmod-package-id = PackageId мода перевода
 help-buildmod-rw-version = Целевая версия RimWorld
 help-buildmod-lang-dir = Имя языковой папки внутри мода (необязательно)
 help-buildmod-dry-run = Ничего не записывать; только вывести план сборки
+help-buildmod-dedupe = Удалять дублирующиеся ключи в одном XML (последний имеет приоритет)
 
 # === scan ===
 test-csv-header = CSV заголовок должен присутствовать

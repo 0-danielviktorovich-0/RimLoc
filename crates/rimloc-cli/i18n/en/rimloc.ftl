@@ -174,6 +174,7 @@ help-buildmod-package-id = Translation mod PackageId
 help-buildmod-rw-version = Target RimWorld version
 help-buildmod-lang-dir = Language folder name inside the mod (optional)
 help-buildmod-dry-run = Do not write files; only print the build plan
+help-buildmod-dedupe = Remove duplicate keys within one XML (last wins)
 
 # === scan ===
 test-csv-header = CSV header must be present
