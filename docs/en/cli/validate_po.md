@@ -26,6 +26,7 @@ rimloc-cli validate-po --po <PO> [OPTIONS]
 | `--strict`       | Enable strict validation mode, treating warnings as errors.  | No       |
 | `--format`       | Output format of the validation report (default: text).      | No       |
 | `--ui-lang <LANG>`| Set the language for UI messages.                            | No       |
+| `--quiet`         | Suppress startup banner and non-essential stdout (alias: `--no-banner`) | No |
 | `--help`         | Show help message for the validate-po command.               | No       |
 
 ## Examples

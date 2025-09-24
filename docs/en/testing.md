@@ -30,11 +30,14 @@ RimLoc emits diagnostics to stderr and to a rolling log file.
 
 - `RUST_LOG=info|debug|trace` — controls console verbosity (default: `info`).
 - `RIMLOC_LOG_DIR=./logs` — directory for daily log files (default: `./logs`).
+- `RIMLOC_LOG_FORMAT=json` — switch file logs to structured JSON (default: `text`).
 - Disable UI decorations for clean copy/paste:
   - `NO_COLOR=1` — remove ANSI colors.
   - `NO_ICONS=1` — remove symbols like ✔/⚠/✖.
 
 On startup, RimLoc prints a banner that includes version, `RIMLOC_LOG_DIR`, and the `RUST_LOG` level so bug reports capture the environment context.
+
+Tip for automation: combine `--quiet` with `--format json` to keep stdout machine‑readable and route diagnostics to stderr/logs.
 
 ## End‑to‑End CLI Checks
 
@@ -113,4 +116,3 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-docs.txt
 mkdocs serve
 ```
-

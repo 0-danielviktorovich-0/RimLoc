@@ -32,6 +32,12 @@ RimLoc CLI bundles everything needed to inventory, validate, and exchange RimWor
 | [`import-po`](export_import.md#import-po) | Apply PO changes back to XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
 | [`build-mod`](build_mod.md) | Scaffold a translation-only RimWorld mod from a PO file. | `--out-mod`, `--package-id`, `--dry-run` |
 
+## Global Options
+
+- `--ui-lang <LANG>` — set UI language for messages (e.g., `en`, `ru`).
+- `--no-color` — disable ANSI colors in terminal output.
+- `--quiet` — suppress startup banner and non-essential stdout (alias: `--no-banner`). Recommended for JSON pipelines.
+
 ## Helpful patterns
 
 ```bash
