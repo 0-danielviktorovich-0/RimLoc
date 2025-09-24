@@ -164,6 +164,81 @@ fn export_po_creates_file() {
 }
 
 #[test]
+fn scan_picks_latest_version_by_default_and_flags_work() {
+    use std::fs;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    // temp root
+    let tmp = tempdir().expect(&ti18n!("test-tempdir"));
+    let root = tmp.path();
+
+    // Create v1.5 and v1.6 with minimal Keyed XML
+    let v15 = root.join("v1.5").join("Languages").join("English").join("Keyed");
+    let v16 = root.join("v1.6").join("Languages").join("English").join("Keyed");
+    fs::create_dir_all(&v15).unwrap();
+    fs::create_dir_all(&v16).unwrap();
+
+    let mut f15 = fs::File::create(v15.join("A.xml")).unwrap();
+    writeln!(
+        f15,
+        "<LanguageData>\n  <K1>Old</K1>\n</LanguageData>\n"
+    )
+    .unwrap();
+    let mut f16 = fs::File::create(v16.join("B.xml")).unwrap();
+    writeln!(
+        f16,
+        "<LanguageData>\n  <K2>New</K2>\n</LanguageData>\n"
+    )
+    .unwrap();
+
+    // 1) По умолчанию берётся последняя версия (v1.6)
+    let out_json_latest = root.join("scan-latest.json");
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]).arg(root)
+        .args(["--format", "json"]) // stdout/json by default
+        .args(["--out-json"]).arg(&out_json_latest);
+    cmd.assert().success();
+    let s = fs::read_to_string(&out_json_latest).unwrap();
+    let items: Vec<serde_json::Value> = serde_json::from_str(&s).unwrap();
+    let keys: std::collections::BTreeSet<String> = items
+        .iter()
+        .filter_map(|o| o.get("key").and_then(|k| k.as_str()).map(|s| s.to_string()))
+        .collect();
+    assert_eq!(keys, ["K2"].into_iter().map(String::from).collect());
+
+    // 2) Явный выбор версии --game-version 1.5
+    let out_json_v15 = root.join("scan-v15.json");
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]).arg(root)
+        .args(["--game-version", "1.5"]) // accept without 'v'
+        .args(["--format", "json"]).args(["--out-json"]).arg(&out_json_v15);
+    cmd.assert().success();
+    let s = fs::read_to_string(&out_json_v15).unwrap();
+    let items: Vec<serde_json::Value> = serde_json::from_str(&s).unwrap();
+    let keys: std::collections::BTreeSet<String> = items
+        .iter()
+        .filter_map(|o| o.get("key").and_then(|k| k.as_str()).map(|s| s.to_string()))
+        .collect();
+    assert_eq!(keys, ["K1"].into_iter().map(String::from).collect());
+
+    // 3) Полное сканирование всех версий
+    let out_json_all = root.join("scan-all.json");
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]).arg(root)
+        .args(["--include-all-versions"]) // process v1.5 + v1.6
+        .args(["--format", "json"]).args(["--out-json"]).arg(&out_json_all);
+    cmd.assert().success();
+    let s = fs::read_to_string(&out_json_all).unwrap();
+    let items: Vec<serde_json::Value> = serde_json::from_str(&s).unwrap();
+    let keys: std::collections::BTreeSet<String> = items
+        .iter()
+        .filter_map(|o| o.get("key").and_then(|k| k.as_str()).map(|s| s.to_string()))
+        .collect();
+    assert_eq!(keys, ["K1", "K2"].into_iter().map(String::from).collect());
+}
+
+#[test]
 fn import_po_dry_run_prints_indicator() {
     let mut cmd = bin_cmd();
     cmd.args(["import-po", "--po"])
