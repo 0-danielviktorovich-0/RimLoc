@@ -122,6 +122,8 @@ help-scan-lang = Language code of the files to scan (e.g., en, ru)
 help-scan-source-lang = Source language code for cross-checks
 help-scan-source-lang-dir = Path to source language directory for cross-checks
 help-scan-format = Output format: "csv" (default) or "json"
+help-scan-game-version = Game version folder to use (e.g., 1.6 or v1.6); defaults to latest available under root
+help-scan-include-all = Include all version subfolders (disable auto-pick of latest)
 
 # validate
 help-validate-about = Validate strings for issues/warnings
@@ -129,6 +131,8 @@ help-validate-root = Path to RimWorld mod root to validate
 help-validate-source-lang = Source language code to compare against
 help-validate-source-lang-dir = Path to source language directory to compare against
 help-validate-format = Output format: "text" (default) or "json"
+help-validate-game-version = Game version folder to use (e.g., 1.6 or v1.6); defaults to latest under root
+help-validate-include-all = Include all version subfolders (disable auto-pick of latest)
 
 # validate-po
 help-validatepo-about = Validate .po file placeholder consistency (msgid vs msgstr)
@@ -143,6 +147,8 @@ help-exportpo-out-po = Output .po file path
 help-exportpo-lang = Target translation language code (e.g., ru, ja, de)
 help-exportpo-source-lang = Source language ISO code to export from (e.g., en, ru, ja)
 help-exportpo-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+help-exportpo-game-version = Game version folder to scan (e.g., 1.6 or v1.6); defaults to latest under root
+help-exportpo-include-all = Include all version subfolders (may create duplicates)
 
 # import-po
 help-importpo-about = Import .po  -  either into a single XML, or spread across existing mod structure
@@ -152,6 +158,7 @@ help-importpo-mod-root = Mod root to update with imported strings (structure mod
 help-importpo-lang = Target language code for import (e.g., ru)
 help-importpo-lang-dir = Target language directory (overrides automatic mapping)
 help-importpo-keep-empty = Import empty strings as placeholders
+help-importpo-game-version = Game version subfolder to write into (e.g., 1.6 or v1.6); defaults to latest if exists
 help-importpo-single-file = Write all imported strings into a single XML file
 help-importpo-backup = Create .bak backups when overwriting files
 help-importpo-dry-run = Do not write changes; only show what would be done
