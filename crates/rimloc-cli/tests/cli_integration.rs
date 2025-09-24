@@ -107,11 +107,7 @@ fn export_po_creates_file() {
 
     cmd.assert().success();
 
-    assert_file_nonempty(
-        &out_po,
-        &ti18n!("test-outpo-not-empty"),
-        "out-po-nonempty",
-    );
+    assert_file_nonempty(&out_po, &ti18n!("test-outpo-not-empty"), "out-po-nonempty");
 }
 
 #[test]
@@ -159,7 +155,11 @@ fn validate_detects_issues_in_bad_xml() {
         &out,
         "[duplicate]",
         1,
-        &ti18n!("test-validate-atleast-duplicates", min = 1, count = out.matches("[duplicate]").count()),
+        &ti18n!(
+            "test-validate-atleast-duplicates",
+            min = 1,
+            count = out.matches("[duplicate]").count()
+        ),
         CTX_NONE,
         bad_xml_en.as_path(),
         "category-[duplicate]",
@@ -168,7 +168,11 @@ fn validate_detects_issues_in_bad_xml() {
         &out,
         "[empty]",
         1,
-        &ti18n!("test-validate-atleast-empty", min = 1, count = out.matches("[empty]").count()),
+        &ti18n!(
+            "test-validate-atleast-empty",
+            min = 1,
+            count = out.matches("[empty]").count()
+        ),
         CTX_NONE,
         bad_xml_en.as_path(),
         "category-[empty]",
@@ -177,7 +181,11 @@ fn validate_detects_issues_in_bad_xml() {
         &out,
         "[placeholder-check]",
         1,
-        &ti18n!("test-validate-atleast-placeholder", min = 1, count = out.matches("[placeholder-check]").count()),
+        &ti18n!(
+            "test-validate-atleast-placeholder",
+            min = 1,
+            count = out.matches("[placeholder-check]").count()
+        ),
         CTX_NONE,
         bad_xml_en.as_path(),
         "category-[placeholder-check]",
@@ -323,7 +331,11 @@ fn import_single_file_dry_run_path() {
     assert_contains_file(
         &combined,
         expected_rel,
-        &ti18n!("test-importpo-expected-path-not-found", out = out, err = err),
+        &ti18n!(
+            "test-importpo-expected-path-not-found",
+            out = out,
+            err = err
+        ),
         expected_abs.as_path(),
         "import-single-file",
     );
@@ -391,7 +403,10 @@ fn build_mod_creates_minimal_structure() {
     let keyed_any = out_mod.join("Languages/Russian/Keyed");
     assert_path_exists(
         keyed_any.as_path(),
-        &ti18n!("test-build-folder-must-exist", path = "Languages/Russian/Keyed"),
+        &ti18n!(
+            "test-build-folder-must-exist",
+            path = "Languages/Russian/Keyed"
+        ),
         "keyed-folder",
     );
 
@@ -407,8 +422,16 @@ fn build_mod_creates_minimal_structure() {
     assert_all_present(
         &about_content,
         &[
-            ("<name>RimLoc Translation</name>", about.as_path(), "about-name-tag"),
-            ("<packageId>yourname.rimloc.translation</packageId>", about.as_path(), "about-packageId-tag"),
+            (
+                "<name>RimLoc Translation</name>",
+                about.as_path(),
+                "about-name-tag",
+            ),
+            (
+                "<packageId>yourname.rimloc.translation</packageId>",
+                about.as_path(),
+                "about-packageId-tag",
+            ),
         ],
         CTX_NONE,
         &ti18n!("test-build-about-tags"),
@@ -464,7 +487,10 @@ fn supported_locales_startup_message_matches() {
         let assert = cmd.assert().success();
         let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
         let clean = strip_ansi(&out);
-        if !(clean.contains("app_started") || clean.contains(&expected) || clean.contains(&expected_snip)) {
+        if !(clean.contains("app_started")
+            || clean.contains(&expected)
+            || clean.contains(&expected_snip))
+        {
             let ftl_path = i18n_dir.join(&loc).join("rimloc.ftl");
             assert_has!(
                 &out,
@@ -579,11 +605,15 @@ fn all_locales_have_same_keys() {
 
     let reference = load_ftl_map("en");
     for loc in locales {
-        if loc == "en" { continue; }
+        if loc == "en" {
+            continue;
+        }
         let map = load_ftl_map(&loc);
         // путь к FTL — для контекста в падении
         let ftl_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("i18n").join(&loc).join("rimloc.ftl");
+            .join("i18n")
+            .join(&loc)
+            .join("rimloc.ftl");
 
         assert_locale_diff(
             &loc,
@@ -772,27 +802,27 @@ fn validation_detail_keys_exist_in_locales() {
 
     // reference EN
     let en_map = load_ftl_map("en");
-    for k in &required_keys {
+    for &k in &required_keys {
         assert_map_contains_key(
             &en_map,
-            *k,
+            k,
             "en",
             std::path::Path::new("crates/rimloc-cli/i18n/en/rimloc.ftl"),
-            &ti18n!("test-ftl-key-missing", key = *k, lang = "en"),
+            &ti18n!("test-ftl-key-missing", key = k, lang = "en"),
         );
-        let vars = extract_fluent_vars(en_map.get(*k).unwrap());
+        let vars = extract_fluent_vars(en_map.get(k).unwrap());
         assert_set_eq(
             &vars,
             &expected_vars,
             &ti18n!(
                 "test-ftl-args-mismatch",
-                key = *k,
+                key = k,
                 expected = format!("{:?}", expected_vars),
                 got = format!("{:?}", vars)
             ),
             "en",
             std::path::Path::new("crates/rimloc-cli/i18n/en/rimloc.ftl"),
-            *k,
+            k,
         );
     }
 
@@ -806,27 +836,27 @@ fn validation_detail_keys_exist_in_locales() {
                     continue;
                 }
                 let map = load_ftl_map(&loc);
-                for k in &required_keys {
+                for &k in &required_keys {
                     assert_map_contains_key(
                         &map,
-                        *k,
+                        k,
                         &loc,
                         std::path::Path::new("crates/rimloc-cli/i18n/rimloc.ftl"),
-                        &ti18n!("test-ftl-key-missing", key = *k, lang = &loc),
+                        &ti18n!("test-ftl-key-missing", key = k, lang = &loc),
                     );
-                    let vars = extract_fluent_vars(map.get(*k).unwrap());
+                    let vars = extract_fluent_vars(map.get(k).unwrap());
                     assert_set_eq(
                         &vars,
                         &expected_vars,
                         &ti18n!(
                             "test-ftl-args-mismatch",
-                            key = *k,
+                            key = k,
                             expected = format!("{:?}", expected_vars),
                             got = format!("{:?}", vars)
                         ),
                         &loc,
                         std::path::Path::new("crates/rimloc-cli/i18n/rimloc.ftl"),
-                        *k,
+                        k,
                     );
                 }
             }
