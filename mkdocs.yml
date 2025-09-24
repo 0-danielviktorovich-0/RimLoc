@@ -67,6 +67,7 @@ nav:
       - Issue Guidelines: community/issues.md
       - Pull Requests: community/pull_requests.md
       - Localization: community/localization.md
+      - Support RimLoc: community/support.md
 
 exclude_docs: |
   readme/**
