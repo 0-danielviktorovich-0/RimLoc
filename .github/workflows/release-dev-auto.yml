@@ -243,9 +243,12 @@ jobs:
         shell: powershell
         run: |
           $version = "v1.5.0"
+          $ver = $version.TrimStart('v')
           $arch = "windows_amd64"
           if ("${{ matrix.target }}" -like "aarch64*") { $arch = "windows_arm64" }
-          Invoke-WebRequest -Uri "https://github.com/anchore/syft/releases/download/$version/syft_$version_$arch.zip" -OutFile syft.zip
+          $url = "https://github.com/anchore/syft/releases/download/$version/syft_${ver}_${arch}.zip"
+          Write-Host "Downloading Syft: $url"
+          Invoke-WebRequest -Uri $url -OutFile syft.zip
           7z x syft.zip -o"$PWD\syft"
       - name: Generate SBOM (SPDX)
         shell: powershell
