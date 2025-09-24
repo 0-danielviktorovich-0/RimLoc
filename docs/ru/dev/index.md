@@ -107,3 +107,81 @@ rimloc-cli --quiet import-po --po ./out/MyMod.po --out-xml ./out/MyMod.ru.xml
 rimloc-cli --quiet build-mod --po ./out/MyMod.po --out-mod ./dist/MyMod-ru --lang ru --dedupe
 ```
 
+## VS Code / VSCodium
+
+VS Code и VSCodium (версия без брендинга и телеметрии) одинаково хорошо подходят для Rust. Рекомендуемые расширения:
+
+- rust‑analyzer (официальная поддержка языка)
+- CodeLLDB (отладчик)
+- Even Better TOML (для Cargo.toml)
+- Fluent (FTL) — подсветка и базовые проверки (например, "Fluent Support")
+
+Сохраните файлы в `.vscode/` (VSCodium читает те же настройки):
+
+Пример `tasks.json`:
+
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "cargo build", "type": "shell", "command": "cargo build --workspace" },
+    { "label": "cargo test",  "type": "shell", "command": "cargo test --workspace" },
+    { "label": "cargo clippy", "type": "shell", "command": "cargo clippy --workspace --all-targets -- -D warnings" },
+    { "label": "cargo fmt",    "type": "shell", "command": "cargo fmt" },
+    { "label": "mkdocs serve", "type": "shell", "command": "python -m venv .venv && . .venv/bin/activate && pip install -r requirements-docs.txt && mkdocs serve" }
+  ]
+}
+```
+
+Пример `launch.json` (отладка `rimloc-cli`):
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug rimloc-cli (scan)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/rimloc-cli",
+      "args": ["--quiet", "scan", "--root", "${workspaceFolder}/test/TestMod", "--format", "json"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
+      "preLaunchTask": "cargo build"
+    },
+    {
+      "name": "Debug rimloc-cli (validate)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/rimloc-cli",
+      "args": ["--quiet", "validate", "--root", "${workspaceFolder}/test/TestMod", "--format", "text"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
+      "preLaunchTask": "cargo build"
+    }
+  ]
+}
+```
+
+Подсказки:
+
+- Для отладки тестовых бинарников можно добавить спец‑конфигурации или компоновочные задачи.
+- VSCodium использует те же файлы `.vscode/`.
+
+## Профилирование
+
+Быстрые flamegraph:
+
+```bash
+cargo install flamegraph
+# Linux: нужен perf (sudo apt install linux-tools-...)
+# macOS: dtrace (запуск от root) или Instruments
+
+cargo flamegraph -p rimloc-cli -- --quiet scan --root ./test/TestMod --format json
+```
+
+Советы:
+
+- Профилируйте сборку `--release`.
+- Суужайте сценарий до одной команды (`scan` на большом моде и т.п.).
+- Используйте `tracing` + `RUST_LOG=debug`, чтобы сопоставлять горячие места с логами.
