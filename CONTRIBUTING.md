@@ -72,6 +72,20 @@ refactor(po): centralize simple PO parsing in rimloc-core
 - switch XML helpers to the core-level parser export
 ```
 
+## Repository Policies
+
+### Commit scope policy (mandatory)
+- Commit only files that were intentionally edited as part of the change. Do not include unrelated files.
+- Avoid drive-by refactors, renames, and mass formatting across the repository. Keep diffs minimal and focused.
+- Run `cargo fmt` but commit only the files you actually touched for the feature/fix. If a repo‑wide reformat is necessary, submit it as a dedicated, separate PR.
+- Do not bump versions, shuffle modules, or update generated artifacts unless explicitly part of the task.
+
+### No-revert policy (mandatory)
+- Do not revert or discard changes without explicit consent from the maintainer/author.
+- Exceptions: only when strictly required to fix broken builds/tests or to complete the current fix/feature. State the rationale clearly in the commit body.
+- If you encounter unrelated, uncommitted local changes, ask whether to keep, commit, or drop them. Do not silently undo them.
+- When a revert is required, use a dedicated commit referencing the original change (e.g., `revert: <hash> <subject>`). Avoid mixing reverts with functional changes.
+
 ## Submitting Changes
 1. Keep commits focused and descriptive. Use `.gitmessage.txt` template (`type(scope): summary`).
 2. Rebase on top of `main` before opening a pull request to avoid merge conflicts.

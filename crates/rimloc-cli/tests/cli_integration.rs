@@ -164,6 +164,90 @@ fn export_po_creates_file() {
 }
 
 #[test]
+fn validate_json_emits_structured_issues() {
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    struct JsonMsg {
+        kind: String,
+        key: String,
+        path: String,
+        line: Option<usize>,
+        message: String,
+    }
+
+    let mut cmd = bin_cmd();
+    cmd.args(["validate", "--root"]) // known to contain issues in Bad.xml
+        .arg(fixture("test/TestMod"))
+        .args(["--format", "json"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    // Strip startup banner or any non-JSON prefix by finding the first '['
+    let json_slice = out
+        .find('[')
+        .map(|i| &out[i..])
+        .unwrap_or(out.as_str());
+    let msgs: Vec<JsonMsg> = serde_json::from_str(json_slice).expect("valid JSON diagnostics");
+    assert!(
+        !msgs.is_empty(),
+        "expected at least one issue in fixture"
+    );
+    let allowed = ["duplicate", "empty", "placeholder-check"];
+    for m in msgs {
+        assert!(allowed.contains(&m.kind.as_str()), "unexpected kind: {}", m.kind);
+        assert!(!m.key.is_empty(), "key must be non-empty");
+        assert!(!m.path.is_empty(), "path must be non-empty");
+        assert!(!m.message.is_empty(), "message must be non-empty");
+    }
+}
+
+#[test]
+fn export_po_respects_version_selection() {
+    use std::fs;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    let tmp = tempdir().expect(&ti18n!("test-tempdir"));
+    let root = tmp.path();
+
+    // Create v1.5 and v1.6 under Languages/English/Keyed
+    let v15 = root
+        .join("v1.5")
+        .join("Languages")
+        .join("English")
+        .join("Keyed");
+    let v16 = root
+        .join("v1.6")
+        .join("Languages")
+        .join("English")
+        .join("Keyed");
+    fs::create_dir_all(&v15).unwrap();
+    fs::create_dir_all(&v16).unwrap();
+    let mut f15 = fs::File::create(v15.join("A.xml")).unwrap();
+    writeln!(f15, "<LanguageData>\n  <K1>Old</K1>\n</LanguageData>\n").unwrap();
+    let mut f16 = fs::File::create(v16.join("B.xml")).unwrap();
+    writeln!(f16, "<LanguageData>\n  <K2>New</K2>\n</LanguageData>\n").unwrap();
+
+    // Export for version 1.5 only (accepts without 'v')
+    let out_po = root.join("out.po");
+    let mut cmd = bin_cmd();
+    cmd.args(["export-po", "--root"]) // default source dir is English
+        .arg(root)
+        .args(["--out-po"])
+        .arg(&out_po)
+        .args(["--game-version", "1.5"]);
+    cmd.assert().success();
+
+    let s = fs::read_to_string(&out_po).expect("read out.po");
+    // msgid contains source text, not the key
+    assert!(s.contains("msgid \"Old\""), "PO must contain 'Old' from v1.5");
+    assert!(
+        !s.contains("msgid \"New\""),
+        "PO must not contain 'New' from v1.6 when version=1.5"
+    );
+}
+
+#[test]
 fn scan_picks_latest_version_by_default_and_flags_work() {
     use std::fs;
     use std::io::Write;
