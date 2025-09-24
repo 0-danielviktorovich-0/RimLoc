@@ -37,12 +37,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-docs.txt
 
-      - name: Inject site_url for GitHub Pages
-        run: |
-          sed -i '1isite_url: https://0-danielviktorovich-0.github.io/RimLoc/' mkdocs.yml
-
       - name: Build site
         run: mkdocs build --verbose --clean
+        env:
+          SITE_URL: https://0-danielviktorovich-0.github.io/RimLoc/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
