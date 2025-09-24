@@ -1,16 +1,13 @@
 use color_eyre::eyre::{eyre, Result};
 use quick_xml::events::{BytesEnd, BytesStart, Event};
 use quick_xml::Writer;
+use regex::Regex;
+use rimloc_core::PoEntry;
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone)]
-pub struct PoEntry {
-    pub key: String,               // msgctxt
-    pub value: String,             // msgstr
-    pub reference: Option<String>, // строка после "#: " (может быть с :line)
-}
+use std::sync::OnceLock;
 
 /// Очень простой парсер .po: собираем reference + msgctxt + msgstr.
 /// Поддерживает многострочный msgstr. Заголовки/комментарии (кроме "#:") игнорим.
@@ -120,12 +117,11 @@ fn parse_po_string(s: &str) -> Result<String> {
 fn group_entries_by_rel_path(
     entries: Vec<PoEntry>,
 ) -> std::collections::HashMap<std::path::PathBuf, Vec<(String, String)>> {
-    use regex::Regex;
-    use std::collections::HashMap;
-    use std::path::PathBuf;
-
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    let re = Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap();
+    static REL_PATH_RE: OnceLock<Regex> = OnceLock::new();
+    let re = REL_PATH_RE.get_or_init(|| {
+        Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap()
+    });
 
     for e in entries {
         let rel_subpath: PathBuf = if let Some(r) = &e.reference {

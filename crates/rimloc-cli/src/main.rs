@@ -14,6 +14,7 @@ use rust_embed::RustEmbed;
 use std::collections::BTreeSet;
 use std::io::IsTerminal;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use tracing::{debug, error, info, warn};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_error::ErrorLayer;
@@ -397,13 +398,15 @@ fn extract_placeholders(s: &str) -> BTreeSet<String> {
     let mut set = BTreeSet::new();
 
     // %d, %s, %1$d, %02d, %i, %f — базового набора достаточно
-    let re_pct = Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap();
+    static RE_PCT: OnceLock<Regex> = OnceLock::new();
+    let re_pct = RE_PCT.get_or_init(|| Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
     for m in re_pct.find_iter(s) {
         set.insert(m.as_str().to_string());
     }
 
     // {NAME}, {0}, {Any-Thing}
-    let re_brace = Regex::new(r"\{[^}]+\}").unwrap();
+    static RE_BRACE: OnceLock<Regex> = OnceLock::new();
+    let re_brace = RE_BRACE.get_or_init(|| Regex::new(r"\{[^}]+\}").unwrap());
     for m in re_brace.find_iter(s) {
         set.insert(m.as_str().to_string());
     }

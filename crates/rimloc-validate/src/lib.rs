@@ -1,74 +1,9 @@
 use regex::Regex;
 use std::collections::HashMap;
-use std::fs;
 use std::path::Path;
+use std::sync::OnceLock;
 
-use color_eyre::eyre::Result;
-use rimloc_core::PoEntry;
-
-mod po {
-    use color_eyre::eyre::{eyre, Result};
-    use rimloc_core::PoEntry;
-
-    /// Minimal PO parser sufficient for our test fixtures.
-    /// Supports single-line msgid/msgstr and optional reference lines starting with `#: `.
-    pub fn parse_po_string(s: &str) -> Result<Vec<PoEntry>> {
-        let mut out = Vec::new();
-        let mut cur_ref: Option<String> = None;
-        let mut cur_id: Option<String> = None;
-
-        fn unquote(q: &str) -> String {
-            let t = q.trim();
-            if t.starts_with('"') && t.ends_with('"') && t.len() >= 2 {
-                t[1..t.len() - 1].to_string()
-            } else {
-                t.to_string()
-            }
-        }
-
-        for line in s.lines() {
-            let l = line.trim();
-            if l.is_empty() {
-                continue;
-            }
-            if let Some(rest) = l.strip_prefix("#:") {
-                cur_ref = Some(rest.trim().to_string());
-                continue;
-            }
-            if let Some(rest) = l.strip_prefix("msgid") {
-                let eq = rest
-                    .trim_start()
-                    .strip_prefix(' ')
-                    .unwrap_or(rest)
-                    .trim_start_matches('=');
-                cur_id = Some(unquote(eq.trim()));
-                continue;
-            }
-            if let Some(rest) = l.strip_prefix("msgstr") {
-                let eq = rest
-                    .trim_start()
-                    .strip_prefix(' ')
-                    .unwrap_or(rest)
-                    .trim_start_matches('=');
-                let val = unquote(eq.trim());
-                // finalize entry when we have both id and str
-                if let Some(id) = cur_id.take() {
-                    out.push(PoEntry {
-                        key: id,
-                        value: val,
-                        reference: cur_ref.take(),
-                    });
-                } else {
-                    return Err(eyre!("Malformed PO entry: msgstr without msgid"));
-                }
-                continue;
-            }
-        }
-        Ok(out)
-    }
-}
-
-pub use po::parse_po_string;
+pub use rimloc_core::parse_simple_po as parse_po_string;
 
 use rimloc_core::{Result as CoreResult, TransUnit};
 
@@ -83,8 +18,10 @@ pub struct ValidationMessage {
 
 /// Validator that reports duplicate keys per file using scanned TransUnits.
 pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
-    let re_pct = Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap();
-    let re_brace_inner = Regex::new(r"^\$?[A-Za-z0-9_]+$").unwrap();
+    static RE_PCT: OnceLock<Regex> = OnceLock::new();
+    static RE_BRACE_INNER: OnceLock<Regex> = OnceLock::new();
+    let re_pct = RE_PCT.get_or_init(|| Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
+    let re_brace_inner = RE_BRACE_INNER.get_or_init(|| Regex::new(r"^\$?[A-Za-z0-9_]+$").unwrap());
 
     let mut by_file_key: HashMap<(String, String), Vec<Option<usize>>> = HashMap::new();
     for u in units {
