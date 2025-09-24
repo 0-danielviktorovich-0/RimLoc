@@ -70,7 +70,7 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 
 Извлечь все языки и вывести JSON:
 ```bash
-rimloc-cli scan --root ./test/TestMod --format json | jq .
+rimloc-cli --quiet scan --root ./test/TestMod --format json | jq .
 ```
 *Сканирует все языки и выводит единицы перевода в формате JSON.*
 
@@ -82,7 +82,7 @@ rimloc-cli scan --root ./test/TestMod --lang en --out-csv out.csv
 
 Сохранять JSON и оставлять вывод в консоли:
 ```bash
-rimloc-cli scan --root ./test/TestMod --format json --out-json ./logs/scan.json
+rimloc-cli --quiet scan --root ./test/TestMod --format json --out-json ./logs/scan.json
 ```
 *Создаёт `scan.json`, одновременно печатая JSON в stdout.*
 

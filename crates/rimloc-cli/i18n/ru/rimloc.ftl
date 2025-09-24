@@ -111,7 +111,7 @@ validate-detail-placeholder = [placeholder-check] { $validator } ({ $path }:{ $l
 help-about = Набор инструментов локализации RimWorld (Rust)
 help-no-color = Отключить цветной вывод
 help-ui-lang = Язык интерфейса (ru или en; по умолчанию системный)
-help-quiet = Скрыть стартовый баннер и несущественные сообщения в stdout
+help-quiet = Скрыть стартовый баннер и несущественные сообщения в stdout (алиас: --no-banner)
 
 # scan
 help-scan-about = Сканировать папку мода и извлечь записи Keyed XML
