@@ -11,6 +11,7 @@ test-binary-built = binary rimloc-cli must be built by cargo
 test-tempdir = tempdir
 test-outpo-exist = out.po must exist
 test-outpo-not-empty = out.po must not be empty
+test-json-not-empty = JSON output must not be empty
 
 # === validate (categories and items) ===
 test-validate-dup-category = expected [duplicate] category in output
