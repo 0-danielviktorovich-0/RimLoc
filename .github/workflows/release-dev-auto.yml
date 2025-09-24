@@ -120,6 +120,13 @@ jobs:
         run: |
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
           syft packages "dist/$NAME.tar.gz" -o spdx-json > "dist/$NAME.spdx.json"
+      - name: Checksums (SHA256)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          (cd dist && sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
+          (cd dist && sha256sum "rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz" > "rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz.sha256")
       - name: Upload assets
         uses: softprops/action-gh-release@v1
         with:
@@ -179,6 +186,12 @@ jobs:
         run: |
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
           syft packages "dist/$NAME.tar.gz" -o spdx-json > "dist/$NAME.spdx.json"
+      - name: Checksums (SHA256)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          (cd dist && shasum -a 256 "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
       - name: Upload assets
         uses: softprops/action-gh-release@v1
         with:
@@ -238,6 +251,14 @@ jobs:
         run: |
           $NAME = "rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}"
           .\syft\syft.exe packages "dist/$NAME.zip" -o spdx-json | Out-File -FilePath "dist/$NAME.spdx.json" -Encoding utf8
+      - name: Checksums (SHA256)
+        shell: powershell
+        run: |
+          $NAME = "rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}"
+          $h1 = (Get-FileHash "dist/$NAME.zip" -Algorithm SHA256).Hash
+          Set-Content -Path "dist/$NAME.zip.sha256" -Value ("$h1  $NAME.zip")
+          $h2 = (Get-FileHash "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip" -Algorithm SHA256).Hash
+          Set-Content -Path "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip.sha256" -Value ("$h2  rimloc-cli-dev-latest-${{ matrix.target }}.zip")
       - name: Upload assets
         uses: softprops/action-gh-release@v1
         with:

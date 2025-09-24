@@ -239,6 +239,22 @@ cosign verify-blob \
 
 Для каждого артефакта генерируется SPDX JSON SBOM (`.spdx.json`) при помощи Syft. Его можно использовать для просмотра зависимостей/лицензий и сканирования уязвимостей (`grype`, `trivy`).
 
+### Контрольные суммы
+
+К каждому артефакту публикуется SHA256‑сумма (`.sha256`). Проверка:
+
+```bash
+# Linux
+sha256sum -c dist/<ASSET>.sha256
+
+# macOS
+shasum -a 256 -c dist/<ASSET>.sha256
+
+# Windows (PowerShell)
+Get-Content dist\<ASSET>.sha256
+Get-FileHash dist\<ASSET> -Algorithm SHA256
+```
+
 ### Профилирование в Windows (WPA/ETW)
 
 В Windows нет нативного `perf`/`dtrace`, но можно писать ETW‑трейсы и смотреть их в WPA:

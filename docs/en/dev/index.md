@@ -242,6 +242,22 @@ cosign verify-blob \
 
 An SPDX JSON SBOM (`.spdx.json`) is generated with Syft for each asset. You can review dependencies/licenses or scan with tools like `grype`/`trivy`.
 
+### Checksums
+
+For each artifact we publish a SHA256 checksum (`.sha256`). Verify:
+
+```bash
+# Linux
+sha256sum -c dist/<ASSET>.sha256
+
+# macOS
+shasum -a 256 -c dist/<ASSET>.sha256
+
+# Windows (PowerShell)
+Get-Content dist\<ASSET>.sha256
+Get-FileHash dist\<ASSET> -Algorithm SHA256
+```
+
 ### Windows profiling (WPA/ETW)
 
 Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
