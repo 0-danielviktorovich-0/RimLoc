@@ -49,7 +49,7 @@ plugins:
           build: true
 
 nav:
-  - Repository: https://github.com/0-danielviktорovich-0/RimLoc
+  - Repository: https://github.com/0-danielviktorovich-0/RimLoc
   - Home: index.md
   - CLI:
       - Overview: cli/index.md
