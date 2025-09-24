@@ -214,6 +214,34 @@ The release body includes the commit SHA and the list of targets. You can edit t
 
 Coming soon: screenshots/GIFs of the “Run workflow” flow (we’ll embed them when available).
 
+### Verifying signatures (cosign keyless)
+
+Each archive is signed with Sigstore/cosign using GitHub OIDC (keyless). You’ll find `.sig` and `.pem` next to the asset.
+
+Basic verification:
+
+```bash
+cosign verify-blob \
+  --certificate dist/<ASSET>.pem \
+  --signature   dist/<ASSET>.sig \
+  dist/<ASSET>
+```
+
+Strict verification (checks GitHub identity of the workflow):
+
+```bash
+cosign verify-blob \
+  --certificate-identity-regexp "https://github.com/.+/.+/.github/workflows/(release-dev|release-dev-auto).yml@.*" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --certificate dist/<ASSET>.pem \
+  --signature   dist/<ASSET>.sig \
+  dist/<ASSET>
+```
+
+### SBOM
+
+An SPDX JSON SBOM (`.spdx.json`) is generated with Syft for each asset. You can review dependencies/licenses or scan with tools like `grype`/`trivy`.
+
 ### Windows profiling (WPA/ETW)
 
 Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
