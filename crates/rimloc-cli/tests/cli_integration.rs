@@ -248,6 +248,126 @@ fn export_po_respects_version_selection() {
 }
 
 #[test]
+fn scan_filters_by_source_lang_and_dir() {
+    use serde::Deserialize;
+    use std::fs;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[derive(Deserialize)]
+    struct JsonUnit {
+        key: String,
+        value: Option<String>,
+        path: String,
+        line: Option<usize>,
+    }
+
+    let tmp = tempdir().expect(&ti18n!("test-tempdir"));
+    let root = tmp.path();
+
+    // Create Languages/English/Keyed and Languages/Russian/Keyed
+    let en_keyed = root
+        .join("Languages")
+        .join("English")
+        .join("Keyed");
+    let ru_keyed = root
+        .join("Languages")
+        .join("Russian")
+        .join("Keyed");
+    fs::create_dir_all(&en_keyed).unwrap();
+    fs::create_dir_all(&ru_keyed).unwrap();
+
+    let mut f_en = fs::File::create(en_keyed.join("A.xml")).unwrap();
+    writeln!(f_en, "<LanguageData>\n  <K_EN>Hello</K_EN>\n</LanguageData>\n").unwrap();
+    let mut f_ru = fs::File::create(ru_keyed.join("B.xml")).unwrap();
+    writeln!(f_ru, "<LanguageData>\n  <K_RU>Привет</K_RU>\n</LanguageData>\n").unwrap();
+
+    // 1) No filters => both keys
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]) // stdout json
+        .arg(root)
+        .args(["--format", "json"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let json_slice = out.find('[').map(|i| &out[i..]).unwrap_or(out.as_str());
+    let units: Vec<JsonUnit> = serde_json::from_str(json_slice).expect("valid json");
+    let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
+    assert_eq!(keys, ["K_EN", "K_RU"].into_iter().map(String::from).collect());
+
+    // 2) Filter by --source-lang en => only English
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]) // stdout json
+        .arg(root)
+        .args(["--format", "json"])
+        .args(["--source-lang", "en"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let json_slice = out.find('[').map(|i| &out[i..]).unwrap_or(out.as_str());
+    let units: Vec<JsonUnit> = serde_json::from_str(json_slice).expect("valid json");
+    let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
+    assert_eq!(keys, ["K_EN"].into_iter().map(String::from).collect());
+
+    // 3) Filter by --source-lang-dir Russian => only Russian
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]) // stdout json
+        .arg(root)
+        .args(["--format", "json"])
+        .args(["--source-lang-dir", "Russian"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let json_slice = out.find('[').map(|i| &out[i..]).unwrap_or(out.as_str());
+    let units: Vec<JsonUnit> = serde_json::from_str(json_slice).expect("valid json");
+    let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
+    assert_eq!(keys, ["K_RU"].into_iter().map(String::from).collect());
+}
+
+#[test]
+fn import_po_single_file_writes_and_backup() {
+    use std::fs;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    // Prepare mod root with existing _Imported.xml to trigger backup
+    let tmp = tempdir().expect(&ti18n!("test-tempdir"));
+    let root = tmp.path();
+    let out_xml = root
+        .join("Languages")
+        .join("Russian")
+        .join("Keyed")
+        .join("_Imported.xml");
+    fs::create_dir_all(out_xml.parent().unwrap()).unwrap();
+    fs::write(&out_xml, "<LanguageData><Old>prev</Old></LanguageData>").unwrap();
+
+    // Prepare minimal PO with msgctxt key and msgstr value
+    let po = root.join("in.po");
+    let mut f = fs::File::create(&po).unwrap();
+    writeln!(f, "msgid \"\"")
+        .and_then(|_| writeln!(f, "msgstr \"\""))
+        .unwrap();
+    writeln!(f, "msgctxt \"K_NEW|Keyed/Dummy.xml:3\"").unwrap();
+    writeln!(f, "msgid \"Hello\"").unwrap();
+    writeln!(f, "msgstr \"Привет\"").unwrap();
+    writeln!(f).unwrap();
+
+    // Run import into single file with backup
+    let mut cmd = bin_cmd();
+    cmd.args(["import-po", "--po"]) // prefer explicit lang ru
+        .arg(&po)
+        .args(["--mod-root"])
+        .arg(root)
+        .args(["--lang", "ru"])
+        .arg("--single-file")
+        .arg("--backup");
+    cmd.assert().success();
+
+    // Verify backup and written content
+    let bak = out_xml.with_extension("xml.bak");
+    assert!(bak.exists(), "expected .bak backup to be created");
+    let s = fs::read_to_string(&out_xml).expect("read imported xml");
+    assert!(s.contains("<K_NEW>Привет</K_NEW>"), "imported value must appear");
+}
+
+#[test]
 fn scan_picks_latest_version_by_default_and_flags_work() {
     use std::fs;
     use std::io::Write;
