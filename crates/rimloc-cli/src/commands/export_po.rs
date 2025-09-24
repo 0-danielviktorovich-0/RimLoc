@@ -49,10 +49,20 @@ pub fn run_export_po(
     };
     tracing::info!(event = "export_from", source_dir = %src_dir);
 
-    let filtered: Vec<_> = units
+    let mut filtered: Vec<_> = units
         .into_iter()
         .filter(|u| is_under_languages_dir(&u.path, &src_dir))
         .collect();
+    filtered.sort_by(|a, b| (
+        a.path.to_string_lossy(),
+        a.line.unwrap_or(0),
+        a.key.as_str(),
+    )
+        .cmp(&(
+            b.path.to_string_lossy(),
+            b.line.unwrap_or(0),
+            b.key.as_str(),
+        )));
     tracing::info!(event = "export_units", count = filtered.len(), source_dir = %src_dir);
 
     rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;

@@ -177,16 +177,14 @@ fn validate_json_emits_structured_issues() {
     }
 
     let mut cmd = bin_cmd();
-    cmd.args(["validate", "--root"]) // known to contain issues in Bad.xml
+    cmd.args(["--quiet"]) // ensure no banner
+        .args(["validate", "--root"]) // known to contain issues in Bad.xml
         .arg(fixture("test/TestMod"))
         .args(["--format", "json"]);
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    // Strip startup banner or any non-JSON prefix by finding the first '['
-    let json_slice = out
-        .find('[')
-        .map(|i| &out[i..])
-        .unwrap_or(out.as_str());
+    // In quiet mode stdout must be a clean JSON array
+    let json_slice = out.as_str();
     let msgs: Vec<JsonMsg> = serde_json::from_str(json_slice).expect("valid JSON diagnostics");
     assert!(
         !msgs.is_empty(),
@@ -198,6 +196,8 @@ fn validate_json_emits_structured_issues() {
         assert!(!m.key.is_empty(), "key must be non-empty");
         assert!(!m.path.is_empty(), "path must be non-empty");
         assert!(!m.message.is_empty(), "message must be non-empty");
+        // Touch optional line to avoid dead_code warnings and ensure it's a valid number if present
+        if let Some(l) = m.line { let _ = l; }
     }
 }
 
@@ -231,7 +231,8 @@ fn export_po_respects_version_selection() {
     // Export for version 1.5 only (accepts without 'v')
     let out_po = root.join("out.po");
     let mut cmd = bin_cmd();
-    cmd.args(["export-po", "--root"]) // default source dir is English
+    cmd.args(["--quiet"]) // no banner
+        .args(["export-po", "--root"]) // default source dir is English
         .arg(root)
         .args(["--out-po"])
         .arg(&out_po)
@@ -245,6 +246,36 @@ fn export_po_respects_version_selection() {
         !s.contains("msgid \"New\""),
         "PO must not contain 'New' from v1.6 when version=1.5"
     );
+}
+
+#[test]
+fn scan_errors_on_missing_version() {
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet"]).args(["scan", "--root"]).arg(fixture("test/TestMod"))
+        .args(["--game-version", "9.9"]);
+    cmd.assert().failure();
+}
+
+#[test]
+fn export_po_errors_on_missing_version() {
+    let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
+    let out_po = tmp.path().join("out.po");
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet"]).args(["export-po", "--root"]).arg(fixture("test/TestMod"))
+        .args(["--out-po"]).arg(&out_po)
+        .args(["--game-version", "0.0"]);
+    cmd.assert().failure();
+}
+
+#[test]
+fn scan_csv_adds_lang_column_when_lang_passed() {
+    // When --lang is provided, CSV should add a lang column as the first header
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet"]).args(["scan", "--root"]).arg(fixture("test/TestMod"))
+        .args(["--lang", "ru"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    assert!(out.lines().next().unwrap_or("").starts_with("lang,key,source,path,line"));
 }
 
 #[test]
@@ -284,39 +315,61 @@ fn scan_filters_by_source_lang_and_dir() {
 
     // 1) No filters => both keys
     let mut cmd = bin_cmd();
-    cmd.args(["scan", "--root"]) // stdout json
+    cmd.args(["--quiet"]) // no banner
+        .args(["scan", "--root"]) // stdout json
         .arg(root)
         .args(["--format", "json"]);
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    let json_slice = out.find('[').map(|i| &out[i..]).unwrap_or(out.as_str());
+    let json_slice = out.as_str();
     let units: Vec<JsonUnit> = serde_json::from_str(json_slice).expect("valid json");
+    // Sanity-check paths/lines and collect keys
+    for u in &units {
+        assert!(u.path.contains("Languages"), "expected Languages in path");
+        assert!(u.path.contains("Keyed"), "expected Keyed in path");
+        let _ = u.line.unwrap_or(0);
+        let _ = u.value.as_deref();
+    }
     let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
     assert_eq!(keys, ["K_EN", "K_RU"].into_iter().map(String::from).collect());
 
     // 2) Filter by --source-lang en => only English
     let mut cmd = bin_cmd();
-    cmd.args(["scan", "--root"]) // stdout json
+    cmd.args(["--quiet"]) // no banner
+        .args(["scan", "--root"]) // stdout json
         .arg(root)
         .args(["--format", "json"])
         .args(["--source-lang", "en"]);
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    let json_slice = out.find('[').map(|i| &out[i..]).unwrap_or(out.as_str());
+    let json_slice = out.as_str();
     let units: Vec<JsonUnit> = serde_json::from_str(json_slice).expect("valid json");
+    for u in &units {
+        assert!(u.path.contains("Languages"), "expected Languages in path");
+        assert!(u.path.contains("Keyed"), "expected Keyed in path");
+        let _ = u.line.unwrap_or(0);
+        let _ = u.value.as_deref();
+    }
     let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
     assert_eq!(keys, ["K_EN"].into_iter().map(String::from).collect());
 
     // 3) Filter by --source-lang-dir Russian => only Russian
     let mut cmd = bin_cmd();
-    cmd.args(["scan", "--root"]) // stdout json
+    cmd.args(["--quiet"]) // no banner
+        .args(["scan", "--root"]) // stdout json
         .arg(root)
         .args(["--format", "json"])
         .args(["--source-lang-dir", "Russian"]);
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    let json_slice = out.find('[').map(|i| &out[i..]).unwrap_or(out.as_str());
+    let json_slice = out.as_str();
     let units: Vec<JsonUnit> = serde_json::from_str(json_slice).expect("valid json");
+    for u in &units {
+        assert!(u.path.contains("Languages"), "expected Languages in path");
+        assert!(u.path.contains("Keyed"), "expected Keyed in path");
+        let _ = u.line.unwrap_or(0);
+        let _ = u.value.as_deref();
+    }
     let keys: BTreeSet<String> = units.iter().map(|u| u.key.clone()).collect();
     assert_eq!(keys, ["K_RU"].into_iter().map(String::from).collect());
 }
@@ -826,14 +879,16 @@ fn supported_locales_startup_message_matches() {
 
         let assert = cmd.assert().success();
         let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-        let clean = strip_ansi(&out);
+        let err = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
+        let combined = format!("{}{}", out, err);
+        let clean = strip_ansi(&combined);
         if !(clean.contains("app_started")
             || clean.contains(&expected)
             || clean.contains(&expected_snip))
         {
             let ftl_path = i18n_dir.join(&loc).join("rimloc.ftl");
             assert_has!(
-                &out,
+                &combined,
                 &expected_snip,
                 &ftl_path,
                 &loc,

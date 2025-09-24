@@ -101,6 +101,16 @@ fn pre_scan_ui_lang() -> Option<String> {
     found
 }
 
+/// Pre-scan CLI args to see if --quiet is present before we build localized clap Command
+fn pre_scan_quiet() -> bool {
+    for arg in std::env::args_os().skip(1) {
+        if let Some(s) = arg.to_str() {
+            if s == "--quiet" { return true; }
+        }
+    }
+    false
+}
+
 /// Apply localized texts (about/help) to the clap Command using tr!()
 fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
     // Top-level about
@@ -110,6 +120,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
     // Top-level args: --no-color, --ui-lang
     cmd = cmd.mut_arg("no_color", |a| a.help(tr!("help-no-color")));
     cmd = cmd.mut_arg("ui_lang", |a| a.help(tr!("help-ui-lang")));
+    cmd = cmd.mut_arg("quiet", |a| a.help(tr!("help-quiet")));
 
     // Subcommands
     for sc in cmd.get_subcommands_mut() {
@@ -241,6 +252,10 @@ struct Cli {
     /// UI language override (e.g., "ru" or "en"); help text localized via FTL.
     #[arg(long, global = true)]
     ui_lang: Option<String>,
+
+    /// Suppress startup banner and non-essential stdout messages.
+    #[arg(long, global = true)]
+    quiet: bool,
 }
 
 #[derive(Subcommand, Debug)]
@@ -660,18 +675,34 @@ fn init_tracing() {
         .with_writer(std::io::stderr)
         .with_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")));
 
-    // Лог в файл — фиксированно DEBUG
-    let file_layer = fmt::layer()
-        .with_ansi(false)
-        .with_target(true)
-        .with_writer(file_writer)
-        .with_filter(EnvFilter::new("debug"));
-
-    tracing_subscriber::registry()
-        .with(console_layer)
-        .with(file_layer)
-        .with(ErrorLayer::default())
-        .init();
+    // Лог в файл — формат настраиваем через RIMLOC_LOG_FORMAT=json|text (по умолчанию text), уровень DEBUG
+    let file_fmt = std::env::var("RIMLOC_LOG_FORMAT").unwrap_or_else(|_| "text".to_string());
+    if file_fmt.eq_ignore_ascii_case("json") {
+        tracing_subscriber::registry()
+            .with(console_layer)
+            .with(
+                fmt::layer()
+                    .json()
+                    .with_ansi(false)
+                    .with_target(true)
+                    .with_writer(file_writer)
+                    .with_filter(EnvFilter::new("debug")),
+            )
+            .with(ErrorLayer::default())
+            .init();
+    } else {
+        tracing_subscriber::registry()
+            .with(console_layer)
+            .with(
+                fmt::layer()
+                    .with_ansi(false)
+                    .with_target(true)
+                    .with_writer(file_writer)
+                    .with_filter(EnvFilter::new("debug")),
+            )
+            .with(ErrorLayer::default())
+            .init();
+    }
 }
 
 fn main() -> Result<()> {
@@ -686,18 +717,35 @@ fn main() -> Result<()> {
     let pre_ui_lang = pre_scan_ui_lang();
     set_ui_lang(pre_ui_lang.as_deref());
 
-    // --- Startup banner (должен быть только один раз!) ---
+    // --- Startup banner (stdout только в интерактивном терминале и если не quiet/no-banner) ---
     let version = env!("CARGO_PKG_VERSION");
     let rustlog = std::env::var("RUST_LOG").unwrap_or_else(|_| "None".to_string());
     let rustlog_ref = rustlog.as_str();
     let logdir = resolve_log_dir();
 
-    ui_out!(
-        "app-started",
-        version = version,
-        logdir = resolve_log_dir().display().to_string(),
-        rustlog = rustlog_ref
-    );
+    let quiet_pre = pre_scan_quiet();
+
+    let show_banner = std::io::stdout().is_terminal()
+        && std::env::var_os("NO_BANNER").is_none()
+        && !quiet_pre;
+    if show_banner {
+        ui_out!(
+            "app-started",
+            version = version,
+            logdir = resolve_log_dir().display().to_string(),
+            rustlog = rustlog_ref
+        );
+    }
+
+    // Always mirror startup to stderr unless quiet
+    if !quiet_pre {
+        ui_info!(
+            "app-started",
+            version = version,
+            logdir = resolve_log_dir().display().to_string(),
+            rustlog = rustlog_ref
+        );
+    }
 
     info!(
         event = "app_started",
@@ -717,6 +765,12 @@ fn main() -> Result<()> {
 
     let use_color =
         !cli.no_color && std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();
+
+    // Suppress banner if --quiet was passed (runtime check post-parse)
+    if cli.quiet {
+        // No additional action needed; banner already gated by terminal check.
+        // Future non-essential prints should honor this flag as needed.
+    }
 
     cli.cmd.run(use_color)
 }
