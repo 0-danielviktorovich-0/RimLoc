@@ -1,17 +1,17 @@
-# <type>(<scope>): краткое описание (до 72 символов)
+# <type>(<scope>): short summary (≤ 72 chars, English only)
 #
-# Возможные типы:
-#   feat      — новая функциональность
-#   fix       — исправление бага
-#   refactor  — рефакторинг без изменения поведения
-#   docs      — изменения в документации
-#   test      — добавление/изменение тестов
-#   chore     — задачи по инфраструктуре, сборке, зависимостям
+# Allowed types:
+#   feat      — new functionality
+#   fix       — bug fix
+#   refactor  — code changes without behaviour impact
+#   docs      — documentation updates
+#   test      — add/update tests
+#   chore     — infra/build/dependency chores
 #
-# После пустой строки можно расписать детали изменений:
+# Leave a blank line, then describe:
 #
-# - Что изменилось
-# - Почему это было сделано
-# - Эффект для пользователей/разработчиков
+# - What changed
+# - Why it was done
+# - Impact on users/developers
 #
-# Строки, начинающиеся с #, будут игнорироваться.
+# Lines starting with # are ignored.
