@@ -68,10 +68,25 @@ DE: Ungültiger Wert: %s
 - [ ] Both files present: `rimloc.ftl`, `rimloc-tests.ftl`
 - [ ] PR includes your language code and, if possible, a screenshot of `--help`
 
+## Also translate the documentation (optional)
+
+RimLoc’s website is built with MkDocs. You can translate the docs pages too:
+
+- Copy pages from `docs/en/...` to `docs/<lang>/...` using the same folder and file names.
+- Keep sections aligned across languages (same structure and headings).
+- Preview locally:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-docs.txt
+mkdocs serve
+```
+
+- For a new language, a maintainer needs to add it to `mkdocs.yml` under the `i18n` plugin (`languages:` list). Open an issue or mention it in your PR — we’ll help wire it up.
+
 ## Need help?
 
 - Open an issue with questions (Community → Issue Guidelines)
 - Start a draft PR — maintainers will guide you
 
 Thank you for making RimLoc friendlier for everyone!
-
