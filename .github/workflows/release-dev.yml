@@ -30,7 +30,7 @@ jobs:
           TAG="v${VERSION}-dev.${SHORT_SHA}"
           NAME_INPUT=${{ toJson(inputs.name) }}
           if [[ -n ${NAME_INPUT//\"\"/} && ${NAME_INPUT} != "null" ]]; then
-            NAME=${{ inputs.name }}
+            NAME="${{ inputs.name }}"
           else
             NAME="Dev pre-release ${TAG}"
           fi
