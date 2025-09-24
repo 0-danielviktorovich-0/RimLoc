@@ -16,6 +16,7 @@ test/test-export-debug.po
 test/*_debug.po
 test/RussianTranslation/
 test/TestMod/Languages/Russian/
+/mods
 
 # === IDE / Editor ===
 /.idea/
