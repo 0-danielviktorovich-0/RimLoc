@@ -1,7 +1,7 @@
 // Clippy: simplify complex tuple types
 type PoEntry = (Option<String>, String, String, Option<String>);
 
-use rimloc_validate::validate;
+// use rimloc_validate::validate; // moved into commands
 include!(concat!(env!("OUT_DIR"), "/supported_locales.rs"));
 use clap::{Command as ClapCommand, Parser, Subcommand};
 use color_eyre::eyre::Result;
@@ -17,7 +17,7 @@ use std::fs;
 use std::io::{ErrorKind, IsTerminal};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::Layer;
@@ -32,12 +32,14 @@ struct Localizations;
 static LANG_LOADER: OnceCell<FluentLanguageLoader> = OnceCell::new();
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct VersionEntry {
     name: String,
     components: Vec<u32>,
     path: PathBuf,
 }
 
+#[allow(dead_code)]
 fn parse_version_components(name: &str) -> Option<Vec<u32>> {
     let trimmed = name.trim_start_matches('v');
     if trimmed.is_empty() {
@@ -58,10 +60,12 @@ fn parse_version_components(name: &str) -> Option<Vec<u32>> {
     }
 }
 
+#[allow(dead_code)]
 fn normalize_version_input(raw: &str) -> String {
     raw.trim_start_matches('v').to_string()
 }
 
+#[allow(dead_code)]
 fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
     let mut candidates = Vec::new();
     let normalized = normalize_version_input(requested);
@@ -84,6 +88,7 @@ fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
     None
 }
 
+#[allow(dead_code)]
 fn list_version_directories(base: &Path) -> color_eyre::Result<Vec<VersionEntry>> {
     let mut entries = Vec::new();
     let read_dir = match fs::read_dir(base) {
@@ -112,6 +117,7 @@ fn list_version_directories(base: &Path) -> color_eyre::Result<Vec<VersionEntry>
     Ok(entries)
 }
 
+#[allow(dead_code)]
 fn is_version_directory(path: &Path) -> bool {
     path.file_name()
         .and_then(|s| s.to_str())
@@ -119,6 +125,7 @@ fn is_version_directory(path: &Path) -> bool {
         .is_some()
 }
 
+#[allow(dead_code)]
 fn resolve_game_version_root(
     base: &Path,
     requested: Option<&str>,
@@ -562,6 +569,7 @@ enum Commands {
     },
 }
 
+#[allow(dead_code)]
 fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
     let mut comps = path.components();
 
@@ -762,90 +770,15 @@ impl Runnable for Commands {
                 format,
                 game_version,
                 include_all_versions,
-            } => {
-                debug!(event = "validate_args", root = ?root, game_version = ?game_version, include_all_versions = include_all_versions);
-
-                let (scan_root, selected_version) = if include_all_versions {
-                    (root.clone(), None)
-                } else {
-                    resolve_game_version_root(&root, game_version.as_deref())?
-                };
-                if let Some(ver) = selected_version.as_deref() {
-                    info!(event = "validate_version_resolved", version = ver, path = %scan_root.display());
-                }
-
-                let mut units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
-
-                // опциональный фильтр по исходному языку
-                if let Some(dir) = source_lang_dir.as_ref() {
-                    units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
-                    info!(event = "validate_filtered_by_dir", source_lang_dir = %dir, remaining = units.len());
-                } else if let Some(code) = source_lang.as_ref() {
-                    let dir = rimloc_import_po::rimworld_lang_dir(code);
-                    units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
-                    info!(event = "validate_filtered_by_code", source_lang = %code, source_dir = %dir, remaining = units.len());
-                }
-
-                let msgs = validate(&units)?;
-                if format == "json" {
-                    #[derive(serde::Serialize)]
-                    struct JsonMsg<'a> {
-                        kind: &'a str,
-                        key: &'a str,
-                        path: &'a str,
-                        line: Option<usize>,
-                        message: &'a str,
-                    }
-                    let items: Vec<JsonMsg> = msgs
-                        .iter()
-                        .map(|m| JsonMsg {
-                            kind: m.kind.as_str(),
-                            key: m.key.as_str(),
-                            path: m.path.as_str(),
-                            line: m.line,
-                            message: m.message.as_str(),
-                        })
-                        .collect();
-                    serde_json::to_writer(std::io::stdout().lock(), &items)?;
-                    return Ok(());
-                }
-                if msgs.is_empty() {
-                    ui_ok!("validate-clean");
-                } else {
-                    for m in msgs {
-                        if !use_color {
-                            println!(
-                                "[{}] {} ({}:{}) — {}",
-                                m.kind,
-                                m.key,
-                                m.path,
-                                m.line.unwrap_or(0),
-                                m.message
-                            );
-                        } else {
-                            use owo_colors::OwoColorize;
-                            let tag = match m.kind.as_str() {
-                                "duplicate" => "⚠",
-                                "empty" => "✖",
-                                "placeholder-check" => "ℹ",
-                                _ => "•",
-                            };
-                            // Plain ASCII token for tests (no ANSI inside brackets)
-                            let plain_kind_token = m.kind.as_str();
-                            println!(
-                                "{} [{}] {} ({}:{}) — {}",
-                                tag,
-                                plain_kind_token,
-                                m.key.green(),
-                                m.path.blue(),
-                                m.line.unwrap_or(0).to_string().magenta(),
-                                m.message
-                            );
-                        }
-                    }
-                }
-                Ok(())
-            }
+            } => commands::validate::run_validate(
+                root,
+                source_lang,
+                source_lang_dir,
+                format,
+                game_version,
+                include_all_versions,
+                use_color,
+            ),
 
             Commands::ValidatePo { po, strict, format } => {
                 debug!(event = "validate_po_args", po = ?po, strict = strict);
@@ -978,47 +911,15 @@ impl Runnable for Commands {
                 source_lang_dir,
                 game_version,
                 include_all_versions,
-            } => {
-                debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, game_version = ?game_version, include_all_versions = include_all_versions);
-
-                let (scan_root, selected_version) = if include_all_versions {
-                    (root.clone(), None)
-                } else {
-                    resolve_game_version_root(&root, game_version.as_deref())?
-                };
-                if let Some(ver) = selected_version.as_deref() {
-                    info!(event = "export_version_resolved", version = ver, path = %scan_root.display());
-                }
-
-                // 1) Сканируем все юниты
-                let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
-
-                // 2) Определяем папку исходного языка:
-                //    - если задан --source-lang-dir → берём его
-                //    - иначе если задан --source-lang → маппим в rimworld_lang_dir(...)
-                //    - иначе по умолчанию "English"
-                let src_dir = if let Some(dir) = source_lang_dir {
-                    dir
-                } else if let Some(code) = source_lang {
-                    rimloc_import_po::rimworld_lang_dir(&code)
-                } else {
-                    "English".to_string()
-                };
-                info!(event = "export_from", source_dir = %src_dir);
-
-                // 3) Фильтруем только те записи, чей путь находится под Languages/<src_dir>/
-                let filtered: Vec<_> = units
-                    .into_iter()
-                    .filter(|u| is_under_languages_dir(&u.path, &src_dir))
-                    .collect();
-
-                info!(event = "export_units", count = filtered.len(), source_dir = %src_dir);
-
-                // 4) Пишем PO (язык назначения как и раньше — опциональное поле в заголовке)
-                rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;
-                ui_ok!("export-po-saved", path = out_po.display().to_string());
-                Ok(())
-            }
+            } => commands::export_po::run_export_po(
+                root,
+                out_po,
+                lang,
+                source_lang,
+                source_lang_dir,
+                game_version,
+                include_all_versions,
+            ),
 
             Commands::ImportPo {
                 po,
@@ -1031,146 +932,18 @@ impl Runnable for Commands {
                 backup,
                 single_file,
                 game_version,
-            } => {
-                debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file, game_version = ?game_version);
-                use std::fs;
-
-                let mut entries = rimloc_import_po::read_po_entries(&po)?;
-                debug!(event = "import_po_loaded", entries = entries.len());
-
-                if !keep_empty {
-                    let before = entries.len();
-                    entries.retain(|e| !e.value.trim().is_empty());
-                    debug!(
-                        event = "import_po_filtered_empty",
-                        before = before,
-                        after = entries.len()
-                    );
-                    if entries.is_empty() {
-                        ui_info!("import-nothing-to-do");
-                        return Ok(());
-                    }
-                }
-
-                if let Some(out) = out_xml {
-                    if dry_run {
-                        ui_out!(
-                            "dry-run-would-write",
-                            count = entries.len(),
-                            path = out.display().to_string()
-                        );
-                        return Ok(());
-                    }
-
-                    if backup && out.exists() {
-                        let bak = out.with_extension("xml.bak");
-                        fs::copy(&out, &bak)?;
-                        warn!(event = "backup", from = %out.display(), to = %bak.display());
-                    }
-
-                    let pairs: Vec<(String, String)> =
-                        entries.into_iter().map(|e| (e.key, e.value)).collect();
-                    rimloc_import_po::write_language_data_xml(&out, &pairs)?;
-                    ui_ok!("xml-saved", path = out.display().to_string());
-                    return Ok(());
-                }
-
-                let Some(base_root) = mod_root else {
-                    ui_info!("import-need-target");
-                    std::process::exit(2);
-                };
-                let (root, selected_version) =
-                    resolve_game_version_root(&base_root, game_version.as_deref())?;
-                if let Some(ver) = selected_version.as_deref() {
-                    info!(event = "import_version_resolved", version = ver, path = %root.display());
-                }
-
-                let lang_folder = if let Some(dir) = lang_dir {
-                    dir
-                } else if let Some(code) = lang {
-                    rimloc_import_po::rimworld_lang_dir(&code)
-                } else {
-                    "Russian".to_string()
-                };
-                debug!(event = "resolved_lang_folder", lang_folder = %lang_folder);
-
-                if single_file {
-                    let out = root
-                        .join("Languages")
-                        .join(&lang_folder)
-                        .join("Keyed")
-                        .join("_Imported.xml");
-
-                    if dry_run {
-                        ui_out!(
-                            "dry-run-would-write",
-                            count = entries.len(),
-                            path = out.display().to_string()
-                        );
-                        return Ok(());
-                    }
-
-                    if backup && out.exists() {
-                        let bak = out.with_extension("xml.bak");
-                        fs::copy(&out, &bak)?;
-                        warn!(event = "backup", from = %out.display(), to = %bak.display());
-                    }
-
-                    let pairs: Vec<(String, String)> =
-                        entries.into_iter().map(|e| (e.key, e.value)).collect();
-                    rimloc_import_po::write_language_data_xml(&out, &pairs)?;
-                    ui_ok!("xml-saved", path = out.display().to_string());
-                    return Ok(());
-                }
-
-                use std::collections::HashMap;
-                let re =
-                    Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$")
-                        .unwrap();
-                let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-
-                for e in entries {
-                    let rel = e
-                        .reference
-                        .as_ref()
-                        .and_then(|r| re.captures(r))
-                        .and_then(|c| c.name("rel").map(|m| PathBuf::from(m.as_str())))
-                        .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml"));
-                    grouped.entry(rel).or_default().push((e.key, e.value));
-                }
-
-                if dry_run {
-                    ui_out!("import-dry-run-header");
-                    let mut keys_total = 0usize;
-                    let mut paths: Vec<_> = grouped.keys().cloned().collect();
-                    paths.sort();
-                    for rel in paths {
-                        let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
-                        keys_total += n;
-                        let full_path = root.join("Languages").join(&lang_folder).join(&rel);
-                        ui_out!(
-                            "import-dry-run-line",
-                            path = full_path.display().to_string(),
-                            n = n
-                        );
-                    }
-                    ui_out!("import-total-keys", n = keys_total);
-                    return Ok(());
-                }
-
-                for (rel, items) in grouped {
-                    let out_path = root.join("Languages").join(&lang_folder).join(&rel);
-                    if backup && out_path.exists() {
-                        let bak = out_path.with_extension("xml.bak");
-                        std::fs::copy(&out_path, &bak)?;
-                        warn!(event = "backup", from = %out_path.display(), to = %bak.display());
-                    }
-                    rimloc_import_po::write_language_data_xml(&out_path, &items)?;
-                }
-
-                ui_ok!("import-done", root = root.display().to_string());
-                Ok(())
-            }
+            } => commands::import_po::run_import_po(
+                po,
+                out_xml,
+                mod_root,
+                lang,
+                lang_dir,
+                keep_empty,
+                dry_run,
+                backup,
+                single_file,
+                game_version,
+            ),
 
             Commands::BuildMod {
                 po,
@@ -1181,52 +954,9 @@ impl Runnable for Commands {
                 rw_version,
                 lang_dir,
                 dry_run,
-            } => {
-                debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run);
-                let lang_folder =
-                    lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
-
-                if dry_run {
-                    let plan = rimloc_import_po::build_translation_mod_dry_run(
-                        &po,
-                        &out_mod,
-                        &lang_folder,
-                        &name,
-                        &package_id,
-                        &rw_version,
-                    )?;
-                    ui_out!("build-dry-run-header");
-                    ui_out!("build-name", value = plan.mod_name);
-                    ui_out!("build-package-id", value = plan.package_id);
-                    ui_out!("build-rw-version", value = plan.rw_version);
-                    ui_out!(
-                        "build-mod-folder",
-                        value = plan.out_mod.display().to_string()
-                    );
-                    ui_out!("build-language", value = plan.lang_dir);
-                    ui_out!("build-divider");
-                    for (path, n) in plan.files {
-                        ui_out!(
-                            "import-dry-run-line",
-                            path = path.display().to_string(),
-                            n = n
-                        );
-                    }
-                    ui_out!("build-divider");
-                    ui_out!("build-summary", n = plan.total_keys);
-                } else {
-                    rimloc_import_po::build_translation_mod_with_langdir(
-                        &po,
-                        &out_mod,
-                        &lang_folder,
-                        &name,
-                        &package_id,
-                        &rw_version,
-                    )?;
-                    ui_ok!("build-done", out = out_mod.display().to_string());
-                }
-                Ok(())
-            }
+            } => commands::build_mod::run_build_mod(
+                po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run,
+            ),
         };
 
         match &result {
