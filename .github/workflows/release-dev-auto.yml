@@ -1,11 +1,8 @@
-name: Release (dev pre-release)
+name: Nightly Dev Pre-release
 
 on:
-  workflow_dispatch:
-    inputs:
-      name:
-        description: "Release name (optional)"
-        required: false
+  push:
+    branches: [ develop ]
 
 permissions:
   contents: write
@@ -27,14 +24,9 @@ jobs:
           VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' crates/rimloc-cli/Cargo.toml | head -n1)
           SHORT_SHA=${GITHUB_SHA::7}
           TAG="v${VERSION}-dev.${SHORT_SHA}"
-          NAME_INPUT=${{ toJson(inputs.name) }}
-          if [[ -n ${NAME_INPUT//\"\"/} && ${NAME_INPUT} != "null" ]]; then
-            NAME=${{ inputs.name }}
-          else
-            NAME="Dev pre-release ${TAG}"
-          fi
+          NAME="Nightly dev pre-release ${TAG}"
           cat > body.txt <<EOF
-          Dev pre-release build
+          Automated dev pre-release build
 
           Commit: ${GITHUB_SHA}
           Short SHA: ${SHORT_SHA}
@@ -172,3 +164,4 @@ jobs:
         with:
           tag_name: ${{ needs.create_release.outputs.tag }}
           files: dist/*
+

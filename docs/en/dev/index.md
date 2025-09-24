@@ -198,6 +198,22 @@ General tips:
 - Narrow down workloads to a single subcommand (e.g., `scan` on a bigger mod).
 - Use `tracing` spans (already enabled) + `RUST_LOG=debug` to correlate hot paths with logs.
 
+## Publishing a dev pre‑release (GitHub Actions)
+
+There are two ways to ship multi‑arch dev builds:
+
+1) Manual (Release — dev pre‑release):
+   - Go to GitHub → Actions → “Release (dev pre-release)” → “Run workflow”.
+   - The workflow computes a tag from Cargo version + short SHA (e.g., `v0.0.1-dev.ab12c34`).
+   - Assets are uploaded for Linux/macOS/Windows (x86_64 + aarch64; Linux also has x86_64‑musl).
+2) Automatic (Nightly Dev Pre-release):
+   - Push to the `develop` branch.
+   - CI creates/updates a pre‑release with the same tag scheme.
+
+The release body includes the commit SHA and the list of targets. You can edit the description after CI finishes if needed.
+
+Coming soon: screenshots/GIFs of the “Run workflow” flow (we’ll embed them when available).
+
 ### Windows profiling (WPA/ETW)
 
 Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
