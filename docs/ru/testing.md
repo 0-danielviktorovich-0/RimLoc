@@ -39,6 +39,29 @@ RimLoc пишет диагностику в stderr и в лог-файл с ро
 
 Совет для автоматизации: используйте `--quiet` вместе с `--format json`, чтобы stdout оставался машинно‑читаемым, а диагностические сообщения шли в stderr/лог.
 
+### Потоки и уровни
+
+- stdout — основная полезная нагрузка (CSV/JSON). Для JSON‑потоков используйте `--quiet`.
+- stderr — сообщения для человека и стартовый баннер.
+- Файловый лог — подробные трассировки в `RIMLOC_LOG_DIR` (ежедневная ротация), уровень DEBUG.
+
+Часто используемые уровни: `error`, `warn`, `info`, `debug`. Для расширенной диагностики — `RUST_LOG=debug`.
+
+### Поля JSON‑лога
+
+При `RIMLOC_LOG_FORMAT=json` лог в файле будет структурированным. Типичные поля:
+
+- `timestamp`, `level`, `target` — стандартные метаданные tracing
+- `event` — семантическое имя события: `app_started`, `scan_args`, `validate_args`, `export_po_args`, `import_po_args`, `build_mod_args`
+- Дополнительные поля в зависимости от события: `cmd`, `root`, `out_po`, `lang`, `game_version` и т.д.
+
+Пример (сокращённо):
+
+```json
+{"timestamp":"...","level":"INFO","event":"app_started","version":"0.2.0","logdir":"logs","rustlog":"debug"}
+{"timestamp":"...","level":"DEBUG","event":"scan_args","root":"./Mods/MyMod","format":"json","game_version":"1.4"}
+```
+
 ## Сквозные проверки CLI
 
 Для быстрых прогонов используйте фикстуру `test/TestMod`:

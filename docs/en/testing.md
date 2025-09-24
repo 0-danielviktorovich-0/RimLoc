@@ -39,6 +39,29 @@ On startup, RimLoc prints a banner that includes version, `RIMLOC_LOG_DIR`, and 
 
 Tip for automation: combine `--quiet` with `--format json` to keep stdout machine‑readable and route diagnostics to stderr/logs.
 
+### Streams and levels
+
+- stdout — primary payload (CSV/JSON). Keep it clean with `--quiet` for JSON flows.
+- stderr — human‑oriented messages and the startup banner.
+- File log — detailed traces in `RIMLOC_LOG_DIR` (daily rotation), level DEBUG.
+
+Common levels: `error`, `warn`, `info`, `debug`. Use `RUST_LOG=debug` for richer traces.
+
+### JSON log fields
+
+When `RIMLOC_LOG_FORMAT=json` is set, file logs emit structured entries. Typical fields:
+
+- `timestamp`, `level`, `target` — standard tracing metadata
+- `event` — semantic event name: `app_started`, `scan_args`, `validate_args`, `export_po_args`, `import_po_args`, `build_mod_args`
+- Additional fields depending on the event: `cmd`, `root`, `out_po`, `lang`, `game_version`, etc.
+
+Example (abbreviated):
+
+```json
+{"timestamp":"...","level":"INFO","event":"app_started","version":"0.2.0","logdir":"logs","rustlog":"debug"}
+{"timestamp":"...","level":"DEBUG","event":"scan_args","root":"./Mods/MyMod","format":"json","game_version":"1.4"}
+```
+
 ## End‑to‑End CLI Checks
 
 Use the bundled fixture `test/TestMod` to exercise the CLI:

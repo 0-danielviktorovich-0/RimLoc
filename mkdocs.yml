@@ -59,6 +59,10 @@ nav:
       - Export/Import: cli/export_import.md
       - Build Mod: cli/build_mod.md
   - Testing: testing.md
+  - Guides:
+      - Placeholders: guide/placeholders.md
+  - Community:
+      - Issue Guidelines: community/issues.md
 
 exclude_docs: |
   readme/**
