@@ -57,16 +57,18 @@ pub fn run_scan(
             .into_iter()
             .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
             .collect();
-        filtered.sort_by(|a, b| (
-            a.path.to_string_lossy(),
-            a.line.unwrap_or(0),
-            a.key.as_str(),
-        )
-            .cmp(&(
-                b.path.to_string_lossy(),
-                b.line.unwrap_or(0),
-                b.key.as_str(),
-            )));
+        filtered.sort_by(|a, b| {
+            (
+                a.path.to_string_lossy(),
+                a.line.unwrap_or(0),
+                a.key.as_str(),
+            )
+                .cmp(&(
+                    b.path.to_string_lossy(),
+                    b.line.unwrap_or(0),
+                    b.key.as_str(),
+                ))
+        });
         tracing::info!(event = "scan_filtered_by_dir", before = before, after = filtered.len(), source_lang_dir = %dir);
         filtered
     } else if let Some(code) = source_lang.clone() {
@@ -76,29 +78,33 @@ pub fn run_scan(
             .into_iter()
             .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
             .collect();
-        filtered.sort_by(|a, b| (
-            a.path.to_string_lossy(),
-            a.line.unwrap_or(0),
-            a.key.as_str(),
-        )
-            .cmp(&(
-                b.path.to_string_lossy(),
-                b.line.unwrap_or(0),
-                b.key.as_str(),
-            )));
+        filtered.sort_by(|a, b| {
+            (
+                a.path.to_string_lossy(),
+                a.line.unwrap_or(0),
+                a.key.as_str(),
+            )
+                .cmp(&(
+                    b.path.to_string_lossy(),
+                    b.line.unwrap_or(0),
+                    b.key.as_str(),
+                ))
+        });
         tracing::info!(event = "scan_filtered_by_code", source_lang = %code, source_dir = %dir, before = before, after = filtered.len());
         filtered
     } else {
-        units.sort_by(|a, b| (
-            a.path.to_string_lossy(),
-            a.line.unwrap_or(0),
-            a.key.as_str(),
-        )
-            .cmp(&(
-                b.path.to_string_lossy(),
-                b.line.unwrap_or(0),
-                b.key.as_str(),
-            )));
+        units.sort_by(|a, b| {
+            (
+                a.path.to_string_lossy(),
+                a.line.unwrap_or(0),
+                a.key.as_str(),
+            )
+                .cmp(&(
+                    b.path.to_string_lossy(),
+                    b.line.unwrap_or(0),
+                    b.key.as_str(),
+                ))
+        });
         units
     };
 
