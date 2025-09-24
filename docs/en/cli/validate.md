@@ -16,14 +16,16 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 
 ## Options
 
-| Option               | Description                                            | Required |
-|----------------------|--------------------------------------------------------|----------|
-| `--root`             | Root directory containing localization files           | Yes      |
-| `--source-lang`      | Source language code (e.g., `en`)                       | No       |
-| `--source-lang-dir`  | Directory of the source language files                  | No       |
-| `--format`           | Output format: text \| json (default: text)             | No       |
-| `--ui-lang`          | Language for the UI messages                             | No       |
-| `--help`             | Show help message                                       | No       |
+| Option                 | Description                                                      | Required |
+|------------------------|------------------------------------------------------------------|----------|
+| `--root`               | Root directory containing localization files                     | Yes      |
+| `--source-lang`        | Source language code (e.g., `en`)                                | No       |
+| `--source-lang-dir`    | Directory of the source language files                            | No       |
+| `--format`             | Output format: text \| json (default: text)                       | No       |
+| `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
+| `--include-all-versions` | Validate all version subfolders instead of auto-picking the latest. | No |
+| `--ui-lang`            | Language for the UI messages                                     | No       |
+| `--help`               | Show help message                                                 | No       |
 
 !!! tip
     If neither `--source-lang` nor `--source-lang-dir` is provided, RimLoc assumes the baseline files live under `Languages/English`.

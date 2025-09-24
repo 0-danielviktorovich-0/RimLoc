@@ -25,11 +25,11 @@ RimLoc CLI объединяет инструменты для сбора, про
 
 | Команда | Назначение | Частые опции |
 |---------|------------|--------------|
-| [`scan`](scan.md) | Собирает единицы перевода из XML. | `--lang`, `--format`, `--out-csv`, `--out-json` |
-| [`validate`](validate.md) | Проверяет XML на дубликаты, пустоты и плейсхолдеры. | `--format`, `--source-lang`, `--source-lang-dir` |
+| [`scan`](scan.md) | Собирает единицы перевода из XML. | `--lang`, `--format`, `--out-csv`, `--out-json`, `--game-version`, `--include-all-versions` |
+| [`validate`](validate.md) | Проверяет XML на дубликаты, пустоты и плейсхолдеры. | `--format`, `--source-lang`, `--source-lang-dir`, `--game-version`, `--include-all-versions` |
 | [`validate-po`](validate_po.md) | Сравнивает плейсхолдеры в PO-файлах. | `--po`, `--strict`, `--format` |
-| [`export-po`](export_import.md#export-po) | Формирует единый PO-файл для переводчиков. | `--root`, `--out-po`, `--lang` |
-| [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file` |
+| [`export-po`](export_import.md#export-po) | Формирует единый PO-файл для переводчиков. | `--root`, `--out-po`, `--lang`, `--game-version`, `--include-all-versions` |
+| [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
 | [`build-mod`](build_mod.md) | Собирает самостоятельный мод-перевод. | `--out-mod`, `--package-id`, `--dry-run` |
 
 ## Полезные паттерны

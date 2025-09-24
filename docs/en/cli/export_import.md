@@ -13,7 +13,7 @@ Use these commands when you are ready to share translations with collaborators o
 **Usage**
 
 ```bash
-rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang <CODE>] [--source-lang-dir <DIR>]
+rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang <CODE>] [--source-lang-dir <DIR>] [--game-version <VER>] [--include-all-versions]
 ```
 
 **Options**
@@ -25,6 +25,8 @@ rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang
 | `--lang <CODE>` | Target translation language (used in the PO header, e.g. `ru`, `ja`). | No |
 | `--source-lang <CODE>` | ISO code of the source language to export (defaults to `en`). | No |
 | `--source-lang-dir <DIR>` | Explicit source language folder name (e.g. `English`). Overrides `--source-lang`. | No |
+| `--game-version <VER>` | Version folder to export from (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
+| `--include-all-versions` | Export from all version subfolders under the root. | No |
 
 **Examples**
 
@@ -65,7 +67,7 @@ rimloc-cli export-po --root ./Mods/MyMod --source-lang-dir Original --out-po ./o
 **Usage**
 
 ```bash
-rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [options]
+rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [--game-version <VER>] [options]
 ```
 
 **Options**
@@ -81,6 +83,7 @@ rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [options]
 | `--dry-run` | Print the planned writes without touching the filesystem. | No |
 | `--backup` | Create `.bak` copies before overwriting existing XML files. | No |
 | `--single-file` | When used with `--mod-root`, write everything into `Keyed/_Imported.xml`. | No |
+| `--game-version <VER>` | If used with `--mod-root`, target a specific version subfolder (e.g., `1.4`). | No |
 
 **Examples**
 

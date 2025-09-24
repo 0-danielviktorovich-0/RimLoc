@@ -13,7 +13,7 @@ Scan a RimWorld mod directory to extract translation units from `Languages/*/{Ke
 ```bash
 rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
                  [--source-lang <CODE>] [--source-lang-dir <DIR>] \
-                 [--format <csv|json>]
+                 [--format <csv|json>] [--game-version <VER>] [--include-all-versions]
 ```
 
 ## Options
@@ -27,6 +27,8 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 | `--source-lang <CODE>` | Source language code for cross-checks (optional). | No       |
 | `--source-lang-dir <DIR>` | Explicit path to source language directory (optional). | No       |
 | `--format <csv\|json>` | Output format to stdout. Default is `csv`. | No       |
+| `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detects latest if omitted. | No |
+| `--include-all-versions` | Scan all version subfolders under the root, disabling auto-pick of the latest. | No |
 
 ### `-r, --root <PATH>`
 Path to the RimWorld mod root directory to scan. **Required**.
