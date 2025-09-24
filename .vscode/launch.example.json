@@ -1,0 +1,39 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug rimloc-cli (scan)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/rimloc-cli",
+      "args": ["--quiet", "scan", "--root", "${workspaceFolder}/test/TestMod", "--format", "json"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
+      "preLaunchTask": "cargo build"
+    },
+    {
+      "name": "Debug rimloc-cli (validate)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/rimloc-cli",
+      "args": ["--quiet", "validate", "--root", "${workspaceFolder}/test/TestMod", "--format", "text"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
+      "preLaunchTask": "cargo build"
+    },
+    {
+      "name": "Debug test: cli_integration::validate_json_emits_structured_issues",
+      "type": "lldb",
+      "request": "launch",
+      "cargo": {
+        "args": ["test", "--no-run", "--package", "rimloc-cli", "--test", "cli_integration"],
+        "filter": { "name": "cli_integration", "kind": "test" }
+      },
+      "args": ["--nocapture", "validate_json_emits_structured_issues"],
+      "cwd": "${workspaceFolder}",
+      "env": { "RUST_LOG": "debug" },
+      "console": "integratedTerminal"
+    }
+  ]
+}
+

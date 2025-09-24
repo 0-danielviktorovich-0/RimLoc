@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "cargo build",  "type": "shell", "command": "cargo build --workspace" },
+    { "label": "cargo test",   "type": "shell", "command": "cargo test --workspace" },
+    { "label": "cargo clippy", "type": "shell", "command": "cargo clippy --workspace --all-targets -- -D warnings" },
+    { "label": "cargo fmt",    "type": "shell", "command": "cargo fmt" },
+    {
+      "label": "mkdocs serve (venv)",
+      "type": "shell",
+      "command": "python -m venv .venv && . .venv/bin/activate && pip install -r requirements-docs.txt && mkdocs serve",
+      "problemMatcher": []
+    },
+    {
+      "label": "mkdocs serve (system Python)",
+      "type": "shell",
+      "command": "pip install -r requirements-docs.txt && mkdocs serve",
+      "problemMatcher": []
+    }
+  ]
+}
+

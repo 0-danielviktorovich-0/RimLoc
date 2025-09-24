@@ -119,7 +119,14 @@ VS Code and VSCodium (telemetry‑free build of VS Code) work equally well for R
 - Even Better TOML (Cargo.toml)
 - Fluent (FTL) syntax highlight (e.g., "Fluent Support")
 
-Place these files under `.vscode/` (VSCodium also reads them):
+Place these files under `.vscode/` (VSCodium also reads them).
+
+Ready‑made examples are included in the repo:
+
+- `.vscode/tasks.example.json`
+- `.vscode/launch.example.json`
+
+Copy them to `.vscode/tasks.json` and `.vscode/launch.json` to enable.
 
 Example `tasks.json`:
 
@@ -170,6 +177,8 @@ Tips:
 
 - Add a "cargo test" compound task or a test launch with `program`: `${workspaceFolder}/target/debug/rimloc-cli-<hash>` if you debug test binaries.
 - VSCodium users can reuse the same `.vscode/` folder.
+
+OS note: Linux and macOS generally provide a smoother Rust developer experience (tooling parity, perf). On Windows, WSL2 is recommended if you prefer a UNIX‑like environment.
 
 ## Profiling tips
 
