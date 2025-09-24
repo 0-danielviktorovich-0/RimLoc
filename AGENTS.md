@@ -25,5 +25,12 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 ## Commit & Pull Request Guidelines
 Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(scope): summary` within 72 characters, using types such as `feat`, `fix`, `docs`, or `chore`. Commit messages must be written in English; a Russian reference lives at `docs/readme/ru/gitmessage.txt`. Commit bodies should explain motivation and impact. Pull requests need a concise summary, linked issues, and instructions for validation; attach CLI output or screenshots when behaviour changes. Ensure CI passes and that formatting, lint, and test checks are green before requesting review.
 
+### Commit scope policy (mandatory)
+- Commit only files that were intentionally edited as part of the change. Do not include unrelated files.
+- Avoid drive‑by refactors, renames, and mass formatting across the repository. Keep diffs minimal and focused.
+- Run `cargo fmt` but commit only the files you actually touched for the feature/fix. If a repository‑wide reformat is necessary, submit it as a dedicated, separate PR.
+- Do not bump versions, shuffle modules, or update generated artifacts unless explicitly part of the task.
+- This rule applies to humans and to automated agents working in this repo — agents must obey it as well.
+
 ## Localization Workflow Notes
 Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at build time. Update the English source, mirror changes to other locales, and run `cargo i18n` (if available) or `cargo test --package rimloc-cli -- tests_i18n` to confirm key integrity.
