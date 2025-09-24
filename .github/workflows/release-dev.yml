@@ -1,0 +1,142 @@
+name: Release (dev pre-release)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag name (e.g., v0.2.0-dev.20250924)"
+        required: true
+        default: "v0.0.0-dev"
+      name:
+        description: "Release name (optional)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: ${{ inputs.name || format('Dev pre-release {0}', inputs.tag) }}
+          prerelease: true
+          draft: false
+          generate_release_notes: true
+
+  linux:
+    needs: create_release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+      - name: Install aarch64 linker (Linux)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+      - name: Build (rimloc-cli)
+        env:
+          CARGO_TERM_COLOR: always
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: |
+          cargo build --release -p rimloc-cli --target ${{ matrix.target }}
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN=target/${{ matrix.target }}/release/rimloc-cli
+          NAME=rimloc-cli-${{ inputs.tag }}-${{ matrix.target }}
+          mkdir -p dist "$NAME"
+          install -m 0755 "$BIN" "$NAME/"
+          cp -a README.md LICENSE "$NAME/"
+          tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
+          echo "Built dist/$NAME.tar.gz"
+      - name: Upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: dist/*
+
+  macos:
+    needs: create_release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runs-on: macos-13
+            target: x86_64-apple-darwin
+          - runs-on: macos-14
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+      - name: Build (rimloc-cli)
+        run: cargo build --release -p rimloc-cli --target ${{ matrix.target }}
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN=target/${{ matrix.target }}/release/rimloc-cli
+          NAME=rimloc-cli-${{ inputs.tag }}-${{ matrix.target }}
+          mkdir -p dist "$NAME"
+          install -m 0755 "$BIN" "$NAME/"
+          cp -a README.md LICENSE "$NAME/"
+          tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
+          echo "Built dist/$NAME.tar.gz"
+      - name: Upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: dist/*
+
+  windows:
+    needs: create_release
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+      - name: Build (rimloc-cli)
+        shell: bash
+        run: cargo build --release -p rimloc-cli --target ${{ matrix.target }}
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          BIN=target/${{ matrix.target }}/release/rimloc-cli.exe
+          NAME=rimloc-cli-${{ inputs.tag }}-${{ matrix.target }}
+          mkdir -p dist "$NAME"
+          cp "$BIN" "$NAME/"
+          cp -a README.md LICENSE "$NAME/"
+          (cd "$NAME" && 7z a -tzip "../dist/$NAME.zip" *)
+          echo "Built dist/$NAME.zip"
+      - name: Upload assets
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: dist/*
+
