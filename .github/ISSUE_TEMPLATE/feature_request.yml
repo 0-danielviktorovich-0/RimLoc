@@ -2,6 +2,17 @@ name: Feature Request
 description: Suggest an idea for RimLoc
 labels: [enhancement]
 body:
+  - type: checkboxes
+    id: dupcheck
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues/PRs for duplicates
+          required: true
+        - label: I searched Discussions for prior art
+          required: false
+    validations:
+      required: true
   - type: textarea
     id: problem
     attributes:
@@ -34,5 +45,13 @@ body:
     attributes:
       label: Validation strategy
       description: How should we test and document this feature?
+    validations:
+      required: false
+  - type: input
+    id: related
+    attributes:
+      label: Related issues/PRs
+      description: Links to similar requests or prior attempts
+      placeholder: https://github.com/<owner>/<repo>/issues/123
     validations:
       required: false
