@@ -80,6 +80,12 @@ rimloc-cli scan --root ./test/TestMod
 ```
 *Scans all languages and prints CSV data to the console.*
 
+## Troubleshooting
+
+- **"0 rows scanned"** – confirm `Languages/<lang>/Keyed` or `DefInjected` exists and the language code matches `--lang`.
+- **Malformed CSV output** – remember that stdout defaults to UTF-8 without BOM; pass `--out-csv <file>` if your spreadsheet tool struggles with pipes.
+- **JSON missing placeholders** – placeholders stay in the original XML; include `--source-lang`/`--source-lang-dir` to compare against a specific language during downstream processing.
+
 ## See also
 
 - [Validate](validate.md)

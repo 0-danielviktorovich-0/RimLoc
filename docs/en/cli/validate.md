@@ -59,4 +59,15 @@ rimloc-cli validate --root ./locales --ui-lang en
 
 ## Output
 
-The command outputs a summary of validation results, including errors and warnings, formatted according to the selected output format. In `text` format, symbols such as ✖ (errors), ⚠ (warnings), and ℹ (information) are used to indicate message severity. In `json` format, structured objects representing the validation results are provided. If no issues are found, a success message is displayed. Exit codes: `0` if validation passes without errors; `1` if any errors are found.
+The command prints a summary of warnings and errors using the requested format. In `text` mode it uses symbols such as ✖ (errors), ⚠ (warnings), and ℹ (information); in `json` mode it returns structured objects you can post-process.
+
+## Exit codes
+
+- `0` — validation finished without errors (warnings may still appear).
+- `1` — at least one error was detected (duplicates, empty strings, placeholder issues).
+
+## Troubleshooting
+
+- **Unexpected duplicates** – make sure translation files are not symlinks to the same XML file or committed twice under different casing.
+- **`placeholder-check` errors** – compare the source and translated value; use `--format json` to inspect the offending key/value pair.
+- **Command ends with exit code 0 but issues remain** – switch to `--format json` to feed the output into scripts, or add `--ui-lang ru` if you need localized diagnostics.
