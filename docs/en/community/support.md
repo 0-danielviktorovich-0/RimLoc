@@ -11,6 +11,7 @@ RimLoc is an open‑source project. If it saves you time or helps your team, con
 - Star the repository on GitHub and share it with others.
 - File helpful issues with logs and minimal repros; improve docs with PRs.
 - Sponsor development (one‑time or recurring):
+  - GitHub Sponsors: [github.com/sponsors/0-danielviktorovich-0](https://github.com/sponsors/0-danielviktorovich-0)
   - Buy Me a Coffee: [buymeacoffee.com/danielviktorovich](https://buymeacoffee.com/danielviktorovich)
   - Ko‑fi: [ko-fi.com/danielviktorovich](https://ko-fi.com/danielviktorovich)
 
