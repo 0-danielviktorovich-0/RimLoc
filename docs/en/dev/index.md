@@ -258,6 +258,31 @@ Get-Content dist\<ASSET>.sha256
 Get-FileHash dist\<ASSET> -Algorithm SHA256
 ```
 
+## Changelog & versioning (plain English)
+
+A clear changelog saves time for users and reviewers.
+
+- One changelog: keep `CHANGELOG.md` in the repo root, written by humans.
+- Format: “Keep a Changelog” + SemVer. Use sections: Added, Changed, Fixed, Docs, Internal.
+- When to update: every user‑facing change gets a bullet under “Unreleased”. Infra‑only PRs can add the `internal-only` label to skip the CI check.
+- How to write bullets: `- [scope] short description (#PR)` — scope is one of `cli`, `core`, `parsers-xml`, `export-po`, `export-csv`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
+- Don’t rewrite history: only add new bullets or move them during a release.
+
+Versioning rules (SemVer):
+
+- Patch: bug fixes that don’t change behavior or formats.
+- Minor: backward‑compatible features (new CLI flags, new exporter options).
+- Major: breaking changes (CLI behavior/flags, JSON/CSV/PO formats, public APIs).
+- CLI may use pre‑releases: `-alpha.N`, `-beta.N`.
+- Workspace crates are versioned independently; bump only crates that changed for users.
+
+Release process in short:
+
+1) Make sure “Unreleased” is up to date and tests/lints/docs are green.
+2) Create a new version section: `## [X.Y.Z] - YYYY‑MM‑DD` and move the bullets.
+3) Update compare links at the bottom of `CHANGELOG.md`.
+4) Tag as `vX.Y.Z` and use the release workflow (`release‑plz`/`cargo‑release`) — don’t edit versions by hand.
+
 ### Windows profiling (WPA/ETW)
 
 Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
