@@ -1,10 +1,9 @@
 # release-plz configuration
 
 [workspace]
-changelog_update = true
+changelog_update = false
 changelog_path = "CHANGELOG.md"
 git_tag_enable = true
 git_release_enable = true
 dependencies_update = true
-
 
