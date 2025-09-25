@@ -22,15 +22,23 @@ RimLoc — проект с открытым исходным кодом. Есл�
 bc1qkty98e5sax63tppmf72ecapnjp9ant90de072h
 ```
 
+![QR BTC](../assets/qr/btc.svg)
+
 - ETH (Ethereum, EVM):
 
 ```
 0xF6F2d527aE161cC5403d176c18a2668b38C52486
 ```
 
+![QR ETH](../assets/qr/eth.svg)
+
 - USDT (Tether)
   - Polygon (POS): `0xF6F2d527aE161cC5403d176c18a2668b38C52486`
   - BNB Smart Chain (BEP‑20): `0xF6F2d527aE161cC5403d176c18a2668b38C52486`
+
+![QR USDT Polygon](../assets/qr/usdt_polygon.svg)
+
+![QR USDT BSC](../assets/qr/usdt_bsc.svg)
 
 Перед отправкой внимательно проверьте сеть и адрес.
 

@@ -24,15 +24,23 @@ If you need an invoice or a specific platform, open an issue or contact the main
 bc1qkty98e5sax63tppmf72ecapnjp9ant90de072h
 ```
 
+![BTC QR](../assets/qr/btc.svg)
+
 - ETH (Ethereum, EVM):
 
 ```
 0xF6F2d527aE161cC5403d176c18a2668b38C52486
 ```
 
+![ETH QR](../assets/qr/eth.svg)
+
 - USDT (Tether)
   - Polygon (POS): `0xF6F2d527aE161cC5403d176c18a2668b38C52486`
   - BNB Smart Chain (BEP‑20): `0xF6F2d527aE161cC5403d176c18a2668b38C52486`
+
+![USDT Polygon QR](../assets/qr/usdt_polygon.svg)
+
+![USDT BSC QR](../assets/qr/usdt_bsc.svg)
 
 Please double‑check the network and the address before sending.
 
