@@ -4,6 +4,24 @@ All notable changes to this project are documented in this file.
 This changelog follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
+<!--
+Template (copy the sections you need):
+
+### Added
+- [scope] short bullet with (#PR)
+
+### Changed
+- [scope] short bullet with (#PR)
+
+### Fixed
+- [scope] short bullet with (#PR)
+
+### Docs
+- [docs] short bullet with (#PR)
+
+### Internal
+- [internal] short bullet with (#PR)
+-->
 - TBD
 
 ## [0.1.0-alpha.1] - 2025-09-25
