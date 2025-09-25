@@ -51,6 +51,7 @@ plugins:
 nav:
   - Repository: https://github.com/0-danielviktorovich-0/RimLoc
   - Home: index.md
+  - Install: install.md
   - CLI:
       - Overview: cli/index.md
       - Scan: cli/scan.md
