@@ -57,6 +57,7 @@ Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(sco
 - Keep `CHANGELOG.md` up to date for every user‑facing change.
 - Use Keep a Changelog format: add entries under `Unreleased` with `Added/Changed/Fixed/Docs` as appropriate and reference PR/issue IDs.
 - On release, move `Unreleased` entries under the new version with a date; never rewrite past entries.
+- CI enforces this for PRs that touch `crates/*`, `docs/*` or `README.md` (see `.github/workflows/changelog-check.yml`).
 
 ### Commit scope policy (mandatory)
 - Commit only files that were intentionally edited as part of the change. Do not include unrelated files.
