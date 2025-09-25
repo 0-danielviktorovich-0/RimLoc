@@ -4,6 +4,7 @@
 changelog_update = false
 changelog_path = "CHANGELOG.md"
 git_tag_enable = true
+git_tag_name = "{{ package }}-v{{ version }}"
 git_release_enable = true
 dependencies_update = true
-
+pr_labels = ["release"]
