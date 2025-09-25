@@ -283,6 +283,14 @@ Release process in short:
 3) Update compare links at the bottom of `CHANGELOG.md`.
 4) Tag as `vX.Y.Z` and use the release workflow (`release‑plz`/`cargo‑release`) — don’t edit versions by hand.
 
+SemVer cheat sheet (what bump to use):
+
+- New CLI flag or compatible JSON/CSV/PO additions → Minor
+- Behavior change with backward compatibility (e.g., defaults unchanged) → Minor
+- Remove/rename CLI flag, change default, remove/rename JSON/CSV fields → Major
+- Bug fix or internal refactor with no user‑visible change → Patch
+- Docs only (no behavior change) → Patch or Internal
+
 ### Windows profiling (WPA/ETW)
 
 Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
