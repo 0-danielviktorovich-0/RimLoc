@@ -8,6 +8,10 @@ permissions:
   contents: write
   id-token: write
 
+concurrency:
+  group: release-dev-auto-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   create_release:
     runs-on: ubuntu-latest
@@ -72,6 +76,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          prefix-key: ${{ matrix.target }}
       - name: Install cross toolchains (Linux)
         if: matrix.target == 'aarch64-unknown-linux-gnu' || matrix.target == 'x86_64-unknown-linux-musl'
         run: |
@@ -167,6 +176,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          prefix-key: ${{ matrix.target }}
       - name: Build (rimloc-cli)
         run: cargo build --release -p rimloc-cli --target ${{ matrix.target }}
       - name: Package
@@ -243,6 +257,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          prefix-key: ${{ matrix.target }}
       - name: Build (rimloc-cli)
         shell: bash
         run: cargo build --release -p rimloc-cli --target ${{ matrix.target }}
