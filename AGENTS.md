@@ -34,6 +34,22 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Build production docs locally with `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build` when you need to verify absolute links.
 - Exclude experimental drafts by placing them outside `docs/` or listing them under `exclude_docs` in `mkdocs.yml`.
 
+## Release Workflow
+- Do not bump versions by hand; use configured tooling (`release-plz`/`cargo-release`) and GitHub Actions (see `release.toml`, `release-plz.toml`).
+- Before tagging: update `CHANGELOG.md` under `Unreleased`, run build/tests/lints, and ensure docs are in sync (EN/RU).
+- Tag and push via the release workflow; artifacts/signatures and SBOMs are handled by CI (see docs in `docs/en/dev/index.md`).
+
+## Automation Rules (agents)
+- Keep diffs minimal and scoped to the task; no drive‑by refactors or large renames.
+- Never rewrite history or revert without approval; follow the no‑revert policy below.
+- Always run and report: `cargo build/test`, `fmt`, and `clippy` after changes.
+- Ask before destructive actions (deletes/moves/format‑sweeps). Scope of this file is repository‑wide.
+
+## CLI Conventions
+- Subcommands/flags use kebab‑case; help texts live in FTL and must be localized.
+- No user strings inline: use `tr!`/FTL; logs via `tracing` only.
+- JSON output must remain stable; update integration tests when schemas or flags change.
+
 ## Commit & Pull Request Guidelines
 Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(scope): summary` within 72 characters, using types such as `feat`, `fix`, `docs`, or `chore`. Commit messages must be written in English; a Russian reference lives at `docs/readme/ru/gitmessage.txt`. Commit bodies should explain motivation and impact. Pull requests need a concise summary, linked issues, and instructions for validation; attach CLI output or screenshots when behaviour changes. Ensure CI passes and that formatting, lint, and test checks are green before requesting review.
 
@@ -48,6 +64,7 @@ Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(sco
 - Run `cargo fmt` but commit only the files you actually touched for the feature/fix. If a repository‑wide reformat is necessary, submit it as a dedicated, separate PR.
 - Do not bump versions, shuffle modules, or update generated artifacts unless explicitly part of the task.
 - This rule applies to humans and to automated agents working in this repo — agents must obey it as well.
+- Recommended scopes: `repo`, `cli`, `core`, `parsers-xml`, `export-csv`, `export-po`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
 
 ### No‑revert policy (mandatory)
 - Do not revert or discard changes without explicit consent from the maintainer/author.
@@ -57,3 +74,13 @@ Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(sco
 
 ## Localization Workflow Notes
 Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at build time. Update the English source, mirror changes to other locales, and run `cargo i18n` (if available) or `cargo test --package rimloc-cli -- tests_i18n` to confirm key integrity.
+ - EN is the source of truth; other locales mirror keys and structure.
+ - Adding a new locale: create `crates/rimloc-cli/i18n/<lang>/` with FTL files — `build.rs` auto‑discovers locales.
+ - No hardcoded user‑facing strings in code; integration tests enforce this.
+
+## PR Checklist
+- Build/tests pass: `cargo build --workspace` and `cargo test --workspace`.
+- Lints clean: `cargo fmt` and `cargo clippy --workspace --all-targets -- -D warnings`.
+- `CHANGELOG.md` updated under `Unreleased` for user‑facing changes.
+- I18n: EN updated, other locales synced; `tests_i18n` green.
+- Docs: EN/RU updated and `SITE_URL=… mkdocs build` succeeds for changed pages.
