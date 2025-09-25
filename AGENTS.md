@@ -45,6 +45,16 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Always run and report: `cargo build/test`, `fmt`, and `clippy` after changes.
 - Ask before destructive actions (deletes/moves/format‑sweeps). Scope of this file is repository‑wide.
 
+## For agents: Changelog & Versioning
+- Changelog: keep a single curated `CHANGELOG.md` (Keep a Changelog + SemVer). Update `Unreleased` for every user‑facing change; use sections `Added/Changed/Fixed/Docs/Internal`.
+- Entry format: `- [scope] short description (#PR)`, no trailing period. Scopes: `cli`, `core`, `parsers-xml`, `export-po`, `export-csv`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
+- Internal‑only changes: add PR label `internal-only` to skip the changelog CI check.
+- Do not rewrite past entries. On release: move `Unreleased` into a new version `## [X.Y.Z] - YYYY-MM-DD` and update compare links at the bottom.
+- Versioning: SemVer. Libraries follow strict SemVer; CLI may use pre‑releases (`-alpha.N`, `-beta.N`).
+- Workspace versions are independent; bump only crates with user‑visible changes (see `release.toml`).
+- Agents must not bump versions, create tags, or publish unless explicitly asked. Default: only update changelog.
+- When assigned a release task: perform the `Unreleased → [X.Y.Z]` move, update links, then request running the release workflow; tags use `vX.Y.Z`.
+
 ## CLI Conventions
 - Subcommands/flags use kebab‑case; help texts live in FTL and must be localized.
 - No user strings inline: use `tr!`/FTL; logs via `tracing` only.
