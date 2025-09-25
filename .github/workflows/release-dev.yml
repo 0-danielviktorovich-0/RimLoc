@@ -117,24 +117,42 @@ jobs:
           cp "dist/$NAME.tar.gz" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz"
           echo "Built dist/$NAME.tar.gz"
       - name: Install cosign (manual)
+        id: cosign
         shell: bash
         run: |
           set -euo pipefail
+          avail=false
+          # 1) Try apt packages
+          if command -v sudo >/dev/null 2>&1; then sudo apt-get update -y -o Acquire::Retries=3 || true; fi
+          if sudo apt-get install -y cosign >/dev/null 2>&1; then
+            avail=true
+          fi
           ver=v2.5.2
           arch=amd64
           case "${{ matrix.target }}" in
             aarch64*) arch=arm64 ;;
           esac
-          mkdir -p "$HOME/.cosign"
-          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-linux-${arch}"
-          for attempt in 1 2 3; do
-            if curl -fsSL "$url" -o "$HOME/.cosign/cosign"; then break; fi
-            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
-            sleep $((attempt*10))
-          done
-          chmod +x "$HOME/.cosign/cosign"
-          echo "$HOME/.cosign" >> "$GITHUB_PATH"
+          if [ "$avail" != true ]; then
+            mkdir -p "$HOME/.cosign"
+            url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-linux-${arch}"
+            for attempt in 1 2 3 4 5; do
+              if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
+              echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
+              sleep $((attempt*10))
+            done
+            if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
+          fi
+          # 3) Fallback to go install
+          if [ "$avail" != true ] && command -v go >/dev/null 2>&1; then
+            export GOBIN="$HOME/.cosign"
+            mkdir -p "$GOBIN"
+            if go install github.com/sigstore/cosign/v2/cmd/cosign@${ver}; then
+              echo "$GOBIN" >> "$GITHUB_PATH"; avail=true
+            fi
+          fi
+          echo "available=$avail" >> "$GITHUB_OUTPUT"
       - name: Sign artifact (cosign keyless)
+        if: steps.cosign.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -219,24 +237,40 @@ jobs:
           tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
           echo "Built dist/$NAME.tar.gz"
       - name: Install cosign (manual)
+        id: cosign
         shell: bash
         run: |
           set -euo pipefail
+          avail=false
+          # Try brew first
+          if command -v brew >/dev/null 2>&1; then
+            if brew install cosign >/dev/null 2>&1; then avail=true; fi
+          fi
           ver=v2.5.2
           arch=amd64
           case "${{ matrix.target }}" in
             aarch64*) arch=arm64 ;;
           esac
-          mkdir -p "$HOME/.cosign"
-          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-darwin-${arch}"
-          for attempt in 1 2 3; do
-            if curl -fsSL "$url" -o "$HOME/.cosign/cosign"; then break; fi
-            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
-            sleep $((attempt*10))
-          done
-          chmod +x "$HOME/.cosign/cosign"
-          echo "$HOME/.cosign" >> "$GITHUB_PATH"
+          if [ "$avail" != true ]; then
+            mkdir -p "$HOME/.cosign"
+            url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-darwin-${arch}"
+            for attempt in 1 2 3 4 5; do
+              if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
+              echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
+              sleep $((attempt*10))
+            done
+            if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
+          fi
+          if [ "$avail" != true ] && command -v go >/dev/null 2>&1; then
+            export GOBIN="$HOME/.cosign"
+            mkdir -p "$GOBIN"
+            if go install github.com/sigstore/cosign/v2/cmd/cosign@${ver}; then
+              echo "$GOBIN" >> "$GITHUB_PATH"; avail=true
+            fi
+          fi
+          echo "available=$avail" >> "$GITHUB_OUTPUT"
       - name: Sign artifact (cosign keyless)
+        if: steps.cosign.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -318,26 +352,37 @@ jobs:
           cp "dist/$NAME.zip" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip"
           echo "Built dist/$NAME.zip"
       - name: Install cosign (manual)
+        id: cosign
         shell: powershell
         run: |
+          $available = $false
           $ver = "v2.5.2"
           $arch = "windows_amd64"
           if ("${{ matrix.target }}" -like "aarch64*") { $arch = "windows_arm64" }
           $dir = "$env:USERPROFILE\.cosign"
           New-Item -ItemType Directory -Force -Path $dir | Out-Null
-          $url = "https://github.com/sigstore/cosign/releases/download/$ver/cosign-$arch.exe"
-          for ($i=1; $i -le 3; $i++) {
-            try {
-              Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'cosign.exe') -UseBasicParsing
-              break
-            } catch {
-              Write-Host "WARN: failed to download cosign (attempt $i), retrying..."
-              Start-Sleep -Seconds (10*$i)
-              if ($i -eq 3) { throw }
+          # Try Chocolatey first
+          try { choco --version | Out-Null } catch {}
+          if (Get-Command choco -ErrorAction SilentlyContinue) {
+            try { choco install cosign -y --no-progress; $available = $true } catch {}
+          }
+          if (-not $available) {
+            $url = "https://github.com/sigstore/cosign/releases/download/$ver/cosign-$arch.exe"
+            for ($i=1; $i -le 5; $i++) {
+              try {
+                Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'cosign.exe') -UseBasicParsing
+                $available = $true
+                break
+              } catch {
+                Write-Host "WARN: failed to download cosign (attempt $i), retrying..."
+                Start-Sleep -Seconds (10*$i)
+              }
             }
           }
-          Add-Content -Path $env:GITHUB_PATH -Value $dir
+          if ($available) { Add-Content -Path $env:GITHUB_PATH -Value $dir }
+          "available=$available" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
       - name: Sign artifact (cosign keyless)
+        if: steps.cosign.outputs.available == 'true'
         shell: bash
         run: |
           set -euo pipefail
