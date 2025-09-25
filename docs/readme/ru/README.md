@@ -2,7 +2,7 @@
 
 [English version](../../README.md)
 
-[![Build](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml) [![Crates.io](https://img.shields.io/crates/v/rimloc)](https://crates.io/crates/rimloc) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](../../LICENSE)
+[![Build](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml) [![Crates.io](https://img.shields.io/badge/crates.io-rimloc--cli-blue?logo=rust&logoColor=white)](https://crates.io/crates/rimloc-cli) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](../../LICENSE)
 
 RimLoc — это инструмент на Rust для локализации и управления переводами модов RimWorld. Он объединяет извлечение строк, проверку качества и экспорт в PO/CSV в едином рабочем процессе на Linux, macOS и Windows.
 
