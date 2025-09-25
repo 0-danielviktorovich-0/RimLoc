@@ -52,6 +52,7 @@ pub fn run_validate(
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {
+            schema_version: u32,
             kind: &'a str,
             key: &'a str,
             path: &'a str,
@@ -61,6 +62,7 @@ pub fn run_validate(
         let items: Vec<JsonMsg> = msgs
             .iter()
             .map(|m| JsonMsg {
+                schema_version: crate::OUTPUT_SCHEMA_VERSION,
                 kind: m.kind.as_str(),
                 key: m.key.as_str(),
                 path: m.path.as_str(),

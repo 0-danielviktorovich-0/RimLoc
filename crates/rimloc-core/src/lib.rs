@@ -7,6 +7,9 @@ use thiserror::Error;
 /// Workspace-wide result alias.
 pub type Result<T> = color_eyre::eyre::Result<T>;
 
+/// Schema version for RimLoc data outputs (JSON/PO headers).
+pub const RIMLOC_SCHEMA_VERSION: u32 = 1;
+
 /// Minimal unit used across crates to represent a single translation entry
 /// scanned from RimWorld XML (Keyed/DefInjected) or produced by tools.
 #[derive(Debug, Clone, Serialize, Deserialize)]

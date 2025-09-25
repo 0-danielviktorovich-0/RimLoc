@@ -35,7 +35,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     // Report empty values
     let mut msgs = Vec::new();
     for u in units {
-        if u.source.as_deref().is_none_or(|s| s.trim().is_empty()) {
+        if u.source.as_deref().map_or(true, |s| s.trim().is_empty()) {
             msgs.push(ValidationMessage {
                 kind: "empty".to_string(),
                 key: u.key.clone(),

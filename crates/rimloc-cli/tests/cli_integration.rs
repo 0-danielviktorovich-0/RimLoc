@@ -148,6 +148,20 @@ fn scan_writes_json_file() {
 }
 
 #[test]
+fn scan_json_contains_schema_version() {
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"]) // stdout JSON
+        .arg(fixture("test/TestMod"))
+        .args(["--format", "json"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    assert!(
+        out.contains("\"schema_version\""),
+        "JSON output should include schema_version field"
+    );
+}
+
+#[test]
 fn export_po_creates_file() {
     let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
     let out_po = tmp.path().join("out.po");
@@ -202,6 +216,21 @@ fn validate_json_emits_structured_issues() {
             let _ = l;
         }
     }
+}
+
+#[test]
+fn validate_json_contains_schema_version() {
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet"]) // ensure no banner
+        .args(["validate", "--root"]) // known to contain issues in Bad.xml
+        .arg(fixture("test/TestMod"))
+        .args(["--format", "json"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    assert!(
+        out.contains("\"schema_version\""),
+        "JSON diagnostics should include schema_version field"
+    );
 }
 
 #[test]

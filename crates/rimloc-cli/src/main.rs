@@ -228,6 +228,8 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
 
 static LOG_GUARD: OnceCell<WorkerGuard> = OnceCell::new();
 const DEFAULT_LOGDIR: &str = "logs";
+// Public schema version for structured outputs (JSON) produced by the CLI.
+pub(crate) const OUTPUT_SCHEMA_VERSION: u32 = rimloc_core::RIMLOC_SCHEMA_VERSION;
 
 fn resolve_log_dir() -> std::path::PathBuf {
     // Prefer RIMLOC_LOG_DIR (underscore). This matches init_tracing.
