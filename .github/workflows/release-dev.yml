@@ -134,11 +134,30 @@ jobs:
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
           (cd dist && sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
           (cd dist && sha256sum "rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz" > "rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz.sha256")
-      - name: Upload assets
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.create_release.outputs.tag }}
-          files: dist/*
+      - name: Upload assets (retry via gh)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=${{ needs.create_release.outputs.tag }}
+          shopt -s nullglob
+          files=(dist/*)
+          echo "Uploading ${#files[@]} assets to ${TAG}"
+          for f in "${files[@]}"; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$f" --clobber -R "$GITHUB_REPOSITORY"; then
+                echo "Uploaded: $f"
+                break
+              fi
+              echo "WARN: upload failed for $f (attempt $attempt). Retrying..."
+              sleep $((attempt*10))
+              if [[ $attempt -eq 3 ]]; then
+                echo "ERROR: giving up on $f" >&2
+                exit 1
+              fi
+            done
+          done
 
   macos:
     needs: create_release
@@ -195,11 +214,30 @@ jobs:
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
           (cd dist && shasum -a 256 "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
-      - name: Upload assets
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.create_release.outputs.tag }}
-          files: dist/*
+      - name: Upload assets (retry via gh)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=${{ needs.create_release.outputs.tag }}
+          shopt -s nullglob
+          files=(dist/*)
+          echo "Uploading ${#files[@]} assets to ${TAG}"
+          for f in "${files[@]}"; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$f" --clobber -R "$GITHUB_REPOSITORY"; then
+                echo "Uploaded: $f"
+                break
+              fi
+              echo "WARN: upload failed for $f (attempt $attempt). Retrying..."
+              sleep $((attempt*10))
+              if [[ $attempt -eq 3 ]]; then
+                echo "ERROR: giving up on $f" >&2
+                exit 1
+              fi
+            done
+          done
 
   windows:
     needs: create_release
@@ -263,8 +301,27 @@ jobs:
           Set-Content -Path "dist/$NAME.zip.sha256" -Value ("$h1  $NAME.zip")
           $h2 = (Get-FileHash "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip" -Algorithm SHA256).Hash
           Set-Content -Path "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip.sha256" -Value ("$h2  rimloc-cli-dev-latest-${{ matrix.target }}.zip")
-      - name: Upload assets
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.create_release.outputs.tag }}
-          files: dist/*
+      - name: Upload assets (retry via gh)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=${{ needs.create_release.outputs.tag }}
+          shopt -s nullglob
+          files=(dist/*)
+          echo "Uploading ${#files[@]} assets to ${TAG}"
+          for f in "${files[@]}"; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG" "$f" --clobber -R "$GITHUB_REPOSITORY"; then
+                echo "Uploaded: $f"
+                break
+              fi
+              echo "WARN: upload failed for $f (attempt $attempt). Retrying..."
+              sleep $((attempt*10))
+              if [[ $attempt -eq 3 ]]; then
+                echo "ERROR: giving up on $f" >&2
+                exit 1
+              fi
+            done
+          done
