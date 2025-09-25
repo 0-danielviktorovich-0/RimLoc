@@ -4,7 +4,7 @@ title: RimLoc
 
 # RimLoc
 
-[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich) [![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/danielviktorovich)
 
 RimLoc помогает моддерам RimWorld поддерживать переводы в актуальном состоянии, проверять их и готовить к передаче переводчикам.
 
