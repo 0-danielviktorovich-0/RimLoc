@@ -11,8 +11,8 @@ RimLoc — проект с открытым исходным кодом. Есл�
 - Поставьте звезду репозиторию на GitHub и поделитесь ссылкой.
 - Оформляйте полезные issues с логами и минимальными примерами; улучшайте документацию через PR.
 - Поддержите разработку финансово (разово или регулярно):
-  - Buy Me a Coffee: https://buymeacoffee.com/danielviktorovich
-  - Ko‑fi: https://ko-fi.com/danielviktorovich
+  - Buy Me a Coffee: [buymeacoffee.com/danielviktorovich](https://buymeacoffee.com/danielviktorovich)
+  - Ko‑fi: [ko-fi.com/danielviktorovich](https://ko-fi.com/danielviktorovich)
 
 ## Криптовалюта
 
