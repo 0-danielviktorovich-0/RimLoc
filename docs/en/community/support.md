@@ -6,6 +6,10 @@ title: Support RimLoc
 
 RimLoc is an open‑source project. If it saves you time or helps your team, consider supporting its development — even a small contribution makes a difference.
 
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-github-%23ea4aaa?logo=github-sponsors)](https://github.com/sponsors/0-danielviktorovich-0)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich)
+[![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich)
+
 ## Ways to support
 
 - Star the repository on GitHub and share it with others.
