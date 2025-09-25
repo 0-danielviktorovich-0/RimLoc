@@ -21,6 +21,8 @@ test/TestMod/Languages/Russian/
 # === IDE / Editor ===
 /.idea/
 /.vscode/
+!.vscode/launch.example.json
+!.vscode/tasks.example.json
 *.iml
 *.swp
 *.swo
