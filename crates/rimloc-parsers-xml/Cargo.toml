@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-parsers-xml"
-version = "0.1.0-dev.0"
+version = "0.1.0"
 edition = "2021"
 description = "XML ingestion and parsing for RimWorld localization data (RimLoc)"
 license = "GPL-3.0-only"
@@ -9,12 +9,18 @@ documentation = "https://0-danielviktorovich-0.github.io/RimLoc/"
 keywords = ["rimworld", "xml", "localization", "parser"]
 categories = ["parsing"]
 readme = "README.md"
+include = [
+  "Cargo.toml",
+  "README.md",
+  "LICENSE*",
+  "src/**"
+]
 
 
 [dependencies]
 walkdir = { workspace = true }
 quick-xml = { workspace = true }
-rimloc-core = { version = "0.1.0-dev.0", path = "../rimloc-core" }
+rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 tempfile = "3"
 tracing = "0.1"
 color-eyre = "0.6"

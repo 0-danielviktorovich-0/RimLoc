@@ -1,0 +1,11 @@
+workspace = true
+shared-version = false
+allow-branch = ["main"]
+publish = false
+push = true
+tag = true
+tag-name = "v{{version}}"
+consolidate-commits = true
+dependent-version = "upgrade"
+
+# Per-crate overrides can be added if needed later.
