@@ -71,15 +71,7 @@ rimloc-cli validate --root ./Mods/MyMod --include-all-versions
 rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version v1.6
 ```
 
-### Demo (asciinema)
-
-[![asciicast](https://asciinema.org/a/your-demo-id.svg)](https://asciinema.org/a/your-demo-id)
-
-### Screenshot
-
-![CLI validation example](../demo-validation.png)
-
-<!-- TODO: Add screenshot or asciinema demo of CLI output once available -->
+<!-- Демо и скриншоты будут добавлены после записи первого walkthrough. -->
 
 ## Документация и поддержка
 
