@@ -1,0 +1,27 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+This changelog follows Keep a Changelog and Semantic Versioning.
+
+## [Unreleased]
+- TBD
+
+## [0.1.0-alpha.1] - 2025-09-25
+### Added
+- rimloc-cli initial prerelease: scan, validate, export-po, import-po, build-mod
+- i18n (EN/RU), colored logs, JSON output and --quiet mode
+- Dev release automation, artifact signing (cosign) and SBOM (Syft)
+
+### Docs
+- Install page (EN/RU), Support page with BMC/Ko-fi and crypto addresses
+- Discord invite and badges
+
+## [0.1.0] - 2025-09-25
+### Added
+- rimloc-core: TransUnit/PoEntry, minimal PO parser
+- rimloc-parsers-xml: scan Keyed XML → TransUnit
+- rimloc-export-csv: CSV exporter with optional lang column
+- rimloc-export-po: PO exporter with msgctxt and references
+- rimloc-import-po: PO reader and LanguageData XML writer
+- rimloc-validate: empty/duplicate/placeholder checks
+

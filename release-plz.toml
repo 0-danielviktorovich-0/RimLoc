@@ -1,0 +1,12 @@
+# release-plz configuration
+
+[workspace]
+changelog_update = true
+changelog_path = "CHANGELOG.md"
+git_tag_enable = true
+git_release_enable = true
+dependencies_update = true
+
+[packages]
+# Release libraries normally, CLI as prerelease when needed.
+
