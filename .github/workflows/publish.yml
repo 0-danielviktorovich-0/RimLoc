@@ -1,0 +1,39 @@
+name: Publish crates
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (no publish)"
+        required: false
+        default: "true"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          dry=${{ inputs.dry_run }}
+          publish() {
+            local pkg="$1"
+            if [[ "$dry" == "true" ]]; then
+              cargo publish -p "$pkg" --dry-run
+            else
+              cargo publish -p "$pkg"
+            fi
+          }
+          publish rimloc-core
+          sleep 30
+          publish rimloc-parsers-xml || true
+          publish rimloc-export-csv || true
+          publish rimloc-export-po || true
+          publish rimloc-import-po || true
+          publish rimloc-validate || true
+          publish rimloc-cli || true

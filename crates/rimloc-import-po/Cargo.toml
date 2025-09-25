@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-import-po"
-version = "0.1.0-dev.0"
+version = "0.1.0"
 edition = "2021"
 description = "Import PO translations back into RimWorld mod XML (RimLoc)"
 license = "GPL-3.0-only"
@@ -9,10 +9,16 @@ documentation = "https://0-danielviktorovich-0.github.io/RimLoc/"
 keywords = ["po", "import", "localization", "rimworld"]
 categories = ["command-line-utilities"]
 readme = "README.md"
+include = [
+  "Cargo.toml",
+  "README.md",
+  "LICENSE*",
+  "src/**"
+]
 
 [dependencies]
 quick-xml = { workspace = true }
-rimloc-core = { version = "0.1.0-dev.0", path = "../rimloc-core" }
+rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 color-eyre = { workspace = true }
 regex = "1"
 tempfile = "3"
