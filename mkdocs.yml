@@ -65,6 +65,7 @@ nav:
       - Placeholders: guide/placeholders.md
       - PO Files 101: guide/po_files.md
   - Community:
+      - Discord: community/discord.md
       - Issue Guidelines: community/issues.md
       - Pull Requests: community/pull_requests.md
       - Localization: community/localization.md
