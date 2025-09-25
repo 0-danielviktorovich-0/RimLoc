@@ -1,7 +1,13 @@
 [package]
 name = "rimloc-core"
-version = "0.1.0"
+version = "0.1.0-dev.0"
 edition = "2021"
+description = "Core data types and utilities for RimLoc translation toolkit"
+license = "GPL-3.0-only"
+repository = "https://github.com/0-danielviktorovich-0/RimLoc"
+documentation = "https://0-danielviktorovich-0.github.io/RimLoc/"
+keywords = ["rimworld", "translation", "localization", "po", "xml"]
+categories = ["command-line-utilities"]
 
 
 [dependencies]
