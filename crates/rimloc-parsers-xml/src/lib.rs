@@ -34,7 +34,7 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }

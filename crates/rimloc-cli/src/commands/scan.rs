@@ -131,6 +131,7 @@ pub fn run_scan(
         "json" => {
             #[derive(serde::Serialize)]
             struct JsonUnit<'a> {
+                schema_version: u32,
                 path: String,
                 line: Option<usize>,
                 key: &'a str,
@@ -139,6 +140,7 @@ pub fn run_scan(
             let items: Vec<JsonUnit<'_>> = units
                 .iter()
                 .map(|u| JsonUnit {
+                    schema_version: crate::OUTPUT_SCHEMA_VERSION,
                     path: u.path.display().to_string(),
                     line: u.line,
                     key: u.key.as_str(),

@@ -2,6 +2,7 @@
 name = "rimloc-validate"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
 description = "Validation helpers for RimLoc to catch duplicates/placeholders issues"
 license = "GPL-3.0-only"
 repository = "https://github.com/0-danielviktorovich-0/RimLoc"

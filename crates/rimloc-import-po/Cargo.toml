@@ -2,6 +2,7 @@
 name = "rimloc-import-po"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
 description = "Import PO translations back into RimWorld mod XML (RimLoc)"
 license = "GPL-3.0-only"
 repository = "https://github.com/0-danielviktorovich-0/RimLoc"

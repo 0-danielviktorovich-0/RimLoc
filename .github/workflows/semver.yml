@@ -1,0 +1,39 @@
+name: semver-checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-semver-checks
+        run: |
+          cargo install cargo-semver-checks --locked
+      - name: Run semver checks for published crates
+        run: |
+          set -euo pipefail
+          crates=(
+            rimloc-core
+            rimloc-parsers-xml
+            rimloc-export-csv
+            rimloc-export-po
+            rimloc-import-po
+            rimloc-validate
+          )
+          for c in "${crates[@]}"; do
+            echo "Checking crate: $c"
+            code=$(curl -s -o /dev/null -w '%{http_code}' https://crates.io/api/v1/crates/$c || echo 000)
+            if [[ "$code" != "200" ]]; then
+              echo "- Skipping $c (not published on crates.io)"
+              continue
+            fi
+            cargo semver-checks check-release -p "$c"
+          done

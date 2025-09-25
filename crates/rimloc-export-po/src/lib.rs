@@ -58,6 +58,12 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
     writeln!(w, "\"MIME-Version: 1.0\\n\"")?;
     writeln!(w, "\"Content-Type: text/plain; charset=UTF-8\\n\"")?;
     writeln!(w, "\"Content-Transfer-Encoding: 8bit\\n\"")?;
+    // Custom header with RimLoc schema version for tooling
+    writeln!(
+        w,
+        "\"X-RimLoc-Schema: {}\\n\"",
+        rimloc_core::RIMLOC_SCHEMA_VERSION
+    )?;
     writeln!(w)?; // пустая строка
 
     // --- Entries ---
@@ -120,6 +126,13 @@ mod tests {
         let s = fs::read_to_string(tmp.path()).unwrap();
         // заголовок
         assert!(s.contains(r#""Language: ru\n""#));
+        assert!(
+            s.contains(&format!(
+                r#""X-RimLoc-Schema: {}\n""#,
+                rimloc_core::RIMLOC_SCHEMA_VERSION
+            )),
+            "PO header should include X-RimLoc-Schema"
+        );
         // #: ссылка
         assert!(s.contains(r#"#: /Mod/Languages/English/Keyed/A.xml:3"#));
         // msgctxt с пайпом и относительным путём

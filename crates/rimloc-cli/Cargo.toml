@@ -2,6 +2,7 @@
 name = "rimloc-cli"
 version = "0.1.0-alpha.1"
 edition = "2021"
+rust-version = "1.70"
 build = "build.rs"
 description = "RimLoc CLI: scan, validate, export/import PO for RimWorld localization"
 license = "GPL-3.0-only"

@@ -55,6 +55,11 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Agents must not bump versions, create tags, or publish unless explicitly asked. Default: only update changelog.
 - When assigned a release task: perform the `Unreleased → [X.Y.Z]` move, update links, then request running the release workflow; tags use `vX.Y.Z`.
 
+### MSRV and SemVer checks
+- MSRV: Rust `1.70` across the workspace (`rust-version` pinned in each crate). Increase MSRV only in a major release.
+- Libraries: CI runs `cargo-semver-checks` for published crates; breaking API changes require a `major` bump.
+- CLI: treat output (JSON/PO/CSV) as a contract. Adding fields is minor; removing/renaming is major. JSON outputs include `schema_version` per item; PO headers include `X-RimLoc-Schema`.
+
 ## CLI Conventions
 - Subcommands/flags use kebab‑case; help texts live in FTL and must be localized.
 - No user strings inline: use `tr!`/FTL; logs via `tracing` only.
