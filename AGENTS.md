@@ -37,6 +37,11 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 ## Commit & Pull Request Guidelines
 Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(scope): summary` within 72 characters, using types such as `feat`, `fix`, `docs`, or `chore`. Commit messages must be written in English; a Russian reference lives at `docs/readme/ru/gitmessage.txt`. Commit bodies should explain motivation and impact. Pull requests need a concise summary, linked issues, and instructions for validation; attach CLI output or screenshots when behaviour changes. Ensure CI passes and that formatting, lint, and test checks are green before requesting review.
 
+### Changelog policy (mandatory)
+- Keep `CHANGELOG.md` up to date for every user‑facing change.
+- Use Keep a Changelog format: add entries under `Unreleased` with `Added/Changed/Fixed/Docs` as appropriate and reference PR/issue IDs.
+- On release, move `Unreleased` entries under the new version with a date; never rewrite past entries.
+
 ### Commit scope policy (mandatory)
 - Commit only files that were intentionally edited as part of the change. Do not include unrelated files.
 - Avoid drive‑by refactors, renames, and mass formatting across the repository. Keep diffs minimal and focused.
