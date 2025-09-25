@@ -89,7 +89,7 @@ jobs:
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then sudo apt-get install -y musl-tools; fi
       - name: Install cross
         if: matrix.builder == 'cross'
-        run: cargo install cross --git https://github.com/cross-rs/cross
+        run: cargo install cross --locked
       - name: Build (rimloc-cli)
         env:
           CARGO_TERM_COLOR: always
@@ -108,8 +108,24 @@ jobs:
           tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
           cp "dist/$NAME.tar.gz" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz"
           echo "Built dist/$NAME.tar.gz"
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+      - name: Install cosign (manual)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ver=v2.5.2
+          arch=amd64
+          case "${{ matrix.target }}" in
+            aarch64*) arch=arm64 ;;
+          esac
+          mkdir -p "$HOME/.cosign"
+          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-linux-${arch}"
+          for attempt in 1 2 3; do
+            if curl -fsSL "$url" -o "$HOME/.cosign/cosign"; then break; fi
+            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
+            sleep $((attempt*10))
+          done
+          chmod +x "$HOME/.cosign/cosign"
+          echo "$HOME/.cosign" >> "$GITHUB_PATH"
       - name: Sign artifact (cosign keyless)
         shell: bash
         run: |
@@ -194,8 +210,24 @@ jobs:
           cp -a README.md LICENSE "$NAME/"
           tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
           echo "Built dist/$NAME.tar.gz"
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+      - name: Install cosign (manual)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ver=v2.5.2
+          arch=amd64
+          case "${{ matrix.target }}" in
+            aarch64*) arch=arm64 ;;
+          esac
+          mkdir -p "$HOME/.cosign"
+          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-darwin-${arch}"
+          for attempt in 1 2 3; do
+            if curl -fsSL "$url" -o "$HOME/.cosign/cosign"; then break; fi
+            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
+            sleep $((attempt*10))
+          done
+          chmod +x "$HOME/.cosign/cosign"
+          echo "$HOME/.cosign" >> "$GITHUB_PATH"
       - name: Sign artifact (cosign keyless)
         shell: bash
         run: |
@@ -277,8 +309,26 @@ jobs:
           (cd "$NAME" && 7z a -tzip "../dist/$NAME.zip" *)
           cp "dist/$NAME.zip" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip"
           echo "Built dist/$NAME.zip"
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+      - name: Install cosign (manual)
+        shell: powershell
+        run: |
+          $ver = "v2.5.2"
+          $arch = "windows_amd64"
+          if ("${{ matrix.target }}" -like "aarch64*") { $arch = "windows_arm64" }
+          $dir = "$env:USERPROFILE\.cosign"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $url = "https://github.com/sigstore/cosign/releases/download/$ver/cosign-$arch.exe"
+          for ($i=1; $i -le 3; $i++) {
+            try {
+              Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'cosign.exe') -UseBasicParsing
+              break
+            } catch {
+              Write-Host "WARN: failed to download cosign (attempt $i), retrying..."
+              Start-Sleep -Seconds (10*$i)
+              if ($i -eq 3) { throw }
+            }
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value $dir
       - name: Sign artifact (cosign keyless)
         shell: bash
         run: |
