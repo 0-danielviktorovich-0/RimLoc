@@ -122,45 +122,40 @@ jobs:
         run: |
           set -euo pipefail
           avail=false
-          # 1) Try apt packages
-          if command -v sudo >/dev/null 2>&1; then sudo apt-get update -y -o Acquire::Retries=3 || true; fi
-          if sudo apt-get install -y cosign >/dev/null 2>&1; then
-            avail=true
-          fi
           ver=v2.5.2
+          # Detect runner arch (not target)
+          machine=$(uname -m)
           arch=amd64
-          case "${{ matrix.target }}" in
-            aarch64*) arch=arm64 ;;
+          case "$machine" in
+            x86_64) arch=amd64 ;;
+            aarch64) arch=arm64 ;;
           esac
-          if [ "$avail" != true ]; then
-            mkdir -p "$HOME/.cosign"
-            url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-linux-${arch}"
-            for attempt in 1 2 3 4 5; do
-              if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
-              echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
-              sleep $((attempt*10))
-            done
-            if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
-          fi
-          # 3) Fallback to go install
-          if [ "$avail" != true ] && command -v go >/dev/null 2>&1; then
-            export GOBIN="$HOME/.cosign"
-            mkdir -p "$GOBIN"
-            if go install github.com/sigstore/cosign/v2/cmd/cosign@${ver}; then
-              echo "$GOBIN" >> "$GITHUB_PATH"; avail=true
-            fi
-          fi
+          mkdir -p "$HOME/.cosign"
+          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-linux-${arch}"
+          for attempt in 1 2 3 4 5; do
+            if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
+            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
+            sleep $((attempt*10))
+          done
+          if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
           echo "available=$avail" >> "$GITHUB_OUTPUT"
       - name: Sign artifact (cosign keyless)
         if: steps.cosign.outputs.available == 'true'
         shell: bash
+        env:
+          COSIGN_EXPERIMENTAL: "1"
         run: |
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          cosign sign-blob --yes \
+          if cosign sign-blob --help 2>&1 | grep -q -- "--yes"; then YES="--yes"; else YES=""; fi
+          ${YES:+true} # no-op to placate shell when YES empty
+          if [ -z "$YES" ]; then printf 'y\n' | cosign sign-blob \
             --output-signature "dist/$NAME.tar.gz.sig" \
             --output-certificate "dist/$NAME.tar.gz.pem" \
-            "dist/$NAME.tar.gz"
+            "dist/$NAME.tar.gz"; else cosign sign-blob $YES \
+            --output-signature "dist/$NAME.tar.gz.sig" \
+            --output-certificate "dist/$NAME.tar.gz.pem" \
+            "dist/$NAME.tar.gz"; fi
       - name: Install Syft (SBOM)
         shell: bash
         run: |
@@ -242,43 +237,39 @@ jobs:
         run: |
           set -euo pipefail
           avail=false
-          # Try brew first
-          if command -v brew >/dev/null 2>&1; then
-            if brew install cosign >/dev/null 2>&1; then avail=true; fi
-          fi
           ver=v2.5.2
+          machine=$(uname -m)
           arch=amd64
-          case "${{ matrix.target }}" in
-            aarch64*) arch=arm64 ;;
+          case "$machine" in
+            x86_64) arch=amd64 ;;
+            arm64|aarch64) arch=arm64 ;;
           esac
-          if [ "$avail" != true ]; then
-            mkdir -p "$HOME/.cosign"
-            url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-darwin-${arch}"
-            for attempt in 1 2 3 4 5; do
-              if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
-              echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
-              sleep $((attempt*10))
-            done
-            if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
-          fi
-          if [ "$avail" != true ] && command -v go >/dev/null 2>&1; then
-            export GOBIN="$HOME/.cosign"
-            mkdir -p "$GOBIN"
-            if go install github.com/sigstore/cosign/v2/cmd/cosign@${ver}; then
-              echo "$GOBIN" >> "$GITHUB_PATH"; avail=true
-            fi
-          fi
+          mkdir -p "$HOME/.cosign"
+          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-darwin-${arch}"
+          for attempt in 1 2 3 4 5; do
+            if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
+            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
+            sleep $((attempt*10))
+          done
+          if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
           echo "available=$avail" >> "$GITHUB_OUTPUT"
       - name: Sign artifact (cosign keyless)
         if: steps.cosign.outputs.available == 'true'
         shell: bash
+        env:
+          COSIGN_EXPERIMENTAL: "1"
         run: |
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          cosign sign-blob --yes \
+          if cosign sign-blob --help 2>&1 | grep -q -- "--yes"; then YES="--yes"; else YES=""; fi
+          ${YES:+true}
+          if [ -z "$YES" ]; then printf 'y\n' | cosign sign-blob \
             --output-signature "dist/$NAME.tar.gz.sig" \
             --output-certificate "dist/$NAME.tar.gz.pem" \
-            "dist/$NAME.tar.gz"
+            "dist/$NAME.tar.gz"; else cosign sign-blob $YES \
+            --output-signature "dist/$NAME.tar.gz.sig" \
+            --output-certificate "dist/$NAME.tar.gz.pem" \
+            "dist/$NAME.tar.gz"; fi
       - name: Install Syft (SBOM)
         shell: bash
         run: |
@@ -357,26 +348,19 @@ jobs:
         run: |
           $available = $false
           $ver = "v2.5.2"
+          # Detect runner arch (windows runner is x64)
           $arch = "windows_amd64"
-          if ("${{ matrix.target }}" -like "aarch64*") { $arch = "windows_arm64" }
           $dir = "$env:USERPROFILE\.cosign"
           New-Item -ItemType Directory -Force -Path $dir | Out-Null
-          # Try Chocolatey first
-          try { choco --version | Out-Null } catch {}
-          if (Get-Command choco -ErrorAction SilentlyContinue) {
-            try { choco install cosign -y --no-progress; $available = $true } catch {}
-          }
-          if (-not $available) {
-            $url = "https://github.com/sigstore/cosign/releases/download/$ver/cosign-$arch.exe"
-            for ($i=1; $i -le 5; $i++) {
-              try {
-                Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'cosign.exe') -UseBasicParsing
-                $available = $true
-                break
-              } catch {
-                Write-Host "WARN: failed to download cosign (attempt $i), retrying..."
-                Start-Sleep -Seconds (10*$i)
-              }
+          $url = "https://github.com/sigstore/cosign/releases/download/$ver/cosign-$arch.exe"
+          for ($i=1; $i -le 5; $i++) {
+            try {
+              Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'cosign.exe') -UseBasicParsing
+              $available = $true
+              break
+            } catch {
+              Write-Host "WARN: failed to download cosign (attempt $i), retrying..."
+              Start-Sleep -Seconds (10*$i)
             }
           }
           if ($available) { Add-Content -Path $env:GITHUB_PATH -Value $dir }
@@ -384,13 +368,20 @@ jobs:
       - name: Sign artifact (cosign keyless)
         if: steps.cosign.outputs.available == 'true'
         shell: bash
+        env:
+          COSIGN_EXPERIMENTAL: "1"
         run: |
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          cosign sign-blob --yes \
+          if cosign sign-blob --help 2>&1 | grep -q -- "--yes"; then YES="--yes"; else YES=""; fi
+          ${YES:+true}
+          if [ -z "$YES" ]; then printf 'y\n' | cosign sign-blob \
             --output-signature "dist/$NAME.zip.sig" \
             --output-certificate "dist/$NAME.zip.pem" \
-            "dist/$NAME.zip"
+            "dist/$NAME.zip"; else cosign sign-blob $YES \
+            --output-signature "dist/$NAME.zip.sig" \
+            --output-certificate "dist/$NAME.zip.pem" \
+            "dist/$NAME.zip"; fi
       - name: Install Syft (Windows)
         shell: powershell
         run: |
