@@ -11,13 +11,30 @@ RimLoc is an open‑source project. If it saves you time or helps your team, con
 - Star the repository on GitHub and share it with others.
 - File helpful issues with logs and minimal repros; improve docs with PRs.
 - Sponsor development (one‑time or recurring):
-  - GitHub Sponsors (if enabled for the maintainer)
-  - Ko‑fi: https://ko-fi.com/your-handle
-  - Buy Me a Coffee: https://www.buymeacoffee.com/your-handle
-  - Patreon: https://www.patreon.com/your-handle
-  - DonationAlerts: https://donationalerts.com/r/your-handle
+  - Buy Me a Coffee: https://buymeacoffee.com/danielviktorovich
+  - Ko‑fi: https://ko-fi.com/danielviktorovich
 
 If you need an invoice or a specific platform, open an issue or contact the maintainer.
+
+## Crypto contributions
+
+- BTC (Bitcoin, bech32):
+
+```
+bc1qkty98e5sax63tppmf72ecapnjp9ant90de072h
+```
+
+- ETH (Ethereum, EVM):
+
+```
+0xF6F2d527aE161cC5403d176c18a2668b38C52486
+```
+
+- USDT (Tether)
+  - Polygon (POS): `0xF6F2d527aE161cC5403d176c18a2668b38C52486`
+  - BNB Smart Chain (BEP‑20): `0xF6F2d527aE161cC5403d176c18a2668b38C52486`
+
+Please double‑check the network and the address before sending.
 
 ## What your support funds
 
@@ -26,4 +43,3 @@ If you need an invoice or a specific platform, open an issue or contact the main
 - Maintenance, security updates, CI/CD and release infrastructure
 
 Thank you for helping RimLoc grow!
-
