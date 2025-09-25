@@ -1,10 +1,16 @@
 [package]
 name = "rimloc-export-po"
-version = "0.1.0"
+version = "0.1.0-dev.0"
 edition = "2021"
+description = "PO exporter for RimWorld mods (RimLoc toolkit)"
+license = "GPL-3.0-only"
+repository = "https://github.com/0-danielviktorovich-0/RimLoc"
+documentation = "https://0-danielviktorovich-0.github.io/RimLoc/"
+keywords = ["po", "gettext", "export", "localization"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 color-eyre = { workspace = true }
-rimloc-core = { path = "../rimloc-core" }
+rimloc-core = { version = "0.1.0-dev.0", path = "../rimloc-core" }
 tempfile = "3"
 regex = "1"

@@ -1,8 +1,18 @@
 [package]
 name = "rimloc-cli"
-version = "0.0.1"
+version = "0.1.0-dev.0"
 edition = "2021"
 build = "build.rs"
+exclude = [
+  "logs/*",
+  "target/*"
+]
+description = "RimLoc CLI: scan, validate, export/import PO for RimWorld localization"
+license = "GPL-3.0-only"
+repository = "https://github.com/0-danielviktorovich-0/RimLoc"
+documentation = "https://0-danielviktorovich-0.github.io/RimLoc/"
+keywords = ["rimworld", "cli", "localization", "gettext", "po"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -10,12 +20,12 @@ clap = { workspace = true }
 color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 walkdir = { workspace = true }
 owo-colors = "4"
-rimloc-core = { path = "../rimloc-core" }
-rimloc-parsers-xml = { path = "../rimloc-parsers-xml" }
-rimloc-export-csv = { path = "../rimloc-export-csv" }
-rimloc-export-po = { path = "../rimloc-export-po" }
-rimloc-validate = { path = "../rimloc-validate" }
-rimloc-import-po = { path = "../rimloc-import-po" }
+rimloc-core = { version = "0.1.0-dev.0", path = "../rimloc-core" }
+rimloc-parsers-xml = { version = "0.1.0-dev.0", path = "../rimloc-parsers-xml" }
+rimloc-export-csv = { version = "0.1.0-dev.0", path = "../rimloc-export-csv" }
+rimloc-export-po = { version = "0.1.0-dev.0", path = "../rimloc-export-po" }
+rimloc-validate = { version = "0.1.0-dev.0", path = "../rimloc-validate" }
+rimloc-import-po = { version = "0.1.0-dev.0", path = "../rimloc-import-po" }
 regex = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
