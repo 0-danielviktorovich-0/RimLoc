@@ -174,14 +174,14 @@ jobs:
           files=(dist/*)
           echo "Uploading ${#files[@]} assets to ${TAG}"
           for f in "${files[@]}"; do
-            for attempt in 1 2 3; do
+            for attempt in 1 2 3 4 5; do
               if gh release upload "$TAG" "$f" --clobber -R "$GITHUB_REPOSITORY"; then
                 echo "Uploaded: $f"
                 break
               fi
               echo "WARN: upload failed for $f (attempt $attempt). Retrying..."
               sleep $((attempt*10))
-              if [[ $attempt -eq 3 ]]; then
+              if [[ $attempt -eq 5 ]]; then
                 echo "ERROR: giving up on $f" >&2
                 exit 1
               fi
@@ -287,14 +287,14 @@ jobs:
           files=(dist/*)
           echo "Uploading ${#files[@]} assets to ${TAG}"
           for f in "${files[@]}"; do
-            for attempt in 1 2 3; do
+            for attempt in 1 2 3 4 5; do
               if gh release upload "$TAG" "$f" --clobber -R "$GITHUB_REPOSITORY"; then
                 echo "Uploaded: $f"
                 break
               fi
               echo "WARN: upload failed for $f (attempt $attempt). Retrying..."
               sleep $((attempt*10))
-              if [[ $attempt -eq 3 ]]; then
+              if [[ $attempt -eq 5 ]]; then
                 echo "ERROR: giving up on $f" >&2
                 exit 1
               fi
@@ -407,14 +407,14 @@ jobs:
           files=(dist/*)
           echo "Uploading ${#files[@]} assets to ${TAG}"
           for f in "${files[@]}"; do
-            for attempt in 1 2 3; do
+            for attempt in 1 2 3 4 5; do
               if gh release upload "$TAG" "$f" --clobber -R "$GITHUB_REPOSITORY"; then
                 echo "Uploaded: $f"
                 break
               fi
               echo "WARN: upload failed for $f (attempt $attempt). Retrying..."
               sleep $((attempt*10))
-              if [[ $attempt -eq 3 ]]; then
+              if [[ $attempt -eq 5 ]]; then
                 echo "ERROR: giving up on $f" >&2
                 exit 1
               fi
