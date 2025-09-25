@@ -8,6 +8,7 @@ repository = "https://github.com/0-danielviktorovich-0/RimLoc"
 documentation = "https://0-danielviktorovich-0.github.io/RimLoc/"
 keywords = ["rimworld", "translation", "localization", "po", "xml"]
 categories = ["command-line-utilities"]
+readme = "README.md"
 
 
 [dependencies]
