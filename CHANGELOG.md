@@ -24,4 +24,8 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - rimloc-export-po: PO exporter with msgctxt and references
 - rimloc-import-po: PO reader and LanguageData XML writer
 - rimloc-validate: empty/duplicate/placeholder checks
-
+ 
+<!-- Links -->
+[Unreleased]: https://github.com/0-danielviktorovich-0/RimLoc/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/0-danielviktorovich-0/RimLoc/compare/v0.1.0-alpha.1...v0.1.0
+[0.1.0-alpha.1]: https://github.com/0-danielviktorovich-0/RimLoc/releases/tag/v0.1.0-alpha.1
