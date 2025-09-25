@@ -91,6 +91,10 @@ rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version 
 - Sample fixtures for experimenting are under `test/`.
 - Report issues or request features via [GitHub Issues](https://github.com/0-danielviktorovich-0/RimLoc/issues).
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for notable changes and release history.
+
 ## Contributing
 
 New to the project? Start with the contributor guide in [AGENTS.md](AGENTS.md) for workspace layout, tooling, and review expectations.
