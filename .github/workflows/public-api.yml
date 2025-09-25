@@ -1,0 +1,33 @@
+name: public-api
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-public-api
+        run: cargo install cargo-public-api --locked
+      - name: Show public API diffs vs origin/main
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=100 || true
+          CRATES=(
+            rimloc-core
+            rimloc-parsers-xml
+            rimloc-export-csv
+            rimloc-export-po
+            rimloc-import-po
+            rimloc-validate
+          )
+          for c in "${CRATES[@]}"; do
+            echo "=== $c ==="
+            cargo public-api -p "$c" --diff-git-branch origin/main || true
+            echo
+          done

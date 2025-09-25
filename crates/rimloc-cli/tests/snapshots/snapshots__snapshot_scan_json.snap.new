@@ -1,0 +1,63 @@
+---
+source: crates/rimloc-cli/tests/snapshots.rs
+assertion_line: 52
+expression: v
+---
+[
+  {
+    "key": "DuplicateKey",
+    "line": 2,
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": "Hello"
+  },
+  {
+    "key": "DuplicateKey",
+    "line": 3,
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": "Hello again"
+  },
+  {
+    "key": "DuplicateKey",
+    "line": 2,
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": "Hello"
+  },
+  {
+    "key": "DuplicateKey",
+    "line": 3,
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": "Hello again"
+  },
+  {
+    "key": "EmptyKey",
+    "line": 4,
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": ""
+  },
+  {
+    "key": "EmptyKey",
+    "line": 4,
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": ""
+  },
+  {
+    "key": "Placeholder",
+    "line": 5,
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": "Welcome, {NAME}! You have %d messages."
+  },
+  {
+    "key": "Placeholder",
+    "line": 5,
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1,
+    "value": "Welcome, {NAME}! You have %d messages."
+  }
+]

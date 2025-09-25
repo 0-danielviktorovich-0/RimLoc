@@ -1,0 +1,55 @@
+---
+source: crates/rimloc-cli/tests/snapshots.rs
+assertion_line: 65
+expression: v
+---
+[
+  {
+    "key": "DuplicateKey",
+    "kind": "duplicate",
+    "line": 2,
+    "message": "Duplicate key in file",
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1
+  },
+  {
+    "key": "DuplicateKey",
+    "kind": "duplicate",
+    "line": 2,
+    "message": "Duplicate key in file",
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1
+  },
+  {
+    "key": "EmptyKey",
+    "kind": "empty",
+    "line": 4,
+    "message": "Empty value",
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1
+  },
+  {
+    "key": "EmptyKey",
+    "kind": "empty",
+    "line": 4,
+    "message": "Empty value",
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1
+  },
+  {
+    "key": "Placeholder",
+    "kind": "placeholder-check",
+    "line": 5,
+    "message": "Placeholders present",
+    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
+    "schema_version": 1
+  },
+  {
+    "key": "Placeholder",
+    "kind": "placeholder-check",
+    "line": 5,
+    "message": "Placeholders present",
+    "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
+    "schema_version": 1
+  }
+]
