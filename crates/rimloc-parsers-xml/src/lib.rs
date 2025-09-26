@@ -92,6 +92,26 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         }
                     }
                 }
+                Ok(Event::Empty(e)) => {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let offset = reader.buffer_position();
+                    let offset = usize::try_from(offset).unwrap_or(usize::MAX);
+                    let line = line_for_offset(offset, &line_starts);
+                    if stack.len() == 1
+                        && stack
+                            .last()
+                            .map(|frame| frame.name == "LanguageData")
+                            .unwrap_or(false)
+                        && !name.is_empty()
+                    {
+                        out.push(TransUnit {
+                            key: name,
+                            source: Some(String::new()),
+                            path: p.to_path_buf(),
+                            line,
+                        });
+                    }
+                }
                 Ok(Event::Text(t)) => {
                     let text = t
                         .unescape()
@@ -135,4 +155,55 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
     }
 
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn scan_keyed_xml_handles_self_closing_keys() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let keyed_dir = dir.path().join("Mods/TestMod/Languages/TestLang/Keyed");
+        fs::create_dir_all(&keyed_dir)?;
+
+        let file_path = keyed_dir.join("SelfClosing.xml");
+        fs::write(
+            &file_path,
+            r#"<LanguageData>
+    <FullKey>Hello RimWorld</FullKey>
+    <EmptyKey/>
+    <Nested>
+        <NestedEmpty/>
+    </Nested>
+</LanguageData>
+"#,
+        )?;
+
+        let units = scan_keyed_xml(dir.path())?;
+
+        assert!(
+            units
+                .iter()
+                .any(|u| u.key == "FullKey" && u.source.as_deref() == Some("Hello RimWorld")),
+            "FullKey should be parsed with text",
+        );
+
+        let empty = units
+            .iter()
+            .find(|u| u.key == "EmptyKey")
+            .expect("EmptyKey should be produced for self-closing elements");
+        assert_eq!(empty.source.as_deref(), Some(""));
+        assert_eq!(empty.path, file_path);
+        assert!(empty.line.is_some());
+
+        assert!(
+            units.iter().all(|u| u.key != "NestedEmpty"),
+            "Nested self-closing keys should not be emitted",
+        );
+
+        Ok(())
+    }
 }
