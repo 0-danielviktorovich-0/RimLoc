@@ -16,6 +16,7 @@ include = [
   "README.md",
   "LICENSE*",
   "build.rs",
+  "i18n.toml",
   "src/**",
   "i18n/**"
 ]
