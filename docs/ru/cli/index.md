@@ -31,6 +31,10 @@ RimLoc CLI объединяет инструменты для сбора, про
 | [`export-po`](export_import.md#export-po) | Формирует единый PO-файл для переводчиков. | `--root`, `--out-po`, `--lang`, `--game-version`, `--include-all-versions` |
 | [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
 | [`build-mod`](build_mod.md) | Собирает самостоятельный мод-перевод. | `--out-mod`, `--package-id`, `--dry-run` |
+| [`diff-xml`](diff_xml.md) | Diff исходник↔перевод; поиск изменившихся исходных строк с baseline PO. | `--baseline-po`, `--format`, `--out-dir`, `--strict` |
+| [`annotate`](annotate.md) | Добавить/удалить комментарии с оригиналом в XML. | `--dry-run`, `--backup`, `--strip` |
+| [`xml-health`](xml_health.md) | Проверить XML под Languages/. | `--format`, `--lang-dir`, `--strict` |
+| [`init`](init.md) | Создать заготовку перевода `Languages/<lang>`. | `--overwrite`, `--dry-run` |
 
 ## Глобальные опции
 
