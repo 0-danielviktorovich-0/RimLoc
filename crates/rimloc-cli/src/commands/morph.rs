@@ -1,5 +1,7 @@
 use crate::version::resolve_game_version_root;
+use lru::LruCache;
 use std::io::IsTerminal;
+use std::num::NonZeroUsize;
 
 #[derive(Debug, Clone)]
 pub enum MorphProvider {
@@ -84,14 +86,30 @@ pub fn run_morph(
     }
 
     // Generate forms
+    let mut cache = LruCache::new(NonZeroUsize::new(1024).unwrap());
+    let morpher_token = std::env::var("MORPHER_TOKEN").ok();
     let mut case_items: Vec<(String, String)> = Vec::new();
     let mut plural_items: Vec<(String, String)> = Vec::new();
     let mut gender_items: Vec<(String, String)> = Vec::new();
 
     for (k, base) in picked {
         // Case: extremely naive Nominative/Genitive forms
-        case_items.push((format!("Case.{}.Nominative", k), base.clone()));
-        case_items.push((format!("Case.{}.Genitive", k), format!("{}{}", base, "'s")));
+        let mut nomin = base.clone();
+        let mut genit = format!("{}{}", base, "'s");
+        if matches!(provider, MorphProvider::MorpherApi) {
+            if let Some(tok) = morpher_token.as_deref() {
+                if let Some(m) = morpher_decline(tok, &base, 1500, &mut cache) {
+                    if let Some(v) = m.get("Nominative") {
+                        nomin = v.clone();
+                    }
+                    if let Some(v) = m.get("Genitive") {
+                        genit = v.clone();
+                    }
+                }
+            }
+        }
+        case_items.push((format!("Case.{}.Nominative", k), nomin));
+        case_items.push((format!("Case.{}.Genitive", k), genit));
         plural_items.push((format!("Plural.{}", k), pluralize(&base)));
         gender_items.push((format!("Gender.{}", k), guess_gender(&base).to_string()));
     }
@@ -129,8 +147,55 @@ pub fn run_morph(
         processed = (processed_total as i64),
         lang = target_lang
     );
-    if matches!(provider, MorphProvider::MorpherApi) {
+    if matches!(provider, MorphProvider::MorpherApi) && morpher_token.is_none() {
         crate::ui_warn!("morph-provider-morpher-stub");
     }
     Ok(())
+}
+fn morpher_decline(
+    token: &str,
+    word: &str,
+    timeout_ms: u64,
+    cache: &mut LruCache<String, std::collections::HashMap<String, String>>,
+) -> Option<std::collections::HashMap<String, String>> {
+    if let Some(v) = cache.get(word) {
+        return Some(v.clone());
+    }
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_millis(timeout_ms))
+        .build()
+        .ok()?;
+    // WS3 Russian declension endpoint
+    let url = format!(
+        "https://ws3.morpher.ru/russian/declension?s={}",
+        urlencoding::encode(word)
+    );
+    let req = client
+        .get(url)
+        .query(&[("format", "json")])
+        .header("Authorization", format!("Basic {}", token));
+    let res = req.send().ok()?;
+    if !res.status().is_success() {
+        return None;
+    }
+    let v: serde_json::Value = res.json().ok()?;
+    let mut map = std::collections::HashMap::new();
+    // map typical cases present in response
+    for (k, key) in [
+        ("И", "Nominative"),
+        ("Р", "Genitive"),
+        ("Д", "Dative"),
+        ("В", "Accusative"),
+        ("Т", "Instrumental"),
+        ("П", "Prepositional"),
+    ] {
+        if let Some(val) = v.get(k).and_then(|x| x.as_str()) {
+            map.insert(key.to_string(), val.to_string());
+        }
+    }
+    if map.is_empty() {
+        return None;
+    }
+    cache.put(word.to_string(), map.clone());
+    Some(map)
 }

@@ -169,6 +169,7 @@ help-importpo-format = Формат вывода для отчётов/DRY‑RUN
 help-importpo-report = Показать сводку: создано/обновлено/пропущено файлов и всего записано ключей
 help-importpo-incremental = Не перезаписывать файлы, если содержимое не изменилось
 import-report-summary = Сводка импорта: создано={ $created }, обновлено={ $updated }, пропущено={ $skipped }, ключей={ $keys }
+help-importpo-only-diff = Записывать только изменённые/новые ключи по файлам (пропускать неизменённые)
 
 # build-mod
 help-buildmod-about = Собрать отдельный мод‑перевод из .po файла
@@ -221,6 +222,8 @@ help-xmlhealth-root = Путь к корню мода RimWorld для скани
 help-xmlhealth-format = Формат вывода: «text» (по умолчанию) или «json»
 help-xmlhealth-lang-dir = Ограничить проверку конкретной языковой папкой (например, Russian)
 help-xmlhealth-strict = Строгий режим: вернуть ошибку при наличии проблем
+help-xmlhealth-only = Список категорий через запятую для включения (parse,tag-mismatch,invalid-char)
+help-xmlhealth-except = Список категорий через запятую для исключения
 xmlhealth-summary = Проверка XML: проблем не обнаружено
 xmlhealth-issues = Проверка XML: обнаружены проблемы (см. список выше)
 xmlhealth-issue-line = { $path } — { $error }
