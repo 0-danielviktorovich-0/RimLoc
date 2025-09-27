@@ -33,7 +33,8 @@ RimLoc CLI объединяет инструменты для сбора, про
 | [`build-mod`](build_mod.md) | Собирает самостоятельный мод-перевод. | `--out-mod`, `--package-id`, `--dry-run` |
 | [`diff-xml`](diff_xml.md) | Diff исходник↔перевод; поиск изменившихся исходных строк с baseline PO. | `--baseline-po`, `--format`, `--out-dir`, `--strict` |
 | [`annotate`](annotate.md) | Добавить/удалить комментарии с оригиналом в XML. | `--dry-run`, `--backup`, `--strip` |
-| [`xml-health`](xml_health.md) | Проверить XML под Languages/. | `--format`, `--lang-dir`, `--strict` |
+| [`xml-health`](xml_health.md) | Проверить XML под Languages/. | `--format`, `--lang-dir`, `--strict`, `--only`, `--except` |
+| [`morph`](morph.md) | Сгенерировать Case/Plural/Gender с провайдером морфологии. | `--provider`, `--timeout-ms`, `--cache-size`, `--pymorphy-url` |
 | [`init`](init.md) | Создать заготовку перевода `Languages/<lang>`. | `--overwrite`, `--dry-run` |
 
 ## Глобальные опции

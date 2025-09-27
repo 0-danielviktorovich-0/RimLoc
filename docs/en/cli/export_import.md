@@ -84,6 +84,10 @@ rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [--game-ve
 | `--backup` | Create `.bak` copies before overwriting existing XML files. | No |
 | `--single-file` | When used with `--mod-root`, write everything into `Keyed/_Imported.xml`. | No |
 | `--game-version <VER>` | If used with `--mod-root`, target a specific version subfolder (e.g., `1.4`). | No |
+| `--format text|json` | Output format for dry-run and reports (default: `text`). | No |
+| `--report` | After import, print a summary (created/updated/skipped files, total keys). | No |
+| `--incremental` | Skip writing files whose content would be identical (byte-for-byte). | No |
+| `--only-diff` | For existing files, write only keys that changed or are new; unchanged keys are skipped. | No |
 
 **Examples**
 
@@ -110,13 +114,22 @@ rimloc-cli --quiet import-po \
   --po ./build/MyMod.ja.po \
   --mod-root ./Mods/MyMod \
   --lang ja \
-  --backup
+  --backup --report --format json
 ```
 
 Route everything into `_Imported.xml` (for translators without the full mod):
 
 ```bash
 rimloc-cli --quiet import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --single-file
+
+Only write changed/new keys for each existing file:
+
+```bash
+rimloc-cli import-po \
+  --po ./build/MyMod.ja.po \
+  --mod-root ./Mods/MyMod \
+  --only-diff --report --format json | jq .
+```
 ```
 
 **Tips**
@@ -125,6 +138,8 @@ rimloc-cli --quiet import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --si
 - Use `--backup` when importing into a working copy you cannot easily recreate.
 - `--lang-dir` lets you match non-standard folder names such as `German (Formal)`.
 - Empty translations are skipped by default; pass `--keep-empty` if you want placeholder entries written as-is.
+- Use `--incremental` to skip rewriting files whose content would not change.
+- Use `--only-diff` to update only changed/new keys in each file (faster diffs, safer merges).
 
 ---
 

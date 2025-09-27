@@ -33,7 +33,8 @@ RimLoc CLI bundles everything needed to inventory, validate, and exchange RimWor
 | [`build-mod`](build_mod.md) | Scaffold a translation-only RimWorld mod from a PO file. | `--out-mod`, `--package-id`, `--dry-run` |
 | [`diff-xml`](diff_xml.md) | Diff source vs translation; detect changed source with baseline PO. | `--baseline-po`, `--format`, `--out-dir`, `--strict` |
 | [`annotate`](annotate.md) | Add/remove source-text comments in translation XML. | `--dry-run`, `--backup`, `--strip` |
-| [`xml-health`](xml_health.md) | Scan XML under Languages/. | `--format`, `--lang-dir`, `--strict` |
+| [`xml-health`](xml_health.md) | Scan XML under Languages/. | `--format`, `--lang-dir`, `--strict`, `--only`, `--except` |
+| [`morph`](morph.md) | Generate Case/Plural/Gender via a morph provider. | `--provider`, `--timeout-ms`, `--cache-size`, `--pymorphy-url` |
 | [`init`](init.md) | Create translation skeleton under `Languages/<lang>`. | `--overwrite`, `--dry-run` |
 
 ## Global Options
