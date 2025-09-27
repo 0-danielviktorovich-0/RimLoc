@@ -37,18 +37,11 @@ pub fn run_validate(
         tracing::info!(event = "validate_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let mut units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
-
-    if let Some(dir) = source_lang_dir.as_ref() {
-        units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
-        tracing::info!(event = "validate_filtered_by_dir", source_lang_dir = %dir, remaining = units.len());
-    } else if let Some(code) = source_lang.as_ref() {
-        let dir = rimloc_import_po::rimworld_lang_dir(code);
-        units.retain(|u| is_under_languages_dir(&u.path, dir.as_str()));
-        tracing::info!(event = "validate_filtered_by_code", source_lang = %code, source_dir = %dir, remaining = units.len());
-    }
-
-    let msgs = rimloc_validate::validate(&units)?;
+    let msgs = rimloc_services::validate_under_root(
+        &scan_root,
+        source_lang.as_deref(),
+        source_lang_dir.as_deref(),
+    )?;
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {
