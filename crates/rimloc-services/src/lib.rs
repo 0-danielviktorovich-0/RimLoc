@@ -11,10 +11,14 @@ pub mod export;
 pub mod validate;
 pub mod import;
 pub mod build;
+pub mod extras;
 
 pub use build::{build_from_po_dry_run, build_from_po_execute, build_from_root, BuildPlan};
 pub use export::export_po_with_tm;
 pub use import::{import_po_to_file, import_po_to_mod_tree, FileStat, ImportPlan, ImportSummary};
 pub use scan::scan_units;
 pub use validate::validate_under_root;
+pub use extras::xml_health::{xml_health_scan, HealthIssue, HealthReport};
+pub use extras::diff::{diff_xml, write_diff_reports, DiffOutput};
+pub use extras::init::{make_init_plan, write_init_plan, InitPlan, InitFilePlan};
 pub use util::is_under_languages_dir;

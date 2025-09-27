@@ -43,7 +43,6 @@ pub fn run_init(
         tracing::info!(event = "init_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
     let src_dir = if let Some(dir) = source_lang_dir {
         dir
     } else if let Some(code) = source_lang {
@@ -58,47 +57,15 @@ pub fn run_init(
     } else {
         "Russian".to_string()
     };
-
-    use std::collections::{BTreeMap, BTreeSet};
-    let mut grouped: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
-    for u in &units {
-        if is_under_languages_dir(&u.path, &src_dir) {
-            let p = u.path.to_string_lossy().to_string();
-            let rel = rel_from_languages(&p).unwrap_or_else(|| {
-                u.path
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .unwrap_or("Keys.xml")
-                    .to_string()
-            });
-            grouped.entry(rel).or_default().insert(u.key.clone());
+    let plan = rimloc_services::make_init_plan(&scan_root, &src_dir, &trg_dir)?;
+    if dry_run {
+        for f in &plan.files {
+            crate::ui_out!("dry-run-would-write", path = f.path.display().to_string(), count = f.keys);
         }
+        crate::ui_out!("init-summary", count = 0i64, lang = plan.language.as_str());
+        return Ok(());
     }
-
-    let mut files_written = 0usize;
-    for (rel, keys) in grouped {
-        let out_path = scan_root.join("Languages").join(&trg_dir).join(&rel);
-        if out_path.exists() && !overwrite {
-            tracing::info!(event = "init_skip_exists", path = %out_path.display());
-            continue;
-        }
-
-        let entries: Vec<(String, String)> = keys.into_iter().map(|k| (k, String::new())).collect();
-
-        if dry_run {
-            crate::ui_out!(
-                "dry-run-would-write",
-                path = out_path.display().to_string(),
-                count = entries.len()
-            );
-            continue;
-        }
-
-        rimloc_import_po::write_language_data_xml(&out_path, &entries)?;
-        crate::ui_out!("xml-saved", path = out_path.display().to_string());
-        files_written += 1;
-    }
-
-    crate::ui_out!("init-summary", count = files_written, lang = trg_dir);
+    let files_written = rimloc_services::write_init_plan(&plan, overwrite, false)?;
+    crate::ui_out!("init-summary", count = files_written, lang = plan.language.as_str());
     Ok(())
 }
