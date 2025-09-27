@@ -45,6 +45,25 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Always run and report: `cargo build/test`, `fmt`, and `clippy` after changes.
 - Ask before destructive actions (deletes/moves/format‑sweeps). Scope of this file is repository‑wide.
 
+### Auto-commit workflow (mandatory for agents)
+- Start a session tied to the current chat/task: `scripts/agent-begin.sh --session <chat-id> [--type chore --scope cli --subject "short summary" -b "bullet"]`.
+- While working, record context as you go:
+  - Add files you intentionally touched: `scripts/agent-context.sh --session <chat-id> --add-file <path>` (repeatable).
+  - Refine message: `scripts/agent-context.sh --session <chat-id> --subject "…" -b "…"`.
+- Finish and commit: `scripts/agent-commit.sh --session <chat-id>` — stages only files changed since baseline and, if a file allowlist exists, intersects with it to avoid accidental pickups.
+- Without `--session`, the scripts fall back to a single global baseline (`.git/agent-baseline.txt`). Prefer sessions to avoid confusion between chats.
+- Use `--dry-run` to preview the file set and the composed message. The script will auto-detect scope from paths and generate safe bullets if none are provided.
+- Ensure hooks are active: run `scripts/setup-git-hooks.sh` once per clone.
+
+Tip: export a default session once per chat
+
+```
+export AGENT_SESSION=<chat-id>
+scripts/agent-begin.sh --subject "…" --type fix --scope core
+# …work…
+scripts/agent-commit.sh
+```
+
 ## For agents: Changelog & Versioning
 - Changelog: keep a single curated `CHANGELOG.md` (Keep a Changelog + SemVer). Update `Unreleased` for every user‑facing change; use sections `Added/Changed/Fixed/Docs/Internal`.
 - Entry format: `- [scope] short description (#PR)`, no trailing period. Scopes: `cli`, `core`, `parsers-xml`, `export-po`, `export-csv`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
@@ -66,7 +85,31 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - JSON output must remain stable; update integration tests when schemas or flags change.
 
 ## Commit & Pull Request Guidelines
-Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(scope): summary` within 72 characters, using types such as `feat`, `fix`, `docs`, or `chore`. Commit messages must be written in English; a Russian reference lives at `docs/readme/ru/gitmessage.txt`. Commit bodies should explain motivation and impact. Pull requests need a concise summary, linked issues, and instructions for validation; attach CLI output or screenshots when behaviour changes. Ensure CI passes and that formatting, lint, and test checks are green before requesting review.
+Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(scope): summary` within 72 characters, using types such as `feat`, `fix`, `docs`, or `chore`. Commit messages must be written in English; a Russian reference lives at `docs/readme/ru/gitmessage.txt`.
+
+- Always include a body for non-trivial changes and format it as bullet points starting with `- `. Explain what changed, why, and any user/dev impact.
+- Avoid bare, context-free subjects such as `tests: update snapshot`. Instead, use a scoped subject and bullets, for example: `tests(cli): update scan snapshot for DefInjected` plus bullets describing exactly what changed in the snapshot and why.
+- Keep the subject ≤ 72 chars. Use present tense and be specific.
+- Release commits use a detailed body and must include the publish order line below.
+
+Release commit example:
+
+```
+chore(release): prep crates for crates.io (0.1.0-dev.0)
+
+- Bump all RimLoc crates to 0.1.0-dev.0
+- Add versioned deps for path crates; add metadata (license, repo, docs)
+- Exclude logs from CLI package
+- Normalize Ko-fi badge to ASCII hyphen to avoid % encoding issues
+
+Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
+```
+
+Pull requests need a concise summary, linked issues, and instructions for validation; attach CLI output or screenshots when behaviour changes. Ensure CI passes and that formatting, lint, and test checks are green before requesting review.
+
+### Git hooks
+- Enable local commit checks: run `scripts/setup-git-hooks.sh` once per clone (sets `core.hooksPath` to `.githooks`).
+- The `commit-msg` hook enforces the subject pattern, a blank line, and at least one `- ` bullet in the body. Release commits must include the publish order line.
 
 ### Changelog policy (mandatory)
 - Keep `CHANGELOG.md` up to date for every user‑facing change.

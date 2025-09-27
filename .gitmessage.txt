@@ -7,11 +7,32 @@
 #   docs      — documentation updates
 #   test      — add/update tests
 #   chore     — infra/build/dependency chores
+#   ci        — CI configuration and scripts
+#   build     — build system or external dependencies
+#   perf      — performance improvements
 #
-# Leave a blank line, then describe:
+# Body style (mandatory for non‑trivial changes):
+# - Leave one blank line after the subject.
+# - Use bullet points starting with "- " to list concrete changes.
+# - Prefer present tense and keep bullets concise but specific.
+# - Explain the motivation and the impact when not obvious.
 #
-# - What changed
-# - Why it was done
-# - Impact on users/developers
+# Example (feature/refactor):
+#
+# refactor(po): centralize simple PO parsing in rimloc-core
+#
+# - expose parse_simple_po helper and PoEntry for shared use
+# - reuse shared types in importer/validator, drop local duplicates
+# - update XML helpers to call the core-level parser export
+#
+# Release commit template:
+#
+# chore(release): prep crates for crates.io (0.1.0-dev.0)
+# - Bump all RimLoc crates to 0.1.0-dev.0
+# - Add versioned deps for path crates; add metadata (license, repo, docs)
+# - Exclude logs from CLI package
+# - Normalize Ko-fi badge to ASCII hyphen to avoid % encoding issues
+#
+# Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
 #
 # Lines starting with # are ignored.

@@ -1,4 +1,4 @@
-# <type>(<scope>): краткое описание (до 72 символов)
+# <type>(<scope>): краткое описание (до 72 символов, только по‑английски)
 #
 # Возможные типы:
 #   feat      — новая функциональность
@@ -6,12 +6,33 @@
 #   refactor  — рефакторинг без изменения поведения
 #   docs      — изменения в документации
 #   test      — добавление/изменение тестов
-#   chore     — задачи по инфраструктуре, сборке, зависимостям
+#   chore     — инфраструктура/сборка/зависимости
+#   ci        — конфигурация и скрипты CI
+#   build     — сборочная система и внешние зависимости
+#   perf      — оптимизации производительности
 #
-# После пустой строки опишите:
+# Стиль тела коммита (обязательно для нетривиальных изменений):
+# - Оставьте одну пустую строку после заголовка.
+# - Используйте маркеры списка, начинающиеся с "- ", и перечислите конкретные изменения.
+# - Предпочтительно настоящее время; формулируйте кратко, но конкретно.
+# - Если мотивация/эффект не очевидны — поясните их отдельным пунктом.
 #
-# - Что изменилось
-# - Почему это было сделано
-# - Эффект для пользователей/разработчиков
+# Пример (feature/refactor):
+#
+# refactor(po): centralize simple PO parsing in rimloc-core
+#
+# - expose parse_simple_po helper and PoEntry for shared use
+# - reuse shared types in importer/validator, drop local duplicates
+# - update XML helpers to call the core-level parser export
+#
+# Шаблон для релизного коммита:
+#
+# chore(release): prep crates for crates.io (0.1.0-dev.0)
+# - Bump all RimLoc crates to 0.1.0-dev.0
+# - Add versioned deps for path crates; add metadata (license, repo, docs)
+# - Exclude logs from CLI package
+# - Normalize Ko-fi badge to ASCII hyphen to avoid % encoding issues
+#
+# Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
 #
 # Строки, начинающиеся с #, будут игнорироваться.
