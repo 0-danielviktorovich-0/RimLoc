@@ -22,6 +22,7 @@ pub fn run_import_po(
     report: bool,
     // If true, skip writing files whose content would be identical (compare bytes)
     incremental: bool,
+    only_diff: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file, game_version = ?game_version);
     use std::fs;
@@ -216,7 +217,7 @@ pub fn run_import_po(
     let mut keys_written = 0usize;
     let mut files_stat: Vec<FileTuple> = Vec::new();
 
-    for (rel, items) in grouped {
+    for (rel, mut items) in grouped {
         let out_path = root.join("Languages").join(&lang_folder).join(&rel);
         if backup && out_path.exists() {
             let bak = out_path.with_extension("xml.bak");
@@ -262,6 +263,21 @@ pub fn run_import_po(
         }
 
         let existed = out_path.exists();
+        if only_diff && existed {
+            let old_map = parse_language_file_keys(&out_path).unwrap_or_default();
+            items.retain(|(k, v)| old_map.get(k).map(|ov| ov != v).unwrap_or(true));
+            if items.is_empty() {
+                skipped_files += 1;
+                files_stat.push((
+                    out_path.display().to_string(),
+                    0,
+                    "skipped",
+                    Vec::new(),
+                    Vec::new(),
+                ));
+                continue;
+            }
+        }
         rimloc_import_po::write_language_data_xml(&out_path, &items)?;
         keys_written += items.len();
         if existed {

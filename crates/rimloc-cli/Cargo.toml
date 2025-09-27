@@ -35,6 +35,9 @@ rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
 rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 regex = "1"
 quick-xml = "0.36"
+reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+lru = "0.12"
+urlencoding = "2.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 tracing-appender = "0.2"

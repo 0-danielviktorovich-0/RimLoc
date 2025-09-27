@@ -13,6 +13,8 @@ pub fn run_xml_health(
     format: String,
     lang_dir: Option<String>,
     strict: bool,
+    only: Option<Vec<String>>,
+    except: Option<Vec<String>>,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "xml_health_args", root = ?root, format = %format, lang_dir = ?lang_dir);
 
@@ -50,12 +52,22 @@ pub fn run_xml_health(
             Err(e) => {
                 issues.push(Issue {
                     path: p.display().to_string(),
-                    category: "read",
+                    category: "encoding",
                     error: format!("{e}"),
                 });
                 continue;
             }
         };
+        if content.chars().any(|ch| {
+            let c = ch as u32;
+            c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D
+        }) {
+            issues.push(Issue {
+                path: p.display().to_string(),
+                category: "invalid-char",
+                error: "control character < 0x20".into(),
+            });
+        }
         let mut reader = quick_xml::Reader::from_str(&content);
         reader.config_mut().trim_text(false);
         let mut buf = Vec::new();
@@ -72,14 +84,28 @@ pub fn run_xml_health(
             buf.clear();
         }
         if let Some(e) = err {
+            let cat = if e.to_lowercase().contains("mismatch") {
+                "tag-mismatch"
+            } else {
+                "parse"
+            };
             issues.push(Issue {
                 path: p.display().to_string(),
-                category: "parse",
+                category: cat,
                 error: e,
             });
         }
     }
 
+    // filter by categories
+    if let Some(onlyv) = only.as_ref() {
+        let set: std::collections::HashSet<&str> = onlyv.iter().map(|s| s.as_str()).collect();
+        issues.retain(|it| set.contains(it.category));
+    }
+    if let Some(exceptv) = except.as_ref() {
+        let set: std::collections::HashSet<&str> = exceptv.iter().map(|s| s.as_str()).collect();
+        issues.retain(|it| !set.contains(it.category));
+    }
     if format == "json" {
         #[derive(serde::Serialize)]
         struct Out {

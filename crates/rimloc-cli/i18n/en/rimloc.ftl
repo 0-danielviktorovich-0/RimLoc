@@ -170,6 +170,7 @@ help-importpo-format = Output format for reports/dry-run: "text" (default) or "j
 help-importpo-report = Print a summary of created/updated/skipped files and total keys written
 help-importpo-incremental = Skip writing files whose content would be identical
 import-report-summary = Import summary: created={ $created }, updated={ $updated }, skipped={ $skipped }, keys={ $keys }
+help-importpo-only-diff = Write only changed/new keys per file (skip unchanged keys)
 
 # build-mod
 help-buildmod-about = Build a standalone translation mod from a .po file
@@ -222,6 +223,8 @@ help-xmlhealth-root = Path to RimWorld mod root to scan
 help-xmlhealth-format = Output format: "text" (default) or "json"
 help-xmlhealth-lang-dir = Restrict scan to a specific language folder name (e.g., Russian)
 help-xmlhealth-strict = Strict mode: return error if issues are found
+help-xmlhealth-only = Comma-separated categories to include (e.g., parse,tag-mismatch,invalid-char)
+help-xmlhealth-except = Comma-separated categories to exclude
 xmlhealth-summary = XML health: no issues found
 xmlhealth-issues = XML health: issues detected (see above)
 xmlhealth-issue-line = { $path } — { $error }

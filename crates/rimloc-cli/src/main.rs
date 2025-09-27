@@ -467,6 +467,12 @@ enum Commands {
         /// Strict mode: return non-zero exit if issues are found
         #[arg(long, default_value_t = false)]
         strict: bool,
+        /// Include only these categories (comma-separated)
+        #[arg(long, value_delimiter = ',')]
+        only: Option<Vec<String>>,
+        /// Exclude these categories (comma-separated)
+        #[arg(long, value_delimiter = ',')]
+        except: Option<Vec<String>>,
     },
 
     /// Generate Case/Plural/Gender files using a morph provider
@@ -589,6 +595,9 @@ enum Commands {
         /// Skip writing files whose content would be identical.
         #[arg(long, default_value_t = false)]
         incremental: bool,
+        /// Only write changed/new keys for each file (skip unchanged keys)
+        #[arg(long, default_value_t = false)]
+        only_diff: bool,
     },
 
     /// Build a standalone translation mod from a .po file (help via FTL).
@@ -899,6 +908,7 @@ impl Runnable for Commands {
                 format,
                 report,
                 incremental,
+                only_diff,
             } => commands::import_po::run_import_po(
                 po,
                 out_xml,
@@ -913,6 +923,7 @@ impl Runnable for Commands {
                 format,
                 report,
                 incremental,
+                only_diff,
             ),
 
             Commands::BuildMod {
@@ -946,7 +957,9 @@ impl Runnable for Commands {
                 format,
                 lang_dir,
                 strict,
-            } => commands::xml_health::run_xml_health(root, format, lang_dir, strict),
+                only,
+                except,
+            } => commands::xml_health::run_xml_health(root, format, lang_dir, strict, only, except),
 
             Commands::Init {
                 root,
