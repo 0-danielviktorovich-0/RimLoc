@@ -62,6 +62,8 @@ nav:
   - Testing: testing.md
   - Developer Guide: dev/index.md
   - Guides:
+      - For Translators: guide/translators.md
+      - Configuration: guide/configuration.md
       - Placeholders: guide/placeholders.md
       - PO Files 101: guide/po_files.md
   - Community:
