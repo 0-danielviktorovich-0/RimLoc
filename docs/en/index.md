@@ -11,6 +11,22 @@ RimLoc helps RimWorld modders keep translations discoverable, validated, and rea
 [:material-play-circle: Start Translating](guide/translators.md){ .md-button .md-button--primary }
 [:material-cog: Configuration (rimloc.toml)](guide/configuration.md){ .md-button }
 
+## Quick Onboarding (5 steps)
+
+1) Install once
+   - `cargo install rimloc-cli`
+2) Add config (optional, saves flags)
+   - Create `rimloc.toml` with `source_lang = "English"`, `target_lang = "Russian"`
+3) Scan and validate your mod
+   - `rimloc-cli scan --root ./Mods/MyMod --format json > scan.json`
+   - `rimloc-cli validate --root ./Mods/MyMod`
+4) Export PO and translate in Poedit
+   - `rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru`
+5) Import and build a translation‑only mod
+   - `rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run`
+   - `rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru`
+
+
 ## Why RimLoc?
 
 - Inventory every string under `Languages/*/{Keyed,DefInjected}` with one command.
