@@ -1,0 +1,35 @@
+---
+source: RimLoc/crates/rimloc-cli/tests/snapshots_defs.rs
+expression: v
+---
+[
+  {
+    "key": "Apparel_Parka.description",
+    "line": 5,
+    "path": "<WS>/test/DefsOnly/Defs/ThingDefs_Items/Apparel.xml",
+    "schema_version": 1,
+    "value": "Warm parka."
+  },
+  {
+    "key": "Apparel_Parka.label",
+    "line": 4,
+    "path": "<WS>/test/DefsOnly/Defs/ThingDefs_Items/Apparel.xml",
+    "schema_version": 1,
+    "value": "parka"
+  },
+  {
+    "key": "Weapon_Sword.description",
+    "line": 10,
+    "path": "<WS>/test/DefsOnly/Defs/ThingDefs_Items/Apparel.xml",
+    "schema_version": 1,
+    "value": "Sharp blade."
+  },
+  {
+    "key": "Weapon_Sword.label",
+    "line": 9,
+    "path": "<WS>/test/DefsOnly/Defs/ThingDefs_Items/Apparel.xml",
+    "schema_version": 1,
+    "value": "sword"
+  }
+]
+

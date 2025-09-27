@@ -15,6 +15,21 @@ pub fn is_under_languages_dir(path: &Path, lang_dir: &str) -> bool {
     false
 }
 
+/// Return true if a path should be considered part of the source set for a given
+/// RimWorld language directory name. For English, treat both Languages/English and
+/// Defs as valid sources (since many mods omit English LanguageData and rely on Defs).
+pub fn is_source_for_lang_dir(path: &Path, lang_dir: &str) -> bool {
+    if is_under_languages_dir(path, lang_dir) {
+        return true;
+    }
+    if lang_dir.eq_ignore_ascii_case("English") {
+        // Any XML under Defs/* counts as English source
+        let s = path.to_string_lossy();
+        return s.contains("/Defs/") || s.contains("\\Defs\\");
+    }
+    false
+}
+
 pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
     use std::fs;
     use std::io::Write;

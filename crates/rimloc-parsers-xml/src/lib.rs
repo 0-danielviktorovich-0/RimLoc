@@ -167,6 +167,157 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
     Ok(out)
 }
 
+/// Scan RimWorld Defs XML to derive implicit English source keys like
+/// "<defName>.<field>" for common translatable fields, e.g. label/description.
+pub fn scan_defs_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
+    scan_defs_xml_under(root, None)
+}
+
+/// Same as `scan_defs_xml`, but restricts scanning to a specific `defs_root` when provided.
+pub fn scan_defs_xml_under(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<TransUnit>> {
+    scan_defs_xml_under_with_fields(root, defs_root, &[])
+}
+
+/// Like `scan_defs_xml_under`, but allows adding extra field names to include.
+/// Matching is case-insensitive and only considers immediate child elements under a Def entry.
+pub fn scan_defs_xml_under_with_fields(
+    root: &Path,
+    defs_root: Option<&Path>,
+    extra_fields: &[String],
+) -> CoreResult<Vec<TransUnit>> {
+    use walkdir::WalkDir;
+    let mut out: Vec<TransUnit> = Vec::new();
+
+    fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
+        if starts.is_empty() {
+            return None;
+        }
+        match starts.binary_search(&offset) {
+            Ok(idx) => Some(idx + 1),
+            Err(idx) if idx > 0 => Some(idx),
+            _ => Some(1),
+        }
+    }
+
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        // filter to .../Defs/....xml (including versioned folders like 1.4/Defs, v1.6/Defs)
+        let p_str = p.to_string_lossy();
+        if let Some(base) = defs_root {
+            // When defs_root is provided, only include XML paths under it
+            if !p.starts_with(base) {
+                continue;
+            }
+        } else {
+            if !(p_str.contains("/Defs/") || p_str.contains("\\Defs\\")) {
+                continue;
+            }
+        }
+
+        let content = match fs::read_to_string(p) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
+
+        // Precompute line starts for approximate line mapping
+        let mut line_starts = Vec::new();
+        line_starts.push(0usize);
+        for (idx, _) in content.match_indices('\n') {
+            line_starts.push(idx + 1);
+        }
+
+        // Use a lightweight DOM for comfortable traversal
+        let doc = match roxmltree::Document::parse(&content) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+
+        // Recognized translatable fields commonly present across Def types (conservative defaults).
+        const DEFAULT_FIELDS: &[&str] = &[
+            "label",
+            "labelShort",
+            "labelPlural",
+            "description",
+            "helpText",
+            "reportString",
+            "gerundLabel",
+        ];
+        let mut all_fields: Vec<String> = DEFAULT_FIELDS.iter().map(|s| s.to_string()).collect();
+        for s in extra_fields {
+            if !s.trim().is_empty() {
+                all_fields.push(s.trim().to_string());
+            }
+        }
+
+        for node in doc.root_element().descendants().filter(|n| n.is_element()) {
+            // Def entries live directly under <Defs> or nested under lists, but
+            // they always contain a <defName> child with text.
+            let def_name = node
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                .and_then(|n| n.text())
+                .map(str::trim)
+                .filter(|s| !s.is_empty());
+            let Some(def_name) = def_name else { continue };
+
+            // For each known field present as an immediate child element, emit a unit
+            for field in &all_fields {
+                if let Some(fnode) = node
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(field))
+                {
+                    let val = fnode.text().unwrap_or("").trim().to_string();
+                    // roxmltree doesn't expose line number directly; approximate using start byte
+                    let line = fnode.range().start;
+                    let line = usize::try_from(line).unwrap_or(0);
+                    let line = line_for_offset(line, &line_starts);
+                    out.push(TransUnit {
+                        key: format!("{}.{}", def_name, field),
+                        source: Some(val),
+                        path: p.to_path_buf(),
+                        line,
+                    });
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// Scan both Languages (Keyed/DefInjected) and Defs (implicit English) to provide
+/// a complete view of translation units present in a mod.
+pub fn scan_all_units(root: &Path) -> CoreResult<Vec<TransUnit>> {
+    scan_all_units_with_defs(root, None)
+}
+
+/// Scan Languages (Keyed/DefInjected) and Defs with optional override of Defs root path.
+pub fn scan_all_units_with_defs(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<TransUnit>> {
+    scan_all_units_with_defs_and_fields(root, defs_root, &[])
+}
+
+/// Scan with optional Defs root and extra fields for Defs extraction.
+pub fn scan_all_units_with_defs_and_fields(
+    root: &Path,
+    defs_root: Option<&Path>,
+    extra_fields: &[String],
+) -> CoreResult<Vec<TransUnit>> {
+    let mut units = scan_keyed_xml(root)?;
+    match scan_defs_xml_under_with_fields(root, defs_root, extra_fields) {
+        Ok(mut defs) => units.append(&mut defs),
+        Err(_) => {}
+    }
+    Ok(units)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -242,6 +393,37 @@ mod tests {
         assert_eq!(unit.source.as_deref(), Some("Part\nRest"));
         assert_eq!(unit.path, file_path);
 
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod defs_tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn scan_defs_extracts_common_fields() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let defs_dir = dir.path().join("Mods/TestMod/Defs/ThingDefs_Items");
+        fs::create_dir_all(&defs_dir)?;
+        let file_path = defs_dir.join("Apparel.xml");
+        fs::write(
+            &file_path,
+            r#"<Defs>
+  <ThingDef>
+    <defName>Apparel_Parka</defName>
+    <label>parka</label>
+    <description>A warm parka for cold climates.</description>
+  </ThingDef>
+</Defs>
+"#,
+        )?;
+
+        let units = scan_defs_xml(dir.path())?;
+        assert!(units.iter().any(|u| u.key == "Apparel_Parka.label" && u.source.as_deref() == Some("parka")));
+        assert!(units.iter().any(|u| u.key == "Apparel_Parka.description" && u.source.as_deref() == Some("A warm parka for cold climates.")));
         Ok(())
     }
 }

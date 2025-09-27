@@ -1,0 +1,14 @@
+---
+source: RimLoc/crates/rimloc-cli/tests/snapshots_defs.rs
+expression: v
+---
+{
+  "changed": [],
+  "only_in_mod": [
+    "Apparel_Parka.description",
+    "Weapon_Sword.description",
+    "Weapon_Sword.label"
+  ],
+  "only_in_translation": []
+}
+

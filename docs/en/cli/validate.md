@@ -6,7 +6,7 @@ title: Validate Command
 
 ## Description
 
-The `validate` command checks the integrity and correctness of your RimWorld mods' localization files (XML Keyed files) within a specified root directory. It verifies that source language files are consistent, properly formatted, and compliant with the expected structure.
+The `validate` command checks the integrity and correctness of your RimWorld mods' localization files within a specified root directory. RimLoc treats English source as `Languages/English` plus `Defs` (implicit labels/descriptions, etc.). It verifies that source language files are consistent, properly formatted, and compliant with the expected structure.
 
 ## Usage
 
@@ -21,6 +21,8 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 | `--root`               | Root directory containing localization files                     | Yes      |
 | `--source-lang`        | Source language code (e.g., `en`)                                | No       |
 | `--source-lang-dir`    | Directory of the source language files                            | No       |
+| `--defs-dir <PATH>`    | Restrict English Defs scanning to this path (relative to root or absolute) | No |
+| `--defs-field <NAME>`  | Additional Defs field name(s) to extract (repeat or comma‑separate) | No |
 | `--format`             | Output format: text \| json (default: text)                       | No       |
 | `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
 | `--include-all-versions` | Validate all version subfolders instead of auto-picking the latest. | No |
@@ -29,7 +31,7 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 | `--help`               | Show help message                                                 | No       |
 
 !!! tip
-    If neither `--source-lang` nor `--source-lang-dir` is provided, RimLoc assumes the baseline files live under `Languages/English`.
+If neither `--source-lang` nor `--source-lang-dir` is provided, RimLoc assumes the baseline files live under `Languages/English` and also pulls English source from `Defs`. Use `--defs-dir` to limit the Defs root and `--defs-field` to add custom fields (can also be set via `[scan].defs_fields` in `rimloc.toml`).
 
 ## Checks performed
 

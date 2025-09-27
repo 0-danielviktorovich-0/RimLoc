@@ -1,4 +1,4 @@
-use crate::{scan::scan_units, util::is_under_languages_dir, Result};
+use crate::{scan::scan_units, util::is_source_for_lang_dir, Result};
 use once_cell::sync::OnceCell;
 use regex::Regex;
 use std::collections::{BTreeMap, BTreeSet};
@@ -29,7 +29,7 @@ pub fn make_init_plan(root: &Path, source_lang_dir: &str, target_lang_dir: &str)
     let units = scan_units(root)?;
     let mut grouped: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for u in &units {
-        if is_under_languages_dir(&u.path, source_lang_dir) {
+        if is_source_for_lang_dir(&u.path, source_lang_dir) {
             let p = u.path.to_string_lossy().to_string();
             let rel = rel_from_languages(&p).unwrap_or_else(|| {
                 u.path
@@ -66,4 +66,3 @@ pub fn write_init_plan(plan: &InitPlan, overwrite: bool, dry_run: bool) -> Resul
     }
     Ok(files_written)
 }
-

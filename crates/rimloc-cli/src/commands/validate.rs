@@ -6,6 +6,8 @@ pub fn run_validate(
     root: std::path::PathBuf,
     source_lang: Option<String>,
     source_lang_dir: Option<String>,
+    defs_dir: Option<std::path::PathBuf>,
+    defs_field: Vec<String>,
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
@@ -24,7 +26,33 @@ pub fn run_validate(
         tracing::info!(event = "validate_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let msgs = rimloc_services::validate_under_root(&scan_root, source_lang.or(cfg.source_lang).as_deref(), source_lang_dir.as_deref())?;
+    let defs_abs = defs_dir
+        .as_ref()
+        .map(|p| if p.is_absolute() { p.clone() } else { scan_root.join(p) });
+    // Merge defs_field from config if CLI didn't set
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let mut cli_defs_field = defs_field;
+    if cli_defs_field.is_empty() {
+        if let Some(scan) = cfg.scan {
+            if let Some(extra) = scan.defs_fields { cli_defs_field = extra; }
+        }
+    }
+    let msgs = if cli_defs_field.is_empty() {
+        rimloc_services::validate_under_root_with_defs(
+            &scan_root,
+            source_lang.or(cfg.source_lang).as_deref(),
+            source_lang_dir.as_deref(),
+            defs_abs.as_deref(),
+        )?
+    } else {
+        rimloc_services::validate_under_root_with_defs_and_fields(
+            &scan_root,
+            source_lang.or(cfg.source_lang).as_deref(),
+            source_lang_dir.as_deref(),
+            defs_abs.as_deref(),
+            &cli_defs_field,
+        )?
+    };
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {

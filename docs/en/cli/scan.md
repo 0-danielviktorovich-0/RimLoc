@@ -6,13 +6,13 @@ title: Scan Command
 
 ## Description
 
-Scan a RimWorld mod directory to extract translation units from `Languages/*/{Keyed,DefInjected}` XML files. This command helps gather all localized strings for further processing or translation.
+Scan a RimWorld mod directory to extract translation units from `Languages/*/{Keyed,DefInjected}` XML files, and English source strings from `Defs` (e.g., `<defName>.label`, `<defName>.description`). This helps gather all localized strings for further processing or translation.
 
 ## Synopsis
 
 ```bash
 rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
-                 [--source-lang <CODE>] [--source-lang-dir <DIR>] \
+                 [--source-lang <CODE>] [--source-lang-dir <DIR>] [--defs-dir <PATH>] \
                  [--format <csv|json>] [--game-version <VER>] [--include-all-versions]
 ```
 
@@ -26,6 +26,8 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 | `--lang <CODE>`      | Language code to scan (e.g. `en`, `ru`). If omitted, all languages are scanned. | No       |
 | `--source-lang <CODE>` | Source language code for cross-checks (optional). | No       |
 | `--source-lang-dir <DIR>` | Explicit path to source language directory (optional). | No       |
+| `--defs-dir <PATH>`   | Restrict English Defs scanning to this path (relative to `--root` or absolute). | No |
+| `--defs-field <NAME>` | Additional Defs field name(s) to extract (repeat or comma‑separate). | No |
 | `--format <csv\|json>` | Output format to stdout. Default is `csv`. | No       |
 | `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detects latest if omitted. | No |
 | `--include-all-versions` | Scan all version subfolders under the root, disabling auto-pick of the latest. | No |
@@ -47,6 +49,12 @@ Source language code for cross-checks (optional).
 
 ### `--source-lang-dir <DIR>`
 Explicit path to source language directory (optional).
+
+### `--defs-dir <PATH>`
+Restrict English Defs scanning to this path. If omitted, Defs under the resolved scan root are included automatically. Accepts paths relative to `--root` (or version root if selected) or absolute paths.
+
+### `--defs-field <NAME>`
+Add extra field names to extract from Defs (e.g., `labelFemale`, `title`). You can repeat the flag or pass a comma‑separated list. Defaults can also be set in `rimloc.toml` under `[scan] defs_fields = [ ... ]`.
 
 ### `--format <csv|json>`
 Output format to stdout. Default is `csv`.
@@ -94,7 +102,7 @@ rimloc-cli scan --root ./test/TestMod
 
 ## Troubleshooting
 
-- **"0 rows scanned"** – confirm `Languages/<lang>/Keyed` or `DefInjected` exists and the language code matches `--lang`.
+- **"0 rows scanned"** – confirm `Languages/<lang>/Keyed` or `DefInjected` exists and the language code matches `--lang`. For English source, ensure `Defs` exists under the selected scan root or pass `--defs-dir`.
 - **Malformed CSV output** – remember that stdout defaults to UTF-8 without BOM; pass `--out-csv <file>` if your spreadsheet tool struggles with pipes.
 - **JSON missing placeholders** – placeholders stay in the original XML; include `--source-lang`/`--source-lang-dir` to compare against a specific language during downstream processing.
 

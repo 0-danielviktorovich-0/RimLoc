@@ -367,6 +367,12 @@ enum Commands {
         /// Source language folder name (e.g., "English"). Takes precedence.
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Optional path to Defs directory; if set, Defs are scanned only under this path.
+        #[arg(long)]
+        defs_dir: Option<PathBuf>,
+        /// Extra field names to consider in Defs (comma-separated or repeated)
+        #[arg(long, value_delimiter = ',')]
+        defs_field: Vec<String>,
         /// Output format: "csv" (default), or "json".
         #[arg(long, default_value = "csv", value_parser = ["csv", "json"])]
         format: String,
@@ -388,6 +394,12 @@ enum Commands {
         /// Source language folder name (e.g., "English").
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Optional path to Defs directory; if set, Defs are scanned only under this path.
+        #[arg(long)]
+        defs_dir: Option<PathBuf>,
+        /// Extra field names to consider in Defs (comma-separated or repeated)
+        #[arg(long, value_delimiter = ',')]
+        defs_field: Vec<String>,
         /// Output format: "text" (default) or "json".
         #[arg(long, default_value = "text", value_parser = ["text", "json"])]
         format: String,
@@ -423,6 +435,12 @@ enum Commands {
         /// Source language folder name (e.g., "English").
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Optional path to Defs directory; if set, Defs are scanned only under this path.
+        #[arg(long)]
+        defs_dir: Option<PathBuf>,
+        /// Extra field names to consider in Defs (comma-separated or repeated)
+        #[arg(long, value_delimiter = ',')]
+        defs_field: Vec<String>,
         /// Target translation language ISO code (e.g., ru); maps to RimWorld folder.
         #[arg(long)]
         lang: Option<String>,
@@ -711,6 +729,8 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                defs_dir,
+                defs_field,
                 format,
                 game_version,
                 include_all_versions,
@@ -721,6 +741,8 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                defs_dir,
+                defs_field,
                 format,
                 game_version,
                 include_all_versions,
@@ -731,6 +753,8 @@ impl Runnable for Commands {
                 root,
                 source_lang,
                 source_lang_dir,
+                defs_dir,
+                defs_field,
                 format,
                 game_version,
                 include_all_versions,
@@ -738,6 +762,8 @@ impl Runnable for Commands {
                 root,
                 source_lang,
                 source_lang_dir,
+                defs_dir,
+                defs_field,
                 format,
                 game_version,
                 include_all_versions,
@@ -871,6 +897,8 @@ impl Runnable for Commands {
                 root,
                 source_lang,
                 source_lang_dir,
+                defs_dir,
+                defs_field,
                 lang,
                 lang_dir,
                 baseline_po,
@@ -882,6 +910,8 @@ impl Runnable for Commands {
                 root,
                 source_lang,
                 source_lang_dir,
+                defs_dir,
+                defs_field,
                 lang,
                 lang_dir,
                 baseline_po,
