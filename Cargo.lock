@@ -1552,6 +1552,8 @@ dependencies = [
  "quick-xml",
  "rimloc-core",
  "roxmltree",
+ "serde",
+ "serde_json",
  "tempfile",
  "tracing",
  "walkdir",

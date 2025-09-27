@@ -8,6 +8,7 @@ pub fn run_validate(
     source_lang_dir: Option<String>,
     defs_dir: Option<std::path::PathBuf>,
     defs_field: Vec<String>,
+    defs_dict: Vec<std::path::PathBuf>,
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
@@ -33,26 +34,35 @@ pub fn run_validate(
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let mut cli_defs_field = defs_field;
     if cli_defs_field.is_empty() {
-        if let Some(scan) = cfg.scan {
-            if let Some(extra) = scan.defs_fields { cli_defs_field = extra; }
+        if let Some(ref scan) = cfg.scan {
+            if let Some(extra) = scan.defs_fields.clone() { cli_defs_field = extra; }
         }
     }
-    let msgs = if cli_defs_field.is_empty() {
-        rimloc_services::validate_under_root_with_defs(
-            &scan_root,
-            source_lang.or(cfg.source_lang).as_deref(),
-            source_lang_dir.as_deref(),
-            defs_abs.as_deref(),
-        )?
-    } else {
-        rimloc_services::validate_under_root_with_defs_and_fields(
-            &scan_root,
-            source_lang.or(cfg.source_lang).as_deref(),
-            source_lang_dir.as_deref(),
-            defs_abs.as_deref(),
-            &cli_defs_field,
-        )?
-    };
+    // Merge dictionaries
+    let mut dicts = Vec::new();
+    dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
+    if let Some(scan) = cfg.scan.as_ref() {
+        if let Some(paths) = scan.defs_dicts.as_ref() {
+            for p in paths {
+                let pp = if p.starts_with('/') || p.contains(':') { std::path::PathBuf::from(p) } else { scan_root.join(p) };
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+            }
+        }
+    }
+    for p in &defs_dict {
+        let pp = if p.is_absolute() { p.clone() } else { scan_root.join(p) };
+        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+    }
+    let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
+
+    let msgs = rimloc_services::validate_under_root_with_defs_and_dict(
+        &scan_root,
+        source_lang.or(cfg.source_lang).as_deref(),
+        source_lang_dir.as_deref(),
+        defs_abs.as_deref(),
+        &merged.0,
+        &cli_defs_field,
+    )?;
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {

@@ -185,9 +185,11 @@ fn merge_schema(mut a: SchemaCfg, b: SchemaCfg) -> SchemaCfg {
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ScanCfg {
     pub defs_fields: Option<Vec<String>>, // extra Defs fields to scan
+    pub defs_dicts: Option<Vec<String>>,  // user dictionaries paths
 }
 
 fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
     if a.defs_fields.is_none() { a.defs_fields = b.defs_fields; }
+    if a.defs_dicts.is_none() { a.defs_dicts = b.defs_dicts; }
     a
 }

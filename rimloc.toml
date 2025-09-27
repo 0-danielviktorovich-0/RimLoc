@@ -120,3 +120,5 @@ list_limit = 100
 [scan]
 # Extra Defs field names to scan in addition to defaults
 # defs_fields = ["labelFemale", "labelMale", "title"]
+# User dictionaries with DefType → field paths
+# defs_dicts = ["./my_defs_fields.json"]

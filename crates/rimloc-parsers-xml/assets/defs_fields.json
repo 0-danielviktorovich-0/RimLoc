@@ -1,0 +1,17 @@
+{
+  "ThingDef": [
+    "label",
+    "labelShort",
+    "labelPlural",
+    "description",
+    "helpText",
+    "reportString",
+    "gerundLabel"
+  ],
+  "RecipeDef": [
+    "label",
+    "description",
+    "jobString"
+  ]
+}
+

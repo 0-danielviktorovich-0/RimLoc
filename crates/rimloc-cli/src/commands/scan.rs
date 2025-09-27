@@ -12,6 +12,7 @@ pub fn run_scan(
     source_lang_dir: Option<String>,
     defs_dir: Option<std::path::PathBuf>,
     defs_field: Vec<String>,
+    defs_dict: Vec<std::path::PathBuf>,
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
@@ -43,15 +44,33 @@ pub fn run_scan(
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let mut cli_defs_field = defs_field;
     if cli_defs_field.is_empty() {
-        if let Some(scan) = cfg.scan {
-            if let Some(extra) = scan.defs_fields { cli_defs_field = extra; }
+        if let Some(ref scan) = cfg.scan {
+            if let Some(extra) = scan.defs_fields.clone() { cli_defs_field = extra; }
         }
     }
-    let mut units = if cli_defs_field.is_empty() {
-        rimloc_services::scan_units_with_defs(&scan_root, defs_abs.as_deref())?
-    } else {
-        rimloc_services::scan_units_with_defs_and_fields(&scan_root, defs_abs.as_deref(), &cli_defs_field)?
-    };
+    // Load dictionaries (embedded + config + CLI)
+    let mut dicts = Vec::new();
+    dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
+    if let Some(scan) = cfg.scan.as_ref() {
+        if let Some(paths) = scan.defs_dicts.as_ref() {
+            for p in paths {
+                let pp = if p.starts_with('/') || p.contains(':') { std::path::PathBuf::from(p) } else { scan_root.join(p) };
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+            }
+        }
+    }
+    for p in &defs_dict {
+        let pp = if p.is_absolute() { p.clone() } else { scan_root.join(p) };
+        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+    }
+    let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
+
+    let mut units = rimloc_services::scan_units_with_defs_and_dict(
+        &scan_root,
+        defs_abs.as_deref(),
+        &merged.0,
+        &cli_defs_field,
+    )?;
 
     fn is_source_for_lang_dir(path: &std::path::Path, lang_dir: &str) -> bool {
         // Languages/<dir>
