@@ -13,6 +13,7 @@ pub fn run_import_po(
     backup: bool,
     single_file: bool,
     game_version: Option<String>,
+    format: String,
     // New behavior flags
     // If true, print a summary of created/updated/skipped files and total keys written
     // (text only; JSON can be added later if needed)
@@ -42,11 +43,26 @@ pub fn run_import_po(
 
     if let Some(out) = out_xml {
         if dry_run {
-            ui_out!(
-                "dry-run-would-write",
-                count = entries.len(),
-                path = out.display().to_string()
-            );
+            if format == "json" {
+                #[derive(serde::Serialize)]
+                struct Plan<'a> {
+                    mode: &'a str,
+                    files: Vec<(String, usize)>,
+                    total_keys: usize,
+                }
+                let p = Plan {
+                    mode: "dry_run",
+                    files: vec![(out.display().to_string(), entries.len())],
+                    total_keys: entries.len(),
+                };
+                serde_json::to_writer(std::io::stdout().lock(), &p)?;
+            } else {
+                ui_out!(
+                    "dry-run-would-write",
+                    count = entries.len(),
+                    path = out.display().to_string()
+                );
+            }
             return Ok(());
         }
 
@@ -56,9 +72,34 @@ pub fn run_import_po(
             tracing::warn!(event = "backup", from = %out.display(), to = %bak.display());
         }
 
-        let pairs: Vec<(String, String)> = entries.into_iter().map(|e| (e.key, e.value)).collect();
+        let pairs: Vec<(String, String)> = entries
+            .clone()
+            .into_iter()
+            .map(|e| (e.key, e.value))
+            .collect();
         rimloc_import_po::write_language_data_xml(&out, &pairs)?;
         ui_ok!("xml-saved", path = out.display().to_string());
+        if report && format == "json" {
+            #[derive(serde::Serialize)]
+            struct Out<'a> {
+                mode: &'a str,
+                created: usize,
+                updated: usize,
+                skipped: usize,
+                keys: usize,
+                files: Vec<(String, usize)>,
+            }
+            let existed = out.exists();
+            let stats = Out {
+                mode: "import",
+                created: if existed { 0 } else { 1 },
+                updated: if existed { 1 } else { 0 },
+                skipped: 0,
+                keys: entries.len(),
+                files: vec![(out.display().to_string(), entries.len())],
+            };
+            serde_json::to_writer(std::io::stdout().lock(), &stats)?;
+        }
         return Ok(());
     }
 
@@ -129,17 +170,39 @@ pub fn run_import_po(
         let mut keys_total = 0usize;
         let mut paths: Vec<_> = grouped.keys().cloned().collect();
         paths.sort();
-        for rel in paths {
-            let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
-            keys_total += n;
-            let full_path = root.join("Languages").join(&lang_folder).join(&rel);
-            ui_out!(
-                "import-dry-run-line",
-                path = full_path.display().to_string(),
-                n = n
-            );
+        if format == "json" {
+            #[derive(serde::Serialize)]
+            struct Plan {
+                mode: &'static str,
+                total_keys: usize,
+                files: Vec<(String, usize)>,
+            }
+            let mut files = Vec::new();
+            for rel in paths {
+                let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
+                keys_total += n;
+                let full_path = root.join("Languages").join(&lang_folder).join(&rel);
+                files.push((full_path.display().to_string(), n));
+            }
+            let p = Plan {
+                mode: "dry_run",
+                total_keys: keys_total,
+                files,
+            };
+            serde_json::to_writer(std::io::stdout().lock(), &p)?;
+        } else {
+            for rel in paths {
+                let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
+                keys_total += n;
+                let full_path = root.join("Languages").join(&lang_folder).join(&rel);
+                ui_out!(
+                    "import-dry-run-line",
+                    path = full_path.display().to_string(),
+                    n = n
+                );
+            }
+            ui_out!("import-total-keys", n = keys_total);
         }
-        ui_out!("import-total-keys", n = keys_total);
         return Ok(());
     }
 
@@ -148,6 +211,7 @@ pub fn run_import_po(
     let mut updated_files = 0usize;
     let mut skipped_files = 0usize;
     let mut keys_written = 0usize;
+    let mut files_stat: Vec<(String, usize, &'static str)> = Vec::new();
 
     for (rel, items) in grouped {
         let out_path = root.join("Languages").join(&lang_folder).join(&rel);
@@ -162,6 +226,7 @@ pub fn run_import_po(
             let old_bytes = std::fs::read(&out_path).unwrap_or_default();
             if old_bytes == new_bytes {
                 skipped_files += 1;
+                files_stat.push((out_path.display().to_string(), items.len(), "skipped"));
                 continue;
             }
         }
@@ -171,20 +236,57 @@ pub fn run_import_po(
         keys_written += items.len();
         if existed {
             updated_files += 1;
+            files_stat.push((out_path.display().to_string(), items.len(), "updated"));
         } else {
             created_files += 1;
+            files_stat.push((out_path.display().to_string(), items.len(), "created"));
         }
     }
 
     ui_ok!("import-done", root = root.display().to_string());
     if report {
-        ui_out!(
-            "import-report-summary",
-            created = created_files,
-            updated = updated_files,
-            skipped = skipped_files,
-            keys = keys_written
-        );
+        if format == "json" {
+            #[derive(serde::Serialize)]
+            struct FileStat<'a> {
+                path: &'a str,
+                keys: usize,
+                status: &'a str,
+            }
+            #[derive(serde::Serialize)]
+            struct Summary<'a> {
+                mode: &'a str,
+                created: usize,
+                updated: usize,
+                skipped: usize,
+                keys: usize,
+                files: Vec<FileStat<'a>>,
+            }
+            let files: Vec<FileStat> = files_stat
+                .iter()
+                .map(|(p, k, s)| FileStat {
+                    path: p.as_str(),
+                    keys: *k,
+                    status: s,
+                })
+                .collect();
+            let sum = Summary {
+                mode: "import",
+                created: created_files,
+                updated: updated_files,
+                skipped: skipped_files,
+                keys: keys_written,
+                files,
+            };
+            serde_json::to_writer(std::io::stdout().lock(), &sum)?;
+        } else {
+            ui_out!(
+                "import-report-summary",
+                created = created_files,
+                updated = updated_files,
+                skipped = skipped_files,
+                keys = keys_written
+            );
+        }
     }
     Ok(())
 }

@@ -165,6 +165,7 @@ help-importpo-game-version = Game version subfolder to write into (e.g., 1.6 or 
 help-importpo-single-file = Write all imported strings into a single XML file
 help-importpo-backup = Create .bak backups when overwriting files
 help-importpo-dry-run = Do not write changes; only show what would be done
+help-importpo-format = Output format for reports/dry-run: "text" (default) or "json"
 help-importpo-report = Print a summary of created/updated/skipped files and total keys written
 help-importpo-incremental = Skip writing files whose content would be identical
 import-report-summary = Import summary: created={ $created }, updated={ $updated }, skipped={ $skipped }, keys={ $keys }
