@@ -64,6 +64,7 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
             name: String,
             line: Option<usize>,
             has_text: bool,
+            buffer: String,
         }
         let mut stack: Vec<ElementFrame> = Vec::new();
 
@@ -78,14 +79,20 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         name,
                         line,
                         has_text: false,
+                        buffer: String::new(),
                     });
                 }
                 Ok(Event::End(_)) => {
                     if let Some(frame) = stack.pop() {
-                        if stack.len() == 1 && !frame.has_text && !frame.name.is_empty() {
+                        if stack.len() == 1 && !frame.name.is_empty() {
+                            let source = if frame.has_text {
+                                frame.buffer
+                            } else {
+                                String::new()
+                            };
                             out.push(TransUnit {
                                 key: frame.name,
-                                source: Some(String::new()),
+                                source: Some(source),
                                 path: p.to_path_buf(),
                                 line: frame.line,
                             });
@@ -110,6 +117,13 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                             path: p.to_path_buf(),
                             line,
                         });
+                    } else if stack.len() == 2 {
+                        if let Some(frame) = stack.last_mut() {
+                            if name == "LineBreak" {
+                                frame.has_text = true;
+                                frame.buffer.push('\n');
+                            }
+                        }
                     }
                 }
                 Ok(Event::Text(t)) => {
@@ -122,13 +136,10 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         .to_string();
                     if stack.len() == 2 {
                         if let Some(frame) = stack.last_mut() {
-                            frame.has_text = true;
-                            out.push(TransUnit {
-                                key: frame.name.clone(),
-                                source: Some(text),
-                                path: p.to_path_buf(),
-                                line: frame.line,
-                            });
+                            if !text.is_empty() {
+                                frame.buffer.push_str(&text);
+                                frame.has_text = true;
+                            }
                         }
                     }
                 }
@@ -136,13 +147,10 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                     let text = String::from_utf8_lossy(t.as_ref()).trim().to_string();
                     if stack.len() == 2 {
                         if let Some(frame) = stack.last_mut() {
-                            frame.has_text = true;
-                            out.push(TransUnit {
-                                key: frame.name.clone(),
-                                source: Some(text),
-                                path: p.to_path_buf(),
-                                line: frame.line,
-                            });
+                            if !text.is_empty() {
+                                frame.buffer.push_str(&text);
+                                frame.has_text = true;
+                            }
                         }
                     }
                 }
@@ -203,6 +211,34 @@ mod tests {
             units.iter().all(|u| u.key != "NestedEmpty"),
             "Nested self-closing keys should not be emitted",
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn scan_keyed_xml_merges_fragmented_text() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let keyed_dir = dir.path().join("Mods/TestMod/Languages/TestLang/Keyed");
+        fs::create_dir_all(&keyed_dir)?;
+
+        let file_path = keyed_dir.join("Fragments.xml");
+        fs::write(
+            &file_path,
+            r#"<LanguageData>
+    <KeyWithBreak>Part<LineBreak/>Rest</KeyWithBreak>
+</LanguageData>
+"#,
+        )?;
+
+        let units = scan_keyed_xml(dir.path())?;
+
+        let unit = units
+            .iter()
+            .find(|u| u.key == "KeyWithBreak")
+            .expect("KeyWithBreak should be parsed");
+
+        assert_eq!(unit.source.as_deref(), Some("Part\nRest"));
+        assert_eq!(unit.path, file_path);
 
         Ok(())
     }

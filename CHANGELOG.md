@@ -22,7 +22,8 @@ Template (copy the sections you need):
 ### Internal
 - [internal] short bullet with (#PR)
 -->
-- TBD
+### Fixed
+- [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
 
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added
