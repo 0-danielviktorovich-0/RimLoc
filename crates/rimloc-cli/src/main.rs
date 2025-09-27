@@ -170,6 +170,22 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-validatepo-format")));
                 *sc = owned;
             }
+            "diff-xml" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-diffxml-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-diffxml-root")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-diffxml-source-lang")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-diffxml-source-lang-dir"))
+                });
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-diffxml-lang")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-diffxml-lang-dir")));
+                owned = owned.mut_arg("baseline_po", |a| a.help(tr!("help-diffxml-baseline-po")));
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-diffxml-format")));
+                owned = owned.mut_arg("out_dir", |a| a.help(tr!("help-diffxml-out-dir")));
+                owned = owned.mut_arg("game_version", |a| a.help(tr!("help-diffxml-game-version")));
+                *sc = owned;
+            }
             "export-po" => {
                 let mut owned = std::mem::take(sc);
                 owned = owned.about(tr!("help-exportpo-about"));
@@ -325,6 +341,37 @@ enum Commands {
         /// Output format for results: "text" (default) or "json".
         #[arg(long, default_value = "text", value_parser = ["text", "json"])]
         format: String,
+    },
+
+    /// Diff source vs translation presence, optionally against a baseline PO to detect changed source strings.
+    DiffXml {
+        /// Path to mod root to analyze.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Source language ISO code (e.g., en); maps to RimWorld folder name.
+        #[arg(long)]
+        source_lang: Option<String>,
+        /// Source language folder name (e.g., "English").
+        #[arg(long)]
+        source_lang_dir: Option<String>,
+        /// Target translation language ISO code (e.g., ru); maps to RimWorld folder.
+        #[arg(long)]
+        lang: Option<String>,
+        /// Target translation language folder name (e.g., "Russian").
+        #[arg(long)]
+        lang_dir: Option<String>,
+        /// Optional baseline PO to detect changed source strings since last export.
+        #[arg(long)]
+        baseline_po: Option<PathBuf>,
+        /// Output format: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
+        /// Optional directory to write Text files (ChangedData.txt, TranslationData.txt, ModData.txt)
+        #[arg(long)]
+        out_dir: Option<PathBuf>,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
     },
 
     /// Export extracted strings to a single .po file (help localized via FTL).
@@ -602,6 +649,28 @@ impl Runnable for Commands {
                     }
                 }
             }
+
+            Commands::DiffXml {
+                root,
+                source_lang,
+                source_lang_dir,
+                lang,
+                lang_dir,
+                baseline_po,
+                format,
+                out_dir,
+                game_version,
+            } => commands::diff_xml::run_diff_xml(
+                root,
+                source_lang,
+                source_lang_dir,
+                lang,
+                lang_dir,
+                baseline_po,
+                format,
+                out_dir,
+                game_version,
+            ),
 
             Commands::ExportPo {
                 root,

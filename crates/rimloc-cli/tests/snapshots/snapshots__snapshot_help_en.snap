@@ -10,6 +10,7 @@ Commands:
   scan         Scan a mod folder and extract Keyed XML entries
   validate     Validate strings for issues/warnings
   validate-po  Validate .po file placeholder consistency (msgid vs msgstr)
+  diff-xml     Diff source vs translation presence and detect changed source strings using a baseline PO
   export-po    Export extracted strings into a single .po file
   import-po    Import .po  -  either into a single XML, or spread across existing mod structure
   build-mod    Build a standalone translation mod from a .po file

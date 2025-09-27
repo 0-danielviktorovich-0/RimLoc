@@ -178,6 +178,21 @@ help-buildmod-lang-dir = Language folder name inside the mod (optional)
 help-buildmod-dry-run = Do not write files; only print the build plan
 help-buildmod-dedupe = Remove duplicate keys within one XML (last wins)
 
+# diff-xml
+help-diffxml-about = Diff source vs translation presence and detect changed source strings using a baseline PO
+help-diffxml-root = Path to RimWorld mod root to analyze
+help-diffxml-source-lang = Source language ISO code (maps to RimWorld folder)
+help-diffxml-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+help-diffxml-lang = Target translation language ISO code (maps to RimWorld folder)
+help-diffxml-lang-dir = Target translation folder name (e.g., Russian). Overrides --lang
+help-diffxml-baseline-po = Baseline PO (previous export) to detect changed source strings
+help-diffxml-format = Output format: "text" (default) or "json"
+help-diffxml-out-dir = Optional output directory for Text files (ChangedData.txt, TranslationData.txt, ModData.txt)
+help-diffxml-game-version = Game version folder to scan (e.g., 1.6 or v1.6); defaults to latest under root
+
+diffxml-saved = Diff results saved to { $path }
+diffxml-summary = Diff summary: changed={ $changed }, only-in-translation={ $only_trg }, only-in-mod={ $only_src }
+
 # === scan ===
 test-csv-header = CSV header must be present
 
