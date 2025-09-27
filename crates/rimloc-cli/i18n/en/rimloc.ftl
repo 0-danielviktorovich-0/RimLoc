@@ -193,6 +193,29 @@ help-diffxml-game-version = Game version folder to scan (e.g., 1.6 or v1.6); def
 diffxml-saved = Diff results saved to { $path }
 diffxml-summary = Diff summary: changed={ $changed }, only-in-translation={ $only_trg }, only-in-mod={ $only_src }
 
+# annotate
+help-annotate-about = Add or remove comments with original source text in translation XML files
+help-annotate-root = Path to RimWorld mod root
+help-annotate-source-lang = Source language ISO code (e.g., en); maps to folder name
+help-annotate-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+help-annotate-lang = Target translation language ISO code (e.g., ru)
+help-annotate-lang-dir = Target translation folder name (e.g., Russian). Overrides --lang
+help-annotate-dry-run = Do not write files; only print which files would be updated
+help-annotate-backup = Create .bak before overwriting XML files
+help-annotate-strip = Strip existing comments instead of adding new ones
+help-annotate-game-version = Game version folder under mod root (e.g., 1.6 or v1.6)
+annotate-would-write = DRY-RUN: would annotate { $path }
+annotate-summary = Annotate done. Processed={ $processed }, commented={ $annotated }
+
+# xml-health
+help-xmlhealth-about = Scan XML files for structural/read errors under Languages/
+help-xmlhealth-root = Path to RimWorld mod root to scan
+help-xmlhealth-format = Output format: "text" (default) or "json"
+help-xmlhealth-lang-dir = Restrict scan to a specific language folder name (e.g., Russian)
+xmlhealth-summary = XML health: no issues found
+xmlhealth-issues = XML health: issues detected (see above)
+xmlhealth-issue-line = { $path } — { $error }
+
 # === scan ===
 test-csv-header = CSV header must be present
 

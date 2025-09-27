@@ -192,6 +192,29 @@ help-diffxml-game-version = Папка версии игры для анализ
 diffxml-saved = Результаты diff сохранены в { $path }
 diffxml-summary = Сводка diff: изменившиеся={ $changed }, только-в-переводе={ $only_trg }, только-в-моде={ $only_src }
 
+# annotate
+help-annotate-about = Добавлять или удалять комментарии с оригинальным текстом в переводных XML
+help-annotate-root = Путь к корню мода RimWorld
+help-annotate-source-lang = ISO-код исходного языка (например, en); сопоставляется с именем папки
+help-annotate-source-lang-dir = Имя папки исходного языка (например, English). Перекрывает --source-lang
+help-annotate-lang = ISO-код языка перевода (например, ru)
+help-annotate-lang-dir = Имя папки языка перевода (например, Russian). Перекрывает --lang
+help-annotate-dry-run = Ничего не записывать; только показать какие файлы изменятся
+help-annotate-backup = Создавать .bak перед перезаписью XML
+help-annotate-strip = Удалять существующие комментарии вместо добавления новых
+help-annotate-game-version = Папка версии игры под корнем мода (например, 1.6 или v1.6)
+annotate-would-write = DRY-RUN: добавили бы комментарии в { $path }
+annotate-summary = Аннотирование завершено. Обработано={ $processed }, прокомментировано={ $annotated }
+
+# xml-health
+help-xmlhealth-about = Проверить XML под Languages/ на ошибки чтения/структуры
+help-xmlhealth-root = Путь к корню мода RimWorld для сканирования
+help-xmlhealth-format = Формат вывода: «text» (по умолчанию) или «json»
+help-xmlhealth-lang-dir = Ограничить проверку конкретной языковой папкой (например, Russian)
+xmlhealth-summary = Проверка XML: проблем не обнаружено
+xmlhealth-issues = Проверка XML: обнаружены проблемы (см. список выше)
+xmlhealth-issue-line = { $path } — { $error }
+
 # === scan ===
 test-csv-header = CSV заголовок должен присутствовать
 
