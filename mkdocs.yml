@@ -67,6 +67,7 @@ nav:
       - Configuration: guide/configuration.md
       - Placeholders: guide/placeholders.md
       - PO Files 101: guide/po_files.md
+      - Learn (Defs/Keyed): learn.md
   - Community:
       - Discord: community/discord.md
       - Issue Guidelines: community/issues.md
