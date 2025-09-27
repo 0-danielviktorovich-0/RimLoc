@@ -20,6 +20,11 @@ pub fn run_xml_health(
 
     let mut issues: Vec<Issue> = Vec::new();
     let mut checked = 0usize;
+    // Pre-compile XML declaration encoding regex (clippy: avoid regex creation in loop)
+    let re_xml_decl = regex::Regex::new(
+        r#"(?i)<\?xml[^>]*encoding\s*=\s*['\"]([^'\"]+)['\"][^>]*\?>"#,
+    )
+    .unwrap();
 
     for entry in WalkDir::new(&root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
@@ -62,9 +67,7 @@ pub fn run_xml_health(
         {
             let head = &content.as_bytes()[..content.len().min(512)];
             if let Ok(head_str) = std::str::from_utf8(head) {
-                let re = regex::Regex::new(r#"(?i)<\?xml[^>]*encoding\s*=\s*['\"]([^'\"]+)['\"][^>]*\?>"#)
-                    .unwrap();
-                if let Some(caps) = re.captures(head_str) {
+                if let Some(caps) = re_xml_decl.captures(head_str) {
                     let enc = caps.get(1).map(|m| m.as_str()).unwrap_or("");
                     let enc_norm = enc.to_ascii_lowercase().replace('_', "-");
                     if enc_norm != "utf-8" && enc_norm != "utf8" {
@@ -168,9 +171,15 @@ pub fn run_xml_health(
                     "encoding" => Some("Save as UTF-8 (no BOM)."),
                     "encoding-detected" => Some("Use UTF-8; remove or fix encoding declaration."),
                     "invalid-char" => Some("Remove control chars < 0x20; keep \t, \n, \r only."),
-                    "tag-mismatch" => Some("Ensure opening/closing tags match and are nested correctly."),
-                    "invalid-entity" => Some("Escape '&' as &amp;; use &lt;/&gt;/&amp; or numeric entities."),
-                    "unexpected-doctype" => Some("Remove <!DOCTYPE>; not required for LanguageData XML."),
+                    "tag-mismatch" => {
+                        Some("Ensure opening/closing tags match and are nested correctly.")
+                    }
+                    "invalid-entity" => {
+                        Some("Escape '&' as &amp;; use &lt;/&gt;/&amp; or numeric entities.")
+                    }
+                    "unexpected-doctype" => {
+                        Some("Remove <!DOCTYPE>; not required for LanguageData XML.")
+                    }
                     _ => None,
                 };
                 if let Some(h) = hint {

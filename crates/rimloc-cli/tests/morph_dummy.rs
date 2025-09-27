@@ -1,11 +1,11 @@
 use assert_cmd::prelude::*;
-use std::{fs, path::PathBuf, process::Command};
+use std::{fs, path::Path, path::PathBuf, process::Command};
 
 fn bin_cmd() -> Command {
     Command::cargo_bin("rimloc-cli").expect("rimloc-cli is built")
 }
 
-fn write_sample_xml(dir: &PathBuf) {
+fn write_sample_xml(dir: &Path) {
     let keyed = dir.join("Languages").join("Russian").join("Keyed");
     fs::create_dir_all(&keyed).expect("create dirs");
     let xml = keyed.join("Sample.xml");
@@ -25,8 +25,10 @@ fn morph_dummy_generates_plural_and_gender() {
     write_sample_xml(&root);
 
     let mut cmd = bin_cmd();
-    cmd.args(["--quiet", "morph", "--root"]).arg(&root)
-        .args(["--provider", "dummy"]).args(["--lang", "ru"]);
+    cmd.args(["--quiet", "morph", "--root"])
+        .arg(&root)
+        .args(["--provider", "dummy"])
+        .args(["--lang", "ru"]);
     cmd.assert().success();
 
     // Check that _Plural.xml and _Gender.xml exist and contain expected heuristics
@@ -35,15 +37,23 @@ fn morph_dummy_generates_plural_and_gender() {
     let gender = fs::read_to_string(keyed.join("_Gender.xml")).expect("gender exists");
 
     // герой -> герои (й -> и)
-    assert!(plural.contains("<Plural.Hero>герои</Plural.Hero>"), "expected plural for герой");
+    assert!(
+        plural.contains("<Plural.Hero>герои</Plural.Hero>"),
+        "expected plural for герой"
+    );
     // мама -> мамы (а -> ы)
-    assert!(plural.contains("<Plural.Mother>мамы</Plural.Mother>"), "expected plural for мама");
+    assert!(
+        plural.contains("<Plural.Mother>мамы</Plural.Mother>"),
+        "expected plural for мама"
+    );
     // площадь -> площади (ь -> и)
-    assert!(plural.contains("<Plural.Square>площади</Plural.Square>"), "expected plural for площадь");
+    assert!(
+        plural.contains("<Plural.Square>площади</Plural.Square>"),
+        "expected plural for площадь"
+    );
 
     // Gender
     assert!(gender.contains("<Gender.Mother>Female</Gender.Mother>"));
     assert!(gender.contains("<Gender.Hero>Male</Gender.Hero>"));
     assert!(gender.contains("<Gender.Square>Female</Gender.Square>"));
 }
-

@@ -1,11 +1,11 @@
 use assert_cmd::prelude::*;
-use std::{env, fs, path::PathBuf, process::Command};
+use std::{env, fs, path::Path, path::PathBuf, process::Command};
 
 fn bin_cmd() -> Command {
     Command::cargo_bin("rimloc-cli").expect("rimloc-cli built")
 }
 
-fn write_sample_xml(dir: &PathBuf) {
+fn write_sample_xml(dir: &Path) {
     let keyed = dir.join("Languages").join("Russian").join("Keyed");
     fs::create_dir_all(&keyed).expect("create dirs");
     let xml = keyed.join("Sample.xml");
@@ -33,14 +33,19 @@ fn morph_pymorphy2_consumes_service_when_available() {
 
     let mut cmd = bin_cmd();
     cmd.env("PYMORPHY_URL", &url)
-        .args(["--quiet", "morph", "--root"]).arg(&root)
-        .args(["--provider", "pymorphy2"]).args(["--lang", "ru"])
+        .args(["--quiet", "morph", "--root"])
+        .arg(&root)
+        .args(["--provider", "pymorphy2"])
+        .args(["--lang", "ru"])
         .args(["--timeout-ms", "3000"]);
     let assert = cmd.assert();
     // If service is reachable, command should succeed and write full cases
     if assert.get_output().status.success() {
         let case_xml = fs::read_to_string(
-            root.join("Languages").join("Russian").join("Keyed").join("_Case.xml"),
+            root.join("Languages")
+                .join("Russian")
+                .join("Keyed")
+                .join("_Case.xml"),
         )
         .expect("case exists");
         // Check at least one extra case beyond Nominative/Genitive
@@ -55,4 +60,3 @@ fn morph_pymorphy2_consumes_service_when_available() {
         eprintln!("pymorphy2 service not reachable; smoke skipped");
     }
 }
-
