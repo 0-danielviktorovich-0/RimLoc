@@ -7,12 +7,14 @@ use std::num::NonZeroUsize;
 pub enum MorphProvider {
     Dummy,
     MorpherApi,
+    Pymorphy2,
 }
 
 impl MorphProvider {
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "morpher" | "morpher_api" => Self::MorpherApi,
+            "pymorphy2" | "pymorphy" => Self::Pymorphy2,
             _ => Self::Dummy,
         }
     }
@@ -46,6 +48,9 @@ pub fn run_morph(
     filter_key_regex: Option<String>,
     limit: Option<usize>,
     game_version: Option<String>,
+    timeout_ms: Option<u64>,
+    cache_size: Option<usize>,
+    pymorphy_url: Option<String>,
 ) -> color_eyre::Result<()> {
     use regex::Regex;
     use std::collections::BTreeMap;
@@ -86,30 +91,59 @@ pub fn run_morph(
     }
 
     // Generate forms
-    let mut cache = LruCache::new(NonZeroUsize::new(1024).unwrap());
+    let cache_cap = cache_size.unwrap_or(1024).max(1);
+    let mut cache = LruCache::new(NonZeroUsize::new(cache_cap).unwrap());
     let morpher_token = std::env::var("MORPHER_TOKEN").ok();
+    // CLI flag takes precedence over ENV
+    let pym_url = pymorphy_url.or_else(|| std::env::var("PYMORPHY_URL").ok());
+    let http_timeout = timeout_ms.unwrap_or(1500);
     let mut case_items: Vec<(String, String)> = Vec::new();
     let mut plural_items: Vec<(String, String)> = Vec::new();
     let mut gender_items: Vec<(String, String)> = Vec::new();
 
     for (k, base) in picked {
-        // Case: extremely naive Nominative/Genitive forms
-        let mut nomin = base.clone();
-        let mut genit = format!("{}{}", base, "'s");
-        if matches!(provider, MorphProvider::MorpherApi) {
-            if let Some(tok) = morpher_token.as_deref() {
-                if let Some(m) = morpher_decline(tok, &base, 1500, &mut cache) {
-                    if let Some(v) = m.get("Nominative") {
-                        nomin = v.clone();
-                    }
-                    if let Some(v) = m.get("Genitive") {
-                        genit = v.clone();
+        // Build a map of cases; start with naive defaults, then overlay provider results
+        let mut cases: std::collections::BTreeMap<String, String> = {
+            let mut m = std::collections::BTreeMap::new();
+            m.insert("Nominative".to_string(), base.clone());
+            m.insert("Genitive".to_string(), format!("{}{}", base, "'s"));
+            m
+        };
+
+        match provider {
+            MorphProvider::MorpherApi => {
+                if let Some(tok) = morpher_token.as_deref() {
+                    if let Some(m) = morpher_decline(tok, &base, http_timeout, &mut cache) {
+                        for (name, val) in m {
+                            cases.insert(name, val);
+                        }
                     }
                 }
             }
+            MorphProvider::Pymorphy2 => {
+                if let Some(url) = pym_url.as_deref() {
+                    if let Some(m) = pymorphy_decline(url, &base, http_timeout, &mut cache) {
+                        for (name, val) in m {
+                            cases.insert(name, val);
+                        }
+                    }
+                }
+            }
+            _ => {}
         }
-        case_items.push((format!("Case.{}.Nominative", k), nomin));
-        case_items.push((format!("Case.{}.Genitive", k), genit));
+        // Emit known case set if present
+        for cname in [
+            "Nominative",
+            "Genitive",
+            "Dative",
+            "Accusative",
+            "Instrumental",
+            "Prepositional",
+        ] {
+            if let Some(v) = cases.get(cname) {
+                case_items.push((format!("Case.{}.{}", k, cname), v.clone()));
+            }
+        }
         plural_items.push((format!("Plural.{}", k), pluralize(&base)));
         gender_items.push((format!("Gender.{}", k), guess_gender(&base).to_string()));
     }
@@ -148,6 +182,9 @@ pub fn run_morph(
         lang = target_lang
     );
     if matches!(provider, MorphProvider::MorpherApi) && morpher_token.is_none() {
+        crate::ui_warn!("morph-provider-morpher-stub");
+    }
+    if matches!(provider, MorphProvider::Pymorphy2) && pym_url.is_none() {
         crate::ui_warn!("morph-provider-morpher-stub");
     }
     Ok(())
@@ -197,5 +234,49 @@ fn morpher_decline(
         return None;
     }
     cache.put(word.to_string(), map.clone());
+    Some(map)
+}
+
+fn pymorphy_decline(
+    url: &str,
+    word: &str,
+    timeout_ms: u64,
+    cache: &mut LruCache<String, std::collections::HashMap<String, String>>,
+) -> Option<std::collections::HashMap<String, String>> {
+    let key = format!("py:{}", word);
+    if let Some(v) = cache.get(&key) {
+        return Some(v.clone());
+    }
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_millis(timeout_ms))
+        .build()
+        .ok()?;
+    let req = client
+        .get(format!("{}/declension", url.trim_end_matches('/')))
+        .query(&[("text", word)])
+        .header("Accept", "application/json");
+    let res = req.send().ok()?;
+    if !res.status().is_success() {
+        return None;
+    }
+    let v: serde_json::Value = res.json().ok()?;
+    let mut map = std::collections::HashMap::new();
+    // Map pymorphy2 tags to English case names used by RimLoc
+    for (k, key) in [
+        ("nomn", "Nominative"),
+        ("gent", "Genitive"),
+        ("datv", "Dative"),
+        ("accs", "Accusative"),
+        ("ablt", "Instrumental"),
+        ("loct", "Prepositional"),
+    ] {
+        if let Some(val) = v.get(k).and_then(|x| x.as_str()) {
+            map.insert(key.to_string(), val.to_string());
+        }
+    }
+    if map.is_empty() {
+        return None;
+    }
+    cache.put(key, map.clone());
     Some(map)
 }

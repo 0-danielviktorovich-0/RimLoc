@@ -222,6 +222,10 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("game_version", |a| {
                     a.help(tr!("help-importpo-game-version"))
                 });
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-importpo-format")));
+                owned = owned.mut_arg("report", |a| a.help(tr!("help-importpo-report")));
+                owned = owned.mut_arg("incremental", |a| a.help(tr!("help-importpo-incremental")));
+                owned = owned.mut_arg("only_diff", |a| a.help(tr!("help-importpo-only-diff")));
                 *sc = owned;
             }
             "build-mod" => {
@@ -230,6 +234,8 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("po", |a| a.help(tr!("help-buildmod-po")));
                 owned = owned.mut_arg("out_mod", |a| a.help(tr!("help-buildmod-out-mod")));
                 owned = owned.mut_arg("lang", |a| a.help(tr!("help-buildmod-lang")));
+                owned = owned.mut_arg("from_root", |a| a.help(tr!("help-buildmod-from-root")));
+                owned = owned.mut_arg("from_game_version", |a| a.help(tr!("help-buildmod-from-game-version")));
                 owned = owned.mut_arg("name", |a| a.help(tr!("help-buildmod-name")));
                 owned = owned.mut_arg("package_id", |a| a.help(tr!("help-buildmod-package-id")));
                 owned = owned.mut_arg("rw_version", |a| a.help(tr!("help-buildmod-rw-version")));
@@ -262,6 +268,24 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("root", |a| a.help(tr!("help-xmlhealth-root")));
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-xmlhealth-format")));
                 owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-xmlhealth-lang-dir")));
+                owned = owned.mut_arg("strict", |a| a.help(tr!("help-xmlhealth-strict")));
+                owned = owned.mut_arg("only", |a| a.help(tr!("help-xmlhealth-only")));
+                owned = owned.mut_arg("except", |a| a.help(tr!("help-xmlhealth-except")));
+                *sc = owned;
+            }
+            "morph" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-morph-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-morph-root")));
+                owned = owned.mut_arg("provider", |a| a.help(tr!("help-morph-provider")));
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-morph-lang")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-morph-lang-dir")));
+                owned = owned.mut_arg("filter_key_regex", |a| a.help(tr!("help-morph-filter")));
+                owned = owned.mut_arg("limit", |a| a.help(tr!("help-morph-limit")));
+                owned = owned.mut_arg("game_version", |a| a.help(tr!("help-morph-game-version")));
+                owned = owned.mut_arg("timeout_ms", |a| a.help(tr!("help-morph-timeout")));
+                owned = owned.mut_arg("cache_size", |a| a.help(tr!("help-morph-cache-size")));
+                owned = owned.mut_arg("pymorphy_url", |a| a.help(tr!("help-morph-pym-url")));
                 *sc = owned;
             }
             "init" => {
@@ -498,6 +522,15 @@ enum Commands {
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
+        /// HTTP timeout for providers, ms (default: 1500)
+        #[arg(long)]
+        timeout_ms: Option<u64>,
+        /// Provider cache size (default: 1024)
+        #[arg(long)]
+        cache_size: Option<usize>,
+        /// Pymorphy2 service URL (overrides PYMORPHY_URL)
+        #[arg(long)]
+        pymorphy_url: Option<String>,
     },
 
     /// Initialize translation skeleton under Languages/<target>
@@ -611,9 +644,9 @@ enum Commands {
         /// Optional: build from existing Languages/<lang> under this root instead of a .po
         #[arg(long)]
         from_root: Option<PathBuf>,
-        /// Optional filter for --from-root: only include files under this game version subfolder
-        #[arg(long)]
-        from_game_version: Option<String>,
+        /// Optional filter for --from-root: only include files under these game version subfolders (comma-separated)
+        #[arg(long, value_delimiter = ',')]
+        from_game_version: Option<Vec<String>>,
         #[arg(long, default_value = "RimLoc Translation")]
         name: String,
         #[arg(long, default_value = "yourname.rimloc.translation")]
@@ -989,6 +1022,9 @@ impl Runnable for Commands {
                 filter_key_regex,
                 limit,
                 game_version,
+                timeout_ms,
+                cache_size,
+                pymorphy_url,
             } => commands::morph::run_morph(
                 root,
                 provider,
@@ -997,6 +1033,9 @@ impl Runnable for Commands {
                 filter_key_regex,
                 limit,
                 game_version,
+                timeout_ms,
+                cache_size,
+                pymorphy_url,
             ),
         };
 

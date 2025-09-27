@@ -178,7 +178,7 @@ help-buildmod-po = Path to .po file to build from
 help-buildmod-out-mod = Output mod folder path
 help-buildmod-lang = Language code of the translation
 help-buildmod-from-root = Build from existing Languages/<lang> under this root instead of a .po
-help-buildmod-from-game-version = Only include files under this version subfolder when using --from-root
+help-buildmod-from-game-version = Only include files under these version subfolders (comma-separated) when using --from-root
 help-buildmod-name = Translation mod display name
 help-buildmod-package-id = Translation mod PackageId
 help-buildmod-rw-version = Target RimWorld version
@@ -228,6 +228,7 @@ help-xmlhealth-except = Comma-separated categories to exclude
 xmlhealth-summary = XML health: no issues found
 xmlhealth-issues = XML health: issues detected (see above)
 xmlhealth-issue-line = { $path } — { $error }
+xmlhealth-hint-line = hint: { $hint }
 
 # init
 help-init-about = Create translation skeleton under Languages/<target> with empty values
@@ -247,13 +248,16 @@ test-csv-header = CSV header must be present
 # === startup message checks ===
 test-startup-text-must-appear = Startup message must appear for locale { $loc }
 # morph
-help-morph-about = Generate Case/Plural/Gender files using a morph provider (dummy/morpher)
+help-morph-about = Generate Case/Plural/Gender files using a morph provider (dummy/morpher/pymorphy2)
 help-morph-root = Path to RimWorld mod root
-help-morph-provider = Provider: dummy (default) or morpher
+help-morph-provider = Provider: dummy (default), morpher, or pymorphy2
 help-morph-lang = Target translation language ISO code
 help-morph-lang-dir = Target translation folder name
 help-morph-filter = Regex to filter keys to process (applies to Keyed keys)
 help-morph-limit = Limit number of keys to process
 help-morph-game-version = Game version subfolder to operate on
+help-morph-timeout = HTTP timeout for providers, ms (default: 1500)
+help-morph-cache-size = Provider cache size (default: 1024)
+help-morph-pym-url = Pymorphy2 service URL (overrides PYMORPHY_URL)
 morph-summary = Morph generated { $processed } entries for { $lang }
 morph-provider-morpher-stub = Morpher API provider is not implemented yet; falling back to dummy rules
