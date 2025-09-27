@@ -38,7 +38,26 @@ fn rel_from_languages(path_str: &str) -> Option<String> {
 /// msgctxt = "<key>|<relative_path_from_Languages>:<line>" (уникальный контекст для Poedit)
 /// msgid   = исходный текст (source), msgstr = "" (пусто, готово к переводу)
 /// В комментарии `#:` пишем ссылку `path:line` (для импорта/раскладки по файлам).
+/// Stats for PO writing (useful when TM is applied)
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PoStats {
+    pub total: usize,
+    pub tm_filled: usize,
+}
+
+/// Backward-compatible entry: write PO without TM
 pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<()> {
+    write_po_with_tm(path, units, lang, None).map(|_| ())
+}
+
+/// Write PO with optional translation memory (key -> translation).
+/// When TM hit is found, we prefill msgstr and mark entry as fuzzy.
+pub fn write_po_with_tm(
+    path: &Path,
+    units: &[TransUnit],
+    lang: Option<&str>,
+    tm: Option<&std::collections::HashMap<String, String>>,
+) -> Result<PoStats> {
     let file = File::create(path)?;
     let mut w = BufWriter::new(file);
 
@@ -66,8 +85,11 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
     )?;
     writeln!(w)?; // пустая строка
 
+    let mut stats = PoStats::default();
+
     // --- Entries ---
     for u in units {
+        stats.total += 1;
         let key = &u.key;
         let msgid = u.source.as_deref().unwrap_or("");
 
@@ -90,14 +112,24 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
         let line_suffix = u.line.map(|l| format!(":{}", l)).unwrap_or_default();
         let ctx = format!("{}|{}{}", key, rel, line_suffix);
 
-        writeln!(w, "msgctxt \"{}\"", escape_po(&ctx))?;
-        writeln!(w, "msgid \"{}\"", escape_po(msgid))?;
-        writeln!(w, "msgstr \"\"")?;
+        // If TM provided and has value for this key, mark fuzzy and prefill msgstr
+        let tm_val = tm.and_then(|m| m.get(key));
+        if let Some(val) = tm_val {
+            writeln!(w, "#, fuzzy")?;
+            stats.tm_filled += 1;
+            writeln!(w, "msgctxt \"{}\"", escape_po(&ctx))?;
+            writeln!(w, "msgid \"{}\"", escape_po(msgid))?;
+            writeln!(w, "msgstr \"{}\"", escape_po(val))?;
+        } else {
+            writeln!(w, "msgctxt \"{}\"", escape_po(&ctx))?;
+            writeln!(w, "msgid \"{}\"", escape_po(msgid))?;
+            writeln!(w, "msgstr \"\"")?;
+        }
         writeln!(w)?;
     }
 
     w.flush()?;
-    Ok(())
+    Ok(stats)
 }
 
 #[cfg(test)]

@@ -22,6 +22,10 @@ Template (copy the sections you need):
 ### Internal
 - [internal] short bullet with (#PR)
 -->
+### Added
+- [export-po] Translation Memory prefill: `--tm-root` to prefill msgstr and mark entries as `fuzzy` (#PR)
+- [cli] Localized help for `--tm-root` and TM coverage summary in export output (#PR)
+
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
 

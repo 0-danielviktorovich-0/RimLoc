@@ -37,6 +37,7 @@ scan-json-saved = JSON сохранён в { $path }
 validate-clean = Всё чисто, ошибок не найдено
 
 export-po-saved = PO сохранён в { $path }
+export-po-tm-coverage = TM автозаполнение: { $filled } / { $total } ({ $pct }%)
 
 import-dry-run-header = DRY-RUN план:
 import-total-keys = ИТОГО: { $n } ключ(ей)
@@ -147,6 +148,7 @@ help-exportpo-out-po = Путь к выходному .po файлу
 help-exportpo-lang = ISO-код языка перевода (например, ru, ja, de)
 help-exportpo-source-lang = ISO-код исходного языка для экспорта (например, en, ru, ja)
 help-exportpo-source-lang-dir = Имя папки исходного языка (например, English). Перекрывает --source-lang
+help-exportpo-tm-root = Путь к базе переводов (например, Languages/Russian или корень мода) для автозаполнения msgstr с пометкой fuzzy
 help-exportpo-game-version = Папка версии игры для сканирования (например, 1.6 или v1.6); по умолчанию — самая новая
 help-exportpo-include-all = Включить все подпапки версий (может привести к дублям)
 

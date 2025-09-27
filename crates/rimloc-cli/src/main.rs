@@ -180,6 +180,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("source_lang_dir", |a| {
                     a.help(tr!("help-exportpo-source-lang-dir"))
                 });
+                owned = owned.mut_arg("tm_root", |a| a.help(tr!("help-exportpo-tm-root")));
                 owned = owned.mut_arg("game_version", |a| {
                     a.help(tr!("help-exportpo-game-version"))
                 });
@@ -347,6 +348,9 @@ enum Commands {
         /// Source language folder name (e.g., "English"). Takes precedence over --source-lang.
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Optional path to a TM root (e.g., Languages/Russian or a mod root) to prefill msgstr and mark fuzzy.
+        #[arg(long)]
+        tm_root: Option<PathBuf>,
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
@@ -605,6 +609,7 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                tm_root,
                 game_version,
                 include_all_versions,
             } => commands::export_po::run_export_po(
@@ -613,6 +618,7 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                tm_root,
                 game_version,
                 include_all_versions,
             ),

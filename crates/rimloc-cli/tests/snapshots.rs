@@ -1,6 +1,6 @@
 use assert_cmd::prelude::*;
-use serde_json::Value;
 use regex::Regex;
+use serde_json::Value;
 use std::path::PathBuf;
 use std::process::Command;
 

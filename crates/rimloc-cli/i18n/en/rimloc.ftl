@@ -37,6 +37,7 @@ scan-json-saved = JSON saved to { $path }
 validate-clean = All clean, no errors found
 
 export-po-saved = PO saved to { $path }
+export-po-tm-coverage = TM prefill: { $filled } / { $total } ({ $pct }%)
 
 import-dry-run-header = DRY-RUN plan:
 import-total-keys = TOTAL: { $n } key(s)
@@ -148,6 +149,7 @@ help-exportpo-out-po = Output .po file path
 help-exportpo-lang = Target translation language code (e.g., ru, ja, de)
 help-exportpo-source-lang = Source language ISO code to export from (e.g., en, ru, ja)
 help-exportpo-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+help-exportpo-tm-root = Path to translation memory root (e.g., Languages/Russian or a mod root) to prefill msgstr and mark entries as fuzzy
 help-exportpo-game-version = Game version folder to scan (e.g., 1.6 or v1.6); defaults to latest under root
 help-exportpo-include-all = Include all version subfolders (may create duplicates)
 

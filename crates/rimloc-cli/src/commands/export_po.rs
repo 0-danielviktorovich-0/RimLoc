@@ -24,10 +24,11 @@ pub fn run_export_po(
     lang: Option<String>,
     source_lang: Option<String>,
     source_lang_dir: Option<String>,
+    tm_root: Option<std::path::PathBuf>,
     game_version: Option<String>,
     include_all_versions: bool,
 ) -> color_eyre::Result<()> {
-    tracing::debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, game_version = ?game_version, include_all_versions = include_all_versions);
+    tracing::debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, tm_root = ?tm_root, game_version = ?game_version, include_all_versions = include_all_versions);
 
     let (scan_root, selected_version) = if include_all_versions {
         (root.clone(), None)
@@ -67,7 +68,46 @@ pub fn run_export_po(
     });
     tracing::info!(event = "export_units", count = filtered.len(), source_dir = %src_dir);
 
-    rimloc_export_po::write_po(&out_po, &filtered, lang.as_deref())?;
+    // Build TM map if requested
+    let tm_map: Option<std::collections::HashMap<String, String>> = if let Some(tm_path) = tm_root {
+        match rimloc_parsers_xml::scan_keyed_xml(&tm_path) {
+            Ok(units) => {
+                let mut map = std::collections::HashMap::<String, String>::new();
+                for u in units {
+                    if let Some(val) = u.source.as_deref() {
+                        let v = val.trim();
+                        if !v.is_empty() {
+                            map.entry(u.key).or_insert_with(|| v.to_string());
+                        }
+                    }
+                }
+                tracing::info!(event = "export_tm_loaded", entries = map.len());
+                Some(map)
+            }
+            Err(e) => {
+                tracing::warn!(event = "export_tm_failed", error = ?e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    let stats =
+        rimloc_export_po::write_po_with_tm(&out_po, &filtered, lang.as_deref(), tm_map.as_ref())?;
     ui_ok!("export-po-saved", path = out_po.display().to_string());
+    if tm_map.is_some() {
+        let pct: u32 = if stats.total == 0 {
+            0
+        } else {
+            ((stats.tm_filled as f64 / stats.total as f64) * 100.0).round() as u32
+        };
+        ui_info!(
+            "export-po-tm-coverage",
+            total = stats.total,
+            filled = stats.tm_filled,
+            pct = pct
+        );
+    }
     Ok(())
 }
