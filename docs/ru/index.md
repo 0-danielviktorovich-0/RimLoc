@@ -8,6 +8,9 @@ title: RimLoc
 
 RimLoc помогает моддерам RimWorld поддерживать переводы в актуальном состоянии, проверять их и готовить к передаче переводчикам.
 
+[:material-play-circle: Начать перевод](guide/translators.md){ .md-button .md-button--primary }
+[:material-cog: Конфигурация (rimloc.toml)](guide/configuration.md){ .md-button }
+
 ## Зачем нужен RimLoc?
 
 - За один запуск собирает все строки из `Languages/*/{Keyed,DefInjected}`.

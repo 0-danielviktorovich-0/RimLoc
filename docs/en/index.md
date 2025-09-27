@@ -8,6 +8,9 @@ title: RimLoc
 
 RimLoc helps RimWorld modders keep translations discoverable, validated, and ready for translators.
 
+[:material-play-circle: Start Translating](guide/translators.md){ .md-button .md-button--primary }
+[:material-cog: Configuration (rimloc.toml)](guide/configuration.md){ .md-button }
+
 ## Why RimLoc?
 
 - Inventory every string under `Languages/*/{Keyed,DefInjected}` with one command.
