@@ -153,7 +153,7 @@ help-exportpo-lang = Target translation language code (e.g., ru, ja, de)
 help-exportpo-pot = Write POT template (empty Language header) instead of a localized PO
 help-exportpo-source-lang = Source language ISO code to export from (e.g., en, ru, ja)
 help-exportpo-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
-help-exportpo-tm-root = Path to translation memory root (e.g., Languages/Russian or a mod root) to prefill msgstr and mark entries as fuzzy
+help-exportpo-tm-root = Path(s) to translation memory roots (repeatable). Each can be Languages/<lang> or a mod root. Prefills msgstr and marks entries as fuzzy
 help-exportpo-game-version = Game version folder to scan (e.g., 1.6 or v1.6); defaults to latest under root
 help-exportpo-include-all = Include all version subfolders (may create duplicates)
 

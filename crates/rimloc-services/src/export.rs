@@ -8,7 +8,7 @@ pub fn export_po_with_tm(
     lang: Option<&str>,
     source_lang: Option<&str>,
     source_lang_dir: Option<&str>,
-    tm_root: Option<&Path>,
+    tm_roots: Option<&[std::path::PathBuf]>,
 ) -> Result<ExportPoStats> {
     let units = rimloc_parsers_xml::scan_keyed_xml(scan_root)?;
 
@@ -37,28 +37,28 @@ pub fn export_po_with_tm(
             ))
     });
 
-    let tm_map: Option<std::collections::HashMap<String, String>> = if let Some(tm_path) = tm_root
-    {
-        match rimloc_parsers_xml::scan_keyed_xml(tm_path) {
-            Ok(units) => {
-                let mut map = std::collections::HashMap::<String, String>::new();
-                for u in units {
-                    if let Some(val) = u.source.as_deref() {
-                        let v = val.trim();
-                        if !v.is_empty() {
-                            map.entry(u.key).or_insert_with(|| v.to_string());
+    let tm_map: Option<std::collections::HashMap<String, String>> = match tm_roots {
+        None => None,
+        Some(roots) if roots.is_empty() => None,
+        Some(roots) => {
+            let mut map = std::collections::HashMap::<String, String>::new();
+            for tm_path in roots {
+                if let Ok(units) = rimloc_parsers_xml::scan_keyed_xml(tm_path) {
+                    for u in units {
+                        if let Some(val) = u.source.as_deref() {
+                            let v = val.trim();
+                            if !v.is_empty() {
+                                // last wins across multiple TM roots
+                                map.insert(u.key, v.to_string());
+                            }
                         }
                     }
                 }
-                Some(map)
             }
-            Err(_) => None,
+            Some(map)
         }
-    } else {
-        None
     };
 
     let stats = rimloc_export_po::write_po_with_tm(out_po, &filtered, lang, tm_map.as_ref())?;
     Ok(stats)
 }
-

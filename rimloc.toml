@@ -23,7 +23,7 @@ list_limit = 100
 # Include all game version subfolders when scanning (may produce duplicates)
 # include_all_versions = false
 
-# Path to Languages/<target> used as Translation Memory (prefill msgstr, mark fuzzy)
+# Path to Translation Memory used to prefill msgstr (mark fuzzy). CLI flag --tm-root is repeatable
 # tm_root = "./Mods/MyMod/Languages/Russian"
 
 # ============================================================================
