@@ -1,7 +1,5 @@
 use crate::version::resolve_game_version_root;
-use lru::LruCache;
 use std::io::IsTerminal;
-use std::num::NonZeroUsize;
 
 #[derive(Debug, Clone)]
 pub enum MorphProvider {
@@ -20,69 +18,7 @@ impl MorphProvider {
     }
 }
 
-fn pluralize(s: &str) -> String {
-    // Heuristics:
-    // - Latin: add 's'
-    // - Cyrillic:
-    //   * й → и
-    //   * ь → и
-    //   * я → и
-    //   * а → ы (but → и after г,к,х,ж,ч,ш,щ)
-    //   * ж/ч/ш/щ (no vowel change) → +и
-    //   * default → +ы
-    let has_cyr = s.chars().any(|c| (c as u32) >= 0x0400);
-    if !has_cyr {
-        return format!("{}s", s);
-    }
-    let lower = s.trim().to_lowercase();
-    let mut chars: Vec<char> = lower.chars().collect();
-    if let Some(&last) = chars.last() {
-        let prev = chars
-            .get(chars.len().saturating_sub(2))
-            .copied()
-            .unwrap_or('\0');
-        match last {
-            'й' => {
-                chars.pop();
-                chars.push('и');
-                return chars.iter().collect();
-            }
-            'ь' => {
-                chars.pop();
-                chars.push('и');
-                return chars.iter().collect();
-            }
-            'я' => {
-                chars.pop();
-                chars.push('и');
-                return chars.iter().collect();
-            }
-            'а' => {
-                let hush = matches!(prev, 'г' | 'к' | 'х' | 'ж' | 'ч' | 'ш' | 'щ');
-                let repl = if hush { 'и' } else { 'ы' };
-                chars.pop();
-                chars.push(repl);
-                return chars.iter().collect();
-            }
-            'ж' | 'ч' | 'ш' | 'щ' => {
-                return format!("{}{}", s, 'и');
-            }
-            _ => {}
-        }
-    }
-    format!("{}{}", s, 'ы')
-}
-
-fn guess_gender(s: &str) -> &'static str {
-    // Heuristics: for Cyrillic nouns treat endings 'а', 'я', 'ь' as Female, else Male.
-    // For Latin fallback: 'a' → Female.
-    let ls = s.trim().to_lowercase();
-    if ls.ends_with('a') || ls.ends_with('я') || ls.ends_with('а') || ls.ends_with('ь') {
-        "Female"
-    } else {
-        "Male"
-    }
-}
+// helper heuristics moved to services
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_morph(
@@ -97,8 +33,7 @@ pub fn run_morph(
     cache_size: Option<usize>,
     pymorphy_url: Option<String>,
 ) -> color_eyre::Result<()> {
-    use regex::Regex;
-    use std::collections::BTreeMap;
+    // patterns handled in services
 
     let provider = MorphProvider::from_str(provider.as_deref().unwrap_or("dummy"));
     let (scan_root, selected_version) = resolve_game_version_root(&root, game_version.as_deref())?;
@@ -134,94 +69,4 @@ pub fn run_morph(
     if res.warn_no_pymorphy { crate::ui_warn!("morph-provider-morpher-stub"); }
     Ok(())
 }
-fn morpher_decline(
-    token: &str,
-    word: &str,
-    timeout_ms: u64,
-    cache: &mut LruCache<String, std::collections::HashMap<String, String>>,
-) -> Option<std::collections::HashMap<String, String>> {
-    if let Some(v) = cache.get(word) {
-        return Some(v.clone());
-    }
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_millis(timeout_ms))
-        .build()
-        .ok()?;
-    // WS3 Russian declension endpoint
-    let url = format!(
-        "https://ws3.morpher.ru/russian/declension?s={}",
-        urlencoding::encode(word)
-    );
-    let req = client
-        .get(url)
-        .query(&[("format", "json")])
-        .header("Authorization", format!("Basic {}", token));
-    let res = req.send().ok()?;
-    if !res.status().is_success() {
-        return None;
-    }
-    let v: serde_json::Value = res.json().ok()?;
-    let mut map = std::collections::HashMap::new();
-    // map typical cases present in response
-    for (k, key) in [
-        ("И", "Nominative"),
-        ("Р", "Genitive"),
-        ("Д", "Dative"),
-        ("В", "Accusative"),
-        ("Т", "Instrumental"),
-        ("П", "Prepositional"),
-    ] {
-        if let Some(val) = v.get(k).and_then(|x| x.as_str()) {
-            map.insert(key.to_string(), val.to_string());
-        }
-    }
-    if map.is_empty() {
-        return None;
-    }
-    cache.put(word.to_string(), map.clone());
-    Some(map)
-}
-
-fn pymorphy_decline(
-    url: &str,
-    word: &str,
-    timeout_ms: u64,
-    cache: &mut LruCache<String, std::collections::HashMap<String, String>>,
-) -> Option<std::collections::HashMap<String, String>> {
-    let key = format!("py:{}", word);
-    if let Some(v) = cache.get(&key) {
-        return Some(v.clone());
-    }
-    let client = reqwest::blocking::Client::builder()
-        .timeout(std::time::Duration::from_millis(timeout_ms))
-        .build()
-        .ok()?;
-    let req = client
-        .get(format!("{}/declension", url.trim_end_matches('/')))
-        .query(&[("text", word)])
-        .header("Accept", "application/json");
-    let res = req.send().ok()?;
-    if !res.status().is_success() {
-        return None;
-    }
-    let v: serde_json::Value = res.json().ok()?;
-    let mut map = std::collections::HashMap::new();
-    // Map pymorphy2 tags to English case names used by RimLoc
-    for (k, key) in [
-        ("nomn", "Nominative"),
-        ("gent", "Genitive"),
-        ("datv", "Dative"),
-        ("accs", "Accusative"),
-        ("ablt", "Instrumental"),
-        ("loct", "Prepositional"),
-    ] {
-        if let Some(val) = v.get(k).and_then(|x| x.as_str()) {
-            map.insert(key.to_string(), val.to_string());
-        }
-    }
-    if map.is_empty() {
-        return None;
-    }
-    cache.put(key, map.clone());
-    Some(map)
-}
+// provider-specific helpers moved to services

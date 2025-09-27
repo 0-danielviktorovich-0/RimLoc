@@ -1412,6 +1412,7 @@ dependencies = [
  "rimloc-export-po",
  "rimloc-import-po",
  "rimloc-parsers-xml",
+ "rimloc-services",
  "rimloc-validate",
  "rust-embed",
  "serde",
@@ -1476,6 +1477,26 @@ dependencies = [
  "rimloc-core",
  "tempfile",
  "tracing",
+ "walkdir",
+]
+
+[[package]]
+name = "rimloc-services"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "lru",
+ "once_cell",
+ "quick-xml",
+ "regex",
+ "reqwest",
+ "rimloc-core",
+ "rimloc-export-po",
+ "rimloc-import-po",
+ "rimloc-parsers-xml",
+ "rimloc-validate",
+ "serde_json",
+ "urlencoding",
  "walkdir",
 ]
 

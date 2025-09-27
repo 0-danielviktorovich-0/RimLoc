@@ -1,6 +1,4 @@
 use crate::version::resolve_game_version_root;
-use quick_xml::events::Event;
-use quick_xml::Reader;
 
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
