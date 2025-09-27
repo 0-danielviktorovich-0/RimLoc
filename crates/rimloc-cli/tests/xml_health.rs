@@ -3,12 +3,14 @@ use serde::Deserialize;
 use std::{fs, path::PathBuf, process::Command};
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct HealthOut {
     checked: usize,
     issues: Vec<Issue>,
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct Issue {
     path: String,
     category: String,
