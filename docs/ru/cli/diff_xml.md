@@ -9,8 +9,8 @@ title: Diff XML
 ## Синопсис
 
 ```bash
-r  imloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] \
-  [--defs-dir <PATH>] [--defs-field <NAME>] [--lang <CODE>|--lang-dir <DIR>] [--baseline-po <PO>] [--format text|json] \
+rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] \
+  [--defs-dir <PATH>] [--defs-field <NAME>] [--defs-dict <PATH>] [--lang <CODE>|--lang-dir <DIR>] [--baseline-po <PO>] [--format text|json] \
   [--out-dir <DIR>] [--game-version <VER>] [--strict]
 ```
 
@@ -19,6 +19,7 @@ r  imloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>
 - `--source-lang <CODE>` / `--source-lang-dir <DIR>`: папка исходника (по умолчанию English)
 - `--defs-dir <PATH>`: ограничить корень `Defs` указанным путём (относительно root или абсолютным)
 - `--defs-field <NAME>`: дополнительные поля `Defs` для извлечения (повторять или через запятую)
+- `--defs-dict <PATH>`: дополнительные словари `Defs` (JSON: DefType → [field paths])
 - `--lang <CODE>` / `--lang-dir <DIR>`: папка перевода (по умолчанию Russian)
 - `--baseline-po <PO>`: предыдущий экспорт для выявления изменившихся исходных строк
 - `--format`: text (по умолчанию) или json

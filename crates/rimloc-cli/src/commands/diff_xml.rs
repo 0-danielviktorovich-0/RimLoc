@@ -75,12 +75,13 @@ pub fn run_diff_xml(
     }
     let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
 
-    let diff = rimloc_services::diff_xml_with_defs_and_fields(
+    let diff = rimloc_services::diff_xml_with_defs_and_dict(
         &scan_root,
         &src_dir,
         &trg_dir,
         baseline_po.as_deref(),
         defs_abs.as_deref(),
+        &merged.0,
         &cli_defs_field,
     )?;
     let any_diff = !diff.changed.is_empty() || !diff.only_in_translation.is_empty() || !diff.only_in_mod.is_empty();
