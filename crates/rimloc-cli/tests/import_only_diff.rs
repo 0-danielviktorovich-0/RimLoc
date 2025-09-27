@@ -3,6 +3,7 @@ use serde::Deserialize;
 use std::{fs, path::PathBuf, process::Command};
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct FileStat {
     path: String,
     keys: usize,
@@ -12,6 +13,7 @@ struct FileStat {
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct Summary {
     mode: String,
     created: usize,

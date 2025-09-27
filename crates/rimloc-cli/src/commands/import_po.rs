@@ -23,7 +23,7 @@ pub fn run_import_po(
     only_diff: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file, game_version = ?game_version);
-    use std::fs;
+    // no local fs imports needed
 
     if let Some(out) = out_xml {
         let summary = rimloc_services::import_po_to_file(&po, &out, keep_empty, dry_run, backup)?;
