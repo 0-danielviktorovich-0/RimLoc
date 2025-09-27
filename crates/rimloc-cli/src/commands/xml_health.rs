@@ -58,6 +58,33 @@ pub fn run_xml_health(
                 continue;
             }
         };
+        // Detect explicit non-UTF8 encoding declarations
+        {
+            let head = &content.as_bytes()[..content.len().min(512)];
+            if let Ok(head_str) = std::str::from_utf8(head) {
+                let re = regex::Regex::new(r#"(?i)<\?xml[^>]*encoding\s*=\s*['\"]([^'\"]+)['\"][^>]*\?>"#)
+                    .unwrap();
+                if let Some(caps) = re.captures(head_str) {
+                    let enc = caps.get(1).map(|m| m.as_str()).unwrap_or("");
+                    let enc_norm = enc.to_ascii_lowercase().replace('_', "-");
+                    if enc_norm != "utf-8" && enc_norm != "utf8" {
+                        issues.push(Issue {
+                            path: p.display().to_string(),
+                            category: "encoding-detected",
+                            error: format!("XML declares encoding={enc}; expected UTF-8"),
+                        });
+                    }
+                }
+                // Detect DOCTYPE usage
+                if head_str.to_ascii_lowercase().contains("<!doctype") {
+                    issues.push(Issue {
+                        path: p.display().to_string(),
+                        category: "unexpected-doctype",
+                        error: "DOCTYPE present (not expected in LanguageData)".into(),
+                    });
+                }
+            }
+        }
         if content.chars().any(|ch| {
             let c = ch as u32;
             c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D
@@ -84,8 +111,13 @@ pub fn run_xml_health(
             buf.clear();
         }
         if let Some(e) = err {
-            let cat = if e.to_lowercase().contains("mismatch") {
+            let el = e.to_ascii_lowercase();
+            let cat = if el.contains("mismatch") {
                 "tag-mismatch"
+            } else if el.contains("doctype") || el.contains("dtd") {
+                "unexpected-doctype"
+            } else if el.contains("entity") || el.contains("ampersand") || el.contains("escape") {
+                "invalid-entity"
             } else {
                 "parse"
             };
@@ -123,12 +155,28 @@ pub fn run_xml_health(
     if issues.is_empty() {
         crate::ui_ok!("xmlhealth-summary",);
     } else {
+        // optional short "how to fix" hints for text output
+        let is_tty = std::io::stdout().is_terminal();
         for it in &issues {
             crate::ui_err!(
                 "xmlhealth-issue-line",
                 path = it.path.as_str(),
                 error = it.error.as_str()
             );
+            if is_tty && format == "text" {
+                let hint = match it.category {
+                    "encoding" => Some("Save as UTF-8 (no BOM)."),
+                    "encoding-detected" => Some("Use UTF-8; remove or fix encoding declaration."),
+                    "invalid-char" => Some("Remove control chars < 0x20; keep \t, \n, \r only."),
+                    "tag-mismatch" => Some("Ensure opening/closing tags match and are nested correctly."),
+                    "invalid-entity" => Some("Escape '&' as &amp;; use &lt;/&gt;/&amp; or numeric entities."),
+                    "unexpected-doctype" => Some("Remove <!DOCTYPE>; not required for LanguageData XML."),
+                    _ => None,
+                };
+                if let Some(h) = hint {
+                    crate::ui_info!("xmlhealth-hint-line", hint = h);
+                }
+            }
         }
         crate::ui_warn!("xmlhealth-issues",);
         if strict {

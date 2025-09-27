@@ -64,6 +64,14 @@ rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang r
 | `rimloc-cli xml-health` | Scan XML under `Languages/` for structural/read errors. | `rimloc-cli xml-health --root ./Mods/MyMod --format json --lang-dir Russian` |
 | `rimloc-cli init` | Create translation skeleton under `Languages/<lang>` from source. | `rimloc-cli init --root ./Mods/MyMod --source-lang en --lang ru` |
 
+### Morph providers (experimental)
+
+- Online Morpher WS3: set `MORPHER_TOKEN`, then run:
+  - `rimloc-cli morph --root ./Mods/MyMod --provider morpher --lang ru --limit 50`
+- Local pymorphy2 service: start the helper under `scripts/pymorphy2_local/`, set `PYMORPHY_URL`:
+  - `rimloc-cli morph --root ./Mods/MyMod --provider pymorphy2 --lang ru --limit 50`
+  - Control via flags: `--timeout-ms`, `--cache-size`, `--pymorphy-url`
+
 ### Versioned mods
 
 If your mod uses per-version subfolders (e.g., `1.4`, `1.5`, `v1.6`), you can target a specific version or include all:
