@@ -14,3 +14,7 @@ regex = "1"
 quick-xml = { workspace = true }
 walkdir = { workspace = true }
 once_cell = { workspace = true }
+reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+lru = "0.12"
+urlencoding = "2.1"
+serde_json = "1"

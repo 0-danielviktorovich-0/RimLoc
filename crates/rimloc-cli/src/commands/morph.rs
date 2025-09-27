@@ -114,124 +114,24 @@ pub fn run_morph(
         "Russian".to_string()
     };
 
-    let re_key = filter_key_regex
-        .as_deref()
-        .map(|r| Regex::new(r).unwrap_or_else(|_| Regex::new(".*").unwrap()))
-        .unwrap_or_else(|| Regex::new(".*").unwrap());
-
-    let units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
-    // Collect up to 'limit' keys/values from target language
-    let mut picked: BTreeMap<String, String> = BTreeMap::new();
-    for u in &units {
-        if picked.len() >= limit.unwrap_or(usize::MAX) {
-            break;
-        }
-        if crate::is_under_languages_dir(&u.path, &target_lang) && re_key.is_match(u.key.as_str()) {
-            if let Some(val) = u.source.as_deref() {
-                picked
-                    .entry(u.key.clone())
-                    .or_insert_with(|| val.to_string());
-            }
-        }
-    }
-
-    // Generate forms
-    let cache_cap = cache_size.unwrap_or(1024).max(1);
-    let mut cache = LruCache::new(NonZeroUsize::new(cache_cap).unwrap());
-    let morpher_token = std::env::var("MORPHER_TOKEN").ok();
-    // CLI flag takes precedence over ENV
-    let pym_url = pymorphy_url.or_else(|| std::env::var("PYMORPHY_URL").ok());
     let http_timeout = timeout_ms.unwrap_or(1500);
-    let mut case_items: Vec<(String, String)> = Vec::new();
-    let mut plural_items: Vec<(String, String)> = Vec::new();
-    let mut gender_items: Vec<(String, String)> = Vec::new();
-
-    for (k, base) in picked {
-        // Build a map of cases; start with naive defaults, then overlay provider results
-        let mut cases: std::collections::BTreeMap<String, String> = {
-            let mut m = std::collections::BTreeMap::new();
-            m.insert("Nominative".to_string(), base.clone());
-            m.insert("Genitive".to_string(), format!("{}{}", base, "'s"));
-            m
-        };
-
-        match provider {
-            MorphProvider::MorpherApi => {
-                if let Some(tok) = morpher_token.as_deref() {
-                    if let Some(m) = morpher_decline(tok, &base, http_timeout, &mut cache) {
-                        for (name, val) in m {
-                            cases.insert(name, val);
-                        }
-                    }
-                }
-            }
-            MorphProvider::Pymorphy2 => {
-                if let Some(url) = pym_url.as_deref() {
-                    if let Some(m) = pymorphy_decline(url, &base, http_timeout, &mut cache) {
-                        for (name, val) in m {
-                            cases.insert(name, val);
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-        // Emit known case set if present
-        for cname in [
-            "Nominative",
-            "Genitive",
-            "Dative",
-            "Accusative",
-            "Instrumental",
-            "Prepositional",
-        ] {
-            if let Some(v) = cases.get(cname) {
-                case_items.push((format!("Case.{}.{}", k, cname), v.clone()));
-            }
-        }
-        plural_items.push((format!("Plural.{}", k), pluralize(&base)));
-        gender_items.push((format!("Gender.{}", k), guess_gender(&base).to_string()));
-    }
-
-    // Write under Languages/<lang>/Keyed
-    let out_case = scan_root
-        .join("Languages")
-        .join(&target_lang)
-        .join("Keyed")
-        .join("_Case.xml");
-    let out_plural = scan_root
-        .join("Languages")
-        .join(&target_lang)
-        .join("Keyed")
-        .join("_Plural.xml");
-    let out_gender = scan_root
-        .join("Languages")
-        .join(&target_lang)
-        .join("Keyed")
-        .join("_Gender.xml");
-
-    if !case_items.is_empty() {
-        rimloc_import_po::write_language_data_xml(&out_case, &case_items)?;
-    }
-    if !plural_items.is_empty() {
-        rimloc_import_po::write_language_data_xml(&out_plural, &plural_items)?;
-    }
-    if !gender_items.is_empty() {
-        rimloc_import_po::write_language_data_xml(&out_gender, &gender_items)?;
-    }
-
-    let processed_total: usize = case_items.len() + plural_items.len() + gender_items.len();
-    crate::ui_ok!(
-        "morph-summary",
-        processed = (processed_total as i64),
-        lang = target_lang
-    );
-    if matches!(provider, MorphProvider::MorpherApi) && morpher_token.is_none() {
-        crate::ui_warn!("morph-provider-morpher-stub");
-    }
-    if matches!(provider, MorphProvider::Pymorphy2) && pym_url.is_none() {
-        crate::ui_warn!("morph-provider-morpher-stub");
-    }
+    let opts = rimloc_services::MorphOptions {
+        provider: match provider {
+            MorphProvider::MorpherApi => rimloc_services::MorphProvider::MorpherApi,
+            MorphProvider::Pymorphy2 => rimloc_services::MorphProvider::Pymorphy2,
+            _ => rimloc_services::MorphProvider::Dummy,
+        },
+        target_lang_dir: target_lang.clone(),
+        filter_key_regex,
+        limit,
+        timeout_ms: http_timeout,
+        cache_size: cache_size.unwrap_or(1024),
+        pymorphy_url,
+    };
+    let res = rimloc_services::morph_generate(&scan_root, &opts)?;
+    crate::ui_ok!("morph-summary", processed = (res.processed as i64), lang = res.lang.as_str());
+    if res.warn_no_morpher { crate::ui_warn!("morph-provider-morpher-stub"); }
+    if res.warn_no_pymorphy { crate::ui_warn!("morph-provider-morpher-stub"); }
     Ok(())
 }
 fn morpher_decline(
