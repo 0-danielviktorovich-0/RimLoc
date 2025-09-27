@@ -33,6 +33,7 @@ Template (copy the sections you need):
 
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
+- [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
 
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added
