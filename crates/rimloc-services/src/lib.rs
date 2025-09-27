@@ -20,7 +20,7 @@ pub use import::{import_po_to_file, import_po_to_mod_tree, FileStat, ImportPlan,
 pub use scan::{scan_units, scan_units_with_defs, scan_units_with_defs_and_fields, scan_units_with_defs_and_dict};
 pub use validate::{validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_fields, validate_under_root_with_defs_and_dict};
 pub use extras::xml_health::xml_health_scan;
-pub use extras::diff::{diff_xml, diff_xml_with_defs, diff_xml_with_defs_and_fields, write_diff_reports};
+pub use extras::diff::{diff_xml, diff_xml_with_defs, diff_xml_with_defs_and_fields, diff_xml_with_defs_and_dict, write_diff_reports};
 pub use rimloc_domain::{DiffOutput, HealthIssue, HealthReport};
 pub use extras::init::{make_init_plan, write_init_plan, InitPlan, InitFilePlan};
 pub use extras::annotate::{annotate as annotate_apply, annotate_dry_run_plan, AnnotateFilePlan, AnnotatePlan, AnnotateSummary};

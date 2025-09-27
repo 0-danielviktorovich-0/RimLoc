@@ -12,7 +12,7 @@ Scan a RimWorld mod directory to extract translation units from `Languages/*/{Ke
 
 ```bash
 rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
-                 [--source-lang <CODE>] [--source-lang-dir <DIR>] [--defs-dir <PATH>] \
+                 [--source-lang <CODE>] [--source-lang-dir <DIR>] [--defs-dir <PATH>] [--defs-dict <PATH>] \
                  [--format <csv|json>] [--game-version <VER>] [--include-all-versions]
 ```
 
@@ -27,6 +27,7 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 | `--source-lang <CODE>` | Source language code for cross-checks (optional). | No       |
 | `--source-lang-dir <DIR>` | Explicit path to source language directory (optional). | No       |
 | `--defs-dir <PATH>`   | Restrict English Defs scanning to this path (relative to `--root` or absolute). | No |
+| `--defs-dict <PATH>`  | Additional Defs dictionaries (JSON: DefType → [field paths]). | No |
 | `--defs-field <NAME>` | Additional Defs field name(s) to extract (repeat or comma‑separate). | No |
 | `--format <csv\|json>` | Output format to stdout. Default is `csv`. | No       |
 | `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detects latest if omitted. | No |

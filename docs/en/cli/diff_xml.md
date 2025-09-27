@@ -10,7 +10,7 @@ Compare presence of keys between source and translation; optionally detect chang
 
 ```bash
 rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] \
-  [--defs-dir <PATH>] [--defs-field <NAME>] [--lang <CODE>|--lang-dir <DIR>] [--baseline-po <PO>] [--format text|json] \
+  [--defs-dir <PATH>] [--defs-field <NAME>] [--defs-dict <PATH>] [--lang <CODE>|--lang-dir <DIR>] [--baseline-po <PO>] [--format text|json] \
   [--out-dir <DIR>] [--game-version <VER>] [--strict]
 ```
 
@@ -19,6 +19,7 @@ rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] 
 - `--source-lang <CODE>` / `--source-lang-dir <DIR>`: source folder (default: English)
 - `--defs-dir <PATH>`: restrict English Defs scanning to this path (relative to root or absolute)
 - `--defs-field <NAME>`: additional Defs field name(s) to extract (repeat or comma‑separate)
+- `--defs-dict <PATH>`: additional Defs dictionaries (JSON: DefType → [field paths])
 - `--lang <CODE>` / `--lang-dir <DIR>`: translation folder (default: Russian)
 - `--baseline-po <PO>`: previous export to detect changed source strings
 - `--format`: text (default) or json
