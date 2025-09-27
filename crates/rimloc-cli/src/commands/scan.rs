@@ -34,7 +34,7 @@ pub fn run_scan(
         tracing::info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let mut units = rimloc_parsers_xml::scan_keyed_xml(&scan_root)?;
+    let mut units = rimloc_services::scan_units(&scan_root)?;
 
     fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
         let mut comps = path.components();

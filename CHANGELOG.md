@@ -20,7 +20,7 @@ Template (copy the sections you need):
 - [docs] Add README banner and move asset to `docs/assets` (#PR)
 
 ### Internal
-- [internal] short bullet with (#PR)
+- [internal] Introduce `rimloc-services` orchestration crate and adopt it in `scan` CLI path (#PR)
 -->
 ### Added
 - [export-po] Translation Memory prefill: `--tm-root` to prefill msgstr and mark entries as `fuzzy` (#PR)

@@ -1,0 +1,10 @@
+[package]
+name = "rimloc-services"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+color-eyre = { workspace = true }
+rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
+rimloc-parsers-xml = { version = "0.1.0", path = "../rimloc-parsers-xml" }
+
