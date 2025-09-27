@@ -48,6 +48,53 @@ read_list_into_array() {
   done < "$1"
 }
 
+stage_hunks_from_snapshot() {
+  local rp="$1"
+  [[ -n "$session_dir" ]] || return 1
+  local snap="$session_dir/snapshots/$rp"
+  local miss="$session_dir/snapshots-missing/$rp"
+  local src=""
+  if [[ -f "$snap" ]]; then
+    src="$snap"
+  elif [[ -f "$miss" ]]; then
+    src="/dev/null"
+  else
+    return 1
+  fi
+  # Build a unidiff-0 patch between src and current working file
+  local tmp_patch raw_patch
+  raw_patch=$(mktemp)
+  tmp_patch=$(mktemp)
+  # git diff returns exit code 1 when differences exist; we want to continue
+  if ! git diff --no-index --unified=0 -- "$src" "$rp" > "$raw_patch"; then
+    true
+  fi
+  # Rewrite headers to match tracked path (a/rp, b/rp)
+  awk -v path="$rp" '
+    BEGIN {diffdone=0}
+    /^diff --git / && diffdone==0 { print "diff --git a/" path " b/" path; next }
+    /^--- / { print "--- a/" path; next }
+    /^\+\+\+ / { print "+++ b/" path; next }
+    { print }
+  ' "$raw_patch" > "$tmp_patch"
+
+  # If patch is empty (no hunks), signal caller to fallback to full add
+  if [[ ! -s "$tmp_patch" ]]; then
+    rm -f "$raw_patch" "$tmp_patch"
+    return 1
+  fi
+
+  # Apply to index (stage only these hunks). Allow 3-way to survive unrelated edits.
+  if ! git apply --cached --unidiff-zero --allow-empty --3way "$tmp_patch"; then
+    echo "✖ Failed to stage hunks for $rp from session snapshot. Potential overlap with other edits." >&2
+    echo "  Try resolving manually or update session snapshot." >&2
+    rm -f "$raw_patch" "$tmp_patch"
+    return 2
+  fi
+  rm -f "$raw_patch" "$tmp_patch"
+  return 0
+}
+
 write_baseline() {
   mkdir -p .git
   collect_changes > "$baseline_file"
@@ -78,24 +125,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     *) die "Unknown option: $1" ;;
   esac
-  # If patch is empty (no hunks), signal caller to fallback to full add
-  if [[ ! -s "$tmp_patch" ]]; then
-    rm -f "$raw_patch" "$tmp_patch"
-    return 1
-  fi
-
-  # If patch is empty (no hunks), signal caller to fallback to full add
-  if [[ ! -s "$tmp_patch" ]]; then
-    rm -f "$raw_patch" "$tmp_patch"
-    return 1
-  fi
-
-  # If patch is empty (no hunks), signal caller to fallback to full add
-  if [[ ! -s "$tmp_patch" ]]; then
-    rm -f "$raw_patch" "$tmp_patch"
-    return 1
-  fi
-
 done
 
 have_cmd git || die "git is required"
@@ -208,10 +237,35 @@ if $dry_run; then
   exit 0
 fi
 
-# Stage only the new changes
+# Stage only the new changes (hunk-aware if snapshots exist)
+files_staged=()
+fallback_paths=()
 for f in "${files_to_commit[@]}"; do
-  git add -A -- "$f"
+  # Prefer exact per-session patch log if present
+  if [[ -n "$session_dir" && -f "$session_dir/patches/$f.patch" ]]; then
+    if git apply --cached --unidiff-zero --allow-empty --3way "$session_dir/patches/$f.patch"; then
+      files_staged+=("$f")
+      continue
+    else
+      echo "✖ Failed to apply per-session patch for $f" >&2
+      echo "  You may need to rebase or regenerate the patch via agent-mark-change.sh begin/end" >&2
+      exit 2
+    fi
+  fi
+  # Next, try snapshot-based hunk staging
+  if [[ -n "$session_dir" ]] && stage_hunks_from_snapshot "$f"; then
+    files_staged+=("$f")
+  else
+    fallback_paths+=("$f")
+  fi
 done
+
+if [[ ${#fallback_paths[@]} -gt 0 ]]; then
+  # Fallback: stage entire files (no snapshot available)
+  for f in "${fallback_paths[@]}"; do
+    git add -A -- "$f"
+  done
+fi
 
 # Compose/validate commit message
 commit_args=()
