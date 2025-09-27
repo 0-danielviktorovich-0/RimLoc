@@ -21,18 +21,60 @@ impl MorphProvider {
 }
 
 fn pluralize(s: &str) -> String {
-    // naive pluralization: english: add 's'; cyrillic: add 'ы'
-    if s.chars().any(|c| (c as u32) >= 0x0400) {
-        format!("{}{}", s, "ы")
-    } else {
-        format!("{}{}", s, "s")
+    // Heuristics:
+    // - Latin: add 's'
+    // - Cyrillic:
+    //   * й → и
+    //   * ь → и
+    //   * я → и
+    //   * а → ы (but → и after г,к,х,ж,ч,ш,щ)
+    //   * ж/ч/ш/щ (no vowel change) → +и
+    //   * default → +ы
+    let has_cyr = s.chars().any(|c| (c as u32) >= 0x0400);
+    if !has_cyr {
+        return format!("{}s", s);
     }
+    let lower = s.trim().to_lowercase();
+    let mut chars: Vec<char> = lower.chars().collect();
+    if let Some(&last) = chars.last() {
+        let prev = chars.get(chars.len().saturating_sub(2)).copied().unwrap_or('\0');
+        match last {
+            'й' => {
+                chars.pop();
+                chars.push('и');
+                return chars.iter().collect();
+            }
+            'ь' => {
+                chars.pop();
+                chars.push('и');
+                return chars.iter().collect();
+            }
+            'я' => {
+                chars.pop();
+                chars.push('и');
+                return chars.iter().collect();
+            }
+            'а' => {
+                let hush = matches!(prev, 'г' | 'к' | 'х' | 'ж' | 'ч' | 'ш' | 'щ');
+                let repl = if hush { 'и' } else { 'ы' };
+                chars.pop();
+                chars.push(repl);
+                return chars.iter().collect();
+            }
+            'ж' | 'ч' | 'ш' | 'щ' => {
+                return format!("{}{}", s, 'и');
+            }
+            _ => {}
+        }
+    }
+    format!("{}{}", s, 'ы')
 }
 
 fn guess_gender(s: &str) -> &'static str {
-    // naive: words ending with 'a'/'я'/'а' -> female; else male
+    // Heuristics: for Cyrillic nouns treat endings 'а', 'я', 'ь' as Female, else Male.
+    // For Latin fallback: 'a' → Female.
     let ls = s.trim().to_lowercase();
-    if ls.ends_with('a') || ls.ends_with('я') || ls.ends_with('а') {
+    if ls.ends_with('a') || ls.ends_with('я') || ls.ends_with('а') || ls.ends_with('ь') {
         "Female"
     } else {
         "Male"
