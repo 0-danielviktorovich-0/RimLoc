@@ -20,6 +20,7 @@ input { padding:8px; border-radius:6px; border:1px solid #30363d; background:#0b
 button { background: var(--acc); color:#0b0e13; border:none; padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer; }
 button.danger { background: var(--err); color: #fff; }
 .ghost { background: transparent; color: var(--fg); border:1px solid #222; }
+.ghost.small { padding:6px 8px; font-weight:500; }
 button#btn-scan { background:#3fb950; }
 button#btn-validate { background:#3fb950; }
 button#btn-xml-health { background:#e3b341; }
@@ -32,3 +33,9 @@ footer { padding:10px 16px; border-top:1px solid #222; color:var(--muted); displ
 /* toast */
 .toast { position: fixed; right: 16px; bottom: 16px; background: #11161d; color: var(--fg); border:1px solid #253042; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(10px); transition: all .2s ease; }
 .toast.show { opacity: 1; transform: translateY(0); }
+
+/* overlay */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px; z-index: 9999; }
+.overlay.show { display:flex; }
+.spinner { width: 36px; height: 36px; border: 4px solid #2a2f38; border-top-color: var(--acc); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -256,8 +256,16 @@ fn api_save_text(path: String, contents: String) -> Result<String, ApiError> {
 }
 
 #[tauri::command]
-fn api_app_version() -> Result<String, ApiError> {
-  Ok(env!("CARGO_PKG_VERSION").to_string())
+fn api_app_version() -> Result<String, ApiError> { Ok(env!("CARGO_PKG_VERSION").to_string()) }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  #[test]
+  fn version_nonempty() {
+    let v = api_app_version().unwrap();
+    assert!(!v.is_empty());
+  }
 }
 
 // Morph

@@ -44,6 +44,8 @@
         <div class="actions">
           <button id="btn-scan" data-i18n="btn_scan">Scan</button>
           <button id="btn-export" data-i18n="btn_export">Export PO</button>
+          <button class="ghost small" data-copy="start-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="start-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="start-output" class="output"></pre>
       </section>
@@ -64,6 +66,8 @@
           <button id="btn-validate" data-i18n="btn_validate">Validate</button>
           <button id="btn-xml-health" data-i18n="btn_xml_health">XML Health</button>
           <button id="btn-validate-save" data-i18n="btn_save_json">Save JSON</button>
+          <button class="ghost small" data-copy="validate-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="validate-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="validate-output" class="output"></pre>
       </section>
@@ -85,6 +89,8 @@
         <div class="actions">
           <button id="btn-diff" data-i18n="btn_run_diff">Run Diff</button>
           <button id="btn-diff-save" data-i18n="btn_save_reports">Save Reports</button>
+          <button class="ghost small" data-copy="diff-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="diff-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="diff-output" class="output"></pre>
       </section>
@@ -113,6 +119,9 @@
           <button id="btn-import-apply" class="danger" data-i18n="btn_import_apply">Apply Import</button>
           <button id="btn-build-dry" data-i18n="btn_build_dry">Build DRY-RUN</button>
           <button id="btn-build-apply" class="danger" data-i18n="btn_build_apply">Apply Build</button>
+          <button id="btn-import-save" data-i18n="btn_save_json">Save JSON</button>
+          <button class="ghost small" data-copy="import-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="import-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="import-output" class="output"></pre>
       </section>
@@ -138,6 +147,8 @@
           <button id="btn-ann-dry" data-i18n="btn_dry_run">Dry-run</button>
           <button id="btn-ann-apply" class="danger" data-i18n="btn_apply">Apply</button>
           <button id="btn-ann-save" data-i18n="btn_save_json">Save JSON</button>
+          <button class="ghost small" data-copy="annotate-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="annotate-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="annotate-output" class="output"></pre>
       </section>
@@ -168,6 +179,8 @@
         </div>
         <div class="actions">
           <button id="btn-morph-run" data-i18n="btn_run">Run</button>
+          <button class="ghost small" data-copy="morph-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="morph-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="morph-output" class="output"></pre>
       </section>
@@ -195,6 +208,8 @@
         <div class="actions">
           <button id="btn-lang-dry" data-i18n="btn_plan_dry">Plan Update (DRY)</button>
           <button id="btn-lang-apply" class="danger" data-i18n="btn_apply_update">Apply Update</button>
+          <button class="ghost small" data-copy="lang-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="lang-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="lang-output" class="output"></pre>
       </section>
@@ -211,6 +226,8 @@
         </div>
         <div class="actions">
           <button id="btn-schema-dump" data-i18n="btn_schema_dump">Dump JSON Schemas</button>
+          <button class="ghost small" data-copy="tools-output" data-i18n="btn_copy_out">Copy</button>
+          <button class="ghost small" data-clear="tools-output" data-i18n="btn_clear_out">Clear</button>
         </div>
         <pre id="tools-output" class="output"></pre>
       </section>
@@ -235,6 +252,13 @@
         <button id="btn-open-path" class="ghost" data-i18n="btn_open_last">Open Last Path</button>
       </div>
     </footer>
+
+    <!-- Overlay & Toasts -->
+    <div id="overlay" class="overlay">
+      <div class="spinner"></div>
+      <div id="overlay-text">Working…</div>
+    </div>
+    <div id="toast" class="toast"></div>
 
     <script src="index.js"></script>
   </body>
