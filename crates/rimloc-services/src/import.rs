@@ -1,6 +1,7 @@
 use crate::Result;
 use quick_xml::{events::Event, Reader};
 use std::path::{Path, PathBuf};
+use rimloc_domain::{ImportSummary as DSummary, ImportFileStat as DFileStat};
 
 #[derive(Debug, Clone)]
 pub struct ImportPlan {
@@ -17,14 +18,7 @@ pub struct FileStat {
     pub changed: Vec<String>,
 }
 
-#[derive(Debug, Clone)]
-pub struct ImportSummary {
-    pub created: usize,
-    pub updated: usize,
-    pub skipped: usize,
-    pub keys: usize,
-    pub files: Vec<FileStat>,
-}
+pub type ImportSummary = DSummary;
 
 fn parse_language_file_keys(path: &Path) -> std::io::Result<std::collections::HashMap<String, String>> {
     let content = std::fs::read_to_string(path)?;
@@ -94,17 +88,12 @@ pub fn import_po_to_file(
 
     if dry_run {
         return Ok(ImportSummary {
+            mode: "import".into(),
             created: if out_xml.exists() { 0 } else { 1 },
             updated: if out_xml.exists() { 1 } else { 0 },
             skipped: 0,
             keys: entries.len(),
-            files: vec![FileStat {
-                path: out_xml.to_path_buf(),
-                keys: entries.len(),
-                status: "planned",
-                added: Vec::new(),
-                changed: Vec::new(),
-            }],
+            files: vec![DFileStat { path: out_xml.display().to_string(), keys: entries.len(), status: "planned".into(), added: Vec::new(), changed: Vec::new() }],
         });
     }
 
@@ -116,17 +105,12 @@ pub fn import_po_to_file(
     rimloc_import_po::write_language_data_xml(out_xml, &pairs)?;
 
     Ok(ImportSummary {
+        mode: "import".into(),
         created: if out_xml.exists() { 0 } else { 1 },
         updated: if out_xml.exists() { 1 } else { 0 },
         skipped: 0,
         keys: pairs.len(),
-        files: vec![FileStat {
-            path: out_xml.to_path_buf(),
-            keys: pairs.len(),
-            status: "updated",
-            added: Vec::new(),
-            changed: Vec::new(),
-        }],
+        files: vec![DFileStat { path: out_xml.display().to_string(), keys: pairs.len(), status: "updated".into(), added: Vec::new(), changed: Vec::new() }],
     })
 }
 
@@ -150,7 +134,7 @@ pub fn import_po_to_mod_tree(
     if !keep_empty {
         entries.retain(|e| !e.value.trim().is_empty());
         if entries.is_empty() {
-            return Ok((None, Some(ImportSummary { created: 0, updated: 0, skipped: 0, keys: 0, files: vec![] })));
+            return Ok((None, Some(ImportSummary { mode: "import".into(), created: 0, updated: 0, skipped: 0, keys: 0, files: vec![] })));
         }
     }
 
@@ -164,8 +148,9 @@ pub fn import_po_to_mod_tree(
         }
         if backup && out.exists() { let _ = std::fs::copy(&out, out.with_extension("xml.bak")); }
         let pairs: Vec<(String, String)> = entries.into_iter().map(|e| (e.key, e.value)).collect();
-        rimloc_import_po::write_language_data_xml(&out, &pairs)?;
-        return Ok((None, Some(ImportSummary { created: (!out.exists()) as usize, updated: out.exists() as usize, skipped: 0, keys: pairs.len(), files: vec![FileStat { path: out, keys: pairs.len(), status: "updated", added: vec![], changed: vec![] }] })));
+        let bytes = rimloc_import_po::render_language_data_xml_bytes(&pairs)?;
+        crate::util::write_atomic(&out, &bytes)?;
+        return Ok((None, Some(ImportSummary { mode: "import".into(), created: (!out.exists()) as usize, updated: out.exists() as usize, skipped: 0, keys: pairs.len(), files: vec![DFileStat { path: out.display().to_string(), keys: pairs.len(), status: "updated".into(), added: vec![], changed: vec![] }] })));
     }
 
     // Group by relative path from Languages/*
@@ -198,7 +183,7 @@ pub fn import_po_to_mod_tree(
     let mut updated_files = 0usize;
     let mut skipped_files = 0usize;
     let mut keys_written = 0usize;
-    let mut files_stat: Vec<FileStat> = Vec::new();
+    let mut files_stat: Vec<DFileStat> = Vec::new();
 
     for (rel, mut items) in grouped {
         let out_path = root.join("Languages").join(lang_folder).join(&rel);
@@ -224,7 +209,7 @@ pub fn import_po_to_mod_tree(
             let old_bytes = std::fs::read(&out_path).unwrap_or_default();
             if old_bytes == new_bytes {
                 skipped_files += 1;
-                files_stat.push(FileStat { path: out_path, keys: items.len(), status: "skipped", added: vec![], changed: vec![] });
+                files_stat.push(DFileStat { path: out_path.display().to_string(), keys: items.len(), status: "skipped".into(), added: vec![], changed: vec![] });
                 continue;
             }
         }
@@ -235,22 +220,22 @@ pub fn import_po_to_mod_tree(
             items.retain(|(k, v)| old_map.get(k).map(|ov| ov != v).unwrap_or(true));
             if items.is_empty() {
                 skipped_files += 1;
-                files_stat.push(FileStat { path: out_path, keys: 0, status: "skipped", added: vec![], changed: vec![] });
+                files_stat.push(DFileStat { path: out_path.display().to_string(), keys: 0, status: "skipped".into(), added: vec![], changed: vec![] });
                 continue;
             }
         }
 
-        rimloc_import_po::write_language_data_xml(&out_path, &items)?;
+        let bytes = rimloc_import_po::render_language_data_xml_bytes(&items)?;
+        crate::util::write_atomic(&out_path, &bytes)?;
         keys_written += items.len();
         if existed {
             updated_files += 1;
-            files_stat.push(FileStat { path: out_path, keys: items.len(), status: "updated", added: added_keys, changed: changed_keys });
+            files_stat.push(DFileStat { path: out_path.display().to_string(), keys: items.len(), status: "updated".into(), added: added_keys, changed: changed_keys });
         } else {
             created_files += 1;
-            files_stat.push(FileStat { path: out_path, keys: items.len(), status: "created", added: added_keys, changed: changed_keys });
+            files_stat.push(DFileStat { path: out_path.display().to_string(), keys: items.len(), status: "created".into(), added: added_keys, changed: changed_keys });
         }
     }
 
-    Ok((None, Some(ImportSummary { created: created_files, updated: updated_files, skipped: skipped_files, keys: keys_written, files: files_stat })))
+    Ok((None, Some(ImportSummary { mode: "import".into(), created: created_files, updated: updated_files, skipped: skipped_files, keys: keys_written, files: files_stat })))
 }
-

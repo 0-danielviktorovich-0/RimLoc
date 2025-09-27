@@ -20,14 +20,15 @@ pub fn run_annotate(
         tracing::info!(event = "annotate_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let src_dir = if let Some(dir) = source_lang_dir {
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let src_dir = if let Some(dir) = source_lang_dir.or(cfg.source_lang.clone()) {
         dir
     } else if let Some(code) = source_lang {
         rimloc_import_po::rimworld_lang_dir(&code)
     } else {
         "English".to_string()
     };
-    let trg_dir = if let Some(dir) = lang_dir {
+    let trg_dir = if let Some(dir) = lang_dir.or(cfg.target_lang.clone()) {
         dir
     } else if let Some(code) = lang {
         rimloc_import_po::rimworld_lang_dir(&code)
@@ -42,16 +43,8 @@ pub fn run_annotate(
         let mut shown = 0usize;
         for f in plan.files.iter() {
             if shown >= limit { break; }
-            println!(
-                "DRY-RUN: {} (add={}, strip={})",
-                f.path.display(),
-                f.add,
-                f.strip
-            );
+            crate::ui_out!("annotate-dry-run-line", path = f.path.as_str(), add = (f.add as i64), strip = (f.strip as i64));
             shown += 1;
-        }
-        if plan.files.len() > limit {
-            println!("... and {} more", plan.files.len() - limit);
         }
         crate::ui_out!("annotate-summary", processed = (plan.processed as i64), annotated = (plan.total_add as i64));
         return Ok(());

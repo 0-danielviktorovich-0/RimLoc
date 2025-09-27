@@ -1,6 +1,7 @@
 use crate::{scan::scan_units, util::is_under_languages_dir, Result};
 use quick_xml::events::{BytesText, Event};
 use quick_xml::{Reader, Writer};
+use rimloc_domain::{AnnotateFilePlan as DFilePlan, AnnotatePlan as DPlan};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -112,20 +113,8 @@ pub fn annotate(
     Ok(AnnotateSummary { processed, annotated })
 }
 
-#[derive(Debug, Clone)]
-pub struct AnnotateFilePlan {
-    pub path: PathBuf,
-    pub add: usize,
-    pub strip: usize,
-}
-
-#[derive(Debug, Clone)]
-pub struct AnnotatePlan {
-    pub files: Vec<AnnotateFilePlan>,
-    pub total_add: usize,
-    pub total_strip: usize,
-    pub processed: usize,
-}
+pub type AnnotateFilePlan = DFilePlan;
+pub type AnnotatePlan = DPlan;
 
 /// Build a dry-run plan for annotate without modifying files.
 pub fn annotate_dry_run_plan(
@@ -200,7 +189,7 @@ pub fn annotate_dry_run_plan(
             }
             buf.clear();
         }
-        out_files.push(AnnotateFilePlan { path: path.clone(), add: add_cnt, strip: strip_cnt });
+        out_files.push(AnnotateFilePlan { path: path.display().to_string(), add: add_cnt, strip: strip_cnt });
         total_add += add_cnt; total_strip += strip_cnt;
     }
 

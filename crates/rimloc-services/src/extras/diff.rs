@@ -1,13 +1,7 @@
 use crate::{scan::scan_units, util::is_under_languages_dir, Result};
+use rimloc_domain::DiffOutput;
 use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
-
-#[derive(Debug, Clone)]
-pub struct DiffOutput {
-    pub changed: Vec<(String, String)>,
-    pub only_in_translation: Vec<String>,
-    pub only_in_mod: Vec<String>,
-}
 
 /// Compute presence/changed diffs between source and target language data.
 pub fn diff_xml(

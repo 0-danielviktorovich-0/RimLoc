@@ -14,3 +14,19 @@ pub fn is_under_languages_dir(path: &Path, lang_dir: &str) -> bool {
     }
     false
 }
+
+pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::fs;
+    use std::io::Write;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).ok();
+    }
+    let tmp = path.with_extension("tmp.write");
+    {
+        let mut f = fs::File::create(&tmp)?;
+        f.write_all(bytes)?;
+        f.flush()?;
+    }
+    fs::rename(&tmp, path)?;
+    Ok(())
+}

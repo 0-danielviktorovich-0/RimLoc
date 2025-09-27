@@ -1,0 +1,11 @@
+[package]
+name = "rimloc-config"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+toml = "0.8"
+dirs = "5"
+thiserror = { workspace = true }
+
