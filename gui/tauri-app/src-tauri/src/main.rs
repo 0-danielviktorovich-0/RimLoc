@@ -87,11 +87,32 @@ fn api_build_mod_dry(po: Option<String>, out_mod: String, lang: String, from_roo
 }
 
 #[tauri::command]
-fn api_diff_xml(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>) -> Result<DiffOutput, ApiError> {
+fn api_diff_xml(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, baseline_po: Option<String>) -> Result<DiffOutput, ApiError> {
   let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
   let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
-  let diff = rimloc_services::diff_xml(PathBuf::from(root).as_path(), &cfg_src, &cfg_trg, None)?;
+  let diff = rimloc_services::diff_xml(
+    PathBuf::from(&root).as_path(),
+    &cfg_src,
+    &cfg_trg,
+    baseline_po.as_deref().map(PathBuf::from).as_deref(),
+  )?;
   Ok(diff)
+}
+
+#[tauri::command]
+fn api_diff_save_reports(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, baseline_po: Option<String>, out_dir: String) -> Result<String, ApiError> {
+  let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
+  let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
+  let diff = rimloc_services::diff_xml(
+    PathBuf::from(&root).as_path(),
+    &cfg_src,
+    &cfg_trg,
+    baseline_po.as_deref().map(PathBuf::from).as_deref(),
+  )?;
+  let out = PathBuf::from(&out_dir);
+  std::fs::create_dir_all(&out).map_err(|e| ApiError { message: e.to_string() })?;
+  rimloc_services::write_diff_reports(&out, &diff)?;
+  Ok(out.display().to_string())
 }
 
 #[tauri::command]
@@ -228,6 +249,17 @@ fn api_schema_dump(out_dir: String) -> Result<String, ApiError> {
   Ok(out_dir.display().to_string())
 }
 
+#[tauri::command]
+fn api_save_text(path: String, contents: String) -> Result<String, ApiError> {
+  std::fs::write(&path, contents).map_err(|e| ApiError { message: e.to_string() })?;
+  Ok(path)
+}
+
+#[tauri::command]
+fn api_app_version() -> Result<String, ApiError> {
+  Ok(env!("CARGO_PKG_VERSION").to_string())
+}
+
 // Morph
 #[tauri::command]
 fn api_morph(root: String, provider: Option<String>, lang: Option<String>, lang_dir: Option<String>, filter_key_regex: Option<String>, limit: Option<usize>, game_version: Option<String>, timeout_ms: Option<u64>, cache_size: Option<usize>, pymorphy_url: Option<String>) -> Result<rimloc_services::MorphResult, ApiError> {
@@ -256,8 +288,11 @@ fn main() {
       api_import_po_dry,
       api_build_mod_dry,
       api_diff_xml,
+      api_diff_save_reports,
       api_xml_health,
       api_lang_update_dry,
+      api_save_text,
+      api_app_version,
       api_import_po_apply,
       api_build_mod_apply,
       api_lang_update_apply,

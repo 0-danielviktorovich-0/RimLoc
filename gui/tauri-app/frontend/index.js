@@ -3,6 +3,10 @@ const { invoke } = window.__TAURI__.invoke;
 // --- i18n ---
 const I18N = {
   en: {
+    tab_start: 'Start', tab_validate: 'Validate', tab_diff: 'Diff', tab_import: 'Import/Build', tab_annotate: 'Annotate', tab_morph: 'Morph', tab_lang: 'Lang Update', tab_tools: 'Tools', tab_settings: 'Settings',
+    hdr_start: 'Start', hdr_validate: 'Validate', hdr_diff: 'Diff', hdr_import: 'Import/Build', hdr_annotate: 'Annotate', hdr_morph: 'Morph', hdr_lang: 'Lang Update', hdr_tools: 'Tools',
+    lbl_mod_root: 'Mod root', lbl_src_code: 'Source lang code', lbl_trg_code: 'Target lang code', lbl_po_out: 'PO output', lbl_tm_roots: 'TM roots (comma)', lbl_src_dir: 'Source lang dir', lbl_trg_dir: 'Target lang dir', lbl_po_file: 'PO file', lbl_only_diff: 'Only diff', lbl_game_root: 'Game root', lbl_repo: 'Repo', lbl_branch: 'Branch', lbl_zip: 'Zip', lbl_ui_lang: 'UI:', lbl_out_dir: 'Output dir', lbl_baseline_po: 'Baseline PO', lbl_reports_dir: 'Reports out dir',
+    btn_scan: 'Scan', btn_export: 'Export PO', btn_validate: 'Validate', btn_xml_health: 'XML Health', btn_run_diff: 'Run Diff', btn_import_dry: 'Import DRY-RUN', btn_import_apply: 'Apply Import', btn_build_dry: 'Build DRY-RUN', btn_build_apply: 'Apply Build', btn_dry_run: 'Dry-run', btn_apply: 'Apply', btn_run: 'Run', btn_plan_dry: 'Plan Update (DRY)', btn_apply_update: 'Apply Update', btn_schema_dump: 'Dump JSON Schemas', btn_save_json: 'Save JSON', btn_save_reports: 'Save Reports', btn_open_last: 'Open Last Path',
     confirm_apply_import: 'Apply import to mod files? Backups recommended.',
     confirm_apply_build: 'Create/overwrite translation mod at output path?',
     confirm_apply_lang: 'Apply official localization update to game? Backup existing folder?',
@@ -10,6 +14,10 @@ const I18N = {
     ok_saved: 'Done.',
   },
   ru: {
+    tab_start: 'Старт', tab_validate: 'Проверка', tab_diff: 'Дифф', tab_import: 'Импорт/Сборка', tab_annotate: 'Аннотация', tab_morph: 'Морфология', tab_lang: 'Обновление', tab_tools: 'Инструменты', tab_settings: 'Настройки',
+    hdr_start: 'Старт', hdr_validate: 'Проверка', hdr_diff: 'Дифф', hdr_import: 'Импорт/Сборка', hdr_annotate: 'Аннотация', hdr_morph: 'Морфология', hdr_lang: 'Обновление локализации', hdr_tools: 'Инструменты',
+    lbl_mod_root: 'Корень мода', lbl_src_code: 'Код исходного языка', lbl_trг_code: 'Код целевого языка', lbl_po_out: 'Выходной PO', lbl_tm_roots: 'TM базы (через запятую)', lbl_src_dir: 'Папка исходного языка', lbl_trg_dir: 'Папка целевого языка', lbl_po_file: 'Файл PO', lbl_only_diff: 'Только отличия', lbl_game_root: 'Корень игры', lbl_repo: 'Репозиторий', lbl_branch: 'Ветка', lbl_zip: 'ZIP', lbl_ui_lang: 'Интерфейс:', lbl_out_dir: 'Папка вывода', lbl_baseline_po: 'Базовый PO', lbl_reports_dir: 'Папка отчётов',
+    btn_scan: 'Сканировать', btn_export: 'Экспорт PO', btn_validate: 'Проверить', btn_xml_health: 'XML здоровье', btn_run_diff: 'Запустить Diff', btn_import_dry: 'Импорт DRY-RUN', btn_import_apply: 'Применить импорт', btn_build_dry: 'Сборка DRY-RUN', btn_build_apply: 'Применить сборку', btn_dry_run: 'DRY-RUN', btn_apply: 'Применить', btn_run: 'Запустить', btn_plan_dry: 'План (DRY)', btn_apply_update: 'Применить обновление', btn_schema_dump: 'Выгрузить JSON схемы', btn_save_json: 'Сохранить JSON', btn_save_reports: 'Сохранить отчёты', btn_open_last: 'Открыть путь',
     confirm_apply_import: 'Применить импорт к файлам мода? Рекомендуется бэкап.',
     confirm_apply_build: 'Создать/перезаписать мод-перевод по указанному пути?',
     confirm_apply_lang: 'Обновить локализацию в игре? Сделать резервную копию существующей папки?',
@@ -99,16 +107,43 @@ $('btn-xml-health').addEventListener('click', async () => {
   } catch (e) { $('validate-output').textContent = String(e); }
 });
 
+// Save Validate/Health JSON to file
+document.getElementById('btn-validate-save')?.addEventListener('click', async () => {
+  const path = await window.__TAURI__.dialog.save({ defaultPath: './logs/validate.json' });
+  if (!path) return;
+  try {
+    await invoke('api_save_text', { path, contents: $('validate-output').textContent });
+    alert('Saved: ' + path);
+  } catch (e) { alert(String(e)); }
+});
+
 $('btn-diff').addEventListener('click', async () => {
   const root = $('diff-mod-root').value.trim();
   const src = $('diff-src').value.trim() || null;
   const srcDir = $('diff-src-dir').value.trim() || null;
   const trg = $('diff-trg').value.trim() || null;
   const trgDir = $('diff-trg-dir').value.trim() || null;
+  const baselinePo = document.getElementById('diff-baseline') ? ($('diff-baseline').value.trim() || null) : null;
   $('diff-output').textContent = 'Diffing...';
   try {
-    const out = await invoke('api_diff_xml', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir });
+    const out = await invoke('api_diff_xml', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, baselinePo });
     $('diff-output').textContent = JSON.stringify(out, null, 2);
+  } catch (e) { $('diff-output').textContent = String(e); }
+});
+
+// Save Diff reports
+document.getElementById('btn-diff-save')?.addEventListener('click', async () => {
+  const root = $('diff-mod-root').value.trim();
+  const src = $('diff-src').value.trim() || null;
+  const srcDir = $('diff-src-dir').value.trim() || null;
+  const trg = $('diff-trg').value.trim() || null;
+  const trgDir = $('diff-trg-dir').value.trim() || null;
+  const baselinePo = document.getElementById('diff-baseline') ? ($('diff-baseline').value.trim() || null) : null;
+  const outDir = document.getElementById('diff-out-dir') ? ($('diff-out-dir').value.trim() || './logs/diff') : './logs/diff';
+  $('diff-output').textContent = 'Saving reports...';
+  try {
+    const p = await invoke('api_diff_save_reports', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, baselinePo, outDir });
+    $('diff-output').textContent = `Reports saved to ${p}`;
   } catch (e) { $('diff-output').textContent = String(e); }
 });
 
@@ -227,6 +262,25 @@ $('btn-ann-apply').addEventListener('click', async () => {
     const sum = await invoke('api_annotate_apply', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, commentPrefix: prefix, strip, backup });
     $('annotate-output').textContent = JSON.stringify(sum, null, 2);
   } catch (e) { $('annotate-output').textContent = String(e); }
+});
+
+// Save annotate JSON (plan or summary)
+document.getElementById('btn-ann-save')?.addEventListener('click', async () => {
+  const path = await window.__TAURI__.dialog.save({ defaultPath: './logs/annotate.json' });
+  if (!path) return;
+  try {
+    await invoke('api_save_text', { path, contents: $('annotate-output').textContent });
+    alert('Saved: ' + path);
+  } catch (e) { alert(String(e)); }
+});
+
+// Show app version in footer
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const v = await invoke('api_app_version');
+    const el = document.querySelector('#app-version small');
+    if (el) el.textContent = `RimLoc GUI v${v} • Tauri shell • Made with ❤️`;
+  } catch (e) {}
 });
 
 // --- persistence of inputs ---
