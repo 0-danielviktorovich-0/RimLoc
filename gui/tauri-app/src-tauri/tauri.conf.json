@@ -22,7 +22,9 @@
   "bundle": {
     "active": false,
     "targets": "all",
-    "icon": []
+    "icon": [],
+    "category": "DeveloperTool",
+    "shortDescription": "Tauri desktop GUI for RimLoc",
+    "publisher": "RimLoc Team"
   }
 }
-

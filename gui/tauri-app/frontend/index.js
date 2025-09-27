@@ -48,6 +48,16 @@ function applyI18n() {
       el.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.textContent = t(k); });
     }
   });
+  // placeholders
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const k = el.getAttribute('data-i18n-placeholder');
+    if (k) el.setAttribute('placeholder', t(k));
+  });
+  // titles
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const k = el.getAttribute('data-i18n-title');
+    if (k) el.setAttribute('title', t(k));
+  });
 }
 applyI18n();
 
@@ -56,6 +66,28 @@ function $(id) { return document.getElementById(id); }
 function setTab(active) {
   document.querySelectorAll('section.tab').forEach(s => s.classList.remove('active'));
   document.getElementById(active).classList.add('active');
+}
+
+// overlay & toasts helpers
+function showOverlay(text) {
+  const o = $('overlay');
+  const t = $('overlay-text');
+  if (t) t.textContent = text || 'Working…';
+  if (o) o.classList.add('show');
+}
+function hideOverlay() { const o = $('overlay'); if (o) o.classList.remove('show'); setOverlayProgress(0); }
+let toastTimer;
+function showToast(text, timeout=2000) {
+  const el = $('toast');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> el.classList.remove('show'), timeout);
+}
+function setOverlayProgress(pct) {
+  const bar = $('overlay-bar');
+  if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
 }
 
 document.querySelectorAll('nav button[data-tab]').forEach(btn => {
@@ -147,6 +179,7 @@ document.getElementById('btn-diff-save')?.addEventListener('click', async () => 
   try {
     const p = await invoke('api_diff_save_reports', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, baselinePo, outDir });
     $('diff-output').textContent = `Reports saved to ${p}`;
+    showToast('Reports saved');
   } catch (e) { $('diff-output').textContent = String(e); }
 });
 
@@ -160,6 +193,7 @@ $('btn-import-dry').addEventListener('click', async () => {
   try {
     const plan = await invoke('api_import_po_dry', { po, modRoot: root, lang: trg, langDir: trgDir, keepEmpty: false, singleFile: false, gameVersion: null, onlyDiff });
     $('import-output').textContent = JSON.stringify(plan, null, 2);
+    showToast('Import plan ready');
   } catch (e) { $('import-output').textContent = String(e); }
 });
 
@@ -171,7 +205,35 @@ $('btn-build-dry').addEventListener('click', async () => {
   try {
     const plan = await invoke('api_build_mod_dry', { po, outMod, lang, fromRoot: null, fromGameVersion: null, name: null, packageId: null, rwVersion: null, langDir: null, dedupe: true });
     $('import-output').textContent = JSON.stringify(plan, null, 2);
+    showToast('Build plan ready');
   } catch (e) { $('import-output').textContent = String(e); }
+});
+
+// Save Import/Build JSON
+document.getElementById('btn-import-save')?.addEventListener('click', async () => {
+  const path = await window.__TAURI__.dialog.save({ defaultPath: './logs/import.json' });
+  if (!path) return;
+  try { await invoke('api_save_text', { path, contents: $('import-output').textContent }); showToast('Saved'); } catch (e) { alert(String(e)); }
+});
+
+// Archive Build output
+document.getElementById('btn-build-archive')?.addEventListener('click', async () => {
+  const dir = window.LAST_PATH || './logs/RimLoc-Translation';
+  const zip = await window.__TAURI__.dialog.save({ defaultPath: './logs/RimLoc-Translation.zip' });
+  if (!zip) return;
+  try { const out = await invoke('api_zip_dir', { dir, outZip: zip }); showToast('Archived: ' + out); } catch (e) { alert(String(e)); }
+});
+
+// Archive Language dir after import
+document.getElementById('btn-import-archive')?.addEventListener('click', async () => {
+  const root = $('imp-mod-root').value.trim();
+  const trg = $('imp-trg').value.trim() || null;
+  const trgDir = $('imp-trg-dir').value.trim() || (trg ? (trg.toLowerCase()==='ru' ? 'Russian' : '') : '');
+  if (!root || !trgDir) { alert('Set mod root and target lang folder'); return; }
+  const dir = `${root.replace(/\\$/,'')}/Languages/${trgDir}`;
+  const zip = await window.__TAURI__.dialog.save({ defaultPath: `./logs/${trgDir}.zip` });
+  if (!zip) return;
+  try { const out = await invoke('api_zip_dir', { dir, outZip: zip }); showToast('Archived: ' + out); } catch (e) { alert(String(e)); }
 });
 
 // Apply Import
@@ -408,3 +470,11 @@ document.getElementById('btn-lang-dry').addEventListener('contextmenu', async (e
   } catch (e) { $('lang-output').textContent = String(e); }
   finally { hideOverlay(); }
 });
+    // placeholders
+    ph_mod_root: '/path/to/Mods/MyMod', ph_po_out: './logs/MyMod.po', ph_tm_roots: '/path/Languages/Russian,/other/root', ph_src_dir: 'English (optional)', ph_trg_dir: 'Russian (optional)', ph_po_file: './logs/MyMod.po', ph_baseline: './prev.po (optional)', ph_out_dir: './logs/diff', ph_pym_url: 'http://localhost:5000', ph_game_root: '/games/RimWorld', ph_branch: '(default)', ph_zip: './RimWorld-ru.zip (optional)', ph_log_path: './logs/rimloc.log',
+    // tooltips
+    tt_pick_dir: 'Choose directory', tt_pick_file: 'Choose file', tt_pick_save: 'Choose save file', tt_mod_root: 'Path to mod root', tt_src_code: 'e.g., en', tt_trg_code: 'e.g., ru', tt_po_out: 'Where to save PO', tt_tm_roots: 'Comma-separated TM roots', tt_src_dir: 'Folder name of source language', tt_trg_dir: 'Folder name of target language', tt_game_root: 'RimWorld installation root', tt_repo: 'owner/name', tt_branch: 'Branch name', tt_out_dir: 'Output directory', tt_log_path: 'Path to rimloc log file',
+    // placeholders
+    ph_mod_root: '/path/to/Mods/MyMod', ph_po_out: './logs/MyMod.po', ph_tm_roots: '/path/Languages/Russian,/other/root', ph_src_dir: 'English (опционально)', ph_trg_dir: 'Russian (опционально)', ph_po_file: './logs/MyMod.po', ph_baseline: './prev.po (опционально)', ph_out_dir: './logs/diff', ph_pym_url: 'http://localhost:5000', ph_game_root: '/games/RimWorld', ph_branch: '(по умолчанию)', ph_zip: './RimWorld-ru.zip (опционально)', ph_log_path: './logs/rimloc.log',
+    // tooltips
+    tt_pick_dir: 'Выбрать папку', tt_pick_file: 'Выбрать файл', tt_pick_save: 'Выбрать файл сохранения', tt_mod_root: 'Путь к корню мода', tt_src_code: 'например, en', tt_trg_code: 'например, ru', tt_po_out: 'Куда сохранить PO', tt_tm_roots: 'TM базы через запятую', tt_src_dir: 'Имя папки исходного языка', tt_trg_dir: 'Имя папки целевого языка', tt_game_root: 'Папка установленной игры', tt_repo: 'owner/name', tt_branch: 'Имя ветки', tt_out_dir: 'Папка вывода', tt_log_path: 'Путь к лог‑файлу rimloc',

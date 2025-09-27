@@ -39,3 +39,5 @@ footer { padding:10px 16px; border-top:1px solid #222; color:var(--muted); displ
 .overlay.show { display:flex; }
 .spinner { width: 36px; height: 36px; border: 4px solid #2a2f38; border-top-color: var(--acc); border-radius: 50%; animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.progress { width: 300px; height: 8px; background:#222; border-radius: 999px; overflow:hidden; border:1px solid #2a2f38; }
+.progress .bar { height:100%; width:0%; background: linear-gradient(90deg, var(--acc), #42d392); transition: width .2s ease; }
