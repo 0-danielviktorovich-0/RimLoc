@@ -47,7 +47,7 @@ pub fn run_diff_xml(
     // Output
     if let Some(dir) = out_dir.as_ref() {
         use std::fs;
-        use std::io::Write;
+        // write via services util; no local writer needed
         fs::create_dir_all(dir)?;
         rimloc_services::write_diff_reports(dir, &diff)?;
         crate::ui_ok!("diffxml-saved", path = dir.display().to_string());

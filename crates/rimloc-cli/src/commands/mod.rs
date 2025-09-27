@@ -8,4 +8,5 @@ pub mod morph;
 pub mod scan;
 pub mod validate;
 pub mod xml_health;
+pub mod schema;
 // re-export commonly used helpers if needed later

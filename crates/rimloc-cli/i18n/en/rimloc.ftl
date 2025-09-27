@@ -81,6 +81,7 @@ build-mod-folder = Mod folder: { $value }
 build-language = Language: { $value }
 build-divider = -----------------------------------
 build-summary = TOTAL: { $n } key(s) will be written
+schema-dumped = Schemas saved to { $path }
 
 # === warnings / errors ===
 ui-lang-unsupported = UI language code is not supported
