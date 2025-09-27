@@ -3,6 +3,20 @@
 ## Project Structure & Module Organization
 RimLoc is organised as a Cargo workspace under `crates/`. Core translation logic lives in `rimloc-core`, XML ingestion in `rimloc-parsers-xml`, and exporters/importers each have their own crate. The CLI entry point is `crates/rimloc-cli/src/main.rs`, with integration fixtures stored under `test/`. `docs/` contains the MkDocs site sources, while `gui/tauri-app` hosts the experimental desktop shell. Keep generated output in `target/` and commit only curated assets in `docs/`.
 
+### Architecture invariants (mandatory)
+- Preserve crate boundaries and responsibilities:
+  - `rimloc-domain` — shared types/JSON schemas; no IO.
+  - `rimloc-core` — core logic; no UI/CLI specifics.
+  - `rimloc-parsers-xml` — XML reading/parsing only.
+  - `rimloc-export-*` / `rimloc-import-*` — format adapters and IO for export/import.
+  - `rimloc-validate` — validation rules and checks.
+  - `rimloc-services` — orchestration/helpers reusable by CLI/GUI; file IO allowed.
+  - `rimloc-cli` — thin command layer only; no business logic.
+- New features land in the appropriate crate (prefer `rimloc-services` for orchestration) and are exposed via the CLI; do not place core logic in the CLI.
+- Keep outputs and contracts stable (CSV/JSON/PO). For breaking JSON changes, bump `OUTPUT_SCHEMA_VERSION`, regenerate schemas via `rimloc-cli schema`, and update docs.
+- Remain platform‑neutral in shared crates; guard OS‑specific code behind features and keep it out of core logic.
+- Avoid adding heavy dependencies or cross‑cutting frameworks without prior discussion; prefer small, focused crates.
+
 ## Build, Test, and Development Commands
 - `cargo build --workspace` builds every crate and checks cross-crate interfaces.
 - `cargo run -p rimloc-cli -- scan --root test/TestMod` exercises the CLI end-to-end during manual checks.
