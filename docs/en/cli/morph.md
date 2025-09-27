@@ -61,3 +61,9 @@ Local pymorphy2:
 rimloc-cli morph --root ./Mods/MyMod --provider pymorphy2 --lang ru --limit 50 --timeout-ms 2000
 ```
 
+Quick service check with curl:
+
+```bash
+curl "http://127.0.0.1:8765/declension?text=мама"
+# -> {"nomn":"мама","gent":"мамы","datv":"маме","accs":"маму","ablt":"мамой","loct":"маме"}
+```
