@@ -6,6 +6,10 @@ title: Для переводчиков — пошагово
 
 Эта страница объясняет, как перевести мод даже без опыта работы с терминалом. Короткие шаги, команды для копирования, простые пояснения.
 
+[:material-download: Установка](../install.md){ .md-button .md-button--primary }
+[:material-play-circle: Запуск скачанной сборки](../install_run.md){ .md-button }
+[:material-github: Релизы на GitHub](https://github.com/0-danielviktorovich-0/RimLoc/releases){ .md-button }
+
 Что мы сделаем:
 - Просканируем мод и найдём строки для перевода
 - Экспортируем единый .po для Poedit (или любого редактора PO)
