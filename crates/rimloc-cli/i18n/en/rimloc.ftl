@@ -68,6 +68,7 @@ validate-po-got = got: { $ph }
 validate-po-total-mismatches = Total mismatches: { $count }
 validate-po-report-line = { $ctxt } → { $reference }
 validate-po-summary = Total mismatches: { $count }
+learn-defs-summary = Learned from Defs: candidates={ $candidates }, accepted={ $accepted } → missing_keys.json={ $missing }, suggested.xml={ $suggested }
 
 # import argument validation
 import-need-target = Error: either --out-xml or --mod-root must be specified

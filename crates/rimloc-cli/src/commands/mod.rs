@@ -9,4 +9,5 @@ pub mod scan;
 pub mod validate;
 pub mod xml_health;
 pub mod schema;
+pub mod learn_defs;
 // re-export commonly used helpers if needed later

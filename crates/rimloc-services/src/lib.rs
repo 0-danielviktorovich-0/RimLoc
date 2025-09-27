@@ -12,6 +12,7 @@ pub mod validate;
 pub mod import;
 pub mod build;
 pub mod extras;
+pub mod learn;
 
 pub use build::{build_from_po_dry_run, build_from_po_execute, build_from_root, BuildPlan};
 pub use export::export_po_with_tm;

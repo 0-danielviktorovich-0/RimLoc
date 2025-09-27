@@ -68,6 +68,7 @@ validate-po-got = получено: { $ph }
 validate-po-total-mismatches = Всего несовпадений: { $count }
 validate-po-report-line = { $ctxt } → { $reference }
 validate-po-summary = Итого несовпадений: { $count }
+learn-defs-summary = Обучение по Defs: кандидатов={ $candidates }, принято={ $accepted } → missing_keys.json={ $missing }, suggested.xml={ $suggested }
 
 # === import-po аргументы ===
 import-need-target = Ошибка: нужно указать либо --out-xml, либо --mod-root
