@@ -13,7 +13,9 @@ Use these commands when you are ready to share translations with collaborators o
 **Usage**
 
 ```bash
-rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang <CODE>] [--source-lang-dir <DIR>] [--game-version <VER>] [--include-all-versions]
+rimloc-cli export-po --root <MOD> --out-po <FILE> \
+  [--lang <CODE>] [--source-lang <CODE>] [--source-lang-dir <DIR>] \
+  [--tm-root <PATH>]... [--game-version <VER>] [--include-all-versions]
 ```
 
 **Options**
@@ -25,6 +27,7 @@ rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang
 | `--lang <CODE>` | Target translation language (used in the PO header, e.g. `ru`, `ja`). | No |
 | `--source-lang <CODE>` | ISO code of the source language to export (defaults to `en`). | No |
 | `--source-lang-dir <DIR>` | Explicit source language folder name (e.g. `English`). Overrides `--source-lang`. | No |
+| `--tm-root <PATH>` | Path to a translation memory root. Repeatable; each root may be `Languages/<lang>` or a mod root. Prefills `msgstr` and marks entries as `fuzzy`. | No |
 | `--game-version <VER>` | Version folder to export from (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
 | `--include-all-versions` | Export from all version subfolders under the root. | No |
 
@@ -50,6 +53,17 @@ Point to a custom source folder (useful if you renamed `English`):
 
 ```bash
 rimloc-cli export-po --root ./Mods/MyMod --source-lang-dir Original --out-po ./out/mymod.po
+```
+
+Use multiple translation memory roots (last wins on conflicts):
+
+```bash
+rimloc-cli export-po \
+  --root ./Mods/MyMod \
+  --out-po ./out/mymod.po \
+  --lang ru \
+  --tm-root ./Mods/OldMod/Languages/Russian \
+  --tm-root ./MyTeamGlossary
 ```
 
 **Tips**

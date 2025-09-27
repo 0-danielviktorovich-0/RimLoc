@@ -152,7 +152,7 @@ help-exportpo-lang = ISO-код языка перевода (например, r
 help-exportpo-pot = Вместо локализованного PO записать POT-шаблон (пустой заголовок Language)
 help-exportpo-source-lang = ISO-код исходного языка для экспорта (например, en, ru, ja)
 help-exportpo-source-lang-dir = Имя папки исходного языка (например, English). Перекрывает --source-lang
-help-exportpo-tm-root = Путь к базе переводов (например, Languages/Russian или корень мода) для автозаполнения msgstr с пометкой fuzzy
+help-exportpo-tm-root = Путь(и) к базам переводов (флаг повторяемый). Каждая база: Languages/<язык> или корень мода. Автозаполняет msgstr и помечает fuzzy
 help-exportpo-game-version = Папка версии игры для сканирования (например, 1.6 или v1.6); по умолчанию — самая новая
 help-exportpo-include-all = Включить все подпапки версий (может привести к дублям)
 

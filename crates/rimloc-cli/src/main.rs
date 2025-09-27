@@ -707,9 +707,9 @@ enum Commands {
         /// Source language folder name (e.g., "English"). Takes precedence over --source-lang.
         #[arg(long)]
         source_lang_dir: Option<String>,
-        /// Optional path to a TM root (e.g., Languages/Russian or a mod root) to prefill msgstr and mark fuzzy.
-        #[arg(long)]
-        tm_root: Option<PathBuf>,
+        /// Path(s) to translation memory roots (repeatable). Each can be Languages/<lang> or a mod root.
+        #[arg(long, value_name = "PATH", num_args = 0.., value_delimiter = None)]
+        tm_root: Vec<PathBuf>,
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,

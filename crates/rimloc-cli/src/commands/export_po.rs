@@ -24,11 +24,11 @@ pub fn run_export_po(
     lang: Option<String>,
     source_lang: Option<String>,
     source_lang_dir: Option<String>,
-    tm_root: Option<std::path::PathBuf>,
+    mut tm_roots: Vec<std::path::PathBuf>,
     game_version: Option<String>,
     include_all_versions: bool,
 ) -> color_eyre::Result<()> {
-    tracing::debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, tm_root = ?tm_root, game_version = ?game_version, include_all_versions = include_all_versions);
+    tracing::debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, tm_roots = ?tm_roots, game_version = ?game_version, include_all_versions = include_all_versions);
     let cfg = rimloc_config::load_config().unwrap_or_default();
 
     let effective_version = game_version.or(cfg.game_version.clone());
@@ -41,16 +41,27 @@ pub fn run_export_po(
         tracing::info!(event = "export_version_resolved", version = ver, path = %scan_root.display());
     }
 
+    // If no CLI tm-roots provided, fallback to config export.tm_root
+    let cfg_tm_root: Option<std::path::PathBuf> = rimloc_config::load_config()
+        .ok()
+        .and_then(|c| c.export.and_then(|e| e.tm_root))
+        .map(std::path::PathBuf::from);
+    if tm_roots.is_empty() {
+        if let Some(one) = cfg_tm_root {
+            tm_roots.push(one);
+        }
+    }
+
     let stats = rimloc_services::export_po_with_tm(
         &scan_root,
         &out_po,
         lang.as_deref(),
         source_lang.or(cfg.source_lang.clone()).as_deref(),
         source_lang_dir.as_deref(),
-        tm_root.as_deref(),
+        if tm_roots.is_empty() { None } else { Some(&tm_roots) },
     )?;
     ui_ok!("export-po-saved", path = out_po.display().to_string());
-    if tm_root.is_some() {
+    if !tm_roots.is_empty() {
         let pct: u32 = if stats.total == 0 {
             0
         } else {
