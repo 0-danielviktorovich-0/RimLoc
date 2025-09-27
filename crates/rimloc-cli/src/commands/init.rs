@@ -1,29 +1,4 @@
 use crate::version::resolve_game_version_root;
-use regex::Regex;
-
-fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
-    let mut comps = path.components();
-    while let Some(c) = comps.next() {
-        let s = c.as_os_str().to_string_lossy();
-        if s.eq_ignore_ascii_case("Languages") {
-            if let Some(lang) = comps.next() {
-                let lang_s = lang.as_os_str().to_string_lossy();
-                return lang_s == lang_dir;
-            }
-            return false;
-        }
-    }
-    false
-}
-
-fn rel_from_languages(path_str: &str) -> Option<String> {
-    static REL_FROM_LANGUAGES: once_cell::sync::OnceCell<Regex> = once_cell::sync::OnceCell::new();
-    let re = REL_FROM_LANGUAGES
-        .get_or_init(|| Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](.+)$").unwrap());
-    re.captures(path_str)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string())
-}
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_init(

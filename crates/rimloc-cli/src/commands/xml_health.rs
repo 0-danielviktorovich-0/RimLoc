@@ -1,5 +1,4 @@
 use std::io::IsTerminal;
-use walkdir::WalkDir;
 
 #[derive(serde::Serialize)]
 struct Issue {
