@@ -147,6 +147,7 @@ help-exportpo-about = Export extracted strings into a single .po file
 help-exportpo-root = Path to RimWorld mod root containing extracted strings
 help-exportpo-out-po = Output .po file path
 help-exportpo-lang = Target translation language code (e.g., ru, ja, de)
+help-exportpo-pot = Write POT template (empty Language header) instead of a localized PO
 help-exportpo-source-lang = Source language ISO code to export from (e.g., en, ru, ja)
 help-exportpo-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
 help-exportpo-tm-root = Path to translation memory root (e.g., Languages/Russian or a mod root) to prefill msgstr and mark entries as fuzzy

@@ -1,8 +1,37 @@
 ---
 source: crates/rimloc-cli/tests/snapshots.rs
+assertion_line: 78
 expression: v
 ---
 [
+  {
+    "key": "Apparel_Parka.description",
+    "line": 3,
+    "path": "<WS>/test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml",
+    "schema_version": 1,
+    "value": "A warm parka for cold climates."
+  },
+  {
+    "key": "Apparel_Parka.description",
+    "line": 3,
+    "path": "<WS>/test/TestMod/Languages/Spain/DefInjected/ThingDef/Apparel.xml",
+    "schema_version": 1,
+    "value": "A warm parka for cold climates."
+  },
+  {
+    "key": "Apparel_Parka.label",
+    "line": 2,
+    "path": "<WS>/test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml",
+    "schema_version": 1,
+    "value": "Parka"
+  },
+  {
+    "key": "Apparel_Parka.label",
+    "line": 2,
+    "path": "<WS>/test/TestMod/Languages/Spain/DefInjected/ThingDef/Apparel.xml",
+    "schema_version": 1,
+    "value": "Parka"
+  },
   {
     "key": "DuplicateKey",
     "line": 2,
