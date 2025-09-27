@@ -13,6 +13,12 @@ pub fn run_import_po(
     backup: bool,
     single_file: bool,
     game_version: Option<String>,
+    // New behavior flags
+    // If true, print a summary of created/updated/skipped files and total keys written
+    // (text only; JSON can be added later if needed)
+    report: bool,
+    // If true, skip writing files whose content would be identical (compare bytes)
+    incremental: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file, game_version = ?game_version);
     use std::fs;
@@ -137,6 +143,12 @@ pub fn run_import_po(
         return Ok(());
     }
 
+    // Summary counters
+    let mut created_files = 0usize;
+    let mut updated_files = 0usize;
+    let mut skipped_files = 0usize;
+    let mut keys_written = 0usize;
+
     for (rel, items) in grouped {
         let out_path = root.join("Languages").join(&lang_folder).join(&rel);
         if backup && out_path.exists() {
@@ -144,9 +156,35 @@ pub fn run_import_po(
             std::fs::copy(&out_path, &bak)?;
             tracing::warn!(event = "backup", from = %out_path.display(), to = %bak.display());
         }
+        if incremental && out_path.exists() {
+            // render new bytes and compare with existing file
+            let new_bytes = rimloc_import_po::render_language_data_xml_bytes(&items)?;
+            let old_bytes = std::fs::read(&out_path).unwrap_or_default();
+            if old_bytes == new_bytes {
+                skipped_files += 1;
+                continue;
+            }
+        }
+
+        let existed = out_path.exists();
         rimloc_import_po::write_language_data_xml(&out_path, &items)?;
+        keys_written += items.len();
+        if existed {
+            updated_files += 1;
+        } else {
+            created_files += 1;
+        }
     }
 
     ui_ok!("import-done", root = root.display().to_string());
+    if report {
+        ui_out!(
+            "import-report-summary",
+            created = created_files,
+            updated = updated_files,
+            skipped = skipped_files,
+            keys = keys_written
+        );
+    }
     Ok(())
 }

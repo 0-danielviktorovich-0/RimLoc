@@ -184,6 +184,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-diffxml-format")));
                 owned = owned.mut_arg("out_dir", |a| a.help(tr!("help-diffxml-out-dir")));
                 owned = owned.mut_arg("game_version", |a| a.help(tr!("help-diffxml-game-version")));
+                owned = owned.mut_arg("strict", |a| a.help(tr!("help-diffxml-strict")));
                 *sc = owned;
             }
             "export-po" => {
@@ -413,6 +414,9 @@ enum Commands {
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
+        /// Strict mode: return non-zero exit if any difference is found
+        #[arg(long, default_value_t = false)]
+        strict: bool,
     },
     /// Annotate translation XML with source text comments (or strip them)
     Annotate {
@@ -456,6 +460,9 @@ enum Commands {
         /// Restrict scan to specific language folder name.
         #[arg(long)]
         lang_dir: Option<String>,
+        /// Strict mode: return non-zero exit if issues are found
+        #[arg(long, default_value_t = false)]
+        strict: bool,
     },
 
     /// Initialize translation skeleton under Languages/<target>
@@ -541,6 +548,12 @@ enum Commands {
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
+        /// Print a summary of created/updated/skipped files and total keys written.
+        #[arg(long, default_value_t = false)]
+        report: bool,
+        /// Skip writing files whose content would be identical.
+        #[arg(long, default_value_t = false)]
+        incremental: bool,
     },
 
     /// Build a standalone translation mod from a .po file (help via FTL).
@@ -551,6 +564,9 @@ enum Commands {
         out_mod: PathBuf,
         #[arg(long)]
         lang: String,
+        /// Optional: build from existing Languages/<lang> under this root instead of a .po
+        #[arg(long)]
+        from_root: Option<PathBuf>,
         #[arg(long, default_value = "RimLoc Translation")]
         name: String,
         #[arg(long, default_value = "yourname.rimloc.translation")]
@@ -770,6 +786,7 @@ impl Runnable for Commands {
                 lang_dir,
                 baseline_po,
                 format,
+                strict,
                 out_dir,
                 game_version,
             } => commands::diff_xml::run_diff_xml(
@@ -780,6 +797,7 @@ impl Runnable for Commands {
                 lang_dir,
                 baseline_po,
                 format,
+                strict,
                 out_dir,
                 game_version,
             ),
@@ -837,6 +855,8 @@ impl Runnable for Commands {
                 backup,
                 single_file,
                 game_version,
+                report,
+                incremental,
             } => commands::import_po::run_import_po(
                 po,
                 out_xml,
@@ -848,12 +868,15 @@ impl Runnable for Commands {
                 backup,
                 single_file,
                 game_version,
+                report,
+                incremental,
             ),
 
             Commands::BuildMod {
                 po,
                 out_mod,
                 lang,
+                from_root,
                 name,
                 package_id,
                 rw_version,
@@ -861,14 +884,16 @@ impl Runnable for Commands {
                 dry_run,
                 dedupe,
             } => commands::build_mod::run_build_mod(
-                po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run, dedupe,
+                po, out_mod, lang, from_root, name, package_id, rw_version, lang_dir, dry_run,
+                dedupe,
             ),
 
             Commands::XmlHealth {
                 root,
                 format,
                 lang_dir,
-            } => commands::xml_health::run_xml_health(root, format, lang_dir),
+                strict,
+            } => commands::xml_health::run_xml_health(root, format, lang_dir, strict),
 
             Commands::Init {
                 root,

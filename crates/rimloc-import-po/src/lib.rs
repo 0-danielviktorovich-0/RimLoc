@@ -5,7 +5,7 @@ use regex::Regex;
 use rimloc_core::PoEntry;
 use std::collections::HashMap;
 use std::fs::{self, File};
-use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::io::{BufRead, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
@@ -156,13 +156,8 @@ fn dedupe_last_wins(items: &[(String, String)]) -> Vec<(String, String)> {
 }
 
 /// Сгенерировать LanguageData XML из пар <key, value>.
-pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) -> Result<()> {
-    if let Some(parent) = out_path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-
-    let file = File::create(out_path)?;
-    let mut w = Writer::new_with_indent(BufWriter::new(file), b' ', 2);
+pub fn render_language_data_xml_bytes(entries: &[(String, String)]) -> Result<Vec<u8>> {
+    let mut w = Writer::new_with_indent(Vec::new(), b' ', 2);
 
     w.write_event(Event::Decl(quick_xml::events::BytesDecl::new(
         "1.0",
@@ -180,7 +175,18 @@ pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) ->
     }
 
     w.write_event(Event::End(BytesEnd::new("LanguageData")))?;
-    w.into_inner().flush()?;
+    Ok(w.into_inner())
+}
+
+pub fn write_language_data_xml(out_path: &Path, entries: &[(String, String)]) -> Result<()> {
+    if let Some(parent) = out_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let bytes = render_language_data_xml_bytes(entries)?;
+    let mut w = BufWriter::new(File::create(out_path)?);
+    use std::io::Write;
+    w.write_all(&bytes)?;
+    w.flush()?;
     Ok(())
 }
 

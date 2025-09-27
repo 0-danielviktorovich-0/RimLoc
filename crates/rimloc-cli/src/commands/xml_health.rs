@@ -11,6 +11,7 @@ pub fn run_xml_health(
     root: std::path::PathBuf,
     format: String,
     lang_dir: Option<String>,
+    strict: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "xml_health_args", root = ?root, format = %format, lang_dir = ?lang_dir);
 
@@ -84,6 +85,9 @@ pub fn run_xml_health(
         }
         let out = Out { checked, issues };
         serde_json::to_writer(std::io::stdout().lock(), &out)?;
+        if strict && !out.issues.is_empty() {
+            color_eyre::eyre::bail!("xmlhealth-issues");
+        }
         return Ok(());
     }
 
@@ -98,6 +102,9 @@ pub fn run_xml_health(
             );
         }
         crate::ui_warn!("xmlhealth-issues",);
+        if strict {
+            color_eyre::eyre::bail!("xmlhealth-issues");
+        }
     }
     Ok(())
 }
