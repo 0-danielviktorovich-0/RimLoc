@@ -25,6 +25,8 @@ rimloc-cli build-mod --po <FILE> --out-mod <DIR> --lang <CODE> [options]
 | `--lang-dir <DIR>` | Explicit language folder name inside the mod (overrides the code-based default). | No |
 | `--dry-run` | Print the planned layout without writing files. | No |
 | `--dedupe` | Remove duplicate keys within a single XML file (last wins). | No |
+| `--from-root <DIR>` | Build from existing `Languages/<lang>` under this root instead of a PO file. | No |
+| `--from-game-version <CSV>` | When using `--from-root`, include only files under these version subfolders (comma-separated). | No |
 
 ## Examples
 
