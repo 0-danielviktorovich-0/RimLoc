@@ -147,7 +147,7 @@ fn api_lang_update_dry(game_root: String, repo: Option<String>, branch: Option<S
 
 // Apply actions
 #[tauri::command]
-fn api_import_po_apply(po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, incremental: bool, only_diff: bool, report: bool, backup: bool) -> Result<rimloc_services::ImportSummary, ApiError> {
+fn api_import_po_apply(window: tauri::Window, po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, incremental: bool, only_diff: bool, report: bool, backup: bool) -> Result<rimloc_services::ImportSummary, ApiError> {
   let (_plan, summary) = rimloc_services::import_po_to_mod_tree(
     PathBuf::from(po).as_path(),
     PathBuf::from(mod_root).as_path(),
@@ -160,23 +160,45 @@ fn api_import_po_apply(po: String, mod_root: String, lang: Option<String>, lang_
     only_diff,
     report,
   )?;
-  summary.ok_or_else(|| ApiError { message: "no summary".into() })
+  if let Some(sum) = summary { return Ok(sum); }
+  // Fallback path should not normally happen; use progress-enabled variant directly when summary is None
+  let mut current = 0usize;
+  let cb = |cur: usize, total: usize, path: &PathBuf| {
+    current = cur;
+    let _ = window.emit("import_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()}));
+  };
+  let sum = rimloc_services::import_po_to_mod_tree_with_progress(
+    PathBuf::from(po).as_path(),
+    PathBuf::from(mod_root).as_path(),
+    &lang_dir.unwrap_or("Russian".into()),
+    keep_empty,
+    backup,
+    single_file,
+    incremental,
+    only_diff,
+    report,
+    cb,
+  )?;
+  Ok(sum)
 }
 
 #[tauri::command]
-fn api_build_mod_apply(po: Option<String>, out_mod: String, lang: String, from_root: Option<String>, from_game_version: Option<Vec<String>>, name: Option<String>, package_id: Option<String>, rw_version: Option<String>, lang_dir: Option<String>, dedupe: bool) -> Result<String, ApiError> {
+fn api_build_mod_apply(window: tauri::Window, po: Option<String>, out_mod: String, lang: String, from_root: Option<String>, from_game_version: Option<Vec<String>>, name: Option<String>, package_id: Option<String>, rw_version: Option<String>, lang_dir: Option<String>, dedupe: bool) -> Result<String, ApiError> {
   if let Some(root) = from_root {
-    let _ = rimloc_services::build_from_root(
+    let mut last = 0usize;
+    let _ = rimloc_services::build_from_root_with_progress(
       PathBuf::from(root).as_path(),
       PathBuf::from(&out_mod).as_path(),
       &lang_dir.clone().unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang)),
       from_game_version.as_deref(),
       true,
       dedupe,
+      |cur, total, path| { last = cur; let _ = window.emit("build_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()})); },
     )?;
     return Ok(out_mod);
   }
   let po = po.ok_or_else(|| ApiError { message: "po is required when from_root is not set".into() })?;
+  let _ = window.emit("build_progress", serde_json::json!({"current": 0, "total": 100}));
   rimloc_services::build_from_po_execute(
     PathBuf::from(&po).as_path(),
     PathBuf::from(&out_mod).as_path(),
@@ -186,6 +208,7 @@ fn api_build_mod_apply(po: Option<String>, out_mod: String, lang: String, from_r
     &rw_version.unwrap_or_else(|| "1.5".into()),
     dedupe,
   )?;
+  let _ = window.emit("build_progress", serde_json::json!({"current": 100, "total": 100}));
   Ok(out_mod)
 }
 

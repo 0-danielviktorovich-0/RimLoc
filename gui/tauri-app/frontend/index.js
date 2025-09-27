@@ -244,11 +244,16 @@ $('btn-import-apply').addEventListener('click', async () => {
   const trg = $('imp-trg').value.trim() || null;
   const trgDir = $('imp-trg-dir').value.trim() || null;
   const onlyDiff = $('imp-only-diff').checked;
-  $('import-output').textContent = 'Applying import...';
+  $('import-output').textContent = 'Applying import...'; showOverlay('Importing…'); setOverlayProgress(0);
   try {
+    const unlisten = await window.__TAURI__.event.listen('import_progress', (ev) => {
+      const d = ev.payload; const pct = d.total>0? Math.round((d.current/d.total)*100):0; setOverlayProgress(pct);
+    });
     const sum = await invoke('api_import_po_apply', { po, modRoot: root, lang: trg, langDir: trgDir, keepEmpty: false, singleFile: false, incremental: true, onlyDiff: onlyDiff, report: true, backup: true });
     $('import-output').textContent = JSON.stringify(sum, null, 2);
+    unlisten(); showToast('Import done');
   } catch (e) { $('import-output').textContent = String(e); }
+  finally { hideOverlay(); }
 });
 
 // Apply Build
@@ -257,12 +262,15 @@ $('btn-build-apply').addEventListener('click', async () => {
   const po = $('imp-po').value.trim() || null;
   const outMod = './logs/RimLoc-Translation';
   const lang = $('imp-trg').value.trim();
-  $('import-output').textContent = 'Building mod...';
+  $('import-output').textContent = 'Building mod...'; showOverlay('Building…'); setOverlayProgress(0);
   try {
+    const unlisten = await window.__TAURI__.event.listen('build_progress', (ev) => { const d = ev.payload; const pct = d.total>0? Math.round((d.current/d.total)*100):0; setOverlayProgress(pct); });
     const out = await invoke('api_build_mod_apply', { po, outMod, lang, fromRoot: null, fromGameVersion: null, name: null, packageId: null, rwVersion: null, langDir: null, dedupe: true });
     $('import-output').textContent = `Built at ${out}`;
     LAST_PATH = out;
+    unlisten(); showToast('Build done');
   } catch (e) { $('import-output').textContent = String(e); }
+  finally { hideOverlay(); }
 });
 
 $('btn-lang-dry').addEventListener('click', async () => {
