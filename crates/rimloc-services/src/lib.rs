@@ -14,7 +14,7 @@ pub mod build;
 pub mod extras;
 pub mod learn;
 
-pub use build::{build_from_po_dry_run, build_from_po_execute, build_from_root, build_from_root_with_progress, BuildPlan};
+pub use build::{build_from_po_dry_run, build_from_po_execute, build_from_po_with_progress, build_from_root, build_from_root_with_progress, BuildPlan};
 pub use export::export_po_with_tm;
 pub use import::{import_po_to_file, import_po_to_mod_tree, import_po_to_mod_tree_with_progress, FileStat, ImportPlan, ImportSummary};
 pub use scan::{scan_units, scan_units_with_defs, scan_units_with_defs_and_fields, scan_units_with_defs_and_dict};

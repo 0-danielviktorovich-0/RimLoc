@@ -1,6 +1,6 @@
 fn main() {
-  // generate icons if missing
-  let out_dir = std::path::Path::new("src-tauri/icons");
+  // generate icons if missing (Tauri expects them under `icons/`)
+  let out_dir = std::path::Path::new("icons");
   let _ = std::fs::create_dir_all(out_dir);
   let png = out_dir.join("icon.png");
   let ico_path = out_dir.join("icon.ico");
@@ -8,8 +8,6 @@ fn main() {
     generate_png(&png, 256, 256);
   }
   if !ico_path.exists() { generate_ico(&png, &ico_path); }
-  let icns_path = out_dir.join("icon.icns");
-  if !icns_path.exists() { generate_icns(&png, &icns_path); }
   tauri_build::build()
 }
 
@@ -17,7 +15,7 @@ fn generate_png(path: &std::path::Path, w: u32, h: u32) {
   let mut img = image::RgbaImage::new(w, h);
   for y in 0..h {
     for x in 0..w {
-      let t = (x as f32 / w as f32);
+      let t = x as f32 / w as f32;
       let r = (122.0 + 133.0 * t) as u8; // gradient
       let g = (162.0 + 50.0 * (1.0 - t)) as u8;
       let b = (247.0 - 80.0 * t) as u8;
@@ -38,20 +36,4 @@ fn generate_ico(png: &std::path::Path, out: &std::path::Path) {
   icon_dir.add_entry(ico::IconDirEntry::encode(&image).expect("encode ico"));
   let mut f = std::fs::File::create(out).expect("create ico");
   let _ = icon_dir.write(&mut f);
-}
-
-fn generate_icns(png: &std::path::Path, out: &std::path::Path) {
-  // Use 1024 base PNG and let icns crate build an icns family
-  let img = image::open(png).expect("icon base png").to_rgba8();
-  let (w, h) = img.dimensions();
-  let mut family = icns::IconFamily::new();
-  // icns crate supports adding png bytes directly
-  let mut buf = Vec::new();
-  {
-    let dynimg = image::DynamicImage::ImageRgba8(img);
-    dynimg.write_to(&mut std::io::Cursor::new(&mut buf), image::ImageOutputFormat::Png).expect("encode png");
-  }
-  family.add_png(&buf).expect("add png to icns");
-  let mut f = std::fs::File::create(out).expect("create icns");
-  family.write(&mut f).expect("write icns");
 }

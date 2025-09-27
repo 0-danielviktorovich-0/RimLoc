@@ -1,15 +1,28 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "RimLoc GUI",
-  "version": "0.1.0",
-  "identifier": "com.rimloc.gui",
+  "$schema": "https://schema.tauri.app/config/1",
+  "package": {
+    "productName": "RimLoc GUI",
+    "version": "0.1.0"
+  },
   "build": {
     "beforeBuildCommand": "",
     "beforeDevCommand": "",
-    "frontendDist": "../frontend",
-    "devUrl": null
+    "devPath": "../frontend",
+    "distDir": "../frontend"
   },
-  "app": {
+  "tauri": {
+    "allowlist": {
+      "dialog": { "open": true, "save": true },
+      "shell": { "open": true }
+    },
+    "bundle": {
+      "active": true,
+      "identifier": "com.rimloc.gui",
+      "icon": ["icons/icon.ico", "icons/icon.png"],
+      "category": "DeveloperTool",
+      "shortDescription": "Tauri desktop GUI for RimLoc",
+      "publisher": "RimLoc Team"
+    },
     "windows": [
       {
         "title": "RimLoc GUI",
@@ -18,13 +31,5 @@
         "resizable": true
       }
     ]
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png"],
-    "category": "DeveloperTool",
-    "shortDescription": "Tauri desktop GUI for RimLoc",
-    "publisher": "RimLoc Team"
   }
 }
