@@ -84,7 +84,7 @@ tar -xzf rimloc-cli-*.tar.gz -C /tmp
 
 ```powershell
 Expand-Archive -Path .\rimloc-cli-*.zip -DestinationPath .\rimloc
-.\rimloc\rimloc-cli.exe --help
+.\rimloc\rimloc-cli --help
 ```
 
 For detailed step‑by‑step instructions on running the downloaded build on Windows/macOS/Linux (opening a terminal, common issues, etc.), see [Run Downloaded Build](install_run.md).

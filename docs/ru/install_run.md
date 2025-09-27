@@ -4,7 +4,7 @@ title: Запуск скачанной сборки
 
 # Запуск скачанной сборки
 
-RimLoc CLI — это консольная программа. Если запустить файл двойным кликом, окно может на миг открыться и сразу закрыться. Нужно запускать из терминала и передавать команды/пути.
+RimLoc CLI — это консольная программа. Если запустить файл двойным кликом, окно может на миг открыться и сразу закрыться. Запускайте из терминала и передавайте команды/пути.
 
 ## Что такое терминал?
 
@@ -16,36 +16,36 @@ RimLoc CLI — это консольная программа. Если запу
 
 ## Windows (PowerShell)
 
-1) Распакуйте ZIP (например, `rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip`). Внутри будет `rimloc-cli.exe`.
+1) Распакуйте ZIP (например, `rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip`). Внутри будет файл `rimloc-cli` (Проводник может скрывать расширение `.exe`).
 2) Откройте PowerShell в этой папке:
    - Проводник → перейдите в папку → в адресной строке введите `powershell` → Enter; или
    - Правый клик по фону папки → «Open in Terminal».
 3) Запустите CLI:
 
 ```powershell
-.\u005crimloc-cli.exe --help
-.rimloc-cli.exe --version
+.\rimloc-cli --help
+.\rimloc-cli --version
 ```
 
 4) Базовые примеры (удобно положить папку мода рядом с EXE, либо укажите полный путь):
 
 ```powershell
 # Список единиц перевода (текстом)
-.rimloc-cli.exe scan --root .\MyMod --format text
+.\rimloc-cli scan --root .\MyMod --format text
 
 # Проверка XML перевода
-.rimloc-cli.exe validate --root .\MyMod
+.\rimloc-cli validate --root .\MyMod
 
 # Экспорт единого PO
-.rimloc-cli.exe export-po --root .\MyMod --out-po .\MyMod.ru.po --lang ru
+.\rimloc-cli export-po --root .\MyMod --out-po .\MyMod.ru.po --lang ru
 
 # Предпросмотр сборки отдельного мода‑перевода из PO
-.rimloc-cli.exe build-mod --po .\MyMod.ru.po --out-mod .\MyMod_RU --lang ru --dry-run
+.\rimloc-cli build-mod --po .\MyMod.ru.po --out-mod .\MyMod_RU --lang ru --dry-run
 ```
 
 Подсказка: запускайте из PowerShell, а не двойным кликом — так вы увидите вывод и ошибки.
 
-Добавить в PATH (необязательно): создайте `%USERPROFILE%\bin`, скопируйте туда `rimloc-cli.exe` и добавьте эту папку в «Переменные среды» → `Path`.
+Добавить в PATH (необязательно): создайте `%USERPROFILE%\bin`, скопируйте туда `rimloc-cli.exe` (в Проводнике отображается как `rimloc-cli`) и добавьте папку в «Переменные среды» → `Path`.
 
 ## macOS (Terminal)
 
@@ -56,7 +56,7 @@ tar -xzf rimloc-cli-*.tar.gz -C "$HOME/Downloads/rimloc"
 cd "$HOME/Downloads/rimloc"
 ```
 
-2) Проверьте, что есть права на запуск, и снимите карантин при необходимости:
+2) Дайте права на запуск и снимите карантин при необходимости:
 
 ```bash
 chmod +x ./rimloc-cli
@@ -115,7 +115,7 @@ chmod +x ./rimloc-cli
 ## Частые проблемы
 
 - Окно открывается и сразу закрывается: запускайте из терминала, а не двойным кликом.
-- «command not found» / «не является внутренней или внешней командой»: запускайте `./rimloc-cli` (Linux/macOS) или `.\u005crimloc-cli.exe` (Windows) из текущей папки либо добавьте в PATH.
+- «command not found» / «не является внутренней или внешней командой»: запускайте `./rimloc-cli` (Linux/macOS) или `.\rimloc-cli` (Windows) из текущей папки либо добавьте в PATH.
 - Permission denied (Linux/macOS): `chmod +x ./rimloc-cli`.
 - Предупреждение безопасности macOS: разрешите запуск в Настройках → Privacy & Security → «Open Anyway» или снимите карантин `xattr -d com.apple.quarantine ./rimloc-cli`.
 - Неверная архитектура: скачайте ассет под ваш процессор/ОС (например, для Apple Silicon — `aarch64-apple-darwin`, для Intel Mac — `x86_64-apple-darwin`).

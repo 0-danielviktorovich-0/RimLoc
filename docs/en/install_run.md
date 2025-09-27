@@ -16,36 +16,36 @@ Open a terminal in the folder where you unpacked `rimloc-cli` and run commands s
 
 ## Windows (PowerShell)
 
-1) Unpack the ZIP you downloaded (e.g., `rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip`). You will get `rimloc-cli.exe`.
+1) Unpack the ZIP you downloaded (e.g., `rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip`). You will get `rimloc-cli` (File Explorer may hide the `.exe` extension).
 2) Open PowerShell in that folder:
    - File Explorer → navigate to the folder → type `powershell` in the address bar → Enter; or
    - Right‑click in the folder background → “Open in Terminal”.
 3) Run the CLI:
 
 ```powershell
-.\u005crimloc-cli.exe --help
-.rimloc-cli.exe --version
+.\rimloc-cli --help
+.\rimloc-cli --version
 ```
 
 4) Basic usage examples (put your mod folder next to the EXE or use an absolute path):
 
 ```powershell
 # List translation units (text output)
-.rimloc-cli.exe scan --root .\MyMod --format text
+.\rimloc-cli scan --root .\MyMod --format text
 
 # Validate XML translations
-.rimloc-cli.exe validate --root .\MyMod
+.\rimloc-cli validate --root .\MyMod
 
 # Export a single PO file
-.rimloc-cli.exe export-po --root .\MyMod --out-po .\MyMod.ru.po --lang ru
+.\rimloc-cli export-po --root .\MyMod --out-po .\MyMod.ru.po --lang ru
 
 # Preview building a translation-only mod from PO
-.rimloc-cli.exe build-mod --po .\MyMod.ru.po --out-mod .\MyMod_RU --lang ru --dry-run
+.\rimloc-cli build-mod --po .\MyMod.ru.po --out-mod .\MyMod_RU --lang ru --dry-run
 ```
 
 Tip: Run from PowerShell, not by double‑clicking, so you can see output and errors.
 
-Add to PATH (optional): create `%USERPROFILE%\bin`, copy `rimloc-cli.exe` there, and add that folder to System → Environment Variables → Path.
+Add to PATH (optional): create `%USERPROFILE%\bin`, copy `rimloc-cli.exe` (shown as `rimloc-cli` in Explorer) there, and add that folder to System → Environment Variables → Path.
 
 ## macOS (Terminal)
 
@@ -115,7 +115,7 @@ Add to PATH (optional): `install -Dm755 ./rimloc-cli ~/.local/bin/rimloc-cli`.
 ## Common issues
 
 - Window opens and closes: run from a terminal rather than double‑clicking.
-- “command not found” or “not recognized”: use `./rimloc-cli` (Linux/macOS) or `.\u005crimloc-cli.exe` (Windows) from the current folder, or add to PATH.
+- “command not found” or “not recognized”: use `./rimloc-cli` (Linux/macOS) or `.\rimloc-cli` (Windows) from the current folder, or add to PATH.
 - Permission denied (Linux/macOS): `chmod +x ./rimloc-cli`.
 - macOS security prompt: allow under System Settings → Privacy & Security → “Open Anyway”, or clear quarantine via `xattr -d com.apple.quarantine ./rimloc-cli`.
 - Wrong architecture: download the asset matching your CPU and OS (e.g., `aarch64-apple-darwin` for Apple Silicon, `x86_64-apple-darwin` for Intel Macs).
