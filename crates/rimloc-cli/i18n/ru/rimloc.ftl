@@ -164,6 +164,7 @@ help-importpo-game-version = Подпапка версии игры, в кото
 help-importpo-single-file = Записать все импортированные строки в один XML‑файл
 help-importpo-backup = Создавать .bak‑резервные копии при перезаписи
 help-importpo-dry-run = Ничего не записывать; только показать план действий
+help-importpo-format = Формат вывода для отчётов/DRY‑RUN: «text» (по умолчанию) или «json»
 help-importpo-report = Показать сводку: создано/обновлено/пропущено файлов и всего записано ключей
 help-importpo-incremental = Не перезаписывать файлы, если содержимое не изменилось
 import-report-summary = Сводка импорта: создано={ $created }, обновлено={ $updated }, пропущено={ $skipped }, ключей={ $keys }

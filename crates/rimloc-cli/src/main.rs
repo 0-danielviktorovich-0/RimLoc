@@ -548,6 +548,9 @@ enum Commands {
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
+        /// Output format for reports or dry-run: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
         /// Print a summary of created/updated/skipped files and total keys written.
         #[arg(long, default_value_t = false)]
         report: bool,
@@ -855,6 +858,7 @@ impl Runnable for Commands {
                 backup,
                 single_file,
                 game_version,
+                format,
                 report,
                 incremental,
             } => commands::import_po::run_import_po(
@@ -868,6 +872,7 @@ impl Runnable for Commands {
                 backup,
                 single_file,
                 game_version,
+                format,
                 report,
                 incremental,
             ),
