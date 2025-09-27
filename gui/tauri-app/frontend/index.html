@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RimLoc GUI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>RimLoc GUI</h1>
+      <nav>
+        <button data-tab="start">Start</button>
+        <button data-tab="validate">Validate</button>
+        <button data-tab="diff">Diff</button>
+        <button data-tab="import">Import/Build</button>
+        <button data-tab="lang">Lang Update</button>
+        <button data-tab="settings">Settings</button>
+      </nav>
+    </header>
+    <main>
+      <section id="start" class="tab active">
+        <h2>Start</h2>
+        <div class="grid">
+          <label>Mod root <input id="start-mod-root" placeholder="/path/to/Mods/MyMod" /></label>
+          <label>Source lang code <input id="start-src" value="en" /></label>
+          <label>Target lang code <input id="start-trg" value="ru" /></label>
+          <label>PO output <input id="start-po-out" placeholder="./logs/MyMod.po" /></label>
+          <label>TM roots (comma) <input id="start-tm-roots" placeholder="/path/Languages/Russian,/other/root" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-scan">Scan</button>
+          <button id="btn-export">Export PO</button>
+        </div>
+        <pre id="start-output" class="output"></pre>
+      </section>
+
+      <section id="validate" class="tab">
+        <h2>Validate</h2>
+        <div class="grid">
+          <label>Mod root <input id="val-mod-root" placeholder="/path/to/Mods/MyMod" /></label>
+          <label>Source lang code <input id="val-src" value="en" /></label>
+          <label>Source lang dir <input id="val-src-dir" placeholder="English (optional)" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-validate">Validate</button>
+          <button id="btn-xml-health">XML Health</button>
+        </div>
+        <pre id="validate-output" class="output"></pre>
+      </section>
+
+      <section id="diff" class="tab">
+        <h2>Diff</h2>
+        <div class="grid">
+          <label>Mod root <input id="diff-mod-root" /></label>
+          <label>Source lang code <input id="diff-src" value="en" /></label>
+          <label>Source lang dir <input id="diff-src-dir" placeholder="English (optional)" /></label>
+          <label>Target lang code <input id="diff-trg" value="ru" /></label>
+          <label>Target lang dir <input id="diff-trg-dir" placeholder="Russian (optional)" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-diff">Run Diff</button>
+        </div>
+        <pre id="diff-output" class="output"></pre>
+      </section>
+
+      <section id="import" class="tab">
+        <h2>Import/Build</h2>
+        <div class="grid">
+          <label>PO file <input id="imp-po" placeholder="./logs/MyMod.po" /></label>
+          <label>Mod root <input id="imp-mod-root" placeholder="/path/Mods/MyMod" /></label>
+          <label>Target lang code <input id="imp-trg" value="ru" /></label>
+          <label>Target lang dir <input id="imp-trg-dir" placeholder="Russian (optional)" /></label>
+          <label>Only diff <input id="imp-only-diff" type="checkbox" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-import-dry">Import DRY-RUN</button>
+          <button id="btn-build-dry">Build DRY-RUN</button>
+        </div>
+        <pre id="import-output" class="output"></pre>
+      </section>
+
+      <section id="lang" class="tab">
+        <h2>Lang Update</h2>
+        <div class="grid">
+          <label>Game root <input id="lang-game-root" placeholder="/games/RimWorld" /></label>
+          <label>Repo <input id="lang-repo" value="Ludeon/RimWorld-ru" /></label>
+          <label>Branch <input id="lang-branch" placeholder="(default)" /></label>
+          <label>Zip <input id="lang-zip" placeholder="./RimWorld-ru.zip (optional)" /></label>
+          <label>Source dir <input id="lang-src-dir" value="Russian" /></label>
+          <label>Target dir <input id="lang-trg-dir" value="Russian (GitHub)" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-lang-dry">Plan Update (DRY)</button>
+        </div>
+        <pre id="lang-output" class="output"></pre>
+      </section>
+
+      <section id="settings" class="tab">
+        <h2>Settings</h2>
+        <p>RimLoc GUI uses embedded services; no extra settings required.</p>
+      </section>
+    </main>
+
+    <footer>
+      <small>RimLoc GUI • Tauri shell • Made with ❤️</small>
+    </footer>
+
+    <script src="index.js"></script>
+  </body>
+  </html>
+

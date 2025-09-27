@@ -96,6 +96,7 @@ rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version 
 ## Documentation & Support
 
 - Browse the full docs: [RimLoc Docs](https://0-danielviktorovich-0.github.io/RimLoc/)
+- Desktop GUI (Tauri) quick start: docs/en/guide/gui.md
 - Filing issues? See the short [Issue Guidelines](docs/en/community/issues.md) for what to include.
 - Learn the format: [PO Files 101](docs/en/guide/po_files.md)
 - Translate the CLI: [Localization Guide](docs/en/community/localization.md)

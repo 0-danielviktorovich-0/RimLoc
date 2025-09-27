@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "RimLoc GUI",
+  "version": "0.1.0",
+  "identifier": "com.rimloc.gui",
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "",
+    "frontendDist": "../frontend",
+    "devUrl": null
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "RimLoc GUI",
+        "width": 1200,
+        "height": 800,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "targets": "all",
+    "icon": []
+  }
+}
+
