@@ -29,11 +29,13 @@ pub fn run_export_po(
     include_all_versions: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "export_po_args", root = ?root, out_po = ?out_po, lang = ?lang, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, tm_root = ?tm_root, game_version = ?game_version, include_all_versions = include_all_versions);
+    let cfg = rimloc_config::load_config().unwrap_or_default();
 
+    let effective_version = game_version.or(cfg.game_version.clone());
     let (scan_root, selected_version) = if include_all_versions {
         (root.clone(), None)
     } else {
-        resolve_game_version_root(&root, game_version.as_deref())?
+        resolve_game_version_root(&root, effective_version.as_deref())?
     };
     if let Some(ver) = selected_version.as_deref() {
         tracing::info!(event = "export_version_resolved", version = ver, path = %scan_root.display());
@@ -43,7 +45,7 @@ pub fn run_export_po(
         &scan_root,
         &out_po,
         lang.as_deref(),
-        source_lang.as_deref(),
+        source_lang.or(cfg.source_lang.clone()).as_deref(),
         source_lang_dir.as_deref(),
         tm_root.as_deref(),
     )?;

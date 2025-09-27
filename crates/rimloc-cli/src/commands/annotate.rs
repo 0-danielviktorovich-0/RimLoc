@@ -35,11 +35,14 @@ pub fn run_annotate(
     } else {
         "Russian".to_string()
     };
-    let prefix = comment_prefix.unwrap_or_else(|| "EN:".to_string());
+    let prefix = comment_prefix.or_else(|| rimloc_config::load_config().ok().and_then(|c| c.annotate.and_then(|a| a.comment_prefix))).unwrap_or_else(|| "EN:".to_string());
+    let cfg_ann = rimloc_config::load_config().unwrap_or_default().annotate.unwrap_or_default();
+    let eff_strip = strip || cfg_ann.strip.unwrap_or(false);
+    let eff_backup = backup || cfg_ann.backup.unwrap_or(false);
     if dry_run {
         // Detailed dry-run plan with per-file counts (limit to 100 for readability)
-        let plan = rimloc_services::annotate_dry_run_plan(&scan_root, &src_dir, &trg_dir, &prefix, strip)?;
-        let limit = 100usize;
+        let plan = rimloc_services::annotate_dry_run_plan(&scan_root, &src_dir, &trg_dir, &prefix, eff_strip)?;
+        let limit = cfg.list_limit.unwrap_or(100usize);
         let mut shown = 0usize;
         for f in plan.files.iter() {
             if shown >= limit { break; }
@@ -49,7 +52,7 @@ pub fn run_annotate(
         crate::ui_out!("annotate-summary", processed = (plan.processed as i64), annotated = (plan.total_add as i64));
         return Ok(());
     }
-    let summary = rimloc_services::annotate_apply(&scan_root, &src_dir, &trg_dir, &prefix, strip, false, backup)?;
+    let summary = rimloc_services::annotate_apply(&scan_root, &src_dir, &trg_dir, &prefix, eff_strip, false, eff_backup)?;
     crate::ui_out!("annotate-summary", processed = summary.processed, annotated = summary.annotated);
     Ok(())
 }

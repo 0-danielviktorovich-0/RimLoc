@@ -13,20 +13,18 @@ pub fn run_validate(
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "validate_args", root = ?root, game_version = ?game_version, include_all_versions = include_all_versions);
 
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let effective_version = game_version.or(cfg.game_version.clone());
     let (scan_root, selected_version) = if include_all_versions {
         (root.clone(), None)
     } else {
-        resolve_game_version_root(&root, game_version.as_deref())?
+        resolve_game_version_root(&root, effective_version.as_deref())?
     };
     if let Some(ver) = selected_version.as_deref() {
         tracing::info!(event = "validate_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let msgs = rimloc_services::validate_under_root(
-        &scan_root,
-        source_lang.as_deref(),
-        source_lang_dir.as_deref(),
-    )?;
+    let msgs = rimloc_services::validate_under_root(&scan_root, source_lang.or(cfg.source_lang).as_deref(), source_lang_dir.as_deref())?;
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {

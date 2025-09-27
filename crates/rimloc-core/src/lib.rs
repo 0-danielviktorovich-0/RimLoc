@@ -10,6 +10,38 @@ pub type Result<T> = color_eyre::eyre::Result<T>;
 /// Schema version for RimLoc data outputs (JSON/PO headers).
 pub const RIMLOC_SCHEMA_VERSION: u32 = 1;
 
+pub mod placeholders {
+    /// Return true if a percent placeholder looks suspicious (e.g., single '%' not matching printf pattern).
+    pub fn is_bad_percent(text: &str) -> bool {
+        let bytes = text.as_bytes();
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] == b'%' {
+                // literal '%%' is ok
+                if i + 1 < bytes.len() && bytes[i + 1] == b'%' {
+                    i += 2;
+                    continue;
+                }
+                // Accept printf-like tokens: %d, %s, %i, %f with optional position/zero/width
+                // This is a light check consistent with the validator logic.
+                let mut j = i + 1;
+                // optional positional like 1$
+                while j < bytes.len() && bytes[j].is_ascii_digit() { j += 1; }
+                if j < bytes.len() && bytes[j] == b'$' { j += 1; }
+                // optional zero or width digits
+                while j < bytes.len() && (bytes[j] == b'0' || bytes[j].is_ascii_digit()) { j += 1; }
+                if j < bytes.len() && matches!(bytes[j] as char, 'd'|'s'|'i'|'f') {
+                    i = j + 1;
+                    continue;
+                }
+                return true;
+            }
+            i += 1;
+        }
+        false
+    }
+}
+
 /// Minimal unit used across crates to represent a single translation entry
 /// scanned from RimWorld XML (Keyed/DefInjected) or produced by tools.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1501,6 +1501,7 @@ dependencies = [
  "anyhow",
  "color-eyre",
  "csv",
+ "regex",
  "serde",
  "thiserror 1.0.69",
 ]
