@@ -1,8 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console on Windows in release
 
-use rimloc_domain::{DiffOutput, HealthReport, ScanUnit};
+use rimloc_domain::{DiffOutput, HealthReport, ScanUnit, SCHEMA_VERSION};
 use serde::Serialize;
 use std::path::PathBuf;
+use tauri::{CustomMenuItem, Menu};
 
 #[derive(thiserror::Error, Debug, Serialize)]
 #[error("{message}")]
@@ -15,17 +16,38 @@ impl From<color_eyre::Report> for ApiError {
 #[tauri::command]
 fn api_scan(root: String) -> Result<Vec<ScanUnit>, ApiError> {
   let units = rimloc_services::scan_units(PathBuf::from(root).as_path())?;
-  Ok(units)
+  let mapped: Vec<ScanUnit> = units
+    .into_iter()
+    .map(|u| ScanUnit {
+      schema_version: SCHEMA_VERSION,
+      path: u.path.display().to_string(),
+      line: u.line,
+      key: u.key,
+      value: u.source,
+    })
+    .collect();
+  Ok(mapped)
 }
 
 #[tauri::command]
-fn api_validate(root: String, source_lang: Option<String>, source_lang_dir: Option<String>) -> Result<Vec<rimloc_services::ValidationMessage>, ApiError> {
+fn api_validate(root: String, source_lang: Option<String>, source_lang_dir: Option<String>) -> Result<Vec<rimloc_domain::ValidationMsg>, ApiError> {
   let msgs = rimloc_services::validate_under_root(
     PathBuf::from(root).as_path(),
     source_lang.as_deref(),
     source_lang_dir.as_deref(),
   )?;
-  Ok(msgs)
+  let out: Vec<rimloc_domain::ValidationMsg> = msgs
+    .into_iter()
+    .map(|m| rimloc_domain::ValidationMsg {
+      schema_version: SCHEMA_VERSION,
+      kind: m.kind,
+      key: m.key,
+      path: m.path,
+      line: m.line,
+      message: m.message,
+    })
+    .collect();
+  Ok(out)
 }
 
 #[tauri::command]
@@ -42,8 +64,11 @@ fn api_export_po(root: String, out_po: String, lang: Option<String>, source_lang
   Ok(())
 }
 
+#[derive(Serialize)]
+struct ImportPlanOut { files: Vec<(String, usize)>, total_keys: usize }
+
 #[tauri::command]
-fn api_import_po_dry(po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, game_version: Option<String>, only_diff: bool) -> Result<rimloc_services::ImportPlan, ApiError> {
+fn api_import_po_dry(po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, _game_version: Option<String>, only_diff: bool) -> Result<ImportPlanOut, ApiError> {
   let (_plan, summary) = rimloc_services::import_po_to_mod_tree(
     PathBuf::from(po).as_path(),
     PathBuf::from(mod_root).as_path(),
@@ -56,22 +81,45 @@ fn api_import_po_dry(po: String, mod_root: String, lang: Option<String>, lang_di
     only_diff,
     false,
   )?;
-  if let Some(plan) = _plan { Ok(plan) } else { Err(ApiError { message: "no plan generated".into() }) }
+  if let Some(plan) = _plan {
+    Ok(ImportPlanOut { files: plan.files.into_iter().map(|(p, n)| (p.display().to_string(), n)).collect(), total_keys: plan.total_keys })
+  } else { Err(ApiError { message: "no plan generated".into() }) }
+}
+
+#[derive(Serialize)]
+struct BuildPlanOut {
+  mod_name: String,
+  package_id: String,
+  rw_version: String,
+  out_mod: String,
+  lang_dir: String,
+  files: Vec<(String, usize)>,
+  total_keys: usize,
 }
 
 #[tauri::command]
-fn api_build_mod_dry(po: Option<String>, out_mod: String, lang: String, from_root: Option<String>, from_game_version: Option<Vec<String>>, name: Option<String>, package_id: Option<String>, rw_version: Option<String>, lang_dir: Option<String>, dedupe: bool) -> Result<rimloc_services::BuildPlan, ApiError> {
+fn api_build_mod_dry(po: Option<String>, out_mod: String, lang: String, from_root: Option<String>, from_game_version: Option<Vec<String>>, name: Option<String>, package_id: Option<String>, rw_version: Option<String>, lang_dir: Option<String>, dedupe: bool) -> Result<BuildPlanOut, ApiError> {
   if let Some(root) = from_root {
     // We don't have a dry-run planner for from_root; reuse import dry-run style by scanning files
+    let langd = lang_dir.clone().unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
     let (files, total_keys) = rimloc_services::build_from_root(
       PathBuf::from(root).as_path(),
       PathBuf::from(&out_mod).as_path(),
-      &lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang)),
+      &langd,
       from_game_version.as_deref(),
       false,
       dedupe,
     )?;
-    return Ok(rimloc_services::BuildPlan { out_mod: PathBuf::from(out_mod), files, total_keys, mod_name: name.unwrap_or_else(|| "RimLoc Translation".into()), package_id: package_id.unwrap_or_else(|| "yourname.rimloc.translation".into()), rw_version: rw_version.unwrap_or_else(|| "1.5".into()), lang_dir: lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang)) });
+    let plan = BuildPlanOut {
+      out_mod: PathBuf::from(&out_mod).display().to_string(),
+      files: files.into_iter().map(|(p, n)| (p.display().to_string(), n)).collect(),
+      total_keys,
+      mod_name: name.unwrap_or_else(|| "RimLoc Translation".into()),
+      package_id: package_id.unwrap_or_else(|| "yourname.rimloc.translation".into()),
+      rw_version: rw_version.unwrap_or_else(|| "1.5".into()),
+      lang_dir: langd,
+    };
+    return Ok(plan);
   }
   let po = po.ok_or_else(|| ApiError { message: "po is required when from_root is not set".into() })?;
   let plan = rimloc_services::build_from_po_dry_run(
@@ -83,7 +131,15 @@ fn api_build_mod_dry(po: Option<String>, out_mod: String, lang: String, from_roo
     &rw_version.unwrap_or_else(|| "1.5".into()),
     dedupe,
   )?;
-  Ok(plan)
+  Ok(BuildPlanOut {
+    mod_name: plan.mod_name,
+    package_id: plan.package_id,
+    rw_version: plan.rw_version,
+    out_mod: plan.out_mod.display().to_string(),
+    lang_dir: plan.lang_dir,
+    files: plan.files.into_iter().map(|(p, n)| (p.display().to_string(), n)).collect(),
+    total_keys: plan.total_keys,
+  })
 }
 
 #[tauri::command]
@@ -117,7 +173,7 @@ fn api_diff_save_reports(root: String, source_lang: Option<String>, source_lang_
 
 #[tauri::command]
 fn api_xml_health(root: String, lang_dir: Option<String>) -> Result<HealthReport, ApiError> {
-  let rep = rimloc_services::xml_health_scan(PathBuf::from(root).as_path(), lang_dir.as_deref(), None, None)?;
+  let rep = rimloc_services::xml_health_scan(PathBuf::from(root).as_path(), lang_dir.as_deref())?;
   Ok(rep)
 }
 
@@ -148,10 +204,13 @@ fn api_lang_update_dry(game_root: String, repo: Option<String>, branch: Option<S
 // Apply actions
 #[tauri::command]
 fn api_import_po_apply(window: tauri::Window, po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, incremental: bool, only_diff: bool, report: bool, backup: bool) -> Result<rimloc_services::ImportSummary, ApiError> {
+  let lang_folder = lang_dir.clone().unwrap_or_else(|| lang.as_ref().map(|c| rimloc_import_po::rimworld_lang_dir(c)).unwrap_or_else(|| "Russian".to_string()));
+  let po_pb = PathBuf::from(&po);
+  let root_pb = PathBuf::from(&mod_root);
   let (_plan, summary) = rimloc_services::import_po_to_mod_tree(
-    PathBuf::from(po).as_path(),
-    PathBuf::from(mod_root).as_path(),
-    &lang_dir.unwrap_or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)).unwrap_or_else(|| "Russian".to_string())),
+    po_pb.as_path(),
+    root_pb.as_path(),
+    &lang_folder,
     keep_empty,
     false,
     backup,
@@ -163,14 +222,14 @@ fn api_import_po_apply(window: tauri::Window, po: String, mod_root: String, lang
   if let Some(sum) = summary { return Ok(sum); }
   // Fallback path should not normally happen; use progress-enabled variant directly when summary is None
   let mut current = 0usize;
-  let cb = |cur: usize, total: usize, path: &PathBuf| {
+  let cb = |cur: usize, total: usize, path: &std::path::Path| {
     current = cur;
     let _ = window.emit("import_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()}));
   };
   let sum = rimloc_services::import_po_to_mod_tree_with_progress(
-    PathBuf::from(po).as_path(),
-    PathBuf::from(mod_root).as_path(),
-    &lang_dir.unwrap_or("Russian".into()),
+    po_pb.as_path(),
+    root_pb.as_path(),
+    &lang_folder,
     keep_empty,
     backup,
     single_file,
@@ -198,17 +257,20 @@ fn api_build_mod_apply(window: tauri::Window, po: Option<String>, out_mod: Strin
     return Ok(out_mod);
   }
   let po = po.ok_or_else(|| ApiError { message: "po is required when from_root is not set".into() })?;
-  let _ = window.emit("build_progress", serde_json::json!({"current": 0, "total": 100}));
-  rimloc_services::build_from_po_execute(
+  let langd = lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
+  let nm = name.unwrap_or_else(|| "RimLoc Translation".into());
+  let pid = package_id.unwrap_or_else(|| "yourname.rimloc.translation".into());
+  let rwv = rw_version.unwrap_or_else(|| "1.5".into());
+  rimloc_services::build_from_po_with_progress(
     PathBuf::from(&po).as_path(),
     PathBuf::from(&out_mod).as_path(),
-    &lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang)),
-    &name.unwrap_or_else(|| "RimLoc Translation".into()),
-    &package_id.unwrap_or_else(|| "yourname.rimloc.translation".into()),
-    &rw_version.unwrap_or_else(|| "1.5".into()),
+    &langd,
+    &nm,
+    &pid,
+    &rwv,
     dedupe,
+    |cur, total, path| { let _ = window.emit("build_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()})); },
   )?;
-  let _ = window.emit("build_progress", serde_json::json!({"current": 100, "total": 100}));
   Ok(out_mod)
 }
 
@@ -241,13 +303,16 @@ fn api_annotate_dry(root: String, source_lang: Option<String>, source_lang_dir: 
   Ok(plan)
 }
 
+#[derive(Serialize)]
+struct AnnotateSummaryOut { processed: usize, annotated: usize }
+
 #[tauri::command]
-fn api_annotate_apply(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, comment_prefix: Option<String>, strip: bool, backup: bool) -> Result<rimloc_services::AnnotateSummary, ApiError> {
+fn api_annotate_apply(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, comment_prefix: Option<String>, strip: bool, backup: bool) -> Result<AnnotateSummaryOut, ApiError> {
   let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
   let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
   let prefix = comment_prefix.unwrap_or_else(|| "EN:".into());
   let sum = rimloc_services::annotate_apply(PathBuf::from(root).as_path(), &cfg_src, &cfg_trg, &prefix, strip, false, backup)?;
-  Ok(sum)
+  Ok(AnnotateSummaryOut { processed: sum.processed, annotated: sum.annotated })
 }
 
 // Schema dump
@@ -339,9 +404,13 @@ fn api_lang_update_download_and_plan(window: tauri::Window, game_root: String, r
   let total = resp.content_length().unwrap_or(0);
   let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
   let mut downloaded: u64 = 0;
-  while let Some(chunk) = resp.chunk().map_err(|e| ApiError { message: e.to_string() })? {
-    downloaded += chunk.len() as u64;
-    buf.extend_from_slice(&chunk);
+  use std::io::Read;
+  let mut chunk = [0u8; 8192];
+  loop {
+    let n = resp.read(&mut chunk).map_err(|e| ApiError { message: e.to_string() })?;
+    if n == 0 { break; }
+    downloaded += n as u64;
+    buf.extend_from_slice(&chunk[..n]);
     let _ = window.emit("lang_update_progress", serde_json::json!({"downloaded": downloaded, "total": total}));
   }
   // write to temp file and reuse existing services function
@@ -366,31 +435,38 @@ fn api_lang_update_download_and_plan(window: tauri::Window, game_root: String, r
 }
 
 // Morph
+#[derive(Serialize)]
+struct MorphResultOut { processed: usize, lang: String, warn_no_morpher: bool, warn_no_pymorphy: bool }
+
 #[tauri::command]
-fn api_morph(root: String, provider: Option<String>, lang: Option<String>, lang_dir: Option<String>, filter_key_regex: Option<String>, limit: Option<usize>, game_version: Option<String>, timeout_ms: Option<u64>, cache_size: Option<usize>, pymorphy_url: Option<String>) -> Result<rimloc_services::MorphResult, ApiError> {
+fn api_morph(root: String, provider: Option<String>, lang: Option<String>, lang_dir: Option<String>, filter_key_regex: Option<String>, limit: Option<usize>, _game_version: Option<String>, timeout_ms: Option<u64>, cache_size: Option<usize>, pymorphy_url: Option<String>) -> Result<MorphResultOut, ApiError> {
+  let target_lang_dir = if let Some(d) = lang_dir { d } else if let Some(code) = lang { rimloc_import_po::rimworld_lang_dir(&code) } else { "Russian".to_string() };
+  let prov = match provider.as_deref() {
+    Some("morpher") => rimloc_services::MorphProvider::MorpherApi,
+    Some("pymorphy") => rimloc_services::MorphProvider::Pymorphy2,
+    _ => rimloc_services::MorphProvider::Dummy,
+  };
   let opts = rimloc_services::MorphOptions {
-    root: PathBuf::from(root),
-    provider,
-    lang,
-    lang_dir,
+    provider: prov,
+    target_lang_dir,
     filter_key_regex,
     limit,
-    game_version,
-    timeout_ms,
-    cache_size,
+    timeout_ms: timeout_ms.unwrap_or(3000),
+    cache_size: cache_size.unwrap_or(1024),
     pymorphy_url,
   };
-  let res = rimloc_services::morph_generate(opts)?;
-  Ok(res)
+  let res = rimloc_services::morph_generate(PathBuf::from(root).as_path(), &opts)?;
+  Ok(MorphResultOut { processed: res.processed, lang: res.lang, warn_no_morpher: res.warn_no_morpher, warn_no_pymorphy: res.warn_no_pymorphy })
 }
 
 fn main() {
   tauri::Builder::default()
-    .menu(tauri::menu::Menu::new()
-      .add_item(tauri::menu::MenuItem::new("About RimLoc GUI".to_string()).with_id("about"))
-      .add_item(tauri::menu::MenuItem::new("Check for Updates".to_string()).with_id("checkupdates"))
-    )
-    .on_menu_event(|app, ev| {
+    .menu({
+      let about = CustomMenuItem::new("about".to_string(), "About RimLoc GUI");
+      let check = CustomMenuItem::new("checkupdates".to_string(), "Check for Updates");
+      Menu::new().add_item(about).add_item(check)
+    })
+    .on_menu_event(|ev| {
       match ev.menu_item_id() {
         "about" => { let _ = tauri::api::dialog::message(Some(&ev.window()), "About", format!("RimLoc GUI v{}\nRust Tauri shell for RimLoc", env!("CARGO_PKG_VERSION"))); }
         "checkupdates" => {

@@ -7,7 +7,6 @@ edition = "2021"
 tauri-build = { version = "1", features = [] }
 image = "0.24"
 ico = "0.3"
-icns = "0.3"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -16,10 +15,13 @@ tauri = { version = "1", features = ["dialog-open", "dialog-save", "shell-open"]
 thiserror = "1"
 rimloc-services = { path = "../../../crates/rimloc-services" }
 rimloc-domain = { path = "../../../crates/rimloc-domain" }
+rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
 schemars = { version = "0.8", features = ["schemars_derive"] }
 reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 zip = "0.6"
 tempfile = "3"
+walkdir = "2"
+color-eyre = "0.6"
 
 [features]
 default = ["custom-protocol"]
