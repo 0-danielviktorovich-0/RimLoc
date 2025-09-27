@@ -36,17 +36,27 @@ pub fn run_annotate(
     };
     let prefix = comment_prefix.unwrap_or_else(|| "EN:".to_string());
     if dry_run {
-        // services annotate skips writing when dry_run, but we want per-file messages; keep single-line notification per CLI contract
+        // Detailed dry-run plan with per-file counts (limit to 100 for readability)
+        let plan = rimloc_services::annotate_dry_run_plan(&scan_root, &src_dir, &trg_dir, &prefix, strip)?;
+        let limit = 100usize;
+        let mut shown = 0usize;
+        for f in plan.files.iter() {
+            if shown >= limit { break; }
+            println!(
+                "DRY-RUN: {} (add={}, strip={})",
+                f.path.display(),
+                f.add,
+                f.strip
+            );
+            shown += 1;
+        }
+        if plan.files.len() > limit {
+            println!("... and {} more", plan.files.len() - limit);
+        }
+        crate::ui_out!("annotate-summary", processed = (plan.processed as i64), annotated = (plan.total_add as i64));
+        return Ok(());
     }
-    let summary = rimloc_services::annotate_apply(
-        &scan_root,
-        &src_dir,
-        &trg_dir,
-        &prefix,
-        strip,
-        dry_run,
-        backup,
-    )?;
+    let summary = rimloc_services::annotate_apply(&scan_root, &src_dir, &trg_dir, &prefix, strip, false, backup)?;
     crate::ui_out!("annotate-summary", processed = summary.processed, annotated = summary.annotated);
     Ok(())
 }

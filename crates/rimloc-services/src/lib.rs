@@ -21,6 +21,6 @@ pub use validate::validate_under_root;
 pub use extras::xml_health::{xml_health_scan, HealthIssue, HealthReport};
 pub use extras::diff::{diff_xml, write_diff_reports, DiffOutput};
 pub use extras::init::{make_init_plan, write_init_plan, InitPlan, InitFilePlan};
-pub use extras::annotate::{annotate as annotate_apply, AnnotateSummary};
+pub use extras::annotate::{annotate as annotate_apply, annotate_dry_run_plan, AnnotateFilePlan, AnnotatePlan, AnnotateSummary};
 pub use extras::morph::{generate as morph_generate, MorphOptions, MorphProvider, MorphResult};
 pub use util::is_under_languages_dir;

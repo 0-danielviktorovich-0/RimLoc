@@ -112,3 +112,97 @@ pub fn annotate(
     Ok(AnnotateSummary { processed, annotated })
 }
 
+#[derive(Debug, Clone)]
+pub struct AnnotateFilePlan {
+    pub path: PathBuf,
+    pub add: usize,
+    pub strip: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnnotatePlan {
+    pub files: Vec<AnnotateFilePlan>,
+    pub total_add: usize,
+    pub total_strip: usize,
+    pub processed: usize,
+}
+
+/// Build a dry-run plan for annotate without modifying files.
+pub fn annotate_dry_run_plan(
+    root: &Path,
+    source_lang_dir: &str,
+    target_lang_dir: &str,
+    comment_prefix: &str,
+    strip: bool,
+) -> Result<AnnotatePlan> {
+    // Build source map: key -> original text
+    let units = scan_units(root)?;
+    let mut src_map: HashMap<String, String> = HashMap::new();
+    for u in &units {
+        if is_under_languages_dir(&u.path, source_lang_dir) {
+            if let Some(val) = &u.source {
+                src_map.entry(u.key.clone()).or_insert_with(|| val.clone());
+            }
+        }
+    }
+
+    let mut files: Vec<PathBuf> = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() { continue; }
+        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
+        if !is_under_languages_dir(p, target_lang_dir) { continue; }
+        let p_str = p.to_string_lossy();
+        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) { continue; }
+        files.push(p.to_path_buf());
+    }
+    files.sort();
+
+    let mut out_files: Vec<AnnotateFilePlan> = Vec::new();
+    let mut total_add = 0usize;
+    let mut total_strip = 0usize;
+    let mut processed = 0usize;
+
+    for path in files {
+        processed += 1;
+        let input = match std::fs::read_to_string(&path) { Ok(s) => s, Err(_) => continue };
+        let mut reader = Reader::from_str(&input);
+        reader.config_mut().trim_text(false);
+        let mut buf = Vec::new();
+        let mut stack: Vec<String> = Vec::new();
+        let mut in_language_data = false;
+        let mut add_cnt = 0usize;
+        let mut strip_cnt = 0usize;
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(e)) => {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    if name == "LanguageData" { in_language_data = true; }
+                    stack.push(name.clone());
+                    if in_language_data && stack.len() == 2 && !strip {
+                        if src_map.get(&name).is_some() { add_cnt += 1; }
+                    }
+                }
+                Ok(Event::End(_)) => {
+                    let name = stack.pop();
+                    if name.as_deref() == Some("LanguageData") { in_language_data = false; }
+                }
+                Ok(Event::Empty(e)) => {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    if in_language_data && stack.len() == 1 && !strip {
+                        if src_map.get(&name).is_some() { add_cnt += 1; }
+                    }
+                }
+                Ok(Event::Comment(_c)) => { if strip { strip_cnt += 1; } }
+                Ok(Event::Eof) => break,
+                Ok(_) => {}
+                Err(_) => break,
+            }
+            buf.clear();
+        }
+        out_files.push(AnnotateFilePlan { path: path.clone(), add: add_cnt, strip: strip_cnt });
+        total_add += add_cnt; total_strip += strip_cnt;
+    }
+
+    Ok(AnnotatePlan { files: out_files, total_add, total_strip, processed })
+}
