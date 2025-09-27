@@ -478,6 +478,12 @@ enum Commands {
         #[arg(long)]
         game_version: Option<String>,
     },
+    /// Dump JSON Schemas for domain types
+    Schema {
+        /// Output directory for schema files
+        #[arg(long, default_value = "./docs/assets/schemas")]
+        out_dir: std::path::PathBuf,
+    },
 
     /// Scan XML for structural issues under Languages/
     XmlHealth {
@@ -719,6 +725,7 @@ impl Runnable for Commands {
                 game_version,
                 include_all_versions,
             ),
+            Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 
             Commands::Validate {
                 root,

@@ -81,6 +81,7 @@ build-mod-folder = Папка мода: { $value }
 build-language = Язык: { $value }
 build-divider = -----------------------------------
 build-summary = ИТОГО: { $n } ключей будет записано
+schema-dumped = Схемы сохранены в { $path }
 
 # === warnings / errors ===
 ui-lang-unsupported = Неподдерживаемый код языка интерфейса

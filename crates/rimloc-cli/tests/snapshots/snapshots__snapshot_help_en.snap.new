@@ -1,0 +1,30 @@
+---
+source: crates/rimloc-cli/tests/snapshots.rs
+assertion_line: 65
+expression: cleaned
+---
+RimWorld localization toolkit (Rust)
+
+Usage: rimloc-cli [OPTIONS] <COMMAND>
+
+Commands:
+  scan         Scan a mod folder and extract Keyed XML entries
+  validate     Validate strings for issues/warnings
+  validate-po  Validate .po file placeholder consistency (msgid vs msgstr)
+  diff-xml     Diff source vs translation presence and detect changed source strings using a baseline PO
+  annotate     Add or remove comments with original source text in translation XML files
+  schema       Dump JSON Schemas for domain types
+  xml-health   Scan XML files for structural/read errors under Languages/
+  morph        Generate Case/Plural/Gender files using a morph provider (dummy/morpher/pymorphy2)
+  init         Create translation skeleton under Languages/<target> with empty values
+  export-po    Export extracted strings into a single .po file
+  import-po    Import .po  -  either into a single XML, or spread across existing mod structure
+  build-mod    Build a standalone translation mod from a .po file
+  help         Print this message or the help of the given subcommand(s)
+
+Options:
+      --no-color           Disable colored output
+      --ui-lang <UI_LANG>  UI language code (e.g. en, ru, ja; defaults to system locale)
+      --quiet              Suppress startup banner and non-essential stdout messages (alias: --no-banner) [aliases: --no-banner]
+  -h, --help               Print help
+  -V, --version            Print version

@@ -35,6 +35,8 @@ rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
 rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 rimloc-services = { version = "0.1.0", path = "../rimloc-services" }
 rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
+rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
+schemars = { workspace = true }
 regex = "1"
 quick-xml = "0.36"
 reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }

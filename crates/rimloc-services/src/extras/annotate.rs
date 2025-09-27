@@ -121,7 +121,7 @@ pub fn annotate_dry_run_plan(
     root: &Path,
     source_lang_dir: &str,
     target_lang_dir: &str,
-    comment_prefix: &str,
+    _comment_prefix: &str,
     strip: bool,
 ) -> Result<AnnotatePlan> {
     // Build source map: key -> original text
