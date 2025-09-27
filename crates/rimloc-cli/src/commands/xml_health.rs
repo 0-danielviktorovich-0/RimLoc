@@ -4,6 +4,7 @@ use walkdir::WalkDir;
 #[derive(serde::Serialize)]
 struct Issue {
     path: String,
+    category: &'static str,
     error: String,
 }
 
@@ -49,7 +50,8 @@ pub fn run_xml_health(
             Err(e) => {
                 issues.push(Issue {
                     path: p.display().to_string(),
-                    error: format!("read error: {e}"),
+                    category: "read",
+                    error: format!("{e}"),
                 });
                 continue;
             }
@@ -72,6 +74,7 @@ pub fn run_xml_health(
         if let Some(e) = err {
             issues.push(Issue {
                 path: p.display().to_string(),
+                category: "parse",
                 error: e,
             });
         }

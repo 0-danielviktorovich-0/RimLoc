@@ -436,6 +436,9 @@ enum Commands {
         /// Target translation folder name (e.g., "Russian").
         #[arg(long)]
         lang_dir: Option<String>,
+        /// Comment prefix to use before the original text (default: "EN:")
+        #[arg(long)]
+        comment_prefix: Option<String>,
         /// Do not write files; only print planned changes.
         #[arg(long, default_value_t = false)]
         dry_run: bool,
@@ -464,6 +467,31 @@ enum Commands {
         /// Strict mode: return non-zero exit if issues are found
         #[arg(long, default_value_t = false)]
         strict: bool,
+    },
+
+    /// Generate Case/Plural/Gender files using a morph provider
+    Morph {
+        /// Path to mod root.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Provider name: dummy (default) or morpher
+        #[arg(long)]
+        provider: Option<String>,
+        /// Target translation language ISO code
+        #[arg(long)]
+        lang: Option<String>,
+        /// Target translation folder name
+        #[arg(long)]
+        lang_dir: Option<String>,
+        /// Regex to filter Keyed keys (default: ".*")
+        #[arg(long)]
+        filter_key_regex: Option<String>,
+        /// Limit number of keys to process
+        #[arg(long)]
+        limit: Option<usize>,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
     },
 
     /// Initialize translation skeleton under Languages/<target>
@@ -574,6 +602,9 @@ enum Commands {
         /// Optional: build from existing Languages/<lang> under this root instead of a .po
         #[arg(long)]
         from_root: Option<PathBuf>,
+        /// Optional filter for --from-root: only include files under this game version subfolder
+        #[arg(long)]
+        from_game_version: Option<String>,
         #[arg(long, default_value = "RimLoc Translation")]
         name: String,
         #[arg(long, default_value = "yourname.rimloc.translation")]
@@ -815,6 +846,7 @@ impl Runnable for Commands {
                 source_lang_dir,
                 lang,
                 lang_dir,
+                comment_prefix,
                 dry_run,
                 backup,
                 strip,
@@ -825,6 +857,7 @@ impl Runnable for Commands {
                 source_lang_dir,
                 lang,
                 lang_dir,
+                comment_prefix,
                 dry_run,
                 backup,
                 strip,
@@ -887,6 +920,7 @@ impl Runnable for Commands {
                 out_mod,
                 lang,
                 from_root,
+                from_game_version,
                 name,
                 package_id,
                 rw_version,
@@ -894,7 +928,16 @@ impl Runnable for Commands {
                 dry_run,
                 dedupe,
             } => commands::build_mod::run_build_mod(
-                po, out_mod, lang, from_root, name, package_id, rw_version, lang_dir, dry_run,
+                po,
+                out_mod,
+                lang,
+                from_root,
+                from_game_version,
+                name,
+                package_id,
+                rw_version,
+                lang_dir,
+                dry_run,
                 dedupe,
             ),
 
@@ -922,6 +965,24 @@ impl Runnable for Commands {
                 lang_dir,
                 overwrite,
                 dry_run,
+                game_version,
+            ),
+
+            Commands::Morph {
+                root,
+                provider,
+                lang,
+                lang_dir,
+                filter_key_regex,
+                limit,
+                game_version,
+            } => commands::morph::run_morph(
+                root,
+                provider,
+                lang,
+                lang_dir,
+                filter_key_regex,
+                limit,
                 game_version,
             ),
         };

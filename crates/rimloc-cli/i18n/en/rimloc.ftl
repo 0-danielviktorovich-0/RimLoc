@@ -177,6 +177,7 @@ help-buildmod-po = Path to .po file to build from
 help-buildmod-out-mod = Output mod folder path
 help-buildmod-lang = Language code of the translation
 help-buildmod-from-root = Build from existing Languages/<lang> under this root instead of a .po
+help-buildmod-from-game-version = Only include files under this version subfolder when using --from-root
 help-buildmod-name = Translation mod display name
 help-buildmod-package-id = Translation mod PackageId
 help-buildmod-rw-version = Target RimWorld version
@@ -211,6 +212,7 @@ help-annotate-dry-run = Do not write files; only print which files would be upda
 help-annotate-backup = Create .bak before overwriting XML files
 help-annotate-strip = Strip existing comments instead of adding new ones
 help-annotate-game-version = Game version folder under mod root (e.g., 1.6 or v1.6)
+help-annotate-comment-prefix = Custom comment prefix before the original text (default: "EN:")
 annotate-would-write = DRY-RUN: would annotate { $path }
 annotate-summary = Annotate done. Processed={ $processed }, commented={ $annotated }
 
@@ -241,3 +243,14 @@ test-csv-header = CSV header must be present
 
 # === startup message checks ===
 test-startup-text-must-appear = Startup message must appear for locale { $loc }
+# morph
+help-morph-about = Generate Case/Plural/Gender files using a morph provider (dummy/morpher)
+help-morph-root = Path to RimWorld mod root
+help-morph-provider = Provider: dummy (default) or morpher
+help-morph-lang = Target translation language ISO code
+help-morph-lang-dir = Target translation folder name
+help-morph-filter = Regex to filter keys to process (applies to Keyed keys)
+help-morph-limit = Limit number of keys to process
+help-morph-game-version = Game version subfolder to operate on
+morph-summary = Morph generated { $processed } entries for { $lang }
+morph-provider-morpher-stub = Morpher API provider is not implemented yet; falling back to dummy rules

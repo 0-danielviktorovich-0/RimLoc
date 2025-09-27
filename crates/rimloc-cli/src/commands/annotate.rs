@@ -27,6 +27,7 @@ pub fn run_annotate(
     source_lang_dir: Option<String>,
     lang: Option<String>,
     lang_dir: Option<String>,
+    comment_prefix: Option<String>,
     dry_run: bool,
     backup: bool,
     strip: bool,
@@ -95,6 +96,7 @@ pub fn run_annotate(
     let mut processed = 0usize;
     let mut annotated = 0usize;
 
+    let prefix = comment_prefix.unwrap_or_else(|| "EN:".to_string());
     for path in files {
         processed += 1;
         let input = match std::fs::read_to_string(&path) {
@@ -128,7 +130,7 @@ pub fn run_annotate(
                     // If adding comments: when entering a direct child of LanguageData (a key)
                     if in_language_data && stack.len() == 2 && !strip {
                         if let Some(orig) = src_map.get(&name) {
-                            let comment = format!(" EN: {} ", sanitize_comment(orig));
+                            let comment = format!(" {} {} ", prefix, sanitize_comment(orig));
                             out.write_event(Event::Comment(BytesText::new(&comment)))?;
                             annotated += 1;
                         }
@@ -147,7 +149,7 @@ pub fn run_annotate(
                     let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
                     if in_language_data && stack.len() == 1 && !strip {
                         if let Some(orig) = src_map.get(&name) {
-                            let comment = format!(" EN: {} ", sanitize_comment(orig));
+                            let comment = format!(" {} {} ", prefix, sanitize_comment(orig));
                             out.write_event(Event::Comment(BytesText::new(&comment)))?;
                             annotated += 1;
                         }
