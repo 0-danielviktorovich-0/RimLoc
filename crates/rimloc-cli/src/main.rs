@@ -495,16 +495,64 @@ enum Commands {
         /// Output directory for reports/templates
         #[arg(long, default_value = "./learn_out")]
         out_dir: PathBuf,
+        /// Where to save learned dataset (defaults to out_dir/learned_defs.json)
+        #[arg(long)]
+        learned_out: Option<PathBuf>,
         /// Disable ML, rely on dict/heuristics only
         #[arg(long, default_value_t = false)]
         no_ml: bool,
         /// Retrain model on new data (stub)
         #[arg(long, default_value_t = false)]
         retrain: bool,
+        /// Path to dict to update with learned fields (Defs)
+        #[arg(long)]
+        retrain_dict: Option<PathBuf>,
         /// Minimal string length
         #[arg(long)]
         min_len: Option<usize>,
         /// Blacklist field names (comma-separated)
+        #[arg(long, value_delimiter = ',')]
+        blacklist: Option<Vec<String>>,
+        /// Game version folder (e.g., 1.6 or v1.6)
+        #[arg(long)]
+        game_version: Option<String>,
+    },
+    /// Learn Keyed keys from English and suggest missing ones for target language
+    LearnKeyed {
+        /// Path to mod root
+        #[arg(short, long)]
+        mod_root: PathBuf,
+        /// One or more keyed dicts (JSON) with include/exclude regexes
+        #[arg(long, value_delimiter = ',')]
+        dict: Vec<PathBuf>,
+        /// Optional ML REST URL
+        #[arg(long)]
+        ml_url: Option<String>,
+        /// Source language folder (default: English)
+        #[arg(long)]
+        source_lang_dir: Option<String>,
+        /// Target language folder (default: Russian)
+        #[arg(long)]
+        lang_dir: Option<String>,
+        /// Acceptance threshold for ML score (default: 0.8)
+        #[arg(long, default_value_t = 0.8)]
+        threshold: f32,
+        /// Output directory for reports/templates
+        #[arg(long, default_value = "./learn_out")]
+        out_dir: PathBuf,
+        /// Where to save learned keyed dataset (defaults to out_dir/learned_keyed.json)
+        #[arg(long)]
+        learned_out: Option<PathBuf>,
+        /// Disable ML, rely on heuristics only
+        #[arg(long, default_value_t = false)]
+        no_ml: bool,
+        /// Path to dict to update with learned keys (Keyed)
+        #[arg(long)]
+        retrain_dict: Option<PathBuf>,
+        /// Minimal string length
+        #[arg(long)]
+        min_len: Option<usize>,
+        /// Blacklist key names (comma-separated)
         #[arg(long, value_delimiter = ',')]
         blacklist: Option<Vec<String>>,
         /// Game version folder (e.g., 1.6 or v1.6)
@@ -1107,8 +1155,11 @@ impl Runnable for Commands {
                 game_version,
             ),
 
-            Commands::LearnDefs { mod_root, dict, model, ml_url, lang_dir, threshold, out_dir, no_ml, retrain, min_len, blacklist, game_version } => {
-                commands::learn_defs::run_learn_defs(mod_root, dict, model, ml_url, lang_dir, threshold, out_dir, no_ml, retrain, min_len, blacklist, game_version)
+            Commands::LearnDefs { mod_root, dict, model, ml_url, lang_dir, threshold, out_dir, learned_out, no_ml, retrain, retrain_dict, min_len, blacklist, game_version } => {
+                commands::learn_defs::run_learn_defs(mod_root, dict, model, ml_url, lang_dir, threshold, out_dir, no_ml, retrain, learned_out, retrain_dict, min_len, blacklist, game_version)
+            }
+            Commands::LearnKeyed { mod_root, dict, ml_url, source_lang_dir, lang_dir, threshold, out_dir, learned_out, no_ml, retrain_dict, min_len, blacklist, game_version } => {
+                commands::learn_defs::run_learn_keyed(mod_root, dict, ml_url, source_lang_dir, lang_dir, threshold, out_dir, no_ml, learned_out, retrain_dict, min_len, blacklist, game_version)
             }
 
             Commands::Morph {
