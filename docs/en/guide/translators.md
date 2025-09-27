@@ -6,6 +6,10 @@ title: For Translators — Step‑by‑Step
 
 This page teaches you how to translate a mod even if you’ve never used a terminal before. Short steps, copy‑paste commands, friendly explanations.
 
+[:material-download: Install](../install.md){ .md-button .md-button--primary }
+[:material-play-circle: Run Downloaded Build](../install_run.md){ .md-button }
+[:material-github: Releases](https://github.com/0-danielviktorovich-0/RimLoc/releases){ .md-button }
+
 What you’ll do:
 - Scan a mod to find text to translate
 - Export a single .po file for Poedit (or any PO editor)
