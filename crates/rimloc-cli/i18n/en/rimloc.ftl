@@ -46,6 +46,7 @@ import-nothing-to-do = Nothing to import (all strings are empty; add --keep-empt
 import-done = Import completed to { $root }
 
 dry-run-would-write = DRY-RUN: would write { $count } key(s) to { $path }
+annotate-dry-run-line = DRY-RUN: { $path } (add={ $add }, strip={ $strip })
 
 xml-saved = XML saved to { $path }
 

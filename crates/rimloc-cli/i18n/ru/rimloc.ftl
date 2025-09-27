@@ -46,6 +46,7 @@ import-nothing-to-do = Нечего импортировать (все стро�
 import-done = Импорт выполнен в { $root }
 
 dry-run-would-write = DRY-RUN: записали бы { $count } ключ(ей) в { $path }
+annotate-dry-run-line = DRY-RUN: { $path } (добавить={ $add }, удалить={ $strip })
 
 xml-saved = XML сохранён в { $path }
 

@@ -3,7 +3,7 @@ use std::io::IsTerminal;
 #[derive(serde::Serialize)]
 struct Issue {
     path: String,
-    category: &'static str,
+    category: String,
     error: String,
 }
 
@@ -18,21 +18,17 @@ pub fn run_xml_health(
     tracing::debug!(event = "xml_health_args", root = ?root, format = %format, lang_dir = ?lang_dir);
 
     let report = rimloc_services::xml_health_scan(&root, lang_dir.as_deref())?;
-    let mut issues: Vec<Issue> = report
-        .issues
-        .into_iter()
-        .map(|it| Issue { path: it.path, category: it.category, error: it.error })
-        .collect();
+    let mut issues: Vec<Issue> = report.issues.into_iter().map(|it| Issue { path: it.path, category: it.category, error: it.error }).collect();
     let checked = report.checked;
 
     // filter by categories
     if let Some(onlyv) = only.as_ref() {
         let set: std::collections::HashSet<&str> = onlyv.iter().map(|s| s.as_str()).collect();
-        issues.retain(|it| set.contains(it.category));
+        issues.retain(|it| set.contains(it.category.as_str()));
     }
     if let Some(exceptv) = except.as_ref() {
         let set: std::collections::HashSet<&str> = exceptv.iter().map(|s| s.as_str()).collect();
-        issues.retain(|it| !set.contains(it.category));
+        issues.retain(|it| !set.contains(it.category.as_str()));
     }
     if format == "json" {
         #[derive(serde::Serialize)]
@@ -60,7 +56,7 @@ pub fn run_xml_health(
                 error = it.error.as_str()
             );
             if is_tty && format == "text" {
-                let hint = match it.category {
+                let hint = match it.category.as_str() {
                     "encoding" => Some("Save as UTF-8 (no BOM)."),
                     "encoding-detected" => Some("Use UTF-8; remove or fix encoding declaration."),
                     "invalid-char" => Some("Remove control chars < 0x20; keep \t, \n, \r only."),

@@ -31,12 +31,10 @@ pub fn run_import_po(
             if format == "json" {
                 #[derive(serde::Serialize)]
                 struct Plan<'a> { mode: &'a str, files: Vec<(String, usize)>, total_keys: usize }
-                let p = Plan { mode: "dry_run", files: summary.files.iter().map(|f| (f.path.display().to_string(), f.keys)).collect(), total_keys: summary.keys };
+                let p = Plan { mode: "dry_run", files: summary.files.iter().map(|f| (f.path.clone(), f.keys)).collect(), total_keys: summary.keys };
                 serde_json::to_writer(std::io::stdout().lock(), &p)?;
             } else {
-                for f in &summary.files {
-                    ui_out!("dry-run-would-write", count = f.keys, path = f.path.display().to_string());
-                }
+                for f in &summary.files { ui_out!("dry-run-would-write", count = f.keys, path = f.path.as_str()); }
             }
             return Ok(());
         }
@@ -44,7 +42,7 @@ pub fn run_import_po(
         if report && format == "json" {
             #[derive(serde::Serialize)]
             struct Out<'a> { mode: &'a str, created: usize, updated: usize, skipped: usize, keys: usize, files: Vec<(String, usize)> }
-            let files = summary.files.iter().map(|f| (f.path.display().to_string(), f.keys)).collect();
+            let files = summary.files.iter().map(|f| (f.path.clone(), f.keys)).collect();
             let stats = Out { mode: "import", created: summary.created, updated: summary.updated, skipped: summary.skipped, keys: summary.keys, files };
             serde_json::to_writer(std::io::stdout().lock(), &stats)?;
         }
@@ -108,17 +106,7 @@ pub fn run_import_po(
                 struct FileStat { path: String, keys: usize, status: String, added: Vec<String>, changed: Vec<String> }
                 #[derive(serde::Serialize)]
                 struct Summary { mode: String, created: usize, updated: usize, skipped: usize, keys: usize, files: Vec<FileStat> }
-                let files: Vec<FileStat> = sum
-                    .files
-                    .iter()
-                    .map(|f| FileStat {
-                        path: f.path.display().to_string(),
-                        keys: f.keys,
-                        status: f.status.to_string(),
-                        added: f.added.clone(),
-                        changed: f.changed.clone(),
-                    })
-                    .collect();
+                let files: Vec<FileStat> = sum.files.iter().map(|f| FileStat { path: f.path.clone(), keys: f.keys, status: f.status.to_string(), added: f.added.clone(), changed: f.changed.clone() }).collect();
                 let out = Summary { mode: "import".into(), created: sum.created, updated: sum.updated, skipped: sum.skipped, keys: sum.keys, files };
                 serde_json::to_writer(std::io::stdout().lock(), &out)?;
             } else {
