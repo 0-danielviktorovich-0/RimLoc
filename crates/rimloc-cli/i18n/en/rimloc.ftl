@@ -216,6 +216,18 @@ xmlhealth-summary = XML health: no issues found
 xmlhealth-issues = XML health: issues detected (see above)
 xmlhealth-issue-line = { $path } — { $error }
 
+# init
+help-init-about = Create translation skeleton under Languages/<target> with empty values
+help-init-root = Path to RimWorld mod root
+help-init-source-lang = Source language ISO code (e.g., en)
+help-init-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+help-init-lang = Target translation language ISO code (e.g., ru)
+help-init-lang-dir = Target translation folder name (e.g., Russian). Overrides --lang
+help-init-overwrite = Overwrite existing files if present
+help-init-dry-run = Do not write files; show plan only
+help-init-game-version = Game version folder to operate on (e.g., 1.6 or v1.6)
+init-summary = Init done: wrote { $count } file(s) for { $lang }
+
 # === scan ===
 test-csv-header = CSV header must be present
 

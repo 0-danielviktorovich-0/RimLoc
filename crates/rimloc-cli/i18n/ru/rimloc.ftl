@@ -215,6 +215,18 @@ xmlhealth-summary = Проверка XML: проблем не обнаружен
 xmlhealth-issues = Проверка XML: обнаружены проблемы (см. список выше)
 xmlhealth-issue-line = { $path } — { $error }
 
+# init
+help-init-about = Создать заготовку перевода в Languages/<язык> с пустыми значениями
+help-init-root = Путь к корню мода RimWorld
+help-init-source-lang = ISO-код исходного языка (например, en)
+help-init-source-lang-dir = Имя папки исходного языка (например, English). Перекрывает --source-lang
+help-init-lang = ISO-код языка перевода (например, ru)
+help-init-lang-dir = Имя папки языка перевода (например, Russian). Перекрывает --lang
+help-init-overwrite = Перезаписывать существующие файлы, если они есть
+help-init-dry-run = Ничего не записывать; показать только план
+help-init-game-version = Папка версии игры (например, 1.6 или v1.6)
+init-summary = Init завершён: создано файлов — { $count } для { $lang }
+
 # === scan ===
 test-csv-header = CSV заголовок должен присутствовать
 
