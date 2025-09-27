@@ -90,6 +90,12 @@ while [[ $# -gt 0 ]]; do
     return 1
   fi
 
+  # If patch is empty (no hunks), signal caller to fallback to full add
+  if [[ ! -s "$tmp_patch" ]]; then
+    rm -f "$raw_patch" "$tmp_patch"
+    return 1
+  fi
+
 done
 
 have_cmd git || die "git is required"
