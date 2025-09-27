@@ -1,0 +1,117 @@
+# RimLoc configuration file (defaults for CLI commands)
+# Any CLI flag overrides these values. Values in CWD/rimloc.toml
+# override values from $HOME/.config/rimloc/rimloc.toml.
+
+# Global defaults
+# Preferred source/target language folders (RimWorld names)
+source_lang = "English"
+target_lang = "Russian"
+
+# Preferred game version folder (e.g. "1.5" or "v1.6").
+# Used by commands that resolve versioned subfolders if not passed via flag.
+game_version = "1.5"
+
+# Default limit for long dry‑run listings (e.g., annotate)
+list_limit = 100
+
+# ============================================================================
+# export-po section
+[export]
+# If set, prefer this source language folder name instead of inferring by code
+# source_lang_dir = "English"
+
+# Include all game version subfolders when scanning (may produce duplicates)
+# include_all_versions = false
+
+# Path to Languages/<target> used as Translation Memory (prefill msgstr, mark fuzzy)
+# tm_root = "./Mods/MyMod/Languages/Russian"
+
+# ============================================================================
+# import-po section
+[import]
+# Keep empty strings (placeholders) from PO during import
+# keep_empty = false
+
+# Create .bak before overwriting existing XML
+# backup = true
+
+# Write all imported keys into a single file Keyed/_Imported.xml
+# single_file = false
+
+# Skip writing files if rendered bytes are identical to existing file
+# incremental = true
+
+# Only write keys that differ from existing XML (skip identical entries)
+# only_diff = true
+
+# Print a summary report (created/updated/skipped/files/keys)
+# report = true
+
+# Force target language directory name under Languages/
+# lang_dir = "Russian"
+
+# ============================================================================
+# build-mod section
+[build]
+# Defaults for translation mod metadata
+# name = "RimLoc Translation"
+# package_id = "yourname.rimloc.translation"
+# rw_version = "1.5"
+
+# Target language directory name
+# lang_dir = "Russian"
+
+# Remove duplicate keys within one file (last wins)
+# dedupe = true
+
+# When building from existing tree (--from-root), restrict to these version subfolders
+# from_root_versions = ["1.4", "1.5"]
+
+# ============================================================================
+# diff-xml section
+[diff]
+# Output directory for txt reports (ChangedData.txt / TranslationData.txt / ModData.txt)
+# out_dir = "./logs/diff"
+
+# Return non‑zero exit code if any differences found
+# strict = false
+
+# ============================================================================
+# xml-health section
+[health]
+# Restrict scan to particular language directory
+# lang_dir = "Russian"
+
+# Fail on any issues
+# strict = false
+
+# Only include issues of these categories (encoding, encoding-detected, invalid-char, tag-mismatch, unexpected-doctype, invalid-entity, parse)
+# only = ["encoding-detected"]
+
+# Exclude issues of these categories
+# except = ["unexpected-doctype"]
+
+# ============================================================================
+# annotate section
+[annotate]
+# Prefix for inserted comments with original text
+# comment_prefix = "EN:"
+
+# Remove existing XML comments instead of adding
+# strip = false
+
+# Create .bak copies before changing XML
+# backup = true
+
+# ============================================================================
+# init section
+[init]
+# Overwrite files if they already exist (otherwise skip)
+# overwrite = false
+
+# ============================================================================
+# schema section
+[schema]
+# Output directory for generated JSON Schemas
+# out_dir = "docs/assets/schemas"
+
