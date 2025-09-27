@@ -127,7 +127,8 @@ $('btn-diff').addEventListener('click', async () => {
   $('diff-output').textContent = 'Diffing...';
   try {
     const out = await invoke('api_diff_xml', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, baselinePo });
-    $('diff-output').textContent = JSON.stringify(out, null, 2);
+    const summary = { changed: out.changed.length, only_in_translation: out.only_in_translation.length, only_in_mod: out.only_in_mod.length };
+    $('diff-output').textContent = JSON.stringify({ summary, ...out }, null, 2);
   } catch (e) { $('diff-output').textContent = String(e); }
 });
 
