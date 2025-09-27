@@ -27,6 +27,8 @@ Open a terminal in the folder where you unpacked `rimloc-cli` and run commands s
 .\rimloc-cli --version
 ```
 
+Important: PowerShell does not search the current folder by default. Run it as `\.\rimloc-cli` (or `\.\rimloc-cli.exe`) from the unpacked folder, or add the folder to PATH. Typing just `rimloc-cli` will fail with “not recognized” unless it is on PATH.
+
 4) Basic usage examples (put your mod folder next to the EXE or use an absolute path):
 
 ```powershell
@@ -46,6 +48,10 @@ Open a terminal in the folder where you unpacked `rimloc-cli` and run commands s
 Tip: Run from PowerShell, not by double‑clicking, so you can see output and errors.
 
 Add to PATH (optional): create `%USERPROFILE%\bin`, copy `rimloc-cli.exe` (shown as `rimloc-cli` in Explorer) there, and add that folder to System → Environment Variables → Path.
+
+Notes for PowerShell users:
+- Absolute paths with spaces must be quoted, e.g. `--root "C:\\Games\\RimWorld Mods\\MyMod"`.
+- If you redirect output to a file and need UTF‑8, prefer `| Out-File -Encoding utf8 file.json` instead of `> file.json` in Windows PowerShell 5. In PowerShell 7+, `>` writes UTF‑8 by default.
 
 ## macOS (Terminal)
 
@@ -126,4 +132,3 @@ Add to PATH (optional): `install -Dm755 ./rimloc-cli ~/.local/bin/rimloc-cli`.
 - See the CLI overview for commands and flags: CLI → Overview.
 - Learn specific tasks: Scan, Validate, Export/Import, Build Mod.
 - Prefer easy updates? Use `cargo install rimloc-cli` from crates.io.
-
