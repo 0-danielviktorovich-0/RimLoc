@@ -1,0 +1,25 @@
+name: Schema Check
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build CLI
+        run: cargo build -p rimloc-cli
+      - name: Generate schemas
+        run: cargo run -p rimloc-cli -- schema --out-dir docs/assets/schemas
+      - name: Ensure schemas are up-to-date
+        run: |
+          git add docs/assets/schemas
+          if ! git diff --cached --quiet; then
+            echo "Schemas are outdated. Run: rimloc-cli schema --out-dir docs/assets/schemas" >&2
+            git diff --cached
+            exit 1
+          fi

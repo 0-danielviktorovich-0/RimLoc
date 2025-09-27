@@ -14,8 +14,10 @@ pub fn run_diff_xml(
     game_version: Option<String>,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "diff_xml_args", root = ?root, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, lang = ?lang, lang_dir = ?lang_dir, baseline_po = ?baseline_po, format = %format, out_dir = ?out_dir, game_version = ?game_version);
+    let cfg = rimloc_config::load_config().unwrap_or_default();
 
-    let (scan_root, selected_version) = resolve_game_version_root(&root, game_version.as_deref())?;
+    let effective_version = game_version.or(cfg.game_version.clone());
+    let (scan_root, selected_version) = resolve_game_version_root(&root, effective_version.as_deref())?;
     if let Some(ver) = selected_version.as_deref() {
         tracing::info!(event = "diff_version_resolved", version = ver, path = %scan_root.display());
     }
@@ -26,14 +28,20 @@ pub fn run_diff_xml(
     } else if let Some(code) = source_lang {
         rimloc_import_po::rimworld_lang_dir(&code)
     } else {
-        "English".to_string()
+        cfg.source_lang
+            .as_deref()
+            .map(rimloc_import_po::rimworld_lang_dir)
+            .unwrap_or_else(|| "English".to_string())
     };
     let trg_dir = if let Some(dir) = lang_dir {
         dir
     } else if let Some(code) = lang {
         rimloc_import_po::rimworld_lang_dir(&code)
     } else {
-        "Russian".to_string()
+        cfg.target_lang
+            .as_deref()
+            .map(rimloc_import_po::rimworld_lang_dir)
+            .unwrap_or_else(|| "Russian".to_string())
     };
     tracing::info!(event = "diff_lang_dirs", source = %src_dir, target = %trg_dir);
     let diff = rimloc_services::diff_xml(

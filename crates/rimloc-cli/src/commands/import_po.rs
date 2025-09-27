@@ -25,8 +25,16 @@ pub fn run_import_po(
     tracing::debug!(event = "import_po_args", po = ?po, out_xml = ?out_xml, mod_root = ?mod_root, lang = ?lang, lang_dir = ?lang_dir, keep_empty = keep_empty, dry_run = dry_run, backup = backup, single_file = single_file, game_version = ?game_version);
     // no local fs imports needed
 
+    let cfg_all = rimloc_config::load_config().unwrap_or_default();
+    let cfg_imp = cfg_all.import.unwrap_or_default();
+    let eff_keep_empty = keep_empty || cfg_imp.keep_empty.unwrap_or(false);
+    let eff_backup = backup || cfg_imp.backup.unwrap_or(false);
+    let eff_single_file = single_file || cfg_imp.single_file.unwrap_or(false);
+    let eff_incremental = incremental || cfg_imp.incremental.unwrap_or(false);
+    let eff_only_diff = only_diff || cfg_imp.only_diff.unwrap_or(false);
+    let eff_report = report || cfg_imp.report.unwrap_or(false);
     if let Some(out) = out_xml {
-        let summary = rimloc_services::import_po_to_file(&po, &out, keep_empty, dry_run, backup)?;
+        let summary = rimloc_services::import_po_to_file(&po, &out, eff_keep_empty, dry_run, eff_backup)?;
         if dry_run {
             if format == "json" {
                 #[derive(serde::Serialize)]
@@ -59,13 +67,7 @@ pub fn run_import_po(
         tracing::info!(event = "import_version_resolved", version = ver, path = %root.display());
     }
 
-    let lang_folder = if let Some(dir) = lang_dir {
-        dir
-    } else if let Some(code) = lang {
-        rimloc_import_po::rimworld_lang_dir(&code)
-    } else {
-        "Russian".to_string()
-    };
+    let lang_folder = if let Some(dir) = lang_dir.or(cfg_imp.lang_dir) { dir } else if let Some(code) = lang { rimloc_import_po::rimworld_lang_dir(&code) } else { "Russian".to_string() };
     tracing::debug!(event = "resolved_lang_folder", lang_folder = %lang_folder);
 
     // Delegate to services for grouping/writing/statistics
@@ -73,13 +75,13 @@ pub fn run_import_po(
         &po,
         &root,
         &lang_folder,
-        keep_empty,
+        eff_keep_empty,
         dry_run,
-        backup,
-        single_file,
-        incremental,
-        only_diff,
-        report,
+        eff_backup,
+        eff_single_file,
+        eff_incremental,
+        eff_only_diff,
+        eff_report,
     )?;
     if let Some(p) = plan {
         ui_out!("import-dry-run-header");

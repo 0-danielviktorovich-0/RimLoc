@@ -20,7 +20,7 @@ pub struct ValidationMessage {
 pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     static RE_PCT: OnceLock<Regex> = OnceLock::new();
     static RE_BRACE_INNER: OnceLock<Regex> = OnceLock::new();
-    let re_pct = RE_PCT.get_or_init(|| Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
+    let _re_pct = RE_PCT.get_or_init(|| Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
     let re_brace_inner = RE_BRACE_INNER.get_or_init(|| Regex::new(r"^\$?[A-Za-z0-9_]+$").unwrap());
 
     let mut by_file_key: HashMap<(String, String), Vec<Option<usize>>> = HashMap::new();
@@ -49,22 +49,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
         if let Some(text) = u.source.as_deref() {
             if !text.trim().is_empty() {
                 let mut placeholder_msg_emitted = false;
-                let mut bad_percent = false;
-                for (i, ch) in text.char_indices() {
-                    if ch == '%' {
-                        // Accept a literal "%%" as not-a-placeholder
-                        if text[i..].starts_with("%%") {
-                            continue;
-                        }
-                        if let Some(m) = re_pct.find_at(text, i) {
-                            if m.start() == i {
-                                continue; // valid token at this position
-                            }
-                        }
-                        bad_percent = true;
-                        break;
-                    }
-                }
+                let bad_percent = rimloc_core::placeholders::is_bad_percent(text);
                 if bad_percent {
                     msgs.push(ValidationMessage {
                         kind: "placeholder-check".to_string(),

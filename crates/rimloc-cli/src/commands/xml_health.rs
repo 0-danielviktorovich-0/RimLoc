@@ -16,6 +16,12 @@ pub fn run_xml_health(
     except: Option<Vec<String>>,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "xml_health_args", root = ?root, format = %format, lang_dir = ?lang_dir);
+    let cfg_all = rimloc_config::load_config().unwrap_or_default();
+    let cfg = cfg_all.health.unwrap_or_default();
+    let lang_dir = lang_dir.or(cfg.lang_dir);
+    let strict = strict || cfg.strict.unwrap_or(false);
+    let only = if only.is_none() { cfg.only } else { only };
+    let except = if except.is_none() { cfg.except } else { except };
 
     let report = rimloc_services::xml_health_scan(&root, lang_dir.as_deref())?;
     let mut issues: Vec<Issue> = report.issues.into_iter().map(|it| Issue { path: it.path, category: it.category, error: it.error }).collect();

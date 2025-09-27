@@ -14,7 +14,14 @@ pub fn run_build_mod(
     dedupe: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run);
-    let lang_folder = lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let cfg_build = cfg.build.unwrap_or_default();
+    let lang_folder = lang_dir.or(cfg_build.lang_dir.map(|s| s)).unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
+    let name = if name.is_empty() { cfg_build.name.unwrap_or_else(|| "RimLoc Translation".to_string()) } else { name };
+    let package_id = if package_id.is_empty() { cfg_build.package_id.unwrap_or_else(|| "yourname.rimloc.translation".to_string()) } else { package_id };
+    let rw_version = if rw_version.is_empty() { cfg_build.rw_version.unwrap_or_else(|| "1.5".to_string()) } else { rw_version };
+    let dedupe = dedupe || cfg_build.dedupe.unwrap_or(false);
+    let from_game_version = if from_game_version.is_none() { cfg_build.from_root_versions } else { from_game_version };
 
     if let Some(root) = from_root {
         // Build from existing Languages/<lang> structure under `root`.

@@ -13,19 +13,20 @@ pub fn run_init(
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "init_args", root = ?root, source_lang = ?source_lang, source_lang_dir = ?source_lang_dir, lang = ?lang, lang_dir = ?lang_dir, overwrite = overwrite, dry_run = dry_run, game_version = ?game_version);
 
-    let (scan_root, selected_version) = resolve_game_version_root(&root, game_version.as_deref())?;
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let (scan_root, selected_version) = resolve_game_version_root(&root, game_version.or(cfg.game_version.clone()).as_deref())?;
     if let Some(ver) = selected_version.as_deref() {
         tracing::info!(event = "init_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let src_dir = if let Some(dir) = source_lang_dir {
+    let src_dir = if let Some(dir) = source_lang_dir.or(cfg.source_lang.clone()) {
         dir
     } else if let Some(code) = source_lang {
         rimloc_import_po::rimworld_lang_dir(&code)
     } else {
         "English".to_string()
     };
-    let trg_dir = if let Some(dir) = lang_dir {
+    let trg_dir = if let Some(dir) = lang_dir.or(cfg.target_lang.clone()) {
         dir
     } else if let Some(code) = lang {
         rimloc_import_po::rimworld_lang_dir(&code)

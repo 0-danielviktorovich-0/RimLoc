@@ -1,6 +1,12 @@
 use std::fs;
 
 pub fn run_schema(out_dir: std::path::PathBuf) -> color_eyre::Result<()> {
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let out_dir = if out_dir.as_os_str().is_empty() {
+        std::path::PathBuf::from(cfg.schema.and_then(|s| s.out_dir).unwrap_or_else(|| "./docs/assets/schemas".to_string()))
+    } else {
+        out_dir
+    };
     fs::create_dir_all(&out_dir)?;
     macro_rules! dump {
         ($ty:ty, $name:literal) => {{
@@ -19,4 +25,3 @@ pub fn run_schema(out_dir: std::path::PathBuf) -> color_eyre::Result<()> {
     crate::ui_ok!("schema-dumped", path = out_dir.display().to_string());
     Ok(())
 }
-
