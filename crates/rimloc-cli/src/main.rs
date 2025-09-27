@@ -236,6 +236,32 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("dedupe", |a| a.help(tr!("help-buildmod-dedupe")));
                 *sc = owned;
             }
+            "annotate" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-annotate-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-annotate-root")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-annotate-source-lang")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-annotate-source-lang-dir"))
+                });
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-annotate-lang")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-annotate-lang-dir")));
+                owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-annotate-dry-run")));
+                owned = owned.mut_arg("backup", |a| a.help(tr!("help-annotate-backup")));
+                owned = owned.mut_arg("strip", |a| a.help(tr!("help-annotate-strip")));
+                owned = owned.mut_arg("game_version", |a| {
+                    a.help(tr!("help-annotate-game-version"))
+                });
+                *sc = owned;
+            }
+            "xml-health" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-xmlhealth-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-xmlhealth-root")));
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-xmlhealth-format")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-xmlhealth-lang-dir")));
+                *sc = owned;
+            }
             _ => {}
         }
     }
@@ -372,6 +398,49 @@ enum Commands {
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
+    },
+    /// Annotate translation XML with source text comments (or strip them)
+    Annotate {
+        /// Path to mod root.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Source language ISO code (maps to folder name).
+        #[arg(long)]
+        source_lang: Option<String>,
+        /// Source language folder name (e.g., "English").
+        #[arg(long)]
+        source_lang_dir: Option<String>,
+        /// Target translation ISO code.
+        #[arg(long)]
+        lang: Option<String>,
+        /// Target translation folder name (e.g., "Russian").
+        #[arg(long)]
+        lang_dir: Option<String>,
+        /// Do not write files; only print planned changes.
+        #[arg(long, default_value_t = false)]
+        dry_run: bool,
+        /// Create .bak before overwriting XML files.
+        #[arg(long, default_value_t = false)]
+        backup: bool,
+        /// Remove existing comments instead of adding.
+        #[arg(long, default_value_t = false)]
+        strip: bool,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
+    },
+
+    /// Scan XML for structural issues under Languages/
+    XmlHealth {
+        /// Path to RimWorld mod root.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Output format: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
+        /// Restrict scan to specific language folder name.
+        #[arg(long)]
+        lang_dir: Option<String>,
     },
 
     /// Export extracted strings to a single .po file (help localized via FTL).
@@ -672,6 +741,28 @@ impl Runnable for Commands {
                 game_version,
             ),
 
+            Commands::Annotate {
+                root,
+                source_lang,
+                source_lang_dir,
+                lang,
+                lang_dir,
+                dry_run,
+                backup,
+                strip,
+                game_version,
+            } => commands::annotate::run_annotate(
+                root,
+                source_lang,
+                source_lang_dir,
+                lang,
+                lang_dir,
+                dry_run,
+                backup,
+                strip,
+                game_version,
+            ),
+
             Commands::ExportPo {
                 root,
                 out_po,
@@ -729,6 +820,12 @@ impl Runnable for Commands {
             } => commands::build_mod::run_build_mod(
                 po, out_mod, lang, name, package_id, rw_version, lang_dir, dry_run, dedupe,
             ),
+
+            Commands::XmlHealth {
+                root,
+                format,
+                lang_dir,
+            } => commands::xml_health::run_xml_health(root, format, lang_dir),
         };
 
         match &result {

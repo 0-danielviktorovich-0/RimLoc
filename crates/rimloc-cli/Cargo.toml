@@ -34,6 +34,7 @@ rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
 rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
 rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 regex = "1"
+quick-xml = "0.36"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 tracing-appender = "0.2"

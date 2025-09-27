@@ -900,6 +900,7 @@ dependencies = [
  "once_cell",
  "owo-colors",
  "predicates",
+ "quick-xml",
  "regex",
  "rimloc-core",
  "rimloc-export-csv",
