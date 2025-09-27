@@ -4,6 +4,7 @@ pub mod diff_xml;
 pub mod export_po;
 pub mod import_po;
 pub mod init;
+pub mod morph;
 pub mod scan;
 pub mod validate;
 pub mod xml_health;

@@ -5,6 +5,7 @@ pub fn run_build_mod(
     out_mod: std::path::PathBuf,
     lang: String,
     from_root: Option<std::path::PathBuf>,
+    from_game_version: Option<String>,
     name: String,
     package_id: String,
     rw_version: String,
@@ -12,42 +13,17 @@ pub fn run_build_mod(
     dry_run: bool,
     dedupe: bool,
 ) -> color_eyre::Result<()> {
-    tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run);
+    tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run);
     let lang_folder = lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
 
     if let Some(root) = from_root {
         // Build from existing Languages/<lang> structure under `root`.
         use std::collections::BTreeMap;
         use std::fs;
-        use walkdir::WalkDir;
+        // use walkdir::WalkDir; // no longer used
         let mut grouped: BTreeMap<std::path::PathBuf, Vec<(String, String)>> = BTreeMap::new();
         let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](.+)$").unwrap();
         let mut total_keys = 0usize;
-
-        for entry in WalkDir::new(&root).into_iter().filter_map(|e| e.ok()) {
-            let p = entry.path();
-            if !p.is_file() {
-                continue;
-            }
-            if p.extension()
-                .and_then(|e| e.to_str())
-                .map_or(true, |e| !e.eq_ignore_ascii_case("xml"))
-            {
-                continue;
-            }
-            let s = p.to_string_lossy();
-            if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
-                continue;
-            }
-            if !(s.contains(&format!("/Languages/{}/", lang_folder))
-                || s.contains(&format!("\\Languages\\{}\\", lang_folder)))
-            {
-                continue;
-            }
-
-            // Parse XML and extract keys/values via the same scanner
-            // We can reuse rimloc_parsers_xml to get TransUnit with path & key/value
-        }
 
         // Use scanner once for efficiency
         let units = rimloc_parsers_xml::scan_keyed_xml(&root)?;
@@ -60,6 +36,16 @@ pub fn run_build_mod(
                 || path_str.contains(&format!("\\Languages\\{}\\", lang_folder)))
             {
                 continue;
+            }
+            if let Some(ver) = from_game_version.as_ref() {
+                // Allow either '/<ver>/' or '\<ver>\' anywhere before Languages or above
+                if !(path_str.contains(&format!("/{}/", ver))
+                    || path_str.contains(&format!("\\{}\\", ver))
+                    || path_str.contains(&format!("/v{}/", ver))
+                    || path_str.contains(&format!("\\v{}\\", ver)))
+                {
+                    continue;
+                }
             }
             if let Some(src) = u.source.as_deref() {
                 if let Some(caps) = re.captures(&path_str) {
