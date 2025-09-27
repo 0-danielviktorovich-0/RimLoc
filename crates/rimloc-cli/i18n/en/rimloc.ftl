@@ -245,6 +245,20 @@ help-init-dry-run = Do not write files; show plan only
 help-init-game-version = Game version folder to operate on (e.g., 1.6 or v1.6)
 init-summary = Init done: wrote { $count } file(s) for { $lang }
 
+# lang-update
+help-langupdate-about = Update official localization from a GitHub repo into Data/Core/Languages
+help-langupdate-game-root = Path to RimWorld game root (contains Data/)
+help-langupdate-repo = GitHub repo in owner/name form (default: Ludeon/RimWorld-ru)
+help-langupdate-branch = Branch name to download from (default branch if omitted)
+help-langupdate-zip = Local zip to use instead of downloading
+help-langupdate-source-lang-dir = Source language folder inside the repo (e.g., Russian)
+help-langupdate-target-lang-dir = Target language folder to create under Data/Core/Languages (e.g., Russian (GitHub))
+help-langupdate-dry-run = Do not write files; only show plan
+help-langupdate-backup = Backup existing folder by renaming to .bak before writing
+langupdate-dry-run-header = === DRY RUN: language update ===
+langupdate-dry-run-line = { $path }  ({ $size } bytes)
+langupdate-summary = Language updated: files={ $files }, bytes={ $bytes }, out={ $out }
+
 # === scan ===
 test-csv-header = CSV header must be present
 

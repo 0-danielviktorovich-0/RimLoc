@@ -1,5 +1,6 @@
 ---
 source: crates/rimloc-cli/tests/snapshots.rs
+assertion_line: 65
 expression: cleaned
 ---
 RimWorld localization toolkit (Rust)
@@ -16,6 +17,7 @@ Commands:
   annotate     Add or remove comments with original source text in translation XML files
   schema       Dump JSON Schemas for domain types
   xml-health   Scan XML files for structural/read errors under Languages/
+  lang-update  Update official localization from a GitHub repo into the base game's Languages folder
   morph        Generate Case/Plural/Gender files using a morph provider (dummy/morpher/pymorphy2)
   init         Create translation skeleton under Languages/<target> with empty values
   export-po    Export extracted strings into a single .po file
