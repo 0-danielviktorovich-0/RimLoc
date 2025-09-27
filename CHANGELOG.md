@@ -21,6 +21,7 @@ Template (copy the sections you need):
 
 ### Internal
 - [internal] Introduce `rimloc-services` orchestration crate and adopt it in `scan` CLI path (#PR)
+- [internal] Route `export-po`, `validate`, `import-po`, `build-mod` via services; add import/build wrappers (#PR)
 -->
 ### Added
 - [export-po] Translation Memory prefill: `--tm-root` to prefill msgstr and mark entries as `fuzzy` (#PR)

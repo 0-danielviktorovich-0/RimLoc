@@ -11,3 +11,4 @@ rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
 rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
 rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 regex = "1"
+quick-xml = { workspace = true }
