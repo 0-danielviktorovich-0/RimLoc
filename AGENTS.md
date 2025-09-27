@@ -59,6 +59,11 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Always run and report: `cargo build/test`, `fmt`, and `clippy` after changes.
 - Ask before destructive actions (deletes/moves/format‑sweeps). Scope of this file is repository‑wide.
 
+### GUI Dependencies (exception for gui/)
+- To deliver a high‑quality long‑term Tauri GUI, dependencies in `gui/` may be added as needed (frontend libs, Tauri plugins, ZIP/HTTP, etc.).
+- This exception does not apply to core crates under `crates/` — keep them lean and focused.
+- Prefer using `rimloc-services` for business logic to avoid duplication.
+
 ### Auto-commit workflow (mandatory for agents)
 - Start a session tied to the current chat/task: `scripts/agent-begin.sh --session <chat-id> [--type chore --scope cli --subject "short summary" -b "bullet"]`.
 - While working, record context as you go:

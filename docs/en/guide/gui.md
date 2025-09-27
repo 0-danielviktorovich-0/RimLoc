@@ -10,8 +10,9 @@ RimLoc ships an optional desktop shell built with Tauri that wraps common CLI wo
 - Start: scan and export PO (with multiple TM roots).
 - Validate: XML checks and XML health.
 - Diff: source vs translation + changed source (baseline via CLI).
-- Import / Build: dry-run previews for import and mod build.
-- Lang Update: dry-run plan for updating official localization from GitHub.
+- Import / Build: dry-run previews and Apply actions with backups.
+- Lang Update: dry-run plan and Apply action (backup existing folder).
+- Annotate: dry-run plan and Apply (add/strip comments with source text).
 
 ## Run locally
 
@@ -29,6 +30,5 @@ cargo tauri dev
 The app uses `rimloc-services` directly; no external binary is required.
 
 ## Notes
-- Write operations are exposed via the CLI; the GUI focuses on previewing (dry-runs) for safety in early versions.
+- Write operations have confirmation prompts and backups where applicable.
 - Set paths in the form fields and press the action buttons; results appear in the panel below.
-

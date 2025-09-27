@@ -14,6 +14,7 @@ label { display:flex; flex-direction:column; gap:6px; background:var(--panel); p
 input { padding:8px; border-radius:6px; border:1px solid #30363d; background:#0b0e13; color:var(--fg); }
 .actions { display:flex; gap:10px; margin: 8px 0 12px; }
 button { background: var(--acc); color:#0b0e13; border:none; padding:10px 14px; border-radius:8px; font-weight:600; cursor:pointer; }
+button.danger { background: var(--err); color: #fff; }
 button#btn-scan { background:#3fb950; }
 button#btn-validate { background:#3fb950; }
 button#btn-xml-health { background:#e3b341; }
@@ -21,5 +22,4 @@ button#btn-diff { background:#7aa2f7; }
 button#btn-export { background:#7aa2f7; }
 button#btn-import-dry, button#btn-build-dry, button#btn-lang-dry { background:#7aa2f7; }
 .output { background:#090c10; border:1px solid #1e242d; border-radius:8px; padding:12px; white-space:pre-wrap; overflow:auto; max-height:360px; }
-footer { padding:10px 16px; border-top:1px solid #222; color:var(--muted); }
-
+footer { padding:10px 16px; border-top:1px solid #222; color:var(--muted); display:flex; justify-content:space-between; align-items:center; gap:12px; }

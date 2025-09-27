@@ -14,6 +14,7 @@
         <button data-tab="validate">Validate</button>
         <button data-tab="diff">Diff</button>
         <button data-tab="import">Import/Build</button>
+        <button data-tab="annotate">Annotate</button>
         <button data-tab="lang">Lang Update</button>
         <button data-tab="settings">Settings</button>
       </nav>
@@ -75,9 +76,30 @@
         </div>
         <div class="actions">
           <button id="btn-import-dry">Import DRY-RUN</button>
+          <button id="btn-import-apply" class="danger">Apply Import</button>
           <button id="btn-build-dry">Build DRY-RUN</button>
+          <button id="btn-build-apply" class="danger">Apply Build</button>
         </div>
         <pre id="import-output" class="output"></pre>
+      </section>
+
+      <section id="annotate" class="tab">
+        <h2>Annotate</h2>
+        <div class="grid">
+          <label>Mod root <input id="ann-root" placeholder="/path/Mods/MyMod" /></label>
+          <label>Source lang code <input id="ann-src" value="en" /></label>
+          <label>Source lang dir <input id="ann-src-dir" placeholder="English (optional)" /></label>
+          <label>Target lang code <input id="ann-trg" value="ru" /></label>
+          <label>Target lang dir <input id="ann-trg-dir" placeholder="Russian (optional)" /></label>
+          <label>Prefix <input id="ann-prefix" value="EN:" /></label>
+          <label>Strip <input id="ann-strip" type="checkbox" /></label>
+          <label>Backup <input id="ann-backup" type="checkbox" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-ann-dry">Dry-run</button>
+          <button id="btn-ann-apply" class="danger">Apply</button>
+        </div>
+        <pre id="annotate-output" class="output"></pre>
       </section>
 
       <section id="lang" class="tab">
@@ -92,6 +114,7 @@
         </div>
         <div class="actions">
           <button id="btn-lang-dry">Plan Update (DRY)</button>
+          <button id="btn-lang-apply" class="danger">Apply Update</button>
         </div>
         <pre id="lang-output" class="output"></pre>
       </section>
@@ -103,10 +126,19 @@
     </main>
 
     <footer>
-      <small>RimLoc GUI • Tauri shell • Made with ❤️</small>
+      <div class="footer-left">
+        <small>RimLoc GUI • Tauri shell • Made with ❤️</small>
+      </div>
+      <div class="footer-right">
+        <label>UI: 
+          <select id="ui-lang">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </label>
+      </div>
     </footer>
 
     <script src="index.js"></script>
   </body>
   </html>
-

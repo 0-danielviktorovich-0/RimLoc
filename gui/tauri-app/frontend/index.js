@@ -1,5 +1,32 @@
 const { invoke } = window.__TAURI__.invoke;
 
+// --- i18n ---
+const I18N = {
+  en: {
+    confirm_apply_import: 'Apply import to mod files? Backups recommended.',
+    confirm_apply_build: 'Create/overwrite translation mod at output path?',
+    confirm_apply_lang: 'Apply official localization update to game? Backup existing folder?',
+    confirm_apply_annotate: 'Apply annotate changes to XML files?',
+    ok_saved: 'Done.',
+  },
+  ru: {
+    confirm_apply_import: 'Применить импорт к файлам мода? Рекомендуется бэкап.',
+    confirm_apply_build: 'Создать/перезаписать мод-перевод по указанному пути?',
+    confirm_apply_lang: 'Обновить локализацию в игре? Сделать резервную копию существующей папки?',
+    confirm_apply_annotate: 'Применить аннотирование к XML файлам?',
+    ok_saved: 'Готово.',
+  }
+};
+let UI_LANG = localStorage.getItem('ui-lang') || 'en';
+document.addEventListener('DOMContentLoaded', () => {
+  $('ui-lang').value = UI_LANG;
+});
+$('ui-lang').addEventListener('change', () => {
+  UI_LANG = $('ui-lang').value;
+  localStorage.setItem('ui-lang', UI_LANG);
+});
+function t(k) { return (I18N[UI_LANG] && I18N[UI_LANG][k]) || I18N.en[k] || k; }
+
 function $(id) { return document.getElementById(id); }
 
 function setTab(active) {
@@ -91,6 +118,34 @@ $('btn-build-dry').addEventListener('click', async () => {
   } catch (e) { $('import-output').textContent = String(e); }
 });
 
+// Apply Import
+$('btn-import-apply').addEventListener('click', async () => {
+  if (!confirm(t('confirm_apply_import'))) return;
+  const po = $('imp-po').value.trim();
+  const root = $('imp-mod-root').value.trim();
+  const trg = $('imp-trg').value.trim() || null;
+  const trgDir = $('imp-trg-dir').value.trim() || null;
+  const onlyDiff = $('imp-only-diff').checked;
+  $('import-output').textContent = 'Applying import...';
+  try {
+    const sum = await invoke('api_import_po_apply', { po, modRoot: root, lang: trg, langDir: trgDir, keepEmpty: false, singleFile: false, incremental: true, onlyDiff: onlyDiff, report: true, backup: true });
+    $('import-output').textContent = JSON.stringify(sum, null, 2);
+  } catch (e) { $('import-output').textContent = String(e); }
+});
+
+// Apply Build
+$('btn-build-apply').addEventListener('click', async () => {
+  if (!confirm(t('confirm_apply_build'))) return;
+  const po = $('imp-po').value.trim() || null;
+  const outMod = './logs/RimLoc-Translation';
+  const lang = $('imp-trg').value.trim();
+  $('import-output').textContent = 'Building mod...';
+  try {
+    const out = await invoke('api_build_mod_apply', { po, outMod, lang, fromRoot: null, fromGameVersion: null, name: null, packageId: null, rwVersion: null, langDir: null, dedupe: true });
+    $('import-output').textContent = `Built at ${out}`;
+  } catch (e) { $('import-output').textContent = String(e); }
+});
+
 $('btn-lang-dry').addEventListener('click', async () => {
   const gameRoot = $('lang-game-root').value.trim();
   const repo = $('lang-repo').value.trim() || null;
@@ -105,3 +160,68 @@ $('btn-lang-dry').addEventListener('click', async () => {
   } catch (e) { $('lang-output').textContent = String(e); }
 });
 
+// Apply Lang Update
+$('btn-lang-apply').addEventListener('click', async () => {
+  if (!confirm(t('confirm_apply_lang'))) return;
+  const gameRoot = $('lang-game-root').value.trim();
+  const repo = $('lang-repo').value.trim() || null;
+  const branch = $('lang-branch').value.trim() || null;
+  const zip = $('lang-zip').value.trim() || null;
+  const srcDir = $('lang-src-dir').value.trim() || null;
+  const trgDir = $('lang-trg-dir').value.trim() || null;
+  $('lang-output').textContent = 'Applying update...';
+  try {
+    const out = await invoke('api_lang_update_apply', { gameRoot, repo, branch, zip, sourceLangDir: srcDir, targetLangDir: trgDir, backup: true });
+    $('lang-output').textContent = `${t('ok_saved')} -> ${out}`;
+  } catch (e) { $('lang-output').textContent = String(e); }
+});
+
+// Annotate
+$('btn-ann-dry').addEventListener('click', async () => {
+  const root = $('ann-root').value.trim();
+  const src = $('ann-src').value.trim() || null;
+  const srcDir = $('ann-src-dir').value.trim() || null;
+  const trg = $('ann-trg').value.trim() || null;
+  const trgDir = $('ann-trg-dir').value.trim() || null;
+  const prefix = $('ann-prefix').value.trim() || null;
+  const strip = $('ann-strip').checked;
+  $('annotate-output').textContent = 'Planning annotate...';
+  try {
+    const plan = await invoke('api_annotate_dry', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, commentPrefix: prefix, strip });
+    $('annotate-output').textContent = JSON.stringify(plan, null, 2);
+  } catch (e) { $('annotate-output').textContent = String(e); }
+});
+
+$('btn-ann-apply').addEventListener('click', async () => {
+  if (!confirm(t('confirm_apply_annotate'))) return;
+  const root = $('ann-root').value.trim();
+  const src = $('ann-src').value.trim() || null;
+  const srcDir = $('ann-src-dir').value.trim() || null;
+  const trg = $('ann-trg').value.trim() || null;
+  const trgDir = $('ann-trg-dir').value.trim() || null;
+  const prefix = $('ann-prefix').value.trim() || null;
+  const strip = $('ann-strip').checked;
+  const backup = $('ann-backup').checked;
+  $('annotate-output').textContent = 'Annotating...';
+  try {
+    const sum = await invoke('api_annotate_apply', { root, sourceLang: src, sourceLangDir: srcDir, lang: trg, langDir: trgDir, commentPrefix: prefix, strip, backup });
+    $('annotate-output').textContent = JSON.stringify(sum, null, 2);
+  } catch (e) { $('annotate-output').textContent = String(e); }
+});
+
+// --- persistence of inputs ---
+function bindPersistInput(id) {
+  const el = $(id);
+  const key = `rimloc-ui:${id}`;
+  const saved = localStorage.getItem(key);
+  if (saved !== null) el.value = saved;
+  el.addEventListener('input', () => localStorage.setItem(key, el.value));
+}
+
+['start-mod-root','start-src','start-trg','start-po-out','start-tm-roots',
+ 'val-mod-root','val-src','val-src-dir',
+ 'diff-mod-root','diff-src','diff-src-dir','diff-trg','diff-trg-dir',
+ 'imp-po','imp-mod-root','imp-trg','imp-trg-dir',
+ 'ann-root','ann-src','ann-src-dir','ann-trg','ann-trg-dir','ann-prefix',
+ 'lang-game-root','lang-repo','lang-branch','lang-zip','lang-src-dir','lang-trg-dir']
+ .forEach(bindPersistInput);
