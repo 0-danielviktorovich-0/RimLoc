@@ -25,6 +25,7 @@ Template (copy the sections you need):
 ### Added
 - [export-po] Translation Memory prefill: `--tm-root` to prefill msgstr and mark entries as `fuzzy` (#PR)
 - [cli] Localized help for `--tm-root` and TM coverage summary in export output (#PR)
+- [cli] New `diff-xml` command: compares source vs translation presence and, with a baseline PO, detects changed source strings; supports text/json and writing ChangedData.txt/TranslationData.txt/ModData.txt (#PR)
 
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)

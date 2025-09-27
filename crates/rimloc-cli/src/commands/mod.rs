@@ -1,4 +1,5 @@
 pub mod build_mod;
+pub mod diff_xml;
 pub mod export_po;
 pub mod import_po;
 pub mod scan;
