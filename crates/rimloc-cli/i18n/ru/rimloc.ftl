@@ -146,6 +146,7 @@ help-exportpo-about = Экспортировать извлечённые стр
 help-exportpo-root = Путь к корню мода RimWorld с извлечёнными строками
 help-exportpo-out-po = Путь к выходному .po файлу
 help-exportpo-lang = ISO-код языка перевода (например, ru, ja, de)
+help-exportpo-pot = Вместо локализованного PO записать POT-шаблон (пустой заголовок Language)
 help-exportpo-source-lang = ISO-код исходного языка для экспорта (например, en, ru, ja)
 help-exportpo-source-lang-dir = Имя папки исходного языка (например, English). Перекрывает --source-lang
 help-exportpo-tm-root = Путь к базе переводов (например, Languages/Russian или корень мода) для автозаполнения msgstr с пометкой fuzzy

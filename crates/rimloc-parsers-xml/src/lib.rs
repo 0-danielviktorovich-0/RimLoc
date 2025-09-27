@@ -38,12 +38,14 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
         {
             continue;
         }
-        // filter to .../Languages/<Locale>/Keyed/....xml
+        // filter to .../Languages/<Locale>/{Keyed,DefInjected}/....xml
         let p_str = p.to_string_lossy();
         if !(p_str.contains("/Languages/") || p_str.contains("\\Languages\\")) {
             continue;
         }
-        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) {
+        let has_keyed = p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\");
+        let has_definj = p_str.contains("/DefInjected/") || p_str.contains("\\DefInjected\\");
+        if !(has_keyed || has_definj) {
             continue;
         }
 

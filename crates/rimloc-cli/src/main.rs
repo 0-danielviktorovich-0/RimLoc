@@ -193,6 +193,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("root", |a| a.help(tr!("help-exportpo-root")));
                 owned = owned.mut_arg("out_po", |a| a.help(tr!("help-exportpo-out-po")));
                 owned = owned.mut_arg("lang", |a| a.help(tr!("help-exportpo-lang")));
+                owned = owned.mut_arg("pot", |a| a.help(tr!("help-exportpo-pot")));
                 owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-exportpo-source-lang")));
                 owned = owned.mut_arg("source_lang_dir", |a| {
                     a.help(tr!("help-exportpo-source-lang-dir"))
@@ -506,6 +507,9 @@ enum Commands {
         /// Target translation language for PO header, e.g., ru, ja, de.
         #[arg(long)]
         lang: Option<String>,
+        /// Write a POT template (empty Language header) instead of a localized PO.
+        #[arg(long, default_value_t = false)]
+        pot: bool,
 
         /// Source language by ISO code (mapped via rimworld_lang_dir).
         #[arg(long)]
@@ -831,6 +835,7 @@ impl Runnable for Commands {
                 root,
                 out_po,
                 lang,
+                pot,
                 source_lang,
                 source_lang_dir,
                 tm_root,
@@ -839,7 +844,7 @@ impl Runnable for Commands {
             } => commands::export_po::run_export_po(
                 root,
                 out_po,
-                lang,
+                if pot { None } else { lang },
                 source_lang,
                 source_lang_dir,
                 tm_root,
