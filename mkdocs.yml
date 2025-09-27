@@ -52,6 +52,7 @@ nav:
   - Repository: https://github.com/0-danielviktorovich-0/RimLoc
   - Home: index.md
   - Install: install.md
+  - Run Downloaded Build: install_run.md
   - CLI:
       - Overview: cli/index.md
       - Scan: cli/scan.md
