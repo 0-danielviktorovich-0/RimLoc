@@ -86,7 +86,9 @@ pub fn run_learn_keyed(
     std::fs::create_dir_all(&out_dir)?;
     // Save learned set for audit
     {
-        #[derive(serde::Serialize)] struct Row<'a> { key: &'a str, value: &'a str, confidence: f32, sourceFile: String, learnedAt: String }
+        #[derive(serde::Serialize)]
+        #[allow(non_snake_case)]
+        struct Row<'a> { key: &'a str, value: &'a str, confidence: f32, sourceFile: String, learnedAt: String }
         let now = chrono::Utc::now().to_rfc3339();
         let rows: Vec<Row> = missing.iter().map(|c| Row { key: &c.key, value: &c.value, confidence: c.confidence.unwrap_or(1.0), sourceFile: c.source_file.display().to_string(), learnedAt: now.clone() }).collect();
         let learned_path = learned_out.unwrap_or_else(|| out_dir.join("learned_keyed.json"));

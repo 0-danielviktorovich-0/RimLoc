@@ -9,7 +9,6 @@ use parser::{scan_candidates, Candidate};
 use dict::{load_dicts, merge_dicts};
 use export::{write_missing_json, write_suggested_xml};
 use ml::{Classifier, DummyClassifier, RestClassifier};
-use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct LearnOptions {
@@ -87,6 +86,7 @@ pub fn learn_defs(opts: &LearnOptions) -> Result<LearnResult> {
     // Save learned set for audit
     {
         #[derive(serde::Serialize)]
+        #[allow(non_snake_case)]
         struct Row<'a> { defType: &'a str, defName: &'a str, fieldPath: &'a str, confidence: f32, sourceFile: String, learnedAt: String }
         let now = chrono::Utc::now().to_rfc3339();
         let rows: Vec<Row> = missing_owned.iter().map(|c| Row {

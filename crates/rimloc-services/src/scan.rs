@@ -28,7 +28,7 @@ pub fn scan_units_with_defs_and_dict(
     dict: &std::collections::HashMap<String, Vec<String>>,
     extra_fields: &[String],
 ) -> Result<Vec<TransUnit>> {
-    let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
+    let units = rimloc_parsers_xml::scan_keyed_xml(root)?;
     let defs = rimloc_parsers_xml::scan_defs_with_dict(root, defs_root, dict, extra_fields)?;
     Ok({ let mut u = units; u.extend(defs); u })
 }

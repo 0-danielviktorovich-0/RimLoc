@@ -102,6 +102,7 @@ pub fn learn_keyed(
 
 pub fn write_keyed_missing_json(path: &Path, cands: &[KeyedCandidate]) -> Result<()> {
     #[derive(serde::Serialize)]
+    #[allow(non_snake_case)]
     struct Item<'a> { key: &'a str, value: &'a str, confidence: f32, sourceFile: String }
     let items: Vec<Item> = cands.iter().map(|c| Item { key: &c.key, value: &c.value, confidence: c.confidence.unwrap_or(1.0), sourceFile: c.source_file.display().to_string() }).collect();
     let file = std::fs::File::create(path)?;
@@ -119,4 +120,3 @@ pub fn write_keyed_suggested_xml(path: &Path, cands: &[KeyedCandidate]) -> Resul
     writeln!(f, "</LanguageData>")?;
     Ok(())
 }
-

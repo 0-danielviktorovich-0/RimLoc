@@ -1,4 +1,3 @@
-use crate::version::resolve_game_version_root;
 
 pub fn run_lang_update(
     game_root: std::path::PathBuf,
@@ -54,4 +53,3 @@ pub fn run_lang_update(
     }
     Ok(())
 }
-
