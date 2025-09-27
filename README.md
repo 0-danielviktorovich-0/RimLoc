@@ -59,6 +59,10 @@ rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang r
 | `rimloc-cli export-po` | Generate a single PO hand-off file for translators. | `rimloc-cli export-po --root ./path/to/mod --out-po ./out/mymod.po --lang ru` |
 | `rimloc-cli import-po` | Bring PO updates back into XML or a single `_Imported.xml`. | `rimloc-cli import-po --po ./out/mymod.po --mod-root ./path/to/mod --dry-run` |
 | `rimloc-cli build-mod` | Scaffold a translation-only mod ready for release. | `rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru` |
+| `rimloc-cli diff-xml` | Compare source vs translation presence; detect changed source with baseline PO. | `rimloc-cli diff-xml --root ./Mods/MyMod --source-lang en --lang ru --baseline-po ./prev.po --out-dir ./diff` |
+| `rimloc-cli annotate` | Add/remove source-text comments in translation XML. | `rimloc-cli annotate --root ./Mods/MyMod --source-lang en --lang ru --backup` |
+| `rimloc-cli xml-health` | Scan XML under `Languages/` for structural/read errors. | `rimloc-cli xml-health --root ./Mods/MyMod --format json --lang-dir Russian` |
+| `rimloc-cli init` | Create translation skeleton under `Languages/<lang>` from source. | `rimloc-cli init --root ./Mods/MyMod --source-lang en --lang ru` |
 
 ### Versioned mods
 
