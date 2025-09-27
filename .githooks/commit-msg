@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Simple Conventional Commit + body bullets checker for RimLoc
+# Usage: invoked by Git with the path to the commit message file
+
+set -euo pipefail
+
+msg_file=${1:?"commit-msg: missing message file path"}
+subject=$(head -n1 "$msg_file" | tr -d '\r')
+
+# 1) Subject rules
+max_subject=72
+if [ ${#subject} -gt $max_subject ]; then
+  echo "✖ Commit subject exceeds ${max_subject} chars" >&2
+  echo "  -> '$subject' (${#subject})" >&2
+  exit 1
+fi
+
+if ! echo "$subject" | grep -Eq '^(feat|fix|docs|chore|refactor|test|ci|build|perf|revert)(\([^)]+\))?: [^ ].+'; then
+  echo "✖ Subject must follow 'type(scope): summary' (Conventional Commits)" >&2
+  echo "  -> e.g., 'feat(core): add X' or 'chore(release): prep crates'" >&2
+  exit 1
+fi
+
+# 2) Blank line after subject
+second_line=$(sed -n '2p' "$msg_file" | tr -d '\r')
+if [ -n "$second_line" ]; then
+  echo "✖ Leave a blank line after the subject line" >&2
+  exit 1
+fi
+
+# 3) Require at least one bullet point in the body for non-trivial changes
+# Allow empty body only for truly trivial fixes; here we encourage bullets.
+body=$(tail -n +3 "$msg_file" | sed 's/\r$//')
+if ! echo "$body" | grep -Eq '^- '; then
+  echo "✖ Body must include bullet points starting with '- ' describing what/why" >&2
+  echo "  See .gitmessage.txt for examples" >&2
+  exit 1
+fi
+
+# 4) Release-specific nudge
+if echo "$subject" | grep -q '^chore(release):'; then
+  if ! echo "$body" | grep -q 'Run publish in order:'; then
+    echo "✖ Release commits must include the publish order line" >&2
+    echo "  -> Run publish in order: core -> parsers -> exporters/importer -> validate -> cli." >&2
+    exit 1
+  fi
+fi
+
+exit 0
+

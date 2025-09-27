@@ -60,7 +60,7 @@ Thanks for your interest in improving RimLoc. This guide explains how to set up 
 ## Commit Messages
 - Follow the `.gitmessage.txt` template in the repository root (English only). Russian guidance is mirrored at `docs/readme/ru/gitmessage.txt`.
 - Keep subjects within 72 characters, use lowercase type (`feat`, `fix`, etc.), and pick a scope when it clarifies the impact.
-- Use the body to explain **what** changed and **why** the change matters.
+- Use the body to explain **what** changed and **why** the change matters, as bullet points starting with `- `.
 
 Example message:
 
@@ -70,6 +70,19 @@ refactor(po): centralize simple PO parsing in rimloc-core
 - expose `parse_simple_po` helper that understands msgid/msgstr plus reference lines
 - reuse the shared `PoEntry` struct in importer and validator instead of local copies
 - switch XML helpers to the core-level parser export
+```
+
+Release commits use a detailed body and include the publish order line:
+
+```
+chore(release): prep crates for crates.io (0.1.0-dev.0)
+
+- Bump all RimLoc crates to 0.1.0-dev.0
+- Add versioned deps for path crates; add metadata (license, repo, docs)
+- Exclude logs from CLI package
+- Normalize Ko-fi badge to ASCII hyphen to avoid % encoding issues
+
+Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
 ```
 
 ## Repository Policies
