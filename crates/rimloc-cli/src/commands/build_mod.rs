@@ -84,7 +84,13 @@ pub fn run_build_mod(
                 for entry in rd.flatten() {
                     if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                         let name = entry.file_name().to_string_lossy().to_string();
-                        if name.starts_with('v') || name.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                        if name.starts_with('v')
+                            || name
+                                .chars()
+                                .next()
+                                .map(|c| c.is_ascii_digit())
+                                .unwrap_or(false)
+                        {
                             versions.insert(name);
                         }
                     }

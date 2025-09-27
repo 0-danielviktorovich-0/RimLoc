@@ -1,0 +1,12 @@
+#: Languages/Russian/Keyed/Sample.xml:1
+msgctxt "A|Languages/Russian/Keyed/Sample.xml:1"
+msgstr "oldA"
+
+#: Languages/Russian/Keyed/Sample.xml:1
+msgctxt "B|Languages/Russian/Keyed/Sample.xml:1"
+msgstr "newB"
+
+#: Languages/Russian/Keyed/Sample.xml:1
+msgctxt "C|Languages/Russian/Keyed/Sample.xml:1"
+msgstr "newC"
+
