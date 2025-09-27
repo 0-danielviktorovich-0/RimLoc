@@ -11,6 +11,22 @@ RimLoc помогает моддерам RimWorld поддерживать пе�
 [:material-play-circle: Начать перевод](guide/translators.md){ .md-button .md-button--primary }
 [:material-cog: Конфигурация (rimloc.toml)](guide/configuration.md){ .md-button }
 
+## Быстрый старт (5 шагов)
+
+1) Установить один раз
+   - `cargo install rimloc-cli`
+2) Добавить конфиг (необязательно, экономит флаги)
+   - Создайте `rimloc.toml` с `source_lang = "English"`, `target_lang = "Russian"`
+3) Сканировать и проверить мод
+   - `rimloc-cli scan --root ./Mods/MyMod --format json > scan.json`
+   - `rimloc-cli validate --root ./Mods/MyMod`
+4) Экспортировать PO и перевести в Poedit
+   - `rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru`
+5) Импортировать и собрать мод‑перевод
+   - `rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run`
+   - `rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru`
+
+
 ## Зачем нужен RimLoc?
 
 - За один запуск собирает все строки из `Languages/*/{Keyed,DefInjected}`.
