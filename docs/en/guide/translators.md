@@ -13,18 +13,24 @@ What you’ll do:
 - Import your translations back into XML
 - Build a translation‑only mod to test in game
 
-Before you begin (one‑time)
-1) Install Rust toolchain (gives you `cargo` and lets you install rimloc):
-   - Windows: https://www.rust-lang.org/tools/install → “Install Rust” (default next/next)
-   - macOS: same link; on Apple Silicon it’s ok
-   - Linux: same link; follow the shell command there
-2) Install RimLoc CLI:
-   - Open Terminal (Windows: PowerShell)
-   - Run: `cargo install rimloc-cli`
+Get RimLoc CLI (choose one)
+- Option A — Download a ready build (recommended): use the Install page, then run it from a terminal.
+  - Guide: Install → Run Downloaded Build.
+  - Windows: from the folder run `.\\rimloc-cli`; macOS/Linux: `./rimloc-cli`.
+- Option B — Install via Cargo (requires Rust):
+  - Install Rust: https://www.rust-lang.org/tools/install
+  - Then: `cargo install rimloc-cli`
 
 Why this matters?
-- Rust is installed once to get `cargo install` — that’s how RimLoc CLI is installed.
-- After that you’ll run everything below with a single tool: `rimloc-cli`.
+- If you download a release/dev build, you do NOT need Rust or Cargo at all.
+- Either way, the tool you will use is the same command: `rimloc-cli`.
+
+Plain terms (no jargon)
+- Terminal: a program where you type commands. Windows → PowerShell; macOS → Terminal; Linux → any terminal.
+- Mod root: the top folder of the mod (what you would copy into `Mods/`).
+- PO file: a single translation file with pairs “source → translation”; open it in Poedit.
+- Placeholder: pieces like `%d`, `%s`, `{NAME}` — don’t change them in translations; RimLoc can check them.
+- Dry‑run: do a safe preview without changing files.
 
 Make RimLoc easy (optional but recommended)
 Why helpful?
@@ -113,11 +119,13 @@ Why is this important?
 
 Tips if you fear the terminal
 - Copy‑paste commands exactly; paths in quotes `"..."` are your folders.
-- On Windows use PowerShell, on macOS “Terminal”, on Linux any terminal.
-- If unsure, put `--dry-run` first. RimLoc prints the plan without changing files.
+- Windows: PowerShell; macOS: Terminal; Linux: any terminal.
+- If unsure, add `--dry-run` to preview changes.
 
 Troubleshooting
-- “command not found: rimloc-cli” — open a new terminal after `cargo install`, or ensure `~/.cargo/bin` is on PATH.
+- “command not found: rimloc-cli”
+  - If you installed via Cargo: open a new terminal or ensure `~/.cargo/bin` (Windows: `%USERPROFILE%\\.cargo\\bin`) is on PATH.
+  - If you downloaded a release: run from the folder where you unpacked it — `.\\rimloc-cli` (Windows) or `./rimloc-cli` (macOS/Linux) — or add that folder to PATH.
 - “mismatched placeholders” — fix the entry in Poedit; placeholders like `%d` or `{NAME}` must stay.
 - “nothing to import” — maybe all PO entries are empty; use `--keep-empty` if you want to import placeholders as blanks.
 
