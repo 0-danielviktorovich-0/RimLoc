@@ -7,6 +7,7 @@ pub fn run_diff_xml(
     source_lang_dir: Option<String>,
     defs_dir: Option<std::path::PathBuf>,
     defs_field: Vec<String>,
+    defs_dict: Vec<std::path::PathBuf>,
     lang: Option<String>,
     lang_dir: Option<String>,
     baseline_po: Option<std::path::PathBuf>,
@@ -53,28 +54,35 @@ pub fn run_diff_xml(
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let mut cli_defs_field = defs_field;
     if cli_defs_field.is_empty() {
-        if let Some(scan) = cfg.scan {
-            if let Some(extra) = scan.defs_fields { cli_defs_field = extra; }
+        if let Some(ref scan) = cfg.scan {
+            if let Some(extra) = scan.defs_fields.clone() { cli_defs_field = extra; }
         }
     }
-    let diff = if cli_defs_field.is_empty() {
-        rimloc_services::diff_xml_with_defs(
-            &scan_root,
-            &src_dir,
-            &trg_dir,
-            baseline_po.as_deref(),
-            defs_abs.as_deref(),
-        )?
-    } else {
-        rimloc_services::diff_xml_with_defs_and_fields(
-            &scan_root,
-            &src_dir,
-            &trg_dir,
-            baseline_po.as_deref(),
-            defs_abs.as_deref(),
-            &cli_defs_field,
-        )?
-    };
+    // Merge dictionaries
+    let mut dicts = Vec::new();
+    dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
+    if let Some(ref scan) = cfg.scan.as_ref() {
+        if let Some(paths) = scan.defs_dicts.as_ref() {
+            for p in paths {
+                let pp = if p.starts_with('/') || p.contains(':') { std::path::PathBuf::from(p) } else { scan_root.join(p) };
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+            }
+        }
+    }
+    for p in &defs_dict {
+        let pp = if p.is_absolute() { p.clone() } else { scan_root.join(p) };
+        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+    }
+    let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
+
+    let diff = rimloc_services::diff_xml_with_defs_and_fields(
+        &scan_root,
+        &src_dir,
+        &trg_dir,
+        baseline_po.as_deref(),
+        defs_abs.as_deref(),
+        &cli_defs_field,
+    )?;
     let any_diff = !diff.changed.is_empty() || !diff.only_in_translation.is_empty() || !diff.only_in_mod.is_empty();
 
     // Output

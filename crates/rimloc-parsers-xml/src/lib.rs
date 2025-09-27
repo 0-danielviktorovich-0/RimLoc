@@ -3,6 +3,7 @@ pub use rimloc_core::parse_simple_po as parse_po_string;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rimloc_core::{Result as CoreResult, TransUnit};
+use serde::Deserialize;
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fs;
@@ -316,6 +317,123 @@ pub fn scan_all_units_with_defs_and_fields(
         Err(_) => {}
     }
     Ok(units)
+}
+
+// --------------------------
+// Defs dictionary support
+// --------------------------
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct DefsDict(pub std::collections::HashMap<String, Vec<String>>);
+
+pub fn load_embedded_defs_dict() -> DefsDict {
+    static JSON_BYTES: &[u8] = include_bytes!("../assets/defs_fields.json");
+    let json = std::str::from_utf8(JSON_BYTES).unwrap_or("{}");
+    let map: std::collections::HashMap<String, Vec<String>> = serde_json::from_str(json).unwrap_or_default();
+    DefsDict(map)
+}
+
+pub fn load_defs_dict_from_str(s: &str) -> CoreResult<DefsDict> {
+    let map: std::collections::HashMap<String, Vec<String>> = serde_json::from_str(s)?;
+    Ok(DefsDict(map))
+}
+
+pub fn load_defs_dict_from_file(path: &Path) -> CoreResult<DefsDict> {
+    let s = fs::read_to_string(path)?;
+    load_defs_dict_from_str(&s)
+}
+
+pub fn merge_defs_dicts(dicts: &[DefsDict]) -> DefsDict {
+    use std::collections::{BTreeSet, HashMap};
+    let mut out: HashMap<String, BTreeSet<String>> = HashMap::new();
+    for d in dicts {
+        for (k, v) in &d.0 {
+            let e = out.entry(k.clone()).or_default();
+            for s in v { e.insert(s.clone()); }
+        }
+    }
+    let mut flat = std::collections::HashMap::new();
+    for (k, v) in out { flat.insert(k, v.into_iter().collect()); }
+    DefsDict(flat)
+}
+
+/// Navigate a roxmltree node by a dot path like `ingestible.ingestCommandString` or `ingredients.li.label`.
+fn collect_values_by_path<'a>(node: roxmltree::Node<'a, 'a>, path: &[&str], out: &mut Vec<&'a str>) {
+    if path.is_empty() {
+        if let Some(t) = node.text() {
+            let t = t.trim();
+            if !t.is_empty() { out.push(t); }
+        }
+        return;
+    }
+    let head = path[0];
+    let tail = &path[1..];
+    if head.eq_ignore_ascii_case("li") {
+        for child in node.children().filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li")) {
+            collect_values_by_path(child, tail, out);
+        }
+    } else {
+        for child in node.children().filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head)) {
+            collect_values_by_path(child, tail, out);
+        }
+    }
+}
+
+/// Scan Defs using a dictionary of field paths per DefType and optional extra shallow fields.
+pub fn scan_defs_with_dict(
+    root: &Path,
+    defs_root: Option<&Path>,
+    dict: &std::collections::HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> CoreResult<Vec<TransUnit>> {
+    use walkdir::WalkDir;
+    let mut out: Vec<TransUnit> = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() { continue; }
+        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
+        if let Some(base) = defs_root { if !p.starts_with(base) { continue; } } else {
+            let s = p.to_string_lossy();
+            if !(s.contains("/Defs/") || s.contains("\\Defs\\")) { continue; }
+        }
+        let content = match fs::read_to_string(p) { Ok(s) => s, Err(_) => continue };
+        let doc = match roxmltree::Document::parse(&content) { Ok(d) => d, Err(_) => continue };
+        let mut line_starts = Vec::new(); line_starts.push(0usize); for (idx, _) in content.match_indices('\n') { line_starts.push(idx + 1); }
+        let root_el = doc.root_element();
+        for def_node in root_el.children().filter(|n| n.is_element()) {
+            let def_type = def_node.tag_name().name().to_string();
+            let def_name = def_node
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                .and_then(|n| n.text())
+                .map(str::trim)
+                .unwrap_or("")
+                .to_string();
+            if def_name.is_empty() { continue; }
+            // Dict paths for this type
+            if let Some(paths) = dict.get(&def_type) {
+                for path in paths {
+                    let segs: Vec<&str> = path.split('.').filter(|s| !s.is_empty()).collect();
+                    let mut vals = Vec::new();
+                    collect_values_by_path(def_node, &segs, &mut vals);
+                    for v in vals {
+                        // approximate line: start from first segment if present
+                        let line = def_node.range().start;
+                        let line = usize::try_from(line).unwrap_or(0);
+                        let line = Some(match line_starts.binary_search(&line) { Ok(idx)=>idx+1, Err(idx) if idx>0=>idx, _=>1 });
+                        out.push(TransUnit { key: format!("{}.{path}", def_name), source: Some(v.to_string()), path: p.to_path_buf(), line });
+                    }
+                }
+            }
+            // Shallow extra fields (immediate children)
+            for f in extra_fields {
+                if let Some(fnode) = def_node.children().find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(f)) {
+                    if let Some(val) = fnode.text().map(str::trim) { let line = fnode.range().start; let line = usize::try_from(line).unwrap_or(0); let line = Some(match line_starts.binary_search(&line) { Ok(idx)=>idx+1, Err(idx) if idx>0=>idx, _=>1 }); out.push(TransUnit { key: format!("{}.{}", def_name, f), source: Some(val.to_string()), path: p.to_path_buf(), line }); }
+                }
+            }
+        }
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
