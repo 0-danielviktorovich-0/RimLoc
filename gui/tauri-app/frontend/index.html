@@ -10,113 +10,206 @@
     <header>
       <h1>RimLoc GUI</h1>
       <nav>
-        <button data-tab="start">Start</button>
-        <button data-tab="validate">Validate</button>
-        <button data-tab="diff">Diff</button>
-        <button data-tab="import">Import/Build</button>
-        <button data-tab="annotate">Annotate</button>
-        <button data-tab="lang">Lang Update</button>
-        <button data-tab="settings">Settings</button>
+        <button data-tab="start" class="active" data-i18n="tab_start">Start</button>
+        <button data-tab="validate" data-i18n="tab_validate">Validate</button>
+        <button data-tab="diff" data-i18n="tab_diff">Diff</button>
+        <button data-tab="import" data-i18n="tab_import">Import/Build</button>
+        <button data-tab="annotate" data-i18n="tab_annotate">Annotate</button>
+        <button data-tab="morph" data-i18n="tab_morph">Morph</button>
+        <button data-tab="lang" data-i18n="tab_lang">Lang Update</button>
+        <button data-tab="tools" data-i18n="tab_tools">Tools</button>
+        <button data-tab="settings" data-i18n="tab_settings">Settings</button>
       </nav>
     </header>
     <main>
       <section id="start" class="tab active">
-        <h2>Start</h2>
+        <h2 data-i18n="hdr_start">Start</h2>
         <div class="grid">
-          <label>Mod root <input id="start-mod-root" placeholder="/path/to/Mods/MyMod" /></label>
-          <label>Source lang code <input id="start-src" value="en" /></label>
-          <label>Target lang code <input id="start-trg" value="ru" /></label>
-          <label>PO output <input id="start-po-out" placeholder="./logs/MyMod.po" /></label>
-          <label>TM roots (comma) <input id="start-tm-roots" placeholder="/path/Languages/Russian,/other/root" /></label>
+          <label data-i18n="lbl_mod_root">Mod root
+            <div class="pick">
+              <input id="start-mod-root" placeholder="/path/to/Mods/MyMod" />
+              <button class="pick-btn" data-pick="dir" data-for="start-mod-root">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_src_code">Source lang code <input id="start-src" value="en" /></label>
+          <label data-i18n="lbl_trg_code">Target lang code <input id="start-trg" value="ru" /></label>
+          <label data-i18n="lbl_po_out">PO output
+            <div class="pick">
+              <input id="start-po-out" placeholder="./logs/MyMod.po" />
+              <button class="pick-btn" data-pick="savefile" data-for="start-po-out">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_tm_roots">TM roots (comma) <input id="start-tm-roots" placeholder="/path/Languages/Russian,/other/root" /></label>
         </div>
         <div class="actions">
-          <button id="btn-scan">Scan</button>
-          <button id="btn-export">Export PO</button>
+          <button id="btn-scan" data-i18n="btn_scan">Scan</button>
+          <button id="btn-export" data-i18n="btn_export">Export PO</button>
         </div>
         <pre id="start-output" class="output"></pre>
       </section>
 
       <section id="validate" class="tab">
-        <h2>Validate</h2>
+        <h2 data-i18n="hdr_validate">Validate</h2>
         <div class="grid">
-          <label>Mod root <input id="val-mod-root" placeholder="/path/to/Mods/MyMod" /></label>
-          <label>Source lang code <input id="val-src" value="en" /></label>
-          <label>Source lang dir <input id="val-src-dir" placeholder="English (optional)" /></label>
+          <label data-i18n="lbl_mod_root">Mod root
+            <div class="pick">
+              <input id="val-mod-root" placeholder="/path/to/Mods/MyMod" />
+              <button class="pick-btn" data-pick="dir" data-for="val-mod-root">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_src_code">Source lang code <input id="val-src" value="en" /></label>
+          <label data-i18n="lbl_src_dir">Source lang dir <input id="val-src-dir" placeholder="English (optional)" /></label>
         </div>
         <div class="actions">
-          <button id="btn-validate">Validate</button>
-          <button id="btn-xml-health">XML Health</button>
+          <button id="btn-validate" data-i18n="btn_validate">Validate</button>
+          <button id="btn-xml-health" data-i18n="btn_xml_health">XML Health</button>
         </div>
         <pre id="validate-output" class="output"></pre>
       </section>
 
       <section id="diff" class="tab">
-        <h2>Diff</h2>
+        <h2 data-i18n="hdr_diff">Diff</h2>
         <div class="grid">
-          <label>Mod root <input id="diff-mod-root" /></label>
-          <label>Source lang code <input id="diff-src" value="en" /></label>
-          <label>Source lang dir <input id="diff-src-dir" placeholder="English (optional)" /></label>
-          <label>Target lang code <input id="diff-trg" value="ru" /></label>
-          <label>Target lang dir <input id="diff-trg-dir" placeholder="Russian (optional)" /></label>
+          <label data-i18n="lbl_mod_root">Mod root
+            <div class="pick">
+              <input id="diff-mod-root" />
+              <button class="pick-btn" data-pick="dir" data-for="diff-mod-root">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_src_code">Source lang code <input id="diff-src" value="en" /></label>
+          <label data-i18n="lbl_src_dir">Source lang dir <input id="diff-src-dir" placeholder="English (optional)" /></label>
+          <label data-i18n="lbl_trg_code">Target lang code <input id="diff-trg" value="ru" /></label>
+          <label data-i18n="lbl_trg_dir">Target lang dir <input id="diff-trg-dir" placeholder="Russian (optional)" /></label>
         </div>
         <div class="actions">
-          <button id="btn-diff">Run Diff</button>
+          <button id="btn-diff" data-i18n="btn_run_diff">Run Diff</button>
         </div>
         <pre id="diff-output" class="output"></pre>
       </section>
 
       <section id="import" class="tab">
-        <h2>Import/Build</h2>
+        <h2 data-i18n="hdr_import">Import/Build</h2>
         <div class="grid">
-          <label>PO file <input id="imp-po" placeholder="./logs/MyMod.po" /></label>
-          <label>Mod root <input id="imp-mod-root" placeholder="/path/Mods/MyMod" /></label>
-          <label>Target lang code <input id="imp-trg" value="ru" /></label>
-          <label>Target lang dir <input id="imp-trg-dir" placeholder="Russian (optional)" /></label>
-          <label>Only diff <input id="imp-only-diff" type="checkbox" /></label>
+          <label data-i18n="lbl_po_file">PO file
+            <div class="pick">
+              <input id="imp-po" placeholder="./logs/MyMod.po" />
+              <button class="pick-btn" data-pick="file" data-for="imp-po">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_mod_root">Mod root
+            <div class="pick">
+              <input id="imp-mod-root" placeholder="/path/Mods/MyMod" />
+              <button class="pick-btn" data-pick="dir" data-for="imp-mod-root">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_trg_code">Target lang code <input id="imp-trg" value="ru" /></label>
+          <label data-i18n="lbl_trg_dir">Target lang dir <input id="imp-trg-dir" placeholder="Russian (optional)" /></label>
+          <label data-i18n="lbl_only_diff">Only diff <input id="imp-only-diff" type="checkbox" /></label>
         </div>
         <div class="actions">
-          <button id="btn-import-dry">Import DRY-RUN</button>
-          <button id="btn-import-apply" class="danger">Apply Import</button>
-          <button id="btn-build-dry">Build DRY-RUN</button>
-          <button id="btn-build-apply" class="danger">Apply Build</button>
+          <button id="btn-import-dry" data-i18n="btn_import_dry">Import DRY-RUN</button>
+          <button id="btn-import-apply" class="danger" data-i18n="btn_import_apply">Apply Import</button>
+          <button id="btn-build-dry" data-i18n="btn_build_dry">Build DRY-RUN</button>
+          <button id="btn-build-apply" class="danger" data-i18n="btn_build_apply">Apply Build</button>
         </div>
         <pre id="import-output" class="output"></pre>
       </section>
 
       <section id="annotate" class="tab">
-        <h2>Annotate</h2>
+        <h2 data-i18n="hdr_annotate">Annotate</h2>
         <div class="grid">
-          <label>Mod root <input id="ann-root" placeholder="/path/Mods/MyMod" /></label>
-          <label>Source lang code <input id="ann-src" value="en" /></label>
-          <label>Source lang dir <input id="ann-src-dir" placeholder="English (optional)" /></label>
-          <label>Target lang code <input id="ann-trg" value="ru" /></label>
-          <label>Target lang dir <input id="ann-trg-dir" placeholder="Russian (optional)" /></label>
-          <label>Prefix <input id="ann-prefix" value="EN:" /></label>
-          <label>Strip <input id="ann-strip" type="checkbox" /></label>
-          <label>Backup <input id="ann-backup" type="checkbox" /></label>
+          <label data-i18n="lbl_mod_root">Mod root
+            <div class="pick">
+              <input id="ann-root" placeholder="/path/Mods/MyMod" />
+              <button class="pick-btn" data-pick="dir" data-for="ann-root">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_src_code">Source lang code <input id="ann-src" value="en" /></label>
+          <label data-i18n="lbl_src_dir">Source lang dir <input id="ann-src-dir" placeholder="English (optional)" /></label>
+          <label data-i18n="lbl_trg_code">Target lang code <input id="ann-trg" value="ru" /></label>
+          <label data-i18n="lbl_trg_dir">Target lang dir <input id="ann-trg-dir" placeholder="Russian (optional)" /></label>
+          <label data-i18n="lbl_prefix">Prefix <input id="ann-prefix" value="EN:" /></label>
+          <label data-i18n="lbl_strip">Strip <input id="ann-strip" type="checkbox" /></label>
+          <label data-i18n="lbl_backup">Backup <input id="ann-backup" type="checkbox" /></label>
         </div>
         <div class="actions">
-          <button id="btn-ann-dry">Dry-run</button>
-          <button id="btn-ann-apply" class="danger">Apply</button>
+          <button id="btn-ann-dry" data-i18n="btn_dry_run">Dry-run</button>
+          <button id="btn-ann-apply" class="danger" data-i18n="btn_apply">Apply</button>
         </div>
         <pre id="annotate-output" class="output"></pre>
       </section>
 
-      <section id="lang" class="tab">
-        <h2>Lang Update</h2>
+      <section id="morph" class="tab">
+        <h2 data-i18n="hdr_morph">Morph</h2>
         <div class="grid">
-          <label>Game root <input id="lang-game-root" placeholder="/games/RimWorld" /></label>
-          <label>Repo <input id="lang-repo" value="Ludeon/RimWorld-ru" /></label>
-          <label>Branch <input id="lang-branch" placeholder="(default)" /></label>
-          <label>Zip <input id="lang-zip" placeholder="./RimWorld-ru.zip (optional)" /></label>
-          <label>Source dir <input id="lang-src-dir" value="Russian" /></label>
-          <label>Target dir <input id="lang-trg-dir" value="Russian (GitHub)" /></label>
+          <label data-i18n="lbl_mod_root">Mod root
+            <div class="pick">
+              <input id="morph-root" placeholder="/path/Mods/MyMod" />
+              <button class="pick-btn" data-pick="dir" data-for="morph-root">…</button>
+            </div>
+          </label>
+          <label>Provider 
+            <select id="morph-provider">
+              <option value="dummy">dummy</option>
+              <option value="morpher">morpher</option>
+              <option value="pymorphy2">pymorphy2</option>
+            </select>
+          </label>
+          <label data-i18n="lbl_trg_code">Target lang code <input id="morph-trg" value="ru" /></label>
+          <label data-i18n="lbl_trg_dir">Target lang dir <input id="morph-trg-dir" placeholder="Russian (optional)" /></label>
+          <label>Filter regex <input id="morph-filter" value=".*" /></label>
+          <label>Limit <input id="morph-limit" value="50" /></label>
+          <label>Timeout ms <input id="morph-timeout" value="1500" /></label>
+          <label>Cache size <input id="morph-cache" value="1024" /></label>
+          <label>Pymorphy URL <input id="morph-pym-url" placeholder="http://localhost:5000" /></label>
         </div>
         <div class="actions">
-          <button id="btn-lang-dry">Plan Update (DRY)</button>
-          <button id="btn-lang-apply" class="danger">Apply Update</button>
+          <button id="btn-morph-run" data-i18n="btn_run">Run</button>
+        </div>
+        <pre id="morph-output" class="output"></pre>
+      </section>
+
+      <section id="lang" class="tab">
+        <h2 data-i18n="hdr_lang">Lang Update</h2>
+        <div class="grid">
+          <label data-i18n="lbl_game_root">Game root
+            <div class="pick">
+              <input id="lang-game-root" placeholder="/games/RimWorld" />
+              <button class="pick-btn" data-pick="dir" data-for="lang-game-root">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_repo">Repo <input id="lang-repo" value="Ludeon/RimWorld-ru" /></label>
+          <label data-i18n="lbl_branch">Branch <input id="lang-branch" placeholder="(default)" /></label>
+          <label data-i18n="lbl_zip">Zip
+            <div class="pick">
+              <input id="lang-zip" placeholder="./RimWorld-ru.zip (optional)" />
+              <button class="pick-btn" data-pick="file" data-for="lang-zip">…</button>
+            </div>
+          </label>
+          <label data-i18n="lbl_src_dir">Source dir <input id="lang-src-dir" value="Russian" /></label>
+          <label data-i18n="lbl_trg_dir">Target dir <input id="lang-trg-dir" value="Russian (GitHub)" /></label>
+        </div>
+        <div class="actions">
+          <button id="btn-lang-dry" data-i18n="btn_plan_dry">Plan Update (DRY)</button>
+          <button id="btn-lang-apply" class="danger" data-i18n="btn_apply_update">Apply Update</button>
         </div>
         <pre id="lang-output" class="output"></pre>
+      </section>
+
+      <section id="tools" class="tab">
+        <h2 data-i18n="hdr_tools">Tools</h2>
+        <div class="grid">
+          <label data-i18n="lbl_out_dir">Output dir
+            <div class="pick">
+              <input id="tools-out-dir" placeholder="./docs/assets/schemas" />
+              <button class="pick-btn" data-pick="dir" data-for="tools-out-dir">…</button>
+            </div>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="btn-schema-dump" data-i18n="btn_schema_dump">Dump JSON Schemas</button>
+        </div>
+        <pre id="tools-output" class="output"></pre>
       </section>
 
       <section id="settings" class="tab">
@@ -126,16 +219,17 @@
     </main>
 
     <footer>
-      <div class="footer-left">
+      <div class="footer-left" id="app-version">
         <small>RimLoc GUI • Tauri shell • Made with ❤️</small>
       </div>
       <div class="footer-right">
-        <label>UI: 
+        <label data-i18n="lbl_ui_lang">UI:
           <select id="ui-lang">
             <option value="en">English</option>
             <option value="ru">Русский</option>
           </select>
         </label>
+        <button id="btn-open-path" class="ghost" data-i18n="btn_open_last">Open Last Path</button>
       </div>
     </footer>
 
