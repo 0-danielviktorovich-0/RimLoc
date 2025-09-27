@@ -1,4 +1,6 @@
 use crate::version::resolve_game_version_root;
+use quick_xml::events::Event;
+use quick_xml::Reader;
 
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
@@ -207,11 +209,12 @@ pub fn run_import_po(
     }
 
     // Summary counters
+    type FileTuple = (String, usize, &'static str, Vec<String>, Vec<String>);
     let mut created_files = 0usize;
     let mut updated_files = 0usize;
     let mut skipped_files = 0usize;
     let mut keys_written = 0usize;
-    let mut files_stat: Vec<(String, usize, &'static str)> = Vec::new();
+    let mut files_stat: Vec<FileTuple> = Vec::new();
 
     for (rel, items) in grouped {
         let out_path = root.join("Languages").join(&lang_folder).join(&rel);
@@ -220,13 +223,40 @@ pub fn run_import_po(
             std::fs::copy(&out_path, &bak)?;
             tracing::warn!(event = "backup", from = %out_path.display(), to = %bak.display());
         }
+        let (added_keys, changed_keys) = if report && format == "json" && out_path.exists() {
+            if let Ok(old_map) = parse_language_file_keys(&out_path) {
+                let mut added = Vec::new();
+                let mut changed = Vec::new();
+                for (k, v) in &items {
+                    if let Some(old) = old_map.get(k) {
+                        if old != v {
+                            changed.push(k.clone());
+                        }
+                    } else {
+                        added.push(k.clone());
+                    }
+                }
+                (added, changed)
+            } else {
+                (Vec::new(), Vec::new())
+            }
+        } else {
+            (Vec::new(), Vec::new())
+        };
+
         if incremental && out_path.exists() {
             // render new bytes and compare with existing file
             let new_bytes = rimloc_import_po::render_language_data_xml_bytes(&items)?;
             let old_bytes = std::fs::read(&out_path).unwrap_or_default();
             if old_bytes == new_bytes {
                 skipped_files += 1;
-                files_stat.push((out_path.display().to_string(), items.len(), "skipped"));
+                files_stat.push((
+                    out_path.display().to_string(),
+                    items.len(),
+                    "skipped",
+                    Vec::new(),
+                    Vec::new(),
+                ));
                 continue;
             }
         }
@@ -236,10 +266,22 @@ pub fn run_import_po(
         keys_written += items.len();
         if existed {
             updated_files += 1;
-            files_stat.push((out_path.display().to_string(), items.len(), "updated"));
+            files_stat.push((
+                out_path.display().to_string(),
+                items.len(),
+                "updated",
+                added_keys,
+                changed_keys,
+            ));
         } else {
             created_files += 1;
-            files_stat.push((out_path.display().to_string(), items.len(), "created"));
+            files_stat.push((
+                out_path.display().to_string(),
+                items.len(),
+                "created",
+                added_keys,
+                changed_keys,
+            ));
         }
     }
 
@@ -251,6 +293,8 @@ pub fn run_import_po(
                 path: &'a str,
                 keys: usize,
                 status: &'a str,
+                added: Vec<String>,
+                changed: Vec<String>,
             }
             #[derive(serde::Serialize)]
             struct Summary<'a> {
@@ -263,10 +307,12 @@ pub fn run_import_po(
             }
             let files: Vec<FileStat> = files_stat
                 .iter()
-                .map(|(p, k, s)| FileStat {
+                .map(|(p, k, s, a, c)| FileStat {
                     path: p.as_str(),
                     keys: *k,
                     status: s,
+                    added: a.clone(),
+                    changed: c.clone(),
                 })
                 .collect();
             let sum = Summary {
@@ -289,4 +335,59 @@ pub fn run_import_po(
         }
     }
     Ok(())
+}
+fn parse_language_file_keys(
+    path: &std::path::Path,
+) -> std::io::Result<std::collections::HashMap<String, String>> {
+    use std::fs;
+    let content = fs::read_to_string(path)?;
+    let mut reader = Reader::from_str(&content);
+    reader.config_mut().trim_text(true);
+    let mut buf = Vec::new();
+    let mut stack: Vec<String> = Vec::new();
+    let mut key: Option<String> = None;
+    let mut acc = std::collections::HashMap::new();
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(e)) => {
+                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                stack.push(name.clone());
+                if stack.len() == 2 && !name.is_empty() {
+                    key = Some(name);
+                }
+            }
+            Ok(Event::End(_)) => {
+                if stack.len() == 2 {
+                    key = None;
+                }
+                stack.pop();
+            }
+            Ok(Event::Text(t)) => {
+                if stack.len() == 2 {
+                    if let Some(k) = key.as_ref() {
+                        let v = t
+                            .unescape()
+                            .unwrap_or_else(|_| {
+                                std::borrow::Cow::Owned(
+                                    String::from_utf8_lossy(t.as_ref()).into_owned(),
+                                )
+                            })
+                            .to_string();
+                        acc.insert(k.clone(), v);
+                    }
+                }
+            }
+            Ok(Event::Empty(e)) => {
+                if stack.len() == 1 {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    acc.insert(name, String::new());
+                }
+            }
+            Ok(Event::Eof) => break,
+            Err(_) => break,
+            _ => {}
+        }
+        buf.clear();
+    }
+    Ok(acc)
 }
