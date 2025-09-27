@@ -1,5 +1,9 @@
 # RimLoc
 
+<p align="center">
+  <img src="docs/assets/RIMLOC-baner.png" alt="RimLoc banner" />
+ </p>
+
 [English](README.md) | [Русский](docs/readme/ru/README.md)
 
 [![Build](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml) [![Crates.io](https://img.shields.io/badge/crates.io-rimloc--cli-blue?logo=rust&logoColor=white)](https://crates.io/crates/rimloc-cli) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](LICENSE) [![Sponsor](https://img.shields.io/badge/sponsor-support%20RimLoc-%23ea4aaa?logo=github-sponsors)](docs/en/community/support.md) [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich) [![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich) [![Discord](https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/g8w4fJ8b)
