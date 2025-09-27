@@ -3,15 +3,47 @@
     "label",
     "labelShort",
     "labelPlural",
+    "labelFemale",
+    "labelMale",
+    "title",
     "description",
     "helpText",
     "reportString",
-    "gerundLabel"
+    "gerundLabel",
+    "jobString",
+    "comps.li.label",
+    "tools.li.label"
   ],
   "RecipeDef": [
     "label",
     "description",
-    "jobString"
+    "jobString",
+    "ingredients.li.label"
+  ],
+  "HediffDef": [
+    "label",
+    "labelNoun",
+    "description"
+  ],
+  "TraitDef": [
+    "label",
+    "degreeDatas.li.label",
+    "degreeDatas.li.description"
+  ],
+  "SkillDef": [
+    "label",
+    "description"
+  ],
+  "PawnKindDef": [
+    "label",
+    "labelPlural"
+  ],
+  "BiomeDef": [
+    "label",
+    "description"
+  ],
+  "ResearchProjectDef": [
+    "label",
+    "description"
   ]
 }
-

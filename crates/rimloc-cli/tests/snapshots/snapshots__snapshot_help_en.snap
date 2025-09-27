@@ -12,6 +12,7 @@ Commands:
   validate-po  Validate .po file placeholder consistency (msgid vs msgstr)
   diff-xml     Diff source vs translation presence and detect changed source strings using a baseline PO
   learn-defs   Learn DefInjected fields and generate missing/suggested outputs
+  learn-keyed  Learn Keyed keys from English and suggest missing ones for target language
   annotate     Add or remove comments with original source text in translation XML files
   schema       Dump JSON Schemas for domain types
   xml-health   Scan XML files for structural/read errors under Languages/
