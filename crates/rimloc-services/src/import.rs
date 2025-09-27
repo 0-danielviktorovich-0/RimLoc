@@ -239,3 +239,113 @@ pub fn import_po_to_mod_tree(
 
     Ok((None, Some(ImportSummary { mode: "import".into(), created: created_files, updated: updated_files, skipped: skipped_files, keys: keys_written, files: files_stat })))
 }
+
+/// Apply import with per-file progress callback (current, total, path)
+pub fn import_po_to_mod_tree_with_progress(
+    po: &Path,
+    root: &Path,
+    lang_folder: &str,
+    keep_empty: bool,
+    backup: bool,
+    single_file: bool,
+    incremental: bool,
+    only_diff: bool,
+    report: bool,
+    mut progress: impl FnMut(usize, usize, &Path),
+) -> Result<ImportSummary> {
+    use std::collections::HashMap;
+    let mut entries = rimloc_import_po::read_po_entries(po)?;
+    if !keep_empty {
+        entries.retain(|e| !e.value.trim().is_empty());
+        if entries.is_empty() {
+            return Ok(ImportSummary { mode: "import".into(), created: 0, updated: 0, skipped: 0, keys: 0, files: vec![] });
+        }
+    }
+
+    if single_file {
+        let out = root.join("Languages").join(lang_folder).join("Keyed").join("_Imported.xml");
+        if backup && out.exists() { let _ = std::fs::copy(&out, out.with_extension("xml.bak")); }
+        let pairs: Vec<(String, String)> = entries.into_iter().map(|e| (e.key, e.value)).collect();
+        let bytes = rimloc_import_po::render_language_data_xml_bytes(&pairs)?;
+        crate::util::write_atomic(&out, &bytes)?;
+        progress(1, 1, &out);
+        return Ok(ImportSummary { mode: "import".into(), created: (!out.exists()) as usize, updated: out.exists() as usize, skipped: 0, keys: pairs.len(), files: vec![DFileStat { path: out.display().to_string(), keys: pairs.len(), status: "updated".into(), added: vec![], changed: vec![] }] });
+    }
+
+    // Group by relative path from Languages/*
+    let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$").unwrap();
+    let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
+    for e in entries {
+        let rel = e
+            .reference
+            .as_ref()
+            .and_then(|r| re.captures(r))
+            .and_then(|c| c.name("rel").map(|m| PathBuf::from(m.as_str())))
+            .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml"));
+        grouped.entry(rel).or_default().push((e.key, e.value));
+    }
+
+    let total_files = grouped.len();
+    let mut idx = 0usize;
+
+    let mut created_files = 0usize;
+    let mut updated_files = 0usize;
+    let mut skipped_files = 0usize;
+    let mut keys_written = 0usize;
+    let mut files_stat: Vec<DFileStat> = Vec::new();
+
+    for (rel, mut items) in grouped {
+        let out_path = root.join("Languages").join(lang_folder).join(&rel);
+        if backup && out_path.exists() { let _ = std::fs::copy(&out_path, out_path.with_extension("xml.bak")); }
+
+        let (added_keys, changed_keys) = if report && out_path.exists() {
+            if let Ok(old_map) = parse_language_file_keys(&out_path) {
+                let mut added = Vec::new();
+                let mut changed = Vec::new();
+                for (k, v) in &items {
+                    if let Some(old) = old_map.get(k) {
+                        if old != v { changed.push(k.clone()); }
+                    } else { added.push(k.clone()); }
+                }
+                (added, changed)
+            } else { (Vec::new(), Vec::new()) }
+        } else { (Vec::new(), Vec::new()) };
+
+        if incremental && out_path.exists() {
+            let new_bytes = rimloc_import_po::render_language_data_xml_bytes(&items)?;
+            let old_bytes = std::fs::read(&out_path).unwrap_or_default();
+            if old_bytes == new_bytes {
+                skipped_files += 1;
+                files_stat.push(DFileStat { path: out_path.display().to_string(), keys: items.len(), status: "skipped".into(), added: vec![], changed: vec![] });
+                idx += 1; progress(idx, total_files, &out_path);
+                continue;
+            }
+        }
+
+        let existed = out_path.exists();
+        if only_diff && existed {
+            let old_map = parse_language_file_keys(&out_path).unwrap_or_default();
+            items.retain(|(k, v)| old_map.get(k).map(|ov| ov != v).unwrap_or(true));
+            if items.is_empty() {
+                skipped_files += 1;
+                files_stat.push(DFileStat { path: out_path.display().to_string(), keys: 0, status: "skipped".into(), added: vec![], changed: vec![] });
+                idx += 1; progress(idx, total_files, &out_path);
+                continue;
+            }
+        }
+
+        let bytes = rimloc_import_po::render_language_data_xml_bytes(&items)?;
+        crate::util::write_atomic(&out_path, &bytes)?;
+        keys_written += items.len();
+        if existed {
+            updated_files += 1;
+            files_stat.push(DFileStat { path: out_path.display().to_string(), keys: items.len(), status: "updated".into(), added: added_keys, changed: changed_keys });
+        } else {
+            created_files += 1;
+            files_stat.push(DFileStat { path: out_path.display().to_string(), keys: items.len(), status: "created".into(), added: added_keys, changed: changed_keys });
+        }
+        idx += 1; progress(idx, total_files, &out_path);
+    }
+
+    Ok(ImportSummary { mode: "import".into(), created: created_files, updated: updated_files, skipped: skipped_files, keys: keys_written, files: files_stat })
+}

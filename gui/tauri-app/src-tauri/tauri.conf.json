@@ -20,7 +20,7 @@
     ]
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "targets": "all",
     "icon": [],
     "category": "DeveloperTool",
