@@ -78,6 +78,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     *) die "Unknown option: $1" ;;
   esac
+  # If patch is empty (no hunks), signal caller to fallback to full add
+  if [[ ! -s "$tmp_patch" ]]; then
+    rm -f "$raw_patch" "$tmp_patch"
+    return 1
+  fi
+
 done
 
 have_cmd git || die "git is required"

@@ -81,6 +81,22 @@ if [[ ${#files[@]} -gt 0 ]]; then
   for f in "${files[@]}"; do
     rp=$(normpath "$f")
     echo "$rp" >> "$session_dir/files.list"
+    # Save a snapshot at the time of adding the file to capture this chat's baseline
+    snap_path="$session_dir/snapshots/$rp"
+    miss_path="$session_dir/snapshots-missing/$rp"
+    mkdir -p "$(dirname "$snap_path")" "$(dirname "$miss_path")"
+    if [[ -e "$repo_root/$rp" ]]; then
+      # Copy current content as baseline if not already present
+      if [[ ! -e "$snap_path" ]]; then
+        cp "$repo_root/$rp" "$snap_path"
+      fi
+    else
+      # Mark as missing-at-start (new file in this session)
+      if [[ ! -e "$miss_path" ]]; then
+        mkdir -p "$(dirname "$miss_path")"
+        : > "$miss_path"
+      fi
+    fi
   done
 fi
 
