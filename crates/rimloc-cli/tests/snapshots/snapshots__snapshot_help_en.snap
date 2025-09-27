@@ -13,6 +13,7 @@ Commands:
   diff-xml     Diff source vs translation presence and detect changed source strings using a baseline PO
   annotate     Add or remove comments with original source text in translation XML files
   xml-health   Scan XML files for structural/read errors under Languages/
+  init         Create translation skeleton under Languages/<target> with empty values
   export-po    Export extracted strings into a single .po file
   import-po    Import .po  -  either into a single XML, or spread across existing mod structure
   build-mod    Build a standalone translation mod from a .po file

@@ -262,6 +262,21 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-xmlhealth-lang-dir")));
                 *sc = owned;
             }
+            "init" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-init-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-init-root")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-init-source-lang")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-init-source-lang-dir"))
+                });
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-init-lang")));
+                owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-init-lang-dir")));
+                owned = owned.mut_arg("overwrite", |a| a.help(tr!("help-init-overwrite")));
+                owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-init-dry-run")));
+                owned = owned.mut_arg("game_version", |a| a.help(tr!("help-init-game-version")));
+                *sc = owned;
+            }
             _ => {}
         }
     }
@@ -441,6 +456,34 @@ enum Commands {
         /// Restrict scan to specific language folder name.
         #[arg(long)]
         lang_dir: Option<String>,
+    },
+
+    /// Initialize translation skeleton under Languages/<target>
+    Init {
+        /// Path to mod root.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Source language ISO code.
+        #[arg(long)]
+        source_lang: Option<String>,
+        /// Source language folder name (e.g., "English").
+        #[arg(long)]
+        source_lang_dir: Option<String>,
+        /// Target translation ISO code.
+        #[arg(long)]
+        lang: Option<String>,
+        /// Target translation folder name.
+        #[arg(long)]
+        lang_dir: Option<String>,
+        /// Overwrite existing files if present.
+        #[arg(long, default_value_t = false)]
+        overwrite: bool,
+        /// Dry-run: do not write files, print plan only.
+        #[arg(long, default_value_t = false)]
+        dry_run: bool,
+        /// Game version folder to operate on (e.g., 1.6 or v1.6).
+        #[arg(long)]
+        game_version: Option<String>,
     },
 
     /// Export extracted strings to a single .po file (help localized via FTL).
@@ -826,6 +869,26 @@ impl Runnable for Commands {
                 format,
                 lang_dir,
             } => commands::xml_health::run_xml_health(root, format, lang_dir),
+
+            Commands::Init {
+                root,
+                source_lang,
+                source_lang_dir,
+                lang,
+                lang_dir,
+                overwrite,
+                dry_run,
+                game_version,
+            } => commands::init::run_init(
+                root,
+                source_lang,
+                source_lang_dir,
+                lang,
+                lang_dir,
+                overwrite,
+                dry_run,
+                game_version,
+            ),
         };
 
         match &result {
