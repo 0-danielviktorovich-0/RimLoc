@@ -17,7 +17,7 @@ Template (copy the sections you need):
 - [scope] short bullet with (#PR)
 
 ### Docs
-- [docs] short bullet with (#PR)
+- [docs] Add README banner and move asset to `docs/assets` (#PR)
 
 ### Internal
 - [internal] short bullet with (#PR)
