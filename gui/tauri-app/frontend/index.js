@@ -6,7 +6,8 @@ const I18N = {
     tab_start: 'Start', tab_validate: 'Validate', tab_diff: 'Diff', tab_import: 'Import/Build', tab_annotate: 'Annotate', tab_morph: 'Morph', tab_lang: 'Lang Update', tab_tools: 'Tools', tab_settings: 'Settings',
     hdr_start: 'Start', hdr_validate: 'Validate', hdr_diff: 'Diff', hdr_import: 'Import/Build', hdr_annotate: 'Annotate', hdr_morph: 'Morph', hdr_lang: 'Lang Update', hdr_tools: 'Tools',
     lbl_mod_root: 'Mod root', lbl_src_code: 'Source lang code', lbl_trg_code: 'Target lang code', lbl_po_out: 'PO output', lbl_tm_roots: 'TM roots (comma)', lbl_src_dir: 'Source lang dir', lbl_trg_dir: 'Target lang dir', lbl_po_file: 'PO file', lbl_only_diff: 'Only diff', lbl_game_root: 'Game root', lbl_repo: 'Repo', lbl_branch: 'Branch', lbl_zip: 'Zip', lbl_ui_lang: 'UI:', lbl_out_dir: 'Output dir', lbl_baseline_po: 'Baseline PO', lbl_reports_dir: 'Reports out dir',
-    btn_scan: 'Scan', btn_export: 'Export PO', btn_validate: 'Validate', btn_xml_health: 'XML Health', btn_run_diff: 'Run Diff', btn_import_dry: 'Import DRY-RUN', btn_import_apply: 'Apply Import', btn_build_dry: 'Build DRY-RUN', btn_build_apply: 'Apply Build', btn_dry_run: 'Dry-run', btn_apply: 'Apply', btn_run: 'Run', btn_plan_dry: 'Plan Update (DRY)', btn_apply_update: 'Apply Update', btn_schema_dump: 'Dump JSON Schemas', btn_save_json: 'Save JSON', btn_save_reports: 'Save Reports', btn_open_last: 'Open Last Path',
+    btn_scan: 'Scan', btn_export: 'Export PO', btn_validate: 'Validate', btn_xml_health: 'XML Health', btn_run_diff: 'Run Diff', btn_import_dry: 'Import DRY-RUN', btn_import_apply: 'Apply Import', btn_build_dry: 'Build DRY-RUN', btn_build_apply: 'Apply Build', btn_dry_run: 'Dry-run', btn_apply: 'Apply', btn_run: 'Run', btn_plan_dry: 'Plan Update (DRY)', btn_apply_update: 'Apply Update', btn_schema_dump: 'Dump JSON Schemas', btn_save_json: 'Save JSON', btn_save_reports: 'Save Reports', btn_open_last: 'Open Last Path', btn_read: 'Read', btn_auto: 'Auto', btn_copy_out: 'Copy', btn_clear_out: 'Clear',
+    tab_logs: 'Logs', hdr_logs: 'Logs', lbl_log_path: 'Log file path', btn_read: 'Read', btn_auto: 'Auto',
     confirm_apply_import: 'Apply import to mod files? Backups recommended.',
     confirm_apply_build: 'Create/overwrite translation mod at output path?',
     confirm_apply_lang: 'Apply official localization update to game? Backup existing folder?',
@@ -17,7 +18,8 @@ const I18N = {
     tab_start: 'Старт', tab_validate: 'Проверка', tab_diff: 'Дифф', tab_import: 'Импорт/Сборка', tab_annotate: 'Аннотация', tab_morph: 'Морфология', tab_lang: 'Обновление', tab_tools: 'Инструменты', tab_settings: 'Настройки',
     hdr_start: 'Старт', hdr_validate: 'Проверка', hdr_diff: 'Дифф', hdr_import: 'Импорт/Сборка', hdr_annotate: 'Аннотация', hdr_morph: 'Морфология', hdr_lang: 'Обновление локализации', hdr_tools: 'Инструменты',
     lbl_mod_root: 'Корень мода', lbl_src_code: 'Код исходного языка', lbl_trг_code: 'Код целевого языка', lbl_po_out: 'Выходной PO', lbl_tm_roots: 'TM базы (через запятую)', lbl_src_dir: 'Папка исходного языка', lbl_trg_dir: 'Папка целевого языка', lbl_po_file: 'Файл PO', lbl_only_diff: 'Только отличия', lbl_game_root: 'Корень игры', lbl_repo: 'Репозиторий', lbl_branch: 'Ветка', lbl_zip: 'ZIP', lbl_ui_lang: 'Интерфейс:', lbl_out_dir: 'Папка вывода', lbl_baseline_po: 'Базовый PO', lbl_reports_dir: 'Папка отчётов',
-    btn_scan: 'Сканировать', btn_export: 'Экспорт PO', btn_validate: 'Проверить', btn_xml_health: 'XML здоровье', btn_run_diff: 'Запустить Diff', btn_import_dry: 'Импорт DRY-RUN', btn_import_apply: 'Применить импорт', btn_build_dry: 'Сборка DRY-RUN', btn_build_apply: 'Применить сборку', btn_dry_run: 'DRY-RUN', btn_apply: 'Применить', btn_run: 'Запустить', btn_plan_dry: 'План (DRY)', btn_apply_update: 'Применить обновление', btn_schema_dump: 'Выгрузить JSON схемы', btn_save_json: 'Сохранить JSON', btn_save_reports: 'Сохранить отчёты', btn_open_last: 'Открыть путь',
+    btn_scan: 'Сканировать', btn_export: 'Экспорт PO', btn_validate: 'Проверить', btn_xml_health: 'XML здоровье', btn_run_diff: 'Запустить Diff', btn_import_dry: 'Импорт DRY-RUN', btn_import_apply: 'Применить импорт', btn_build_dry: 'Сборка DRY-RUN', btn_build_apply: 'Применить сборку', btn_dry_run: 'DRY-RUN', btn_apply: 'Применить', btn_run: 'Запустить', btn_plan_dry: 'План (DRY)', btn_apply_update: 'Применить обновление', btn_schema_dump: 'Выгрузить JSON схемы', btn_save_json: 'Сохранить JSON', btn_save_reports: 'Сохранить отчёты', btn_open_last: 'Открыть путь', btn_read: 'Прочитать', btn_auto: 'Авто', btn_copy_out: 'Копировать', btn_clear_out: 'Очистить',
+    tab_logs: 'Логи', hdr_logs: 'Логи', lbl_log_path: 'Путь к лог‑файлу',
     confirm_apply_import: 'Применить импорт к файлам мода? Рекомендуется бэкап.',
     confirm_apply_build: 'Создать/перезаписать мод-перевод по указанному пути?',
     confirm_apply_lang: 'Обновить локализацию в игре? Сделать резервную копию существующей папки?',
@@ -282,6 +284,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const el = document.querySelector('#app-version small');
     if (el) el.textContent = `RimLoc GUI v${v} • Tauri shell • Made with ❤️`;
   } catch (e) {}
+  // listen update checks
+  await window.__TAURI__.event.listen('gui_update_check', (ev) => {
+    const d = ev.payload;
+    if (d.error) { showToast('Update check error'); return; }
+    if (d.current && d.latest && d.latest !== '' && d.latest !== d.current) {
+      showToast(`New version available: ${d.latest}`);
+    } else {
+      showToast('You are up to date');
+    }
+  });
 });
 
 // --- persistence of inputs ---
@@ -354,4 +366,45 @@ $('btn-schema-dump').addEventListener('click', async () => {
     $('tools-output').textContent = `Saved to ${p}`;
     LAST_PATH = p;
   } catch (e) { $('tools-output').textContent = String(e); }
+});
+
+// Logs tab
+$('btn-logs-read').addEventListener('click', async () => {
+  const path = $('logs-path').value.trim() || './logs/rimloc.log';
+  const lines = parseInt($('logs-lines').value.trim() || '200', 10) || 200;
+  try {
+    const text = await invoke('api_read_log_tail', { path, lines });
+    $('logs-output').textContent = text;
+  } catch (e) { $('logs-output').textContent = String(e); }
+});
+
+let LOGS_TIMER;
+$('btn-logs-auto').addEventListener('click', async () => {
+  if (LOGS_TIMER) { clearInterval(LOGS_TIMER); LOGS_TIMER = null; showToast('Auto off'); return; }
+  showToast('Auto on');
+  LOGS_TIMER = setInterval(() => { document.getElementById('btn-logs-read').click(); }, 2000);
+});
+
+// Lang update with progress (download+plan)
+document.getElementById('btn-lang-dry').addEventListener('contextmenu', async (e) => {
+  e.preventDefault();
+  const gameRoot = $('lang-game-root').value.trim();
+  const repo = $('lang-repo').value.trim() || 'Ludeon/RimWorld-ru';
+  const branch = $('lang-branch').value.trim() || null;
+  const srcDir = $('lang-src-dir').value.trim() || 'Russian';
+  const trgDir = $('lang-trg-dir').value.trim() || 'Russian (GitHub)';
+  $('lang-output').textContent = 'Downloading & planning...';
+  showOverlay('Downloading…');
+  try {
+    const unlisten = await window.__TAURI__.event.listen('lang_update_progress', (ev) => {
+      const d = ev.payload;
+      const pct = d.total > 0 ? Math.round((d.downloaded / d.total) * 100) : 0;
+      $('overlay-text').textContent = `Downloading… ${pct}%`;
+    });
+    const res = await invoke('api_lang_update_download_and_plan', { gameRoot, repo, branch, sourceLangDir: srcDir, targetLangDir: trgDir });
+    $('lang-output').textContent = JSON.stringify(res, null, 2);
+    unlisten();
+    showToast('Plan ready');
+  } catch (e) { $('lang-output').textContent = String(e); }
+  finally { hideOverlay(); }
 });

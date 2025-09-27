@@ -14,6 +14,9 @@ thiserror = "1"
 rimloc-services = { path = "../../../crates/rimloc-services" }
 rimloc-domain = { path = "../../../crates/rimloc-domain" }
 schemars = { version = "0.8", features = ["schemars_derive"] }
+reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+zip = "0.6"
+tempfile = "3"
 
 [features]
 default = ["custom-protocol"]

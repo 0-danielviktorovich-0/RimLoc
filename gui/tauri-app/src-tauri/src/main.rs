@@ -266,6 +266,94 @@ mod tests {
     let v = api_app_version().unwrap();
     assert!(!v.is_empty());
   }
+  #[test]
+  fn schema_dump_tmp() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = api_schema_dump(dir.path().display().to_string()).unwrap();
+    assert!(std::path::Path::new(&out).exists());
+  }
+}
+
+#[tauri::command]
+fn api_read_log_tail(path: String, lines: Option<usize>) -> Result<String, ApiError> {
+  let content = std::fs::read_to_string(&path).map_err(|e| ApiError { message: e.to_string() })?;
+  let mut all: Vec<&str> = content.lines().collect();
+  let n = lines.unwrap_or(200);
+  if all.len() > n { all = all[all.len()-n..].to_vec(); }
+  Ok(all.join("\n"))
+}
+
+#[tauri::command]
+fn api_zip_dir(dir: String, out_zip: String) -> Result<String, ApiError> {
+  use std::io::Write;
+  let path = PathBuf::from(dir);
+  let file = std::fs::File::create(&out_zip).map_err(|e| ApiError { message: e.to_string() })?;
+  let mut zipw = zip::ZipWriter::new(file);
+  let options = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+  for entry in walkdir::WalkDir::new(&path) {
+    let entry = entry.map_err(|e| ApiError { message: e.to_string() })?;
+    let p = entry.path();
+    if p.is_file() {
+      let rel = p.strip_prefix(&path).unwrap().to_string_lossy().to_string();
+      zipw.start_file(rel, options).map_err(|e| ApiError { message: e.to_string() })?;
+      let bytes = std::fs::read(p).map_err(|e| ApiError { message: e.to_string() })?;
+      zipw.write_all(&bytes).map_err(|e| ApiError { message: e.to_string() })?;
+    }
+  }
+  zipw.finish().map_err(|e| ApiError { message: e.to_string() })?;
+  Ok(out_zip)
+}
+
+#[tauri::command]
+fn api_check_updates(repo: Option<String>) -> Result<(String, String), ApiError> {
+  let repo = repo.unwrap_or_else(|| "0-danielviktorovich-0/RimLoc".into());
+  let url = format!("https://api.github.com/repos/{repo}/releases/latest");
+  let client = reqwest::blocking::Client::builder().user_agent("RimLocGUI").build().unwrap();
+  let resp = client.get(url).send().map_err(|e| ApiError { message: e.to_string() })?;
+  let json: serde_json::Value = resp.json().map_err(|e| ApiError { message: e.to_string() })?;
+  let tag = json.get("tag_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+  let cur = env!("CARGO_PKG_VERSION").to_string();
+  Ok((cur, tag))
+}
+
+#[tauri::command]
+fn api_lang_update_download_and_plan(window: tauri::Window, game_root: String, repo: String, branch: Option<String>, source_lang_dir: String, target_lang_dir: String) -> Result<serde_json::Value, ApiError> {
+  // Stream download with progress and emit events
+  let api_repo = format!("https://api.github.com/repos/{repo}");
+  let client = reqwest::blocking::Client::builder().user_agent("RimLocGUI").build().unwrap();
+  let br = if let Some(b) = branch { b } else {
+    let meta: serde_json::Value = client.get(api_repo).send().map_err(|e| ApiError { message: e.to_string() })?.json().map_err(|e| ApiError { message: e.to_string() })?;
+    meta.get("default_branch").and_then(|v| v.as_str()).unwrap_or("master").to_string()
+  };
+  let url = format!("https://codeload.github.com/{repo}/zip/refs/heads/{br}");
+  let mut resp = client.get(url).send().map_err(|e| ApiError { message: e.to_string() })?;
+  let total = resp.content_length().unwrap_or(0);
+  let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
+  let mut downloaded: u64 = 0;
+  while let Some(chunk) = resp.chunk().map_err(|e| ApiError { message: e.to_string() })? {
+    downloaded += chunk.len() as u64;
+    buf.extend_from_slice(&chunk);
+    let _ = window.emit("lang_update_progress", serde_json::json!({"downloaded": downloaded, "total": total}));
+  }
+  // write to temp file and reuse existing services function
+  let tmp = tempfile::NamedTempFile::new().map_err(|e| ApiError { message: e.to_string() })?;
+  std::fs::write(tmp.path(), &buf).map_err(|e| ApiError { message: e.to_string() })?;
+  let (plan, _summary) = rimloc_services::lang_update(
+    PathBuf::from(&game_root).as_path(),
+    &repo,
+    Some(br.as_str()),
+    Some(tmp.path()),
+    &source_lang_dir,
+    &target_lang_dir,
+    true,
+    false,
+  )?;
+  let p = plan.ok_or_else(|| ApiError { message: "no plan".into() })?;
+  Ok(serde_json::json!({
+    "files": p.files.iter().map(|f| serde_json::json!({"rel_path": f.rel_path, "size": f.size})).collect::<Vec<_>>(),
+    "total": p.total_bytes,
+    "out": p.out_languages_dir.join(&p.target_lang_dir).display().to_string()
+  }))
 }
 
 // Morph
@@ -289,6 +377,26 @@ fn api_morph(root: String, provider: Option<String>, lang: Option<String>, lang_
 
 fn main() {
   tauri::Builder::default()
+    .menu(tauri::menu::Menu::new()
+      .add_item(tauri::menu::MenuItem::new("About RimLoc GUI".to_string()).with_id("about"))
+      .add_item(tauri::menu::MenuItem::new("Check for Updates".to_string()).with_id("checkupdates"))
+    )
+    .on_menu_event(|app, ev| {
+      match ev.menu_item_id() {
+        "about" => { let _ = tauri::api::dialog::message(Some(&ev.window()), "About", format!("RimLoc GUI v{}\nRust Tauri shell for RimLoc", env!("CARGO_PKG_VERSION"))); }
+        "checkupdates" => {
+          let w = ev.window().clone();
+          std::thread::spawn(move || {
+            let res = api_check_updates(None);
+            match res { 
+              Ok((cur, latest)) => { let _ = w.emit("gui_update_check", serde_json::json!({"current": cur, "latest": latest})); },
+              Err(e) => { let _ = w.emit("gui_update_check", serde_json::json!({"error": e.message})); }
+            }
+          });
+        }
+        _ => {}
+      }
+    })
     .invoke_handler(tauri::generate_handler![
       api_scan,
       api_validate,
@@ -301,6 +409,10 @@ fn main() {
       api_lang_update_dry,
       api_save_text,
       api_app_version,
+      api_read_log_tail,
+      api_zip_dir,
+      api_check_updates,
+      api_lang_update_download_and_plan,
       api_import_po_apply,
       api_build_mod_apply,
       api_lang_update_apply,
