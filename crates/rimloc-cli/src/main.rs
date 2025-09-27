@@ -621,6 +621,34 @@ enum Commands {
         except: Option<Vec<String>>,
     },
 
+    /// Update official localization from a GitHub repo into the base game's Languages folder
+    LangUpdate {
+        /// Path to RimWorld game root (the folder containing Data/)
+        #[arg(long)]
+        game_root: std::path::PathBuf,
+        /// GitHub repo in owner/name form (e.g., Ludeon/RimWorld-ru)
+        #[arg(long, default_value = "Ludeon/RimWorld-ru")]
+        repo: String,
+        /// Branch name to download from (default: repo default branch)
+        #[arg(long)]
+        branch: Option<String>,
+        /// Local zip file to use instead of downloading
+        #[arg(long)]
+        zip: Option<std::path::PathBuf>,
+        /// Source language folder name inside the repo (e.g., Russian)
+        #[arg(long, default_value = "Russian")]
+        source_lang_dir: Option<String>,
+        /// Target language folder name to create under Data/Core/Languages (e.g., "Russian (GitHub)")
+        #[arg(long, default_value = "Russian (GitHub)")]
+        target_lang_dir: Option<String>,
+        /// Dry-run: do not write files, only print plan
+        #[arg(long, default_value_t = false)]
+        dry_run: bool,
+        /// Backup existing target folder by renaming to .bak before writing
+        #[arg(long, default_value_t = false)]
+        backup: bool,
+    },
+
     /// Generate Case/Plural/Gender files using a morph provider
     Morph {
         /// Path to mod root.
@@ -1134,6 +1162,26 @@ impl Runnable for Commands {
                 only,
                 except,
             } => commands::xml_health::run_xml_health(root, format, lang_dir, strict, only, except),
+
+            Commands::LangUpdate {
+                game_root,
+                repo,
+                branch,
+                zip,
+                source_lang_dir,
+                target_lang_dir,
+                dry_run,
+                backup,
+            } => commands::lang_update::run_lang_update(
+                game_root,
+                repo,
+                branch,
+                zip,
+                source_lang_dir,
+                target_lang_dir,
+                dry_run,
+                backup,
+            ),
 
             Commands::Init {
                 root,
