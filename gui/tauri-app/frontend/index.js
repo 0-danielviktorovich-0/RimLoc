@@ -24,8 +24,22 @@ document.addEventListener('DOMContentLoaded', () => {
 $('ui-lang').addEventListener('change', () => {
   UI_LANG = $('ui-lang').value;
   localStorage.setItem('ui-lang', UI_LANG);
+  applyI18n();
 });
 function t(k) { return (I18N[UI_LANG] && I18N[UI_LANG][k]) || I18N.en[k] || k; }
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const k = el.getAttribute('data-i18n');
+    if (!k) return;
+    const isInput = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT';
+    if (!isInput) {
+      // replace only text nodes (keep children like inputs/buttons)
+      el.childNodes.forEach(n => { if (n.nodeType === Node.TEXT_NODE) n.textContent = t(k); });
+    }
+  });
+}
+applyI18n();
 
 function $(id) { return document.getElementById(id); }
 
@@ -35,7 +49,11 @@ function setTab(active) {
 }
 
 document.querySelectorAll('nav button[data-tab]').forEach(btn => {
-  btn.addEventListener('click', () => setTab(btn.dataset.tab));
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button[data-tab]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setTab(btn.dataset.tab);
+  });
 });
 
 $('btn-scan').addEventListener('click', async () => {
@@ -143,6 +161,7 @@ $('btn-build-apply').addEventListener('click', async () => {
   try {
     const out = await invoke('api_build_mod_apply', { po, outMod, lang, fromRoot: null, fromGameVersion: null, name: null, packageId: null, rwVersion: null, langDir: null, dedupe: true });
     $('import-output').textContent = `Built at ${out}`;
+    LAST_PATH = out;
   } catch (e) { $('import-output').textContent = String(e); }
 });
 
@@ -173,6 +192,7 @@ $('btn-lang-apply').addEventListener('click', async () => {
   try {
     const out = await invoke('api_lang_update_apply', { gameRoot, repo, branch, zip, sourceLangDir: srcDir, targetLangDir: trgDir, backup: true });
     $('lang-output').textContent = `${t('ok_saved')} -> ${out}`;
+    LAST_PATH = out;
   } catch (e) { $('lang-output').textContent = String(e); }
 });
 
@@ -225,3 +245,58 @@ function bindPersistInput(id) {
  'ann-root','ann-src','ann-src-dir','ann-trg','ann-trg-dir','ann-prefix',
  'lang-game-root','lang-repo','lang-branch','lang-zip','lang-src-dir','lang-trg-dir']
  .forEach(bindPersistInput);
+
+// pickers
+document.querySelectorAll('.pick-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const field = btn.getAttribute('data-for');
+    const mode = btn.getAttribute('data-pick');
+    try {
+      let selected;
+      if (mode === 'dir') {
+        selected = await window.__TAURI__.dialog.open({ directory: true, multiple: false });
+      } else if (mode === 'file') {
+        selected = await window.__TAURI__.dialog.open({ multiple: false });
+      } else if (mode === 'savefile') {
+        selected = await window.__TAURI__.dialog.save({ defaultPath: $(field).value || undefined });
+      }
+      if (selected) { $(field).value = selected; localStorage.setItem(`rimloc-ui:${field}`, selected); }
+    } catch (e) { /* ignore */ }
+  });
+});
+
+// Open last path
+let LAST_PATH = null;
+$('btn-open-path').addEventListener('click', async () => {
+  if (!LAST_PATH) return;
+  try { await window.__TAURI__.shell.open(LAST_PATH); } catch (e) { /* ignore */ }
+});
+
+// Morph run
+$('btn-morph-run').addEventListener('click', async () => {
+  const root = $('morph-root').value.trim();
+  const provider = $('morph-provider').value;
+  const lang = $('morph-trg').value.trim() || null;
+  const langDir = $('morph-trg-dir').value.trim() || null;
+  const filterKeyRegex = $('morph-filter').value.trim() || null;
+  const limit = parseInt($('morph-limit').value.trim() || '0', 10) || null;
+  const timeoutMs = parseInt($('morph-timeout').value.trim() || '0', 10) || null;
+  const cacheSize = parseInt($('morph-cache').value.trim() || '0', 10) || null;
+  const pymorphyUrl = $('morph-pym-url').value.trim() || null;
+  $('morph-output').textContent = 'Running morph...';
+  try {
+    const res = await invoke('api_morph', { root, provider, lang, langDir, filterKeyRegex, limit, gameVersion: null, timeoutMs, cacheSize, pymorphyUrl });
+    $('morph-output').textContent = JSON.stringify(res, null, 2);
+  } catch (e) { $('morph-output').textContent = String(e); }
+});
+
+// Schema dump
+$('btn-schema-dump').addEventListener('click', async () => {
+  const outDir = $('tools-out-dir').value.trim();
+  $('tools-output').textContent = 'Dumping schemas...';
+  try {
+    const p = await invoke('api_schema_dump', { outDir });
+    $('tools-output').textContent = `Saved to ${p}`;
+    LAST_PATH = p;
+  } catch (e) { $('tools-output').textContent = String(e); }
+});
