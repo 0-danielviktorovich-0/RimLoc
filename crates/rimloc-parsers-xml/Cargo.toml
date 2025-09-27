@@ -25,3 +25,4 @@ rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 tempfile = "3"
 tracing = "0.1"
 color-eyre = "0.6"
+roxmltree = { workspace = true }

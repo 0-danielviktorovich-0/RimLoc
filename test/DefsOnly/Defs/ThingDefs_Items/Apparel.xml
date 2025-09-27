@@ -1,0 +1,13 @@
+<Defs>
+  <ThingDef>
+    <defName>Apparel_Parka</defName>
+    <label>parka</label>
+    <description>Warm parka.</description>
+  </ThingDef>
+  <ThingDef>
+    <defName>Weapon_Sword</defName>
+    <label>sword</label>
+    <description>Sharp blade.</description>
+  </ThingDef>
+</Defs>
+

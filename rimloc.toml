@@ -115,3 +115,8 @@ list_limit = 100
 # Output directory for generated JSON Schemas
 # out_dir = "docs/assets/schemas"
 
+# ============================================================================
+# scan section
+[scan]
+# Extra Defs field names to scan in addition to defaults
+# defs_fields = ["labelFemale", "labelMale", "title"]

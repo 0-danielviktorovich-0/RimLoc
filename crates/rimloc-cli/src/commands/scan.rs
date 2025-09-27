@@ -10,6 +10,8 @@ pub fn run_scan(
     lang: Option<String>,
     source_lang: Option<String>,
     source_lang_dir: Option<String>,
+    defs_dir: Option<std::path::PathBuf>,
+    defs_field: Vec<String>,
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
@@ -34,19 +36,40 @@ pub fn run_scan(
         tracing::info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let mut units = rimloc_services::scan_units(&scan_root)?;
+    let defs_abs = defs_dir
+        .as_ref()
+        .map(|p| if p.is_absolute() { p.clone() } else { scan_root.join(p) });
+    // Merge defs_field from config if not provided on CLI
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let mut cli_defs_field = defs_field;
+    if cli_defs_field.is_empty() {
+        if let Some(scan) = cfg.scan {
+            if let Some(extra) = scan.defs_fields { cli_defs_field = extra; }
+        }
+    }
+    let mut units = if cli_defs_field.is_empty() {
+        rimloc_services::scan_units_with_defs(&scan_root, defs_abs.as_deref())?
+    } else {
+        rimloc_services::scan_units_with_defs_and_fields(&scan_root, defs_abs.as_deref(), &cli_defs_field)?
+    };
 
-    fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
+    fn is_source_for_lang_dir(path: &std::path::Path, lang_dir: &str) -> bool {
+        // Languages/<dir>
         let mut comps = path.components();
         while let Some(c) = comps.next() {
             let s = c.as_os_str().to_string_lossy();
             if s.eq_ignore_ascii_case("Languages") {
                 if let Some(lang) = comps.next() {
                     let lang_s = lang.as_os_str().to_string_lossy();
-                    return lang_s == lang_dir;
+                    if lang_s == lang_dir { return true; }
                 }
-                return false;
+                break;
             }
+        }
+        // English also includes Defs/*
+        if lang_dir.eq_ignore_ascii_case("English") {
+            let s = path.to_string_lossy();
+            if s.contains("/Defs/") || s.contains("\\Defs\\") { return true; }
         }
         false
     }
@@ -55,7 +78,7 @@ pub fn run_scan(
         let before = units.len();
         let mut filtered: Vec<_> = units
             .into_iter()
-            .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
+            .filter(|u| is_source_for_lang_dir(&u.path, dir.as_str()))
             .collect();
         filtered.sort_by(|a, b| {
             (
@@ -76,7 +99,7 @@ pub fn run_scan(
         let before = units.len();
         let mut filtered: Vec<_> = units
             .into_iter()
-            .filter(|u| is_under_languages_dir(&u.path, dir.as_str()))
+            .filter(|u| is_source_for_lang_dir(&u.path, dir.as_str()))
             .collect();
         filtered.sort_by(|a, b| {
             (

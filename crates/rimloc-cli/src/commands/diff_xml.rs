@@ -5,6 +5,8 @@ pub fn run_diff_xml(
     root: std::path::PathBuf,
     source_lang: Option<String>,
     source_lang_dir: Option<String>,
+    defs_dir: Option<std::path::PathBuf>,
+    defs_field: Vec<String>,
     lang: Option<String>,
     lang_dir: Option<String>,
     baseline_po: Option<std::path::PathBuf>,
@@ -44,12 +46,35 @@ pub fn run_diff_xml(
             .unwrap_or_else(|| "Russian".to_string())
     };
     tracing::info!(event = "diff_lang_dirs", source = %src_dir, target = %trg_dir);
-    let diff = rimloc_services::diff_xml(
-        &scan_root,
-        &src_dir,
-        &trg_dir,
-        baseline_po.as_deref(),
-    )?;
+    let defs_abs = defs_dir
+        .as_ref()
+        .map(|p| if p.is_absolute() { p.clone() } else { scan_root.join(p) });
+    // Merge defs_field from config if CLI didn't set
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let mut cli_defs_field = defs_field;
+    if cli_defs_field.is_empty() {
+        if let Some(scan) = cfg.scan {
+            if let Some(extra) = scan.defs_fields { cli_defs_field = extra; }
+        }
+    }
+    let diff = if cli_defs_field.is_empty() {
+        rimloc_services::diff_xml_with_defs(
+            &scan_root,
+            &src_dir,
+            &trg_dir,
+            baseline_po.as_deref(),
+            defs_abs.as_deref(),
+        )?
+    } else {
+        rimloc_services::diff_xml_with_defs_and_fields(
+            &scan_root,
+            &src_dir,
+            &trg_dir,
+            baseline_po.as_deref(),
+            defs_abs.as_deref(),
+            &cli_defs_field,
+        )?
+    };
     let any_diff = !diff.changed.is_empty() || !diff.only_in_translation.is_empty() || !diff.only_in_mod.is_empty();
 
     // Output

@@ -14,6 +14,7 @@ pub struct RimLocConfig {
     pub annotate: Option<AnnotateCfg>,
     pub init: Option<InitCfg>,
     pub schema: Option<SchemaCfg>,
+    pub scan: Option<ScanCfg>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -116,6 +117,7 @@ fn merge(mut a: RimLocConfig, b: RimLocConfig) -> RimLocConfig {
     a.annotate = merge_opt(a.annotate, b.annotate, merge_annotate);
     a.init = merge_opt(a.init, b.init, merge_init);
     a.schema = merge_opt(a.schema, b.schema, merge_schema);
+    a.scan = merge_opt(a.scan, b.scan, merge_scan);
     a
 }
 
@@ -177,5 +179,15 @@ fn merge_init(mut a: InitCfg, b: InitCfg) -> InitCfg {
 }
 fn merge_schema(mut a: SchemaCfg, b: SchemaCfg) -> SchemaCfg {
     if a.out_dir.is_none() { a.out_dir = b.out_dir; }
+    a
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct ScanCfg {
+    pub defs_fields: Option<Vec<String>>, // extra Defs fields to scan
+}
+
+fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
+    if a.defs_fields.is_none() { a.defs_fields = b.defs_fields; }
     a
 }
