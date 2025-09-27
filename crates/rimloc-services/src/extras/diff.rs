@@ -43,21 +43,51 @@ pub fn diff_xml(
 
     let mut changed: Vec<(String, String)> = Vec::new();
     if let Some(po) = baseline_po {
-        // parse via CLI-compatible basic parser from rimloc-cli? Not available here.
-        // Reuse rimloc-core minimal PO parser: it returns entries without context.
-        // We need key from msgctxt; fallback: if core parser lacks context, skip changed.
-        let s = std::fs::read_to_string(po)?;
-        let entries = rimloc_core::parse_simple_po(&s)?;
+        // Parse PO header+entries with msgctxt support to extract original key from context
+        let file = std::fs::File::open(po)?;
+        use std::io::{BufRead, BufReader};
+        let rdr = BufReader::new(file);
         let mut base: HashMap<String, String> = HashMap::new();
-        for e in entries {
-            // We don't have ctx; use key as-is (rimloc-core::PoEntry.key is used as msgid key here)
-            base.entry(e.key).or_insert(e.value);
+        let mut ctx: Option<String> = None;
+        let mut id = String::new();
+        let mut strv = String::new();
+        enum Mode { None, InId, InStr }
+        let mut mode = Mode::None;
+        fn unq(s: &str) -> String {
+            let mut out = String::new();
+            let raw = s.trim().trim_start_matches('"').trim_end_matches('"');
+            let mut it = raw.chars().peekable();
+            while let Some(c) = it.next() {
+                if c == '\\' {
+                    if let Some(n) = it.next() {
+                        out.push(match n { 'n' => '\n', 't' => '\t', 'r' => '\r', '\\' => '\\', '"' => '"', x => x });
+                    } else { out.push('\\'); }
+                } else { out.push(c); }
+            }
+            out
         }
+        let mut push = |ctx: &mut Option<String>, id: &mut String, strv: &mut String| {
+            if !id.is_empty() {
+                // ctx format: key|relpath[:line]? — take key before '|'
+                if let Some(c) = ctx.as_deref() {
+                    let key = c.split('|').next().unwrap_or("").trim().to_string();
+                    if !key.is_empty() { base.entry(key).or_insert(std::mem::take(id)); }
+                }
+                *ctx = None; *strv = String::new();
+            }
+        };
+        for line in rdr.lines() {
+            let t = line?.trim().to_string();
+            if t.is_empty() { push(&mut ctx, &mut id, &mut strv); mode = Mode::None; continue; }
+            if let Some(rest) = t.strip_prefix("msgctxt ") { push(&mut ctx, &mut id, &mut strv); ctx = Some(unq(rest)); mode = Mode::None; continue; }
+            if let Some(rest) = t.strip_prefix("msgid ") { push(&mut ctx, &mut id, &mut strv); id = unq(rest); mode = Mode::InId; continue; }
+            if let Some(rest) = t.strip_prefix("msgstr ") { strv = unq(rest); mode = Mode::InStr; continue; }
+            if matches!(mode, Mode::InId | Mode::InStr) && t.starts_with('"') { let chunk = unq(&t); match mode { Mode::InId => id.push_str(&chunk), Mode::InStr => strv.push_str(&chunk), Mode::None => {} } }
+        }
+        push(&mut ctx, &mut id, &mut strv);
         for (k, new_src) in &src_map {
             if let Some(old_src) = base.get(k) {
-                if old_src != new_src {
-                    changed.push((k.clone(), new_src.clone()));
-                }
+                if old_src != new_src { changed.push((k.clone(), new_src.clone())); }
             }
         }
         changed.sort_by(|a, b| a.0.cmp(&b.0));
@@ -88,4 +118,3 @@ pub fn write_diff_reports(dir: &Path, diff: &DiffOutput) -> Result<()> {
     }
     Ok(())
 }
-
