@@ -4,6 +4,7 @@ use std::path::Path;
 
 pub fn write_missing_json(path: &Path, cands: &[&Candidate]) -> Result<()> {
     #[derive(serde::Serialize)]
+    #[allow(non_snake_case)]
     struct Item<'a> { defType: &'a str, defName: &'a str, fieldPath: &'a str, confidence: f32, sourceFile: String }
     let items: Vec<Item> = cands.iter().map(|c| Item { defType: &c.def_type, defName: &c.def_name, fieldPath: &c.field_path, confidence: c.confidence.unwrap_or(1.0), sourceFile: c.source_file.display().to_string() }).collect();
     let file = std::fs::File::create(path)?;
@@ -22,4 +23,3 @@ pub fn write_suggested_xml(path: &Path, cands: &[&Candidate]) -> Result<()> {
     writeln!(f, "</LanguageData>")?;
     Ok(())
 }
-

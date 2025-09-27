@@ -470,6 +470,7 @@ document.getElementById('btn-lang-dry').addEventListener('contextmenu', async (e
       const d = ev.payload;
       const pct = d.total > 0 ? Math.round((d.downloaded / d.total) * 100) : 0;
       $('overlay-text').textContent = `Downloading… ${pct}%`;
+      setOverlayProgress(pct);
     });
     const res = await invoke('api_lang_update_download_and_plan', { gameRoot, repo, branch, sourceLangDir: srcDir, targetLangDir: trgDir });
     $('lang-output').textContent = JSON.stringify(res, null, 2);
