@@ -31,6 +31,10 @@ RimLoc CLI bundles everything needed to inventory, validate, and exchange RimWor
 | [`export-po`](export_import.md#export-po) | Produce a single PO bundle for translators. | `--root`, `--out-po`, `--lang`, `--game-version`, `--include-all-versions` |
 | [`import-po`](export_import.md#import-po) | Apply PO changes back to XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
 | [`build-mod`](build_mod.md) | Scaffold a translation-only RimWorld mod from a PO file. | `--out-mod`, `--package-id`, `--dry-run` |
+| [`diff-xml`](diff_xml.md) | Diff source vs translation; detect changed source with baseline PO. | `--baseline-po`, `--format`, `--out-dir`, `--strict` |
+| [`annotate`](annotate.md) | Add/remove source-text comments in translation XML. | `--dry-run`, `--backup`, `--strip` |
+| [`xml-health`](xml_health.md) | Scan XML under Languages/. | `--format`, `--lang-dir`, `--strict` |
+| [`init`](init.md) | Create translation skeleton under `Languages/<lang>`. | `--overwrite`, `--dry-run` |
 
 ## Global Options
 
