@@ -235,7 +235,9 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("out_mod", |a| a.help(tr!("help-buildmod-out-mod")));
                 owned = owned.mut_arg("lang", |a| a.help(tr!("help-buildmod-lang")));
                 owned = owned.mut_arg("from_root", |a| a.help(tr!("help-buildmod-from-root")));
-                owned = owned.mut_arg("from_game_version", |a| a.help(tr!("help-buildmod-from-game-version")));
+                owned = owned.mut_arg("from_game_version", |a| {
+                    a.help(tr!("help-buildmod-from-game-version"))
+                });
                 owned = owned.mut_arg("name", |a| a.help(tr!("help-buildmod-name")));
                 owned = owned.mut_arg("package_id", |a| a.help(tr!("help-buildmod-package-id")));
                 owned = owned.mut_arg("rw_version", |a| a.help(tr!("help-buildmod-rw-version")));

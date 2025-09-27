@@ -37,7 +37,10 @@ fn pluralize(s: &str) -> String {
     let lower = s.trim().to_lowercase();
     let mut chars: Vec<char> = lower.chars().collect();
     if let Some(&last) = chars.last() {
-        let prev = chars.get(chars.len().saturating_sub(2)).copied().unwrap_or('\0');
+        let prev = chars
+            .get(chars.len().saturating_sub(2))
+            .copied()
+            .unwrap_or('\0');
         match last {
             'й' => {
                 chars.pop();
