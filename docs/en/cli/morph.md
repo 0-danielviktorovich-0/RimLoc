@@ -67,3 +67,23 @@ Quick service check with curl:
 curl "http://127.0.0.1:8765/declension?text=мама"
 # -> {"nomn":"мама","gent":"мамы","datv":"маме","accs":"маму","ablt":"мамой","loct":"маме"}
 ```
+
+More examples:
+
+- Process only labels (keys ending with `label`) and limit to 100 entries:
+
+```bash
+rimloc-cli morph --root ./Mods/MyMod --provider morpher \
+  --filter-key-regex '.*label$' --limit 100 --lang ru
+```
+
+- Pick a specific version folder and override cache size:
+
+```bash
+rimloc-cli morph --root ./Mods/MyMod --provider pymorphy2 \
+  --game-version v1.6 --cache-size 4096 --timeout-ms 2500 --lang ru
+```
+
+Known limitations (dummy provider):
+- Plural/gender are heuristic; edge cases (irregular nouns, abbreviations) may be wrong.
+- Use an online/local morphology provider for production output wherever possible.
