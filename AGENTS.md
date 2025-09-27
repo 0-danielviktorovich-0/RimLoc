@@ -50,7 +50,12 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - While working, record context as you go:
   - Add files you intentionally touched: `scripts/agent-context.sh --session <chat-id> --add-file <path>` (repeatable).
   - Refine message: `scripts/agent-context.sh --session <chat-id> --subject "…" -b "…"`.
+- For precise hunks in shared files, wrap edits:
+  - Before editing a file: `scripts/agent-mark-change.sh --session <chat-id> begin --file <path>`
+  - After saving your change: `scripts/agent-mark-change.sh --session <chat-id> end --file <path>`
+  This records an exact per-chat patch. On commit, we apply only those hunks — чужие правки в том же файле не попадут.
 - Finish and commit: `scripts/agent-commit.sh --session <chat-id>` — stages only files changed since baseline and, if a file allowlist exists, intersects with it to avoid accidental pickups.
+- Hunk-aware staging: if a session snapshot exists for a file (created automatically on `--add-file`), only the hunks changed in this chat are staged. Independent edits from other chats in the same file stay unstaged. On overlapping edits, the script stops with a clear message.
 - Without `--session`, the scripts fall back to a single global baseline (`.git/agent-baseline.txt`). Prefer sessions to avoid confusion between chats.
 - Use `--dry-run` to preview the file set and the composed message. The script will auto-detect scope from paths and generate safe bullets if none are provided.
 - Ensure hooks are active: run `scripts/setup-git-hooks.sh` once per clone.
