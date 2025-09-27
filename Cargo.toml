@@ -12,6 +12,9 @@ members = [
     "crates/rimloc-domain",
     "crates/rimloc-config",
 ]
+exclude = [
+    "gui/tauri-app/src-tauri"
+]
 
 [workspace.package]
 edition = "2021"
