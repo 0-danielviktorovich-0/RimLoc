@@ -165,12 +165,16 @@ help-importpo-game-version = Game version subfolder to write into (e.g., 1.6 or 
 help-importpo-single-file = Write all imported strings into a single XML file
 help-importpo-backup = Create .bak backups when overwriting files
 help-importpo-dry-run = Do not write changes; only show what would be done
+help-importpo-report = Print a summary of created/updated/skipped files and total keys written
+help-importpo-incremental = Skip writing files whose content would be identical
+import-report-summary = Import summary: created={ $created }, updated={ $updated }, skipped={ $skipped }, keys={ $keys }
 
 # build-mod
 help-buildmod-about = Build a standalone translation mod from a .po file
 help-buildmod-po = Path to .po file to build from
 help-buildmod-out-mod = Output mod folder path
 help-buildmod-lang = Language code of the translation
+help-buildmod-from-root = Build from existing Languages/<lang> under this root instead of a .po
 help-buildmod-name = Translation mod display name
 help-buildmod-package-id = Translation mod PackageId
 help-buildmod-rw-version = Target RimWorld version
@@ -189,6 +193,7 @@ help-diffxml-baseline-po = Baseline PO (previous export) to detect changed sourc
 help-diffxml-format = Output format: "text" (default) or "json"
 help-diffxml-out-dir = Optional output directory for Text files (ChangedData.txt, TranslationData.txt, ModData.txt)
 help-diffxml-game-version = Game version folder to scan (e.g., 1.6 or v1.6); defaults to latest under root
+help-diffxml-strict = Strict mode: return error if any difference is found
 
 diffxml-saved = Diff results saved to { $path }
 diffxml-summary = Diff summary: changed={ $changed }, only-in-translation={ $only_trg }, only-in-mod={ $only_src }
@@ -212,6 +217,7 @@ help-xmlhealth-about = Scan XML files for structural/read errors under Languages
 help-xmlhealth-root = Path to RimWorld mod root to scan
 help-xmlhealth-format = Output format: "text" (default) or "json"
 help-xmlhealth-lang-dir = Restrict scan to a specific language folder name (e.g., Russian)
+help-xmlhealth-strict = Strict mode: return error if issues are found
 xmlhealth-summary = XML health: no issues found
 xmlhealth-issues = XML health: issues detected (see above)
 xmlhealth-issue-line = { $path } — { $error }

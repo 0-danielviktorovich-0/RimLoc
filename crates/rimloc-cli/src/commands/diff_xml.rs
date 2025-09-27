@@ -24,6 +24,7 @@ pub fn run_diff_xml(
     lang_dir: Option<String>,
     baseline_po: Option<std::path::PathBuf>,
     format: String,
+    strict: bool,
     out_dir: Option<std::path::PathBuf>,
     game_version: Option<String>,
 ) -> color_eyre::Result<()> {
@@ -113,6 +114,7 @@ pub fn run_diff_xml(
         }
         changed.sort_by(|a, b| a.0.cmp(&b.0));
     }
+    let any_diff = !changed.is_empty() || !only_in_trg.is_empty() || !only_in_src.is_empty();
 
     // Output
     if let Some(dir) = out_dir.as_ref() {
@@ -143,6 +145,9 @@ pub fn run_diff_xml(
             }
         }
         crate::ui_ok!("diffxml-saved", path = dir.display().to_string());
+        if strict && any_diff {
+            color_eyre::eyre::bail!("diffxml-nonempty");
+        }
         return Ok(());
     }
 
@@ -154,11 +159,14 @@ pub fn run_diff_xml(
             only_in_mod: Vec<String>,
         }
         let out = DiffOut {
-            changed,
-            only_in_translation: only_in_trg,
-            only_in_mod: only_in_src,
+            changed: changed.clone(),
+            only_in_translation: only_in_trg.clone(),
+            only_in_mod: only_in_src.clone(),
         };
         serde_json::to_writer(std::io::stdout().lock(), &out)?;
+        if strict && any_diff {
+            color_eyre::eyre::bail!("diffxml-nonempty");
+        }
         return Ok(());
     }
 
@@ -169,5 +177,8 @@ pub fn run_diff_xml(
         only_trg = only_in_trg.len(),
         only_src = only_in_src.len()
     );
+    if strict && any_diff {
+        color_eyre::eyre::bail!("diffxml-nonempty");
+    }
     Ok(())
 }
