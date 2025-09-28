@@ -1,9 +1,43 @@
-use crate::{Result, TransUnit};
+use crate::{util::def_injected_target_path, Result, TransUnit};
 use rimloc_parsers_xml::DefsMetaUnit;
 use serde::Deserialize;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
+
+const DEFAULT_SOURCE_LANG_DIR: &str = "English";
+
+fn seen_key(path: &Path, key: &str) -> String {
+    let normalized = path.to_string_lossy().replace('\\', "/");
+    format!("{normalized}|{key}")
+}
+
+fn merge_defs_units(
+    units: &mut Vec<TransUnit>,
+    seen: &mut HashSet<String>,
+    scan_root: &Path,
+    lang_dir: &str,
+    defs_meta: Vec<DefsMetaUnit>,
+) {
+    for meta in defs_meta {
+        let mut unit = meta.unit;
+        if unit
+            .source
+            .as_ref()
+            .map(|s| s.trim().is_empty())
+            .unwrap_or(true)
+        {
+            continue;
+        }
+        let target_path = def_injected_target_path(scan_root, lang_dir, &meta.def_type, &unit.path);
+        unit.path = target_path;
+        unit.line = None;
+        let key = seen_key(&unit.path, &unit.key);
+        if seen.insert(key) {
+            units.push(unit);
+        }
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct AutoDefsContext {
@@ -176,8 +210,23 @@ pub fn autodiscover_defs_context(root: &Path) -> Result<AutoDefsContext> {
 pub fn scan_units_auto(root: &Path) -> Result<Vec<TransUnit>> {
     let auto = autodiscover_defs_context(root)?;
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
-    let defs = rimloc_parsers_xml::scan_defs_with_dict(root, None, &auto.dict, &auto.extra_fields)?;
-    units.extend(defs);
+    let mut seen: HashSet<String> = units
+        .iter()
+        .map(|u| seen_key(&u.path, &u.key))
+        .collect();
+    let defs_meta = rimloc_parsers_xml::scan_defs_with_dict_meta(
+        root,
+        None,
+        &auto.dict,
+        &auto.extra_fields,
+    )?;
+    merge_defs_units(
+        &mut units,
+        &mut seen,
+        root,
+        DEFAULT_SOURCE_LANG_DIR,
+        defs_meta,
+    );
     Ok(units)
 }
 
@@ -194,7 +243,8 @@ pub fn scan_units_with_defs(
     root: &Path,
     defs_root: Option<&std::path::Path>,
 ) -> Result<Vec<TransUnit>> {
-    rimloc_parsers_xml::scan_all_units_with_defs(root, defs_root)
+    let auto = autodiscover_defs_context(root)?;
+    scan_units_with_defs_and_dict(root, defs_root, &auto.dict, &auto.extra_fields)
 }
 
 pub fn scan_units_with_defs_and_fields(
@@ -202,7 +252,12 @@ pub fn scan_units_with_defs_and_fields(
     defs_root: Option<&std::path::Path>,
     extra_fields: &[String],
 ) -> Result<Vec<TransUnit>> {
-    rimloc_parsers_xml::scan_all_units_with_defs_and_fields(root, defs_root, extra_fields)
+    let auto = autodiscover_defs_context(root)?;
+    let mut merged_fields: Vec<String> = auto.extra_fields.clone();
+    merged_fields.extend(extra_fields.iter().cloned());
+    merged_fields.sort();
+    merged_fields.dedup();
+    scan_units_with_defs_and_dict(root, defs_root, &auto.dict, &merged_fields)
 }
 
 pub fn scan_units_with_defs_and_dict(
@@ -212,8 +267,18 @@ pub fn scan_units_with_defs_and_dict(
     extra_fields: &[String],
 ) -> Result<Vec<TransUnit>> {
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
-    let defs = rimloc_parsers_xml::scan_defs_with_dict(root, defs_root, dict, extra_fields)?;
-    units.extend(defs);
+    let mut seen: HashSet<String> = units
+        .iter()
+        .map(|u| seen_key(&u.path, &u.key))
+        .collect();
+    let defs_meta = rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)?;
+    merge_defs_units(
+        &mut units,
+        &mut seen,
+        root,
+        DEFAULT_SOURCE_LANG_DIR,
+        defs_meta,
+    );
     Ok(units)
 }
 

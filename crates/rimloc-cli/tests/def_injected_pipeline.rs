@@ -50,12 +50,22 @@ fn scan_detects_defs_without_english_definj() {
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
     let json: Value = serde_json::from_str(&stdout).expect("valid json");
     let arr = json.as_array().expect("array");
+    let paths: Vec<&str> = arr
+        .iter()
+        .filter_map(|item| item.get("path").and_then(|p| p.as_str()))
+        .collect();
     let keys: Vec<&str> = arr
         .iter()
         .filter_map(|item| item.get("key").and_then(|k| k.as_str()))
         .collect();
     assert!(keys.contains(&"Meal_Simple.label"));
     assert!(keys.contains(&"Meal_Fine.description"));
+    assert!(
+        paths
+            .iter()
+            .any(|p| p.contains("Languages/English/DefInjected/ThingDef/Food.xml")),
+        "scan should surface DefInjected target path for learned defs",
+    );
 }
 
 #[test]
@@ -70,6 +80,7 @@ fn scan_reports_both_keyed_and_defs() {
     let arr = json.as_array().expect("array");
     let mut has_keyed = false;
     let mut has_def = false;
+    let mut has_definj_path = false;
     for item in arr {
         if let Some(key) = item.get("key").and_then(|k| k.as_str()) {
             if key == "Greeting" {
@@ -77,6 +88,11 @@ fn scan_reports_both_keyed_and_defs() {
             }
             if key == "Weapon_Bow.description" {
                 has_def = true;
+                if let Some(path) = item.get("path").and_then(|p| p.as_str()) {
+                    if path.contains("Languages/English/DefInjected/ThingDef/Weapons.xml") {
+                        has_definj_path = true;
+                    }
+                }
             }
         }
     }
@@ -84,6 +100,10 @@ fn scan_reports_both_keyed_and_defs() {
     assert!(
         has_def,
         "Weapon_Bow.description from Defs should be present"
+    );
+    assert!(
+        has_definj_path,
+        "DefInjected entries should point to the canonical English path"
     );
 }
 

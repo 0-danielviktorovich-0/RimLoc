@@ -1,10 +1,11 @@
 use crate::{
-    autodiscover_defs_context, scan_defs_with_meta, util::is_under_languages_dir, ExportPoStats,
-    Result,
+    autodiscover_defs_context, scan_defs_with_meta,
+    util::{def_injected_target_path, is_under_languages_dir},
+    ExportPoStats, Result,
 };
 use rimloc_parsers_xml::DefsMetaUnit;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Export to PO with optional TM, filtering by source lang or explicit folder name.
 pub fn export_po_with_tm(
@@ -41,20 +42,7 @@ pub fn export_po_with_tm(
         if source.is_none() {
             continue;
         }
-        let target_path = {
-            let file_name = meta
-                .unit
-                .path
-                .file_name()
-                .map(|s| s.to_os_string())
-                .unwrap_or_else(|| std::ffi::OsString::from("Defs.xml"));
-            PathBuf::from(scan_root)
-                .join("Languages")
-                .join(&src_dir)
-                .join("DefInjected")
-                .join(&meta.def_type)
-                .join(file_name)
-        };
+        let target_path = def_injected_target_path(scan_root, &src_dir, &meta.def_type, &meta.unit.path);
         let entry = english_map
             .entry(key.clone())
             .or_insert_with(|| rimloc_core::TransUnit {
