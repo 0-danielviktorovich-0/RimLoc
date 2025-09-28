@@ -47,11 +47,23 @@ fn scan_respects_defs_dir_override() {
     let mut cmd = bin_cmd();
     cmd.args(["--quiet", "scan", "--root"]) // stdout JSON
         .arg(root)
-        .args(["--format", "json", "--include-all-versions", "--defs-dir", "Defs"]);
+        .args([
+            "--format",
+            "json",
+            "--include-all-versions",
+            "--defs-dir",
+            "Defs",
+        ]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    assert!(stdout.contains("A1.label"), "expected A1.label from root/Defs");
-    assert!(!stdout.contains("B1.label"), "did not expect B1.label from v1.6/Defs");
+    assert!(
+        stdout.contains("A1.label"),
+        "expected A1.label from root/Defs"
+    );
+    assert!(
+        !stdout.contains("B1.label"),
+        "did not expect B1.label from v1.6/Defs"
+    );
 
     // Now point to v1.6/Defs explicitly
     let mut cmd = bin_cmd();
@@ -66,8 +78,14 @@ fn scan_respects_defs_dir_override() {
         ]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    assert!(stdout.contains("B1.label"), "expected B1.label from v1.6/Defs");
-    assert!(!stdout.contains("A1.label"), "did not expect A1.label from root/Defs");
+    assert!(
+        stdout.contains("B1.label"),
+        "expected B1.label from v1.6/Defs"
+    );
+    assert!(
+        !stdout.contains("A1.label"),
+        "did not expect A1.label from root/Defs"
+    );
 
     // With extra defs field, custom field should be extracted
     let mut cmd = bin_cmd();
@@ -84,5 +102,8 @@ fn scan_respects_defs_dir_override() {
         ]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    assert!(stdout.contains("B1.title"), "expected B1.title from v1.6/Defs with --defs-field title");
+    assert!(
+        stdout.contains("B1.title"),
+        "expected B1.title from v1.6/Defs with --defs-field title"
+    );
 }

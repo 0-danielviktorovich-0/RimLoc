@@ -40,11 +40,22 @@ pub fn annotate(
     let mut files: Vec<PathBuf> = Vec::new();
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() { continue; }
-        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
-        if !is_under_languages_dir(p, target_lang_dir) { continue; }
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        if !is_under_languages_dir(p, target_lang_dir) {
+            continue;
+        }
         let p_str = p.to_string_lossy();
-        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) { continue; }
+        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) {
+            continue;
+        }
         files.push(p.to_path_buf());
     }
     files.sort();
@@ -54,7 +65,10 @@ pub fn annotate(
 
     for path in files {
         processed += 1;
-        let input = match std::fs::read_to_string(&path) { Ok(s) => s, Err(_) => continue };
+        let input = match std::fs::read_to_string(&path) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
         let mut reader = Reader::from_str(&input);
         reader.config_mut().trim_text(false);
         let mut buf = Vec::new();
@@ -66,51 +80,82 @@ pub fn annotate(
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
                     let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
-                    if name == "LanguageData" { in_language_data = true; }
+                    if name == "LanguageData" {
+                        in_language_data = true;
+                    }
                     stack.push(name.clone());
-                    if in_language_data && stack.len() == 2 && !strip {
-                        if let Some(orig) = src_map.get(&name) {
-                            let comment = format!(" {} {} ", comment_prefix, sanitize_comment(orig));
-                            out.write_event(Event::Comment(BytesText::new(&comment)))?;
-                            annotated += 1;
-                        }
+                    if in_language_data && stack.len() == 2 && !strip && src_map.contains_key(&name)
+                    {
+                        let comment = format!(
+                            " {} {} ",
+                            comment_prefix,
+                            sanitize_comment(src_map.get(&name).unwrap())
+                        );
+                        out.write_event(Event::Comment(BytesText::new(&comment)))?;
+                        annotated += 1;
                     }
                     out.write_event(Event::Start(e.to_owned()))?;
                 }
                 Ok(Event::End(e)) => {
                     let name = stack.pop();
-                    if name.as_deref() == Some("LanguageData") { in_language_data = false; }
+                    if name.as_deref() == Some("LanguageData") {
+                        in_language_data = false;
+                    }
                     out.write_event(Event::End(e.to_owned()))?;
                 }
                 Ok(Event::Empty(e)) => {
                     let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
-                    if in_language_data && stack.len() == 1 && !strip {
-                        if let Some(orig) = src_map.get(&name) {
-                            let comment = format!(" {} {} ", comment_prefix, sanitize_comment(orig));
-                            out.write_event(Event::Comment(BytesText::new(&comment)))?;
-                            annotated += 1;
-                        }
+                    if in_language_data && stack.len() == 1 && !strip && src_map.contains_key(&name)
+                    {
+                        let comment = format!(
+                            " {} {} ",
+                            comment_prefix,
+                            sanitize_comment(src_map.get(&name).unwrap())
+                        );
+                        out.write_event(Event::Comment(BytesText::new(&comment)))?;
+                        annotated += 1;
                     }
                     out.write_event(Event::Empty(e.to_owned()))?;
                 }
-                Ok(Event::Text(t)) => { out.write_event(Event::Text(t))?; }
-                Ok(Event::CData(t)) => { out.write_event(Event::CData(t))?; }
-                Ok(Event::Decl(d)) => { out.write_event(Event::Decl(d))?; }
-                Ok(Event::PI(p)) => { out.write_event(Event::PI(p))?; }
-                Ok(Event::Comment(c)) => { if !strip { out.write_event(Event::Comment(c.to_owned()))?; } }
-                Ok(Event::DocType(d)) => { out.write_event(Event::DocType(d))?; }
+                Ok(Event::Text(t)) => {
+                    out.write_event(Event::Text(t))?;
+                }
+                Ok(Event::CData(t)) => {
+                    out.write_event(Event::CData(t))?;
+                }
+                Ok(Event::Decl(d)) => {
+                    out.write_event(Event::Decl(d))?;
+                }
+                Ok(Event::PI(p)) => {
+                    out.write_event(Event::PI(p))?;
+                }
+                Ok(Event::Comment(c)) => {
+                    if !strip {
+                        out.write_event(Event::Comment(c.to_owned()))?;
+                    }
+                }
+                Ok(Event::DocType(d)) => {
+                    out.write_event(Event::DocType(d))?;
+                }
                 Ok(Event::Eof) => break,
                 Err(_) => break,
             }
             buf.clear();
         }
 
-        if dry_run { continue; }
-        if backup && path.exists() { let _ = std::fs::copy(&path, path.with_extension("xml.bak")); }
+        if dry_run {
+            continue;
+        }
+        if backup && path.exists() {
+            let _ = std::fs::copy(&path, path.with_extension("xml.bak"));
+        }
         std::fs::write(&path, out.into_inner())?;
     }
 
-    Ok(AnnotateSummary { processed, annotated })
+    Ok(AnnotateSummary {
+        processed,
+        annotated,
+    })
 }
 
 pub type AnnotateFilePlan = DFilePlan;
@@ -138,11 +183,22 @@ pub fn annotate_dry_run_plan(
     let mut files: Vec<PathBuf> = Vec::new();
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() { continue; }
-        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
-        if !is_under_languages_dir(p, target_lang_dir) { continue; }
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        if !is_under_languages_dir(p, target_lang_dir) {
+            continue;
+        }
         let p_str = p.to_string_lossy();
-        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) { continue; }
+        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) {
+            continue;
+        }
         files.push(p.to_path_buf());
     }
     files.sort();
@@ -154,7 +210,10 @@ pub fn annotate_dry_run_plan(
 
     for path in files {
         processed += 1;
-        let input = match std::fs::read_to_string(&path) { Ok(s) => s, Err(_) => continue };
+        let input = match std::fs::read_to_string(&path) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
         let mut reader = Reader::from_str(&input);
         reader.config_mut().trim_text(false);
         let mut buf = Vec::new();
@@ -166,32 +225,52 @@ pub fn annotate_dry_run_plan(
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
                     let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
-                    if name == "LanguageData" { in_language_data = true; }
+                    if name == "LanguageData" {
+                        in_language_data = true;
+                    }
                     stack.push(name.clone());
-                    if in_language_data && stack.len() == 2 && !strip {
-                        if src_map.get(&name).is_some() { add_cnt += 1; }
+                    if in_language_data && stack.len() == 2 && !strip && src_map.contains_key(&name)
+                    {
+                        add_cnt += 1;
                     }
                 }
                 Ok(Event::End(_)) => {
                     let name = stack.pop();
-                    if name.as_deref() == Some("LanguageData") { in_language_data = false; }
+                    if name.as_deref() == Some("LanguageData") {
+                        in_language_data = false;
+                    }
                 }
                 Ok(Event::Empty(e)) => {
                     let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
-                    if in_language_data && stack.len() == 1 && !strip {
-                        if src_map.get(&name).is_some() { add_cnt += 1; }
+                    if in_language_data && stack.len() == 1 && !strip && src_map.contains_key(&name)
+                    {
+                        add_cnt += 1;
                     }
                 }
-                Ok(Event::Comment(_c)) => { if strip { strip_cnt += 1; } }
+                Ok(Event::Comment(_c)) => {
+                    if strip {
+                        strip_cnt += 1;
+                    }
+                }
                 Ok(Event::Eof) => break,
                 Ok(_) => {}
                 Err(_) => break,
             }
             buf.clear();
         }
-        out_files.push(AnnotateFilePlan { path: path.display().to_string(), add: add_cnt, strip: strip_cnt });
-        total_add += add_cnt; total_strip += strip_cnt;
+        out_files.push(AnnotateFilePlan {
+            path: path.display().to_string(),
+            add: add_cnt,
+            strip: strip_cnt,
+        });
+        total_add += add_cnt;
+        total_strip += strip_cnt;
     }
 
-    Ok(AnnotatePlan { files: out_files, total_add, total_strip, processed })
+    Ok(AnnotatePlan {
+        files: out_files,
+        total_add,
+        total_strip,
+        processed,
+    })
 }

@@ -24,7 +24,15 @@ pub fn run_xml_health(
     let except = if except.is_none() { cfg.except } else { except };
 
     let report = rimloc_services::xml_health_scan(&root, lang_dir.as_deref())?;
-    let mut issues: Vec<Issue> = report.issues.into_iter().map(|it| Issue { path: it.path, category: it.category, error: it.error }).collect();
+    let mut issues: Vec<Issue> = report
+        .issues
+        .into_iter()
+        .map(|it| Issue {
+            path: it.path,
+            category: it.category,
+            error: it.error,
+        })
+        .collect();
     let checked = report.checked;
 
     // filter by categories

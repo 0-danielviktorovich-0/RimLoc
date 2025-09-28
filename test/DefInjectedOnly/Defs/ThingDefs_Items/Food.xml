@@ -1,0 +1,12 @@
+<Defs>
+  <ThingDef>
+    <defName>Meal_Simple</defName>
+    <label>simple meal</label>
+    <description>A basic cooked meal.</description>
+  </ThingDef>
+  <ThingDef>
+    <defName>Meal_Fine</defName>
+    <label>fine meal</label>
+    <description>A more refined dish.</description>
+  </ThingDef>
+</Defs>

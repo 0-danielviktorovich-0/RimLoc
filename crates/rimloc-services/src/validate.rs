@@ -43,7 +43,11 @@ pub fn validate_under_root_with_defs_and_fields(
     defs_root: Option<&Path>,
     extra_fields: &[String],
 ) -> Result<Vec<ValidationMessage>> {
-    let mut units = rimloc_parsers_xml::scan_all_units_with_defs_and_fields(scan_root, defs_root, extra_fields)?;
+    let mut units = rimloc_parsers_xml::scan_all_units_with_defs_and_fields(
+        scan_root,
+        defs_root,
+        extra_fields,
+    )?;
     if let Some(dir) = source_lang_dir {
         units.retain(|u| is_source_for_lang_dir(&u.path, dir));
     } else if let Some(code) = source_lang {
@@ -62,7 +66,8 @@ pub fn validate_under_root_with_defs_and_dict(
     dict: &std::collections::HashMap<String, Vec<String>>,
     extra_fields: &[String],
 ) -> Result<Vec<ValidationMessage>> {
-    let mut units = crate::scan::scan_units_with_defs_and_dict(scan_root, defs_root, dict, extra_fields)?;
+    let mut units =
+        crate::scan::scan_units_with_defs_and_dict(scan_root, defs_root, dict, extra_fields)?;
     if let Some(dir) = source_lang_dir {
         units.retain(|u| crate::util::is_source_for_lang_dir(&u.path, dir));
     } else if let Some(code) = source_lang {

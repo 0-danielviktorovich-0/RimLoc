@@ -1,6 +1,10 @@
 use assert_cmd::prelude::*;
 use serde::Deserialize;
-use std::{fs, path::PathBuf, process::Command};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 #[derive(Deserialize)]
 #[allow(dead_code)]
@@ -27,7 +31,7 @@ fn bin_cmd() -> Command {
     Command::cargo_bin("rimloc-cli").expect("rimloc-cli built")
 }
 
-fn write_xml(root: &PathBuf, content: &str) -> PathBuf {
+fn write_xml(root: &Path, content: &str) -> PathBuf {
     let path = root
         .join("Languages")
         .join("Russian")
@@ -43,7 +47,10 @@ fn make_po(entries: &[(&str, &str)]) -> String {
     let mut out = String::new();
     for (k, v) in entries {
         out.push_str("#: Languages/Russian/Keyed/Sample.xml:1\n");
-        out.push_str(&format!("msgctxt \"{}|Languages/Russian/Keyed/Sample.xml:1\"\n", k));
+        out.push_str(&format!(
+            "msgctxt \"{}|Languages/Russian/Keyed/Sample.xml:1\"\n",
+            k
+        ));
         out.push_str(&format!("msgstr \"{}\"\n\n", v));
     }
     out
@@ -71,10 +78,14 @@ fn import_only_diff_updates_only_changed_keys() {
 
     let mut cmd = bin_cmd();
     cmd.args(["--quiet", "import-po"]) // JSON report, only-diff
-        .args(["--po"]).arg(&po_path)
-        .args(["--mod-root"]).arg(&root)
+        .args(["--po"])
+        .arg(&po_path)
+        .args(["--mod-root"])
+        .arg(&root)
         .args(["--lang", "ru"]) // resolve Languages/Russian
-        .args(["--only-diff"]).args(["--report"]).args(["--format", "json"]);
+        .args(["--only-diff"])
+        .args(["--report"])
+        .args(["--format", "json"]);
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
     // stdout: last non-empty line is JSON summary
@@ -109,7 +120,10 @@ fn import_incremental_skips_identical() {
         .join("Keyed")
         .join("Sample.xml");
     std::fs::create_dir_all(out_path.parent().unwrap()).unwrap();
-    let entries = vec![("A".to_string(), "same".to_string()), ("B".to_string(), "same".to_string())];
+    let entries = vec![
+        ("A".to_string(), "same".to_string()),
+        ("B".to_string(), "same".to_string()),
+    ];
     rimloc_import_po::write_language_data_xml(&out_path, &entries).expect("write xml");
     let po_text = make_po(&[("A", "same"), ("B", "same")]);
     let po_path = tmp.path().join("same.po");
@@ -117,10 +131,14 @@ fn import_incremental_skips_identical() {
 
     let mut cmd = bin_cmd();
     cmd.args(["--quiet", "import-po"]) // incremental compare should skip
-        .args(["--po"]).arg(&po_path)
-        .args(["--mod-root"]).arg(&root)
+        .args(["--po"])
+        .arg(&po_path)
+        .args(["--mod-root"])
+        .arg(&root)
         .args(["--lang", "ru"]) // resolve Languages/Russian
-        .args(["--incremental"]).args(["--report"]).args(["--format", "json"]);
+        .args(["--incremental"])
+        .args(["--report"])
+        .args(["--format", "json"]);
 
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
@@ -130,6 +148,9 @@ fn import_incremental_skips_identical() {
         .find(|l| !l.trim().is_empty())
         .expect("have json line");
     let rep: Summary = serde_json::from_str(json_line).expect("json summary");
-    assert_eq!(rep.skipped, 1, "expected one skipped file due to identical content");
+    assert_eq!(
+        rep.skipped, 1,
+        "expected one skipped file due to identical content"
+    );
     assert_eq!(rep.updated + rep.created, 0);
 }

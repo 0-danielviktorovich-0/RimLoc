@@ -64,9 +64,17 @@ pub fn run_morph(
         pymorphy_url,
     };
     let res = rimloc_services::morph_generate(&scan_root, &opts)?;
-    crate::ui_ok!("morph-summary", processed = (res.processed as i64), lang = res.lang.as_str());
-    if res.warn_no_morpher { crate::ui_warn!("morph-provider-morpher-stub"); }
-    if res.warn_no_pymorphy { crate::ui_warn!("morph-provider-morpher-stub"); }
+    crate::ui_ok!(
+        "morph-summary",
+        processed = (res.processed as i64),
+        lang = res.lang.as_str()
+    );
+    if res.warn_no_morpher {
+        crate::ui_warn!("morph-provider-morpher-stub");
+    }
+    if res.warn_no_pymorphy {
+        crate::ui_warn!("morph-provider-morpher-stub");
+    }
     Ok(())
 }
 // provider-specific helpers moved to services
