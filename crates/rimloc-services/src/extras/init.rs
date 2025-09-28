@@ -25,7 +25,11 @@ pub struct InitPlan {
     pub language: String,
 }
 
-pub fn make_init_plan(root: &Path, source_lang_dir: &str, target_lang_dir: &str) -> Result<InitPlan> {
+pub fn make_init_plan(
+    root: &Path,
+    source_lang_dir: &str,
+    target_lang_dir: &str,
+) -> Result<InitPlan> {
     let units = scan_units(root)?;
     let mut grouped: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for u in &units {
@@ -44,9 +48,15 @@ pub fn make_init_plan(root: &Path, source_lang_dir: &str, target_lang_dir: &str)
     let mut files = Vec::new();
     for (rel, keys) in grouped {
         let out = root.join("Languages").join(target_lang_dir).join(rel);
-        files.push(InitFilePlan { path: out, keys: keys.len() });
+        files.push(InitFilePlan {
+            path: out,
+            keys: keys.len(),
+        });
     }
-    Ok(InitPlan { files, language: target_lang_dir.to_string() })
+    Ok(InitPlan {
+        files,
+        language: target_lang_dir.to_string(),
+    })
 }
 
 pub fn write_init_plan(plan: &InitPlan, overwrite: bool, dry_run: bool) -> Result<usize> {

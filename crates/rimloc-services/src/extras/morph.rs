@@ -6,19 +6,40 @@ use std::num::NonZeroUsize;
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MorphProvider { Dummy, MorpherApi, Pymorphy2 }
+pub enum MorphProvider {
+    Dummy,
+    MorpherApi,
+    Pymorphy2,
+}
 
 fn pluralize(s: &str) -> String {
     let has_cyr = s.chars().any(|c| (c as u32) >= 0x0400);
-    if !has_cyr { return format!("{}s", s); }
+    if !has_cyr {
+        return format!("{}s", s);
+    }
     let lower = s.trim().to_lowercase();
     let mut chars: Vec<char> = lower.chars().collect();
     if let Some(&last) = chars.last() {
-        let prev = chars.get(chars.len().saturating_sub(2)).copied().unwrap_or('\0');
+        let prev = chars
+            .get(chars.len().saturating_sub(2))
+            .copied()
+            .unwrap_or('\0');
         match last {
-            'й' | 'ь' | 'я' => { chars.pop(); chars.push('и'); return chars.iter().collect(); }
-            'а' => { let hush = matches!(prev, 'г'|'к'|'х'|'ж'|'ч'|'ш'|'щ'); let repl = if hush { 'и' } else { 'ы' }; chars.pop(); chars.push(repl); return chars.iter().collect(); }
-            'ж' | 'ч' | 'ш' | 'щ' => { return format!("{}{}", s, 'и'); }
+            'й' | 'ь' | 'я' => {
+                chars.pop();
+                chars.push('и');
+                return chars.iter().collect();
+            }
+            'а' => {
+                let hush = matches!(prev, 'г' | 'к' | 'х' | 'ж' | 'ч' | 'ш' | 'щ');
+                let repl = if hush { 'и' } else { 'ы' };
+                chars.pop();
+                chars.push(repl);
+                return chars.iter().collect();
+            }
+            'ж' | 'ч' | 'ш' | 'щ' => {
+                return format!("{}{}", s, 'и');
+            }
             _ => {}
         }
     }
@@ -27,7 +48,11 @@ fn pluralize(s: &str) -> String {
 
 fn guess_gender(s: &str) -> &'static str {
     let ls = s.trim().to_lowercase();
-    if ls.ends_with('a') || ls.ends_with('я') || ls.ends_with('а') || ls.ends_with('ь') { "Female" } else { "Male" }
+    if ls.ends_with('a') || ls.ends_with('я') || ls.ends_with('а') || ls.ends_with('ь') {
+        "Female"
+    } else {
+        "Male"
+    }
 }
 
 fn morpher_decline(
@@ -36,17 +61,42 @@ fn morpher_decline(
     timeout_ms: u64,
     cache: &mut LruCache<String, std::collections::HashMap<String, String>>,
 ) -> Option<std::collections::HashMap<String, String>> {
-    if let Some(v) = cache.get(word) { return Some(v.clone()); }
-    let client = reqwest::blocking::Client::builder().timeout(std::time::Duration::from_millis(timeout_ms)).build().ok()?;
-    let url = format!("https://ws3.morpher.ru/russian/declension?s={}", urlencoding::encode(word));
-    let req = client.get(url).query(&[("format","json")]).header("Authorization", format!("Basic {}", token));
-    let res = req.send().ok()?; if !res.status().is_success() { return None; }
+    if let Some(v) = cache.get(word) {
+        return Some(v.clone());
+    }
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_millis(timeout_ms))
+        .build()
+        .ok()?;
+    let url = format!(
+        "https://ws3.morpher.ru/russian/declension?s={}",
+        urlencoding::encode(word)
+    );
+    let req = client
+        .get(url)
+        .query(&[("format", "json")])
+        .header("Authorization", format!("Basic {}", token));
+    let res = req.send().ok()?;
+    if !res.status().is_success() {
+        return None;
+    }
     let v: serde_json::Value = res.json().ok()?;
     let mut map = std::collections::HashMap::new();
-    for (k, key) in [("И","Nominative"),("Р","Genitive"),("Д","Dative"),("В","Accusative"),("Т","Instrumental"),("П","Prepositional")] {
-        if let Some(val) = v.get(k).and_then(|x| x.as_str()) { map.insert(key.to_string(), val.to_string()); }
+    for (k, key) in [
+        ("И", "Nominative"),
+        ("Р", "Genitive"),
+        ("Д", "Dative"),
+        ("В", "Accusative"),
+        ("Т", "Instrumental"),
+        ("П", "Prepositional"),
+    ] {
+        if let Some(val) = v.get(k).and_then(|x| x.as_str()) {
+            map.insert(key.to_string(), val.to_string());
+        }
     }
-    if map.is_empty() { return None; }
+    if map.is_empty() {
+        return None;
+    }
     cache.put(word.to_string(), map.clone());
     Some(map)
 }
@@ -58,16 +108,38 @@ fn pymorphy_decline(
     cache: &mut LruCache<String, std::collections::HashMap<String, String>>,
 ) -> Option<std::collections::HashMap<String, String>> {
     let key = format!("py:{}", word);
-    if let Some(v) = cache.get(&key) { return Some(v.clone()); }
-    let client = reqwest::blocking::Client::builder().timeout(std::time::Duration::from_millis(timeout_ms)).build().ok()?;
-    let req = client.get(format!("{}/declension", url.trim_end_matches('/'))).query(&[("text", word)]).header("Accept","application/json");
-    let res = req.send().ok()?; if !res.status().is_success() { return None; }
+    if let Some(v) = cache.get(&key) {
+        return Some(v.clone());
+    }
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_millis(timeout_ms))
+        .build()
+        .ok()?;
+    let req = client
+        .get(format!("{}/declension", url.trim_end_matches('/')))
+        .query(&[("text", word)])
+        .header("Accept", "application/json");
+    let res = req.send().ok()?;
+    if !res.status().is_success() {
+        return None;
+    }
     let v: serde_json::Value = res.json().ok()?;
     let mut map = std::collections::HashMap::new();
-    for (k, key) in [("nomn","Nominative"),("gent","Genitive"),("datv","Dative"),("accs","Accusative"),("ablt","Instrumental"),("loct","Prepositional")] {
-        if let Some(val) = v.get(k).and_then(|x| x.as_str()) { map.insert(key.to_string(), val.to_string()); }
+    for (k, key) in [
+        ("nomn", "Nominative"),
+        ("gent", "Genitive"),
+        ("datv", "Dative"),
+        ("accs", "Accusative"),
+        ("ablt", "Instrumental"),
+        ("loct", "Prepositional"),
+    ] {
+        if let Some(val) = v.get(k).and_then(|x| x.as_str()) {
+            map.insert(key.to_string(), val.to_string());
+        }
     }
-    if map.is_empty() { return None; }
+    if map.is_empty() {
+        return None;
+    }
     cache.put(key, map.clone());
     Some(map)
 }
@@ -102,10 +174,16 @@ pub fn generate(root: &Path, opts: &MorphOptions) -> Result<MorphResult> {
     // Collect up to 'limit' keys/values from target language
     let mut picked: BTreeMap<String, String> = BTreeMap::new();
     for u in &units {
-        if picked.len() >= opts.limit.unwrap_or(usize::MAX) { break; }
-        if crate::util::is_under_languages_dir(&u.path, &opts.target_lang_dir) && re_key.is_match(u.key.as_str()) {
+        if picked.len() >= opts.limit.unwrap_or(usize::MAX) {
+            break;
+        }
+        if crate::util::is_under_languages_dir(&u.path, &opts.target_lang_dir)
+            && re_key.is_match(u.key.as_str())
+        {
             if let Some(val) = u.source.as_deref() {
-                picked.entry(u.key.clone()).or_insert_with(|| val.to_string());
+                picked
+                    .entry(u.key.clone())
+                    .or_insert_with(|| val.to_string());
             }
         }
     }
@@ -132,34 +210,65 @@ pub fn generate(root: &Path, opts: &MorphOptions) -> Result<MorphResult> {
             MorphProvider::MorpherApi => {
                 if let Some(tok) = morpher_token.as_deref() {
                     if let Some(m) = morpher_decline(tok, &base, opts.timeout_ms, &mut cache) {
-                        for (name, val) in m { cases.insert(name, val); }
+                        for (name, val) in m {
+                            cases.insert(name, val);
+                        }
                     }
                 }
             }
             MorphProvider::Pymorphy2 => {
                 if let Some(url) = pym_url.as_deref() {
                     if let Some(m) = pymorphy_decline(url, &base, opts.timeout_ms, &mut cache) {
-                        for (name, val) in m { cases.insert(name, val); }
+                        for (name, val) in m {
+                            cases.insert(name, val);
+                        }
                     }
                 }
             }
             MorphProvider::Dummy => {}
         }
 
-        for cname in ["Nominative","Genitive","Dative","Accusative","Instrumental","Prepositional"] {
-            if let Some(v) = cases.get(cname) { case_items.push((format!("Case.{}.{}", k, cname), v.clone())); }
+        for cname in [
+            "Nominative",
+            "Genitive",
+            "Dative",
+            "Accusative",
+            "Instrumental",
+            "Prepositional",
+        ] {
+            if let Some(v) = cases.get(cname) {
+                case_items.push((format!("Case.{}.{}", k, cname), v.clone()));
+            }
         }
         plural_items.push((format!("Plural.{}", k), pluralize(&base)));
         gender_items.push((format!("Gender.{}", k), guess_gender(&base).to_string()));
     }
 
     // Write under Languages/<lang>/Keyed
-    let out_case = root.join("Languages").join(&opts.target_lang_dir).join("Keyed").join("_Case.xml");
-    let out_plural = root.join("Languages").join(&opts.target_lang_dir).join("Keyed").join("_Plural.xml");
-    let out_gender = root.join("Languages").join(&opts.target_lang_dir).join("Keyed").join("_Gender.xml");
-    if !case_items.is_empty() { rimloc_import_po::write_language_data_xml(&out_case, &case_items)?; }
-    if !plural_items.is_empty() { rimloc_import_po::write_language_data_xml(&out_plural, &plural_items)?; }
-    if !gender_items.is_empty() { rimloc_import_po::write_language_data_xml(&out_gender, &gender_items)?; }
+    let out_case = root
+        .join("Languages")
+        .join(&opts.target_lang_dir)
+        .join("Keyed")
+        .join("_Case.xml");
+    let out_plural = root
+        .join("Languages")
+        .join(&opts.target_lang_dir)
+        .join("Keyed")
+        .join("_Plural.xml");
+    let out_gender = root
+        .join("Languages")
+        .join(&opts.target_lang_dir)
+        .join("Keyed")
+        .join("_Gender.xml");
+    if !case_items.is_empty() {
+        rimloc_import_po::write_language_data_xml(&out_case, &case_items)?;
+    }
+    if !plural_items.is_empty() {
+        rimloc_import_po::write_language_data_xml(&out_plural, &plural_items)?;
+    }
+    if !gender_items.is_empty() {
+        rimloc_import_po::write_language_data_xml(&out_gender, &gender_items)?;
+    }
 
     let processed_total: usize = case_items.len() + plural_items.len() + gender_items.len();
     Ok(MorphResult {
@@ -169,4 +278,3 @@ pub fn generate(root: &Path, opts: &MorphOptions) -> Result<MorphResult> {
         warn_no_pymorphy: opts.provider == MorphProvider::Pymorphy2 && pym_url.is_none(),
     })
 }
-

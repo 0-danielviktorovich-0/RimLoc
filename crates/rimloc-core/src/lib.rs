@@ -26,11 +26,17 @@ pub mod placeholders {
                 // This is a light check consistent with the validator logic.
                 let mut j = i + 1;
                 // optional positional like 1$
-                while j < bytes.len() && bytes[j].is_ascii_digit() { j += 1; }
-                if j < bytes.len() && bytes[j] == b'$' { j += 1; }
+                while j < bytes.len() && bytes[j].is_ascii_digit() {
+                    j += 1;
+                }
+                if j < bytes.len() && bytes[j] == b'$' {
+                    j += 1;
+                }
                 // optional zero or width digits
-                while j < bytes.len() && (bytes[j] == b'0' || bytes[j].is_ascii_digit()) { j += 1; }
-                if j < bytes.len() && matches!(bytes[j] as char, 'd'|'s'|'i'|'f') {
+                while j < bytes.len() && (bytes[j] == b'0' || bytes[j].is_ascii_digit()) {
+                    j += 1;
+                }
+                if j < bytes.len() && matches!(bytes[j] as char, 'd' | 's' | 'i' | 'f') {
                     i = j + 1;
                     continue;
                 }

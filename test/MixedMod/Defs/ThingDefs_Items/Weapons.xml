@@ -1,0 +1,12 @@
+<Defs>
+  <ThingDef>
+    <defName>Weapon_Blade</defName>
+    <label>blade</label>
+    <description>A sharp blade.</description>
+  </ThingDef>
+  <ThingDef>
+    <defName>Weapon_Bow</defName>
+    <label>bow</label>
+    <description>A simple bow.</description>
+  </ThingDef>
+</Defs>

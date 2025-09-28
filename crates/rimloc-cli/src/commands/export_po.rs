@@ -1,4 +1,7 @@
 use crate::version::resolve_game_version_root;
+use std::io::IsTerminal;
+use std::path::Path;
+use walkdir::WalkDir;
 
 #[allow(dead_code)]
 fn is_under_languages_dir(path: &std::path::Path, lang_dir: &str) -> bool {
@@ -52,13 +55,20 @@ pub fn run_export_po(
         }
     }
 
+    let auto = rimloc_services::autodiscover_defs_context(&scan_root)?;
+
+    let effective_source_lang = source_lang.clone().or(cfg.source_lang.clone());
     let stats = rimloc_services::export_po_with_tm(
         &scan_root,
         &out_po,
         lang.as_deref(),
-        source_lang.or(cfg.source_lang.clone()).as_deref(),
+        effective_source_lang.as_deref(),
         source_lang_dir.as_deref(),
-        if tm_roots.is_empty() { None } else { Some(&tm_roots) },
+        if tm_roots.is_empty() {
+            None
+        } else {
+            Some(&tm_roots)
+        },
     )?;
     ui_ok!("export-po-saved", path = out_po.display().to_string());
     if !tm_roots.is_empty() {
@@ -73,6 +83,54 @@ pub fn run_export_po(
             filled = stats.tm_filled,
             pct = pct
         );
+    }
+
+    fn has_definj_files(dir: &Path) -> bool {
+        if !dir.exists() {
+            return false;
+        }
+        for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.is_file()
+                && path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|ext| ext.eq_ignore_ascii_case("xml"))
+                    .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    let src_dir = if let Some(dir) = source_lang_dir.as_deref() {
+        dir.to_string()
+    } else if let Some(code) = effective_source_lang.clone() {
+        rimloc_import_po::rimworld_lang_dir(&code)
+    } else {
+        "English".to_string()
+    };
+    let english_definj = scan_root
+        .join("Languages")
+        .join(&src_dir)
+        .join("DefInjected");
+    if !has_definj_files(&english_definj) {
+        let suggested = scan_root.join("_learn").join("suggested.xml");
+        if suggested.exists() {
+            ui_warn!(
+                "export-po-missing-definj-suggested",
+                path = suggested.display().to_string(),
+                lang_dir = src_dir
+            );
+        } else if let Some(first) = auto.learned_sources.first() {
+            ui_warn!(
+                "export-po-missing-definj-learned",
+                path = first.display().to_string()
+            );
+        } else {
+            ui_warn!("export-po-missing-definj-generate", lang_dir = src_dir);
+        }
     }
     Ok(())
 }
