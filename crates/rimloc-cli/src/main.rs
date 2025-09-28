@@ -493,7 +493,7 @@ enum Commands {
         #[arg(long, default_value_t = 0.8)]
         threshold: f32,
         /// Output directory for reports/templates
-        #[arg(long, default_value = "./learn_out")]
+        #[arg(long, default_value = "./_learn")]
         out_dir: PathBuf,
         /// Where to save learned dataset (defaults to out_dir/learned_defs.json)
         #[arg(long)]
@@ -1203,12 +1203,66 @@ impl Runnable for Commands {
                 game_version,
             ),
 
-            Commands::LearnDefs { mod_root, dict, model, ml_url, lang_dir, threshold, out_dir, learned_out, no_ml, retrain, retrain_dict, min_len, blacklist, game_version } => {
-                commands::learn_defs::run_learn_defs(mod_root, dict, model, ml_url, lang_dir, threshold, out_dir, no_ml, retrain, learned_out, retrain_dict, min_len, blacklist, game_version)
-            }
-            Commands::LearnKeyed { mod_root, dict, ml_url, source_lang_dir, lang_dir, threshold, out_dir, learned_out, no_ml, retrain_dict, min_len, blacklist, game_version } => {
-                commands::learn_defs::run_learn_keyed(mod_root, dict, ml_url, source_lang_dir, lang_dir, threshold, out_dir, no_ml, learned_out, retrain_dict, min_len, blacklist, game_version)
-            }
+            Commands::LearnDefs {
+                mod_root,
+                dict,
+                model,
+                ml_url,
+                lang_dir,
+                threshold,
+                out_dir,
+                learned_out,
+                no_ml,
+                retrain,
+                retrain_dict,
+                min_len,
+                blacklist,
+                game_version,
+            } => commands::learn_defs::run_learn_defs(
+                mod_root,
+                dict,
+                model,
+                ml_url,
+                lang_dir,
+                threshold,
+                out_dir,
+                no_ml,
+                retrain,
+                learned_out,
+                retrain_dict,
+                min_len,
+                blacklist,
+                game_version,
+            ),
+            Commands::LearnKeyed {
+                mod_root,
+                dict,
+                ml_url,
+                source_lang_dir,
+                lang_dir,
+                threshold,
+                out_dir,
+                learned_out,
+                no_ml,
+                retrain_dict,
+                min_len,
+                blacklist,
+                game_version,
+            } => commands::learn_defs::run_learn_keyed(
+                mod_root,
+                dict,
+                ml_url,
+                source_lang_dir,
+                lang_dir,
+                threshold,
+                out_dir,
+                no_ml,
+                learned_out,
+                retrain_dict,
+                min_len,
+                blacklist,
+                game_version,
+            ),
 
             Commands::Morph {
                 root,

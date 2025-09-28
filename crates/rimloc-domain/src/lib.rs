@@ -75,4 +75,3 @@ pub struct AnnotatePlan {
     pub total_strip: usize,
     pub processed: usize,
 }
-

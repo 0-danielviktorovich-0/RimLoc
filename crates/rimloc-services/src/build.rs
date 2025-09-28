@@ -1,4 +1,4 @@
-use crate::{Result};
+use crate::Result;
 use std::path::{Path, PathBuf};
 
 /// Build translation mod from an existing Languages/<lang> tree under `from_root`.
@@ -102,19 +102,37 @@ pub fn build_from_root_with_progress(
     let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
     for u in units {
         let path_str = u.path.to_string_lossy();
-        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) { continue; }
-        if !(path_str.contains(&format!("/Languages/{}/", lang_folder)) || path_str.contains(&format!("\\Languages\\{}\\", lang_folder))) { continue; }
+        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+            continue;
+        }
+        if !(path_str.contains(&format!("/Languages/{}/", lang_folder))
+            || path_str.contains(&format!("\\Languages\\{}\\", lang_folder)))
+        {
+            continue;
+        }
         if let Some(vers) = versions {
             let mut matched = false;
             for ver in vers {
-                if path_str.contains(&format!("/{}/", ver)) || path_str.contains(&format!("\\{}\\", ver)) || path_str.contains(&format!("/v{}/", ver)) || path_str.contains(&format!("\\v{}\\", ver)) { matched = true; break; }
+                if path_str.contains(&format!("/{}/", ver))
+                    || path_str.contains(&format!("\\{}\\", ver))
+                    || path_str.contains(&format!("/v{}/", ver))
+                    || path_str.contains(&format!("\\v{}\\", ver))
+                {
+                    matched = true;
+                    break;
+                }
             }
-            if !matched { continue; }
+            if !matched {
+                continue;
+            }
         }
         if let Some(src) = u.source.as_deref() {
             if let Some(caps) = re.captures(&path_str) {
                 let rel = PathBuf::from(&caps[1]);
-                grouped.entry(rel).or_default().push((u.key, src.to_string()));
+                grouped
+                    .entry(rel)
+                    .or_default()
+                    .push((u.key, src.to_string()));
                 total_keys += 1;
             }
         }
@@ -127,15 +145,25 @@ pub fn build_from_root_with_progress(
         if dedupe {
             let mut seen: HashSet<String> = HashSet::new();
             let mut outv: Vec<(String, String)> = Vec::new();
-            for (k, v) in items.into_iter().rev() { if seen.insert(k.clone()) { outv.push((k, v)); } }
-            outv.reverse(); items = outv;
+            for (k, v) in items.into_iter().rev() {
+                if seen.insert(k.clone()) {
+                    outv.push((k, v));
+                }
+            }
+            outv.reverse();
+            items = outv;
         }
         let full = out_mod.join("Languages").join(lang_folder).join(&rel);
-        if write { rimloc_import_po::write_language_data_xml(&full, &items)?; }
+        if write {
+            rimloc_import_po::write_language_data_xml(&full, &items)?;
+        }
         files.push((full.clone(), items.len()));
-        idx += 1; progress(idx, total_files, &full);
+        idx += 1;
+        progress(idx, total_files, &full);
     }
-    if write { let _ = std::fs::create_dir_all(out_mod.join("About")); }
+    if write {
+        let _ = std::fs::create_dir_all(out_mod.join("About"));
+    }
     Ok((files, total_keys))
 }
 
@@ -200,6 +228,7 @@ pub fn build_from_po_execute(
 }
 
 /// Build from PO with per-file progress events
+#[allow(clippy::too_many_arguments)]
 pub fn build_from_po_with_progress(
     po: &Path,
     out_mod: &Path,
@@ -212,7 +241,8 @@ pub fn build_from_po_with_progress(
 ) -> Result<()> {
     // Read entries and group by relative path under Languages/
     let entries = rimloc_import_po::read_po_entries(po)?;
-    let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](?P<rel>.+?)(?::\d+)?$").unwrap();
+    let re =
+        regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](?P<rel>.+?)(?::\d+)?$").unwrap();
     use std::collections::{BTreeMap, HashSet};
     let mut grouped: BTreeMap<PathBuf, Vec<(String, String)>> = BTreeMap::new();
     for e in entries {
@@ -243,12 +273,18 @@ pub fn build_from_po_with_progress(
         if dedupe {
             let mut seen: HashSet<String> = HashSet::new();
             let mut outv: Vec<(String, String)> = Vec::new();
-            for (k, v) in items.into_iter().rev() { if seen.insert(k.clone()) { outv.push((k, v)); } }
-            outv.reverse(); items = outv;
+            for (k, v) in items.into_iter().rev() {
+                if seen.insert(k.clone()) {
+                    outv.push((k, v));
+                }
+            }
+            outv.reverse();
+            items = outv;
         }
         let out_path = out_mod.join("Languages").join(lang_folder).join(&rel);
         rimloc_import_po::write_language_data_xml(&out_path, &items)?;
-        idx += 1; progress(idx, total, &out_path);
+        idx += 1;
+        progress(idx, total, &out_path);
     }
     Ok(())
 }

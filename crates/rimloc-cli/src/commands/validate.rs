@@ -27,15 +27,21 @@ pub fn run_validate(
         tracing::info!(event = "validate_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let defs_abs = defs_dir
-        .as_ref()
-        .map(|p| if p.is_absolute() { p.clone() } else { scan_root.join(p) });
+    let defs_abs = defs_dir.as_ref().map(|p| {
+        if p.is_absolute() {
+            p.clone()
+        } else {
+            scan_root.join(p)
+        }
+    });
     // Merge defs_field from config if CLI didn't set
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let mut cli_defs_field = defs_field;
     if cli_defs_field.is_empty() {
         if let Some(ref scan) = cfg.scan {
-            if let Some(extra) = scan.defs_fields.clone() { cli_defs_field = extra; }
+            if let Some(extra) = scan.defs_fields.clone() {
+                cli_defs_field = extra;
+            }
         }
     }
     // Merge dictionaries
@@ -44,14 +50,26 @@ pub fn run_validate(
     if let Some(scan) = cfg.scan.as_ref() {
         if let Some(paths) = scan.defs_dicts.as_ref() {
             for p in paths {
-                let pp = if p.starts_with('/') || p.contains(':') { std::path::PathBuf::from(p) } else { scan_root.join(p) };
-                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+                let pp = if p.starts_with('/') || p.contains(':') {
+                    std::path::PathBuf::from(p)
+                } else {
+                    scan_root.join(p)
+                };
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                    dicts.push(d);
+                }
             }
         }
     }
     for p in &defs_dict {
-        let pp = if p.is_absolute() { p.clone() } else { scan_root.join(p) };
-        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+        let pp = if p.is_absolute() {
+            p.clone()
+        } else {
+            scan_root.join(p)
+        };
+        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+            dicts.push(d);
+        }
     }
     let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
 

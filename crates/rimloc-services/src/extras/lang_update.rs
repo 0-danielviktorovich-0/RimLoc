@@ -99,9 +99,7 @@ fn plan_from_zip_bytes(
 
 /// Apply plan by extracting entries and writing them to the target languages dir.
 fn apply_plan(bytes: &[u8], plan: &LangUpdatePlan, backup: bool) -> Result<()> {
-    let lang_dir = plan
-        .out_languages_dir
-        .join(&plan.target_lang_dir);
+    let lang_dir = plan.out_languages_dir.join(&plan.target_lang_dir);
     if lang_dir.exists() && backup {
         let bak = lang_dir.with_extension("bak");
         if bak.exists() {
@@ -144,6 +142,7 @@ pub struct LangUpdateSummary {
     pub out_dir: PathBuf,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn lang_update(
     game_root: &Path,
     repo: &str,
@@ -169,6 +168,12 @@ pub fn lang_update(
         return Ok((Some(plan), None));
     }
     apply_plan(&bytes, &plan, backup)?;
-    Ok((None, Some(LangUpdateSummary { files: plan.files.len(), bytes: plan.total_bytes, out_dir: out_languages_dir.join(target_lang_dir) })))
+    Ok((
+        None,
+        Some(LangUpdateSummary {
+            files: plan.files.len(),
+            bytes: plan.total_bytes,
+            out_dir: out_languages_dir.join(target_lang_dir),
+        }),
+    ))
 }
-

@@ -1,4 +1,5 @@
 use crate::version::resolve_game_version_root;
+use std::collections::{BTreeSet, HashMap};
 use std::io::IsTerminal;
 
 #[allow(clippy::too_many_arguments)]
@@ -37,39 +38,72 @@ pub fn run_scan(
         tracing::info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
     }
 
-    let defs_abs = defs_dir
-        .as_ref()
-        .map(|p| if p.is_absolute() { p.clone() } else { scan_root.join(p) });
-    // Merge defs_field from config if not provided on CLI
+    let defs_abs = defs_dir.as_ref().map(|p| {
+        if p.is_absolute() {
+            p.clone()
+        } else {
+            scan_root.join(p)
+        }
+    });
+    let auto = rimloc_services::autodiscover_defs_context(&scan_root)?;
     let cfg = rimloc_config::load_config().unwrap_or_default();
-    let mut cli_defs_field = defs_field;
-    if cli_defs_field.is_empty() {
-        if let Some(ref scan) = cfg.scan {
-            if let Some(extra) = scan.defs_fields.clone() { cli_defs_field = extra; }
+
+    let mut extra_fields: Vec<String> = auto.extra_fields.clone();
+    if let Some(ref scan_cfg) = cfg.scan {
+        if let Some(extra) = scan_cfg.defs_fields.clone() {
+            extra_fields.extend(extra);
         }
     }
-    // Load dictionaries (embedded + config + CLI)
-    let mut dicts = Vec::new();
-    dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
-    if let Some(scan) = cfg.scan.as_ref() {
-        if let Some(paths) = scan.defs_dicts.as_ref() {
+    extra_fields.extend(defs_field);
+    extra_fields.sort();
+    extra_fields.dedup();
+
+    let mut dict_sets: HashMap<String, BTreeSet<String>> = auto
+        .dict
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
+
+    let mut merge_dict = |map: HashMap<String, Vec<String>>| {
+        for (k, v) in map {
+            dict_sets.entry(k).or_default().extend(v);
+        }
+    };
+
+    if let Some(scan_cfg) = cfg.scan.as_ref() {
+        if let Some(paths) = scan_cfg.defs_dicts.as_ref() {
             for p in paths {
-                let pp = if p.starts_with('/') || p.contains(':') { std::path::PathBuf::from(p) } else { scan_root.join(p) };
-                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+                let pp = if p.starts_with('/') || p.contains(':') {
+                    std::path::PathBuf::from(p)
+                } else {
+                    scan_root.join(p)
+                };
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                    merge_dict(d.0);
+                }
             }
         }
     }
     for p in &defs_dict {
-        let pp = if p.is_absolute() { p.clone() } else { scan_root.join(p) };
-        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+        let pp = if p.is_absolute() {
+            p.clone()
+        } else {
+            scan_root.join(p)
+        };
+        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+            merge_dict(d.0);
+        }
     }
-    let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
+    let merged: HashMap<String, Vec<String>> = dict_sets
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
 
     let mut units = rimloc_services::scan_units_with_defs_and_dict(
         &scan_root,
         defs_abs.as_deref(),
-        &merged.0,
-        &cli_defs_field,
+        &merged,
+        &extra_fields,
     )?;
 
     fn is_source_for_lang_dir(path: &std::path::Path, lang_dir: &str) -> bool {
@@ -80,7 +114,9 @@ pub fn run_scan(
             if s.eq_ignore_ascii_case("Languages") {
                 if let Some(lang) = comps.next() {
                     let lang_s = lang.as_os_str().to_string_lossy();
-                    if lang_s == lang_dir { return true; }
+                    if lang_s == lang_dir {
+                        return true;
+                    }
                 }
                 break;
             }
@@ -88,7 +124,9 @@ pub fn run_scan(
         // English also includes Defs/*
         if lang_dir.eq_ignore_ascii_case("English") {
             let s = path.to_string_lossy();
-            if s.contains("/Defs/") || s.contains("\\Defs\\") { return true; }
+            if s.contains("/Defs/") || s.contains("\\Defs\\") {
+                return true;
+            }
         }
         false
     }

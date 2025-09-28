@@ -7,14 +7,18 @@ use walkdir::WalkDir;
 pub fn xml_health_scan(root: &Path, lang_dir: Option<&str>) -> crate::Result<HealthReport> {
     let mut issues: Vec<HealthIssue> = Vec::new();
     let mut checked = 0usize;
-    let re_xml_decl: Regex = Regex::new(r#"(?i)<\?xml[^>]*encoding\s*=\s*['\"]([^'\"]+)['\"][^>]*\?>"#).unwrap();
+    let re_xml_decl: Regex =
+        Regex::new(r#"(?i)<\?xml[^>]*encoding\s*=\s*['\"]([^'\"]+)['\"][^>]*\?>"#).unwrap();
 
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() {
             continue;
         }
-        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) {
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+        {
             continue;
         }
         if let Some(dir) = lang_dir {
@@ -22,7 +26,9 @@ pub fn xml_health_scan(root: &Path, lang_dir: Option<&str>) -> crate::Result<Hea
             if !s.contains("/Languages/") && !s.contains("\\Languages\\") {
                 continue;
             }
-            if !(s.contains(&format!("/Languages/{dir}/")) || s.contains(&format!("\\Languages\\{dir}\\"))) {
+            if !(s.contains(&format!("/Languages/{dir}/"))
+                || s.contains(&format!("\\Languages\\{dir}\\")))
+            {
                 continue;
             }
         }
@@ -31,7 +37,11 @@ pub fn xml_health_scan(root: &Path, lang_dir: Option<&str>) -> crate::Result<Hea
         let content = match std::fs::read_to_string(p) {
             Ok(s) => s,
             Err(e) => {
-                issues.push(HealthIssue { path: p.display().to_string(), category: "encoding".into(), error: format!("{e}") });
+                issues.push(HealthIssue {
+                    path: p.display().to_string(),
+                    category: "encoding".into(),
+                    error: format!("{e}"),
+                });
                 continue;
             }
         };
@@ -43,16 +53,31 @@ pub fn xml_health_scan(root: &Path, lang_dir: Option<&str>) -> crate::Result<Hea
                 let enc = caps.get(1).map(|m| m.as_str()).unwrap_or("");
                 let enc_norm = enc.to_ascii_lowercase().replace('_', "-");
                 if enc_norm != "utf-8" && enc_norm != "utf8" {
-                    issues.push(HealthIssue { path: p.display().to_string(), category: "encoding-detected".into(), error: format!("XML declares encoding={enc}; expected UTF-8") });
+                    issues.push(HealthIssue {
+                        path: p.display().to_string(),
+                        category: "encoding-detected".into(),
+                        error: format!("XML declares encoding={enc}; expected UTF-8"),
+                    });
                 }
             }
             if head_str.to_ascii_lowercase().contains("<!doctype") {
-                issues.push(HealthIssue { path: p.display().to_string(), category: "unexpected-doctype".into(), error: "DOCTYPE present (not expected in LanguageData)".into() });
+                issues.push(HealthIssue {
+                    path: p.display().to_string(),
+                    category: "unexpected-doctype".into(),
+                    error: "DOCTYPE present (not expected in LanguageData)".into(),
+                });
             }
         }
 
-        if content.chars().any(|ch| { let c = ch as u32; c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D }) {
-            issues.push(HealthIssue { path: p.display().to_string(), category: "invalid-char".into(), error: "control character < 0x20".into() });
+        if content.chars().any(|ch| {
+            let c = ch as u32;
+            c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D
+        }) {
+            issues.push(HealthIssue {
+                path: p.display().to_string(),
+                category: "invalid-char".into(),
+                error: "control character < 0x20".into(),
+            });
         }
 
         let mut reader = quick_xml::Reader::from_str(&content);
@@ -63,17 +88,29 @@ pub fn xml_health_scan(root: &Path, lang_dir: Option<&str>) -> crate::Result<Hea
             match reader.read_event_into(&mut buf) {
                 Ok(quick_xml::events::Event::Eof) => break,
                 Ok(_) => {}
-                Err(e) => { err = Some(format!("{e}")); break; }
+                Err(e) => {
+                    err = Some(format!("{e}"));
+                    break;
+                }
             }
             buf.clear();
         }
         if let Some(e) = err {
             let el = e.to_ascii_lowercase();
-            let cat = if el.contains("mismatch") { "tag-mismatch" }
-                else if el.contains("doctype") || el.contains("dtd") { "unexpected-doctype" }
-                else if el.contains("entity") || el.contains("ampersand") || el.contains("escape") { "invalid-entity" }
-                else { "parse" };
-            issues.push(HealthIssue { path: p.display().to_string(), category: cat.into(), error: e });
+            let cat = if el.contains("mismatch") {
+                "tag-mismatch"
+            } else if el.contains("doctype") || el.contains("dtd") {
+                "unexpected-doctype"
+            } else if el.contains("entity") || el.contains("ampersand") || el.contains("escape") {
+                "invalid-entity"
+            } else {
+                "parse"
+            };
+            issues.push(HealthIssue {
+                path: p.display().to_string(),
+                category: cat.into(),
+                error: e,
+            });
         }
     }
 

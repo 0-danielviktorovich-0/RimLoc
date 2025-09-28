@@ -20,7 +20,8 @@ pub fn run_diff_xml(
     let cfg = rimloc_config::load_config().unwrap_or_default();
 
     let effective_version = game_version.or(cfg.game_version.clone());
-    let (scan_root, selected_version) = resolve_game_version_root(&root, effective_version.as_deref())?;
+    let (scan_root, selected_version) =
+        resolve_game_version_root(&root, effective_version.as_deref())?;
     if let Some(ver) = selected_version.as_deref() {
         tracing::info!(event = "diff_version_resolved", version = ver, path = %scan_root.display());
     }
@@ -47,31 +48,49 @@ pub fn run_diff_xml(
             .unwrap_or_else(|| "Russian".to_string())
     };
     tracing::info!(event = "diff_lang_dirs", source = %src_dir, target = %trg_dir);
-    let defs_abs = defs_dir
-        .as_ref()
-        .map(|p| if p.is_absolute() { p.clone() } else { scan_root.join(p) });
+    let defs_abs = defs_dir.as_ref().map(|p| {
+        if p.is_absolute() {
+            p.clone()
+        } else {
+            scan_root.join(p)
+        }
+    });
     // Merge defs_field from config if CLI didn't set
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let mut cli_defs_field = defs_field;
     if cli_defs_field.is_empty() {
-        if let Some(ref scan) = cfg.scan {
-            if let Some(extra) = scan.defs_fields.clone() { cli_defs_field = extra; }
+        if let Some(scan) = cfg.scan.as_ref() {
+            if let Some(extra) = scan.defs_fields.clone() {
+                cli_defs_field = extra;
+            }
         }
     }
     // Merge dictionaries
     let mut dicts = Vec::new();
     dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
-    if let Some(ref scan) = cfg.scan.as_ref() {
+    if let Some(scan) = cfg.scan.as_ref() {
         if let Some(paths) = scan.defs_dicts.as_ref() {
             for p in paths {
-                let pp = if p.starts_with('/') || p.contains(':') { std::path::PathBuf::from(p) } else { scan_root.join(p) };
-                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+                let pp = if p.starts_with('/') || p.contains(':') {
+                    std::path::PathBuf::from(p)
+                } else {
+                    scan_root.join(p)
+                };
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                    dicts.push(d);
+                }
             }
         }
     }
     for p in &defs_dict {
-        let pp = if p.is_absolute() { p.clone() } else { scan_root.join(p) };
-        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+        let pp = if p.is_absolute() {
+            p.clone()
+        } else {
+            scan_root.join(p)
+        };
+        if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+            dicts.push(d);
+        }
     }
     let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
 
@@ -84,7 +103,9 @@ pub fn run_diff_xml(
         &merged.0,
         &cli_defs_field,
     )?;
-    let any_diff = !diff.changed.is_empty() || !diff.only_in_translation.is_empty() || !diff.only_in_mod.is_empty();
+    let any_diff = !diff.changed.is_empty()
+        || !diff.only_in_translation.is_empty()
+        || !diff.only_in_mod.is_empty();
 
     // Output
     if let Some(dir) = out_dir.as_ref() {

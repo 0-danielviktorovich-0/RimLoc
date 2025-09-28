@@ -1,4 +1,4 @@
-
+#[allow(clippy::too_many_arguments)]
 pub fn run_lang_update(
     game_root: std::path::PathBuf,
     repo: String,
@@ -29,7 +29,11 @@ pub fn run_lang_update(
         for f in p.files.iter() {
             crate::ui_out!(
                 "langupdate-dry-run-line",
-                path = format!("{}/{}", p.out_languages_dir.join(&p.target_lang_dir).display(), f.rel_path),
+                path = format!(
+                    "{}/{}",
+                    p.out_languages_dir.join(&p.target_lang_dir).display(),
+                    f.rel_path
+                ),
                 size = (f.size as i64)
             );
         }
@@ -37,7 +41,11 @@ pub fn run_lang_update(
             "langupdate-summary",
             files = (p.files.len() as i64),
             bytes = (p.total_bytes as i64),
-            out = p.out_languages_dir.join(&p.target_lang_dir).display().to_string()
+            out = p
+                .out_languages_dir
+                .join(&p.target_lang_dir)
+                .display()
+                .to_string()
         );
         return Ok(());
     }

@@ -105,10 +105,18 @@ pub fn load_config() -> Result<RimLocConfig, ConfigError> {
 }
 
 fn merge(mut a: RimLocConfig, b: RimLocConfig) -> RimLocConfig {
-    if a.source_lang.is_none() { a.source_lang = b.source_lang; }
-    if a.target_lang.is_none() { a.target_lang = b.target_lang; }
-    if a.game_version.is_none() { a.game_version = b.game_version; }
-    if a.list_limit.is_none() { a.list_limit = b.list_limit; }
+    if a.source_lang.is_none() {
+        a.source_lang = b.source_lang;
+    }
+    if a.target_lang.is_none() {
+        a.target_lang = b.target_lang;
+    }
+    if a.game_version.is_none() {
+        a.game_version = b.game_version;
+    }
+    if a.list_limit.is_none() {
+        a.list_limit = b.list_limit;
+    }
     a.export = merge_opt(a.export, b.export, merge_export);
     a.import = merge_opt(a.import, b.import, merge_import);
     a.build = merge_opt(a.build, b.build, merge_build);
@@ -131,54 +139,108 @@ fn merge_opt<T: Default>(a: Option<T>, b: Option<T>, f: fn(T, T) -> T) -> Option
 }
 
 fn merge_export(mut a: ExportCfg, b: ExportCfg) -> ExportCfg {
-    if a.source_lang_dir.is_none() { a.source_lang_dir = b.source_lang_dir; }
-    if a.include_all_versions.is_none() { a.include_all_versions = b.include_all_versions; }
-    if a.tm_root.is_none() { a.tm_root = b.tm_root; }
+    if a.source_lang_dir.is_none() {
+        a.source_lang_dir = b.source_lang_dir;
+    }
+    if a.include_all_versions.is_none() {
+        a.include_all_versions = b.include_all_versions;
+    }
+    if a.tm_root.is_none() {
+        a.tm_root = b.tm_root;
+    }
     a
 }
 fn merge_import(mut a: ImportCfg, b: ImportCfg) -> ImportCfg {
-    if a.keep_empty.is_none() { a.keep_empty = b.keep_empty; }
-    if a.backup.is_none() { a.backup = b.backup; }
-    if a.single_file.is_none() { a.single_file = b.single_file; }
-    if a.incremental.is_none() { a.incremental = b.incremental; }
-    if a.only_diff.is_none() { a.only_diff = b.only_diff; }
-    if a.report.is_none() { a.report = b.report; }
-    if a.lang_dir.is_none() { a.lang_dir = b.lang_dir; }
+    if a.keep_empty.is_none() {
+        a.keep_empty = b.keep_empty;
+    }
+    if a.backup.is_none() {
+        a.backup = b.backup;
+    }
+    if a.single_file.is_none() {
+        a.single_file = b.single_file;
+    }
+    if a.incremental.is_none() {
+        a.incremental = b.incremental;
+    }
+    if a.only_diff.is_none() {
+        a.only_diff = b.only_diff;
+    }
+    if a.report.is_none() {
+        a.report = b.report;
+    }
+    if a.lang_dir.is_none() {
+        a.lang_dir = b.lang_dir;
+    }
     a
 }
 fn merge_build(mut a: BuildCfg, b: BuildCfg) -> BuildCfg {
-    if a.name.is_none() { a.name = b.name; }
-    if a.package_id.is_none() { a.package_id = b.package_id; }
-    if a.rw_version.is_none() { a.rw_version = b.rw_version; }
-    if a.lang_dir.is_none() { a.lang_dir = b.lang_dir; }
-    if a.dedupe.is_none() { a.dedupe = b.dedupe; }
-    if a.from_root_versions.is_none() { a.from_root_versions = b.from_root_versions; }
+    if a.name.is_none() {
+        a.name = b.name;
+    }
+    if a.package_id.is_none() {
+        a.package_id = b.package_id;
+    }
+    if a.rw_version.is_none() {
+        a.rw_version = b.rw_version;
+    }
+    if a.lang_dir.is_none() {
+        a.lang_dir = b.lang_dir;
+    }
+    if a.dedupe.is_none() {
+        a.dedupe = b.dedupe;
+    }
+    if a.from_root_versions.is_none() {
+        a.from_root_versions = b.from_root_versions;
+    }
     a
 }
 fn merge_diff(mut a: DiffCfg, b: DiffCfg) -> DiffCfg {
-    if a.out_dir.is_none() { a.out_dir = b.out_dir; }
-    if a.strict.is_none() { a.strict = b.strict; }
+    if a.out_dir.is_none() {
+        a.out_dir = b.out_dir;
+    }
+    if a.strict.is_none() {
+        a.strict = b.strict;
+    }
     a
 }
 fn merge_health(mut a: HealthCfg, b: HealthCfg) -> HealthCfg {
-    if a.lang_dir.is_none() { a.lang_dir = b.lang_dir; }
-    if a.strict.is_none() { a.strict = b.strict; }
-    if a.only.is_none() { a.only = b.only; }
-    if a.except.is_none() { a.except = b.except; }
+    if a.lang_dir.is_none() {
+        a.lang_dir = b.lang_dir;
+    }
+    if a.strict.is_none() {
+        a.strict = b.strict;
+    }
+    if a.only.is_none() {
+        a.only = b.only;
+    }
+    if a.except.is_none() {
+        a.except = b.except;
+    }
     a
 }
 fn merge_annotate(mut a: AnnotateCfg, b: AnnotateCfg) -> AnnotateCfg {
-    if a.comment_prefix.is_none() { a.comment_prefix = b.comment_prefix; }
-    if a.strip.is_none() { a.strip = b.strip; }
-    if a.backup.is_none() { a.backup = b.backup; }
+    if a.comment_prefix.is_none() {
+        a.comment_prefix = b.comment_prefix;
+    }
+    if a.strip.is_none() {
+        a.strip = b.strip;
+    }
+    if a.backup.is_none() {
+        a.backup = b.backup;
+    }
     a
 }
 fn merge_init(mut a: InitCfg, b: InitCfg) -> InitCfg {
-    if a.overwrite.is_none() { a.overwrite = b.overwrite; }
+    if a.overwrite.is_none() {
+        a.overwrite = b.overwrite;
+    }
     a
 }
 fn merge_schema(mut a: SchemaCfg, b: SchemaCfg) -> SchemaCfg {
-    if a.out_dir.is_none() { a.out_dir = b.out_dir; }
+    if a.out_dir.is_none() {
+        a.out_dir = b.out_dir;
+    }
     a
 }
 
@@ -189,7 +251,11 @@ pub struct ScanCfg {
 }
 
 fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
-    if a.defs_fields.is_none() { a.defs_fields = b.defs_fields; }
-    if a.defs_dicts.is_none() { a.defs_dicts = b.defs_dicts; }
+    if a.defs_fields.is_none() {
+        a.defs_fields = b.defs_fields;
+    }
+    if a.defs_dicts.is_none() {
+        a.defs_dicts = b.defs_dicts;
+    }
     a
 }

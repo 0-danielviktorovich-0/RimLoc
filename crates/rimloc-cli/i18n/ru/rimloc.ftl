@@ -38,6 +38,9 @@ validate-clean = Всё чисто, ошибок не найдено
 
 export-po-saved = PO сохранён в { $path }
 export-po-tm-coverage = TM автозаполнение: { $filled } / { $total } ({ $pct }%)
+export-po-missing-definj-suggested = Не найдено English/DefInjected; примените { $path }, скопировав в Languages/{ $lang_dir }/DefInjected
+export-po-missing-definj-learned = Не найдено English/DefInjected; воспользуйтесь обученными данными из { $path }
+export-po-missing-definj-generate = Папка Languages/{ $lang_dir }/DefInjected пуста; запустите «rimloc-cli learn-defs --lang-dir { $lang_dir }» или добавьте шаблоны перед экспортом
 
 import-dry-run-header = DRY-RUN план:
 import-total-keys = ИТОГО: { $n } ключ(ей)

@@ -38,6 +38,9 @@ validate-clean = All clean, no errors found
 
 export-po-saved = PO saved to { $path }
 export-po-tm-coverage = TM prefill: { $filled } / { $total } ({ $pct }%)
+export-po-missing-definj-suggested = English DefInjected files were not found; apply { $path } to bootstrap them (copy to Languages/{ $lang_dir }/DefInjected)
+export-po-missing-definj-learned = English DefInjected files were not found; use learned defs from { $path } to create them
+export-po-missing-definj-generate = English DefInjected folder is empty; run `rimloc-cli learn-defs --lang-dir { $lang_dir }` or apply suggested templates before exporting
 
 import-dry-run-header = DRY-RUN plan:
 import-total-keys = TOTAL: { $n } key(s)
