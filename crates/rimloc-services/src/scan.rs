@@ -1,8 +1,9 @@
 use crate::{Result, TransUnit};
 use rimloc_parsers_xml::DefsMetaUnit;
 use serde::Deserialize;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use walkdir::WalkDir;
 
 #[derive(Debug, Clone, Default)]
 pub struct AutoDefsContext {
@@ -47,12 +48,44 @@ fn load_learned_defs(path: &Path) -> Result<Vec<LearnedDefRow>> {
 
 fn autodiscover_learn_dirs(root: &Path) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
+    let mut seen: HashSet<PathBuf> = HashSet::new();
+
+    let mut push_dir = |p: PathBuf| {
+        if p.is_dir() && seen.insert(p.clone()) {
+            dirs.push(p);
+        }
+    };
+
     for name in ["_learn", "learn_out", "Learn", "learn"] {
-        let candidate = root.join(name);
-        if candidate.is_dir() {
-            dirs.push(candidate);
+        push_dir(root.join(name));
+    }
+
+    let languages_root = root.join("Languages");
+    if languages_root.is_dir() {
+        // Walk only shallow levels under Languages to catch nested _learn/learn_out folders.
+        for entry in WalkDir::new(&languages_root)
+            .min_depth(1)
+            .max_depth(4)
+            .into_iter()
+            .filter_map(|entry| entry.ok())
+        {
+            if !entry.file_type().is_dir() {
+                continue;
+            }
+            let name = entry.file_name();
+            let Some(name) = name.to_str() else {
+                continue;
+            };
+            if name.eq_ignore_ascii_case("_learn")
+                || name.eq_ignore_ascii_case("learn_out")
+                || name.eq_ignore_ascii_case("learn")
+                || name.eq_ignore_ascii_case("Learn")
+            {
+                push_dir(entry.into_path());
+            }
         }
     }
+
     dirs
 }
 
@@ -191,4 +224,40 @@ pub fn scan_defs_with_meta(
     extra_fields: &[String],
 ) -> Result<Vec<DefsMetaUnit>> {
     rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn autodiscover_learn_dirs_finds_nested_under_languages() -> Result<()> {
+        let dir = tempdir()?;
+        let nested = dir
+            .path()
+            .join("Languages")
+            .join("English")
+            .join("DefInjected")
+            .join("_learn");
+        fs::create_dir_all(&nested)?;
+        let learned = nested.join("learned_defs.json");
+        fs::write(
+            &learned,
+            r#"[{"defType":"ThingDef","fieldPath":"description"}]"#,
+        )?;
+
+        let ctx = autodiscover_defs_context(dir.path())?;
+        assert!(ctx
+            .learned_sources
+            .iter()
+            .any(|p| p.file_name().and_then(|s| s.to_str()) == Some("learned_defs.json")));
+        assert!(ctx
+            .dict
+            .get("ThingDef")
+            .map(|fields| fields.iter().any(|f| f == "description"))
+            .unwrap_or(false));
+        Ok(())
+    }
 }
