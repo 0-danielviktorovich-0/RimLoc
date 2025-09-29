@@ -21,7 +21,20 @@
         <p class="subtitle" data-i18n="subtitle">Desktop companion for RimLoc services</p>
       </div>
       <div class="header-meta">
-        <div class="controls">
+        <span id="app-version"></span>
+        <span id="status-text"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="settings-panel">
+        <div class="panel-head">
+          <h2 data-i18n="settings">Settings</h2>
+          <div class="actions">
+            <button id="open-debug-modal" type="button" data-i18n="open_debug">Debug…</button>
+          </div>
+        </div>
+        <div class="field-grid">
           <label>
             <span data-i18n="language">Language</span>
             <select id="locale-select">
@@ -45,14 +58,8 @@
               <option value="debug">debug</option>
             </select>
           </label>
-          <button id="open-debug-modal" type="button" data-i18n="open_debug">Debug…</button>
         </div>
-        <span id="app-version"></span>
-        <span id="status-text"></span>
-      </div>
-    </header>
-
-    <main>
+      </section>
       <section class="panel" id="mod-setup">
         <h2 data-i18n="mod_setup">Mod setup</h2>
         <p class="hint" data-i18n="mod_setup_hint">Choose the mod folder and optional game version. Values are stored locally for convenience.</p>
@@ -181,6 +188,7 @@
       <p data-i18n="footer_hint">Need DefInjected strings? Run “Learn defs” first and copy <code>suggested.xml</code> into your language folder.</p>
     </footer>
 
+    <script src="tauri.js"></script>
     <script src="index.js"></script>
   </body>
 </html>

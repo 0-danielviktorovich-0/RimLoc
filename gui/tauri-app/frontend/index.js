@@ -528,6 +528,7 @@ function initDebugUI() {
 // --- i18n ---
 const I18N = {
   en: {
+    settings: "Settings",
     title: "RimLoc GUI",
     subtitle: "Desktop companion for RimLoc services",
     language: "Language",
@@ -576,6 +577,7 @@ const I18N = {
     "theme.dark": "Dark",
   },
   ru: {
+    settings: "Настройки",
     title: "RimLoc GUI",
     subtitle: "Настольный интерфейс для сервисов RimLoc",
     language: "Язык",

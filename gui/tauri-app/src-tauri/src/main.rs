@@ -222,16 +222,16 @@ fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Res
     let root = PathBuf::from(&request.root);
     if request.include_all_versions {
         let res = run_scan(&root, None, &request);
-        if res.is_ok() {
-            emit_log(&window, &state, "info", "scan finished (all versions)");
+        if let Ok(ref r) = res {
+            emit_log(&window, &state, "info", format!("scan finished (all versions): total={} keyed={} definj={} saved_json={:?} saved_csv={:?}", r.total, r.keyed, r.def_injected, r.saved_json, r.saved_csv));
             emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
         }
         res
     } else {
         let (resolved, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
         let res = run_scan(&resolved, version.as_deref(), &request);
-        if res.is_ok() {
-            emit_log(&window, &state, "info", format!("scan finished: {}", resolved.display()));
+        if let Ok(ref r) = res {
+            emit_log(&window, &state, "info", format!("scan finished: {} → total={} keyed={} definj={} saved_json={:?} saved_csv={:?}", resolved.display(), r.total, r.keyed, r.def_injected, r.saved_json, r.saved_csv));
             emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
         }
         res
@@ -375,7 +375,7 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
     let learned_path = out_dir.join("learned_defs.json");
     emit_progress(&window, &state, "learn", "done", Some("Learn finished".to_string()), Some(100));
 
-    Ok(LearnDefsResponse {
+    let response = LearnDefsResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
         out_dir: out_dir.display().to_string(),
@@ -384,7 +384,9 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
         learned_path: learned_path.display().to_string(),
         candidates: result.candidates.len(),
         accepted: result.accepted,
-    })
+    };
+    emit_log(&window, &state, "info", format!("learn finished: accepted {}/{} → out_dir={}", response.accepted, response.candidates, response.out_dir));
+    Ok(response)
 }
 
 #[tauri::command]
@@ -433,7 +435,7 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     }
     emit_progress(&window, &state, "export", "done", Some("Export finished".to_string()), Some(100));
 
-    Ok(ExportPoResponse {
+    let resp = ExportPoResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
         out_po: out_po_path.display().to_string(),
@@ -441,7 +443,9 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
         tm_filled: stats.tm_filled,
         tm_coverage_pct,
         warning,
-    })
+    };
+    emit_log(&window, &state, "info", format!("export finished: {} → total={} tm_filled={} ({}%)", resp.out_po, resp.total, resp.tm_filled, resp.tm_coverage_pct));
+    Ok(resp)
 }
 
 fn def_injected_warning(scan_root: &Path, source_dir: &str) -> Option<String> {
