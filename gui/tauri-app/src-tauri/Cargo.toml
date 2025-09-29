@@ -16,12 +16,11 @@ thiserror = "1"
 rimloc-services = { path = "../../../crates/rimloc-services" }
 rimloc-domain = { path = "../../../crates/rimloc-domain" }
 rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
-schemars = { version = "0.8", features = ["schemars_derive"] }
-reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
-zip = "0.6"
-tempfile = "3"
-walkdir = "2"
+rimloc-export-csv = { path = "../../../crates/rimloc-export-csv" }
 color-eyre = "0.6"
+walkdir = "2"
+dirs = "5"
+once_cell = "1"
 
 [features]
 default = ["custom-protocol"]

@@ -45,6 +45,7 @@
               <option value="debug">debug</option>
             </select>
           </label>
+          <button id="open-debug-modal" type="button" data-i18n="open_debug">Debug…</button>
         </div>
         <span id="app-version"></span>
         <span id="status-text"></span>
@@ -154,6 +155,26 @@
         </div>
         <pre id="debug-log" class="debug-log" aria-live="polite"></pre>
       </section>
+
+      <div id="debug-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="debug-modal-title">
+        <div class="modal-card">
+          <div class="modal-head">
+            <h3 id="debug-modal-title" data-i18n="debug_modal_title">Diagnostics</h3>
+            <button type="button" id="debug-modal-close">✕</button>
+          </div>
+          <div class="modal-body">
+            <p data-i18n="debug_modal_hint">Copy errors or share with maintainer. Log file:</p>
+            <div class="path-row">
+              <code id="log-path">…</code>
+              <div class="path-actions">
+                <button id="copy-log-path" type="button" data-i18n="copy">Copy</button>
+                <button id="open-log-folder" type="button" data-i18n="open_folder">Open folder</button>
+              </div>
+            </div>
+            <pre id="debug-modal-content" class="debug-log"></pre>
+          </div>
+        </div>
+      </div>
     </main>
 
     <footer>

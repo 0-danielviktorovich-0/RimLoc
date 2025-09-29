@@ -35,6 +35,7 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
   - `cargo build --workspace`
   - `cargo test --workspace` (append `-- --nocapture` when investigating)
   - `cargo fmt && cargo clippy --workspace --all-targets -- -D warnings`
+  - Commit your changes using the auto-commit workflow below; do not end a task with uncommitted edits.
 - If you touch docs under `docs/`, preview or build the site:
   - `mkdocs serve` locally from a virtualenv, or
   - `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build` to validate links.
@@ -57,7 +58,16 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Keep diffs minimal and scoped to the task; no drive‑by refactors or large renames.
 - Never rewrite history or revert without approval; follow the no‑revert policy below.
 - Always run and report: `cargo build/test`, `fmt`, and `clippy` after changes.
+- Language preference: if the user writes in Russian, respond and continue the conversation in Russian.
 - Ask before destructive actions (deletes/moves/format‑sweeps). Scope of this file is repository‑wide.
+- Mandatory: always finish by committing via `scripts/agent-commit.sh`. If committing is not possible in the harness, include the exact commit message and file list in the final reply and ask the user to run the command.
+
+### Secrets & External Services (GH_TOKEN)
+- Allowed: when the user explicitly provides `GH_TOKEN`/`GITHUB_TOKEN` and asks to use it, agents may perform the requested GitHub operations (e.g., API calls, cloning private repos, fetching releases).
+- How to pass: use an environment variable only (example: `export GH_TOKEN=…`); never hardcode tokens or write them to files under version control.
+- Safety: do not print tokens in logs or command output; avoid echoing env vars. If output may include headers, redact them.
+- Scope: use the token strictly for the requested operation. Do not publish, tag, or modify GitHub state (releases, labels, settings) unless the user explicitly asks.
+- Cleanup: avoid persisting tokens in scripts/commits; unset after use if appropriate (`unset GH_TOKEN`).
 
 ### GUI Dependencies (exception for gui/)
 - To deliver a high‑quality long‑term Tauri GUI, dependencies in `gui/` may be added as needed (frontend libs, Tauri plugins, ZIP/HTTP, etc.).
@@ -73,7 +83,7 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
   - Before editing a file: `scripts/agent-mark-change.sh --session <chat-id> begin --file <path>`
   - After saving your change: `scripts/agent-mark-change.sh --session <chat-id> end --file <path>`
   This records an exact per-chat patch. On commit, we apply only those hunks — чужие правки в том же файле не попадут.
-- Finish and commit: `scripts/agent-commit.sh --session <chat-id>` — stages only files changed since baseline and, if a file allowlist exists, intersects with it to avoid accidental pickups.
+- Finish and commit (mandatory step): `scripts/agent-commit.sh --session <chat-id>` — stages only files changed since baseline and, if a file allowlist exists, intersects with it to avoid accidental pickups.
 - Hunk-aware staging: if a session snapshot exists for a file (created automatically on `--add-file`), only the hunks changed in this chat are staged. Independent edits from other chats in the same file stay unstaged. On overlapping edits, the script stops with a clear message.
 - Without `--session`, the scripts fall back to a single global baseline (`.git/agent-baseline.txt`). Prefer sessions to avoid confusion between chats.
 - Use `--dry-run` to preview the file set and the composed message. The script will auto-detect scope from paths and generate safe bullets if none are provided.
@@ -85,7 +95,7 @@ Tip: export a default session once per chat
 export AGENT_SESSION=<chat-id>
 scripts/agent-begin.sh --subject "…" --type fix --scope core
 # …work…
-scripts/agent-commit.sh
+scripts/agent-commit.sh  # Mandatory finish step
 ```
 
 ## For agents: Changelog & Versioning

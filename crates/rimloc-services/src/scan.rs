@@ -210,16 +210,9 @@ pub fn autodiscover_defs_context(root: &Path) -> Result<AutoDefsContext> {
 pub fn scan_units_auto(root: &Path) -> Result<Vec<TransUnit>> {
     let auto = autodiscover_defs_context(root)?;
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
-    let mut seen: HashSet<String> = units
-        .iter()
-        .map(|u| seen_key(&u.path, &u.key))
-        .collect();
-    let defs_meta = rimloc_parsers_xml::scan_defs_with_dict_meta(
-        root,
-        None,
-        &auto.dict,
-        &auto.extra_fields,
-    )?;
+    let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
+    let defs_meta =
+        rimloc_parsers_xml::scan_defs_with_dict_meta(root, None, &auto.dict, &auto.extra_fields)?;
     merge_defs_units(
         &mut units,
         &mut seen,
@@ -267,11 +260,9 @@ pub fn scan_units_with_defs_and_dict(
     extra_fields: &[String],
 ) -> Result<Vec<TransUnit>> {
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
-    let mut seen: HashSet<String> = units
-        .iter()
-        .map(|u| seen_key(&u.path, &u.key))
-        .collect();
-    let defs_meta = rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)?;
+    let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
+    let defs_meta =
+        rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)?;
     merge_defs_units(
         &mut units,
         &mut seen,

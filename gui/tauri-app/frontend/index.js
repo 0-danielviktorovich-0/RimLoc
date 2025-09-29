@@ -143,16 +143,30 @@ async function runAction(label, fn) {
 
 function pickDirectory(targetId) {
   return async () => {
+    debugLog("debug", `pickDirectory -> ${targetId}`);
+    const current = $(targetId).value.trim() || null;
     try {
-      debugLog("debug", `pickDirectory -> ${targetId}`);
-      const selected = await tauriDialog().open({ directory: true, multiple: false });
+      // Try JS API first
+      const selected = await tauriDialog().open({ directory: true, multiple: false, defaultPath: current || undefined });
       if (selected) {
         $(targetId).value = selected;
         $(targetId).dispatchEvent(new Event("change"));
         showToast(selected);
+        return;
       }
     } catch (e) {
-      showError(e);
+      debugLog("warn", `dialog.open failed, fallback to backend: ${formatError(e)}`);
+    }
+    try {
+      // Fallback to backend command
+      const selected2 = await tauriInvoke("pick_directory", { initial: current });
+      if (selected2) {
+        $(targetId).value = selected2;
+        $(targetId).dispatchEvent(new Event("change"));
+        showToast(selected2);
+      }
+    } catch (e2) {
+      showError(e2);
     }
   };
 }
@@ -483,6 +497,31 @@ function initDebugUI() {
   });
   $("debug-clear").addEventListener("click", () => {
     $("debug-log").textContent = "";
+  });
+
+  // Modal controls
+  const modal = $("debug-modal");
+  $("open-debug-modal").addEventListener("click", async () => {
+    try {
+      const info = await tauriInvoke("get_log_info");
+      if (info?.logPath || info?.log_path) {
+        $("log-path").textContent = info.logPath || info.log_path;
+      }
+    } catch {}
+    $("debug-modal-content").textContent = $("debug-log").textContent;
+    modal.classList.remove("hidden");
+  });
+  $("debug-modal-close").addEventListener("click", () => modal.classList.add("hidden"));
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.add("hidden");
+  });
+  $("copy-log-path").addEventListener("click", async () => {
+    const path = $("log-path").textContent;
+    try { await navigator.clipboard.writeText(path); showToast("Copied"); } catch {}
+  });
+  $("open-log-folder").addEventListener("click", () => {
+    const path = $("log-path").textContent;
+    if (path) tauriShell().open(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
   });
 }
 

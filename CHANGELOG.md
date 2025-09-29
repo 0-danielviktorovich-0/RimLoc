@@ -35,6 +35,12 @@ Template (copy the sections you need):
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
 - [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
 
+### Docs
+- [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
+- [docs] README: replace AGENTS.md link with CONTRIBUTING.md (#PR)
+- [docs] AGENTS: make commit via scripts/agent-commit.sh a mandatory finish step for agents (#PR)
+- [docs] AGENTS: explicitly allow using GH_TOKEN/GITHUB_TOKEN when provided by the user, with safety rules (#PR)
+
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added
 - rimloc-cli initial prerelease: scan, validate, export-po, import-po, build-mod

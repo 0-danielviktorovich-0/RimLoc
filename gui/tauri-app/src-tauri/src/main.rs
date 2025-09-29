@@ -7,9 +7,11 @@ use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn, scan_
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use tauri::{Manager, Window};
+use tauri::{Manager, State, Window};
 use thiserror::Error;
 use walkdir::WalkDir;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 #[derive(Debug, Error, Serialize)]
 #[error("{message}")]
@@ -126,14 +128,30 @@ struct LogEvent {
     message: String,
 }
 
-fn emit_log(window: &Window, level: &str, message: impl Into<String>) {
+#[derive(Debug)]
+struct LogState {
+    path: PathBuf,
+}
+
+fn append_log(path: &Path, level: &str, message: &str) {
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {
+        let _ = writeln!(f, "{}: {}", level.to_uppercase(), message.replace('\n', " "));
+    }
+}
+
+fn emit_log(window: &Window, state: &State<LogState>, level: &str, message: impl Into<String>) {
+    let msg: String = message.into();
     let _ = window.emit(
         "log",
         LogEvent {
             level: level.to_string(),
-            message: message.into(),
+            message: msg.clone(),
         },
     );
+    append_log(&state.path, level, &msg);
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -145,16 +163,20 @@ struct ProgressEvent {
     pct: Option<u32>,
 }
 
-fn emit_progress(window: &Window, action: &str, step: &str, message: impl Into<Option<String>>, pct: Option<u32>) {
+fn emit_progress(window: &Window, state: &State<LogState>, action: &str, step: &str, message: Option<String>, pct: Option<u32>) {
     let _ = window.emit(
         "progress",
         ProgressEvent {
             action: action.to_string(),
             step: step.to_string(),
-            message: message.into(),
+            message: message.clone(),
             pct,
         },
     );
+    if let Some(msg) = message {
+        append_log(&state.path, "DEBUG", &format!("[{}] {} {}%", action, step, pct.unwrap_or(0)));
+        append_log(&state.path, "DEBUG", &msg);
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -194,23 +216,23 @@ fn get_app_info() -> Result<AppInfo, ApiError> {
 }
 
 #[tauri::command]
-fn scan_mod(window: Window, request: ScanRequest) -> Result<ScanResponse, ApiError> {
-    emit_log(&window, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
-    emit_progress(&window, "scan", "start", Some("Scanning…".to_string()), Some(0));
+fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Result<ScanResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
+    emit_progress(&window, &state, "scan", "start", Some("Scanning…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
     if request.include_all_versions {
         let res = run_scan(&root, None, &request);
         if res.is_ok() {
-            emit_log(&window, "info", "scan finished (all versions)");
-            emit_progress(&window, "scan", "done", Some("Scan finished".to_string()), Some(100));
+            emit_log(&window, &state, "info", "scan finished (all versions)");
+            emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
         }
         res
     } else {
         let (resolved, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
         let res = run_scan(&resolved, version.as_deref(), &request);
         if res.is_ok() {
-            emit_log(&window, "info", format!("scan finished: {}", resolved.display()));
-            emit_progress(&window, "scan", "done", Some("Scan finished".to_string()), Some(100));
+            emit_log(&window, &state, "info", format!("scan finished: {}", resolved.display()));
+            emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
         }
         res
     }
@@ -312,9 +334,9 @@ fn classify_unit(path: &Path) -> ScanKind {
 }
 
 #[tauri::command]
-fn learn_defs(window: Window, request: LearnDefsRequest) -> Result<LearnDefsResponse, ApiError> {
-    emit_log(&window, "info", format!("learn: root={}", request.root));
-    emit_progress(&window, "learn", "start", Some("Preparing…".to_string()), Some(0));
+fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest) -> Result<LearnDefsResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("learn: root={}", request.root));
+    emit_progress(&window, &state, "learn", "start", Some("Preparing…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let out_dir_raw = request
@@ -325,7 +347,7 @@ fn learn_defs(window: Window, request: LearnDefsRequest) -> Result<LearnDefsResp
     let out_dir = make_absolute(&scan_root, &out_dir_raw);
     std::fs::create_dir_all(&out_dir)?;
 
-    emit_progress(&window, "learn", "discover", Some("Discovering context…".to_string()), Some(10));
+    emit_progress(&window, &state, "learn", "discover", Some("Discovering context…".to_string()), Some(10));
     let auto = autodiscover_defs_context(&scan_root).wrap_err("discover defs context")?;
     let opts = learn::LearnOptions {
         mod_root: scan_root.clone(),
@@ -347,11 +369,11 @@ fn learn_defs(window: Window, request: LearnDefsRequest) -> Result<LearnDefsResp
         learned_out: None,
     };
 
-    emit_log(&window, "debug", format!("learn options: out_dir={}", out_dir.display()));
-    emit_progress(&window, "learn", "learn", Some("Learning templates…".to_string()), Some(60));
+    emit_log(&window, &state, "debug", format!("learn options: out_dir={}", out_dir.display()));
+    emit_progress(&window, &state, "learn", "learn", Some("Learning templates…".to_string()), Some(60));
     let result = learn::learn_defs(&opts).wrap_err("learn defs")?;
     let learned_path = out_dir.join("learned_defs.json");
-    emit_progress(&window, "learn", "done", Some("Learn finished".to_string()), Some(100));
+    emit_progress(&window, &state, "learn", "done", Some("Learn finished".to_string()), Some(100));
 
     Ok(LearnDefsResponse {
         resolved_root: scan_root.display().to_string(),
@@ -366,9 +388,9 @@ fn learn_defs(window: Window, request: LearnDefsRequest) -> Result<LearnDefsResp
 }
 
 #[tauri::command]
-fn export_po(window: Window, request: ExportPoRequest) -> Result<ExportPoResponse, ApiError> {
-    emit_log(&window, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
-    emit_progress(&window, "export", "start", Some("Exporting…".to_string()), Some(0));
+fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -> Result<ExportPoResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
+    emit_progress(&window, &state, "export", "start", Some("Exporting…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let out_po_path = make_absolute(&scan_root, Path::new(&request.out_po));
@@ -383,7 +405,7 @@ fn export_po(window: Window, request: ExportPoRequest) -> Result<ExportPoRespons
             .collect()
     });
 
-    emit_progress(&window, "export", "collect", Some("Collecting units…".to_string()), Some(20));
+    emit_progress(&window, &state, "export", "collect", Some("Collecting units…".to_string()), Some(20));
     let stats = export_po_with_tm(
         &scan_root,
         &out_po_path,
@@ -407,9 +429,9 @@ fn export_po(window: Window, request: ExportPoRequest) -> Result<ExportPoRespons
         .unwrap_or_else(|| "English".to_string());
     let warning = def_injected_warning(&scan_root, &source_dir);
     if let Some(ref w) = warning {
-        emit_log(&window, "warn", w.clone());
+        emit_log(&window, &state, "warn", w.clone());
     }
-    emit_progress(&window, "export", "done", Some("Export finished".to_string()), Some(100));
+    emit_progress(&window, &state, "export", "done", Some("Export finished".to_string()), Some(100));
 
     Ok(ExportPoResponse {
         resolved_root: scan_root.display().to_string(),
@@ -591,6 +613,15 @@ fn main() {
     let _ = color_eyre::install();
     tauri::Builder::default()
         .setup(|app| {
+            // Prepare log file path in OS-specific data directory
+            let base = dirs::data_dir().unwrap_or_else(|| std::env::temp_dir());
+            let log_path = base.join("RimLoc").join("logs").join("gui.log");
+            if let Some(parent) = log_path.parent() { let _ = std::fs::create_dir_all(parent); }
+            // Write a startup banner
+            if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&log_path) {
+                let _ = writeln!(f, "=== RimLoc GUI start v{} ===", env!("CARGO_PKG_VERSION"));
+            }
+            app.manage(LogState { path: log_path.clone() });
             let main_window = app.get_window("main");
             if let Some(window) = main_window {
                 let _ = window.emit("app-info", AppInfo {
@@ -599,7 +630,27 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_app_info, scan_mod, learn_defs, export_po])
+        .invoke_handler(tauri::generate_handler![get_app_info, scan_mod, learn_defs, export_po, get_log_info, pick_directory])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LogInfo { log_path: String }
+
+#[tauri::command]
+fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
+    Ok(LogInfo { log_path: state.path.display().to_string() })
+}
+
+#[tauri::command]
+fn pick_directory(initial: Option<String>) -> Result<Option<String>, ApiError> {
+    let mut builder = tauri::api::dialog::blocking::FileDialogBuilder::new();
+    if let Some(init) = initial {
+        let p = PathBuf::from(init);
+        if p.exists() { builder = builder.set_directory(p); }
+    }
+    let picked = builder.pick_folder().map(|p| p.display().to_string());
+    Ok(picked)
 }

@@ -42,7 +42,8 @@ pub fn export_po_with_tm(
         if source.is_none() {
             continue;
         }
-        let target_path = def_injected_target_path(scan_root, &src_dir, &meta.def_type, &meta.unit.path);
+        let target_path =
+            def_injected_target_path(scan_root, &src_dir, &meta.def_type, &meta.unit.path);
         let entry = english_map
             .entry(key.clone())
             .or_insert_with(|| rimloc_core::TransUnit {

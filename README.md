@@ -110,7 +110,7 @@ See [CHANGELOG.md](CHANGELOG.md) for notable changes and release history.
 
 ## Contributing
 
-New to the project? Start with the contributor guide in [AGENTS.md](AGENTS.md) for workspace layout, tooling, and review expectations.
+New to the project? Start with the contributor guide in [CONTRIBUTING.md](CONTRIBUTING.md) for workspace layout, tooling, and review expectations.
 
 Want to update the docs? Run `mkdocs serve` from the repo root and edit the files under `docs/`—Russian and English stay in sync by mirroring structure.
 
