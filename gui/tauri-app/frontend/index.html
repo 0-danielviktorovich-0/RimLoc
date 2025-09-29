@@ -27,6 +27,12 @@
     </header>
 
     <main>
+      <section class="panel" id="progress-panel">
+        <div class="panel-head">
+          <h2 data-i18n="progress">Progress</h2>
+        </div>
+        <div id="progress-items" class="progress-items"></div>
+      </section>
       <section class="panel" id="settings-panel">
         <div class="panel-head">
           <h2 data-i18n="settings">Settings</h2>
@@ -176,6 +182,7 @@
               <div class="path-actions">
                 <button id="copy-log-path" type="button" data-i18n="copy">Copy</button>
                 <button id="open-log-folder" type="button" data-i18n="open_folder">Open folder</button>
+                <button id="save-console" type="button" data-i18n="save_console">Save console…</button>
               </div>
             </div>
             <pre id="debug-modal-content" class="debug-log"></pre>

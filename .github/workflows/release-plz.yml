@@ -16,20 +16,22 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    env:
+      RELEASE_PLZ_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - name: release-plz (release-pr with PAT)
-        if: secrets.RELEASE_PLZ_TOKEN != ''
+        if: env.RELEASE_PLZ_TOKEN != ''
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
       - name: release-plz (release-pr)
-        if: secrets.RELEASE_PLZ_TOKEN == ''
+        if: env.RELEASE_PLZ_TOKEN == ''
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: release-pr
@@ -46,13 +48,16 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: write
+    env:
+      RELEASE_PLZ_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - name: release-plz (release with PAT)
-        if: secrets.CARGO_REGISTRY_TOKEN != '' && secrets.RELEASE_PLZ_TOKEN != ''
+        if: env.CARGO_REGISTRY_TOKEN != '' && env.RELEASE_PLZ_TOKEN != ''
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: release
@@ -60,7 +65,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
       - name: release-plz (release)
-        if: secrets.CARGO_REGISTRY_TOKEN != '' && secrets.RELEASE_PLZ_TOKEN == ''
+        if: env.CARGO_REGISTRY_TOKEN != '' && env.RELEASE_PLZ_TOKEN == ''
         uses: MarcoIeni/release-plz-action@v0.5
         with:
           command: release

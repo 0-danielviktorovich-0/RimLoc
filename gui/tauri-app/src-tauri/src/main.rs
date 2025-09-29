@@ -635,6 +635,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![get_app_info, scan_mod, learn_defs, export_po, get_log_info, pick_directory])
+        .invoke_handler(tauri::generate_handler![save_text_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -657,4 +658,12 @@ fn pick_directory(initial: Option<String>) -> Result<Option<String>, ApiError> {
     }
     let picked = builder.pick_folder().map(|p| p.display().to_string());
     Ok(picked)
+}
+
+#[tauri::command]
+fn save_text_file(path: String, content: String) -> Result<String, ApiError> {
+    let p = PathBuf::from(path);
+    if let Some(parent) = p.parent() { std::fs::create_dir_all(parent)?; }
+    std::fs::write(&p, content.as_bytes())?;
+    Ok(p.display().to_string())
 }

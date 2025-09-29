@@ -32,6 +32,7 @@ const state = {
   logLevel: localStorage.getItem("rimloc.logLevel") || "info",
   locale: localStorage.getItem("rimloc.locale") || "auto",
   theme: localStorage.getItem("rimloc.theme") || "auto",
+  progress: {},
 };
 
 function $(id) {
@@ -470,6 +471,7 @@ async function fetchAppVersion() {
         debugLog("debug", msg);
         const text = $("overlay-text");
         if (text && message) text.textContent = message;
+        updateProgress(action, pct ?? 0, step, message || "");
       })
       .catch(() => {});
   }
@@ -523,6 +525,59 @@ function initDebugUI() {
     const path = $("log-path").textContent;
     if (path) tauriShell().open(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
   });
+  $("save-console").addEventListener("click", async () => {
+    try {
+      const info = await tauriInvoke("get_log_info");
+      const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "console-buffer.txt");
+      const path = await tauriDialog().save({ defaultPath: def });
+      if (!path) return;
+      const content = $("debug-log").textContent || "";
+      await tauriInvoke("save_text_file", { path, content });
+      showToast(`Saved: ${path}`);
+    } catch (e) {
+      showError(e);
+    }
+  });
+
+  // Hotkey: Cmd/Ctrl + D opens modal
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === "d") {
+      e.preventDefault();
+      $("open-debug-modal").click();
+    }
+  });
+}
+
+// --- Progress panel ---
+function ensureProgressRow(action) {
+  const list = $("progress-items");
+  let row = list.querySelector(`[data-action="${action}"]`);
+  if (row) return row;
+  row = document.createElement("div");
+  row.className = "progress-row";
+  row.dataset.action = action;
+  const label = document.createElement("div");
+  label.className = "progress-label";
+  label.textContent = tr(action) || action;
+  const bar = document.createElement("div");
+  bar.className = "progress-bar";
+  const fill = document.createElement("div");
+  fill.className = "progress-fill";
+  bar.appendChild(fill);
+  const pct = document.createElement("div");
+  pct.className = "progress-pct";
+  row.append(label, bar, pct);
+  list.appendChild(row);
+  return row;
+}
+
+function updateProgress(action, pct, step, message) {
+  state.progress[action] = { pct, step, message };
+  const row = ensureProgressRow(action);
+  const fill = row.querySelector(".progress-fill");
+  const pctEl = row.querySelector(".progress-pct");
+  fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+  pctEl.textContent = `${pct}%`;
 }
 
 // --- i18n ---
@@ -570,6 +625,11 @@ const I18N = {
     debug_modal_hint: "Copy errors or share with maintainer. Log file:",
     copy: "Copy",
     open_folder: "Open folder",
+    save_console: "Save console…",
+    progress: "Progress",
+    scan: "Scan",
+    learn: "Learn",
+    export: "Export",
     footer_hint: "Need DefInjected strings? Run “Learn defs” first and copy suggested.xml into your language folder.",
     "lang.auto": "Auto",
     "theme.auto": "Auto",
@@ -619,6 +679,11 @@ const I18N = {
     debug_modal_hint: "Скопируйте ошибки или поделитесь с мейнтейнером. Файл логов:",
     copy: "Скопировать",
     open_folder: "Открыть папку",
+    save_console: "Сохранить консоль…",
+    progress: "Прогресс",
+    scan: "Сканирование",
+    learn: "Обучение",
+    export: "Экспорт",
     footer_hint: "Нужны строки DefInjected? Сначала выполните “Обучение”, затем скопируйте suggested.xml в папку вашего языка.",
     "lang.auto": "Авто",
     "theme.auto": "Авто",

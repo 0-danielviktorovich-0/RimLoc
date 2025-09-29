@@ -347,6 +347,16 @@ footer {
   font-size: 12px;
 }
 
+/* Progress panel */
+.progress-items { display: flex; flex-direction: column; gap: 8px; }
+.progress-row { display: grid; grid-template-columns: 120px 1fr 56px; gap: 12px; align-items: center; }
+.progress-label { color: var(--muted); font-size: 0.9rem; }
+.progress-bar { height: 10px; border-radius: 999px; background: #e6e8f1; overflow: hidden; border: 1px solid var(--border); }
+.progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.2s ease; }
+.progress-pct { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+:root[data-theme="dark"] .progress-bar { background: #1f2937; }
+
 /* Modal */
 .modal {
   position: fixed;
