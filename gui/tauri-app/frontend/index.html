@@ -7,283 +7,159 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div id="overlay" class="overlay hidden">
+      <div class="overlay-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="overlay-text">Working…</p>
+      </div>
+    </div>
+    <div id="toast" role="status" aria-live="polite"></div>
+
     <header>
-      <h1>RimLoc GUI</h1>
-      <nav>
-        <button data-tab="start" class="active" data-i18n="tab_start">Start</button>
-        <button data-tab="validate" data-i18n="tab_validate">Validate</button>
-        <button data-tab="diff" data-i18n="tab_diff">Diff</button>
-        <button data-tab="import" data-i18n="tab_import">Import/Build</button>
-        <button data-tab="annotate" data-i18n="tab_annotate">Annotate</button>
-        <button data-tab="morph" data-i18n="tab_morph">Morph</button>
-        <button data-tab="lang" data-i18n="tab_lang">Lang Update</button>
-        <button data-tab="tools" data-i18n="tab_tools">Tools</button>
-        <button data-tab="logs" data-i18n="tab_logs">Logs</button>
-        <button data-tab="settings" data-i18n="tab_settings">Settings</button>
-      </nav>
-    </header>
-    <main>
-      <section id="start" class="tab active">
-        <h2 data-i18n="hdr_start">Start</h2>
-        <div class="grid">
-          <label data-i18n="lbl_mod_root" title="" data-i18n-title="tt_mod_root">Mod root
-            <div class="pick">
-              <input id="start-mod-root" placeholder="" data-i18n-placeholder="ph_mod_root" />
-              <button class="pick-btn" data-pick="dir" data-for="start-mod-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_src_code">Source lang code <input id="start-src" value="en" title="" data-i18n-title="tt_src_code" /></label>
-          <label data-i18n="lbl_trg_code">Target lang code <input id="start-trg" value="ru" title="" data-i18n-title="tt_trg_code" /></label>
-          <label data-i18n="lbl_po_out" title="" data-i18n-title="tt_po_out">PO output
-            <div class="pick">
-              <input id="start-po-out" placeholder="" data-i18n-placeholder="ph_po_out" />
-              <button class="pick-btn" data-pick="savefile" data-for="start-po-out" title="" data-i18n-title="tt_pick_save">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_tm_roots">TM roots (comma) <input id="start-tm-roots" placeholder="" data-i18n-placeholder="ph_tm_roots" title="" data-i18n-title="tt_tm_roots" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-scan" data-i18n="btn_scan">Scan</button>
-          <button id="btn-export" data-i18n="btn_export">Export PO</button>
-          <button class="ghost small" data-copy="start-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="start-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="start-output" class="output"></pre>
-      </section>
-
-      <section id="validate" class="tab">
-        <h2 data-i18n="hdr_validate">Validate</h2>
-        <div class="grid">
-          <label data-i18n="lbl_mod_root" title="" data-i18n-title="tt_mod_root">Mod root
-            <div class="pick">
-              <input id="val-mod-root" placeholder="" data-i18n-placeholder="ph_mod_root" />
-              <button class="pick-btn" data-pick="dir" data-for="val-mod-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_src_code">Source lang code <input id="val-src" value="en" title="" data-i18n-title="tt_src_code" /></label>
-          <label data-i18n="lbl_src_dir">Source lang dir <input id="val-src-dir" placeholder="" data-i18n-placeholder="ph_src_dir" title="" data-i18n-title="tt_src_dir" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-validate" data-i18n="btn_validate">Validate</button>
-          <button id="btn-xml-health" data-i18n="btn_xml_health">XML Health</button>
-          <button id="btn-validate-save" data-i18n="btn_save_json">Save JSON</button>
-          <button class="ghost small" data-copy="validate-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="validate-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="validate-output" class="output"></pre>
-      </section>
-
-      <section id="diff" class="tab">
-        <h2 data-i18n="hdr_diff">Diff</h2>
-        <div class="grid">
-          <label data-i18n="lbl_mod_root" title="" data-i18n-title="tt_mod_root">Mod root
-            <div class="pick">
-              <input id="diff-mod-root" placeholder="" data-i18n-placeholder="ph_mod_root" />
-              <button class="pick-btn" data-pick="dir" data-for="diff-mod-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_src_code">Source lang code <input id="diff-src" value="en" title="" data-i18n-title="tt_src_code" /></label>
-          <label data-i18n="lbl_src_dir">Source lang dir <input id="diff-src-dir" placeholder="" data-i18n-placeholder="ph_src_dir" title="" data-i18n-title="tt_src_dir" /></label>
-          <label data-i18n="lbl_trg_code">Target lang code <input id="diff-trg" value="ru" title="" data-i18n-title="tt_trg_code" /></label>
-          <label data-i18n="lbl_trg_dir">Target lang dir <input id="diff-trg-dir" placeholder="" data-i18n-placeholder="ph_trg_dir" title="" data-i18n-title="tt_trg_dir" /></label>
-          </div>
-          <div class="actions">
-          <button id="btn-diff" data-i18n="btn_run_diff">Run Diff</button>
-          <button id="btn-diff-save" data-i18n="btn_save_reports">Save Reports</button>
-          <button class="ghost small" data-copy="diff-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="diff-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="diff-output" class="output"></pre>
-      </section>
-
-      <section id="import" class="tab">
-        <h2 data-i18n="hdr_import">Import/Build</h2>
-        <div class="grid">
-          <label data-i18n="lbl_po_file" title="" data-i18n-title="tt_po_file">PO file
-            <div class="pick">
-              <input id="imp-po" placeholder="" data-i18n-placeholder="ph_po_file" />
-              <button class="pick-btn" data-pick="file" data-for="imp-po" title="" data-i18n-title="tt_pick_file">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_mod_root" title="" data-i18n-title="tt_mod_root">Mod root
-            <div class="pick">
-              <input id="imp-mod-root" placeholder="" data-i18n-placeholder="ph_mod_root" />
-              <button class="pick-btn" data-pick="dir" data-for="imp-mod-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_trg_code">Target lang code <input id="imp-trg" value="ru" title="" data-i18n-title="tt_trg_code" /></label>
-          <label data-i18n="lbl_trg_dir">Target lang dir <input id="imp-trg-dir" placeholder="" data-i18n-placeholder="ph_trg_dir" title="" data-i18n-title="tt_trg_dir" /></label>
-          <label data-i18n="lbl_only_diff">Only diff <input id="imp-only-diff" type="checkbox" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-import-dry" data-i18n="btn_import_dry">Import DRY-RUN</button>
-          <button id="btn-import-apply" class="danger" data-i18n="btn_import_apply">Apply Import</button>
-          <button id="btn-build-dry" data-i18n="btn_build_dry">Build DRY-RUN</button>
-          <button id="btn-build-apply" class="danger" data-i18n="btn_build_apply">Apply Build</button>
-          <button id="btn-build-archive" data-i18n="btn_archive">Archive Build</button>
-          <button id="btn-import-archive" data-i18n="btn_archive_lang">Archive Language Dir</button>
-          <button id="btn-import-save" data-i18n="btn_save_json">Save JSON</button>
-          <button class="ghost small" data-copy="import-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="import-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="import-output" class="output"></pre>
-      </section>
-
-      <section id="annotate" class="tab">
-        <h2 data-i18n="hdr_annotate">Annotate</h2>
-        <div class="grid">
-          <label data-i18n="lbl_mod_root" title="" data-i18n-title="tt_mod_root">Mod root
-            <div class="pick">
-              <input id="ann-root" placeholder="" data-i18n-placeholder="ph_mod_root" />
-              <button class="pick-btn" data-pick="dir" data-for="ann-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_src_code">Source lang code <input id="ann-src" value="en" title="" data-i18n-title="tt_src_code" /></label>
-          <label data-i18n="lbl_src_dir">Source lang dir <input id="ann-src-dir" placeholder="" data-i18n-placeholder="ph_src_dir" title="" data-i18n-title="tt_src_dir" /></label>
-          <label data-i18n="lbl_trg_code">Target lang code <input id="ann-trg" value="ru" title="" data-i18n-title="tt_trg_code" /></label>
-          <label data-i18n="lbl_trg_dir">Target lang dir <input id="ann-trg-dir" placeholder="" data-i18n-placeholder="ph_trg_dir" title="" data-i18n-title="tt_trg_dir" /></label>
-          <label data-i18n="lbl_prefix">Prefix <input id="ann-prefix" value="EN:" /></label>
-          <label data-i18n="lbl_strip">Strip <input id="ann-strip" type="checkbox" /></label>
-          <label data-i18n="lbl_backup">Backup <input id="ann-backup" type="checkbox" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-ann-dry" data-i18n="btn_dry_run">Dry-run</button>
-          <button id="btn-ann-apply" class="danger" data-i18n="btn_apply">Apply</button>
-          <button id="btn-ann-save" data-i18n="btn_save_json">Save JSON</button>
-          <button class="ghost small" data-copy="annotate-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="annotate-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="annotate-output" class="output"></pre>
-      </section>
-
-      <section id="morph" class="tab">
-        <h2 data-i18n="hdr_morph">Morph</h2>
-        <div class="grid">
-          <label data-i18n="lbl_mod_root" title="" data-i18n-title="tt_mod_root">Mod root
-            <div class="pick">
-              <input id="morph-root" placeholder="" data-i18n-placeholder="ph_mod_root" />
-              <button class="pick-btn" data-pick="dir" data-for="morph-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
-          </label>
-          <label>Provider 
-            <select id="morph-provider">
-              <option value="dummy">dummy</option>
-              <option value="morpher">morpher</option>
-              <option value="pymorphy2">pymorphy2</option>
+      <div>
+        <h1 data-i18n="title">RimLoc GUI</h1>
+        <p class="subtitle" data-i18n="subtitle">Desktop companion for RimLoc services</p>
+      </div>
+      <div class="header-meta">
+        <div class="controls">
+          <label>
+            <span data-i18n="language">Language</span>
+            <select id="locale-select">
+              <option value="auto" data-i18n="lang.auto">Auto</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
             </select>
           </label>
-          <label data-i18n="lbl_trg_code">Target lang code <input id="morph-trg" value="ru" /></label>
-          <label data-i18n="lbl_trg_dir">Target lang dir <input id="morph-trg-dir" placeholder="" data-i18n-placeholder="ph_trg_dir" /></label>
-          <label data-i18n="lbl_filter">Filter regex <input id="morph-filter" value=".*" /></label>
-          <label data-i18n="lbl_limit">Limit <input id="morph-limit" value="50" /></label>
-          <label data-i18n="lbl_timeout">Timeout ms <input id="morph-timeout" value="1500" /></label>
-          <label data-i18n="lbl_cache">Cache size <input id="morph-cache" value="1024" /></label>
-          <label data-i18n="lbl_pym_url">Pymorphy URL <input id="morph-pym-url" placeholder="" data-i18n-placeholder="ph_pym_url" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-morph-run" data-i18n="btn_run">Run</button>
-          <button class="ghost small" data-copy="morph-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="morph-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="morph-output" class="output"></pre>
-      </section>
-
-      <section id="lang" class="tab">
-        <h2 data-i18n="hdr_lang">Lang Update</h2>
-        <div class="grid">
-          <label data-i18n="lbl_game_root" title="" data-i18n-title="tt_game_root">Game root
-            <div class="pick">
-              <input id="lang-game-root" placeholder="" data-i18n-placeholder="ph_game_root" />
-              <button class="pick-btn" data-pick="dir" data-for="lang-game-root" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
+          <label>
+            <span data-i18n="theme">Theme</span>
+            <select id="theme-select">
+              <option value="auto" data-i18n="theme.auto">Auto</option>
+              <option value="light" data-i18n="theme.light">Light</option>
+              <option value="dark" data-i18n="theme.dark">Dark</option>
+            </select>
           </label>
-          <label data-i18n="lbl_repo">Repo <input id="lang-repo" value="Ludeon/RimWorld-ru" title="" data-i18n-title="tt_repo" /></label>
-          <label data-i18n="lbl_branch">Branch <input id="lang-branch" placeholder="" data-i18n-placeholder="ph_branch" title="" data-i18n-title="tt_branch" /></label>
-          <label data-i18n="lbl_zip">Zip
-            <div class="pick">
-              <input id="lang-zip" placeholder="" data-i18n-placeholder="ph_zip" />
-              <button class="pick-btn" data-pick="file" data-for="lang-zip" title="" data-i18n-title="tt_pick_file">…</button>
-            </div>
-          </label>
-          <label data-i18n="lbl_src_dir">Source dir <input id="lang-src-dir" value="Russian" title="" data-i18n-title="tt_src_dir" /></label>
-          <label data-i18n="lbl_trg_dir">Target dir <input id="lang-trg-dir" value="Russian (GitHub)" title="" data-i18n-title="tt_trg_dir" /></label>
-        </div>
-        <div class="actions">
-          <button id="btn-lang-dry" data-i18n="btn_plan_dry">Plan Update (DRY)</button>
-          <button id="btn-lang-apply" class="danger" data-i18n="btn_apply_update">Apply Update</button>
-          <button class="ghost small" data-copy="lang-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="lang-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="lang-output" class="output"></pre>
-      </section>
-
-      <section id="tools" class="tab">
-        <h2 data-i18n="hdr_tools">Tools</h2>
-        <div class="grid">
-          <label data-i18n="lbl_out_dir" title="" data-i18n-title="tt_out_dir">Output dir
-            <div class="pick">
-              <input id="tools-out-dir" placeholder="" data-i18n-placeholder="ph_out_dir" />
-              <button class="pick-btn" data-pick="dir" data-for="tools-out-dir" title="" data-i18n-title="tt_pick_dir">…</button>
-            </div>
+          <label>
+            <span data-i18n="loglevel">Log level</span>
+            <select id="log-level">
+              <option value="info">info</option>
+              <option value="debug">debug</option>
+            </select>
           </label>
         </div>
-        <div class="actions">
-          <button id="btn-schema-dump" data-i18n="btn_schema_dump">Dump JSON Schemas</button>
-          <button class="ghost small" data-copy="tools-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="tools-output" data-i18n="btn_clear_out">Clear</button>
+        <span id="app-version"></span>
+        <span id="status-text"></span>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel" id="mod-setup">
+        <h2 data-i18n="mod_setup">Mod setup</h2>
+        <p class="hint" data-i18n="mod_setup_hint">Choose the mod folder and optional game version. Values are stored locally for convenience.</p>
+        <div class="field-group">
+          <label for="mod-root" data-i18n="mod_root">Mod root</label>
+          <div class="path-input">
+            <input id="mod-root" type="text" placeholder="/path/to/mod" autocomplete="off" />
+            <button type="button" data-action="pick-root" data-i18n="browse">Browse…</button>
+          </div>
         </div>
-        <pre id="tools-output" class="output"></pre>
+        <div class="field-grid">
+          <label data-i18n="game_version">Game version (optional)
+            <input id="game-version" type="text" placeholder="e.g. 1.5" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang">Target language code
+            <input id="target-lang" type="text" placeholder="ru" autocomplete="off" />
+          </label>
+          <label data-i18n="source_lang">Source language code
+            <input id="source-lang" type="text" placeholder="auto" autocomplete="off" />
+          </label>
+        </div>
       </section>
 
-      <section id="logs" class="tab">
-        <h2 data-i18n="hdr_logs">Logs</h2>
-        <div class="grid">
-          <label data-i18n="lbl_log_path" title="" data-i18n-title="tt_log_path">Log file path
-            <div class="pick">
-              <input id="logs-path" placeholder="" data-i18n-placeholder="ph_log_path" />
-              <button class="pick-btn" data-pick="file" data-for="logs-path" title="" data-i18n-title="tt_pick_file">…</button>
+      <section class="panel" id="scan-panel">
+        <div class="panel-head">
+          <h2 data-i18n="scan_title">Scan Keyed &amp; DefInjected</h2>
+          <div class="actions">
+            <button type="button" id="scan-run" data-i18n="scan_run">Run scan</button>
+            <button type="button" id="scan-save-json" data-i18n="scan_save_json">Save JSON…</button>
+            <button type="button" id="scan-save-csv" data-i18n="scan_save_csv">Save CSV…</button>
+          </div>
+        </div>
+        <div class="scan-summary" id="scan-summary" data-i18n="scan_empty">No scan performed yet.</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="th_key">Key</th>
+                <th scope="col" data-i18n="th_kind">Kind</th>
+                <th scope="col" data-i18n="th_source">Source sample</th>
+                <th scope="col" data-i18n="th_path">Path</th>
+                <th scope="col" data-i18n="th_line">Line</th>
+              </tr>
+            </thead>
+            <tbody id="scan-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="learn-panel">
+        <div class="panel-head">
+          <h2 data-i18n="learn_title">Learn DefInjected</h2>
+          <div class="actions">
+            <button type="button" id="learn-run" data-i18n="learn_run">Learn defs</button>
+            <button type="button" id="learn-open-out" disabled data-i18n="open_output">Open output</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="out_folder">Output folder
+            <div class="path-input">
+              <input id="learn-out" type="text" placeholder="_learn" autocomplete="off" />
+              <button type="button" data-action="pick-learn-out" data-i18n="browse">Browse…</button>
             </div>
           </label>
-          <label>Lines <input id="logs-lines" value="200" /></label>
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="learn-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
         </div>
-        <div class="actions">
-          <button id="btn-logs-read" data-i18n="btn_read">Read</button>
-          <button id="btn-logs-auto" data-i18n="btn_auto">Auto</button>
-          <button class="ghost small" data-copy="logs-output" data-i18n="btn_copy_out">Copy</button>
-          <button class="ghost small" data-clear="logs-output" data-i18n="btn_clear_out">Clear</button>
-        </div>
-        <pre id="logs-output" class="output"></pre>
+        <div class="result" id="learn-result" data-i18n="learn_empty">No learn run yet.</div>
       </section>
 
-      <section id="settings" class="tab">
-        <h2>Settings</h2>
-        <p>RimLoc GUI uses embedded services; no extra settings required.</p>
+      <section class="panel" id="export-panel">
+        <div class="panel-head">
+          <h2 data-i18n="export_title">Export PO</h2>
+          <div class="actions">
+            <button type="button" id="export-run" data-i18n="export_run">Export PO</button>
+            <button type="button" id="export-open-file" disabled data-i18n="open_file">Open file</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="po_out_file">PO output file
+            <div class="path-input">
+              <input id="po-output" type="text" placeholder="_learn/mod.po" autocomplete="off" />
+              <button type="button" data-action="pick-po-output" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="tm_folders">Translation memory folders (one per line)
+            <textarea id="tm-roots" rows="3" placeholder="/path/to/reference-mod"></textarea>
+          </label>
+        </div>
+        <div class="result" id="export-result" data-i18n="export_empty">No export performed yet.</div>
+      </section>
+
+      <section class="panel" id="debug-panel">
+        <div class="panel-head">
+          <h2 data-i18n="debug_console">Debug console</h2>
+          <div class="actions">
+            <button type="button" id="debug-clear" data-i18n="clear">Clear</button>
+          </div>
+        </div>
+        <pre id="debug-log" class="debug-log" aria-live="polite"></pre>
       </section>
     </main>
 
     <footer>
-      <div class="footer-left" id="app-version">
-        <small>RimLoc GUI • Tauri shell • Made with ❤️</small>
-      </div>
-      <div class="footer-right">
-        <label data-i18n="lbl_ui_lang">UI:
-          <select id="ui-lang">
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-          </select>
-        </label>
-        <button id="btn-open-path" class="ghost" data-i18n="btn_open_last">Open Last Path</button>
-      </div>
+      <p data-i18n="footer_hint">Need DefInjected strings? Run “Learn defs” first and copy <code>suggested.xml</code> into your language folder.</p>
     </footer>
-
-    <!-- Overlay & Toasts -->
-    <div id="overlay" class="overlay">
-      <div class="spinner"></div>
-      <div id="overlay-text">Working…</div>
-      <div class="progress"><div class="bar" id="overlay-bar"></div></div>
-    </div>
-    <div id="toast" class="toast"></div>
 
     <script src="index.js"></script>
   </body>
-  </html>
+</html>

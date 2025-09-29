@@ -1,511 +1,605 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console on Windows in release
 
-use rimloc_domain::{DiffOutput, HealthReport, ScanUnit, SCHEMA_VERSION};
-use serde::Serialize;
-use std::path::PathBuf;
-use tauri::{CustomMenuItem, Menu};
+use color_eyre::eyre::WrapErr;
+use rimloc_domain::{ScanUnit, SCHEMA_VERSION};
+use rimloc_export_csv as export_csv;
+use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn, scan_units_auto};
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::path::{Path, PathBuf};
+use tauri::{Manager, Window};
+use thiserror::Error;
+use walkdir::WalkDir;
 
-#[derive(thiserror::Error, Debug, Serialize)]
+#[derive(Debug, Error, Serialize)]
 #[error("{message}")]
-pub struct ApiError { pub message: String }
+pub struct ApiError {
+    pub message: String,
+}
 
 impl From<color_eyre::Report> for ApiError {
-  fn from(e: color_eyre::Report) -> Self { ApiError { message: format!("{e}") } }
-}
-
-#[tauri::command]
-fn api_scan(root: String) -> Result<Vec<ScanUnit>, ApiError> {
-  let units = rimloc_services::scan_units(PathBuf::from(root).as_path())?;
-  let mapped: Vec<ScanUnit> = units
-    .into_iter()
-    .map(|u| ScanUnit {
-      schema_version: SCHEMA_VERSION,
-      path: u.path.display().to_string(),
-      line: u.line,
-      key: u.key,
-      value: u.source,
-    })
-    .collect();
-  Ok(mapped)
-}
-
-#[tauri::command]
-fn api_validate(root: String, source_lang: Option<String>, source_lang_dir: Option<String>) -> Result<Vec<rimloc_domain::ValidationMsg>, ApiError> {
-  let msgs = rimloc_services::validate_under_root(
-    PathBuf::from(root).as_path(),
-    source_lang.as_deref(),
-    source_lang_dir.as_deref(),
-  )?;
-  let out: Vec<rimloc_domain::ValidationMsg> = msgs
-    .into_iter()
-    .map(|m| rimloc_domain::ValidationMsg {
-      schema_version: SCHEMA_VERSION,
-      kind: m.kind,
-      key: m.key,
-      path: m.path,
-      line: m.line,
-      message: m.message,
-    })
-    .collect();
-  Ok(out)
-}
-
-#[tauri::command]
-fn api_export_po(root: String, out_po: String, lang: Option<String>, source_lang: Option<String>, source_lang_dir: Option<String>, tm_roots: Option<Vec<String>>) -> Result<(), ApiError> {
-  let tm_paths: Option<Vec<PathBuf>> = tm_roots.map(|v| v.into_iter().map(PathBuf::from).collect());
-  rimloc_services::export_po_with_tm(
-    PathBuf::from(&root).as_path(),
-    PathBuf::from(&out_po).as_path(),
-    lang.as_deref(),
-    source_lang.as_deref(),
-    source_lang_dir.as_deref(),
-    tm_paths.as_ref().map(|v| v.as_slice()),
-  )?;
-  Ok(())
-}
-
-#[derive(Serialize)]
-struct ImportPlanOut { files: Vec<(String, usize)>, total_keys: usize }
-
-#[tauri::command]
-fn api_import_po_dry(po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, _game_version: Option<String>, only_diff: bool) -> Result<ImportPlanOut, ApiError> {
-  let (_plan, summary) = rimloc_services::import_po_to_mod_tree(
-    PathBuf::from(po).as_path(),
-    PathBuf::from(mod_root).as_path(),
-    &lang_dir.unwrap_or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)).unwrap_or_else(|| "Russian".to_string())),
-    keep_empty,
-    true,
-    false,
-    single_file,
-    true,
-    only_diff,
-    false,
-  )?;
-  if let Some(plan) = _plan {
-    Ok(ImportPlanOut { files: plan.files.into_iter().map(|(p, n)| (p.display().to_string(), n)).collect(), total_keys: plan.total_keys })
-  } else { Err(ApiError { message: "no plan generated".into() }) }
-}
-
-#[derive(Serialize)]
-struct BuildPlanOut {
-  mod_name: String,
-  package_id: String,
-  rw_version: String,
-  out_mod: String,
-  lang_dir: String,
-  files: Vec<(String, usize)>,
-  total_keys: usize,
-}
-
-#[tauri::command]
-fn api_build_mod_dry(po: Option<String>, out_mod: String, lang: String, from_root: Option<String>, from_game_version: Option<Vec<String>>, name: Option<String>, package_id: Option<String>, rw_version: Option<String>, lang_dir: Option<String>, dedupe: bool) -> Result<BuildPlanOut, ApiError> {
-  if let Some(root) = from_root {
-    // We don't have a dry-run planner for from_root; reuse import dry-run style by scanning files
-    let langd = lang_dir.clone().unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
-    let (files, total_keys) = rimloc_services::build_from_root(
-      PathBuf::from(root).as_path(),
-      PathBuf::from(&out_mod).as_path(),
-      &langd,
-      from_game_version.as_deref(),
-      false,
-      dedupe,
-    )?;
-    let plan = BuildPlanOut {
-      out_mod: PathBuf::from(&out_mod).display().to_string(),
-      files: files.into_iter().map(|(p, n)| (p.display().to_string(), n)).collect(),
-      total_keys,
-      mod_name: name.unwrap_or_else(|| "RimLoc Translation".into()),
-      package_id: package_id.unwrap_or_else(|| "yourname.rimloc.translation".into()),
-      rw_version: rw_version.unwrap_or_else(|| "1.5".into()),
-      lang_dir: langd,
-    };
-    return Ok(plan);
-  }
-  let po = po.ok_or_else(|| ApiError { message: "po is required when from_root is not set".into() })?;
-  let plan = rimloc_services::build_from_po_dry_run(
-    PathBuf::from(&po).as_path(),
-    PathBuf::from(&out_mod).as_path(),
-    &lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang)),
-    &name.unwrap_or_else(|| "RimLoc Translation".into()),
-    &package_id.unwrap_or_else(|| "yourname.rimloc.translation".into()),
-    &rw_version.unwrap_or_else(|| "1.5".into()),
-    dedupe,
-  )?;
-  Ok(BuildPlanOut {
-    mod_name: plan.mod_name,
-    package_id: plan.package_id,
-    rw_version: plan.rw_version,
-    out_mod: plan.out_mod.display().to_string(),
-    lang_dir: plan.lang_dir,
-    files: plan.files.into_iter().map(|(p, n)| (p.display().to_string(), n)).collect(),
-    total_keys: plan.total_keys,
-  })
-}
-
-#[tauri::command]
-fn api_diff_xml(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, baseline_po: Option<String>) -> Result<DiffOutput, ApiError> {
-  let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
-  let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
-  let diff = rimloc_services::diff_xml(
-    PathBuf::from(&root).as_path(),
-    &cfg_src,
-    &cfg_trg,
-    baseline_po.as_deref().map(PathBuf::from).as_deref(),
-  )?;
-  Ok(diff)
-}
-
-#[tauri::command]
-fn api_diff_save_reports(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, baseline_po: Option<String>, out_dir: String) -> Result<String, ApiError> {
-  let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
-  let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
-  let diff = rimloc_services::diff_xml(
-    PathBuf::from(&root).as_path(),
-    &cfg_src,
-    &cfg_trg,
-    baseline_po.as_deref().map(PathBuf::from).as_deref(),
-  )?;
-  let out = PathBuf::from(&out_dir);
-  std::fs::create_dir_all(&out).map_err(|e| ApiError { message: e.to_string() })?;
-  rimloc_services::write_diff_reports(&out, &diff)?;
-  Ok(out.display().to_string())
-}
-
-#[tauri::command]
-fn api_xml_health(root: String, lang_dir: Option<String>) -> Result<HealthReport, ApiError> {
-  let rep = rimloc_services::xml_health_scan(PathBuf::from(root).as_path(), lang_dir.as_deref())?;
-  Ok(rep)
-}
-
-#[derive(Serialize)]
-struct LangUpdateDryLine { path: String, size: u64 }
-#[derive(Serialize)]
-struct LangUpdateDry { files: Vec<LangUpdateDryLine>, total: u64, out: String }
-
-#[tauri::command]
-fn api_lang_update_dry(game_root: String, repo: Option<String>, branch: Option<String>, zip: Option<String>, source_lang_dir: Option<String>, target_lang_dir: Option<String>) -> Result<LangUpdateDry, ApiError> {
-  let repo = repo.unwrap_or_else(|| "Ludeon/RimWorld-ru".into());
-  let src = source_lang_dir.unwrap_or_else(|| "Russian".into());
-  let trg = target_lang_dir.unwrap_or_else(|| "Russian (GitHub)".into());
-  let (plan, _summary) = rimloc_services::lang_update(
-    PathBuf::from(&game_root).as_path(),
-    &repo,
-    branch.as_deref(),
-    zip.as_deref().map(PathBuf::from).as_deref(),
-    &src,
-    &trg,
-    true,
-    false,
-  )?;
-  let p = plan.ok_or_else(|| ApiError { message: "no plan".into() })?;
-  Ok(LangUpdateDry { files: p.files.into_iter().map(|f| LangUpdateDryLine { path: format!("{}/{}", p.out_languages_dir.join(&p.target_lang_dir).display(), f.rel_path), size: f.size }).collect(), total: p.total_bytes, out: p.out_languages_dir.join(&p.target_lang_dir).display().to_string() })
-}
-
-// Apply actions
-#[tauri::command]
-fn api_import_po_apply(window: tauri::Window, po: String, mod_root: String, lang: Option<String>, lang_dir: Option<String>, keep_empty: bool, single_file: bool, incremental: bool, only_diff: bool, report: bool, backup: bool) -> Result<rimloc_services::ImportSummary, ApiError> {
-  let lang_folder = lang_dir.clone().unwrap_or_else(|| lang.as_ref().map(|c| rimloc_import_po::rimworld_lang_dir(c)).unwrap_or_else(|| "Russian".to_string()));
-  let po_pb = PathBuf::from(&po);
-  let root_pb = PathBuf::from(&mod_root);
-  let (_plan, summary) = rimloc_services::import_po_to_mod_tree(
-    po_pb.as_path(),
-    root_pb.as_path(),
-    &lang_folder,
-    keep_empty,
-    false,
-    backup,
-    single_file,
-    incremental,
-    only_diff,
-    report,
-  )?;
-  if let Some(sum) = summary { return Ok(sum); }
-  // Fallback path should not normally happen; use progress-enabled variant directly when summary is None
-  let mut current = 0usize;
-  let cb = |cur: usize, total: usize, path: &std::path::Path| {
-    current = cur;
-    let _ = window.emit("import_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()}));
-  };
-  let sum = rimloc_services::import_po_to_mod_tree_with_progress(
-    po_pb.as_path(),
-    root_pb.as_path(),
-    &lang_folder,
-    keep_empty,
-    backup,
-    single_file,
-    incremental,
-    only_diff,
-    report,
-    cb,
-  )?;
-  Ok(sum)
-}
-
-#[tauri::command]
-fn api_build_mod_apply(window: tauri::Window, po: Option<String>, out_mod: String, lang: String, from_root: Option<String>, from_game_version: Option<Vec<String>>, name: Option<String>, package_id: Option<String>, rw_version: Option<String>, lang_dir: Option<String>, dedupe: bool) -> Result<String, ApiError> {
-  if let Some(root) = from_root {
-    let mut last = 0usize;
-    let _ = rimloc_services::build_from_root_with_progress(
-      PathBuf::from(root).as_path(),
-      PathBuf::from(&out_mod).as_path(),
-      &lang_dir.clone().unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang)),
-      from_game_version.as_deref(),
-      true,
-      dedupe,
-      |cur, total, path| { last = cur; let _ = window.emit("build_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()})); },
-    )?;
-    return Ok(out_mod);
-  }
-  let po = po.ok_or_else(|| ApiError { message: "po is required when from_root is not set".into() })?;
-  let langd = lang_dir.unwrap_or_else(|| rimloc_import_po::rimworld_lang_dir(&lang));
-  let nm = name.unwrap_or_else(|| "RimLoc Translation".into());
-  let pid = package_id.unwrap_or_else(|| "yourname.rimloc.translation".into());
-  let rwv = rw_version.unwrap_or_else(|| "1.5".into());
-  rimloc_services::build_from_po_with_progress(
-    PathBuf::from(&po).as_path(),
-    PathBuf::from(&out_mod).as_path(),
-    &langd,
-    &nm,
-    &pid,
-    &rwv,
-    dedupe,
-    |cur, total, path| { let _ = window.emit("build_progress", serde_json::json!({"current": cur, "total": total, "path": path.display().to_string()})); },
-  )?;
-  Ok(out_mod)
-}
-
-#[tauri::command]
-fn api_lang_update_apply(game_root: String, repo: Option<String>, branch: Option<String>, zip: Option<String>, source_lang_dir: Option<String>, target_lang_dir: Option<String>, backup: bool) -> Result<String, ApiError> {
-  let repo = repo.unwrap_or_else(|| "Ludeon/RimWorld-ru".into());
-  let src = source_lang_dir.unwrap_or_else(|| "Russian".into());
-  let trg = target_lang_dir.unwrap_or_else(|| "Russian (GitHub)".into());
-  let (_plan, summary) = rimloc_services::lang_update(
-    PathBuf::from(&game_root).as_path(),
-    &repo,
-    branch.as_deref(),
-    zip.as_deref().map(PathBuf::from).as_deref(),
-    &src,
-    &trg,
-    false,
-    backup,
-  )?;
-  let sum = summary.ok_or_else(|| ApiError { message: "no summary".into() })?;
-  Ok(sum.out_dir.display().to_string())
-}
-
-// Annotate
-#[tauri::command]
-fn api_annotate_dry(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, comment_prefix: Option<String>, strip: bool) -> Result<rimloc_services::AnnotatePlan, ApiError> {
-  let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
-  let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
-  let prefix = comment_prefix.unwrap_or_else(|| "EN:".into());
-  let plan = rimloc_services::annotate_dry_run_plan(PathBuf::from(root).as_path(), &cfg_src, &cfg_trg, &prefix, strip)?;
-  Ok(plan)
-}
-
-#[derive(Serialize)]
-struct AnnotateSummaryOut { processed: usize, annotated: usize }
-
-#[tauri::command]
-fn api_annotate_apply(root: String, source_lang: Option<String>, source_lang_dir: Option<String>, lang: Option<String>, lang_dir: Option<String>, comment_prefix: Option<String>, strip: bool, backup: bool) -> Result<AnnotateSummaryOut, ApiError> {
-  let cfg_src = source_lang_dir.or_else(|| source_lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "English".to_string());
-  let cfg_trg = lang_dir.or_else(|| lang.map(|c| rimloc_import_po::rimworld_lang_dir(&c)) ).unwrap_or_else(|| "Russian".to_string());
-  let prefix = comment_prefix.unwrap_or_else(|| "EN:".into());
-  let sum = rimloc_services::annotate_apply(PathBuf::from(root).as_path(), &cfg_src, &cfg_trg, &prefix, strip, false, backup)?;
-  Ok(AnnotateSummaryOut { processed: sum.processed, annotated: sum.annotated })
-}
-
-// Schema dump
-#[tauri::command]
-fn api_schema_dump(out_dir: String) -> Result<String, ApiError> {
-  let out_dir = PathBuf::from(out_dir);
-  std::fs::create_dir_all(&out_dir).map_err(|e| ApiError { message: e.to_string() })?;
-  macro_rules! dump {
-    ($ty:ty, $name:literal) => {{
-      let schema = schemars::schema_for!($ty);
-      let path = out_dir.join($name);
-      let f = std::fs::File::create(&path).map_err(|e| ApiError { message: e.to_string() })?;
-      serde_json::to_writer_pretty(f, &schema).map_err(|e| ApiError { message: e.to_string() })?;
-    }};
-  }
-  dump!(rimloc_domain::ScanUnit, "scan_unit.schema.json");
-  dump!(rimloc_domain::ValidationMsg, "validation_msg.schema.json");
-  dump!(rimloc_domain::ImportSummary, "import_summary.schema.json");
-  dump!(rimloc_domain::DiffOutput, "diff_output.schema.json");
-  dump!(rimloc_domain::HealthReport, "health_report.schema.json");
-  dump!(rimloc_domain::AnnotatePlan, "annotate_plan.schema.json");
-  Ok(out_dir.display().to_string())
-}
-
-#[tauri::command]
-fn api_save_text(path: String, contents: String) -> Result<String, ApiError> {
-  std::fs::write(&path, contents).map_err(|e| ApiError { message: e.to_string() })?;
-  Ok(path)
-}
-
-#[tauri::command]
-fn api_app_version() -> Result<String, ApiError> { Ok(env!("CARGO_PKG_VERSION").to_string()) }
-
-// tests moved to tests.rs
-
-#[tauri::command]
-fn api_read_log_tail(path: String, lines: Option<usize>) -> Result<String, ApiError> {
-  let content = std::fs::read_to_string(&path).map_err(|e| ApiError { message: e.to_string() })?;
-  let mut all: Vec<&str> = content.lines().collect();
-  let n = lines.unwrap_or(200);
-  if all.len() > n { all = all[all.len()-n..].to_vec(); }
-  Ok(all.join("\n"))
-}
-
-#[tauri::command]
-fn api_zip_dir(dir: String, out_zip: String) -> Result<String, ApiError> {
-  use std::io::Write;
-  let path = PathBuf::from(dir);
-  let file = std::fs::File::create(&out_zip).map_err(|e| ApiError { message: e.to_string() })?;
-  let mut zipw = zip::ZipWriter::new(file);
-  let options = zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
-  for entry in walkdir::WalkDir::new(&path) {
-    let entry = entry.map_err(|e| ApiError { message: e.to_string() })?;
-    let p = entry.path();
-    if p.is_file() {
-      let rel = p.strip_prefix(&path).unwrap().to_string_lossy().to_string();
-      zipw.start_file(rel, options).map_err(|e| ApiError { message: e.to_string() })?;
-      let bytes = std::fs::read(p).map_err(|e| ApiError { message: e.to_string() })?;
-      zipw.write_all(&bytes).map_err(|e| ApiError { message: e.to_string() })?;
+    fn from(err: color_eyre::Report) -> Self {
+        ApiError {
+            message: format!("{err}"),
+        }
     }
-  }
-  zipw.finish().map_err(|e| ApiError { message: e.to_string() })?;
-  Ok(out_zip)
+}
+
+impl From<std::io::Error> for ApiError {
+    fn from(err: std::io::Error) -> Self {
+        ApiError {
+            message: err.to_string(),
+        }
+    }
+}
+
+impl From<serde_json::Error> for ApiError {
+    fn from(err: serde_json::Error) -> Self {
+        ApiError {
+            message: err.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct ScanRequest {
+    root: String,
+    #[serde(default)]
+    game_version: Option<String>,
+    #[serde(default)]
+    include_all_versions: bool,
+    #[serde(default)]
+    out_json: Option<String>,
+    #[serde(default)]
+    out_csv: Option<String>,
+    #[serde(default)]
+    lang: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct ScanUnitView {
+    key: String,
+    source: String,
+    path: String,
+    line: Option<usize>,
+    kind: ScanKind,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ScanResponse {
+    root: String,
+    resolved_root: String,
+    game_version: Option<String>,
+    total: usize,
+    keyed: usize,
+    def_injected: usize,
+    saved_json: Option<String>,
+    saved_csv: Option<String>,
+    units: Vec<ScanUnitView>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LearnDefsResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    out_dir: String,
+    missing_path: String,
+    suggested_path: String,
+    learned_path: String,
+    candidates: usize,
+    accepted: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportPoResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    out_po: String,
+    total: usize,
+    tm_filled: usize,
+    tm_coverage_pct: u32,
+    warning: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct AppInfo {
+    version: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+enum ScanKind {
+    Keyed,
+    DefInjected,
+    Other,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct LogEvent {
+    level: String,
+    message: String,
+}
+
+fn emit_log(window: &Window, level: &str, message: impl Into<String>) {
+    let _ = window.emit(
+        "log",
+        LogEvent {
+            level: level.to_string(),
+            message: message.into(),
+        },
+    );
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ProgressEvent {
+    action: String,
+    step: String,
+    message: Option<String>,
+    pct: Option<u32>,
+}
+
+fn emit_progress(window: &Window, action: &str, step: &str, message: impl Into<Option<String>>, pct: Option<u32>) {
+    let _ = window.emit(
+        "progress",
+        ProgressEvent {
+            action: action.to_string(),
+            step: step.to_string(),
+            message: message.into(),
+            pct,
+        },
+    );
+}
+
+#[derive(Debug, Deserialize)]
+struct LearnDefsRequest {
+    root: String,
+    #[serde(default)]
+    out_dir: Option<String>,
+    #[serde(default)]
+    lang_dir: Option<String>,
+    #[serde(default)]
+    threshold: Option<f32>,
+    #[serde(default)]
+    game_version: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ExportPoRequest {
+    root: String,
+    out_po: String,
+    #[serde(default)]
+    lang: Option<String>,
+    #[serde(default)]
+    source_lang: Option<String>,
+    #[serde(default)]
+    source_lang_dir: Option<String>,
+    #[serde(default)]
+    tm_roots: Option<Vec<String>>,
+    #[serde(default)]
+    game_version: Option<String>,
 }
 
 #[tauri::command]
-fn api_check_updates(repo: Option<String>) -> Result<(String, String), ApiError> {
-  let repo = repo.unwrap_or_else(|| "0-danielviktorovich-0/RimLoc".into());
-  let url = format!("https://api.github.com/repos/{repo}/releases/latest");
-  let client = reqwest::blocking::Client::builder().user_agent("RimLocGUI").build().unwrap();
-  let resp = client.get(url).send().map_err(|e| ApiError { message: e.to_string() })?;
-  let json: serde_json::Value = resp.json().map_err(|e| ApiError { message: e.to_string() })?;
-  let tag = json.get("tag_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
-  let cur = env!("CARGO_PKG_VERSION").to_string();
-  Ok((cur, tag))
+fn get_app_info() -> Result<AppInfo, ApiError> {
+    Ok(AppInfo {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    })
 }
 
 #[tauri::command]
-fn api_lang_update_download_and_plan(window: tauri::Window, game_root: String, repo: String, branch: Option<String>, source_lang_dir: String, target_lang_dir: String) -> Result<serde_json::Value, ApiError> {
-  // Stream download with progress and emit events
-  let api_repo = format!("https://api.github.com/repos/{repo}");
-  let client = reqwest::blocking::Client::builder().user_agent("RimLocGUI").build().unwrap();
-  let br = if let Some(b) = branch { b } else {
-    let meta: serde_json::Value = client.get(api_repo).send().map_err(|e| ApiError { message: e.to_string() })?.json().map_err(|e| ApiError { message: e.to_string() })?;
-    meta.get("default_branch").and_then(|v| v.as_str()).unwrap_or("master").to_string()
-  };
-  let url = format!("https://codeload.github.com/{repo}/zip/refs/heads/{br}");
-  let mut resp = client.get(url).send().map_err(|e| ApiError { message: e.to_string() })?;
-  let total = resp.content_length().unwrap_or(0);
-  let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
-  let mut downloaded: u64 = 0;
-  use std::io::Read;
-  let mut chunk = [0u8; 8192];
-  loop {
-    let n = resp.read(&mut chunk).map_err(|e| ApiError { message: e.to_string() })?;
-    if n == 0 { break; }
-    downloaded += n as u64;
-    buf.extend_from_slice(&chunk[..n]);
-    let _ = window.emit("lang_update_progress", serde_json::json!({"downloaded": downloaded, "total": total}));
-  }
-  // write to temp file and reuse existing services function
-  let tmp = tempfile::NamedTempFile::new().map_err(|e| ApiError { message: e.to_string() })?;
-  std::fs::write(tmp.path(), &buf).map_err(|e| ApiError { message: e.to_string() })?;
-  let (plan, _summary) = rimloc_services::lang_update(
-    PathBuf::from(&game_root).as_path(),
-    &repo,
-    Some(br.as_str()),
-    Some(tmp.path()),
-    &source_lang_dir,
-    &target_lang_dir,
-    true,
-    false,
-  )?;
-  let p = plan.ok_or_else(|| ApiError { message: "no plan".into() })?;
-  Ok(serde_json::json!({
-    "files": p.files.iter().map(|f| serde_json::json!({"rel_path": f.rel_path, "size": f.size})).collect::<Vec<_>>(),
-    "total": p.total_bytes,
-    "out": p.out_languages_dir.join(&p.target_lang_dir).display().to_string()
-  }))
+fn scan_mod(window: Window, request: ScanRequest) -> Result<ScanResponse, ApiError> {
+    emit_log(&window, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
+    emit_progress(&window, "scan", "start", Some("Scanning…".to_string()), Some(0));
+    let root = PathBuf::from(&request.root);
+    if request.include_all_versions {
+        let res = run_scan(&root, None, &request);
+        if res.is_ok() {
+            emit_log(&window, "info", "scan finished (all versions)");
+            emit_progress(&window, "scan", "done", Some("Scan finished".to_string()), Some(100));
+        }
+        res
+    } else {
+        let (resolved, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+        let res = run_scan(&resolved, version.as_deref(), &request);
+        if res.is_ok() {
+            emit_log(&window, "info", format!("scan finished: {}", resolved.display()));
+            emit_progress(&window, "scan", "done", Some("Scan finished".to_string()), Some(100));
+        }
+        res
+    }
 }
 
-// Morph
-#[derive(Serialize)]
-struct MorphResultOut { processed: usize, lang: String, warn_no_morpher: bool, warn_no_pymorphy: bool }
+fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> Result<ScanResponse, ApiError> {
+    let units = scan_units_auto(scan_root).wrap_err("scan units")?;
+    let mut keyed = 0usize;
+    let mut def_injected = 0usize;
+    let mut mapped: Vec<ScanUnitView> = Vec::with_capacity(units.len());
+    for unit in &units {
+        let kind = classify_unit(&unit.path);
+        match kind {
+            ScanKind::Keyed => keyed += 1,
+            ScanKind::DefInjected => def_injected += 1,
+            ScanKind::Other => {}
+        }
+        mapped.push(ScanUnitView {
+            key: unit.key.clone(),
+            source: unit.source.clone().unwrap_or_default(),
+            path: unit.path.display().to_string(),
+            line: unit.line,
+            kind,
+        });
+    }
+
+    let saved_json = if let Some(path) = request.out_json.as_ref() {
+        let path = make_absolute(scan_root, Path::new(path));
+        write_scan_json(&path, &units)?;
+        Some(path.display().to_string())
+    } else {
+        None
+    };
+
+    let saved_csv = if let Some(path) = request.out_csv.as_ref() {
+        let path = make_absolute(scan_root, Path::new(path));
+        write_scan_csv(&path, &units, request.lang.as_deref())?;
+        Some(path.display().to_string())
+    } else {
+        None
+    };
+
+    Ok(ScanResponse {
+        root: request.root.clone(),
+        resolved_root: scan_root.display().to_string(),
+        game_version: version.map(ToString::to_string),
+        total: units.len(),
+        keyed,
+        def_injected,
+        saved_json,
+        saved_csv,
+        units: mapped,
+    })
+}
+
+fn write_scan_json(path: &Path, units: &[rimloc_services::TransUnit]) -> Result<(), ApiError> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let file = File::create(path)?;
+    let payload: Vec<ScanUnit> = units
+        .iter()
+        .map(|u| ScanUnit {
+            schema_version: SCHEMA_VERSION,
+            path: u.path.display().to_string(),
+            line: u.line,
+            key: u.key.clone(),
+            value: u.source.clone(),
+        })
+        .collect();
+    serde_json::to_writer_pretty(file, &payload).map_err(ApiError::from)
+}
+
+fn write_scan_csv(path: &Path, units: &[rimloc_services::TransUnit], lang: Option<&str>) -> Result<(), ApiError> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let file = File::create(path)?;
+    export_csv::write_csv(file, units, lang).map_err(ApiError::from)
+}
+
+fn make_absolute(base: &Path, candidate: &Path) -> PathBuf {
+    if candidate.is_absolute() {
+        candidate.to_path_buf()
+    } else {
+        base.join(candidate)
+    }
+}
+
+fn classify_unit(path: &Path) -> ScanKind {
+    let path_str = path.to_string_lossy();
+    if path_str.contains("/Keyed/") || path_str.contains("\\Keyed\\") {
+        ScanKind::Keyed
+    } else if path_str.contains("/DefInjected/") || path_str.contains("\\DefInjected\\") {
+        ScanKind::DefInjected
+    } else {
+        ScanKind::Other
+    }
+}
 
 #[tauri::command]
-fn api_morph(root: String, provider: Option<String>, lang: Option<String>, lang_dir: Option<String>, filter_key_regex: Option<String>, limit: Option<usize>, _game_version: Option<String>, timeout_ms: Option<u64>, cache_size: Option<usize>, pymorphy_url: Option<String>) -> Result<MorphResultOut, ApiError> {
-  let target_lang_dir = if let Some(d) = lang_dir { d } else if let Some(code) = lang { rimloc_import_po::rimworld_lang_dir(&code) } else { "Russian".to_string() };
-  let prov = match provider.as_deref() {
-    Some("morpher") => rimloc_services::MorphProvider::MorpherApi,
-    Some("pymorphy") => rimloc_services::MorphProvider::Pymorphy2,
-    _ => rimloc_services::MorphProvider::Dummy,
-  };
-  let opts = rimloc_services::MorphOptions {
-    provider: prov,
-    target_lang_dir,
-    filter_key_regex,
-    limit,
-    timeout_ms: timeout_ms.unwrap_or(3000),
-    cache_size: cache_size.unwrap_or(1024),
-    pymorphy_url,
-  };
-  let res = rimloc_services::morph_generate(PathBuf::from(root).as_path(), &opts)?;
-  Ok(MorphResultOut { processed: res.processed, lang: res.lang, warn_no_morpher: res.warn_no_morpher, warn_no_pymorphy: res.warn_no_pymorphy })
+fn learn_defs(window: Window, request: LearnDefsRequest) -> Result<LearnDefsResponse, ApiError> {
+    emit_log(&window, "info", format!("learn: root={}", request.root));
+    emit_progress(&window, "learn", "start", Some("Preparing…".to_string()), Some(0));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let out_dir_raw = request
+        .out_dir
+        .as_ref()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("_learn"));
+    let out_dir = make_absolute(&scan_root, &out_dir_raw);
+    std::fs::create_dir_all(&out_dir)?;
+
+    emit_progress(&window, "learn", "discover", Some("Discovering context…".to_string()), Some(10));
+    let auto = autodiscover_defs_context(&scan_root).wrap_err("discover defs context")?;
+    let opts = learn::LearnOptions {
+        mod_root: scan_root.clone(),
+        defs_root: None,
+        dict_files: auto.dict_sources.clone(),
+        model_path: None,
+        ml_url: None,
+        lang_dir: request
+            .lang_dir
+            .clone()
+            .unwrap_or_else(|| "English".to_string()),
+        threshold: request.threshold.unwrap_or(0.8),
+        no_ml: true,
+        retrain: false,
+        retrain_dict: None,
+        min_len: 1,
+        blacklist: Vec::new(),
+        out_dir: out_dir.clone(),
+        learned_out: None,
+    };
+
+    emit_log(&window, "debug", format!("learn options: out_dir={}", out_dir.display()));
+    emit_progress(&window, "learn", "learn", Some("Learning templates…".to_string()), Some(60));
+    let result = learn::learn_defs(&opts).wrap_err("learn defs")?;
+    let learned_path = out_dir.join("learned_defs.json");
+    emit_progress(&window, "learn", "done", Some("Learn finished".to_string()), Some(100));
+
+    Ok(LearnDefsResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        out_dir: out_dir.display().to_string(),
+        missing_path: result.missing_path.display().to_string(),
+        suggested_path: result.suggested_path.display().to_string(),
+        learned_path: learned_path.display().to_string(),
+        candidates: result.candidates.len(),
+        accepted: result.accepted,
+    })
+}
+
+#[tauri::command]
+fn export_po(window: Window, request: ExportPoRequest) -> Result<ExportPoResponse, ApiError> {
+    emit_log(&window, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
+    emit_progress(&window, "export", "start", Some("Exporting…".to_string()), Some(0));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let out_po_path = make_absolute(&scan_root, Path::new(&request.out_po));
+    if let Some(parent) = out_po_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    let tm_paths: Option<Vec<PathBuf>> = request.tm_roots.as_ref().map(|roots| {
+        roots
+            .iter()
+            .map(|r| make_absolute(&scan_root, Path::new(r)))
+            .collect()
+    });
+
+    emit_progress(&window, "export", "collect", Some("Collecting units…".to_string()), Some(20));
+    let stats = export_po_with_tm(
+        &scan_root,
+        &out_po_path,
+        request.lang.as_deref(),
+        request.source_lang.as_deref(),
+        request.source_lang_dir.as_deref(),
+        tm_paths.as_ref().map(|v| v.as_slice()),
+    )
+    .wrap_err("export po")?;
+
+    let tm_coverage_pct = if stats.total == 0 {
+        0
+    } else {
+        ((stats.tm_filled as f64 / stats.total as f64) * 100.0).round() as u32
+    };
+
+    let source_dir = request
+        .source_lang_dir
+        .clone()
+        .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .unwrap_or_else(|| "English".to_string());
+    let warning = def_injected_warning(&scan_root, &source_dir);
+    if let Some(ref w) = warning {
+        emit_log(&window, "warn", w.clone());
+    }
+    emit_progress(&window, "export", "done", Some("Export finished".to_string()), Some(100));
+
+    Ok(ExportPoResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        out_po: out_po_path.display().to_string(),
+        total: stats.total,
+        tm_filled: stats.tm_filled,
+        tm_coverage_pct,
+        warning,
+    })
+}
+
+fn def_injected_warning(scan_root: &Path, source_dir: &str) -> Option<String> {
+    let definj = scan_root
+        .join("Languages")
+        .join(source_dir)
+        .join("DefInjected");
+    if has_any_xml(&definj) {
+        None
+    } else {
+        Some(format!(
+            "Languages/{source_dir}/DefInjected NOT found → export will include only Keyed. You can copy _learn/suggested.xml into DefInjected."
+        ))
+    }
+}
+
+fn has_any_xml(dir: &Path) -> bool {
+    if !dir.exists() {
+        return false;
+    }
+    for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() {
+            if entry
+                .path()
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|ext| ext.eq_ignore_ascii_case("xml"))
+                .unwrap_or(false)
+            {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn resolve_game_version_root(
+    base: &Path,
+    requested: Option<&str>,
+) -> Result<(PathBuf, Option<String>), ApiError> {
+    if is_version_directory(base) {
+        let name = base
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_string());
+        return Ok((base.to_path_buf(), name));
+    }
+
+    let languages = list_version_directories(base)?;
+
+    if let Some(req) = requested {
+        if let Some(path) = find_version_directory(base, req) {
+            let name = path
+                .file_name()
+                .and_then(|s| s.to_str())
+                .map(|s| s.to_string());
+            return Ok((path, name));
+        }
+        return Err(ApiError {
+            message: format!(
+                "Requested version '{req}' not found under {}",
+                base.display()
+            ),
+        });
+    }
+
+    if languages.is_empty() {
+        return Ok((base.to_path_buf(), None));
+    }
+
+    let mut entries = languages;
+    entries.sort_by(|a, b| {
+        let len_cmp = a.components.len().cmp(&b.components.len());
+        if len_cmp != std::cmp::Ordering::Equal {
+            return len_cmp;
+        }
+        a.components.cmp(&b.components)
+    });
+
+    if let Some(entry) = entries.last() {
+        return Ok((entry.path.clone(), Some(entry.name.clone())));
+    }
+
+    Ok((base.to_path_buf(), None))
+}
+
+#[derive(Debug, Clone)]
+struct VersionEntry {
+    name: String,
+    components: Vec<u32>,
+    path: PathBuf,
+}
+
+fn is_version_directory(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|s| s.to_str())
+        .and_then(parse_version_components)
+        .is_some()
+}
+
+fn list_version_directories(base: &Path) -> Result<Vec<VersionEntry>, ApiError> {
+    let mut entries = Vec::new();
+    let read_dir = match std::fs::read_dir(base) {
+        Ok(iter) => iter,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(entries),
+        Err(err) => return Err(ApiError {
+            message: err.to_string(),
+        }),
+    };
+    for entry in read_dir {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let name_os = entry.file_name();
+        let Some(name) = name_os.to_str() else {
+            continue;
+        };
+        if let Some(components) = parse_version_components(name) {
+            entries.push(VersionEntry {
+                name: name.to_string(),
+                components,
+                path: entry.path(),
+            });
+        }
+    }
+    Ok(entries)
+}
+
+fn parse_version_components(name: &str) -> Option<Vec<u32>> {
+    let trimmed = name.trim_start_matches('v');
+    if trimmed.is_empty() {
+        return None;
+    }
+    let mut parts = Vec::new();
+    for part in trimmed.split('.') {
+        if part.is_empty() {
+            return None;
+        }
+        let value: u32 = part.parse().ok()?;
+        parts.push(value);
+    }
+    if parts.is_empty() { None } else { Some(parts) }
+}
+
+fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
+    let mut candidates = Vec::new();
+    let normalized = requested.trim_start_matches('v');
+    if requested.starts_with('v') {
+        candidates.push(requested.trim().to_string());
+        candidates.push(normalized.to_string());
+    } else {
+        candidates.push(normalized.to_string());
+        candidates.push(format!("v{normalized}"));
+    }
+    for name in candidates {
+        if name.is_empty() {
+            continue;
+        }
+        let candidate = base.join(&name);
+        if candidate.is_dir() {
+            return Some(candidate);
+        }
+    }
+    None
 }
 
 fn main() {
-  tauri::Builder::default()
-    .menu({
-      let about = CustomMenuItem::new("about".to_string(), "About RimLoc GUI");
-      let check = CustomMenuItem::new("checkupdates".to_string(), "Check for Updates");
-      Menu::new().add_item(about).add_item(check)
-    })
-    .on_menu_event(|ev| {
-      match ev.menu_item_id() {
-        "about" => { let _ = tauri::api::dialog::message(Some(&ev.window()), "About", format!("RimLoc GUI v{}\nRust Tauri shell for RimLoc", env!("CARGO_PKG_VERSION"))); }
-        "checkupdates" => {
-          let w = ev.window().clone();
-          std::thread::spawn(move || {
-            let res = api_check_updates(None);
-            match res { 
-              Ok((cur, latest)) => { let _ = w.emit("gui_update_check", serde_json::json!({"current": cur, "latest": latest})); },
-              Err(e) => { let _ = w.emit("gui_update_check", serde_json::json!({"error": e.message})); }
+    let _ = color_eyre::install();
+    tauri::Builder::default()
+        .setup(|app| {
+            let main_window = app.get_window("main");
+            if let Some(window) = main_window {
+                let _ = window.emit("app-info", AppInfo {
+                    version: env!("CARGO_PKG_VERSION").to_string(),
+                });
             }
-          });
-        }
-        _ => {}
-      }
-    })
-    .invoke_handler(tauri::generate_handler![
-      api_scan,
-      api_validate,
-      api_export_po,
-      api_import_po_dry,
-      api_build_mod_dry,
-      api_diff_xml,
-      api_diff_save_reports,
-      api_xml_health,
-      api_lang_update_dry,
-      api_save_text,
-      api_app_version,
-      api_read_log_tail,
-      api_zip_dir,
-      api_check_updates,
-      api_lang_update_download_and_plan,
-      api_import_po_apply,
-      api_build_mod_apply,
-      api_lang_update_apply,
-      api_annotate_dry,
-      api_annotate_apply,
-      api_schema_dump,
-      api_morph,
-    ])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![get_app_info, scan_mod, learn_defs, export_po])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
