@@ -376,6 +376,10 @@ enum Commands {
         /// Additional Defs dictionaries (JSON files DefType -> [field paths])
         #[arg(long, value_delimiter = ',')]
         defs_dict: Vec<PathBuf>,
+        /// Optional type schema (JSON) to augment Defs fields
+        #[arg(long)]
+        defs_type_schema: Option<PathBuf>,
+        
         /// Output format: "csv" (default), or "json".
         #[arg(long, default_value = "csv", value_parser = ["csv", "json"])]
         format: String,
@@ -412,6 +416,9 @@ enum Commands {
         /// Additional Defs dictionaries (JSON files DefType -> [field paths])
         #[arg(long, value_delimiter = ',')]
         defs_dict: Vec<PathBuf>,
+        /// Optional type schema (JSON) to augment Defs fields
+        #[arg(long)]
+        defs_type_schema: Option<PathBuf>,
         /// Output format: "text" (default) or "json".
         #[arg(long, default_value = "text", value_parser = ["text", "json"])]
         format: String,
@@ -887,6 +894,7 @@ impl Runnable for Commands {
                 defs_dir,
                 defs_field,
                 defs_dict,
+                defs_type_schema,
                 format,
                 game_version,
                 include_all_versions,
@@ -902,6 +910,7 @@ impl Runnable for Commands {
                 defs_dir,
                 defs_field,
                 defs_dict,
+                defs_type_schema,
                 format,
                 game_version,
                 include_all_versions,
@@ -917,6 +926,7 @@ impl Runnable for Commands {
                 defs_dir,
                 defs_field,
                 defs_dict,
+                defs_type_schema,
                 format,
                 game_version,
                 include_all_versions,
@@ -927,6 +937,7 @@ impl Runnable for Commands {
                 defs_dir,
                 defs_field,
                 defs_dict,
+                defs_type_schema,
                 format,
                 game_version,
                 include_all_versions,

@@ -9,6 +9,7 @@ pub fn run_validate(
     defs_dir: Option<std::path::PathBuf>,
     defs_field: Vec<String>,
     defs_dict: Vec<std::path::PathBuf>,
+    defs_type_schema: Option<std::path::PathBuf>,
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
@@ -68,6 +69,12 @@ pub fn run_validate(
             scan_root.join(p)
         };
         if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+            dicts.push(d);
+        }
+    }
+    if let Some(schema) = defs_type_schema.as_ref() {
+        let pp = if schema.is_absolute() { schema.clone() } else { scan_root.join(schema) };
+        if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
             dicts.push(d);
         }
     }

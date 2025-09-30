@@ -562,6 +562,30 @@ pub fn merge_defs_dicts(dicts: &[DefsDict]) -> DefsDict {
     DefsDict(flat)
 }
 
+/// Load a simple type schema and convert it to a Defs dictionary.
+/// Supported JSON shapes:
+/// - { "ThingDef": ["label", "description", ...], ... }
+/// - { "ThingDef": { "fields": ["label", "description", ...] }, ... }
+pub fn load_type_schema_as_dict(path: &Path) -> CoreResult<DefsDict> {
+    let s = fs::read_to_string(path)?;
+    #[derive(serde::Deserialize)]
+    #[serde(untagged)]
+    enum Entry {
+        Flat(Vec<String>),
+        Obj { fields: Vec<String> },
+    }
+    let raw: std::collections::HashMap<String, Entry> = serde_json::from_str(&s)?;
+    let mut out: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+    for (k, v) in raw {
+        let fields = match v {
+            Entry::Flat(v) => v,
+            Entry::Obj { fields } => fields,
+        };
+        out.entry(k).or_default().extend(fields);
+    }
+    Ok(DefsDict(out))
+}
+
 /// Navigate a roxmltree node by a dot path like `ingestible.ingestCommandString` or `ingredients.li.label`.
 fn collect_values_by_path<'a>(
     node: roxmltree::Node<'a, 'a>,

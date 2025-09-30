@@ -10,6 +10,15 @@ pub struct PatchTextCandidate {
     pub tag_path: String,
     pub value: String,
     pub source_file: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inferred: Option<InferredDefInjected>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct InferredDefInjected {
+    pub def_type: String,
+    pub def_name: String,
+    pub field_path: String,
 }
 
 fn collect_texts(node: roxmltree::Node, path_prefix: &str, out: &mut Vec<(String, String)>) {
@@ -85,12 +94,16 @@ pub fn scan_patches_texts(root: &Path, min_len: usize) -> Result<Vec<PatchTextCa
                         if val.len() < min_len {
                             continue;
                         }
+                        let inferred = xpath
+                            .as_deref()
+                            .and_then(|xp| infer_definj_from_xpath(xp, &tag_path));
                         out.push(PatchTextCandidate {
                             operation_class: class.clone(),
                             xpath: xpath.clone(),
                             tag_path,
                             value: val,
                             source_file: p.to_path_buf(),
+                            inferred,
                         });
                     }
                 }
@@ -100,3 +113,73 @@ pub fn scan_patches_texts(root: &Path, min_len: usize) -> Result<Vec<PatchTextCa
     Ok(out)
 }
 
+fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInjected> {
+    // Heuristic: looking for .../Defs/<DefType>[defName='X' or @defName='X' or @Name='X']/rest/of/path
+    // Then map rest/of/path + tag_path into dot path; normalize li's
+    let xp = xpath.replace("\\", "/");
+    // find segment after /Defs/
+    let idx = xp.find("/Defs/")?;
+    let after_defs = &xp[idx + "/Defs/".len()..];
+    // take the first segment (DefType[...] or DefType)
+    let seg_end = after_defs.find('/').unwrap_or(after_defs.len());
+    let first = &after_defs[..seg_end];
+    // capture def_type and condition
+    // patterns like ThingDef[defName='Foo'] or ThingDef[@Name='Bar']
+    let re = regex::Regex::new(r"^(?P<ty>[^\[]+)(?P<cond>\[[^\]]+\])?").ok()?;
+    let caps = re.captures(first)?;
+    let def_type = caps.name("ty")?.as_str().to_string();
+    let cond = caps.name("cond").map(|m| m.as_str().to_string()).unwrap_or_default();
+    if def_type.trim().is_empty() {
+        return None;
+    }
+    // try extract def_name from condition
+    let name_re = regex::Regex::new(r"(?i)(?:@?defName|@?Name)\s*=\s*'([^']+)'").ok()?;
+    let def_name = name_re
+        .captures(&cond)
+        .and_then(|c| c.get(1))
+        .map(|m| m.as_str().to_string())?;
+    // the remainder path after the first segment
+    let rest = if seg_end < after_defs.len() {
+        &after_defs[seg_end + 1..]
+    } else {
+        ""
+    };
+    // Build field path: rest segments + tag_path segments
+    let mut segs: Vec<String> = Vec::new();
+    for part in rest.split('/') {
+        if part.is_empty() {
+            continue;
+        }
+        // normalize predicates [..] to li
+        let name = part.split('[').next().unwrap_or("");
+        if name.eq_ignore_ascii_case("li") {
+            segs.push("li".to_string());
+        } else if name.is_empty() {
+            continue;
+        } else {
+            segs.push(name.to_string());
+        }
+    }
+    for part in tag_path.split('.') {
+        if part.is_empty() {
+            continue;
+        }
+        let name = part.split('[').next().unwrap_or("");
+        if name.eq_ignore_ascii_case("li") {
+            segs.push("li".to_string());
+        } else if name.is_empty() {
+            continue;
+        } else {
+            segs.push(name.to_string());
+        }
+    }
+    if segs.is_empty() {
+        return None;
+    }
+    let field_path = segs.join(".");
+    Some(InferredDefInjected {
+        def_type,
+        def_name,
+        field_path,
+    })
+}
