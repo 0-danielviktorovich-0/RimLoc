@@ -16,6 +16,9 @@ use std::path::Path;
 pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
     use walkdir::WalkDir;
     let mut out: Vec<TransUnit> = Vec::new();
+    fn keyed_nested_enabled() -> bool {
+        matches!(std::env::var("RIMLOC_KEYED_NESTED"), Ok(v) if v.trim() == "1")
+    }
 
     fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
         if starts.is_empty() {
@@ -27,6 +30,8 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
             _ => Some(1),
         }
     }
+
+    // (no cross-file logic in keyed scanner)
 
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
@@ -87,6 +92,21 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                 }
                 Ok(Event::End(_)) => {
                     if let Some(frame) = stack.pop() {
+                        // If closing a <li> directly under a top-level key, fold into the parent buffer
+                        if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
+                            if let Some(parent) = stack.last_mut() {
+                                if !parent.buffer.is_empty() {
+                                    parent.buffer.push('\n');
+                                }
+                                if !frame.buffer.is_empty() {
+                                    parent.buffer.push_str(&frame.buffer);
+                                    parent.has_text = true;
+                                }
+                            }
+                            continue;
+                        }
+
+                        // Closing a top-level <Key> under <LanguageData>
                         if stack.len() == 1 && !frame.name.is_empty() {
                             let source = if frame.has_text {
                                 frame.buffer
@@ -96,6 +116,29 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                             out.push(TransUnit {
                                 key: frame.name,
                                 source: Some(source),
+                                path: p.to_path_buf(),
+                                line: frame.line,
+                            });
+                        } else if keyed_nested_enabled()
+                            && stack
+                                .last()
+                                .map(|f| f.name == "LanguageData")
+                                .unwrap_or(false)
+                            && !frame.name.is_empty()
+                            && frame.name != "LineBreak"
+                            && frame.has_text
+                        {
+                            // Optional nested keyed: dotted path under LanguageData
+                            let mut parts: Vec<&str> = stack
+                                .iter()
+                                .skip(1)
+                                .map(|f| f.name.as_str())
+                                .collect();
+                            parts.push(&frame.name);
+                            let key = parts.join(".");
+                            out.push(TransUnit {
+                                key,
+                                source: Some(frame.buffer),
                                 path: p.to_path_buf(),
                                 line: frame.line,
                             });
@@ -120,12 +163,44 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                             path: p.to_path_buf(),
                             line,
                         });
-                    } else if stack.len() == 2 {
+                    } else if stack.len() >= 2 {
+                        // Support <LineBreak/> inside either a top-level key or nested <li>
                         if let Some(frame) = stack.last_mut() {
-                            if name == "LineBreak" {
+                            if name.eq_ignore_ascii_case("LineBreak") {
                                 frame.has_text = true;
                                 frame.buffer.push('\n');
                             }
+                        }
+                        // Self-closing <li/> directly under a top-level key contributes an empty line
+                        if name.eq_ignore_ascii_case("li") && stack.len() == 2 {
+                            if let Some(parent) = stack.last_mut() {
+                                if !parent.buffer.is_empty() {
+                                    parent.buffer.push('\n');
+                                }
+                                parent.has_text = true;
+                            }
+                        }
+                        // Optional nested empty key: produce dotted key
+                        if keyed_nested_enabled()
+                            && stack
+                                .last()
+                                .map(|f| f.name == "LanguageData")
+                                .unwrap_or(false)
+                            && name != "LineBreak"
+                        {
+                            let mut parts: Vec<&str> = stack
+                                .iter()
+                                .skip(1)
+                                .map(|f| f.name.as_str())
+                                .collect();
+                            parts.push(&name);
+                            let key = parts.join(".");
+                            out.push(TransUnit {
+                                key,
+                                source: Some(String::new()),
+                                path: p.to_path_buf(),
+                                line,
+                            });
                         }
                     }
                 }
@@ -137,23 +212,19 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         })
                         .trim()
                         .to_string();
-                    if stack.len() == 2 {
-                        if let Some(frame) = stack.last_mut() {
-                            if !text.is_empty() {
-                                frame.buffer.push_str(&text);
-                                frame.has_text = true;
-                            }
+                    if let Some(frame) = stack.last_mut() {
+                        if !text.is_empty() {
+                            frame.buffer.push_str(&text);
+                            frame.has_text = true;
                         }
                     }
                 }
                 Ok(Event::CData(t)) => {
                     let text = String::from_utf8_lossy(t.as_ref()).trim().to_string();
-                    if stack.len() == 2 {
-                        if let Some(frame) = stack.last_mut() {
-                            if !text.is_empty() {
-                                frame.buffer.push_str(&text);
-                                frame.has_text = true;
-                            }
+                    if let Some(frame) = stack.last_mut() {
+                        if !text.is_empty() {
+                            frame.buffer.push_str(&text);
+                            frame.has_text = true;
                         }
                     }
                 }
@@ -197,6 +268,61 @@ pub fn scan_defs_xml_under_with_fields(
             Ok(idx) => Some(idx + 1),
             Err(idx) if idx > 0 => Some(idx),
             _ => Some(1),
+        }
+    }
+
+    // Cross-file index for shallow field inheritance
+    use std::collections::HashMap;
+    let mut defs_index: HashMap<String, HashMap<String, std::path::PathBuf>> = HashMap::new();
+    let mut name_index: HashMap<String, HashMap<String, std::path::PathBuf>> = HashMap::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        let p_str = p.to_string_lossy();
+        let in_scope = if let Some(base) = defs_root {
+            p.starts_with(base)
+        } else {
+            p_str.contains("/Defs/") || p_str.contains("\\Defs\\")
+        };
+        if !in_scope {
+            continue;
+        }
+        let Ok(content) = fs::read_to_string(p) else {
+            continue;
+        };
+        let Ok(doc) = roxmltree::Document::parse(&content) else {
+            continue;
+        };
+        for node in doc.root_element().children().filter(|n| n.is_element()) {
+            let def_type = node.tag_name().name().to_string();
+            if let Some(nm) = node.attribute("Name").map(|s| s.to_string()) {
+                name_index
+                    .entry(def_type.clone())
+                    .or_default()
+                    .entry(nm)
+                    .or_insert_with(|| p.to_path_buf());
+            }
+            if let Some(def_name) = node
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                .and_then(|n| n.text())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                defs_index
+                    .entry(def_type)
+                    .or_default()
+                    .entry(def_name.to_string())
+                    .or_insert_with(|| p.to_path_buf());
+            }
         }
     }
 
@@ -270,13 +396,73 @@ pub fn scan_defs_xml_under_with_fields(
 
             // For each known field present as an immediate child element, emit a unit
             for field in &all_fields {
+                let mut found_val: Option<String> = None;
+                let mut line: Option<usize> = None;
                 if let Some(fnode) = node
                     .children()
                     .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(field))
                 {
-                    let val = fnode.text().unwrap_or("").trim().to_string();
-                    // roxmltree doesn't expose line number directly; approximate using start byte
-                    let line = line_for_offset(fnode.range().start, &line_starts);
+                    found_val = fnode.text().map(|t| t.trim().to_string());
+                    line = line_for_offset(fnode.range().start, &line_starts);
+                }
+                if found_val.is_none() && inherit_enabled() {
+                    // try same-file ParentName chain by walking ancestors with matching def type
+                    let root_el_local = doc.root_element();
+                    // climb within same document
+                    let mut current = node;
+                    let def_tag = current.tag_name().name();
+                    let mut guard = 0;
+                    while found_val.is_none() {
+                        guard += 1;
+                        if guard > 16 {
+                            break;
+                        }
+                        let Some(parent_name) = current.attribute("ParentName") else {
+                            break;
+                        };
+                        let mut next_parent = root_el_local.children().find(|c| {
+                            c.is_element()
+                                && c.tag_name().name().eq_ignore_ascii_case(def_tag)
+                                && c.attribute("Name").is_some_and(|n| n == parent_name)
+                        });
+                        if next_parent.is_none() {
+                            next_parent = root_el_local.children().find(|c| {
+                                c.is_element()
+                                    && c.tag_name().name().eq_ignore_ascii_case(def_tag)
+                                    && c.children()
+                                        .find(|n| n.is_element() && n.tag_name().name() == "defName")
+                                        .and_then(|n| n.text())
+                                        .map(str::trim)
+                                        .is_some_and(|n| n == parent_name)
+                            });
+                        }
+                        if let Some(parent) = next_parent {
+                            if let Some(fnode) = parent.children().find(|c| {
+                                c.is_element() && c.tag_name().name().eq_ignore_ascii_case(field)
+                            }) {
+                                if let Some(val) = fnode.text().map(str::trim) {
+                                    if !val.is_empty() {
+                                        found_val = Some(val.to_string());
+                                        line = line_for_offset(node.range().start, &line_starts);
+                                        break;
+                                    }
+                                }
+                            }
+                            current = parent;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                if found_val.is_none() && inherit_enabled() {
+                    if let Some(parent_name) = node.attribute("ParentName") {
+                        if let Some(val) = find_field_in_parents_across_files_simple(&defs_index, &name_index, node.tag_name().name(), parent_name, field) {
+                            found_val = Some(val);
+                            line = line_for_offset(node.range().start, &line_starts);
+                        }
+                    }
+                }
+                if let Some(val) = found_val {
                     out.push(TransUnit {
                         key: format!("{}.{}", def_name, field),
                         source: Some(val),
@@ -375,7 +561,11 @@ fn collect_values_by_path<'a>(
         }
         return;
     }
-    let head = path[0];
+    let mut head = path[0];
+    // Allow markers like li{h} to denote handle-preferred list segments; strip markers here
+    if let Some(pos) = head.find('{') {
+        head = &head[..pos];
+    }
     let tail = &path[1..];
     if head.eq_ignore_ascii_case("li") {
         for child in node
@@ -392,6 +582,68 @@ fn collect_values_by_path<'a>(
             collect_values_by_path(child, tail, out);
         }
     }
+}
+
+fn inherit_enabled() -> bool {
+    match std::env::var("RIMLOC_INHERIT") {
+        Ok(val) if val.trim() == "0" => false,
+        _ => true,
+    }
+}
+
+// Helper for shallow-field inheritance across files by ParentName.
+fn find_field_in_parents_across_files_simple(
+    index_defname: &std::collections::HashMap<
+        String,
+        std::collections::HashMap<String, std::path::PathBuf>,
+    >,
+    index_name: &std::collections::HashMap<
+        String,
+        std::collections::HashMap<String, std::path::PathBuf>,
+    >,
+    def_type: &str,
+    start_parent_name: &str,
+    field: &str,
+) -> Option<String> {
+    let mut current = Some(start_parent_name.to_string());
+    let mut guard = 0;
+    while let Some(name) = current {
+        guard += 1;
+        if guard > 32 {
+            break;
+        }
+        let path = index_name
+            .get(def_type)
+            .and_then(|m| m.get(&name))
+            .cloned()
+            .or_else(|| index_defname.get(def_type).and_then(|m| m.get(&name)).cloned())?;
+        let content = std::fs::read_to_string(path).ok()?;
+        let doc = roxmltree::Document::parse(&content).ok()?;
+        let root_el = doc.root_element();
+        let def_node = root_el.children().find(|c| {
+            c.is_element()
+                && c.tag_name().name().eq_ignore_ascii_case(def_type)
+                && (c.attribute("Name").is_some_and(|n| n == name)
+                    || c.children()
+                        .find(|n| n.is_element() && n.tag_name().name() == "defName")
+                        .and_then(|n| n.text())
+                        .map(str::trim)
+                        .is_some_and(|t| t == name))
+        });
+        let Some(def_node) = def_node else { break };
+        if let Some(fnode) = def_node
+            .children()
+            .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(field))
+        {
+            if let Some(val) = fnode.text().map(str::trim) {
+                if !val.is_empty() {
+                    return Some(val.to_string());
+                }
+            }
+        }
+        current = def_node.attribute("ParentName").map(|s| s.to_string());
+    }
+    None
 }
 
 /// Scan Defs using a dictionary of field paths per DefType and optional extra shallow fields.
@@ -425,6 +677,135 @@ pub fn scan_defs_with_dict_meta(
 ) -> CoreResult<Vec<DefsMetaUnit>> {
     use walkdir::WalkDir;
     let mut out: Vec<DefsMetaUnit> = Vec::new();
+
+    // Build cross-file indexes:
+    // - defType -> defName -> Path
+    // - defType -> Name attribute -> Path
+    use std::collections::HashMap;
+    let mut defs_index: HashMap<String, HashMap<String, std::path::PathBuf>> = HashMap::new();
+    let mut name_index: HashMap<String, HashMap<String, std::path::PathBuf>> = HashMap::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        let in_scope = if let Some(base) = defs_root {
+            p.starts_with(base)
+        } else {
+            let s = p.to_string_lossy();
+            s.contains("/Defs/") || s.contains("\\Defs\\")
+        };
+        if !in_scope {
+            continue;
+        }
+        let Ok(content) = fs::read_to_string(p) else {
+            continue;
+        };
+        let Ok(doc) = roxmltree::Document::parse(&content) else {
+            continue;
+        };
+        for node in doc.root_element().children().filter(|n| n.is_element()) {
+            let def_type = node.tag_name().name().to_string();
+            if let Some(nm) = node.attribute("Name").map(|s| s.to_string()) {
+                name_index
+                    .entry(def_type.clone())
+                    .or_default()
+                    .entry(nm)
+                    .or_insert_with(|| p.to_path_buf());
+            }
+            if let Some(def_name) = node
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                .and_then(|n| n.text())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                defs_index
+                    .entry(def_type)
+                    .or_default()
+                    .entry(def_name.to_string())
+                    .or_insert_with(|| p.to_path_buf());
+            }
+        }
+    }
+
+    // Helper: cross-file parent chain for a dot path
+    fn collect_values_in_parents_across_files(
+        index_defname: &std::collections::HashMap<
+            String,
+            std::collections::HashMap<String, std::path::PathBuf>,
+        >,
+        index_name: &std::collections::HashMap<
+            String,
+            std::collections::HashMap<String, std::path::PathBuf>,
+        >,
+        def_type: &str,
+        start_parent_name: &str,
+        segs: &[&str],
+        out_vals: &mut Vec<String>,
+    ) {
+        let mut current = Some(start_parent_name.to_string());
+        let mut guard = 0;
+        while let Some(name) = current {
+            guard += 1;
+            if guard > 32 {
+                break;
+            }
+            // Prefer Name index, then fall back to defName index
+            let path_opt = index_name
+                .get(def_type)
+                .and_then(|m| m.get(&name))
+                .cloned()
+                .or_else(|| {
+                    index_defname
+                        .get(def_type)
+                        .and_then(|m| m.get(&name))
+                        .cloned()
+                });
+            let Some(path) = path_opt else { break };
+            let Ok(content) = std::fs::read_to_string(path) else {
+                break;
+            };
+            let Ok(doc) = roxmltree::Document::parse(&content) else {
+                break;
+            };
+            let root_el = doc.root_element();
+            // Try by Name attribute first, then defName element
+            let mut maybe = root_el.children().find(|c| {
+                c.is_element()
+                    && c.tag_name().name().eq_ignore_ascii_case(def_type)
+                    && c.attribute("Name").is_some_and(|n| n == name)
+            });
+            if maybe.is_none() {
+                maybe = root_el.children().find(|c| {
+                    c.is_element()
+                        && c.tag_name().name().eq_ignore_ascii_case(def_type)
+                        && c.children()
+                            .find(|n| n.is_element() && n.tag_name().name() == "defName")
+                            .and_then(|n| n.text())
+                            .map(str::trim)
+                            .is_some_and(|t| t == name)
+                });
+            }
+            let def_node = match maybe {
+                Some(n) => n,
+                None => break,
+            };
+            let mut vals_local = Vec::new();
+            collect_values_by_path(def_node, segs, &mut vals_local);
+            if !vals_local.is_empty() {
+                out_vals.extend(vals_local.into_iter().map(|s| s.to_string()));
+                break;
+            }
+            current = def_node.attribute("ParentName").map(|s| s.to_string());
+        }
+    }
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() {
@@ -475,8 +856,89 @@ pub fn scan_defs_with_dict_meta(
             if let Some(paths) = dict.get(&def_type) {
                 for path in paths {
                     let segs: Vec<&str> = path.split('.').filter(|s| !s.is_empty()).collect();
+                    // Prepare display path without any {..} markers (e.g., li{h} -> li)
+                    let display_path = segs
+                        .iter()
+                        .map(|s| if let Some(pos) = s.find('{') { &s[..pos] } else { s })
+                        .collect::<Vec<&str>>()
+                        .join(".");
                     let mut vals = Vec::new();
                     collect_values_by_path(def_node, &segs, &mut vals);
+                    if vals.is_empty() && inherit_enabled() {
+                        // In-file ParentName chain; respect Inherit="false"
+                        if !def_node
+                            .attribute("Inherit")
+                            .map(|v| v.eq_ignore_ascii_case("false"))
+                            .unwrap_or(false)
+                        {
+                            let mut current = def_node;
+                            let mut guard = 0;
+                            while vals.is_empty() {
+                                guard += 1;
+                                if guard > 16 {
+                                    break;
+                                }
+                                let Some(parent_name) = current.attribute("ParentName") else {
+                                    break;
+                                };
+                                if let Some(parent) = root_el.children().find(|c| {
+                                    c.is_element()
+                                        && c.tag_name().name().eq_ignore_ascii_case(&def_type)
+                                        && c.attribute("Name").is_some_and(|n| n == parent_name)
+                                }) {
+                                    collect_values_by_path(parent, &segs, &mut vals);
+                                    current = parent;
+                                } else if let Some(parent) = root_el.children().find(|c| {
+                                    c.is_element()
+                                        && c.tag_name().name().eq_ignore_ascii_case(&def_type)
+                                        && c.children()
+                                            .find(|n| {
+                                                n.is_element() && n.tag_name().name() == "defName"
+                                            })
+                                            .and_then(|n| n.text())
+                                            .map(str::trim)
+                                            .is_some_and(|n| n == parent_name)
+                                }) {
+                                    collect_values_by_path(parent, &segs, &mut vals);
+                                    current = parent;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                        if vals.is_empty() && inherit_enabled() {
+                            if let Some(parent_name) = def_node.attribute("ParentName") {
+                                let mut vals2: Vec<String> = Vec::new();
+                                collect_values_in_parents_across_files(
+                                    &defs_index,
+                                    &name_index,
+                                    &def_type,
+                                    parent_name,
+                                    &segs,
+                                    &mut vals2,
+                                );
+                                for v in vals2 {
+                                    let line = def_node.range().start;
+                                    let line = Some(match line_starts.binary_search(&line) {
+                                        Ok(idx) => idx + 1,
+                                        Err(idx) if idx > 0 => idx,
+                                        _ => 1,
+                                    });
+                                    out.push(DefsMetaUnit {
+                                        unit: TransUnit {
+                                            key: format!("{}.{path}", def_name),
+                                            source: Some(v),
+                                            path: p.to_path_buf(),
+                                            line,
+                                        },
+                                        def_type: def_type.clone(),
+                                        def_name: def_name.clone(),
+                                        field_path: path.clone(),
+                                    });
+                                }
+                            }
+                        }
+                    }
                     for v in vals {
                         // approximate line: start from first segment if present
                         let line = def_node.range().start;
@@ -487,20 +949,21 @@ pub fn scan_defs_with_dict_meta(
                         });
                         out.push(DefsMetaUnit {
                             unit: TransUnit {
-                                key: format!("{}.{path}", def_name),
+                                key: format!("{}.{}", def_name, display_path),
                                 source: Some(v.to_string()),
                                 path: p.to_path_buf(),
                                 line,
                             },
                             def_type: def_type.clone(),
                             def_name: def_name.clone(),
-                            field_path: path.clone(),
+                            field_path: display_path.clone(),
                         });
                     }
                 }
             }
             // Shallow extra fields (immediate children)
             for f in extra_fields {
+                let mut produced = false;
                 if let Some(fnode) = def_node
                     .children()
                     .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(f))
@@ -523,6 +986,111 @@ pub fn scan_defs_with_dict_meta(
                             def_name: def_name.clone(),
                             field_path: f.clone(),
                         });
+                        produced = true;
+                    }
+                }
+                if !produced && inherit_enabled() {
+                    // In-file parents; respect Inherit="false"
+                    if !def_node
+                        .attribute("Inherit")
+                        .map(|v| v.eq_ignore_ascii_case("false"))
+                        .unwrap_or(false)
+                    {
+                        let mut current = def_node;
+                        let mut guard = 0;
+                        while !produced {
+                            guard += 1;
+                            if guard > 16 {
+                                break;
+                            }
+                            let Some(parent_name) = current.attribute("ParentName") else {
+                                break;
+                            };
+                            let next_parent = root_el
+                                .children()
+                                .find(|c| {
+                                    c.is_element()
+                                        && c.tag_name().name().eq_ignore_ascii_case(&def_type)
+                                        && c.attribute("Name").is_some_and(|n| n == parent_name)
+                                })
+                                .or_else(|| {
+                                    root_el.children().find(|c| {
+                                        c.is_element()
+                                            && c.tag_name().name().eq_ignore_ascii_case(&def_type)
+                                            && c.children()
+                                                .find(|n| {
+                                                    n.is_element()
+                                                        && n.tag_name().name() == "defName"
+                                                })
+                                                .and_then(|n| n.text())
+                                                .map(str::trim)
+                                                .is_some_and(|n| n == parent_name)
+                                    })
+                                });
+                            if let Some(parent) = next_parent {
+                                if let Some(n) = parent.children().find(|c| {
+                                    c.is_element() && c.tag_name().name().eq_ignore_ascii_case(f)
+                                }) {
+                                    if let Some(val) = n.text().map(str::trim) {
+                                        let line = def_node.range().start;
+                                        let line = Some(match line_starts.binary_search(&line) {
+                                            Ok(idx) => idx + 1,
+                                            Err(idx) if idx > 0 => idx,
+                                            _ => 1,
+                                        });
+                                        out.push(DefsMetaUnit {
+                                            unit: TransUnit {
+                                                key: format!("{}.{}", def_name, f),
+                                                source: Some(val.to_string()),
+                                                path: p.to_path_buf(),
+                                                line,
+                                            },
+                                            def_type: def_type.clone(),
+                                            def_name: def_name.clone(),
+                                            field_path: f.clone(),
+                                        });
+                                        produced = true;
+                                        break;
+                                    }
+                                }
+                                current = parent;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+                if !produced && inherit_enabled() {
+                    if let Some(parent_name) = def_node.attribute("ParentName") {
+                        let segs: Vec<&str> = std::slice::from_ref(&f.as_str()).to_vec();
+                        let mut vals2: Vec<String> = Vec::new();
+                        collect_values_in_parents_across_files(
+                            &defs_index,
+                            &name_index,
+                            &def_type,
+                            parent_name,
+                            &segs,
+                            &mut vals2,
+                        );
+                        if let Some(val) = vals2.into_iter().find(|v| !v.trim().is_empty()) {
+                            let line = def_node.range().start;
+                            let line = Some(match line_starts.binary_search(&line) {
+                                Ok(idx) => idx + 1,
+                                Err(idx) if idx > 0 => idx,
+                                _ => 1,
+                            });
+                            out.push(DefsMetaUnit {
+                                unit: TransUnit {
+                                    key: format!("{}.{}", def_name, f),
+                                    source: Some(val),
+                                    path: p.to_path_buf(),
+                                    line,
+                                },
+                                def_type: def_type.clone(),
+                                def_name: def_name.clone(),
+                                field_path: f.clone(),
+                            });
+                        }
                     }
                 }
             }

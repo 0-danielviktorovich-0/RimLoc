@@ -11,14 +11,15 @@
     "reportString",
     "gerundLabel",
     "jobString",
-    "comps.li.label",
-    "tools.li.label"
+    "comps.li{h}.label",
+    "tools.li{h}.label"
   ],
   "RecipeDef": [
     "label",
     "description",
     "jobString",
-    "ingredients.li.label"
+    "ingredients.li{h}.label",
+    "ingredients.li.filter.customSummary"
   ],
   "HediffDef": [
     "label",
@@ -27,8 +28,8 @@
   ],
   "TraitDef": [
     "label",
-    "degreeDatas.li.label",
-    "degreeDatas.li.description"
+    "degreeDatas.li{h}.label",
+    "degreeDatas.li{h}.description"
   ],
   "SkillDef": [
     "label",
@@ -38,11 +39,63 @@
     "label",
     "labelPlural"
   ],
+  "SoundDef": [
+    "subSounds.li{h}.name"
+  ],
   "BiomeDef": [
     "label",
     "description"
   ],
+  "JobDef": [
+    "reportString",
+    "gerundLabel"
+  ],
+  "ThoughtDef": [
+    "label",
+    "description"
+  ],
+  "IncidentDef": [
+    "letterLabel",
+    "letterText"
+  ],
   "ResearchProjectDef": [
+    "label",
+    "description"
+  ],
+  "BackstoryDef": [
+    "title",
+    "titleFemale",
+    "titleShort",
+    "titleShortFemale",
+    "baseDesc",
+    "description"
+  ],
+  "TaleDef": [
+    "label",
+    "description"
+  ],
+  "ScenarioDef": [
+    "label",
+    "description",
+    "scenario.name",
+    "scenario.description"
+  ],
+  "DamageDef": [
+    "label",
+    "description",
+    "deathMessage"
+  ],
+  "FactionDef": [
+    "label",
+    "description",
+    "pawnSingular",
+    "leaderTitle"
+  ],
+  "AbilityDef": [
+    "label",
+    "description"
+  ],
+  "ThoughtDef": [
     "label",
     "description"
   ]

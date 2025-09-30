@@ -17,6 +17,8 @@ pub fn run_scan(
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
+    keyed_nested: bool,
+    no_inherit: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(
         event = "scan_args",
@@ -98,6 +100,14 @@ pub fn run_scan(
         .into_iter()
         .map(|(k, v)| (k, v.into_iter().collect()))
         .collect();
+
+    // Gate inheritance via env var for parser crate
+    if no_inherit {
+        std::env::set_var("RIMLOC_INHERIT", "0");
+    }
+    if keyed_nested {
+        std::env::set_var("RIMLOC_KEYED_NESTED", "1");
+    }
 
     let mut units = rimloc_services::scan_units_with_defs_and_dict(
         &scan_root,

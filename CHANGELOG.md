@@ -34,6 +34,14 @@ Template (copy the sections you need):
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
 - [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
+- [parsers-xml] Aggregate <li> list items and <LineBreak/> into a single value for LanguageData keys; improves DefInjected/Keyed lists handling (#PR)
+- [parsers-xml] Resolve Defs inheritance across files via Name/ParentName (fallback to defName), respect Inherit="false"; improves DefInjected candidates discovery (#PR)
+
+### Changed
+- [parsers-xml] Support path markers in dict (`li{h}`) to hint pseudo-handles for list segments; markers are ignored during value traversal and stripped from produced keys (#PR)
+- [services/learn] Generate EN: comments alongside suggested DefInjected entries to help translators (#PR)
+- [parsers-xml/assets] Expand `defs_fields.json` with common fields from Core/popular mods; add handle-hinted list paths (e.g., `ingredients.li{h}.label`, `degreeDatas.li{h}.description`, `SoundDef.subSounds.li{h}.name`) (#PR)
+- [cli/scan] Add `--no-inherit` to disable ParentName inheritance when scanning Defs (for strict modes) (#PR)
 
 ### Docs
 - [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)

@@ -385,6 +385,12 @@ enum Commands {
         /// Include all version subfolders (disable auto-pick of latest).
         #[arg(long, default_value_t = false)]
         include_all_versions: bool,
+        /// Treat nested keyed elements under LanguageData as dotted keys (experimental)
+        #[arg(long, default_value_t = false)]
+        keyed_nested: bool,
+        /// Strict mode for Defs: disable ParentName inheritance when scanning
+        #[arg(long, default_value_t = false)]
+        no_inherit: bool,
     },
 
     /// Validate strings and report issues (help localized via FTL).
@@ -859,6 +865,8 @@ impl Runnable for Commands {
                 format,
                 game_version,
                 include_all_versions,
+                keyed_nested,
+                no_inherit,
             } => commands::scan::run_scan(
                 root,
                 out_csv,
@@ -872,6 +880,8 @@ impl Runnable for Commands {
                 format,
                 game_version,
                 include_all_versions,
+                keyed_nested,
+                no_inherit,
             ),
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 

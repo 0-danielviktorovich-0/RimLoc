@@ -165,9 +165,20 @@ function pickDirectory(targetId) {
         $(targetId).value = selected2;
         $(targetId).dispatchEvent(new Event("change"));
         showToast(selected2);
+        return;
       }
     } catch (e2) {
       showError(e2);
+      // Last-resort browser-only fallback: prompt for path
+      try {
+        const manual = window.prompt("Enter folder path:", current || "");
+        if (manual) {
+          $(targetId).value = manual;
+          $(targetId).dispatchEvent(new Event("change"));
+          showToast(manual);
+          return;
+        }
+      } catch {}
     }
   };
 }
@@ -195,7 +206,16 @@ function pickSave(targetId, options = {}) {
         $(targetId).dispatchEvent(new Event("change"));
       }
     } catch (e) {
-      showError(e);
+      // Fallback to manual prompt when dialog API is not available
+      debugLog("warn", `save dialog failed: ${formatError(e)}`);
+      const current = $(targetId).value.trim();
+      const manual = window.prompt("Enter file path:", current || (options.defaultPath || ""));
+      if (manual) {
+        $(targetId).value = manual;
+        $(targetId).dispatchEvent(new Event("change"));
+      } else {
+        showError(e);
+      }
     }
   };
 }
@@ -323,15 +343,16 @@ async function handleScan(saveMode) {
   }
   const payload = {
     root,
-    gameVersion: $("game-version").value.trim() || null,
+    game_version: $("game-version").value.trim() || null,
     lang: $("target-lang").value.trim() || null,
   };
+  debugLog("debug", `scan payload: ${JSON.stringify(payload)}`);
   if (saveMode === "json") {
     const path = await tauriDialog().save({
       defaultPath: `${root.replace(/\\/g, "/")}/_learn/scan.json`,
     });
     if (!path) return;
-    payload.outJson = path;
+    payload.out_json = path;
     await runAction("Saving JSON…", () => tauriInvoke("scan_mod", payload));
     showToast(`Saved scan JSON to ${path}`);
     return;
@@ -341,7 +362,7 @@ async function handleScan(saveMode) {
       defaultPath: `${root.replace(/\\/g, "/")}/_learn/scan.csv`,
     });
     if (!path) return;
-    payload.outCsv = path;
+    payload.out_csv = path;
     await runAction("Saving CSV…", () => tauriInvoke("scan_mod", payload));
     showToast(`Saved scan CSV to ${path}`);
     return;
@@ -361,10 +382,11 @@ async function handleLearn() {
   const langDir = $("learn-lang-dir").value.trim();
   const payload = {
     root,
-    outDir: outDir || null,
-    langDir: langDir || null,
-    gameVersion: $("game-version").value.trim() || null,
+    out_dir: outDir || null,
+    lang_dir: langDir || null,
+    game_version: $("game-version").value.trim() || null,
   };
+  debugLog("debug", `learn payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", payload));
   renderLearn(result);
   showToast("Learned DefInjected candidates");
@@ -385,23 +407,33 @@ async function handleExport() {
   const tmRoots = parseTmRoots($("tm-roots").value);
   const payload = {
     root,
-    outPo,
+    out_po: outPo,
     lang: $("target-lang").value.trim() || null,
-    sourceLang: $("source-lang").value.trim() || null,
-    tmRoots: tmRoots.length ? tmRoots : null,
-    gameVersion: $("game-version").value.trim() || null,
+    source_lang: $("source-lang").value.trim() || null,
+    // source_lang_dir: optional separate input could be added; omit/null if not supplied
+    tm_roots: tmRoots.length ? tmRoots : null,
+    game_version: $("game-version").value.trim() || null,
   };
+  debugLog("debug", `export payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", payload));
   renderExport(result);
   showToast("PO exported successfully");
   updateStatus("Export finished");
 }
 
-function openPath(path) {
+async function openPath(path) {
   if (!path) return;
-  tauriShell()
-    .open(path)
-    .catch((err) => showError(err));
+  try {
+    await tauriShell().open(path);
+    return;
+  } catch (err) {
+    debugLog("warn", `shell.open not available: ${formatError(err)}`);
+  }
+  try {
+    await tauriInvoke("open_path", { path });
+  } catch (e) {
+    showError(e);
+  }
 }
 
 function initEventHandlers() {
@@ -459,7 +491,8 @@ async function fetchAppVersion() {
     ev
       .listen("log", ({ payload }) => {
         if (!payload) return;
-        debugLog(payload.level || "info", payload.message || String(payload));
+        // Log backend messages to UI only to avoid echo loop
+        debugLog(payload.level || "info", payload.message || String(payload), true);
       })
       .catch(() => {});
 
@@ -468,7 +501,8 @@ async function fetchAppVersion() {
         if (!payload) return;
         const { action, step, message, pct } = payload;
         const msg = `[${action}] ${step}${message ? ": " + message : ""}${pct != null ? ` (${pct}%)` : ""}`;
-        debugLog("debug", msg);
+        // Log to UI but do not forward to backend (already logged there)
+        debugLog("debug", msg, true);
         const text = $("overlay-text");
         if (text && message) text.textContent = message;
         updateProgress(action, pct ?? 0, step, message || "");
@@ -478,17 +512,26 @@ async function fetchAppVersion() {
 }
 
 // --- Debug console and logging ---
-function debugLog(level, message) {
+function debugLog(level, message, noForward = false) {
   const order = { error: 0, warn: 1, info: 2, debug: 3 };
   const allowed = state.logLevel === "debug" ? 3 : 2;
   const lvl = order[String(level).toLowerCase()] ?? 2;
-  if (lvl > allowed) return;
-  const el = $("debug-log");
-  if (!el) return;
-  const ts = new Date().toLocaleTimeString();
-  const line = `[${ts}] ${String(level).toUpperCase()}: ${message}\n`;
-  el.textContent += line;
-  el.scrollTop = el.scrollHeight;
+  // Show in UI if allowed
+  if (lvl <= allowed) {
+    const el = $("debug-log");
+    if (el) {
+      const ts = new Date().toLocaleTimeString();
+      const line = `[${ts}] ${String(level).toUpperCase()}: ${message}\n`;
+      el.textContent += line;
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+  // Always forward to backend (unless suppressed) to keep file logs maximal
+  if (!noForward) {
+    try {
+      tauriInvoke("log_message", { level: String(level), message: String(message) }).catch(() => {});
+    } catch {}
+  }
 }
 
 function initDebugUI() {
@@ -523,7 +566,7 @@ function initDebugUI() {
   });
   $("open-log-folder").addEventListener("click", () => {
     const path = $("log-path").textContent;
-    if (path) tauriShell().open(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
+    if (path) openPath(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
   });
   $("save-console").addEventListener("click", async () => {
     try {
@@ -761,4 +804,14 @@ document.addEventListener("DOMContentLoaded", () => {
   renderExport(null);
   fetchAppVersion();
   debugLog("debug", "UI ready");
+  // Capture and persist unhandled errors
+  window.addEventListener("error", (e) => {
+    const msg = e?.error?.message || e?.message || String(e?.error || e);
+    debugLog("error", `Unhandled error: ${msg}`);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const r = e?.reason;
+    const msg = r?.message || (typeof r === "string" ? r : (r ? JSON.stringify(r) : "unknown"));
+    debugLog("error", `Unhandled rejection: ${msg}`);
+  });
 });

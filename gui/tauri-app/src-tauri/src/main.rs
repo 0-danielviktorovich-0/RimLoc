@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::{Path, PathBuf};
 use tauri::{Manager, State, Window};
+use tauri::Emitter;
 use thiserror::Error;
 use walkdir::WalkDir;
 use std::fs::OpenOptions;
@@ -154,6 +155,13 @@ fn emit_log(window: &Window, state: &State<LogState>, level: &str, message: impl
     append_log(&state.path, level, &msg);
 }
 
+#[tauri::command]
+fn log_message(window: Window, state: State<LogState>, level: String, message: String) -> Result<(), ApiError> {
+    // Accept logs from the frontend and persist alongside backend logs
+    emit_log(&window, &state, &level, message);
+    Ok(())
+}
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct ProgressEvent {
@@ -220,6 +228,10 @@ fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Res
     emit_log(&window, &state, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
     emit_progress(&window, &state, "scan", "start", Some("Scanning…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
+    if !root.exists() {
+        emit_log(&window, &state, "error", format!("scan: path not found: {}", root.display()));
+        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+    }
     if request.include_all_versions {
         let res = run_scan(&root, None, &request);
         if let Ok(ref r) = res {
@@ -338,6 +350,10 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
     emit_log(&window, &state, "info", format!("learn: root={}", request.root));
     emit_progress(&window, &state, "learn", "start", Some("Preparing…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
+    if !root.exists() {
+        emit_log(&window, &state, "error", format!("learn: path not found: {}", root.display()));
+        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+    }
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let out_dir_raw = request
         .out_dir
@@ -394,6 +410,10 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     emit_log(&window, &state, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
     emit_progress(&window, &state, "export", "start", Some("Exporting…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
+    if !root.exists() {
+        emit_log(&window, &state, "error", format!("export_po: path not found: {}", root.display()));
+        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+    }
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let out_po_path = make_absolute(&scan_root, Path::new(&request.out_po));
     if let Some(parent) = out_po_path.parent() {
@@ -626,7 +646,7 @@ fn main() {
                 let _ = writeln!(f, "=== RimLoc GUI start v{} ===", env!("CARGO_PKG_VERSION"));
             }
             app.manage(LogState { path: log_path.clone() });
-            let main_window = app.get_window("main");
+            let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
                 let _ = window.emit("app-info", AppInfo {
                     version: env!("CARGO_PKG_VERSION").to_string(),
@@ -634,8 +654,17 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_app_info, scan_mod, learn_defs, export_po, get_log_info, pick_directory])
-        .invoke_handler(tauri::generate_handler![save_text_file])
+        .invoke_handler(tauri::generate_handler![
+            get_app_info,
+            scan_mod,
+            learn_defs,
+            export_po,
+            get_log_info,
+            pick_directory,
+            save_text_file,
+            log_message,
+            open_path
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -650,14 +679,9 @@ fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
 }
 
 #[tauri::command]
-fn pick_directory(initial: Option<String>) -> Result<Option<String>, ApiError> {
-    let mut builder = tauri::api::dialog::blocking::FileDialogBuilder::new();
-    if let Some(init) = initial {
-        let p = PathBuf::from(init);
-        if p.exists() { builder = builder.set_directory(p); }
-    }
-    let picked = builder.pick_folder().map(|p| p.display().to_string());
-    Ok(picked)
+fn pick_directory(_initial: Option<String>) -> Result<Option<String>, ApiError> {
+    // Tauri v2: use JS dialog plugin. Backend picker removed to avoid extra deps.
+    Err(ApiError { message: "Directory dialog is not available via backend on Tauri v2".into() })
 }
 
 #[tauri::command]
@@ -666,4 +690,22 @@ fn save_text_file(path: String, content: String) -> Result<String, ApiError> {
     if let Some(parent) = p.parent() { std::fs::create_dir_all(parent)?; }
     std::fs::write(&p, content.as_bytes())?;
     Ok(p.display().to_string())
+}
+
+#[tauri::command]
+fn open_path(path: String) -> Result<(), ApiError> {
+    let p = PathBuf::from(path);
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open").arg(&p).spawn()?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open").arg(&p).spawn()?;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd").args(["/C", "start", "", &p.display().to_string()]).spawn()?;
+    }
+    Ok(())
 }

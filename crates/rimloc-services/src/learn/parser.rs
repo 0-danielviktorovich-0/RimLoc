@@ -67,22 +67,20 @@ pub fn scan_candidates(
             // primary dict-based paths
             if let Some(paths) = dict.get(&def_type) {
                 for path in paths {
-                    let segs: Vec<&str> = path.split('.').filter(|s| !s.is_empty()).collect();
-                    let mut vals = Vec::new();
-                    super::ml::collect_values_by_path(def_node, &segs, &mut vals);
-                    for v in vals {
-                        let v = v.trim();
-                        if v.len() < min_len {
-                            continue;
-                        }
-                        if blacklist.iter().any(|b| path.eq_ignore_ascii_case(b)) {
-                            continue;
-                        }
+                    // Parse segments with optional list-handle markers like li{h}
+                    let raw_segs: Vec<&str> = path.split('.').filter(|s| !s.is_empty()).collect();
+                    // Collect (expanded_field_path, value) pairs using indices and optional pseudo-handles
+                    let mut entries: Vec<(String, String)> = Vec::new();
+                    collect_entries_by_path_with_handles(def_node, &raw_segs, &mut entries);
+                    for (field_path_expanded, v) in entries {
+                        let v = v.trim().to_string();
+                        if v.len() < min_len { continue; }
+                        if blacklist.iter().any(|b| field_path_expanded.eq_ignore_ascii_case(b)) { continue; }
                         out.push(Candidate {
                             def_type: def_type.clone(),
                             def_name: def_name.clone(),
-                            field_path: path.clone(),
-                            value: v.to_string(),
+                            field_path: field_path_expanded,
+                            value: v,
                             source_file: p.to_path_buf(),
                             confidence: None,
                         });
@@ -125,6 +123,180 @@ pub fn scan_candidates(
         }
     }
     Ok(out)
+}
+
+// -------------
+// Helpers
+// -------------
+
+fn normalize_handle(mut s: String) -> String {
+    // Trim and replace spaces/tabs/newlines with underscore
+    s = s.trim().to_string();
+    let mut out = String::with_capacity(s.len());
+    let mut last_underscore = false;
+    for ch in s.chars() {
+        let mapped = match ch {
+            ' ' | '\t' | '\n' | '\r' => '_',
+            '.' | '-' => '_',
+            '{' | '}' => continue,
+            _ => ch,
+        };
+        if mapped.is_ascii_alphanumeric() || mapped == '_' {
+            let c = if mapped.is_ascii_uppercase() { mapped } else { mapped };
+            if c == '_' {
+                if !last_underscore {
+                    out.push('_');
+                    last_underscore = true;
+                }
+            } else {
+                out.push(c);
+                last_underscore = false;
+            }
+        }
+    }
+    out.trim_matches('_').to_string()
+}
+
+fn prefer_handle_segment(seg: &str) -> bool {
+    seg.eq_ignore_ascii_case("li{h}") || seg.to_ascii_lowercase().starts_with("li{h")
+}
+
+fn strip_marker(seg: &str) -> &str {
+    if let Some(pos) = seg.find('{') { &seg[..pos] } else { seg }
+}
+
+fn collect_entries_by_path_with_handles(
+    node: roxmltree::Node,
+    segs: &[&str],
+    out: &mut Vec<(String, String)>,
+) {
+    fn walk(
+        node: roxmltree::Node,
+        segs: &[&str],
+        acc: &mut Vec<String>,
+        out: &mut Vec<(String, String)>,
+    ) {
+        if segs.is_empty() {
+            if let Some(t) = node.text() {
+                let val = t.trim();
+                if !val.is_empty() {
+                    let path = acc.join(".");
+                    out.push((path, val.to_string()));
+                }
+            }
+            return;
+        }
+        let raw_head = segs[0];
+        let head = strip_marker(raw_head);
+        let tail = &segs[1..];
+        if head.eq_ignore_ascii_case("li") {
+            // Iterate list items and append index or pseudo-handle token
+            let prefer_handle = prefer_handle_segment(raw_head);
+            let mut index: usize = 0;
+            for child in node
+                .children()
+                .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
+            {
+                let mut token = index.to_string();
+                if prefer_handle {
+                    // Heuristic handle from Class attribute or well-known child fields
+                    let mut handle = child.attribute("Class").map(|s| s.to_string());
+                    if handle.is_none() {
+                        for tag in [
+                            "defName",
+                            "label",
+                            "name",
+                            "compClass",
+                            "thingDef",
+                            "stat",
+                            "skill",
+                        ] {
+                            if let Some(n) = child
+                                .children()
+                                .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(tag))
+                            {
+                                if let Some(txt) = n.text().map(str::trim) {
+                                    if !txt.is_empty() {
+                                        handle = Some(txt.to_string());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if let Some(h) = handle {
+                        let h = if h.contains('.') {
+                            h.split('.').last().unwrap_or("").to_string()
+                        } else {
+                            h
+                        };
+                        let norm = normalize_handle(h);
+                        if !norm.is_empty() {
+                            token = norm;
+                        }
+                    }
+                }
+                acc.push(token);
+                walk(child, tail, acc, out);
+                acc.pop();
+                index += 1;
+            }
+        } else {
+            for child in node
+                .children()
+                .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head))
+            {
+                acc.push(head.to_string());
+                walk(child, tail, acc, out);
+                acc.pop();
+            }
+        }
+    }
+
+    // Start recursion at the first matching segment under current node
+    if segs.is_empty() { return; }
+    let raw_head = segs[0];
+    let head = strip_marker(raw_head);
+    let tail = &segs[1..];
+    if head.eq_ignore_ascii_case("li") {
+        // Promote list traversal at current level
+        let mut acc: Vec<String> = Vec::new();
+        let mut index: usize = 0;
+        let prefer_handle = prefer_handle_segment(raw_head);
+        for child in node
+            .children()
+            .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
+        {
+            let mut token = index.to_string();
+            if prefer_handle {
+                let mut handle = child.attribute("Class").map(|s| s.to_string());
+                if handle.is_none() {
+                    for tag in ["defName", "label", "name", "compClass", "thingDef", "stat", "skill"] {
+                        if let Some(n) = child.children().find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(tag)) {
+                            if let Some(txt) = n.text().map(str::trim) { if !txt.is_empty() { handle = Some(txt.to_string()); break; } }
+                        }
+                    }
+                }
+                if let Some(h) = handle {
+                    let h = if h.contains('.') { h.split('.').last().unwrap_or("").to_string() } else { h };
+                    let norm = normalize_handle(h);
+                    if !norm.is_empty() { token = norm; }
+                }
+            }
+            acc.push(token);
+            walk(child, tail, &mut acc, out);
+            acc.pop();
+            index += 1;
+        }
+    } else {
+        for child in node
+            .children()
+            .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head))
+        {
+            let mut acc: Vec<String> = vec![head.to_string()];
+            walk(child, tail, &mut acc, out);
+        }
+    }
 }
 
 pub fn collect_existing_definj_keys(

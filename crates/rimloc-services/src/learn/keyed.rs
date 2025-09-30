@@ -205,6 +205,9 @@ pub fn write_keyed_suggested_xml(path: &Path, cands: &[KeyedCandidate]) -> Resul
     let mut f = std::fs::File::create(path)?;
     writeln!(f, "<LanguageData>")?;
     for c in cands {
+        // Put original English value as a translator hint
+        let en = super::export::escape_xml_comment(&c.value);
+        writeln!(f, "  <!-- EN: {} -->", en)?;
         writeln!(f, "  <{}></{}>", c.key, c.key)?;
     }
     writeln!(f, "</LanguageData>")?;

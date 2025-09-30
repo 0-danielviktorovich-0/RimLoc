@@ -47,6 +47,8 @@ pub fn write_suggested_xml(path: &Path, cands: &[&Candidate]) -> Result<()> {
     });
     for c in items {
         let key = format!("{}.{}", c.def_name, c.field_path);
+        // EN: comment as translator hint
+        writeln!(f, "  <!-- EN: {} -->", escape_xml_comment(&c.value))?;
         writeln!(f, "  <{key}>{}</{key}>", escape_xml(&c.value))?;
     }
     writeln!(f, "</LanguageData>")?;
@@ -90,6 +92,7 @@ fn write_language_file(path: &Path, cands: &[&Candidate]) -> Result<()> {
     writeln!(f, "<LanguageData>")?;
     for c in items {
         let key = format!("{}.{}", c.def_name, c.field_path);
+        writeln!(f, "  <!-- EN: {} -->", escape_xml_comment(&c.value))?;
         writeln!(f, "  <{key}>{}</{key}>", escape_xml(&c.value))?;
     }
     writeln!(f, "</LanguageData>")?;
@@ -109,4 +112,13 @@ fn escape_xml(text: &str) -> String {
         }
     }
     out
+}
+
+pub(crate) fn escape_xml_comment(text: &str) -> String {
+    // Minimal sanitizer for XML comments: avoid "--" and ensure no closing marker
+    let mut s = text.replace("--", "- -");
+    if s.ends_with('-') {
+        s.push(' ');
+    }
+    s
 }

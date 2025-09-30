@@ -78,7 +78,8 @@ pub(crate) fn collect_values_by_path<'a>(
         }
         return;
     }
-    let head = path[0];
+    let mut head = path[0];
+    if let Some(pos) = head.find('{') { head = &head[..pos]; }
     let tail = &path[1..];
     if head.eq_ignore_ascii_case("li") {
         for child in node
