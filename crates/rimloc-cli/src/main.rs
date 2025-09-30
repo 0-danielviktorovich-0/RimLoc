@@ -318,15 +318,38 @@ const DEFAULT_LOGDIR: &str = "logs";
 pub(crate) const OUTPUT_SCHEMA_VERSION: u32 = rimloc_core::RIMLOC_SCHEMA_VERSION;
 
 fn resolve_log_dir() -> std::path::PathBuf {
-    // Prefer RIMLOC_LOG_DIR (underscore). This matches init_tracing.
-    if let Ok(val) = std::env::var("RIMLOC_LOG_DIR") {
-        let trimmed = val.trim();
+    use std::path::{Component, Path, PathBuf};
+
+    fn is_safe_relative(p: &Path) -> bool {
+        if p.is_absolute() {
+            return false;
+        }
+        // Disallow any path components that could escape or address other volumes
+        for c in p.components() {
+            match c {
+                Component::Normal(_) | Component::CurDir => {}
+                _ => return false,
+            }
+        }
+        true
+    }
+
+    if let Some(val) = std::env::var_os("RIMLOC_LOG_DIR") {
+        let s = val.to_string_lossy();
+        let trimmed = s.trim();
         if !trimmed.is_empty() {
-            return std::path::PathBuf::from(trimmed);
+            let candidate = PathBuf::from(trimmed);
+            if is_safe_relative(&candidate) {
+                // Keep it relative to current working directory
+                return std::env::current_dir()
+                    .unwrap_or_else(|_| PathBuf::from("."))
+                    .join(candidate);
+            }
         }
     }
+
     std::env::current_dir()
-        .unwrap_or_else(|_| std::path::PathBuf::from("."))
+        .unwrap_or_else(|_| PathBuf::from("."))
         .join(DEFAULT_LOGDIR)
 }
 
@@ -1390,8 +1413,8 @@ impl Runnable for Commands {
 fn init_tracing() {
     use std::fs;
 
-    let log_dir: String = std::env::var("RIMLOC_LOG_DIR").unwrap_or_else(|_| "logs".to_string());
-    // гарантируем, что каталог есть
+    let log_dir = resolve_log_dir();
+    // гарантируем, что каталог есть (без паники при ошибке)
     let _ = fs::create_dir_all(&log_dir);
 
     // Лог в файл (daily rotation в logs/rimloc.log) — всегда DEBUG и выше
