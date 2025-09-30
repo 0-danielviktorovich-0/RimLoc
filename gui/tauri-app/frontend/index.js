@@ -383,7 +383,7 @@ async function handleScan(saveMode) {
     });
     if (!path) return;
     payload.out_json = path;
-    await runAction("Saving JSON…", () => tauriInvoke("scan_mod", payload));
+    await runAction("Saving JSON…", () => tauriInvoke("scan_mod", { request: payload }));
     showToast(`Saved scan JSON to ${path}`);
     return;
   }
@@ -393,11 +393,11 @@ async function handleScan(saveMode) {
     });
     if (!path) return;
     payload.out_csv = path;
-    await runAction("Saving CSV…", () => tauriInvoke("scan_mod", payload));
+    await runAction("Saving CSV…", () => tauriInvoke("scan_mod", { request: payload }));
     showToast(`Saved scan CSV to ${path}`);
     return;
   }
-  const result = await runAction("Scanning…", () => tauriInvoke("scan_mod", payload));
+  const result = await runAction("Scanning…", () => tauriInvoke("scan_mod", { request: payload }));
   try { console.log('Scan result', result); } catch {}
   debugLog('info', `scan done: total=${result.total}`);
   renderScan(result);
@@ -421,7 +421,7 @@ async function handleLearn() {
     game_version: val("game-version") || null,
   };
   debugLog("debug", `learn payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", payload));
+  const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", { request: payload }));
   try { console.log('Learn result', result); } catch {}
   debugLog('info', `learn done: accepted=${result.accepted}/${result.candidates}`);
   renderLearn(result);
@@ -453,7 +453,7 @@ async function handleExport() {
     game_version: val("game-version") || null,
   };
   debugLog("debug", `export payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", payload));
+  const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", { request: payload }));
   try { console.log('Export result', result); } catch {}
   debugLog('info', `export done: total=${result.total}`);
   renderExport(result);
@@ -475,7 +475,7 @@ async function handleValidate() {
     extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
   };
   debugLog("debug", `validate payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Validating…", () => tauriInvoke("validate_mod", payload));
+  const result = await runAction("Validating…", () => tauriInvoke("validate_mod", { request: payload }));
   try { console.log('Validate result', result); } catch {}
   debugLog('info', `validate done: total=${result.total}`);
   renderValidate(result);
@@ -505,7 +505,7 @@ async function handleHealth() {
     game_version: val("game-version") || null,
     lang_dir: val("health-lang-dir") || null,
   };
-  const result = await runAction("XML Health…", () => tauriInvoke("xml_health", payload));
+  const result = await runAction("XML Health…", () => tauriInvoke("xml_health", { request: payload }));
   try { console.log('Health result', result); } catch {}
   debugLog('info', `health done: checked=${result.checked} issues=${result.issues?.length||0}`);
   renderHealth(result);
@@ -544,7 +544,7 @@ async function handleImport() {
     report: true,
   };
   debugLog("debug", `import payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Importing PO…", () => tauriInvoke("import_po", payload));
+  const result = await runAction("Importing PO…", () => tauriInvoke("import_po", { request: payload }));
   try { console.log('Import result', result); } catch {}
   debugLog('info', `import done: created=${result.created} updated=${result.updated}`);
   const box = $("import-result");
@@ -564,7 +564,7 @@ async function handleBuild() {
   if (!po_path || !out_mod) return showToast("Select PO and output folder", true);
   const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe };
   debugLog("debug", `build payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Building mod…", () => tauriInvoke("build_mod", payload));
+  const result = await runAction("Building mod…", () => tauriInvoke("build_mod", { request: payload }));
   try { console.log('Build result', result); } catch {}
   debugLog('info', `build done: files=${result.files}`);
   const box = $("build-result");
@@ -585,7 +585,7 @@ async function handleDiff() {
     defs_root: val("diff-defs-root") || null,
     baseline_po: val("diff-po") || null,
   };
-  const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", payload));
+  const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", { request: payload }));
   try { console.log('Diff result', res); } catch {}
   debugLog('info', `diff done: only_in_mod=${res.only_in_mod?.length||0} only_in_translation=${res.only_in_translation?.length||0} changed=${res.changed?.length||0}`);
   const box = $("diff-result");
@@ -619,7 +619,7 @@ async function handleLangUpdate() {
     dry_run: isChecked("lang-update-dry"),
     backup: isChecked("lang-update-backup"),
   };
-  const res = await runAction("Lang update…", () => tauriInvoke("lang_update_cmd", payload));
+  const res = await runAction("Lang update…", () => tauriInvoke("lang_update_cmd", { request: payload }));
   try { console.log('Lang update result', res); } catch {}
   debugLog('info', `lang_update done: files=${res.files} bytes=${res.bytes}`);
   $("lang-update-result").textContent = `Files: ${res.files}, Bytes: ${res.bytes}, Out: ${res.outDir || res.out_dir}`;
@@ -639,7 +639,7 @@ async function handleAnnotate(dry) {
     dry_run: !!dry,
     backup: isChecked("annotate-backup"),
   };
-  const res = await runAction(dry ? "Annotate preview…" : "Annotate apply…", () => tauriInvoke("annotate_cmd", payload));
+  const res = await runAction(dry ? "Annotate preview…" : "Annotate apply…", () => tauriInvoke("annotate_cmd", { request: payload }));
   try { console.log('Annotate result', res); } catch {}
   debugLog('info', `annotate done: processed=${res.processed} annotated=${res.annotated}`);
   $("annotate-result").textContent = `Processed: ${res.processed}, Annotated: ${res.annotated}`;
@@ -656,7 +656,7 @@ async function handleInit() {
     overwrite: isChecked("init-overwrite"),
     dry_run: isChecked("init-dry"),
   };
-  const res = await runAction("Init language…", () => tauriInvoke("init_lang_cmd", payload));
+  const res = await runAction("Init language…", () => tauriInvoke("init_lang_cmd", { request: payload }));
   try { console.log('Init result', res); } catch {}
   $("init-result").textContent = `Files: ${res.files}, Language: ${res.outLanguage || res.out_language}`;
 }
@@ -708,7 +708,7 @@ function initEventHandlers() {
   const healthSave = $("health-save"); if (healthSave) healthSave.addEventListener("click", async () => {
     const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
     const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/health.json` });
-    if (!path) return; await runAction("Saving health…", () => tauriInvoke("xml_health", { root, game_version: val("game-version") || null, lang_dir: val("health-lang-dir") || null, out_json: path }));
+    if (!path) return; await runAction("Saving health…", () => tauriInvoke("xml_health", { request: { root, game_version: val("game-version") || null, lang_dir: val("health-lang-dir") || null, out_json: path } }));
     showToast(`Saved: ${path}`);
   });
 
@@ -1333,7 +1333,7 @@ async function waitForTauri(maxMs = 5000) {
       extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
       out_json: path,
     };
-    await runAction("Saving validation…", () => tauriInvoke("validate_mod", payload));
+    await runAction("Saving validation…", () => tauriInvoke("validate_mod", { request: payload }));
     showToast(`Saved: ${path}`);
   });
 
@@ -1350,7 +1350,7 @@ async function waitForTauri(maxMs = 5000) {
       baseline_po: val("diff-po") || null,
       out_json: path,
     };
-    await runAction("Saving diff…", () => tauriInvoke("diff_xml_cmd", payload));
+    await runAction("Saving diff…", () => tauriInvoke("diff_xml_cmd", { request: payload }));
     showToast(`Saved: ${path}`);
 });
 
