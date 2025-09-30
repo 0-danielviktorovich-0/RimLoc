@@ -89,6 +89,8 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - Use `--dry-run` to preview the file set and the composed message. The script will auto-detect scope from paths and generate safe bullets if none are provided.
 - Ensure hooks are active: run `scripts/setup-git-hooks.sh` once per clone.
 
+- Final guard: run `scripts/agent-ensure-commit.sh` to verify the working tree is clean. Use `--session <chat-id> --auto` to auto-commit pending changes via the session if needed.
+
 Tip: export a default session once per chat
 
 ```
