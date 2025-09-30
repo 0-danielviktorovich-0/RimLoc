@@ -422,6 +422,84 @@ async function handleExport() {
   updateStatus("Export finished");
 }
 
+async function handleValidate() {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    game_version: $("game-version").value.trim() || null,
+    source_lang: $("validate-source-lang").value.trim() || null,
+    source_lang_dir: $("validate-source-lang-dir").value.trim() || null,
+    defs_root: $("validate-defs-root").value.trim() || null,
+    extra_fields: ($("validate-extra-fields").value || "").split(',').map(s => s.trim()).filter(Boolean),
+  };
+  debugLog("debug", `validate payload: ${JSON.stringify(payload)}`);
+  const result = await runAction("Validating…", () => tauriInvoke("validate_mod", payload));
+  renderValidate(result);
+  showToast(`Validation: ${result.total} messages`);
+}
+
+function renderValidate(result) {
+  const box = $("validate-result");
+  box.textContent = "";
+  if (!result) { box.textContent = tr("validate_empty"); return; }
+  const summary = document.createElement("p");
+  summary.textContent = `Total: ${result.total}, errors: ${result.errors}, warnings: ${result.warnings}, info: ${result.infos}`;
+  box.appendChild(summary);
+  const pre = document.createElement("pre");
+  const lines = (result.messages || []).slice(0, 500).map(m => `${(m.kind||'').toUpperCase()} ${m.path}${m.line?':'+m.line:''}: ${m.key} – ${m.message}`);
+  pre.textContent = lines.join("\n");
+  box.appendChild(pre);
+}
+
+async function handleHealth() {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    game_version: $("game-version").value.trim() || null,
+    lang_dir: $("health-lang-dir").value.trim() || null,
+  };
+  const result = await runAction("XML Health…", () => tauriInvoke("xml_health", payload));
+  renderHealth(result);
+  showToast(`Checked ${result.checked}, issues: ${result.issues.length}`);
+}
+
+function renderHealth(result) {
+  const box = $("health-result");
+  box.textContent = "";
+  if (!result) { box.textContent = tr("health_empty"); return; }
+  const summary = document.createElement("p");
+  summary.textContent = `Checked: ${result.checked}, issues: ${result.issues.length}`;
+  box.appendChild(summary);
+  const pre = document.createElement("pre");
+  pre.textContent = (result.issues || []).slice(0, 500).map(i => `${i.path}${i.line?':'+i.line:''}: ${i.kind} – ${i.message}`).join("\n");
+  box.appendChild(pre);
+}
+
+async function handleImport() {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const po_path = $("import-po").value.trim();
+  if (!po_path) return showToast("Select PO file", true);
+  const payload = {
+    root,
+    po_path,
+    game_version: $("game-version").value.trim() || null,
+    lang_dir: $("import-lang-dir").value.trim() || null,
+    keep_empty: $("import-keep-empty").checked,
+    backup: false,
+    single_file: $("import-single-file").checked,
+    incremental: $("import-incremental").checked,
+    only_diff: false,
+    report: true,
+  };
+  debugLog("debug", `import payload: ${JSON.stringify(payload)}`);
+  const result = await runAction("Importing PO…", () => tauriInvoke("import_po", payload));
+  const box = $("import-result");
+  box.textContent = `Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}, Keys: ${result.keys}`;
+}
+
 async function openPath(path) {
   if (!path) return;
   try {
@@ -683,6 +761,7 @@ const I18N = {
     scan_run: "Run scan",
     scan_save_json: "Save JSON…",
     scan_save_csv: "Save CSV…",
+    scan_all_versions: "Include all versions under root",
     scan_empty: "No scan performed yet.",
     th_key: "Key",
     th_kind: "Kind",
@@ -701,6 +780,22 @@ const I18N = {
     po_out_file: "PO output file",
     tm_folders: "Translation memory folders (one per line)",
     export_empty: "No export performed yet.",
+    validate_title: "Validate",
+    validate_run: "Run validate",
+    validate_empty: "No validation run yet.",
+    defs_root: "Defs root (optional)",
+    extra_fields: "Extra fields (comma-separated)",
+    health_title: "XML Health",
+    health_run: "Check",
+    health_empty: "No health check yet.",
+    import_title: "Import PO → XML",
+    import_run: "Import PO",
+    po_file: "PO file",
+    target_lang_folder: "Target language folder",
+    import_single_file: "Single file (_Imported.xml)",
+    import_incremental: "Incremental (skip identical)",
+    import_keep_empty: "Keep empty entries",
+    import_empty: "No import performed yet.",
     debug_console: "Debug console",
     clear: "Clear",
     open_debug: "Debug…",
@@ -737,6 +832,7 @@ const I18N = {
     scan_run: "Сканировать",
     scan_save_json: "Сохранить JSON…",
     scan_save_csv: "Сохранить CSV…",
+    scan_all_versions: "Включить все версии в корне",
     scan_empty: "Сканирование ещё не выполнялось.",
     th_key: "Ключ",
     th_kind: "Тип",
@@ -755,6 +851,22 @@ const I18N = {
     po_out_file: "Файл PO",
     tm_folders: "Папки TM (по одной в строке)",
     export_empty: "Экспорт ещё не выполнялся.",
+    validate_title: "Валидация",
+    validate_run: "Проверить",
+    validate_empty: "Валидация ещё не выполнялась.",
+    defs_root: "Папка Defs (опционально)",
+    extra_fields: "Доп. поля (через запятую)",
+    health_title: "Проверка XML",
+    health_run: "Проверить",
+    health_empty: "Проверка ещё не выполнялась.",
+    import_title: "Импорт PO → XML",
+    import_run: "Импортировать PO",
+    po_file: "Файл PO",
+    target_lang_folder: "Папка целевого языка",
+    import_single_file: "Один файл (_Imported.xml)",
+    import_incremental: "Инкрементально (пропуск идентичных)",
+    import_keep_empty: "Сохранять пустые",
+    import_empty: "Импорт ещё не выполнялся.",
     debug_console: "Консоль отладки",
     clear: "Очистить",
     open_debug: "Отладка…",
