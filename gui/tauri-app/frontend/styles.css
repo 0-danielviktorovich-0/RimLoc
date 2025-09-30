@@ -106,7 +106,7 @@ main {
 
 .field-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
@@ -267,6 +267,9 @@ code {
   color: var(--text);
   padding: 0.45rem 0.9rem;
 }
+
+.result .paths .paths-row { display: flex; align-items: center; gap: .5rem; }
+.result .paths .paths-row span { word-break: break-all; }
 
 footer {
   margin-top: auto;

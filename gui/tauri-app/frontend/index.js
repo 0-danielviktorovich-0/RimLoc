@@ -449,10 +449,10 @@ async function handleExport() {
     showToast("Select mod root first", true);
     return;
   }
-  const outPo = val("po-output");
+  let outPo = val("po-output");
   if (!outPo) {
-    showToast("Specify output PO path", true);
-    return;
+    outPo = `${root.replace(/\\/g,'/')}/_learn/translation.po`;
+    $("po-output").value = outPo;
   }
   const tmRoots = parseTmRoots(val("tm-roots"));
   const pot = isChecked("export-pot");
@@ -743,6 +743,10 @@ function initEventHandlers() {
   $("import-run").addEventListener("click", handleImport);
   const pickImportPo = document.querySelector('[data-action="pick-import-po"]');
   if (pickImportPo) pickImportPo.addEventListener("click", () => pickFile("import-po", [{ name: "PO", extensions: ["po"] }])());
+  const pickImportOutXml = document.querySelector('[data-action="pick-import-out-xml"]');
+  if (pickImportOutXml) pickImportOutXml.addEventListener("click", () => pickSave("import-out-xml", { defaultPath: `${(val('mod-root')||'').replace(/\\/g,'/')}/_learn/_Imported.xml` })());
+  const importSingle = $("import-single-file");
+  if (importSingle) importSingle.addEventListener("change", () => { const wrap = $("import-out-xml-wrap"); if (wrap) wrap.style.display = importSingle.checked ? '' : 'none'; });
 
   // Build
   const buildRun = $("build-run");

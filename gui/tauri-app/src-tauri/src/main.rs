@@ -357,6 +357,8 @@ struct ImportPoRequest {
     root: String,
     po_path: String,
     #[serde(default)]
+    out_xml: Option<String>,
+    #[serde(default)]
     game_version: Option<String>,
     #[serde(default)]
     lang: Option<String>,
@@ -1060,7 +1062,11 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
         .clone()
         .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
         .unwrap_or_else(|| "English".to_string());
-    let summary = if request.dry_run {
+    let summary = if let Some(out_xml) = request.out_xml.as_deref() {
+        let outp = make_absolute(&scan_root, Path::new(out_xml));
+        rimloc_services::import_po_to_file(&po_path, &outp, request.keep_empty, request.dry_run, request.backup)
+            .wrap_err("import po to file")?
+    } else if request.dry_run {
         let (_plan, summary) = import_po_to_mod_tree(
             &po_path,
             &scan_root,

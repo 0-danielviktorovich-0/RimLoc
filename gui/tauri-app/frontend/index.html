@@ -334,6 +334,13 @@
           <label data-i18n="target_lang_folder">Target language folder
             <input id="import-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
           </label>
+          <label id="import-out-xml-wrap" style="display:none">
+            <span>Output XML path</span>
+            <div class="path-input">
+              <input id="import-out-xml" type="text" placeholder="/path/to/_Imported.xml" autocomplete="off" />
+              <button type="button" data-action="pick-import-out-xml" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
           <label>
             <input id="import-single-file" type="checkbox" />
             <span data-i18n="import_single_file">Single file (_Imported.xml)</span>
