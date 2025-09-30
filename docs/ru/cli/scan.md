@@ -13,6 +13,7 @@ title: Команда Scan
 ```bash
 rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
                  [--source-lang <CODE>] [--source-lang-dir <DIR>] [--defs-dir <PATH>] [--defs-dict <PATH>] \
+                 [--defs-type-schema <PATH>] [--keyed-nested] [--no-inherit] \
                  [--format <csv|json>] [--game-version <VER>] [--include-all-versions]
 ```
 
@@ -28,7 +29,10 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 | `--source-lang-dir <DIR>`| Явный путь к директории исходного языка (опционально).                      | Нет         |
 | `--defs-dir <PATH>`      | Ограничить поиск английских строк в `Defs` указанным путём (относительно `--root` или абсолютный). | Нет |
 | `--defs-dict <PATH>`     | Дополнительные словари `Defs` (JSON: DefType → [field paths]). | Нет |
+| `--defs-type-schema <PATH>` | Необязательная типовая схема (JSON) для расширения полей `Defs` (например, сгенерированная оффлайн). | Нет |
 | `--defs-field <NAME>`    | Дополнительные поля Defs для извлечения (флаг можно повторять или перечислить через запятую). | Нет |
+| `--keyed-nested`         | Считать вложенные элементы под LanguageData дотированными ключами Keyed (экспериментально). | Нет |
+| `--no-inherit`           | Отключить наследование ParentName при сканировании Defs (строгий режим). | Нет |
 | `--format <csv|json>`    | Формат вывода в stdout. По умолчанию — `csv`.                              | Нет         |
 | `--game-version <VER>`   | Папка версии, по которой работать (например, `1.4`, `v1.4`). Если не указано — берётся последняя. | Нет |
 | `--include-all-versions` | Сканировать все подпапки версий под корнем, отключая авто-выбор последней. | Нет |

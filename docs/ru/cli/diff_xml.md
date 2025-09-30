@@ -11,7 +11,7 @@ title: Diff XML
 ```bash
 rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] \
   [--defs-dir <PATH>] [--defs-field <NAME>] [--defs-dict <PATH>] [--lang <CODE>|--lang-dir <DIR>] [--baseline-po <PO>] [--format text|json] \
-  [--out-dir <DIR>] [--game-version <VER>] [--strict]
+  [--out-dir <DIR>] [--game-version <VER>] [--strict] [--apply-flags] [--backup]
 ```
 
 ## Опции
@@ -26,3 +26,5 @@ rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] 
 - `--out-dir <DIR>`: записи txt-отчётов (ChangedData.txt, TranslationData.txt, ModData.txt)
 - `--game-version <VER>`: подпапка версии
 - `--strict`: ненулевой код выхода при отличиях
+- `--apply-flags`: править переводные XML на месте: добавить `<!-- FUZZY -->` у ключей с изменившимся исходником (по baseline PO) и `<!-- UNUSED -->` у ключей, которые есть только в переводе
+- `--backup`: сохранять `.bak` перед изменением XML (по умолчанию: включено)

@@ -8,6 +8,7 @@
   },
   "app": {
     "security": { "csp": null },
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "RimLoc GUI",

@@ -80,8 +80,9 @@ pub(crate) fn collect_values_by_path<'a>(
     }
     let mut head = path[0];
     if let Some(pos) = head.find('{') { head = &head[..pos]; }
+    let aliases: Vec<&str> = head.split('|').collect();
     let tail = &path[1..];
-    if head.eq_ignore_ascii_case("li") {
+    if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
         for child in node
             .children()
             .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
@@ -91,7 +92,7 @@ pub(crate) fn collect_values_by_path<'a>(
     } else {
         for child in node
             .children()
-            .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head))
+            .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
         {
             collect_values_by_path(child, tail, out);
         }

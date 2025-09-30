@@ -606,8 +606,10 @@ fn collect_values_by_path<'a>(
     if let Some(pos) = head.find('{') {
         head = &head[..pos];
     }
+    // Allow alias segments like "label|labelShort" – take any that matches
+    let aliases: Vec<&str> = head.split('|').collect();
     let tail = &path[1..];
-    if head.eq_ignore_ascii_case("li") {
+    if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
         for child in node
             .children()
             .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
@@ -617,7 +619,7 @@ fn collect_values_by_path<'a>(
     } else {
         for child in node
             .children()
-            .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head))
+            .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
         {
             collect_values_by_path(child, tail, out);
         }

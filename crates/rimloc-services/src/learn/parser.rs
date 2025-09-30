@@ -188,8 +188,9 @@ fn collect_entries_by_path_with_handles(
         }
         let raw_head = segs[0];
         let head = strip_marker(raw_head);
+        let aliases: Vec<&str> = head.split('|').collect();
         let tail = &segs[1..];
-        if head.eq_ignore_ascii_case("li") {
+        if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
             // Iterate list items and append index or pseudo-handle token
             let prefer_handle = prefer_handle_segment(raw_head);
             let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
@@ -244,7 +245,7 @@ fn collect_entries_by_path_with_handles(
         } else {
             for child in node
                 .children()
-                .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head))
+                .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
             {
                 acc.push(head.to_string());
                 walk(child, tail, acc, out);
@@ -257,8 +258,9 @@ fn collect_entries_by_path_with_handles(
     if segs.is_empty() { return; }
     let raw_head = segs[0];
     let head = strip_marker(raw_head);
+    let aliases: Vec<&str> = head.split('|').collect();
     let tail = &segs[1..];
-    if head.eq_ignore_ascii_case("li") {
+    if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
         // Promote list traversal at current level
         let mut acc: Vec<String> = Vec::new();
         let mut index: usize = 0;
@@ -297,7 +299,7 @@ fn collect_entries_by_path_with_handles(
     } else {
         for child in node
             .children()
-            .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(head))
+            .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
         {
             let mut acc: Vec<String> = vec![head.to_string()];
             walk(child, tail, &mut acc, out);

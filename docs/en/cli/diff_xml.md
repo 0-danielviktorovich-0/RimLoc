@@ -11,7 +11,7 @@ Compare presence of keys between source and translation; optionally detect chang
 ```bash
 rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] \
   [--defs-dir <PATH>] [--defs-field <NAME>] [--defs-dict <PATH>] [--lang <CODE>|--lang-dir <DIR>] [--baseline-po <PO>] [--format text|json] \
-  [--out-dir <DIR>] [--game-version <VER>] [--strict]
+  [--out-dir <DIR>] [--game-version <VER>] [--strict] [--apply-flags] [--backup]
 ```
 
 ## Options
@@ -26,3 +26,5 @@ rimloc-cli diff-xml --root <MOD> [--source-lang <CODE>|--source-lang-dir <DIR>] 
 - `--out-dir <DIR>`: write reports (ChangedData.txt, TranslationData.txt, ModData.txt)
 - `--game-version <VER>`: version subfolder under the mod
 - `--strict`: non-zero exit if differences are found
+- `--apply-flags`: modify translation XML in-place: add `<!-- FUZZY -->` to changed keys (by baseline PO) and `<!-- UNUSED -->` to keys only present in translation
+- `--backup`: write `.bak` files before modifying XML (default: true)
