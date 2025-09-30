@@ -62,6 +62,26 @@
     "label",
     "description"
   ],
+  "JobDef": [
+    "label",
+    "description",
+    "reportString"
+  ],
+  "TerrainDef": [
+    "label",
+    "description"
+  ],
+  "RulePackDef": [
+    "rulesStrings.li"
+  ],
+  "HediffDef": [
+    "stages.li.label",
+    "stages.li.description"
+  ],
+  "ThoughtDef": [
+    "stages.li.label",
+    "stages.li.description"
+  ],
   "BackstoryDef": [
     "title",
     "titleFemale",

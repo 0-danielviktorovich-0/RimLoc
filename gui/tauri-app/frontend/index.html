@@ -243,6 +243,49 @@
         <div class="result" id="import-result" data-i18n="import_empty">No import performed yet.</div>
       </section>
 
+      <section class="panel" id="build-panel">
+        <div class="panel-head">
+          <h2 data-i18n="build_title">Build Translation Mod</h2>
+          <div class="actions">
+            <button type="button" id="build-run" data-i18n="build_run">Build</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="po_file">PO file
+            <div class="path-input">
+              <input id="build-po" type="text" placeholder="/path/to/translation.po" autocomplete="off" />
+              <button type="button" data-action="pick-build-po" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="out_folder">Output folder
+            <div class="path-input">
+              <input id="build-out" type="text" placeholder="/path/to/mod-out" autocomplete="off" />
+              <button type="button" data-action="pick-build-out" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="build-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="mod_name">Mod name</span>
+            <input id="build-name" type="text" placeholder="RimLoc Translation" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="package_id">Package ID</span>
+            <input id="build-package" type="text" placeholder="your.name.rimloc" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="rw_version">RimWorld version</span>
+            <input id="build-rw" type="text" placeholder="1.5" autocomplete="off" />
+          </label>
+          <label>
+            <input id="build-dedupe" type="checkbox" />
+            <span data-i18n="build_dedupe">Dedupe keys</span>
+          </label>
+        </div>
+        <div class="result" id="build-result" data-i18n="build_empty">No build performed yet.</div>
+      </section>
+
       <section class="panel" id="debug-panel">
         <div class="panel-head">
           <h2 data-i18n="debug_console">Debug console</h2>

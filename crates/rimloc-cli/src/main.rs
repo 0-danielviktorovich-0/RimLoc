@@ -574,6 +574,22 @@ enum Commands {
         #[arg(long)]
         game_version: Option<String>,
     },
+
+    /// Learn text candidates added by PatchOperations (Patches/) and produce a JSON report
+    LearnPatches {
+        /// Path to mod root
+        #[arg(short, long)]
+        mod_root: PathBuf,
+        /// Minimal string length
+        #[arg(long, default_value_t = 1)]
+        min_len: usize,
+        /// Output JSON report path (default: ./learn_out/patches_texts.json)
+        #[arg(long)]
+        out_json: Option<PathBuf>,
+        /// Game version folder (e.g., 1.6 or v1.6)
+        #[arg(long)]
+        game_version: Option<String>,
+    },
     /// Annotate translation XML with source text comments (or strip them)
     Annotate {
         /// Path to mod root.
@@ -1288,6 +1304,13 @@ impl Runnable for Commands {
                 from_defs_special,
                 game_version,
             ),
+
+            Commands::LearnPatches {
+                mod_root,
+                min_len,
+                out_json,
+                game_version,
+            } => commands::learn_patches::run_learn_patches(mod_root, min_len, out_json, game_version),
 
             Commands::Morph {
                 root,

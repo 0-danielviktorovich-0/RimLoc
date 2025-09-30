@@ -6,6 +6,7 @@ pub mod import_po;
 pub mod init;
 pub mod lang_update;
 pub mod learn_defs;
+pub mod learn_patches;
 pub mod morph;
 pub mod scan;
 pub mod schema;

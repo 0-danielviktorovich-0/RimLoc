@@ -3,6 +3,7 @@ pub mod export;
 pub mod keyed;
 pub mod ml;
 pub mod parser;
+pub mod patches;
 
 use crate::Result;
 use dict::{load_dicts, merge_dicts};

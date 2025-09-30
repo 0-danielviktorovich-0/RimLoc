@@ -500,6 +500,23 @@ async function handleImport() {
   box.textContent = `Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}, Keys: ${result.keys}`;
 }
 
+async function handleBuild() {
+  const po_path = $("build-po").value.trim();
+  const out_mod = $("build-out").value.trim();
+  const lang_dir = $("build-lang-dir").value.trim() || "Russian";
+  const name = $("build-name").value.trim() || "RimLoc Translation";
+  const package_id = $("build-package").value.trim() || "your.name.rimloc";
+  const rw_version = $("build-rw").value.trim() || "1.5";
+  const dedupe = $("build-dedupe").checked;
+  if (!po_path || !out_mod) return showToast("Select PO and output folder", true);
+  const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe };
+  debugLog("debug", `build payload: ${JSON.stringify(payload)}`);
+  const result = await runAction("Building mod…", () => tauriInvoke("build_mod", payload));
+  const box = $("build-result");
+  if (box) box.textContent = `Built to ${result.outMod || result.out_mod}. Files: ${result.files}, Keys: ${result.totalKeys || result.total_keys || 0}`;
+  showToast("Build complete");
+}
+
 async function openPath(path) {
   if (!path) return;
   try {
@@ -549,6 +566,14 @@ function initEventHandlers() {
   $("import-run").addEventListener("click", handleImport);
   const pickImportPo = document.querySelector('[data-action="pick-import-po"]');
   if (pickImportPo) pickImportPo.addEventListener("click", () => pickFile("import-po", [{ name: "PO", extensions: ["po"] }])());
+
+  // Build
+  const buildRun = $("build-run");
+  if (buildRun) buildRun.addEventListener("click", handleBuild);
+  const pickBuildPo = document.querySelector('[data-action="pick-build-po"]');
+  if (pickBuildPo) pickBuildPo.addEventListener("click", () => pickFile("build-po", [{ name: "PO", extensions: ["po"] }])());
+  const pickBuildOut = document.querySelector('[data-action="pick-build-out"]');
+  if (pickBuildOut) pickBuildOut.addEventListener("click", pickDirectory("build-out"));
 }
 
 function initPersistence() {
@@ -586,6 +611,19 @@ function initPersistence() {
     el.checked = localStorage.getItem(key) === "1";
     el.addEventListener("change", () => localStorage.setItem(key, el.checked ? "1" : "0"));
   });
+
+  // Build options
+  bindPersist("build-po", "rimloc.buildPo");
+  bindPersist("build-out", "rimloc.buildOut");
+  bindPersist("build-lang-dir", "rimloc.buildLangDir", "Russian");
+  bindPersist("build-name", "rimloc.buildName", "RimLoc Translation");
+  bindPersist("build-package", "rimloc.buildPackage", "your.name.rimloc");
+  bindPersist("build-rw", "rimloc.buildRW", "1.5");
+  const buildDedupe = $("build-dedupe");
+  if (buildDedupe) {
+    buildDedupe.checked = localStorage.getItem("rimloc.buildDedupe") === "1";
+    buildDedupe.addEventListener("change", () => localStorage.setItem("rimloc.buildDedupe", buildDedupe.checked ? "1" : "0"));
+  }
 }
 
 async function fetchAppVersion() {
@@ -780,6 +818,10 @@ const I18N = {
     po_out_file: "PO output file",
     tm_folders: "Translation memory folders (one per line)",
     export_empty: "No export performed yet.",
+    build_title: "Build Translation Mod",
+    build_run: "Build",
+    build_dedupe: "Dedupe keys",
+    build_empty: "No build performed yet.",
     validate_title: "Validate",
     validate_run: "Run validate",
     validate_empty: "No validation run yet.",
@@ -851,6 +893,10 @@ const I18N = {
     po_out_file: "Файл PO",
     tm_folders: "Папки TM (по одной в строке)",
     export_empty: "Экспорт ещё не выполнялся.",
+    build_title: "Сборка перевода из PO",
+    build_run: "Собрать",
+    build_dedupe: "Удалять дубли ключей",
+    build_empty: "Сборка ещё не выполнялась.",
     validate_title: "Валидация",
     validate_run: "Проверить",
     validate_empty: "Валидация ещё не выполнялась.",
