@@ -156,30 +156,18 @@ function pickDirectory(targetId) {
         return;
       }
     } catch (e) {
-      debugLog("warn", `dialog.open failed, fallback to backend: ${formatError(e)}`);
+      debugLog("warn", `dialog.open failed: ${formatError(e)}`);
     }
+    // Last-resort browser-only fallback: prompt for path (avoid backend blocking dialogs)
     try {
-      // Fallback to backend command
-      const selected2 = await tauriInvoke("pick_directory", { initial: current });
-      if (selected2) {
-        $(targetId).value = selected2;
+      const manual = window.prompt("Enter folder path:", current || "");
+      if (manual) {
+        $(targetId).value = manual;
         $(targetId).dispatchEvent(new Event("change"));
-        showToast(selected2);
+        showToast(manual);
         return;
       }
-    } catch (e2) {
-      showError(e2);
-      // Last-resort browser-only fallback: prompt for path
-      try {
-        const manual = window.prompt("Enter folder path:", current || "");
-        if (manual) {
-          $(targetId).value = manual;
-          $(targetId).dispatchEvent(new Event("change"));
-          showToast(manual);
-          return;
-        }
-      } catch {}
-    }
+    } catch {}
   };
 }
 

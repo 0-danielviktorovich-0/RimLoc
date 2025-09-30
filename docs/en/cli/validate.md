@@ -24,6 +24,7 @@ rimloc-cli validate --root <ROOT> [OPTIONS]
 | `--defs-dir <PATH>`    | Restrict English Defs scanning to this path (relative to root or absolute) | No |
 | `--defs-field <NAME>`  | Additional Defs field name(s) to extract (repeat or comma‑separate) | No |
 | `--defs-dict <PATH>`   | Additional Defs dictionaries (JSON: DefType → [field paths]) | No |
+| `--defs-type-schema <PATH>` | Optional type schema (JSON) to augment Defs fields (e.g., generated offline) | No |
 | `--format`             | Output format: text \| json (default: text)                       | No       |
 | `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
 | `--include-all-versions` | Validate all version subfolders instead of auto-picking the latest. | No |

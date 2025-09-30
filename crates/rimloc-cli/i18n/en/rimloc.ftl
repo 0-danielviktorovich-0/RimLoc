@@ -134,6 +134,9 @@ help-scan-source-lang-dir = Path to source language directory for cross-checks
 help-scan-format = Output format: "csv" (default) or "json"
 help-scan-game-version = Game version folder to use (e.g., 1.6 or v1.6); defaults to latest available under root
 help-scan-include-all = Include all version subfolders (disable auto-pick of latest)
+help-scan-defs-type-schema = Optional type schema (JSON) to augment Defs fields (e.g., generated offline)
+help-scan-keyed-nested = Treat nested elements under LanguageData as dotted Keyed keys (experimental)
+help-scan-no-inherit = Disable ParentName inheritance when scanning Defs (strict mode)
 
 # validate
 help-validate-about = Validate strings for issues/warnings
@@ -143,6 +146,7 @@ help-validate-source-lang-dir = Path to source language directory to compare aga
 help-validate-format = Output format: "text" (default) or "json"
 help-validate-game-version = Game version folder to use (e.g., 1.6 or v1.6); defaults to latest under root
 help-validate-include-all = Include all version subfolders (disable auto-pick of latest)
+help-validate-defs-type-schema = Optional type schema (JSON) to augment Defs fields
 
 # validate-po
 help-validatepo-about = Validate .po file placeholder consistency (msgid vs msgstr)
@@ -206,6 +210,14 @@ help-diffxml-format = Output format: "text" (default) or "json"
 help-diffxml-out-dir = Optional output directory for Text files (ChangedData.txt, TranslationData.txt, ModData.txt)
 help-diffxml-game-version = Game version folder to scan (e.g., 1.6 or v1.6); defaults to latest under root
 help-diffxml-strict = Strict mode: return error if any difference is found
+help-diffxml-apply-flags = Modify translation XML in-place: add FUZZY to changed and UNUSED to orphan keys
+help-diffxml-backup = Create .bak backups when modifying XML (default: true)
+help-scan-no-inherit = Disable ParentName inheritance when scanning Defs (strict mode)
+help-scan-keyed-nested = Treat nested keyed elements under LanguageData as dotted keys (experimental)
+help-validate-defs-type-schema = Additional Defs type schema (JSON) to augment dictionary
+help-scan-defs-type-schema = Additional Defs type schema (JSON) to augment dictionary
+help-diffxml-apply-flags = Modify translation XML in-place: add FUZZY to changed and UNUSED to orphan keys
+help-diffxml-backup = Create .bak backups when modifying XML (default: true)
 
 diffxml-saved = Diff results saved to { $path }
 diffxml-summary = Diff summary: changed={ $changed }, only-in-translation={ $only_trg }, only-in-mod={ $only_src }

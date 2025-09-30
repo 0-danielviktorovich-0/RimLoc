@@ -37,6 +37,23 @@ pub fn run_validate(
     });
     // Merge defs_field from config if CLI didn't set
     let cfg = rimloc_config::load_config().unwrap_or_default();
+    // Apply ENV gates from config defaults
+    if cfg
+        .scan
+        .as_ref()
+        .and_then(|s| s.no_inherit)
+        .unwrap_or(false)
+    {
+        std::env::set_var("RIMLOC_INHERIT", "0");
+    }
+    if cfg
+        .scan
+        .as_ref()
+        .and_then(|s| s.keyed_nested)
+        .unwrap_or(false)
+    {
+        std::env::set_var("RIMLOC_KEYED_NESTED", "1");
+    }
     let mut cli_defs_field = defs_field;
     if cli_defs_field.is_empty() {
         if let Some(ref scan) = cfg.scan {
