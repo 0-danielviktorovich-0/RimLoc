@@ -65,6 +65,16 @@ function $(id) {
   return document.getElementById(id);
 }
 
+// Safe helpers to avoid null access on optional inputs
+function val(id) {
+  const el = $(id);
+  return el ? (el.value || "").trim() : "";
+}
+function isChecked(id) {
+  const el = $(id);
+  return !!(el && el.checked);
+}
+
 function bindPersist(id, key, fallback = "") {
   const el = $(id);
   const saved = localStorage.getItem(key);
@@ -1312,15 +1322,15 @@ async function waitForTauri(maxMs = 5000) {
 })();
   // Validate save
   const valSave = $("validate-save"); if (valSave) valSave.addEventListener("click", async () => {
-    const root = $("mod-root").value.trim(); if (!root) return showToast("Select mod root first", true);
+    const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
     const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/validate.json` });
     if (!path) return; const payload = {
       root,
-      game_version: $("game-version").value.trim() || null,
-      source_lang: $("validate-source-lang").value.trim() || null,
-      source_lang_dir: $("validate-source-lang-dir").value.trim() || null,
-      defs_root: $("validate-defs-root").value.trim() || null,
-      extra_fields: ($("validate-extra-fields").value || "").split(',').map(s => s.trim()).filter(Boolean),
+      game_version: val("game-version") || null,
+      source_lang: val("validate-source-lang") || null,
+      source_lang_dir: val("validate-source-lang-dir") || null,
+      defs_root: val("validate-defs-root") || null,
+      extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
       out_json: path,
     };
     await runAction("Saving validation…", () => tauriInvoke("validate_mod", payload));
@@ -1329,15 +1339,15 @@ async function waitForTauri(maxMs = 5000) {
 
   // Diff save
   const diffSave = $("diff-save"); if (diffSave) diffSave.addEventListener("click", async () => {
-    const root = $("mod-root").value.trim(); if (!root) return showToast("Select mod root first", true);
+    const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
     const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/diff.json` });
     if (!path) return; const payload = {
       root,
-      game_version: $("game-version").value.trim() || null,
-      source_lang_dir: $("diff-source-lang-dir").value.trim() || "English",
-      target_lang_dir: $("diff-target-lang-dir").value.trim() || "Russian",
-      defs_root: $("diff-defs-root").value.trim() || null,
-      baseline_po: $("diff-po").value.trim() || null,
+      game_version: val("game-version") || null,
+      source_lang_dir: val("diff-source-lang-dir") || "English",
+      target_lang_dir: val("diff-target-lang-dir") || "Russian",
+      defs_root: val("diff-defs-root") || null,
+      baseline_po: val("diff-po") || null,
       out_json: path,
     };
     await runAction("Saving diff…", () => tauriInvoke("diff_xml_cmd", payload));
@@ -1366,14 +1376,14 @@ function collectByKey(units, sourceLangDir, targetLangDir) {
 
 function renderPreview(rows) {
   const list = $("preview-keys"); if (!list) return;
-  const root = $("mod-root").value.trim();
-  const trg = $("target-lang").value.trim() || 'ru';
+  const root = val("mod-root");
+  const trg = val("target-lang") || 'ru';
   const trgDir = langToDir(trg) || 'Russian';
   const srcDir = 'English';
   const units = window._lastScanUnits || [];
   const data = collectByKey(units, srcDir, trgDir);
-  const term = ($("preview-filter").value || '').toLowerCase();
-  const missingOnly = $("preview-missing-only").checked;
+  const term = (val("preview-filter") || '').toLowerCase();
+  const missingOnly = isChecked("preview-missing-only");
   list.innerHTML = '';
   let shown = 0;
   for (const r of data) {
