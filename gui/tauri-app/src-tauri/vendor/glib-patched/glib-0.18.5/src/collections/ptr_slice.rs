@@ -895,11 +895,15 @@ impl<T: TransparentPtrType> PtrSlice<T> {
             while self.len > len {
                 self.len -= 1;
                 let p = self.ptr.as_ptr().add(self.len);
-                ptr::drop_in_place::<T>(p as *mut T);
+                // codeql[rust/access-invalid-pointer]: p is within the allocated slice and
+                // points to an initialized element; we first move it out then drop.
+                let item: T = ptr::read(p as *mut T);
+                // Clear the slot to avoid any potential double-drop in case of unwind.
                 ptr::write(
                     p,
                     Ptr::from(ptr::null_mut::<<T as GlibPtrDefault>::GlibType>()),
                 );
+                drop(item);
             }
         }
     }
