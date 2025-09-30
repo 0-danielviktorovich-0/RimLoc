@@ -1,3 +1,32 @@
+## =============================================================================
+## RimLoc English Localization (EN)  -  Reference / Source of Truth
+##
+## Guidelines:
+## 1. English (EN) is the canonical base. All other locales MUST mirror its keys.
+## 2. Section order is FIXED:
+##    - General messages (app-started, scan, validate, export, import, dry-run, xml, build)
+##    - validate-po group
+##    - import argument validation
+##    - build-mod details
+##    - warnings / errors
+##    - validation kinds
+##    - validation categories
+##    - CLI help localization (help-*, grouped by subcommand)
+## 3. Adding new keys:
+##    - Append new keys at the end of the most relevant section.
+##    - If adding a new section, append it to the end of the file with a header.
+## 4. Placeholder rules:
+##    - Placeholders ($var) must be identical across all locales.
+##    - Do not rename or drop placeholders without updating every locale.
+## 5. CLI help localization:
+##    - Top-level keys: help-about, help-no-color, help-ui-lang.
+##    - Per-command keys: help-&lt;cmd&gt;-about and help-&lt;cmd&gt;-&lt;arg&gt;.
+##    - Keep naming in kebab-case matching CLI flags/args (e.g., help-importpo-out-xml).
+## 6. Tests:
+##    - all_locales_have_same_keys ensures all locales match EN.
+##    - each_locale_runs_help_successfully uses these help keys to verify output in each locale.
+## =============================================================================
+
 app-started = rimloc запущен - версия={ $version } - logdir={ $logdir } - RUST_LOG={ $rustlog }
 scan-csv-stdout = Печать CSV в stdout...
 scan-csv-saved = CSV сохранён в { $path }
@@ -70,9 +99,6 @@ help-scan-source-lang-dir = Путь к директории исходного 
 help-scan-format = Формат вывода: «csv» (по умолчанию) или «json»
 help-scan-game-version = Папка версии игры (например, 1.6 или v1.6); по умолчанию выбирается самая новая под корнем
 help-scan-include-all = Включить все подпапки версий (отключить авто‑выбор последней)
-help-scan-defs-type-schema = Дополнительная схема типов Defs (JSON) для расширения словаря
-help-scan-keyed-nested = Обрабатывать вложенные Keyed-элементы под LanguageData как составные ключи (экспериментально)
-help-scan-no-inherit = Отключить наследование ParentName при сканировании Defs (строгий режим)
 help-validate-about = Проверить строки на ошибки/предупреждения
 help-validate-root = Путь к корню мода RimWorld для проверки
 help-validate-source-lang = Код исходного языка для сравнения
@@ -80,7 +106,6 @@ help-validate-source-lang-dir = Путь к директории исходно�
 help-validate-format = Формат вывода: «text» (по умолчанию) или «json»
 help-validate-game-version = Папка версии игры (например, 1.6 или v1.6); по умолчанию выбирается самая новая
 help-validate-include-all = Включить все подпапки версий (отключить авто‑выбор последней)
-help-validate-defs-type-schema = Дополнительная схема типов Defs (JSON) для расширения словаря
 help-validatepo-about = Проверить согласованность плейсхолдеров в .po (msgid vs msgstr)
 help-validatepo-po = Путь к .po файлу для проверки
 help-validatepo-strict = Строгий режим: вернуть ошибку (код 1), если найдены несовпадения
@@ -134,14 +159,6 @@ help-diffxml-format = Формат вывода: «text» (по умолчани
 help-diffxml-out-dir = Папка для записи txt-отчётов (ChangedData.txt, TranslationData.txt, ModData.txt)
 help-diffxml-game-version = Папка версии игры для анализа (например, 1.6 или v1.6); по умолчанию выбирается самая новая
 help-diffxml-strict = Строгий режим: вернуть ошибку, если найдены отличия
-help-diffxml-apply-flags = Править переводные XML на месте: добавить FUZZY для изменённых и UNUSED для «осиротевших» ключей
-help-diffxml-backup = Создавать резервные .bak при изменении XML (по умолчанию: включено)
-help-scan-no-inherit = Отключить наследование ParentName при сканировании Defs (строгий режим)
-help-scan-keyed-nested = Обрабатывать вложенные Keyed-элементы под LanguageData как составные ключи (экспериментально)
-help-validate-defs-type-schema = Дополнительная схема типов Defs (JSON) для расширения словаря
-help-scan-defs-type-schema = Дополнительная схема типов Defs (JSON) для расширения словаря
-help-diffxml-apply-flags = Править переводные XML на месте: добавить FUZZY для изменённых и UNUSED для «осиротевших» ключей
-help-diffxml-backup = Создавать резервные .bak при изменении XML (по умолчанию: включено)
 diffxml-saved = Результаты diff сохранены в { $path }
 diffxml-summary = Сводка diff: изменившиеся={ $changed }, только-в-переводе={ $only_trg }, только-в-моде={ $only_src }
 help-annotate-about = Добавлять или удалять комментарии с оригинальным текстом в переводных XML
