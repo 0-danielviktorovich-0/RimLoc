@@ -33,6 +33,7 @@ jobs:
           languages: rust
           build-mode: none
           config-file: ./.github/codeql/codeql-config.yml
+          source-root: RimLoc
 
       # For Rust, a no-build analysis is sufficient for tauri + workspace here.
       # If you want a build-based extraction in the future, replace build-mode with autobuild,
