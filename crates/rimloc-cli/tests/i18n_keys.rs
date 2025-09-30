@@ -2,6 +2,8 @@ use std::{collections::BTreeSet, fs, path::Path};
 
 fn load_ids(dir: &str) -> BTreeSet<String> {
     let mut ids = BTreeSet::new();
+    // Only allow known fixture dirs
+    assert!(matches!(dir, "en" | "ru"), "invalid i18n dir: {dir}");
     let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let base = repo_root.join("i18n").join(dir);
 
