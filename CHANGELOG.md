@@ -48,6 +48,7 @@ Template (copy the sections you need):
 - [docs] README: replace AGENTS.md link with CONTRIBUTING.md (#PR)
 - [docs] AGENTS: make commit via scripts/agent-commit.sh a mandatory finish step for agents (#PR)
 - [docs] AGENTS: explicitly allow using GH_TOKEN/GITHUB_TOKEN when provided by the user, with safety rules (#PR)
+- [docs] AGENTS: add final guard step with scripts/agent-ensure-commit.sh (#PR)
 
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added
