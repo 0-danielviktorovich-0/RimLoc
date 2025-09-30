@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DiffOutput",
+  "type": "object",
+  "required": [
+    "changed",
+    "only_in_mod",
+    "only_in_translation"
+  ],
+  "properties": {
+    "changed": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "maxItems": 2,
+        "minItems": 2
+      }
+    },
+    "only_in_mod": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "only_in_translation": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

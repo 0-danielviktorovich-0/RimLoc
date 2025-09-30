@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ImportSummary",
+  "type": "object",
+  "required": [
+    "created",
+    "files",
+    "keys",
+    "mode",
+    "skipped",
+    "updated"
+  ],
+  "properties": {
+    "created": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0.0
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ImportFileStat"
+      }
+    },
+    "keys": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0.0
+    },
+    "mode": {
+      "type": "string"
+    },
+    "skipped": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0.0
+    },
+    "updated": {
+      "type": "integer",
+      "format": "uint",
+      "minimum": 0.0
+    }
+  },
+  "definitions": {
+    "ImportFileStat": {
+      "type": "object",
+      "required": [
+        "added",
+        "changed",
+        "keys",
+        "path",
+        "status"
+      ],
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "keys": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0.0
+        },
+        "path": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ValidationMsg",
+  "type": "object",
+  "required": [
+    "key",
+    "kind",
+    "message",
+    "path",
+    "schema_version"
+  ],
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "line": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint",
+      "minimum": 0.0
+    },
+    "message": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "schema_version": {
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    }
+  }
+}
