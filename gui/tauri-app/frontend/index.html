@@ -138,6 +138,38 @@
             <input id="scan-all-versions" type="checkbox" />
             <span data-i18n="scan_all_versions">Include all versions under root</span>
           </label>
+          <label data-i18n="defs_root">Defs root (optional)
+            <div class="path-input">
+              <input id="scan-defs-root" type="text" placeholder="/path/to/Defs" autocomplete="off" />
+              <button type="button" data-action="pick-scan-defs" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="extra_fields">Extra fields (comma-separated)
+            <input id="scan-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
+          </label>
+          <label>
+            <span>Defs dictionaries (one per line)</span>
+            <textarea id="scan-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+          </label>
+          <label>
+            <span>Type schema (optional)</span>
+            <div class="path-input">
+              <input id="scan-type-schema" type="text" placeholder="/path/to/schema.json" autocomplete="off" />
+              <button type="button" data-action="pick-scan-schema" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <input id="scan-keyed-nested" type="checkbox" />
+            <span>Nested Keyed (dot-paths)</span>
+          </label>
+          <label>
+            <input id="scan-no-inherit" type="checkbox" />
+            <span>No inheritance</span>
+          </label>
+          <label>
+            <input id="scan-with-plugins" type="checkbox" />
+            <span>Run plugins</span>
+          </label>
         </div>
         <div class="scan-summary" id="scan-summary" data-i18n="scan_empty">No scan performed yet.</div>
         <div class="table-wrapper">
@@ -174,6 +206,10 @@
           <label data-i18n="source_lang_folder">Source language folder
             <input id="learn-lang-dir" type="text" placeholder="English" autocomplete="off" />
           </label>
+          <label>
+            <span>Threshold</span>
+            <input id="learn-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" autocomplete="off" />
+          </label>
         </div>
         <div class="result" id="learn-result" data-i18n="learn_empty">No learn run yet.</div>
       </section>
@@ -198,6 +234,14 @@
           </label>
           <label data-i18n="source_lang_folder">Source language folder
             <input id="export-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label>
+            <input id="export-pot" type="checkbox" />
+            <span data-i18n="export_pot">Write POT (template)</span>
+          </label>
+          <label>
+            <input id="export-all-versions" type="checkbox" />
+            <span data-i18n="scan_all_versions">Include all versions under root</span>
           </label>
         </div>
         <div class="result" id="export-result" data-i18n="export_empty">No export performed yet.</div>
@@ -227,6 +271,20 @@
           <label data-i18n="extra_fields">Extra fields (comma-separated)
             <input id="validate-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
           </label>
+          <label>
+            <input id="validate-all-versions" type="checkbox" />
+            <span data-i18n="scan_all_versions">Include all versions under root</span>
+          </label>
+          <label>
+            <input id="validate-compare-ph" type="checkbox" />
+            <span data-i18n="validate_compare_ph">Compare placeholders EN↔Target</span>
+          </label>
+          <label data-i18n="target_lang">Target language code
+            <input id="validate-target-lang" type="text" placeholder="ru" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="validate-target-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
         </div>
         <div class="result" id="validate-result" data-i18n="validate_empty">No validation run yet.</div>
       </section>
@@ -242,6 +300,18 @@
         <div class="field-grid">
           <label data-i18n="source_lang_folder">Source language folder
             <input id="health-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label>
+            <input id="health-strict" type="checkbox" />
+            <span data-i18n="health_strict">Strict mode (non-empty=error)</span>
+          </label>
+          <label>
+            <span data-i18n="health_only">Only categories</span>
+            <input id="health-only" type="text" placeholder="duplicate,empty,placeholder-check" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="health_except">Except categories</span>
+            <input id="health-except" type="text" placeholder="placeholder-check" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="health-result" data-i18n="health_empty">No health check yet.</div>
@@ -276,6 +346,22 @@
             <input id="import-keep-empty" type="checkbox" />
             <span data-i18n="import_keep_empty">Keep empty entries</span>
           </label>
+          <label>
+            <input id="import-backup" type="checkbox" />
+            <span data-i18n="backup">Backup existing</span>
+          </label>
+          <label>
+            <input id="import-only-diff" type="checkbox" />
+            <span data-i18n="import_only_diff">Only changed keys</span>
+          </label>
+          <label>
+            <input id="import-report" type="checkbox" />
+            <span data-i18n="import_report">Print summary report</span>
+          </label>
+          <label>
+            <input id="import-dry-run" type="checkbox" />
+            <span data-i18n="dry_run">Dry run</span>
+          </label>
         </div>
         <div class="result" id="import-result" data-i18n="import_empty">No import performed yet.</div>
       </section>
@@ -293,6 +379,17 @@
               <input id="build-po" type="text" placeholder="/path/to/translation.po" autocomplete="off" />
               <button type="button" data-action="pick-build-po" data-i18n="browse">Browse…</button>
             </div>
+          </label>
+          <label>
+            <span data-i18n="from_root">From existing root (optional)</span>
+            <div class="path-input">
+              <input id="build-from-root" type="text" placeholder="/path/to/mod-or-lang-root" autocomplete="off" />
+              <button type="button" data-action="pick-build-from-root" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="from_versions">Only game versions (comma-separated)</span>
+            <input id="build-from-versions" type="text" placeholder="1.5,1.6" autocomplete="off" />
           </label>
           <label data-i18n="out_folder">Output folder
             <div class="path-input">
@@ -318,6 +415,10 @@
           <label>
             <input id="build-dedupe" type="checkbox" />
             <span data-i18n="build_dedupe">Dedupe keys</span>
+          </label>
+          <label>
+            <input id="build-dry" type="checkbox" />
+            <span data-i18n="dry_run">Dry run</span>
           </label>
         </div>
         <div class="result" id="build-result" data-i18n="build_empty">No build performed yet.</div>
@@ -362,6 +463,12 @@
           </div>
         </div>
         <div class="field-grid">
+          <label>Game root (folder with Data)
+            <div class="path-input">
+              <input id="lang-update-game-root" type="text" placeholder="/path/to/RimWorld" autocomplete="off" />
+              <button type="button" data-action="pick-lang-update-root" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
           <label>Repo
             <input id="lang-update-repo" type="text" placeholder="Ludeon/RimWorld" autocomplete="off" />
           </label>

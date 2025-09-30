@@ -3566,6 +3566,7 @@ dependencies = [
  "rimloc-domain",
  "rimloc-export-csv",
  "rimloc-import-po",
+ "rimloc-parsers-xml",
  "rimloc-services",
  "serde",
  "serde_json",

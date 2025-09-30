@@ -352,6 +352,7 @@ footer {
 .split .col { flex: 1 1 0; }
 .two-pane { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0b1020; color: #e6edf3; border-radius: 8px; padding: 8px; min-height: 140px; white-space: pre-wrap; }
+.scroll-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0b1020; color: #e6edf3; border-radius: 8px; padding: 8px; max-height: 280px; overflow: auto; white-space: pre; }
 
 /* Progress panel */
 .progress-items { display: flex; flex-direction: column; gap: 8px; }

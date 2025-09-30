@@ -3,12 +3,12 @@
 use color_eyre::eyre::WrapErr;
 use rimloc_domain::{ScanUnit, SCHEMA_VERSION};
 use rimloc_export_csv as export_csv;
-use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn, scan_units_auto};
+use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn};
 use rimloc_services::{
     validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_fields,
     xml_health_scan, import_po_to_mod_tree_with_progress, build_from_po_with_progress,
     diff_xml, diff_xml_with_defs, lang_update, annotate_dry_run_plan, annotate_apply,
-    make_init_plan, write_init_plan,
+    make_init_plan, write_init_plan, import_po_to_mod_tree, validate_placeholders_cross_language,
 };
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -66,6 +66,24 @@ struct ScanRequest {
     out_csv: Option<String>,
     #[serde(default)]
     lang: Option<String>,
+    #[serde(default)]
+    source_lang: Option<String>,
+    #[serde(default)]
+    source_lang_dir: Option<String>,
+    #[serde(default)]
+    defs_root: Option<String>,
+    #[serde(default)]
+    extra_fields: Option<Vec<String>>,
+    #[serde(default)]
+    defs_dicts: Option<Vec<String>>,
+    #[serde(default)]
+    type_schema: Option<String>,
+    #[serde(default)]
+    keyed_nested: bool,
+    #[serde(default)]
+    no_inherit: bool,
+    #[serde(default)]
+    with_plugins: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -246,6 +264,8 @@ struct ExportPoRequest {
     #[serde(default)]
     lang: Option<String>,
     #[serde(default)]
+    pot: bool,
+    #[serde(default)]
     source_lang: Option<String>,
     #[serde(default)]
     source_lang_dir: Option<String>,
@@ -253,6 +273,8 @@ struct ExportPoRequest {
     tm_roots: Option<Vec<String>>,
     #[serde(default)]
     game_version: Option<String>,
+    #[serde(default)]
+    include_all_versions: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -270,6 +292,14 @@ struct ValidateRequest {
     extra_fields: Option<Vec<String>>,
     #[serde(default)]
     out_json: Option<String>,
+    #[serde(default)]
+    include_all_versions: bool,
+    #[serde(default)]
+    compare_placeholders: bool,
+    #[serde(default)]
+    target_lang: Option<String>,
+    #[serde(default)]
+    target_lang_dir: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -305,6 +335,12 @@ struct XmlHealthRequest {
     lang_dir: Option<String>,
     #[serde(default)]
     out_json: Option<String>,
+    #[serde(default)]
+    strict: bool,
+    #[serde(default)]
+    only: Option<Vec<String>>,
+    #[serde(default)]
+    except: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -338,6 +374,8 @@ struct ImportPoRequest {
     only_diff: bool,
     #[serde(default)]
     report: bool,
+    #[serde(default)]
+    dry_run: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -362,6 +400,12 @@ struct BuildModRequest {
     rw_version: String,
     #[serde(default)]
     dedupe: bool,
+    #[serde(default)]
+    dry_run: bool,
+    #[serde(default)]
+    from_root: Option<String>,
+    #[serde(default)]
+    from_game_versions: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -577,7 +621,82 @@ fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Res
 }
 
 fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> Result<ScanResponse, ApiError> {
-    let units = scan_units_auto(scan_root).wrap_err("scan units")?;
+    // Advanced scan mirrors CLI logic where possible
+    use std::collections::{BTreeSet, HashMap};
+    let defs_abs = request
+        .defs_root
+        .as_deref()
+        .map(|p| make_absolute(scan_root, Path::new(p)));
+    let auto = autodiscover_defs_context(scan_root).wrap_err("discover defs context")?;
+    let mut extra_fields: Vec<String> = auto.extra_fields.clone();
+    if let Some(ref fields) = request.extra_fields {
+        extra_fields.extend(fields.clone());
+    }
+    extra_fields.sort();
+    extra_fields.dedup();
+
+    // Merge dicts: auto + files + schema-as-dict
+    let mut dict_sets: HashMap<String, BTreeSet<String>> = auto
+        .dict
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
+    let mut merge_dict = |map: HashMap<String, Vec<String>>| {
+        for (k, v) in map {
+            dict_sets.entry(k).or_default().extend(v);
+        }
+    };
+    if let Some(list) = request.defs_dicts.as_ref() {
+        for p in list {
+            let pp = make_absolute(scan_root, Path::new(p));
+            if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                merge_dict(d.0);
+            }
+        }
+    }
+    if let Some(schema) = request.type_schema.as_deref() {
+        let pp = make_absolute(scan_root, Path::new(schema));
+        if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
+            merge_dict(d.0);
+        }
+    }
+    let merged: HashMap<String, Vec<String>> = dict_sets
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
+
+    // Env gates for inheritance/nested keyed
+    if request.no_inherit {
+        std::env::set_var("RIMLOC_INHERIT", "0");
+    }
+    if request.keyed_nested {
+        std::env::set_var("RIMLOC_KEYED_NESTED", "1");
+    }
+
+    // Perform scan
+    let mut units = rimloc_services::scan_units_with_defs_and_dict(
+        scan_root,
+        defs_abs.as_deref(),
+        &merged,
+        &extra_fields,
+    )
+    .wrap_err("scan units (defs+dict)")?;
+    if request.with_plugins {
+        let _ = rimloc_services::plugins::load_plugins_from_env();
+        let default_dir = scan_root.join("plugins");
+        let _ = rimloc_services::plugins::load_dynamic_plugins_from(&default_dir);
+        if let Ok(mut extra) = rimloc_services::plugins::run_scan_plugins(scan_root) {
+            units.append(&mut extra);
+        }
+    }
+
+    // Optional language filter
+    if let Some(dir) = request.source_lang_dir.as_deref() {
+        units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, dir));
+    } else if let Some(code) = request.source_lang.as_deref() {
+        let dir = rimloc_import_po::rimworld_lang_dir(code);
+        units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, &dir));
+    }
     let mut keyed = 0usize;
     let mut def_injected = 0usize;
     let mut mapped: Vec<ScanUnitView> = Vec::with_capacity(units.len());
@@ -745,7 +864,11 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
         emit_log(&window, &state, "error", format!("export_po: path not found: {}", root.display()));
         return Err(ApiError { message: format!("Path not found: {}", root.display()) });
     }
-    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let (scan_root, version) = if request.include_all_versions {
+        (root.clone(), None)
+    } else {
+        resolve_game_version_root(&root, request.game_version.as_deref())?
+    };
     let out_po_path = make_absolute(&scan_root, Path::new(&request.out_po));
     if let Some(parent) = out_po_path.parent() {
         std::fs::create_dir_all(parent)?;
@@ -762,7 +885,7 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     let stats = export_po_with_tm(
         &scan_root,
         &out_po_path,
-        request.lang.as_deref(),
+        if request.pot { None } else { request.lang.as_deref() },
         request.source_lang.as_deref(),
         request.source_lang_dir.as_deref(),
         tm_paths.as_ref().map(|v| v.as_slice()),
@@ -807,9 +930,13 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
     emit_log(&window, &state, "info", format!("validate: root={}", request.root));
     emit_progress(&window, &state, "validate", "start", Some("Validating…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
-    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let (scan_root, version) = if request.include_all_versions {
+        (root.clone(), None)
+    } else {
+        resolve_game_version_root(&root, request.game_version.as_deref())?
+    };
     let defs_root = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
-    let msgs_raw = if let Some(fields) = request.extra_fields.as_ref() {
+    let mut msgs_raw = if let Some(fields) = request.extra_fields.as_ref() {
         validate_under_root_with_defs_and_fields(
             &scan_root,
             request.source_lang.as_deref(),
@@ -831,6 +958,21 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
             request.source_lang_dir.as_deref(),
         )?
     };
+    if request.compare_placeholders {
+        let src_dir = request
+            .source_lang_dir
+            .clone()
+            .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .unwrap_or_else(|| "English".to_string());
+        let tgt_dir = request
+            .target_lang_dir
+            .clone()
+            .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .unwrap_or_else(|| "Russian".to_string());
+        if let Ok(mut extra) = validate_placeholders_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
+            msgs_raw.append(&mut extra);
+        }
+    }
     let msgs: Vec<ValidationMessageView> = msgs_raw
         .into_iter()
         .map(|m| ValidationMessageView { kind: m.kind, key: m.key, path: m.path, line: m.line, message: m.message })
@@ -876,7 +1018,18 @@ fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest)
         .clone()
         .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
         .unwrap_or_else(|| "English".to_string());
-    let report = xml_health_scan(&scan_root, Some(&lang_dir)).wrap_err("xml health")?;
+    let mut report = xml_health_scan(&scan_root, Some(&lang_dir)).wrap_err("xml health")?;
+    // Optional filtering like CLI options
+    if let Some(only) = request.only.as_ref() {
+        if !only.is_empty() {
+            report.issues.retain(|i| only.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
+        }
+    }
+    if let Some(except) = request.except.as_ref() {
+        if !except.is_empty() {
+            report.issues.retain(|i| !except.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
+        }
+    }
     emit_progress(&window, &state, "health", "done", Some("XML check finished".to_string()), Some(100));
     let out = XmlHealthResponse {
         resolved_root: scan_root.display().to_string(),
@@ -907,21 +1060,37 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
         .clone()
         .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
         .unwrap_or_else(|| "English".to_string());
-    let summary = import_po_to_mod_tree_with_progress(
-        &po_path,
-        &scan_root,
-        &lang_dir,
-        request.keep_empty,
-        request.backup,
-        request.single_file,
-        request.incremental,
-        request.only_diff,
-        request.report,
-        |cur, total, path| {
-            emit_progress(&window, &state, "import", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
-        },
-    )
-    .wrap_err("import po")?;
+    let summary = if request.dry_run {
+        let (_plan, summary) = import_po_to_mod_tree(
+            &po_path,
+            &scan_root,
+            &lang_dir,
+            request.keep_empty,
+            true,
+            request.backup,
+            request.single_file,
+            request.incremental,
+            request.only_diff,
+            request.report,
+        )?;
+        summary.unwrap_or(rimloc_services::ImportSummary { mode: "dry_run".into(), created: 0, updated: 0, skipped: 0, keys: 0, files: vec![] })
+    } else {
+        import_po_to_mod_tree_with_progress(
+            &po_path,
+            &scan_root,
+            &lang_dir,
+            request.keep_empty,
+            request.backup,
+            request.single_file,
+            request.incremental,
+            request.only_diff,
+            request.report,
+            |cur, total, path| {
+                emit_progress(&window, &state, "import", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+            },
+        )
+        .wrap_err("import po")?
+    };
     emit_progress(&window, &state, "import", "done", Some("Import finished".to_string()), Some(100));
     let resp = ImportPoResponse {
         resolved_root: scan_root.display().to_string(),
@@ -942,26 +1111,53 @@ fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("build_mod from PO: {}", request.po_path));
     emit_progress(&window, &state, "build", "start", Some("Building mod…".to_string()), Some(0));
-    let po = PathBuf::from(&request.po_path);
     let out = PathBuf::from(&request.out_mod);
     let mut files_count = 0usize;
     let mut total_keys = 0usize;
-    build_from_po_with_progress(
-        &po,
-        &out,
-        &request.lang_dir,
-        &request.name,
-        &request.package_id,
-        &request.rw_version,
-        request.dedupe,
-        |cur, total, path| {
-            files_count = total;
-            emit_progress(&window, &state, "build", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
-        },
-    )
-    .wrap_err("build mod from po")?;
-    // Estimate total keys by scanning generated mod quickly (optional)
-    // Skipping heavy scan; we leave total_keys = 0 for now as a placeholder.
+    if let Some(from_root) = request.from_root.as_deref() {
+        let root = PathBuf::from(from_root);
+        let versions = request.from_game_versions.as_ref().map(|v| v.as_slice());
+        if request.dry_run {
+            let (files, total) = rimloc_services::build_from_root(&root, &out, &request.lang_dir, versions, false, request.dedupe)?;
+            files_count = files.len();
+            total_keys = total;
+        } else {
+            let (files, total) = rimloc_services::build_from_root_with_progress(&root, &out, &request.lang_dir, versions, true, request.dedupe, |cur, total, path| {
+                emit_progress(&window, &state, "build", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+            })?;
+            files_count = files.len();
+            total_keys = total;
+        }
+    } else if request.dry_run {
+        let po = PathBuf::from(&request.po_path);
+        let plan = rimloc_services::build_from_po_dry_run(
+            &po,
+            &out,
+            &request.lang_dir,
+            &request.name,
+            &request.package_id,
+            &request.rw_version,
+            request.dedupe,
+        )?;
+        files_count = plan.files.len();
+        total_keys = plan.total_keys;
+    } else {
+        let po = PathBuf::from(&request.po_path);
+        build_from_po_with_progress(
+            &po,
+            &out,
+            &request.lang_dir,
+            &request.name,
+            &request.package_id,
+            &request.rw_version,
+            request.dedupe,
+            |cur, total, path| {
+                files_count = total;
+                emit_progress(&window, &state, "build", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+            },
+        )
+        .wrap_err("build mod from po")?;
+    }
     emit_progress(&window, &state, "build", "done", Some("Build finished".to_string()), Some(100));
     let resp = BuildModResponse { out_mod: out.display().to_string(), files: files_count, total_keys };
     write_profile(&state, "build_mod", t0, serde_json::json!({"files": resp.files }));
@@ -1283,8 +1479,8 @@ fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateR
     println!("lang_update_cmd invoked: root={} repo={} branch={:?}", request.root, request.repo, request.branch);
     let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
-    let root = PathBuf::from(&request.root);
-    let (scan_root, _version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    // Expecting game root (folder containing Data/)
+    let scan_root = PathBuf::from(&request.root);
     let zip_path = request.zip_path.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
     let (_plan, summary) = lang_update(
         &scan_root,

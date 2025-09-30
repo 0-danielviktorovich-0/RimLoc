@@ -364,7 +364,7 @@ function renderExport(result) {
 
 async function handleScan(saveMode) {
   try { console.log('Clicked Scan', saveMode||'run'); } catch {}
-  debugLog('info', `scan clicked (${saveMode||'run'})`);
+  debugLog('info', `scan clicked (${saveMode||'run'})`, true);
   const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
@@ -375,6 +375,15 @@ async function handleScan(saveMode) {
     game_version: val("game-version") || null,
     lang: val("target-lang") || null,
     include_all_versions: isChecked("scan-all-versions"),
+    source_lang: val("source-lang") || null,
+    source_lang_dir: null,
+    defs_root: val("scan-defs-root") || null,
+    extra_fields: (val("scan-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
+    defs_dicts: (($("scan-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
+    type_schema: val("scan-type-schema") || null,
+    keyed_nested: isChecked("scan-keyed-nested"),
+    no_inherit: isChecked("scan-no-inherit"),
+    with_plugins: isChecked("scan-with-plugins"),
   };
   debugLog("debug", `scan payload: ${JSON.stringify(payload)}`);
   if (saveMode === "json") {
@@ -406,7 +415,7 @@ async function handleScan(saveMode) {
 
 async function handleLearn() {
   try { console.log('Clicked Learn'); } catch {}
-  debugLog('info', 'learn clicked');
+  debugLog('info', 'learn clicked', true);
   const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
@@ -414,11 +423,14 @@ async function handleLearn() {
   }
   const outDir = val("learn-out");
   const langDir = val("learn-lang-dir");
+  const thresholdStr = val("learn-threshold");
+  const threshold = thresholdStr ? Number(thresholdStr) : null;
   const payload = {
     root,
     out_dir: outDir || null,
     lang_dir: langDir || null,
     game_version: val("game-version") || null,
+    threshold: threshold,
   };
   debugLog("debug", `learn payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", { request: payload }));
@@ -431,7 +443,7 @@ async function handleLearn() {
 
 async function handleExport() {
   try { console.log('Clicked Export'); } catch {}
-  debugLog('info', 'export clicked');
+  debugLog('info', 'export clicked', true);
   const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
@@ -443,6 +455,8 @@ async function handleExport() {
     return;
   }
   const tmRoots = parseTmRoots(val("tm-roots"));
+  const pot = isChecked("export-pot");
+  const include_all_versions = isChecked("export-all-versions");
   const payload = {
     root,
     out_po: outPo,
@@ -451,6 +465,8 @@ async function handleExport() {
     source_lang_dir: val("export-source-lang-dir") || null,
     tm_roots: tmRoots.length ? tmRoots : null,
     game_version: val("game-version") || null,
+    pot,
+    include_all_versions,
   };
   debugLog("debug", `export payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", { request: payload }));
@@ -463,7 +479,7 @@ async function handleExport() {
 
 async function handleValidate() {
   try { console.log('Clicked Validate'); } catch {}
-  debugLog('info', 'validate clicked');
+  debugLog('info', 'validate clicked', true);
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -473,6 +489,10 @@ async function handleValidate() {
     source_lang_dir: val("validate-source-lang-dir") || null,
     defs_root: val("validate-defs-root") || null,
     extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
+    include_all_versions: isChecked("validate-all-versions"),
+    compare_placeholders: isChecked("validate-compare-ph"),
+    target_lang: val("validate-target-lang") || null,
+    target_lang_dir: val("validate-target-lang-dir") || null,
   };
   debugLog("debug", `validate payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Validating…", () => tauriInvoke("validate_mod", { request: payload }));
@@ -490,6 +510,7 @@ function renderValidate(result) {
   summary.textContent = `Total: ${result.total}, errors: ${result.errors}, warnings: ${result.warnings}, info: ${result.infos}`;
   box.appendChild(summary);
   const pre = document.createElement("pre");
+  pre.className = 'scroll-code';
   const lines = (result.messages || []).slice(0, 500).map(m => `${(m.kind||'').toUpperCase()} ${m.path}${m.line?':'+m.line:''}: ${m.key} – ${m.message}`);
   pre.textContent = lines.join("\n");
   box.appendChild(pre);
@@ -497,13 +518,16 @@ function renderValidate(result) {
 
 async function handleHealth() {
   try { console.log('Clicked Health'); } catch {}
-  debugLog('info', 'health clicked');
+  debugLog('info', 'health clicked', true);
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
     game_version: val("game-version") || null,
     lang_dir: val("health-lang-dir") || null,
+    strict: isChecked("health-strict"),
+    only: (val("health-only") || "").split(',').map(s => s.trim()).filter(Boolean),
+    except: (val("health-except") || "").split(',').map(s => s.trim()).filter(Boolean),
   };
   const result = await runAction("XML Health…", () => tauriInvoke("xml_health", { request: payload }));
   try { console.log('Health result', result); } catch {}
@@ -520,13 +544,14 @@ function renderHealth(result) {
   summary.textContent = `Checked: ${result.checked}, issues: ${result.issues.length}`;
   box.appendChild(summary);
   const pre = document.createElement("pre");
+  pre.className = 'scroll-code';
   pre.textContent = (result.issues || []).slice(0, 500).map(i => `${i.path}${i.line?':'+i.line:''}: ${i.kind} – ${i.message}`).join("\n");
   box.appendChild(pre);
 }
 
 async function handleImport() {
   try { console.log('Clicked Import'); } catch {}
-  debugLog('info', 'import clicked');
+  debugLog('info', 'import clicked', true);
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const po_path = val("import-po");
@@ -537,11 +562,12 @@ async function handleImport() {
     game_version: val("game-version") || null,
     lang_dir: val("import-lang-dir") || null,
     keep_empty: isChecked("import-keep-empty"),
-    backup: false,
+    backup: isChecked("import-backup"),
     single_file: isChecked("import-single-file"),
     incremental: isChecked("import-incremental"),
-    only_diff: false,
-    report: true,
+    only_diff: isChecked("import-only-diff"),
+    report: isChecked("import-report"),
+    dry_run: isChecked("import-dry-run"),
   };
   debugLog("debug", `import payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Importing PO…", () => tauriInvoke("import_po", { request: payload }));
@@ -553,7 +579,7 @@ async function handleImport() {
 
 async function handleBuild() {
   try { console.log('Clicked Build'); } catch {}
-  debugLog('info', 'build clicked');
+  debugLog('info', 'build clicked', true);
   const po_path = val("build-po");
   const out_mod = val("build-out");
   const lang_dir = val("build-lang-dir") || "Russian";
@@ -561,8 +587,12 @@ async function handleBuild() {
   const package_id = val("build-package") || "your.name.rimloc";
   const rw_version = val("build-rw") || "1.5";
   const dedupe = isChecked("build-dedupe");
-  if (!po_path || !out_mod) return showToast("Select PO and output folder", true);
-  const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe };
+  const dry_run = isChecked("build-dry");
+  const from_root = val("build-from-root");
+  const from_game_versions = (val("build-from-versions") || "").split(',').map(s => s.trim()).filter(Boolean);
+  if (!out_mod) return showToast("Select output folder", true);
+  if (!po_path && !from_root) return showToast("Select PO or From root", true);
+  const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe, dry_run, from_root: from_root || null, from_game_versions: from_game_versions.length ? from_game_versions : null };
   debugLog("debug", `build payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Building mod…", () => tauriInvoke("build_mod", { request: payload }));
   try { console.log('Build result', result); } catch {}
@@ -574,7 +604,7 @@ async function handleBuild() {
 
 async function handleDiff() {
   try { console.log('Clicked Diff'); } catch {}
-  debugLog('info', 'diff clicked');
+  debugLog('info', 'diff clicked', true);
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -607,9 +637,9 @@ async function handleDiff() {
 
 async function handleLangUpdate() {
   try { console.log('Clicked Lang Update'); } catch {}
-  debugLog('info', 'lang_update clicked');
-  const root = val("mod-root");
-  if (!root) return showToast("Select mod root first", true);
+  debugLog('info', 'lang_update clicked', true);
+  const root = val("lang-update-game-root") || val("mod-root");
+  if (!root) return showToast("Select game root first", true);
   const payload = {
     root,
     repo: val("lang-update-repo") || "Ludeon/RimWorld",
@@ -627,7 +657,7 @@ async function handleLangUpdate() {
 
 async function handleAnnotate(dry) {
   try { console.log('Clicked Annotate', { dry }); } catch {}
-  debugLog('info', `annotate clicked (dry=${!!dry})`);
+  debugLog('info', `annotate clicked (dry=${!!dry})`, true);
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -664,12 +694,7 @@ async function handleInit() {
 async function openPath(path) {
   if (!path) return;
   const s = String(path || '');
-  const isUrl = /^(https?|mailto|tel):/i.test(s);
-  if (isUrl) {
-    try { await tauriShell().open(s); return; } catch (err) {
-      debugLog("warn", `shell.open failed: ${formatError(err)}`);
-    }
-  }
+  // Always use backend command which supports files and URLs across OSes
   try { await tauriInvoke("open_path", { path: s }); }
   catch (e) { showError(e); }
 }
@@ -690,6 +715,10 @@ function initEventHandlers() {
   });
 
   document.querySelector('[data-action="pick-root"]').addEventListener("click", pickDirectory("mod-root"));
+  const pickScanDefs = document.querySelector('[data-action="pick-scan-defs"]');
+  if (pickScanDefs) pickScanDefs.addEventListener("click", pickDirectory("scan-defs-root"));
+  const pickScanSchema = document.querySelector('[data-action="pick-scan-schema"]');
+  if (pickScanSchema) pickScanSchema.addEventListener("click", () => pickFile("scan-type-schema", [{ name: "JSON", extensions: ["json"] }])());
   document.querySelector('[data-action="pick-learn-out"]').addEventListener("click", pickDirectory("learn-out"));
   document.querySelector('[data-action="pick-po-output"]').addEventListener(
     "click",
@@ -722,6 +751,8 @@ function initEventHandlers() {
   if (pickBuildPo) pickBuildPo.addEventListener("click", () => pickFile("build-po", [{ name: "PO", extensions: ["po"] }])());
   const pickBuildOut = document.querySelector('[data-action="pick-build-out"]');
   if (pickBuildOut) pickBuildOut.addEventListener("click", pickDirectory("build-out"));
+  const pickBuildFrom = document.querySelector('[data-action="pick-build-from-root"]');
+  if (pickBuildFrom) pickBuildFrom.addEventListener("click", pickDirectory("build-from-root"));
 
   // Diff
   const diffRun = $("diff-run");
@@ -734,6 +765,8 @@ function initEventHandlers() {
   // Lang update
   const luRun = $("lang-update-run");
   if (luRun) luRun.addEventListener("click", handleLangUpdate);
+  const pickLuRoot = document.querySelector('[data-action="pick-lang-update-root"]');
+  if (pickLuRoot) pickLuRoot.addEventListener("click", pickDirectory("lang-update-game-root"));
 
   // Annotate
   const annPrev = $("annotate-preview");
@@ -761,19 +794,47 @@ function initPersistence() {
     scanAll.checked = localStorage.getItem("rimloc.scanAllVersions") === "1";
     scanAll.addEventListener("change", () => localStorage.setItem("rimloc.scanAllVersions", scanAll.checked ? "1" : "0"));
   }
+  bindPersist("scan-defs-root", "rimloc.scanDefsRoot");
+  bindPersist("scan-extra-fields", "rimloc.scanExtraFields");
+  bindPersistTextArea("scan-defs-dicts", "rimloc.scanDefsDicts");
+  bindPersist("scan-type-schema", "rimloc.scanTypeSchema");
+  ["scan-keyed-nested","scan-no-inherit","scan-with-plugins"].forEach(id => {
+    const el = $(id);
+    if (!el) return; const key = `rimloc.${id}`;
+    el.checked = localStorage.getItem(key) === "1";
+    el.addEventListener("change", () => localStorage.setItem(key, el.checked?"1":"0"));
+  });
   // Export options
   bindPersist("export-source-lang-dir", "rimloc.exportSourceLangDir", "English");
+  const expPot = $("export-pot");
+  if (expPot) {
+    expPot.checked = localStorage.getItem("rimloc.exportPOT") === "1";
+    expPot.addEventListener("change", () => localStorage.setItem("rimloc.exportPOT", expPot.checked ? "1" : "0"));
+  }
+  const expAll = $("export-all-versions");
+  if (expAll) {
+    expAll.checked = localStorage.getItem("rimloc.exportAllVersions") === "1";
+    expAll.addEventListener("change", () => localStorage.setItem("rimloc.exportAllVersions", expAll.checked ? "1" : "0"));
+  }
+  bindPersist("learn-threshold", "rimloc.learnThreshold", "0.8");
   // Validate options
   bindPersist("validate-source-lang", "rimloc.validateSourceLang");
   bindPersist("validate-source-lang-dir", "rimloc.validateSourceLangDir", "English");
   bindPersist("validate-defs-root", "rimloc.validateDefsRoot");
   bindPersist("validate-extra-fields", "rimloc.validateExtraFields");
+  const valAll = $("validate-all-versions"); if (valAll) { valAll.checked = localStorage.getItem("rimloc.validateAllVersions") === "1"; valAll.addEventListener("change", () => localStorage.setItem("rimloc.validateAllVersions", valAll.checked?"1":"0")); }
+  const valCmp = $("validate-compare-ph"); if (valCmp) { valCmp.checked = localStorage.getItem("rimloc.validateComparePH") === "1"; valCmp.addEventListener("change", () => localStorage.setItem("rimloc.validateComparePH", valCmp.checked?"1":"0")); }
+  bindPersist("validate-target-lang", "rimloc.validateTargetLang", "ru");
+  bindPersist("validate-target-lang-dir", "rimloc.validateTargetLangDir", "Russian");
   // Health options
   bindPersist("health-lang-dir", "rimloc.healthLangDir", "English");
+  const hStrict = $("health-strict"); if (hStrict) { hStrict.checked = localStorage.getItem("rimloc.healthStrict") === "1"; hStrict.addEventListener("change", () => localStorage.setItem("rimloc.healthStrict", hStrict.checked?"1":"0")); }
+  bindPersist("health-only", "rimloc.healthOnly");
+  bindPersist("health-except", "rimloc.healthExcept");
   // Import options
   bindPersist("import-po", "rimloc.importPo");
   bindPersist("import-lang-dir", "rimloc.importLangDir", "Russian");
-  const flags = ["import-single-file","import-incremental","import-keep-empty"];
+  const flags = ["import-single-file","import-incremental","import-keep-empty","import-backup","import-only-diff","import-report","import-dry-run"];
   flags.forEach(id => {
     const el = $(id);
     if (!el) return;
@@ -789,11 +850,14 @@ function initPersistence() {
   bindPersist("build-name", "rimloc.buildName", "RimLoc Translation");
   bindPersist("build-package", "rimloc.buildPackage", "your.name.rimloc");
   bindPersist("build-rw", "rimloc.buildRW", "1.5");
+  bindPersist("build-from-root", "rimloc.buildFromRoot");
+  bindPersist("build-from-versions", "rimloc.buildFromVersions");
   const buildDedupe = $("build-dedupe");
   if (buildDedupe) {
     buildDedupe.checked = localStorage.getItem("rimloc.buildDedupe") === "1";
     buildDedupe.addEventListener("change", () => localStorage.setItem("rimloc.buildDedupe", buildDedupe.checked ? "1" : "0"));
   }
+  const buildDry = $("build-dry"); if (buildDry) { buildDry.checked = localStorage.getItem("rimloc.buildDry") === "1"; buildDry.addEventListener("change", () => localStorage.setItem("rimloc.buildDry", buildDry.checked?"1":"0")); }
 
   // Diff options
   bindPersist("diff-source-lang-dir", "rimloc.diffSource", "English");
@@ -806,6 +870,7 @@ function initPersistence() {
   bindPersist("lang-update-branch", "rimloc.luBranch", "master");
   bindPersist("lang-update-source", "rimloc.luSource", "English");
   bindPersist("lang-update-target", "rimloc.luTarget", "Russian");
+  bindPersist("lang-update-game-root", "rimloc.luGameRoot");
   ["lang-update-dry","lang-update-backup"].forEach(id => {
     const el = $(id);
     if (!el) return;
@@ -1055,19 +1120,29 @@ const I18N = {
     open_file: "Open file",
     po_out_file: "PO output file",
     tm_folders: "Translation memory folders (one per line)",
+    export_pot: "Write POT (template)",
     export_empty: "No export performed yet.",
+    save_report: "Save report…",
     build_title: "Build Translation Mod",
     build_run: "Build",
     build_dedupe: "Dedupe keys",
     build_empty: "No build performed yet.",
+    from_root: "From existing root (optional)",
+    from_versions: "Only game versions (comma-separated)",
     validate_title: "Validate",
     validate_run: "Run validate",
     validate_empty: "No validation run yet.",
+    validate_compare_ph: "Compare placeholders EN↔Target",
     defs_root: "Defs root (optional)",
     extra_fields: "Extra fields (comma-separated)",
     health_title: "XML Health",
     health_run: "Check",
     health_empty: "No health check yet.",
+    health_strict: "Strict mode (non-empty=error)",
+    health_only: "Only categories",
+    health_except: "Except categories",
+    preview_title: "Preview EN → Target",
+    preview_missing_only: "Missing only",
     import_title: "Import PO → XML",
     import_run: "Import PO",
     po_file: "PO file",
@@ -1075,6 +1150,8 @@ const I18N = {
     import_single_file: "Single file (_Imported.xml)",
     import_incremental: "Incremental (skip identical)",
     import_keep_empty: "Keep empty entries",
+    import_only_diff: "Only changed keys",
+    import_report: "Print summary report",
     import_empty: "No import performed yet.",
     diff_title: "Diff XML",
     diff_run: "Run diff",
@@ -1105,6 +1182,14 @@ const I18N = {
     scan: "Scan",
     learn: "Learn",
     export: "Export",
+    validate: "Validate",
+    health: "XML Health",
+    import: "Import",
+    build: "Build",
+    diff: "Diff",
+    annotate: "Annotate",
+    init: "Init",
+    lang_update: "Lang Update",
     footer_hint: "Need DefInjected strings? Run “Learn defs” first and copy suggested.xml into your language folder.",
     "lang.auto": "Auto",
     "theme.auto": "Auto",
@@ -1147,19 +1232,29 @@ const I18N = {
     open_file: "Открыть файл",
     po_out_file: "Файл PO",
     tm_folders: "Папки TM (по одной в строке)",
+    export_pot: "Писать POT (шаблон)",
     export_empty: "Экспорт ещё не выполнялся.",
+    save_report: "Сохранить отчёт…",
     build_title: "Сборка перевода из PO",
     build_run: "Собрать",
     build_dedupe: "Удалять дубли ключей",
     build_empty: "Сборка ещё не выполнялась.",
+    from_root: "Из существующего корня (опционально)",
+    from_versions: "Только версии игры (через запятую)",
     validate_title: "Валидация",
     validate_run: "Проверить",
     validate_empty: "Валидация ещё не выполнялась.",
+    validate_compare_ph: "Сравнивать плейсхолдеры EN↔Целевой",
     defs_root: "Папка Defs (опционально)",
     extra_fields: "Доп. поля (через запятую)",
     health_title: "Проверка XML",
     health_run: "Проверить",
     health_empty: "Проверка ещё не выполнялась.",
+    health_strict: "Строгий режим (наличие проблем=ошибка)",
+    health_only: "Только категории",
+    health_except: "Исключить категории",
+    preview_title: "Предпросмотр EN → Целевой",
+    preview_missing_only: "Только отсутствующие",
     import_title: "Импорт PO → XML",
     import_run: "Импортировать PO",
     po_file: "Файл PO",
@@ -1167,6 +1262,8 @@ const I18N = {
     import_single_file: "Один файл (_Imported.xml)",
     import_incremental: "Инкрементально (пропуск идентичных)",
     import_keep_empty: "Сохранять пустые",
+    import_only_diff: "Только изменённые ключи",
+    import_report: "Печатать отчёт",
     import_empty: "Импорт ещё не выполнялся.",
     diff_title: "Сравнение XML",
     diff_run: "Сравнить",
@@ -1197,6 +1294,14 @@ const I18N = {
     scan: "Сканирование",
     learn: "Обучение",
     export: "Экспорт",
+    validate: "Проверка",
+    health: "Проверка XML",
+    import: "Импорт",
+    build: "Сборка",
+    diff: "Сравнение",
+    annotate: "Аннотация",
+    init: "Инициализация",
+    lang_update: "Обновление языка",
     footer_hint: "Нужны строки DefInjected? Сначала выполните “Обучение”, затем скопируйте suggested.xml в папку вашего языка.",
     "lang.auto": "Авто",
     "theme.auto": "Авто",
@@ -1280,7 +1385,7 @@ function boot() {
     renderLearn(null);
     renderExport(null);
     fetchAppVersion();
-    debugLog("info", "UI ready");
+    debugLog("info", "UI ready", true);
     try { console.log('Boot: complete'); } catch {}
   } catch (e) {
     try { console.error('Boot error', e); } catch {}
@@ -1410,7 +1515,3 @@ function langToDir(code) {
 
 const previewFilter = $("preview-filter"); if (previewFilter) previewFilter.addEventListener('input', () => renderPreview());
 const missingToggle = $("preview-missing-only"); if (missingToggle) missingToggle.addEventListener('change', () => renderPreview());
-    preview_title: "Preview EN → Target",
-    preview_missing_only: "Missing only",
-    preview_title: "Предпросмотр EN → Целевой",
-    preview_missing_only: "Только отсутствующие",
