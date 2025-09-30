@@ -746,7 +746,14 @@ function initEventHandlers() {
   const pickImportOutXml = document.querySelector('[data-action="pick-import-out-xml"]');
   if (pickImportOutXml) pickImportOutXml.addEventListener("click", () => pickSave("import-out-xml", { defaultPath: `${(val('mod-root')||'').replace(/\\/g,'/')}/_learn/_Imported.xml` })());
   const importSingle = $("import-single-file");
-  if (importSingle) importSingle.addEventListener("change", () => { const wrap = $("import-out-xml-wrap"); if (wrap) wrap.style.display = importSingle.checked ? '' : 'none'; });
+  if (importSingle) importSingle.addEventListener("change", () => {
+    const wrap = $("import-out-xml-wrap");
+    if (wrap) wrap.style.display = importSingle.checked ? '' : 'none';
+    if (importSingle.checked && !val('import-out-xml')) {
+      const root = val('mod-root');
+      if (root) $("import-out-xml").value = `${root.replace(/\\/g,'/')}/_learn/_Imported.xml`;
+    }
+  });
 
   // Build
   const buildRun = $("build-run");
@@ -1107,6 +1114,13 @@ const I18N = {
     scan_save_json: "Save JSON…",
     scan_save_csv: "Save CSV…",
     scan_all_versions: "Include all versions under root",
+    scan_defs_root: "Defs root (optional)",
+    scan_extra_fields: "Extra fields (comma-separated)",
+    scan_defs_dicts: "Defs dictionaries (one per line)",
+    scan_type_schema: "Type schema (optional)",
+    scan_keyed_nested: "Nested Keyed (dot-paths)",
+    scan_no_inherit: "No inheritance",
+    scan_plugins: "Run plugins",
     scan_empty: "No scan performed yet.",
     th_key: "Key",
     th_kind: "Kind",
@@ -1163,6 +1177,7 @@ const I18N = {
     lang_update_title: "Lang Update",
     lang_update_run: "Update",
     lang_update_empty: "No lang update yet.",
+    lu_game_root: "Game root (folder with Data)",
     dry_run: "Dry run",
     backup: "Backup existing",
     annotate_title: "Annotate Keyed",
@@ -1219,6 +1234,13 @@ const I18N = {
     scan_save_json: "Сохранить JSON…",
     scan_save_csv: "Сохранить CSV…",
     scan_all_versions: "Включить все версии в корне",
+    scan_defs_root: "Папка Defs (опционально)",
+    scan_extra_fields: "Доп. поля (через запятую)",
+    scan_defs_dicts: "Словари Defs (по одному в строке)",
+    scan_type_schema: "Схема типов (опционально)",
+    scan_keyed_nested: "Nested Keyed (dot-paths)",
+    scan_no_inherit: "Без наследования",
+    scan_plugins: "Запуск плагинов",
     scan_empty: "Сканирование ещё не выполнялось.",
     th_key: "Ключ",
     th_kind: "Тип",
@@ -1275,6 +1297,7 @@ const I18N = {
     lang_update_title: "Обновление языка",
     lang_update_run: "Обновить",
     lang_update_empty: "Обновление ещё не выполнялось.",
+    lu_game_root: "Папка игры (с папкой Data)",
     dry_run: "Черновой запуск",
     backup: "Делать бэкап",
     annotate_title: "Аннотация Keyed",
@@ -1427,6 +1450,20 @@ async function waitForTauri(maxMs = 5000) {
   }
   boot();
 })();
+
+// Автозаполнение путей по умолчанию при выборе корня
+document.addEventListener('DOMContentLoaded', () => {
+  const rootEl = $("mod-root");
+  if (!rootEl) return;
+  const ensureDefaults = () => {
+    const root = val('mod-root');
+    if (!root) return;
+    if (!val('po-output')) $("po-output").value = `${root.replace(/\\/g,'/')}/_learn/translation.po`;
+    if (isChecked('import-single-file') && !val('import-out-xml')) $("import-out-xml").value = `${root.replace(/\\/g,'/')}/_learn/_Imported.xml`;
+  };
+  rootEl.addEventListener('change', ensureDefaults);
+  ensureDefaults();
+});
   // Validate save
   const valSave = $("validate-save"); if (valSave) valSave.addEventListener("click", async () => {
     const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);

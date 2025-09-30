@@ -116,6 +116,7 @@ label {
   flex-direction: column;
   gap: 0.4rem;
   font-weight: 500;
+  min-width: 0;
 }
 
 input,
@@ -135,10 +136,19 @@ textarea {
 .path-input {
   display: flex;
   gap: 0.6rem;
+  align-items: center;
 }
 
 .path-input input {
   flex: 1;
+  min-width: 0;
+}
+
+/* Удобная раскладка для чекбоксов — в одну строку */
+label:has(> input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 button {
