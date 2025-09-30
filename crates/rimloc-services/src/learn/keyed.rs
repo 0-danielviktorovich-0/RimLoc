@@ -23,6 +23,100 @@ pub fn load_keyed_dict_from_file(path: &Path) -> Result<KeyedDict> {
     Ok(d)
 }
 
+/// Extract Keyed-like pairs from Defs for specific schemas used by popular frameworks.
+/// - XmlExtensions.SettingsMenuDef: tKey/tKeyTip combined with label/text/tooltip
+/// - QuestScriptDef: any element with attribute TKey → candidate(key=TKey, value=text)
+pub fn scan_keyed_from_defs_special(root: &Path) -> Result<Vec<(String, String, PathBuf)>> {
+    let mut out = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        let s = p.to_string_lossy();
+        if !(s.contains("/Defs/") || s.contains("\\Defs\\")) {
+            continue;
+        }
+        let content = match std::fs::read_to_string(p) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
+        let doc = match Document::parse(&content) {
+            Ok(d) => d,
+            Err(_) => continue,
+        };
+        let root_el = doc.root_element();
+        // XmlExtensions.SettingsMenuDef
+        for def in root_el.children().filter(|n| n.is_element()) {
+            let tag = def.tag_name().name();
+            if tag.eq_ignore_ascii_case("XmlExtensions.SettingsMenuDef") {
+                if let Some(settings) = def
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("settings"))
+                {
+                    for li in settings
+                        .children()
+                        .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
+                    {
+                        // Collect possible pairs
+                        let mut tkey: Option<String> = None;
+                        let mut tkey_text: Option<String> = None;
+                        let mut tkey_tip: Option<String> = None;
+                        let mut tkey_tip_text: Option<String> = None;
+                        for child in li.children().filter(|c| c.is_element()) {
+                            let nm = child.tag_name().name();
+                            match nm {
+                                "tKey" => tkey = child.text().map(|s| s.trim().to_string()),
+                                "label" | "text" => {
+                                    if tkey_text.is_none() {
+                                        tkey_text = child.text().map(|s| s.trim().to_string())
+                                    }
+                                }
+                                "tKeyTip" => tkey_tip = child.text().map(|s| s.trim().to_string()),
+                                "tooltip" => {
+                                    if tkey_tip_text.is_none() {
+                                        tkey_tip_text = child.text().map(|s| s.trim().to_string())
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        if let (Some(k), Some(v)) = (tkey.as_ref(), tkey_text.as_ref()) {
+                            if !k.is_empty() && !v.is_empty() {
+                                out.push((k.clone(), v.clone(), p.to_path_buf()));
+                            }
+                        }
+                        if let (Some(k), Some(v)) = (tkey_tip.as_ref(), tkey_tip_text.as_ref()) {
+                            if !k.is_empty() && !v.is_empty() {
+                                out.push((k.clone(), v.clone(), p.to_path_buf()));
+                            }
+                        }
+                    }
+                }
+            }
+            // QuestScriptDef: any descendant with attribute TKey
+            if tag.eq_ignore_ascii_case("QuestScriptDef") {
+                for node in def.descendants().filter(|n| n.is_element()) {
+                    if let Some(k) = node.attribute("TKey") {
+                        if let Some(v) = node.text().map(|s| s.trim()) {
+                            if !k.trim().is_empty() && !v.is_empty() {
+                                out.push((k.trim().to_string(), v.to_string(), p.to_path_buf()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
 pub fn scan_keyed_source(
     root: &Path,
     source_lang_dir: &str,
@@ -113,10 +207,19 @@ pub fn learn_keyed(
     dicts: &[KeyedDict],
     min_len: usize,
     blacklist: &[String],
+    must_contain_letter: bool,
+    exclude_substr: &[String],
     threshold: f32,
     classifier: &mut dyn super::ml::Classifier,
 ) -> Result<Vec<KeyedCandidate>> {
-    let src = scan_keyed_source(root, source_lang_dir)?;
+    let mut src = scan_keyed_source(root, source_lang_dir)?;
+    // Merge special Defs-derived keyed pairs
+    if std::env::var("RIMLOC_LEARN_KEYED_FROM_DEFS")
+        .map(|v| v == "1")
+        .unwrap_or(false)
+    {
+        src.extend(scan_keyed_from_defs_special(root)?);
+    }
     let existing = collect_existing_keyed(root, target_lang_dir)?;
     // compile dict regexes
     let mut includes: Vec<regex::Regex> = Vec::new();
@@ -152,6 +255,12 @@ pub fn learn_keyed(
             continue;
         }
         if excludes.iter().any(|r| r.is_match(&key)) {
+            continue;
+        }
+        if must_contain_letter && !val.chars().any(|c| c.is_alphabetic()) {
+            continue;
+        }
+        if exclude_substr.iter().any(|s| !s.is_empty() && key.contains(s)) {
             continue;
         }
         let mut cand = KeyedCandidate {

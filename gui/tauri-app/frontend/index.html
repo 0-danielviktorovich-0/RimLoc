@@ -98,6 +98,12 @@
             <button type="button" id="scan-save-csv" data-i18n="scan_save_csv">Save CSV…</button>
           </div>
         </div>
+        <div class="field-grid">
+          <label>
+            <input id="scan-all-versions" type="checkbox" />
+            <span data-i18n="scan_all_versions">Include all versions under root</span>
+          </label>
+        </div>
         <div class="scan-summary" id="scan-summary" data-i18n="scan_empty">No scan performed yet.</div>
         <div class="table-wrapper">
           <table>
@@ -155,8 +161,86 @@
           <label data-i18n="tm_folders">Translation memory folders (one per line)
             <textarea id="tm-roots" rows="3" placeholder="/path/to/reference-mod"></textarea>
           </label>
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="export-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
         </div>
         <div class="result" id="export-result" data-i18n="export_empty">No export performed yet.</div>
+      </section>
+
+      <section class="panel" id="validate-panel">
+        <div class="panel-head">
+          <h2 data-i18n="validate_title">Validate</h2>
+          <div class="actions">
+            <button type="button" id="validate-run" data-i18n="validate_run">Run validate</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="source_lang">Source language code
+            <input id="validate-source-lang" type="text" placeholder="auto" autocomplete="off" />
+          </label>
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="validate-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label data-i18n="defs_root">Defs root (optional)
+            <div class="path-input">
+              <input id="validate-defs-root" type="text" placeholder="/path/to/Defs" autocomplete="off" />
+              <button type="button" data-action="pick-validate-defs" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="extra_fields">Extra fields (comma-separated)
+            <input id="validate-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
+          </label>
+        </div>
+        <div class="result" id="validate-result" data-i18n="validate_empty">No validation run yet.</div>
+      </section>
+
+      <section class="panel" id="health-panel">
+        <div class="panel-head">
+          <h2 data-i18n="health_title">XML Health</h2>
+          <div class="actions">
+            <button type="button" id="health-run" data-i18n="health_run">Check</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="health-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
+        </div>
+        <div class="result" id="health-result" data-i18n="health_empty">No health check yet.</div>
+      </section>
+
+      <section class="panel" id="import-panel">
+        <div class="panel-head">
+          <h2 data-i18n="import_title">Import PO → XML</h2>
+          <div class="actions">
+            <button type="button" id="import-run" data-i18n="import_run">Import PO</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="po_file">PO file
+            <div class="path-input">
+              <input id="import-po" type="text" placeholder="/path/to/translation.po" autocomplete="off" />
+              <button type="button" data-action="pick-import-po" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="import-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <input id="import-single-file" type="checkbox" />
+            <span data-i18n="import_single_file">Single file (_Imported.xml)</span>
+          </label>
+          <label>
+            <input id="import-incremental" type="checkbox" />
+            <span data-i18n="import_incremental">Incremental (skip identical)</span>
+          </label>
+          <label>
+            <input id="import-keep-empty" type="checkbox" />
+            <span data-i18n="import_keep_empty">Keep empty entries</span>
+          </label>
+        </div>
+        <div class="result" id="import-result" data-i18n="import_empty">No import performed yet.</div>
       </section>
 
       <section class="panel" id="debug-panel">

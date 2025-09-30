@@ -558,6 +558,15 @@ enum Commands {
         /// Minimal string length
         #[arg(long)]
         min_len: Option<usize>,
+        /// Only accept values that contain at least one letter (A..Z or localized)
+        #[arg(long, default_value_t = false)]
+        must_contain_letter: bool,
+        /// Exclude keys containing any of these substrings (comma-separated)
+        #[arg(long, value_delimiter = ',')]
+        exclude_substr: Option<Vec<String>>,
+        /// Include Keyed-like pairs extracted from Defs (XmlExtensions.SettingsMenuDef, QuestScriptDef)
+        #[arg(long, default_value_t = false)]
+        from_defs_special: bool,
         /// Blacklist key names (comma-separated)
         #[arg(long, value_delimiter = ',')]
         blacklist: Option<Vec<String>>,
@@ -1252,11 +1261,14 @@ impl Runnable for Commands {
                 lang_dir,
                 threshold,
                 out_dir,
-                learned_out,
                 no_ml,
+                learned_out,
                 retrain_dict,
                 min_len,
                 blacklist,
+                must_contain_letter,
+                exclude_substr,
+                from_defs_special,
                 game_version,
             } => commands::learn_defs::run_learn_keyed(
                 mod_root,
@@ -1271,6 +1283,9 @@ impl Runnable for Commands {
                 retrain_dict,
                 min_len,
                 blacklist,
+                must_contain_letter,
+                exclude_substr,
+                from_defs_special,
                 game_version,
             ),
 

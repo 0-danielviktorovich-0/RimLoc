@@ -71,6 +71,9 @@ pub fn run_learn_keyed(
     retrain_dict: Option<std::path::PathBuf>,
     min_len: Option<usize>,
     blacklist: Option<Vec<String>>,
+    must_contain_letter: bool,
+    exclude_substr: Option<Vec<String>>,
+    from_defs_special: bool,
     game_version: Option<String>,
 ) -> color_eyre::Result<()> {
     let (scan_root, _) = resolve_game_version_root(&mod_root, game_version.as_deref())?;
@@ -95,6 +98,9 @@ pub fn run_learn_keyed(
     };
     let src_dir = source_lang_dir.unwrap_or_else(|| "English".to_string());
     let trg_dir = lang_dir.unwrap_or_else(|| "Russian".to_string());
+    if from_defs_special {
+        std::env::set_var("RIMLOC_LEARN_KEYED_FROM_DEFS", "1");
+    }
     let missing = rimloc_services::learn::keyed::learn_keyed(
         &scan_root,
         &src_dir,
@@ -102,6 +108,8 @@ pub fn run_learn_keyed(
         &dicts,
         min_len.unwrap_or(1),
         &blacklist.unwrap_or_default(),
+        must_contain_letter,
+        &exclude_substr.unwrap_or_default(),
         threshold,
         classifier.as_mut(),
     )?;

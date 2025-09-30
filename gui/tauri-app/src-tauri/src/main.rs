@@ -4,6 +4,10 @@ use color_eyre::eyre::WrapErr;
 use rimloc_domain::{ScanUnit, SCHEMA_VERSION};
 use rimloc_export_csv as export_csv;
 use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn, scan_units_auto};
+use rimloc_services::{
+    validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_fields,
+    xml_health_scan, import_po_to_mod_tree_with_progress, build_from_po_with_progress,
+};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -214,6 +218,119 @@ struct ExportPoRequest {
     tm_roots: Option<Vec<String>>,
     #[serde(default)]
     game_version: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ValidateRequest {
+    root: String,
+    #[serde(default)]
+    game_version: Option<String>,
+    #[serde(default)]
+    source_lang: Option<String>,
+    #[serde(default)]
+    source_lang_dir: Option<String>,
+    #[serde(default)]
+    defs_root: Option<String>,
+    #[serde(default)]
+    extra_fields: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ValidateResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    total: usize,
+    errors: usize,
+    warnings: usize,
+    infos: usize,
+    messages: Vec<ValidationMessageView>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ValidationMessageView {
+    kind: String,
+    key: String,
+    path: String,
+    line: Option<usize>,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct XmlHealthRequest {
+    root: String,
+    #[serde(default)]
+    game_version: Option<String>,
+    #[serde(default)]
+    lang: Option<String>,
+    #[serde(default)]
+    lang_dir: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct XmlHealthResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    checked: usize,
+    issues: Vec<rimloc_services::HealthIssue>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ImportPoRequest {
+    root: String,
+    po_path: String,
+    #[serde(default)]
+    game_version: Option<String>,
+    #[serde(default)]
+    lang: Option<String>,
+    #[serde(default)]
+    lang_dir: Option<String>,
+    #[serde(default)]
+    keep_empty: bool,
+    #[serde(default)]
+    backup: bool,
+    #[serde(default)]
+    single_file: bool,
+    #[serde(default)]
+    incremental: bool,
+    #[serde(default)]
+    only_diff: bool,
+    #[serde(default)]
+    report: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportPoResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    lang_dir: String,
+    created: usize,
+    updated: usize,
+    skipped: usize,
+    keys: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct BuildModRequest {
+    po_path: String,
+    out_mod: String,
+    lang_dir: String,
+    name: String,
+    package_id: String,
+    rw_version: String,
+    #[serde(default)]
+    dedupe: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BuildModResponse {
+    out_mod: String,
+    files: usize,
+    total_keys: usize,
 }
 
 #[tauri::command]
@@ -468,6 +585,149 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     Ok(resp)
 }
 
+#[tauri::command]
+fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest) -> Result<ValidateResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("validate: root={}", request.root));
+    emit_progress(&window, &state, "validate", "start", Some("Validating…".to_string()), Some(0));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let defs_root = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
+    let msgs_raw = if let Some(fields) = request.extra_fields.as_ref() {
+        validate_under_root_with_defs_and_fields(
+            &scan_root,
+            request.source_lang.as_deref(),
+            request.source_lang_dir.as_deref(),
+            defs_root.as_deref(),
+            fields,
+        )?
+    } else if request.defs_root.is_some() {
+        validate_under_root_with_defs(
+            &scan_root,
+            request.source_lang.as_deref(),
+            request.source_lang_dir.as_deref(),
+            defs_root.as_deref(),
+        )?
+    } else {
+        validate_under_root(
+            &scan_root,
+            request.source_lang.as_deref(),
+            request.source_lang_dir.as_deref(),
+        )?
+    };
+    let msgs: Vec<ValidationMessageView> = msgs_raw
+        .into_iter()
+        .map(|m| ValidationMessageView { kind: m.kind, key: m.key, path: m.path, line: m.line, message: m.message })
+        .collect();
+    let mut errors = 0usize;
+    let mut warnings = 0usize;
+    let mut infos = 0usize;
+    for m in &msgs {
+        match m.kind.as_str() {
+            "error" => errors += 1,
+            "warn" | "warning" => warnings += 1,
+            _ => infos += 1,
+        }
+    }
+    emit_progress(&window, &state, "validate", "done", Some("Validation finished".to_string()), Some(100));
+    Ok(ValidateResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        total: msgs.len(),
+        errors,
+        warnings,
+        infos,
+        messages: msgs,
+    })
+}
+
+#[tauri::command]
+fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest) -> Result<XmlHealthResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("xml_health: root={}", request.root));
+    emit_progress(&window, &state, "health", "start", Some("Checking XML…".to_string()), Some(0));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let lang_dir = request
+        .lang_dir
+        .clone()
+        .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .unwrap_or_else(|| "English".to_string());
+    let report = xml_health_scan(&scan_root, Some(&lang_dir)).wrap_err("xml health")?;
+    emit_progress(&window, &state, "health", "done", Some("XML check finished".to_string()), Some(100));
+    Ok(XmlHealthResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        checked: report.checked,
+        issues: report.issues,
+    })
+}
+
+#[tauri::command]
+fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -> Result<ImportPoResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("import_po: root={} po={}", request.root, request.po_path));
+    emit_progress(&window, &state, "import", "start", Some("Importing PO…".to_string()), Some(0));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let po_path = make_absolute(&scan_root, Path::new(&request.po_path));
+    let lang_dir = request
+        .lang_dir
+        .clone()
+        .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .unwrap_or_else(|| "English".to_string());
+    let summary = import_po_to_mod_tree_with_progress(
+        &po_path,
+        &scan_root,
+        &lang_dir,
+        request.keep_empty,
+        request.backup,
+        request.single_file,
+        request.incremental,
+        request.only_diff,
+        request.report,
+        |cur, total, path| {
+            emit_progress(&window, &state, "import", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+        },
+    )
+    .wrap_err("import po")?;
+    emit_progress(&window, &state, "import", "done", Some("Import finished".to_string()), Some(100));
+    Ok(ImportPoResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        lang_dir,
+        created: summary.created,
+        updated: summary.updated,
+        skipped: summary.skipped,
+        keys: summary.keys,
+    })
+}
+
+#[tauri::command]
+fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -> Result<BuildModResponse, ApiError> {
+    emit_log(&window, &state, "info", format!("build_mod from PO: {}", request.po_path));
+    emit_progress(&window, &state, "build", "start", Some("Building mod…".to_string()), Some(0));
+    let po = PathBuf::from(&request.po_path);
+    let out = PathBuf::from(&request.out_mod);
+    let mut files_count = 0usize;
+    let mut total_keys = 0usize;
+    build_from_po_with_progress(
+        &po,
+        &out,
+        &request.lang_dir,
+        &request.name,
+        &request.package_id,
+        &request.rw_version,
+        request.dedupe,
+        |cur, total, path| {
+            files_count = total;
+            emit_progress(&window, &state, "build", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+        },
+    )
+    .wrap_err("build mod from po")?;
+    // Estimate total keys by scanning generated mod quickly (optional)
+    // Skipping heavy scan; we leave total_keys = 0 for now as a placeholder.
+    emit_progress(&window, &state, "build", "done", Some("Build finished".to_string()), Some(100));
+    Ok(BuildModResponse { out_mod: out.display().to_string(), files: files_count, total_keys })
+}
+
 fn def_injected_warning(scan_root: &Path, source_dir: &str) -> Option<String> {
     let definj = scan_root
         .join("Languages")
@@ -636,6 +896,8 @@ fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
 fn main() {
     let _ = color_eyre::install();
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             // Prepare log file path in OS-specific data directory
             let base = dirs::data_dir().unwrap_or_else(|| std::env::temp_dir());
@@ -659,6 +921,10 @@ fn main() {
             scan_mod,
             learn_defs,
             export_po,
+            validate_mod,
+            xml_health,
+            import_po,
+            build_mod,
             get_log_info,
             pick_directory,
             save_text_file,

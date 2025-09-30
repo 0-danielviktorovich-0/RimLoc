@@ -105,6 +105,10 @@ pub fn run_scan(
     if no_inherit {
         std::env::set_var("RIMLOC_INHERIT", "0");
     }
+    // Gate nested keyed dotted keys via env var
+    if keyed_nested {
+        std::env::set_var("RIMLOC_KEYED_NESTED", "1");
+    }
     if keyed_nested {
         std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }

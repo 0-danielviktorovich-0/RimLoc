@@ -92,6 +92,22 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                 }
                 Ok(Event::End(_)) => {
                     if let Some(frame) = stack.pop() {
+                        // Optional: emit nested dotted keys under LanguageData when enabled
+                        let keyed_nested = std::env::var("RIMLOC_KEYED_NESTED").ok().map_or(false, |v| v == "1");
+                        if keyed_nested {
+                            if frame.has_text && !frame.name.is_empty() {
+                                // stack after pop contains ancestors; expect root[0] == LanguageData
+                                if stack.first().map(|f| f.name.eq_ignore_ascii_case("LanguageData")).unwrap_or(false) && stack.len() >= 2 {
+                                    let mut parts: Vec<String> = stack.iter().skip(1).map(|f| f.name.clone()).collect();
+                                    parts.push(frame.name.clone());
+                                    if !parts.iter().any(|p| p.eq_ignore_ascii_case("li")) {
+                                        let key = parts.join(".");
+                                        out.push(TransUnit { key, source: Some(frame.buffer.clone()), path: p.to_path_buf(), line: frame.line });
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
                         // If closing a <li> directly under a top-level key, fold into the parent buffer
                         if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
                             if let Some(parent) = stack.last_mut() {

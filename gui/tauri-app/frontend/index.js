@@ -345,6 +345,7 @@ async function handleScan(saveMode) {
     root,
     game_version: $("game-version").value.trim() || null,
     lang: $("target-lang").value.trim() || null,
+    include_all_versions: $("scan-all-versions")?.checked || false,
   };
   debugLog("debug", `scan payload: ${JSON.stringify(payload)}`);
   if (saveMode === "json") {
@@ -410,7 +411,7 @@ async function handleExport() {
     out_po: outPo,
     lang: $("target-lang").value.trim() || null,
     source_lang: $("source-lang").value.trim() || null,
-    // source_lang_dir: optional separate input could be added; omit/null if not supplied
+    source_lang_dir: $("export-source-lang-dir").value.trim() || null,
     tm_roots: tmRoots.length ? tmRoots : null,
     game_version: $("game-version").value.trim() || null,
   };
@@ -457,6 +458,19 @@ function initEventHandlers() {
     "click",
     pickSave("po-output", { defaultPath: "translation.po" })
   );
+
+  // Validate
+  $("validate-run").addEventListener("click", handleValidate);
+  const pickDefs = document.querySelector('[data-action="pick-validate-defs"]');
+  if (pickDefs) pickDefs.addEventListener("click", pickDirectory("validate-defs-root"));
+
+  // Health
+  $("health-run").addEventListener("click", handleHealth);
+
+  // Import
+  $("import-run").addEventListener("click", handleImport);
+  const pickImportPo = document.querySelector('[data-action="pick-import-po"]');
+  if (pickImportPo) pickImportPo.addEventListener("click", () => pickFile("import-po", [{ name: "PO", extensions: ["po"] }])());
 }
 
 function initPersistence() {
@@ -468,6 +482,32 @@ function initPersistence() {
   bindPersist("learn-lang-dir", "rimloc.learnLangDir", "English");
   bindPersist("po-output", "rimloc.poOutput", "_learn/translation.po");
   bindPersistTextArea("tm-roots", "rimloc.tmRoots");
+  // Scan options
+  const scanAll = $("scan-all-versions");
+  if (scanAll) {
+    scanAll.checked = localStorage.getItem("rimloc.scanAllVersions") === "1";
+    scanAll.addEventListener("change", () => localStorage.setItem("rimloc.scanAllVersions", scanAll.checked ? "1" : "0"));
+  }
+  // Export options
+  bindPersist("export-source-lang-dir", "rimloc.exportSourceLangDir", "English");
+  // Validate options
+  bindPersist("validate-source-lang", "rimloc.validateSourceLang");
+  bindPersist("validate-source-lang-dir", "rimloc.validateSourceLangDir", "English");
+  bindPersist("validate-defs-root", "rimloc.validateDefsRoot");
+  bindPersist("validate-extra-fields", "rimloc.validateExtraFields");
+  // Health options
+  bindPersist("health-lang-dir", "rimloc.healthLangDir", "English");
+  // Import options
+  bindPersist("import-po", "rimloc.importPo");
+  bindPersist("import-lang-dir", "rimloc.importLangDir", "Russian");
+  const flags = ["import-single-file","import-incremental","import-keep-empty"];
+  flags.forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    const key = `rimloc.${id}`;
+    el.checked = localStorage.getItem(key) === "1";
+    el.addEventListener("change", () => localStorage.setItem(key, el.checked ? "1" : "0"));
+  });
 }
 
 async function fetchAppVersion() {
