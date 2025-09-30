@@ -52,6 +52,8 @@ dry-run-would-write = DRY-RUN: would write { $count } key(s) to { $path }
 annotate-dry-run-line = DRY-RUN: { $path } (add={ $add }, strip={ $strip })
 
 xml-saved = XML saved to { $path }
+diffxml-summary = Diff: changed={ $changed }, only-in-translation={ $only_trg }, only-in-mod={ $only_src }
+diffxml-flags-applied = Applied flags: fuzzy={ $fuzzy }, unused={ $unused }
 
 build-dry-run-header = === DRY RUN: building translation mod ===
 build-built-at = Translation mod built at { $path }

@@ -1,4 +1,5 @@
 use crate::version::resolve_game_version_root;
+use rimloc_services::apply_diff_flags;
 
 #[allow(clippy::too_many_arguments)]
 pub fn run_diff_xml(
@@ -13,6 +14,8 @@ pub fn run_diff_xml(
     baseline_po: Option<std::path::PathBuf>,
     format: String,
     strict: bool,
+    apply_flags: bool,
+    backup: bool,
     out_dir: Option<std::path::PathBuf>,
     game_version: Option<String>,
 ) -> color_eyre::Result<()> {
@@ -106,6 +109,16 @@ pub fn run_diff_xml(
     let any_diff = !diff.changed.is_empty()
         || !diff.only_in_translation.is_empty()
         || !diff.only_in_mod.is_empty();
+
+    // Apply flags to translation XML if requested
+    if apply_flags {
+        let (f_cnt, u_cnt) = rimloc_services::apply_diff_flags(&scan_root, &trg_dir, &diff, backup)?;
+        crate::ui_out!("diffxml-flags-applied", fuzzy = f_cnt, unused = u_cnt);
+        if strict && any_diff {
+            color_eyre::eyre::bail!("diffxml-nonempty");
+        }
+        return Ok(());
+    }
 
     // Output
     if let Some(dir) = out_dir.as_ref() {

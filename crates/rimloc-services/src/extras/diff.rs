@@ -606,3 +606,86 @@ pub fn write_diff_reports(dir: &Path, diff: &DiffOutput) -> Result<()> {
     }
     Ok(())
 }
+
+/// Apply flags to translation XML files based on a DiffOutput:
+/// - keys listed in `changed` are annotated with `<!-- FUZZY -->`
+/// - keys listed in `only_in_translation` are annotated with `<!-- UNUSED -->`
+pub fn apply_diff_flags(root: &Path, target_lang_dir: &str, diff: &DiffOutput, backup: bool) -> Result<(usize, usize)> {
+    use quick_xml::{events::{Event, BytesText}, Reader, Writer};
+    use walkdir::WalkDir;
+    use std::collections::HashSet;
+
+    let fuzzy: HashSet<&str> = diff.changed.iter().map(|(k, _)| k.as_str()).collect();
+    let unused: HashSet<&str> = diff.only_in_translation.iter().map(|k| k.as_str()).collect();
+
+    let mut fuzzy_count = 0usize;
+    let mut unused_count = 0usize;
+
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() { continue; }
+        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
+        // Under Languages/<target>/Keyed or DefInjected
+        let s = p.to_string_lossy();
+        if !(s.contains(&format!("/Languages/{target_lang}/", target_lang = target_lang_dir)) || s.contains(&format!("\\Languages\\{target_lang}\\", target_lang = target_lang_dir))) { continue; }
+
+        let input = match std::fs::read_to_string(p) { Ok(s) => s, Err(_) => continue };
+        let mut reader = Reader::from_str(&input);
+        reader.config_mut().trim_text(false);
+        let mut buf = Vec::new();
+        let mut out = Writer::new_with_indent(Vec::new(), b' ', 2);
+        let mut stack: Vec<String> = Vec::new();
+        let mut in_language_data = false;
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Ok(Event::Start(e)) => {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    if name.eq_ignore_ascii_case("LanguageData") { in_language_data = true; }
+                    stack.push(name.clone());
+                    if in_language_data && stack.len() == 2 {
+                        if fuzzy.contains(name.as_str()) {
+                            out.write_event(Event::Comment(BytesText::new(" FUZZY ")))?;
+                            fuzzy_count += 1;
+                        } else if unused.contains(name.as_str()) {
+                            out.write_event(Event::Comment(BytesText::new(" UNUSED ")))?;
+                            unused_count += 1;
+                        }
+                    }
+                    out.write_event(Event::Start(e.to_owned()))?;
+                }
+                Ok(Event::Empty(e)) => {
+                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    if in_language_data && stack.len() == 1 {
+                        if fuzzy.contains(name.as_str()) {
+                            out.write_event(Event::Comment(BytesText::new(" FUZZY ")))?;
+                            fuzzy_count += 1;
+                        } else if unused.contains(name.as_str()) {
+                            out.write_event(Event::Comment(BytesText::new(" UNUSED ")))?;
+                            unused_count += 1;
+                        }
+                    }
+                    out.write_event(Event::Empty(e.to_owned()))?;
+                }
+                Ok(Event::End(e)) => {
+                    if stack.pop().as_deref() == Some("LanguageData") { in_language_data = false; }
+                    out.write_event(Event::End(e.to_owned()))?;
+                }
+                Ok(Event::Text(t)) => out.write_event(Event::Text(t))?,
+                Ok(Event::CData(t)) => out.write_event(Event::CData(t))?,
+                Ok(Event::Decl(d)) => out.write_event(Event::Decl(d))?,
+                Ok(Event::PI(pi)) => out.write_event(Event::PI(pi))?,
+                Ok(Event::Comment(c)) => out.write_event(Event::Comment(c))?,
+                Ok(Event::DocType(d)) => out.write_event(Event::DocType(d))?,
+                Ok(Event::Eof) => break,
+                Err(_) => break,
+            }
+            buf.clear();
+        }
+        if backup && p.exists() {
+            let _ = std::fs::copy(p, p.with_extension("xml.bak"));
+        }
+        std::fs::write(p, out.into_inner())?;
+    }
+
+    Ok((fuzzy_count, unused_count))
+}

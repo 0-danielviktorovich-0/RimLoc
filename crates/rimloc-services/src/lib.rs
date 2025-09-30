@@ -25,7 +25,7 @@ pub use extras::annotate::{
 };
 pub use extras::diff::{
     diff_xml, diff_xml_with_defs, diff_xml_with_defs_and_dict, diff_xml_with_defs_and_fields,
-    write_diff_reports,
+    write_diff_reports, apply_diff_flags,
 };
 pub use extras::init::{make_init_plan, write_init_plan, InitFilePlan, InitPlan};
 pub use extras::lang_update::{lang_update, LangUpdatePlan, LangUpdateSummary};

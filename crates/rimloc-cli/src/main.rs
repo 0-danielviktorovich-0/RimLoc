@@ -484,6 +484,12 @@ enum Commands {
         /// Strict mode: return non-zero exit if any difference is found
         #[arg(long, default_value_t = false)]
         strict: bool,
+        /// Apply flags to translation XML: mark changed as FUZZY and only-in-translation as UNUSED
+        #[arg(long, default_value_t = false)]
+        apply_flags: bool,
+        /// Make .bak backups when applying flags
+        #[arg(long, default_value_t = true)]
+        backup: bool,
     },
     /// Learn DefInjected fields and generate missing/suggested outputs
     LearnDefs {
@@ -1068,6 +1074,8 @@ impl Runnable for Commands {
             }
 
             Commands::DiffXml {
+                apply_flags,
+                backup,
                 root,
                 source_lang,
                 source_lang_dir,
@@ -1093,6 +1101,8 @@ impl Runnable for Commands {
                 baseline_po,
                 format,
                 strict,
+                apply_flags,
+                backup,
                 out_dir,
                 game_version,
             ),

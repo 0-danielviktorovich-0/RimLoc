@@ -52,6 +52,8 @@ dry-run-would-write = DRY-RUN: записали бы { $count } ключ(ей) �
 annotate-dry-run-line = DRY-RUN: { $path } (добавить={ $add }, удалить={ $strip })
 
 xml-saved = XML сохранён в { $path }
+diffxml-summary = Сравнение: изменено={ $changed }, только в переводе={ $only_trg }, только в моде={ $only_src }
+diffxml-flags-applied = Применены флаги: fuzzy={ $fuzzy }, unused={ $unused }
 
 build-dry-run-header = === DRY RUN: сборка мода перевода ===
 build-built-at = Мод перевода собран в { $path }

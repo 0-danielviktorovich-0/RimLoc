@@ -7,6 +7,8 @@ use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn, scan_
 use rimloc_services::{
     validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_fields,
     xml_health_scan, import_po_to_mod_tree_with_progress, build_from_po_with_progress,
+    diff_xml, diff_xml_with_defs, lang_update, annotate_dry_run_plan, annotate_apply,
+    make_init_plan, write_init_plan,
 };
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -332,6 +334,95 @@ struct BuildModResponse {
     out_mod: String,
     files: usize,
     total_keys: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct DiffXmlRequest {
+    root: String,
+    #[serde(default)]
+    game_version: Option<String>,
+    source_lang_dir: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    baseline_po: Option<String>,
+    #[serde(default)]
+    defs_root: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DiffXmlResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    only_in_mod: Vec<String>,
+    only_in_translation: Vec<String>,
+    changed: Vec<(String, String)>,
+}
+
+#[derive(Debug, Deserialize)]
+struct LangUpdateRequest {
+    root: String,
+    repo: String,
+    #[serde(default)]
+    branch: Option<String>,
+    #[serde(default)]
+    zip_path: Option<String>,
+    #[serde(default)]
+    game_version: Option<String>,
+    source_lang_dir: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    dry_run: bool,
+    #[serde(default)]
+    backup: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LangUpdateResponse {
+    files: usize,
+    bytes: u64,
+    out_dir: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct AnnotateRequest {
+    root: String,
+    source_lang_dir: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    comment_prefix: Option<String>,
+    #[serde(default)]
+    strip: bool,
+    #[serde(default)]
+    dry_run: bool,
+    #[serde(default)]
+    backup: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AnnotateResponse {
+    processed: usize,
+    annotated: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct InitRequest {
+    root: String,
+    source_lang_dir: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    overwrite: bool,
+    #[serde(default)]
+    dry_run: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct InitResponse {
+    files: usize,
+    out_language: String,
 }
 
 #[tauri::command]
@@ -926,6 +1017,10 @@ fn main() {
             xml_health,
             import_po,
             build_mod,
+            diff_xml_cmd,
+            lang_update_cmd,
+            annotate_cmd,
+            init_lang_cmd,
             get_log_info,
             pick_directory,
             save_text_file,
@@ -980,4 +1075,79 @@ fn open_path(path: String) -> Result<(), ApiError> {
         std::process::Command::new("cmd").args(["/C", "start", "", &p.display().to_string()]).spawn()?;
     }
     Ok(())
+}
+#[tauri::command]
+fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest) -> Result<DiffXmlResponse, ApiError> {
+    append_log(&state.path, "INFO", &format!("diff_xml: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let baseline = request.baseline_po.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
+    let defs = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
+    let out = if defs.is_some() {
+        diff_xml_with_defs(
+            &scan_root,
+            &request.source_lang_dir,
+            &request.target_lang_dir,
+            baseline.as_deref(),
+            defs.as_deref(),
+        )?
+    } else {
+        diff_xml(
+            &scan_root,
+            &request.source_lang_dir,
+            &request.target_lang_dir,
+            baseline.as_deref(),
+        )?
+    };
+    Ok(DiffXmlResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        only_in_mod: out.only_in_mod,
+        only_in_translation: out.only_in_translation,
+        changed: out.changed,
+    })
+}
+
+#[tauri::command]
+fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateRequest) -> Result<LangUpdateResponse, ApiError> {
+    append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
+    let root = PathBuf::from(&request.root);
+    let (scan_root, _version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let zip_path = request.zip_path.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
+    let (_plan, summary) = lang_update(
+        &scan_root,
+        &request.repo,
+        request.branch.as_deref(),
+        zip_path.as_deref(),
+        &request.source_lang_dir,
+        &request.target_lang_dir,
+        request.dry_run,
+        request.backup,
+    )?;
+    if let Some(s) = summary {
+        Ok(LangUpdateResponse { files: s.files, bytes: s.bytes, out_dir: s.out_dir.display().to_string() })
+    } else {
+        Ok(LangUpdateResponse { files: 0, bytes: 0, out_dir: scan_root.join("Data/Core/Languages").display().to_string() })
+    }
+}
+
+#[tauri::command]
+fn annotate_cmd(_window: Window, state: State<LogState>, request: AnnotateRequest) -> Result<AnnotateResponse, ApiError> {
+    append_log(&state.path, "INFO", &format!("annotate: src={} trg={}", request.source_lang_dir, request.target_lang_dir));
+    let root = PathBuf::from(&request.root);
+    if request.dry_run {
+        let plan = annotate_dry_run_plan(&root, &request.source_lang_dir, &request.target_lang_dir, request.comment_prefix.as_deref().unwrap_or("//"), request.strip)?;
+        Ok(AnnotateResponse { processed: plan.processed, annotated: plan.total_add })
+    } else {
+        let s = annotate_apply(&root, &request.source_lang_dir, &request.target_lang_dir, request.comment_prefix.as_deref().unwrap_or("//"), request.strip, false, request.backup)?;
+        Ok(AnnotateResponse { processed: s.processed, annotated: s.annotated })
+    }
+}
+
+#[tauri::command]
+fn init_lang_cmd(_window: Window, _state: State<LogState>, request: InitRequest) -> Result<InitResponse, ApiError> {
+    let root = PathBuf::from(&request.root);
+    let plan = make_init_plan(&root, &request.source_lang_dir, &request.target_lang_dir)?;
+    let files = write_init_plan(&plan, request.overwrite, request.dry_run)?;
+    Ok(InitResponse { files, out_language: plan.language })
 }

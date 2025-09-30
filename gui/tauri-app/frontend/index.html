@@ -286,6 +286,125 @@
         <div class="result" id="build-result" data-i18n="build_empty">No build performed yet.</div>
       </section>
 
+      <section class="panel" id="diff-panel">
+        <div class="panel-head">
+          <h2 data-i18n="diff_title">Diff XML</h2>
+          <div class="actions">
+            <button type="button" id="diff-run" data-i18n="diff_run">Run diff</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="diff-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="diff-target-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label data-i18n="defs_root">Defs root (optional)
+            <div class="path-input">
+              <input id="diff-defs-root" type="text" placeholder="/path/to/Defs" autocomplete="off" />
+              <button type="button" data-action="pick-diff-defs" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="po_file">Baseline PO (optional)
+            <div class="path-input">
+              <input id="diff-po" type="text" placeholder="/path/to/baseline.po" autocomplete="off" />
+              <button type="button" data-action="pick-diff-po" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+        </div>
+        <div class="result" id="diff-result" data-i18n="diff_empty">No diff run yet.</div>
+      </section>
+
+      <section class="panel" id="lang-update-panel">
+        <div class="panel-head">
+          <h2 data-i18n="lang_update_title">Lang Update</h2>
+          <div class="actions">
+            <button type="button" id="lang-update-run" data-i18n="lang_update_run">Update</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label>Repo
+            <input id="lang-update-repo" type="text" placeholder="Ludeon/RimWorld" autocomplete="off" />
+          </label>
+          <label>Branch
+            <input id="lang-update-branch" type="text" placeholder="master" autocomplete="off" />
+          </label>
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="lang-update-source" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="lang-update-target" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <input id="lang-update-dry" type="checkbox" />
+            <span data-i18n="dry_run">Dry run</span>
+          </label>
+          <label>
+            <input id="lang-update-backup" type="checkbox" />
+            <span data-i18n="backup">Backup existing</span>
+          </label>
+        </div>
+        <div class="result" id="lang-update-result" data-i18n="lang_update_empty">No lang update yet.</div>
+      </section>
+
+      <section class="panel" id="annotate-panel">
+        <div class="panel-head">
+          <h2 data-i18n="annotate_title">Annotate Keyed</h2>
+          <div class="actions">
+            <button type="button" id="annotate-preview" data-i18n="annotate_preview">Preview</button>
+            <button type="button" id="annotate-apply" data-i18n="annotate_apply">Apply</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="annotate-source" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="annotate-target" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <span>Prefix</span>
+            <input id="annotate-prefix" type="text" placeholder="//" autocomplete="off" />
+          </label>
+          <label>
+            <input id="annotate-strip" type="checkbox" />
+            <span data-i18n="strip_comments">Strip existing comments</span>
+          </label>
+          <label>
+            <input id="annotate-backup" type="checkbox" />
+            <span data-i18n="backup">Backup files</span>
+          </label>
+        </div>
+        <div class="result" id="annotate-result" data-i18n="annotate_empty">No annotate yet.</div>
+      </section>
+
+      <section class="panel" id="init-panel">
+        <div class="panel-head">
+          <h2 data-i18n="init_title">Init Language</h2>
+          <div class="actions">
+            <button type="button" id="init-run" data-i18n="init_run">Init</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="init-source" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="init-target" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <input id="init-overwrite" type="checkbox" />
+            <span data-i18n="overwrite">Overwrite existing</span>
+          </label>
+          <label>
+            <input id="init-dry" type="checkbox" />
+            <span data-i18n="dry_run">Dry run</span>
+          </label>
+        </div>
+        <div class="result" id="init-result" data-i18n="init_empty">No init yet.</div>
+      </section>
+
       <section class="panel" id="debug-panel">
         <div class="panel-head">
           <h2 data-i18n="debug_console">Debug console</h2>
