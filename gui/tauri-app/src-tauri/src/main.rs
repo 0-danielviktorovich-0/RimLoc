@@ -300,6 +300,10 @@ struct ValidateRequest {
     target_lang: Option<String>,
     #[serde(default)]
     target_lang_dir: Option<String>,
+    #[serde(default)]
+    defs_dicts: Option<Vec<String>>,
+    #[serde(default)]
+    defs_type_schema: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -431,6 +435,12 @@ struct DiffXmlRequest {
     defs_root: Option<String>,
     #[serde(default)]
     out_json: Option<String>,
+    #[serde(default)]
+    defs_dicts: Option<Vec<String>>,
+    #[serde(default)]
+    extra_fields: Option<Vec<String>>,
+    #[serde(default)]
+    type_schema: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -938,7 +948,33 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
         resolve_game_version_root(&root, request.game_version.as_deref())?
     };
     let defs_root = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
-    let mut msgs_raw = if let Some(fields) = request.extra_fields.as_ref() {
+
+    // If dicts and/or type schema provided, merge dicts and call validate_with_defs_and_dict
+    let mut msgs_raw = if request.defs_dicts.as_ref().map(|v| !v.is_empty()).unwrap_or(false)
+        || request.defs_type_schema.as_ref().is_some()
+    {
+        let mut dicts: Vec<rimloc_parsers_xml::DefsDict> = Vec::new();
+        dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
+        if let Some(list) = request.defs_dicts.as_ref() {
+            for p in list {
+                let pp = make_absolute(&scan_root, Path::new(p));
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+            }
+        }
+        if let Some(schema) = request.defs_type_schema.as_deref() {
+            let pp = make_absolute(&scan_root, Path::new(schema));
+            if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) { dicts.push(d); }
+        }
+        let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
+        rimloc_services::validate_under_root_with_defs_and_dict(
+            &scan_root,
+            request.source_lang.as_deref(),
+            request.source_lang_dir.as_deref(),
+            defs_root.as_deref(),
+            &merged.0,
+            request.extra_fields.as_deref().unwrap_or(&Vec::new()),
+        )?
+    } else if let Some(fields) = request.extra_fields.as_ref() {
         validate_under_root_with_defs_and_fields(
             &scan_root,
             request.source_lang.as_deref(),
@@ -1448,7 +1484,42 @@ fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let baseline = request.baseline_po.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
     let defs = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
-    let out = if defs.is_some() {
+    let out = if request.defs_dicts.as_ref().map(|v| !v.is_empty()).unwrap_or(false)
+        || request.type_schema.is_some()
+    {
+        // Build merged dicts (embedded + files + type schema) and run dict-based diff
+        let mut dicts: Vec<rimloc_parsers_xml::DefsDict> = Vec::new();
+        dicts.push(rimloc_parsers_xml::load_embedded_defs_dict());
+        if let Some(list) = request.defs_dicts.as_ref() {
+            for p in list {
+                let pp = make_absolute(&scan_root, Path::new(p));
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+            }
+        }
+        if let Some(schema) = request.type_schema.as_deref() {
+            let pp = make_absolute(&scan_root, Path::new(schema));
+            if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) { dicts.push(d); }
+        }
+        let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
+        rimloc_services::diff_xml_with_defs_and_dict(
+            &scan_root,
+            &request.source_lang_dir,
+            &request.target_lang_dir,
+            baseline.as_deref(),
+            defs.as_deref(),
+            &merged.0,
+            request.extra_fields.as_deref().unwrap_or(&Vec::new()),
+        )?
+    } else if let Some(fields) = request.extra_fields.as_ref() {
+        rimloc_services::diff_xml_with_defs_and_fields(
+            &scan_root,
+            &request.source_lang_dir,
+            &request.target_lang_dir,
+            baseline.as_deref(),
+            defs.as_deref(),
+            fields,
+        )?
+    } else if defs.is_some() {
         diff_xml_with_defs(
             &scan_root,
             &request.source_lang_dir,

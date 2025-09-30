@@ -489,6 +489,8 @@ async function handleValidate() {
     source_lang_dir: val("validate-source-lang-dir") || null,
     defs_root: val("validate-defs-root") || null,
     extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
+    defs_dicts: (($("validate-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
+    defs_type_schema: val("validate-type-schema") || null,
     include_all_versions: isChecked("validate-all-versions"),
     compare_placeholders: isChecked("validate-compare-ph"),
     target_lang: val("validate-target-lang") || null,
@@ -614,6 +616,9 @@ async function handleDiff() {
     target_lang_dir: val("diff-target-lang-dir") || "Russian",
     defs_root: val("diff-defs-root") || null,
     baseline_po: val("diff-po") || null,
+    defs_dicts: (($("diff-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
+    type_schema: val("diff-type-schema") || null,
+    extra_fields: (val("diff-extra-fields") || "").split(',').map(s=>s.trim()).filter(Boolean),
   };
   const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", { request: payload }));
   try { console.log('Diff result', res); } catch {}
@@ -729,6 +734,8 @@ function initEventHandlers() {
   $("validate-run").addEventListener("click", handleValidate);
   const pickDefs = document.querySelector('[data-action="pick-validate-defs"]');
   if (pickDefs) pickDefs.addEventListener("click", pickDirectory("validate-defs-root"));
+  const pickValSchema = document.querySelector('[data-action="pick-validate-schema"]');
+  if (pickValSchema) pickValSchema.addEventListener("click", () => pickFile("validate-type-schema", [{ name: "JSON", extensions: ["json"] }])());
 
   // Health
   $("health-run").addEventListener("click", handleHealth);
@@ -772,6 +779,8 @@ function initEventHandlers() {
   if (pickDiffDefs) pickDiffDefs.addEventListener("click", pickDirectory("diff-defs-root"));
   const pickDiffPo = document.querySelector('[data-action="pick-diff-po"]');
   if (pickDiffPo) pickDiffPo.addEventListener("click", () => pickFile("diff-po", [{ name: "PO", extensions: ["po"] }])());
+  const pickDiffSchema = document.querySelector('[data-action="pick-diff-schema"]');
+  if (pickDiffSchema) pickDiffSchema.addEventListener("click", () => pickFile("diff-type-schema", [{ name: "JSON", extensions: ["json"] }])());
 
   // Lang update
   const luRun = $("lang-update-run");
@@ -833,6 +842,8 @@ function initPersistence() {
   bindPersist("validate-source-lang-dir", "rimloc.validateSourceLangDir", "English");
   bindPersist("validate-defs-root", "rimloc.validateDefsRoot");
   bindPersist("validate-extra-fields", "rimloc.validateExtraFields");
+  bindPersistTextArea("validate-defs-dicts", "rimloc.validateDefsDicts");
+  bindPersist("validate-type-schema", "rimloc.validateTypeSchema");
   const valAll = $("validate-all-versions"); if (valAll) { valAll.checked = localStorage.getItem("rimloc.validateAllVersions") === "1"; valAll.addEventListener("change", () => localStorage.setItem("rimloc.validateAllVersions", valAll.checked?"1":"0")); }
   const valCmp = $("validate-compare-ph"); if (valCmp) { valCmp.checked = localStorage.getItem("rimloc.validateComparePH") === "1"; valCmp.addEventListener("change", () => localStorage.setItem("rimloc.validateComparePH", valCmp.checked?"1":"0")); }
   bindPersist("validate-target-lang", "rimloc.validateTargetLang", "ru");
@@ -875,6 +886,9 @@ function initPersistence() {
   bindPersist("diff-target-lang-dir", "rimloc.diffTarget", "Russian");
   bindPersist("diff-defs-root", "rimloc.diffDefs");
   bindPersist("diff-po", "rimloc.diffPo");
+  bindPersistTextArea("diff-defs-dicts", "rimloc.diffDefsDicts");
+  bindPersist("diff-type-schema", "rimloc.diffTypeSchema");
+  bindPersist("diff-extra-fields", "rimloc.diffExtraFields");
 
   // Lang update options
   bindPersist("lang-update-repo", "rimloc.luRepo", "Ludeon/RimWorld");

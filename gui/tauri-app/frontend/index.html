@@ -272,6 +272,17 @@
             <input id="validate-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
           </label>
           <label>
+            <span>Defs dictionaries (one per line)</span>
+            <textarea id="validate-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+          </label>
+          <label>
+            <span>Type schema (optional)</span>
+            <div class="path-input">
+              <input id="validate-type-schema" type="text" placeholder="/path/to/schema.json" autocomplete="off" />
+              <button type="button" data-action="pick-validate-schema" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
             <input id="validate-all-versions" type="checkbox" />
             <span data-i18n="scan_all_versions">Include all versions under root</span>
           </label>
@@ -457,6 +468,20 @@
               <input id="diff-po" type="text" placeholder="/path/to/baseline.po" autocomplete="off" />
               <button type="button" data-action="pick-diff-po" data-i18n="browse">Browse…</button>
             </div>
+          </label>
+          <label>
+            <span>Defs dictionaries (one per line)</span>
+            <textarea id="diff-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+          </label>
+          <label>
+            <span>Type schema (optional)</span>
+            <div class="path-input">
+              <input id="diff-type-schema" type="text" placeholder="/path/to/schema.json" autocomplete="off" />
+              <button type="button" data-action="pick-diff-schema" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="extra_fields">Extra fields (comma-separated)
+            <input id="diff-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="diff-result" data-i18n="diff_empty">No diff run yet.</div>
