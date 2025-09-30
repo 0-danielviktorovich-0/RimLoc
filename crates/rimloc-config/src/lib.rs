@@ -248,6 +248,8 @@ fn merge_schema(mut a: SchemaCfg, b: SchemaCfg) -> SchemaCfg {
 pub struct ScanCfg {
     pub defs_fields: Option<Vec<String>>, // extra Defs fields to scan
     pub defs_dicts: Option<Vec<String>>,  // user dictionaries paths
+    pub no_inherit: Option<bool>,         // disable ParentName inheritance
+    pub keyed_nested: Option<bool>,       // treat nested keyed as dotted keys
 }
 
 fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
@@ -256,6 +258,12 @@ fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
     }
     if a.defs_dicts.is_none() {
         a.defs_dicts = b.defs_dicts;
+    }
+    if a.no_inherit.is_none() {
+        a.no_inherit = b.no_inherit;
+    }
+    if a.keyed_nested.is_none() {
+        a.keyed_nested = b.keyed_nested;
     }
     a
 }

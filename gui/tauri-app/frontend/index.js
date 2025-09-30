@@ -517,6 +517,81 @@ async function handleBuild() {
   showToast("Build complete");
 }
 
+async function handleDiff() {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    game_version: $("game-version").value.trim() || null,
+    source_lang_dir: $("diff-source-lang-dir").value.trim() || "English",
+    target_lang_dir: $("diff-target-lang-dir").value.trim() || "Russian",
+    defs_root: $("diff-defs-root").value.trim() || null,
+    baseline_po: $("diff-po").value.trim() || null,
+  };
+  const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", payload));
+  const box = $("diff-result");
+  box.textContent = `Only in mod: ${res.only_in_mod.length}, Only in translation: ${res.only_in_translation.length}, Changed: ${res.changed.length}`;
+  const pre = document.createElement("pre");
+  pre.textContent = [
+    "-- Only in mod --",
+    ...res.only_in_mod.slice(0, 100),
+    "",
+    "-- Only in translation --",
+    ...res.only_in_translation.slice(0, 100),
+    "",
+    "-- Changed --",
+    ...res.changed.slice(0, 100).map((pair) => Array.isArray(pair) ? pair[0] : (pair.key || JSON.stringify(pair)))
+  ].join("\n");
+  box.appendChild(document.createElement("br"));
+  box.appendChild(pre);
+}
+
+async function handleLangUpdate() {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    repo: $("lang-update-repo").value.trim() || "Ludeon/RimWorld",
+    branch: $("lang-update-branch").value.trim() || null,
+    source_lang_dir: $("lang-update-source").value.trim() || "English",
+    target_lang_dir: $("lang-update-target").value.trim() || "Russian",
+    dry_run: $("lang-update-dry").checked,
+    backup: $("lang-update-backup").checked,
+  };
+  const res = await runAction("Lang update…", () => tauriInvoke("lang_update_cmd", payload));
+  $("lang-update-result").textContent = `Files: ${res.files}, Bytes: ${res.bytes}, Out: ${res.outDir || res.out_dir}`;
+}
+
+async function handleAnnotate(dry) {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    source_lang_dir: $("annotate-source").value.trim() || "English",
+    target_lang_dir: $("annotate-target").value.trim() || "Russian",
+    comment_prefix: $("annotate-prefix").value.trim() || "//",
+    strip: $("annotate-strip").checked,
+    dry_run: !!dry,
+    backup: $("annotate-backup").checked,
+  };
+  const res = await runAction(dry ? "Annotate preview…" : "Annotate apply…", () => tauriInvoke("annotate_cmd", payload));
+  $("annotate-result").textContent = `Processed: ${res.processed}, Annotated: ${res.annotated}`;
+}
+
+async function handleInit() {
+  const root = $("mod-root").value.trim();
+  if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    source_lang_dir: $("init-source").value.trim() || "English",
+    target_lang_dir: $("init-target").value.trim() || "Russian",
+    overwrite: $("init-overwrite").checked,
+    dry_run: $("init-dry").checked,
+  };
+  const res = await runAction("Init language…", () => tauriInvoke("init_lang_cmd", payload));
+  $("init-result").textContent = `Files: ${res.files}, Language: ${res.outLanguage || res.out_language}`;
+}
+
 async function openPath(path) {
   if (!path) return;
   try {
@@ -574,6 +649,28 @@ function initEventHandlers() {
   if (pickBuildPo) pickBuildPo.addEventListener("click", () => pickFile("build-po", [{ name: "PO", extensions: ["po"] }])());
   const pickBuildOut = document.querySelector('[data-action="pick-build-out"]');
   if (pickBuildOut) pickBuildOut.addEventListener("click", pickDirectory("build-out"));
+
+  // Diff
+  const diffRun = $("diff-run");
+  if (diffRun) diffRun.addEventListener("click", handleDiff);
+  const pickDiffDefs = document.querySelector('[data-action="pick-diff-defs"]');
+  if (pickDiffDefs) pickDiffDefs.addEventListener("click", pickDirectory("diff-defs-root"));
+  const pickDiffPo = document.querySelector('[data-action="pick-diff-po"]');
+  if (pickDiffPo) pickDiffPo.addEventListener("click", () => pickFile("diff-po", [{ name: "PO", extensions: ["po"] }])());
+
+  // Lang update
+  const luRun = $("lang-update-run");
+  if (luRun) luRun.addEventListener("click", handleLangUpdate);
+
+  // Annotate
+  const annPrev = $("annotate-preview");
+  if (annPrev) annPrev.addEventListener("click", () => handleAnnotate(true));
+  const annApply = $("annotate-apply");
+  if (annApply) annApply.addEventListener("click", () => handleAnnotate(false));
+
+  // Init
+  const initRun = $("init-run");
+  if (initRun) initRun.addEventListener("click", handleInit);
 }
 
 function initPersistence() {
@@ -624,6 +721,48 @@ function initPersistence() {
     buildDedupe.checked = localStorage.getItem("rimloc.buildDedupe") === "1";
     buildDedupe.addEventListener("change", () => localStorage.setItem("rimloc.buildDedupe", buildDedupe.checked ? "1" : "0"));
   }
+
+  // Diff options
+  bindPersist("diff-source-lang-dir", "rimloc.diffSource", "English");
+  bindPersist("diff-target-lang-dir", "rimloc.diffTarget", "Russian");
+  bindPersist("diff-defs-root", "rimloc.diffDefs");
+  bindPersist("diff-po", "rimloc.diffPo");
+
+  // Lang update options
+  bindPersist("lang-update-repo", "rimloc.luRepo", "Ludeon/RimWorld");
+  bindPersist("lang-update-branch", "rimloc.luBranch", "master");
+  bindPersist("lang-update-source", "rimloc.luSource", "English");
+  bindPersist("lang-update-target", "rimloc.luTarget", "Russian");
+  ["lang-update-dry","lang-update-backup"].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    const key = `rimloc.${id}`;
+    el.checked = localStorage.getItem(key) === "1";
+    el.addEventListener("change", () => localStorage.setItem(key, el.checked ? "1" : "0"));
+  });
+
+  // Annotate options
+  bindPersist("annotate-source", "rimloc.annSource", "English");
+  bindPersist("annotate-target", "rimloc.annTarget", "Russian");
+  bindPersist("annotate-prefix", "rimloc.annPrefix", "//");
+  ["annotate-strip","annotate-backup"].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    const key = `rimloc.${id}`;
+    el.checked = localStorage.getItem(key) === "1";
+    el.addEventListener("change", () => localStorage.setItem(key, el.checked ? "1" : "0"));
+  });
+
+  // Init options
+  bindPersist("init-source", "rimloc.initSource", "English");
+  bindPersist("init-target", "rimloc.initTarget", "Russian");
+  ["init-overwrite","init-dry"].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    const key = `rimloc.${id}`;
+    el.checked = localStorage.getItem(key) === "1";
+    el.addEventListener("change", () => localStorage.setItem(key, el.checked ? "1" : "0"));
+  });
 }
 
 async function fetchAppVersion() {
@@ -838,6 +977,23 @@ const I18N = {
     import_incremental: "Incremental (skip identical)",
     import_keep_empty: "Keep empty entries",
     import_empty: "No import performed yet.",
+    diff_title: "Diff XML",
+    diff_run: "Run diff",
+    diff_empty: "No diff run yet.",
+    lang_update_title: "Lang Update",
+    lang_update_run: "Update",
+    lang_update_empty: "No lang update yet.",
+    dry_run: "Dry run",
+    backup: "Backup existing",
+    annotate_title: "Annotate Keyed",
+    annotate_preview: "Preview",
+    annotate_apply: "Apply",
+    annotate_empty: "No annotate yet.",
+    strip_comments: "Strip existing comments",
+    init_title: "Init Language",
+    init_run: "Init",
+    init_empty: "No init yet.",
+    overwrite: "Overwrite existing",
     debug_console: "Debug console",
     clear: "Clear",
     open_debug: "Debug…",
@@ -913,6 +1069,23 @@ const I18N = {
     import_incremental: "Инкрементально (пропуск идентичных)",
     import_keep_empty: "Сохранять пустые",
     import_empty: "Импорт ещё не выполнялся.",
+    diff_title: "Сравнение XML",
+    diff_run: "Сравнить",
+    diff_empty: "Сравнение ещё не выполнялось.",
+    lang_update_title: "Обновление языка",
+    lang_update_run: "Обновить",
+    lang_update_empty: "Обновление ещё не выполнялось.",
+    dry_run: "Черновой запуск",
+    backup: "Делать бэкап",
+    annotate_title: "Аннотация Keyed",
+    annotate_preview: "Предпросмотр",
+    annotate_apply: "Применить",
+    annotate_empty: "Аннотация ещё не выполнялась.",
+    strip_comments: "Удалять существующие комментарии",
+    init_title: "Инициализация языка",
+    init_run: "Инициализировать",
+    init_empty: "Инициализация ещё не выполнялась.",
+    overwrite: "Перезаписывать существующие",
     debug_console: "Консоль отладки",
     clear: "Очистить",
     open_debug: "Отладка…",

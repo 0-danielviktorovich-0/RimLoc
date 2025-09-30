@@ -109,8 +109,17 @@ pub fn run_scan(
         .collect();
 
     // Gate inheritance via env var for parser crate
-    if no_inherit {
+    // Apply ENV gates from CLI flags or config defaults
+    if no_inherit || cfg.scan.as_ref().and_then(|s| s.no_inherit).unwrap_or(false) {
         std::env::set_var("RIMLOC_INHERIT", "0");
+    }
+    if cfg
+        .scan
+        .as_ref()
+        .and_then(|s| s.keyed_nested)
+        .unwrap_or(false)
+    {
+        std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }
     // Gate nested keyed dotted keys via env var
     if keyed_nested {

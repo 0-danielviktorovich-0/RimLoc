@@ -183,3 +183,24 @@ fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInj
         field_path,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn infer_from_xpath_basic() {
+        let xp = "/Mods/Test/Defs/ThingDef[defName='Apparel_Parka']/description";
+        let inf = infer_definj_from_xpath(xp, "").expect("infer");
+        assert_eq!(inf.def_type, "ThingDef");
+        assert_eq!(inf.def_name, "Apparel_Parka");
+        assert_eq!(inf.field_path, "description");
+    }
+    #[test]
+    fn infer_from_xpath_with_name_and_li() {
+        let xp = "/Defs/RecipeDef[@Name='Cook_SimpleMeal']/ingredients/li";
+        let inf = infer_definj_from_xpath(xp, "label").expect("infer");
+        assert_eq!(inf.def_type, "RecipeDef");
+        assert_eq!(inf.def_name, "Cook_SimpleMeal");
+        assert_eq!(inf.field_path, "ingredients.li.label");
+    }
+}
