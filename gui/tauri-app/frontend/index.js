@@ -663,17 +663,15 @@ async function handleInit() {
 
 async function openPath(path) {
   if (!path) return;
-  try {
-    await tauriShell().open(path);
-    return;
-  } catch (err) {
-    debugLog("warn", `shell.open not available: ${formatError(err)}`);
+  const s = String(path || '');
+  const isUrl = /^(https?|mailto|tel):/i.test(s);
+  if (isUrl) {
+    try { await tauriShell().open(s); return; } catch (err) {
+      debugLog("warn", `shell.open failed: ${formatError(err)}`);
+    }
   }
-  try {
-    await tauriInvoke("open_path", { path });
-  } catch (e) {
-    showError(e);
-  }
+  try { await tauriInvoke("open_path", { path: s }); }
+  catch (e) { showError(e); }
 }
 
 function initEventHandlers() {
@@ -1412,3 +1410,7 @@ function langToDir(code) {
 
 const previewFilter = $("preview-filter"); if (previewFilter) previewFilter.addEventListener('input', () => renderPreview());
 const missingToggle = $("preview-missing-only"); if (missingToggle) missingToggle.addEventListener('change', () => renderPreview());
+    preview_title: "Preview EN → Target",
+    preview_missing_only: "Missing only",
+    preview_title: "Предпросмотр EN → Целевой",
+    preview_missing_only: "Только отсутствующие",
