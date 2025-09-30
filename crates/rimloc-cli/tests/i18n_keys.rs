@@ -6,6 +6,7 @@ fn load_ids(dir: &str) -> BTreeSet<String> {
     for entry in fs::read_dir(&base).unwrap() {
         let entry = entry.unwrap();
         if entry.path().extension().and_then(|e| e.to_str()) == Some("ftl") {
+            // codeql[rust/path-injection]: test-only code reading known fixture files under i18n/
             let text = fs::read_to_string(entry.path()).unwrap();
             for line in text.lines() {
                 // грубый, но практичный парс: message-id до '=' в начале строки

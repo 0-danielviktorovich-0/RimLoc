@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     if: ${{ !contains(join(fromJson(toJson(github.event.pull_request.labels)).*.name, ','), 'internal-only') }}
