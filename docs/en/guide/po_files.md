@@ -4,6 +4,9 @@ title: PO Files 101
 
 # PO Files 101
 
+!!! info "Terminology"
+    New to `.po`? Start with the Glossary: ../glossary.md#po-portable-object
+
 This page explains what `.po` files are, why RimLoc uses them, and how to edit them comfortably.
 
 ## What is a PO file?
@@ -79,3 +82,4 @@ msgconv --to-code=utf-8 ./in.po > ./out.po
 
 Don’t change placeholders (e.g., `{count}`, `%s`). See Guides → Placeholders for details.
 
+See also: ../cli/export_import.md · ../cli/validate_po.md

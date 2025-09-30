@@ -4,6 +4,9 @@ title: Placeholders
 
 # Placeholders
 
+!!! info "Terminology"
+    New to placeholders? See the Glossary: ../glossary.md#placeholder
+
 Placeholders are special tokens embedded in strings that are replaced at runtime with dynamic values (numbers, names, etc.). RimLoc understands two common families:
 
 - Brace style: `{...}`
@@ -29,6 +32,8 @@ RimLoc treats placeholders as opaque tokens: it checks presence and basic shape,
   - Compares placeholders in `msgid` vs `msgstr`. Any difference is reported as a mismatch.
   - Use `--strict` to make mismatches fail CI (exit code 1).
 
+See also: ../cli/validate_po.md
+
 ## Typical pitfalls
 
 - Dropping a placeholder entirely: the translated string must still contain all tokens.
@@ -45,4 +50,3 @@ rimloc-cli --quiet validate --root ./Mods/MyMod --format text
 # Validate PO placeholders strictly (machine readable)
 rimloc-cli --quiet validate-po --po ./out/mymod.po --strict --format json | jq .
 ```
-

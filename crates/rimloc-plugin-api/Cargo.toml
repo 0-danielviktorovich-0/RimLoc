@@ -1,0 +1,12 @@
+[package]
+name = "rimloc-plugin-api"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+description = "Public plugin API for RimLoc (scan/export hooks)"
+repository = "https://github.com/0-danielviktorovich-0/RimLoc"
+
+[dependencies]
+rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
+color-eyre = "0.6"
+

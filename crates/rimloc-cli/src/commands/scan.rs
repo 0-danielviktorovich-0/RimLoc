@@ -20,6 +20,7 @@ pub fn run_scan(
     include_all_versions: bool,
     keyed_nested: bool,
     no_inherit: bool,
+    with_plugins: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(
         event = "scan_args",
@@ -135,6 +136,16 @@ pub fn run_scan(
         &merged,
         &extra_fields,
     )?;
+
+    if with_plugins {
+        // Load plugins from env and from default ./plugins under scan root
+        let _ = rimloc_services::plugins::load_plugins_from_env();
+        let default_dir = scan_root.join("plugins");
+        let _ = rimloc_services::plugins::load_dynamic_plugins_from(&default_dir);
+        if let Ok(mut extra) = rimloc_services::plugins::run_scan_plugins(&scan_root) {
+            units.append(&mut extra);
+        }
+    }
 
     fn is_source_for_lang_dir(path: &std::path::Path, lang_dir: &str) -> bool {
         // Languages/<dir>

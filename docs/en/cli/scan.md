@@ -13,7 +13,7 @@ Scan a RimWorld mod directory to extract translation units from `Languages/*/{Ke
 ```bash
 rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CODE>] \
                  [--source-lang <CODE>] [--source-lang-dir <DIR>] [--defs-dir <PATH>] [--defs-dict <PATH>] \
-                 [--defs-type-schema <PATH>] [--keyed-nested] [--no-inherit] \
+                 [--defs-type-schema <PATH>] [--keyed-nested] [--no-inherit] [--with-plugins] \
                  [--format <csv|json>] [--game-version <VER>] [--include-all-versions]
 ```
 
@@ -34,6 +34,7 @@ rimloc-cli scan --root <PATH> [--out-csv <FILE>] [--out-json <FILE>] [--lang <CO
 | `--keyed-nested` | Treat nested elements under LanguageData as dotted Keyed keys (experimental). | No |
 | `--no-inherit` | Disable ParentName inheritance when scanning Defs (strict mode). | No |
 | `--format <csv\|json>` | Output format to stdout. Default is `csv`. | No       |
+| `--with-plugins` | Load dynamic plugins (from `RIMLOC_PLUGINS` or `<root>/plugins`) and merge scanned units | No |
 | `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detects latest if omitted. | No |
 | `--include-all-versions` | Scan all version subfolders under the root, disabling auto-pick of the latest. | No |
 
@@ -119,3 +120,4 @@ rimloc-cli scan --root ./test/TestMod
 
 !!! note
     All user-facing CLI output (help, messages) is localized via **Fluent**.
+- **Plugins not loaded** – set `RIMLOC_PLUGINS` to a colon/semicolon-separated list of directories containing `*.so`/`*.dylib`/`*.dll`, or drop plugin libraries under `<root>/plugins`. Each plugin must export `rimloc_plugin_scan_json` that returns a JSON array of units.

@@ -7,14 +7,21 @@
     "frontendDist": "../frontend"
   },
   "app": {
-    "security": { "csp": null },
+    "security": {
+      "csp": null,
+      "assetProtocol": { "enable": true },
+      "pattern": { "use": "brownfield" }
+    },
     "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
+        "url": "index.html",
         "title": "RimLoc GUI",
         "width": 1200,
         "height": 800,
-        "resizable": true
+        "resizable": true,
+        "devtools": true
       }
     ]
   },

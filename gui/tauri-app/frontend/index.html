@@ -57,13 +57,7 @@
               <option value="dark" data-i18n="theme.dark">Dark</option>
             </select>
           </label>
-          <label>
-            <span data-i18n="loglevel">Log level</span>
-            <select id="log-level">
-              <option value="info">info</option>
-              <option value="debug">debug</option>
-            </select>
-          </label>
+          
         </div>
       </section>
       <section class="panel" id="mod-setup">
@@ -86,6 +80,47 @@
           <label data-i18n="source_lang">Source language code
             <input id="source-lang" type="text" placeholder="auto" autocomplete="off" />
           </label>
+        </div>
+      </section>
+
+      <section class="panel" id="preview-panel">
+        <div class="panel-head">
+          <h2 data-i18n="preview_title">Preview EN → Target</h2>
+          <div class="actions">
+            <input id="preview-filter" type="text" placeholder="filter keys…" />
+            <label>
+              <input id="preview-missing-only" type="checkbox" />
+              <span data-i18n="preview_missing_only">Missing only</span>
+            </label>
+          </div>
+        </div>
+        <div class="split">
+          <div class="col">
+            <div class="table-wrapper" style="max-height: 240px">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Key</th>
+                    <th scope="col">EN</th>
+                    <th scope="col">Target</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-keys"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="col">
+            <div class="two-pane">
+              <div>
+                <h3>EN</h3>
+                <pre class="code" id="preview-en"></pre>
+              </div>
+              <div>
+                <h3>Target</h3>
+                <pre class="code" id="preview-target"></pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -461,7 +496,6 @@
       <p data-i18n="footer_hint">Need DefInjected strings? Run “Learn defs” first and copy <code>suggested.xml</code> into your language folder.</p>
     </footer>
 
-    <script src="tauri.js"></script>
-    <script src="index.js"></script>
+    <script src="index.js" defer></script>
   </body>
 </html>

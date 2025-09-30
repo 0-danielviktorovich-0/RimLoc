@@ -2,6 +2,8 @@
 resolver = "2"
 members = [
     "crates/rimloc-core",
+    "crates/rimloc-plugin-api",
+    "crates/rimloc-plugin-jsonftl",
     "crates/rimloc-parsers-xml",
     "crates/rimloc-export-csv",
     "crates/rimloc-export-po",

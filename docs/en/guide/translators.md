@@ -4,6 +4,12 @@ title: For Translators — Step‑by‑Step
 
 # Translate a RimWorld mod with RimLoc (no stress) 🎯
 
+!!! tip "Want a short step‑by‑step?"
+    Start with Getting Started: ../getting-started.md and tutorials:
+    - ../tutorials/translate_mod.md — from scratch
+    - ../tutorials/export_po.md — export to .po only
+    - ../tutorials/update_translations.md — update an existing translation
+
 This page teaches you how to translate a mod even if you’ve never used a terminal before. Short steps, copy‑paste commands, friendly explanations.
 
 [:material-download: Install](../install.md){ .md-button .md-button--primary }
@@ -117,6 +123,8 @@ rimloc-cli build-mod --from-root "C:/RimMods/MyCoolMod" --out-mod "C:/RimMods/My
 
 Test in game
 - Copy `MyCoolMod_RU` into your RimWorld `Mods` folder, enable it in the mod list, switch language to Russian.
+
+See also: ../glossary.md · ../tips.md · ../troubleshooting.md
 
 Why is this important?
 - Only in game you see real context: line breaks, lengths, where strings appear. If something’s off — fix the .po and re‑import.

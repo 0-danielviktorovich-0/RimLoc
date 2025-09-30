@@ -9,16 +9,48 @@ use std::convert::TryFrom;
 use std::fs;
 use std::path::Path;
 
+/// Options to tune Keyed/DefInjected scanning behaviour.
+#[derive(Clone, Debug)]
+pub struct KeyedScanOptions {
+    /// Emit dotted keys for nested elements under `<LanguageData>`.
+    /// Example: `<Root><Menu><Open>…</Open></Menu></Root>` -> `Menu.Open`.
+    pub nested: bool,
+    /// Join `<li>` items with a newline when collapsing list content into parent value.
+    pub join_li_with_newline: bool,
+    /// Include self-closing empty keys.
+    pub include_empty_keys: bool,
+    /// Process files in parallel where possible. Final result is sorted deterministically.
+    pub parallel: bool,
+}
+
+impl Default for KeyedScanOptions {
+    fn default() -> Self {
+        // Preserve historical defaults unless gated via env
+        let nested = matches!(std::env::var("RIMLOC_KEYED_NESTED"), Ok(v) if v.trim() == "1");
+        let join_li_with_newline = true;
+        let include_empty_keys = true;
+        let parallel = matches!(std::env::var("RIMLOC_PARALLEL"), Ok(v) if v.trim() == "1");
+        Self {
+            nested,
+            join_li_with_newline,
+            include_empty_keys,
+            parallel,
+        }
+    }
+}
+
 /// Very small XML scanner for RimWorld "Keyed" XML files.
-/// It walks `root` and finds files that match `*/Languages/*/Keyed/*.xml`.
+/// It walks `root` and finds files that match `*/Languages/*/{Keyed,DefInjected}/*.xml`.
 /// For every `<Key>Value</Key>` pair found, it produces a `TransUnit` with
 /// the key name, text value, file path and (approximate) line number.
 pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
+    scan_keyed_xml_with_options(root, &KeyedScanOptions::default())
+}
+
+/// Same as `scan_keyed_xml` but allows configuring behaviour via `KeyedScanOptions`.
+pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> CoreResult<Vec<TransUnit>> {
     use walkdir::WalkDir;
     let mut out: Vec<TransUnit> = Vec::new();
-    fn keyed_nested_enabled() -> bool {
-        matches!(std::env::var("RIMLOC_KEYED_NESTED"), Ok(v) if v.trim() == "1")
-    }
 
     fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
         if starts.is_empty() {
@@ -33,6 +65,8 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
 
     // (no cross-file logic in keyed scanner)
 
+    // Collect candidate files first to allow optional parallel processing
+    let mut files: Vec<std::path::PathBuf> = Vec::new();
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() {
@@ -46,7 +80,8 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
         }
         // filter to .../Languages/<Locale>/{Keyed,DefInjected}/....xml
         let p_str = p.to_string_lossy();
-        if !(p_str.contains("/Languages/") || p_str.contains("\\Languages\\")) {
+        let in_languages = p_str.contains("/Languages/") || p_str.contains("\\Languages\\");
+        if !in_languages {
             continue;
         }
         let has_keyed = p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\");
@@ -54,10 +89,15 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
         if !(has_keyed || has_definj) {
             continue;
         }
+        files.push(p.to_path_buf());
+    }
+
+    let process_one = |p: &std::path::PathBuf| -> Vec<TransUnit> {
+        let mut local: Vec<TransUnit> = Vec::new();
 
         let content = match fs::read_to_string(p) {
             Ok(s) => s,
-            Err(_) => continue,
+            Err(_) => return local,
         };
         let mut line_starts = Vec::new();
         line_starts.push(0usize);
@@ -93,16 +133,26 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                 Ok(Event::End(_)) => {
                     if let Some(frame) = stack.pop() {
                         // Optional: emit nested dotted keys under LanguageData when enabled
-                        let keyed_nested = std::env::var("RIMLOC_KEYED_NESTED").ok().map_or(false, |v| v == "1");
-                        if keyed_nested {
+                        if opts.nested {
                             if frame.has_text && !frame.name.is_empty() {
                                 // stack after pop contains ancestors; expect root[0] == LanguageData
-                                if stack.first().map(|f| f.name.eq_ignore_ascii_case("LanguageData")).unwrap_or(false) && stack.len() >= 2 {
-                                    let mut parts: Vec<String> = stack.iter().skip(1).map(|f| f.name.clone()).collect();
+                                if stack
+                                    .first()
+                                    .map(|f| f.name.eq_ignore_ascii_case("LanguageData"))
+                                    .unwrap_or(false)
+                                    && stack.len() >= 2
+                                {
+                                    let mut parts: Vec<String> =
+                                        stack.iter().skip(1).map(|f| f.name.clone()).collect();
                                     parts.push(frame.name.clone());
                                     if !parts.iter().any(|p| p.eq_ignore_ascii_case("li")) {
                                         let key = parts.join(".");
-                                        out.push(TransUnit { key, source: Some(frame.buffer.clone()), path: p.to_path_buf(), line: frame.line });
+                                        local.push(TransUnit {
+                                            key,
+                                            source: Some(frame.buffer.clone()),
+                                            path: p.clone(),
+                                            line: frame.line,
+                                        });
                                         continue;
                                     }
                                 }
@@ -111,7 +161,7 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         // If closing a <li> directly under a top-level key, fold into the parent buffer
                         if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
                             if let Some(parent) = stack.last_mut() {
-                                if !parent.buffer.is_empty() {
+                                if opts.join_li_with_newline && !parent.buffer.is_empty() {
                                     parent.buffer.push('\n');
                                 }
                                 if !frame.buffer.is_empty() {
@@ -126,16 +176,21 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         if stack.len() == 1 && !frame.name.is_empty() {
                             let source = if frame.has_text {
                                 frame.buffer
+                            } else if opts.include_empty_keys {
+                                String::new()
                             } else {
+                                // skip empty when not requested
                                 String::new()
                             };
-                            out.push(TransUnit {
-                                key: frame.name,
-                                source: Some(source),
-                                path: p.to_path_buf(),
-                                line: frame.line,
-                            });
-                        } else if keyed_nested_enabled()
+                            if opts.include_empty_keys || !source.is_empty() {
+                                local.push(TransUnit {
+                                    key: frame.name,
+                                    source: Some(source),
+                                    path: p.clone(),
+                                    line: frame.line,
+                                });
+                            }
+                        } else if opts.nested
                             && stack
                                 .last()
                                 .map(|f| f.name == "LanguageData")
@@ -145,17 +200,14 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                             && frame.has_text
                         {
                             // Optional nested keyed: dotted path under LanguageData
-                            let mut parts: Vec<&str> = stack
-                                .iter()
-                                .skip(1)
-                                .map(|f| f.name.as_str())
-                                .collect();
+                            let mut parts: Vec<&str> =
+                                stack.iter().skip(1).map(|f| f.name.as_str()).collect();
                             parts.push(&frame.name);
                             let key = parts.join(".");
-                            out.push(TransUnit {
+                            local.push(TransUnit {
                                 key,
                                 source: Some(frame.buffer),
-                                path: p.to_path_buf(),
+                                path: p.clone(),
                                 line: frame.line,
                             });
                         }
@@ -173,12 +225,14 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                             .unwrap_or(false)
                         && !name.is_empty()
                     {
-                        out.push(TransUnit {
-                            key: name,
-                            source: Some(String::new()),
-                            path: p.to_path_buf(),
-                            line,
-                        });
+                        if opts.include_empty_keys {
+                            local.push(TransUnit {
+                                key: name,
+                                source: Some(String::new()),
+                                path: p.clone(),
+                                line,
+                            });
+                        }
                     } else if stack.len() >= 2 {
                         // Support <LineBreak/> inside either a top-level key or nested <li>
                         if let Some(frame) = stack.last_mut() {
@@ -190,31 +244,28 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         // Self-closing <li/> directly under a top-level key contributes an empty line
                         if name.eq_ignore_ascii_case("li") && stack.len() == 2 {
                             if let Some(parent) = stack.last_mut() {
-                                if !parent.buffer.is_empty() {
+                                if opts.join_li_with_newline && !parent.buffer.is_empty() {
                                     parent.buffer.push('\n');
                                 }
                                 parent.has_text = true;
                             }
                         }
                         // Optional nested empty key: produce dotted key
-                        if keyed_nested_enabled()
+                        if opts.nested
                             && stack
                                 .last()
                                 .map(|f| f.name == "LanguageData")
                                 .unwrap_or(false)
                             && name != "LineBreak"
                         {
-                            let mut parts: Vec<&str> = stack
-                                .iter()
-                                .skip(1)
-                                .map(|f| f.name.as_str())
-                                .collect();
+                            let mut parts: Vec<&str> =
+                                stack.iter().skip(1).map(|f| f.name.as_str()).collect();
                             parts.push(&name);
                             let key = parts.join(".");
-                            out.push(TransUnit {
+                            local.push(TransUnit {
                                 key,
                                 source: Some(String::new()),
-                                path: p.to_path_buf(),
+                                path: p.clone(),
                                 line,
                             });
                         }
@@ -230,6 +281,9 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
                         .to_string();
                     if let Some(frame) = stack.last_mut() {
                         if !text.is_empty() {
+                            // Preserve line-break semantics: if previous char is not a newline
+                            // and we're appending a new text chunk that starts with a newline, 
+                            // keep it as part of buffer (quick-xml trimmed already).
                             frame.buffer.push_str(&text);
                             frame.has_text = true;
                         }
@@ -250,8 +304,45 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
             }
             buf.clear();
         }
+
+        local
+    };
+
+    if opts.parallel {
+        #[cfg(feature = "rayon")] 
+        {
+            use rayon::prelude::*;
+            let mut collected: Vec<TransUnit> = files.par_iter().flat_map(process_one).collect();
+            collected.sort_by(|a, b| {
+                (
+                    a.path.to_string_lossy(),
+                    a.line.unwrap_or(0),
+                    a.key.as_str(),
+                )
+                    .cmp(&(
+                        b.path.to_string_lossy(),
+                        b.line.unwrap_or(0),
+                        b.key.as_str(),
+                    ))
+            });
+            return Ok(collected);
+        }
+        // If parallel requested but rayon feature not enabled, fall back to sequential
     }
 
+    for p in &files {
+        out.extend(process_one(p));
+    }
+    // Deterministic order
+    out.sort_by(|a, b| (
+        a.path.to_string_lossy(),
+        a.line.unwrap_or(0),
+        a.key.as_str(),
+    ).cmp(&(
+        b.path.to_string_lossy(),
+        b.line.unwrap_or(0),
+        b.key.as_str(),
+    )));
     Ok(out)
 }
 

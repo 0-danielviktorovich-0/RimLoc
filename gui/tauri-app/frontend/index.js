@@ -6,7 +6,27 @@ function tauriInvoke(cmd, args) {
   const tauri = getTauri();
   const fn = tauri.invoke || tauri.tauri?.invoke || tauri.core?.invoke;
   if (!fn) throw new Error("Tauri API not available: invoke");
-  return fn(cmd, args);
+  try { debugLog("trace", `invoke ${cmd} → ${sanitizeArgs(args)}`, true); } catch {}
+  const start = Date.now();
+  return fn(cmd, args)
+    .then((res) => { try { debugLog("trace", `invoke ${cmd} ✓ ${Date.now()-start}ms`, true); } catch {} return res; })
+    .catch((e) => { try { debugLog("error", `invoke ${cmd} ✗ ${Date.now()-start}ms: ${formatError(e)}`, true); } catch {} throw e; });
+}
+
+function sanitizeArgs(args) {
+  try {
+    const home = (typeof process !== 'undefined' && process.env && process.env.HOME) ? process.env.HOME : null;
+    const replacer = (k, v) => {
+      if (typeof v === 'string') {
+        let s = v;
+        if (home && s.startsWith(home)) s = `~${s.slice(home.length)}`;
+        if (s.length > 300) s = s.slice(0, 300) + '…';
+        return s;
+      }
+      return v;
+    };
+    return JSON.stringify(args || {}, replacer);
+  } catch { return String(args); }
 }
 
 function tauriDialog() {
@@ -238,6 +258,7 @@ function renderScan(result) {
   summary.textContent = `Found ${result.total} entries (${result.keyed} Keyed, ${result.defInjected ?? result.def_injected} DefInjected).`;
   const limit = 500;
   const rows = result.units.slice(0, limit);
+  window._lastScanUnits = result.units;
   rows.forEach((unit) => {
     const tr = document.createElement("tr");
     const key = document.createElement("td");
@@ -264,6 +285,8 @@ function renderScan(result) {
   }
   updateStatus(`Scan complete – ${result.total} entries`);
   debugLog("info", `Scan complete: ${result.total} entries (${result.keyed} keyed, ${result.defInjected ?? result.def_injected} definj)`);
+  // refresh preview panel
+  try { renderPreview(); } catch (_) {}
 }
 
 function makePathRow(label, path) {
@@ -324,16 +347,16 @@ function renderExport(result) {
 }
 
 async function handleScan(saveMode) {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
     return;
   }
   const payload = {
     root,
-    game_version: $("game-version").value.trim() || null,
-    lang: $("target-lang").value.trim() || null,
-    include_all_versions: $("scan-all-versions")?.checked || false,
+    game_version: val("game-version") || null,
+    lang: val("target-lang") || null,
+    include_all_versions: isChecked("scan-all-versions"),
   };
   debugLog("debug", `scan payload: ${JSON.stringify(payload)}`);
   if (saveMode === "json") {
@@ -362,18 +385,18 @@ async function handleScan(saveMode) {
 }
 
 async function handleLearn() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
     return;
   }
-  const outDir = $("learn-out").value.trim();
-  const langDir = $("learn-lang-dir").value.trim();
+  const outDir = val("learn-out");
+  const langDir = val("learn-lang-dir");
   const payload = {
     root,
     out_dir: outDir || null,
     lang_dir: langDir || null,
-    game_version: $("game-version").value.trim() || null,
+    game_version: val("game-version") || null,
   };
   debugLog("debug", `learn payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", payload));
@@ -383,25 +406,25 @@ async function handleLearn() {
 }
 
 async function handleExport() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
     return;
   }
-  const outPo = $("po-output").value.trim();
+  const outPo = val("po-output");
   if (!outPo) {
     showToast("Specify output PO path", true);
     return;
   }
-  const tmRoots = parseTmRoots($("tm-roots").value);
+  const tmRoots = parseTmRoots(val("tm-roots"));
   const payload = {
     root,
     out_po: outPo,
-    lang: $("target-lang").value.trim() || null,
-    source_lang: $("source-lang").value.trim() || null,
-    source_lang_dir: $("export-source-lang-dir").value.trim() || null,
+    lang: val("target-lang") || null,
+    source_lang: val("source-lang") || null,
+    source_lang_dir: val("export-source-lang-dir") || null,
     tm_roots: tmRoots.length ? tmRoots : null,
-    game_version: $("game-version").value.trim() || null,
+    game_version: val("game-version") || null,
   };
   debugLog("debug", `export payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", payload));
@@ -411,15 +434,15 @@ async function handleExport() {
 }
 
 async function handleValidate() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
-    game_version: $("game-version").value.trim() || null,
-    source_lang: $("validate-source-lang").value.trim() || null,
-    source_lang_dir: $("validate-source-lang-dir").value.trim() || null,
-    defs_root: $("validate-defs-root").value.trim() || null,
-    extra_fields: ($("validate-extra-fields").value || "").split(',').map(s => s.trim()).filter(Boolean),
+    game_version: val("game-version") || null,
+    source_lang: val("validate-source-lang") || null,
+    source_lang_dir: val("validate-source-lang-dir") || null,
+    defs_root: val("validate-defs-root") || null,
+    extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
   };
   debugLog("debug", `validate payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Validating…", () => tauriInvoke("validate_mod", payload));
@@ -441,12 +464,12 @@ function renderValidate(result) {
 }
 
 async function handleHealth() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
-    game_version: $("game-version").value.trim() || null,
-    lang_dir: $("health-lang-dir").value.trim() || null,
+    game_version: val("game-version") || null,
+    lang_dir: val("health-lang-dir") || null,
   };
   const result = await runAction("XML Health…", () => tauriInvoke("xml_health", payload));
   renderHealth(result);
@@ -466,19 +489,19 @@ function renderHealth(result) {
 }
 
 async function handleImport() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
-  const po_path = $("import-po").value.trim();
+  const po_path = val("import-po");
   if (!po_path) return showToast("Select PO file", true);
   const payload = {
     root,
     po_path,
-    game_version: $("game-version").value.trim() || null,
-    lang_dir: $("import-lang-dir").value.trim() || null,
-    keep_empty: $("import-keep-empty").checked,
+    game_version: val("game-version") || null,
+    lang_dir: val("import-lang-dir") || null,
+    keep_empty: isChecked("import-keep-empty"),
     backup: false,
-    single_file: $("import-single-file").checked,
-    incremental: $("import-incremental").checked,
+    single_file: isChecked("import-single-file"),
+    incremental: isChecked("import-incremental"),
     only_diff: false,
     report: true,
   };
@@ -489,13 +512,13 @@ async function handleImport() {
 }
 
 async function handleBuild() {
-  const po_path = $("build-po").value.trim();
-  const out_mod = $("build-out").value.trim();
-  const lang_dir = $("build-lang-dir").value.trim() || "Russian";
-  const name = $("build-name").value.trim() || "RimLoc Translation";
-  const package_id = $("build-package").value.trim() || "your.name.rimloc";
-  const rw_version = $("build-rw").value.trim() || "1.5";
-  const dedupe = $("build-dedupe").checked;
+  const po_path = val("build-po");
+  const out_mod = val("build-out");
+  const lang_dir = val("build-lang-dir") || "Russian";
+  const name = val("build-name") || "RimLoc Translation";
+  const package_id = val("build-package") || "your.name.rimloc";
+  const rw_version = val("build-rw") || "1.5";
+  const dedupe = isChecked("build-dedupe");
   if (!po_path || !out_mod) return showToast("Select PO and output folder", true);
   const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe };
   debugLog("debug", `build payload: ${JSON.stringify(payload)}`);
@@ -506,15 +529,15 @@ async function handleBuild() {
 }
 
 async function handleDiff() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
-    game_version: $("game-version").value.trim() || null,
-    source_lang_dir: $("diff-source-lang-dir").value.trim() || "English",
-    target_lang_dir: $("diff-target-lang-dir").value.trim() || "Russian",
-    defs_root: $("diff-defs-root").value.trim() || null,
-    baseline_po: $("diff-po").value.trim() || null,
+    game_version: val("game-version") || null,
+    source_lang_dir: val("diff-source-lang-dir") || "English",
+    target_lang_dir: val("diff-target-lang-dir") || "Russian",
+    defs_root: val("diff-defs-root") || null,
+    baseline_po: val("diff-po") || null,
   };
   const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", payload));
   const box = $("diff-result");
@@ -535,46 +558,46 @@ async function handleDiff() {
 }
 
 async function handleLangUpdate() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
-    repo: $("lang-update-repo").value.trim() || "Ludeon/RimWorld",
-    branch: $("lang-update-branch").value.trim() || null,
-    source_lang_dir: $("lang-update-source").value.trim() || "English",
-    target_lang_dir: $("lang-update-target").value.trim() || "Russian",
-    dry_run: $("lang-update-dry").checked,
-    backup: $("lang-update-backup").checked,
+    repo: val("lang-update-repo") || "Ludeon/RimWorld",
+    branch: val("lang-update-branch") || null,
+    source_lang_dir: val("lang-update-source") || "English",
+    target_lang_dir: val("lang-update-target") || "Russian",
+    dry_run: isChecked("lang-update-dry"),
+    backup: isChecked("lang-update-backup"),
   };
   const res = await runAction("Lang update…", () => tauriInvoke("lang_update_cmd", payload));
   $("lang-update-result").textContent = `Files: ${res.files}, Bytes: ${res.bytes}, Out: ${res.outDir || res.out_dir}`;
 }
 
 async function handleAnnotate(dry) {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
-    source_lang_dir: $("annotate-source").value.trim() || "English",
-    target_lang_dir: $("annotate-target").value.trim() || "Russian",
-    comment_prefix: $("annotate-prefix").value.trim() || "//",
-    strip: $("annotate-strip").checked,
+    source_lang_dir: val("annotate-source") || "English",
+    target_lang_dir: val("annotate-target") || "Russian",
+    comment_prefix: val("annotate-prefix") || "//",
+    strip: isChecked("annotate-strip"),
     dry_run: !!dry,
-    backup: $("annotate-backup").checked,
+    backup: isChecked("annotate-backup"),
   };
   const res = await runAction(dry ? "Annotate preview…" : "Annotate apply…", () => tauriInvoke("annotate_cmd", payload));
   $("annotate-result").textContent = `Processed: ${res.processed}, Annotated: ${res.annotated}`;
 }
 
 async function handleInit() {
-  const root = $("mod-root").value.trim();
+  const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
     root,
-    source_lang_dir: $("init-source").value.trim() || "English",
-    target_lang_dir: $("init-target").value.trim() || "Russian",
-    overwrite: $("init-overwrite").checked,
-    dry_run: $("init-dry").checked,
+    source_lang_dir: val("init-source") || "English",
+    target_lang_dir: val("init-target") || "Russian",
+    overwrite: isChecked("init-overwrite"),
+    dry_run: isChecked("init-dry"),
   };
   const res = await runAction("Init language…", () => tauriInvoke("init_lang_cmd", payload));
   $("init-result").textContent = `Files: ${res.files}, Language: ${res.outLanguage || res.out_language}`;
@@ -624,6 +647,12 @@ function initEventHandlers() {
 
   // Health
   $("health-run").addEventListener("click", handleHealth);
+  const healthSave = $("health-save"); if (healthSave) healthSave.addEventListener("click", async () => {
+    const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
+    const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/health.json` });
+    if (!path) return; await runAction("Saving health…", () => tauriInvoke("xml_health", { root, game_version: val("game-version") || null, lang_dir: val("health-lang-dir") || null, out_json: path }));
+    showToast(`Saved: ${path}`);
+  });
 
   // Import
   $("import-run").addEventListener("click", handleImport);
@@ -818,11 +847,6 @@ function debugLog(level, message, noForward = false) {
 }
 
 function initDebugUI() {
-  $("log-level").value = state.logLevel;
-  $("log-level").addEventListener("change", () => {
-    state.logLevel = $("log-level").value;
-    localStorage.setItem("rimloc.logLevel", state.logLevel);
-  });
   $("debug-clear").addEventListener("click", () => {
     $("debug-log").textContent = "";
   });
@@ -1190,6 +1214,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initI18nUI();
   initThemeUI();
   renderScan(null);
+  renderPreview(null);
   renderLearn(null);
   renderExport(null);
   fetchAppVersion();
@@ -1205,3 +1230,95 @@ document.addEventListener("DOMContentLoaded", () => {
     debugLog("error", `Unhandled rejection: ${msg}`);
   });
 });
+  // Validate save
+  const valSave = $("validate-save"); if (valSave) valSave.addEventListener("click", async () => {
+    const root = $("mod-root").value.trim(); if (!root) return showToast("Select mod root first", true);
+    const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/validate.json` });
+    if (!path) return; const payload = {
+      root,
+      game_version: $("game-version").value.trim() || null,
+      source_lang: $("validate-source-lang").value.trim() || null,
+      source_lang_dir: $("validate-source-lang-dir").value.trim() || null,
+      defs_root: $("validate-defs-root").value.trim() || null,
+      extra_fields: ($("validate-extra-fields").value || "").split(',').map(s => s.trim()).filter(Boolean),
+      out_json: path,
+    };
+    await runAction("Saving validation…", () => tauriInvoke("validate_mod", payload));
+    showToast(`Saved: ${path}`);
+  });
+
+  // Diff save
+  const diffSave = $("diff-save"); if (diffSave) diffSave.addEventListener("click", async () => {
+    const root = $("mod-root").value.trim(); if (!root) return showToast("Select mod root first", true);
+    const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/diff.json` });
+    if (!path) return; const payload = {
+      root,
+      game_version: $("game-version").value.trim() || null,
+      source_lang_dir: $("diff-source-lang-dir").value.trim() || "English",
+      target_lang_dir: $("diff-target-lang-dir").value.trim() || "Russian",
+      defs_root: $("diff-defs-root").value.trim() || null,
+      baseline_po: $("diff-po").value.trim() || null,
+      out_json: path,
+    };
+    await runAction("Saving diff…", () => tauriInvoke("diff_xml_cmd", payload));
+    showToast(`Saved: ${path}`);
+});
+
+// === Preview panel ===
+function collectByKey(units, sourceLangDir, targetLangDir) {
+  const map = new Map();
+  const norm = (s) => (s || '').trim();
+  for (const u of units || []) {
+    const path = String(u.path || '');
+    const key = u.key;
+    if (!key) continue;
+    let rec = map.get(key);
+    if (!rec) { rec = { key, en: '', trg: '', enPath: '', trgPath: '' }; map.set(key, rec); }
+    if (path.includes(`/Languages/${sourceLangDir}/`) || path.includes(`\\Languages\\${sourceLangDir}\\`) || path.includes('/Defs/') || path.includes('\\Defs\\')) {
+      rec.en = norm(u.source || u.value || ''); rec.enPath = u.path;
+    }
+    if (path.includes(`/Languages/${targetLangDir}/`) || path.includes(`\\Languages\\${targetLangDir}\\`)) {
+      rec.trg = norm(u.source || u.value || ''); rec.trgPath = u.path;
+    }
+  }
+  return Array.from(map.values());
+}
+
+function renderPreview(rows) {
+  const list = $("preview-keys"); if (!list) return;
+  const root = $("mod-root").value.trim();
+  const trg = $("target-lang").value.trim() || 'ru';
+  const trgDir = langToDir(trg) || 'Russian';
+  const srcDir = 'English';
+  const units = window._lastScanUnits || [];
+  const data = collectByKey(units, srcDir, trgDir);
+  const term = ($("preview-filter").value || '').toLowerCase();
+  const missingOnly = $("preview-missing-only").checked;
+  list.innerHTML = '';
+  let shown = 0;
+  for (const r of data) {
+    if (term && !r.key.toLowerCase().includes(term)) continue;
+    if (missingOnly && r.en && r.trg) continue;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(r.key)}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
+    tr.addEventListener('click', () => {
+      $("preview-en").textContent = r.en || '';
+      $("preview-target").textContent = r.trg || '';
+    });
+    list.appendChild(tr); shown++;
+    if (shown > 300) break;
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+}
+
+function langToDir(code) {
+  const l = (code || '').trim().toLowerCase();
+  const map = { 'ru':'Russian','en':'English','ja':'Japanese','ko':'Korean','fr':'French','de':'German','es':'Spanish','pt-br':'PortugueseBrazilian','pt':'Portuguese','pl':'Polish','it':'Italian','tr':'Turkish','uk':'Ukrainian','cs':'Czech','hu':'Hungarian','nl':'Dutch','ro':'Romanian','th':'Thai','el':'Greek','zh':'ChineseSimplified','zh-tw':'ChineseTraditional' };
+  return map[l];
+}
+
+const previewFilter = $("preview-filter"); if (previewFilter) previewFilter.addEventListener('input', () => renderPreview());
+const missingToggle = $("preview-missing-only"); if (missingToggle) missingToggle.addEventListener('change', () => renderPreview());

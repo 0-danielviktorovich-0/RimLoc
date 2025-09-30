@@ -185,6 +185,7 @@ xmlhealth-summary = Проверка XML: проблем не обнаружен
 xmlhealth-issues = Проверка XML: обнаружены проблемы (см. список выше)
 xmlhealth-issue-line = { $path } — { $error }
 xmlhealth-hint-line = подсказка: { $hint }
+validate-hint-placeholders = подсказка: убедитесь, что плейсхолдеры совпадают в оригинале и переводе
 help-init-about = Создать заготовку перевода в Languages/<язык> с пустыми значениями
 help-init-root = Путь к корню мода RimWorld
 help-init-source-lang = ISO-код исходного языка (например, en)

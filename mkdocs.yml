@@ -51,8 +51,18 @@ plugins:
 nav:
   - Repository: https://github.com/0-danielviktorovich-0/RimLoc
   - Home: index.md
-  - Install: install.md
-  - Run Downloaded Build: install_run.md
+  - Start Here:
+      - Getting Started: getting-started.md
+      - Install: install.md
+      - Run Downloaded Build: install_run.md
+      - Tutorials:
+          - Translate a Mod: tutorials/translate_mod.md
+          - Export to PO: tutorials/export_po.md
+          - Update Translations: tutorials/update_translations.md
+      - Tips & Tricks: tips.md
+      - FAQ: faq.md
+      - Troubleshooting: troubleshooting.md
+      - Glossary: glossary.md
   - CLI:
       - Overview: cli/index.md
       - Scan: cli/scan.md
@@ -60,14 +70,21 @@ nav:
       - Validate PO: cli/validate_po.md
       - Export/Import: cli/export_import.md
       - Build Mod: cli/build_mod.md
-  - Testing: testing.md
-  - Developer Guide: dev/index.md
-  - Guides:
-      - For Translators: guide/translators.md
+      - Diff XML: cli/diff_xml.md
+      - Annotate: cli/annotate.md
+      - XML Health: cli/xml_health.md
+      - Morph: cli/morph.md
+      - Init: cli/init.md
+      - Lang Update: cli/lang_update.md
+  - GUI: guide/gui.md
+  - Formats & Concepts:
       - Configuration: guide/configuration.md
       - Placeholders: guide/placeholders.md
       - PO Files 101: guide/po_files.md
       - Learn (Defs/Keyed): learn.md
+  - Developers:
+      - Overview: dev/index.md
+      - Testing: testing.md
   - Community:
       - Discord: community/discord.md
       - Issue Guidelines: community/issues.md

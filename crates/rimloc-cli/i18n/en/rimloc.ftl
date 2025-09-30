@@ -75,6 +75,9 @@ validate-po-report-line = { $ctxt } → { $reference }
 validate-po-summary = Total mismatches: { $count }
 learn-defs-summary = Learned from Defs: candidates={ $candidates }, accepted={ $accepted } → missing_keys.json={ $missing }, suggested.xml={ $suggested }
 
+# hints
+validate-hint-placeholders = hint: ensure placeholders match source/translation
+
 # import argument validation
 import-need-target = Error: either --out-xml or --mod-root must be specified
 import-dry-run-line = { $path }  ({ $n } key(s))

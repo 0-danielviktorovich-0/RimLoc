@@ -11,6 +11,7 @@ rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
 rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
 rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
+rimloc-plugin-api = { version = "0.1.0", path = "../rimloc-plugin-api" }
 regex = "1"
 quick-xml = { workspace = true }
 walkdir = { workspace = true }
@@ -23,6 +24,7 @@ serde = { version = "1", features = ["derive"] }
 roxmltree = { workspace = true }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 zip = { workspace = true }
+libloading = { version = "0.8" }
 
 [dev-dependencies]
 tempfile = { workspace = true }

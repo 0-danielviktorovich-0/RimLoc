@@ -4,80 +4,41 @@ title: Validate Command
 
 # Validate Command
 
-## Description
+Validate mod XML and report issues such as duplicate keys, empty values, and placeholder problems. Optionally compare placeholders EN → target by key.
 
-The `validate` command checks the integrity and correctness of your RimWorld mods' localization files within a specified root directory. RimLoc treats English source as `Languages/English` plus `Defs` (implicit labels/descriptions, etc.). It verifies that source language files are consistent, properly formatted, and compliant with the expected structure.
+## Synopsis
 
-## Usage
-
-```bash
-rimloc-cli validate --root <ROOT> [OPTIONS]
+```
+rimloc-cli validate --root <PATH> [--format <text|json>] [--game-version <VER>] [--include-all-versions] \
+                    [--source-lang <CODE>] [--source-lang-dir <DIR>] \
+                    [--defs-dir <PATH>] [--defs-dict <PATH>] [--defs-type-schema <PATH>] [--defs-field <NAME>] \
+                    [--compare-placeholders] [--lang <CODE>] [--lang-dir <DIR>]
 ```
 
-## Options
+## Notable options
 
-| Option                 | Description                                                      | Required |
-|------------------------|------------------------------------------------------------------|----------|
-| `--root`               | Root directory containing localization files                     | Yes      |
-| `--source-lang`        | Source language code (e.g., `en`)                                | No       |
-| `--source-lang-dir`    | Directory of the source language files                            | No       |
-| `--defs-dir <PATH>`    | Restrict English Defs scanning to this path (relative to root or absolute) | No |
-| `--defs-field <NAME>`  | Additional Defs field name(s) to extract (repeat or comma‑separate) | No |
-| `--defs-dict <PATH>`   | Additional Defs dictionaries (JSON: DefType → [field paths]) | No |
-| `--defs-type-schema <PATH>` | Optional type schema (JSON) to augment Defs fields (e.g., generated offline) | No |
-| `--format`             | Output format: text \| json (default: text)                       | No       |
-| `--game-version <VER>` | Version folder to operate on (e.g., `1.4`, `v1.4`). Auto-detected if omitted. | No |
-| `--include-all-versions` | Validate all version subfolders instead of auto-picking the latest. | No |
-| `--ui-lang`            | Language for the UI messages                                     | No       |
-| `--quiet`              | Suppress startup banner and non-essential stdout (alias: `--no-banner`) | No       |
-| `--help`               | Show help message                                                 | No       |
+- `--compare-placeholders` — compares placeholder sets between source (EN) and target language entries matched by key. Produces additional `placeholder-check` messages when sets differ.
+- `--lang`, `--lang-dir` — target translation (ISO code or folder name) for `--compare-placeholders`. Defaults to `Russian` if omitted.
 
-!!! tip
-If neither `--source-lang` nor `--source-lang-dir` is provided, RimLoc assumes the baseline files live under `Languages/English` and also pulls English source from `Defs`. Use `--defs-dir` to limit the Defs root and `--defs-field` to add custom fields (can also be set via `[scan].defs_fields` in `rimloc.toml`).
+## JSON output
 
-## Checks performed
+When `--format json` is set, the command emits a JSON array of messages with fields:
 
-- *empty* — detects empty values  
-- *duplicate* — finds duplicate keys  
-- *placeholder-check* — verifies placeholders consistency  
-
-## Examples
-
-Validate localization files in the `./locales` directory with default options:
-
-```bash
-rimloc-cli validate --root ./locales
+```
+{
+  "schema_version": 1,
+  "kind": "placeholder-check",
+  "key": "SomeKey",
+  "path": "/Mods/My/Languages/Russian/Keyed/A.xml",
+  "line": 42,
+  "message": "Placeholder mismatch vs source"
+}
 ```
 
-Specify the source language and source language directory:
+The schema version is stable across minor releases. When adding new fields, we will bump `OUTPUT_SCHEMA_VERSION` in the CLI and update the docs.
 
-```bash
-rimloc-cli validate --root ./locales --source-lang en --source-lang-dir ./locales/en
-```
+## See also
 
-Get the validation output in JSON format filtered by source language:
+- [Scan](scan.md)
+- [Validate PO](validate_po.md)
 
-```bash
-rimloc-cli validate --root ./locales --format json --source-lang en
-```
-
-Set the UI language for messages:
-
-```bash
-rimloc-cli validate --root ./locales --ui-lang en
-```
-
-## Output
-
-The command prints a summary of warnings and errors using the requested format. In `text` mode it uses symbols such as ✖ (errors), ⚠ (warnings), and ℹ (information); in `json` mode it returns structured objects you can post-process.
-
-## Exit codes
-
-- `0` — validation finished without errors (warnings may still appear).
-- `1` — at least one error was detected (duplicates, empty strings, placeholder issues).
-
-## Troubleshooting
-
-- **Unexpected duplicates** – make sure translation files are not symlinks to the same XML file or committed twice under different casing.
-- **`placeholder-check` errors** – compare the source and translated value; use `--format json` to inspect the offending key/value pair.
-- **Command ends with exit code 0 but issues remain** – switch to `--format json` to feed the output into scripts, or add `--ui-lang ru` if you need localized diagnostics.

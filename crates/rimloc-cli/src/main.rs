@@ -395,6 +395,9 @@ enum Commands {
         /// Strict mode for Defs: disable ParentName inheritance when scanning
         #[arg(long, default_value_t = false)]
         no_inherit: bool,
+        /// Also run registered and dynamic plugins and merge their units
+        #[arg(long, default_value_t = false)]
+        with_plugins: bool,
     },
 
     /// Validate strings and report issues (help localized via FTL).
@@ -428,6 +431,15 @@ enum Commands {
         /// Include all version subfolders (disable auto-pick of latest).
         #[arg(long, default_value_t = false)]
         include_all_versions: bool,
+        /// Compare placeholders between source and target language by key
+        #[arg(long, default_value_t = false)]
+        compare_placeholders: bool,
+        /// Target translation language ISO code
+        #[arg(long)]
+        lang: Option<String>,
+        /// Target translation folder name (e.g., "Russian")
+        #[arg(long)]
+        lang_dir: Option<String>,
     },
 
     /// Validate .po placeholder consistency (msgid vs msgstr); help via FTL.
@@ -906,6 +918,7 @@ impl Runnable for Commands {
                 include_all_versions,
                 keyed_nested,
                 no_inherit,
+                with_plugins,
             } => commands::scan::run_scan(
                 root,
                 out_csv,
@@ -922,6 +935,7 @@ impl Runnable for Commands {
                 include_all_versions,
                 keyed_nested,
                 no_inherit,
+                with_plugins,
             ),
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 
@@ -936,6 +950,9 @@ impl Runnable for Commands {
                 format,
                 game_version,
                 include_all_versions,
+                compare_placeholders,
+                lang,
+                lang_dir,
             } => commands::validate::run_validate(
                 root,
                 source_lang,
@@ -947,6 +964,9 @@ impl Runnable for Commands {
                 format,
                 game_version,
                 include_all_versions,
+                compare_placeholders,
+                lang,
+                lang_dir,
                 use_color,
             ),
 

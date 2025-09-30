@@ -11,7 +11,7 @@
 RimLoc is a Rust-based toolkit for RimWorld localization and mod translation management. It keeps translation sources, PO/CSV exports, and QA checks in one workflow on Linux, macOS, and Windows.
 
 Quick links for newcomers:
-- Start translating: docs/en/guide/translators.md
+- Start here (step‑by‑step): docs/en/getting-started.md
 - Configuration (rimloc.toml): docs/en/guide/configuration.md
 
 ## Why RimLoc?

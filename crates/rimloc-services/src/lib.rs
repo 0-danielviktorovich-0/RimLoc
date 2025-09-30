@@ -13,6 +13,7 @@ pub mod learn;
 pub mod scan;
 mod util;
 pub mod validate;
+pub mod plugins;
 
 pub use build::{
     build_from_po_dry_run, build_from_po_execute, build_from_po_with_progress, build_from_root,
@@ -46,3 +47,4 @@ pub use validate::{
     validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_dict,
     validate_under_root_with_defs_and_fields,
 };
+pub use validate::validate_placeholders_cross_language;

@@ -347,6 +347,12 @@ footer {
   font-size: 12px;
 }
 
+/* Preview layout */
+.split { display: flex; gap: 16px; }
+.split .col { flex: 1 1 0; }
+.two-pane { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0b1020; color: #e6edf3; border-radius: 8px; padding: 8px; min-height: 140px; white-space: pre-wrap; }
+
 /* Progress panel */
 .progress-items { display: flex; flex-direction: column; gap: 8px; }
 .progress-row { display: grid; grid-template-columns: 120px 1fr 56px; gap: 12px; align-items: center; }

@@ -8,23 +8,12 @@ title: RimLoc
 
 RimLoc helps RimWorld modders keep translations discoverable, validated, and ready for translators.
 
-[:material-play-circle: Start Translating](guide/translators.md){ .md-button .md-button--primary }
+[:material-play-circle: Start Translating](getting-started.md){ .md-button .md-button--primary }
 [:material-cog: Configuration (rimloc.toml)](guide/configuration.md){ .md-button }
 
-## Quick Onboarding (5 steps)
+## 🚀 Quick Start
 
-1) Install once
-   - `cargo install rimloc-cli`
-2) Add config (optional, saves flags)
-   - Create `rimloc.toml` with `source_lang = "English"`, `target_lang = "Russian"`
-3) Scan and validate your mod
-   - `rimloc-cli scan --root ./Mods/MyMod --format json > scan.json`
-   - `rimloc-cli validate --root ./Mods/MyMod`
-4) Export PO and translate in Poedit
-   - `rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru`
-5) Import and build a translation‑only mod
-   - `rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run`
-   - `rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru`
+New? Start here: getting-started.md — step‑by‑step guide with commands and tips.
 
 
 ## Why RimLoc?
@@ -35,33 +24,9 @@ RimLoc helps RimWorld modders keep translations discoverable, validated, and rea
 - Build translation-only RimWorld mods straight from a curated `.po` file.
 - Ship CLIs localized via Fluent (English and Russian included by default).
 
-## Quick start
+## Commands at a glance
 
-```bash
-cargo install rimloc-cli
-rimloc-cli scan --root ./test/TestMod --format json | jq '.[0]'
-rimloc-cli validate --root ./test/TestMod
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru --dry-run
-```
-
-- `scan` collects translation units and prints CSV (or JSON with `--format json`).
-- `validate` performs QA checks and exits with `1` if it finds errors.
-- `export-po` writes a single `.po` hand-off file for translators or CAT tools.
-- `build-mod --dry-run` previews the translation-only mod RimLoc would scaffold.
-- Use the bundled `test/TestMod` fixture to experiment before touching your mod.
-
-Need to export for translators?
-
-```bash
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-```
-
-Need to ship a translation-only mod?
-
-```bash
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru
-```
+See the CLI overview: cli/index.md. Jump directly: Scan · Validate · Validate PO · Export/Import · Build Mod.
 
 ## Core commands
 

@@ -8,23 +8,12 @@ title: RimLoc
 
 RimLoc помогает моддерам RimWorld поддерживать переводы в актуальном состоянии, проверять их и готовить к передаче переводчикам.
 
-[:material-play-circle: Начать перевод](guide/translators.md){ .md-button .md-button--primary }
+[:material-play-circle: Начать перевод](getting-started.md){ .md-button .md-button--primary }
 [:material-cog: Конфигурация (rimloc.toml)](guide/configuration.md){ .md-button }
 
-## Быстрый старт (5 шагов)
+## 🚀 Быстрый старт
 
-1) Установить один раз
-   - `cargo install rimloc-cli`
-2) Добавить конфиг (необязательно, экономит флаги)
-   - Создайте `rimloc.toml` с `source_lang = "English"`, `target_lang = "Russian"`
-3) Сканировать и проверить мод
-   - `rimloc-cli scan --root ./Mods/MyMod --format json > scan.json`
-   - `rimloc-cli validate --root ./Mods/MyMod`
-4) Экспортировать PO и перевести в Poedit
-   - `rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru`
-5) Импортировать и собрать мод‑перевод
-   - `rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run`
-   - `rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru`
+Новичкам — сюда: getting-started.md. Там пошаговый гайд, примеры команд и советы.
 
 
 ## Зачем нужен RimLoc?
@@ -35,33 +24,9 @@ RimLoc помогает моддерам RimWorld поддерживать пе�
 - Может собрать переводческий мод напрямую из готового `.po` файла.
 - CLI уже локализован (английский и русский) и использует стек Fluent.
 
-## Быстрый старт
+## Команды в двух словах
 
-```bash
-cargo install rimloc-cli
-rimloc-cli scan --root ./test/TestMod --format json | jq '.[0]'
-rimloc-cli validate --root ./test/TestMod
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru --dry-run
-```
-
-- `scan` собирает единицы перевода и выводит CSV (или JSON при `--format json`).
-- `validate` выполняет проверку качества и возвращает код `1`, если найдены ошибки.
-- `export-po` формирует единый `.po` для передачи переводчикам или CAT-системам.
-- `build-mod --dry-run` показывает, каким будет отдельный переводческий мод.
-- Для экспериментов воспользуйтесь тестовым модом `test/TestMod`.
-
-Нужно подготовить пакет для переводчиков?
-
-```bash
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-```
-
-Нужно собрать отдельный мод-перевод?
-
-```bash
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru
-```
+См. обзор CLI: cli/index.md. Полные страницы с примерами: Scan · Validate · Validate PO · Export/Import · Build Mod.
 
 ## Основные команды
 

@@ -1,4 +1,5 @@
 use crate::version::resolve_game_version_root;
+use rimloc_services::validate_placeholders_cross_language;
 
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
@@ -13,6 +14,9 @@ pub fn run_validate(
     format: String,
     game_version: Option<String>,
     include_all_versions: bool,
+    compare_placeholders: bool,
+    target_lang: Option<String>,
+    target_lang_dir: Option<String>,
     use_color: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "validate_args", root = ?root, game_version = ?game_version, include_all_versions = include_all_versions);
@@ -97,14 +101,40 @@ pub fn run_validate(
     }
     let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
 
-    let msgs = rimloc_services::validate_under_root_with_defs_and_dict(
+    let mut msgs = rimloc_services::validate_under_root_with_defs_and_dict(
         &scan_root,
-        source_lang.or(cfg.source_lang).as_deref(),
+        source_lang.as_deref().or(cfg.source_lang.as_deref()),
         source_lang_dir.as_deref(),
         defs_abs.as_deref(),
         &merged.0,
         &cli_defs_field,
     )?;
+
+    if compare_placeholders {
+        // Resolve source and target dirs
+        let src_dir = if let Some(dir) = source_lang_dir.clone() {
+            dir
+        } else if let Some(code) = source_lang.as_ref().or(cfg.source_lang.as_ref()) {
+            rimloc_import_po::rimworld_lang_dir(code)
+        } else {
+            "English".to_string()
+        };
+        let trg_dir = if let Some(dir) = target_lang_dir.clone() {
+            dir
+        } else if let Some(code) = target_lang.as_ref().or(cfg.target_lang.as_ref()) {
+            rimloc_import_po::rimworld_lang_dir(code)
+        } else {
+            "Russian".to_string()
+        };
+        if let Ok(mut extra) = rimloc_services::validate_placeholders_cross_language(
+            &scan_root,
+            &src_dir,
+            &trg_dir,
+            defs_abs.as_deref(),
+        ) {
+            msgs.append(&mut extra);
+        }
+    }
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {
@@ -165,6 +195,9 @@ pub fn run_validate(
                     m.line.unwrap_or(0).to_string().magenta(),
                     m.message
                 );
+                if m.kind == "placeholder-check" {
+                    println!("{}", tr!("validate-hint-placeholders"));
+                }
             }
         }
     }

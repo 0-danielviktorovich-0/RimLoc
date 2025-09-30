@@ -67,3 +67,10 @@ rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru --dry-
 - **Экспорт/импорт ничего не делает** — убедитесь, что каталог `Languages/<lang>/` существует и код языка совпадает с переданным флагом.
 
 Нужны детали по конкретной команде? На отдельных страницах приведены таблицы опций, примеры и советы по устранению ошибок.
+
+## См. также
+
+- Начало работы: ../getting-started.md
+- Туториалы: ../tutorials/translate_mod.md · ../tutorials/export_po.md · ../tutorials/update_translations.md
+- Словарь: ../glossary.md
+- Советы и лайфхаки: ../tips.md
