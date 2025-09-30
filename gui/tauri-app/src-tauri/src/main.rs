@@ -20,6 +20,7 @@ use thiserror::Error;
 use walkdir::WalkDir;
 use std::fs::OpenOptions;
 use std::io::Write;
+use chrono::Utc;
 
 #[derive(Debug, Error, Serialize)]
 #[error("{message}")]
@@ -145,8 +146,23 @@ fn append_log(path: &Path, level: &str, message: &str) {
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
+    rotate_if_needed(path);
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {
-        let _ = writeln!(f, "{}: {}", level.to_uppercase(), message.replace('\n', " "));
+        let ts = Utc::now().to_rfc3339();
+        let tid = format!("{:?}", std::thread::current().id());
+        let _ = writeln!(f, "[{}][{}] {}: {}", ts, tid, level.to_uppercase(), message.replace('\n', " "));
+    }
+}
+
+fn rotate_if_needed(path: &Path) {
+    if let Ok(meta) = std::fs::metadata(path) {
+        let max = 5 * 1024 * 1024; // 5 MB
+        if meta.len() > max {
+            if let Some(dir) = path.parent() {
+                let rotated = dir.join(format!("gui-{}.log", Utc::now().format("%Y%m%d-%H%M%S")));
+                let _ = std::fs::rename(path, rotated);
+            }
+        }
     }
 }
 
@@ -194,6 +210,22 @@ fn emit_progress(window: &Window, state: &State<LogState>, action: &str, step: &
     }
 }
 
+fn write_profile(state: &State<LogState>, command: &str, start: std::time::Instant, extra: serde_json::Value) {
+    let duration_ms = start.elapsed().as_millis() as u64;
+    let entry = serde_json::json!({
+        "ts": Utc::now().to_rfc3339(),
+        "command": command,
+        "duration_ms": duration_ms,
+        "extra": extra,
+    });
+    if let Some(dir) = state.path.parent() {
+        let file = dir.join("profile.jsonl");
+        if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(file) {
+            let _ = writeln!(f, "{}", entry);
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct LearnDefsRequest {
     root: String,
@@ -236,6 +268,8 @@ struct ValidateRequest {
     defs_root: Option<String>,
     #[serde(default)]
     extra_fields: Option<Vec<String>>,
+    #[serde(default)]
+    out_json: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -269,6 +303,8 @@ struct XmlHealthRequest {
     lang: Option<String>,
     #[serde(default)]
     lang_dir: Option<String>,
+    #[serde(default)]
+    out_json: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -347,6 +383,8 @@ struct DiffXmlRequest {
     baseline_po: Option<String>,
     #[serde(default)]
     defs_root: Option<String>,
+    #[serde(default)]
+    out_json: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -432,8 +470,82 @@ fn get_app_info() -> Result<AppInfo, ApiError> {
     })
 }
 
+#[derive(Debug, Deserialize)]
+struct DebugOptions {
+    #[serde(default)]
+    backtrace: Option<bool>,
+    #[serde(default)]
+    min_level: Option<String>,
+}
+
+#[tauri::command]
+fn set_debug_options(state: State<LogState>, opts: DebugOptions) -> Result<String, ApiError> {
+    if let Some(bt) = opts.backtrace {
+        std::env::set_var("RUST_BACKTRACE", if bt { "1" } else { "0" });
+        append_log(&state.path, "INFO", &format!("debug: backtrace set to {}", bt));
+    }
+    if let Some(level) = opts.min_level {
+        append_log(&state.path, "INFO", &format!("debug: min_level hint {}", level));
+    }
+    Ok("ok".into())
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DiagnosticsInfo {
+    app_version: String,
+    os: String,
+    arch: String,
+    log_path: String,
+    tauri_version: String,
+}
+
+#[tauri::command]
+fn get_diagnostics(state: State<LogState>) -> Result<DiagnosticsInfo, ApiError> {
+    let os = std::env::consts::OS.to_string();
+    let arch = std::env::consts::ARCH.to_string();
+    Ok(DiagnosticsInfo {
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+        os,
+        arch,
+        log_path: state.path.display().to_string(),
+        tauri_version: tauri::VERSION.to_string(),
+    })
+}
+
+#[derive(Debug, Deserialize)]
+struct CollectDiagRequest { #[serde(default)] out_path: Option<String> }
+
+#[tauri::command]
+fn collect_diagnostics(state: State<LogState>, req: CollectDiagRequest) -> Result<String, ApiError> {
+    let base = state.path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| std::env::temp_dir());
+    let out = req.out_path.map(PathBuf::from).unwrap_or_else(|| base.join("diagnostics.txt"));
+    let mut buf = String::new();
+    buf.push_str(&format!("Diagnostics generated at: {}\n", Utc::now().to_rfc3339()));
+    buf.push_str(&format!("App version: {}\n", env!("CARGO_PKG_VERSION")));
+    buf.push_str(&format!("OS: {}\nArch: {}\n", std::env::consts::OS, std::env::consts::ARCH));
+    buf.push_str(&format!("Tauri: {}\n", tauri::VERSION));
+    buf.push_str(&format!("Log file: {}\n\n", state.path.display()));
+    if let Ok(log) = std::fs::read_to_string(&state.path) {
+        buf.push_str("=== Last 500 lines of gui.log ===\n");
+        let lines: Vec<&str> = log.lines().collect();
+        let start = lines.len().saturating_sub(500);
+        for l in &lines[start..] { buf.push_str(l); buf.push('\n'); }
+    }
+    if let Some(parent) = out.parent() { let _ = std::fs::create_dir_all(parent); }
+    std::fs::write(&out, buf.as_bytes())?;
+    Ok(out.display().to_string())
+}
+
+#[tauri::command]
+fn simulate_error() -> Result<(), ApiError> { Err(ApiError { message: "Simulated error for debug".into() }) }
+
+#[tauri::command]
+fn simulate_panic() -> Result<(), ApiError> { std::panic::panic_any(0u8); }
+
 #[tauri::command]
 fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Result<ScanResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
     emit_progress(&window, &state, "scan", "start", Some("Scanning…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
@@ -447,6 +559,9 @@ fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Res
             emit_log(&window, &state, "info", format!("scan finished (all versions): total={} keyed={} definj={} saved_json={:?} saved_csv={:?}", r.total, r.keyed, r.def_injected, r.saved_json, r.saved_csv));
             emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
         }
+        if let Ok(ref r) = res {
+            write_profile(&state, "scan_mod", t0, serde_json::json!({"total": r.total, "keyed": r.keyed, "def_injected": r.def_injected}));
+        }
         res
     } else {
         let (resolved, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
@@ -454,6 +569,7 @@ fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Res
         if let Ok(ref r) = res {
             emit_log(&window, &state, "info", format!("scan finished: {} → total={} keyed={} definj={} saved_json={:?} saved_csv={:?}", resolved.display(), r.total, r.keyed, r.def_injected, r.saved_json, r.saved_csv));
             emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
+            write_profile(&state, "scan_mod", t0, serde_json::json!({"total": r.total, "keyed": r.keyed, "def_injected": r.def_injected}));
         }
         res
     }
@@ -556,6 +672,7 @@ fn classify_unit(path: &Path) -> ScanKind {
 
 #[tauri::command]
 fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest) -> Result<LearnDefsResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("learn: root={}", request.root));
     emit_progress(&window, &state, "learn", "start", Some("Preparing…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
@@ -611,11 +728,13 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
         accepted: result.accepted,
     };
     emit_log(&window, &state, "info", format!("learn finished: accepted {}/{} → out_dir={}", response.accepted, response.candidates, response.out_dir));
+    write_profile(&state, "learn_defs", t0, serde_json::json!({"accepted": response.accepted, "candidates": response.candidates}));
     Ok(response)
 }
 
 #[tauri::command]
 fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -> Result<ExportPoResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
     emit_progress(&window, &state, "export", "start", Some("Exporting…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
@@ -674,11 +793,13 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
         warning,
     };
     emit_log(&window, &state, "info", format!("export finished: {} → total={} tm_filled={} ({}%)", resp.out_po, resp.total, resp.tm_filled, resp.tm_coverage_pct));
+    write_profile(&state, "export_po", t0, serde_json::json!({"total": resp.total, "tm_filled": resp.tm_filled}));
     Ok(resp)
 }
 
 #[tauri::command]
 fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest) -> Result<ValidateResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("validate: root={}", request.root));
     emit_progress(&window, &state, "validate", "start", Some("Validating…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
@@ -721,6 +842,12 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
         }
     }
     emit_progress(&window, &state, "validate", "done", Some("Validation finished".to_string()), Some(100));
+    if let Some(out) = request.out_json.as_deref() {
+        let path = make_absolute(&scan_root, Path::new(out));
+        if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+        let _ = std::fs::write(&path, serde_json::to_vec_pretty(&msgs).unwrap_or_default());
+    }
+    write_profile(&state, "validate", t0, serde_json::json!({"total": msgs.len(), "errors": errors, "warnings": warnings, "infos": infos }));
     Ok(ValidateResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
@@ -734,6 +861,7 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
 
 #[tauri::command]
 fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest) -> Result<XmlHealthResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("xml_health: root={}", request.root));
     emit_progress(&window, &state, "health", "start", Some("Checking XML…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
@@ -745,16 +873,24 @@ fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest)
         .unwrap_or_else(|| "English".to_string());
     let report = xml_health_scan(&scan_root, Some(&lang_dir)).wrap_err("xml health")?;
     emit_progress(&window, &state, "health", "done", Some("XML check finished".to_string()), Some(100));
-    Ok(XmlHealthResponse {
+    let out = XmlHealthResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
         checked: report.checked,
         issues: report.issues,
-    })
+    };
+    if let Some(path_str) = request.out_json.as_deref() {
+        let p = make_absolute(&scan_root, Path::new(path_str));
+        if let Some(parent) = p.parent() { let _ = std::fs::create_dir_all(parent); }
+        let _ = std::fs::write(&p, serde_json::to_vec_pretty(&out).unwrap_or_default());
+    }
+    write_profile(&state, "xml_health", t0, serde_json::json!({"checked": out.checked, "issues": out.issues.len()}));
+    Ok(out)
 }
 
 #[tauri::command]
 fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -> Result<ImportPoResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("import_po: root={} po={}", request.root, request.po_path));
     emit_progress(&window, &state, "import", "start", Some("Importing PO…".to_string()), Some(0));
     let root = PathBuf::from(&request.root);
@@ -781,7 +917,7 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
     )
     .wrap_err("import po")?;
     emit_progress(&window, &state, "import", "done", Some("Import finished".to_string()), Some(100));
-    Ok(ImportPoResponse {
+    let resp = ImportPoResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
         lang_dir,
@@ -789,11 +925,14 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
         updated: summary.updated,
         skipped: summary.skipped,
         keys: summary.keys,
-    })
+    };
+    write_profile(&state, "import_po", t0, serde_json::json!({"created": resp.created, "updated": resp.updated, "skipped": resp.skipped, "keys": resp.keys}));
+    Ok(resp)
 }
 
 #[tauri::command]
 fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -> Result<BuildModResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("build_mod from PO: {}", request.po_path));
     emit_progress(&window, &state, "build", "start", Some("Building mod…".to_string()), Some(0));
     let po = PathBuf::from(&request.po_path);
@@ -817,7 +956,9 @@ fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -
     // Estimate total keys by scanning generated mod quickly (optional)
     // Skipping heavy scan; we leave total_keys = 0 for now as a placeholder.
     emit_progress(&window, &state, "build", "done", Some("Build finished".to_string()), Some(100));
-    Ok(BuildModResponse { out_mod: out.display().to_string(), files: files_count, total_keys })
+    let resp = BuildModResponse { out_mod: out.display().to_string(), files: files_count, total_keys };
+    write_profile(&state, "build_mod", t0, serde_json::json!({"files": resp.files }));
+    Ok(resp)
 }
 
 fn def_injected_warning(scan_root: &Path, source_dir: &str) -> Option<String> {
@@ -991,14 +1132,22 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            // Prepare log file path in OS-specific data directory
-            let base = dirs::data_dir().unwrap_or_else(|| std::env::temp_dir());
-            let log_path = base.join("RimLoc").join("logs").join("gui.log");
-            if let Some(parent) = log_path.parent() { let _ = std::fs::create_dir_all(parent); }
+            // Prepare log + profile paths
+            let base = app
+                .path()
+                .app_data_dir()
+                .unwrap_or_else(|_| dirs::data_dir().unwrap_or_else(|| std::env::temp_dir()));
+            // keep our fixed app folder name for consistency across OSes
+            let logs_dir = base.join("RimLoc").join("logs");
+            let log_path = logs_dir.join("gui.log");
+            let profile_path = logs_dir.join("profile.jsonl");
+            let _ = std::fs::create_dir_all(&logs_dir);
             // Write a startup banner
             if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&log_path) {
                 let _ = writeln!(f, "=== RimLoc GUI start v{} ===", env!("CARGO_PKG_VERSION"));
             }
+            // ensure profile file exists
+            let _ = OpenOptions::new().create(true).append(true).open(&profile_path);
             app.manage(LogState { path: log_path.clone() });
             let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
@@ -1025,7 +1174,12 @@ fn main() {
             pick_directory,
             save_text_file,
             log_message,
-            open_path
+            open_path,
+            set_debug_options,
+            get_diagnostics,
+            collect_diagnostics,
+            simulate_error,
+            simulate_panic
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1078,6 +1232,7 @@ fn open_path(path: String) -> Result<(), ApiError> {
 }
 #[tauri::command]
 fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest) -> Result<DiffXmlResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("diff_xml: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir));
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
@@ -1099,17 +1254,25 @@ fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest
             baseline.as_deref(),
         )?
     };
-    Ok(DiffXmlResponse {
+    let resp = DiffXmlResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
         only_in_mod: out.only_in_mod,
         only_in_translation: out.only_in_translation,
         changed: out.changed,
-    })
+    };
+    if let Some(p) = request.out_json.as_deref() {
+        let path = make_absolute(&scan_root, Path::new(p));
+        if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+        let _ = std::fs::write(&path, serde_json::to_vec_pretty(&resp).unwrap_or_default());
+    }
+    write_profile(&state, "diff_xml", t0, serde_json::json!({"only_in_mod": resp.only_in_mod.len(), "only_in_translation": resp.only_in_translation.len(), "changed": resp.changed.len()}));
+    Ok(resp)
 }
 
 #[tauri::command]
 fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateRequest) -> Result<LangUpdateResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
     let root = PathBuf::from(&request.root);
     let (scan_root, _version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
@@ -1125,29 +1288,41 @@ fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateR
         request.backup,
     )?;
     if let Some(s) = summary {
-        Ok(LangUpdateResponse { files: s.files, bytes: s.bytes, out_dir: s.out_dir.display().to_string() })
+        let resp = LangUpdateResponse { files: s.files, bytes: s.bytes, out_dir: s.out_dir.display().to_string() };
+        write_profile(&state, "lang_update", t0, serde_json::json!({"files": resp.files, "bytes": resp.bytes }));
+        Ok(resp)
     } else {
-        Ok(LangUpdateResponse { files: 0, bytes: 0, out_dir: scan_root.join("Data/Core/Languages").display().to_string() })
+        let resp = LangUpdateResponse { files: 0, bytes: 0, out_dir: scan_root.join("Data/Core/Languages").display().to_string() };
+        write_profile(&state, "lang_update", t0, serde_json::json!({"files": 0, "bytes": 0 }));
+        Ok(resp)
     }
 }
 
 #[tauri::command]
 fn annotate_cmd(_window: Window, state: State<LogState>, request: AnnotateRequest) -> Result<AnnotateResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("annotate: src={} trg={}", request.source_lang_dir, request.target_lang_dir));
     let root = PathBuf::from(&request.root);
     if request.dry_run {
         let plan = annotate_dry_run_plan(&root, &request.source_lang_dir, &request.target_lang_dir, request.comment_prefix.as_deref().unwrap_or("//"), request.strip)?;
-        Ok(AnnotateResponse { processed: plan.processed, annotated: plan.total_add })
+        let resp = AnnotateResponse { processed: plan.processed, annotated: plan.total_add };
+        write_profile(&state, "annotate_preview", t0, serde_json::json!({"processed": resp.processed, "annotated": resp.annotated }));
+        Ok(resp)
     } else {
         let s = annotate_apply(&root, &request.source_lang_dir, &request.target_lang_dir, request.comment_prefix.as_deref().unwrap_or("//"), request.strip, false, request.backup)?;
-        Ok(AnnotateResponse { processed: s.processed, annotated: s.annotated })
+        let resp = AnnotateResponse { processed: s.processed, annotated: s.annotated };
+        write_profile(&state, "annotate_apply", t0, serde_json::json!({"processed": resp.processed, "annotated": resp.annotated }));
+        Ok(resp)
     }
 }
 
 #[tauri::command]
-fn init_lang_cmd(_window: Window, _state: State<LogState>, request: InitRequest) -> Result<InitResponse, ApiError> {
+fn init_lang_cmd(_window: Window, state: State<LogState>, request: InitRequest) -> Result<InitResponse, ApiError> {
+    let t0 = std::time::Instant::now();
     let root = PathBuf::from(&request.root);
     let plan = make_init_plan(&root, &request.source_lang_dir, &request.target_lang_dir)?;
     let files = write_init_plan(&plan, request.overwrite, request.dry_run)?;
-    Ok(InitResponse { files, out_language: plan.language })
+    let resp = InitResponse { files, out_language: plan.language };
+    write_profile(&state, "init_lang", t0, serde_json::json!({"files": resp.files }));
+    Ok(resp)
 }

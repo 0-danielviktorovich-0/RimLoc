@@ -3559,6 +3559,7 @@ dependencies = [
 name = "rimloc-gui"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "color-eyre",
  "dirs 5.0.1",
  "ico 0.3.0",

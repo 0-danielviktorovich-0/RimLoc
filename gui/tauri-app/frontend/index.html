@@ -173,6 +173,7 @@
           <h2 data-i18n="validate_title">Validate</h2>
           <div class="actions">
             <button type="button" id="validate-run" data-i18n="validate_run">Run validate</button>
+            <button type="button" id="validate-save" data-i18n="save_report">Save report…</button>
           </div>
         </div>
         <div class="field-grid">
@@ -200,6 +201,7 @@
           <h2 data-i18n="health_title">XML Health</h2>
           <div class="actions">
             <button type="button" id="health-run" data-i18n="health_run">Check</button>
+            <button type="button" id="health-save" data-i18n="save_report">Save report…</button>
           </div>
         </div>
         <div class="field-grid">
@@ -291,6 +293,7 @@
           <h2 data-i18n="diff_title">Diff XML</h2>
           <div class="actions">
             <button type="button" id="diff-run" data-i18n="diff_run">Run diff</button>
+            <button type="button" id="diff-save" data-i18n="save_report">Save report…</button>
           </div>
         </div>
         <div class="field-grid">
@@ -429,7 +432,24 @@
                 <button id="copy-log-path" type="button" data-i18n="copy">Copy</button>
                 <button id="open-log-folder" type="button" data-i18n="open_folder">Open folder</button>
                 <button id="save-console" type="button" data-i18n="save_console">Save console…</button>
+                <button id="collect-diagnostics" type="button" data-i18n="collect_diag">Collect diagnostics…</button>
+                <button id="simulate-error" type="button" data-i18n="simulate_error">Simulate error</button>
+                <button id="simulate-panic" type="button" data-i18n="simulate_panic">Simulate panic</button>
               </div>
+            </div>
+            <div class="field-grid">
+              <label>
+                <span data-i18n="loglevel">Log level</span>
+                <select id="log-level-modal">
+                  <option value="info">info</option>
+                  <option value="debug">debug</option>
+                  <option value="trace">trace</option>
+                </select>
+              </label>
+              <label>
+                <input id="enable-backtrace" type="checkbox" />
+                <span data-i18n="enable_backtrace">Enable Rust backtrace</span>
+              </label>
             </div>
             <pre id="debug-modal-content" class="debug-log"></pre>
           </div>

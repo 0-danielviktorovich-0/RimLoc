@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/capability.json",
+  "identifier": "default",
+  "description": "Default capability: allow dialog open/save and shell open for main window.",
+  "windows": ["main", "*"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "shell:default",
+    "shell:allow-open"
+  ]
+}

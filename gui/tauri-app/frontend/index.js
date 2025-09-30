@@ -796,8 +796,8 @@ async function fetchAppVersion() {
 
 // --- Debug console and logging ---
 function debugLog(level, message, noForward = false) {
-  const order = { error: 0, warn: 1, info: 2, debug: 3 };
-  const allowed = state.logLevel === "debug" ? 3 : 2;
+  const order = { error: 0, warn: 1, info: 2, debug: 3, trace: 4 };
+  const allowed = state.logLevel === "trace" ? 4 : (state.logLevel === "debug" ? 3 : 2);
   const lvl = order[String(level).toLowerCase()] ?? 2;
   // Show in UI if allowed
   if (lvl <= allowed) {
@@ -837,6 +837,11 @@ function initDebugUI() {
       }
     } catch {}
     $("debug-modal-content").textContent = $("debug-log").textContent;
+    // sync modal controls
+    const lv = $("log-level-modal");
+    if (lv) lv.value = state.logLevel === "trace" ? "trace" : state.logLevel;
+    const bt = $("enable-backtrace");
+    if (bt) bt.checked = localStorage.getItem("rimloc.backtrace") === "1";
     modal.classList.remove("hidden");
   });
   $("debug-modal-close").addEventListener("click", () => modal.classList.add("hidden"));
@@ -863,6 +868,32 @@ function initDebugUI() {
     } catch (e) {
       showError(e);
     }
+  });
+  $("collect-diagnostics").addEventListener("click", async () => {
+    try {
+      const info = await tauriInvoke("get_log_info");
+      const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "diagnostics.txt");
+      const path = await tauriDialog().save({ defaultPath: def });
+      if (!path) return;
+      const saved = await tauriInvoke("collect_diagnostics", { req: { outPath: path } });
+      showToast(`Diagnostics saved: ${saved}`);
+    } catch (e) { showError(e); }
+  });
+  $("simulate-error").addEventListener("click", async () => {
+    try { await tauriInvoke("simulate_error"); } catch (e) { showError(e); }
+  });
+  $("simulate-panic").addEventListener("click", async () => {
+    try { await tauriInvoke("simulate_panic"); } catch (e) { showError(e); }
+  });
+  $("log-level-modal").addEventListener("change", async () => {
+    const lv = $("log-level-modal").value;
+    state.logLevel = lv; localStorage.setItem("rimloc.logLevel", lv);
+    try { await tauriInvoke("set_debug_options", { opts: { minLevel: lv } }); } catch {}
+  });
+  $("enable-backtrace").addEventListener("change", async () => {
+    const on = $("enable-backtrace").checked;
+    localStorage.setItem("rimloc.backtrace", on ? "1" : "0");
+    try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {}
   });
 
   // Hotkey: Cmd/Ctrl + D opens modal

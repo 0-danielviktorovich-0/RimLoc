@@ -7,7 +7,7 @@ title: Learn DefInjected / Keyed
 Разбор “на пальцах”, как автоматически искать строки, пополнять словари и генерировать шаблоны. Подходит новичкам — можно копировать команды и подставить свой путь к моду.
 
 Что это даёт
-- Находит переводимые поля в Defs (label/description/вложенные элементы) и ключи в Keyed.
+- Находит переводимые поля в Defs (label/description/вложенные элементы; списки <li> и <LineBreak/> объединяются автоматически) и ключи в Keyed.
 - Сохраняет “выученные” наборы для ревью.
 - По желанию — дополняет словари автоматически.
 - Генерирует пустые шаблоны XML для переводчиков.
@@ -50,34 +50,34 @@ Keyed dictionary (JSON)
 1) Scan/Validate/Diff c учётом словарей (Defs)
 - Скан JSON для быстрого просмотра:
 ```
-rimloc-cli --quiet scan --root ./Mods/MyMod --format json \
+rimloc-cli --quiet scan --root ./mods/MyMod --format json \
   --defs-dict ./dicts/defs.json --defs-field labelFemale,title
 ```
 - Проверка (пустые/дубли/плейсхолдеры):
 ```
-rimloc-cli validate --root ./Mods/MyMod --format json --defs-dict ./dicts/defs.json
+rimloc-cli validate --root ./mods/MyMod --format json --defs-dict ./dicts/defs.json
 ```
 - Diff исходник/перевод (с учётом словаря):
 ```
-rimloc-cli diff-xml --root ./Mods/MyMod --format json \
+rimloc-cli diff-xml --root ./mods/MyMod --format json \
   --defs-dict ./dicts/defs.json --defs-dir 1.6/Defs
 ```
 
 2) Обучение DefInjected (поиск + шаблон)
 ```
-rimloc-cli learn-defs --mod ./Mods/MyMod \
+rimloc-cli learn-defs --mod ./mods/MyMod \
   --dict ./dicts/defs.json --no-ml \
   --lang English --threshold 0.8 --out ./out \
   --learned-out ./out/learned_defs.json
 ```
 Результаты:
 - `out/missing_keys.json` – список новых ключей [{ defType, defName, fieldPath, confidence, sourceFile }]
-- `out/suggested.xml` – шаблон DefInjected
+- `out/suggested.xml` – шаблон DefInjected (с комментариями `<!-- EN: ... -->` с оригиналами)
 - `out/learned_defs.json` – журнал с датами
 
 Авто‑пополнение словаря:
 ```
-rimloc-cli learn-defs --mod ./Mods/MyMod \
+rimloc-cli learn-defs --mod ./mods/MyMod \
   --dict ./dicts/defs.json --no-ml \
   --lang English --threshold 0.8 --out ./out \
   --retrain --retrain-dict ./dicts/defs.json
@@ -86,7 +86,7 @@ rimloc-cli learn-defs --mod ./Mods/MyMod \
 
 3) Обучение Keyed (поиск + шаблон)
 ```
-rimloc-cli learn-keyed --mod ./Mods/MyMod \
+rimloc-cli learn-keyed --mod ./mods/MyMod \
   --dict ./dicts/keyed.json --no-ml \
   --source-lang-dir English --lang-dir Russian \
   --threshold 0.8 --out ./out \
@@ -94,12 +94,12 @@ rimloc-cli learn-keyed --mod ./Mods/MyMod \
 ```
 Результаты:
 - `out/missing_keyed.json` – [{ key, value, confidence, sourceFile }]
-- `out/_SuggestedKeyed.xml` – шаблон Keyed
+- `out/_SuggestedKeyed.xml` – шаблон Keyed (также с `<!-- EN: ... -->`)
 - `out/learned_keyed.json` – журнал с датами
 
 Пополнение словаря Keyed (добавляет точные ключи как regex `^key$`):
 ```
-rimloc-cli learn-keyed --mod ./Mods/MyMod \
+rimloc-cli learn-keyed --mod ./mods/MyMod \
   --dict ./dicts/keyed.json --no-ml \
   --threshold 0.8 --out ./out \
   --retrain-dict ./dicts/keyed.json
@@ -123,12 +123,12 @@ REST: POST `{ url }`
 
 Запуск с ML:
 ```
-rimloc-cli learn-defs  --mod ./Mods/MyMod --dict ./dicts/defs.json --ml-url http://127.0.0.1:8080/score --threshold 0.85 --out ./out
-rimloc-cli learn-keyed --mod ./Mods/MyMod --dict ./dicts/keyed.json --ml-url http://127.0.0.1:8080/score --threshold 0.85 --out ./out
+rimloc-cli learn-defs  --mod ./mods/MyMod --dict ./dicts/defs.json --ml-url http://127.0.0.1:8080/score --threshold 0.85 --out ./out
+rimloc-cli learn-keyed --mod ./mods/MyMod --dict ./dicts/keyed.json --ml-url http://127.0.0.1:8080/score --threshold 0.85 --out ./out
 ```
 
 ## Советы
 - Держите Defs и Keyed словари отдельно.
 - Начните с `--no-ml` и порога 0.8; потом настройте под проект.
-- Для списков в Defs используйте `li` (например, comps.li.label).
+- Для списков в Defs используйте `li` (например, comps.li.label). Можно использовать `li{h}` — тогда RimLoc постарается именовать элементы списка по «ручкам» (Class/defName/label) вместо индексов; повторы будут как foo, foo-1. Также возможны алиасы в шаге пути: `a|b`. (например, comps.li.label).
 - Логи обучения (`learned_*.json`) удобно хранить в репозитории для ревью.

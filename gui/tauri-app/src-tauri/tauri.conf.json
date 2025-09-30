@@ -7,22 +7,7 @@
     "frontendDist": "../frontend"
   },
   "app": {
-    "security": {
-      "csp": null,
-      "capabilities": [
-        {
-          "identifier": "default",
-          "permissions": [
-            "core:default",
-            "dialog:default",
-            "dialog:allow-open",
-            "dialog:allow-save",
-            "shell:default",
-            "shell:allow-open"
-          ]
-        }
-      ]
-    },
+    "security": { "csp": null },
     "withGlobalTauri": true,
     "windows": [
       {
