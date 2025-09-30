@@ -1,16 +1,22 @@
 function getTauri() {
-  return window.__TAURI__ || {};
+  const t = (typeof window !== 'undefined' && window.__TAURI__) ? window.__TAURI__ : undefined;
+  if (!getTauri._loggedOnce) {
+    getTauri._loggedOnce = true;
+    try { console.log('TAURI global:', t); } catch {}
+  }
+  return t || {};
 }
 
 function tauriInvoke(cmd, args) {
   const tauri = getTauri();
   const fn = tauri.invoke || tauri.tauri?.invoke || tauri.core?.invoke;
-  if (!fn) throw new Error("Tauri API not available: invoke");
+  if (!fn) { try { console.error('invoke not available', { cmd, args }); } catch {}; throw new Error("Tauri API not available: invoke"); }
+  try { console.log('invoke', cmd, args); } catch {}
   try { debugLog("trace", `invoke ${cmd} → ${sanitizeArgs(args)}`, true); } catch {}
   const start = Date.now();
   return fn(cmd, args)
-    .then((res) => { try { debugLog("trace", `invoke ${cmd} ✓ ${Date.now()-start}ms`, true); } catch {} return res; })
-    .catch((e) => { try { debugLog("error", `invoke ${cmd} ✗ ${Date.now()-start}ms: ${formatError(e)}`, true); } catch {} throw e; });
+    .then((res) => { try { console.log('invoke ✓', cmd, Date.now()-start, 'ms', res); } catch {}; try { debugLog("trace", `invoke ${cmd} ✓ ${Date.now()-start}ms`, true); } catch {} return res; })
+    .catch((e) => { try { console.error('invoke ✗', cmd, Date.now()-start, 'ms', e); } catch {}; try { debugLog("error", `invoke ${cmd} ✗ ${Date.now()-start}ms: ${formatError(e)}`, true); } catch {} throw e; });
 }
 
 function sanitizeArgs(args) {
@@ -347,6 +353,8 @@ function renderExport(result) {
 }
 
 async function handleScan(saveMode) {
+  try { console.log('Clicked Scan', saveMode||'run'); } catch {}
+  debugLog('info', `scan clicked (${saveMode||'run'})`);
   const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
@@ -380,11 +388,15 @@ async function handleScan(saveMode) {
     return;
   }
   const result = await runAction("Scanning…", () => tauriInvoke("scan_mod", payload));
+  try { console.log('Scan result', result); } catch {}
+  debugLog('info', `scan done: total=${result.total}`);
   renderScan(result);
   showToast(`Found ${result.total} entries`);
 }
 
 async function handleLearn() {
+  try { console.log('Clicked Learn'); } catch {}
+  debugLog('info', 'learn clicked');
   const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
@@ -400,12 +412,16 @@ async function handleLearn() {
   };
   debugLog("debug", `learn payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", payload));
+  try { console.log('Learn result', result); } catch {}
+  debugLog('info', `learn done: accepted=${result.accepted}/${result.candidates}`);
   renderLearn(result);
   showToast("Learned DefInjected candidates");
   updateStatus("Learn completed");
 }
 
 async function handleExport() {
+  try { console.log('Clicked Export'); } catch {}
+  debugLog('info', 'export clicked');
   const root = val("mod-root");
   if (!root) {
     showToast("Select mod root first", true);
@@ -428,12 +444,16 @@ async function handleExport() {
   };
   debugLog("debug", `export payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", payload));
+  try { console.log('Export result', result); } catch {}
+  debugLog('info', `export done: total=${result.total}`);
   renderExport(result);
   showToast("PO exported successfully");
   updateStatus("Export finished");
 }
 
 async function handleValidate() {
+  try { console.log('Clicked Validate'); } catch {}
+  debugLog('info', 'validate clicked');
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -446,6 +466,8 @@ async function handleValidate() {
   };
   debugLog("debug", `validate payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Validating…", () => tauriInvoke("validate_mod", payload));
+  try { console.log('Validate result', result); } catch {}
+  debugLog('info', `validate done: total=${result.total}`);
   renderValidate(result);
   showToast(`Validation: ${result.total} messages`);
 }
@@ -464,6 +486,8 @@ function renderValidate(result) {
 }
 
 async function handleHealth() {
+  try { console.log('Clicked Health'); } catch {}
+  debugLog('info', 'health clicked');
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -472,6 +496,8 @@ async function handleHealth() {
     lang_dir: val("health-lang-dir") || null,
   };
   const result = await runAction("XML Health…", () => tauriInvoke("xml_health", payload));
+  try { console.log('Health result', result); } catch {}
+  debugLog('info', `health done: checked=${result.checked} issues=${result.issues?.length||0}`);
   renderHealth(result);
   showToast(`Checked ${result.checked}, issues: ${result.issues.length}`);
 }
@@ -489,6 +515,8 @@ function renderHealth(result) {
 }
 
 async function handleImport() {
+  try { console.log('Clicked Import'); } catch {}
+  debugLog('info', 'import clicked');
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const po_path = val("import-po");
@@ -507,11 +535,15 @@ async function handleImport() {
   };
   debugLog("debug", `import payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Importing PO…", () => tauriInvoke("import_po", payload));
+  try { console.log('Import result', result); } catch {}
+  debugLog('info', `import done: created=${result.created} updated=${result.updated}`);
   const box = $("import-result");
   box.textContent = `Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped}, Keys: ${result.keys}`;
 }
 
 async function handleBuild() {
+  try { console.log('Clicked Build'); } catch {}
+  debugLog('info', 'build clicked');
   const po_path = val("build-po");
   const out_mod = val("build-out");
   const lang_dir = val("build-lang-dir") || "Russian";
@@ -523,12 +555,16 @@ async function handleBuild() {
   const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe };
   debugLog("debug", `build payload: ${JSON.stringify(payload)}`);
   const result = await runAction("Building mod…", () => tauriInvoke("build_mod", payload));
+  try { console.log('Build result', result); } catch {}
+  debugLog('info', `build done: files=${result.files}`);
   const box = $("build-result");
   if (box) box.textContent = `Built to ${result.outMod || result.out_mod}. Files: ${result.files}, Keys: ${result.totalKeys || result.total_keys || 0}`;
   showToast("Build complete");
 }
 
 async function handleDiff() {
+  try { console.log('Clicked Diff'); } catch {}
+  debugLog('info', 'diff clicked');
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -540,6 +576,8 @@ async function handleDiff() {
     baseline_po: val("diff-po") || null,
   };
   const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", payload));
+  try { console.log('Diff result', res); } catch {}
+  debugLog('info', `diff done: only_in_mod=${res.only_in_mod?.length||0} only_in_translation=${res.only_in_translation?.length||0} changed=${res.changed?.length||0}`);
   const box = $("diff-result");
   box.textContent = `Only in mod: ${res.only_in_mod.length}, Only in translation: ${res.only_in_translation.length}, Changed: ${res.changed.length}`;
   const pre = document.createElement("pre");
@@ -558,6 +596,8 @@ async function handleDiff() {
 }
 
 async function handleLangUpdate() {
+  try { console.log('Clicked Lang Update'); } catch {}
+  debugLog('info', 'lang_update clicked');
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -570,10 +610,14 @@ async function handleLangUpdate() {
     backup: isChecked("lang-update-backup"),
   };
   const res = await runAction("Lang update…", () => tauriInvoke("lang_update_cmd", payload));
+  try { console.log('Lang update result', res); } catch {}
+  debugLog('info', `lang_update done: files=${res.files} bytes=${res.bytes}`);
   $("lang-update-result").textContent = `Files: ${res.files}, Bytes: ${res.bytes}, Out: ${res.outDir || res.out_dir}`;
 }
 
 async function handleAnnotate(dry) {
+  try { console.log('Clicked Annotate', { dry }); } catch {}
+  debugLog('info', `annotate clicked (dry=${!!dry})`);
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -586,10 +630,13 @@ async function handleAnnotate(dry) {
     backup: isChecked("annotate-backup"),
   };
   const res = await runAction(dry ? "Annotate preview…" : "Annotate apply…", () => tauriInvoke("annotate_cmd", payload));
+  try { console.log('Annotate result', res); } catch {}
+  debugLog('info', `annotate done: processed=${res.processed} annotated=${res.annotated}`);
   $("annotate-result").textContent = `Processed: ${res.processed}, Annotated: ${res.annotated}`;
 }
 
 async function handleInit() {
+  try { console.log('Clicked Init'); } catch {}
   const root = val("mod-root");
   if (!root) return showToast("Select mod root first", true);
   const payload = {
@@ -600,6 +647,7 @@ async function handleInit() {
     dry_run: isChecked("init-dry"),
   };
   const res = await runAction("Init language…", () => tauriInvoke("init_lang_cmd", payload));
+  try { console.log('Init result', res); } catch {}
   $("init-result").textContent = `Files: ${res.files}, Language: ${res.outLanguage || res.out_language}`;
 }
 
@@ -1207,19 +1255,30 @@ function initThemeUI() {
   applyTheme();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  initPersistence();
-  initEventHandlers();
-  initDebugUI();
-  initI18nUI();
-  initThemeUI();
-  renderScan(null);
-  renderPreview(null);
-  renderLearn(null);
-  renderExport(null);
-  fetchAppVersion();
-  debugLog("debug", "UI ready");
-  // Capture and persist unhandled errors
+function boot() {
+  try { console.log('Boot: begin'); } catch {}
+  try {
+    if (!getTauri().core && !getTauri().invoke && !(getTauri().tauri && getTauri().tauri.invoke)) {
+      try { console.warn('TAURI API not injected (withGlobalTauri?)'); } catch {}
+      showToast('Tauri API not available (check withGlobalTauri)', true);
+    }
+    initPersistence();
+    initEventHandlers();
+    initDebugUI();
+    initI18nUI();
+    initThemeUI();
+    renderScan(null);
+    if (typeof renderPreview === 'function') renderPreview(null);
+    renderLearn(null);
+    renderExport(null);
+    fetchAppVersion();
+    debugLog("info", "UI ready");
+    try { console.log('Boot: complete'); } catch {}
+  } catch (e) {
+    try { console.error('Boot error', e); } catch {}
+    showError(e);
+  }
+  // capture unhandled errors
   window.addEventListener("error", (e) => {
     const msg = e?.error?.message || e?.message || String(e?.error || e);
     debugLog("error", `Unhandled error: ${msg}`);
@@ -1229,7 +1288,28 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = r?.message || (typeof r === "string" ? r : (r ? JSON.stringify(r) : "unknown"));
     debugLog("error", `Unhandled rejection: ${msg}`);
   });
-});
+}
+
+async function waitForTauri(maxMs = 5000) {
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    const t = getTauri();
+    if (t && (t.invoke || t.core?.invoke || t.tauri?.invoke)) return true;
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return false;
+}
+
+(async () => {
+  if (document.readyState === 'loading') {
+    await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  const ok = await waitForTauri();
+  if (!ok) {
+    try { console.warn('TAURI invoke not ready after timeout'); } catch {}
+  }
+  boot();
+})();
   // Validate save
   const valSave = $("validate-save"); if (valSave) valSave.addEventListener("click", async () => {
     const root = $("mod-root").value.trim(); if (!root) return showToast("Select mod root first", true);
