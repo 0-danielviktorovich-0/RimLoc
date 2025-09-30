@@ -10,6 +10,7 @@ use rimloc_services::{
     diff_xml, diff_xml_with_defs, lang_update, annotate_dry_run_plan, annotate_apply,
     make_init_plan, write_init_plan, import_po_to_mod_tree, validate_placeholders_cross_language,
 };
+use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -1068,6 +1069,9 @@ fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest)
             report.issues.retain(|i| !except.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
         }
     }
+    if request.strict && !report.issues.is_empty() {
+        emit_log(&window, &state, "warn", format!("XML health strict: {} issues detected", report.issues.len()));
+    }
     emit_progress(&window, &state, "health", "done", Some("XML check finished".to_string()), Some(100));
     let out = XmlHealthResponse {
         resolved_root: scan_root.display().to_string(),
@@ -1425,6 +1429,9 @@ fn main() {
             collect_diagnostics,
             simulate_error,
             simulate_panic
+            ,morph_cmd
+            ,learn_keyed_cmd
+            ,dump_schemas
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1554,6 +1561,7 @@ fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest
 #[tauri::command]
 fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateRequest) -> Result<LangUpdateResponse, ApiError> {
     println!("lang_update_cmd invoked: root={} repo={} branch={:?}", request.root, request.repo, request.branch);
+    let _ = &request.game_version; // mark as used
     let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
     // Expecting game root (folder containing Data/)
@@ -1578,6 +1586,143 @@ fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateR
         write_profile(&state, "lang_update", t0, serde_json::json!({"files": 0, "bytes": 0 }));
         Ok(resp)
     }
+}
+
+// --- Morph (CLI parity) ---
+#[derive(Debug, Deserialize)]
+struct MorphRequest {
+    root: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    provider: Option<String>,
+    #[serde(default)]
+    filter_key_regex: Option<String>,
+    #[serde(default)]
+    limit: Option<usize>,
+    #[serde(default)]
+    timeout_ms: Option<u64>,
+    #[serde(default)]
+    cache_size: Option<usize>,
+    #[serde(default)]
+    pymorphy_url: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MorphResponse { processed: usize, lang: String, warn_no_morpher: bool, warn_no_pymorphy: bool }
+
+#[tauri::command]
+fn morph_cmd(_window: Window, state: State<LogState>, request: MorphRequest) -> Result<MorphResponse, ApiError> {
+    append_log(&state.path, "INFO", &format!("morph: target={} provider={:?}", request.target_lang_dir, request.provider));
+    let root = PathBuf::from(&request.root);
+    let prov = match request.provider.as_deref() {
+        Some("morpher") | Some("MorpherApi") => MorphProvider::MorpherApi,
+        Some("pymorphy") | Some("Pymorphy2") => MorphProvider::Pymorphy2,
+        _ => MorphProvider::Dummy,
+    };
+    let opts = MorphOptions {
+        provider: prov,
+        target_lang_dir: request.target_lang_dir.clone(),
+        filter_key_regex: request.filter_key_regex.clone(),
+        limit: request.limit,
+        timeout_ms: request.timeout_ms.unwrap_or(1500),
+        cache_size: request.cache_size.unwrap_or(1024),
+        pymorphy_url: request.pymorphy_url.clone(),
+    };
+    let res = rimloc_services::morph_generate(&root, &opts).wrap_err("morph generate")?;
+    Ok(MorphResponse { processed: res.processed, lang: res.lang, warn_no_morpher: res.warn_no_morpher, warn_no_pymorphy: res.warn_no_pymorphy })
+}
+
+// --- Learn Keyed ---
+#[derive(Debug, Deserialize)]
+struct LearnKeyedRequest {
+    root: String,
+    source_lang_dir: Option<String>,
+    target_lang_dir: Option<String>,
+    #[serde(default)]
+    dict_files: Option<Vec<String>>,
+    #[serde(default)]
+    min_len: Option<usize>,
+    #[serde(default)]
+    blacklist: Option<Vec<String>>,
+    #[serde(default)]
+    must_contain_letter: bool,
+    #[serde(default)]
+    exclude_substr: Option<Vec<String>>,
+    #[serde(default)]
+    threshold: Option<f32>,
+    #[serde(default)]
+    out_dir: Option<String>,
+    #[serde(default)]
+    from_defs_special: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LearnKeyedResponse { processed: usize, suggested: String, missing: String }
+
+#[tauri::command]
+fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedRequest) -> Result<LearnKeyedResponse, ApiError> {
+    append_log(&state.path, "INFO", &format!("learn_keyed: src={:?} trg={:?}", request.source_lang_dir, request.target_lang_dir));
+    let root = PathBuf::from(&request.root);
+    let scan_root = root.clone();
+    let out_dir = request.out_dir.as_deref().map(PathBuf::from).unwrap_or_else(|| scan_root.join("_learn"));
+    std::fs::create_dir_all(&out_dir)?;
+
+    // load dicts
+    let mut dicts = Vec::new();
+    if let Some(files) = request.dict_files.as_ref() {
+        for f in files {
+            let pp = PathBuf::from(f);
+            if let Ok(d) = rimloc_services::learn::keyed::load_keyed_dict_from_file(&pp) { dicts.push(d); }
+        }
+    }
+    let src_dir = request.source_lang_dir.clone().unwrap_or_else(|| "English".to_string());
+    let trg_dir = request.target_lang_dir.clone().unwrap_or_else(|| "Russian".to_string());
+    if request.from_defs_special { std::env::set_var("RIMLOC_LEARN_KEYED_FROM_DEFS", "1"); }
+    let missing = rimloc_services::learn::keyed::learn_keyed(
+        &scan_root,
+        &src_dir,
+        &trg_dir,
+        &dicts,
+        request.min_len.unwrap_or(1),
+        &request.blacklist.clone().unwrap_or_default(),
+        request.must_contain_letter,
+        &request.exclude_substr.clone().unwrap_or_default(),
+        request.threshold.unwrap_or(0.8),
+        &mut rimloc_services::learn::ml::DummyClassifier::new(0.9),
+    )?;
+
+    let miss = out_dir.join("missing_keyed.json");
+    rimloc_services::learn::keyed::write_keyed_missing_json(&miss, &missing)?;
+    let sug = out_dir.join("_SuggestedKeyed.xml");
+    rimloc_services::learn::keyed::write_keyed_suggested_xml(&sug, &missing)?;
+    Ok(LearnKeyedResponse { processed: missing.len(), suggested: sug.display().to_string(), missing: miss.display().to_string() })
+}
+
+// --- Dump JSON Schemas ---
+#[derive(Debug, Deserialize)]
+struct DumpSchemasRequest { out_dir: String }
+#[tauri::command]
+fn dump_schemas(_window: Window, _state: State<LogState>, req: DumpSchemasRequest) -> Result<String, ApiError> {
+    use std::fs;
+    let out_dir = PathBuf::from(&req.out_dir);
+    fs::create_dir_all(&out_dir)?;
+    macro_rules! dump {
+        ($ty:ty, $name:literal) => {{
+            let schema = schemars::schema_for!($ty);
+            let path = out_dir.join($name);
+            let f = std::fs::File::create(&path)?;
+            serde_json::to_writer_pretty(f, &schema)?;
+        }};
+    }
+    dump!(rimloc_domain::ScanUnit, "scan_unit.schema.json");
+    dump!(rimloc_domain::ValidationMsg, "validation_msg.schema.json");
+    dump!(rimloc_domain::ImportSummary, "import_summary.schema.json");
+    dump!(rimloc_domain::DiffOutput, "diff_output.schema.json");
+    dump!(rimloc_domain::HealthReport, "health_report.schema.json");
+    dump!(rimloc_domain::AnnotatePlan, "annotate_plan.schema.json");
+    Ok(out_dir.display().to_string())
 }
 
 #[tauri::command]

@@ -487,6 +487,119 @@
         <div class="result" id="diff-result" data-i18n="diff_empty">No diff run yet.</div>
       </section>
 
+      <section class="panel" id="morph-panel">
+        <div class="panel-head">
+          <h2>Morph (Cases/Plural/Gender)</h2>
+          <div class="actions">
+            <button type="button" id="morph-run">Generate</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="morph-target-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <span>Provider</span>
+            <select id="morph-provider">
+              <option value="dummy">Dummy</option>
+              <option value="morpher">MorpherApi</option>
+              <option value="pymorphy">Pymorphy2</option>
+            </select>
+          </label>
+          <label>
+            <span>Filter key regex</span>
+            <input id="morph-filter" type="text" placeholder=".*" autocomplete="off" />
+          </label>
+          <label>
+            <span>Limit</span>
+            <input id="morph-limit" type="number" placeholder="" autocomplete="off" />
+          </label>
+          <label>
+            <span>Timeout, ms</span>
+            <input id="morph-timeout" type="number" placeholder="1500" autocomplete="off" />
+          </label>
+          <label>
+            <span>Cache size</span>
+            <input id="morph-cache" type="number" placeholder="1024" autocomplete="off" />
+          </label>
+          <label>
+            <span>Pymorphy URL</span>
+            <input id="morph-pym-url" type="text" placeholder="http://localhost:5000" autocomplete="off" />
+          </label>
+        </div>
+        <div class="result" id="morph-result">—</div>
+      </section>
+
+      <section class="panel" id="learn-keyed-panel">
+        <div class="panel-head">
+          <h2>Learn Keyed</h2>
+          <div class="actions">
+            <button type="button" id="learn-keyed-run">Run</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="out_folder">Output folder
+            <div class="path-input">
+              <input id="learn-keyed-out" type="text" placeholder="_learn" autocomplete="off" />
+              <button type="button" data-action="pick-learn-keyed-out" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="source_lang_folder">Source language folder
+            <input id="learn-keyed-source" type="text" placeholder="English" autocomplete="off" />
+          </label>
+          <label data-i18n="target_lang_folder">Target language folder
+            <input id="learn-keyed-target" type="text" placeholder="Russian" autocomplete="off" />
+          </label>
+          <label>
+            <span>Threshold</span>
+            <input id="learn-keyed-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" autocomplete="off" />
+          </label>
+          <label>
+            <span>Dict files (one per line)</span>
+            <textarea id="learn-keyed-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+          </label>
+          <label>
+            <span>Blacklist (one per line)</span>
+            <textarea id="learn-keyed-blacklist" rows="3" placeholder="prefix_.*\n^Key$"></textarea>
+          </label>
+          <label>
+            <span>Exclude substrings (one per line)</span>
+            <textarea id="learn-keyed-exclude" rows="3" placeholder="TODO\nWIP"></textarea>
+          </label>
+          <label>
+            <span>Min length</span>
+            <input id="learn-keyed-minlen" type="number" placeholder="1" />
+          </label>
+          <label>
+            <input id="learn-keyed-must-letter" type="checkbox" />
+            <span>Must contain letter</span>
+          </label>
+          <label>
+            <input id="learn-keyed-from-defs" type="checkbox" />
+            <span>From Defs (special)</span>
+          </label>
+        </div>
+        <div class="result" id="learn-keyed-result">—</div>
+      </section>
+
+      <section class="panel" id="schemas-panel">
+        <div class="panel-head">
+          <h2>JSON Schemas</h2>
+          <div class="actions">
+            <button type="button" id="schemas-dump">Dump schemas…</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="out_folder">Output folder
+            <div class="path-input">
+              <input id="schemas-out" type="text" placeholder="./docs/assets/schemas" autocomplete="off" />
+              <button type="button" data-action="pick-schemas-out" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+        </div>
+        <div class="result" id="schemas-result">—</div>
+      </section>
+
       <section class="panel" id="lang-update-panel">
         <div class="panel-head">
           <h2 data-i18n="lang_update_title">Lang Update</h2>

@@ -3568,6 +3568,7 @@ dependencies = [
  "rimloc-import-po",
  "rimloc-parsers-xml",
  "rimloc-services",
+ "schemars 0.8.22",
  "serde",
  "serde_json",
  "tauri",

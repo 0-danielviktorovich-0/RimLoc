@@ -640,6 +640,53 @@ async function handleDiff() {
   box.appendChild(pre);
 }
 
+async function handleMorph() {
+  try { console.log('Clicked Morph'); } catch {}
+  const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
+  const payload = {
+    root,
+    target_lang_dir: val("morph-target-lang-dir") || "Russian",
+    provider: $("morph-provider")?.value || "dummy",
+    filter_key_regex: val("morph-filter") || null,
+    limit: (val("morph-limit")||"") ? Number(val("morph-limit")) : null,
+    timeout_ms: (val("morph-timeout")||"") ? Number(val("morph-timeout")) : null,
+    cache_size: (val("morph-cache")||"") ? Number(val("morph-cache")) : null,
+    pymorphy_url: val("morph-pym-url") || null,
+  };
+  const res = await runAction("Generating morph…", () => tauriInvoke("morph_cmd", { request: payload }));
+  $("morph-result").textContent = `Processed: ${res.processed}, Lang: ${res.lang}${res.warnNoMorpher?' (no MORPHER_TOKEN)':''}${res.warnNoPymorphy?' (no Pymorphy URL)':''}`;
+}
+
+async function handleLearnKeyed() {
+  try { console.log('Clicked Learn Keyed'); } catch {}
+  const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
+  const dicts = (($("learn-keyed-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean));
+  const blacklist = (($("learn-keyed-blacklist")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean));
+  const exclude = (($("learn-keyed-exclude")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean));
+  const payload = {
+    root,
+    source_lang_dir: val("learn-keyed-source") || "English",
+    target_lang_dir: val("learn-keyed-target") || "Russian",
+    dict_files: dicts.length?dicts:null,
+    min_len: (val("learn-keyed-minlen")||"")?Number(val("learn-keyed-minlen")):null,
+    blacklist: blacklist.length?blacklist:null,
+    must_contain_letter: isChecked("learn-keyed-must-letter"),
+    exclude_substr: exclude.length?exclude:null,
+    threshold: (val("learn-keyed-threshold")||"")?Number(val("learn-keyed-threshold")):null,
+    out_dir: val("learn-keyed-out") || "_learn",
+    from_defs_special: isChecked("learn-keyed-from-defs"),
+  };
+  const res = await runAction("Learn Keyed…", () => tauriInvoke("learn_keyed_cmd", { request: payload }));
+  $("learn-keyed-result").textContent = `Processed: ${res.processed}, Suggested: ${res.suggested}, Missing: ${res.missing}`;
+}
+
+async function handleDumpSchemas() {
+  try { console.log('Clicked Dump Schemas'); } catch {}
+  const out_dir = val("schemas-out") || "./docs/assets/schemas";
+  const saved = await runAction("Dumping schemas…", () => tauriInvoke("dump_schemas", { req: { outDir: out_dir } }));
+  $("schemas-result").textContent = `Saved to: ${saved}`;
+}
+
 async function handleLangUpdate() {
   try { console.log('Clicked Lang Update'); } catch {}
   debugLog('info', 'lang_update clicked', true);
@@ -782,6 +829,19 @@ function initEventHandlers() {
   const pickDiffSchema = document.querySelector('[data-action="pick-diff-schema"]');
   if (pickDiffSchema) pickDiffSchema.addEventListener("click", () => pickFile("diff-type-schema", [{ name: "JSON", extensions: ["json"] }])());
 
+  // Morph
+  const morphRun = $("morph-run"); if (morphRun) morphRun.addEventListener("click", handleMorph);
+
+  // Learn Keyed
+  const lkRun = $("learn-keyed-run"); if (lkRun) lkRun.addEventListener("click", handleLearnKeyed);
+  const pickLkOut = document.querySelector('[data-action="pick-learn-keyed-out"]');
+  if (pickLkOut) pickLkOut.addEventListener("click", pickDirectory("learn-keyed-out"));
+
+  // Schemas
+  const dumpSchemas = $("schemas-dump"); if (dumpSchemas) dumpSchemas.addEventListener("click", handleDumpSchemas);
+  const pickSchemasOut = document.querySelector('[data-action="pick-schemas-out"]');
+  if (pickSchemasOut) pickSchemasOut.addEventListener("click", pickDirectory("schemas-out"));
+
   // Lang update
   const luRun = $("lang-update-run");
   if (luRun) luRun.addEventListener("click", handleLangUpdate);
@@ -896,6 +956,29 @@ function initPersistence() {
   bindPersist("lang-update-source", "rimloc.luSource", "English");
   bindPersist("lang-update-target", "rimloc.luTarget", "Russian");
   bindPersist("lang-update-game-root", "rimloc.luGameRoot");
+
+  // Morph persist
+  bindPersist("morph-target-lang-dir", "rimloc.morphTarget", "Russian");
+  const morphProvider = $("morph-provider"); if (morphProvider) { morphProvider.value = localStorage.getItem("rimloc.morphProvider") || "dummy"; morphProvider.addEventListener("change", () => localStorage.setItem("rimloc.morphProvider", morphProvider.value)); }
+  bindPersist("morph-filter", "rimloc.morphFilter");
+  bindPersist("morph-limit", "rimloc.morphLimit");
+  bindPersist("morph-timeout", "rimloc.morphTimeout", "1500");
+  bindPersist("morph-cache", "rimloc.morphCache", "1024");
+  bindPersist("morph-pym-url", "rimloc.morphPymUrl");
+
+  // Learn Keyed persist
+  bindPersist("learn-keyed-out", "rimloc.lkOut", "_learn");
+  bindPersist("learn-keyed-source", "rimloc.lkSource", "English");
+  bindPersist("learn-keyed-target", "rimloc.lkTarget", "Russian");
+  bindPersist("learn-keyed-threshold", "rimloc.lkThreshold", "0.8");
+  bindPersistTextArea("learn-keyed-dicts", "rimloc.lkDicts");
+  bindPersistTextArea("learn-keyed-blacklist", "rimloc.lkBlacklist");
+  bindPersistTextArea("learn-keyed-exclude", "rimloc.lkExclude");
+  bindPersist("learn-keyed-minlen", "rimloc.lkMinLen", "1");
+  ["learn-keyed-must-letter","learn-keyed-from-defs"].forEach(id => { const el=$(id); if (!el) return; const k=`rimloc.${id}`; el.checked = localStorage.getItem(k)==="1"; el.addEventListener("change", ()=>localStorage.setItem(k, el.checked?"1":"0")); });
+
+  // Schemas persist
+  bindPersist("schemas-out", "rimloc.schemasOut", "./docs/assets/schemas");
   ["lang-update-dry","lang-update-backup"].forEach(id => {
     const el = $(id);
     if (!el) return;

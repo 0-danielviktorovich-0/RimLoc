@@ -64,6 +64,7 @@ impl Classifier for RestClassifier {
 }
 
 /// Reuse function from parser logic to navigate dot-paths.
+#[allow(dead_code)]
 pub(crate) fn collect_values_by_path<'a>(
     node: roxmltree::Node<'a, 'a>,
     path: &[&str],
