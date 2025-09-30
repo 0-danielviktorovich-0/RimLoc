@@ -114,7 +114,7 @@ fn escape_xml(text: &str) -> String {
     out
 }
 
-pub(crate) fn escape_xml_comment(text: &str) -> String {
+pub fn escape_xml_comment(text: &str) -> String {
     // Minimal sanitizer for XML comments: avoid "--" and ensure no closing marker
     let mut s = text.replace("--", "- -");
     if s.ends_with('-') {

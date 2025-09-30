@@ -4,7 +4,7 @@ function getTauri() {
 
 function tauriInvoke(cmd, args) {
   const tauri = getTauri();
-  const fn = tauri.invoke || tauri.tauri?.invoke;
+  const fn = tauri.invoke || tauri.tauri?.invoke || tauri.core?.invoke;
   if (!fn) throw new Error("Tauri API not available: invoke");
   return fn(cmd, args);
 }

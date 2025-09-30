@@ -13,6 +13,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use tauri::{Manager, State, Window};
 use tauri::Emitter;
+use tauri_plugin_dialog::DialogExt;
 use thiserror::Error;
 use walkdir::WalkDir;
 use std::fs::OpenOptions;
@@ -945,9 +946,14 @@ fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
 }
 
 #[tauri::command]
-fn pick_directory(_initial: Option<String>) -> Result<Option<String>, ApiError> {
-    // Tauri v2: use JS dialog plugin. Backend picker removed to avoid extra deps.
-    Err(ApiError { message: "Directory dialog is not available via backend on Tauri v2".into() })
+fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<String>, ApiError> {
+    let mut builder = window.dialog().file();
+    if let Some(init) = initial.as_deref() {
+        let p = PathBuf::from(init);
+        builder = builder.set_directory(p);
+    }
+    let picked = builder.blocking_pick_folder().map(|p| p.simplified().to_string());
+    Ok(picked)
 }
 
 #[tauri::command]
