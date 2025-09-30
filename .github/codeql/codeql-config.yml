@@ -1,0 +1,17 @@
+name: RimLoc CodeQL Config
+queries:
+  - uses: security-extended
+paths:
+  - RimLoc
+paths-ignore:
+  - RimLoc/gui/tauri-app/src-tauri/vendor/**
+  - RimLoc/**/target/**
+  - RimLoc/test/**
+  - RimLoc/docs/**
+  - icons/**
+  - compare/**
+  - mods/**
+  - "**/*.md"
+  - "**/*.png"
+  - "**/*.ico"
+  - "**/*.svg"
