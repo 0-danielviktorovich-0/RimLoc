@@ -367,10 +367,7 @@ async function handleScan(saveMode) {
   try { console.log('Clicked Scan', saveMode||'run'); } catch {}
   debugLog('info', `scan clicked (${saveMode||'run'})`, true);
   const root = val("mod-root");
-  if (!root) {
-    showToast("Select mod root first", true);
-    return;
-  }
+  if (!root) { showToast(tr('select_mod_root_first'), true); return; }
   const payload = {
     root,
     game_version: val("game-version") || null,
@@ -393,8 +390,8 @@ async function handleScan(saveMode) {
     });
     if (!path) return;
     payload.out_json = path;
-    await runAction("Saving JSON…", () => tauriInvoke("scan_mod", { request: payload }));
-    showToast(`Saved scan JSON to ${path}`);
+  await runAction(tr('saving_json'), () => tauriInvoke("scan_mod", { request: payload }));
+  showToast(`${tr('saved')}: ${path}`);
     return;
   }
   if (saveMode === "csv") {
@@ -403,38 +400,50 @@ async function handleScan(saveMode) {
     });
     if (!path) return;
     payload.out_csv = path;
-    await runAction("Saving CSV…", () => tauriInvoke("scan_mod", { request: payload }));
-    showToast(`Saved scan CSV to ${path}`);
+  await runAction(tr('saving_csv'), () => tauriInvoke("scan_mod", { request: payload }));
+  showToast(`${tr('saved')}: ${path}`);
     return;
   }
-  const result = await runAction("Scanning…", () => tauriInvoke("scan_mod", { request: payload }));
+  const result = await runAction(tr('scanning'), () => tauriInvoke("scan_mod", { request: payload }));
   try { console.log('Scan result', result); } catch {}
   debugLog('info', `scan done: total=${result.total}`);
   renderScan(result);
-  showToast(`Found ${result.total} entries`);
+  showToast(`${tr('found')}: ${result.total} ${tr('entries')}`);
 }
 
 async function handleLearn() {
   try { console.log('Clicked Learn'); } catch {}
   debugLog('info', 'learn clicked', true);
   const root = val("mod-root");
-  if (!root) {
-    showToast("Select mod root first", true);
-    return;
-  }
+  if (!root) { showToast(tr('select_mod_root_first'), true); return; }
   const outDir = val("learn-out");
   const langDir = val("learn-lang-dir");
   const thresholdStr = val("learn-threshold");
   const threshold = thresholdStr ? Number(thresholdStr) : null;
+  const defsRoot = val("learn-defs-root");
+  const dicts = (($("learn-defs-dicts")?.value || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean));
+  const minLenStr = val("learn-minlen");
+  const minLen = minLenStr ? Number(minLenStr) : null;
+  const blacklist = (($("learn-blacklist")?.value || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean));
   const payload = {
     root,
     out_dir: outDir || null,
     lang_dir: langDir || null,
     game_version: val("game-version") || null,
     threshold: threshold,
+    defs_root: defsRoot || null,
+    dict_files: dicts.length ? dicts : null,
+    model_path: val("learn-model") || null,
+    ml_url: val("learn-ml-url") || null,
+    no_ml: isChecked("learn-no-ml"),
+    retrain: isChecked("learn-retrain"),
+    learned_out: val("learn-learned-out") || null,
+    retrain_dict: val("learn-retrain-dict") || null,
+    min_len: minLen,
+    blacklist: blacklist.length ? blacklist : null,
   };
   debugLog("debug", `learn payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Learning DefInjected…", () => tauriInvoke("learn_defs", { request: payload }));
+  const result = await runAction(tr('learning_defs'), () => tauriInvoke("learn_defs", { request: payload }));
   try { console.log('Learn result', result); } catch {}
   debugLog('info', `learn done: accepted=${result.accepted}/${result.candidates}`);
   renderLearn(result);
@@ -446,10 +455,7 @@ async function handleExport() {
   try { console.log('Clicked Export'); } catch {}
   debugLog('info', 'export clicked', true);
   const root = val("mod-root");
-  if (!root) {
-    showToast("Select mod root first", true);
-    return;
-  }
+  if (!root) { showToast(tr('select_mod_root_first'), true); return; }
   let outPo = val("po-output");
   if (!outPo) {
     outPo = `${root.replace(/\\/g,'/')}/_learn/translation.po`;
@@ -468,13 +474,18 @@ async function handleExport() {
     game_version: val("game-version") || null,
     pot,
     include_all_versions,
+    // advanced options similar to Scan/Validate
+    defs_root: val("export-defs-root") || null,
+    extra_fields: (val("export-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
+    defs_dicts: (($("export-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
+    defs_type_schema: val("export-type-schema") || null,
   };
   debugLog("debug", `export payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Exporting PO…", () => tauriInvoke("export_po", { request: payload }));
+  const result = await runAction(tr('exporting_po'), () => tauriInvoke("export_po", { request: payload }));
   try { console.log('Export result', result); } catch {}
   debugLog('info', `export done: total=${result.total}`);
   renderExport(result);
-  showToast("PO exported successfully");
+  showToast(tr('export_ok'));
   updateStatus("Export finished");
 }
 
@@ -482,7 +493,7 @@ async function handleValidate() {
   try { console.log('Clicked Validate'); } catch {}
   debugLog('info', 'validate clicked', true);
   const root = val("mod-root");
-  if (!root) return showToast("Select mod root first", true);
+  if (!root) return showToast(tr('select_mod_root_first'), true);
   const payload = {
     root,
     game_version: val("game-version") || null,
@@ -498,11 +509,11 @@ async function handleValidate() {
     target_lang_dir: val("validate-target-lang-dir") || null,
   };
   debugLog("debug", `validate payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Validating…", () => tauriInvoke("validate_mod", { request: payload }));
+  const result = await runAction(tr('validating'), () => tauriInvoke("validate_mod", { request: payload }));
   try { console.log('Validate result', result); } catch {}
   debugLog('info', `validate done: total=${result.total}`);
   renderValidate(result);
-  showToast(`Validation: ${result.total} messages`);
+  showToast(`${tr('validation')}: ${result.total}`);
 }
 
 function renderValidate(result) {
@@ -523,7 +534,7 @@ async function handleHealth() {
   try { console.log('Clicked Health'); } catch {}
   debugLog('info', 'health clicked', true);
   const root = val("mod-root");
-  if (!root) return showToast("Select mod root first", true);
+  if (!root) return showToast(tr('select_mod_root_first'), true);
   const payload = {
     root,
     game_version: val("game-version") || null,
@@ -532,11 +543,11 @@ async function handleHealth() {
     only: (val("health-only") || "").split(',').map(s => s.trim()).filter(Boolean),
     except: (val("health-except") || "").split(',').map(s => s.trim()).filter(Boolean),
   };
-  const result = await runAction("XML Health…", () => tauriInvoke("xml_health", { request: payload }));
+  const result = await runAction(tr('xml_health'), () => tauriInvoke("xml_health", { request: payload }));
   try { console.log('Health result', result); } catch {}
   debugLog('info', `health done: checked=${result.checked} issues=${result.issues?.length||0}`);
   renderHealth(result);
-  showToast(`Checked ${result.checked}, issues: ${result.issues.length}`);
+  showToast(`${tr('checked')}: ${result.checked}, ${tr('issues')}: ${result.issues.length}`);
 }
 
 function renderHealth(result) {
@@ -556,9 +567,9 @@ async function handleImport() {
   try { console.log('Clicked Import'); } catch {}
   debugLog('info', 'import clicked', true);
   const root = val("mod-root");
-  if (!root) return showToast("Select mod root first", true);
+  if (!root) return showToast(tr('select_mod_root_first'), true);
   const po_path = val("import-po");
-  if (!po_path) return showToast("Select PO file", true);
+  if (!po_path) return showToast(tr('select_po_file'), true);
   const payload = {
     root,
     po_path,
@@ -573,7 +584,7 @@ async function handleImport() {
     dry_run: isChecked("import-dry-run"),
   };
   debugLog("debug", `import payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Importing PO…", () => tauriInvoke("import_po", { request: payload }));
+  const result = await runAction(tr('importing_po'), () => tauriInvoke("import_po", { request: payload }));
   try { console.log('Import result', result); } catch {}
   debugLog('info', `import done: created=${result.created} updated=${result.updated}`);
   const box = $("import-result");
@@ -593,23 +604,23 @@ async function handleBuild() {
   const dry_run = isChecked("build-dry");
   const from_root = val("build-from-root");
   const from_game_versions = (val("build-from-versions") || "").split(',').map(s => s.trim()).filter(Boolean);
-  if (!out_mod) return showToast("Select output folder", true);
-  if (!po_path && !from_root) return showToast("Select PO or From root", true);
+  if (!out_mod) return showToast(tr('select_output_folder'), true);
+  if (!po_path && !from_root) return showToast(tr('select_po_or_from_root'), true);
   const payload = { po_path, out_mod, lang_dir, name, package_id, rw_version, dedupe, dry_run, from_root: from_root || null, from_game_versions: from_game_versions.length ? from_game_versions : null };
   debugLog("debug", `build payload: ${JSON.stringify(payload)}`);
-  const result = await runAction("Building mod…", () => tauriInvoke("build_mod", { request: payload }));
+  const result = await runAction(tr('building_mod'), () => tauriInvoke("build_mod", { request: payload }));
   try { console.log('Build result', result); } catch {}
   debugLog('info', `build done: files=${result.files}`);
   const box = $("build-result");
-  if (box) box.textContent = `Built to ${result.outMod || result.out_mod}. Files: ${result.files}, Keys: ${result.totalKeys || result.total_keys || 0}`;
-  showToast("Build complete");
+  if (box) box.textContent = `${tr('built_to')}: ${result.outMod || result.out_mod}. ${tr('files')}: ${result.files}, Keys: ${result.totalKeys || result.total_keys || 0}`;
+  showToast(tr('build_complete'));
 }
 
 async function handleDiff() {
   try { console.log('Clicked Diff'); } catch {}
   debugLog('info', 'diff clicked', true);
   const root = val("mod-root");
-  if (!root) return showToast("Select mod root first", true);
+  if (!root) return showToast(tr('select_mod_root_first'), true);
   const payload = {
     root,
     game_version: val("game-version") || null,
@@ -621,7 +632,7 @@ async function handleDiff() {
     type_schema: val("diff-type-schema") || null,
     extra_fields: (val("diff-extra-fields") || "").split(',').map(s=>s.trim()).filter(Boolean),
   };
-  const res = await runAction("Diff XML…", () => tauriInvoke("diff_xml_cmd", { request: payload }));
+  const res = await runAction(tr('diff_xml'), () => tauriInvoke("diff_xml_cmd", { request: payload }));
   try { console.log('Diff result', res); } catch {}
   debugLog('info', `diff done: only_in_mod=${res.only_in_mod?.length||0} only_in_translation=${res.only_in_translation?.length||0} changed=${res.changed?.length||0}`);
   const box = $("diff-result");
@@ -655,8 +666,8 @@ async function handleMorph() {
     pymorphy_url: val("morph-pym-url") || null,
     morpher_token: val("morph-token") || null,
   };
-  const res = await runAction("Generating morph…", () => tauriInvoke("morph_cmd", { request: payload }));
-  $("morph-result").textContent = `Processed: ${res.processed}, Lang: ${res.lang}${res.warnNoMorpher?' (no MORPHER_TOKEN)':''}${res.warnNoPymorphy?' (no Pymorphy URL)':''}`;
+  const res = await runAction(tr('generating_morph'), () => tauriInvoke("morph_cmd", { request: payload }));
+  $("morph-result").textContent = `${tr('processed')}: ${res.processed}, ${tr('lang')}: ${res.lang}${res.warnNoMorpher?' (no MORPHER_TOKEN)':''}${res.warnNoPymorphy?' (no Pymorphy URL)':''}`;
 }
 
 async function handleLearnKeyed() {
@@ -677,23 +688,53 @@ async function handleLearnKeyed() {
     threshold: (val("learn-keyed-threshold")||"")?Number(val("learn-keyed-threshold")):null,
     out_dir: val("learn-keyed-out") || "_learn",
     from_defs_special: isChecked("learn-keyed-from-defs"),
+    learned_out: val("learn-keyed-learned-out") || null,
+    retrain: isChecked("learn-keyed-retrain"),
+    retrain_dict: val("learn-keyed-retrain-dict") || null,
+    ml_url: val("learn-keyed-ml-url") || null,
+    no_ml: isChecked("learn-keyed-no-ml"),
+    game_version: val("game-version") || null,
   };
-  const res = await runAction("Learn Keyed…", () => tauriInvoke("learn_keyed_cmd", { request: payload }));
-  $("learn-keyed-result").textContent = `Processed: ${res.processed}, Suggested: ${res.suggested}, Missing: ${res.missing}`;
+  const res = await runAction(tr('learn_keyed'), () => tauriInvoke("learn_keyed_cmd", { request: payload }));
+  $("learn-keyed-result").textContent = `${tr('processed')}: ${res.processed}, ${tr('suggested')}: ${res.suggested}, Missing: ${res.missing}`;
 }
 
 async function handleDumpSchemas() {
   try { console.log('Clicked Dump Schemas'); } catch {}
   const out_dir = val("schemas-out") || "./docs/assets/schemas";
-  const saved = await runAction("Dumping schemas…", () => tauriInvoke("dump_schemas", { req: { out_dir: out_dir } }));
-  $("schemas-result").textContent = `Saved to: ${saved}`;
+  const saved = await runAction(tr('dumping_schemas'), () => tauriInvoke("dump_schemas", { req: { out_dir: out_dir } }));
+  $("schemas-result").textContent = `${tr('saved_to')}: ${saved}`;
+}
+
+async function handleValidatePo() {
+  try { console.log('Clicked Validate PO'); } catch {}
+  const po = val("validate-po-path"); if (!po) return showToast(tr("po_file"), true);
+  const strict = isChecked("validate-po-strict");
+  const resp = await runAction(tr("validating_po"), () => tauriInvoke("validate_po_gui", { req: { po_path: po, strict } }));
+  const box = $("validate-po-result");
+  const n = resp.mismatches?.length || 0;
+  if (n === 0) { box.textContent = `${tr('ok')} (${resp.checked} ${tr('entries')})`; return; }
+  const pre = document.createElement('pre');
+  pre.className = 'scroll-code';
+  pre.textContent = resp.mismatches.slice(0, 300).map(m => `${m.context||''} ${m.reference||''}\nID: ${m.msgid}\nSTR: ${m.msgstr}\nEXP: ${JSON.stringify(m.expectedPlaceholders||m.expected_placeholders)}\nGOT: ${JSON.stringify(m.gotPlaceholders||m.got_placeholders)}`).join("\n\n");
+  box.innerHTML = '';
+  box.appendChild(pre);
+}
+
+async function handleLearnPatches() {
+  try { console.log('Clicked Learn Patches'); } catch {}
+  const root = val("mod-root"); if (!root) return showToast(tr("mod_root"), true);
+  const min_len = (val("learn-patches-minlen")||"") ? Number(val("learn-patches-minlen")) : null;
+  const out_json = val("learn-patches-out") || null;
+  const resp = await runAction(tr("scanning_patches"), () => tauriInvoke("learn_patches_cmd", { req: { root, min_len, out_json, game_version: val("game-version") || null } }));
+  $("learn-patches-result").textContent = `${tr('found')}: ${resp.total}, ${tr('json')}: ${resp.outJson || resp.out_json}${resp.suggestedXml||resp.suggested_xml?`, ${tr('suggested')}: ${resp.suggestedXml || resp.suggested_xml}`:''}`;
 }
 
 async function handleLangUpdate() {
   try { console.log('Clicked Lang Update'); } catch {}
   debugLog('info', 'lang_update clicked', true);
   const root = val("lang-update-game-root") || val("mod-root");
-  if (!root) return showToast("Select game root first", true);
+  if (!root) return showToast(tr('select_game_root_first'), true);
   const payload = {
     root,
     repo: val("lang-update-repo") || "Ludeon/RimWorld",
@@ -703,10 +744,10 @@ async function handleLangUpdate() {
     dry_run: isChecked("lang-update-dry"),
     backup: isChecked("lang-update-backup"),
   };
-  const res = await runAction("Lang update…", () => tauriInvoke("lang_update_cmd", { request: payload }));
+  const res = await runAction(tr('lang_update_running'), () => tauriInvoke("lang_update_cmd", { request: payload }));
   try { console.log('Lang update result', res); } catch {}
   debugLog('info', `lang_update done: files=${res.files} bytes=${res.bytes}`);
-  $("lang-update-result").textContent = `Files: ${res.files}, Bytes: ${res.bytes}, Out: ${res.outDir || res.out_dir}`;
+  $("lang-update-result").textContent = `${tr('files')}: ${res.files}, ${tr('bytes')}: ${res.bytes}, ${tr('out')}: ${res.outDir || res.out_dir}`;
 }
 
 async function handleAnnotate(dry) {
@@ -723,10 +764,10 @@ async function handleAnnotate(dry) {
     dry_run: !!dry,
     backup: isChecked("annotate-backup"),
   };
-  const res = await runAction(dry ? "Annotate preview…" : "Annotate apply…", () => tauriInvoke("annotate_cmd", { request: payload }));
+  const res = await runAction(dry ? tr('annotate_preview') : tr('annotate_apply'), () => tauriInvoke("annotate_cmd", { request: payload }));
   try { console.log('Annotate result', res); } catch {}
   debugLog('info', `annotate done: processed=${res.processed} annotated=${res.annotated}`);
-  $("annotate-result").textContent = `Processed: ${res.processed}, Annotated: ${res.annotated}`;
+  $("annotate-result").textContent = `${tr('processed')}: ${res.processed}, ${tr('annotated')}: ${res.annotated}`;
 }
 
 async function handleInit() {
@@ -740,9 +781,9 @@ async function handleInit() {
     overwrite: isChecked("init-overwrite"),
     dry_run: isChecked("init-dry"),
   };
-  const res = await runAction("Init language…", () => tauriInvoke("init_lang_cmd", { request: payload }));
+  const res = await runAction(tr('init_running'), () => tauriInvoke("init_lang_cmd", { request: payload }));
   try { console.log('Init result', res); } catch {}
-  $("init-result").textContent = `Files: ${res.files}, Language: ${res.outLanguage || res.out_language}`;
+  $("init-result").textContent = `${tr('files')}: ${res.files}, ${tr('language')}: ${res.outLanguage || res.out_language}`;
 }
 
 async function openPath(path) {
@@ -767,6 +808,10 @@ function initEventHandlers() {
     const path = state.export?.outPo || state.export?.out_po;
     openPath(path);
   });
+  const pickExportDefs = document.querySelector('[data-action="pick-export-defs"]');
+  if (pickExportDefs) pickExportDefs.addEventListener("click", pickDirectory("export-defs-root"));
+  const pickExportSchema = document.querySelector('[data-action="pick-export-schema"]');
+  if (pickExportSchema) pickExportSchema.addEventListener("click", () => pickFile("export-type-schema", [{ name: "JSON", extensions: ["json"] }])());
 
   document.querySelector('[data-action="pick-root"]').addEventListener("click", pickDirectory("mod-root"));
   const pickScanDefs = document.querySelector('[data-action="pick-scan-defs"]');
@@ -774,6 +819,10 @@ function initEventHandlers() {
   const pickScanSchema = document.querySelector('[data-action="pick-scan-schema"]');
   if (pickScanSchema) pickScanSchema.addEventListener("click", () => pickFile("scan-type-schema", [{ name: "JSON", extensions: ["json"] }])());
   document.querySelector('[data-action="pick-learn-out"]').addEventListener("click", pickDirectory("learn-out"));
+  const pickLearnDefs = document.querySelector('[data-action="pick-learn-defs"]'); if (pickLearnDefs) pickLearnDefs.addEventListener("click", pickDirectory("learn-defs-root"));
+  const pickLearnModel = document.querySelector('[data-action="pick-learn-model"]'); if (pickLearnModel) pickLearnModel.addEventListener("click", () => pickFile("learn-model", [{ name: "Binary", extensions: ["bin","model"] }])());
+  const pickLearnLearned = document.querySelector('[data-action="pick-learn-learned"]'); if (pickLearnLearned) pickLearnLearned.addEventListener("click", () => pickSave("learn-learned-out", { defaultPath: "learned_defs.json" })());
+  const pickLearnRetrain = document.querySelector('[data-action="pick-learn-retrain-dict"]'); if (pickLearnRetrain) pickLearnRetrain.addEventListener("click", () => pickSave("learn-retrain-dict", { defaultPath: "defs_dict.updated.json" })());
   document.querySelector('[data-action="pick-po-output"]').addEventListener(
     "click",
     pickSave("po-output", { defaultPath: "translation.po" })
@@ -781,6 +830,9 @@ function initEventHandlers() {
 
   // Validate
   $("validate-run").addEventListener("click", handleValidate);
+  const vpRun = $("validate-po-run"); if (vpRun) vpRun.addEventListener("click", handleValidatePo);
+  const vpPick = document.querySelector('[data-action="pick-validate-po"]'); if (vpPick) vpPick.addEventListener("click", () => pickFile("validate-po-path", [{ name: "PO", extensions: ["po"] }])());
+  const vpSave = $("validate-po-save"); if (vpSave) vpSave.addEventListener("click", async () => { try { const po = val("validate-po-path"); if (!po) return; const res = await tauriInvoke("validate_po_gui", { req: { po_path: po, strict: isChecked("validate-po-strict") } }); const def = (po||'').replace(/\.po$/, '.validate.json'); const path = await tauriDialog().save({ defaultPath: def }); if (!path) return; await tauriInvoke("save_text_file", { path, content: JSON.stringify(res, null, 2) }); showToast(`${tr('saved')}: ${path}`); } catch(e) { showError(e); } });
   const pickDefs = document.querySelector('[data-action="pick-validate-defs"]');
   if (pickDefs) pickDefs.addEventListener("click", pickDirectory("validate-defs-root"));
   const pickValSchema = document.querySelector('[data-action="pick-validate-schema"]');
@@ -789,10 +841,10 @@ function initEventHandlers() {
   // Health
   $("health-run").addEventListener("click", handleHealth);
   const healthSave = $("health-save"); if (healthSave) healthSave.addEventListener("click", async () => {
-    const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
+    const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
     const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/health.json` });
-    if (!path) return; await runAction("Saving health…", () => tauriInvoke("xml_health", { request: { root, game_version: val("game-version") || null, lang_dir: val("health-lang-dir") || null, out_json: path } }));
-    showToast(`Saved: ${path}`);
+    if (!path) return; await runAction(tr('saving_health'), () => tauriInvoke("xml_health", { request: { root, game_version: val("game-version") || null, lang_dir: val("health-lang-dir") || null, out_json: path } }));
+    showToast(`${tr('saved')}: ${path}`);
   });
 
   // Import
@@ -838,6 +890,8 @@ function initEventHandlers() {
   const lkRun = $("learn-keyed-run"); if (lkRun) lkRun.addEventListener("click", handleLearnKeyed);
   const pickLkOut = document.querySelector('[data-action="pick-learn-keyed-out"]');
   if (pickLkOut) pickLkOut.addEventListener("click", pickDirectory("learn-keyed-out"));
+  const pickLkLearned = document.querySelector('[data-action="pick-learn-keyed-learned"]'); if (pickLkLearned) pickLkLearned.addEventListener("click", () => pickSave("learn-keyed-learned-out", { defaultPath: "learned_keyed.json" })());
+  const pickLkRetrain = document.querySelector('[data-action="pick-learn-keyed-retrain"]'); if (pickLkRetrain) pickLkRetrain.addEventListener("click", () => pickSave("learn-keyed-retrain-dict", { defaultPath: "keyed_dict.updated.json" })());
 
   // Schemas
   const dumpSchemas = $("schemas-dump"); if (dumpSchemas) dumpSchemas.addEventListener("click", handleDumpSchemas);
@@ -859,6 +913,10 @@ function initEventHandlers() {
   // Init
   const initRun = $("init-run");
   if (initRun) initRun.addEventListener("click", handleInit);
+
+  // Learn Patches
+  const lpRun = $("learn-patches-run"); if (lpRun) lpRun.addEventListener("click", handleLearnPatches);
+  const lpPick = document.querySelector('[data-action="pick-learn-patches-out"]'); if (lpPick) lpPick.addEventListener("click", () => pickSave("learn-patches-out", { defaultPath: "_learn/patches_texts.json" })());
 }
 
 function initPersistence() {
@@ -868,8 +926,25 @@ function initPersistence() {
   bindPersist("source-lang", "rimloc.sourceLang");
   bindPersist("learn-out", "rimloc.learnOut", "_learn");
   bindPersist("learn-lang-dir", "rimloc.learnLangDir", "English");
+  // (above) learn-defs bindings set once
+  bindPersist("learn-defs-root", "rimloc.learnDefsRoot");
+  bindPersistTextArea("learn-defs-dicts", "rimloc.learnDefsDicts");
+  bindPersist("learn-ml-url", "rimloc.learnMlUrl");
+  bindPersist("learn-model", "rimloc.learnModel");
+  bindPersist("learn-learned-out", "rimloc.learnLearnedOut");
+  bindPersist("learn-retrain-dict", "rimloc.learnRetrainDict");
+  bindPersist("learn-minlen", "rimloc.learnMinLen");
+  bindPersistTextArea("learn-blacklist", "rimloc.learnBlacklist");
+  const learnNoMl = $("learn-no-ml"); if (learnNoMl) { learnNoMl.checked = localStorage.getItem("rimloc.learnNoMl") === "1"; learnNoMl.addEventListener("change", () => localStorage.setItem("rimloc.learnNoMl", learnNoMl.checked?"1":"0")); }
+  const learnRetrain = $("learn-retrain"); if (learnRetrain) { learnRetrain.checked = localStorage.getItem("rimloc.learnRetrain") === "1"; learnRetrain.addEventListener("change", () => localStorage.setItem("rimloc.learnRetrain", learnRetrain.checked?"1":"0")); }
   bindPersist("po-output", "rimloc.poOutput", "_learn/translation.po");
   bindPersistTextArea("tm-roots", "rimloc.tmRoots");
+  // Learn Keyed extras
+  bindPersist("learn-keyed-ml-url", "rimloc.learnKeyedMlUrl");
+  bindPersist("learn-keyed-learned-out", "rimloc.learnKeyedLearnedOut");
+  bindPersist("learn-keyed-retrain-dict", "rimloc.learnKeyedRetrainDict");
+  const lkNoMl = $("learn-keyed-no-ml"); if (lkNoMl) { lkNoMl.checked = localStorage.getItem("rimloc.learnKeyedNoMl") === "1"; lkNoMl.addEventListener("change", () => localStorage.setItem("rimloc.learnKeyedNoMl", lkNoMl.checked?"1":"0")); }
+  const lkRetrain = $("learn-keyed-retrain"); if (lkRetrain) { lkRetrain.checked = localStorage.getItem("rimloc.learnKeyedRetrain") === "1"; lkRetrain.addEventListener("change", () => localStorage.setItem("rimloc.learnKeyedRetrain", lkRetrain.checked?"1":"0")); }
   // Scan options
   const scanAll = $("scan-all-versions");
   if (scanAll) {
@@ -888,6 +963,10 @@ function initPersistence() {
   });
   // Export options
   bindPersist("export-source-lang-dir", "rimloc.exportSourceLangDir", "English");
+  bindPersist("export-defs-root", "rimloc.exportDefsRoot");
+  bindPersist("export-extra-fields", "rimloc.exportExtraFields");
+  bindPersistTextArea("export-defs-dicts", "rimloc.exportDefsDicts");
+  bindPersist("export-type-schema", "rimloc.exportTypeSchema");
   const expPot = $("export-pot");
   if (expPot) {
     expPot.checked = localStorage.getItem("rimloc.exportPOT") === "1";
@@ -910,6 +989,11 @@ function initPersistence() {
   const valCmp = $("validate-compare-ph"); if (valCmp) { valCmp.checked = localStorage.getItem("rimloc.validateComparePH") === "1"; valCmp.addEventListener("change", () => localStorage.setItem("rimloc.validateComparePH", valCmp.checked?"1":"0")); }
   bindPersist("validate-target-lang", "rimloc.validateTargetLang", "ru");
   bindPersist("validate-target-lang-dir", "rimloc.validateTargetLangDir", "Russian");
+  // Validate PO + Learn Patches
+  bindPersist("validate-po-path", "rimloc.validatePoPath");
+  const vpStrict = $("validate-po-strict"); if (vpStrict) { vpStrict.checked = localStorage.getItem("rimloc.validatePoStrict") === "1"; vpStrict.addEventListener("change", () => localStorage.setItem("rimloc.validatePoStrict", vpStrict.checked?"1":"0")); }
+  bindPersist("learn-patches-minlen", "rimloc.learnPatchesMinLen");
+  bindPersist("learn-patches-out", "rimloc.learnPatchesOut");
   // Health options
   bindPersist("health-lang-dir", "rimloc.healthLangDir", "English");
   const hStrict = $("health-strict"); if (hStrict) { hStrict.checked = localStorage.getItem("rimloc.healthStrict") === "1"; hStrict.addEventListener("change", () => localStorage.setItem("rimloc.healthStrict", hStrict.checked?"1":"0")); }
@@ -1087,14 +1171,14 @@ function addLogEntry(entry) {
   renderStructuredLogs();
 }
 
-function initDebugUI() {
+async function initDebugUI() {
   $("debug-clear").addEventListener("click", () => {
     $("debug-log").textContent = "";
   });
 
   // Modal controls
   // modal version removed (migrated to inline panel)
-  const copyModal = $("copy-log-path"); if (copyModal) copyModal.addEventListener("click", async () => { const p = $("log-path").textContent; try { await navigator.clipboard.writeText(p); showToast("Copied"); } catch {} });
+  const copyModal = $("copy-log-path"); if (copyModal) copyModal.addEventListener("click", async () => { const p = $("log-path").textContent; try { await navigator.clipboard.writeText(p); showToast(tr('copied')); } catch {} });
   // Inline toolbar bindings (panel)
   const setLogPath = (p) => {
     const el1 = $("log-path"); if (el1) el1.textContent = p;
@@ -1104,7 +1188,7 @@ function initDebugUI() {
     const info = await tauriInvoke("get_log_info");
     if (info?.logPath || info?.log_path) setLogPath(info.logPath || info.log_path);
   } catch {}
-  const copyInline = $("copy-log-path-inline"); if (copyInline) copyInline.addEventListener("click", async () => { const p = $("log-path-inline").textContent; try { await navigator.clipboard.writeText(p); showToast("Copied"); } catch {} });
+  const copyInline = $("copy-log-path-inline"); if (copyInline) copyInline.addEventListener("click", async () => { const p = $("log-path-inline").textContent; try { await navigator.clipboard.writeText(p); showToast(tr('copied')); } catch {} });
   const openInline = $("open-log-folder-inline"); if (openInline) openInline.addEventListener("click", () => { const p = $("log-path-inline").textContent; if (p) openPath(p.replace(/\\/g, "/").replace(/\/[^/]*$/, "/")); });
   const saveInline = $("save-console-inline"); if (saveInline) saveInline.addEventListener("click", async () => {
     try {
@@ -1114,7 +1198,7 @@ function initDebugUI() {
       if (!path) return;
       const content = $("debug-log").textContent || "";
       await tauriInvoke("save_text_file", { path, content });
-      showToast(`Saved: ${path}`);
+      showToast(`${tr('saved')}: ${path}`);
     } catch (e) { showError(e); }
   });
   const collInline = $("collect-diagnostics-inline"); if (collInline) collInline.addEventListener("click", async () => {
@@ -1124,18 +1208,18 @@ function initDebugUI() {
       const path = await tauriDialog().save({ defaultPath: def });
       if (!path) return;
       const saved = await tauriInvoke("collect_diagnostics", { req: { out_path: path } });
-      showToast(`Diagnostics saved: ${saved}`);
+      showToast(`${tr('diagnostics_saved')}: ${saved}`);
     } catch (e) { showError(e); }
   });
   const simErrInline = $("simulate-error-inline"); if (simErrInline) simErrInline.addEventListener("click", async () => { try { await tauriInvoke("simulate_error"); } catch (e) { showError(e); } });
   const simPanInline = $("simulate-panic-inline"); if (simPanInline) simPanInline.addEventListener("click", async () => { try { await tauriInvoke("simulate_panic"); } catch (e) { showError(e); } });
   const lvInline = $("log-level-inline"); if (lvInline) lvInline.addEventListener("change", async () => { state.logLevel = lvInline.value; localStorage.setItem("rimloc.logLevel", state.logLevel); try { await tauriInvoke("set_debug_options", { opts: { minLevel: state.logLevel } }); } catch {} });
   const btInline = $("enable-backtrace-inline"); if (btInline) { btInline.checked = localStorage.getItem("rimloc.backtrace") === "1"; btInline.addEventListener("change", async () => { const on = btInline.checked; localStorage.setItem("rimloc.backtrace", on?"1":"0"); try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {} }); }
-  const saveStructured = $("save-structured"); if (saveStructured) saveStructured.addEventListener("click", async () => { try { const path = await tauriDialog().save({ defaultPath: "rimloc-logs.jsonl" }); if (!path) return; const lines = state.logBuffer.map(e => JSON.stringify(e)).join("\n"); await tauriInvoke("save_text_file", { path, content: lines }); showToast(`Saved: ${path}`); } catch(e) { showError(e); } });
+  const saveStructured = $("save-structured"); if (saveStructured) saveStructured.addEventListener("click", async () => { try { const path = await tauriDialog().save({ defaultPath: "rimloc-logs.jsonl" }); if (!path) return; const lines = state.logBuffer.map(e => JSON.stringify(e)).join("\n"); await tauriInvoke("save_text_file", { path, content: lines }); showToast(`${tr('saved')}: ${path}`); } catch(e) { showError(e); } });
   const clearStructured = $("clear-structured"); if (clearStructured) clearStructured.addEventListener("click", () => { state.logBuffer = []; renderStructuredLogs(); });
   const filterEl = $("log-filter"); if (filterEl) filterEl.addEventListener('input', renderStructuredLogs);
   ["log-ui","log-backend","log-invoke","log-progress"].forEach(id => { const el=$(id); if (el) el.addEventListener('change', renderStructuredLogs); });
-  $("open-log-folder").addEventListener("click", () => {
+  const openLogFolder = $("open-log-folder"); if (openLogFolder) openLogFolder.addEventListener("click", () => {
     const path = $("log-path").textContent;
     if (path) openPath(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
   });
@@ -1147,7 +1231,7 @@ function initDebugUI() {
       if (!path) return;
       const content = $("debug-log").textContent || "";
       await tauriInvoke("save_text_file", { path, content });
-      showToast(`Saved: ${path}`);
+      showToast(`${tr('saved')}: ${path}`);
     } catch (e) {
       showError(e);
     }
@@ -1159,7 +1243,7 @@ function initDebugUI() {
       const path = await tauriDialog().save({ defaultPath: def });
       if (!path) return;
       const saved = await tauriInvoke("collect_diagnostics", { req: { outPath: path } });
-      showToast(`Diagnostics saved: ${saved}`);
+      showToast(`${tr('diagnostics_saved')}: ${saved}`);
     } catch (e) { showError(e); }
   });
   const simErrModal = $("simulate-error"); if (simErrModal) simErrModal.addEventListener("click", async () => {
@@ -1255,6 +1339,45 @@ const I18N = {
     export_pot: "Write POT (template)",
     export_empty: "No export performed yet.",
     save_report: "Save report…",
+    saved: "Saved",
+    saved_to: "Saved to",
+    saving_json: "Saving JSON…",
+    saving_csv: "Saving CSV…",
+    saving_health: "Saving health…",
+    scanning: "Scanning…",
+    learning_defs: "Learning DefInjected…",
+    exporting_po: "Exporting PO…",
+    export_ok: "PO exported successfully",
+    validating: "Validating…",
+    validation: "Validation",
+    xml_health: "XML Health…",
+    checked: "Checked",
+    issues: "issues",
+    importing_po: "Importing PO…",
+    building_mod: "Building mod…",
+    built_to: "Built to",
+    build_complete: "Build complete",
+    diff_xml: "Diff XML…",
+    generating_morph: "Generating morph…",
+    processed: "Processed",
+    annotated: "Annotated",
+    lang: "Lang",
+    learn_keyed: "Learn Keyed…",
+    dumping_schemas: "Dumping schemas…",
+    suggested: "Suggested",
+    suggested_xml: "Suggested XML",
+    copied: "Copied",
+    diagnostics_saved: "Diagnostics saved",
+    tauri_api_unavailable: "Tauri API not available (check withGlobalTauri)",
+    select_mod_root_first: "Select mod root first",
+    select_game_root_first: "Select game root first",
+    select_po_file: "Select PO file",
+    select_output_folder: "Select output folder",
+    select_po_or_from_root: "Select PO or From root",
+    init_running: "Init language…",
+    annotate_preview: "Annotate preview…",
+    annotate_apply: "Annotate apply…",
+    lang_update_running: "Lang update…",
     toast_learned: "Learned DefInjected candidates",
     build_title: "Build Translation Mod",
     build_run: "Build",
@@ -1340,6 +1463,19 @@ const I18N = {
     morph_title: "Morph (Cases/Plural/Gender)",
     morph_generate: "Generate",
     limit: "Limit",
+    ok: "OK",
+    entries: "entries",
+    found: "Found",
+    json: "JSON",
+    suggested: "Suggested",
+    validate_po_title: "Validate PO",
+    validate_po_run: "Validate PO",
+    validating_po: "Validating PO…",
+    strict: "Strict",
+    out_json: "Out JSON",
+    learn_patches_title: "Learn Patches",
+    learn_patches_run: "Run",
+    scanning_patches: "Scanning patches…",
     learn_keyed_title: "Learn Keyed",
     run: "Run",
     validate: "Validate",
@@ -1436,6 +1572,45 @@ const I18N = {
     export_pot: "Писать POT (шаблон)",
     export_empty: "Экспорт ещё не выполнялся.",
     save_report: "Сохранить отчёт…",
+    saved: "Сохранено",
+    saved_to: "Сохранено в",
+    saving_json: "Сохранение JSON…",
+    saving_csv: "Сохранение CSV…",
+    saving_health: "Сохранение отчёта…",
+    scanning: "Сканирование…",
+    learning_defs: "Обучение DefInjected…",
+    exporting_po: "Экспорт PO…",
+    export_ok: "PO успешно сохранён",
+    validating: "Проверка…",
+    validation: "Проверка",
+    xml_health: "Проверка XML…",
+    checked: "Проверено",
+    issues: "проблем",
+    importing_po: "Импорт PO…",
+    building_mod: "Сборка мода…",
+    built_to: "Собрано в",
+    build_complete: "Сборка завершена",
+    diff_xml: "Сравнение XML…",
+    generating_morph: "Генерация морфологии…",
+    processed: "Обработано",
+    annotated: "Аннотировано",
+    lang: "Язык",
+    learn_keyed: "Обучение Keyed…",
+    dumping_schemas: "Выгрузка схем…",
+    suggested: "Предложено",
+    suggested_xml: "Предложенный XML",
+    copied: "Скопировано",
+    diagnostics_saved: "Диагностика сохранена",
+    tauri_api_unavailable: "Tauri API недоступен (проверьте withGlobalTauri)",
+    select_mod_root_first: "Сначала укажите корень мода",
+    select_game_root_first: "Сначала укажите папку игры",
+    select_po_file: "Укажите файл PO",
+    select_output_folder: "Укажите папку вывода",
+    select_po_or_from_root: "Укажите PO или исходный корень",
+    init_running: "Инициализация языка…",
+    annotate_preview: "Предпросмотр аннотации…",
+    annotate_apply: "Применение аннотации…",
+    lang_update_running: "Обновление языка…",
     toast_learned: "Выбраны кандидаты DefInjected",
     build_title: "Сборка перевода из PO",
     build_run: "Собрать",
@@ -1521,6 +1696,19 @@ const I18N = {
     morph_title: "Морфология (падеж/мн.число/род)",
     morph_generate: "Сгенерировать",
     limit: "Лимит",
+    ok: "OK",
+    entries: "строк",
+    found: "Найдено",
+    json: "JSON",
+    suggested: "XML",
+    validate_po_title: "Проверка PO",
+    validate_po_run: "Проверить PO",
+    validating_po: "Проверка PO…",
+    strict: "Строгий режим",
+    out_json: "JSON отчёт",
+    learn_patches_title: "Тексты из Patches",
+    learn_patches_run: "Запуск",
+    scanning_patches: "Сканирование Patches…",
     learn_keyed_title: "Обучение Keyed",
     run: "Запуск",
     validate: "Проверка",
@@ -1615,12 +1803,13 @@ function applyI18n() {
 function initI18nUI() {
   const select = $("locale-select");
   select.value = state.locale;
-  select.addEventListener("change", () => {
+  select.addEventListener("change", async () => {
     state.locale = select.value;
     localStorage.setItem("rimloc.locale", state.locale);
+    await loadCliI18n();
     applyI18n();
   });
-  applyI18n();
+  (async () => { await loadCliI18n(); applyI18n(); })();
 }
 
 // --- Theme ---
@@ -1653,8 +1842,8 @@ function boot() {
   try { console.log('Boot: begin'); } catch {}
   try {
     if (!getTauri().core && !getTauri().invoke && !(getTauri().tauri && getTauri().tauri.invoke)) {
-      try { console.warn('TAURI API not injected (withGlobalTauri?)'); } catch {}
-      showToast('Tauri API not available (check withGlobalTauri)', true);
+    try { console.warn('TAURI API not injected (withGlobalTauri?)'); } catch {}
+    showToast(tr('tauri_api_unavailable'), true);
     }
     initPersistence();
     initEventHandlers();
@@ -1704,6 +1893,19 @@ async function waitForTauri(maxMs = 5000) {
   }
   boot();
 })();
+
+async function loadCliI18n() {
+  try {
+    const loc = detectLocale();
+    const langs = loc === 'ru' ? ['ru','en'] : ['en'];
+    for (const l of langs) {
+      const map = await tauriInvoke('get_cli_i18n', { lang: l }).catch(() => null);
+      if (map && typeof map === 'object') {
+        I18N[l] = Object.assign({}, map, I18N[l] || {});
+      }
+    }
+  } catch {}
+}
 
 // Автозаполнение путей по умолчанию при выборе корня
 document.addEventListener('DOMContentLoaded', () => {
@@ -1846,6 +2048,39 @@ function renderStructuredLogs() {
     tbody.appendChild(tr);
   }
 }
+
+// --- Profiler ---
+async function loadProfile() {
+  const limit = Number($("profile-limit")?.value || 200) || 200;
+  const res = await tauriInvoke("get_profile", { req: { limit } });
+  // recent
+  const tbodyR = document.querySelector('#profile-recent tbody'); if (tbodyR) {
+    tbodyR.innerHTML = '';
+    for (const e of res.entries || []) {
+      const tr = document.createElement('tr');
+      const tdTs = document.createElement('td'); tdTs.textContent = new Date(e.ts).toLocaleTimeString();
+      const tdCmd = document.createElement('td'); tdCmd.textContent = e.command;
+      const tdDur = document.createElement('td'); tdDur.textContent = String(e.durationMs || e.duration_ms || 0);
+      const tdEx = document.createElement('td'); tdEx.textContent = JSON.stringify(e.extra || {});
+      tr.append(tdTs, tdCmd, tdDur, tdEx); tbodyR.appendChild(tr);
+    }
+  }
+  // summary
+  const tbodyS = document.querySelector('#profile-summary tbody'); if (tbodyS) {
+    tbodyS.innerHTML = '';
+    for (const r of res.per_command || res.perCommand || []) {
+      const tr = document.createElement('tr');
+      const tdCmd = document.createElement('td'); tdCmd.textContent = r.command;
+      const tdCnt = document.createElement('td'); tdCnt.textContent = String(r.count);
+      const tdAvg = document.createElement('td'); tdAvg.textContent = (r.avgMs || r.avg_ms).toFixed(1);
+      const tdMax = document.createElement('td'); tdMax.textContent = String(r.maxMs || r.max_ms);
+      const tdTot = document.createElement('td'); tdTot.textContent = String(r.totalMs || r.total_ms);
+      tr.append(tdCmd, tdCnt, tdAvg, tdMax, tdTot); tbodyS.appendChild(tr);
+    }
+  }
+}
+
+const profBtn = $("profile-load"); if (profBtn) profBtn.addEventListener('click', () => runAction('Loading profile…', loadProfile));
 
 const previewFilter = $("preview-filter"); if (previewFilter) previewFilter.addEventListener('input', () => renderPreview());
 const missingToggle = $("preview-missing-only"); if (missingToggle) missingToggle.addEventListener('change', () => renderPreview());

@@ -33,6 +33,27 @@
         </div>
         <div id="progress-items" class="progress-items"></div>
       </section>
+      <section class="panel" id="profile-panel">
+        <div class="panel-head">
+          <h2>Profiler</h2>
+          <div class="actions">
+            <input id="profile-limit" type="number" value="200" min="1" max="5000" />
+            <button type="button" id="profile-load">Load profile</button>
+          </div>
+        </div>
+        <div class="table-wrapper" style="max-height: 240px">
+          <table id="profile-recent" class="log-table">
+            <thead><tr><th>Time</th><th>Command</th><th>Duration, ms</th><th>Extra</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-wrapper" style="max-height: 240px">
+          <table id="profile-summary" class="log-table">
+            <thead><tr><th>Command</th><th>Count</th><th>Avg, ms</th><th>Max, ms</th><th>Total, ms</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
       <section class="panel" id="settings-panel">
         <div class="panel-head">
           <h2 data-i18n="settings">Settings</h2>
@@ -208,6 +229,57 @@
             <span>Threshold</span>
             <input id="learn-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" data-ph="ph.threshold08" autocomplete="off" />
           </label>
+          <label data-i18n="defs_root">Defs root (optional)
+            <div class="path-input">
+              <input id="learn-defs-root" type="text" placeholder="/path/to/Defs" data-ph="ph.path.defs" autocomplete="off" />
+              <button type="button" data-action="pick-learn-defs" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="dict_files">Dict files (one per line)</span>
+            <textarea id="learn-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json" data-ph="ph.dicts_lines"></textarea>
+          </label>
+          <label>
+            <span data-i18n="min_length">Min length</span>
+            <input id="learn-minlen" type="number" placeholder="1" data-ph="ph.min_length_1" />
+          </label>
+          <label>
+            <span data-i18n="blacklist">Blacklist (one per line)</span>
+            <textarea id="learn-blacklist" rows="3" placeholder="prefix_.*\n^Key$" data-ph="ph.blacklist_lines"></textarea>
+          </label>
+          <label>
+            <span>ML URL</span>
+            <input id="learn-ml-url" type="text" placeholder="http://localhost:8765/score" autocomplete="off" />
+          </label>
+          <label>
+            <input id="learn-no-ml" type="checkbox" />
+            <span>No ML (fast heuristic)</span>
+          </label>
+          <label>
+            <span>Model file (optional)</span>
+            <div class="path-input">
+              <input id="learn-model" type="text" placeholder="/path/to/model.bin" autocomplete="off" />
+              <button type="button" data-action="pick-learn-model" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <span>Learned out file (optional)</span>
+            <div class="path-input">
+              <input id="learn-learned-out" type="text" placeholder="learned_defs.json" autocomplete="off" />
+              <button type="button" data-action="pick-learn-learned" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <input id="learn-retrain" type="checkbox" />
+            <span>Retrain (update dict)</span>
+          </label>
+          <label>
+            <span>Retrain dict (optional)</span>
+            <div class="path-input">
+              <input id="learn-retrain-dict" type="text" placeholder="/path/to/defs_dict.json" autocomplete="off" />
+              <button type="button" data-action="pick-learn-retrain-dict" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
         </div>
         <div class="result" id="learn-result" data-i18n="learn_empty">No learn run yet.</div>
       </section>
@@ -225,6 +297,27 @@
             <div class="path-input">
               <input id="po-output" type="text" placeholder="_learn/mod.po" data-ph="ph.path.po" autocomplete="off" />
               <button type="button" data-action="pick-po-output" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="defs_root">Defs root (optional)
+            <div class="path-input">
+              <input id="export-defs-root" type="text" placeholder="/path/to/Defs" data-ph="ph.path.defs" autocomplete="off" />
+              <button type="button" data-action="pick-export-defs" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label data-i18n="extra_fields">
+            <input id="export-extra-fields" type="text" placeholder="label,description" data-ph="ph.extra_fields" autocomplete="off" />
+          </label>
+          <label>
+            <span>Defs dictionaries (one per line)</span>
+            <textarea id="export-defs-dicts" rows="3" placeholder="/path/to/dict.json
+/path/to/another.json" data-ph="ph.dicts_lines"></textarea>
+          </label>
+          <label>
+            <span data-i18n="type_schema">Type schema (optional)</span>
+            <div class="path-input">
+              <input id="export-type-schema" type="text" placeholder="/path/to/schema.json" data-ph="ph.path.schema" autocomplete="off" />
+              <button type="button" data-action="pick-export-schema" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="tm_folders">
@@ -296,6 +389,30 @@
           </label>
         </div>
         <div class="result" id="validate-result" data-i18n="validate_empty">No validation run yet.</div>
+      </section>
+
+      <section class="panel" id="validate-po-panel">
+        <div class="panel-head">
+          <h2 data-i18n="validate_po_title">Validate PO</h2>
+          <div class="actions">
+            <button type="button" id="validate-po-run" data-i18n="validate_po_run">Run</button>
+            <button type="button" id="validate-po-save" data-i18n="save_report">Save report…</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label>
+            <span data-i18n="po_file">PO file</span>
+            <div class="path-input">
+              <input id="validate-po-path" type="text" placeholder="/path/to/translation.po" autocomplete="off" />
+              <button type="button" data-action="pick-validate-po" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <input id="validate-po-strict" type="checkbox" />
+            <span data-i18n="strict">Strict</span>
+          </label>
+        </div>
+        <div class="result" id="validate-po-result">—</div>
       </section>
 
       <section class="panel" id="health-panel">
@@ -580,8 +697,57 @@
             <input id="learn-keyed-from-defs" type="checkbox" />
             <span data-i18n="from_defs">From Defs (special)</span>
           </label>
+          <label>
+            <span>ML URL</span>
+            <input id="learn-keyed-ml-url" type="text" placeholder="http://localhost:8765/score" autocomplete="off" />
+          </label>
+          <label>
+            <input id="learn-keyed-no-ml" type="checkbox" />
+            <span>No ML (fast heuristic)</span>
+          </label>
+          <label>
+            <span>Learned out file (optional)</span>
+            <div class="path-input">
+              <input id="learn-keyed-learned-out" type="text" placeholder="learned_keyed.json" autocomplete="off" />
+              <button type="button" data-action="pick-learn-keyed-learned" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <input id="learn-keyed-retrain" type="checkbox" />
+            <span>Retrain (update dict)</span>
+          </label>
+          <label>
+            <span>Retrain dict (optional)</span>
+            <div class="path-input">
+              <input id="learn-keyed-retrain-dict" type="text" placeholder="/path/to/keyed_dict.json" autocomplete="off" />
+              <button type="button" data-action="pick-learn-keyed-retrain" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
         </div>
         <div class="result" id="learn-keyed-result">—</div>
+      </section>
+
+      <section class="panel" id="learn-patches-panel">
+        <div class="panel-head">
+          <h2 data-i18n="learn_patches_title">Learn Patches</h2>
+          <div class="actions">
+            <button type="button" id="learn-patches-run" data-i18n="run">Run</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label>
+            <span data-i18n="min_length">Min length</span>
+            <input id="learn-patches-minlen" type="number" placeholder="1" autocomplete="off" />
+          </label>
+          <label>
+            <span data-i18n="out_json">Out JSON</span>
+            <div class="path-input">
+              <input id="learn-patches-out" type="text" placeholder="_learn/patches_texts.json" autocomplete="off" />
+              <button type="button" data-action="pick-learn-patches-out" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+        </div>
+        <div class="result" id="learn-patches-result">—</div>
       </section>
 
       <section class="panel" id="schemas-panel">
