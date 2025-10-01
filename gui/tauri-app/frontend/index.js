@@ -684,7 +684,7 @@ async function handleLearnKeyed() {
 async function handleDumpSchemas() {
   try { console.log('Clicked Dump Schemas'); } catch {}
   const out_dir = val("schemas-out") || "./docs/assets/schemas";
-  const saved = await runAction("Dumping schemas…", () => tauriInvoke("dump_schemas", { req: { outDir: out_dir } }));
+  const saved = await runAction("Dumping schemas…", () => tauriInvoke("dump_schemas", { req: { out_dir: out_dir } }));
   $("schemas-result").textContent = `Saved to: ${saved}`;
 }
 
@@ -1301,6 +1301,24 @@ const I18N = {
     scan: "Scan",
     learn: "Learn",
     export: "Export",
+    type_schema: "Type schema (optional)",
+    morph_provider: "Provider",
+    morph_token: "Morpher token",
+    morph_filter: "Filter key regex",
+    timeout_ms: "Timeout, ms",
+    cache_size: "Cache size",
+    pymorphy_url: "Pymorphy URL",
+    dict_files: "Dict files (one per line)",
+    blacklist: "Blacklist (one per line)",
+    exclude_substrings: "Exclude substrings (one per line)",
+    min_length: "Min length",
+    must_letter: "Must contain letter",
+    from_defs: "From Defs (special)",
+    schemas_title: "JSON Schemas",
+    schemas_dump: "Dump schemas…",
+    game_root: "Game root (folder with Data)",
+    repo: "Repo",
+    branch: "Branch",
     validate: "Validate",
     health: "XML Health",
     import: "Import",
@@ -1422,6 +1440,24 @@ const I18N = {
     scan: "Сканирование",
     learn: "Обучение",
     export: "Экспорт",
+    type_schema: "Схема типов (опционально)",
+    morph_provider: "Провайдер",
+    morph_token: "Токен Morpher",
+    morph_filter: "Regex фильтр ключей",
+    timeout_ms: "Таймаут, мс",
+    cache_size: "Размер кэша",
+    pymorphy_url: "URL Pymorphy",
+    dict_files: "Файлы словарей (по одному в строке)",
+    blacklist: "Стоп‑слова/ключи (по одному в строке)",
+    exclude_substrings: "Исключать подстроки (по одной в строке)",
+    min_length: "Мин. длина",
+    must_letter: "Должна быть буква",
+    from_defs: "Из Defs (спец.)",
+    schemas_title: "JSON схемы",
+    schemas_dump: "Выгрузить схемы…",
+    game_root: "Папка игры (с Data)",
+    repo: "Репозиторий",
+    branch: "Ветка",
     validate: "Проверка",
     health: "Проверка XML",
     import: "Импорт",
