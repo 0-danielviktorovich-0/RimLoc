@@ -24,6 +24,13 @@
     "get_diagnostics",
     "collect_diagnostics",
     "simulate_error",
-    "simulate_panic"
+    "simulate_panic",
+    "morph_cmd",
+    "learn_keyed_cmd",
+    "dump_schemas",
+    "get_profile",
+    "validate_po_gui",
+    "learn_patches_cmd",
+    "get_cli_i18n"
   ]
 }

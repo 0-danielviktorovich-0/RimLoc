@@ -3,7 +3,7 @@
 use color_eyre::eyre::WrapErr;
 use rimloc_domain::{ScanUnit, SCHEMA_VERSION};
 use rimloc_export_csv as export_csv;
-use rimloc_services::{autodiscover_defs_context, export_po_with_tm, learn};
+use rimloc_services::{autodiscover_defs_context, learn, scan_defs_with_meta, is_under_languages_dir};
 use rimloc_services::{
     validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_fields,
     xml_health_scan, import_po_to_mod_tree_with_progress, build_from_po_with_progress,
@@ -22,6 +22,7 @@ use walkdir::WalkDir;
 use std::fs::OpenOptions;
 use std::io::Write;
 use chrono::Utc;
+use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug, Error, Serialize)]
 #[error("{message}")]
@@ -256,6 +257,27 @@ struct LearnDefsRequest {
     threshold: Option<f32>,
     #[serde(default)]
     game_version: Option<String>,
+    // Advanced options
+    #[serde(default)]
+    defs_root: Option<String>,
+    #[serde(default)]
+    dict_files: Option<Vec<String>>,
+    #[serde(default)]
+    model_path: Option<String>,
+    #[serde(default)]
+    ml_url: Option<String>,
+    #[serde(default)]
+    no_ml: bool,
+    #[serde(default)]
+    retrain: bool,
+    #[serde(default)]
+    learned_out: Option<String>,
+    #[serde(default)]
+    retrain_dict: Option<String>,
+    #[serde(default)]
+    min_len: Option<usize>,
+    #[serde(default)]
+    blacklist: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -276,6 +298,17 @@ struct ExportPoRequest {
     game_version: Option<String>,
     #[serde(default)]
     include_all_versions: bool,
+    // New advanced options (mirror scan/validate)
+    #[serde(default)]
+    defs_root: Option<String>,
+    #[serde(default)]
+    extra_fields: Option<Vec<String>>,
+    #[serde(default)]
+    defs_dicts: Option<Vec<String>>,
+    #[serde(default)]
+    defs_type_schema: Option<String>,
+    #[serde(default)]
+    type_schema: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -825,24 +858,45 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
 
     emit_progress(&window, &state, "learn", "discover", Some("Discovering context…".to_string()), Some(10));
     let auto = autodiscover_defs_context(&scan_root).wrap_err("discover defs context")?;
+    let defs_root = request
+        .defs_root
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
+    let dict_files: Vec<PathBuf> = if let Some(list) = request.dict_files.as_ref() {
+        list.iter().map(|p| make_absolute(&scan_root, Path::new(p))).collect()
+    } else {
+        auto.dict_sources.clone()
+    };
+    let model_path = request
+        .model_path
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
+    let learned_out = request
+        .learned_out
+        .as_deref()
+        .map(|p| make_absolute(&out_dir, Path::new(p)));
+    let retrain_dict = request
+        .retrain_dict
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
     let opts = learn::LearnOptions {
         mod_root: scan_root.clone(),
-        defs_root: None,
-        dict_files: auto.dict_sources.clone(),
-        model_path: None,
-        ml_url: None,
+        defs_root,
+        dict_files,
+        model_path,
+        ml_url: request.ml_url.clone(),
         lang_dir: request
             .lang_dir
             .clone()
             .unwrap_or_else(|| "English".to_string()),
         threshold: request.threshold.unwrap_or(0.8),
-        no_ml: true,
-        retrain: false,
-        retrain_dict: None,
-        min_len: 1,
-        blacklist: Vec::new(),
+        no_ml: request.no_ml,
+        retrain: request.retrain,
+        retrain_dict,
+        min_len: request.min_len.unwrap_or(1),
+        blacklist: request.blacklist.clone().unwrap_or_default(),
         out_dir: out_dir.clone(),
-        learned_out: None,
+        learned_out,
     };
 
     emit_log(&window, &state, "debug", format!("learn options: out_dir={}", out_dir.display()));
@@ -895,13 +949,124 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     });
 
     emit_progress(&window, &state, "export", "collect", Some("Collecting units…".to_string()), Some(20));
-    let stats = export_po_with_tm(
-        &scan_root,
+
+    // Advanced: allow explicit Defs dir and custom dict/fields like scan
+    let defs_abs = request
+        .defs_root
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
+    let auto = autodiscover_defs_context(&scan_root).wrap_err("discover defs context")?;
+    let mut extra_fields: Vec<String> = auto.extra_fields.clone();
+    if let Some(ref fields) = request.extra_fields {
+        extra_fields.extend(fields.clone());
+    }
+    extra_fields.sort();
+    extra_fields.dedup();
+
+    use std::collections::{BTreeSet, HashMap};
+    let mut dict_sets: HashMap<String, BTreeSet<String>> = auto
+        .dict
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
+    let mut merge_dict = |map: HashMap<String, Vec<String>>| {
+        for (k, v) in map {
+            dict_sets.entry(k).or_default().extend(v);
+        }
+    };
+    if let Some(list) = request.defs_dicts.as_ref() {
+        for p in list {
+            let pp = make_absolute(&scan_root, Path::new(p));
+            if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                merge_dict(d.0);
+            }
+        }
+    }
+    let type_schema = request
+        .defs_type_schema
+        .as_deref()
+        .or(request.type_schema.as_deref());
+    if let Some(schema) = type_schema {
+        let pp = make_absolute(&scan_root, Path::new(schema));
+        if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
+            merge_dict(d.0);
+        }
+    }
+    let merged: HashMap<String, Vec<String>> = dict_sets
+        .into_iter()
+        .map(|(k, v)| (k, v.into_iter().collect()))
+        .collect();
+
+    // Source dir for filtering + target path mapping of DefInjected
+    let source_dir: String = request
+        .source_lang_dir
+        .clone()
+        .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .unwrap_or_else(|| "English".to_string());
+
+    // 1) Keyed units filtered to source_dir (or all if source_dir is English and lack Languages/English)
+    let keyed_units = rimloc_parsers_xml::scan_keyed_xml(&scan_root).wrap_err("scan keyed")?;
+    let mut english_map: HashMap<String, rimloc_services::TransUnit> = HashMap::new();
+    for u in keyed_units.into_iter().filter(|u| is_under_languages_dir(&u.path, &source_dir)) {
+        english_map.insert(u.key.clone(), u);
+    }
+
+    // 2) Defs meta units; map into TransUnit with target path under DefInjected using chosen source_dir
+    let defs_meta = scan_defs_with_meta(&scan_root, defs_abs.as_deref(), &merged, &extra_fields)
+        .wrap_err("scan defs meta")?;
+    for meta in defs_meta {
+        let key = meta.unit.key.clone();
+        let source = meta.unit.source.clone();
+        if source.is_none() { continue; }
+        let target_path = def_injected_target_path_for_export(&scan_root, &source_dir, &meta.def_type, &meta.unit.path);
+        let entry = english_map
+            .entry(key.clone())
+            .or_insert_with(|| { let mut u = meta.unit.clone(); u.path = target_path.clone(); u.line = None; u });
+        if entry.source.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+            entry.source = source.clone();
+        }
+        let path_str = entry.path.to_string_lossy();
+        if !path_str.contains("/DefInjected/") && !path_str.contains("\\DefInjected\\") {
+            entry.path = target_path;
+            entry.line = None;
+        }
+    }
+
+    let mut units: Vec<_> = english_map.into_values().collect();
+    units.sort_by(|a, b| (
+        a.path.to_string_lossy(), a.line.unwrap_or(0), a.key.as_str()
+    ).cmp(&(
+        b.path.to_string_lossy(), b.line.unwrap_or(0), b.key.as_str()
+    )));
+
+    // Build TM map
+    let tm_map: Option<std::collections::HashMap<String, String>> = match tm_paths.as_ref().map(|v| v.as_slice()) {
+        None => None,
+        Some([]) => None,
+        Some(roots) => {
+            let mut map = std::collections::HashMap::<String, String>::new();
+            for tm_path in roots {
+                if let Ok(units) = rimloc_parsers_xml::scan_keyed_xml(tm_path) {
+                    for u in units {
+                        if let Some(val) = u.source.as_deref() {
+                            let v = val.trim();
+                            if !v.is_empty() {
+                                map.insert(u.key, v.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+            Some(map)
+        }
+    };
+
+    // Write PO
+    let stats = rimloc_export_po::write_po_with_tm(
         &out_po_path,
+        &units,
         if request.pot { None } else { request.lang.as_deref() },
-        request.source_lang.as_deref(),
-        request.source_lang_dir.as_deref(),
-        tm_paths.as_ref().map(|v| v.as_slice()),
+        tm_map.as_ref(),
     )
     .wrap_err("export po")?;
 
@@ -911,11 +1076,6 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
         ((stats.tm_filled as f64 / stats.total as f64) * 100.0).round() as u32
     };
 
-    let source_dir = request
-        .source_lang_dir
-        .clone()
-        .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
-        .unwrap_or_else(|| "English".to_string());
     let warning = def_injected_warning(&scan_root, &source_dir);
     if let Some(ref w) = warning {
         emit_log(&window, &state, "warn", w.clone());
@@ -934,6 +1094,21 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     emit_log(&window, &state, "info", format!("export finished: {} → total={} tm_filled={} ({}%)", resp.out_po, resp.total, resp.tm_filled, resp.tm_coverage_pct));
     write_profile(&state, "export_po", t0, serde_json::json!({"total": resp.total, "tm_filled": resp.tm_filled}));
     Ok(resp)
+}
+
+// Local helper: derive DefInjected target path for a given Defs file
+fn def_injected_target_path_for_export(scan_root: &Path, lang_dir: &str, def_type: &str, source_path: &Path) -> PathBuf {
+    use std::ffi::OsStr;
+    let file_name = source_path
+        .file_name()
+        .map(|s| s.to_owned())
+        .unwrap_or_else(|| OsStr::new("Defs.xml").to_owned());
+    scan_root
+        .join("Languages")
+        .join(lang_dir)
+        .join("DefInjected")
+        .join(def_type)
+        .join(file_name)
 }
 
 #[tauri::command]
@@ -1294,6 +1469,166 @@ fn resolve_game_version_root(
     Ok((base.to_path_buf(), None))
 }
 
+// --- Validate PO (GUI) ---
+#[derive(Debug, Deserialize)]
+struct ValidatePoRequest { po_path: String, #[serde(default)] strict: bool }
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ValidatePoMismatch { context: Option<String>, reference: Option<String>, msgid: String, msgstr: String, expected_placeholders: Vec<String>, got_placeholders: Vec<String> }
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ValidatePoResponse { checked: usize, mismatches: Vec<ValidatePoMismatch> }
+
+fn extract_placeholders_cli_like(s: &str) -> BTreeSet<String> {
+    // same patterns as CLI: %.. and {...}
+    static RE_PCT: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
+    static RE_BRACE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
+    let mut set = BTreeSet::new();
+    let re1 = RE_PCT.get_or_init(|| regex::Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
+    for m in re1.find_iter(s) { set.insert(m.as_str().to_string()); }
+    let re2 = RE_BRACE.get_or_init(|| regex::Regex::new(r"\{[^}]+\}").unwrap());
+    for m in re2.find_iter(s) { set.insert(m.as_str().to_string()); }
+    set
+}
+
+#[tauri::command]
+fn validate_po_gui(_window: Window, _state: State<LogState>, req: ValidatePoRequest) -> Result<ValidatePoResponse, ApiError> {
+    use std::io::BufRead;
+    let file = std::fs::File::open(&req.po_path).map_err(ApiError::from)?;
+    let rdr = std::io::BufReader::new(file);
+    let mut ctx: Option<String> = None;
+    let mut id = String::new();
+    let mut strv = String::new();
+    let mut reference: Option<String> = None;
+    enum Mode { None, InId, InStr }
+    let mut mode = Mode::None;
+    let mut entries: Vec<(Option<String>, String, String, Option<String>)> = Vec::new();
+    let mut push = |ctx: &mut Option<String>, id: &mut String, strv: &mut String, reference: &mut Option<String>, entries: &mut Vec<(Option<String>, String, String, Option<String>)>| {
+        if !id.is_empty() || !strv.is_empty() || ctx.is_some() || reference.is_some() {
+            entries.push((ctx.clone(), std::mem::take(id), std::mem::take(strv), reference.clone()));
+            *ctx = None; *reference = None;
+        }
+    };
+    for line in rdr.lines() {
+        let t = line.map_err(ApiError::from)?.trim().to_string();
+        if t.is_empty() { push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries); mode = Mode::None; continue; }
+        if let Some(rest) = t.strip_prefix("#:") { reference = Some(rest.trim().to_string()); continue; }
+        if let Some(rest) = t.strip_prefix("msgctxt ") { push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries); ctx = Some(unquote(&rest)); mode = Mode::None; continue; }
+        if let Some(rest) = t.strip_prefix("msgid ") { push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries); id = unquote(&rest); mode = Mode::InId; continue; }
+        if let Some(rest) = t.strip_prefix("msgstr ") { strv = unquote(&rest); mode = Mode::InStr; continue; }
+        if matches!(mode, Mode::InId | Mode::InStr) && t.starts_with('"') {
+            let chunk = unquote(&t);
+            match mode { Mode::InId => id.push_str(&chunk), Mode::InStr => strv.push_str(&chunk), Mode::None => {} }
+            continue;
+        }
+    }
+    push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries);
+
+    let mut mismatches: Vec<ValidatePoMismatch> = Vec::new();
+    let mut checked = 0usize;
+    for (ctx, msgid, msgstr, reference) in entries {
+        if msgid.is_empty() { continue; }
+        if msgstr.trim().is_empty() { continue; }
+        checked += 1;
+        let src_ph = extract_placeholders_cli_like(&msgid);
+        let dst_ph = extract_placeholders_cli_like(&msgstr);
+        if src_ph != dst_ph {
+            mismatches.push(ValidatePoMismatch {
+                context: ctx,
+                reference,
+                msgid,
+                msgstr,
+                expected_placeholders: src_ph.into_iter().collect(),
+                got_placeholders: dst_ph.into_iter().collect(),
+            });
+        }
+    }
+    Ok(ValidatePoResponse { checked, mismatches })
+}
+
+fn unquote(s: &str) -> String {
+    let raw = s.trim().trim_start_matches('"').trim_end_matches('"');
+    let mut out = String::new();
+    let mut it = raw.chars().peekable();
+    while let Some(c) = it.next() {
+        if c == '\\' { if let Some(n) = it.next() { out.push(match n { 'n' => '\n', 't' => '\t', 'r' => '\r', '\\' => '\\', '"' => '"', x => x }); } else { out.push('\\'); } }
+        else { out.push(c); }
+    }
+    out
+}
+
+// --- Learn Patches (scan Patches/ texts) ---
+#[derive(Debug, Deserialize)]
+struct LearnPatchesRequest { root: String, #[serde(default)] min_len: Option<usize>, #[serde(default)] out_json: Option<String>, #[serde(default)] game_version: Option<String> }
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct LearnPatchesResponse { out_json: String, suggested_xml: Option<String>, total: usize }
+
+#[tauri::command]
+fn learn_patches_cmd(_window: Window, _state: State<LogState>, req: LearnPatchesRequest) -> Result<LearnPatchesResponse, ApiError> {
+    let root = PathBuf::from(&req.root);
+    let (scan_root, _version) = resolve_game_version_root(&root, req.game_version.as_deref())?;
+    let min_len = req.min_len.unwrap_or(1);
+    let cands = rimloc_services::learn::patches::scan_patches_texts(&scan_root, min_len).wrap_err("scan patches")?;
+    let out_dir = scan_root.join("learn_out");
+    let out_json = req.out_json.as_deref().map(PathBuf::from).unwrap_or_else(|| out_dir.join("patches_texts.json"));
+    if let Some(parent) = out_json.parent() { std::fs::create_dir_all(parent).ok(); }
+    let f = std::fs::File::create(&out_json)?;
+    serde_json::to_writer_pretty(f, &cands).ok();
+    // Also suggested XML if there are inferred entries
+    let mut inferred: Vec<_> = cands.iter().filter_map(|c| c.inferred.as_ref().map(|i| (i, &c.value))).collect();
+    inferred.sort_by(|a,b| (a.0.def_type.as_str(), a.0.def_name.as_str(), a.0.field_path.as_str()).cmp(&(b.0.def_type.as_str(), b.0.def_name.as_str(), b.0.field_path.as_str())));
+    let mut suggested: Option<PathBuf> = None;
+    if !inferred.is_empty() {
+        std::fs::create_dir_all(&out_dir).ok();
+        let sug = out_dir.join("_SuggestedFromPatches.xml");
+        let mut f = std::fs::File::create(&sug)?;
+        use std::io::Write;
+        writeln!(f, "<LanguageData>")?;
+        let mut current_ty: Option<&str> = None;
+        for (inf, val) in inferred {
+            if current_ty.map(|t| t != inf.def_type.as_str()).unwrap_or(true) { current_ty = Some(&inf.def_type); writeln!(f, "  <!-- {} -->", inf.def_type)?; }
+            let key = format!("{}.{}", inf.def_name, inf.field_path);
+            let en = rimloc_services::learn::export::escape_xml_comment(val);
+            writeln!(f, "  <!-- EN: {} -->", en)?;
+            writeln!(f, "  <{}></{}>", key, key)?;
+        }
+        writeln!(f, "</LanguageData>")?;
+        suggested = Some(sug);
+    }
+    Ok(LearnPatchesResponse { out_json: out_json.display().to_string(), suggested_xml: suggested.map(|p| p.display().to_string()), total: cands.len() })
+}
+
+// --- Load CLI FTL (best-effort simple parser) ---
+#[tauri::command]
+fn get_cli_i18n(lang: String) -> Result<std::collections::HashMap<String, String>, ApiError> {
+    use std::collections::HashMap;
+    use std::io::BufRead;
+    let here = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let ftl = here
+        .join("../../../crates/rimloc-cli/i18n")
+        .join(&lang)
+        .join("rimloc.ftl");
+    let mut map: HashMap<String, String> = HashMap::new();
+    if !ftl.exists() {
+        return Ok(map);
+    }
+    let file = std::fs::File::open(&ftl)?;
+    let rdr = std::io::BufReader::new(file);
+    let re = regex::Regex::new(r"^\s*([A-Za-z0-9_.-]+)\s*=\s*(.+)$").unwrap();
+    for line in rdr.lines() {
+        let l = line?;
+        let s = l.trim();
+        if s.is_empty() || s.starts_with('#') { continue; }
+        if let Some(cap) = re.captures(s) {
+            let key = cap.get(1).unwrap().as_str().to_string();
+            let val = cap.get(2).unwrap().as_str().to_string();
+            map.insert(key, val);
+        }
+    }
+    Ok(map)
+}
+
 #[derive(Debug, Clone)]
 struct VersionEntry {
     name: String,
@@ -1432,6 +1767,10 @@ fn main() {
             ,morph_cmd
             ,learn_keyed_cmd
             ,dump_schemas
+            ,get_profile
+            ,validate_po_gui
+            ,learn_patches_cmd
+            ,get_cli_i18n
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1657,6 +1996,8 @@ struct LearnKeyedRequest {
     source_lang_dir: Option<String>,
     target_lang_dir: Option<String>,
     #[serde(default)]
+    game_version: Option<String>,
+    #[serde(default)]
     dict_files: Option<Vec<String>>,
     #[serde(default)]
     min_len: Option<usize>,
@@ -1672,6 +2013,16 @@ struct LearnKeyedRequest {
     out_dir: Option<String>,
     #[serde(default)]
     from_defs_special: bool,
+    #[serde(default)]
+    ml_url: Option<String>,
+    #[serde(default)]
+    no_ml: bool,
+    #[serde(default)]
+    retrain: bool,
+    #[serde(default)]
+    retrain_dict: Option<String>,
+    #[serde(default)]
+    learned_out: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1682,8 +2033,12 @@ struct LearnKeyedResponse { processed: usize, suggested: String, missing: String
 fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedRequest) -> Result<LearnKeyedResponse, ApiError> {
     append_log(&state.path, "INFO", &format!("learn_keyed: src={:?} trg={:?}", request.source_lang_dir, request.target_lang_dir));
     let root = PathBuf::from(&request.root);
-    let scan_root = root.clone();
-    let out_dir = request.out_dir.as_deref().map(PathBuf::from).unwrap_or_else(|| scan_root.join("_learn"));
+    let (scan_root, _version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+    let out_dir = request
+        .out_dir
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)))
+        .unwrap_or_else(|| scan_root.join("_learn"));
     std::fs::create_dir_all(&out_dir)?;
 
     // load dicts
@@ -1697,6 +2052,14 @@ fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedR
     let src_dir = request.source_lang_dir.clone().unwrap_or_else(|| "English".to_string());
     let trg_dir = request.target_lang_dir.clone().unwrap_or_else(|| "Russian".to_string());
     if request.from_defs_special { std::env::set_var("RIMLOC_LEARN_KEYED_FROM_DEFS", "1"); }
+    // Classifier
+    let mut classifier: Box<dyn rimloc_services::learn::ml::Classifier> = if request.no_ml {
+        Box::new(rimloc_services::learn::ml::DummyClassifier::new(1.0))
+    } else if let Some(url) = &request.ml_url {
+        Box::new(rimloc_services::learn::ml::RestClassifier::new(url.clone()))
+    } else {
+        Box::new(rimloc_services::learn::ml::DummyClassifier::new(0.9))
+    };
     let missing = rimloc_services::learn::keyed::learn_keyed(
         &scan_root,
         &src_dir,
@@ -1707,8 +2070,43 @@ fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedR
         request.must_contain_letter,
         &request.exclude_substr.clone().unwrap_or_default(),
         request.threshold.unwrap_or(0.8),
-        &mut rimloc_services::learn::ml::DummyClassifier::new(0.9),
+        classifier.as_mut(),
     )?;
+
+    let learned_out = request
+        .learned_out
+        .as_deref()
+        .map(|p| make_absolute(&out_dir, Path::new(p)));
+    // Save learned set for audit
+    {
+        #[derive(serde::Serialize)]
+        #[allow(non_snake_case)]
+        struct Row<'a> { key: &'a str, value: &'a str, confidence: f32, sourceFile: String, learnedAt: String }
+        let now = chrono::Utc::now().to_rfc3339();
+        let rows: Vec<Row> = missing
+            .iter()
+            .map(|c| Row { key: &c.key, value: &c.value, confidence: c.confidence.unwrap_or(1.0), sourceFile: c.source_file.display().to_string(), learnedAt: now.clone() })
+            .collect();
+        let path = learned_out.unwrap_or_else(|| out_dir.join("learned_keyed.json"));
+        let file = std::fs::File::create(path)?;
+        serde_json::to_writer_pretty(file, &rows)?;
+    }
+
+    // Retrain: update a dict file if requested
+    if request.retrain {
+        let out_path = if let Some(p) = request.retrain_dict.as_deref() {
+            make_absolute(&scan_root, Path::new(p))
+        } else {
+            out_dir.join("keyed_dict.updated.json")
+        };
+        #[derive(serde::Serialize)]
+        struct KD { include: Vec<String>, #[serde(skip_serializing_if = "Option::is_none")] exclude: Option<Vec<String>> }
+        let mut include: Vec<String> = Vec::new();
+        for c in &missing { include.push(format!("^{}$", regex::escape(&c.key))); }
+        include.sort(); include.dedup();
+        let file = std::fs::File::create(out_path)?;
+        serde_json::to_writer_pretty(file, &KD { include, exclude: None })?;
+    }
 
     let miss = out_dir.join("missing_keyed.json");
     rimloc_services::learn::keyed::write_keyed_missing_json(&miss, &missing)?;
@@ -1740,6 +2138,54 @@ fn dump_schemas(_window: Window, _state: State<LogState>, req: DumpSchemasReques
     dump!(rimloc_domain::HealthReport, "health_report.schema.json");
     dump!(rimloc_domain::AnnotatePlan, "annotate_plan.schema.json");
     Ok(out_dir.display().to_string())
+}
+
+// --- Profiler: return last N entries of profile.jsonl with per-command summary ---
+#[derive(Debug, Deserialize)]
+struct ProfileRequest { #[serde(default)] limit: Option<usize> }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileEntryOut { ts: String, command: String, duration_ms: u64, extra: serde_json::Value }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileCommandRow { command: String, count: usize, total_ms: u64, max_ms: u64, avg_ms: f64 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileResponse { entries: Vec<ProfileEntryOut>, per_command: Vec<ProfileCommandRow> }
+
+#[tauri::command]
+fn get_profile(state: State<LogState>, req: ProfileRequest) -> Result<ProfileResponse, ApiError> {
+    let lim = req.limit.unwrap_or(200).min(5000);
+    let mut entries: Vec<ProfileEntryOut> = Vec::new();
+    if let Some(dir) = state.path.parent() {
+        let file = dir.join("profile.jsonl");
+        if file.exists() {
+            let content = std::fs::read_to_string(&file)?;
+            for line in content.lines().rev().take(lim) {
+                if line.trim().is_empty() { continue; }
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
+                    let ts = v.get("ts").and_then(|x| x.as_str()).unwrap_or("").to_string();
+                    let command = v.get("command").and_then(|x| x.as_str()).unwrap_or("").to_string();
+                    let duration_ms = v.get("duration_ms").and_then(|x| x.as_u64()).unwrap_or(0);
+                    let extra = v.get("extra").cloned().unwrap_or(serde_json::json!({}));
+                    entries.push(ProfileEntryOut { ts, command, duration_ms, extra });
+                }
+            }
+            entries.reverse();
+        }
+    }
+    use std::collections::BTreeMap;
+    let mut map: BTreeMap<String, (usize, u64, u64)> = BTreeMap::new();
+    for e in &entries {
+        let ent = map.entry(e.command.clone()).or_insert((0, 0, 0));
+        ent.0 += 1; ent.1 += e.duration_ms; if e.duration_ms > ent.2 { ent.2 = e.duration_ms; }
+    }
+    let mut per_command: Vec<ProfileCommandRow> = map.into_iter().map(|(k,(c,tot,max))| ProfileCommandRow{ command: k, count: c, total_ms: tot, max_ms: max, avg_ms: if c==0 {0.0} else {(tot as f64)/(c as f64)} }).collect();
+    per_command.sort_by(|a,b| b.avg_ms.partial_cmp(&a.avg_ms).unwrap_or(std::cmp::Ordering::Equal));
+    Ok(ProfileResponse { entries, per_command })
 }
 
 #[tauri::command]

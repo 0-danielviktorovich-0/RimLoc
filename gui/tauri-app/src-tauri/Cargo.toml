@@ -21,11 +21,13 @@ rimloc-domain = { path = "../../../crates/rimloc-domain" }
 rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
 rimloc-export-csv = { path = "../../../crates/rimloc-export-csv" }
 rimloc-parsers-xml = { path = "../../../crates/rimloc-parsers-xml" }
+rimloc-export-po = { path = "../../../crates/rimloc-export-po" }
 schemars = "0.8"
 color-eyre = "0.6"
 walkdir = "2"
 dirs = "5"
 once_cell = "1"
+regex = "1"
 
 [features]
 default = ["custom-protocol"]
