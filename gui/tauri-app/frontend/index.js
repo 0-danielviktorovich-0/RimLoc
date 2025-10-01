@@ -1292,6 +1292,11 @@ function updateProgress(action, pct, step, message) {
 }
 
 // --- i18n ---
+// Optional alias mapping for gradual key unification GUI↔CLI
+const I18N_ALIAS = {
+  // example: 'exporting': 'exporting_po'
+};
+
 const I18N = {
   en: {
     settings: "Settings",
@@ -1339,6 +1344,8 @@ const I18N = {
     export_pot: "Write POT (template)",
     export_empty: "No export performed yet.",
     save_report: "Save report…",
+    saving_validation: "Saving validation…",
+    saving_diff: "Saving diff…",
     saved: "Saved",
     saved_to: "Saved to",
     saving_json: "Saving JSON…",
@@ -1572,6 +1579,8 @@ const I18N = {
     export_pot: "Писать POT (шаблон)",
     export_empty: "Экспорт ещё не выполнялся.",
     save_report: "Сохранить отчёт…",
+    saving_validation: "Сохранение проверки…",
+    saving_diff: "Сохранение сравнения…",
     saved: "Сохранено",
     saved_to: "Сохранено в",
     saving_json: "Сохранение JSON…",
@@ -1770,7 +1779,13 @@ function detectLocale() {
 
 function tr(key) {
   const loc = detectLocale();
-  return I18N[loc]?.[key] ?? I18N.en[key] ?? key;
+  const lk = I18N[loc]?.[key];
+  if (lk) return lk;
+  const alias = I18N_ALIAS[key];
+  if (alias) {
+    return I18N[loc]?.[alias] ?? I18N.en[alias] ?? I18N.en[key] ?? key;
+  }
+  return I18N.en[key] ?? key;
 }
 
 function applyI18n() {
@@ -1922,7 +1937,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
   // Validate save
   const valSave = $("validate-save"); if (valSave) valSave.addEventListener("click", async () => {
-    const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
+    const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
     const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/validate.json` });
     if (!path) return; const payload = {
       root,
@@ -1933,13 +1948,13 @@ document.addEventListener('DOMContentLoaded', () => {
       extra_fields: (val("validate-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
       out_json: path,
     };
-    await runAction("Saving validation…", () => tauriInvoke("validate_mod", { request: payload }));
-    showToast(`Saved: ${path}`);
+    await runAction(tr('saving_validation'), () => tauriInvoke("validate_mod", { request: payload }));
+    showToast(`${tr('saved')}: ${path}`);
   });
 
   // Diff save
   const diffSave = $("diff-save"); if (diffSave) diffSave.addEventListener("click", async () => {
-    const root = val("mod-root"); if (!root) return showToast("Select mod root first", true);
+    const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
     const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/diff.json` });
     if (!path) return; const payload = {
       root,
@@ -1950,8 +1965,8 @@ document.addEventListener('DOMContentLoaded', () => {
       baseline_po: val("diff-po") || null,
       out_json: path,
     };
-    await runAction("Saving diff…", () => tauriInvoke("diff_xml_cmd", { request: payload }));
-    showToast(`Saved: ${path}`);
+    await runAction(tr('saving_diff'), () => tauriInvoke("diff_xml_cmd", { request: payload }));
+    showToast(`${tr('saved')}: ${path}`);
 });
 
 // === Preview panel ===
