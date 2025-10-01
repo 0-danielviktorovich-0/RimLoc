@@ -46,9 +46,19 @@ fn download_repo_zip(repo: &str, branch: Option<&str>) -> Result<Vec<u8>> {
         .user_agent("RimLoc/cli")
         .build()
         .unwrap();
-    let mut resp = client.get(url).send()?;
+    let mut resp = client
+        .get(url)
+        .header(reqwest::header::ACCEPT, "application/zip")
+        .send()?;
     let mut buf: Vec<u8> = Vec::new();
     resp.copy_to(&mut buf)?;
+    // Quick sanity check: ZIP files should start with PK\x03\x04
+    if buf.len() < 4 || &buf[..2] != b"PK" {
+        return Err(color_eyre::eyre::eyre!(
+            "Downloaded content is not a zip archive (repo={}, branch={:?})",
+            repo, branch
+        ));
+    }
     Ok(buf)
 }
 

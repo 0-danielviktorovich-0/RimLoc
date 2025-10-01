@@ -36,9 +36,7 @@
       <section class="panel" id="settings-panel">
         <div class="panel-head">
           <h2 data-i18n="settings">Settings</h2>
-          <div class="actions">
-            <button id="open-debug-modal" type="button" data-i18n="open_debug">Debug…</button>
-          </div>
+          <div class="actions"></div>
         </div>
         <div class="field-grid">
           <label>
@@ -66,19 +64,19 @@
         <div class="field-group">
           <label for="mod-root" data-i18n="mod_root">Mod root</label>
           <div class="path-input">
-            <input id="mod-root" type="text" placeholder="/path/to/mod" autocomplete="off" />
+            <input id="mod-root" type="text" placeholder="/path/to/mod" data-ph="ph.path.mod" autocomplete="off" />
             <button type="button" data-action="pick-root" data-i18n="browse">Browse…</button>
           </div>
         </div>
         <div class="field-grid">
-          <label data-i18n="game_version">Game version (optional)
-            <input id="game-version" type="text" placeholder="e.g. 1.5" autocomplete="off" />
+          <label data-i18n="game_version">
+            <input id="game-version" type="text" placeholder="e.g. 1.5" data-ph="ph.eg_game_ver" autocomplete="off" />
           </label>
           <label data-i18n="target_lang">
-            <input id="target-lang" type="text" placeholder="ru" autocomplete="off" />
+            <input id="target-lang" type="text" placeholder="ru" data-ph="ph.lang_ru" autocomplete="off" />
           </label>
           <label data-i18n="source_lang">
-            <input id="source-lang" type="text" placeholder="auto" autocomplete="off" />
+            <input id="source-lang" type="text" placeholder="auto" data-ph="ph.lang_auto" autocomplete="off" />
           </label>
         </div>
       </section>
@@ -87,7 +85,7 @@
         <div class="panel-head">
           <h2 data-i18n="preview_title">Preview EN → Target</h2>
           <div class="actions">
-            <input id="preview-filter" type="text" placeholder="filter keys…" />
+            <input id="preview-filter" type="text" placeholder="filter keys…" data-ph="ph.filter_keys" />
             <label>
               <input id="preview-missing-only" type="checkbox" />
               <span data-i18n="preview_missing_only">Missing only</span>
@@ -140,21 +138,21 @@
           </label>
           <label data-i18n="defs_root">Defs root (optional)
             <div class="path-input">
-              <input id="scan-defs-root" type="text" placeholder="/path/to/Defs" autocomplete="off" />
+              <input id="scan-defs-root" type="text" placeholder="/path/to/Defs" data-ph="ph.path.defs" autocomplete="off" />
               <button type="button" data-action="pick-scan-defs" data-i18n="browse">Browse…</button>
             </div>
           </label>
-          <label data-i18n="extra_fields">Extra fields (comma-separated)
-            <input id="scan-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
+          <label data-i18n="extra_fields">
+            <input id="scan-extra-fields" type="text" placeholder="label,description" data-ph="ph.extra_fields" autocomplete="off" />
           </label>
           <label>
             <span>Defs dictionaries (one per line)</span>
-            <textarea id="scan-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+            <textarea id="scan-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json" data-ph="ph.dicts_lines"></textarea>
           </label>
           <label>
             <span data-i18n="type_schema">Type schema (optional)</span>
             <div class="path-input">
-              <input id="scan-type-schema" type="text" placeholder="/path/to/schema.json" autocomplete="off" />
+              <input id="scan-type-schema" type="text" placeholder="/path/to/schema.json" data-ph="ph.path.schema" autocomplete="off" />
               <button type="button" data-action="pick-scan-schema" data-i18n="browse">Browse…</button>
             </div>
           </label>
@@ -168,7 +166,7 @@
           </label>
           <label>
             <input id="scan-with-plugins" type="checkbox" />
-            <span>Run plugins</span>
+          <span data-i18n="run_plugins">Run plugins</span>
           </label>
         </div>
         <div class="scan-summary" id="scan-summary" data-i18n="scan_empty">No scan performed yet.</div>
@@ -199,16 +197,16 @@
         <div class="field-grid">
           <label data-i18n="out_folder">
             <div class="path-input">
-              <input id="learn-out" type="text" placeholder="_learn" autocomplete="off" />
+              <input id="learn-out" type="text" placeholder="_learn" data-ph="ph.out_dir" autocomplete="off" />
               <button type="button" data-action="pick-learn-out" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="source_lang_folder">
-            <input id="learn-lang-dir" type="text" placeholder="English" autocomplete="off" />
+            <input id="learn-lang-dir" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
           </label>
           <label>
             <span>Threshold</span>
-            <input id="learn-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" autocomplete="off" />
+            <input id="learn-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" data-ph="ph.threshold08" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="learn-result" data-i18n="learn_empty">No learn run yet.</div>
@@ -225,15 +223,15 @@
         <div class="field-grid">
           <label data-i18n="po_out_file">
             <div class="path-input">
-              <input id="po-output" type="text" placeholder="_learn/mod.po" autocomplete="off" />
+              <input id="po-output" type="text" placeholder="_learn/mod.po" data-ph="ph.path.po" autocomplete="off" />
               <button type="button" data-action="pick-po-output" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="tm_folders">
-            <textarea id="tm-roots" rows="3" placeholder="/path/to/reference-mod"></textarea>
+            <textarea id="tm-roots" rows="3" placeholder="/path/to/reference-mod" data-ph="ph.tm_roots"></textarea>
           </label>
           <label data-i18n="source_lang_folder">
-            <input id="export-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+            <input id="export-source-lang-dir" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
           </label>
           <label>
             <input id="export-pot" type="checkbox" />
@@ -256,29 +254,29 @@
           </div>
         </div>
         <div class="field-grid">
-          <label data-i18n="source_lang">Source language code
-            <input id="validate-source-lang" type="text" placeholder="auto" autocomplete="off" />
+          <label data-i18n="source_lang">
+            <input id="validate-source-lang" type="text" placeholder="auto" data-ph="ph.lang_auto" autocomplete="off" />
           </label>
           <label data-i18n="source_lang_folder">
-            <input id="validate-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+            <input id="validate-source-lang-dir" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
           </label>
           <label data-i18n="defs_root">
             <div class="path-input">
-              <input id="validate-defs-root" type="text" placeholder="/path/to/Defs" autocomplete="off" />
+              <input id="validate-defs-root" type="text" placeholder="/path/to/Defs" data-ph="ph.path.defs" autocomplete="off" />
               <button type="button" data-action="pick-validate-defs" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="extra_fields">
-            <input id="validate-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
+            <input id="validate-extra-fields" type="text" placeholder="label,description" data-ph="ph.extra_fields" autocomplete="off" />
           </label>
           <label>
             <span>Defs dictionaries (one per line)</span>
-            <textarea id="validate-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+            <textarea id="validate-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json" data-ph="ph.dicts_lines"></textarea>
           </label>
           <label>
             <span>Type schema (optional)</span>
             <div class="path-input">
-              <input id="validate-type-schema" type="text" placeholder="/path/to/schema.json" autocomplete="off" />
+              <input id="validate-type-schema" type="text" placeholder="/path/to/schema.json" data-ph="ph.path.schema" autocomplete="off" />
               <button type="button" data-action="pick-validate-schema" data-i18n="browse">Browse…</button>
             </div>
           </label>
@@ -290,11 +288,11 @@
             <input id="validate-compare-ph" type="checkbox" />
             <span data-i18n="validate_compare_ph">Compare placeholders EN↔Target</span>
           </label>
-          <label data-i18n="target_lang">Target language code
-            <input id="validate-target-lang" type="text" placeholder="ru" autocomplete="off" />
+          <label data-i18n="target_lang">
+            <input id="validate-target-lang" type="text" placeholder="ru" data-ph="ph.lang_ru" autocomplete="off" />
           </label>
           <label data-i18n="target_lang_folder">
-            <input id="validate-target-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+            <input id="validate-target-lang-dir" type="text" placeholder="Russian" data-ph="ph.lang_ru_dir" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="validate-result" data-i18n="validate_empty">No validation run yet.</div>
@@ -310,7 +308,7 @@
         </div>
         <div class="field-grid">
           <label data-i18n="source_lang_folder">
-            <input id="health-lang-dir" type="text" placeholder="English" autocomplete="off" />
+            <input id="health-lang-dir" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
           </label>
           <label>
             <input id="health-strict" type="checkbox" />
@@ -318,11 +316,11 @@
           </label>
           <label>
             <span data-i18n="health_only">Only categories</span>
-            <input id="health-only" type="text" placeholder="duplicate,empty,placeholder-check" autocomplete="off" />
+            <input id="health-only" type="text" placeholder="duplicate,empty,placeholder-check" data-ph="ph.categories_only_csv" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="health_except">Except categories</span>
-            <input id="health-except" type="text" placeholder="placeholder-check" autocomplete="off" />
+            <input id="health-except" type="text" placeholder="placeholder-check" data-ph="ph.categories_except_csv" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="health-result" data-i18n="health_empty">No health check yet.</div>
@@ -336,19 +334,19 @@
           </div>
         </div>
         <div class="field-grid">
-          <label data-i18n="po_file">PO file
+          <label data-i18n="po_file">
             <div class="path-input">
-              <input id="import-po" type="text" placeholder="/path/to/translation.po" autocomplete="off" />
+              <input id="import-po" type="text" placeholder="/path/to/translation.po" data-ph="ph.path.po" autocomplete="off" />
               <button type="button" data-action="pick-import-po" data-i18n="browse">Browse…</button>
             </div>
           </label>
-          <label data-i18n="target_lang_folder">Target language folder
-            <input id="import-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          <label data-i18n="target_lang_folder">
+            <input id="import-lang-dir" type="text" placeholder="Russian" data-ph="ph.lang_ru_dir" autocomplete="off" />
           </label>
           <label id="import-out-xml-wrap" style="display:none">
             <span>Output XML path</span>
             <div class="path-input">
-              <input id="import-out-xml" type="text" placeholder="/path/to/_Imported.xml" autocomplete="off" />
+              <input id="import-out-xml" type="text" placeholder="/path/to/_Imported.xml" data-ph="ph.path.imported_xml" autocomplete="off" />
               <button type="button" data-action="pick-import-out-xml" data-i18n="browse">Browse…</button>
             </div>
           </label>
@@ -392,9 +390,9 @@
           </div>
         </div>
         <div class="field-grid">
-          <label data-i18n="po_file">PO file
+          <label data-i18n="po_file">
             <div class="path-input">
-              <input id="build-po" type="text" placeholder="/path/to/translation.po" autocomplete="off" />
+              <input id="build-po" type="text" placeholder="/path/to/translation.po" data-ph="ph.path.po" autocomplete="off" />
               <button type="button" data-action="pick-build-po" data-i18n="browse">Browse…</button>
             </div>
           </label>
@@ -411,24 +409,24 @@
           </label>
           <label data-i18n="out_folder">
             <div class="path-input">
-              <input id="build-out" type="text" placeholder="/path/to/mod-out" autocomplete="off" />
+              <input id="build-out" type="text" placeholder="/path/to/mod-out" data-ph="ph.path.out_mod" autocomplete="off" />
               <button type="button" data-action="pick-build-out" data-i18n="browse">Browse…</button>
             </div>
           </label>
-          <label data-i18n="target_lang_folder">Target language folder
-            <input id="build-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+          <label data-i18n="target_lang_folder">
+            <input id="build-lang-dir" type="text" placeholder="Russian" data-ph="ph.lang_ru_dir" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="mod_name">Mod name</span>
-            <input id="build-name" type="text" placeholder="RimLoc Translation" autocomplete="off" />
+            <input id="build-name" type="text" placeholder="RimLoc Translation" data-ph="ph.mod_name" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="package_id">Package ID</span>
-            <input id="build-package" type="text" placeholder="your.name.rimloc" autocomplete="off" />
+            <input id="build-package" type="text" placeholder="your.name.rimloc" data-ph="ph.package_id" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="rw_version">RimWorld version</span>
-            <input id="build-rw" type="text" placeholder="1.5" autocomplete="off" />
+            <input id="build-rw" type="text" placeholder="1.5" data-ph="ph.rw_version" autocomplete="off" />
           </label>
           <label>
             <input id="build-dedupe" type="checkbox" />
@@ -452,36 +450,36 @@
         </div>
         <div class="field-grid">
           <label data-i18n="source_lang_folder">
-            <input id="diff-source-lang-dir" type="text" placeholder="English" autocomplete="off" />
+            <input id="diff-source-lang-dir" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
           </label>
           <label data-i18n="target_lang_folder">
-            <input id="diff-target-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+            <input id="diff-target-lang-dir" type="text" placeholder="Russian" data-ph="ph.lang_ru_dir" autocomplete="off" />
           </label>
           <label data-i18n="defs_root">Defs root (optional)
             <div class="path-input">
-              <input id="diff-defs-root" type="text" placeholder="/path/to/Defs" autocomplete="off" />
+              <input id="diff-defs-root" type="text" placeholder="/path/to/Defs" data-ph="ph.path.defs" autocomplete="off" />
               <button type="button" data-action="pick-diff-defs" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="po_file">Baseline PO (optional)
             <div class="path-input">
-              <input id="diff-po" type="text" placeholder="/path/to/baseline.po" autocomplete="off" />
+              <input id="diff-po" type="text" placeholder="/path/to/baseline.po" data-ph="ph.path.baseline_po" autocomplete="off" />
               <button type="button" data-action="pick-diff-po" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label>
             <span>Defs dictionaries (one per line)</span>
-            <textarea id="diff-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+            <textarea id="diff-defs-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json" data-ph="ph.dicts_lines"></textarea>
           </label>
           <label>
             <span>Type schema (optional)</span>
             <div class="path-input">
-              <input id="diff-type-schema" type="text" placeholder="/path/to/schema.json" autocomplete="off" />
+              <input id="diff-type-schema" type="text" placeholder="/path/to/schema.json" data-ph="ph.path.schema" autocomplete="off" />
               <button type="button" data-action="pick-diff-schema" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="extra_fields">Extra fields (comma-separated)
-            <input id="diff-extra-fields" type="text" placeholder="label,description" autocomplete="off" />
+            <input id="diff-extra-fields" type="text" placeholder="label,description" data-ph="ph.extra_fields" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="diff-result" data-i18n="diff_empty">No diff run yet.</div>
@@ -489,14 +487,14 @@
 
       <section class="panel" id="morph-panel">
         <div class="panel-head">
-          <h2>Morph (Cases/Plural/Gender)</h2>
+          <h2 data-i18n="morph_title">Morph (Cases/Plural/Gender)</h2>
           <div class="actions">
-            <button type="button" id="morph-run">Generate</button>
+            <button type="button" id="morph-run" data-i18n="morph_generate">Generate</button>
           </div>
         </div>
         <div class="field-grid">
           <label data-i18n="target_lang_folder">Target language folder
-            <input id="morph-target-lang-dir" type="text" placeholder="Russian" autocomplete="off" />
+            <input id="morph-target-lang-dir" type="text" placeholder="Russian" data-ph="ph.lang_ru_dir" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="morph_provider">Provider</span>
@@ -512,23 +510,23 @@
           </label>
           <label>
             <span data-i18n="morph_filter">Filter key regex</span>
-            <input id="morph-filter" type="text" placeholder=".*" autocomplete="off" />
+            <input id="morph-filter" type="text" placeholder=".*" data-ph="ph.regex_all" autocomplete="off" />
           </label>
           <label>
-            <span>Limit</span>
+            <span data-i18n="limit">Limit</span>
             <input id="morph-limit" type="number" placeholder="" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="timeout_ms">Timeout, ms</span>
-            <input id="morph-timeout" type="number" placeholder="1500" autocomplete="off" />
+            <input id="morph-timeout" type="number" placeholder="1500" data-ph="ph.timeout_ms" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="cache_size">Cache size</span>
-            <input id="morph-cache" type="number" placeholder="1024" autocomplete="off" />
+            <input id="morph-cache" type="number" placeholder="1024" data-ph="ph.cache_size" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="pymorphy_url">Pymorphy URL</span>
-            <input id="morph-pym-url" type="text" placeholder="http://localhost:5000" autocomplete="off" />
+            <input id="morph-pym-url" type="text" placeholder="http://localhost:5000" data-ph="ph.pym_url" autocomplete="off" />
           </label>
         </div>
         <div class="result" id="morph-result">—</div>
@@ -536,43 +534,43 @@
 
       <section class="panel" id="learn-keyed-panel">
         <div class="panel-head">
-          <h2>Learn Keyed</h2>
+          <h2 data-i18n="learn_keyed_title">Learn Keyed</h2>
           <div class="actions">
-            <button type="button" id="learn-keyed-run">Run</button>
+            <button type="button" id="learn-keyed-run" data-i18n="run">Run</button>
           </div>
         </div>
         <div class="field-grid">
           <label data-i18n="out_folder">Output folder
             <div class="path-input">
-              <input id="learn-keyed-out" type="text" placeholder="_learn" autocomplete="off" />
+              <input id="learn-keyed-out" type="text" placeholder="_learn" data-ph="ph.out_dir" autocomplete="off" />
               <button type="button" data-action="pick-learn-keyed-out" data-i18n="browse">Browse…</button>
             </div>
           </label>
           <label data-i18n="source_lang_folder">Source language folder
-            <input id="learn-keyed-source" type="text" placeholder="English" autocomplete="off" />
+            <input id="learn-keyed-source" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
           </label>
           <label data-i18n="target_lang_folder">Target language folder
-            <input id="learn-keyed-target" type="text" placeholder="Russian" autocomplete="off" />
+            <input id="learn-keyed-target" type="text" placeholder="Russian" data-ph="ph.lang_ru_dir" autocomplete="off" />
           </label>
           <label>
             <span>Threshold</span>
-            <input id="learn-keyed-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" autocomplete="off" />
+            <input id="learn-keyed-threshold" type="number" step="0.05" min="0" max="1" placeholder="0.8" data-ph="ph.threshold08" autocomplete="off" />
           </label>
           <label>
             <span data-i18n="dict_files">Dict files (one per line)</span>
-            <textarea id="learn-keyed-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json"></textarea>
+            <textarea id="learn-keyed-dicts" rows="3" placeholder="/path/to/dict.json\n/path/to/another.json" data-ph="ph.dicts_lines"></textarea>
           </label>
           <label>
             <span data-i18n="blacklist">Blacklist (one per line)</span>
-            <textarea id="learn-keyed-blacklist" rows="3" placeholder="prefix_.*\n^Key$"></textarea>
+            <textarea id="learn-keyed-blacklist" rows="3" placeholder="prefix_.*\n^Key$" data-ph="ph.blacklist_lines"></textarea>
           </label>
           <label>
             <span data-i18n="exclude_substrings">Exclude substrings (one per line)</span>
-            <textarea id="learn-keyed-exclude" rows="3" placeholder="TODO\nWIP"></textarea>
+            <textarea id="learn-keyed-exclude" rows="3" placeholder="TODO\nWIP" data-ph="ph.exclude_lines"></textarea>
           </label>
           <label>
             <span data-i18n="min_length">Min length</span>
-            <input id="learn-keyed-minlen" type="number" placeholder="1" />
+            <input id="learn-keyed-minlen" type="number" placeholder="1" data-ph="ph.min_length_1" />
           </label>
           <label>
             <input id="learn-keyed-must-letter" type="checkbox" />
@@ -596,7 +594,7 @@
         <div class="field-grid">
           <label data-i18n="out_folder">
             <div class="path-input">
-              <input id="schemas-out" type="text" placeholder="./docs/assets/schemas" autocomplete="off" />
+            <input id="schemas-out" type="text" placeholder="./docs/assets/schemas" data-ph="ph.schemas_out" autocomplete="off" />
               <button type="button" data-action="pick-schemas-out" data-i18n="browse">Browse…</button>
             </div>
           </label>
@@ -614,7 +612,7 @@
         <div class="field-grid">
           <label><span data-i18n="game_root">Game root (folder with Data)</span>
             <div class="path-input">
-              <input id="lang-update-game-root" type="text" placeholder="/path/to/RimWorld" autocomplete="off" />
+              <input id="lang-update-game-root" type="text" placeholder="/path/to/RimWorld" data-ph="ph.path.game_root" autocomplete="off" />
               <button type="button" data-action="pick-lang-update-root" data-i18n="browse">Browse…</button>
             </div>
           </label>
@@ -706,46 +704,36 @@
             <button type="button" id="debug-clear" data-i18n="clear">Clear</button>
           </div>
         </div>
+        <div class="field-grid">
+          <label>
+            <span data-i18n="loglevel">Log level</span>
+            <select id="log-level-inline">
+              <option value="info">info</option>
+              <option value="debug">debug</option>
+              <option value="trace">trace</option>
+            </select>
+          </label>
+          <label>
+            <input id="enable-backtrace-inline" type="checkbox" />
+            <span data-i18n="enable_backtrace">Enable Rust backtrace</span>
+          </label>
+          <label>
+            <span>Log file</span>
+            <code id="log-path-inline">…</code>
+          </label>
+          <div class="actions">
+            <button type="button" id="copy-log-path-inline" data-i18n="copy">Copy</button>
+            <button type="button" id="open-log-folder-inline" data-i18n="open_folder">Open folder</button>
+            <button type="button" id="save-console-inline" data-i18n="save_console">Save console…</button>
+            <button type="button" id="collect-diagnostics-inline" data-i18n="collect_diag">Collect diagnostics…</button>
+            <button type="button" id="simulate-error-inline" data-i18n="simulate_error">Simulate error</button>
+            <button type="button" id="simulate-panic-inline" data-i18n="simulate_panic">Simulate panic</button>
+          </div>
+        </div>
         <pre id="debug-log" class="debug-log" aria-live="polite"></pre>
       </section>
 
-      <div id="debug-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="debug-modal-title">
-        <div class="modal-card">
-          <div class="modal-head">
-            <h3 id="debug-modal-title" data-i18n="debug_modal_title">Diagnostics</h3>
-            <button type="button" id="debug-modal-close">✕</button>
-          </div>
-          <div class="modal-body">
-            <p data-i18n="debug_modal_hint">Copy errors or share with maintainer. Log file:</p>
-            <div class="path-row">
-              <code id="log-path">…</code>
-              <div class="path-actions">
-                <button id="copy-log-path" type="button" data-i18n="copy">Copy</button>
-                <button id="open-log-folder" type="button" data-i18n="open_folder">Open folder</button>
-                <button id="save-console" type="button" data-i18n="save_console">Save console…</button>
-                <button id="collect-diagnostics" type="button" data-i18n="collect_diag">Collect diagnostics…</button>
-                <button id="simulate-error" type="button" data-i18n="simulate_error">Simulate error</button>
-                <button id="simulate-panic" type="button" data-i18n="simulate_panic">Simulate panic</button>
-              </div>
-            </div>
-            <div class="field-grid">
-              <label>
-                <span data-i18n="loglevel">Log level</span>
-                <select id="log-level-modal">
-                  <option value="info">info</option>
-                  <option value="debug">debug</option>
-                  <option value="trace">trace</option>
-                </select>
-              </label>
-              <label>
-                <input id="enable-backtrace" type="checkbox" />
-                <span data-i18n="enable_backtrace">Enable Rust backtrace</span>
-              </label>
-            </div>
-            <pre id="debug-modal-content" class="debug-log"></pre>
-          </div>
-        </div>
-      </div>
+      
     </main>
 
     <footer>

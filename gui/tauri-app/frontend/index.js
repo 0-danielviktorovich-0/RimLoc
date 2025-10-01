@@ -1083,35 +1083,49 @@ function initDebugUI() {
   });
 
   // Modal controls
-  const modal = $("debug-modal");
-  $("open-debug-modal").addEventListener("click", async () => {
+  // modal version removed (migrated to inline panel)
+  const copyModal = $("copy-log-path"); if (copyModal) copyModal.addEventListener("click", async () => { const p = $("log-path").textContent; try { await navigator.clipboard.writeText(p); showToast("Copied"); } catch {} });
+  // Inline toolbar bindings (panel)
+  const setLogPath = (p) => {
+    const el1 = $("log-path"); if (el1) el1.textContent = p;
+    const el2 = $("log-path-inline"); if (el2) el2.textContent = p;
+  };
+  try {
+    const info = await tauriInvoke("get_log_info");
+    if (info?.logPath || info?.log_path) setLogPath(info.logPath || info.log_path);
+  } catch {}
+  const copyInline = $("copy-log-path-inline"); if (copyInline) copyInline.addEventListener("click", async () => { const p = $("log-path-inline").textContent; try { await navigator.clipboard.writeText(p); showToast("Copied"); } catch {} });
+  const openInline = $("open-log-folder-inline"); if (openInline) openInline.addEventListener("click", () => { const p = $("log-path-inline").textContent; if (p) openPath(p.replace(/\\/g, "/").replace(/\/[^/]*$/, "/")); });
+  const saveInline = $("save-console-inline"); if (saveInline) saveInline.addEventListener("click", async () => {
     try {
       const info = await tauriInvoke("get_log_info");
-      if (info?.logPath || info?.log_path) {
-        $("log-path").textContent = info.logPath || info.log_path;
-      }
-    } catch {}
-    $("debug-modal-content").textContent = $("debug-log").textContent;
-    // sync modal controls
-    const lv = $("log-level-modal");
-    if (lv) lv.value = state.logLevel === "trace" ? "trace" : state.logLevel;
-    const bt = $("enable-backtrace");
-    if (bt) bt.checked = localStorage.getItem("rimloc.backtrace") === "1";
-    modal.classList.remove("hidden");
+      const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "console-buffer.txt");
+      const path = await tauriDialog().save({ defaultPath: def });
+      if (!path) return;
+      const content = $("debug-log").textContent || "";
+      await tauriInvoke("save_text_file", { path, content });
+      showToast(`Saved: ${path}`);
+    } catch (e) { showError(e); }
   });
-  $("debug-modal-close").addEventListener("click", () => modal.classList.add("hidden"));
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.classList.add("hidden");
+  const collInline = $("collect-diagnostics-inline"); if (collInline) collInline.addEventListener("click", async () => {
+    try {
+      const info = await tauriInvoke("get_log_info");
+      const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "diagnostics.txt");
+      const path = await tauriDialog().save({ defaultPath: def });
+      if (!path) return;
+      const saved = await tauriInvoke("collect_diagnostics", { req: { out_path: path } });
+      showToast(`Diagnostics saved: ${saved}`);
+    } catch (e) { showError(e); }
   });
-  $("copy-log-path").addEventListener("click", async () => {
-    const path = $("log-path").textContent;
-    try { await navigator.clipboard.writeText(path); showToast("Copied"); } catch {}
-  });
+  const simErrInline = $("simulate-error-inline"); if (simErrInline) simErrInline.addEventListener("click", async () => { try { await tauriInvoke("simulate_error"); } catch (e) { showError(e); } });
+  const simPanInline = $("simulate-panic-inline"); if (simPanInline) simPanInline.addEventListener("click", async () => { try { await tauriInvoke("simulate_panic"); } catch (e) { showError(e); } });
+  const lvInline = $("log-level-inline"); if (lvInline) lvInline.addEventListener("change", async () => { state.logLevel = lvInline.value; localStorage.setItem("rimloc.logLevel", state.logLevel); try { await tauriInvoke("set_debug_options", { opts: { minLevel: state.logLevel } }); } catch {} });
+  const btInline = $("enable-backtrace-inline"); if (btInline) { btInline.checked = localStorage.getItem("rimloc.backtrace") === "1"; btInline.addEventListener("change", async () => { const on = btInline.checked; localStorage.setItem("rimloc.backtrace", on?"1":"0"); try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {} }); }
   $("open-log-folder").addEventListener("click", () => {
     const path = $("log-path").textContent;
     if (path) openPath(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
   });
-  $("save-console").addEventListener("click", async () => {
+  const saveModal = $("save-console"); if (saveModal) saveModal.addEventListener("click", async () => {
     try {
       const info = await tauriInvoke("get_log_info");
       const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "console-buffer.txt");
@@ -1124,7 +1138,7 @@ function initDebugUI() {
       showError(e);
     }
   });
-  $("collect-diagnostics").addEventListener("click", async () => {
+  const collectModal = $("collect-diagnostics"); if (collectModal) collectModal.addEventListener("click", async () => {
     try {
       const info = await tauriInvoke("get_log_info");
       const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "diagnostics.txt");
@@ -1134,30 +1148,17 @@ function initDebugUI() {
       showToast(`Diagnostics saved: ${saved}`);
     } catch (e) { showError(e); }
   });
-  $("simulate-error").addEventListener("click", async () => {
+  const simErrModal = $("simulate-error"); if (simErrModal) simErrModal.addEventListener("click", async () => {
     try { await tauriInvoke("simulate_error"); } catch (e) { showError(e); }
   });
-  $("simulate-panic").addEventListener("click", async () => {
+  const simPanModal = $("simulate-panic"); if (simPanModal) simPanModal.addEventListener("click", async () => {
     try { await tauriInvoke("simulate_panic"); } catch (e) { showError(e); }
   });
-  $("log-level-modal").addEventListener("change", async () => {
-    const lv = $("log-level-modal").value;
-    state.logLevel = lv; localStorage.setItem("rimloc.logLevel", lv);
-    try { await tauriInvoke("set_debug_options", { opts: { minLevel: lv } }); } catch {}
-  });
-  $("enable-backtrace").addEventListener("change", async () => {
-    const on = $("enable-backtrace").checked;
-    localStorage.setItem("rimloc.backtrace", on ? "1" : "0");
-    try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {}
-  });
+  const lvModal = $("log-level-modal"); if (lvModal) lvModal.addEventListener("change", async () => { const lv = lvModal.value; state.logLevel = lv; localStorage.setItem("rimloc.logLevel", lv); try { await tauriInvoke("set_debug_options", { opts: { minLevel: lv } }); } catch {} });
+  const btModal = $("enable-backtrace"); if (btModal) btModal.addEventListener("change", async () => { const on = btModal.checked; localStorage.setItem("rimloc.backtrace", on?"1":"0"); try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {} });
 
   // Hotkey: Cmd/Ctrl + D opens modal
-  document.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === "d") {
-      e.preventDefault();
-      $("open-debug-modal").click();
-    }
-  });
+  // Hotkey disabled (modal removed); could focus debug log or toggle panel if needed
 }
 
 // --- Progress panel ---
@@ -1319,6 +1320,12 @@ const I18N = {
     game_root: "Game root (folder with Data)",
     repo: "Repo",
     branch: "Branch",
+    run_plugins: "Run plugins",
+    morph_title: "Morph (Cases/Plural/Gender)",
+    morph_generate: "Generate",
+    limit: "Limit",
+    learn_keyed_title: "Learn Keyed",
+    run: "Run",
     validate: "Validate",
     health: "XML Health",
     import: "Import",
@@ -1332,6 +1339,40 @@ const I18N = {
     "theme.auto": "Auto",
     "theme.light": "Light",
     "theme.dark": "Dark",
+    // placeholders
+    ph: "",
+    "ph.path.mod": "/path/to/mod",
+    "ph.eg_game_ver": "e.g. 1.5",
+    "ph.lang_ru": "ru",
+    "ph.lang_auto": "auto",
+    "ph.filter_keys": "filter keys…",
+    "ph.path.defs": "/path/to/Defs",
+    "ph.extra_fields": "label,description",
+    "ph.dicts_lines": "/path/to/dict.json\n/path/to/another.json",
+    "ph.path.schema": "/path/to/schema.json",
+    "ph.out_dir": "_learn",
+    "ph.lang_en": "English",
+    "ph.threshold08": "0.8",
+    "ph.path.po": "_learn/translation.po",
+    "ph.tm_roots": "/path/to/reference-mod",
+    "ph.lang_ru_dir": "Russian",
+    "ph.categories_only_csv": "duplicate,empty,placeholder-check",
+    "ph.categories_except_csv": "placeholder-check",
+    "ph.path.imported_xml": "/path/to/_Imported.xml",
+    "ph.path.out_mod": "/path/to/mod-out",
+    "ph.mod_name": "RimLoc Translation",
+    "ph.package_id": "your.name.rimloc",
+    "ph.rw_version": "1.5",
+    "ph.path.baseline_po": "/path/to/baseline.po",
+    "ph.regex_all": ".*",
+    "ph.timeout_ms": "1500",
+    "ph.cache_size": "1024",
+    "ph.pym_url": "http://localhost:5000",
+    "ph.blacklist_lines": "prefix_.*\n^Key$",
+    "ph.exclude_lines": "TODO\nWIP",
+    "ph.min_length_1": "1",
+    "ph.path.game_root": "/path/to/RimWorld",
+    "ph.schemas_out": "./docs/assets/schemas",
   },
   ru: {
     settings: "Настройки",
@@ -1458,6 +1499,12 @@ const I18N = {
     game_root: "Папка игры (с Data)",
     repo: "Репозиторий",
     branch: "Ветка",
+    run_plugins: "Запуск плагинов",
+    morph_title: "Морфология (падеж/мн.число/род)",
+    morph_generate: "Сгенерировать",
+    limit: "Лимит",
+    learn_keyed_title: "Обучение Keyed",
+    run: "Запуск",
     validate: "Проверка",
     health: "Проверка XML",
     import: "Импорт",
@@ -1471,6 +1518,40 @@ const I18N = {
     "theme.auto": "Авто",
     "theme.light": "Светлая",
     "theme.dark": "Тёмная",
+    // placeholders
+    ph: "",
+    "ph.path.mod": "/путь/к/моду",
+    "ph.eg_game_ver": "например, 1.5",
+    "ph.lang_ru": "ru",
+    "ph.lang_auto": "auto",
+    "ph.filter_keys": "поиск по ключам…",
+    "ph.path.defs": "/путь/к/Defs",
+    "ph.extra_fields": "label,description",
+    "ph.dicts_lines": "/путь/к/dict.json\n/путь/к/another.json",
+    "ph.path.schema": "/путь/к/schema.json",
+    "ph.out_dir": "_learn",
+    "ph.lang_en": "English",
+    "ph.threshold08": "0.8",
+    "ph.path.po": "_learn/translation.po",
+    "ph.tm_roots": "/путь/к/референс-моду",
+    "ph.lang_ru_dir": "Russian",
+    "ph.categories_only_csv": "duplicate,empty,placeholder-check",
+    "ph.categories_except_csv": "placeholder-check",
+    "ph.path.imported_xml": "/путь/к/_Imported.xml",
+    "ph.path.out_mod": "/путь/к/mod-out",
+    "ph.mod_name": "RimLoc Translation",
+    "ph.package_id": "your.name.rimloc",
+    "ph.rw_version": "1.5",
+    "ph.path.baseline_po": "/путь/к/baseline.po",
+    "ph.regex_all": ".*",
+    "ph.timeout_ms": "1500",
+    "ph.cache_size": "1024",
+    "ph.pym_url": "http://localhost:5000",
+    "ph.blacklist_lines": "prefix_.*\n^Key$",
+    "ph.exclude_lines": "TODO\nWIP",
+    "ph.min_length_1": "1",
+    "ph.path.game_root": "/путь/к/RimWorld",
+    "ph.schemas_out": "./docs/assets/schemas",
   },
 };
 
@@ -1505,6 +1586,12 @@ function applyI18n() {
     }
   });
   // options in selects are handled via data-i18n on options
+  // Localize placeholders via data-ph="i18n.key"
+  document.querySelectorAll('[data-ph]').forEach((el) => {
+    const key = el.getAttribute('data-ph');
+    const text = tr(key);
+    if (text) el.setAttribute('placeholder', text);
+  });
 }
 
 function initI18nUI() {

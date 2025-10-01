@@ -1565,7 +1565,21 @@ fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateR
     let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
     // Expecting game root (folder containing Data/)
-    let scan_root = PathBuf::from(&request.root);
+    let mut scan_root = PathBuf::from(&request.root);
+    // macOS: allow selecting the .app bundle; resolve to Contents/Resources if needed
+    #[cfg(target_os = "macos")]
+    {
+        let direct = scan_root.join("Data").join("Core").join("Languages");
+        let bundled = scan_root
+            .join("Contents")
+            .join("Resources")
+            .join("Data")
+            .join("Core")
+            .join("Languages");
+        if !direct.exists() && bundled.exists() {
+            scan_root = scan_root.join("Contents").join("Resources");
+        }
+    }
     let zip_path = request.zip_path.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
     let (_plan, summary) = lang_update(
         &scan_root,
