@@ -1605,6 +1605,8 @@ struct MorphRequest {
     cache_size: Option<usize>,
     #[serde(default)]
     pymorphy_url: Option<String>,
+    #[serde(default)]
+    morpher_token: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1620,6 +1622,7 @@ fn morph_cmd(_window: Window, state: State<LogState>, request: MorphRequest) -> 
         Some("pymorphy") | Some("Pymorphy2") => MorphProvider::Pymorphy2,
         _ => MorphProvider::Dummy,
     };
+    if let Some(tok) = request.morpher_token.as_deref() { std::env::set_var("MORPHER_TOKEN", tok); }
     let opts = MorphOptions {
         provider: prov,
         target_lang_dir: request.target_lang_dir.clone(),

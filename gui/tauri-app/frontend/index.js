@@ -437,7 +437,7 @@ async function handleLearn() {
   try { console.log('Learn result', result); } catch {}
   debugLog('info', `learn done: accepted=${result.accepted}/${result.candidates}`);
   renderLearn(result);
-  showToast("Learned DefInjected candidates");
+  showToast(tr("toast_learned"));
   updateStatus("Learn completed");
 }
 
@@ -652,6 +652,7 @@ async function handleMorph() {
     timeout_ms: (val("morph-timeout")||"") ? Number(val("morph-timeout")) : null,
     cache_size: (val("morph-cache")||"") ? Number(val("morph-cache")) : null,
     pymorphy_url: val("morph-pym-url") || null,
+    morpher_token: val("morph-token") || null,
   };
   const res = await runAction("Generating morph…", () => tauriInvoke("morph_cmd", { request: payload }));
   $("morph-result").textContent = `Processed: ${res.processed}, Lang: ${res.lang}${res.warnNoMorpher?' (no MORPHER_TOKEN)':''}${res.warnNoPymorphy?' (no Pymorphy URL)':''}`;
@@ -965,6 +966,7 @@ function initPersistence() {
   bindPersist("morph-timeout", "rimloc.morphTimeout", "1500");
   bindPersist("morph-cache", "rimloc.morphCache", "1024");
   bindPersist("morph-pym-url", "rimloc.morphPymUrl");
+  bindPersist("morph-token", "rimloc.morphToken");
 
   // Learn Keyed persist
   bindPersist("learn-keyed-out", "rimloc.lkOut", "_learn");
@@ -1238,6 +1240,7 @@ const I18N = {
     export_pot: "Write POT (template)",
     export_empty: "No export performed yet.",
     save_report: "Save report…",
+    toast_learned: "Learned DefInjected candidates",
     build_title: "Build Translation Mod",
     build_run: "Build",
     build_dedupe: "Dedupe keys",
@@ -1358,6 +1361,7 @@ const I18N = {
     export_pot: "Писать POT (шаблон)",
     export_empty: "Экспорт ещё не выполнялся.",
     save_report: "Сохранить отчёт…",
+    toast_learned: "Выбраны кандидаты DefInjected",
     build_title: "Сборка перевода из PO",
     build_run: "Собрать",
     build_dedupe: "Удалять дубли ключей",
@@ -1450,7 +1454,19 @@ function applyI18n() {
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
     const text = tr(key);
-    if (text) el.innerText = text;
+    if (!text) return;
+    // Если это label с полями ввода — не перетираем разметку, а добавляем текст в отдельный span
+    if (el.tagName === 'LABEL' && el.querySelector('input,textarea,select')) {
+      let span = el.querySelector('.i18n-label');
+      if (!span) {
+        span = document.createElement('span');
+        span.className = 'i18n-label';
+        el.insertBefore(span, el.firstChild);
+      }
+      span.textContent = text;
+    } else {
+      el.textContent = text;
+    }
   });
   // options in selects are handled via data-i18n on options
 }

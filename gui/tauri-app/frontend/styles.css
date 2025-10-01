@@ -292,7 +292,7 @@ footer {
 #toast {
   position: fixed;
   left: 50%;
-  bottom: 2rem;
+  bottom: 3.5rem;
   transform: translateX(-50%) translateY(120%);
   padding: 0.75rem 1.2rem;
   border-radius: 999px;
@@ -301,7 +301,9 @@ footer {
   font-weight: 500;
   box-shadow: 0 18px 40px rgba(15, 23, 66, 0.25);
   transition: transform 0.25s ease;
-  z-index: 1000;
+  z-index: 3000;
+  max-width: 80vw;
+  text-align: center;
 }
 
 #toast.show {
