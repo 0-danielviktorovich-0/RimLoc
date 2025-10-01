@@ -179,3 +179,21 @@ Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at b
 - `CHANGELOG.md` updated under `Unreleased` for user‑facing changes.
 - I18n: EN updated, other locales synced; `tests_i18n` green.
 - Docs: EN/RU updated and `SITE_URL=… mkdocs build` succeeds for changed pages.
+## GUI/CLI Parity and i18n
+
+When adding or changing features:
+
+- Keep CLI and GUI in lockstep: every new CLI command or flag must be exposed in the GUI with the same semantics. Avoid introducing functionality in one surface only.
+- No hardcoded UI strings. Prefer i18n keys (see `frontend/index.js` I18N map). If you must add a new label, introduce a key in both `en` and `ru` and use `data-i18n` in HTML or `tr(key)` in JS.
+- For dynamic messages, prefer composing from i18n tokens or add a dedicated key; do not inline English text.
+- If a new backend command is added, register it in Tauri `invoke_handler`, permissions (`src-tauri/permissions/allow-commands.json`) and wire a GUI panel/control for it.
+- Aim to keep APIs ergonomic for UI: when a CLI adds a structured option group (e.g., Defs dict/schema), expose a single request struct in Tauri mirroring CLI fields so the GUI can pass-through without transforms.
+
+Review checklist for contributors:
+
+- [ ] CLI: command + args implemented and documented
+- [ ] Backend: Tauri command mirrors CLI types and fields
+- [ ] Permissions updated, capability model unchanged unless necessary
+- [ ] GUI: controls added with `data-i18n`/`tr()` and `localStorage` persistence
+- [ ] Logs/progress events wired to the progress panel
+- [ ] Build and run `cargo tauri dev` clean
