@@ -718,6 +718,26 @@
             <span data-i18n="enable_backtrace">Enable Rust backtrace</span>
           </label>
           <label>
+            <span data-i18n="log_filter">Filter</span>
+            <input id="log-filter" type="text" placeholder="text, cmd, source…" data-ph="ph.filter_text" autocomplete="off" />
+          </label>
+          <label>
+            <input id="log-ui" type="checkbox" checked />
+            <span>UI</span>
+          </label>
+          <label>
+            <input id="log-backend" type="checkbox" checked />
+            <span>Backend</span>
+          </label>
+          <label>
+            <input id="log-invoke" type="checkbox" checked />
+            <span>Invoke</span>
+          </label>
+          <label>
+            <input id="log-progress" type="checkbox" checked />
+            <span>Progress</span>
+          </label>
+          <label>
             <span>Log file</span>
             <code id="log-path-inline">…</code>
           </label>
@@ -728,9 +748,25 @@
             <button type="button" id="collect-diagnostics-inline" data-i18n="collect_diag">Collect diagnostics…</button>
             <button type="button" id="simulate-error-inline" data-i18n="simulate_error">Simulate error</button>
             <button type="button" id="simulate-panic-inline" data-i18n="simulate_panic">Simulate panic</button>
+            <button type="button" id="save-structured" data-i18n="save_jsonl">Save JSONL…</button>
+            <button type="button" id="clear-structured" data-i18n="clear">Clear</button>
           </div>
         </div>
         <pre id="debug-log" class="debug-log" aria-live="polite"></pre>
+        <div class="table-wrapper" style="max-height: 260px">
+          <table id="log-struct" class="log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Level</th>
+                <th>Source</th>
+                <th>Message</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </section>
 
       

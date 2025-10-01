@@ -362,6 +362,15 @@ footer {
   font-size: 12px;
 }
 
+.log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.log-table th, .log-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.log-table tr:hover { background: rgba(0,0,0,0.03); }
+.log-level-error { color: var(--danger); font-weight: 600; }
+.log-level-warn { color: #b58900; font-weight: 600; }
+.log-level-info { color: var(--text); }
+.log-level-debug { color: var(--muted); }
+.log-level-trace { color: #888; }
+
 /* Preview layout */
 .split { display: flex; gap: 16px; }
 .split .col { flex: 1 1 0; }

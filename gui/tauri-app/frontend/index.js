@@ -12,11 +12,11 @@ function tauriInvoke(cmd, args) {
   const fn = tauri.invoke || tauri.tauri?.invoke || tauri.core?.invoke;
   if (!fn) { try { console.error('invoke not available', { cmd, args }); } catch {}; throw new Error("Tauri API not available: invoke"); }
   try { console.log('invoke', cmd, args); } catch {}
-  try { debugLog("trace", `invoke ${cmd} → ${sanitizeArgs(args)}`, true); } catch {}
+  try { debugLog("trace", `invoke ${cmd} → ${sanitizeArgs(args)}`, true); addLogEntry({ ts: Date.now(), level: 'trace', source: 'invoke', cmd, args: args || {} }); } catch {}
   const start = Date.now();
   return fn(cmd, args)
-    .then((res) => { try { console.log('invoke ✓', cmd, Date.now()-start, 'ms', res); } catch {}; try { debugLog("trace", `invoke ${cmd} ✓ ${Date.now()-start}ms`, true); } catch {} return res; })
-    .catch((e) => { try { console.error('invoke ✗', cmd, Date.now()-start, 'ms', e); } catch {}; try { debugLog("error", `invoke ${cmd} ✗ ${Date.now()-start}ms: ${formatError(e)}`, true); } catch {} throw e; });
+    .then((res) => { const dur = Date.now()-start; try { console.log('invoke ✓', cmd, dur, 'ms', res); } catch {}; try { debugLog("trace", `invoke ${cmd} ✓ ${dur}ms`, true); addLogEntry({ ts: Date.now(), level: 'trace', source: 'invoke', cmd, ok: true, durMs: dur }); } catch {} return res; })
+    .catch((e) => { const dur = Date.now()-start; try { console.error('invoke ✗', cmd, dur, 'ms', e); } catch {}; try { debugLog("error", `invoke ${cmd} ✗ ${dur}ms: ${formatError(e)}`, true); addLogEntry({ ts: Date.now(), level: 'error', source: 'invoke', cmd, ok: false, durMs: dur, error: formatError(e) }); } catch {} throw e; });
 }
 
 function sanitizeArgs(args) {
@@ -59,6 +59,7 @@ const state = {
   locale: localStorage.getItem("rimloc.locale") || "auto",
   theme: localStorage.getItem("rimloc.theme") || "auto",
   progress: {},
+  logBuffer: [],
 };
 
 function $(id) {
@@ -1036,6 +1037,7 @@ async function fetchAppVersion() {
         if (!payload) return;
         // Log backend messages to UI only to avoid echo loop
         debugLog(payload.level || "info", payload.message || String(payload), true);
+        try { addLogEntry({ ts: Date.now(), level: (payload.level||'info').toLowerCase(), source: 'backend', message: String(payload.message||'') }); } catch {}
       })
       .catch(() => {});
 
@@ -1046,6 +1048,7 @@ async function fetchAppVersion() {
         const msg = `[${action}] ${step}${message ? ": " + message : ""}${pct != null ? ` (${pct}%)` : ""}`;
         // Log to UI but do not forward to backend (already logged there)
         debugLog("debug", msg, true);
+        try { addLogEntry({ ts: Date.now(), level: 'debug', source: 'progress', action, step, message: message||'', pct }); } catch {}
         const text = $("overlay-text");
         if (text && message) text.textContent = message;
         updateProgress(action, pct ?? 0, step, message || "");
@@ -1075,6 +1078,13 @@ function debugLog(level, message, noForward = false) {
       tauriInvoke("log_message", { level: String(level), message: String(message) }).catch(() => {});
     } catch {}
   }
+  try { addLogEntry({ ts: Date.now(), level: String(level).toLowerCase(), source: 'ui', message: String(message) }); } catch {}
+}
+
+function addLogEntry(entry) {
+  state.logBuffer.push(entry);
+  if (state.logBuffer.length > 2000) state.logBuffer.shift();
+  renderStructuredLogs();
 }
 
 function initDebugUI() {
@@ -1121,6 +1131,10 @@ function initDebugUI() {
   const simPanInline = $("simulate-panic-inline"); if (simPanInline) simPanInline.addEventListener("click", async () => { try { await tauriInvoke("simulate_panic"); } catch (e) { showError(e); } });
   const lvInline = $("log-level-inline"); if (lvInline) lvInline.addEventListener("change", async () => { state.logLevel = lvInline.value; localStorage.setItem("rimloc.logLevel", state.logLevel); try { await tauriInvoke("set_debug_options", { opts: { minLevel: state.logLevel } }); } catch {} });
   const btInline = $("enable-backtrace-inline"); if (btInline) { btInline.checked = localStorage.getItem("rimloc.backtrace") === "1"; btInline.addEventListener("change", async () => { const on = btInline.checked; localStorage.setItem("rimloc.backtrace", on?"1":"0"); try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {} }); }
+  const saveStructured = $("save-structured"); if (saveStructured) saveStructured.addEventListener("click", async () => { try { const path = await tauriDialog().save({ defaultPath: "rimloc-logs.jsonl" }); if (!path) return; const lines = state.logBuffer.map(e => JSON.stringify(e)).join("\n"); await tauriInvoke("save_text_file", { path, content: lines }); showToast(`Saved: ${path}`); } catch(e) { showError(e); } });
+  const clearStructured = $("clear-structured"); if (clearStructured) clearStructured.addEventListener("click", () => { state.logBuffer = []; renderStructuredLogs(); });
+  const filterEl = $("log-filter"); if (filterEl) filterEl.addEventListener('input', renderStructuredLogs);
+  ["log-ui","log-backend","log-invoke","log-progress"].forEach(id => { const el=$(id); if (el) el.addEventListener('change', renderStructuredLogs); });
   $("open-log-folder").addEventListener("click", () => {
     const path = $("log-path").textContent;
     if (path) openPath(path.replace(/\\/g, "/").replace(/\/[^/]*$/, "/"));
@@ -1320,6 +1334,8 @@ const I18N = {
     game_root: "Game root (folder with Data)",
     repo: "Repo",
     branch: "Branch",
+    log_filter: "Filter",
+    save_jsonl: "Save JSONL…",
     run_plugins: "Run plugins",
     morph_title: "Morph (Cases/Plural/Gender)",
     morph_generate: "Generate",
@@ -1499,6 +1515,8 @@ const I18N = {
     game_root: "Папка игры (с Data)",
     repo: "Репозиторий",
     branch: "Ветка",
+    log_filter: "Фильтр",
+    save_jsonl: "Сохранить JSONL…",
     run_plugins: "Запуск плагинов",
     morph_title: "Морфология (падеж/мн.число/род)",
     morph_generate: "Сгенерировать",
@@ -1788,6 +1806,45 @@ function langToDir(code) {
   const l = (code || '').trim().toLowerCase();
   const map = { 'ru':'Russian','en':'English','ja':'Japanese','ko':'Korean','fr':'French','de':'German','es':'Spanish','pt-br':'PortugueseBrazilian','pt':'Portuguese','pl':'Polish','it':'Italian','tr':'Turkish','uk':'Ukrainian','cs':'Czech','hu':'Hungarian','nl':'Dutch','ro':'Romanian','th':'Thai','el':'Greek','zh':'ChineseSimplified','zh-tw':'ChineseTraditional' };
   return map[l];
+}
+
+function renderStructuredLogs() {
+  const tbody = document.querySelector('#log-struct tbody'); if (!tbody) return;
+  const filterEl = $("log-filter");
+  const term = (filterEl ? filterEl.value : '').toLowerCase();
+  const showUI = isChecked('log-ui');
+  const showBE = isChecked('log-backend');
+  const showInv = isChecked('log-invoke');
+  const showPr = isChecked('log-progress');
+  const rows = state.logBuffer.filter(e => {
+    if (!e) return false; const s = e.source||'ui';
+    if (s==='ui' && !showUI) return false;
+    if (s==='backend' && !showBE) return false;
+    if (s==='invoke' && !showInv) return false;
+    if (s==='progress' && !showPr) return false;
+    if (term) {
+      const blob = JSON.stringify(e).toLowerCase();
+      if (!blob.includes(term)) return false;
+    }
+    return true;
+  }).slice(-500);
+  tbody.innerHTML = '';
+  for (const e of rows) {
+    const tr = document.createElement('tr');
+    const ts = new Date(e.ts||Date.now()).toLocaleTimeString();
+    const lvl = (e.level||'info').toLowerCase();
+    const src = e.source||'ui';
+    const msg = e.message || (e.cmd ? `${e.cmd}` : '');
+    const det = Object.assign({}, e);
+    delete det.ts; delete det.level; delete det.source; delete det.message;
+    const tdTs = document.createElement('td'); tdTs.textContent = ts;
+    const tdLv = document.createElement('td'); tdLv.textContent = lvl.toUpperCase(); tdLv.className = `log-level-${lvl}`;
+    const tdSrc = document.createElement('td'); tdSrc.textContent = src;
+    const tdMsg = document.createElement('td'); tdMsg.textContent = msg;
+    const tdDet = document.createElement('td'); tdDet.textContent = Object.keys(det).length? JSON.stringify(det): '';
+    tr.append(tdTs, tdLv, tdSrc, tdMsg, tdDet);
+    tbody.appendChild(tr);
+  }
 }
 
 const previewFilter = $("preview-filter"); if (previewFilter) previewFilter.addEventListener('input', () => renderPreview());
