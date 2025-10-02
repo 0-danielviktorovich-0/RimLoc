@@ -53,6 +53,38 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
         // Placeholder checks (run only when non-empty)
         if let Some(text) = u.source.as_deref() {
             if !text.trim().is_empty() {
+                // Invisible/bi-di control characters
+                let mut invisible_hits: Vec<char> = Vec::new();
+                for ch in text.chars() {
+                    match ch {
+                        '\u{200B}' | // ZWSP
+                        '\u{200C}' | // ZWNJ
+                        '\u{200D}' | // ZWJ
+                        '\u{200E}' | // LRM
+                        '\u{200F}' | // RLM
+                        '\u{202A}' | // LRE
+                        '\u{202B}' | // RLE
+                        '\u{202C}' | // PDF
+                        '\u{202D}' | // LRO
+                        '\u{202E}' | // RLO
+                        '\u{2066}' | // LRI
+                        '\u{2067}' | // RLI
+                        '\u{2068}' | // FSI
+                        '\u{2069}'   // PDI
+                        => invisible_hits.push(ch),
+                        _ => {}
+                    }
+                }
+                if !invisible_hits.is_empty() {
+                    let codes: Vec<String> = invisible_hits.into_iter().map(|c| format!("U+{:04X}", c as u32)).collect();
+                    msgs.push(ValidationMessage {
+                        kind: "invisible-char".to_string(),
+                        key: u.key.clone(),
+                        path: u.path.to_string_lossy().to_string(),
+                        line: u.line,
+                        message: format!("Suspicious control chars: {}", codes.join(", ")),
+                    });
+                }
                 let mut placeholder_msg_emitted = false;
                 let bad_percent = rimloc_core::placeholders::is_bad_percent(text);
                 if bad_percent {
