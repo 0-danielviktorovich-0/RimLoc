@@ -22,6 +22,8 @@ rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
 rimloc-export-csv = { path = "../../../crates/rimloc-export-csv" }
 rimloc-parsers-xml = { path = "../../../crates/rimloc-parsers-xml" }
 rimloc-export-po = { path = "../../../crates/rimloc-export-po" }
+rimloc-export-xliff = { path = "../../../crates/rimloc-export-xliff" }
+rimloc-import-xliff = { path = "../../../crates/rimloc-import-xliff" }
 schemars = "0.8"
 color-eyre = "0.6"
 walkdir = "2"
