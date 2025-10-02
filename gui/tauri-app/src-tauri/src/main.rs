@@ -2100,6 +2100,9 @@ fn main() {
             ,scan_strings_gui
             ,load_plugin_cmd
             ,list_plugins_cmd
+            ,coverage_gui
+            ,export_xliff_gui
+            ,import_xliff_gui
             ,merge_keyed_gui
         ])
         .run(tauri::generate_context!())
