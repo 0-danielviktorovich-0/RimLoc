@@ -13,6 +13,8 @@ members = [
     "crates/rimloc-services",
     "crates/rimloc-domain",
     "crates/rimloc-config",
+    "crates/rimloc-export-xliff",
+    "crates/rimloc-import-xliff",
 ]
 exclude = [
     "gui/tauri-app/src-tauri"

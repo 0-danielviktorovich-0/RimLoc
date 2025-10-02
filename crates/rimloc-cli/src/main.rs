@@ -887,6 +887,32 @@ enum Commands {
         include_all_versions: bool,
     },
 
+    /// Export XLIFF 1.2 for use in CAT tools.
+    ExportXliff {
+        /// Path to mod root (or Languages/<locale>).
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Output .xlf path.
+        #[arg(long)]
+        out_xlf: PathBuf,
+        /// Source language folder name (default: English)
+        #[arg(long, default_value = "English")]
+        source_lang_dir: String,
+        /// Target translation language ISO code (for header)
+        #[arg(long, default_value = "ru")]
+        lang: String,
+    },
+
+    /// Import XLIFF 1.2 and write a single LanguageData XML (Keyed style)
+    ImportXliff {
+        /// Input .xlf path
+        #[arg(long)]
+        xlf: PathBuf,
+        /// Output LanguageData XML path
+        #[arg(long)]
+        out_xml: PathBuf,
+    },
+
     /// Import .po into a single XML or into an existing mod's structure (help via FTL).
     ImportPo {
         #[arg(long)]
@@ -1044,6 +1070,19 @@ impl Runnable for Commands {
                         );
                     }
                 }
+                Ok(())
+            }
+            Commands::ExportXliff { root, out_xlf, source_lang_dir, lang } => {
+                // Reuse services scan to gather units under English only
+                let mut units = rimloc_services::scan::scan_units(&root)?;
+                units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, &source_lang_dir));
+                rimloc_export_xliff::write_xliff_12(&out_xlf, &units, "en", &lang)?;
+                if use_color { use owo_colors::OwoColorize; println!("{} exported XLIFF → {}", "✔".green(), out_xlf.display()); } else { println!("exported XLIFF → {}", out_xlf.display()); }
+                Ok(())
+            }
+            Commands::ImportXliff { xlf, out_xml } => {
+                rimloc_import_xliff::xliff_to_language_data(&out_xml, &xlf)?;
+                if use_color { use owo_colors::OwoColorize; println!("{} wrote {}", "✔".green(), out_xml.display()); } else { println!("wrote {}", out_xml.display()); }
                 Ok(())
             }
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),

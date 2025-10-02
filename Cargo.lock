@@ -1710,7 +1710,9 @@ dependencies = [
  "rimloc-domain",
  "rimloc-export-csv",
  "rimloc-export-po",
+ "rimloc-export-xliff",
  "rimloc-import-po",
+ "rimloc-import-xliff",
  "rimloc-parsers-xml",
  "rimloc-services",
  "rimloc-validate",
@@ -1778,6 +1780,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "rimloc-export-xliff"
+version = "0.1.0"
+dependencies = [
+ "rimloc-core",
+]
+
+[[package]]
 name = "rimloc-import-po"
 version = "0.1.0"
 dependencies = [
@@ -1786,6 +1795,15 @@ dependencies = [
  "regex",
  "rimloc-core",
  "tempfile",
+]
+
+[[package]]
+name = "rimloc-import-xliff"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "quick-xml",
+ "rimloc-import-po",
 ]
 
 [[package]]

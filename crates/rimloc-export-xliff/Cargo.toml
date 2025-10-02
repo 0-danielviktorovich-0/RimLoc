@@ -1,0 +1,8 @@
+[package]
+name = "rimloc-export-xliff"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rimloc-core = { path = "../rimloc-core" }
+
