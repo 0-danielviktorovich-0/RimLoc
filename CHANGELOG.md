@@ -60,6 +60,7 @@ Template (copy the sections you need):
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
 - [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
 - [parsers-xml] Aggregate <li> list items and <LineBreak/> into a single value for LanguageData keys; improves DefInjected/Keyed lists handling (#PR)
+- [services/merge-keyed] Read <li> and <LineBreak/> correctly when merging English→target; preserves multi-line values and list semantics (#PR)
 - [parsers-xml] Resolve Defs inheritance across files via Name/ParentName (fallback to defName), respect Inherit="false"; improves DefInjected candidates discovery (#PR)
  - [cli/logging] Validate `RIMLOC_LOG_DIR` against traversal/absolute paths; reject unsafe values (#PR)
  - [gui] Lang update: resolve macOS .app bundle to `Resources`; enforce Accept: zip and header check for downloads (#PR)
