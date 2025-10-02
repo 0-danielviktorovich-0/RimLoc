@@ -1139,6 +1139,17 @@ function initPersistence() {
   bindPersist("scan-type-schema", "rimloc.scanTypeSchema");
   const scanFuzzy = $("scan-fuzzy");
   if (scanFuzzy) { scanFuzzy.checked = localStorage.getItem("rimloc.scanFuzzy") === "1"; scanFuzzy.addEventListener("change", () => localStorage.setItem("rimloc.scanFuzzy", scanFuzzy.checked?"1":"0")); }
+
+  // Simple Mode – прячет продвинутые опции
+  const simpleToggle = $("simple-mode-toggle");
+  if (simpleToggle) {
+    const saved = localStorage.getItem("rimloc.simpleMode") === "1";
+    simpleToggle.checked = saved;
+    document.body.classList.toggle('simple-mode', saved);
+    simpleToggle.addEventListener('change', () => {
+      const on = simpleToggle.checked; document.body.classList.toggle('simple-mode', on); localStorage.setItem("rimloc.simpleMode", on?"1":"0");
+    });
+  }
   ["scan-keyed-nested","scan-no-inherit","scan-with-plugins"].forEach(id => {
     const el = $(id);
     if (!el) return; const key = `rimloc.${id}`;

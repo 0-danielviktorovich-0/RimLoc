@@ -100,7 +100,9 @@ pub fn scan_keyed_xml_with_options(
     }
 
     #[allow(dead_code)]
-    fn is_def_injected_path(p: &std::path::Path) -> bool { def_injected_type_from_path(p).is_some() }
+    fn is_def_injected_path(p: &std::path::Path) -> bool {
+        def_injected_type_from_path(p).is_some()
+    }
 
     fn def_injected_type_from_path(p: &std::path::Path) -> Option<String> {
         // Find segment immediately following "DefInjected" in the path

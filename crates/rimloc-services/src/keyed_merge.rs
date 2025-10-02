@@ -153,7 +153,10 @@ pub fn merge_keyed(
         if !p.is_file() {
             continue;
         }
-        if p.extension().and_then(|e| e.to_str()).is_none_or(|ext| !ext.eq_ignore_ascii_case("xml")) {
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
+        {
             continue;
         }
         let s = p.to_string_lossy();

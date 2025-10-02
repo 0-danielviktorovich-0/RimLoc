@@ -1,33 +1,36 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console on Windows in release
 
+use chrono::Utc;
 use color_eyre::eyre::WrapErr;
 use rimloc_domain::{ScanUnit, SCHEMA_VERSION};
 use rimloc_export_csv as export_csv;
-use rimloc_services::{autodiscover_defs_context, learn, scan_defs_with_meta, is_under_languages_dir};
-use rimloc_services::{
-    validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_fields,
-    xml_health_scan, import_po_to_mod_tree_with_progress, build_from_po_with_progress,
-    diff_xml, diff_xml_with_defs, lang_update, annotate_dry_run_plan, annotate_apply,
-    make_init_plan, write_init_plan, import_po_to_mod_tree, validate_placeholders_cross_language,
-};
-use rimloc_services::plugins as svc_plugins;
-use rimloc_services::keyed_merge::merge_keyed as svc_merge_keyed;
-use rimloc_services::validate::coverage_report as svc_coverage;
 use rimloc_export_xliff::write_xliff_12 as svc_export_xliff;
 use rimloc_import_xliff::xliff_to_language_data as svc_import_xliff;
+use rimloc_services::keyed_merge::merge_keyed as svc_merge_keyed;
+use rimloc_services::plugins as svc_plugins;
+use rimloc_services::validate::coverage_report as svc_coverage;
+use rimloc_services::{
+    annotate_apply, annotate_dry_run_plan, build_from_po_with_progress, diff_xml,
+    diff_xml_with_defs, import_po_to_mod_tree, import_po_to_mod_tree_with_progress, lang_update,
+    make_init_plan, validate_placeholders_cross_language, validate_under_root,
+    validate_under_root_with_defs, validate_under_root_with_defs_and_fields, write_init_plan,
+    xml_health_scan,
+};
+use rimloc_services::{
+    autodiscover_defs_context, is_under_languages_dir, learn, scan_defs_with_meta,
+};
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeSet, HashMap};
 use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use tauri::{Manager, State, Window};
 use tauri::Emitter;
+use tauri::{Manager, State, Window};
 use tauri_plugin_dialog::DialogExt;
 use thiserror::Error;
 use walkdir::WalkDir;
-use std::fs::OpenOptions;
-use std::io::Write;
-use chrono::Utc;
-use std::collections::{BTreeSet, HashMap};
 
 #[derive(Debug, Error, Serialize)]
 #[error("{message}")]
@@ -99,6 +102,8 @@ struct ScanRequest {
     patch_strict_xpath: bool,
     #[serde(default)]
     parallel: bool,
+    #[serde(default)]
+    fuzzy: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -183,7 +188,14 @@ fn append_log(path: &Path, level: &str, message: &str) {
     if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {
         let ts = Utc::now().to_rfc3339();
         let tid = format!("{:?}", std::thread::current().id());
-        let _ = writeln!(f, "[{}][{}] {}: {}", ts, tid, level.to_uppercase(), message.replace('\n', " "));
+        let _ = writeln!(
+            f,
+            "[{}][{}] {}: {}",
+            ts,
+            tid,
+            level.to_uppercase(),
+            message.replace('\n', " ")
+        );
     }
 }
 
@@ -212,7 +224,12 @@ fn emit_log(window: &Window, state: &State<LogState>, level: &str, message: impl
 }
 
 #[tauri::command]
-fn log_message(window: Window, state: State<LogState>, level: String, message: String) -> Result<(), ApiError> {
+fn log_message(
+    window: Window,
+    state: State<LogState>,
+    level: String,
+    message: String,
+) -> Result<(), ApiError> {
     // Accept logs from the frontend and persist alongside backend logs
     emit_log(&window, &state, &level, message);
     Ok(())
@@ -227,7 +244,14 @@ struct ProgressEvent {
     pct: Option<u32>,
 }
 
-fn emit_progress(window: &Window, state: &State<LogState>, action: &str, step: &str, message: Option<String>, pct: Option<u32>) {
+fn emit_progress(
+    window: &Window,
+    state: &State<LogState>,
+    action: &str,
+    step: &str,
+    message: Option<String>,
+    pct: Option<u32>,
+) {
     let _ = window.emit(
         "progress",
         ProgressEvent {
@@ -238,37 +262,68 @@ fn emit_progress(window: &Window, state: &State<LogState>, action: &str, step: &
         },
     );
     if let Some(msg) = message {
-        append_log(&state.path, "DEBUG", &format!("[{}] {} {}%", action, step, pct.unwrap_or(0)));
+        append_log(
+            &state.path,
+            "DEBUG",
+            &format!("[{}] {} {}%", action, step, pct.unwrap_or(0)),
+        );
         append_log(&state.path, "DEBUG", &msg);
     }
 }
 
 // --- Plugins ---
 #[derive(Debug, Deserialize)]
-struct LoadPluginRequest { path: String }
+struct LoadPluginRequest {
+    path: String,
+}
 
 #[derive(Debug, Serialize)]
-struct LoadPluginResponse { id: String }
+struct LoadPluginResponse {
+    id: String,
+}
 
 #[tauri::command]
-fn load_plugin_cmd(_window: Window, _state: State<LogState>, request: LoadPluginRequest) -> Result<LoadPluginResponse, ApiError> {
+fn load_plugin_cmd(
+    _window: Window,
+    _state: State<LogState>,
+    request: LoadPluginRequest,
+) -> Result<LoadPluginResponse, ApiError> {
     let p = PathBuf::from(&request.path);
-    svc_plugins::load_dynamic_plugin(&p).map_err(|e| ApiError { message: format!("{e}") })?;
+    svc_plugins::load_dynamic_plugin(&p).map_err(|e| ApiError {
+        message: format!("{e}"),
+    })?;
     // Return filename as id; registry stores Arc<dyn ParserPlugin> without direct IDs for dyn plugins
-    let id = p.file_name().and_then(|s| s.to_str()).unwrap_or("dyn").to_string();
+    let id = p
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or("dyn")
+        .to_string();
     Ok(LoadPluginResponse { id })
 }
 
 #[derive(Debug, Serialize)]
-struct ListPluginsResponse { ids: Vec<String> }
+struct ListPluginsResponse {
+    ids: Vec<String>,
+}
 
 #[tauri::command]
-fn list_plugins_cmd(_window: Window, _state: State<LogState>) -> Result<ListPluginsResponse, ApiError> {
-    let ids: Vec<String> = svc_plugins::iter().into_iter().map(|p| p.id().to_string()).collect();
+fn list_plugins_cmd(
+    _window: Window,
+    _state: State<LogState>,
+) -> Result<ListPluginsResponse, ApiError> {
+    let ids: Vec<String> = svc_plugins::iter()
+        .into_iter()
+        .map(|p| p.id().to_string())
+        .collect();
     Ok(ListPluginsResponse { ids })
 }
 
-fn write_profile(state: &State<LogState>, command: &str, start: std::time::Instant, extra: serde_json::Value) {
+fn write_profile(
+    state: &State<LogState>,
+    command: &str,
+    start: std::time::Instant,
+    extra: serde_json::Value,
+) {
     let duration_ms = start.elapsed().as_millis() as u64;
     let entry = serde_json::json!({
         "ts": Utc::now().to_rfc3339(),
@@ -296,34 +351,93 @@ struct MergeKeyedRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct MergeKeyedResponse { files: usize, keys_total: usize, reused: usize, unused: usize, out_hint: String }
+struct MergeKeyedResponse {
+    files: usize,
+    keys_total: usize,
+    reused: usize,
+    unused: usize,
+    out_hint: String,
+}
 
 #[tauri::command]
-fn merge_keyed_gui(_window: Window, _state: State<LogState>, request: MergeKeyedRequest) -> Result<MergeKeyedResponse, ApiError> {
+fn merge_keyed_gui(
+    _window: Window,
+    _state: State<LogState>,
+    request: MergeKeyedRequest,
+) -> Result<MergeKeyedResponse, ApiError> {
     let root = PathBuf::from(&request.root);
     if !root.exists() {
-        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+        return Err(ApiError {
+            message: format!("Path not found: {}", root.display()),
+        });
     }
     let out_dir = request.out_dir.as_deref().map(PathBuf::from);
-    let stats = svc_merge_keyed(&root, &request.source_lang_dir, &request.target_lang_dir, out_dir.as_deref()).map_err(|e| ApiError { message: format!("{e}") })?;
-    let out_hint = out_dir.map(|p| p.display().to_string()).unwrap_or_else(|| root.join("Languages").join(&request.target_lang_dir).join("Keyed").display().to_string());
-    Ok(MergeKeyedResponse { files: stats.files, keys_total: stats.keys_total, reused: stats.reused, unused: stats.unused, out_hint })
+    let stats = svc_merge_keyed(
+        &root,
+        &request.source_lang_dir,
+        &request.target_lang_dir,
+        out_dir.as_deref(),
+    )
+    .map_err(|e| ApiError {
+        message: format!("{e}"),
+    })?;
+    let out_hint = out_dir.map(|p| p.display().to_string()).unwrap_or_else(|| {
+        root.join("Languages")
+            .join(&request.target_lang_dir)
+            .join("Keyed")
+            .display()
+            .to_string()
+    });
+    Ok(MergeKeyedResponse {
+        files: stats.files,
+        keys_total: stats.keys_total,
+        reused: stats.reused,
+        unused: stats.unused,
+        out_hint,
+    })
 }
 
 #[derive(Debug, Deserialize)]
-struct CoverageRequest { root: String, source_lang_dir: String, target_lang_dir: String, #[serde(default)] defs_root: Option<String> }
+struct CoverageRequest {
+    root: String,
+    source_lang_dir: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    defs_root: Option<String>,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct CoverageResponse { source_total: usize, target_total: usize, translated: usize, missing: usize }
+struct CoverageResponse {
+    source_total: usize,
+    target_total: usize,
+    translated: usize,
+    missing: usize,
+}
 
 #[tauri::command]
-fn coverage_gui(_window: Window, _state: State<LogState>, request: CoverageRequest) -> Result<CoverageResponse, ApiError> {
+fn coverage_gui(
+    _window: Window,
+    _state: State<LogState>,
+    request: CoverageRequest,
+) -> Result<CoverageResponse, ApiError> {
     let root = PathBuf::from(&request.root);
     let defs = request.defs_root.as_deref().map(PathBuf::from);
-    let rep = svc_coverage(&root, &request.source_lang_dir, &request.target_lang_dir, defs.as_deref())
-        .map_err(|e| ApiError { message: format!("{e}") })?;
-    Ok(CoverageResponse { source_total: rep.source_total, target_total: rep.target_total, translated: rep.translated, missing: rep.missing })
+    let rep = svc_coverage(
+        &root,
+        &request.source_lang_dir,
+        &request.target_lang_dir,
+        defs.as_deref(),
+    )
+    .map_err(|e| ApiError {
+        message: format!("{e}"),
+    })?;
+    Ok(CoverageResponse {
+        source_total: rep.source_total,
+        target_total: rep.target_total,
+        translated: rep.translated,
+        missing: rep.missing,
+    })
 }
 
 #[derive(Debug, Deserialize)]
@@ -337,28 +451,53 @@ struct ExportXliffRequest {
 }
 
 #[tauri::command]
-fn export_xliff_gui(_window: Window, _state: State<LogState>, request: ExportXliffRequest) -> Result<String, ApiError> {
+fn export_xliff_gui(
+    _window: Window,
+    _state: State<LogState>,
+    request: ExportXliffRequest,
+) -> Result<String, ApiError> {
     let root = PathBuf::from(&request.root);
-    if !root.exists() { return Err(ApiError { message: format!("Path not found: {}", root.display()) }); }
-    let mut units = rimloc_services::scan::scan_units(&root).map_err(|e| ApiError { message: format!("{e}") })?;
+    if !root.exists() {
+        return Err(ApiError {
+            message: format!("Path not found: {}", root.display()),
+        });
+    }
+    let mut units = rimloc_services::scan::scan_units(&root).map_err(|e| ApiError {
+        message: format!("{e}"),
+    })?;
     let src = request.source_lang_dir.as_deref().unwrap_or("English");
     units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, src));
     let out = PathBuf::from(&request.out_xlf);
-    if let Some(parent) = out.parent() { let _ = std::fs::create_dir_all(parent); }
+    if let Some(parent) = out.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
     let lang = request.lang.as_deref().unwrap_or("ru");
-    svc_export_xliff(&out, &units, "en", lang).map_err(|e| ApiError { message: format!("{e}") })?;
+    svc_export_xliff(&out, &units, "en", lang).map_err(|e| ApiError {
+        message: format!("{e}"),
+    })?;
     Ok(out.display().to_string())
 }
 
 #[derive(Debug, Deserialize)]
-struct ImportXliffRequest { xlf: String, out_xml: String }
+struct ImportXliffRequest {
+    xlf: String,
+    out_xml: String,
+}
 
 #[tauri::command]
-fn import_xliff_gui(_window: Window, _state: State<LogState>, request: ImportXliffRequest) -> Result<String, ApiError> {
+fn import_xliff_gui(
+    _window: Window,
+    _state: State<LogState>,
+    request: ImportXliffRequest,
+) -> Result<String, ApiError> {
     let xlf = PathBuf::from(&request.xlf);
     let out = PathBuf::from(&request.out_xml);
-    if let Some(parent) = out.parent() { let _ = std::fs::create_dir_all(parent); }
-    svc_import_xliff(&out, &xlf).map_err(|e| ApiError { message: format!("{e}") })?;
+    if let Some(parent) = out.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    svc_import_xliff(&out, &xlf).map_err(|e| ApiError {
+        message: format!("{e}"),
+    })?;
     Ok(out.display().to_string())
 }
 
@@ -517,50 +656,106 @@ struct ScanStringsRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct StringLineView { path: String, line: usize, text: String, lang_dir: Option<String> }
+struct StringLineView {
+    path: String,
+    line: usize,
+    text: String,
+    lang_dir: Option<String>,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ScanStringsResponse { resolved_root: String, game_version: Option<String>, total: usize, items: Vec<StringLineView>, saved_json: Option<String> }
+struct ScanStringsResponse {
+    resolved_root: String,
+    game_version: Option<String>,
+    total: usize,
+    items: Vec<StringLineView>,
+    saved_json: Option<String>,
+}
 
 #[tauri::command]
-fn scan_strings_gui(_window: Window, _state: State<LogState>, request: ScanStringsRequest) -> Result<ScanStringsResponse, ApiError> {
+fn scan_strings_gui(
+    _window: Window,
+    _state: State<LogState>,
+    request: ScanStringsRequest,
+) -> Result<ScanStringsResponse, ApiError> {
     use walkdir::WalkDir;
     let root = PathBuf::from(&request.root);
-    let (scan_root, version) = if request.include_all_versions { (root.clone(), None) } else { resolve_game_version_root(&root, request.game_version.as_deref())? };
+    let (scan_root, version) = if request.include_all_versions {
+        (root.clone(), None)
+    } else {
+        resolve_game_version_root(&root, request.game_version.as_deref())?
+    };
     let mut items: Vec<StringLineView> = Vec::new();
     for entry in WalkDir::new(&scan_root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() { continue; }
-        let is_txt = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("txt")).unwrap_or(false);
-        if !is_txt { continue; }
+        if !p.is_file() {
+            continue;
+        }
+        let is_txt = p
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|ext| ext.eq_ignore_ascii_case("txt"))
+            .unwrap_or(false);
+        if !is_txt {
+            continue;
+        }
         let s = p.to_string_lossy();
-        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) { continue; }
-        if !(s.contains("/Strings/") || s.contains("\\Strings\\")) { continue; }
+        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
+            continue;
+        }
+        if !(s.contains("/Strings/") || s.contains("\\Strings\\")) {
+            continue;
+        }
         if let Some(dir) = request.lang_dir.as_deref() {
-            if !(s.contains(&format!("/Languages/{dir}/")) || s.contains(&format!("\\Languages\\{}\\", dir))) {
+            if !(s.contains(&format!("/Languages/{dir}/"))
+                || s.contains(&format!("\\Languages\\{}\\", dir)))
+            {
                 continue;
             }
         }
-        let content = match std::fs::read_to_string(p) { Ok(v) => v, Err(_) => continue };
-        let mut line_no = 0usize;
-        for line in content.lines() {
-            line_no += 1;
+        let content = match std::fs::read_to_string(p) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        for (idx, line) in content.lines().enumerate() {
+            let line_no = idx + 1;
             let t = line.trim();
-            if t.is_empty() { continue; }
-            let snippet = if t.len() > 200 { format!("{}…", &t[..200]) } else { t.to_string() };
-            items.push(StringLineView { path: p.display().to_string(), line: line_no, text: snippet, lang_dir: request.lang_dir.clone() });
+            if t.is_empty() {
+                continue;
+            }
+            let snippet = if t.len() > 200 {
+                format!("{}…", &t[..200])
+            } else {
+                t.to_string()
+            };
+            items.push(StringLineView {
+                path: p.display().to_string(),
+                line: line_no,
+                text: snippet,
+                lang_dir: request.lang_dir.clone(),
+            });
         }
     }
     items.sort_by(|a, b| (a.path.clone(), a.line).cmp(&(b.path.clone(), b.line)));
     let saved_json = if let Some(path) = request.out_json.as_ref() {
         let path = make_absolute(&scan_root, Path::new(path));
-        if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
         let file = File::create(&path)?;
         serde_json::to_writer_pretty(file, &items)?;
         Some(path.display().to_string())
-    } else { None };
-    Ok(ScanStringsResponse { resolved_root: scan_root.display().to_string(), game_version: version, total: items.len(), items, saved_json })
+    } else {
+        None
+    };
+    Ok(ScanStringsResponse {
+        resolved_root: scan_root.display().to_string(),
+        game_version: version,
+        total: items.len(),
+        items,
+        saved_json,
+    })
 }
 
 #[derive(Debug, Serialize)]
@@ -754,10 +949,18 @@ struct DebugOptions {
 fn set_debug_options(state: State<LogState>, opts: DebugOptions) -> Result<String, ApiError> {
     if let Some(bt) = opts.backtrace {
         std::env::set_var("RUST_BACKTRACE", if bt { "1" } else { "0" });
-        append_log(&state.path, "INFO", &format!("debug: backtrace set to {}", bt));
+        append_log(
+            &state.path,
+            "INFO",
+            &format!("debug: backtrace set to {}", bt),
+        );
     }
     if let Some(level) = opts.min_level {
-        append_log(&state.path, "INFO", &format!("debug: min_level hint {}", level));
+        append_log(
+            &state.path,
+            "INFO",
+            &format!("debug: min_level hint {}", level),
+        );
     }
     Ok("ok".into())
 }
@@ -786,69 +989,163 @@ fn get_diagnostics(state: State<LogState>) -> Result<DiagnosticsInfo, ApiError> 
 }
 
 #[derive(Debug, Deserialize)]
-struct CollectDiagRequest { #[serde(default)] out_path: Option<String> }
+struct CollectDiagRequest {
+    #[serde(default)]
+    out_path: Option<String>,
+}
 
 #[tauri::command]
-fn collect_diagnostics(state: State<LogState>, req: CollectDiagRequest) -> Result<String, ApiError> {
-    let base = state.path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| std::env::temp_dir());
-    let out = req.out_path.map(PathBuf::from).unwrap_or_else(|| base.join("diagnostics.txt"));
+fn collect_diagnostics(
+    state: State<LogState>,
+    req: CollectDiagRequest,
+) -> Result<String, ApiError> {
+    let base = state
+        .path
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(std::env::temp_dir);
+    let out = req
+        .out_path
+        .map(PathBuf::from)
+        .unwrap_or_else(|| base.join("diagnostics.txt"));
     let mut buf = String::new();
-    buf.push_str(&format!("Diagnostics generated at: {}\n", Utc::now().to_rfc3339()));
+    buf.push_str(&format!(
+        "Diagnostics generated at: {}\n",
+        Utc::now().to_rfc3339()
+    ));
     buf.push_str(&format!("App version: {}\n", env!("CARGO_PKG_VERSION")));
-    buf.push_str(&format!("OS: {}\nArch: {}\n", std::env::consts::OS, std::env::consts::ARCH));
+    buf.push_str(&format!(
+        "OS: {}\nArch: {}\n",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    ));
     buf.push_str(&format!("Tauri: {}\n", tauri::VERSION));
     buf.push_str(&format!("Log file: {}\n\n", state.path.display()));
     if let Ok(log) = std::fs::read_to_string(&state.path) {
         buf.push_str("=== Last 500 lines of gui.log ===\n");
         let lines: Vec<&str> = log.lines().collect();
         let start = lines.len().saturating_sub(500);
-        for l in &lines[start..] { buf.push_str(l); buf.push('\n'); }
+        for l in &lines[start..] {
+            buf.push_str(l);
+            buf.push('\n');
+        }
     }
-    if let Some(parent) = out.parent() { let _ = std::fs::create_dir_all(parent); }
+    if let Some(parent) = out.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
     std::fs::write(&out, buf.as_bytes())?;
     Ok(out.display().to_string())
 }
 
 #[tauri::command]
-fn simulate_error() -> Result<(), ApiError> { Err(ApiError { message: "Simulated error for debug".into() }) }
+fn simulate_error() -> Result<(), ApiError> {
+    Err(ApiError {
+        message: "Simulated error for debug".into(),
+    })
+}
 
 #[tauri::command]
-fn simulate_panic() -> Result<(), ApiError> { std::panic::panic_any(0u8); }
+fn simulate_panic() -> Result<(), ApiError> {
+    std::panic::panic_any(0u8);
+}
 
 #[tauri::command]
-fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Result<ScanResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("scan_mod: root={} all={} gv={:?}", request.root, request.include_all_versions, request.game_version));
+fn scan_mod(
+    window: Window,
+    state: State<LogState>,
+    request: ScanRequest,
+) -> Result<ScanResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "scan_mod: root={} all={} gv={:?}",
+            request.root, request.include_all_versions, request.game_version
+        ),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
-    emit_progress(&window, &state, "scan", "start", Some("Scanning…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!(
+            "scan: root={} include_all_versions={}",
+            request.root, request.include_all_versions
+        ),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "scan",
+        "start",
+        Some("Scanning…".to_string()),
+        Some(0),
+    );
     let root = PathBuf::from(&request.root);
     if !root.exists() {
-        emit_log(&window, &state, "error", format!("scan: path not found: {}", root.display()));
-        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+        emit_log(
+            &window,
+            &state,
+            "error",
+            format!("scan: path not found: {}", root.display()),
+        );
+        return Err(ApiError {
+            message: format!("Path not found: {}", root.display()),
+        });
     }
     if request.include_all_versions {
         let res = run_scan(&root, None, &request);
         if let Ok(ref r) = res {
             emit_log(&window, &state, "info", format!("scan finished (all versions): total={} keyed={} definj={} saved_json={:?} saved_csv={:?}", r.total, r.keyed, r.def_injected, r.saved_json, r.saved_csv));
-            emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
+            emit_progress(
+                &window,
+                &state,
+                "scan",
+                "done",
+                Some("Scan finished".to_string()),
+                Some(100),
+            );
         }
         if let Ok(ref r) = res {
-            write_profile(&state, "scan_mod", t0, serde_json::json!({"total": r.total, "keyed": r.keyed, "def_injected": r.def_injected}));
+            write_profile(
+                &state,
+                "scan_mod",
+                t0,
+                serde_json::json!({"total": r.total, "keyed": r.keyed, "def_injected": r.def_injected}),
+            );
         }
         res
     } else {
-        let (resolved, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
+        let (resolved, version) =
+            resolve_game_version_root(&root, request.game_version.as_deref())?;
         let res = run_scan(&resolved, version.as_deref(), &request);
         if let Ok(ref r) = res {
             emit_log(&window, &state, "info", format!("scan finished: {} → total={} keyed={} definj={} saved_json={:?} saved_csv={:?}", resolved.display(), r.total, r.keyed, r.def_injected, r.saved_json, r.saved_csv));
-            emit_progress(&window, &state, "scan", "done", Some("Scan finished".to_string()), Some(100));
-            write_profile(&state, "scan_mod", t0, serde_json::json!({"total": r.total, "keyed": r.keyed, "def_injected": r.def_injected}));
+            emit_progress(
+                &window,
+                &state,
+                "scan",
+                "done",
+                Some("Scan finished".to_string()),
+                Some(100),
+            );
+            write_profile(
+                &state,
+                "scan_mod",
+                t0,
+                serde_json::json!({"total": r.total, "keyed": r.keyed, "def_injected": r.def_injected}),
+            );
         }
         res
     }
 }
 
-fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> Result<ScanResponse, ApiError> {
+fn run_scan(
+    scan_root: &Path,
+    version: Option<&str>,
+    request: &ScanRequest,
+) -> Result<ScanResponse, ApiError> {
     // Advanced scan mirrors CLI logic where possible
     use std::collections::{BTreeSet, HashMap};
     let defs_abs = request
@@ -909,7 +1206,9 @@ fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> R
     if request.keyed_nested {
         std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }
-    if request.parallel { std::env::set_var("RIMLOC_PARALLEL", "1"); }
+    if request.parallel {
+        std::env::set_var("RIMLOC_PARALLEL", "1");
+    }
 
     // Perform scan
     let mut units = rimloc_services::scan_units_with_defs_and_dict(
@@ -929,7 +1228,9 @@ fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> R
     }
     if request.with_patches {
         let min_len = request.patch_min_len.unwrap_or(1);
-        if let Ok(mut extra) = rimloc_services::scan_patches_as_units(scan_root, min_len, request.patch_strict_xpath) {
+        if let Ok(mut extra) =
+            rimloc_services::scan_patches_as_units(scan_root, min_len, request.patch_strict_xpath)
+        {
             units.append(&mut extra);
         }
     }
@@ -1007,7 +1308,11 @@ fn write_scan_json(path: &Path, units: &[rimloc_services::TransUnit]) -> Result<
     serde_json::to_writer_pretty(file, &payload).map_err(ApiError::from)
 }
 
-fn write_scan_csv(path: &Path, units: &[rimloc_services::TransUnit], lang: Option<&str>) -> Result<(), ApiError> {
+fn write_scan_csv(
+    path: &Path,
+    units: &[rimloc_services::TransUnit],
+    lang: Option<&str>,
+) -> Result<(), ApiError> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -1035,15 +1340,46 @@ fn classify_unit(path: &Path) -> ScanKind {
 }
 
 #[tauri::command]
-fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest) -> Result<LearnDefsResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("learn_defs: root={} gv={:?}", request.root, request.game_version));
+fn learn_defs(
+    window: Window,
+    state: State<LogState>,
+    request: LearnDefsRequest,
+) -> Result<LearnDefsResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "learn_defs: root={} gv={:?}",
+            request.root, request.game_version
+        ),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("learn: root={}", request.root));
-    emit_progress(&window, &state, "learn", "start", Some("Preparing…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!("learn: root={}", request.root),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "learn",
+        "start",
+        Some("Preparing…".to_string()),
+        Some(0),
+    );
     let root = PathBuf::from(&request.root);
     if !root.exists() {
-        emit_log(&window, &state, "error", format!("learn: path not found: {}", root.display()));
-        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+        emit_log(
+            &window,
+            &state,
+            "error",
+            format!("learn: path not found: {}", root.display()),
+        );
+        return Err(ApiError {
+            message: format!("Path not found: {}", root.display()),
+        });
     }
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let out_dir_raw = request
@@ -1054,14 +1390,23 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
     let out_dir = make_absolute(&scan_root, &out_dir_raw);
     std::fs::create_dir_all(&out_dir)?;
 
-    emit_progress(&window, &state, "learn", "discover", Some("Discovering context…".to_string()), Some(10));
+    emit_progress(
+        &window,
+        &state,
+        "learn",
+        "discover",
+        Some("Discovering context…".to_string()),
+        Some(10),
+    );
     let auto = autodiscover_defs_context(&scan_root).wrap_err("discover defs context")?;
     let defs_root = request
         .defs_root
         .as_deref()
         .map(|p| make_absolute(&scan_root, Path::new(p)));
     let dict_files: Vec<PathBuf> = if let Some(list) = request.dict_files.as_ref() {
-        list.iter().map(|p| make_absolute(&scan_root, Path::new(p))).collect()
+        list.iter()
+            .map(|p| make_absolute(&scan_root, Path::new(p)))
+            .collect()
     } else {
         auto.dict_sources.clone()
     };
@@ -1097,11 +1442,30 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
         learned_out,
     };
 
-    emit_log(&window, &state, "debug", format!("learn options: out_dir={}", out_dir.display()));
-    emit_progress(&window, &state, "learn", "learn", Some("Learning templates…".to_string()), Some(60));
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!("learn options: out_dir={}", out_dir.display()),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "learn",
+        "learn",
+        Some("Learning templates…".to_string()),
+        Some(60),
+    );
     let result = learn::learn_defs(&opts).wrap_err("learn defs")?;
     let learned_path = out_dir.join("learned_defs.json");
-    emit_progress(&window, &state, "learn", "done", Some("Learn finished".to_string()), Some(100));
+    emit_progress(
+        &window,
+        &state,
+        "learn",
+        "done",
+        Some("Learn finished".to_string()),
+        Some(100),
+    );
 
     let response = LearnDefsResponse {
         resolved_root: scan_root.display().to_string(),
@@ -1113,21 +1477,62 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
         candidates: result.candidates.len(),
         accepted: result.accepted,
     };
-    emit_log(&window, &state, "info", format!("learn finished: accepted {}/{} → out_dir={}", response.accepted, response.candidates, response.out_dir));
-    write_profile(&state, "learn_defs", t0, serde_json::json!({"accepted": response.accepted, "candidates": response.candidates}));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!(
+            "learn finished: accepted {}/{} → out_dir={}",
+            response.accepted, response.candidates, response.out_dir
+        ),
+    );
+    write_profile(
+        &state,
+        "learn_defs",
+        t0,
+        serde_json::json!({"accepted": response.accepted, "candidates": response.candidates}),
+    );
     Ok(response)
 }
 
 #[tauri::command]
-fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -> Result<ExportPoResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("export_po: root={} out_po={}", request.root, request.out_po));
+fn export_po(
+    window: Window,
+    state: State<LogState>,
+    request: ExportPoRequest,
+) -> Result<ExportPoResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!("export_po: root={} out_po={}", request.root, request.out_po),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
-    emit_progress(&window, &state, "export", "start", Some("Exporting…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!("export_po: root={} out_po={}", request.root, request.out_po),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "export",
+        "start",
+        Some("Exporting…".to_string()),
+        Some(0),
+    );
     let root = PathBuf::from(&request.root);
     if !root.exists() {
-        emit_log(&window, &state, "error", format!("export_po: path not found: {}", root.display()));
-        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+        emit_log(
+            &window,
+            &state,
+            "error",
+            format!("export_po: path not found: {}", root.display()),
+        );
+        return Err(ApiError {
+            message: format!("Path not found: {}", root.display()),
+        });
     }
     let (scan_root, version) = if request.include_all_versions {
         (root.clone(), None)
@@ -1146,7 +1551,14 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
             .collect()
     });
 
-    emit_progress(&window, &state, "export", "collect", Some("Collecting units…".to_string()), Some(20));
+    emit_progress(
+        &window,
+        &state,
+        "export",
+        "collect",
+        Some("Collecting units…".to_string()),
+        Some(20),
+    );
 
     // Advanced: allow explicit Defs dir and custom dict/fields like scan
     let defs_abs = request
@@ -1199,13 +1611,21 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     let source_dir: String = request
         .source_lang_dir
         .clone()
-        .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .or_else(|| {
+            request
+                .source_lang
+                .clone()
+                .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+        })
         .unwrap_or_else(|| "English".to_string());
 
     // 1) Keyed units filtered to source_dir (or all if source_dir is English and lack Languages/English)
     let keyed_units = rimloc_parsers_xml::scan_keyed_xml(&scan_root).wrap_err("scan keyed")?;
     let mut english_map: HashMap<String, rimloc_services::TransUnit> = HashMap::new();
-    for u in keyed_units.into_iter().filter(|u| is_under_languages_dir(&u.path, &source_dir)) {
+    for u in keyed_units
+        .into_iter()
+        .filter(|u| is_under_languages_dir(&u.path, &source_dir))
+    {
         english_map.insert(u.key.clone(), u);
     }
 
@@ -1215,12 +1635,27 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     for meta in defs_meta {
         let key = meta.unit.key.clone();
         let source = meta.unit.source.clone();
-        if source.is_none() { continue; }
-        let target_path = def_injected_target_path_for_export(&scan_root, &source_dir, &meta.def_type, &meta.unit.path);
-        let entry = english_map
-            .entry(key.clone())
-            .or_insert_with(|| { let mut u = meta.unit.clone(); u.path = target_path.clone(); u.line = None; u });
-        if entry.source.as_ref().map(|s| s.trim().is_empty()).unwrap_or(true) {
+        if source.is_none() {
+            continue;
+        }
+        let target_path = def_injected_target_path_for_export(
+            &scan_root,
+            &source_dir,
+            &meta.def_type,
+            &meta.unit.path,
+        );
+        let entry = english_map.entry(key.clone()).or_insert_with(|| {
+            let mut u = meta.unit.clone();
+            u.path = target_path.clone();
+            u.line = None;
+            u
+        });
+        if entry
+            .source
+            .as_ref()
+            .map(|s| s.trim().is_empty())
+            .unwrap_or(true)
+        {
             entry.source = source.clone();
         }
         let path_str = entry.path.to_string_lossy();
@@ -1231,14 +1666,21 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     }
 
     let mut units: Vec<_> = english_map.into_values().collect();
-    units.sort_by(|a, b| (
-        a.path.to_string_lossy(), a.line.unwrap_or(0), a.key.as_str()
-    ).cmp(&(
-        b.path.to_string_lossy(), b.line.unwrap_or(0), b.key.as_str()
-    )));
+    units.sort_by(|a, b| {
+        (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            ))
+    });
 
     // Build TM map
-    let tm_map: Option<std::collections::HashMap<String, String>> = match tm_paths.as_ref().map(|v| v.as_slice()) {
+    let tm_map: Option<std::collections::HashMap<String, String>> = match tm_paths.as_deref() {
         None => None,
         Some([]) => None,
         Some(roots) => {
@@ -1263,7 +1705,11 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     let stats = rimloc_export_po::write_po_with_tm(
         &out_po_path,
         &units,
-        if request.pot { None } else { request.lang.as_deref() },
+        if request.pot {
+            None
+        } else {
+            request.lang.as_deref()
+        },
         tm_map.as_ref(),
     )
     .wrap_err("export po")?;
@@ -1278,7 +1724,14 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
     if let Some(ref w) = warning {
         emit_log(&window, &state, "warn", w.clone());
     }
-    emit_progress(&window, &state, "export", "done", Some("Export finished".to_string()), Some(100));
+    emit_progress(
+        &window,
+        &state,
+        "export",
+        "done",
+        Some("Export finished".to_string()),
+        Some(100),
+    );
 
     let resp = ExportPoResponse {
         resolved_root: scan_root.display().to_string(),
@@ -1289,13 +1742,31 @@ fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -
         tm_coverage_pct,
         warning,
     };
-    emit_log(&window, &state, "info", format!("export finished: {} → total={} tm_filled={} ({}%)", resp.out_po, resp.total, resp.tm_filled, resp.tm_coverage_pct));
-    write_profile(&state, "export_po", t0, serde_json::json!({"total": resp.total, "tm_filled": resp.tm_filled}));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!(
+            "export finished: {} → total={} tm_filled={} ({}%)",
+            resp.out_po, resp.total, resp.tm_filled, resp.tm_coverage_pct
+        ),
+    );
+    write_profile(
+        &state,
+        "export_po",
+        t0,
+        serde_json::json!({"total": resp.total, "tm_filled": resp.tm_filled}),
+    );
     Ok(resp)
 }
 
 // Local helper: derive DefInjected target path for a given Defs file
-fn def_injected_target_path_for_export(scan_root: &Path, lang_dir: &str, def_type: &str, source_path: &Path) -> PathBuf {
+fn def_injected_target_path_for_export(
+    scan_root: &Path,
+    lang_dir: &str,
+    def_type: &str,
+    source_path: &Path,
+) -> PathBuf {
     use std::ffi::OsStr;
     let file_name = source_path
         .file_name()
@@ -1310,21 +1781,52 @@ fn def_injected_target_path_for_export(scan_root: &Path, lang_dir: &str, def_typ
 }
 
 #[tauri::command]
-fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest) -> Result<ValidateResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("validate_mod: root={} defs_root={:?}", request.root, request.defs_root));
+fn validate_mod(
+    window: Window,
+    state: State<LogState>,
+    request: ValidateRequest,
+) -> Result<ValidateResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "validate_mod: root={} defs_root={:?}",
+            request.root, request.defs_root
+        ),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("validate: root={}", request.root));
-    emit_progress(&window, &state, "validate", "start", Some("Validating…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!("validate: root={}", request.root),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "validate",
+        "start",
+        Some("Validating…".to_string()),
+        Some(0),
+    );
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = if request.include_all_versions {
         (root.clone(), None)
     } else {
         resolve_game_version_root(&root, request.game_version.as_deref())?
     };
-    let defs_root = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
+    let defs_root = request
+        .defs_root
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
 
     // If dicts and/or type schema provided, merge dicts and call validate_with_defs_and_dict
-    let mut msgs_raw = if request.defs_dicts.as_ref().map(|v| !v.is_empty()).unwrap_or(false)
+    let mut msgs_raw = if request
+        .defs_dicts
+        .as_ref()
+        .map(|v| !v.is_empty())
+        .unwrap_or(false)
         || request.defs_type_schema.as_ref().is_some()
     {
         let mut dicts: Vec<rimloc_parsers_xml::DefsDict> = Vec::new();
@@ -1332,12 +1834,16 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
         if let Some(list) = request.defs_dicts.as_ref() {
             for p in list {
                 let pp = make_absolute(&scan_root, Path::new(p));
-                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                    dicts.push(d);
+                }
             }
         }
         if let Some(schema) = request.defs_type_schema.as_deref() {
             let pp = make_absolute(&scan_root, Path::new(schema));
-            if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) { dicts.push(d); }
+            if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
+                dicts.push(d);
+            }
         }
         let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
         rimloc_services::validate_under_root_with_defs_and_dict(
@@ -1374,14 +1880,29 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
         let src_dir = request
             .source_lang_dir
             .clone()
-            .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .or_else(|| {
+                request
+                    .source_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
             .unwrap_or_else(|| "English".to_string());
         let tgt_dir = request
             .target_lang_dir
             .clone()
-            .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .or_else(|| {
+                request
+                    .target_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
             .unwrap_or_else(|| "Russian".to_string());
-        if let Ok(mut extra) = validate_placeholders_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
+        if let Ok(mut extra) = validate_placeholders_cross_language(
+            &scan_root,
+            &src_dir,
+            &tgt_dir,
+            defs_root.as_deref(),
+        ) {
             msgs_raw.append(&mut extra);
         }
     }
@@ -1389,14 +1910,29 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
         let src_dir = request
             .source_lang_dir
             .clone()
-            .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .or_else(|| {
+                request
+                    .source_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
             .unwrap_or_else(|| "English".to_string());
         let tgt_dir = request
             .target_lang_dir
             .clone()
-            .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .or_else(|| {
+                request
+                    .target_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
             .unwrap_or_else(|| "Russian".to_string());
-        if let Ok(mut extra) = rimloc_services::validate::validate_lists_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
+        if let Ok(mut extra) = rimloc_services::validate::validate_lists_cross_language(
+            &scan_root,
+            &src_dir,
+            &tgt_dir,
+            defs_root.as_deref(),
+        ) {
             msgs_raw.append(&mut extra);
         }
     }
@@ -1404,20 +1940,41 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
         let src_dir = request
             .source_lang_dir
             .clone()
-            .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .or_else(|| {
+                request
+                    .source_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
             .unwrap_or_else(|| "English".to_string());
         let tgt_dir = request
             .target_lang_dir
             .clone()
-            .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .or_else(|| {
+                request
+                    .target_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
             .unwrap_or_else(|| "Russian".to_string());
-        if let Ok(mut extra) = rimloc_services::validate::validate_orphans_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
+        if let Ok(mut extra) = rimloc_services::validate::validate_orphans_cross_language(
+            &scan_root,
+            &src_dir,
+            &tgt_dir,
+            defs_root.as_deref(),
+        ) {
             msgs_raw.append(&mut extra);
         }
     }
     let msgs: Vec<ValidationMessageView> = msgs_raw
         .into_iter()
-        .map(|m| ValidationMessageView { kind: m.kind, key: m.key, path: m.path, line: m.line, message: m.message })
+        .map(|m| ValidationMessageView {
+            kind: m.kind,
+            key: m.key,
+            path: m.path,
+            line: m.line,
+            message: m.message,
+        })
         .collect();
     let mut errors = 0usize;
     let mut warnings = 0usize;
@@ -1429,13 +1986,27 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
             _ => infos += 1,
         }
     }
-    emit_progress(&window, &state, "validate", "done", Some("Validation finished".to_string()), Some(100));
+    emit_progress(
+        &window,
+        &state,
+        "validate",
+        "done",
+        Some("Validation finished".to_string()),
+        Some(100),
+    );
     if let Some(out) = request.out_json.as_deref() {
         let path = make_absolute(&scan_root, Path::new(out));
-        if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
         let _ = std::fs::write(&path, serde_json::to_vec_pretty(&msgs).unwrap_or_default());
     }
-    write_profile(&state, "validate", t0, serde_json::json!({"total": msgs.len(), "errors": errors, "warnings": warnings, "infos": infos }));
+    write_profile(
+        &state,
+        "validate",
+        t0,
+        serde_json::json!({"total": msgs.len(), "errors": errors, "warnings": warnings, "infos": infos }),
+    );
     Ok(ValidateResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
@@ -1448,34 +2019,79 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
 }
 
 #[tauri::command]
-fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest) -> Result<XmlHealthResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("xml_health: root={} lang_dir={:?}", request.root, request.lang_dir));
+fn xml_health(
+    window: Window,
+    state: State<LogState>,
+    request: XmlHealthRequest,
+) -> Result<XmlHealthResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "xml_health: root={} lang_dir={:?}",
+            request.root, request.lang_dir
+        ),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("xml_health: root={}", request.root));
-    emit_progress(&window, &state, "health", "start", Some("Checking XML…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!("xml_health: root={}", request.root),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "health",
+        "start",
+        Some("Checking XML…".to_string()),
+        Some(0),
+    );
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let lang_dir = request
         .lang_dir
         .clone()
-        .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .or_else(|| {
+            request
+                .lang
+                .clone()
+                .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+        })
         .unwrap_or_else(|| "English".to_string());
     let mut report = xml_health_scan(&scan_root, Some(&lang_dir)).wrap_err("xml health")?;
     // Optional filtering like CLI options
     if let Some(only) = request.only.as_ref() {
         if !only.is_empty() {
-            report.issues.retain(|i| only.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
+            report
+                .issues
+                .retain(|i| only.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
         }
     }
     if let Some(except) = request.except.as_ref() {
         if !except.is_empty() {
-            report.issues.retain(|i| !except.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
+            report
+                .issues
+                .retain(|i| !except.iter().any(|k| k.eq_ignore_ascii_case(&i.category)));
         }
     }
     if request.strict && !report.issues.is_empty() {
-        emit_log(&window, &state, "warn", format!("XML health strict: {} issues detected", report.issues.len()));
+        emit_log(
+            &window,
+            &state,
+            "warn",
+            format!("XML health strict: {} issues detected", report.issues.len()),
+        );
     }
-    emit_progress(&window, &state, "health", "done", Some("XML check finished".to_string()), Some(100));
+    emit_progress(
+        &window,
+        &state,
+        "health",
+        "done",
+        Some("XML check finished".to_string()),
+        Some(100),
+    );
     let out = XmlHealthResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
@@ -1484,31 +2100,70 @@ fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest)
     };
     if let Some(path_str) = request.out_json.as_deref() {
         let p = make_absolute(&scan_root, Path::new(path_str));
-        if let Some(parent) = p.parent() { let _ = std::fs::create_dir_all(parent); }
+        if let Some(parent) = p.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
         let _ = std::fs::write(&p, serde_json::to_vec_pretty(&out).unwrap_or_default());
     }
-    write_profile(&state, "xml_health", t0, serde_json::json!({"checked": out.checked, "issues": out.issues.len()}));
+    write_profile(
+        &state,
+        "xml_health",
+        t0,
+        serde_json::json!({"checked": out.checked, "issues": out.issues.len()}),
+    );
     Ok(out)
 }
 
 #[tauri::command]
-fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -> Result<ImportPoResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("import_po: root={} po={}", request.root, request.po_path));
+fn import_po(
+    window: Window,
+    state: State<LogState>,
+    request: ImportPoRequest,
+) -> Result<ImportPoResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!("import_po: root={} po={}", request.root, request.po_path),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("import_po: root={} po={}", request.root, request.po_path));
-    emit_progress(&window, &state, "import", "start", Some("Importing PO…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!("import_po: root={} po={}", request.root, request.po_path),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "import",
+        "start",
+        Some("Importing PO…".to_string()),
+        Some(0),
+    );
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let po_path = make_absolute(&scan_root, Path::new(&request.po_path));
     let lang_dir = request
         .lang_dir
         .clone()
-        .or_else(|| request.lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+        .or_else(|| {
+            request
+                .lang
+                .clone()
+                .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+        })
         .unwrap_or_else(|| "English".to_string());
     let summary = if let Some(out_xml) = request.out_xml.as_deref() {
         let outp = make_absolute(&scan_root, Path::new(out_xml));
-        rimloc_services::import_po_to_file(&po_path, &outp, request.keep_empty, request.dry_run, request.backup)
-            .wrap_err("import po to file")?
+        rimloc_services::import_po_to_file(
+            &po_path,
+            &outp,
+            request.keep_empty,
+            request.dry_run,
+            request.backup,
+        )
+        .wrap_err("import po to file")?
     } else if request.dry_run {
         let (_plan, summary) = import_po_to_mod_tree(
             &po_path,
@@ -1522,7 +2177,14 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
             request.only_diff,
             request.report,
         )?;
-        summary.unwrap_or(rimloc_services::ImportSummary { mode: "dry_run".into(), created: 0, updated: 0, skipped: 0, keys: 0, files: vec![] })
+        summary.unwrap_or(rimloc_services::ImportSummary {
+            mode: "dry_run".into(),
+            created: 0,
+            updated: 0,
+            skipped: 0,
+            keys: 0,
+            files: vec![],
+        })
     } else {
         import_po_to_mod_tree_with_progress(
             &po_path,
@@ -1535,12 +2197,26 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
             request.only_diff,
             request.report,
             |cur, total, path| {
-                emit_progress(&window, &state, "import", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+                emit_progress(
+                    &window,
+                    &state,
+                    "import",
+                    "file",
+                    Some(path.display().to_string()),
+                    Some(((cur as f64 / total as f64) * 100.0).round() as u32),
+                );
             },
         )
         .wrap_err("import po")?
     };
-    emit_progress(&window, &state, "import", "done", Some("Import finished".to_string()), Some(100));
+    emit_progress(
+        &window,
+        &state,
+        "import",
+        "done",
+        Some("Import finished".to_string()),
+        Some(100),
+    );
     let resp = ImportPoResponse {
         resolved_root: scan_root.display().to_string(),
         game_version: version,
@@ -1550,30 +2226,78 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
         skipped: summary.skipped,
         keys: summary.keys,
     };
-    write_profile(&state, "import_po", t0, serde_json::json!({"created": resp.created, "updated": resp.updated, "skipped": resp.skipped, "keys": resp.keys}));
+    write_profile(
+        &state,
+        "import_po",
+        t0,
+        serde_json::json!({"created": resp.created, "updated": resp.updated, "skipped": resp.skipped, "keys": resp.keys}),
+    );
     Ok(resp)
 }
 
 #[tauri::command]
-fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -> Result<BuildModResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("build_mod: po={} out={}", request.po_path, request.out_mod));
+fn build_mod(
+    window: Window,
+    state: State<LogState>,
+    request: BuildModRequest,
+) -> Result<BuildModResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!("build_mod: po={} out={}", request.po_path, request.out_mod),
+    );
     let t0 = std::time::Instant::now();
-    emit_log(&window, &state, "info", format!("build_mod from PO: {}", request.po_path));
-    emit_progress(&window, &state, "build", "start", Some("Building mod…".to_string()), Some(0));
+    emit_log(
+        &window,
+        &state,
+        "info",
+        format!("build_mod from PO: {}", request.po_path),
+    );
+    emit_progress(
+        &window,
+        &state,
+        "build",
+        "start",
+        Some("Building mod…".to_string()),
+        Some(0),
+    );
     let out = PathBuf::from(&request.out_mod);
     let mut files_count = 0usize;
     let mut total_keys = 0usize;
     if let Some(from_root) = request.from_root.as_deref() {
         let root = PathBuf::from(from_root);
-        let versions = request.from_game_versions.as_ref().map(|v| v.as_slice());
+        let versions = request.from_game_versions.as_deref();
         if request.dry_run {
-            let (files, total) = rimloc_services::build_from_root(&root, &out, &request.lang_dir, versions, false, request.dedupe)?;
+            let (files, total) = rimloc_services::build_from_root(
+                &root,
+                &out,
+                &request.lang_dir,
+                versions,
+                false,
+                request.dedupe,
+            )?;
             files_count = files.len();
             total_keys = total;
         } else {
-            let (files, total) = rimloc_services::build_from_root_with_progress(&root, &out, &request.lang_dir, versions, true, request.dedupe, |cur, total, path| {
-                emit_progress(&window, &state, "build", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
-            })?;
+            let (files, total) = rimloc_services::build_from_root_with_progress(
+                &root,
+                &out,
+                &request.lang_dir,
+                versions,
+                true,
+                request.dedupe,
+                |cur, total, path| {
+                    emit_progress(
+                        &window,
+                        &state,
+                        "build",
+                        "file",
+                        Some(path.display().to_string()),
+                        Some(((cur as f64 / total as f64) * 100.0).round() as u32),
+                    );
+                },
+            )?;
             files_count = files.len();
             total_keys = total;
         }
@@ -1602,14 +2326,37 @@ fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -
             request.dedupe,
             |cur, total, path| {
                 files_count = total;
-                emit_progress(&window, &state, "build", "file", Some(path.display().to_string()), Some(((cur as f64 / total as f64) * 100.0).round() as u32));
+                emit_progress(
+                    &window,
+                    &state,
+                    "build",
+                    "file",
+                    Some(path.display().to_string()),
+                    Some(((cur as f64 / total as f64) * 100.0).round() as u32),
+                );
             },
         )
         .wrap_err("build mod from po")?;
     }
-    emit_progress(&window, &state, "build", "done", Some("Build finished".to_string()), Some(100));
-    let resp = BuildModResponse { out_mod: out.display().to_string(), files: files_count, total_keys };
-    write_profile(&state, "build_mod", t0, serde_json::json!({"files": resp.files }));
+    emit_progress(
+        &window,
+        &state,
+        "build",
+        "done",
+        Some("Build finished".to_string()),
+        Some(100),
+    );
+    let resp = BuildModResponse {
+        out_mod: out.display().to_string(),
+        files: files_count,
+        total_keys,
+    };
+    write_profile(
+        &state,
+        "build_mod",
+        t0,
+        serde_json::json!({"files": resp.files }),
+    );
     Ok(resp)
 }
 
@@ -1632,16 +2379,15 @@ fn has_any_xml(dir: &Path) -> bool {
         return false;
     }
     for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
-        if entry.file_type().is_file() {
-            if entry
+        if entry.file_type().is_file()
+            && entry
                 .path()
                 .extension()
                 .and_then(|e| e.to_str())
                 .map(|ext| ext.eq_ignore_ascii_case("xml"))
                 .unwrap_or(false)
-            {
-                return true;
-            }
+        {
+            return true;
         }
     }
     false
@@ -1699,13 +2445,28 @@ fn resolve_game_version_root(
 
 // --- Validate PO (GUI) ---
 #[derive(Debug, Deserialize)]
-struct ValidatePoRequest { po_path: String, #[serde(default)] strict: bool }
+struct ValidatePoRequest {
+    po_path: String,
+    #[serde(default)]
+    #[allow(dead_code)]
+    strict: bool,
+}
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ValidatePoMismatch { context: Option<String>, reference: Option<String>, msgid: String, msgstr: String, expected_placeholders: Vec<String>, got_placeholders: Vec<String> }
+struct ValidatePoMismatch {
+    context: Option<String>,
+    reference: Option<String>,
+    msgid: String,
+    msgstr: String,
+    expected_placeholders: Vec<String>,
+    got_placeholders: Vec<String>,
+}
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ValidatePoResponse { checked: usize, mismatches: Vec<ValidatePoMismatch> }
+struct ValidatePoResponse {
+    checked: usize,
+    mismatches: Vec<ValidatePoMismatch>,
+}
 
 fn extract_placeholders_cli_like(s: &str) -> BTreeSet<String> {
     // same patterns as CLI: %.. and {...}
@@ -1713,14 +2474,22 @@ fn extract_placeholders_cli_like(s: &str) -> BTreeSet<String> {
     static RE_BRACE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
     let mut set = BTreeSet::new();
     let re1 = RE_PCT.get_or_init(|| regex::Regex::new(r"%(\d+\$)?0?\d*[sdif]").unwrap());
-    for m in re1.find_iter(s) { set.insert(m.as_str().to_string()); }
+    for m in re1.find_iter(s) {
+        set.insert(m.as_str().to_string());
+    }
     let re2 = RE_BRACE.get_or_init(|| regex::Regex::new(r"\{[^}]+\}").unwrap());
-    for m in re2.find_iter(s) { set.insert(m.as_str().to_string()); }
+    for m in re2.find_iter(s) {
+        set.insert(m.as_str().to_string());
+    }
     set
 }
 
 #[tauri::command]
-fn validate_po_gui(_window: Window, _state: State<LogState>, req: ValidatePoRequest) -> Result<ValidatePoResponse, ApiError> {
+fn validate_po_gui(
+    _window: Window,
+    _state: State<LogState>,
+    req: ValidatePoRequest,
+) -> Result<ValidatePoResponse, ApiError> {
     use std::io::BufRead;
     let file = std::fs::File::open(&req.po_path).map_err(ApiError::from)?;
     let rdr = std::io::BufReader::new(file);
@@ -1728,25 +2497,65 @@ fn validate_po_gui(_window: Window, _state: State<LogState>, req: ValidatePoRequ
     let mut id = String::new();
     let mut strv = String::new();
     let mut reference: Option<String> = None;
-    enum Mode { None, InId, InStr }
+    enum Mode {
+        None,
+        InId,
+        InStr,
+    }
     let mut mode = Mode::None;
     let mut entries: Vec<(Option<String>, String, String, Option<String>)> = Vec::new();
-    let mut push = |ctx: &mut Option<String>, id: &mut String, strv: &mut String, reference: &mut Option<String>, entries: &mut Vec<(Option<String>, String, String, Option<String>)>| {
-        if !id.is_empty() || !strv.is_empty() || ctx.is_some() || reference.is_some() {
-            entries.push((ctx.clone(), std::mem::take(id), std::mem::take(strv), reference.clone()));
-            *ctx = None; *reference = None;
-        }
-    };
+    let push =
+        |ctx: &mut Option<String>,
+         id: &mut String,
+         strv: &mut String,
+         reference: &mut Option<String>,
+         entries: &mut Vec<(Option<String>, String, String, Option<String>)>| {
+            if !id.is_empty() || !strv.is_empty() || ctx.is_some() || reference.is_some() {
+                entries.push((
+                    ctx.clone(),
+                    std::mem::take(id),
+                    std::mem::take(strv),
+                    reference.clone(),
+                ));
+                *ctx = None;
+                *reference = None;
+            }
+        };
     for line in rdr.lines() {
         let t = line.map_err(ApiError::from)?.trim().to_string();
-        if t.is_empty() { push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries); mode = Mode::None; continue; }
-        if let Some(rest) = t.strip_prefix("#:") { reference = Some(rest.trim().to_string()); continue; }
-        if let Some(rest) = t.strip_prefix("msgctxt ") { push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries); ctx = Some(unquote(&rest)); mode = Mode::None; continue; }
-        if let Some(rest) = t.strip_prefix("msgid ") { push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries); id = unquote(&rest); mode = Mode::InId; continue; }
-        if let Some(rest) = t.strip_prefix("msgstr ") { strv = unquote(&rest); mode = Mode::InStr; continue; }
+        if t.is_empty() {
+            push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries);
+            mode = Mode::None;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("#:") {
+            reference = Some(rest.trim().to_string());
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgctxt ") {
+            push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries);
+            ctx = Some(unquote(rest));
+            mode = Mode::None;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgid ") {
+            push(&mut ctx, &mut id, &mut strv, &mut reference, &mut entries);
+            id = unquote(rest);
+            mode = Mode::InId;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgstr ") {
+            strv = unquote(rest);
+            mode = Mode::InStr;
+            continue;
+        }
         if matches!(mode, Mode::InId | Mode::InStr) && t.starts_with('"') {
             let chunk = unquote(&t);
-            match mode { Mode::InId => id.push_str(&chunk), Mode::InStr => strv.push_str(&chunk), Mode::None => {} }
+            match mode {
+                Mode::InId => id.push_str(&chunk),
+                Mode::InStr => strv.push_str(&chunk),
+                Mode::None => {}
+            }
             continue;
         }
     }
@@ -1755,8 +2564,12 @@ fn validate_po_gui(_window: Window, _state: State<LogState>, req: ValidatePoRequ
     let mut mismatches: Vec<ValidatePoMismatch> = Vec::new();
     let mut checked = 0usize;
     for (ctx, msgid, msgstr, reference) in entries {
-        if msgid.is_empty() { continue; }
-        if msgstr.trim().is_empty() { continue; }
+        if msgid.is_empty() {
+            continue;
+        }
+        if msgstr.trim().is_empty() {
+            continue;
+        }
         checked += 1;
         let src_ph = extract_placeholders_cli_like(&msgid);
         let dst_ph = extract_placeholders_cli_like(&msgstr);
@@ -1771,7 +2584,10 @@ fn validate_po_gui(_window: Window, _state: State<LogState>, req: ValidatePoRequ
             });
         }
     }
-    Ok(ValidatePoResponse { checked, mismatches })
+    Ok(ValidatePoResponse {
+        checked,
+        mismatches,
+    })
 }
 
 fn unquote(s: &str) -> String {
@@ -1779,8 +2595,22 @@ fn unquote(s: &str) -> String {
     let mut out = String::new();
     let mut it = raw.chars().peekable();
     while let Some(c) = it.next() {
-        if c == '\\' { if let Some(n) = it.next() { out.push(match n { 'n' => '\n', 't' => '\t', 'r' => '\r', '\\' => '\\', '"' => '"', x => x }); } else { out.push('\\'); } }
-        else { out.push(c); }
+        if c == '\\' {
+            if let Some(n) = it.next() {
+                out.push(match n {
+                    'n' => '\n',
+                    't' => '\t',
+                    'r' => '\r',
+                    '\\' => '\\',
+                    '"' => '"',
+                    x => x,
+                });
+            } else {
+                out.push('\\');
+            }
+        } else {
+            out.push(c);
+        }
     }
     out
 }
@@ -1796,13 +2626,23 @@ struct LoadTmRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct TmEntry { key: String, value: String }
+struct TmEntry {
+    key: String,
+    value: String,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct TmBundle { by_key: Vec<TmEntry>, by_id: Vec<TmEntry> }
+struct TmBundle {
+    by_key: Vec<TmEntry>,
+    by_id: Vec<TmEntry>,
+}
 
-struct PoEntry { ctx: Option<String>, id: String, val: String }
+struct PoEntry {
+    ctx: Option<String>,
+    id: String,
+    val: String,
+}
 
 fn parse_po_entries(path: &Path) -> Result<Vec<PoEntry>, ApiError> {
     use std::io::BufRead;
@@ -1812,25 +2652,62 @@ fn parse_po_entries(path: &Path) -> Result<Vec<PoEntry>, ApiError> {
     let mut id = String::new();
     let mut strv = String::new();
     let mut _reference: Option<String> = None;
-    enum Mode { None, InId, InStr }
+    enum Mode {
+        None,
+        InId,
+        InStr,
+    }
     let mut mode = Mode::None;
     let mut out: Vec<PoEntry> = Vec::new();
-    let mut push = |ctx: &mut Option<String>, id: &mut String, strv: &mut String, _reference: &mut Option<String>, out: &mut Vec<PoEntry>| {
+    let push = |ctx: &mut Option<String>,
+                id: &mut String,
+                strv: &mut String,
+                _reference: &mut Option<String>,
+                out: &mut Vec<PoEntry>| {
         if !id.is_empty() || !strv.is_empty() || ctx.is_some() || _reference.is_some() {
-            out.push(PoEntry { ctx: ctx.clone(), id: std::mem::take(id), val: std::mem::take(strv) });
+            out.push(PoEntry {
+                ctx: ctx.clone(),
+                id: std::mem::take(id),
+                val: std::mem::take(strv),
+            });
         }
-        *ctx = None; *_reference = None;
+        *ctx = None;
+        *_reference = None;
     };
     for line in rdr.lines() {
         let t = line.map_err(ApiError::from)?.trim().to_string();
-        if t.is_empty() { push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out); mode = Mode::None; continue; }
-        if let Some(rest) = t.strip_prefix("#:") { _reference = Some(rest.trim().to_string()); continue; }
-        if let Some(rest) = t.strip_prefix("msgctxt ") { push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out); ctx = Some(unquote(&rest)); mode = Mode::None; continue; }
-        if let Some(rest) = t.strip_prefix("msgid ") { id = unquote(&rest); mode = Mode::InId; continue; }
-        if let Some(rest) = t.strip_prefix("msgstr ") { strv = unquote(&rest); mode = Mode::InStr; continue; }
+        if t.is_empty() {
+            push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out);
+            mode = Mode::None;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("#:") {
+            _reference = Some(rest.trim().to_string());
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgctxt ") {
+            push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out);
+            ctx = Some(unquote(rest));
+            mode = Mode::None;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgid ") {
+            id = unquote(rest);
+            mode = Mode::InId;
+            continue;
+        }
+        if let Some(rest) = t.strip_prefix("msgstr ") {
+            strv = unquote(rest);
+            mode = Mode::InStr;
+            continue;
+        }
         if matches!(mode, Mode::InId | Mode::InStr) && t.starts_with('"') {
             let chunk = unquote(&t);
-            match mode { Mode::InId => id.push_str(&chunk), Mode::InStr => strv.push_str(&chunk), Mode::None => {} }
+            match mode {
+                Mode::InId => id.push_str(&chunk),
+                Mode::InStr => strv.push_str(&chunk),
+                Mode::None => {}
+            }
             continue;
         }
     }
@@ -1839,7 +2716,11 @@ fn parse_po_entries(path: &Path) -> Result<Vec<PoEntry>, ApiError> {
 }
 
 #[tauri::command]
-fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Result<TmBundle, ApiError> {
+fn load_tm(
+    _window: Window,
+    _state: State<LogState>,
+    req: LoadTmRequest,
+) -> Result<TmBundle, ApiError> {
     let mut by_key: HashMap<String, String> = HashMap::new();
     let mut by_id: HashMap<String, Vec<String>> = HashMap::new();
     if let Some(p) = req.baseline_po.as_deref() {
@@ -1847,8 +2728,14 @@ fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Resu
         if abs.is_file() {
             if let Ok(entries) = parse_po_entries(&abs) {
                 for e in entries {
-                    if let Some(ctx) = e.ctx.as_ref() { if !ctx.is_empty() && !e.val.trim().is_empty() { by_key.entry(ctx.clone()).or_insert(e.val.clone()); } }
-                    if !e.id.trim().is_empty() && !e.val.trim().is_empty() { by_id.entry(e.id.clone()).or_default().push(e.val.clone()); }
+                    if let Some(ctx) = e.ctx.as_ref() {
+                        if !ctx.is_empty() && !e.val.trim().is_empty() {
+                            by_key.entry(ctx.clone()).or_insert(e.val.clone());
+                        }
+                    }
+                    if !e.id.trim().is_empty() && !e.val.trim().is_empty() {
+                        by_id.entry(e.id.clone()).or_default().push(e.val.clone());
+                    }
                 }
             }
         }
@@ -1856,52 +2743,122 @@ fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Resu
     if let Some(roots) = req.tm_roots.as_ref() {
         for root in roots {
             let base = PathBuf::from(root);
-            if !base.exists() { continue; }
-            for entry in walkdir::WalkDir::new(&base).into_iter().filter_map(|e| e.ok()) {
+            if !base.exists() {
+                continue;
+            }
+            for entry in walkdir::WalkDir::new(&base)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
                 let p = entry.path();
-                if !p.is_file() { continue; }
-                let is_po = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("po")).unwrap_or(false);
-                if !is_po { continue; }
+                if !p.is_file() {
+                    continue;
+                }
+                let is_po = p
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|ext| ext.eq_ignore_ascii_case("po"))
+                    .unwrap_or(false);
+                if !is_po {
+                    continue;
+                }
                 if let Ok(entries) = parse_po_entries(p) {
                     for e in entries {
-                        if let Some(ctx) = e.ctx.as_ref() { if !ctx.is_empty() && !e.val.trim().is_empty() { by_key.entry(ctx.clone()).or_insert(e.val.clone()); } }
+                        if let Some(ctx) = e.ctx.as_ref() {
+                            if !ctx.is_empty() && !e.val.trim().is_empty() {
+                                by_key.entry(ctx.clone()).or_insert(e.val.clone());
+                            }
+                        }
                         if !e.id.trim().is_empty() && !e.val.trim().is_empty() {
-                            let arr = by_id.entry(e.id.clone()).or_default(); if !arr.contains(&e.val) { arr.push(e.val.clone()); }
+                            let arr = by_id.entry(e.id.clone()).or_default();
+                            if !arr.contains(&e.val) {
+                                arr.push(e.val.clone());
+                            }
                         }
                     }
                 }
             }
         }
     }
-    let mut by_key_list: Vec<TmEntry> = by_key.into_iter().map(|(k, v)| TmEntry { key: k, value: v }).collect();
+    let mut by_key_list: Vec<TmEntry> = by_key
+        .into_iter()
+        .map(|(k, v)| TmEntry { key: k, value: v })
+        .collect();
     by_key_list.sort_by(|a, b| a.key.cmp(&b.key));
     let mut by_id_list: Vec<TmEntry> = Vec::new();
-    for (k, arr) in by_id.into_iter() { for v in arr { by_id_list.push(TmEntry { key: k.clone(), value: v }); } }
+    for (k, arr) in by_id.into_iter() {
+        for v in arr {
+            by_id_list.push(TmEntry {
+                key: k.clone(),
+                value: v,
+            });
+        }
+    }
     by_id_list.sort_by(|a, b| a.key.cmp(&b.key));
-    Ok(TmBundle { by_key: by_key_list, by_id: by_id_list })
+    Ok(TmBundle {
+        by_key: by_key_list,
+        by_id: by_id_list,
+    })
 }
 
 // --- Learn Patches (scan Patches/ texts) ---
 #[derive(Debug, Deserialize)]
-struct LearnPatchesRequest { root: String, #[serde(default)] min_len: Option<usize>, #[serde(default)] out_json: Option<String>, #[serde(default)] game_version: Option<String> }
+struct LearnPatchesRequest {
+    root: String,
+    #[serde(default)]
+    min_len: Option<usize>,
+    #[serde(default)]
+    out_json: Option<String>,
+    #[serde(default)]
+    game_version: Option<String>,
+}
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct LearnPatchesResponse { out_json: String, suggested_xml: Option<String>, total: usize }
+struct LearnPatchesResponse {
+    out_json: String,
+    suggested_xml: Option<String>,
+    total: usize,
+}
 
 #[tauri::command]
-fn learn_patches_cmd(_window: Window, _state: State<LogState>, req: LearnPatchesRequest) -> Result<LearnPatchesResponse, ApiError> {
+fn learn_patches_cmd(
+    _window: Window,
+    _state: State<LogState>,
+    req: LearnPatchesRequest,
+) -> Result<LearnPatchesResponse, ApiError> {
     let root = PathBuf::from(&req.root);
     let (scan_root, _version) = resolve_game_version_root(&root, req.game_version.as_deref())?;
     let min_len = req.min_len.unwrap_or(1);
-    let cands = rimloc_services::learn::patches::scan_patches_texts(&scan_root, min_len).wrap_err("scan patches")?;
+    let cands = rimloc_services::learn::patches::scan_patches_texts(&scan_root, min_len)
+        .wrap_err("scan patches")?;
     let out_dir = scan_root.join("learn_out");
-    let out_json = req.out_json.as_deref().map(PathBuf::from).unwrap_or_else(|| out_dir.join("patches_texts.json"));
-    if let Some(parent) = out_json.parent() { std::fs::create_dir_all(parent).ok(); }
+    let out_json = req
+        .out_json
+        .as_deref()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| out_dir.join("patches_texts.json"));
+    if let Some(parent) = out_json.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
     let f = std::fs::File::create(&out_json)?;
     serde_json::to_writer_pretty(f, &cands).ok();
     // Also suggested XML if there are inferred entries
-    let mut inferred: Vec<_> = cands.iter().filter_map(|c| c.inferred.as_ref().map(|i| (i, &c.value))).collect();
-    inferred.sort_by(|a,b| (a.0.def_type.as_str(), a.0.def_name.as_str(), a.0.field_path.as_str()).cmp(&(b.0.def_type.as_str(), b.0.def_name.as_str(), b.0.field_path.as_str())));
+    let mut inferred: Vec<_> = cands
+        .iter()
+        .filter_map(|c| c.inferred.as_ref().map(|i| (i, &c.value)))
+        .collect();
+    inferred.sort_by(|a, b| {
+        (
+            a.0.def_type.as_str(),
+            a.0.def_name.as_str(),
+            a.0.field_path.as_str(),
+        )
+            .cmp(&(
+                b.0.def_type.as_str(),
+                b.0.def_name.as_str(),
+                b.0.field_path.as_str(),
+            ))
+    });
     let mut suggested: Option<PathBuf> = None;
     if !inferred.is_empty() {
         std::fs::create_dir_all(&out_dir).ok();
@@ -1911,7 +2868,13 @@ fn learn_patches_cmd(_window: Window, _state: State<LogState>, req: LearnPatches
         writeln!(f, "<LanguageData>")?;
         let mut current_ty: Option<&str> = None;
         for (inf, val) in inferred {
-            if current_ty.map(|t| t != inf.def_type.as_str()).unwrap_or(true) { current_ty = Some(&inf.def_type); writeln!(f, "  <!-- {} -->", inf.def_type)?; }
+            if current_ty
+                .map(|t| t != inf.def_type.as_str())
+                .unwrap_or(true)
+            {
+                current_ty = Some(&inf.def_type);
+                writeln!(f, "  <!-- {} -->", inf.def_type)?;
+            }
             let key = format!("{}.{}", inf.def_name, inf.field_path);
             let en = rimloc_services::learn::export::escape_xml_comment(val);
             writeln!(f, "  <!-- EN: {} -->", en)?;
@@ -1920,7 +2883,11 @@ fn learn_patches_cmd(_window: Window, _state: State<LogState>, req: LearnPatches
         writeln!(f, "</LanguageData>")?;
         suggested = Some(sug);
     }
-    Ok(LearnPatchesResponse { out_json: out_json.display().to_string(), suggested_xml: suggested.map(|p| p.display().to_string()), total: cands.len() })
+    Ok(LearnPatchesResponse {
+        out_json: out_json.display().to_string(),
+        suggested_xml: suggested.map(|p| p.display().to_string()),
+        total: cands.len(),
+    })
 }
 
 // --- Load CLI FTL (best-effort simple parser) ---
@@ -1943,7 +2910,9 @@ fn get_cli_i18n(lang: String) -> Result<std::collections::HashMap<String, String
     for line in rdr.lines() {
         let l = line?;
         let s = l.trim();
-        if s.is_empty() || s.starts_with('#') { continue; }
+        if s.is_empty() || s.starts_with('#') {
+            continue;
+        }
         if let Some(cap) = re.captures(s) {
             let key = cap.get(1).unwrap().as_str().to_string();
             let val = cap.get(2).unwrap().as_str().to_string();
@@ -1972,9 +2941,11 @@ fn list_version_directories(base: &Path) -> Result<Vec<VersionEntry>, ApiError> 
     let read_dir = match std::fs::read_dir(base) {
         Ok(iter) => iter,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(entries),
-        Err(err) => return Err(ApiError {
-            message: err.to_string(),
-        }),
+        Err(err) => {
+            return Err(ApiError {
+                message: err.to_string(),
+            })
+        }
     };
     for entry in read_dir {
         let entry = entry?;
@@ -2009,7 +2980,11 @@ fn parse_version_components(name: &str) -> Option<Vec<u32>> {
         let value: u32 = part.parse().ok()?;
         parts.push(value);
     }
-    if parts.is_empty() { None } else { Some(parts) }
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts)
+    }
 }
 
 fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
@@ -2044,7 +3019,7 @@ fn main() {
             let base = app
                 .path()
                 .app_data_dir()
-                .unwrap_or_else(|_| dirs::data_dir().unwrap_or_else(|| std::env::temp_dir()));
+                .unwrap_or_else(|_| dirs::data_dir().unwrap_or_else(std::env::temp_dir));
             // keep our fixed app folder name for consistency across OSes
             let logs_dir = base.join("RimLoc").join("logs");
             let log_path = logs_dir.join("gui.log");
@@ -2055,13 +3030,21 @@ fn main() {
                 let _ = writeln!(f, "=== RimLoc GUI start v{} ===", env!("CARGO_PKG_VERSION"));
             }
             // ensure profile file exists
-            let _ = OpenOptions::new().create(true).append(true).open(&profile_path);
-            app.manage(LogState { path: log_path.clone() });
+            let _ = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&profile_path);
+            app.manage(LogState {
+                path: log_path.clone(),
+            });
             let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
-                let _ = window.emit("app-info", AppInfo {
-                    version: env!("CARGO_PKG_VERSION").to_string(),
-                });
+                let _ = window.emit(
+                    "app-info",
+                    AppInfo {
+                        version: env!("CARGO_PKG_VERSION").to_string(),
+                    },
+                );
             }
             Ok(())
         })
@@ -2078,7 +3061,7 @@ fn main() {
             lang_update_cmd,
             annotate_cmd,
             init_lang_cmd,
-    get_log_info,
+            get_log_info,
             pick_directory,
             save_text_file,
             log_message,
@@ -2087,23 +3070,23 @@ fn main() {
             get_diagnostics,
             collect_diagnostics,
             simulate_error,
-            simulate_panic
-            ,morph_cmd
-            ,learn_keyed_cmd
-            ,dump_schemas
-            ,get_profile
-            ,validate_po_gui
-            ,learn_patches_cmd
-            ,get_cli_i18n
-            ,apply_translation
-            ,load_tm
-            ,scan_strings_gui
-            ,load_plugin_cmd
-            ,list_plugins_cmd
-            ,coverage_gui
-            ,export_xliff_gui
-            ,import_xliff_gui
-            ,merge_keyed_gui
+            simulate_panic,
+            morph_cmd,
+            learn_keyed_cmd,
+            dump_schemas,
+            get_profile,
+            validate_po_gui,
+            learn_patches_cmd,
+            get_cli_i18n,
+            apply_translation,
+            load_tm,
+            scan_strings_gui,
+            load_plugin_cmd,
+            list_plugins_cmd,
+            coverage_gui,
+            export_xliff_gui,
+            import_xliff_gui,
+            merge_keyed_gui
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -2111,11 +3094,15 @@ fn main() {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct LogInfo { log_path: String }
+struct LogInfo {
+    log_path: String,
+}
 
 #[tauri::command]
 fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
-    Ok(LogInfo { log_path: state.path.display().to_string() })
+    Ok(LogInfo {
+        log_path: state.path.display().to_string(),
+    })
 }
 
 #[tauri::command]
@@ -2125,14 +3112,18 @@ fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<Stri
         let p = PathBuf::from(init);
         builder = builder.set_directory(p);
     }
-    let picked = builder.blocking_pick_folder().map(|p| p.simplified().to_string());
+    let picked = builder
+        .blocking_pick_folder()
+        .map(|p| p.simplified().to_string());
     Ok(picked)
 }
 
 #[tauri::command]
 fn save_text_file(path: String, content: String) -> Result<String, ApiError> {
     let p = PathBuf::from(path);
-    if let Some(parent) = p.parent() { std::fs::create_dir_all(parent)?; }
+    if let Some(parent) = p.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
     std::fs::write(&p, content.as_bytes())?;
     Ok(p.display().to_string())
 }
@@ -2150,20 +3141,51 @@ fn open_path(path: String) -> Result<(), ApiError> {
     }
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("cmd").args(["/C", "start", "", &p.display().to_string()]).spawn()?;
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", &p.display().to_string()])
+            .spawn()?;
     }
     Ok(())
 }
 #[tauri::command]
-fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest) -> Result<DiffXmlResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("diff_xml_cmd: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir));
+fn diff_xml_cmd(
+    window: Window,
+    state: State<LogState>,
+    request: DiffXmlRequest,
+) -> Result<DiffXmlResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "diff_xml_cmd: root={} src={} trg={}",
+            request.root, request.source_lang_dir, request.target_lang_dir
+        ),
+    );
     let t0 = std::time::Instant::now();
-    append_log(&state.path, "INFO", &format!("diff_xml: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir));
+    append_log(
+        &state.path,
+        "INFO",
+        &format!(
+            "diff_xml: root={} src={} trg={}",
+            request.root, request.source_lang_dir, request.target_lang_dir
+        ),
+    );
     let root = PathBuf::from(&request.root);
     let (scan_root, version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
-    let baseline = request.baseline_po.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
-    let defs = request.defs_root.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
-    let out = if request.defs_dicts.as_ref().map(|v| !v.is_empty()).unwrap_or(false)
+    let baseline = request
+        .baseline_po
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
+    let defs = request
+        .defs_root
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
+    let out = if request
+        .defs_dicts
+        .as_ref()
+        .map(|v| !v.is_empty())
+        .unwrap_or(false)
         || request.type_schema.is_some()
     {
         // Build merged dicts (embedded + files + type schema) and run dict-based diff
@@ -2172,12 +3194,16 @@ fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest
         if let Some(list) = request.defs_dicts.as_ref() {
             for p in list {
                 let pp = make_absolute(&scan_root, Path::new(p));
-                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) { dicts.push(d); }
+                if let Ok(d) = rimloc_parsers_xml::load_defs_dict_from_file(&pp) {
+                    dicts.push(d);
+                }
             }
         }
         if let Some(schema) = request.type_schema.as_deref() {
             let pp = make_absolute(&scan_root, Path::new(schema));
-            if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) { dicts.push(d); }
+            if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
+                dicts.push(d);
+            }
         }
         let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
         rimloc_services::diff_xml_with_defs_and_dict(
@@ -2223,19 +3249,45 @@ fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest
     };
     if let Some(p) = request.out_json.as_deref() {
         let path = make_absolute(&scan_root, Path::new(p));
-        if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
         let _ = std::fs::write(&path, serde_json::to_vec_pretty(&resp).unwrap_or_default());
     }
-    write_profile(&state, "diff_xml", t0, serde_json::json!({"only_in_mod": resp.only_in_mod.len(), "only_in_translation": resp.only_in_translation.len(), "changed": resp.changed.len()}));
+    write_profile(
+        &state,
+        "diff_xml",
+        t0,
+        serde_json::json!({"only_in_mod": resp.only_in_mod.len(), "only_in_translation": resp.only_in_translation.len(), "changed": resp.changed.len()}),
+    );
     Ok(resp)
 }
 
 #[tauri::command]
-fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateRequest) -> Result<LangUpdateResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("lang_update_cmd: root={} repo={} branch={:?}", request.root, request.repo, request.branch));
+fn lang_update_cmd(
+    window: Window,
+    state: State<LogState>,
+    request: LangUpdateRequest,
+) -> Result<LangUpdateResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "lang_update_cmd: root={} repo={} branch={:?}",
+            request.root, request.repo, request.branch
+        ),
+    );
     let _ = &request.game_version; // mark as used
     let t0 = std::time::Instant::now();
-    append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
+    append_log(
+        &state.path,
+        "INFO",
+        &format!(
+            "lang_update: repo={} src={} trg={}",
+            request.repo, request.source_lang_dir, request.target_lang_dir
+        ),
+    );
     // Expecting game root (folder containing Data/)
     let mut scan_root = PathBuf::from(&request.root);
     // macOS: allow selecting the .app bundle; resolve to Contents/Resources if needed
@@ -2252,7 +3304,10 @@ fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateR
             scan_root = scan_root.join("Contents").join("Resources");
         }
     }
-    let zip_path = request.zip_path.as_deref().map(|p| make_absolute(&scan_root, Path::new(p)));
+    let zip_path = request
+        .zip_path
+        .as_deref()
+        .map(|p| make_absolute(&scan_root, Path::new(p)));
     let (_plan, summary) = lang_update(
         &scan_root,
         &request.repo,
@@ -2264,12 +3319,30 @@ fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateR
         request.backup,
     )?;
     if let Some(s) = summary {
-        let resp = LangUpdateResponse { files: s.files, bytes: s.bytes, out_dir: s.out_dir.display().to_string() };
-        write_profile(&state, "lang_update", t0, serde_json::json!({"files": resp.files, "bytes": resp.bytes }));
+        let resp = LangUpdateResponse {
+            files: s.files,
+            bytes: s.bytes,
+            out_dir: s.out_dir.display().to_string(),
+        };
+        write_profile(
+            &state,
+            "lang_update",
+            t0,
+            serde_json::json!({"files": resp.files, "bytes": resp.bytes }),
+        );
         Ok(resp)
     } else {
-        let resp = LangUpdateResponse { files: 0, bytes: 0, out_dir: scan_root.join("Data/Core/Languages").display().to_string() };
-        write_profile(&state, "lang_update", t0, serde_json::json!({"files": 0, "bytes": 0 }));
+        let resp = LangUpdateResponse {
+            files: 0,
+            bytes: 0,
+            out_dir: scan_root.join("Data/Core/Languages").display().to_string(),
+        };
+        write_profile(
+            &state,
+            "lang_update",
+            t0,
+            serde_json::json!({"files": 0, "bytes": 0 }),
+        );
         Ok(resp)
     }
 }
@@ -2297,18 +3370,36 @@ struct MorphRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct MorphResponse { processed: usize, lang: String, warn_no_morpher: bool, warn_no_pymorphy: bool }
+struct MorphResponse {
+    processed: usize,
+    lang: String,
+    warn_no_morpher: bool,
+    warn_no_pymorphy: bool,
+}
 
 #[tauri::command]
-fn morph_cmd(_window: Window, state: State<LogState>, request: MorphRequest) -> Result<MorphResponse, ApiError> {
-    append_log(&state.path, "INFO", &format!("morph: target={} provider={:?}", request.target_lang_dir, request.provider));
+fn morph_cmd(
+    _window: Window,
+    state: State<LogState>,
+    request: MorphRequest,
+) -> Result<MorphResponse, ApiError> {
+    append_log(
+        &state.path,
+        "INFO",
+        &format!(
+            "morph: target={} provider={:?}",
+            request.target_lang_dir, request.provider
+        ),
+    );
     let root = PathBuf::from(&request.root);
     let prov = match request.provider.as_deref() {
         Some("morpher") | Some("MorpherApi") => MorphProvider::MorpherApi,
         Some("pymorphy") | Some("Pymorphy2") => MorphProvider::Pymorphy2,
         _ => MorphProvider::Dummy,
     };
-    if let Some(tok) = request.morpher_token.as_deref() { std::env::set_var("MORPHER_TOKEN", tok); }
+    if let Some(tok) = request.morpher_token.as_deref() {
+        std::env::set_var("MORPHER_TOKEN", tok);
+    }
     let opts = MorphOptions {
         provider: prov,
         target_lang_dir: request.target_lang_dir.clone(),
@@ -2319,7 +3410,12 @@ fn morph_cmd(_window: Window, state: State<LogState>, request: MorphRequest) -> 
         pymorphy_url: request.pymorphy_url.clone(),
     };
     let res = rimloc_services::morph_generate(&root, &opts).wrap_err("morph generate")?;
-    Ok(MorphResponse { processed: res.processed, lang: res.lang, warn_no_morpher: res.warn_no_morpher, warn_no_pymorphy: res.warn_no_pymorphy })
+    Ok(MorphResponse {
+        processed: res.processed,
+        lang: res.lang,
+        warn_no_morpher: res.warn_no_morpher,
+        warn_no_pymorphy: res.warn_no_pymorphy,
+    })
 }
 
 // --- Learn Keyed ---
@@ -2360,11 +3456,26 @@ struct LearnKeyedRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct LearnKeyedResponse { processed: usize, suggested: String, missing: String }
+struct LearnKeyedResponse {
+    processed: usize,
+    suggested: String,
+    missing: String,
+}
 
 #[tauri::command]
-fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedRequest) -> Result<LearnKeyedResponse, ApiError> {
-    append_log(&state.path, "INFO", &format!("learn_keyed: src={:?} trg={:?}", request.source_lang_dir, request.target_lang_dir));
+fn learn_keyed_cmd(
+    _window: Window,
+    state: State<LogState>,
+    request: LearnKeyedRequest,
+) -> Result<LearnKeyedResponse, ApiError> {
+    append_log(
+        &state.path,
+        "INFO",
+        &format!(
+            "learn_keyed: src={:?} trg={:?}",
+            request.source_lang_dir, request.target_lang_dir
+        ),
+    );
     let root = PathBuf::from(&request.root);
     let (scan_root, _version) = resolve_game_version_root(&root, request.game_version.as_deref())?;
     let out_dir = request
@@ -2379,12 +3490,22 @@ fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedR
     if let Some(files) = request.dict_files.as_ref() {
         for f in files {
             let pp = PathBuf::from(f);
-            if let Ok(d) = rimloc_services::learn::keyed::load_keyed_dict_from_file(&pp) { dicts.push(d); }
+            if let Ok(d) = rimloc_services::learn::keyed::load_keyed_dict_from_file(&pp) {
+                dicts.push(d);
+            }
         }
     }
-    let src_dir = request.source_lang_dir.clone().unwrap_or_else(|| "English".to_string());
-    let trg_dir = request.target_lang_dir.clone().unwrap_or_else(|| "Russian".to_string());
-    if request.from_defs_special { std::env::set_var("RIMLOC_LEARN_KEYED_FROM_DEFS", "1"); }
+    let src_dir = request
+        .source_lang_dir
+        .clone()
+        .unwrap_or_else(|| "English".to_string());
+    let trg_dir = request
+        .target_lang_dir
+        .clone()
+        .unwrap_or_else(|| "Russian".to_string());
+    if request.from_defs_special {
+        std::env::set_var("RIMLOC_LEARN_KEYED_FROM_DEFS", "1");
+    }
     // Classifier
     let mut classifier: Box<dyn rimloc_services::learn::ml::Classifier> = if request.no_ml {
         Box::new(rimloc_services::learn::ml::DummyClassifier::new(1.0))
@@ -2414,11 +3535,23 @@ fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedR
     {
         #[derive(serde::Serialize)]
         #[allow(non_snake_case)]
-        struct Row<'a> { key: &'a str, value: &'a str, confidence: f32, sourceFile: String, learnedAt: String }
+        struct Row<'a> {
+            key: &'a str,
+            value: &'a str,
+            confidence: f32,
+            sourceFile: String,
+            learnedAt: String,
+        }
         let now = chrono::Utc::now().to_rfc3339();
         let rows: Vec<Row> = missing
             .iter()
-            .map(|c| Row { key: &c.key, value: &c.value, confidence: c.confidence.unwrap_or(1.0), sourceFile: c.source_file.display().to_string(), learnedAt: now.clone() })
+            .map(|c| Row {
+                key: &c.key,
+                value: &c.value,
+                confidence: c.confidence.unwrap_or(1.0),
+                sourceFile: c.source_file.display().to_string(),
+                learnedAt: now.clone(),
+            })
             .collect();
         let path = learned_out.unwrap_or_else(|| out_dir.join("learned_keyed.json"));
         let file = std::fs::File::create(path)?;
@@ -2433,26 +3566,49 @@ fn learn_keyed_cmd(_window: Window, state: State<LogState>, request: LearnKeyedR
             out_dir.join("keyed_dict.updated.json")
         };
         #[derive(serde::Serialize)]
-        struct KD { include: Vec<String>, #[serde(skip_serializing_if = "Option::is_none")] exclude: Option<Vec<String>> }
+        struct KD {
+            include: Vec<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            exclude: Option<Vec<String>>,
+        }
         let mut include: Vec<String> = Vec::new();
-        for c in &missing { include.push(format!("^{}$", regex::escape(&c.key))); }
-        include.sort(); include.dedup();
+        for c in &missing {
+            include.push(format!("^{}$", regex::escape(&c.key)));
+        }
+        include.sort();
+        include.dedup();
         let file = std::fs::File::create(out_path)?;
-        serde_json::to_writer_pretty(file, &KD { include, exclude: None })?;
+        serde_json::to_writer_pretty(
+            file,
+            &KD {
+                include,
+                exclude: None,
+            },
+        )?;
     }
 
     let miss = out_dir.join("missing_keyed.json");
     rimloc_services::learn::keyed::write_keyed_missing_json(&miss, &missing)?;
     let sug = out_dir.join("_SuggestedKeyed.xml");
     rimloc_services::learn::keyed::write_keyed_suggested_xml(&sug, &missing)?;
-    Ok(LearnKeyedResponse { processed: missing.len(), suggested: sug.display().to_string(), missing: miss.display().to_string() })
+    Ok(LearnKeyedResponse {
+        processed: missing.len(),
+        suggested: sug.display().to_string(),
+        missing: miss.display().to_string(),
+    })
 }
 
 // --- Dump JSON Schemas ---
 #[derive(Debug, Deserialize)]
-struct DumpSchemasRequest { out_dir: String }
+struct DumpSchemasRequest {
+    out_dir: String,
+}
 #[tauri::command]
-fn dump_schemas(_window: Window, _state: State<LogState>, req: DumpSchemasRequest) -> Result<String, ApiError> {
+fn dump_schemas(
+    _window: Window,
+    _state: State<LogState>,
+    req: DumpSchemasRequest,
+) -> Result<String, ApiError> {
     use std::fs;
     let out_dir = PathBuf::from(&req.out_dir);
     fs::create_dir_all(&out_dir)?;
@@ -2475,19 +3631,36 @@ fn dump_schemas(_window: Window, _state: State<LogState>, req: DumpSchemasReques
 
 // --- Profiler: return last N entries of profile.jsonl with per-command summary ---
 #[derive(Debug, Deserialize)]
-struct ProfileRequest { #[serde(default)] limit: Option<usize> }
+struct ProfileRequest {
+    #[serde(default)]
+    limit: Option<usize>,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ProfileEntryOut { ts: String, command: String, duration_ms: u64, extra: serde_json::Value }
+struct ProfileEntryOut {
+    ts: String,
+    command: String,
+    duration_ms: u64,
+    extra: serde_json::Value,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ProfileCommandRow { command: String, count: usize, total_ms: u64, max_ms: u64, avg_ms: f64 }
+struct ProfileCommandRow {
+    command: String,
+    count: usize,
+    total_ms: u64,
+    max_ms: u64,
+    avg_ms: f64,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ProfileResponse { entries: Vec<ProfileEntryOut>, per_command: Vec<ProfileCommandRow> }
+struct ProfileResponse {
+    entries: Vec<ProfileEntryOut>,
+    per_command: Vec<ProfileCommandRow>,
+}
 
 #[tauri::command]
 fn get_profile(state: State<LogState>, req: ProfileRequest) -> Result<ProfileResponse, ApiError> {
@@ -2498,13 +3671,28 @@ fn get_profile(state: State<LogState>, req: ProfileRequest) -> Result<ProfileRes
         if file.exists() {
             let content = std::fs::read_to_string(&file)?;
             for line in content.lines().rev().take(lim) {
-                if line.trim().is_empty() { continue; }
+                if line.trim().is_empty() {
+                    continue;
+                }
                 if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
-                    let ts = v.get("ts").and_then(|x| x.as_str()).unwrap_or("").to_string();
-                    let command = v.get("command").and_then(|x| x.as_str()).unwrap_or("").to_string();
+                    let ts = v
+                        .get("ts")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let command = v
+                        .get("command")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .to_string();
                     let duration_ms = v.get("duration_ms").and_then(|x| x.as_u64()).unwrap_or(0);
                     let extra = v.get("extra").cloned().unwrap_or(serde_json::json!({}));
-                    entries.push(ProfileEntryOut { ts, command, duration_ms, extra });
+                    entries.push(ProfileEntryOut {
+                        ts,
+                        command,
+                        duration_ms,
+                        extra,
+                    });
                 }
             }
             entries.reverse();
@@ -2514,52 +3702,164 @@ fn get_profile(state: State<LogState>, req: ProfileRequest) -> Result<ProfileRes
     let mut map: BTreeMap<String, (usize, u64, u64)> = BTreeMap::new();
     for e in &entries {
         let ent = map.entry(e.command.clone()).or_insert((0, 0, 0));
-        ent.0 += 1; ent.1 += e.duration_ms; if e.duration_ms > ent.2 { ent.2 = e.duration_ms; }
+        ent.0 += 1;
+        ent.1 += e.duration_ms;
+        if e.duration_ms > ent.2 {
+            ent.2 = e.duration_ms;
+        }
     }
-    let mut per_command: Vec<ProfileCommandRow> = map.into_iter().map(|(k,(c,tot,max))| ProfileCommandRow{ command: k, count: c, total_ms: tot, max_ms: max, avg_ms: if c==0 {0.0} else {(tot as f64)/(c as f64)} }).collect();
-    per_command.sort_by(|a,b| b.avg_ms.partial_cmp(&a.avg_ms).unwrap_or(std::cmp::Ordering::Equal));
-    Ok(ProfileResponse { entries, per_command })
+    let mut per_command: Vec<ProfileCommandRow> = map
+        .into_iter()
+        .map(|(k, (c, tot, max))| ProfileCommandRow {
+            command: k,
+            count: c,
+            total_ms: tot,
+            max_ms: max,
+            avg_ms: if c == 0 {
+                0.0
+            } else {
+                (tot as f64) / (c as f64)
+            },
+        })
+        .collect();
+    per_command.sort_by(|a, b| {
+        b.avg_ms
+            .partial_cmp(&a.avg_ms)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    Ok(ProfileResponse {
+        entries,
+        per_command,
+    })
 }
 
 #[tauri::command]
-fn annotate_cmd(_window: Window, state: State<LogState>, request: AnnotateRequest) -> Result<AnnotateResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("annotate_cmd: root={} src={} trg={} dry_run={}", request.root, request.source_lang_dir, request.target_lang_dir, request.dry_run));
+fn annotate_cmd(
+    window: Window,
+    state: State<LogState>,
+    request: AnnotateRequest,
+) -> Result<AnnotateResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "annotate_cmd: root={} src={} trg={} dry_run={}",
+            request.root, request.source_lang_dir, request.target_lang_dir, request.dry_run
+        ),
+    );
     let t0 = std::time::Instant::now();
-    append_log(&state.path, "INFO", &format!("annotate: src={} trg={}", request.source_lang_dir, request.target_lang_dir));
+    append_log(
+        &state.path,
+        "INFO",
+        &format!(
+            "annotate: src={} trg={}",
+            request.source_lang_dir, request.target_lang_dir
+        ),
+    );
     let root = PathBuf::from(&request.root);
     if request.dry_run {
-        let plan = annotate_dry_run_plan(&root, &request.source_lang_dir, &request.target_lang_dir, request.comment_prefix.as_deref().unwrap_or("//"), request.strip)?;
-        let resp = AnnotateResponse { processed: plan.processed, annotated: plan.total_add };
-        write_profile(&state, "annotate_preview", t0, serde_json::json!({"processed": resp.processed, "annotated": resp.annotated }));
+        let plan = annotate_dry_run_plan(
+            &root,
+            &request.source_lang_dir,
+            &request.target_lang_dir,
+            request.comment_prefix.as_deref().unwrap_or("//"),
+            request.strip,
+        )?;
+        let resp = AnnotateResponse {
+            processed: plan.processed,
+            annotated: plan.total_add,
+        };
+        write_profile(
+            &state,
+            "annotate_preview",
+            t0,
+            serde_json::json!({"processed": resp.processed, "annotated": resp.annotated }),
+        );
         Ok(resp)
     } else {
-        let s = annotate_apply(&root, &request.source_lang_dir, &request.target_lang_dir, request.comment_prefix.as_deref().unwrap_or("//"), request.strip, false, request.backup)?;
-        let resp = AnnotateResponse { processed: s.processed, annotated: s.annotated };
-        write_profile(&state, "annotate_apply", t0, serde_json::json!({"processed": resp.processed, "annotated": resp.annotated }));
+        let s = annotate_apply(
+            &root,
+            &request.source_lang_dir,
+            &request.target_lang_dir,
+            request.comment_prefix.as_deref().unwrap_or("//"),
+            request.strip,
+            false,
+            request.backup,
+        )?;
+        let resp = AnnotateResponse {
+            processed: s.processed,
+            annotated: s.annotated,
+        };
+        write_profile(
+            &state,
+            "annotate_apply",
+            t0,
+            serde_json::json!({"processed": resp.processed, "annotated": resp.annotated }),
+        );
         Ok(resp)
     }
 }
 
 #[tauri::command]
-fn init_lang_cmd(_window: Window, state: State<LogState>, request: InitRequest) -> Result<InitResponse, ApiError> {
-    emit_log(&window, &state, "debug", format!("init_lang_cmd: root={} src={} trg={} overwrite={} dry_run={}", request.root, request.source_lang_dir, request.target_lang_dir, request.overwrite, request.dry_run));
+fn init_lang_cmd(
+    window: Window,
+    state: State<LogState>,
+    request: InitRequest,
+) -> Result<InitResponse, ApiError> {
+    emit_log(
+        &window,
+        &state,
+        "debug",
+        format!(
+            "init_lang_cmd: root={} src={} trg={} overwrite={} dry_run={}",
+            request.root,
+            request.source_lang_dir,
+            request.target_lang_dir,
+            request.overwrite,
+            request.dry_run
+        ),
+    );
     let t0 = std::time::Instant::now();
     let root = PathBuf::from(&request.root);
     let plan = make_init_plan(&root, &request.source_lang_dir, &request.target_lang_dir)?;
     let files = write_init_plan(&plan, request.overwrite, request.dry_run)?;
-    let resp = InitResponse { files, out_language: plan.language };
-    write_profile(&state, "init_lang", t0, serde_json::json!({"files": resp.files }));
+    let resp = InitResponse {
+        files,
+        out_language: plan.language,
+    };
+    write_profile(
+        &state,
+        "init_lang",
+        t0,
+        serde_json::json!({"files": resp.files }),
+    );
     Ok(resp)
 }
 #[derive(Debug, Deserialize)]
-struct ApplyTranslationRequest { root: String, #[serde(default)] lang: Option<String>, #[serde(default)] lang_dir: Option<String>, key: String, value: String, #[serde(default)] file: Option<String> }
+struct ApplyTranslationRequest {
+    root: String,
+    #[serde(default)]
+    lang: Option<String>,
+    #[serde(default)]
+    lang_dir: Option<String>,
+    key: String,
+    value: String,
+    #[serde(default)]
+    file: Option<String>,
+}
 #[derive(Debug, Serialize)]
-struct ApplyTranslationResponse { out_path: String, total_keys: usize }
+struct ApplyTranslationResponse {
+    out_path: String,
+    total_keys: usize,
+}
 
 fn read_language_pairs(path: &Path) -> std::io::Result<Vec<(String, String)>> {
-    if !path.exists() { return Ok(Vec::new()); }
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
     let s = std::fs::read_to_string(path)?;
-    let doc = roxmltree::Document::parse(&s).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    let doc = roxmltree::Document::parse(&s).map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut out = Vec::new();
     let root = doc.root_element();
     for child in root.children().filter(|n| n.is_element()) {
@@ -2571,22 +3871,45 @@ fn read_language_pairs(path: &Path) -> std::io::Result<Vec<(String, String)>> {
 }
 
 #[tauri::command]
-fn apply_translation(request: ApplyTranslationRequest) -> Result<ApplyTranslationResponse, ApiError> {
+fn apply_translation(
+    request: ApplyTranslationRequest,
+) -> Result<ApplyTranslationResponse, ApiError> {
     let root = PathBuf::from(&request.root);
-    let lang_dir = request.lang_dir.clone().or_else(|| request.lang.as_ref().map(|c| rimloc_import_po::rimworld_lang_dir(c))).unwrap_or_else(|| "Russian".to_string());
+    let lang_dir = request
+        .lang_dir
+        .clone()
+        .or_else(|| {
+            request
+                .lang
+                .as_ref()
+                .map(|c| rimloc_import_po::rimworld_lang_dir(c))
+        })
+        .unwrap_or_else(|| "Russian".to_string());
     let out_path = if let Some(f) = request.file.as_deref() {
         make_absolute(&root, Path::new(f))
     } else {
-        root.join("Languages").join(&lang_dir).join("Keyed").join("_Edited.xml")
+        root.join("Languages")
+            .join(&lang_dir)
+            .join("Keyed")
+            .join("_Edited.xml")
     };
     let mut pairs = read_language_pairs(&out_path).unwrap_or_default();
     // update/insert
     let mut found = false;
     for (k, v) in pairs.iter_mut() {
-        if k == &request.key { *v = request.value.clone(); found = true; break; }
+        if k == &request.key {
+            *v = request.value.clone();
+            found = true;
+            break;
+        }
     }
-    if !found { pairs.push((request.key.clone(), request.value.clone())); }
-    pairs.sort_by(|a,b| a.0.cmp(&b.0));
+    if !found {
+        pairs.push((request.key.clone(), request.value.clone()));
+    }
+    pairs.sort_by(|a, b| a.0.cmp(&b.0));
     rimloc_import_po::write_language_data_xml(&out_path, &pairs).map_err(ApiError::from)?;
-    Ok(ApplyTranslationResponse { out_path: out_path.display().to_string(), total_keys: pairs.len() })
+    Ok(ApplyTranslationResponse {
+        out_path: out_path.display().to_string(),
+        total_keys: pairs.len(),
+    })
 }

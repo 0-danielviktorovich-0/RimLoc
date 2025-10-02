@@ -309,8 +309,12 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 let mut owned = std::mem::take(sc);
                 owned = owned.about(tr!("help-mergekeyed-about"));
                 owned = owned.mut_arg("root", |a| a.help(tr!("help-mergekeyed-root")));
-                owned = owned.mut_arg("source_lang_dir", |a| a.help(tr!("help-mergekeyed-source-lang-dir")));
-                owned = owned.mut_arg("target_lang_dir", |a| a.help(tr!("help-mergekeyed-target-lang-dir")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-mergekeyed-source-lang-dir"))
+                });
+                owned = owned.mut_arg("target_lang_dir", |a| {
+                    a.help(tr!("help-mergekeyed-target-lang-dir"))
+                });
                 owned = owned.mut_arg("out_dir", |a| a.help(tr!("help-mergekeyed-out-dir")));
                 *sc = owned;
             }
@@ -318,8 +322,12 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 let mut owned = std::mem::take(sc);
                 owned = owned.about(tr!("help-coverage-about"));
                 owned = owned.mut_arg("root", |a| a.help(tr!("help-coverage-root")));
-                owned = owned.mut_arg("source_lang_dir", |a| a.help(tr!("help-coverage-source-lang-dir")));
-                owned = owned.mut_arg("target_lang_dir", |a| a.help(tr!("help-coverage-target-lang-dir")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-coverage-source-lang-dir"))
+                });
+                owned = owned.mut_arg("target_lang_dir", |a| {
+                    a.help(tr!("help-coverage-target-lang-dir"))
+                });
                 owned = owned.mut_arg("defs_dir", |a| a.help(tr!("help-coverage-defs-dir")));
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-coverage-format")));
                 *sc = owned;
@@ -329,7 +337,9 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.about(tr!("help-exportxlf-about"));
                 owned = owned.mut_arg("root", |a| a.help(tr!("help-exportxlf-root")));
                 owned = owned.mut_arg("out_xlf", |a| a.help(tr!("help-exportxlf-out-xlf")));
-                owned = owned.mut_arg("source_lang_dir", |a| a.help(tr!("help-exportxlf-source-lang-dir")));
+                owned = owned.mut_arg("source_lang_dir", |a| {
+                    a.help(tr!("help-exportxlf-source-lang-dir"))
+                });
                 owned = owned.mut_arg("lang", |a| a.help(tr!("help-exportxlf-lang")));
                 *sc = owned;
             }
@@ -1146,14 +1156,32 @@ impl Runnable for Commands {
                 units
                     .retain(|u| rimloc_services::is_under_languages_dir(&u.path, &source_lang_dir));
                 rimloc_export_xliff::write_xliff_12(&out_xlf, &units, "en", &lang)?;
-                if use_color { use owo_colors::OwoColorize; println!("{} {} {}", "✔".green(), tr!("export-xlf-saved"), out_xlf.display()); }
-                else { println!("{} {}", tr!("export-xlf-saved"), out_xlf.display()); }
+                if use_color {
+                    use owo_colors::OwoColorize;
+                    println!(
+                        "{} {} {}",
+                        "✔".green(),
+                        tr!("export-xlf-saved"),
+                        out_xlf.display()
+                    );
+                } else {
+                    println!("{} {}", tr!("export-xlf-saved"), out_xlf.display());
+                }
                 Ok(())
             }
             Commands::ImportXliff { xlf, out_xml } => {
                 rimloc_import_xliff::xliff_to_language_data(&out_xml, &xlf)?;
-                if use_color { use owo_colors::OwoColorize; println!("{} {} {}", "✔".green(), tr!("import-xlf-wrote"), out_xml.display()); }
-                else { println!("{} {}", tr!("import-xlf-wrote"), out_xml.display()); }
+                if use_color {
+                    use owo_colors::OwoColorize;
+                    println!(
+                        "{} {} {}",
+                        "✔".green(),
+                        tr!("import-xlf-wrote"),
+                        out_xml.display()
+                    );
+                } else {
+                    println!("{} {}", tr!("import-xlf-wrote"), out_xml.display());
+                }
                 Ok(())
             }
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),

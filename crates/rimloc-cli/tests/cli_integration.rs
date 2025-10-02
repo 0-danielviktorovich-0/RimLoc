@@ -201,7 +201,12 @@ fn validate_json_emits_structured_issues() {
     let json_slice = out.as_str();
     let msgs: Vec<JsonMsg> = serde_json::from_str(json_slice).expect("valid JSON diagnostics");
     assert!(!msgs.is_empty(), "expected at least one issue in fixture");
-    let allowed = ["duplicate", "duplicate-global", "empty", "placeholder-check"];
+    let allowed = [
+        "duplicate",
+        "duplicate-global",
+        "empty",
+        "placeholder-check",
+    ];
     for m in msgs {
         assert!(
             allowed.contains(&m.kind.as_str()),
@@ -1390,7 +1395,11 @@ fn scan_for_hardcoded_user_strings_in(dir: &std::path::Path, include_tests: bool
                 }
                 // Skip vendored third-party code (not subject to our i18n rules)
                 let pstr = path.to_string_lossy();
-                if pstr.contains("/src-tauri/vendor/") || pstr.contains("\\src-tauri\\vendor\\") || pstr.contains("/vendor/") || pstr.contains("\\vendor\\") {
+                if pstr.contains("/src-tauri/vendor/")
+                    || pstr.contains("\\src-tauri\\vendor\\")
+                    || pstr.contains("/vendor/")
+                    || pstr.contains("\\vendor\\")
+                {
                     continue;
                 }
                 offenders.extend(scan_for_hardcoded_user_strings_in(&path, include_tests));
@@ -1699,7 +1708,11 @@ fn all_tr_keys_exist_in_en_ftl() {
                     }
                     // Skip vendored third-party code
                     let pstr = p.to_string_lossy();
-                    if pstr.contains("/src-tauri/vendor/") || pstr.contains("\\src-tauri\\vendor\\") || pstr.contains("/vendor/") || pstr.contains("\\vendor\\") {
+                    if pstr.contains("/src-tauri/vendor/")
+                        || pstr.contains("\\src-tauri\\vendor\\")
+                        || pstr.contains("/vendor/")
+                        || pstr.contains("\\vendor\\")
+                    {
                         continue;
                     }
                     if name == "tests" {
@@ -1708,7 +1721,11 @@ fn all_tr_keys_exist_in_en_ftl() {
                     walk(&p, en_map, missing);
                 } else {
                     let pstr = p.to_string_lossy();
-                    if pstr.contains("/src-tauri/vendor/") || pstr.contains("\\src-tauri\\vendor\\") || pstr.contains("/vendor/") || pstr.contains("\\vendor\\") {
+                    if pstr.contains("/src-tauri/vendor/")
+                        || pstr.contains("\\src-tauri\\vendor\\")
+                        || pstr.contains("/vendor/")
+                        || pstr.contains("\\vendor\\")
+                    {
                         continue;
                     }
                     scan_file(&p, en_map, missing);

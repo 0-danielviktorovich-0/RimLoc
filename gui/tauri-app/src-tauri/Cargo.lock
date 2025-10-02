@@ -3564,6 +3564,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "rimloc-export-xliff"
+version = "0.1.0"
+dependencies = [
+ "rimloc-core",
+]
+
+[[package]]
 name = "rimloc-gui"
 version = "0.1.0"
 dependencies = [
@@ -3577,9 +3584,12 @@ dependencies = [
  "rimloc-domain",
  "rimloc-export-csv",
  "rimloc-export-po",
+ "rimloc-export-xliff",
  "rimloc-import-po",
+ "rimloc-import-xliff",
  "rimloc-parsers-xml",
  "rimloc-services",
+ "roxmltree",
  "schemars 0.8.22",
  "serde",
  "serde_json",
@@ -3600,6 +3610,15 @@ dependencies = [
  "regex",
  "rimloc-core",
  "tempfile",
+]
+
+[[package]]
+name = "rimloc-import-xliff"
+version = "0.1.0"
+dependencies = [
+ "color-eyre",
+ "quick-xml 0.36.2",
+ "rimloc-import-po",
 ]
 
 [[package]]
