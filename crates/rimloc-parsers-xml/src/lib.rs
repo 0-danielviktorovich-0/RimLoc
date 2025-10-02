@@ -21,6 +21,9 @@ pub struct KeyedScanOptions {
     pub include_empty_keys: bool,
     /// Process files in parallel where possible. Final result is sorted deterministically.
     pub parallel: bool,
+    /// When scanning nested keys under `DefInjected/`, drop leading Def type segment
+    /// (e.g., ThingDef.Apparel_Parka.label -> Apparel_Parka.label).
+    pub definj_drop_def_type: bool,
 }
 
 impl Default for KeyedScanOptions {
@@ -35,6 +38,7 @@ impl Default for KeyedScanOptions {
             join_li_with_newline,
             include_empty_keys,
             parallel,
+            definj_drop_def_type: true,
         }
     }
 }
@@ -95,6 +99,46 @@ pub fn scan_keyed_xml_with_options(
         files.push(p.to_path_buf());
     }
 
+    fn is_def_injected_path(p: &std::path::Path) -> bool {
+        def_injected_type_from_path(p).is_some()
+    }
+
+    fn def_injected_type_from_path(p: &std::path::Path) -> Option<String> {
+        // Find segment immediately following "DefInjected" in the path
+        let mut seen = false;
+        for c in p.components() {
+            let s = c.as_os_str().to_string_lossy();
+            if seen {
+                return Some(s.into_owned());
+            }
+            if s.eq_ignore_ascii_case("DefInjected") {
+                seen = true;
+            }
+        }
+        None
+    }
+
+    fn drop_def_type_if_needed(
+        mut key: String,
+        maybe_def_type: Option<&str>,
+        drop: bool,
+    ) -> String {
+        if !(drop) {
+            return key;
+        }
+        let Some(pos) = key.find('.') else { return key };
+        let head = &key[..pos];
+        if let Some(dt) = maybe_def_type {
+            if head.eq_ignore_ascii_case(dt) {
+                key.drain(..=pos);
+            }
+        } else if head.ends_with("Def") {
+            // Fallback: when path parsing failed but it still looks like a Def type
+            key.drain(..=pos);
+        }
+        key
+    }
+
     let process_one = |p: &std::path::PathBuf| -> Vec<TransUnit> {
         let mut local: Vec<TransUnit> = Vec::new();
 
@@ -148,7 +192,8 @@ pub fn scan_keyed_xml_with_options(
                                     stack.iter().skip(1).map(|f| f.name.clone()).collect();
                                 parts.push(frame.name.clone());
                                 if !parts.iter().any(|p| p.eq_ignore_ascii_case("li")) {
-                                    let key = parts.join(".");
+                                    let def_type = def_injected_type_from_path(p);
+                                    let key = drop_def_type_if_needed(parts.join("."), def_type.as_deref(), opts.definj_drop_def_type);
                                     local.push(TransUnit {
                                         key,
                                         source: Some(frame.buffer.clone()),
@@ -204,7 +249,8 @@ pub fn scan_keyed_xml_with_options(
                             let mut parts: Vec<&str> =
                                 stack.iter().skip(1).map(|f| f.name.as_str()).collect();
                             parts.push(&frame.name);
-                            let key = parts.join(".");
+                            let def_type = def_injected_type_from_path(p);
+                            let key = drop_def_type_if_needed(parts.join("."), def_type.as_deref(), opts.definj_drop_def_type);
                             local.push(TransUnit {
                                 key,
                                 source: Some(frame.buffer),
@@ -262,7 +308,8 @@ pub fn scan_keyed_xml_with_options(
                             let mut parts: Vec<&str> =
                                 stack.iter().skip(1).map(|f| f.name.as_str()).collect();
                             parts.push(&name);
-                            let key = parts.join(".");
+                            let def_type = def_injected_type_from_path(p);
+                            let key = drop_def_type_if_needed(parts.join("."), def_type.as_deref(), opts.definj_drop_def_type);
                             local.push(TransUnit {
                                 key,
                                 source: Some(String::new()),
@@ -1757,6 +1804,61 @@ mod tests {
 
         assert_eq!(unit.source.as_deref(), Some("Part\nRest"));
         assert_eq!(unit.path, file_path);
+
+        Ok(())
+    }
+
+    #[test]
+    fn scan_keyed_nested_definj_drops_def_type() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let definj_dir = dir
+            .path()
+            .join("Mods/TestMod/Languages/English/DefInjected/ThingDef");
+        fs::create_dir_all(&definj_dir)?;
+
+        let file_path = definj_dir.join("Nested.xml");
+        fs::write(
+            &file_path,
+            r#"<LanguageData>
+  <ThingDef>
+    <Meal_Simple>
+      <label>simple meal</label>
+    </Meal_Simple>
+  </ThingDef>
+  <PawnKindDef>
+    <Pawn_PlayerColony>
+      <label>colonist</label>
+    </Pawn_PlayerColony>
+  </PawnKindDef>
+  <NotADef>
+    <Foo>
+      <label>bar</label>
+    </Foo>
+  </NotADef>
+  <Already.Flat>baz</Already.Flat>
+  </LanguageData>
+"#,
+        )?;
+
+        let opts = KeyedScanOptions {
+            nested: true,
+            join_li_with_newline: true,
+            include_empty_keys: true,
+            parallel: false,
+            definj_drop_def_type: true,
+        };
+        let units = scan_keyed_xml_with_options(dir.path(), &opts)?;
+
+        // For DefInjected nested structure, first segment ending with 'Def' must be dropped
+        assert!(units.iter().any(|u| u.key == "Meal_Simple.label" && u.source.as_deref() == Some("simple meal")));
+        // Different def type inside same file should keep its prefix
+        assert!(units.iter().any(|u| u.key == "PawnKindDef.Pawn_PlayerColony.label" && u.source.as_deref() == Some("colonist")));
+
+        // Non-Def prefix should remain (NotADef doesn't end with 'Def' → keep it)
+        assert!(units.iter().any(|u| u.key == "NotADef.Foo.label" && u.source.as_deref() == Some("bar")));
+
+        // Already flat dotted key preserved as-is
+        assert!(units.iter().any(|u| u.key == "Already.Flat" && u.source.as_deref() == Some("baz")));
 
         Ok(())
     }
