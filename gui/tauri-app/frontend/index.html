@@ -16,11 +16,13 @@
           if (window.matchMedia) {
             var mq = window.matchMedia('(prefers-color-scheme: dark)');
             if (!window.__rimlocThemeBound) {
-              mq.addEventListener('change', function(){
+              var onChange = function(){
                 if ((localStorage.getItem('rimloc.theme') || 'auto') === 'auto') {
                   document.documentElement.dataset.theme = (mq.matches ? 'dark' : 'light');
                 }
-              });
+              };
+              if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
+              else if (typeof mq.addListener === 'function') mq.addListener(onChange);
               window.__rimlocThemeBound = true;
             }
           }
@@ -1176,6 +1178,21 @@
       <p data-i18n="footer_hint">Need DefInjected strings? Run “Learn defs” first and copy <code>suggested.xml</code> into your language folder.</p>
     </footer>
 
-    <script src="index.js" defer></script>
+    <script src="index.js"></script>
+    <script>
+      // Fallback watchdog: if main script didn't set ready flag, try to boot manually or report.
+      (function(){
+        function tryBoot(){
+          var s = document.getElementById('status-text');
+          if (window.__rimlocReady) return;
+          if (typeof window.boot === 'function') {
+            try { s && (s.textContent = 'Booting…'); window.boot(); } catch (e) { console.error('Boot error', e); s && (s.textContent = 'Boot error: ' + (e && e.message ? e.message : e)); }
+          } else {
+            s && (s.textContent = 'index.js not loaded');
+          }
+        }
+        setTimeout(tryBoot, 300);
+      })();
+    </script>
   </body>
 </html>
