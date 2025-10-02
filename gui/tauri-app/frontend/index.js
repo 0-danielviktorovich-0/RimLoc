@@ -1506,6 +1506,7 @@ const I18N = {
     scan_defs_dicts: "Defs dictionaries (one per line)",
     scan_type_schema: "Type schema (optional)",
     scan_keyed_nested: "Nested Keyed (dot-paths)",
+    scan_fuzzy: "Fuzzy from Defs",
     scan_no_inherit: "No inheritance",
     scan_plugins: "Run plugins",
     scan_empty: "No scan performed yet.",
@@ -1760,6 +1761,7 @@ const I18N = {
     scan_defs_dicts: "Словари Defs (по одному в строке)",
     scan_type_schema: "Схема типов (опционально)",
     scan_keyed_nested: "Nested Keyed (dot-paths)",
+    scan_fuzzy: "Fuzzy из Defs",
     scan_no_inherit: "Без наследования",
     scan_plugins: "Запуск плагинов",
     scan_empty: "Сканирование ещё не выполнялось.",
@@ -2423,3 +2425,15 @@ function renderEnHighlighted(en) {
   // visualize <li> boundaries by splitting newlines (heuristic)
   box.innerHTML = html;
 }
+    coverage_title: "Coverage",
+    coverage_run: "Run",
+    xliff: "XLIFF",
+    xlf_export: "Export .xlf",
+    xlf_import: "Import .xlf",
+    xlf_out_xml: "Output XML",
+    coverage_title: "Покрытие",
+    coverage_run: "Запуск",
+    xliff: "XLIFF",
+    xlf_export: "Экспорт .xlf",
+    xlf_import: "Импорт .xlf",
+    xlf_out_xml: "Выходной XML",
