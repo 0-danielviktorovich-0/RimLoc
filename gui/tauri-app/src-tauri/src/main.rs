@@ -13,6 +13,8 @@ use rimloc_services::{
 use rimloc_services::plugins as svc_plugins;
 use rimloc_services::keyed_merge::merge_keyed as svc_merge_keyed;
 use rimloc_services::validate::coverage_report as svc_coverage;
+use rimloc_export_xliff::write_xliff_12 as svc_export_xliff;
+use rimloc_import_xliff::xliff_to_language_data as svc_import_xliff;
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -322,6 +324,42 @@ fn coverage_gui(_window: Window, _state: State<LogState>, request: CoverageReque
     let rep = svc_coverage(&root, &request.source_lang_dir, &request.target_lang_dir, defs.as_deref())
         .map_err(|e| ApiError { message: format!("{e}") })?;
     Ok(CoverageResponse { source_total: rep.source_total, target_total: rep.target_total, translated: rep.translated, missing: rep.missing })
+}
+
+#[derive(Debug, Deserialize)]
+struct ExportXliffRequest {
+    root: String,
+    out_xlf: String,
+    #[serde(default)]
+    source_lang_dir: Option<String>,
+    #[serde(default)]
+    lang: Option<String>,
+}
+
+#[tauri::command]
+fn export_xliff_gui(_window: Window, _state: State<LogState>, request: ExportXliffRequest) -> Result<String, ApiError> {
+    let root = PathBuf::from(&request.root);
+    if !root.exists() { return Err(ApiError { message: format!("Path not found: {}", root.display()) }); }
+    let mut units = rimloc_services::scan::scan_units(&root).map_err(|e| ApiError { message: format!("{e}") })?;
+    let src = request.source_lang_dir.as_deref().unwrap_or("English");
+    units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, src));
+    let out = PathBuf::from(&request.out_xlf);
+    if let Some(parent) = out.parent() { let _ = std::fs::create_dir_all(parent); }
+    let lang = request.lang.as_deref().unwrap_or("ru");
+    svc_export_xliff(&out, &units, "en", lang).map_err(|e| ApiError { message: format!("{e}") })?;
+    Ok(out.display().to_string())
+}
+
+#[derive(Debug, Deserialize)]
+struct ImportXliffRequest { xlf: String, out_xml: String }
+
+#[tauri::command]
+fn import_xliff_gui(_window: Window, _state: State<LogState>, request: ImportXliffRequest) -> Result<String, ApiError> {
+    let xlf = PathBuf::from(&request.xlf);
+    let out = PathBuf::from(&request.out_xml);
+    if let Some(parent) = out.parent() { let _ = std::fs::create_dir_all(parent); }
+    svc_import_xliff(&out, &xlf).map_err(|e| ApiError { message: format!("{e}") })?;
+    Ok(out.display().to_string())
 }
 
 #[derive(Debug, Deserialize)]

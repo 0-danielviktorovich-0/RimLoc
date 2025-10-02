@@ -1053,6 +1053,27 @@ function initEventHandlers() {
     const pct = res.sourceTotal>0 ? Math.round(res.translated*100/res.sourceTotal) : 0;
     $("coverage-summary").textContent = `source=${res.sourceTotal}, target=${res.targetTotal}, translated=${res.translated}, missing=${res.missing} (${pct}%)`;
   });
+
+  // XLIFF
+  const pickXlfExport = document.querySelector('[data-action="pick-xlf-export"]'); if (pickXlfExport) pickXlfExport.addEventListener("click", () => pickSave("xlf-export-path", { defaultPath: "out.xlf" })());
+  const pickXlfImport = document.querySelector('[data-action="pick-xlf-import"]'); if (pickXlfImport) pickXlfImport.addEventListener("click", () => pickOpen("xlf-import-path", { filters: [{ name: 'XLIFF', extensions: ['xlf','xliff'] }] })());
+  const pickXlfImportOut = document.querySelector('[data-action="pick-xlf-import-out"]'); if (pickXlfImportOut) pickXlfImportOut.addEventListener("click", () => pickSave("xlf-import-out", { defaultPath: "_Imported.xml" })());
+  bindPersist("xlf-export-path", "rimloc.xlfExportPath");
+  bindPersist("xlf-export-source", "rimloc.xlfExportSource", "English");
+  bindPersist("xlf-export-lang", "rimloc.xlfExportLang", "ru");
+  bindPersist("xlf-import-path", "rimloc.xlfImportPath");
+  bindPersist("xlf-import-out", "rimloc.xlfImportOut");
+  const xlfExport = $("xlf-export-run"); if (xlfExport) xlfExport.addEventListener("click", async () => {
+    const root = val("mod-root"); if (!root) return toast(tr('select_mod_root_first'));
+    const payload = { root, out_xlf: val("xlf-export-path")||"out.xlf", source_lang_dir: val("xlf-export-source")||"English", lang: val("xlf-export-lang")||"ru" };
+    const out = await runAction(tr('exporting_po')||'Exporting…', () => tauriInvoke("export_xliff_gui", { request: payload }));
+    $("xlf-summary").textContent = `Saved ${out}`;
+  });
+  const xlfImport = $("xlf-import-run"); if (xlfImport) xlfImport.addEventListener("click", async () => {
+    const payload = { xlf: val("xlf-import-path"), out_xml: val("xlf-import-out")||"_Imported.xml" };
+    const out = await runAction(tr('importing_po')||'Importing…', () => tauriInvoke("import_xliff_gui", { request: payload }));
+    $("xlf-summary").textContent = `Wrote ${out}`;
+  });
 }
 
 function initPersistence() {

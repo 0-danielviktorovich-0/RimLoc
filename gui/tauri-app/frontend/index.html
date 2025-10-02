@@ -322,6 +322,51 @@
         <div class="scan-summary" id="coverage-summary">Ready.</div>
       </section>
 
+      <section class="panel" id="xliff-panel">
+        <div class="panel-head">
+          <h2>XLIFF</h2>
+        </div>
+        <div class="field-grid">
+          <label>
+            <span>Export .xlf</span>
+            <div class="path-input">
+              <input id="xlf-export-path" type="text" placeholder="/path/to/out.xlf" />
+              <button type="button" data-action="pick-xlf-export" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <span>Source lang dir</span>
+            <input id="xlf-export-source" type="text" value="English" />
+          </label>
+          <label>
+            <span>Target lang code</span>
+            <input id="xlf-export-lang" type="text" value="ru" />
+          </label>
+          <label>
+            <button type="button" id="xlf-export-run">Export XLIFF</button>
+          </label>
+          <hr />
+          <label>
+            <span>Import .xlf</span>
+            <div class="path-input">
+              <input id="xlf-import-path" type="text" placeholder="/path/to/input.xlf" />
+              <button type="button" data-action="pick-xlf-import" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <span>Output XML</span>
+            <div class="path-input">
+              <input id="xlf-import-out" type="text" placeholder="/path/to/_Imported.xml" />
+              <button type="button" data-action="pick-xlf-import-out" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <button type="button" id="xlf-import-run">Import XLIFF</button>
+          </label>
+        </div>
+        <div class="scan-summary" id="xlf-summary">Ready.</div>
+      </section>
+
       <section class="panel" id="strings-panel">
         <div class="panel-head">
           <h2 data-i18n="strings_title">Strings Inventory</h2>
