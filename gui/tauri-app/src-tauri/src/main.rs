@@ -339,6 +339,10 @@ struct ValidateRequest {
     #[serde(default)]
     compare_placeholders: bool,
     #[serde(default)]
+    compare_lists: bool,
+    #[serde(default)]
+    report_orphans: bool,
+    #[serde(default)]
     target_lang: Option<String>,
     #[serde(default)]
     target_lang_dir: Option<String>,
@@ -1199,6 +1203,36 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
             .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
             .unwrap_or_else(|| "Russian".to_string());
         if let Ok(mut extra) = validate_placeholders_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
+            msgs_raw.append(&mut extra);
+        }
+    }
+    if request.compare_lists {
+        let src_dir = request
+            .source_lang_dir
+            .clone()
+            .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .unwrap_or_else(|| "English".to_string());
+        let tgt_dir = request
+            .target_lang_dir
+            .clone()
+            .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .unwrap_or_else(|| "Russian".to_string());
+        if let Ok(mut extra) = rimloc_services::validate::validate_lists_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
+            msgs_raw.append(&mut extra);
+        }
+    }
+    if request.report_orphans {
+        let src_dir = request
+            .source_lang_dir
+            .clone()
+            .or_else(|| request.source_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .unwrap_or_else(|| "English".to_string());
+        let tgt_dir = request
+            .target_lang_dir
+            .clone()
+            .or_else(|| request.target_lang.clone().map(|c| rimloc_import_po::rimworld_lang_dir(&c)))
+            .unwrap_or_else(|| "Russian".to_string());
+        if let Ok(mut extra) = rimloc_services::validate::validate_orphans_cross_language(&scan_root, &src_dir, &tgt_dir, defs_root.as_deref()) {
             msgs_raw.append(&mut extra);
         }
     }
