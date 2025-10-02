@@ -5,6 +5,7 @@ use quick_xml::Reader;
 use rimloc_core::{Result as CoreResult, TransUnit};
 use serde::Deserialize;
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fs;
 use std::path::Path;
@@ -953,6 +954,158 @@ fn collect_values_by_path<'a>(
             }
         }
     }
+}
+
+// --------------------------
+// Keyed file reader (map)
+// --------------------------
+
+/// Read a single LanguageData XML file (Keyed) into a map of key -> value, preserving
+/// multi-line values, handling `<li>` aggregation and `<LineBreak/>` semantics.
+pub fn read_keyed_file_map(path: &Path) -> CoreResult<BTreeMap<String, String>> {
+    read_keyed_file_map_with_comments(path, None)
+}
+
+/// Same as `read_keyed_file_map` but when `comment_prefix` is provided, a preceding
+/// XML comment matching that prefix (e.g., "EN:") right before a top-level key
+/// is used as the value for that key instead of the element text.
+pub fn read_keyed_file_map_with_comments(
+    path: &Path,
+    comment_prefix: Option<&str>,
+) -> CoreResult<BTreeMap<String, String>> {
+    let mut map = BTreeMap::new();
+    let content = match fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => return Err(e.into()),
+    };
+    let mut reader = Reader::from_str(&content);
+    reader.config_mut().trim_text(false);
+    let mut buf = Vec::new();
+
+    #[derive(Default)]
+    struct Frame {
+        name: String,
+        buffer: String,
+        has_text: bool,
+        comment_override: Option<String>,
+    }
+
+    let mut stack: Vec<Frame> = Vec::new();
+    let mut pending_comment: Option<String> = None;
+    let prefix = comment_prefix.map(|s| s.to_string());
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(e)) => {
+                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let mut fr = Frame {
+                    name,
+                    buffer: String::new(),
+                    has_text: false,
+                    comment_override: None,
+                };
+                if stack.len() == 1 {
+                    // Starting a top-level key under <LanguageData>
+                    if let (Some(pref), Some(cmt)) = (prefix.as_deref(), pending_comment.take()) {
+                        let trimmed = cmt.trim();
+                        if trimmed.starts_with(pref) {
+                            let val = trimmed[pref.len()..].trim().to_string();
+                            if !val.is_empty() {
+                                fr.comment_override = Some(val);
+                            }
+                        }
+                    }
+                }
+                stack.push(fr);
+            }
+            Ok(Event::Comment(c)) => {
+                // Remember comments that appear directly under <LanguageData>
+                if stack.len() == 1 {
+                    let s = String::from_utf8_lossy(c.as_ref()).to_string();
+                    pending_comment = Some(s);
+                }
+            }
+            Ok(Event::End(_)) => {
+                if let Some(mut frame) = stack.pop() {
+                    // Commit a top-level key under LanguageData
+                    if stack.len() == 1 && !frame.name.is_empty() {
+                        let mut val = if let Some(v) = frame.comment_override.take() {
+                            v
+                        } else if frame.has_text {
+                            frame.buffer.trim().to_string()
+                        } else {
+                            String::new()
+                        };
+                        map.insert(frame.name, std::mem::take(&mut val));
+                        continue;
+                    }
+                    // Folding list items
+                    if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
+                        if let Some(parent) = stack.last_mut() {
+                            if parent.has_text && !parent.buffer.ends_with('\n') {
+                                parent.buffer.push('\n');
+                            }
+                            if !frame.buffer.is_empty() {
+                                parent.buffer.push_str(frame.buffer.trim());
+                                parent.has_text = true;
+                            } else {
+                                parent.has_text = true;
+                            }
+                        }
+                        continue;
+                    }
+                    if let Some(parent) = stack.last_mut() {
+                        if !frame.buffer.is_empty() {
+                            parent.buffer.push_str(&frame.buffer);
+                            parent.has_text = parent.has_text || frame.has_text;
+                        }
+                    }
+                }
+            }
+            Ok(Event::Empty(e)) => {
+                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                if name.eq_ignore_ascii_case("LineBreak") {
+                    if let Some(parent) = stack.last_mut() {
+                        parent.buffer.push('\n');
+                        parent.has_text = true;
+                    }
+                } else if stack.len() == 1 {
+                    map.insert(name, String::new());
+                } else if name.eq_ignore_ascii_case("li") && stack.len() == 2 {
+                    if let Some(parent) = stack.last_mut() {
+                        if parent.has_text && !parent.buffer.ends_with('\n') {
+                            parent.buffer.push('\n');
+                        }
+                        parent.has_text = true;
+                    }
+                }
+            }
+            Ok(Event::Text(t)) => {
+                if let Some(frame) = stack.last_mut() {
+                    let text = t.unescape().unwrap_or_default().to_string();
+                    if !text.trim().is_empty() {
+                        frame.buffer.push_str(text.trim());
+                        frame.has_text = true;
+                    }
+                }
+            }
+            Ok(Event::CData(t)) => {
+                if let Some(frame) = stack.last_mut() {
+                    let text = String::from_utf8_lossy(t.as_ref());
+                    if !text.trim().is_empty() {
+                        frame.buffer.push_str(text.trim());
+                        frame.has_text = true;
+                    }
+                }
+            }
+            Ok(Event::Eof) => break,
+            Ok(_) => {}
+            Err(e) => return Err(e.into()),
+        }
+        buf.clear();
+    }
+
+    Ok(map)
 }
 
 fn inherit_enabled() -> bool {
