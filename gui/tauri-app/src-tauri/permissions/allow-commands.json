@@ -32,6 +32,9 @@
     "validate_po_gui",
     "learn_patches_cmd",
     "get_cli_i18n",
-    "apply_translation"
+    "apply_translation",
+    "load_plugin_cmd",
+    "list_plugins_cmd",
+    "merge_keyed_gui"
   ]
 }

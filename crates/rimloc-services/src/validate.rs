@@ -291,8 +291,17 @@ pub fn coverage_report(
     let source_total = src.len();
     let mut translated = 0usize;
     for (k, _) in src.iter() {
-        if let Some(v) = tgt.get(k) { if !v.trim().is_empty() { translated += 1; } }
+        if let Some(v) = tgt.get(k) {
+            if !v.trim().is_empty() {
+                translated += 1;
+            }
+        }
     }
     let missing = source_total.saturating_sub(translated);
-    Ok(CoverageReport { source_total, target_total: tgt.len(), translated, missing })
+    Ok(CoverageReport {
+        source_total,
+        target_total: tgt.len(),
+        translated,
+        missing,
+    })
 }

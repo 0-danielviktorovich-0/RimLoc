@@ -11,6 +11,7 @@ use rimloc_services::{
     make_init_plan, write_init_plan, import_po_to_mod_tree, validate_placeholders_cross_language,
 };
 use rimloc_services::plugins as svc_plugins;
+use rimloc_services::keyed_merge::merge_keyed as svc_merge_keyed;
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -278,6 +279,32 @@ fn write_profile(state: &State<LogState>, command: &str, start: std::time::Insta
             let _ = writeln!(f, "{}", entry);
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+struct MergeKeyedRequest {
+    root: String,
+    #[serde(default)]
+    source_lang_dir: String,
+    target_lang_dir: String,
+    #[serde(default)]
+    out_dir: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MergeKeyedResponse { files: usize, keys_total: usize, reused: usize, unused: usize, out_hint: String }
+
+#[tauri::command]
+fn merge_keyed_gui(_window: Window, _state: State<LogState>, request: MergeKeyedRequest) -> Result<MergeKeyedResponse, ApiError> {
+    let root = PathBuf::from(&request.root);
+    if !root.exists() {
+        return Err(ApiError { message: format!("Path not found: {}", root.display()) });
+    }
+    let out_dir = request.out_dir.as_deref().map(PathBuf::from);
+    let stats = svc_merge_keyed(&root, &request.source_lang_dir, &request.target_lang_dir, out_dir.as_deref()).map_err(|e| ApiError { message: format!("{e}") })?;
+    let out_hint = out_dir.map(|p| p.display().to_string()).unwrap_or_else(|| root.join("Languages").join(&request.target_lang_dir).join("Keyed").display().to_string());
+    Ok(MergeKeyedResponse { files: stats.files, keys_total: stats.keys_total, reused: stats.reused, unused: stats.unused, out_hint })
 }
 
 #[derive(Debug, Deserialize)]
@@ -2009,6 +2036,7 @@ fn main() {
             ,scan_strings_gui
             ,load_plugin_cmd
             ,list_plugins_cmd
+            ,merge_keyed_gui
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -24,15 +24,21 @@ pub fn read_xliff_12(path: &Path) -> Result<HashMap<String, String>> {
                             cur_id = Some(String::from_utf8_lossy(&a.value).to_string());
                         }
                     }
-                } else if name.as_slice() == b"target" { in_target = true; cur_val.clear(); }
+                } else if name.as_slice() == b"target" {
+                    in_target = true;
+                    cur_val.clear();
+                }
             }
             Ok(Event::Text(t)) => {
-                if in_target { cur_val.push_str(&t.unescape().unwrap_or_default()); }
+                if in_target {
+                    cur_val.push_str(&t.unescape().unwrap_or_default());
+                }
             }
             Ok(Event::End(e)) => {
                 let name = e.name().as_ref().to_vec();
-                if name.as_slice() == b"target" { in_target = false; }
-                else if name.as_slice() == b"trans-unit" {
+                if name.as_slice() == b"target" {
+                    in_target = false;
+                } else if name.as_slice() == b"trans-unit" {
                     if let Some(id) = cur_id.take() {
                         map.insert(id, cur_val.trim().to_string());
                         cur_val.clear();

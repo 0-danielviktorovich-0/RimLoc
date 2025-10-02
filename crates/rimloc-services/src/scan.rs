@@ -326,9 +326,22 @@ pub fn scan_units_with_defs_and_dict(
         if let Ok(mut fuzzy) = rimloc_parsers_xml::scan_defs_fuzzy(root, defs_root) {
             for u in fuzzy.drain(..) {
                 let k = seen_key(&u.path, &u.key);
-                if seen.insert(k) { units.push(u); }
+                if seen.insert(k) {
+                    units.push(u);
+                }
             }
-            units.sort_by(|a,b| (a.path.to_string_lossy(), a.line.unwrap_or(0), a.key.as_str()).cmp(&(b.path.to_string_lossy(), b.line.unwrap_or(0), b.key.as_str())));
+            units.sort_by(|a, b| {
+                (
+                    a.path.to_string_lossy(),
+                    a.line.unwrap_or(0),
+                    a.key.as_str(),
+                )
+                    .cmp(&(
+                        b.path.to_string_lossy(),
+                        b.line.unwrap_or(0),
+                        b.key.as_str(),
+                    ))
+            });
         }
     }
     Ok(units)

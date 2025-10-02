@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 This changelog follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
+
+### Added
+- [parsers-xml] Normalize nested DefInjected dotted keys by dropping leading def type segment when it matches the file's DefInjected/<DefType> folder; preserves mixed types and flat keys.
+- [parsers-xml] Extended Defs DSL: multiple attribute predicates (name[@a=v&@b=w]) and indexed selection (name[2], name[#2], name[index=2]).
+- [cli/scan] New `--fuzzy` flag to include heuristic string fields from Defs not covered by dicts (RIMLOC_FUZZY=1).
+- [services] Merge Keyed service: merges English→target Keyed with EN: comments and UNUSED block.
+- [cli] `merge-keyed` command to run the above.
+- [cli] `coverage` command to report translated/missing counts (text/json).
+- [export/import-xliff] Minimal XLIFF 1.2 exporter/importer crates and CLI (`export-xliff`, `import-xliff`).
+- [gui/tauri] Backend commands to load/list dynamic parser plugins (for future UI hookup).
+
+### Changed
+- [services/scan] Optionally merge fuzzy candidates; deterministic sort preserved.
+
 <!--
 Template (copy the sections you need):
 

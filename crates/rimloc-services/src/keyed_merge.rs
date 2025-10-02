@@ -1,4 +1,5 @@
 use crate::Result;
+#[allow(unused_imports)]
 use rimloc_core::TransUnit;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File};
@@ -8,7 +9,9 @@ use walkdir::WalkDir;
 
 fn read_keyed_file(path: &Path) -> BTreeMap<String, String> {
     let mut map = BTreeMap::new();
-    let Ok(content) = fs::read_to_string(path) else { return map };
+    let Ok(content) = fs::read_to_string(path) else {
+        return map;
+    };
     let mut reader = quick_xml::Reader::from_str(&content);
     reader.config_mut().trim_text(true);
     let mut buf = Vec::new();
@@ -47,15 +50,22 @@ fn read_keyed_file(path: &Path) -> BTreeMap<String, String> {
                 }
             }
             Ok(quick_xml::events::Event::Eof) => break,
-            Err(_) | _ => {}
+            Ok(_) => {}
+            Err(_) => {}
         }
         buf.clear();
     }
     map
 }
 
-fn write_keyed_xml(out_path: &Path, entries: &[(String, String, String)], unused: &[(String, String)]) -> Result<()> {
-    if let Some(parent) = out_path.parent() { fs::create_dir_all(parent)?; }
+fn write_keyed_xml(
+    out_path: &Path,
+    entries: &[(String, String, String)],
+    unused: &[(String, String)],
+) -> Result<()> {
+    if let Some(parent) = out_path.parent() {
+        fs::create_dir_all(parent)?;
+    }
     let mut w = File::create(out_path)?;
     writeln!(w, "<?xml version=\"1.0\" encoding=\"utf-8\" ?>")?;
     writeln!(w, "<LanguageData>")?;
@@ -63,12 +73,24 @@ fn write_keyed_xml(out_path: &Path, entries: &[(String, String, String)], unused
         if !en.is_empty() {
             writeln!(w, "  <!-- EN: {} -->", en.replace("--", "—"))?;
         }
-        writeln!(w, "  <{}>{}</{}>", key, quick_xml::escape::escape(tr.as_str()), key)?;
+        writeln!(
+            w,
+            "  <{}>{}</{}>",
+            key,
+            quick_xml::escape::escape(tr.as_str()),
+            key
+        )?;
     }
     if !unused.is_empty() {
         writeln!(w, "  <!-- UNUSED -->")?;
         for (key, tr) in unused {
-            writeln!(w, "  <{}>{}</{}>", key, quick_xml::escape::escape(tr.as_str()), key)?;
+            writeln!(
+                w,
+                "  <{}>{}</{}>",
+                key,
+                quick_xml::escape::escape(tr.as_str()),
+                key
+            )?;
         }
     }
     writeln!(w, "</LanguageData>")?;
@@ -82,13 +104,20 @@ fn rel_keyed_path(path: &Path, lang_dir: &str) -> Option<PathBuf> {
     while let Some(c) = comps.next() {
         let s = c.as_os_str().to_string_lossy();
         if !seen_lang {
-            if s.eq_ignore_ascii_case("Languages") { seen_lang = true; }
+            if s.eq_ignore_ascii_case("Languages") {
+                seen_lang = true;
+            }
             continue;
         }
-        if s != lang_dir { continue; }
+        if s != lang_dir {
+            continue;
+        }
         // Next should be Keyed
         if let Some(k) = comps.next() {
-            if k.as_os_str().to_string_lossy().eq_ignore_ascii_case("Keyed") {
+            if k.as_os_str()
+                .to_string_lossy()
+                .eq_ignore_ascii_case("Keyed")
+            {
                 let rest: PathBuf = comps.as_path().to_path_buf();
                 return Some(rest);
             }
@@ -105,29 +134,65 @@ pub struct MergeKeyedStats {
     pub unused: usize,
 }
 
-pub fn merge_keyed(root: &Path, source_lang_dir: &str, target_lang_dir: &str, out_dir: Option<&Path>) -> Result<MergeKeyedStats> {
-    let mut stats = MergeKeyedStats { files: 0, keys_total: 0, reused: 0, unused: 0 };
+pub fn merge_keyed(
+    root: &Path,
+    source_lang_dir: &str,
+    target_lang_dir: &str,
+    out_dir: Option<&Path>,
+) -> Result<MergeKeyedStats> {
+    let mut stats = MergeKeyedStats {
+        files: 0,
+        keys_total: 0,
+        reused: 0,
+        unused: 0,
+    };
     // Gather all English Keyed files
     let mut en_files: Vec<PathBuf> = Vec::new();
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() { continue; }
-        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension().and_then(|e| e.to_str()).is_none_or(|ext| !ext.eq_ignore_ascii_case("xml")) {
+            continue;
+        }
         let s = p.to_string_lossy();
-        if !(s.contains("/Languages/")||s.contains("\\Languages\\")) { continue; }
-        if !(s.contains("/Keyed/")||s.contains("\\Keyed\\")) { continue; }
-        if !(s.contains(&format!("/Languages/{}/", source_lang_dir)) || s.contains(&format!("\\Languages\\{}\\", source_lang_dir))) { continue; }
+        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
+            continue;
+        }
+        if !(s.contains("/Keyed/") || s.contains("\\Keyed\\")) {
+            continue;
+        }
+        if !(s.contains(&format!("/Languages/{}/", source_lang_dir))
+            || s.contains(&format!("\\Languages\\{}\\", source_lang_dir)))
+        {
+            continue;
+        }
         en_files.push(p.to_path_buf());
     }
     en_files.sort();
 
     for en_path in en_files {
         let en_map = read_keyed_file(&en_path);
-        if en_map.is_empty() { continue; }
-        let rel = rel_keyed_path(&en_path, source_lang_dir).unwrap_or_else(|| PathBuf::from(en_path.file_name().unwrap()));
+        if en_map.is_empty() {
+            continue;
+        }
+        let rel = rel_keyed_path(&en_path, source_lang_dir)
+            .unwrap_or_else(|| PathBuf::from(en_path.file_name().unwrap()));
         let trg_rel = rel.clone();
-        let trg_path = if let Some(out) = out_dir { out.join(trg_rel) } else { root.join("Languages").join(target_lang_dir).join("Keyed").join(trg_rel) };
-        let old_trg_path = root.join("Languages").join(target_lang_dir).join("Keyed").join(rel);
+        let trg_path = if let Some(out) = out_dir {
+            out.join(trg_rel)
+        } else {
+            root.join("Languages")
+                .join(target_lang_dir)
+                .join("Keyed")
+                .join(trg_rel)
+        };
+        let old_trg_path = root
+            .join("Languages")
+            .join(target_lang_dir)
+            .join("Keyed")
+            .join(rel);
         let trg_map = read_keyed_file(&old_trg_path);
 
         let mut entries: Vec<(String, String, String)> = Vec::new();
@@ -135,14 +200,18 @@ pub fn merge_keyed(root: &Path, source_lang_dir: &str, target_lang_dir: &str, ou
         for (k, en) in en_map.iter() {
             stats.keys_total += 1;
             let tr = trg_map.get(k).cloned().unwrap_or_default();
-            if !tr.is_empty() { stats.reused += 1; }
+            if !tr.is_empty() {
+                stats.reused += 1;
+            }
             used.insert(k.clone());
             entries.push((k.clone(), en.clone(), tr));
         }
         // compute unused from target
         let mut unused: Vec<(String, String)> = Vec::new();
         for (k, v) in trg_map.iter() {
-            if !used.contains(k) { unused.push((k.clone(), v.clone())); }
+            if !used.contains(k) {
+                unused.push((k.clone(), v.clone()));
+            }
         }
         stats.unused += unused.len();
 
@@ -152,4 +221,3 @@ pub fn merge_keyed(root: &Path, source_lang_dir: &str, target_lang_dir: &str, ou
 
     Ok(stats)
 }
-

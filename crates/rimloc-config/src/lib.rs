@@ -283,9 +283,17 @@ pub struct PluginsCfg {
 }
 
 fn merge_plugins(mut a: PluginsCfg, b: PluginsCfg) -> PluginsCfg {
-    if a.json_include.is_none() { a.json_include = b.json_include; }
-    if a.json_exclude.is_none() { a.json_exclude = b.json_exclude; }
-    if a.yaml_include.is_none() { a.yaml_include = b.yaml_include; }
-    if a.yaml_exclude.is_none() { a.yaml_exclude = b.yaml_exclude; }
+    if a.json_include.is_none() {
+        a.json_include = b.json_include;
+    }
+    if a.json_exclude.is_none() {
+        a.json_exclude = b.json_exclude;
+    }
+    if a.yaml_include.is_none() {
+        a.yaml_include = b.yaml_include;
+    }
+    if a.yaml_exclude.is_none() {
+        a.yaml_exclude = b.yaml_exclude;
+    }
     a
 }

@@ -1020,6 +1020,22 @@ function initEventHandlers() {
   // Learn Patches
   const lpRun = $("learn-patches-run"); if (lpRun) lpRun.addEventListener("click", handleLearnPatches);
   const lpPick = document.querySelector('[data-action="pick-learn-patches-out"]'); if (lpPick) lpPick.addEventListener("click", () => pickSave("learn-patches-out", { defaultPath: "_learn/patches_texts.json" })());
+
+  // Merge Keyed
+  const pickMergeOut = document.querySelector('[data-action="pick-merge-out"]'); if (pickMergeOut) pickMergeOut.addEventListener("click", pickDirectory("merge-out"));
+  const mergeRun = $("merge-keyed-run");
+  if (mergeRun) mergeRun.addEventListener("click", async () => {
+    const root = val("mod-root"); if (!root) return toast(tr('select_mod_root_first'));
+    const payload = {
+      root,
+      source_lang_dir: val("merge-source") || "English",
+      target_lang_dir: val("merge-target") || "Russian",
+      out_dir: (val("merge-out") || null),
+    };
+    const res = await runAction(tr('merging_keyed')||'Merging…', () => tauriInvoke("merge_keyed_gui", { request: payload }));
+    $("merge-keyed-summary").textContent = `files=${res.files}, keys=${res.keysTotal}, reused=${res.reused}, unused=${res.unused} → ${res.outHint}`;
+    toast(tr('merge_done')||'Merge done');
+  });
 }
 
 function initPersistence() {
@@ -1498,6 +1514,13 @@ const I18N = {
     build_title: "Build Translation Mod",
     build_run: "Build",
     build_dedupe: "Dedupe keys",
+    merge_keyed_title: "Merge Keyed",
+    merge_keyed_run: "Run merge",
+    merge_source: "Source language dir",
+    merge_target: "Target language dir",
+    merge_out: "Output dir (optional)",
+    merging_keyed: "Merging Keyed…",
+    merge_done: "Merge complete",
     build_empty: "No build performed yet.",
     from_root: "From existing root (optional)",
     from_versions: "Only game versions (comma-separated)",
@@ -1796,6 +1819,13 @@ const I18N = {
     init_run: "Инициализировать",
     init_empty: "Инициализация ещё не выполнялась.",
     overwrite: "Перезаписывать существующие",
+    merge_keyed_title: "Слияние Keyed",
+    merge_keyed_run: "Слить",
+    merge_source: "Папка исходного языка",
+    merge_target: "Папка целевого языка",
+    merge_out: "Папка для вывода (опц.)",
+    merging_keyed: "Слияние Keyed…",
+    merge_done: "Слияние выполнено",
     debug_console: "Консоль отладки",
     clear: "Очистить",
     open_debug: "Отладка…",

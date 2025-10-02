@@ -264,6 +264,33 @@
         </div>
       </section>
 
+      <section class="panel" id="merge-keyed-panel">
+        <div class="panel-head">
+          <h2 data-i18n="merge_keyed_title">Merge Keyed</h2>
+          <div class="actions">
+            <button type="button" id="merge-keyed-run" data-i18n="merge_keyed_run">Run merge</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label>
+            <span data-i18n="merge_source">Source language dir</span>
+            <input id="merge-source" type="text" value="English" />
+          </label>
+          <label>
+            <span data-i18n="merge_target">Target language dir</span>
+            <input id="merge-target" type="text" value="Russian" />
+          </label>
+          <label>
+            <span data-i18n="merge_out">Output dir (optional)</span>
+            <div class="path-input">
+              <input id="merge-out" type="text" placeholder="/path/to/out/Keyed" />
+              <button type="button" data-action="pick-merge-out" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+        </div>
+        <div class="scan-summary" id="merge-keyed-summary">Ready.</div>
+      </section>
+
       <section class="panel" id="strings-panel">
         <div class="panel-head">
           <h2 data-i18n="strings_title">Strings Inventory</h2>
