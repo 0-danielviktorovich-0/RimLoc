@@ -305,6 +305,41 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("game_version", |a| a.help(tr!("help-init-game-version")));
                 *sc = owned;
             }
+            "merge-keyed" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-mergekeyed-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-mergekeyed-root")));
+                owned = owned.mut_arg("source_lang_dir", |a| a.help(tr!("help-mergekeyed-source-lang-dir")));
+                owned = owned.mut_arg("target_lang_dir", |a| a.help(tr!("help-mergekeyed-target-lang-dir")));
+                owned = owned.mut_arg("out_dir", |a| a.help(tr!("help-mergekeyed-out-dir")));
+                *sc = owned;
+            }
+            "coverage" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-coverage-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-coverage-root")));
+                owned = owned.mut_arg("source_lang_dir", |a| a.help(tr!("help-coverage-source-lang-dir")));
+                owned = owned.mut_arg("target_lang_dir", |a| a.help(tr!("help-coverage-target-lang-dir")));
+                owned = owned.mut_arg("defs_dir", |a| a.help(tr!("help-coverage-defs-dir")));
+                owned = owned.mut_arg("format", |a| a.help(tr!("help-coverage-format")));
+                *sc = owned;
+            }
+            "export-xliff" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-exportxlf-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-exportxlf-root")));
+                owned = owned.mut_arg("out_xlf", |a| a.help(tr!("help-exportxlf-out-xlf")));
+                owned = owned.mut_arg("source_lang_dir", |a| a.help(tr!("help-exportxlf-source-lang-dir")));
+                owned = owned.mut_arg("lang", |a| a.help(tr!("help-exportxlf-lang")));
+                *sc = owned;
+            }
+            "import-xliff" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-importxlf-about"));
+                owned = owned.mut_arg("xlf", |a| a.help(tr!("help-importxlf-xlf")));
+                owned = owned.mut_arg("out_xml", |a| a.help(tr!("help-importxlf-out-xml")));
+                *sc = owned;
+            }
             _ => {}
         }
     }
