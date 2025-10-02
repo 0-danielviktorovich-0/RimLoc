@@ -1606,6 +1606,86 @@ fn unquote(s: &str) -> String {
     out
 }
 
+// --- Load TM (baseline PO + TM roots with .po files) ---
+#[derive(Debug, Deserialize)]
+struct LoadTmRequest {
+    #[serde(default)]
+    baseline_po: Option<String>,
+    #[serde(default)]
+    tm_roots: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TmEntry { key: String, value: String }
+
+fn parse_po_for_tm(path: &Path) -> Result<HashMap<String, String>, ApiError> {
+    use std::io::BufRead;
+    let file = std::fs::File::open(path).map_err(ApiError::from)?;
+    let rdr = std::io::BufReader::new(file);
+    let mut ctx: Option<String> = None;
+    let mut id = String::new();
+    let mut strv = String::new();
+    let mut _reference: Option<String> = None;
+    enum Mode { None, InId, InStr }
+    let mut mode = Mode::None;
+    let mut out: HashMap<String, String> = HashMap::new();
+    let mut push = |ctx: &mut Option<String>, _id: &mut String, strv: &mut String, _reference: &mut Option<String>, out: &mut HashMap<String,String>| {
+        if let Some(k) = ctx.as_ref() {
+            if !k.is_empty() && !strv.trim().is_empty() {
+                out.entry(k.clone()).or_insert_with(|| std::mem::take(strv));
+            }
+        }
+        *ctx = None; *_id = String::new(); *_reference = None;
+    };
+    for line in rdr.lines() {
+        let t = line.map_err(ApiError::from)?.trim().to_string();
+        if t.is_empty() { push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out); mode = Mode::None; continue; }
+        if let Some(rest) = t.strip_prefix("#:") { _reference = Some(rest.trim().to_string()); continue; }
+        if let Some(rest) = t.strip_prefix("msgctxt ") { push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out); ctx = Some(unquote(&rest)); mode = Mode::None; continue; }
+        if let Some(rest) = t.strip_prefix("msgid ") { id = unquote(&rest); mode = Mode::InId; continue; }
+        if let Some(rest) = t.strip_prefix("msgstr ") { strv = unquote(&rest); mode = Mode::InStr; continue; }
+        if matches!(mode, Mode::InId | Mode::InStr) && t.starts_with('"') {
+            let chunk = unquote(&t);
+            match mode { Mode::InId => id.push_str(&chunk), Mode::InStr => strv.push_str(&chunk), Mode::None => {} }
+            continue;
+        }
+    }
+    push(&mut ctx, &mut id, &mut strv, &mut _reference, &mut out);
+    Ok(out)
+}
+
+#[tauri::command]
+fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Result<Vec<TmEntry>, ApiError> {
+    let mut map: HashMap<String, String> = HashMap::new();
+    if let Some(p) = req.baseline_po.as_deref() {
+        let abs = PathBuf::from(p);
+        if abs.is_file() {
+            if let Ok(m) = parse_po_for_tm(&abs) {
+                for (k, v) in m { map.entry(k).or_insert(v); }
+            }
+        }
+    }
+    if let Some(roots) = req.tm_roots.as_ref() {
+        for root in roots {
+            let base = PathBuf::from(root);
+            if !base.exists() { continue; }
+            for entry in walkdir::WalkDir::new(&base).into_iter().filter_map(|e| e.ok()) {
+                let p = entry.path();
+                if !p.is_file() { continue; }
+                let is_po = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("po")).unwrap_or(false);
+                if !is_po { continue; }
+                if let Ok(m) = parse_po_for_tm(p) {
+                    for (k, v) in m { map.entry(k).or_insert(v); }
+                }
+            }
+        }
+    }
+    let mut vec: Vec<TmEntry> = map.into_iter().map(|(k, v)| TmEntry { key: k, value: v }).collect();
+    vec.sort_by(|a, b| a.key.cmp(&b.key));
+    Ok(vec)
+}
+
 // --- Learn Patches (scan Patches/ texts) ---
 #[derive(Debug, Deserialize)]
 struct LearnPatchesRequest { root: String, #[serde(default)] min_len: Option<usize>, #[serde(default)] out_json: Option<String>, #[serde(default)] game_version: Option<String> }
@@ -1821,6 +1901,7 @@ fn main() {
             ,learn_patches_cmd
             ,get_cli_i18n
             ,apply_translation
+            ,load_tm
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

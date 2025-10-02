@@ -35,6 +35,8 @@ pub fn init_builtin() {
             crate::plugins_xml_ext::XmlExtensionsSettingsPlugin,
         ));
         register(Arc::new(crate::plugins_msf::ModSettingsFrameworkPlugin));
+        register(Arc::new(crate::plugins_json::JsonKeyedPlugin));
+        register(Arc::new(crate::plugins_yaml::YamlKeyedPlugin));
     });
 }
 

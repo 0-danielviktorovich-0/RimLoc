@@ -150,9 +150,29 @@
                   <button type="button" id="preview-open-edited" disabled>Open _Edited.xml</button>
                 </div>
                 <div id="preview-warnings" class="scroll-code" style="margin-top: 8px"></div>
+                <div id="preview-suggestion" class="hint" style="margin-top: 8px"></div>
+                <div class="actions" style="margin-top: 4px">
+                  <button type="button" id="preview-apply-suggestion" disabled data-i18n="insert_suggestion">Insert suggestion</button>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+        <div class="field-grid" style="margin-top: 8px">
+          <label>
+            <span data-i18n="baseline_po">Baseline PO (optional)</span>
+            <div class="path-input">
+              <input id="preview-baseline-po" type="text" placeholder="/path/to/baseline.po" autocomplete="off" />
+              <button type="button" id="pick-preview-baseline" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+          <label>
+            <span data-i18n="tm_folders">Translation memory folders (one per line)</span>
+            <textarea id="preview-tm-roots" rows="3" placeholder="/path/to/tm1\n/path/to/tm2"></textarea>
+          </label>
+          <label>
+            <button type="button" id="preview-load-tm" data-i18n="tm_load">Load TM</button>
+          </label>
         </div>
       </section>
 
