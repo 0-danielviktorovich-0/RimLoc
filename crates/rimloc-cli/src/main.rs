@@ -563,6 +563,25 @@ enum Commands {
         #[arg(long, default_value_t = true)]
         backup: bool,
     },
+
+    /// Report translation coverage (counts of translated/missing keys) between source and target languages.
+    Coverage {
+        /// Path to mod root to analyze.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Source language folder name (e.g., English)
+        #[arg(long, default_value = "English")]
+        source_lang_dir: String,
+        /// Target language folder name (e.g., Russian)
+        #[arg(long)]
+        target_lang_dir: String,
+        /// Optional path to Defs directory; if set, Defs are scanned only under this path.
+        #[arg(long)]
+        defs_dir: Option<PathBuf>,
+        /// Output format: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
+    },
     /// Learn DefInjected fields and generate missing/suggested outputs
     LearnDefs {
         /// Path to mod root
@@ -1013,6 +1032,20 @@ impl Runnable for Commands {
                 patch_strict_xpath,
                 fuzzy,
             ),
+            Commands::Coverage { root, source_lang_dir, target_lang_dir, defs_dir, format } => {
+                let defs_abs = defs_dir.as_ref().map(|p| if p.is_absolute() { p.clone() } else { root.join(p) });
+                let rep = rimloc_services::validate::coverage_report(&root, &source_lang_dir, &target_lang_dir, defs_abs.as_deref())?;
+                match format.as_str() {
+                    "json" => { serde_json::to_writer(std::io::stdout().lock(), &rep)?; }
+                    _ => {
+                        println!("Coverage: source={} target={} translated={} missing={} ({}%)",
+                            rep.source_total, rep.target_total, rep.translated, rep.missing,
+                            if rep.source_total>0 { (rep.translated as f64 / rep.source_total as f64 * 100.0).round() as i64 } else { 0 }
+                        );
+                    }
+                }
+                Ok(())
+            }
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 
             Commands::MergeKeyed { root, source_lang_dir, target_lang_dir, out_dir } => {
