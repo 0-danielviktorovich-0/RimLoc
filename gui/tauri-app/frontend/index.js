@@ -2005,16 +2005,29 @@ function renderPreview(rows) {
   const data = collectByKey(units, srcDir, trgDir);
   const term = (val("preview-filter") || '').toLowerCase();
   const missingOnly = isChecked("preview-missing-only");
+  const onlyPhIssues = isChecked("preview-only-ph-issues");
+  const onlyListIssues = isChecked("preview-only-list-issues");
   list.innerHTML = '';
   let shown = 0;
   for (const r of data) {
     if (term && !r.key.toLowerCase().includes(term)) continue;
     if (missingOnly && r.en && r.trg) continue;
+    // compute issues
+    const phEn = extractPlaceholders(r.en||'');
+    const phTr = extractPlaceholders(r.trg||'');
+    const phMismatch = setNeq(phEn, phTr);
+    const liCount = (s)=>{ if(!s) return 0; const c=(s.match(/\n/g)||[]).length; return s.length? c+1:0 };
+    const listMismatch = r.en && r.trg ? (liCount(r.en) !== liCount(r.trg)) : false;
+    if (onlyPhIssues && !phMismatch) continue;
+    if (onlyListIssues && !listMismatch) continue;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${escapeHtml(r.key)}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
+    const badge = phMismatch? ' ⚠PH': (listMismatch? ' ⚠LI':'');
+    tr.innerHTML = `<td>${escapeHtml(r.key)}${badge}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
     tr.addEventListener('click', () => {
+      window._selectedKey = r.key;
       $("preview-en").textContent = r.en || '';
-      $("preview-target").textContent = r.trg || '';
+      const ed = $("preview-target-edit"); if (ed) ed.value = r.trg || '';
+      updatePreviewWarnings(r.en||'', ed?.value||'');
     });
     list.appendChild(tr); shown++;
     if (shown > 300) break;
@@ -2105,3 +2118,55 @@ const profBtn = $("profile-load"); if (profBtn) profBtn.addEventListener('click'
 
 const previewFilter = $("preview-filter"); if (previewFilter) previewFilter.addEventListener('input', () => renderPreview());
 const missingToggle = $("preview-missing-only"); if (missingToggle) missingToggle.addEventListener('change', () => renderPreview());
+const onlyPhToggle = $("preview-only-ph-issues"); if (onlyPhToggle) onlyPhToggle.addEventListener('change', () => renderPreview());
+const onlyLiToggle = $("preview-only-list-issues"); if (onlyLiToggle) onlyLiToggle.addEventListener('change', () => renderPreview());
+
+async function applyPreviewEdit() {
+  const key = window._selectedKey;
+  if (!key) return showToast('Select a key first', true);
+  const root = val('mod-root'); if (!root) return showToast(tr('select_mod_root_first'), true);
+  const trg = val('target-lang') || 'ru';
+  const langDir = langToDir(trg) || 'Russian';
+  const value = ($("preview-target-edit")?.value || '').trim();
+  const req = { root, key, value, lang: trg, lang_dir: langDir, file: null };
+  const resp = await runAction('Saving translation…', () => tauriInvoke('apply_translation', { request: req }));
+  // Update in-memory units snapshot for instant preview refresh
+  if (!window._lastScanUnits) window._lastScanUnits = [];
+  window._lastScanUnits.push({ key, source: value, path: resp?.out_path || `Languages/${langDir}/Keyed/_Edited.xml`, line: null });
+  // Update warnings live
+  updatePreviewWarnings($("preview-en").textContent || '', value);
+  showToast('Saved');
+  const openBtn = $("preview-open-edited"); if (openBtn) { openBtn.disabled = false; openBtn.dataset.path = resp?.out_path || ''; }
+}
+
+const applyBtn = $("preview-apply"); if (applyBtn) applyBtn.addEventListener('click', applyPreviewEdit);
+const openEdited = $("preview-open-edited"); if (openEdited) openEdited.addEventListener('click', async () => { const p = openEdited.dataset.path; if (p) { await tauriInvoke('open_path', { path: p }); } });
+
+// --- Helper: placeholder extraction and warnings ---
+function extractPlaceholders(s) {
+  const out = new Set(); if (!s) return out;
+  const rePct = /%(?:\d+\$)?0?\d*[sdif]/g; let m;
+  while ((m = rePct.exec(s)) !== null) { out.add(m[0]); }
+  const reBrace = /\{\s*([^{}\s]+)\s*\}/g; let b;
+  while ((b = reBrace.exec(s)) !== null) { out.add(`{${b[1]}}`); }
+  return out;
+}
+function setNeq(a, b) {
+  if (a.size !== b.size) return true;
+  for (const v of a) if (!b.has(v)) return true; return false;
+}
+function updatePreviewWarnings(en, trg) {
+  const box = $("preview-warnings"); if (!box) return;
+  const lines = [];
+  const phEn = extractPlaceholders(en||'');
+  const phTr = extractPlaceholders(trg||'');
+  if (setNeq(phEn, phTr)) {
+    lines.push(`Placeholder mismatch: EN=[${Array.from(phEn).join(', ')}], TR=[${Array.from(phTr).join(', ')}]`);
+  }
+  const liCount = (s)=>{ if(!s) return 0; const c=(s.match(/\n/g)||[]).length; return s.length? c+1:0 };
+  if (en && trg && (liCount(en) !== liCount(trg))) {
+    lines.push(`List items mismatch: EN=${liCount(en)} TR=${liCount(trg)}`);
+  }
+  box.textContent = lines.join('\n');
+}
+const editArea = $("preview-target-edit"); if (editArea) editArea.addEventListener('input', () => updatePreviewWarnings($("preview-en").textContent||'', editArea.value||''));

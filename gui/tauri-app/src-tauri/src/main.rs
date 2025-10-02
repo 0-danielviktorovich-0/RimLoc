@@ -1803,7 +1803,7 @@ fn main() {
             lang_update_cmd,
             annotate_cmd,
             init_lang_cmd,
-            get_log_info,
+    get_log_info,
             pick_directory,
             save_text_file,
             log_message,
@@ -1820,6 +1820,7 @@ fn main() {
             ,validate_po_gui
             ,learn_patches_cmd
             ,get_cli_i18n
+            ,apply_translation
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -2266,4 +2267,43 @@ fn init_lang_cmd(_window: Window, state: State<LogState>, request: InitRequest) 
     let resp = InitResponse { files, out_language: plan.language };
     write_profile(&state, "init_lang", t0, serde_json::json!({"files": resp.files }));
     Ok(resp)
+}
+#[derive(Debug, Deserialize)]
+struct ApplyTranslationRequest { root: String, #[serde(default)] lang: Option<String>, #[serde(default)] lang_dir: Option<String>, key: String, value: String, #[serde(default)] file: Option<String> }
+#[derive(Debug, Serialize)]
+struct ApplyTranslationResponse { out_path: String, total_keys: usize }
+
+fn read_language_pairs(path: &Path) -> std::io::Result<Vec<(String, String)>> {
+    if !path.exists() { return Ok(Vec::new()); }
+    let s = std::fs::read_to_string(path)?;
+    let doc = roxmltree::Document::parse(&s).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+    let mut out = Vec::new();
+    let root = doc.root_element();
+    for child in root.children().filter(|n| n.is_element()) {
+        let name = child.tag_name().name().to_string();
+        let val = child.text().unwrap_or("").to_string();
+        out.push((name, val));
+    }
+    Ok(out)
+}
+
+#[tauri::command]
+fn apply_translation(request: ApplyTranslationRequest) -> Result<ApplyTranslationResponse, ApiError> {
+    let root = PathBuf::from(&request.root);
+    let lang_dir = request.lang_dir.clone().or_else(|| request.lang.as_ref().map(|c| rimloc_import_po::rimworld_lang_dir(c))).unwrap_or_else(|| "Russian".to_string());
+    let out_path = if let Some(f) = request.file.as_deref() {
+        make_absolute(&root, Path::new(f))
+    } else {
+        root.join("Languages").join(&lang_dir).join("Keyed").join("_Edited.xml")
+    };
+    let mut pairs = read_language_pairs(&out_path).unwrap_or_default();
+    // update/insert
+    let mut found = false;
+    for (k, v) in pairs.iter_mut() {
+        if k == &request.key { *v = request.value.clone(); found = true; break; }
+    }
+    if !found { pairs.push((request.key.clone(), request.value.clone())); }
+    pairs.sort_by(|a,b| a.0.cmp(&b.0));
+    rimloc_import_po::write_language_data_xml(&out_path, &pairs).map_err(ApiError::from)?;
+    Ok(ApplyTranslationResponse { out_path: out_path.display().to_string(), total_keys: pairs.len() })
 }
