@@ -218,6 +218,33 @@ help-annotate-about = Add or remove comments with original source text in transl
 help-annotate-root = Path to RimWorld mod root
 help-annotate-source-lang = Source language ISO code (e.g., en); maps to folder name
 help-annotate-source-lang-dir = Source language folder name (e.g., English). Overrides --source-lang
+
+# merge-keyed
+help-mergekeyed-about = Merge English Keyed files into target language with EN: comments and UNUSED section
+help-mergekeyed-root = Path to RimWorld mod root
+help-mergekeyed-source-lang-dir = Source language folder name (default: English)
+help-mergekeyed-target-lang-dir = Target language folder name (e.g., Russian)
+help-mergekeyed-out-dir = Output directory to write merged Keyed (optional; default is Languages/<target>/Keyed)
+
+# coverage
+help-coverage-about = Report translation coverage between source and target language folders
+help-coverage-root = Path to RimWorld mod root
+help-coverage-source-lang-dir = Source language folder name (e.g., English)
+help-coverage-target-lang-dir = Target language folder name (e.g., Russian)
+help-coverage-defs-dir = Optional Defs root path to restrict scanning
+help-coverage-format = Output format: "text" (default) or "json"
+
+# export-xliff
+help-exportxlf-about = Export extracted strings into a single XLIFF 1.2 file (for CAT tools)
+help-exportxlf-root = Path to RimWorld mod root containing extracted strings
+help-exportxlf-out-xlf = Output .xlf file path
+help-exportxlf-source-lang-dir = Source language folder name (default: English)
+help-exportxlf-lang = Target translation language code for XLIFF header (e.g., ru)
+
+# import-xliff
+help-importxlf-about = Import XLIFF 1.2 and write a single LanguageData XML (Keyed)
+help-importxlf-xlf = Input .xlf path
+help-importxlf-out-xml = Output XML file path
 help-annotate-lang = Target translation language ISO code (e.g., ru)
 help-annotate-lang-dir = Target translation folder name (e.g., Russian). Overrides --lang
 help-annotate-dry-run = Do not write files; only print which files would be updated
