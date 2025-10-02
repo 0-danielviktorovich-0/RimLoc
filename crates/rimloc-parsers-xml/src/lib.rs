@@ -761,40 +761,49 @@ fn collect_values_by_path<'a>(
     #[derive(Clone)]
     struct Sel {
         name: String,
-        attr: Option<(String, String)>,
+        attrs: Vec<(String, String)>,
+        index: Option<usize>,
     }
     let parse_sel = |s: &str| -> Sel {
         if let Some(br) = s.find('[') {
             let name = &s[..br];
             let inside = &s[br + 1..s.len().saturating_sub(1)];
-            // support formats: @attr='v' | @attr=v | attr='v' | attr=v
-            let mut parts = inside
-                .trim()
-                .trim_matches(|c| c == '[' || c == ']')
-                .splitn(2, '=');
-            if let Some(attr_raw) = parts.next() {
-                let attr = attr_raw.trim().trim_start_matches('@');
-                if let Some(val_raw) = parts.next() {
-                    let val = val_raw
-                        .trim()
-                        .trim_matches('"')
-                        .trim_matches('\'')
-                        .to_string();
-                    return Sel {
-                        name: name.to_string(),
-                        attr: Some((attr.to_string(), val)),
-                    };
+            // Support multiple predicates separated by '&': a=b&c=d
+            // Index forms: "#2", "2", "index=2", "i=2"
+            let mut attrs: Vec<(String, String)> = Vec::new();
+            let mut index: Option<usize> = None;
+            for token in inside.split('&').map(|t| t.trim()).filter(|t| !t.is_empty()) {
+                let t = token.trim_matches(|c| c == '[' || c == ']');
+                if let Some(num) = t.strip_prefix('#') {
+                    if let Ok(i) = num.parse::<usize>() {
+                        index = Some(i);
+                        continue;
+                    }
+                }
+                if t.chars().all(|c| c.is_ascii_digit()) {
+                    if let Ok(i) = t.parse::<usize>() {
+                        index = Some(i);
+                        continue;
+                    }
+                }
+                let mut parts = t.splitn(2, '=');
+                let left = parts.next().unwrap_or("").trim().trim_start_matches('@');
+                if left.eq_ignore_ascii_case("index") || left.eq_ignore_ascii_case("i") {
+                    if let Some(v) = parts.next() {
+                        if let Ok(i) = v.trim().parse::<usize>() {
+                            index = Some(i);
+                        }
+                    }
+                    continue;
+                }
+                if let Some(right) = parts.next() {
+                    let val = right.trim().trim_matches('"').trim_matches('\'').to_string();
+                    attrs.push((left.to_string(), val));
                 }
             }
-            Sel {
-                name: name.to_string(),
-                attr: None,
-            }
+            Sel { name: name.to_string(), attrs, index }
         } else {
-            Sel {
-                name: s.to_string(),
-                attr: None,
-            }
+            Sel { name: s.to_string(), attrs: Vec::new(), index: None }
         }
     };
     let aliases: Vec<Sel> = head.split('|').map(parse_sel).collect();
@@ -807,45 +816,64 @@ fn collect_values_by_path<'a>(
             collect_values_by_path(child, tail, out);
         }
     } else {
+        // If any alias specifies an index, handle indexed selection by name first.
+        if let Some(sel) = aliases.iter().find(|a| a.index.is_some()).cloned() {
+            // Collect candidates matching name and attrs
+            let mut candidates: Vec<roxmltree::Node<'a, 'a>> = Vec::new();
+            'collect: for child in node.children().filter(|c| c.is_element()) {
+                let cname = child.tag_name().name();
+                if !cname.eq_ignore_ascii_case(sel.name.as_str()) { continue; }
+                // Check attributes
+                let mut ok = true;
+                for (attr, val) in &sel.attrs {
+                    if let Some(av) = child.attribute(attr.as_str()) {
+                        if av != val { ok = false; break; }
+                    } else {
+                        // Special: defName/Name child element
+                        if attr.eq_ignore_ascii_case("defName") || attr.eq_ignore_ascii_case("Name") {
+                            if let Some(t) = child.children().find(|n| n.is_element() && (n.tag_name().name()=="defName" || n.tag_name().name()=="Name")).and_then(|n| n.text()) {
+                                if t != val { ok = false; }
+                            } else { ok = false; }
+                        } else { ok = false; }
+                        if !ok { break; }
+                    }
+                }
+                if ok { candidates.push(child); }
+            }
+            if let Some(i) = sel.index {
+                if let Some(ch) = candidates.get(i) {
+                    collect_values_by_path(*ch, tail, out);
+                }
+            } else {
+                for ch in candidates { collect_values_by_path(ch, tail, out); }
+            }
+            return;
+        }
         'outer: for child in node.children().filter(|c| c.is_element()) {
             let cname = child.tag_name().name();
             for sel in &aliases {
                 if !cname.eq_ignore_ascii_case(sel.name.as_str()) {
                     continue;
                 }
-                if let Some((attr, ref val)) = sel.attr.as_ref() {
+                // Match all attrs (if any)
+                let mut ok = true;
+                for (attr, val) in &sel.attrs {
                     if let Some(av) = child.attribute(attr.as_str()) {
-                        if av == val {
-                            collect_values_by_path(child, tail, out);
-                            continue 'outer;
-                        } else {
-                            continue;
-                        }
+                        if av != val { ok = false; break; }
                     } else {
-                        // Special case: defName/Name as child element when attr missing
-                        if (attr.as_str()).eq_ignore_ascii_case("defName")
-                            || (attr.as_str()).eq_ignore_ascii_case("Name")
-                        {
-                            if let Some(t) = child
-                                .children()
-                                .find(|n| {
-                                    n.is_element()
-                                        && (n.tag_name().name() == "defName"
-                                            || n.tag_name().name() == "Name")
-                                })
-                                .and_then(|n| n.text())
-                            {
-                                if t == val.as_str() {
-                                    collect_values_by_path(child, tail, out);
-                                    continue 'outer;
-                                }
-                            }
-                        }
-                        continue;
+                        if attr.eq_ignore_ascii_case("defName") || attr.eq_ignore_ascii_case("Name") {
+                            if let Some(t) = child.children().find(|n| n.is_element() && (n.tag_name().name()=="defName" || n.tag_name().name()=="Name")).and_then(|n| n.text()) {
+                                if t != val { ok = false; }
+                            } else { ok = false; }
+                        } else { ok = false; }
+                        if !ok { break; }
                     }
-                } else {
+                }
+                if ok {
                     collect_values_by_path(child, tail, out);
                     continue 'outer;
+                } else {
+                    continue;
                 }
             }
         }
