@@ -260,6 +260,34 @@
         </div>
       </section>
 
+      <section class="panel" id="strings-panel">
+        <div class="panel-head">
+          <h2 data-i18n="strings_title">Strings Inventory</h2>
+          <div class="actions">
+            <button type="button" id="strings-run" data-i18n="strings_run">Run</button>
+            <button type="button" id="strings-save" data-i18n="save_report">Save report…</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label data-i18n="source_lang_folder">
+            <input id="strings-lang-dir" type="text" placeholder="English" data-ph="ph.lang_en" autocomplete="off" />
+          </label>
+        </div>
+        <div class="table-wrapper" style="max-height: 260px">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="th_path">Path</th>
+                <th scope="col" data-i18n="th_line">Line</th>
+                <th scope="col" data-i18n="th_source">Text</th>
+              </tr>
+            </thead>
+            <tbody id="strings-table-body"></tbody>
+          </table>
+        </div>
+        <div class="result" id="strings-result" data-i18n="strings_empty">No strings yet.</div>
+      </section>
+
       <section class="panel" id="learn-panel">
         <div class="panel-head">
           <h2 data-i18n="learn_title">Learn DefInjected</h2>

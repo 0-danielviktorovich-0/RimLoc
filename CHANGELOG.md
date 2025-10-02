@@ -34,12 +34,20 @@ Template (copy the sections you need):
 - [gui] Scan table: toggle to show only entries from `Patches/` (#PR)
 - [gui] Preview TM: load Baseline PO + TM folders, show suggestion and quick insert into target field (#PR)
 - [plugins] JSON/YAML keyed scanners: flatten string/object/array-of-strings into dotted keys (#PR)
+ - [cli] New `learn-defs` and `learn-keyed` commands: suggest DefInjected fields and Keyed keys; produce learned datasets/reports (#PR)
+ - [cli] New `morph` command: generate Case/Plural/Gender via Morpher API or local pymorphy2; supports filters/limits/timeouts and caching (#PR)
+ - [cli] New `schema` command: dump JSON Schemas for domain types (#PR)
+ - [gui] New panels: Learn DefInjected, Learn Keyed, Learn Patches, Morph, and JSON Schemas (#PR)
+ - [gui] Structured log viewer with filters (source/level/text) and JSONL export; Debug Console replaces legacy modal (#PR)
+ - [tauri] Backend commands: `validate_po_gui`, `learn_patches_cmd`; expose CLI i18n to GUI (#PR)
 
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
 - [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
 - [parsers-xml] Aggregate <li> list items and <LineBreak/> into a single value for LanguageData keys; improves DefInjected/Keyed lists handling (#PR)
 - [parsers-xml] Resolve Defs inheritance across files via Name/ParentName (fallback to defName), respect Inherit="false"; improves DefInjected candidates discovery (#PR)
+ - [gui] Lang update: resolve macOS .app bundle to `Resources`; enforce Accept: zip and header check for downloads (#PR)
+ - [gui/frontend] Use backend `open_path` to avoid plugin-shell URL regex warnings; fix save-report wrappers (#PR)
 
 ### Changed
 - [parsers-xml] Support path markers in dict (`li{h}`) to hint pseudo-handles for list segments; markers are ignored during value traversal and stripped from produced keys (#PR)
@@ -49,6 +57,8 @@ Template (copy the sections you need):
 - [parsers-xml] Parallelize Keyed/DefInjected scan (env `RIMLOC_PARALLEL=1` or `--parallel`); deterministic order preserved (#PR)
 - [validate] Report cross-file duplicates as `duplicate-global` with file list summary (#PR)
 - [validate] Warn on invisible/bi-di control characters in values (e.g., ZWSP/LRM/RLM/RLO/FSI) (#PR)
+ - [gui/i18n] Remove hardcoded UI strings; centralize i18n (EN/RU) and add simple i18n linter; localize placeholders and common labels (#PR)
+ - [gui/tauri] Validate/Diff panels support extended inputs (`defs_dict`, `defs_type_schema`, extra fields); mirror CLI outputs and report saving (#PR)
 
 ### Docs
 - [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
@@ -56,6 +66,8 @@ Template (copy the sections you need):
 - [docs] AGENTS: make commit via scripts/agent-commit.sh a mandatory finish step for agents (#PR)
 - [docs] AGENTS: explicitly allow using GH_TOKEN/GITHUB_TOKEN when provided by the user, with safety rules (#PR)
 - [docs] AGENTS: add final guard step with scripts/agent-ensure-commit.sh (#PR)
+ - [docs/schemas] Refresh generated JSON Schemas via `rimloc-cli schema`; document `out_dir` in configuration guide (#PR)
+ - [docs/gui] Expand GUI guide with Morph and Tools (schemas) sections (#PR)
 
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added

@@ -10,11 +10,18 @@ impl plugins::ParserPlugin for JsonKeyedPlugin {
 
     fn scan_units(&self, root: &Path) -> Result<Vec<TransUnit>> {
         let mut out = Vec::new();
+        let include = std::env::var("RIMLOC_JSON_PATH_INCLUDE").ok();
+        let exclude = std::env::var("RIMLOC_JSON_PATH_EXCLUDE").ok();
+        let incl_res: Option<Vec<regex::Regex>> = include.as_deref().map(|s| s.split(',').filter_map(|p| regex::Regex::new(p.trim()).ok()).collect());
+        let excl_res: Option<Vec<regex::Regex>> = exclude.as_deref().map(|s| s.split(',').filter_map(|p| regex::Regex::new(p.trim()).ok()).collect());
         for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
             let p = entry.path();
             if !p.is_file() { continue; }
             let is_json = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("json")).unwrap_or(false);
             if !is_json { continue; }
+            let norm = p.to_string_lossy().replace('\\', "/");
+            if let Some(res) = incl_res.as_ref() { if !res.iter().any(|r| r.is_match(&norm)) { continue; } }
+            if let Some(res) = excl_res.as_ref() { if res.iter().any(|r| r.is_match(&norm)) { continue; } }
             let content = match std::fs::read_to_string(p) { Ok(s) => s, Err(_) => continue };
             let val: Value = match serde_json::from_str(&content) { Ok(v) => v, Err(_) => continue };
             fn flatten(prefix: &str, v: &Value, out: &mut Vec<(String, String)>) {
@@ -49,4 +56,3 @@ impl plugins::ParserPlugin for JsonKeyedPlugin {
         Ok(out)
     }
 }
-

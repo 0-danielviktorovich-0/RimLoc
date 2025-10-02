@@ -393,6 +393,68 @@ struct XmlHealthRequest {
     except: Option<Vec<String>>,
 }
 
+// --- Strings inventory ---
+#[derive(Debug, Deserialize)]
+struct ScanStringsRequest {
+    root: String,
+    #[serde(default)]
+    game_version: Option<String>,
+    #[serde(default)]
+    include_all_versions: bool,
+    #[serde(default)]
+    lang_dir: Option<String>,
+    #[serde(default)]
+    out_json: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct StringLineView { path: String, line: usize, text: String, lang_dir: Option<String> }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ScanStringsResponse { resolved_root: String, game_version: Option<String>, total: usize, items: Vec<StringLineView>, saved_json: Option<String> }
+
+#[tauri::command]
+fn scan_strings_gui(_window: Window, _state: State<LogState>, request: ScanStringsRequest) -> Result<ScanStringsResponse, ApiError> {
+    use walkdir::WalkDir;
+    let root = PathBuf::from(&request.root);
+    let (scan_root, version) = if request.include_all_versions { (root.clone(), None) } else { resolve_game_version_root(&root, request.game_version.as_deref())? };
+    let mut items: Vec<StringLineView> = Vec::new();
+    for entry in WalkDir::new(&scan_root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() { continue; }
+        let is_txt = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("txt")).unwrap_or(false);
+        if !is_txt { continue; }
+        let s = p.to_string_lossy();
+        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) { continue; }
+        if !(s.contains("/Strings/") || s.contains("\\Strings\\")) { continue; }
+        if let Some(dir) = request.lang_dir.as_deref() {
+            if !(s.contains(&format!("/Languages/{dir}/")) || s.contains(&format!("\\Languages\\{}\\", dir))) {
+                continue;
+            }
+        }
+        let content = match std::fs::read_to_string(p) { Ok(v) => v, Err(_) => continue };
+        let mut line_no = 0usize;
+        for line in content.lines() {
+            line_no += 1;
+            let t = line.trim();
+            if t.is_empty() { continue; }
+            let snippet = if t.len() > 200 { format!("{}…", &t[..200]) } else { t.to_string() };
+            items.push(StringLineView { path: p.display().to_string(), line: line_no, text: snippet, lang_dir: request.lang_dir.clone() });
+        }
+    }
+    items.sort_by(|a, b| (a.path.clone(), a.line).cmp(&(b.path.clone(), b.line)));
+    let saved_json = if let Some(path) = request.out_json.as_ref() {
+        let path = make_absolute(&scan_root, Path::new(path));
+        if let Some(parent) = path.parent() { let _ = std::fs::create_dir_all(parent); }
+        let file = File::create(&path)?;
+        serde_json::to_writer_pretty(file, &items)?;
+        Some(path.display().to_string())
+    } else { None };
+    Ok(ScanStringsResponse { resolved_root: scan_root.display().to_string(), game_version: version, total: items.len(), items, saved_json })
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct XmlHealthResponse {
@@ -1902,6 +1964,7 @@ fn main() {
             ,get_cli_i18n
             ,apply_translation
             ,load_tm
+            ,scan_strings_gui
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
