@@ -1,5 +1,13 @@
 // Early status hint to confirm JS is executing before boot()
-(function(){ try { const s = document.getElementById('status-text'); if (s) s.textContent = 'Loading UI…'; } catch(_){} })();
+(function(){
+  try {
+    const s = document.getElementById('status-text');
+    if (s) s.textContent = 'Loading UI…';
+    // mark that index.js started
+    window.__rimlocScriptLoaded = true;
+    try { console.info('RimLoc GUI: index.js loaded'); } catch {}
+  } catch(_){}
+})();
 
 function getTauri() {
   const t = (typeof window !== 'undefined' && window.__TAURI__) ? window.__TAURI__ : undefined;
@@ -2092,9 +2100,10 @@ function initThemeUI() {
     applyTheme();
   });
   if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (state.theme === 'auto') applyTheme();
-    });
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => { if (state.theme === 'auto') applyTheme(); };
+    if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
+    else if (typeof mq.addListener === 'function') mq.addListener(onChange);
   }
   applyTheme();
 }
