@@ -104,6 +104,8 @@ struct ScanRequest {
     parallel: bool,
     #[serde(default)]
     fuzzy: bool,
+    #[serde(default)]
+    use_en_comments: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -852,6 +854,8 @@ struct DiffXmlRequest {
     extra_fields: Option<Vec<String>>,
     #[serde(default)]
     type_schema: Option<String>,
+    #[serde(default)]
+    out_dir: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -3253,6 +3257,15 @@ fn diff_xml_cmd(
             let _ = std::fs::create_dir_all(parent);
         }
         let _ = std::fs::write(&path, serde_json::to_vec_pretty(&resp).unwrap_or_default());
+    }
+    if let Some(dir) = request.out_dir.as_deref() {
+        let out_dir = make_absolute(&scan_root, Path::new(dir));
+        let diff = rimloc_domain::DiffOutput {
+            changed: resp.changed.clone(),
+            only_in_mod: resp.only_in_mod.clone(),
+            only_in_translation: resp.only_in_translation.clone(),
+        };
+        let _ = rimloc_services::write_diff_reports(&out_dir, &diff);
     }
     write_profile(
         &state,

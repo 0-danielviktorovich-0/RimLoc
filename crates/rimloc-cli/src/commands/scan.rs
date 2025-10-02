@@ -12,6 +12,7 @@ pub fn run_scan(
     lang: Option<String>,
     source_lang: Option<String>,
     source_lang_dir: Option<String>,
+    use_en_comments: Option<String>,
     defs_dir: Option<std::path::PathBuf>,
     defs_field: Vec<String>,
     defs_dict: Vec<std::path::PathBuf>,
@@ -225,6 +226,20 @@ pub fn run_scan(
             }
         }
         false
+    }
+
+    // Apply optional EN comments override before filtering/sorting
+    if let Some(prefix) = use_en_comments.as_deref() {
+        let src_dir = source_lang_dir
+            .clone()
+            .or_else(|| {
+                source_lang
+                    .clone()
+                    .map(|c| rimloc_import_po::rimworld_lang_dir(&c))
+            })
+            .unwrap_or_else(|| "English".to_string());
+        let _ =
+            rimloc_services::scan::override_keyed_units_from_comments(&mut units, &src_dir, prefix);
     }
 
     let units = if let Some(dir) = source_lang_dir.clone() {
