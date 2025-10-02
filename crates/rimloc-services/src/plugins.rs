@@ -34,6 +34,7 @@ pub fn init_builtin() {
         register(Arc::new(
             crate::plugins_xml_ext::XmlExtensionsSettingsPlugin,
         ));
+        register(Arc::new(crate::plugins_msf::ModSettingsFrameworkPlugin));
     });
 }
 
@@ -108,7 +109,11 @@ pub fn load_dynamic_plugin(path: &Path) -> Result<()> {
             .unwrap_or("dyn")
             .to_string();
         let fn_ptr: rimloc_plugin_api::ScanJsonFn = *func;
-        register(Arc::new(DynPlugin { id, lib, func: fn_ptr }));
+        register(Arc::new(DynPlugin {
+            id,
+            lib,
+            func: fn_ptr,
+        }));
         Ok(())
     }
 }

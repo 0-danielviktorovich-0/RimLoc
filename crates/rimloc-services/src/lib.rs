@@ -11,6 +11,7 @@ pub mod extras;
 pub mod import;
 pub mod learn;
 pub mod plugins;
+pub mod plugins_msf;
 pub mod plugins_xml_ext;
 pub mod scan;
 mod util;
