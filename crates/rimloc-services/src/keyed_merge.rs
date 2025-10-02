@@ -8,50 +8,121 @@ use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 fn read_keyed_file(path: &Path) -> BTreeMap<String, String> {
+    // Robust reader that supports list items (<li>) and <LineBreak/> semantics
+    // under <LanguageData> and preserves multi-line entries.
     let mut map = BTreeMap::new();
     let Ok(content) = fs::read_to_string(path) else {
         return map;
     };
     let mut reader = quick_xml::Reader::from_str(&content);
-    reader.config_mut().trim_text(true);
+    // Keep whitespace inside nodes as much as possible; we will trim when storing
+    reader.config_mut().trim_text(false);
     let mut buf = Vec::new();
-    let mut stack: Vec<String> = Vec::new();
-    let mut cur_key: Option<String> = None;
-    let mut cur_val = String::new();
+
+    #[derive(Default)]
+    struct Frame {
+        name: String,
+        buffer: String,
+        has_text: bool,
+    }
+
+    let mut stack: Vec<Frame> = Vec::new();
+
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(quick_xml::events::Event::Start(e)) => {
                 let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
-                stack.push(name.clone());
-                if stack.len() == 2 {
-                    cur_key = Some(name);
-                    cur_val.clear();
-                }
+                stack.push(Frame {
+                    name,
+                    buffer: String::new(),
+                    has_text: false,
+                });
             }
-            Ok(quick_xml::events::Event::Text(t)) => {
-                if stack.len() == 2 {
-                    let text = t.unescape().unwrap_or_default().to_string();
-                    cur_val.push_str(text.trim());
-                }
-            }
-            Ok(quick_xml::events::Event::End(_)) => {
-                if stack.len() == 2 {
-                    if let Some(k) = cur_key.take() {
-                        map.insert(k, cur_val.trim().to_string());
-                        cur_val.clear();
+            Ok(quick_xml::events::Event::End(_e)) => {
+                if let Some(frame) = stack.pop() {
+                    // Top-level key under LanguageData => commit
+                    if stack.len() == 1 && !frame.name.is_empty() {
+                        let val = if frame.has_text {
+                            frame.buffer.trim().to_string()
+                        } else {
+                            String::new()
+                        };
+                        map.insert(frame.name, val);
+                        continue;
+                    }
+                    // If closing <li> under a top-level key, fold into parent with newline handling
+                    if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
+                        if let Some(parent) = stack.last_mut() {
+                            if parent.has_text && !parent.buffer.ends_with('\n') {
+                                parent.buffer.push('\n');
+                            }
+                            if !frame.buffer.is_empty() {
+                                parent.buffer.push_str(frame.buffer.trim());
+                                parent.has_text = true;
+                            } else {
+                                // Empty <li/> still counts as an empty line
+                                parent.has_text = true;
+                            }
+                        }
+                        continue;
+                    }
+                    // Otherwise bubble text up if needed
+                    if let Some(parent) = stack.last_mut() {
+                        if !frame.buffer.is_empty() {
+                            parent.buffer.push_str(&frame.buffer);
+                            parent.has_text = parent.has_text || frame.has_text;
+                        }
                     }
                 }
-                stack.pop();
             }
             Ok(quick_xml::events::Event::Empty(e)) => {
                 let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                // Self-closing LineBreak inside key or list item => newline
+                if name.eq_ignore_ascii_case("LineBreak") {
+                    if let Some(parent) = stack.last_mut() {
+                        parent.buffer.push('\n');
+                        parent.has_text = true;
+                    }
+                    buf.clear();
+                    continue;
+                }
+                // Self-closing key directly under LanguageData => empty value
                 if stack.len() == 1 {
                     map.insert(name, String::new());
+                    buf.clear();
+                    continue;
+                }
+                // Self-closing <li/> under a top-level key contributes an empty line
+                if name.eq_ignore_ascii_case("li") && stack.len() == 2 {
+                    if let Some(parent) = stack.last_mut() {
+                        if parent.has_text && !parent.buffer.ends_with('\n') {
+                            parent.buffer.push('\n');
+                        }
+                        parent.has_text = true;
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::Text(t)) => {
+                if let Some(frame) = stack.last_mut() {
+                    let text = t.unescape().unwrap_or_default().to_string();
+                    if !text.trim().is_empty() {
+                        frame.buffer.push_str(text.trim());
+                        frame.has_text = true;
+                    }
+                }
+            }
+            Ok(quick_xml::events::Event::CData(t)) => {
+                if let Some(frame) = stack.last_mut() {
+                    let text = String::from_utf8_lossy(t.as_ref());
+                    if !text.trim().is_empty() {
+                        frame.buffer.push_str(text.trim());
+                        frame.has_text = true;
+                    }
                 }
             }
             Ok(quick_xml::events::Event::Eof) => break,
             Ok(_) => {}
-            Err(_) => {}
+            Err(_) => break,
         }
         buf.clear();
     }
