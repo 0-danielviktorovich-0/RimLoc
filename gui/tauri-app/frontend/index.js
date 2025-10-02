@@ -509,6 +509,8 @@ async function handleValidate() {
     defs_type_schema: val("validate-type-schema") || null,
     include_all_versions: isChecked("validate-all-versions"),
     compare_placeholders: isChecked("validate-compare-ph"),
+    compare_lists: isChecked("validate-compare-lists"),
+    report_orphans: isChecked("validate-report-orphans"),
     target_lang: val("validate-target-lang") || null,
     target_lang_dir: val("validate-target-lang-dir") || null,
   };

@@ -1480,6 +1480,35 @@ mod defs_tests {
         Ok(())
     }
 
+    #[test]
+    fn scan_defs_extracts_worldobject_and_sitepart_labels() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let defs_dir = dir.path().join("Mods/TestMod/Defs/Misc");
+        fs::create_dir_all(&defs_dir)?;
+        let file_path = defs_dir.join("WorldSite.xml");
+        fs::write(
+            &file_path,
+            r#"<Defs>
+  <WorldObjectDef>
+    <defName>MyWorldObject</defName>
+    <label>some world object</label>
+    <description>appears on world map</description>
+  </WorldObjectDef>
+  <SitePartDef>
+    <defName>BanditCamp</defName>
+    <label>bandit camp</label>
+    <description>hostile site</description>
+  </SitePartDef>
+</Defs>
+"#,
+        )?;
+        let meta = scan_defs_with_dict_meta(dir.path(), None, &load_embedded_defs_dict().0, &[])?;
+        let units: Vec<TransUnit> = meta.into_iter().map(|m| m.unit).collect();
+        assert!(units.iter().any(|u| u.key == "MyWorldObject.label" && u.source.as_deref() == Some("some world object")));
+        assert!(units.iter().any(|u| u.key == "BanditCamp.description" && u.source.as_deref() == Some("hostile site")));
+        Ok(())
+    }
+
     // NOTE: RecipeDef.ingredients.* are schema-sensitive and vary across mods;
     // covered indirectly via dict/DSL integration tests elsewhere.
 }

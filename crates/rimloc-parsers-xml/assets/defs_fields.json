@@ -49,6 +49,26 @@
   "IncidentCategoryDef": [
     "label"
   ],
+  "WorldObjectDef": [
+    "label",
+    "description"
+  ],
+  "SitePartDef": [
+    "label",
+    "description"
+  ],
+  "GeneDef": [
+    "label",
+    "description"
+  ],
+  "MemeDef": [
+    "label",
+    "description"
+  ],
+  "PreceptDef": [
+    "label",
+    "description"
+  ],
   "HediffDef": [
     "label",
     "labelNoun",
