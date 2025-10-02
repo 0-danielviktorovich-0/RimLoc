@@ -137,27 +137,27 @@ pub fn scan_keyed_xml_with_options(
                     if let Some(frame) = stack.pop() {
                         // Optional: emit nested dotted keys under LanguageData when enabled
                         if opts.nested && frame.has_text && !frame.name.is_empty() {
-                                // stack after pop contains ancestors; expect root[0] == LanguageData
-                                if stack
-                                    .first()
-                                    .map(|f| f.name.eq_ignore_ascii_case("LanguageData"))
-                                    .unwrap_or(false)
-                                    && stack.len() >= 2
-                                {
-                                    let mut parts: Vec<String> =
-                                        stack.iter().skip(1).map(|f| f.name.clone()).collect();
-                                    parts.push(frame.name.clone());
-                                    if !parts.iter().any(|p| p.eq_ignore_ascii_case("li")) {
-                                        let key = parts.join(".");
-                                        local.push(TransUnit {
-                                            key,
-                                            source: Some(frame.buffer.clone()),
-                                            path: p.clone(),
-                                            line: frame.line,
-                                        });
-                                        continue;
-                                    }
+                            // stack after pop contains ancestors; expect root[0] == LanguageData
+                            if stack
+                                .first()
+                                .map(|f| f.name.eq_ignore_ascii_case("LanguageData"))
+                                .unwrap_or(false)
+                                && stack.len() >= 2
+                            {
+                                let mut parts: Vec<String> =
+                                    stack.iter().skip(1).map(|f| f.name.clone()).collect();
+                                parts.push(frame.name.clone());
+                                if !parts.iter().any(|p| p.eq_ignore_ascii_case("li")) {
+                                    let key = parts.join(".");
+                                    local.push(TransUnit {
+                                        key,
+                                        source: Some(frame.buffer.clone()),
+                                        path: p.clone(),
+                                        line: frame.line,
+                                    });
+                                    continue;
                                 }
+                            }
                         }
                         // If closing a <li> directly under a top-level key, fold into the parent buffer
                         if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
@@ -733,12 +733,21 @@ fn collect_values_by_path<'a>(
                         .trim_matches('"')
                         .trim_matches('\'')
                         .to_string();
-                    return Sel { name: name.to_string(), attr: Some((attr.to_string(), val)) };
+                    return Sel {
+                        name: name.to_string(),
+                        attr: Some((attr.to_string(), val)),
+                    };
                 }
             }
-            Sel { name: name.to_string(), attr: None }
+            Sel {
+                name: name.to_string(),
+                attr: None,
+            }
         } else {
-            Sel { name: s.to_string(), attr: None }
+            Sel {
+                name: s.to_string(),
+                attr: None,
+            }
         }
     };
     let aliases: Vec<Sel> = head.split('|').map(parse_sel).collect();
@@ -774,7 +783,8 @@ fn collect_values_by_path<'a>(
                                 .children()
                                 .find(|n| {
                                     n.is_element()
-                                        && (n.tag_name().name() == "defName" || n.tag_name().name() == "Name")
+                                        && (n.tag_name().name() == "defName"
+                                            || n.tag_name().name() == "Name")
                                 })
                                 .and_then(|n| n.text())
                             {
@@ -1471,12 +1481,23 @@ mod defs_tests {
         let meta = scan_defs_with_dict_meta(dir.path(), None, &load_embedded_defs_dict().0, &[])?;
         let units: Vec<TransUnit> = meta.into_iter().map(|m| m.unit).collect();
         // Pawn lifeStages labels
-        assert!(units.iter().any(|u| u.key == "Pawn_PlayerColony.lifeStages.li.label" && u.source.as_deref() == Some("juvenile colonist")));
-        assert!(units.iter().any(|u| u.key == "Pawn_PlayerColony.lifeStages.li.label" && u.source.as_deref() == Some("adult colonist")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Pawn_PlayerColony.lifeStages.li.label"
+                && u.source.as_deref() == Some("juvenile colonist")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Pawn_PlayerColony.lifeStages.li.label"
+                && u.source.as_deref() == Some("adult colonist")));
         // Thing verbs.li.label
-        assert!(units.iter().any(|u| u.key == "Meal_Simple.verbs.li.label" && u.source.as_deref() == Some("eat")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Meal_Simple.verbs.li.label" && u.source.as_deref() == Some("eat")));
         // ingestible.ingestCommandString
-        assert!(units.iter().any(|u| u.key == "Meal_Simple.ingestible.ingestCommandString" && u.source.as_deref() == Some("Eat {0}")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Meal_Simple.ingestible.ingestCommandString"
+                && u.source.as_deref() == Some("Eat {0}")));
         Ok(())
     }
 
@@ -1504,8 +1525,14 @@ mod defs_tests {
         )?;
         let meta = scan_defs_with_dict_meta(dir.path(), None, &load_embedded_defs_dict().0, &[])?;
         let units: Vec<TransUnit> = meta.into_iter().map(|m| m.unit).collect();
-        assert!(units.iter().any(|u| u.key == "MyWorldObject.label" && u.source.as_deref() == Some("some world object")));
-        assert!(units.iter().any(|u| u.key == "BanditCamp.description" && u.source.as_deref() == Some("hostile site")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "MyWorldObject.label"
+                && u.source.as_deref() == Some("some world object")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "BanditCamp.description"
+                && u.source.as_deref() == Some("hostile site")));
         Ok(())
     }
 

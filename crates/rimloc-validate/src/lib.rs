@@ -24,12 +24,17 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     let re_brace_inner = RE_BRACE_INNER.get_or_init(|| Regex::new(r"^\$?[A-Za-z0-9_]+$").unwrap());
 
     let mut by_file_key: HashMap<(String, String), Vec<Option<usize>>> = HashMap::new();
+    let mut by_key_files: HashMap<String, Vec<(String, Option<usize>)>> = HashMap::new();
     for u in units {
         let path = u.path.to_string_lossy().to_string();
         by_file_key
             .entry((path, u.key.clone()))
             .or_default()
             .push(u.line);
+        by_key_files
+            .entry(u.key.clone())
+            .or_default()
+            .push((u.path.to_string_lossy().to_string(), u.line));
     }
 
     // Report empty values
@@ -142,6 +147,33 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                 path,
                 line,
                 message: "Duplicate key in file".to_string(),
+            });
+        }
+    }
+
+    // Cross-file duplicates: same key appears in multiple files under the scanned set
+    for (key, entries) in by_key_files {
+        // Normalize unique files
+        use std::collections::BTreeSet;
+        let mut files: BTreeSet<String> = BTreeSet::new();
+        for (p, _) in &entries {
+            files.insert(p.clone());
+        }
+        if files.len() > 1 {
+            // Report one message, attach first path/line for reference
+            let (path, line) = entries
+                .first()
+                .cloned()
+                .unwrap_or_else(|| (String::new(), None));
+            msgs.push(ValidationMessage {
+                kind: "duplicate-global".to_string(),
+                key,
+                path,
+                line,
+                message: format!(
+                    "Key appears in multiple files: {}",
+                    files.iter().cloned().collect::<Vec<_>>().join(", ")
+                ),
             });
         }
     }
