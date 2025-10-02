@@ -76,7 +76,10 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                     }
                 }
                 if !invisible_hits.is_empty() {
-                    let codes: Vec<String> = invisible_hits.into_iter().map(|c| format!("U+{:04X}", c as u32)).collect();
+                    let codes: Vec<String> = invisible_hits
+                        .into_iter()
+                        .map(|c| format!("U+{:04X}", c as u32))
+                        .collect();
                     msgs.push(ValidationMessage {
                         kind: "invisible-char".to_string(),
                         key: u.key.clone(),
@@ -162,7 +165,9 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
-                        message: "Placeholders present — Hint: verify count and types match the source.".to_string(),
+                        message:
+                            "Placeholders present — Hint: verify count and types match the source."
+                                .to_string(),
                     });
                 }
             }

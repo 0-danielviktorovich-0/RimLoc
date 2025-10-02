@@ -1058,39 +1058,107 @@ impl Runnable for Commands {
                 patch_strict_xpath,
                 fuzzy,
             ),
-            Commands::Coverage { root, source_lang_dir, target_lang_dir, defs_dir, format } => {
-                let defs_abs = defs_dir.as_ref().map(|p| if p.is_absolute() { p.clone() } else { root.join(p) });
-                let rep = rimloc_services::validate::coverage_report(&root, &source_lang_dir, &target_lang_dir, defs_abs.as_deref())?;
+            Commands::Coverage {
+                root,
+                source_lang_dir,
+                target_lang_dir,
+                defs_dir,
+                format,
+            } => {
+                let defs_abs = defs_dir.as_ref().map(|p| {
+                    if p.is_absolute() {
+                        p.clone()
+                    } else {
+                        root.join(p)
+                    }
+                });
+                let rep = rimloc_services::validate::coverage_report(
+                    &root,
+                    &source_lang_dir,
+                    &target_lang_dir,
+                    defs_abs.as_deref(),
+                )?;
                 match format.as_str() {
-                    "json" => { serde_json::to_writer(std::io::stdout().lock(), &rep)?; }
+                    "json" => {
+                        serde_json::to_writer(std::io::stdout().lock(), &rep)?;
+                    }
                     _ => {
-                        println!("Coverage: source={} target={} translated={} missing={} ({}%)",
-                            rep.source_total, rep.target_total, rep.translated, rep.missing,
-                            if rep.source_total>0 { (rep.translated as f64 / rep.source_total as f64 * 100.0).round() as i64 } else { 0 }
+                        println!(
+                            "Coverage: source={} target={} translated={} missing={} ({}%)",
+                            rep.source_total,
+                            rep.target_total,
+                            rep.translated,
+                            rep.missing,
+                            if rep.source_total > 0 {
+                                (rep.translated as f64 / rep.source_total as f64 * 100.0).round()
+                                    as i64
+                            } else {
+                                0
+                            }
                         );
                     }
                 }
                 Ok(())
             }
-            Commands::ExportXliff { root, out_xlf, source_lang_dir, lang } => {
+            Commands::ExportXliff {
+                root,
+                out_xlf,
+                source_lang_dir,
+                lang,
+            } => {
                 // Reuse services scan to gather units under English only
                 let mut units = rimloc_services::scan::scan_units(&root)?;
-                units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, &source_lang_dir));
+                units
+                    .retain(|u| rimloc_services::is_under_languages_dir(&u.path, &source_lang_dir));
                 rimloc_export_xliff::write_xliff_12(&out_xlf, &units, "en", &lang)?;
-                if use_color { use owo_colors::OwoColorize; println!("{} exported XLIFF → {}", "✔".green(), out_xlf.display()); } else { println!("exported XLIFF → {}", out_xlf.display()); }
+                if use_color {
+                    use owo_colors::OwoColorize;
+                    println!("{} exported XLIFF → {}", "✔".green(), out_xlf.display());
+                } else {
+                    println!("exported XLIFF → {}", out_xlf.display());
+                }
                 Ok(())
             }
             Commands::ImportXliff { xlf, out_xml } => {
                 rimloc_import_xliff::xliff_to_language_data(&out_xml, &xlf)?;
-                if use_color { use owo_colors::OwoColorize; println!("{} wrote {}", "✔".green(), out_xml.display()); } else { println!("wrote {}", out_xml.display()); }
+                if use_color {
+                    use owo_colors::OwoColorize;
+                    println!("{} wrote {}", "✔".green(), out_xml.display());
+                } else {
+                    println!("wrote {}", out_xml.display());
+                }
                 Ok(())
             }
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 
-            Commands::MergeKeyed { root, source_lang_dir, target_lang_dir, out_dir } => {
-                let stats = rimloc_services::keyed_merge::merge_keyed(&root, &source_lang_dir, &target_lang_dir, out_dir.as_deref())?;
-                if use_color { use owo_colors::OwoColorize; println!("{} merge-keyed: files={}, keys={}, reused={}, unused={}", "✔".green(), stats.files, stats.keys_total, stats.reused, stats.unused); }
-                else { println!("merge-keyed: files={}, keys={}, reused={}, unused={}", stats.files, stats.keys_total, stats.reused, stats.unused); }
+            Commands::MergeKeyed {
+                root,
+                source_lang_dir,
+                target_lang_dir,
+                out_dir,
+            } => {
+                let stats = rimloc_services::keyed_merge::merge_keyed(
+                    &root,
+                    &source_lang_dir,
+                    &target_lang_dir,
+                    out_dir.as_deref(),
+                )?;
+                if use_color {
+                    use owo_colors::OwoColorize;
+                    println!(
+                        "{} merge-keyed: files={}, keys={}, reused={}, unused={}",
+                        "✔".green(),
+                        stats.files,
+                        stats.keys_total,
+                        stats.reused,
+                        stats.unused
+                    );
+                } else {
+                    println!(
+                        "merge-keyed: files={}, keys={}, reused={}, unused={}",
+                        stats.files, stats.keys_total, stats.reused, stats.unused
+                    );
+                }
                 Ok(())
             }
 

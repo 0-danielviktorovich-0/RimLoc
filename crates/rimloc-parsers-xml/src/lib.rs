@@ -99,9 +99,8 @@ pub fn scan_keyed_xml_with_options(
         files.push(p.to_path_buf());
     }
 
-    fn is_def_injected_path(p: &std::path::Path) -> bool {
-        def_injected_type_from_path(p).is_some()
-    }
+    #[allow(dead_code)]
+    fn is_def_injected_path(p: &std::path::Path) -> bool { def_injected_type_from_path(p).is_some() }
 
     fn def_injected_type_from_path(p: &std::path::Path) -> Option<String> {
         // Find segment immediately following "DefInjected" in the path
@@ -193,7 +192,11 @@ pub fn scan_keyed_xml_with_options(
                                 parts.push(frame.name.clone());
                                 if !parts.iter().any(|p| p.eq_ignore_ascii_case("li")) {
                                     let def_type = def_injected_type_from_path(p);
-                                    let key = drop_def_type_if_needed(parts.join("."), def_type.as_deref(), opts.definj_drop_def_type);
+                                    let key = drop_def_type_if_needed(
+                                        parts.join("."),
+                                        def_type.as_deref(),
+                                        opts.definj_drop_def_type,
+                                    );
                                     local.push(TransUnit {
                                         key,
                                         source: Some(frame.buffer.clone()),
@@ -250,7 +253,11 @@ pub fn scan_keyed_xml_with_options(
                                 stack.iter().skip(1).map(|f| f.name.as_str()).collect();
                             parts.push(&frame.name);
                             let def_type = def_injected_type_from_path(p);
-                            let key = drop_def_type_if_needed(parts.join("."), def_type.as_deref(), opts.definj_drop_def_type);
+                            let key = drop_def_type_if_needed(
+                                parts.join("."),
+                                def_type.as_deref(),
+                                opts.definj_drop_def_type,
+                            );
                             local.push(TransUnit {
                                 key,
                                 source: Some(frame.buffer),
@@ -309,7 +316,11 @@ pub fn scan_keyed_xml_with_options(
                                 stack.iter().skip(1).map(|f| f.name.as_str()).collect();
                             parts.push(&name);
                             let def_type = def_injected_type_from_path(p);
-                            let key = drop_def_type_if_needed(parts.join("."), def_type.as_deref(), opts.definj_drop_def_type);
+                            let key = drop_def_type_if_needed(
+                                parts.join("."),
+                                def_type.as_deref(),
+                                opts.definj_drop_def_type,
+                            );
                             local.push(TransUnit {
                                 key,
                                 source: Some(String::new()),
@@ -772,7 +783,11 @@ fn collect_values_by_path<'a>(
             // Index forms: "#2", "2", "index=2", "i=2"
             let mut attrs: Vec<(String, String)> = Vec::new();
             let mut index: Option<usize> = None;
-            for token in inside.split('&').map(|t| t.trim()).filter(|t| !t.is_empty()) {
+            for token in inside
+                .split('&')
+                .map(|t| t.trim())
+                .filter(|t| !t.is_empty())
+            {
                 let t = token.trim_matches(|c| c == '[' || c == ']');
                 if let Some(num) = t.strip_prefix('#') {
                     if let Ok(i) = num.parse::<usize>() {
@@ -797,13 +812,25 @@ fn collect_values_by_path<'a>(
                     continue;
                 }
                 if let Some(right) = parts.next() {
-                    let val = right.trim().trim_matches('"').trim_matches('\'').to_string();
+                    let val = right
+                        .trim()
+                        .trim_matches('"')
+                        .trim_matches('\'')
+                        .to_string();
                     attrs.push((left.to_string(), val));
                 }
             }
-            Sel { name: name.to_string(), attrs, index }
+            Sel {
+                name: name.to_string(),
+                attrs,
+                index,
+            }
         } else {
-            Sel { name: s.to_string(), attrs: Vec::new(), index: None }
+            Sel {
+                name: s.to_string(),
+                attrs: Vec::new(),
+                index: None,
+            }
         }
     };
     let aliases: Vec<Sel> = head.split('|').map(parse_sel).collect();
@@ -820,32 +847,58 @@ fn collect_values_by_path<'a>(
         if let Some(sel) = aliases.iter().find(|a| a.index.is_some()).cloned() {
             // Collect candidates matching name and attrs
             let mut candidates: Vec<roxmltree::Node<'a, 'a>> = Vec::new();
-            'collect: for child in node.children().filter(|c| c.is_element()) {
+            for child in node.children().filter(|c| c.is_element()) {
                 let cname = child.tag_name().name();
-                if !cname.eq_ignore_ascii_case(sel.name.as_str()) { continue; }
+                if !cname.eq_ignore_ascii_case(sel.name.as_str()) {
+                    continue;
+                }
                 // Check attributes
                 let mut ok = true;
                 for (attr, val) in &sel.attrs {
                     if let Some(av) = child.attribute(attr.as_str()) {
-                        if av != val { ok = false; break; }
+                        if av != val {
+                            ok = false;
+                            break;
+                        }
                     } else {
                         // Special: defName/Name child element
-                        if attr.eq_ignore_ascii_case("defName") || attr.eq_ignore_ascii_case("Name") {
-                            if let Some(t) = child.children().find(|n| n.is_element() && (n.tag_name().name()=="defName" || n.tag_name().name()=="Name")).and_then(|n| n.text()) {
-                                if t != val { ok = false; }
-                            } else { ok = false; }
-                        } else { ok = false; }
-                        if !ok { break; }
+                        if attr.eq_ignore_ascii_case("defName") || attr.eq_ignore_ascii_case("Name")
+                        {
+                            if let Some(t) = child
+                                .children()
+                                .find(|n| {
+                                    n.is_element()
+                                        && (n.tag_name().name() == "defName"
+                                            || n.tag_name().name() == "Name")
+                                })
+                                .and_then(|n| n.text())
+                            {
+                                if t != val {
+                                    ok = false;
+                                }
+                            } else {
+                                ok = false;
+                            }
+                        } else {
+                            ok = false;
+                        }
+                        if !ok {
+                            break;
+                        }
                     }
                 }
-                if ok { candidates.push(child); }
+                if ok {
+                    candidates.push(child);
+                }
             }
             if let Some(i) = sel.index {
                 if let Some(ch) = candidates.get(i) {
                     collect_values_by_path(*ch, tail, out);
                 }
             } else {
-                for ch in candidates { collect_values_by_path(ch, tail, out); }
+                for ch in candidates {
+                    collect_values_by_path(ch, tail, out);
+                }
             }
             return;
         }
@@ -859,14 +912,34 @@ fn collect_values_by_path<'a>(
                 let mut ok = true;
                 for (attr, val) in &sel.attrs {
                     if let Some(av) = child.attribute(attr.as_str()) {
-                        if av != val { ok = false; break; }
+                        if av != val {
+                            ok = false;
+                            break;
+                        }
                     } else {
-                        if attr.eq_ignore_ascii_case("defName") || attr.eq_ignore_ascii_case("Name") {
-                            if let Some(t) = child.children().find(|n| n.is_element() && (n.tag_name().name()=="defName" || n.tag_name().name()=="Name")).and_then(|n| n.text()) {
-                                if t != val { ok = false; }
-                            } else { ok = false; }
-                        } else { ok = false; }
-                        if !ok { break; }
+                        if attr.eq_ignore_ascii_case("defName") || attr.eq_ignore_ascii_case("Name")
+                        {
+                            if let Some(t) = child
+                                .children()
+                                .find(|n| {
+                                    n.is_element()
+                                        && (n.tag_name().name() == "defName"
+                                            || n.tag_name().name() == "Name")
+                                })
+                                .and_then(|n| n.text())
+                            {
+                                if t != val {
+                                    ok = false;
+                                }
+                            } else {
+                                ok = false;
+                            }
+                        } else {
+                            ok = false;
+                        }
+                        if !ok {
+                            break;
+                        }
                     }
                 }
                 if ok {
@@ -972,7 +1045,9 @@ pub fn scan_defs_with_dict(
 pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<TransUnit>> {
     use walkdir::WalkDir;
     fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
-        if starts.is_empty() { return None; }
+        if starts.is_empty() {
+            return None;
+        }
         match starts.binary_search(&offset) {
             Ok(idx) => Some(idx + 1),
             Err(idx) if idx > 0 => Some(idx),
@@ -981,37 +1056,76 @@ pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<
     }
     // Fields already covered by defaults
     const DEFAULTS: &[&str] = &[
-        "label","labelShort","labelPlural","description","helpText","reportString","gerundLabel","defName",
+        "label",
+        "labelShort",
+        "labelPlural",
+        "description",
+        "helpText",
+        "reportString",
+        "gerundLabel",
+        "defName",
     ];
     let mut out = Vec::new();
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() { continue; }
-        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
-        let in_scope = if let Some(base) = defs_root { p.starts_with(base) } else {
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        let in_scope = if let Some(base) = defs_root {
+            p.starts_with(base)
+        } else {
             let s = p.to_string_lossy();
             s.contains("/Defs/") || s.contains("\\Defs\\")
         };
-        if !in_scope { continue; }
-        let Ok(content) = fs::read_to_string(p) else { continue };
-        let Ok(doc) = roxmltree::Document::parse(&content) else { continue };
+        if !in_scope {
+            continue;
+        }
+        let Ok(content) = fs::read_to_string(p) else {
+            continue;
+        };
+        let Ok(doc) = roxmltree::Document::parse(&content) else {
+            continue;
+        };
         let mut line_starts = vec![0usize];
-        for (idx, _) in content.match_indices('\n') { line_starts.push(idx + 1); }
+        for (idx, _) in content.match_indices('\n') {
+            line_starts.push(idx + 1);
+        }
         for def_node in doc.root_element().children().filter(|n| n.is_element()) {
-            let def_name = def_node.children().find(|c| c.is_element() && c.tag_name().name()=="defName")
-                .and_then(|n| n.text()).map(str::trim).unwrap_or("");
-            if def_name.is_empty() { continue; }
+            let def_name = def_node
+                .children()
+                .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                .and_then(|n| n.text())
+                .map(str::trim)
+                .unwrap_or("");
+            if def_name.is_empty() {
+                continue;
+            }
             for child in def_node.children().filter(|c| c.is_element()) {
                 let name = child.tag_name().name();
-                if DEFAULTS.iter().any(|d| d.eq_ignore_ascii_case(&name)) { continue; }
-                if let Some(t) = child.text().map(str::trim) { if !t.is_empty() {
-                    // Heuristic: consider "fuzzy" only if likely human text (>=2 words or contains space)
-                    let human_like = t.split_whitespace().count() >= 2;
-                    if human_like {
-                        let line = line_for_offset(child.range().start, &line_starts);
-                        out.push(TransUnit { key: format!("{}.{}", def_name, name), source: Some(t.to_string()), path: p.to_path_buf(), line });
+                if DEFAULTS.iter().any(|d| d.eq_ignore_ascii_case(name)) {
+                    continue;
+                }
+                if let Some(t) = child.text().map(str::trim) {
+                    if !t.is_empty() {
+                        // Heuristic: consider "fuzzy" only if likely human text (>=2 words or contains space)
+                        let human_like = t.split_whitespace().count() >= 2;
+                        if human_like {
+                            let line = line_for_offset(child.range().start, &line_starts);
+                            out.push(TransUnit {
+                                key: format!("{}.{}", def_name, name),
+                                source: Some(t.to_string()),
+                                path: p.to_path_buf(),
+                                line,
+                            });
+                        }
                     }
-                }}
+                }
             }
         }
     }
@@ -1308,11 +1422,12 @@ pub fn scan_defs_with_dict_meta(
                                         );
                                         for v in vals2 {
                                             let line = def_node.range().start;
-                                            let line = Some(match line_starts.binary_search(&line) {
-                                                Ok(idx) => idx + 1,
-                                                Err(idx) if idx > 0 => idx,
-                                                _ => 1,
-                                            });
+                                            let line =
+                                                Some(match line_starts.binary_search(&line) {
+                                                    Ok(idx) => idx + 1,
+                                                    Err(idx) if idx > 0 => idx,
+                                                    _ => 1,
+                                                });
                                             out_local.push(DefsMetaUnit {
                                                 unit: TransUnit {
                                                     key: format!("{}.{}", def_name, display_path),
@@ -1928,15 +2043,24 @@ mod tests {
         let units = scan_keyed_xml_with_options(dir.path(), &opts)?;
 
         // For DefInjected nested structure, first segment ending with 'Def' must be dropped
-        assert!(units.iter().any(|u| u.key == "Meal_Simple.label" && u.source.as_deref() == Some("simple meal")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Meal_Simple.label" && u.source.as_deref() == Some("simple meal")));
         // Different def type inside same file should keep its prefix
-        assert!(units.iter().any(|u| u.key == "PawnKindDef.Pawn_PlayerColony.label" && u.source.as_deref() == Some("colonist")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "PawnKindDef.Pawn_PlayerColony.label"
+                && u.source.as_deref() == Some("colonist")));
 
         // Non-Def prefix should remain (NotADef doesn't end with 'Def' → keep it)
-        assert!(units.iter().any(|u| u.key == "NotADef.Foo.label" && u.source.as_deref() == Some("bar")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "NotADef.Foo.label" && u.source.as_deref() == Some("bar")));
 
         // Already flat dotted key preserved as-is
-        assert!(units.iter().any(|u| u.key == "Already.Flat" && u.source.as_deref() == Some("baz")));
+        assert!(units
+            .iter()
+            .any(|u| u.key == "Already.Flat" && u.source.as_deref() == Some("baz")));
 
         Ok(())
     }

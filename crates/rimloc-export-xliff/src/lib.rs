@@ -3,11 +3,20 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-pub fn write_xliff_12(path: &Path, units: &[TransUnit], src_lang: &str, trg_lang: &str) -> Result<()> {
+pub fn write_xliff_12(
+    path: &Path,
+    units: &[TransUnit],
+    src_lang: &str,
+    trg_lang: &str,
+) -> Result<()> {
     let mut w = BufWriter::new(File::create(path)?);
     writeln!(w, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
     writeln!(w, r#"<xliff version="1.2">"#)?;
-    writeln!(w, r#"  <file source-language="{}" target-language="{}" datatype="plaintext" original="rimloc">"#, src_lang, trg_lang)?;
+    writeln!(
+        w,
+        r#"  <file source-language="{}" target-language="{}" datatype="plaintext" original="rimloc">"#,
+        src_lang, trg_lang
+    )?;
     writeln!(w, "    <body>")?;
     for u in units {
         let id = &u.key;
@@ -43,4 +52,3 @@ fn xml_escape(s: &str) -> String {
     }
     out
 }
-
