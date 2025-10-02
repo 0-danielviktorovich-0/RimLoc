@@ -1051,7 +1051,7 @@ function initEventHandlers() {
   const pickMergeOut = document.querySelector('[data-action="pick-merge-out"]'); if (pickMergeOut) pickMergeOut.addEventListener("click", pickDirectory("merge-out"));
   const mergeRun = $("merge-keyed-run");
   if (mergeRun) mergeRun.addEventListener("click", async () => {
-    const root = val("mod-root"); if (!root) return toast(tr('select_mod_root_first'));
+    const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
     const payload = {
       root,
       source_lang_dir: val("merge-source") || "English",
@@ -1060,14 +1060,14 @@ function initEventHandlers() {
     };
     const res = await runAction(tr('merging_keyed')||'Merging…', () => tauriInvoke("merge_keyed_gui", { request: payload }));
     $("merge-keyed-summary").textContent = `files=${res.files}, keys=${res.keysTotal}, reused=${res.reused}, unused=${res.unused} → ${res.outHint}`;
-    toast(tr('merge_done')||'Merge done');
+    showToast(tr('merge_done')||'Merge done');
   });
 
   // Coverage
   const pickCovDefs = document.querySelector('[data-action="pick-coverage-defs"]'); if (pickCovDefs) pickCovDefs.addEventListener("click", pickDirectory("coverage-defs"));
   const covRun = $("coverage-run");
   if (covRun) covRun.addEventListener("click", async () => {
-    const root = val("mod-root"); if (!root) return toast(tr('select_mod_root_first'));
+    const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
     const payload = {
       root,
       source_lang_dir: val("coverage-source") || "English",
@@ -1081,7 +1081,7 @@ function initEventHandlers() {
 
   // XLIFF
   const pickXlfExport = document.querySelector('[data-action="pick-xlf-export"]'); if (pickXlfExport) pickXlfExport.addEventListener("click", () => pickSave("xlf-export-path", { defaultPath: "out.xlf" })());
-  const pickXlfImport = document.querySelector('[data-action="pick-xlf-import"]'); if (pickXlfImport) pickXlfImport.addEventListener("click", () => pickOpen("xlf-import-path", { filters: [{ name: 'XLIFF', extensions: ['xlf','xliff'] }] })());
+  const pickXlfImport = document.querySelector('[data-action="pick-xlf-import"]'); if (pickXlfImport) pickXlfImport.addEventListener("click", () => pickFile("xlf-import-path", [{ name: 'XLIFF', extensions: ['xlf','xliff'] }])());
   const pickXlfImportOut = document.querySelector('[data-action="pick-xlf-import-out"]'); if (pickXlfImportOut) pickXlfImportOut.addEventListener("click", () => pickSave("xlf-import-out", { defaultPath: "_Imported.xml" })());
   bindPersist("xlf-export-path", "rimloc.xlfExportPath");
   bindPersist("xlf-export-source", "rimloc.xlfExportSource", "English");
@@ -1089,7 +1089,7 @@ function initEventHandlers() {
   bindPersist("xlf-import-path", "rimloc.xlfImportPath");
   bindPersist("xlf-import-out", "rimloc.xlfImportOut");
   const xlfExport = $("xlf-export-run"); if (xlfExport) xlfExport.addEventListener("click", async () => {
-    const root = val("mod-root"); if (!root) return toast(tr('select_mod_root_first'));
+    const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
     const payload = { root, out_xlf: val("xlf-export-path")||"out.xlf", source_lang_dir: val("xlf-export-source")||"English", lang: val("xlf-export-lang")||"ru" };
     const out = await runAction(tr('exporting_po')||'Exporting…', () => tauriInvoke("export_xliff_gui", { request: payload }));
     $("xlf-summary").textContent = `Saved ${out}`;
