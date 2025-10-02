@@ -2279,12 +2279,20 @@ function renderPreview(rows) {
     const phMismatch = setNeq(phEn, phTr);
     const liCount = (s)=>{ if(!s) return 0; const c=(s.match(/\n/g)||[]).length; return s.length? c+1:0 };
     const listMismatch = r.en && r.trg ? (liCount(r.en) !== liCount(r.trg)) : false;
+    const hasPH = (phEn.size>0) || (phTr.size>0);
+    const hasTag = /<[^>]+>/.test(r.en||'') || /<[^>]+>/.test(r.trg||'');
     if (onlyPhIssues && !phMismatch) continue;
     if (onlyListIssues && !listMismatch) continue;
     const tr = document.createElement('tr');
     const hasSugg = (window._tmMap && window._tmMap.has(r.key)) || (window._tmIdMap && r.en && window._tmIdMap.get(r.en));
-    const badge = (hasSugg? ' ★':'') + (phMismatch? ' ⚠PH': (listMismatch? ' ⚠LI':''));
-    tr.innerHTML = `<td>${escapeHtml(r.key)}${badge}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
+    // Build colored badges
+    let badges = '';
+    if (hasSugg) badges += '<span class="badge badge-sugg" title="TM">★</span>';
+    if (hasPH) badges += '<span class="badge badge-ph" title="Has placeholders">PH</span>';
+    if (hasTag) badges += '<span class="badge badge-tag" title="Has XML tags">TAG</span>';
+    if (phMismatch) badges += '<span class="badge badge-warn" title="Placeholder mismatch">PH!</span>';
+    else if (listMismatch) badges += '<span class="badge badge-warn" title="List items mismatch">LI!</span>';
+    tr.innerHTML = `<td>${escapeHtml(r.key)}${badges}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
     tr.addEventListener('click', () => {
       window._selectedKey = r.key;
       renderEnHighlighted(r.en||'');
@@ -2292,6 +2300,11 @@ function renderPreview(rows) {
       updatePreviewWarnings(r.en||'', ed?.value||'');
       // show TM suggestion
       try { showSuggestionForKey(r.key, r.en||''); } catch {}
+      // enable Open button with target path (fallback to EN path)
+      const btnOpen = $("preview-open-edited"); if (btnOpen) {
+        const p = r.trgPath || r.enPath || '';
+        btnOpen.disabled = !p; btnOpen.dataset.path = p; btnOpen.textContent = tr('open_file') || 'Open';
+      }
     });
     list.appendChild(tr); shown++;
     if (shown > 300) break;
@@ -2452,6 +2465,7 @@ function updatePreviewWarnings(en, trg) {
   box.textContent = lines.join('\n');
 }
 const editArea = $("preview-target-edit"); if (editArea) editArea.addEventListener('input', () => updatePreviewWarnings($("preview-en").textContent||'', editArea.value||''));
+const btnOpenEdited = $("preview-open-edited"); if (btnOpenEdited) btnOpenEdited.addEventListener('click', () => { const p = btnOpenEdited.dataset.path || ''; if (p) openPath(p); });
 
 function renderEnHighlighted(en) {
   const box = $("preview-en"); if (!box) return;
