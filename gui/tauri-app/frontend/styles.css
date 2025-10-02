@@ -37,6 +37,11 @@ body {
   flex-direction: column;
 }
 
+/* Simple Mode: прячем элементы с классом advanced-only */
+body.simple-mode .advanced-only {
+  display: none !important;
+}
+
 header {
   padding: 1.5rem 2rem 1rem;
   display: flex;

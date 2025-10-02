@@ -24,6 +24,7 @@ rimloc-parsers-xml = { path = "../../../crates/rimloc-parsers-xml" }
 rimloc-export-po = { path = "../../../crates/rimloc-export-po" }
 rimloc-export-xliff = { path = "../../../crates/rimloc-export-xliff" }
 rimloc-import-xliff = { path = "../../../crates/rimloc-import-xliff" }
+roxmltree = "0.20"
 schemars = "0.8"
 color-eyre = "0.6"
 walkdir = "2"
@@ -35,6 +36,4 @@ regex = "1"
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 
-[patch.crates-io]
-# Use a locally patched glib 0.18.6 with the VariantStrIter::impl_get fix
-glib = { path = "vendor/glib-patched/glib-0.18.5" }
+ 
