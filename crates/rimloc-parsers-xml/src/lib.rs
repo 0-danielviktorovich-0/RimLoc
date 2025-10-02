@@ -967,6 +967,56 @@ pub fn scan_defs_with_dict(
     )
 }
 
+/// Heuristic scan for additional string fields ("fuzzy" candidates).
+/// Enabled by env RIMLOC_FUZZY=1; intended to supplement dict-based extraction.
+pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<TransUnit>> {
+    use walkdir::WalkDir;
+    fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
+        if starts.is_empty() { return None; }
+        match starts.binary_search(&offset) {
+            Ok(idx) => Some(idx + 1),
+            Err(idx) if idx > 0 => Some(idx),
+            _ => Some(1),
+        }
+    }
+    // Fields already covered by defaults
+    const DEFAULTS: &[&str] = &[
+        "label","labelShort","labelPlural","description","helpText","reportString","gerundLabel","defName",
+    ];
+    let mut out = Vec::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() { continue; }
+        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
+        let in_scope = if let Some(base) = defs_root { p.starts_with(base) } else {
+            let s = p.to_string_lossy();
+            s.contains("/Defs/") || s.contains("\\Defs\\")
+        };
+        if !in_scope { continue; }
+        let Ok(content) = fs::read_to_string(p) else { continue };
+        let Ok(doc) = roxmltree::Document::parse(&content) else { continue };
+        let mut line_starts = vec![0usize];
+        for (idx, _) in content.match_indices('\n') { line_starts.push(idx + 1); }
+        for def_node in doc.root_element().children().filter(|n| n.is_element()) {
+            let def_name = def_node.children().find(|c| c.is_element() && c.tag_name().name()=="defName")
+                .and_then(|n| n.text()).map(str::trim).unwrap_or("");
+            if def_name.is_empty() { continue; }
+            for child in def_node.children().filter(|c| c.is_element()) {
+                let name = child.tag_name().name();
+                if DEFAULTS.iter().any(|d| d.eq_ignore_ascii_case(&name)) { continue; }
+                if let Some(t) = child.text().map(str::trim) { if !t.is_empty() {
+                    // Heuristic: consider "fuzzy" only if likely human text (>=2 words or contains space)
+                    let human_like = t.split_whitespace().count() >= 2;
+                    if human_like {
+                        let line = line_for_offset(child.range().start, &line_starts);
+                        out.push(TransUnit { key: format!("{}.{}", def_name, name), source: Some(t.to_string()), path: p.to_path_buf(), line });
+                    }
+                }}
+            }
+        }
+    }
+    Ok(out)
+}
 pub fn scan_defs_with_dict_meta(
     root: &Path,
     defs_root: Option<&Path>,

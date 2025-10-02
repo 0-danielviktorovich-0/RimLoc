@@ -433,6 +433,9 @@ enum Commands {
         /// Strict xpath mode for PatchOperations (reject ambiguous)
         #[arg(long, default_value_t = false)]
         patch_strict_xpath: bool,
+        /// Fuzzy: include heuristic string fields from Defs (not covered by dicts)
+        #[arg(long, default_value_t = false)]
+        fuzzy: bool,
     },
 
     /// Validate strings and report issues (help localized via FTL).
@@ -970,6 +973,7 @@ impl Runnable for Commands {
                 with_patches,
                 patch_min_len,
                 patch_strict_xpath,
+                fuzzy,
             } => commands::scan::run_scan(
                 root,
                 out_csv,
@@ -991,6 +995,7 @@ impl Runnable for Commands {
                 with_patches,
                 patch_min_len,
                 patch_strict_xpath,
+                fuzzy,
             ),
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 

@@ -321,6 +321,16 @@ pub fn scan_units_with_defs_and_dict(
         DEFAULT_SOURCE_LANG_DIR,
         defs_meta,
     );
+    // Optional fuzzy candidates from Defs
+    if matches!(std::env::var("RIMLOC_FUZZY"), Ok(v) if v.trim()=="1") {
+        if let Ok(mut fuzzy) = rimloc_parsers_xml::scan_defs_fuzzy(root, defs_root) {
+            for u in fuzzy.drain(..) {
+                let k = seen_key(&u.path, &u.key);
+                if seen.insert(k) { units.push(u); }
+            }
+            units.sort_by(|a,b| (a.path.to_string_lossy(), a.line.unwrap_or(0), a.key.as_str()).cmp(&(b.path.to_string_lossy(), b.line.unwrap_or(0), b.key.as_str())));
+        }
+    }
     Ok(units)
 }
 

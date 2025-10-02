@@ -26,6 +26,7 @@ pub fn run_scan(
     with_patches: bool,
     patch_min_len: Option<usize>,
     patch_strict_xpath: bool,
+    fuzzy: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(
         event = "scan_args",
@@ -147,6 +148,7 @@ pub fn run_scan(
     if keyed_nested {
         std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }
+    if fuzzy { std::env::set_var("RIMLOC_FUZZY", "1"); }
 
     let mut units = rimloc_services::scan_units_with_defs_and_dict(
         &scan_root,
