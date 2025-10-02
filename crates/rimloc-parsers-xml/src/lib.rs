@@ -1421,7 +1421,8 @@ mod defs_tests {
 "#,
         )?;
 
-        let units = scan_defs_xml(dir.path())?;
+        let meta = scan_defs_with_dict_meta(dir.path(), None, &load_embedded_defs_dict().0, &[])?;
+        let units: Vec<TransUnit> = meta.into_iter().map(|m| m.unit).collect();
         assert!(units
             .iter()
             .any(|u| u.key == "Apparel_Parka.label" && u.source.as_deref() == Some("parka")));
@@ -1429,4 +1430,56 @@ mod defs_tests {
             && u.source.as_deref() == Some("A warm parka for cold climates.")));
         Ok(())
     }
+
+    #[test]
+    fn scan_defs_extracts_pawnkind_lifestages_and_thing_verbs() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let defs_dir = dir.path().join("Mods/TestMod/Defs/Mixed");
+        fs::create_dir_all(&defs_dir)?;
+        let file_path = defs_dir.join("Mixed.xml");
+        fs::write(
+            &file_path,
+            r#"<Defs>
+  <PawnKindDef>
+    <defName>Pawn_PlayerColony</defName>
+    <label>colonist</label>
+    <lifeStages>
+      <li>
+        <label>juvenile colonist</label>
+      </li>
+      <li>
+        <label>adult colonist</label>
+      </li>
+    </lifeStages>
+  </PawnKindDef>
+  <ThingDef>
+    <defName>Meal_Simple</defName>
+    <label>simple meal</label>
+    <verbs>
+      <li>
+        <label>eat</label>
+      </li>
+    </verbs>
+    <ingestible>
+      <ingestCommandString>Eat {0}</ingestCommandString>
+    </ingestible>
+  </ThingDef>
+</Defs>
+"#,
+        )?;
+
+        let meta = scan_defs_with_dict_meta(dir.path(), None, &load_embedded_defs_dict().0, &[])?;
+        let units: Vec<TransUnit> = meta.into_iter().map(|m| m.unit).collect();
+        // Pawn lifeStages labels
+        assert!(units.iter().any(|u| u.key == "Pawn_PlayerColony.lifeStages.li.label" && u.source.as_deref() == Some("juvenile colonist")));
+        assert!(units.iter().any(|u| u.key == "Pawn_PlayerColony.lifeStages.li.label" && u.source.as_deref() == Some("adult colonist")));
+        // Thing verbs.li.label
+        assert!(units.iter().any(|u| u.key == "Meal_Simple.verbs.li.label" && u.source.as_deref() == Some("eat")));
+        // ingestible.ingestCommandString
+        assert!(units.iter().any(|u| u.key == "Meal_Simple.ingestible.ingestCommandString" && u.source.as_deref() == Some("Eat {0}")));
+        Ok(())
+    }
+
+    // NOTE: RecipeDef.ingredients.* are schema-sensitive and vary across mods;
+    // covered indirectly via dict/DSL integration tests elsewhere.
 }
