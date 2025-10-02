@@ -2108,6 +2108,7 @@ function boot() {
     }
     initPersistence();
     initEventHandlers();
+    debugLog('debug', 'Handlers bound', true);
     initDebugUI();
     initI18nUI();
     initThemeUI();
@@ -2116,8 +2117,13 @@ function boot() {
     renderLearn(null);
     renderExport(null);
     fetchAppVersion();
-    updateStatus('UI ready');
-    debugLog("info", "UI ready", true);
+    const tauri = getTauri();
+    const tauriOk = !!(tauri && (tauri.invoke || tauri.tauri?.invoke || tauri.core?.invoke));
+    const loc = detectLocale();
+    const theme = document.documentElement.dataset.theme || 'auto';
+    updateStatus(`UI ready | Tauri:${tauriOk?'yes':'no'} | Locale:${loc} | Theme:${theme}`);
+    debugLog("info", `UI ready (tauri:${tauriOk?'yes':'no'}, locale:${loc}, theme:${theme})`, true);
+    window.__rimlocReady = true;
     try { console.log('Boot: complete'); } catch {}
   } catch (e) {
     try { console.error('Boot error', e); } catch {}
