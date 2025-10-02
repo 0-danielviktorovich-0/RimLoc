@@ -23,6 +23,32 @@
     "ingredients.li{h}.label",
     "ingredients.li.filter.customSummary"
   ],
+  "StatDef": [
+    "label",
+    "description"
+  ],
+  "RecordDef": [
+    "label",
+    "description"
+  ],
+  "WeatherDef": [
+    "label",
+    "description"
+  ],
+  "WorkTypeDef": [
+    "label",
+    "description"
+  ],
+  "BodyPartDef": [
+    "label",
+    "description"
+  ],
+  "HairDef": [
+    "label"
+  ],
+  "IncidentCategoryDef": [
+    "label"
+  ],
   "HediffDef": [
     "label",
     "labelNoun",
