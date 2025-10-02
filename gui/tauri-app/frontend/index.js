@@ -1523,6 +1523,7 @@ const I18N = {
     scan_plugins: "Run plugins",
     use_en_comments: "Use EN comments",
     comments_prefix: "Comments prefix",
+    diff_save_txt: "Save TXT reports…",
     scan_empty: "No scan performed yet.",
     th_key: "Key",
     th_kind: "Kind",
@@ -2460,6 +2461,8 @@ function renderEnHighlighted(en) {
   html = html.replace(/\{\s*([^{}\s]+)\s*\}/g, '<mark class="ph">{$1}</mark>');
   // visualize list item boundaries via newline markers (heuristic)
   html = html.replace(/\n/g, '<span class="li-marker">⏎</span>\n');
+  // light highlight for XML-like tags (escaped &lt;...&gt;)
+  html = html.replace(/&lt;([^<>]+)&gt;/g, '<span class="xml-tag">&lt;$1&gt;</span>');
   box.innerHTML = html;
 }
     coverage_title: "Coverage",
