@@ -1146,22 +1146,14 @@ impl Runnable for Commands {
                 units
                     .retain(|u| rimloc_services::is_under_languages_dir(&u.path, &source_lang_dir));
                 rimloc_export_xliff::write_xliff_12(&out_xlf, &units, "en", &lang)?;
-                if use_color {
-                    use owo_colors::OwoColorize;
-                    println!("{} exported XLIFF → {}", "✔".green(), out_xlf.display());
-                } else {
-                    println!("exported XLIFF → {}", out_xlf.display());
-                }
+                if use_color { use owo_colors::OwoColorize; println!("{} {} {}", "✔".green(), tr!("export-xlf-saved"), out_xlf.display()); }
+                else { println!("{} {}", tr!("export-xlf-saved"), out_xlf.display()); }
                 Ok(())
             }
             Commands::ImportXliff { xlf, out_xml } => {
                 rimloc_import_xliff::xliff_to_language_data(&out_xml, &xlf)?;
-                if use_color {
-                    use owo_colors::OwoColorize;
-                    println!("{} wrote {}", "✔".green(), out_xml.display());
-                } else {
-                    println!("wrote {}", out_xml.display());
-                }
+                if use_color { use owo_colors::OwoColorize; println!("{} {} {}", "✔".green(), tr!("import-xlf-wrote"), out_xml.display()); }
+                else { println!("{} {}", tr!("import-xlf-wrote"), out_xml.display()); }
                 Ok(())
             }
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),

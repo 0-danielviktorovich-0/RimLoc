@@ -182,6 +182,8 @@ help-importpo-report = Print a summary of created/updated/skipped files and tota
 help-importpo-incremental = Skip writing files whose content would be identical
 import-report-summary = Import summary: created={ $created }, updated={ $updated }, skipped={ $skipped }, keys={ $keys }
 help-importpo-only-diff = Write only changed/new keys per file (skip unchanged keys)
+export-xlf-saved = XLIFF saved to
+import-xlf-wrote = Wrote XML
 
 # build-mod
 help-buildmod-about = Build a standalone translation mod from a .po file

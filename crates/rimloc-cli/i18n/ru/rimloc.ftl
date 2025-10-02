@@ -136,6 +136,8 @@ help-importpo-report = Показать сводку: создано/обнов�
 help-importpo-incremental = Не перезаписывать файлы, если содержимое не изменилось
 import-report-summary = Сводка импорта: создано={ $created }, обновлено={ $updated }, пропущено={ $skipped }, ключей={ $keys }
 help-importpo-only-diff = Записывать только изменённые/новые ключи по файлам (пропускать неизменённые)
+export-xlf-saved = XLIFF сохранён в
+import-xlf-wrote = Записан XML
 help-buildmod-about = Собрать отдельный мод‑перевод из .po файла
 help-buildmod-po = Путь к .po файлу для сборки
 help-buildmod-out-mod = Путь выходной папки мода
