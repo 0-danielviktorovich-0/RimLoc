@@ -762,7 +762,7 @@ fn simulate_panic() -> Result<(), ApiError> { std::panic::panic_any(0u8); }
 
 #[tauri::command]
 fn scan_mod(window: Window, state: State<LogState>, request: ScanRequest) -> Result<ScanResponse, ApiError> {
-    println!("scan_mod invoked: root={} all={} gv={:?}", request.root, request.include_all_versions, request.game_version);
+    emit_log(&window, &state, "debug", format!("scan_mod: root={} all={} gv={:?}", request.root, request.include_all_versions, request.game_version));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("scan: root={} include_all_versions={}", request.root, request.include_all_versions));
     emit_progress(&window, &state, "scan", "start", Some("Scanning…".to_string()), Some(0));
@@ -972,7 +972,7 @@ fn classify_unit(path: &Path) -> ScanKind {
 
 #[tauri::command]
 fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest) -> Result<LearnDefsResponse, ApiError> {
-    println!("learn_defs invoked: root={} gv={:?}", request.root, request.game_version);
+    emit_log(&window, &state, "debug", format!("learn_defs: root={} gv={:?}", request.root, request.game_version));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("learn: root={}", request.root));
     emit_progress(&window, &state, "learn", "start", Some("Preparing…".to_string()), Some(0));
@@ -1056,7 +1056,7 @@ fn learn_defs(window: Window, state: State<LogState>, request: LearnDefsRequest)
 
 #[tauri::command]
 fn export_po(window: Window, state: State<LogState>, request: ExportPoRequest) -> Result<ExportPoResponse, ApiError> {
-    println!("export_po invoked: root={} out_po={}", request.root, request.out_po);
+    emit_log(&window, &state, "debug", format!("export_po: root={} out_po={}", request.root, request.out_po));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("export_po: root={} out_po={}", request.root, request.out_po));
     emit_progress(&window, &state, "export", "start", Some("Exporting…".to_string()), Some(0));
@@ -1247,7 +1247,7 @@ fn def_injected_target_path_for_export(scan_root: &Path, lang_dir: &str, def_typ
 
 #[tauri::command]
 fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest) -> Result<ValidateResponse, ApiError> {
-    println!("validate_mod invoked: root={} defs_root={:?}", request.root, request.defs_root);
+    emit_log(&window, &state, "debug", format!("validate_mod: root={} defs_root={:?}", request.root, request.defs_root));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("validate: root={}", request.root));
     emit_progress(&window, &state, "validate", "start", Some("Validating…".to_string()), Some(0));
@@ -1385,7 +1385,7 @@ fn validate_mod(window: Window, state: State<LogState>, request: ValidateRequest
 
 #[tauri::command]
 fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest) -> Result<XmlHealthResponse, ApiError> {
-    println!("xml_health invoked: root={} lang_dir={:?}", request.root, request.lang_dir);
+    emit_log(&window, &state, "debug", format!("xml_health: root={} lang_dir={:?}", request.root, request.lang_dir));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("xml_health: root={}", request.root));
     emit_progress(&window, &state, "health", "start", Some("Checking XML…".to_string()), Some(0));
@@ -1429,7 +1429,7 @@ fn xml_health(window: Window, state: State<LogState>, request: XmlHealthRequest)
 
 #[tauri::command]
 fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -> Result<ImportPoResponse, ApiError> {
-    println!("import_po invoked: root={} po={}", request.root, request.po_path);
+    emit_log(&window, &state, "debug", format!("import_po: root={} po={}", request.root, request.po_path));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("import_po: root={} po={}", request.root, request.po_path));
     emit_progress(&window, &state, "import", "start", Some("Importing PO…".to_string()), Some(0));
@@ -1492,7 +1492,7 @@ fn import_po(window: Window, state: State<LogState>, request: ImportPoRequest) -
 
 #[tauri::command]
 fn build_mod(window: Window, state: State<LogState>, request: BuildModRequest) -> Result<BuildModResponse, ApiError> {
-    println!("build_mod invoked: po={} out={}", request.po_path, request.out_mod);
+    emit_log(&window, &state, "debug", format!("build_mod: po={} out={}", request.po_path, request.out_mod));
     let t0 = std::time::Instant::now();
     emit_log(&window, &state, "info", format!("build_mod from PO: {}", request.po_path));
     emit_progress(&window, &state, "build", "start", Some("Building mod…".to_string()), Some(0));
@@ -2089,7 +2089,7 @@ fn open_path(path: String) -> Result<(), ApiError> {
 }
 #[tauri::command]
 fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest) -> Result<DiffXmlResponse, ApiError> {
-    println!("diff_xml_cmd invoked: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir);
+    emit_log(&window, &state, "debug", format!("diff_xml_cmd: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir));
     let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("diff_xml: root={} src={} trg={}", request.root, request.source_lang_dir, request.target_lang_dir));
     let root = PathBuf::from(&request.root);
@@ -2165,7 +2165,7 @@ fn diff_xml_cmd(_window: Window, state: State<LogState>, request: DiffXmlRequest
 
 #[tauri::command]
 fn lang_update_cmd(_window: Window, state: State<LogState>, request: LangUpdateRequest) -> Result<LangUpdateResponse, ApiError> {
-    println!("lang_update_cmd invoked: root={} repo={} branch={:?}", request.root, request.repo, request.branch);
+    emit_log(&window, &state, "debug", format!("lang_update_cmd: root={} repo={} branch={:?}", request.root, request.repo, request.branch));
     let _ = &request.game_version; // mark as used
     let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("lang_update: repo={} src={} trg={}", request.repo, request.source_lang_dir, request.target_lang_dir));
@@ -2456,7 +2456,7 @@ fn get_profile(state: State<LogState>, req: ProfileRequest) -> Result<ProfileRes
 
 #[tauri::command]
 fn annotate_cmd(_window: Window, state: State<LogState>, request: AnnotateRequest) -> Result<AnnotateResponse, ApiError> {
-    println!("annotate_cmd invoked: root={} src={} trg={} dry_run={}", request.root, request.source_lang_dir, request.target_lang_dir, request.dry_run);
+    emit_log(&window, &state, "debug", format!("annotate_cmd: root={} src={} trg={} dry_run={}", request.root, request.source_lang_dir, request.target_lang_dir, request.dry_run));
     let t0 = std::time::Instant::now();
     append_log(&state.path, "INFO", &format!("annotate: src={} trg={}", request.source_lang_dir, request.target_lang_dir));
     let root = PathBuf::from(&request.root);
@@ -2475,7 +2475,7 @@ fn annotate_cmd(_window: Window, state: State<LogState>, request: AnnotateReques
 
 #[tauri::command]
 fn init_lang_cmd(_window: Window, state: State<LogState>, request: InitRequest) -> Result<InitResponse, ApiError> {
-    println!("init_lang_cmd invoked: root={} src={} trg={} overwrite={} dry_run={}", request.root, request.source_lang_dir, request.target_lang_dir, request.overwrite, request.dry_run);
+    emit_log(&window, &state, "debug", format!("init_lang_cmd: root={} src={} trg={} overwrite={} dry_run={}", request.root, request.source_lang_dir, request.target_lang_dir, request.overwrite, request.dry_run));
     let t0 = std::time::Instant::now();
     let root = PathBuf::from(&request.root);
     let plan = make_init_plan(&root, &request.source_lang_dir, &request.target_lang_dir)?;
