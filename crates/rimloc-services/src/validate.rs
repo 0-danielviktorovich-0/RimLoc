@@ -255,3 +255,44 @@ pub fn validate_orphans_cross_language(
     }
     Ok(msgs)
 }
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CoverageReport {
+    pub source_total: usize,
+    pub target_total: usize,
+    pub translated: usize,
+    pub missing: usize,
+}
+
+/// Compute translation coverage by matching keys between source and target.
+pub fn coverage_report(
+    scan_root: &Path,
+    source_lang_dir: &str,
+    target_lang_dir: &str,
+    defs_root: Option<&Path>,
+) -> Result<CoverageReport> {
+    let mut units = if let Some(defs) = defs_root {
+        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+    } else {
+        rimloc_parsers_xml::scan_all_units(scan_root)?
+    };
+    use std::collections::HashMap;
+    let mut src: HashMap<String, String> = HashMap::new();
+    let mut tgt: HashMap<String, String> = HashMap::new();
+    for u in units.drain(..) {
+        if let Some(text) = u.source.as_deref() {
+            if crate::util::is_source_for_lang_dir(&u.path, source_lang_dir) {
+                src.entry(u.key.clone()).or_insert_with(|| text.to_string());
+            } else if crate::util::is_source_for_lang_dir(&u.path, target_lang_dir) {
+                tgt.insert(u.key.clone(), text.to_string());
+            }
+        }
+    }
+    let source_total = src.len();
+    let mut translated = 0usize;
+    for (k, _) in src.iter() {
+        if let Some(v) = tgt.get(k) { if !v.trim().is_empty() { translated += 1; } }
+    }
+    let missing = source_total.saturating_sub(translated);
+    Ok(CoverageReport { source_total, target_total: tgt.len(), translated, missing })
+}
