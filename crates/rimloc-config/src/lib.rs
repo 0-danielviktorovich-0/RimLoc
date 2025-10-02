@@ -15,6 +15,7 @@ pub struct RimLocConfig {
     pub init: Option<InitCfg>,
     pub schema: Option<SchemaCfg>,
     pub scan: Option<ScanCfg>,
+    pub plugins: Option<PluginsCfg>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -126,6 +127,7 @@ fn merge(mut a: RimLocConfig, b: RimLocConfig) -> RimLocConfig {
     a.init = merge_opt(a.init, b.init, merge_init);
     a.schema = merge_opt(a.schema, b.schema, merge_schema);
     a.scan = merge_opt(a.scan, b.scan, merge_scan);
+    a.plugins = merge_opt(a.plugins, b.plugins, merge_plugins);
     a
 }
 
@@ -269,5 +271,21 @@ fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
     if a.parallel.is_none() {
         a.parallel = b.parallel;
     }
+    a
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+pub struct PluginsCfg {
+    pub json_include: Option<Vec<String>>,
+    pub json_exclude: Option<Vec<String>>,
+    pub yaml_include: Option<Vec<String>>,
+    pub yaml_exclude: Option<Vec<String>>,
+}
+
+fn merge_plugins(mut a: PluginsCfg, b: PluginsCfg) -> PluginsCfg {
+    if a.json_include.is_none() { a.json_include = b.json_include; }
+    if a.json_exclude.is_none() { a.json_exclude = b.json_exclude; }
+    if a.yaml_include.is_none() { a.yaml_include = b.yaml_include; }
+    if a.yaml_exclude.is_none() { a.yaml_exclude = b.yaml_exclude; }
     a
 }

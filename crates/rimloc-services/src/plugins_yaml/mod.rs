@@ -11,16 +11,24 @@ impl plugins::ParserPlugin for YamlKeyedPlugin {
         let mut out = Vec::new();
         let include = std::env::var("RIMLOC_YAML_PATH_INCLUDE").ok();
         let exclude = std::env::var("RIMLOC_YAML_PATH_EXCLUDE").ok();
+        let cfg = rimloc_config::load_config().unwrap_or_default();
+        let (cfg_inc, cfg_exc) = cfg.plugins.as_ref().map(|p| (p.yaml_include.clone().unwrap_or_default(), p.yaml_exclude.clone().unwrap_or_default())).unwrap_or_default();
         let incl_res: Option<Vec<regex::Regex>> = include.as_deref().map(|s| s.split(',').filter_map(|p| regex::Regex::new(p.trim()).ok()).collect());
         let excl_res: Option<Vec<regex::Regex>> = exclude.as_deref().map(|s| s.split(',').filter_map(|p| regex::Regex::new(p.trim()).ok()).collect());
+        let mut incl_all: Vec<regex::Regex> = Vec::new();
+        if let Some(v) = incl_res.as_ref() { incl_all.extend(v.clone()); }
+        for ptn in cfg_inc { if let Ok(r) = regex::Regex::new(&ptn) { incl_all.push(r); } }
+        let mut excl_all: Vec<regex::Regex> = Vec::new();
+        if let Some(v) = excl_res.as_ref() { excl_all.extend(v.clone()); }
+        for ptn in cfg_exc { if let Ok(r) = regex::Regex::new(&ptn) { excl_all.push(r); } }
         for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
             let p = entry.path();
             if !p.is_file() { continue; }
             let is_yaml = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("yml") || ext.eq_ignore_ascii_case("yaml")).unwrap_or(false);
             if !is_yaml { continue; }
             let norm = p.to_string_lossy().replace('\\', "/");
-            if let Some(res) = incl_res.as_ref() { if !res.iter().any(|r| r.is_match(&norm)) { continue; } }
-            if let Some(res) = excl_res.as_ref() { if res.iter().any(|r| r.is_match(&norm)) { continue; } }
+            if !incl_all.is_empty() && !incl_all.iter().any(|r| r.is_match(&norm)) { continue; }
+            if !excl_all.is_empty() && excl_all.iter().any(|r| r.is_match(&norm)) { continue; }
             let content = match std::fs::read_to_string(p) { Ok(s) => s, Err(_) => continue };
             let val: serde_yaml::Value = match serde_yaml::from_str(&content) { Ok(v) => v, Err(_) => continue };
             fn flatten(prefix: &str, v: &serde_yaml::Value, out: &mut Vec<(String, String)>) {
