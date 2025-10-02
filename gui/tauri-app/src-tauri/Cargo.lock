@@ -3598,6 +3598,7 @@ version = "0.1.0"
 dependencies = [
  "color-eyre",
  "quick-xml 0.36.2",
+ "rayon",
  "rimloc-core",
  "roxmltree",
  "serde",

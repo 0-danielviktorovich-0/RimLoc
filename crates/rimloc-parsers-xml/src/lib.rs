@@ -1029,6 +1029,361 @@ pub fn scan_defs_with_dict_meta(
             current = def_node.attribute("ParentName").map(|s| s.to_string());
         }
     }
+
+    // Optional parallel processing of Defs files (deterministic output order is preserved)
+    {
+        use walkdir::WalkDir;
+        let mut def_files: Vec<std::path::PathBuf> = Vec::new();
+        for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+            let p = entry.path();
+            if !p.is_file() {
+                continue;
+            }
+            if p.extension()
+                .and_then(|e| e.to_str())
+                .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            {
+                continue;
+            }
+            let in_scope = if let Some(base) = defs_root {
+                p.starts_with(base)
+            } else {
+                let s = p.to_string_lossy();
+                s.contains("/Defs/") || s.contains("\\Defs\\")
+            };
+            if !in_scope {
+                continue;
+            }
+            def_files.push(p.to_path_buf());
+        }
+
+        let parallel = matches!(std::env::var("RIMLOC_PARALLEL"), Ok(v) if v.trim() == "1");
+        #[cfg(feature = "rayon")]
+        if parallel {
+            use rayon::prelude::*;
+            let process_one = |p: &std::path::PathBuf| -> Vec<DefsMetaUnit> {
+                let mut out_local: Vec<DefsMetaUnit> = Vec::new();
+                let content = match fs::read_to_string(p) {
+                    Ok(s) => s,
+                    Err(_) => return out_local,
+                };
+                let doc = match roxmltree::Document::parse(&content) {
+                    Ok(d) => d,
+                    Err(_) => return out_local,
+                };
+                let mut line_starts = Vec::new();
+                line_starts.push(0usize);
+                for (idx, _) in content.match_indices('\n') {
+                    line_starts.push(idx + 1);
+                }
+                let root_el = doc.root_element();
+                const DEFAULT_FIELDS: &[&str] = &[
+                    "label",
+                    "labelShort",
+                    "labelPlural",
+                    "description",
+                    "helpText",
+                    "reportString",
+                    "gerundLabel",
+                ];
+                let mut all_fields: Vec<String> =
+                    DEFAULT_FIELDS.iter().map(|s| s.to_string()).collect();
+                for s in extra_fields {
+                    if !s.trim().is_empty() {
+                        all_fields.push(s.trim().to_string());
+                    }
+                }
+                for def_node in root_el.children().filter(|n| n.is_element()) {
+                    let def_type = def_node.tag_name().name().to_string();
+                    let def_name = def_node
+                        .children()
+                        .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                        .and_then(|n| n.text())
+                        .map(str::trim)
+                        .unwrap_or("")
+                        .to_string();
+                    if def_name.is_empty() {
+                        continue;
+                    }
+                    if let Some(paths) = dict.get(&def_type) {
+                        for path in paths {
+                            let segs: Vec<&str> =
+                                path.split('.').filter(|s| !s.is_empty()).collect();
+                            let display_path = segs
+                                .iter()
+                                .map(|s| {
+                                    if let Some(pos) = s.find('{') {
+                                        &s[..pos]
+                                    } else {
+                                        s
+                                    }
+                                })
+                                .collect::<Vec<&str>>()
+                                .join(".");
+                            let mut vals = Vec::new();
+                            collect_values_by_path(def_node, &segs, &mut vals);
+                            if vals.is_empty() && inherit_enabled() {
+                                if !def_node
+                                    .attribute("Inherit")
+                                    .map(|v| v.eq_ignore_ascii_case("false"))
+                                    .unwrap_or(false)
+                                {
+                                    let mut current = def_node;
+                                    let mut guard = 0;
+                                    while vals.is_empty() {
+                                        guard += 1;
+                                        if guard > 16 {
+                                            break;
+                                        }
+                                        let Some(parent_name) = current.attribute("ParentName")
+                                        else {
+                                            break;
+                                        };
+                                        if let Some(parent) = root_el.children().find(|c| {
+                                            c.is_element()
+                                                && c.tag_name()
+                                                    .name()
+                                                    .eq_ignore_ascii_case(&def_type)
+                                                && c.attribute("Name")
+                                                    .is_some_and(|n| n == parent_name)
+                                        }) {
+                                            collect_values_by_path(parent, &segs, &mut vals);
+                                            current = parent;
+                                        } else if let Some(parent) = root_el.children().find(|c| {
+                                            c.is_element()
+                                                && c.tag_name()
+                                                    .name()
+                                                    .eq_ignore_ascii_case(&def_type)
+                                                && c.children()
+                                                    .find(|n| {
+                                                        n.is_element()
+                                                            && n.tag_name().name() == "defName"
+                                                    })
+                                                    .and_then(|n| n.text())
+                                                    .map(str::trim)
+                                                    .is_some_and(|n| n == parent_name)
+                                        }) {
+                                            collect_values_by_path(parent, &segs, &mut vals);
+                                            current = parent;
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                }
+                                if vals.is_empty() && inherit_enabled() {
+                                    if let Some(parent_name) = def_node.attribute("ParentName") {
+                                        let mut vals2: Vec<String> = Vec::new();
+                                        collect_values_in_parents_across_files(
+                                            &defs_index,
+                                            &name_index,
+                                            &def_type,
+                                            parent_name,
+                                            &segs,
+                                            &mut vals2,
+                                        );
+                                        for v in vals2 {
+                                            let line = def_node.range().start;
+                                            let line = Some(match line_starts.binary_search(&line) {
+                                                Ok(idx) => idx + 1,
+                                                Err(idx) if idx > 0 => idx,
+                                                _ => 1,
+                                            });
+                                            out_local.push(DefsMetaUnit {
+                                                unit: TransUnit {
+                                                    key: format!("{}.{}", def_name, display_path),
+                                                    source: Some(v),
+                                                    path: p.clone(),
+                                                    line,
+                                                },
+                                                def_type: def_type.clone(),
+                                                def_name: def_name.clone(),
+                                                field_path: display_path.clone(),
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                            for v in vals {
+                                let line = def_node.range().start;
+                                let line = Some(match line_starts.binary_search(&line) {
+                                    Ok(idx) => idx + 1,
+                                    Err(idx) if idx > 0 => idx,
+                                    _ => 1,
+                                });
+                                out_local.push(DefsMetaUnit {
+                                    unit: TransUnit {
+                                        key: format!("{}.{}", def_name, display_path),
+                                        source: Some(v.to_string()),
+                                        path: p.clone(),
+                                        line,
+                                    },
+                                    def_type: def_type.clone(),
+                                    def_name: def_name.clone(),
+                                    field_path: display_path.clone(),
+                                });
+                            }
+                        }
+                    }
+                    for f in extra_fields {
+                        let mut produced = false;
+                        if let Some(fnode) = def_node
+                            .children()
+                            .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(f))
+                        {
+                            if let Some(val) = fnode.text().map(str::trim) {
+                                let line = fnode.range().start;
+                                let line = Some(match line_starts.binary_search(&line) {
+                                    Ok(idx) => idx + 1,
+                                    Err(idx) if idx > 0 => idx,
+                                    _ => 1,
+                                });
+                                out_local.push(DefsMetaUnit {
+                                    unit: TransUnit {
+                                        key: format!("{}.{}", def_name, f),
+                                        source: Some(val.to_string()),
+                                        path: p.clone(),
+                                        line,
+                                    },
+                                    def_type: def_type.clone(),
+                                    def_name: def_name.clone(),
+                                    field_path: f.clone(),
+                                });
+                                produced = true;
+                            }
+                        }
+                        #[allow(clippy::collapsible_if)]
+                        if !produced && inherit_enabled() {
+                            if !def_node
+                                .attribute("Inherit")
+                                .map(|v| v.eq_ignore_ascii_case("false"))
+                                .unwrap_or(false)
+                            {
+                                let mut current = def_node;
+                                let mut guard = 0;
+                                while !produced {
+                                    guard += 1;
+                                    if guard > 16 {
+                                        break;
+                                    }
+                                    let Some(parent_name) = current.attribute("ParentName") else {
+                                        break;
+                                    };
+                                    let next_parent = root_el
+                                        .children()
+                                        .find(|c| {
+                                            c.is_element()
+                                                && c.tag_name()
+                                                    .name()
+                                                    .eq_ignore_ascii_case(&def_type)
+                                                && c.attribute("Name")
+                                                    .is_some_and(|n| n == parent_name)
+                                        })
+                                        .or_else(|| {
+                                            root_el.children().find(|c| {
+                                                c.is_element()
+                                                    && c.tag_name()
+                                                        .name()
+                                                        .eq_ignore_ascii_case(&def_type)
+                                                    && c.children()
+                                                        .find(|n| {
+                                                            n.is_element()
+                                                                && n.tag_name().name() == "defName"
+                                                        })
+                                                        .and_then(|n| n.text())
+                                                        .map(str::trim)
+                                                        .is_some_and(|n| n == parent_name)
+                                            })
+                                        });
+                                    if let Some(parent) = next_parent {
+                                        if let Some(n) = parent.children().find(|c| {
+                                            c.is_element()
+                                                && c.tag_name().name().eq_ignore_ascii_case(f)
+                                        }) {
+                                            if let Some(val) = n.text().map(str::trim) {
+                                                let line = def_node.range().start;
+                                                let line =
+                                                    Some(match line_starts.binary_search(&line) {
+                                                        Ok(idx) => idx + 1,
+                                                        Err(idx) if idx > 0 => idx,
+                                                        _ => 1,
+                                                    });
+                                                out_local.push(DefsMetaUnit {
+                                                    unit: TransUnit {
+                                                        key: format!("{}.{}", def_name, f),
+                                                        source: Some(val.to_string()),
+                                                        path: p.clone(),
+                                                        line,
+                                                    },
+                                                    def_type: def_type.clone(),
+                                                    def_name: def_name.clone(),
+                                                    field_path: f.clone(),
+                                                });
+                                                produced = true;
+                                                break;
+                                            }
+                                        }
+                                        current = parent;
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if !produced && inherit_enabled() {
+                            if let Some(parent_name) = def_node.attribute("ParentName") {
+                                let segs: Vec<&str> = std::slice::from_ref(&f.as_str()).to_vec();
+                                let mut vals2: Vec<String> = Vec::new();
+                                collect_values_in_parents_across_files(
+                                    &defs_index,
+                                    &name_index,
+                                    &def_type,
+                                    parent_name,
+                                    &segs,
+                                    &mut vals2,
+                                );
+                                if let Some(val) = vals2.into_iter().find(|v| !v.trim().is_empty())
+                                {
+                                    let line = def_node.range().start;
+                                    let line = Some(match line_starts.binary_search(&line) {
+                                        Ok(idx) => idx + 1,
+                                        Err(idx) if idx > 0 => idx,
+                                        _ => 1,
+                                    });
+                                    out_local.push(DefsMetaUnit {
+                                        unit: TransUnit {
+                                            key: format!("{}.{}", def_name, f),
+                                            source: Some(val),
+                                            path: p.clone(),
+                                            line,
+                                        },
+                                        def_type: def_type.clone(),
+                                        def_name: def_name.clone(),
+                                        field_path: f.clone(),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                out_local
+            };
+            let mut merged: Vec<DefsMetaUnit> =
+                def_files.par_iter().flat_map(process_one).collect();
+            merged.sort_by(|a, b| {
+                (
+                    a.unit.path.to_string_lossy(),
+                    a.unit.line.unwrap_or(0),
+                    a.unit.key.as_str(),
+                )
+                    .cmp(&(
+                        b.unit.path.to_string_lossy(),
+                        b.unit.line.unwrap_or(0),
+                        b.unit.key.as_str(),
+                    ))
+            });
+            return Ok(merged);
+        }
+    }
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
         if !p.is_file() {

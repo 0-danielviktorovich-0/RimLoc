@@ -377,6 +377,8 @@ footer {
 .two-pane { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0b1020; color: #e6edf3; border-radius: 8px; padding: 8px; min-height: 140px; white-space: pre-wrap; }
 .scroll-code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background: #0b1020; color: #e6edf3; border-radius: 8px; padding: 8px; max-height: 280px; overflow: auto; white-space: pre; }
+.ph { background: rgba(255, 200, 0, 0.15); border-bottom: 1px dotted #eac54f; }
+.li-marker { background: rgba(56, 189, 248, 0.15); border-bottom: 1px dotted #38bdf8; }
 
 /* Progress panel */
 .progress-items { display: flex; flex-direction: column; gap: 8px; }

@@ -21,7 +21,8 @@ impl super::super::plugins::ParserPlugin for XmlExtensionsSettingsPlugin {
             if !p.is_file() {
                 continue;
             }
-            if !p.extension()
+            if !p
+                .extension()
                 .and_then(|e| e.to_str())
                 .map(|ext| ext.eq_ignore_ascii_case("xml"))
                 .unwrap_or(false)
