@@ -31,6 +31,7 @@ Template (copy the sections you need):
 - [cli] New `xml-health` command: scans XML files under Languages/ for structural/read errors (text/json) (#PR)
 - [cli] New `init` command: generate translation skeleton under `Languages/<target>` with empty values (text/dry-run/overwrite) (#PR)
 - [services/plugins] Built-in ModSettingsFramework plugin: extracts `<id>` label/tooltip from `Patches/` operations into Keyed units (#PR)
+ - [gui] Scan table: toggle to show only entries from `Patches/` (#PR)
 
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
@@ -45,6 +46,7 @@ Template (copy the sections you need):
 - [cli/scan] Add `--no-inherit` to disable ParentName inheritance when scanning Defs (for strict modes) (#PR)
 - [parsers-xml] Parallelize Keyed/DefInjected scan (env `RIMLOC_PARALLEL=1` or `--parallel`); deterministic order preserved (#PR)
 - [validate] Report cross-file duplicates as `duplicate-global` with file list summary (#PR)
+ - [validate] Warn on invisible/bi-di control characters in values (e.g., ZWSP/LRM/RLM/RLO/FSI) (#PR)
 
 ### Docs
 - [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)

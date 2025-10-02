@@ -273,8 +273,15 @@ function renderScan(result) {
     return;
   }
   summary.textContent = `Found ${result.total} entries (${result.keyed} Keyed, ${result.defInjected ?? result.def_injected} DefInjected).`;
+  const onlyPatches = isChecked('scan-only-patches');
   const limit = 500;
-  const rows = result.units.slice(0, limit);
+  const units = onlyPatches
+    ? (result.units || []).filter(u => {
+        const p = (u.path || '').replace(/\\/g, '/');
+        return (u.kind === 'Other' || u.kind === 2 || u.kind === 'other') && p.includes('/Patches/');
+      })
+    : (result.units || []);
+  const rows = units.slice(0, limit);
   window._lastScanUnits = result.units;
   rows.forEach((unit) => {
     const tr = document.createElement("tr");
@@ -296,7 +303,8 @@ function renderScan(result) {
     const tr = document.createElement("tr");
     const td = document.createElement("td");
     td.colSpan = 5;
-    td.textContent = `Showing first ${limit} entries of ${result.units.length}.`;
+    const totalShownBase = onlyPatches ? units.length : result.units.length;
+    td.textContent = `Showing first ${limit} entries of ${totalShownBase}.`;
     tr.appendChild(td);
     tableBody.appendChild(tr);
   }
@@ -1415,6 +1423,8 @@ const I18N = {
     health_except: "Except categories",
     preview_title: "Preview EN → Target",
     preview_missing_only: "Missing only",
+    // Scan table filter
+    scan_only_patches: "Only Patches in table",
     import_title: "Import PO → XML",
     import_run: "Import PO",
     po_file: "PO file",
@@ -1650,6 +1660,8 @@ const I18N = {
     health_except: "Исключить категории",
     preview_title: "Предпросмотр EN → Целевой",
     preview_missing_only: "Только отсутствующие",
+    // Scan table filter
+    scan_only_patches: "Только Patches в таблице",
     import_title: "Импорт PO → XML",
     import_run: "Импортировать PO",
     po_file: "Файл PO",
