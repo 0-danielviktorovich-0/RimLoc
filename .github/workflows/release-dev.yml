@@ -6,6 +6,10 @@ on:
       name:
         description: "Release name (optional)"
         required: false
+      split:
+        description: "Split CLI and GUI into separate archives"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -29,6 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          SPLIT='${{ inputs.split }}'
           VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' crates/rimloc-cli/Cargo.toml | head -n1)
           SHORT_SHA=${GITHUB_SHA::7}
           TAG="v${VERSION}-dev.${SHORT_SHA}"
@@ -38,14 +43,22 @@ jobs:
           else
             NAME="Dev pre-release ${TAG}"
           fi
+          if [[ "$SPLIT" == "true" ]]; then
+            PKG_MODE="split (CLI and GUI separate)"
+          else
+            PKG_MODE="bundled per target (CLI+GUI together)"
+          fi
           cat > body.txt <<EOF
           Dev pre-release build
 
           Commit: ${GITHUB_SHA}
           Short SHA: ${SHORT_SHA}
 
+          Packaging: ${PKG_MODE}
           Artifacts:
-          - Linux: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl
+          - If bundled: one archive per target with CLI binary and GUI native package
+          - If split: two archives per target (CLI-only, GUI-only)
+          - Linux: x86_64-unknown-linux-gnu, aarch64-unknown-linux-gnu, x86_64-unknown-linux-musl (GUI skipped on musl)
           - macOS: x86_64-apple-darwin, aarch64-apple-darwin
           - Windows: x86_64-pc-windows-msvc, aarch64-pc-windows-msvc
           EOF
@@ -95,83 +108,74 @@ jobs:
           sudo apt-get update
           if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]]; then sudo apt-get install -y gcc-aarch64-linux-gnu; fi
           if [[ "${{ matrix.target }}" == "x86_64-unknown-linux-musl" ]]; then sudo apt-get install -y musl-tools; fi
+      - name: Install Tauri Linux build deps (GUI)
+        if: endsWith(matrix.target, '-unknown-linux-gnu')
+        run: |
+          sudo apt-get update
+          if sudo apt-get install -y libwebkit2gtk-4.1-dev; then echo "Installed webkit2gtk 4.1"; else sudo apt-get install -y libwebkit2gtk-4.0-dev; fi
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
       - name: Install cross
         if: matrix.builder == 'cross'
         run: cargo install cross --locked
-      - name: Build (rimloc-cli)
+      - name: Build (CLI)
         env:
           CARGO_TERM_COLOR: always
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: |
           if [[ "${{ matrix.builder }}" == "cross" ]]; then cross build --release -p rimloc-cli --target ${{ matrix.target }}; else cargo build --release -p rimloc-cli --target ${{ matrix.target }}; fi
-      - name: Package
+      - name: Install tauri-cli (GUI packaging)
+        if: endsWith(matrix.target, '-unknown-linux-gnu')
+        run: cargo install tauri-cli --locked
+      - name: Bundle GUI package (AppImage)
+        if: endsWith(matrix.target, '-unknown-linux-gnu')
+        run: |
+          pushd gui/tauri-app
+          cargo tauri build --target ${{ matrix.target }} --bundles appimage
+          popd
+      - name: Package (bundle CLI+GUI)
+        if: ${{ inputs.split != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
-          BIN=target/${{ matrix.target }}/release/rimloc-cli
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          mkdir -p dist "$NAME"
-          install -m 0755 "$BIN" "$NAME/"
-          cp -a README.md LICENSE "$NAME/"
-          tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
-          cp "dist/$NAME.tar.gz" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz"
+          NAME=rimloc-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT/cli" "$ROOT/gui"
+          install -m 0755 "target/${{ matrix.target }}/release/rimloc-cli" "$ROOT/cli/"
+          if [[ "${{ matrix.target }}" == *"-unknown-linux-gnu" ]]; then
+            BDIR="gui/tauri-app/src-tauri/target/${{ matrix.target }}/release/bundle"
+            BUNDLE=$(find "$BDIR" -type f \( -name "*.AppImage" -o -name "*.appimage" \) | head -n1 || true)
+            if [[ -n "$BUNDLE" ]]; then cp "$BUNDLE" "$ROOT/gui/"; fi
+          fi
+          cp -a README.md LICENSE "$ROOT/"
+          tar -C "$ROOT" -czf "dist/$NAME.tar.gz" .
           echo "Built dist/$NAME.tar.gz"
-      - name: Install cosign (manual)
-        id: cosign
-        shell: bash
-        run: |
-          set -euo pipefail
-          avail=false
-          ver=v2.5.2
-          # Detect runner arch (not target)
-          machine=$(uname -m)
-          arch=amd64
-          case "$machine" in
-            x86_64) arch=amd64 ;;
-            aarch64) arch=arm64 ;;
-          esac
-          mkdir -p "$HOME/.cosign"
-          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-linux-${arch}"
-          for attempt in 1 2 3 4 5; do
-            if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
-            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
-            sleep $((attempt*10))
-          done
-          if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
-          echo "available=$avail" >> "$GITHUB_OUTPUT"
-      - name: Sign artifact (cosign keyless)
-        if: steps.cosign.outputs.available == 'true'
-        shell: bash
-        env:
-          COSIGN_EXPERIMENTAL: "1"
-        run: |
-          set -euo pipefail
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          if cosign sign-blob --help 2>&1 | grep -q -- "--yes"; then YES="--yes"; else YES=""; fi
-          ${YES:+true} # no-op to placate shell when YES empty
-          if [ -z "$YES" ]; then printf 'y\n' | cosign sign-blob \
-            --output-signature "dist/$NAME.tar.gz.sig" \
-            --output-certificate "dist/$NAME.tar.gz.pem" \
-            "dist/$NAME.tar.gz"; else cosign sign-blob $YES \
-            --output-signature "dist/$NAME.tar.gz.sig" \
-            --output-certificate "dist/$NAME.tar.gz.pem" \
-            "dist/$NAME.tar.gz"; fi
-      - name: Install Syft (SBOM)
-        shell: bash
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin
-      - name: Generate SBOM (SPDX)
-        shell: bash
-        run: |
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          syft packages "dist/$NAME.tar.gz" -o spdx-json > "dist/$NAME.spdx.json"
-      - name: Checksums (SHA256)
+      - name: Package (CLI only)
+        if: ${{ inputs.split == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          (cd dist && sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
-          (cd dist && sha256sum "rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz" > "rimloc-cli-dev-latest-${{ matrix.target }}.tar.gz.sha256")
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT"
+          install -m 0755 "target/${{ matrix.target }}/release/rimloc-cli" "$ROOT/"
+          cp -a README.md LICENSE "$ROOT/"
+          tar -C "$ROOT" -czf "dist/$NAME.tar.gz" .
+          echo "Built dist/$NAME.tar.gz"
+      - name: Package (GUI only)
+        if: ${{ inputs.split == 'true' && endsWith(matrix.target, '-unknown-linux-gnu') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-gui-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT"
+          BDIR="gui/tauri-app/src-tauri/target/${{ matrix.target }}/release/bundle"
+          BUNDLE=$(find "$BDIR" -type f \( -name "*.AppImage" -o -name "*.appimage" \) | head -n1 || true)
+          if [[ -n "$BUNDLE" ]]; then cp "$BUNDLE" "$ROOT/"; fi
+          cp -a README.md LICENSE "$ROOT/"
+          tar -C "$ROOT" -czf "dist/$NAME.tar.gz" .
+          echo "Built dist/$NAME.tar.gz"
+      # No separate checksums for dev pre-release; GitHub UI shows sha256
       - name: Upload assets (retry via gh)
         shell: bash
         env:
@@ -218,73 +222,58 @@ jobs:
         with:
           cache-on-failure: true
           prefix-key: ${{ matrix.target }}
-      - name: Build (rimloc-cli)
+      - name: Build (CLI)
         run: cargo build --release -p rimloc-cli --target ${{ matrix.target }}
-      - name: Package
+      - name: Install tauri-cli (GUI packaging)
+        run: cargo install tauri-cli --locked
+      - name: Bundle GUI package (DMG)
+        run: |
+          pushd gui/tauri-app
+          cargo tauri build --target ${{ matrix.target }} --bundles dmg
+          popd
+      
+      - name: Package (bundle CLI+GUI)
+        if: ${{ inputs.split != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
-          BIN=target/${{ matrix.target }}/release/rimloc-cli
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          mkdir -p dist "$NAME"
-          install -m 0755 "$BIN" "$NAME/"
-          cp -a README.md LICENSE "$NAME/"
-          tar -C "$NAME" -czf "dist/$NAME.tar.gz" .
+          NAME=rimloc-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT/cli" "$ROOT/gui"
+          install -m 0755 "target/${{ matrix.target }}/release/rimloc-cli" "$ROOT/cli/"
+          BDIR="gui/tauri-app/src-tauri/target/${{ matrix.target }}/release/bundle"
+          BUNDLE=$(find "$BDIR" -type f -name "*.dmg" | head -n1 || true)
+          if [[ -n "$BUNDLE" ]]; then cp "$BUNDLE" "$ROOT/gui/"; fi
+          cp -a README.md LICENSE "$ROOT/"
+          tar -C "$ROOT" -czf "dist/$NAME.tar.gz" .
           echo "Built dist/$NAME.tar.gz"
-      - name: Install cosign (manual)
-        id: cosign
-        shell: bash
-        run: |
-          set -euo pipefail
-          avail=false
-          ver=v2.5.2
-          machine=$(uname -m)
-          arch=amd64
-          case "$machine" in
-            x86_64) arch=amd64 ;;
-            arm64|aarch64) arch=arm64 ;;
-          esac
-          mkdir -p "$HOME/.cosign"
-          url="https://github.com/sigstore/cosign/releases/download/${ver}/cosign-darwin-${arch}"
-          for attempt in 1 2 3 4 5; do
-            if curl -fsSL --retry 5 --retry-all-errors --retry-delay 5 "$url" -o "$HOME/.cosign/cosign"; then avail=true; break; fi
-            echo "WARN: failed to download cosign (attempt $attempt), retrying..." >&2
-            sleep $((attempt*10))
-          done
-          if [ "$avail" = true ]; then chmod +x "$HOME/.cosign/cosign"; echo "$HOME/.cosign" >> "$GITHUB_PATH"; fi
-          echo "available=$avail" >> "$GITHUB_OUTPUT"
-      - name: Sign artifact (cosign keyless)
-        if: steps.cosign.outputs.available == 'true'
-        shell: bash
-        env:
-          COSIGN_EXPERIMENTAL: "1"
-        run: |
-          set -euo pipefail
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          if cosign sign-blob --help 2>&1 | grep -q -- "--yes"; then YES="--yes"; else YES=""; fi
-          ${YES:+true}
-          if [ -z "$YES" ]; then printf 'y\n' | cosign sign-blob \
-            --output-signature "dist/$NAME.tar.gz.sig" \
-            --output-certificate "dist/$NAME.tar.gz.pem" \
-            "dist/$NAME.tar.gz"; else cosign sign-blob $YES \
-            --output-signature "dist/$NAME.tar.gz.sig" \
-            --output-certificate "dist/$NAME.tar.gz.pem" \
-            "dist/$NAME.tar.gz"; fi
-      - name: Install Syft (SBOM)
-        shell: bash
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sudo sh -s -- -b /usr/local/bin
-      - name: Generate SBOM (SPDX)
-        shell: bash
-        run: |
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          syft packages "dist/$NAME.tar.gz" -o spdx-json > "dist/$NAME.spdx.json"
-      - name: Checksums (SHA256)
+      - name: Package (CLI only)
+        if: ${{ inputs.split == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          (cd dist && shasum -a 256 "$NAME.tar.gz" > "$NAME.tar.gz.sha256")
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT"
+          install -m 0755 "target/${{ matrix.target }}/release/rimloc-cli" "$ROOT/"
+          cp -a README.md LICENSE "$ROOT/"
+          tar -C "$ROOT" -czf "dist/$NAME.tar.gz" .
+          echo "Built dist/$NAME.tar.gz"
+      - name: Package (GUI only)
+        if: ${{ inputs.split == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=rimloc-gui-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT"
+          BDIR="gui/tauri-app/src-tauri/target/${{ matrix.target }}/release/bundle"
+          BUNDLE=$(find "$BDIR" -type f -name "*.dmg" | head -n1 || true)
+          if [[ -n "$BUNDLE" ]]; then cp "$BUNDLE" "$ROOT/"; fi
+          cp -a README.md LICENSE "$ROOT/"
+          tar -C "$ROOT" -czf "dist/$NAME.tar.gz" .
+          echo "Built dist/$NAME.tar.gz"
+      # No separate checksums for dev pre-release; GitHub UI shows sha256
       - name: Upload assets (retry via gh)
         shell: bash
         env:
@@ -327,85 +316,63 @@ jobs:
         with:
           cache-on-failure: true
           prefix-key: ${{ matrix.target }}
-      - name: Build (rimloc-cli)
+      - name: Build (CLI)
         shell: bash
         run: cargo build --release -p rimloc-cli --target ${{ matrix.target }}
-      - name: Package
+      - name: Install NSIS (Windows bundler)
+        shell: powershell
+        run: choco install nsis -y
+      - name: Install tauri-cli (GUI packaging)
+        shell: bash
+        run: cargo install tauri-cli --locked
+      - name: Bundle GUI package (NSIS)
+        shell: bash
+        run: |
+          pushd gui/tauri-app
+          cargo tauri build --target ${{ matrix.target }} --bundles nsis
+          popd
+      - name: Package (bundle CLI+GUI)
+        if: ${{ inputs.split != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
-          BIN=target/${{ matrix.target }}/release/rimloc-cli.exe
-          NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          mkdir -p dist "$NAME"
-          cp "$BIN" "$NAME/"
-          cp -a README.md LICENSE "$NAME/"
-          (cd "$NAME" && 7z a -tzip "../dist/$NAME.zip" *)
-          cp "dist/$NAME.zip" "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip"
+          NAME=rimloc-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT/cli" "$ROOT/gui"
+          cp "target/${{ matrix.target }}/release/rimloc-cli.exe" "$ROOT/cli/"
+          BDIR="gui/tauri-app/src-tauri/target/${{ matrix.target }}/release/bundle"
+          BUNDLE=$(find "$BDIR" -type f -name "*.exe" | head -n1 || true)
+          if [[ -n "$BUNDLE" ]]; then cp "$BUNDLE" "$ROOT/gui/"; fi
+          cp -a README.md LICENSE "$ROOT/"
+          (cd "$ROOT" && 7z a -tzip "../dist/$NAME.zip" *)
           echo "Built dist/$NAME.zip"
-      - name: Install cosign (manual)
-        id: cosign
-        shell: powershell
-        run: |
-          $available = $false
-          $ver = "v2.5.2"
-          # Detect runner arch (windows runner is x64)
-          $arch = "windows_amd64"
-          $dir = "$env:USERPROFILE\.cosign"
-          New-Item -ItemType Directory -Force -Path $dir | Out-Null
-          $url = "https://github.com/sigstore/cosign/releases/download/$ver/cosign-$arch.exe"
-          for ($i=1; $i -le 5; $i++) {
-            try {
-              Invoke-WebRequest -Uri $url -OutFile (Join-Path $dir 'cosign.exe') -UseBasicParsing
-              $available = $true
-              break
-            } catch {
-              Write-Host "WARN: failed to download cosign (attempt $i), retrying..."
-              Start-Sleep -Seconds (10*$i)
-            }
-          }
-          if ($available) { Add-Content -Path $env:GITHUB_PATH -Value $dir }
-          "available=$available" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-      - name: Sign artifact (cosign keyless)
-        if: steps.cosign.outputs.available == 'true'
+      - name: Package (CLI only)
+        if: ${{ inputs.split == 'true' }}
         shell: bash
-        env:
-          COSIGN_EXPERIMENTAL: "1"
         run: |
           set -euo pipefail
           NAME=rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
-          if cosign sign-blob --help 2>&1 | grep -q -- "--yes"; then YES="--yes"; else YES=""; fi
-          ${YES:+true}
-          if [ -z "$YES" ]; then printf 'y\n' | cosign sign-blob \
-            --output-signature "dist/$NAME.zip.sig" \
-            --output-certificate "dist/$NAME.zip.pem" \
-            "dist/$NAME.zip"; else cosign sign-blob $YES \
-            --output-signature "dist/$NAME.zip.sig" \
-            --output-certificate "dist/$NAME.zip.pem" \
-            "dist/$NAME.zip"; fi
-      - name: Install Syft (Windows)
-        shell: powershell
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT"
+          cp "target/${{ matrix.target }}/release/rimloc-cli.exe" "$ROOT/"
+          cp -a README.md LICENSE "$ROOT/"
+          (cd "$ROOT" && 7z a -tzip "../dist/$NAME.zip" *)
+          echo "Built dist/$NAME.zip"
+      - name: Package (GUI only)
+        if: ${{ inputs.split == 'true' }}
+        shell: bash
         run: |
-          $version = "v1.5.0"
-          $ver = $version.TrimStart('v')
-          # Syft runs on the runner; x64 binary works for both jobs
-          $arch = "windows_amd64"
-          $url = "https://github.com/anchore/syft/releases/download/$version/syft_${ver}_${arch}.zip"
-          Write-Host "Downloading Syft: $url"
-          Invoke-WebRequest -Uri $url -OutFile syft.zip
-          7z x syft.zip -o"$PWD\syft"
-      - name: Generate SBOM (SPDX)
-        shell: powershell
-        run: |
-          $NAME = "rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}"
-          .\syft\syft.exe packages "dist/$NAME.zip" -o spdx-json | Out-File -FilePath "dist/$NAME.spdx.json" -Encoding utf8
-      - name: Checksums (SHA256)
-        shell: powershell
-        run: |
-          $NAME = "rimloc-cli-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}"
-          $h1 = (Get-FileHash "dist/$NAME.zip" -Algorithm SHA256).Hash
-          Set-Content -Path "dist/$NAME.zip.sha256" -Value ("$h1  $NAME.zip")
-          $h2 = (Get-FileHash "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip" -Algorithm SHA256).Hash
-          Set-Content -Path "dist/rimloc-cli-dev-latest-${{ matrix.target }}.zip.sha256" -Value ("$h2  rimloc-cli-dev-latest-${{ matrix.target }}.zip")
+          set -euo pipefail
+          NAME=rimloc-gui-${{ needs.create_release.outputs.tag }}-${{ matrix.target }}
+          ROOT="$NAME"
+          mkdir -p dist "$ROOT"
+          BDIR="gui/tauri-app/src-tauri/target/${{ matrix.target }}/release/bundle"
+          BUNDLE=$(find "$BDIR" -type f -name "*.exe" | head -n1 || true)
+          if [[ -n "$BUNDLE" ]]; then cp "$BUNDLE" "$ROOT/"; fi
+          cp -a README.md LICENSE "$ROOT/"
+          (cd "$ROOT" && 7z a -tzip "../dist/$NAME.zip" *)
+          echo "Built dist/$NAME.zip"
+      # No separate checksums for dev pre-release; GitHub UI shows sha256
       - name: Upload assets (retry via gh)
         shell: bash
         env:
