@@ -474,6 +474,7 @@ async function handleScan(saveMode) {
     defs_dicts: (($("scan-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
     type_schema: val("scan-type-schema") || null,
     keyed_nested: isChecked("scan-keyed-nested"),
+    fuzzy: isChecked("scan-fuzzy"),
     parallel: isChecked("scan-parallel"),
     no_inherit: isChecked("scan-no-inherit"),
     with_plugins: isChecked("scan-with-plugins"),
@@ -1036,6 +1037,22 @@ function initEventHandlers() {
     $("merge-keyed-summary").textContent = `files=${res.files}, keys=${res.keysTotal}, reused=${res.reused}, unused=${res.unused} → ${res.outHint}`;
     toast(tr('merge_done')||'Merge done');
   });
+
+  // Coverage
+  const pickCovDefs = document.querySelector('[data-action="pick-coverage-defs"]'); if (pickCovDefs) pickCovDefs.addEventListener("click", pickDirectory("coverage-defs"));
+  const covRun = $("coverage-run");
+  if (covRun) covRun.addEventListener("click", async () => {
+    const root = val("mod-root"); if (!root) return toast(tr('select_mod_root_first'));
+    const payload = {
+      root,
+      source_lang_dir: val("coverage-source") || "English",
+      target_lang_dir: val("coverage-target") || (val("learn-lang-dir")||"Russian"),
+      defs_root: (val("coverage-defs")||null),
+    };
+    const res = await runAction(tr('validating')||'Validating…', () => tauriInvoke("coverage_gui", { request: payload }));
+    const pct = res.sourceTotal>0 ? Math.round(res.translated*100/res.sourceTotal) : 0;
+    $("coverage-summary").textContent = `source=${res.sourceTotal}, target=${res.targetTotal}, translated=${res.translated}, missing=${res.missing} (${pct}%)`;
+  });
 }
 
 function initPersistence() {
@@ -1074,6 +1091,8 @@ function initPersistence() {
   bindPersist("scan-extra-fields", "rimloc.scanExtraFields");
   bindPersistTextArea("scan-defs-dicts", "rimloc.scanDefsDicts");
   bindPersist("scan-type-schema", "rimloc.scanTypeSchema");
+  const scanFuzzy = $("scan-fuzzy");
+  if (scanFuzzy) { scanFuzzy.checked = localStorage.getItem("rimloc.scanFuzzy") === "1"; scanFuzzy.addEventListener("change", () => localStorage.setItem("rimloc.scanFuzzy", scanFuzzy.checked?"1":"0")); }
   ["scan-keyed-nested","scan-no-inherit","scan-with-plugins"].forEach(id => {
     const el = $(id);
     if (!el) return; const key = `rimloc.${id}`;

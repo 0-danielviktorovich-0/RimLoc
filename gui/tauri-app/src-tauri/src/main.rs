@@ -12,6 +12,7 @@ use rimloc_services::{
 };
 use rimloc_services::plugins as svc_plugins;
 use rimloc_services::keyed_merge::merge_keyed as svc_merge_keyed;
+use rimloc_services::validate::coverage_report as svc_coverage;
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -305,6 +306,22 @@ fn merge_keyed_gui(_window: Window, _state: State<LogState>, request: MergeKeyed
     let stats = svc_merge_keyed(&root, &request.source_lang_dir, &request.target_lang_dir, out_dir.as_deref()).map_err(|e| ApiError { message: format!("{e}") })?;
     let out_hint = out_dir.map(|p| p.display().to_string()).unwrap_or_else(|| root.join("Languages").join(&request.target_lang_dir).join("Keyed").display().to_string());
     Ok(MergeKeyedResponse { files: stats.files, keys_total: stats.keys_total, reused: stats.reused, unused: stats.unused, out_hint })
+}
+
+#[derive(Debug, Deserialize)]
+struct CoverageRequest { root: String, source_lang_dir: String, target_lang_dir: String, #[serde(default)] defs_root: Option<String> }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CoverageResponse { source_total: usize, target_total: usize, translated: usize, missing: usize }
+
+#[tauri::command]
+fn coverage_gui(_window: Window, _state: State<LogState>, request: CoverageRequest) -> Result<CoverageResponse, ApiError> {
+    let root = PathBuf::from(&request.root);
+    let defs = request.defs_root.as_deref().map(PathBuf::from);
+    let rep = svc_coverage(&root, &request.source_lang_dir, &request.target_lang_dir, defs.as_deref())
+        .map_err(|e| ApiError { message: format!("{e}") })?;
+    Ok(CoverageResponse { source_total: rep.source_total, target_total: rep.target_total, translated: rep.translated, missing: rep.missing })
 }
 
 #[derive(Debug, Deserialize)]
@@ -837,6 +854,15 @@ fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> R
         .into_iter()
         .map(|(k, v)| (k, v.into_iter().collect()))
         .collect();
+
+    // Mirror CLI env gates
+    if request.keyed_nested {
+        std::env::set_var("RIMLOC_KEYED_NESTED", "1");
+    }
+    if request.fuzzy {
+        std::env::set_var("RIMLOC_FUZZY", "1");
+    }
+    // no_inherit is present in ScanRequest outer options (handled in frontend; if needed place here too)
 
     // Env gates for inheritance/nested keyed
     if request.no_inherit {

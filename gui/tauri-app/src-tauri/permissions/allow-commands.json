@@ -35,6 +35,7 @@
     "apply_translation",
     "load_plugin_cmd",
     "list_plugins_cmd",
+    "coverage_gui",
     "merge_keyed_gui"
   ]
 }

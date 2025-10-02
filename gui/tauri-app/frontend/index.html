@@ -219,6 +219,10 @@
             <span>Nested Keyed (dot-paths)</span>
           </label>
           <label>
+            <input id="scan-fuzzy" type="checkbox" />
+            <span>Fuzzy from Defs</span>
+          </label>
+          <label>
             <input id="scan-parallel" type="checkbox" />
             <span>Parallel</span>
           </label>
@@ -289,6 +293,33 @@
           </label>
         </div>
         <div class="scan-summary" id="merge-keyed-summary">Ready.</div>
+      </section>
+
+      <section class="panel" id="coverage-panel">
+        <div class="panel-head">
+          <h2 data-i18n="coverage_title">Coverage</h2>
+          <div class="actions">
+            <button type="button" id="coverage-run" data-i18n="coverage_run">Run</button>
+          </div>
+        </div>
+        <div class="field-grid">
+          <label>
+            <span data-i18n="source_lang_folder">Source language folder</span>
+            <input id="coverage-source" type="text" value="English" />
+          </label>
+          <label>
+            <span data-i18n="target_lang_folder">Target language folder</span>
+            <input id="coverage-target" type="text" value="Russian" />
+          </label>
+          <label>
+            <span data-i18n="defs_root">Defs root (optional)</span>
+            <div class="path-input">
+              <input id="coverage-defs" type="text" placeholder="/path/to/Defs" />
+              <button type="button" data-action="pick-coverage-defs" data-i18n="browse">Browse…</button>
+            </div>
+          </label>
+        </div>
+        <div class="scan-summary" id="coverage-summary">Ready.</div>
       </section>
 
       <section class="panel" id="strings-panel">
