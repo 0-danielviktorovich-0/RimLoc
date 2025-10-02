@@ -134,6 +134,7 @@ help-scan-out-json = Save extracted entries to JSON file (use with --format json
 help-scan-lang = Language code of the files to scan (e.g., en, ru)
 help-scan-source-lang = Source language code for cross-checks
 help-scan-source-lang-dir = Path to source language directory for cross-checks
+help-scan-use-en-comments = Use preceding XML comments as source for Keyed (optional prefix; default: "EN:")
 help-scan-format = Output format: "csv" (default) or "json"
 help-scan-game-version = Game version folder to use (e.g., 1.6 or v1.6); defaults to latest available under root
 help-scan-include-all = Include all version subfolders (disable auto-pick of latest)
