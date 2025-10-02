@@ -1,4 +1,5 @@
 use crate::version::resolve_game_version_root;
+use rimloc_services::scan::scan_patches_as_units;
 use std::collections::{BTreeSet, HashMap};
 use std::io::IsTerminal;
 
@@ -19,8 +20,12 @@ pub fn run_scan(
     game_version: Option<String>,
     include_all_versions: bool,
     keyed_nested: bool,
+    parallel: bool,
     no_inherit: bool,
     with_plugins: bool,
+    with_patches: bool,
+    patch_min_len: Option<usize>,
+    patch_strict_xpath: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(
         event = "scan_args",
@@ -99,7 +104,11 @@ pub fn run_scan(
         }
     }
     if let Some(schema) = defs_type_schema.as_ref() {
-        let pp = if schema.is_absolute() { schema.clone() } else { scan_root.join(schema) };
+        let pp = if schema.is_absolute() {
+            schema.clone()
+        } else {
+            scan_root.join(schema)
+        };
         if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
             merge_dict(d.0);
         }
@@ -111,7 +120,13 @@ pub fn run_scan(
 
     // Gate inheritance via env var for parser crate
     // Apply ENV gates from CLI flags or config defaults
-    if no_inherit || cfg.scan.as_ref().and_then(|s| s.no_inherit).unwrap_or(false) {
+    if no_inherit
+        || cfg
+            .scan
+            .as_ref()
+            .and_then(|s| s.no_inherit)
+            .unwrap_or(false)
+    {
         std::env::set_var("RIMLOC_INHERIT", "0");
     }
     if cfg
@@ -126,6 +141,9 @@ pub fn run_scan(
     if keyed_nested {
         std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }
+    if parallel || cfg.scan.as_ref().and_then(|s| s.parallel).unwrap_or(false) {
+        std::env::set_var("RIMLOC_PARALLEL", "1");
+    }
     if keyed_nested {
         std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }
@@ -137,15 +155,48 @@ pub fn run_scan(
         &extra_fields,
     )?;
 
+    // Optionally augment with plugin-derived units (e.g., XmlExtensions Settings/TKey)
     if with_plugins {
-        // Load plugins from env and from default ./plugins under scan root
-        let _ = rimloc_services::plugins::load_plugins_from_env();
-        let default_dir = scan_root.join("plugins");
-        let _ = rimloc_services::plugins::load_dynamic_plugins_from(&default_dir);
-        if let Ok(mut extra) = rimloc_services::plugins::run_scan_plugins(&scan_root) {
+        rimloc_services::plugins::init_builtin();
+        for p in rimloc_services::plugins::iter() {
+            if let Ok(mut extra) = p.scan_units(&scan_root) {
+                units.append(&mut extra);
+            }
+        }
+        units.sort_by(|a, b| {
+            (
+                a.path.to_string_lossy(),
+                a.line.unwrap_or(0),
+                a.key.as_str(),
+            )
+                .cmp(&(
+                    b.path.to_string_lossy(),
+                    b.line.unwrap_or(0),
+                    b.key.as_str(),
+                ))
+        });
+    }
+
+    if with_patches {
+        let min_len = patch_min_len.unwrap_or(1);
+        if let Ok(mut extra) = scan_patches_as_units(&scan_root, min_len, patch_strict_xpath) {
             units.append(&mut extra);
+            units.sort_by(|a, b| {
+                (
+                    a.path.to_string_lossy(),
+                    a.line.unwrap_or(0),
+                    a.key.as_str(),
+                )
+                    .cmp(&(
+                        b.path.to_string_lossy(),
+                        b.line.unwrap_or(0),
+                        b.key.as_str(),
+                    ))
+            });
         }
     }
+
+    // Plugin execution is integrated in services::scan_units via registry. Future: expose dynamic loaders here.
 
     fn is_source_for_lang_dir(path: &std::path::Path, lang_dir: &str) -> bool {
         // Languages/<dir>

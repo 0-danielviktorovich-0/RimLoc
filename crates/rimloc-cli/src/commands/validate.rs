@@ -1,4 +1,5 @@
 use crate::version::resolve_game_version_root;
+use rimloc_services::validate::{validate_lists_cross_language, validate_orphans_cross_language};
 use rimloc_services::validate_placeholders_cross_language;
 
 #[allow(dead_code)]
@@ -15,6 +16,8 @@ pub fn run_validate(
     game_version: Option<String>,
     include_all_versions: bool,
     compare_placeholders: bool,
+    compare_lists: bool,
+    report_orphans: bool,
     target_lang: Option<String>,
     target_lang_dir: Option<String>,
     use_color: bool,
@@ -94,7 +97,11 @@ pub fn run_validate(
         }
     }
     if let Some(schema) = defs_type_schema.as_ref() {
-        let pp = if schema.is_absolute() { schema.clone() } else { scan_root.join(schema) };
+        let pp = if schema.is_absolute() {
+            schema.clone()
+        } else {
+            scan_root.join(schema)
+        };
         if let Ok(d) = rimloc_parsers_xml::load_type_schema_as_dict(&pp) {
             dicts.push(d);
         }
@@ -132,6 +139,49 @@ pub fn run_validate(
             &trg_dir,
             defs_abs.as_deref(),
         ) {
+            msgs.append(&mut extra);
+        }
+    }
+    if compare_lists {
+        // Resolve source/target like above (reuse the same vars)
+        let src_dir = if let Some(dir) = source_lang_dir.clone() {
+            dir
+        } else if let Some(code) = source_lang.as_ref().or(cfg.source_lang.as_ref()) {
+            rimloc_import_po::rimworld_lang_dir(code)
+        } else {
+            "English".to_string()
+        };
+        let trg_dir = if let Some(dir) = target_lang_dir.clone() {
+            dir
+        } else if let Some(code) = target_lang.as_ref().or(cfg.target_lang.as_ref()) {
+            rimloc_import_po::rimworld_lang_dir(code)
+        } else {
+            "Russian".to_string()
+        };
+        if let Ok(mut extra) =
+            validate_lists_cross_language(&scan_root, &src_dir, &trg_dir, defs_abs.as_deref())
+        {
+            msgs.append(&mut extra);
+        }
+    }
+    if report_orphans {
+        let src_dir = if let Some(dir) = source_lang_dir.clone() {
+            dir
+        } else if let Some(code) = source_lang.as_ref().or(cfg.source_lang.as_ref()) {
+            rimloc_import_po::rimworld_lang_dir(code)
+        } else {
+            "English".to_string()
+        };
+        let trg_dir = if let Some(dir) = target_lang_dir.clone() {
+            dir
+        } else if let Some(code) = target_lang.as_ref().or(cfg.target_lang.as_ref()) {
+            rimloc_import_po::rimworld_lang_dir(code)
+        } else {
+            "Russian".to_string()
+        };
+        if let Ok(mut extra) =
+            validate_orphans_cross_language(&scan_root, &src_dir, &trg_dir, defs_abs.as_deref())
+        {
             msgs.append(&mut extra);
         }
     }

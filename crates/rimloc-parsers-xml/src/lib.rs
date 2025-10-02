@@ -48,7 +48,10 @@ pub fn scan_keyed_xml(root: &Path) -> CoreResult<Vec<TransUnit>> {
 }
 
 /// Same as `scan_keyed_xml` but allows configuring behaviour via `KeyedScanOptions`.
-pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> CoreResult<Vec<TransUnit>> {
+pub fn scan_keyed_xml_with_options(
+    root: &Path,
+    opts: &KeyedScanOptions,
+) -> CoreResult<Vec<TransUnit>> {
     use walkdir::WalkDir;
     let mut out: Vec<TransUnit> = Vec::new();
 
@@ -133,8 +136,7 @@ pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> Core
                 Ok(Event::End(_)) => {
                     if let Some(frame) = stack.pop() {
                         // Optional: emit nested dotted keys under LanguageData when enabled
-                        if opts.nested {
-                            if frame.has_text && !frame.name.is_empty() {
+                        if opts.nested && frame.has_text && !frame.name.is_empty() {
                                 // stack after pop contains ancestors; expect root[0] == LanguageData
                                 if stack
                                     .first()
@@ -156,7 +158,6 @@ pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> Core
                                         continue;
                                     }
                                 }
-                            }
                         }
                         // If closing a <li> directly under a top-level key, fold into the parent buffer
                         if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
@@ -282,7 +283,7 @@ pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> Core
                     if let Some(frame) = stack.last_mut() {
                         if !text.is_empty() {
                             // Preserve line-break semantics: if previous char is not a newline
-                            // and we're appending a new text chunk that starts with a newline, 
+                            // and we're appending a new text chunk that starts with a newline,
                             // keep it as part of buffer (quick-xml trimmed already).
                             frame.buffer.push_str(&text);
                             frame.has_text = true;
@@ -309,7 +310,7 @@ pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> Core
     };
 
     if opts.parallel {
-        #[cfg(feature = "rayon")] 
+        #[cfg(feature = "rayon")]
         {
             use rayon::prelude::*;
             let mut collected: Vec<TransUnit> = files.par_iter().flat_map(process_one).collect();
@@ -334,15 +335,18 @@ pub fn scan_keyed_xml_with_options(root: &Path, opts: &KeyedScanOptions) -> Core
         out.extend(process_one(p));
     }
     // Deterministic order
-    out.sort_by(|a, b| (
-        a.path.to_string_lossy(),
-        a.line.unwrap_or(0),
-        a.key.as_str(),
-    ).cmp(&(
-        b.path.to_string_lossy(),
-        b.line.unwrap_or(0),
-        b.key.as_str(),
-    )));
+    out.sort_by(|a, b| {
+        (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            ))
+    });
     Ok(out)
 }
 
@@ -537,7 +541,9 @@ pub fn scan_defs_xml_under_with_fields(
                                 c.is_element()
                                     && c.tag_name().name().eq_ignore_ascii_case(def_tag)
                                     && c.children()
-                                        .find(|n| n.is_element() && n.tag_name().name() == "defName")
+                                        .find(|n| {
+                                            n.is_element() && n.tag_name().name() == "defName"
+                                        })
                                         .and_then(|n| n.text())
                                         .map(str::trim)
                                         .is_some_and(|n| n == parent_name)
@@ -563,7 +569,13 @@ pub fn scan_defs_xml_under_with_fields(
                 }
                 if found_val.is_none() && inherit_enabled() {
                     if let Some(parent_name) = node.attribute("ParentName") {
-                        if let Some(val) = find_field_in_parents_across_files_simple(&defs_index, &name_index, node.tag_name().name(), parent_name, field) {
+                        if let Some(val) = find_field_in_parents_across_files_simple(
+                            &defs_index,
+                            &name_index,
+                            node.tag_name().name(),
+                            parent_name,
+                            field,
+                        ) {
                             found_val = Some(val);
                             line = line_for_offset(node.range().start, &line_starts);
                         }
@@ -698,9 +710,40 @@ fn collect_values_by_path<'a>(
         head = &head[..pos];
     }
     // Allow alias segments like "label|labelShort" – take any that matches
-    let aliases: Vec<&str> = head.split('|').collect();
+    // Allow a minimal predicate syntax: name[attr=value] or name[@attr='value']
+    #[derive(Clone)]
+    struct Sel {
+        name: String,
+        attr: Option<(String, String)>,
+    }
+    let parse_sel = |s: &str| -> Sel {
+        if let Some(br) = s.find('[') {
+            let name = &s[..br];
+            let inside = &s[br + 1..s.len().saturating_sub(1)];
+            // support formats: @attr='v' | @attr=v | attr='v' | attr=v
+            let mut parts = inside
+                .trim()
+                .trim_matches(|c| c == '[' || c == ']')
+                .splitn(2, '=');
+            if let Some(attr_raw) = parts.next() {
+                let attr = attr_raw.trim().trim_start_matches('@');
+                if let Some(val_raw) = parts.next() {
+                    let val = val_raw
+                        .trim()
+                        .trim_matches('"')
+                        .trim_matches('\'')
+                        .to_string();
+                    return Sel { name: name.to_string(), attr: Some((attr.to_string(), val)) };
+                }
+            }
+            Sel { name: name.to_string(), attr: None }
+        } else {
+            Sel { name: s.to_string(), attr: None }
+        }
+    };
+    let aliases: Vec<Sel> = head.split('|').map(parse_sel).collect();
     let tail = &path[1..];
-    if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
+    if aliases.iter().any(|a| a.name.eq_ignore_ascii_case("li")) {
         for child in node
             .children()
             .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
@@ -708,20 +751,52 @@ fn collect_values_by_path<'a>(
             collect_values_by_path(child, tail, out);
         }
     } else {
-        for child in node
-            .children()
-            .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
-        {
-            collect_values_by_path(child, tail, out);
+        'outer: for child in node.children().filter(|c| c.is_element()) {
+            let cname = child.tag_name().name();
+            for sel in &aliases {
+                if !cname.eq_ignore_ascii_case(sel.name.as_str()) {
+                    continue;
+                }
+                if let Some((attr, ref val)) = sel.attr.as_ref() {
+                    if let Some(av) = child.attribute(attr.as_str()) {
+                        if av == val {
+                            collect_values_by_path(child, tail, out);
+                            continue 'outer;
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        // Special case: defName/Name as child element when attr missing
+                        if (attr.as_str()).eq_ignore_ascii_case("defName")
+                            || (attr.as_str()).eq_ignore_ascii_case("Name")
+                        {
+                            if let Some(t) = child
+                                .children()
+                                .find(|n| {
+                                    n.is_element()
+                                        && (n.tag_name().name() == "defName" || n.tag_name().name() == "Name")
+                                })
+                                .and_then(|n| n.text())
+                            {
+                                if t == val.as_str() {
+                                    collect_values_by_path(child, tail, out);
+                                    continue 'outer;
+                                }
+                            }
+                        }
+                        continue;
+                    }
+                } else {
+                    collect_values_by_path(child, tail, out);
+                    continue 'outer;
+                }
+            }
         }
     }
 }
 
 fn inherit_enabled() -> bool {
-    match std::env::var("RIMLOC_INHERIT") {
-        Ok(val) if val.trim() == "0" => false,
-        _ => true,
-    }
+    !matches!(std::env::var("RIMLOC_INHERIT"), Ok(val) if val.trim() == "0")
 }
 
 // Helper for shallow-field inheritance across files by ParentName.
@@ -749,7 +824,12 @@ fn find_field_in_parents_across_files_simple(
             .get(def_type)
             .and_then(|m| m.get(&name))
             .cloned()
-            .or_else(|| index_defname.get(def_type).and_then(|m| m.get(&name)).cloned())?;
+            .or_else(|| {
+                index_defname
+                    .get(def_type)
+                    .and_then(|m| m.get(&name))
+                    .cloned()
+            })?;
         let content = std::fs::read_to_string(path).ok()?;
         let doc = roxmltree::Document::parse(&content).ok()?;
         let root_el = doc.root_element();
@@ -992,7 +1072,13 @@ pub fn scan_defs_with_dict_meta(
                     // Prepare display path without any {..} markers (e.g., li{h} -> li)
                     let display_path = segs
                         .iter()
-                        .map(|s| if let Some(pos) = s.find('{') { &s[..pos] } else { s })
+                        .map(|s| {
+                            if let Some(pos) = s.find('{') {
+                                &s[..pos]
+                            } else {
+                                s
+                            }
+                        })
                         .collect::<Vec<&str>>()
                         .join(".");
                     let mut vals = Vec::new();

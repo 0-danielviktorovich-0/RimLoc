@@ -402,7 +402,7 @@ enum Commands {
         /// Optional type schema (JSON) to augment Defs fields
         #[arg(long)]
         defs_type_schema: Option<PathBuf>,
-        
+
         /// Output format: "csv" (default), or "json".
         #[arg(long, default_value = "csv", value_parser = ["csv", "json"])]
         format: String,
@@ -415,12 +415,24 @@ enum Commands {
         /// Treat nested keyed elements under LanguageData as dotted keys (experimental)
         #[arg(long, default_value_t = false)]
         keyed_nested: bool,
+        /// Enable parallel scanning (faster on multi-core; deterministic order is preserved)
+        #[arg(long, default_value_t = false)]
+        parallel: bool,
         /// Strict mode for Defs: disable ParentName inheritance when scanning
         #[arg(long, default_value_t = false)]
         no_inherit: bool,
         /// Also run registered and dynamic plugins and merge their units
         #[arg(long, default_value_t = false)]
         with_plugins: bool,
+        /// Include PatchOperations analysis (infer DefInjected keys from xpath)
+        #[arg(long, default_value_t = false)]
+        with_patches: bool,
+        /// Minimal value length when scanning PatchOperations (default: 1)
+        #[arg(long)]
+        patch_min_len: Option<usize>,
+        /// Strict xpath mode for PatchOperations (reject ambiguous)
+        #[arg(long, default_value_t = false)]
+        patch_strict_xpath: bool,
     },
 
     /// Validate strings and report issues (help localized via FTL).
@@ -457,6 +469,12 @@ enum Commands {
         /// Compare placeholders between source and target language by key
         #[arg(long, default_value_t = false)]
         compare_placeholders: bool,
+        /// Compare list-like values by counting line breaks
+        #[arg(long, default_value_t = false)]
+        compare_lists: bool,
+        /// Report keys present in target but missing in source
+        #[arg(long, default_value_t = false)]
+        report_orphans: bool,
         /// Target translation language ISO code
         #[arg(long)]
         lang: Option<String>,
@@ -634,6 +652,12 @@ enum Commands {
         /// Output JSON report path (default: ./learn_out/patches_texts.json)
         #[arg(long)]
         out_json: Option<PathBuf>,
+        /// Strict xpath interpretation (reject ambiguous cases)
+        #[arg(long, default_value_t = false)]
+        strict_xpath: bool,
+        /// Emit only inferred keys array instead of full JSON objects
+        #[arg(long, default_value_t = false)]
+        emit_keys_only: bool,
         /// Game version folder (e.g., 1.6 or v1.6)
         #[arg(long)]
         game_version: Option<String>,
@@ -940,8 +964,12 @@ impl Runnable for Commands {
                 game_version,
                 include_all_versions,
                 keyed_nested,
+                parallel,
                 no_inherit,
                 with_plugins,
+                with_patches,
+                patch_min_len,
+                patch_strict_xpath,
             } => commands::scan::run_scan(
                 root,
                 out_csv,
@@ -957,8 +985,12 @@ impl Runnable for Commands {
                 game_version,
                 include_all_versions,
                 keyed_nested,
+                parallel,
                 no_inherit,
                 with_plugins,
+                with_patches,
+                patch_min_len,
+                patch_strict_xpath,
             ),
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
 
@@ -974,6 +1006,8 @@ impl Runnable for Commands {
                 game_version,
                 include_all_versions,
                 compare_placeholders,
+                compare_lists,
+                report_orphans,
                 lang,
                 lang_dir,
             } => commands::validate::run_validate(
@@ -988,6 +1022,8 @@ impl Runnable for Commands {
                 game_version,
                 include_all_versions,
                 compare_placeholders,
+                compare_lists,
+                report_orphans,
                 lang,
                 lang_dir,
                 use_color,
@@ -1373,8 +1409,17 @@ impl Runnable for Commands {
                 mod_root,
                 min_len,
                 out_json,
+                strict_xpath,
+                emit_keys_only,
                 game_version,
-            } => commands::learn_patches::run_learn_patches(mod_root, min_len, out_json, game_version),
+            } => commands::learn_patches::run_learn_patches(
+                mod_root,
+                min_len,
+                out_json,
+                strict_xpath,
+                emit_keys_only,
+                game_version,
+            ),
 
             Commands::Morph {
                 root,

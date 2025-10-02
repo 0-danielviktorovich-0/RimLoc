@@ -84,6 +84,7 @@ nav:
       - Learn (Defs/Keyed): learn.md
   - Developers:
       - Overview: dev/index.md
+      - Docs Style Guide: dev/docs_style.md
       - Testing: testing.md
   - Community:
       - Discord: community/discord.md

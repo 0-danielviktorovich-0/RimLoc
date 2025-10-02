@@ -250,6 +250,7 @@ pub struct ScanCfg {
     pub defs_dicts: Option<Vec<String>>,  // user dictionaries paths
     pub no_inherit: Option<bool>,         // disable ParentName inheritance
     pub keyed_nested: Option<bool>,       // treat nested keyed as dotted keys
+    pub parallel: Option<bool>,           // enable parallel scanning
 }
 
 fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
@@ -264,6 +265,9 @@ fn merge_scan(mut a: ScanCfg, b: ScanCfg) -> ScanCfg {
     }
     if a.keyed_nested.is_none() {
         a.keyed_nested = b.keyed_nested;
+    }
+    if a.parallel.is_none() {
+        a.parallel = b.parallel;
     }
     a
 }

@@ -128,7 +128,10 @@ pub fn validate_placeholders_cross_language(
             }
         } else if is_source_for_lang_dir(&path, target_lang_dir) {
             if let Some(s) = u.source.as_deref() {
-                tgt_map.insert(key, (s.to_string(), path.to_string_lossy().into_owned(), u.line));
+                tgt_map.insert(
+                    key,
+                    (s.to_string(), path.to_string_lossy().into_owned(), u.line),
+                );
             }
         }
     }
@@ -151,5 +154,104 @@ pub fn validate_placeholders_cross_language(
         }
     }
 
+    Ok(msgs)
+}
+
+/// Compare list-like values by counting line breaks between source and target for matching keys.
+pub fn validate_lists_cross_language(
+    scan_root: &Path,
+    source_lang_dir: &str,
+    target_lang_dir: &str,
+    defs_root: Option<&Path>,
+) -> Result<Vec<ValidationMessage>> {
+    let mut units = if let Some(defs) = defs_root {
+        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+    } else {
+        rimloc_parsers_xml::scan_all_units(scan_root)?
+    };
+    let mut src: std::collections::HashMap<String, (String, Option<usize>)> =
+        std::collections::HashMap::new();
+    let mut tgt: std::collections::HashMap<String, (String, String, Option<usize>)> =
+        std::collections::HashMap::new();
+    for u in units.drain(..) {
+        if let Some(text) = u.source.as_deref() {
+            if is_source_for_lang_dir(&u.path, source_lang_dir) {
+                src.insert(u.key.clone(), (text.to_string(), u.line));
+            } else if is_source_for_lang_dir(&u.path, target_lang_dir) {
+                tgt.insert(
+                    u.key.clone(),
+                    (
+                        text.to_string(),
+                        u.path.to_string_lossy().into_owned(),
+                        u.line,
+                    ),
+                );
+            }
+        }
+    }
+    fn li_count(s: &str) -> usize {
+        if s.is_empty() {
+            0
+        } else {
+            // Heuristic: <li> merged with newlines
+            s.matches('\n').count() + 1
+        }
+    }
+    let mut msgs = Vec::new();
+    for (k, (t, path, line)) in tgt.into_iter() {
+        if let Some((s, _)) = src.get(&k) {
+            let cs = li_count(s);
+            let ct = li_count(&t);
+            if cs != ct {
+                msgs.push(ValidationMessage {
+                    kind: "list-mismatch".into(),
+                    key: k,
+                    path,
+                    line,
+                    message: format!("List items mismatch: src={cs} tgt={ct}"),
+                });
+            }
+        }
+    }
+    Ok(msgs)
+}
+
+/// Report keys present in target language but missing in source.
+pub fn validate_orphans_cross_language(
+    scan_root: &Path,
+    source_lang_dir: &str,
+    target_lang_dir: &str,
+    defs_root: Option<&Path>,
+) -> Result<Vec<ValidationMessage>> {
+    let mut units = if let Some(defs) = defs_root {
+        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+    } else {
+        rimloc_parsers_xml::scan_all_units(scan_root)?
+    };
+    let mut src_keys: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut tgt_map: std::collections::HashMap<String, (String, Option<usize>)> =
+        std::collections::HashMap::new();
+    for u in units.drain(..) {
+        if is_source_for_lang_dir(&u.path, source_lang_dir) {
+            src_keys.insert(u.key.clone());
+        } else if is_source_for_lang_dir(&u.path, target_lang_dir) {
+            tgt_map.insert(
+                u.key.clone(),
+                (u.path.to_string_lossy().into_owned(), u.line),
+            );
+        }
+    }
+    let mut msgs = Vec::new();
+    for (k, (path, line)) in tgt_map.into_iter() {
+        if !src_keys.contains(&k) {
+            msgs.push(ValidationMessage {
+                kind: "orphan".into(),
+                key: k,
+                path,
+                line,
+                message: "Key missing in source".into(),
+            });
+        }
+    }
     Ok(msgs)
 }

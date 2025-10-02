@@ -74,8 +74,15 @@ pub fn scan_candidates(
                     collect_entries_by_path_with_handles(def_node, &raw_segs, &mut entries);
                     for (field_path_expanded, v) in entries {
                         let v = v.trim().to_string();
-                        if v.len() < min_len { continue; }
-                        if blacklist.iter().any(|b| field_path_expanded.eq_ignore_ascii_case(b)) { continue; }
+                        if v.len() < min_len {
+                            continue;
+                        }
+                        if blacklist
+                            .iter()
+                            .any(|b| field_path_expanded.eq_ignore_ascii_case(b))
+                        {
+                            continue;
+                        }
                         out.push(Candidate {
                             def_type: def_type.clone(),
                             def_name: def_name.clone(),
@@ -142,7 +149,11 @@ fn normalize_handle(mut s: String) -> String {
             _ => ch,
         };
         if mapped.is_ascii_alphanumeric() || mapped == '_' {
-            let c = if mapped.is_ascii_uppercase() { mapped } else { mapped };
+            let c = if mapped.is_ascii_uppercase() {
+                mapped
+            } else {
+                mapped
+            };
             if c == '_' {
                 if !last_underscore {
                     out.push('_');
@@ -162,7 +173,11 @@ fn prefer_handle_segment(seg: &str) -> bool {
 }
 
 fn strip_marker(seg: &str) -> &str {
-    if let Some(pos) = seg.find('{') { &seg[..pos] } else { seg }
+    if let Some(pos) = seg.find('{') {
+        &seg[..pos]
+    } else {
+        seg
+    }
 }
 
 fn collect_entries_by_path_with_handles(
@@ -193,7 +208,8 @@ fn collect_entries_by_path_with_handles(
         if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
             // Iterate list items and append index or pseudo-handle token
             let prefer_handle = prefer_handle_segment(raw_head);
-            let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            let mut seen: std::collections::HashMap<String, usize> =
+                std::collections::HashMap::new();
             let mut index: usize = 0;
             for child in node
                 .children()
@@ -213,10 +229,9 @@ fn collect_entries_by_path_with_handles(
                             "stat",
                             "skill",
                         ] {
-                            if let Some(n) = child
-                                .children()
-                                .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(tag))
-                            {
+                            if let Some(n) = child.children().find(|c| {
+                                c.is_element() && c.tag_name().name().eq_ignore_ascii_case(tag)
+                            }) {
                                 if let Some(txt) = n.text().map(str::trim) {
                                     if !txt.is_empty() {
                                         handle = Some(txt.to_string());
@@ -227,11 +242,17 @@ fn collect_entries_by_path_with_handles(
                         }
                     }
                     if let Some(h) = handle {
-                        let h = if h.contains('.') { h.split('.').last().unwrap_or("").to_string() } else { h };
+                        let h = if h.contains('.') {
+                            h.split('.').last().unwrap_or("").to_string()
+                        } else {
+                            h
+                        };
                         let mut norm = normalize_handle(h);
                         if !norm.is_empty() {
                             let cnt = seen.entry(norm.clone()).or_insert(0);
-                            if *cnt > 0 { norm = format!("{}-{}", norm, *cnt); }
+                            if *cnt > 0 {
+                                norm = format!("{}-{}", norm, *cnt);
+                            }
                             *cnt += 1;
                             token = norm;
                         }
@@ -243,10 +264,12 @@ fn collect_entries_by_path_with_handles(
                 index += 1;
             }
         } else {
-            for child in node
-                .children()
-                .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
-            {
+            for child in node.children().filter(|c| {
+                c.is_element()
+                    && aliases
+                        .iter()
+                        .any(|a| c.tag_name().name().eq_ignore_ascii_case(a))
+            }) {
                 acc.push(head.to_string());
                 walk(child, tail, acc, out);
                 acc.pop();
@@ -255,7 +278,9 @@ fn collect_entries_by_path_with_handles(
     }
 
     // Start recursion at the first matching segment under current node
-    if segs.is_empty() { return; }
+    if segs.is_empty() {
+        return;
+    }
     let raw_head = segs[0];
     let head = strip_marker(raw_head);
     let aliases: Vec<&str> = head.split('|').collect();
@@ -274,18 +299,39 @@ fn collect_entries_by_path_with_handles(
             if prefer_handle {
                 let mut handle = child.attribute("Class").map(|s| s.to_string());
                 if handle.is_none() {
-                    for tag in ["defName", "label", "name", "compClass", "thingDef", "stat", "skill"] {
-                        if let Some(n) = child.children().find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case(tag)) {
-                            if let Some(txt) = n.text().map(str::trim) { if !txt.is_empty() { handle = Some(txt.to_string()); break; } }
+                    for tag in [
+                        "defName",
+                        "label",
+                        "name",
+                        "compClass",
+                        "thingDef",
+                        "stat",
+                        "skill",
+                    ] {
+                        if let Some(n) = child.children().find(|c| {
+                            c.is_element() && c.tag_name().name().eq_ignore_ascii_case(tag)
+                        }) {
+                            if let Some(txt) = n.text().map(str::trim) {
+                                if !txt.is_empty() {
+                                    handle = Some(txt.to_string());
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
                 if let Some(h) = handle {
-                    let h = if h.contains('.') { h.split('.').last().unwrap_or("").to_string() } else { h };
+                    let h = if h.contains('.') {
+                        h.split('.').last().unwrap_or("").to_string()
+                    } else {
+                        h
+                    };
                     let mut norm = normalize_handle(h);
                     if !norm.is_empty() {
                         let cnt = seen.entry(norm.clone()).or_insert(0);
-                        if *cnt > 0 { norm = format!("{}-{}", norm, *cnt); }
+                        if *cnt > 0 {
+                            norm = format!("{}-{}", norm, *cnt);
+                        }
                         *cnt += 1;
                         token = norm;
                     }
@@ -297,10 +343,12 @@ fn collect_entries_by_path_with_handles(
             index += 1;
         }
     } else {
-        for child in node
-            .children()
-            .filter(|c| c.is_element() && aliases.iter().any(|a| c.tag_name().name().eq_ignore_ascii_case(a)))
-        {
+        for child in node.children().filter(|c| {
+            c.is_element()
+                && aliases
+                    .iter()
+                    .any(|a| c.tag_name().name().eq_ignore_ascii_case(a))
+        }) {
             let mut acc: Vec<String> = vec![head.to_string()];
             walk(child, tail, &mut acc, out);
         }

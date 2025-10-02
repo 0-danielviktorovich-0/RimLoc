@@ -56,14 +56,12 @@ pub fn scan_keyed_from_defs_special(root: &Path) -> Result<Vec<(String, String, 
         for def in root_el.children().filter(|n| n.is_element()) {
             let tag = def.tag_name().name();
             if tag.eq_ignore_ascii_case("XmlExtensions.SettingsMenuDef") {
-                if let Some(settings) = def
-                    .children()
-                    .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("settings"))
-                {
-                    for li in settings
-                        .children()
-                        .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
-                    {
+                if let Some(settings) = def.children().find(|c| {
+                    c.is_element() && c.tag_name().name().eq_ignore_ascii_case("settings")
+                }) {
+                    for li in settings.children().filter(|c| {
+                        c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li")
+                    }) {
                         // Collect possible pairs
                         let mut tkey: Option<String> = None;
                         let mut tkey_text: Option<String> = None;
@@ -260,7 +258,10 @@ pub fn learn_keyed(
         if must_contain_letter && !val.chars().any(|c| c.is_alphabetic()) {
             continue;
         }
-        if exclude_substr.iter().any(|s| !s.is_empty() && key.contains(s)) {
+        if exclude_substr
+            .iter()
+            .any(|s| !s.is_empty() && key.contains(s))
+        {
             continue;
         }
         let mut cand = KeyedCandidate {

@@ -182,12 +182,28 @@
             <span>Nested Keyed (dot-paths)</span>
           </label>
           <label>
+            <input id="scan-parallel" type="checkbox" />
+            <span>Parallel</span>
+          </label>
+          <label>
             <input id="scan-no-inherit" type="checkbox" />
             <span>No inheritance</span>
           </label>
           <label>
             <input id="scan-with-plugins" type="checkbox" />
           <span data-i18n="run_plugins">Run plugins</span>
+          </label>
+          <label>
+            <input id="scan-with-patches" type="checkbox" />
+            <span>Include Patches</span>
+          </label>
+          <label>
+            <span>Patch min length</span>
+            <input id="scan-patch-minlen" type="number" min="1" placeholder="1" style="width:90px" />
+          </label>
+          <label>
+            <input id="scan-patch-strict" type="checkbox" />
+            <span>Patch strict xpath</span>
           </label>
         </div>
         <div class="scan-summary" id="scan-summary" data-i18n="scan_empty">No scan performed yet.</div>

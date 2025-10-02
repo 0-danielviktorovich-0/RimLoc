@@ -86,6 +86,14 @@ struct ScanRequest {
     no_inherit: bool,
     #[serde(default)]
     with_plugins: bool,
+    #[serde(default)]
+    with_patches: bool,
+    #[serde(default)]
+    patch_min_len: Option<usize>,
+    #[serde(default)]
+    patch_strict_xpath: bool,
+    #[serde(default)]
+    parallel: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -718,6 +726,7 @@ fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> R
     if request.keyed_nested {
         std::env::set_var("RIMLOC_KEYED_NESTED", "1");
     }
+    if request.parallel { std::env::set_var("RIMLOC_PARALLEL", "1"); }
 
     // Perform scan
     let mut units = rimloc_services::scan_units_with_defs_and_dict(
@@ -732,6 +741,12 @@ fn run_scan(scan_root: &Path, version: Option<&str>, request: &ScanRequest) -> R
         let default_dir = scan_root.join("plugins");
         let _ = rimloc_services::plugins::load_dynamic_plugins_from(&default_dir);
         if let Ok(mut extra) = rimloc_services::plugins::run_scan_plugins(scan_root) {
+            units.append(&mut extra);
+        }
+    }
+    if request.with_patches {
+        let min_len = request.patch_min_len.unwrap_or(1);
+        if let Ok(mut extra) = rimloc_services::scan_patches_as_units(scan_root, min_len, request.patch_strict_xpath) {
             units.append(&mut extra);
         }
     }

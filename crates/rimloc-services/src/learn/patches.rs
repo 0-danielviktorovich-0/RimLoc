@@ -94,9 +94,12 @@ pub fn scan_patches_texts(root: &Path, min_len: usize) -> Result<Vec<PatchTextCa
                         if val.len() < min_len {
                             continue;
                         }
+                        let strict = std::env::var("RIMLOC_PATCH_STRICT_XPATH")
+                            .map(|v| v == "1")
+                            .unwrap_or(false);
                         let inferred = xpath
                             .as_deref()
-                            .and_then(|xp| infer_definj_from_xpath(xp, &tag_path));
+                            .and_then(|xp| infer_definj_from_xpath_mode(xp, &tag_path, strict));
                         out.push(PatchTextCandidate {
                             operation_class: class.clone(),
                             xpath: xpath.clone(),
@@ -113,7 +116,11 @@ pub fn scan_patches_texts(root: &Path, min_len: usize) -> Result<Vec<PatchTextCa
     Ok(out)
 }
 
-fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInjected> {
+pub(crate) fn infer_definj_from_xpath_mode(
+    xpath: &str,
+    tag_path: &str,
+    strict: bool,
+) -> Option<InferredDefInjected> {
     // Heuristic: looking for .../Defs/<DefType>[defName='X' or @defName='X' or @Name='X']/rest/of/path
     // Then map rest/of/path + tag_path into dot path; normalize li's
     let xp = xpath.replace("\\", "/");
@@ -128,12 +135,20 @@ fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInj
     let re = regex::Regex::new(r"^(?P<ty>[^\[]+)(?P<cond>\[[^\]]+\])?").ok()?;
     let caps = re.captures(first)?;
     let def_type = caps.name("ty")?.as_str().to_string();
-    let cond = caps.name("cond").map(|m| m.as_str().to_string()).unwrap_or_default();
+    let cond = caps
+        .name("cond")
+        .map(|m| m.as_str().to_string())
+        .unwrap_or_default();
     if def_type.trim().is_empty() {
         return None;
     }
     // try extract def_name from condition
-    let name_re = regex::Regex::new(r"(?i)(?:@?defName|@?Name)\s*=\s*'([^']+)'").ok()?;
+    let name_re = if strict {
+        regex::Regex::new(r"(?i)^(?:\[@?defName\s*=\s*'([^']+)'\]|\[@?Name\s*=\s*'([^']+)'\])$")
+            .ok()?
+    } else {
+        regex::Regex::new(r"(?i)(?:@?defName|@?Name)\s*=\s*'([^']+)'").ok()?
+    };
     let def_name = name_re
         .captures(&cond)
         .and_then(|c| c.get(1))
@@ -150,8 +165,24 @@ fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInj
         if part.is_empty() {
             continue;
         }
-        // normalize predicates [..] to li
-        let name = part.split('[').next().unwrap_or("");
+        // normalize predicates [..] to li (strict: reject indexed paths like [3])
+        let (name, pred) = match part.split_once('[') {
+            Some((n, p)) => (n, Some(p)),
+            None => (part, None),
+        };
+        if strict {
+            if let Some(preds) = pred {
+                // allow @Name/@defName only; reject numeric indexes
+                if preds
+                    .chars()
+                    .next()
+                    .map(|c| c.is_ascii_digit())
+                    .unwrap_or(false)
+                {
+                    return None;
+                }
+            }
+        }
         if name.eq_ignore_ascii_case("li") {
             segs.push("li".to_string());
         } else if name.is_empty() {
@@ -182,6 +213,11 @@ fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInj
         def_name,
         field_path,
     })
+}
+
+// Backward-compatible helper used by tests
+fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInjected> {
+    infer_definj_from_xpath_mode(xpath, tag_path, false)
 }
 
 #[cfg(test)]

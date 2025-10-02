@@ -1,3 +1,4 @@
+use crate::plugins;
 use crate::{util::def_injected_target_path, Result, TransUnit};
 use rimloc_parsers_xml::DefsMetaUnit;
 use serde::Deserialize;
@@ -223,12 +224,62 @@ pub fn scan_units_auto(root: &Path) -> Result<Vec<TransUnit>> {
     Ok(units)
 }
 
+/// Convert PatchOperation text candidates (learn/patches) into TransUnits when
+/// a DefInjected key can be inferred from xpath/tag path.
+pub fn scan_patches_as_units(
+    root: &Path,
+    min_len: usize,
+    strict_xpath: bool,
+) -> Result<Vec<TransUnit>> {
+    let mut out = Vec::new();
+    // Delegate to learn/patches to collect candidates
+    let mut candidates = crate::learn::patches::scan_patches_texts(root, min_len)?;
+    // Avoid excessive size; keep deterministic order
+    candidates.sort_by(|a, b| {
+        a.source_file
+            .cmp(&b.source_file)
+            .then(a.tag_path.cmp(&b.tag_path))
+    });
+    for c in candidates {
+        let inferred = if strict_xpath {
+            // already inferred using strict flag inside scan; but recompute just in case
+            if let (Some(xp), tp) = (c.xpath.as_deref(), c.tag_path.as_str()) {
+                crate::learn::patches::infer_definj_from_xpath_mode(xp, tp, true)
+            } else {
+                None
+            }
+        } else {
+            c.inferred
+        };
+        if let Some(meta) = inferred {
+            if !meta.def_name.trim().is_empty() && !meta.field_path.trim().is_empty() {
+                out.push(TransUnit {
+                    key: format!("{}.{}", meta.def_name, meta.field_path),
+                    source: Some(c.value.clone()),
+                    // Keep patch file as path; exporters group to _Imported.xml when not under Languages
+                    path: c.source_file.clone(),
+                    line: None,
+                });
+            }
+        }
+    }
+    Ok(out)
+}
+
 /// Scan a RimWorld mod folder and return discovered translation units.
 /// This wraps `rimloc_parsers_xml::scan_keyed_xml` to provide a stable entrypoint
 /// for higher-level clients (CLI, GUI, LSP) without importing parser crates.
 pub fn scan_units(root: &Path) -> Result<Vec<TransUnit>> {
     // Include both LanguageData (Keyed/DefInjected) and implicit English from Defs
-    scan_units_auto(root)
+    let mut units = scan_units_auto(root)?;
+    // Run registered parser plugins to augment scan results
+    plugins::init_builtin();
+    for p in plugins::iter() {
+        if let Ok(mut more) = p.scan_units(root) {
+            units.append(&mut more);
+        }
+    }
+    Ok(units)
 }
 
 /// Like `scan_units`, but restrict Defs scanning to a particular directory when provided.

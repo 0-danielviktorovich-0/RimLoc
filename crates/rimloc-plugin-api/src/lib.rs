@@ -15,5 +15,5 @@ pub trait ScanPlugin: Send + Sync {
 /// containing JSON array of TransUnit objects.
 pub const SCAN_JSON_SYMBOL: &[u8] = b"rimloc_plugin_scan_json\0";
 
-pub type ScanJsonFn = unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::os::raw::c_char;
-
+pub type ScanJsonFn =
+    unsafe extern "C" fn(*const std::os::raw::c_char) -> *mut std::os::raw::c_char;

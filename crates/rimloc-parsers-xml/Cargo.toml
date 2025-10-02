@@ -31,6 +31,6 @@ serde_json = "1"
 rayon = { version = "1", optional = true }
 
 [features]
-default = []
+default = ["rayon"]
 # Enable parallel scanning via `scan_keyed_xml_with_options` when env RIMLOC_PARALLEL=1
 rayon = ["dep:rayon"]
