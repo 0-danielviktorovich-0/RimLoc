@@ -31,6 +31,7 @@
     "get_profile",
     "validate_po_gui",
     "learn_patches_cmd",
-    "get_cli_i18n"
+    "get_cli_i18n",
+    "apply_translation"
   ]
 }

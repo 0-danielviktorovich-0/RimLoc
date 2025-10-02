@@ -111,6 +111,14 @@
               <input id="preview-missing-only" type="checkbox" />
               <span data-i18n="preview_missing_only">Missing only</span>
             </label>
+            <label>
+              <input id="preview-only-ph-issues" type="checkbox" />
+              <span>Only placeholder issues</span>
+            </label>
+            <label>
+              <input id="preview-only-list-issues" type="checkbox" />
+              <span>Only list issues</span>
+            </label>
           </div>
         </div>
         <div class="split">
@@ -136,7 +144,12 @@
               </div>
               <div>
                 <h3>Target</h3>
-                <pre class="code" id="preview-target"></pre>
+                <textarea id="preview-target-edit" class="code" style="min-height: 140px"></textarea>
+                <div class="actions" style="margin-top: 8px">
+                  <button type="button" id="preview-apply">Apply</button>
+                  <button type="button" id="preview-open-edited" disabled>Open _Edited.xml</button>
+                </div>
+                <div id="preview-warnings" class="scroll-code" style="margin-top: 8px"></div>
               </div>
             </div>
           </div>

@@ -128,6 +128,8 @@
     "stages.li.description"
   ],
   "ThoughtDef": [
+    "label",
+    "description",
     "stages.li.label",
     "stages.li.description"
   ],
@@ -164,7 +166,73 @@
     "label",
     "description"
   ],
-  "ThoughtDef": [
+  "PawnCapacityDef": [
+    "label",
+    "description"
+  ],
+  "NeedDef": [
+    "label",
+    "description"
+  ],
+  "InspirationDef": [
+    "label",
+    "description"
+  ],
+  "MentalBreakDef": [
+    "label",
+    "description"
+  ],
+  "MentalStateDef": [
+    "label",
+    "description"
+  ],
+  "RoyalTitleDef": [
+    "label",
+    "labelFemale",
+    "labelMale",
+    "description"
+  ],
+  "WorkGiverDef": [
+    "label",
+    "description"
+  ],
+  "ThingCategoryDef": [
+    "label",
+    "description"
+  ],
+  "DesignationCategoryDef": [
+    "label",
+    "description"
+  ],
+  "DesignatorDropdownGroupDef": [
+    "label",
+    "description"
+  ],
+  "TraderKindDef": [
+    "label",
+    "description"
+  ],
+  "RaidStrategyDef": [
+    "label",
+    "description"
+  ],
+  "SiteCoreDef": [
+    "label",
+    "description"
+  ],
+  "StorytellerDef": [
+    "label",
+    "description"
+  ],
+  "StyleCategoryDef": [
+    "label",
+    "description"
+  ],
+  "StyleItemCategoryDef": [
+    "label",
+    "description"
+  ],
+  "PawnRelationDef": [
     "label",
     "description"
   ]
