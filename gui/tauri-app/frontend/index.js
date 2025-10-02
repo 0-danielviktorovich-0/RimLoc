@@ -1,3 +1,6 @@
+// Early status hint to confirm JS is executing before boot()
+(function(){ try { const s = document.getElementById('status-text'); if (s) s.textContent = 'Loading UI…'; } catch(_){} })();
+
 function getTauri() {
   const t = (typeof window !== 'undefined' && window.__TAURI__) ? window.__TAURI__ : undefined;
   if (!getTauri._loggedOnce) {
@@ -1355,6 +1358,7 @@ function debugLog(level, message, noForward = false) {
   // Always forward to backend (unless suppressed) to keep file logs maximal
   if (!noForward) {
     try {
+      // Forward to backend if available; ignore errors in UI-only mode
       tauriInvoke("log_message", { level: String(level), message: String(message) }).catch(() => {});
     } catch {}
   }
@@ -2112,6 +2116,7 @@ function boot() {
     renderLearn(null);
     renderExport(null);
     fetchAppVersion();
+    updateStatus('UI ready');
     debugLog("info", "UI ready", true);
     try { console.log('Boot: complete'); } catch {}
   } catch (e) {
