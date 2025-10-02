@@ -138,6 +138,9 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("source_lang_dir", |a| {
                     a.help(tr!("help-scan-source-lang-dir"))
                 });
+                owned = owned.mut_arg("use_en_comments", |a| {
+                    a.help(tr!("help-scan-use-en-comments"))
+                });
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-scan-format")));
                 owned = owned.mut_arg("game_version", |a| a.help(tr!("help-scan-game-version")));
                 owned = owned.mut_arg("include_all_versions", |a| {
