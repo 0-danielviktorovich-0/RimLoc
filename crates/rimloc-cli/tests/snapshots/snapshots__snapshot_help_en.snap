@@ -9,9 +9,11 @@ Usage: rimloc-cli [OPTIONS] <COMMAND>
 
 Commands:
   scan           Scan a mod folder and extract Keyed XML entries
+  merge-keyed    Merge English Keyed files into target language with EN: comments and UNUSED section
   validate       Validate strings for issues/warnings
   validate-po    Validate .po file placeholder consistency (msgid vs msgstr)
   diff-xml       Diff source vs translation presence and detect changed source strings using a baseline PO
+  coverage       Report translation coverage between source and target language folders
   learn-defs     Learn DefInjected fields and generate missing/suggested outputs
   learn-keyed    Learn Keyed keys from English and suggest missing ones for target language
   learn-patches  Learn text candidates added by PatchOperations (Patches/) and produce a JSON report
@@ -22,6 +24,8 @@ Commands:
   morph          Generate Case/Plural/Gender files using a morph provider (dummy/morpher/pymorphy2)
   init           Create translation skeleton under Languages/<target> with empty values
   export-po      Export extracted strings into a single .po file
+  export-xliff   Export extracted strings into a single XLIFF 1.2 file (for CAT tools)
+  import-xliff   Import XLIFF 1.2 and write a single LanguageData XML (Keyed)
   import-po      Import .po  -  either into a single XML, or spread across existing mod structure
   build-mod      Build a standalone translation mod from a .po file
   help           Print this message or the help of the given subcommand(s)
