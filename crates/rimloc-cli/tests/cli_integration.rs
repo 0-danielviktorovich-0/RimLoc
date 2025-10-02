@@ -78,6 +78,30 @@ fn help_works() {
 }
 
 #[test]
+fn scan_help_has_use_en_comments_flag_localized() {
+    use std::path::{Path, PathBuf};
+    let i18n_dir: PathBuf = Path::new(env!("CARGO_MANIFEST_DIR")).join("i18n");
+    for &lang in SUPPORTED_LOCALES.iter() {
+        // Expected help snippet for the new flag (fallback to EN)
+        let expected = read_ftl_message(&i18n_dir, lang, "help-scan-use-en-comments")
+            .or_else(|| read_ftl_message(&i18n_dir, "en", "help-scan-use-en-comments"))
+            .unwrap_or_else(|| panic!("{}", ti18n!("test-help-about-key-required")));
+        let mut cmd = bin_cmd();
+        cmd.args(["--ui-lang", lang, "scan", "--help"]);
+        let assert = cmd.assert().success();
+        let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+        assert_has!(
+            &out,
+            &expected,
+            &i18n_dir.join(lang).join("rimloc.ftl"),
+            lang,
+            "help-scan-use-en-comments",
+            &ti18n!("test-help-about-must-be-localized", lang = lang),
+        );
+    }
+}
+
+#[test]
 fn scan_outputs_csv_header() {
     let mut cmd = bin_cmd();
     cmd.args(["scan", "--root"]).arg(fixture("test/TestMod"));
