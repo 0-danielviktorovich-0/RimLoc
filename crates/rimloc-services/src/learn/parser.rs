@@ -149,11 +149,7 @@ fn normalize_handle(mut s: String) -> String {
             _ => ch,
         };
         if mapped.is_ascii_alphanumeric() || mapped == '_' {
-            let c = if mapped.is_ascii_uppercase() {
-                mapped
-            } else {
-                mapped
-            };
+            let c = mapped;
             if c == '_' {
                 if !last_underscore {
                     out.push('_');
@@ -208,12 +204,11 @@ fn collect_entries_by_path_with_handles(
         if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
             // Iterate list items and append index or pseudo-handle token
             let prefer_handle = prefer_handle_segment(raw_head);
-            let mut seen: std::collections::HashMap<String, usize> =
-                std::collections::HashMap::new();
-            let mut index: usize = 0;
-            for child in node
+            let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+            for (index, child) in node
                 .children()
                 .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
+                .enumerate()
             {
                 let mut token = index.to_string();
                 if prefer_handle {
@@ -242,11 +237,7 @@ fn collect_entries_by_path_with_handles(
                         }
                     }
                     if let Some(h) = handle {
-                        let h = if h.contains('.') {
-                            h.split('.').last().unwrap_or("").to_string()
-                        } else {
-                            h
-                        };
+                        let h = if h.contains('.') { h.rsplit('.').next().unwrap_or("").to_string() } else { h };
                         let mut norm = normalize_handle(h);
                         if !norm.is_empty() {
                             let cnt = seen.entry(norm.clone()).or_insert(0);
@@ -261,7 +252,6 @@ fn collect_entries_by_path_with_handles(
                 acc.push(token);
                 walk(child, tail, acc, out);
                 acc.pop();
-                index += 1;
             }
         } else {
             for child in node.children().filter(|c| {
@@ -288,12 +278,12 @@ fn collect_entries_by_path_with_handles(
     if aliases.iter().any(|a| a.eq_ignore_ascii_case("li")) {
         // Promote list traversal at current level
         let mut acc: Vec<String> = Vec::new();
-        let mut index: usize = 0;
         let prefer_handle = prefer_handle_segment(raw_head);
         let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
-        for child in node
+        for (index, child) in node
             .children()
             .filter(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("li"))
+            .enumerate()
         {
             let mut token = index.to_string();
             if prefer_handle {
@@ -321,11 +311,7 @@ fn collect_entries_by_path_with_handles(
                     }
                 }
                 if let Some(h) = handle {
-                    let h = if h.contains('.') {
-                        h.split('.').last().unwrap_or("").to_string()
-                    } else {
-                        h
-                    };
+                    let h = if h.contains('.') { h.rsplit('.').next().unwrap_or("").to_string() } else { h };
                     let mut norm = normalize_handle(h);
                     if !norm.is_empty() {
                         let cnt = seen.entry(norm.clone()).or_insert(0);
@@ -340,7 +326,6 @@ fn collect_entries_by_path_with_handles(
             acc.push(token);
             walk(child, tail, &mut acc, out);
             acc.pop();
-            index += 1;
         }
     } else {
         for child in node.children().filter(|c| {

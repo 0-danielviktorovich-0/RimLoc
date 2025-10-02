@@ -1,4 +1,5 @@
 use crate::version::resolve_game_version_root;
+#[allow(unused_imports)]
 use rimloc_services::apply_diff_flags;
 
 #[allow(clippy::too_many_arguments)]

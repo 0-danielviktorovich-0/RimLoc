@@ -1,5 +1,6 @@
 use crate::version::resolve_game_version_root;
 use rimloc_services::validate::{validate_lists_cross_language, validate_orphans_cross_language};
+#[allow(unused_imports)]
 use rimloc_services::validate_placeholders_cross_language;
 
 #[allow(dead_code)]

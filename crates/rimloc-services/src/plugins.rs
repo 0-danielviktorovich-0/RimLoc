@@ -130,7 +130,7 @@ pub fn load_dynamic_plugins_from(dir: &Path) -> Result<usize> {
 pub fn load_plugins_from_env() -> Result<usize> {
     let mut loaded = 0usize;
     if let Ok(val) = std::env::var("RIMLOC_PLUGINS") {
-        for token in val.split(|c| c == ';' || c == ':') {
+        for token in val.split([';', ':']) {
             let t = token.trim();
             if t.is_empty() {
                 continue;
