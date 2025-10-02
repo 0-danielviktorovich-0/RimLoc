@@ -2137,11 +2137,12 @@ async function waitForTauri(maxMs = 5000) {
   if (document.readyState === 'loading') {
     await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
   }
-  const ok = await waitForTauri();
-  if (!ok) {
-    try { console.warn('TAURI invoke not ready after timeout'); } catch {}
-  }
+  // Attach UI immediately; do not block on Tauri injection.
   boot();
+  // Probe Tauri in background; just for diagnostics.
+  waitForTauri().then((ok) => {
+    if (!ok) { try { console.warn('TAURI invoke not ready after timeout'); } catch {} }
+  });
 })();
 
 async function loadCliI18n() {
