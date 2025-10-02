@@ -1,114 +1,173 @@
-//! Simple plugin scaffolding for extensible scanners/exporters.
-//! Public trait lives in `rimloc-plugin-api`. This module handles registration
-//! and dynamic loading for scan plugins.
-
 use crate::{Result, TransUnit};
-use once_cell::sync::Lazy;
-use rimloc_plugin_api::{ScanJsonFn, ScanPlugin, SCAN_JSON_SYMBOL};
-use std::ffi::{CStr, CString};
+use once_cell::sync::OnceCell;
 use std::path::{Path, PathBuf};
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
-static SCAN_PLUGINS: Lazy<RwLock<Vec<&'static dyn ScanPlugin>>> = Lazy::new(|| RwLock::new(Vec::new()));
+pub trait ParserPlugin: Send + Sync {
+    fn id(&self) -> &'static str;
+    fn scan_units(&self, root: &std::path::Path) -> Result<Vec<TransUnit>>;
+}
 
-pub fn register_scan_plugin(p: &'static dyn ScanPlugin) {
-    if let Ok(mut guard) = SCAN_PLUGINS.write() {
-        guard.push(p);
+static REGISTRY: OnceCell<RwLock<Vec<Arc<dyn ParserPlugin>>>> = OnceCell::new();
+
+pub fn register(p: Arc<dyn ParserPlugin>) {
+    REGISTRY
+        .get_or_init(|| RwLock::new(Vec::new()))
+        .write()
+        .unwrap()
+        .push(p);
+}
+
+pub fn iter() -> Vec<Arc<dyn ParserPlugin>> {
+    let guard = REGISTRY
+        .get_or_init(|| RwLock::new(Vec::new()))
+        .read()
+        .unwrap();
+    guard.iter().cloned().collect()
+}
+
+pub fn init_builtin() {
+    // Register built-in plugins exactly once
+    use std::sync::Once;
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| {
+        register(Arc::new(
+            crate::plugins_xml_ext::XmlExtensionsSettingsPlugin,
+        ));
+    });
+}
+
+// --- Dynamic plugin loading (optional) ---
+
+struct DynPlugin {
+    id: String,
+    #[allow(dead_code)]
+    lib: libloading::Library,
+    func: rimloc_plugin_api::ScanJsonFn,
+}
+
+impl ParserPlugin for DynPlugin {
+    fn id(&self) -> &'static str {
+        Box::leak(self.id.clone().into_boxed_str())
+    }
+    fn scan_units(&self, root: &std::path::Path) -> Result<Vec<TransUnit>> {
+        use std::ffi::CString;
+        let c_root = CString::new(root.to_string_lossy().as_bytes()).unwrap();
+        let s_ptr = unsafe { (self.func)(c_root.as_ptr()) };
+        if s_ptr.is_null() {
+            return Ok(Vec::new());
+        }
+        let c_str = unsafe { std::ffi::CString::from_raw(s_ptr) };
+        let json = c_str.to_string_lossy().to_string();
+        #[derive(serde::Deserialize)]
+        struct Unit {
+            key: String,
+            #[serde(default)]
+            source: Option<String>,
+            path: String,
+            #[serde(default)]
+            line: Option<usize>,
+        }
+        let units: Vec<Unit> = serde_json::from_str(&json).unwrap_or_default();
+        Ok(units
+            .into_iter()
+            .map(|u| TransUnit {
+                key: u.key,
+                source: u.source,
+                path: PathBuf::from(u.path),
+                line: u.line,
+            })
+            .collect())
     }
 }
 
-/// Wrapper around a dynamically loaded library + exported scan function.
-struct DynJsonScanPlugin {
-    _lib: libloading::Library,
-    func: ScanJsonFn,
-    name: String,
+fn is_dyn_lib(path: &Path) -> bool {
+    if !path.is_file() {
+        return false;
+    }
+    if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+        let e = ext.to_ascii_lowercase();
+        return e == "so" || e == "dll" || e == "dylib";
+    }
+    false
 }
 
-impl DynJsonScanPlugin {
-    fn new(lib: libloading::Library, func: ScanJsonFn, path: &Path) -> Self {
-        let name = path.file_stem().and_then(|s| s.to_str()).unwrap_or("dyn").to_string();
-        Self { _lib: lib, func, name }
+pub fn load_dynamic_plugin(path: &Path) -> Result<()> {
+    if !is_dyn_lib(path) {
+        return Ok(());
+    }
+    unsafe {
+        let lib = libloading::Library::new(path)?;
+        let symbol_name =
+            std::ffi::CStr::from_bytes_with_nul_unchecked(rimloc_plugin_api::SCAN_JSON_SYMBOL);
+        let func: libloading::Symbol<rimloc_plugin_api::ScanJsonFn> =
+            lib.get(symbol_name.to_bytes())?;
+        let id = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("dyn")
+            .to_string();
+        let fn_ptr: rimloc_plugin_api::ScanJsonFn = *func;
+        register(Arc::new(DynPlugin { id, lib, func: fn_ptr }));
+        Ok(())
     }
 }
 
-impl ScanPlugin for DynJsonScanPlugin {
-    fn name(&self) -> &'static str {
-        // leak to 'static; acceptable for process lifetime
-        Box::leak(self.name.clone().into_boxed_str())
+pub fn load_dynamic_plugins_from(dir: &Path) -> Result<usize> {
+    let mut count = 0usize;
+    if dir.is_dir() {
+        for entry in std::fs::read_dir(dir)? {
+            let p = entry?.path();
+            if is_dyn_lib(&p) {
+                let _ = load_dynamic_plugin(&p);
+                count += 1;
+            }
+        }
     }
-    fn matches(&self, _root: &Path) -> bool { true }
-    fn scan(&self, root: &Path) -> Result<Vec<TransUnit>> {
-        let s = root.to_string_lossy();
-        let c_root = CString::new(s.as_bytes())?;
-        let ptr = unsafe { (self.func)(c_root.as_ptr()) };
-        if ptr.is_null() { return Ok(Vec::new()); }
-        let c_str = unsafe { CStr::from_ptr(ptr) };
-        let json = c_str.to_string_lossy().into_owned();
-        // It is up to the plugin to decide who frees the string. We ignore for now.
-        let units: Vec<TransUnit> = serde_json::from_str(&json).unwrap_or_default();
-        Ok(units)
-    }
+    Ok(count)
 }
 
-/// Load dynamic plugins from a directory. Returns count of loaded plugins.
-pub fn load_dynamic_plugins_from(dir: &Path) -> usize {
+pub fn load_plugins_from_env() -> Result<usize> {
     let mut loaded = 0usize;
-    if !dir.is_dir() { return 0; }
-    let mut libs: Vec<PathBuf> = Vec::new();
-    if let Ok(rd) = std::fs::read_dir(dir) {
-        for e in rd.flatten() {
-            let p = e.path();
-            if p.extension().and_then(|s| s.to_str()).map(|ext| match std::env::consts::OS {
-                "macos" => ext.eq_ignore_ascii_case("dylib"),
-                "windows" => ext.eq_ignore_ascii_case("dll"),
-                _ => ext.eq_ignore_ascii_case("so"),
-            }).unwrap_or(false) {
-                libs.push(p);
-            }
-        }
-    }
-    for p in libs {
-        unsafe {
-            if let Ok(lib) = libloading::Library::new(&p) {
-                let func: Option<ScanJsonFn> = match lib.get::<ScanJsonFn>(SCAN_JSON_SYMBOL) {
-                    Ok(sym) => Some(*sym),
-                    Err(_) => None,
-                };
-                if let Some(func) = func {
-                    let plugin = DynJsonScanPlugin::new(lib, func, &p);
-                    let boxed: Box<dyn ScanPlugin> = Box::new(plugin);
-                    let static_ref: &'static dyn ScanPlugin = Box::leak(boxed);
-                    register_scan_plugin(static_ref);
-                    loaded += 1;
-                }
-            }
-        }
-    }
-    loaded
-}
-
-/// Try environment variables to load plugin directories: RIMLOC_PLUGINS (path list).
-pub fn load_plugins_from_env() -> usize {
-    let mut total = 0;
     if let Ok(val) = std::env::var("RIMLOC_PLUGINS") {
-        let sep = if cfg!(windows) { ';' } else { ':' };
-        for part in val.split(sep).map(str::trim).filter(|s| !s.is_empty()) {
-            total += load_dynamic_plugins_from(Path::new(part));
-        }
-    }
-    total
-}
-
-/// Run all registered plugins and merge their results.
-pub fn run_scan_plugins(root: &Path) -> Result<Vec<TransUnit>> {
-    let mut out = Vec::new();
-    if let Ok(guard) = SCAN_PLUGINS.read() {
-        for p in guard.iter() {
-            if p.matches(root) {
-                let mut units = p.scan(root)?;
-                out.append(&mut units);
+        for token in val.split(|c| c == ';' || c == ':') {
+            let t = token.trim();
+            if t.is_empty() {
+                continue;
+            }
+            let p = PathBuf::from(t);
+            if p.is_dir() {
+                loaded += load_dynamic_plugins_from(&p)?;
+            } else {
+                let _ = load_dynamic_plugin(&p);
+                loaded += 1;
             }
         }
     }
-    Ok(out)
+    Ok(loaded)
+}
+
+pub fn run_scan_plugins(root: &Path) -> Result<Vec<TransUnit>> {
+    let mut all = Vec::new();
+    for p in iter() {
+        match p.scan_units(root) {
+            Ok(mut v) => {
+                all.append(&mut v);
+            }
+            Err(_) => { /* ignore plugin failure */ }
+        }
+    }
+    all.sort_by(|a, b| {
+        (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            ))
+    });
+    Ok(all)
 }

@@ -12,7 +12,9 @@
     "gerundLabel",
     "jobString",
     "comps.li{h}.label",
-    "tools.li{h}.label"
+    "tools.li{h}.label",
+    "verbs.li.label",
+    "ingestible.ingestCommandString"
   ],
   "RecipeDef": [
     "label",
@@ -37,7 +39,8 @@
   ],
   "PawnKindDef": [
     "label",
-    "labelPlural"
+    "labelPlural",
+    "lifeStages.li.label"
   ],
   "SoundDef": [
     "subSounds.li{h}.name"

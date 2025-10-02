@@ -610,26 +610,56 @@ pub fn write_diff_reports(dir: &Path, diff: &DiffOutput) -> Result<()> {
 /// Apply flags to translation XML files based on a DiffOutput:
 /// - keys listed in `changed` are annotated with `<!-- FUZZY -->`
 /// - keys listed in `only_in_translation` are annotated with `<!-- UNUSED -->`
-pub fn apply_diff_flags(root: &Path, target_lang_dir: &str, diff: &DiffOutput, backup: bool) -> Result<(usize, usize)> {
-    use quick_xml::{events::{Event, BytesText}, Reader, Writer};
-    use walkdir::WalkDir;
+pub fn apply_diff_flags(
+    root: &Path,
+    target_lang_dir: &str,
+    diff: &DiffOutput,
+    backup: bool,
+) -> Result<(usize, usize)> {
+    use quick_xml::{
+        events::{BytesText, Event},
+        Reader, Writer,
+    };
     use std::collections::HashSet;
+    use walkdir::WalkDir;
 
     let fuzzy: HashSet<&str> = diff.changed.iter().map(|(k, _)| k.as_str()).collect();
-    let unused: HashSet<&str> = diff.only_in_translation.iter().map(|k| k.as_str()).collect();
+    let unused: HashSet<&str> = diff
+        .only_in_translation
+        .iter()
+        .map(|k| k.as_str())
+        .collect();
 
     let mut fuzzy_count = 0usize;
     let mut unused_count = 0usize;
 
     for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
         let p = entry.path();
-        if !p.is_file() { continue; }
-        if p.extension().and_then(|e| e.to_str()).map_or(true, |ext| !ext.eq_ignore_ascii_case("xml")) { continue; }
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
         // Under Languages/<target>/Keyed or DefInjected
         let s = p.to_string_lossy();
-        if !(s.contains(&format!("/Languages/{target_lang}/", target_lang = target_lang_dir)) || s.contains(&format!("\\Languages\\{target_lang}\\", target_lang = target_lang_dir))) { continue; }
+        if !(s.contains(&format!(
+            "/Languages/{target_lang}/",
+            target_lang = target_lang_dir
+        )) || s.contains(&format!(
+            "\\Languages\\{target_lang}\\",
+            target_lang = target_lang_dir
+        ))) {
+            continue;
+        }
 
-        let input = match std::fs::read_to_string(p) { Ok(s) => s, Err(_) => continue };
+        let input = match std::fs::read_to_string(p) {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
         let mut reader = Reader::from_str(&input);
         reader.config_mut().trim_text(false);
         let mut buf = Vec::new();
@@ -640,7 +670,9 @@ pub fn apply_diff_flags(root: &Path, target_lang_dir: &str, diff: &DiffOutput, b
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
                     let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
-                    if name.eq_ignore_ascii_case("LanguageData") { in_language_data = true; }
+                    if name.eq_ignore_ascii_case("LanguageData") {
+                        in_language_data = true;
+                    }
                     stack.push(name.clone());
                     if in_language_data && stack.len() == 2 {
                         if fuzzy.contains(name.as_str()) {
@@ -667,7 +699,9 @@ pub fn apply_diff_flags(root: &Path, target_lang_dir: &str, diff: &DiffOutput, b
                     out.write_event(Event::Empty(e.to_owned()))?;
                 }
                 Ok(Event::End(e)) => {
-                    if stack.pop().as_deref() == Some("LanguageData") { in_language_data = false; }
+                    if stack.pop().as_deref() == Some("LanguageData") {
+                        in_language_data = false;
+                    }
                     out.write_event(Event::End(e.to_owned()))?;
                 }
                 Ok(Event::Text(t)) => out.write_event(Event::Text(t))?,

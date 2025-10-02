@@ -10,10 +10,11 @@ pub mod export;
 pub mod extras;
 pub mod import;
 pub mod learn;
+pub mod plugins;
+pub mod plugins_xml_ext;
 pub mod scan;
 mod util;
 pub mod validate;
-pub mod plugins;
 
 pub use build::{
     build_from_po_dry_run, build_from_po_execute, build_from_po_with_progress, build_from_root,
@@ -25,8 +26,8 @@ pub use extras::annotate::{
     AnnotateSummary,
 };
 pub use extras::diff::{
-    diff_xml, diff_xml_with_defs, diff_xml_with_defs_and_dict, diff_xml_with_defs_and_fields,
-    write_diff_reports, apply_diff_flags,
+    apply_diff_flags, diff_xml, diff_xml_with_defs, diff_xml_with_defs_and_dict,
+    diff_xml_with_defs_and_fields, write_diff_reports,
 };
 pub use extras::init::{make_init_plan, write_init_plan, InitFilePlan, InitPlan};
 pub use extras::lang_update::{lang_update, LangUpdatePlan, LangUpdateSummary};
@@ -38,13 +39,14 @@ pub use import::{
 };
 pub use rimloc_domain::{DiffOutput, HealthIssue, HealthReport};
 pub use scan::{
-    autodiscover_defs_context, scan_defs_with_meta, scan_units, scan_units_auto,
-    scan_units_with_defs, scan_units_with_defs_and_dict, scan_units_with_defs_and_fields,
-    AutoDefsContext,
+    autodiscover_defs_context, scan_defs_with_meta, scan_patches_as_units, scan_units,
+    scan_units_auto, scan_units_with_defs, scan_units_with_defs_and_dict,
+    scan_units_with_defs_and_fields, AutoDefsContext,
 };
 pub use util::is_under_languages_dir;
+pub use validate::validate_placeholders_cross_language;
+pub use validate::{validate_lists_cross_language, validate_orphans_cross_language};
 pub use validate::{
     validate_under_root, validate_under_root_with_defs, validate_under_root_with_defs_and_dict,
     validate_under_root_with_defs_and_fields,
 };
-pub use validate::validate_placeholders_cross_language;

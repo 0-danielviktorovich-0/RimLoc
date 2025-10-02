@@ -380,8 +380,12 @@ async function handleScan(saveMode) {
     defs_dicts: (($("scan-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
     type_schema: val("scan-type-schema") || null,
     keyed_nested: isChecked("scan-keyed-nested"),
+    parallel: isChecked("scan-parallel"),
     no_inherit: isChecked("scan-no-inherit"),
     with_plugins: isChecked("scan-with-plugins"),
+    with_patches: isChecked("scan-with-patches"),
+    patch_min_len: (function(){ const v = val("scan-patch-minlen"); return v ? Number(v) : null; })(),
+    patch_strict_xpath: isChecked("scan-patch-strict"),
   };
   debugLog("debug", `scan payload: ${JSON.stringify(payload)}`);
   if (saveMode === "json") {

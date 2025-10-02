@@ -129,7 +129,8 @@ pub fn run_diff_xml(
 
     // Apply flags to translation XML if requested
     if apply_flags {
-        let (f_cnt, u_cnt) = rimloc_services::apply_diff_flags(&scan_root, &trg_dir, &diff, backup)?;
+        let (f_cnt, u_cnt) =
+            rimloc_services::apply_diff_flags(&scan_root, &trg_dir, &diff, backup)?;
         crate::ui_out!("diffxml-flags-applied", fuzzy = f_cnt, unused = u_cnt);
         if strict && any_diff {
             color_eyre::eyre::bail!("diffxml-nonempty");
