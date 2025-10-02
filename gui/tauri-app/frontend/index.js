@@ -317,26 +317,40 @@ function renderScan(result) {
 }
 
 // --- TM suggestions ---
-window._tmMap = new Map();
+window._tmMap = new Map(); // by key (msgctxt)
+window._tmIdMap = new Map(); // by msgid -> Array of candidates
 
 async function handleLoadTM() {
   const baseline = val('preview-baseline-po') || null;
   const tm_roots = (($("preview-tm-roots")?.value || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean));
   const req = { baseline_po: baseline, tm_roots: tm_roots.length ? tm_roots : null };
-  const entries = await runAction(tr('tm_load') || 'Load TM…', () => tauriInvoke('load_tm', { req }));
-  const map = new Map();
-  for (const e of entries || []) { if (e && e.key && typeof e.value === 'string' && e.value.trim().length) { if (!map.has(e.key)) map.set(e.key, e.value); } }
-  window._tmMap = map;
-  showToast(`${tr('loaded') || 'Loaded'}: ${map.size} ${tr('entries')}`);
+  const bundle = await runAction(tr('tm_load') || 'Load TM…', () => tauriInvoke('load_tm', { req }));
+  const mapKey = new Map();
+  const mapId = new Map();
+  const byKey = bundle?.byKey || bundle?.by_key || [];
+  const byId = bundle?.byId || bundle?.by_id || [];
+  for (const e of byKey) {
+    if (e && e.key && typeof e.value === 'string' && e.value.trim().length && !mapKey.has(e.key)) mapKey.set(e.key, e.value);
+  }
+  for (const e of byId) {
+    if (!e || !e.key) continue; const id = e.key; const v = String(e.value||'').trim(); if (!v) continue;
+    if (!mapId.has(id)) mapId.set(id, []);
+    const arr = mapId.get(id); if (!arr.includes(v)) arr.push(v);
+  }
+  window._tmMap = mapKey; window._tmIdMap = mapId;
+  showToast(`${tr('loaded') || 'Loaded'}: ${mapKey.size} ${tr('entries')}`);
 }
 
-function showSuggestionForKey(key) {
+function showSuggestionForKey(key, enText) {
   const box = $("preview-suggestion"); if (!box) return;
   const btn = $("preview-apply-suggestion");
-  const val = window._tmMap ? window._tmMap.get(key) : null;
-  if (val) {
-    box.textContent = `${tr('suggestion') || 'Suggestion'}: ${val}`;
-    if (btn) btn.disabled = false, btn.dataset.suggestion = val;
+  const byKey = window._tmMap ? window._tmMap.get(key) : null;
+  const candidates = (window._tmIdMap && enText) ? (window._tmIdMap.get(enText) || []) : [];
+  const first = byKey || candidates[0] || '';
+  if (first) {
+    const tail = candidates.length > 1 ? ` (${tr('alternatives')||'alternatives'}: ${candidates.slice(0,3).join(' | ')})` : '';
+    box.textContent = `${tr('suggestion') || 'Suggestion'}: ${first}${tail}`;
+    if (btn) btn.disabled = false, btn.dataset.suggestion = first;
   } else {
     box.textContent = '';
     if (btn) btn.disabled = true, delete btn.dataset.suggestion;
@@ -399,8 +413,9 @@ function renderStrings(result) {
   if (!body || !box) return;
   body.textContent = '';
   if (!result || !Array.isArray(result.items)) { box.textContent = tr('strings_empty'); return; }
+  window._stringsData = result.items || [];
   for (const it of result.items.slice(0, 1000)) {
-    const tr = document.createElement('tr');
+    const tr = document.createElement('tr'); tr.dataset.path = it.path || '';
     const tdP = document.createElement('td'); tdP.textContent = it.path || '';
     const tdL = document.createElement('td'); tdL.textContent = String(it.line || '');
     const tdT = document.createElement('td'); tdT.textContent = it.text || '';
@@ -1500,6 +1515,7 @@ const I18N = {
     health_except: "Except categories",
     preview_title: "Preview EN → Target",
     preview_missing_only: "Missing only",
+    preview_only_suggestions: "Only with suggestions",
     // Scan table filter
     scan_only_patches: "Only Patches in table",
     strings_title: "Strings Inventory",
@@ -1746,6 +1762,7 @@ const I18N = {
     health_except: "Исключить категории",
     preview_title: "Предпросмотр EN → Целевой",
     preview_missing_only: "Только отсутствующие",
+    preview_only_suggestions: "Только с подсказками",
     // Scan table filter
     scan_only_patches: "Только Patches в таблице",
     strings_title: "Инвентаризация Strings",
@@ -2109,6 +2126,7 @@ function renderPreview(rows) {
   const data = collectByKey(units, srcDir, trgDir);
   const term = (val("preview-filter") || '').toLowerCase();
   const missingOnly = isChecked("preview-missing-only");
+  const onlySugg = isChecked("preview-only-suggestions");
   const onlyPhIssues = isChecked("preview-only-ph-issues");
   const onlyListIssues = isChecked("preview-only-list-issues");
   list.innerHTML = '';
@@ -2116,6 +2134,11 @@ function renderPreview(rows) {
   for (const r of data) {
     if (term && !r.key.toLowerCase().includes(term)) continue;
     if (missingOnly && r.en && r.trg) continue;
+    if (onlySugg) {
+      const hasByKey = !!(window._tmMap && window._tmMap.has(r.key));
+      const hasById = !!(window._tmIdMap && r.en && window._tmIdMap.get(r.en));
+      if (!hasByKey && !hasById) continue;
+    }
     // compute issues
     const phEn = extractPlaceholders(r.en||'');
     const phTr = extractPlaceholders(r.trg||'');
@@ -2125,7 +2148,8 @@ function renderPreview(rows) {
     if (onlyPhIssues && !phMismatch) continue;
     if (onlyListIssues && !listMismatch) continue;
     const tr = document.createElement('tr');
-    const badge = phMismatch? ' ⚠PH': (listMismatch? ' ⚠LI':'');
+    const hasSugg = (window._tmMap && window._tmMap.has(r.key)) || (window._tmIdMap && r.en && window._tmIdMap.get(r.en));
+    const badge = (hasSugg? ' ★':'') + (phMismatch? ' ⚠PH': (listMismatch? ' ⚠LI':''));
     tr.innerHTML = `<td>${escapeHtml(r.key)}${badge}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
     tr.addEventListener('click', () => {
       window._selectedKey = r.key;
@@ -2133,7 +2157,7 @@ function renderPreview(rows) {
       const ed = $("preview-target-edit"); if (ed) ed.value = r.trg || '';
       updatePreviewWarnings(r.en||'', ed?.value||'');
       // show TM suggestion
-      try { showSuggestionForKey(r.key); } catch {}
+      try { showSuggestionForKey(r.key, r.en||''); } catch {}
     });
     list.appendChild(tr); shown++;
     if (shown > 300) break;
@@ -2252,6 +2276,19 @@ const applySugg = $("preview-apply-suggestion"); if (applySugg) applySugg.addEve
 // Strings panel handlers
 const stringsRun = $("strings-run"); if (stringsRun) stringsRun.addEventListener('click', () => handleStrings());
 const stringsSave = $("strings-save"); if (stringsSave) stringsSave.addEventListener('click', () => handleStrings('json'));
+const stringsSaveCsv = $("strings-save-csv"); if (stringsSaveCsv) stringsSaveCsv.addEventListener('click', async () => {
+  const items = window._stringsData || []; if (!items.length) return showToast(tr('strings_empty'));
+  const path = await tauriDialog().save({ defaultPath: 'strings.csv' }); if (!path) return;
+  const esc = (s)=> '"'+String(s||'').replace(/"/g,'""')+'"';
+  let csv = 'path,line,text\n';
+  for (const it of items) { csv += `${esc(it.path)},${it.line},${esc(it.text)}\n`; }
+  await tauriInvoke('save_text_file', { path, content: csv });
+  showToast(`${tr('saved')}: ${path}`);
+});
+const stringsTbody = $("strings-table-body"); if (stringsTbody) stringsTbody.addEventListener('click', async (e) => {
+  let tr = e.target; while (tr && tr.tagName !== 'TR') tr = tr.parentElement; if (!tr) return;
+  const p = tr.dataset.path; if (p) { try { await tauriInvoke('open_path', { path: p }); } catch(err) { showError(err); } }
+});
 
 // --- Helper: placeholder extraction and warnings ---
 function extractPlaceholders(s) {

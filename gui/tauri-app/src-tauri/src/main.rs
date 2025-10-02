@@ -1681,7 +1681,13 @@ struct LoadTmRequest {
 #[serde(rename_all = "camelCase")]
 struct TmEntry { key: String, value: String }
 
-fn parse_po_for_tm(path: &Path) -> Result<HashMap<String, String>, ApiError> {
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TmBundle { by_key: Vec<TmEntry>, by_id: Vec<TmEntry> }
+
+struct PoEntry { ctx: Option<String>, id: String, val: String }
+
+fn parse_po_entries(path: &Path) -> Result<Vec<PoEntry>, ApiError> {
     use std::io::BufRead;
     let file = std::fs::File::open(path).map_err(ApiError::from)?;
     let rdr = std::io::BufReader::new(file);
@@ -1691,14 +1697,12 @@ fn parse_po_for_tm(path: &Path) -> Result<HashMap<String, String>, ApiError> {
     let mut _reference: Option<String> = None;
     enum Mode { None, InId, InStr }
     let mut mode = Mode::None;
-    let mut out: HashMap<String, String> = HashMap::new();
-    let mut push = |ctx: &mut Option<String>, _id: &mut String, strv: &mut String, _reference: &mut Option<String>, out: &mut HashMap<String,String>| {
-        if let Some(k) = ctx.as_ref() {
-            if !k.is_empty() && !strv.trim().is_empty() {
-                out.entry(k.clone()).or_insert_with(|| std::mem::take(strv));
-            }
+    let mut out: Vec<PoEntry> = Vec::new();
+    let mut push = |ctx: &mut Option<String>, id: &mut String, strv: &mut String, _reference: &mut Option<String>, out: &mut Vec<PoEntry>| {
+        if !id.is_empty() || !strv.is_empty() || ctx.is_some() || _reference.is_some() {
+            out.push(PoEntry { ctx: ctx.clone(), id: std::mem::take(id), val: std::mem::take(strv) });
         }
-        *ctx = None; *_id = String::new(); *_reference = None;
+        *ctx = None; *_reference = None;
     };
     for line in rdr.lines() {
         let t = line.map_err(ApiError::from)?.trim().to_string();
@@ -1718,13 +1722,17 @@ fn parse_po_for_tm(path: &Path) -> Result<HashMap<String, String>, ApiError> {
 }
 
 #[tauri::command]
-fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Result<Vec<TmEntry>, ApiError> {
-    let mut map: HashMap<String, String> = HashMap::new();
+fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Result<TmBundle, ApiError> {
+    let mut by_key: HashMap<String, String> = HashMap::new();
+    let mut by_id: HashMap<String, Vec<String>> = HashMap::new();
     if let Some(p) = req.baseline_po.as_deref() {
         let abs = PathBuf::from(p);
         if abs.is_file() {
-            if let Ok(m) = parse_po_for_tm(&abs) {
-                for (k, v) in m { map.entry(k).or_insert(v); }
+            if let Ok(entries) = parse_po_entries(&abs) {
+                for e in entries {
+                    if let Some(ctx) = e.ctx.as_ref() { if !ctx.is_empty() && !e.val.trim().is_empty() { by_key.entry(ctx.clone()).or_insert(e.val.clone()); } }
+                    if !e.id.trim().is_empty() && !e.val.trim().is_empty() { by_id.entry(e.id.clone()).or_default().push(e.val.clone()); }
+                }
             }
         }
     }
@@ -1737,15 +1745,23 @@ fn load_tm(_window: Window, _state: State<LogState>, req: LoadTmRequest) -> Resu
                 if !p.is_file() { continue; }
                 let is_po = p.extension().and_then(|e| e.to_str()).map(|ext| ext.eq_ignore_ascii_case("po")).unwrap_or(false);
                 if !is_po { continue; }
-                if let Ok(m) = parse_po_for_tm(p) {
-                    for (k, v) in m { map.entry(k).or_insert(v); }
+                if let Ok(entries) = parse_po_entries(p) {
+                    for e in entries {
+                        if let Some(ctx) = e.ctx.as_ref() { if !ctx.is_empty() && !e.val.trim().is_empty() { by_key.entry(ctx.clone()).or_insert(e.val.clone()); } }
+                        if !e.id.trim().is_empty() && !e.val.trim().is_empty() {
+                            let arr = by_id.entry(e.id.clone()).or_default(); if !arr.contains(&e.val) { arr.push(e.val.clone()); }
+                        }
+                    }
                 }
             }
         }
     }
-    let mut vec: Vec<TmEntry> = map.into_iter().map(|(k, v)| TmEntry { key: k, value: v }).collect();
-    vec.sort_by(|a, b| a.key.cmp(&b.key));
-    Ok(vec)
+    let mut by_key_list: Vec<TmEntry> = by_key.into_iter().map(|(k, v)| TmEntry { key: k, value: v }).collect();
+    by_key_list.sort_by(|a, b| a.key.cmp(&b.key));
+    let mut by_id_list: Vec<TmEntry> = Vec::new();
+    for (k, arr) in by_id.into_iter() { for v in arr { by_id_list.push(TmEntry { key: k.clone(), value: v }); } }
+    by_id_list.sort_by(|a, b| a.key.cmp(&b.key));
+    Ok(TmBundle { by_key: by_key_list, by_id: by_id_list })
 }
 
 // --- Learn Patches (scan Patches/ texts) ---

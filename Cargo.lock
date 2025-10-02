@@ -1833,6 +1833,7 @@ dependencies = [
  "quick-xml",
  "regex",
  "reqwest",
+ "rimloc-config",
  "rimloc-core",
  "rimloc-domain",
  "rimloc-export-po",
