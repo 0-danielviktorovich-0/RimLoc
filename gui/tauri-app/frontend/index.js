@@ -314,6 +314,39 @@ function renderScan(result) {
   try { renderPreview(); } catch (_) {}
 }
 
+// --- TM suggestions ---
+window._tmMap = new Map();
+
+async function handleLoadTM() {
+  const baseline = val('preview-baseline-po') || null;
+  const tm_roots = (($("preview-tm-roots")?.value || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean));
+  const req = { baseline_po: baseline, tm_roots: tm_roots.length ? tm_roots : null };
+  const entries = await runAction(tr('tm_load') || 'Load TM…', () => tauriInvoke('load_tm', { req }));
+  const map = new Map();
+  for (const e of entries || []) { if (e && e.key && typeof e.value === 'string' && e.value.trim().length) { if (!map.has(e.key)) map.set(e.key, e.value); } }
+  window._tmMap = map;
+  showToast(`${tr('loaded') || 'Loaded'}: ${map.size} ${tr('entries')}`);
+}
+
+function showSuggestionForKey(key) {
+  const box = $("preview-suggestion"); if (!box) return;
+  const btn = $("preview-apply-suggestion");
+  const val = window._tmMap ? window._tmMap.get(key) : null;
+  if (val) {
+    box.textContent = `${tr('suggestion') || 'Suggestion'}: ${val}`;
+    if (btn) btn.disabled = false, btn.dataset.suggestion = val;
+  } else {
+    box.textContent = '';
+    if (btn) btn.disabled = true, delete btn.dataset.suggestion;
+  }
+}
+
+const pickPreviewBaseline = $("pick-preview-baseline"); if (pickPreviewBaseline) pickPreviewBaseline.addEventListener('click', async () => {
+  try { const selected = await tauriDialog().open({ multiple: false, filters: [{ name: 'PO', extensions: ['po'] }] }); if (selected) { $("preview-baseline-po").value = selected; } } catch (e) { showError(e); }
+});
+const loadTmBtn = $("preview-load-tm"); if (loadTmBtn) loadTmBtn.addEventListener('click', () => handleLoadTM());
+
+
 function makePathRow(label, path) {
   const wrapper = document.createElement("div");
   wrapper.className = "paths-row";
@@ -1368,6 +1401,12 @@ const I18N = {
     saving_json: "Saving JSON…",
     saving_csv: "Saving CSV…",
     saving_health: "Saving health…",
+    tm_load: "Load TM",
+    baseline_po: "Baseline PO (optional)",
+    suggestion: "Suggestion",
+    insert_suggestion: "Insert suggestion",
+    loaded: "Loaded",
+    inserted: "Inserted",
     scanning: "Scanning…",
     learning_defs: "Learning DefInjected…",
     exporting_po: "Exporting PO…",
@@ -1605,6 +1644,12 @@ const I18N = {
     saving_json: "Сохранение JSON…",
     saving_csv: "Сохранение CSV…",
     saving_health: "Сохранение отчёта…",
+    tm_load: "Загрузить TM",
+    baseline_po: "Базовый PO (опционально)",
+    suggestion: "Подсказка",
+    insert_suggestion: "Вставить подсказку",
+    loaded: "Загружено",
+    inserted: "Вставлено",
     scanning: "Сканирование…",
     learning_defs: "Обучение DefInjected…",
     exporting_po: "Экспорт PO…",
@@ -2043,6 +2088,8 @@ function renderPreview(rows) {
       renderEnHighlighted(r.en||'');
       const ed = $("preview-target-edit"); if (ed) ed.value = r.trg || '';
       updatePreviewWarnings(r.en||'', ed?.value||'');
+      // show TM suggestion
+      try { showSuggestionForKey(r.key); } catch {}
     });
     list.appendChild(tr); shown++;
     if (shown > 300) break;
@@ -2156,6 +2203,7 @@ async function applyPreviewEdit() {
 
 const applyBtn = $("preview-apply"); if (applyBtn) applyBtn.addEventListener('click', applyPreviewEdit);
 const openEdited = $("preview-open-edited"); if (openEdited) openEdited.addEventListener('click', async () => { const p = openEdited.dataset.path; if (p) { await tauriInvoke('open_path', { path: p }); } });
+const applySugg = $("preview-apply-suggestion"); if (applySugg) applySugg.addEventListener('click', () => { const s = applySugg.dataset.suggestion; if (!s) return; const ed = $("preview-target-edit"); if (ed) { ed.value = s; updatePreviewWarnings($("preview-en").textContent||'', s); showToast(tr('inserted') || 'Inserted'); } });
 
 // --- Helper: placeholder extraction and warnings ---
 function extractPlaceholders(s) {
