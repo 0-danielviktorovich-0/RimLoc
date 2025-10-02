@@ -30,6 +30,7 @@ Template (copy the sections you need):
 - [cli] New `annotate` command: add/remove source-text comments in translation XML; supports dry-run and backups (#PR)
 - [cli] New `xml-health` command: scans XML files under Languages/ for structural/read errors (text/json) (#PR)
 - [cli] New `init` command: generate translation skeleton under `Languages/<target>` with empty values (text/dry-run/overwrite) (#PR)
+- [services/plugins] Built-in ModSettingsFramework plugin: extracts `<id>` label/tooltip from `Patches/` operations into Keyed units (#PR)
 
 ### Fixed
 - [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
@@ -42,8 +43,8 @@ Template (copy the sections you need):
 - [services/learn] Generate EN: comments alongside suggested DefInjected entries to help translators (#PR)
 - [parsers-xml/assets] Expand `defs_fields.json` with common fields from Core/popular mods; add handle-hinted list paths (e.g., `ingredients.li{h}.label`, `degreeDatas.li{h}.description`, `SoundDef.subSounds.li{h}.name`) (#PR)
 - [cli/scan] Add `--no-inherit` to disable ParentName inheritance when scanning Defs (for strict modes) (#PR)
- - [parsers-xml] Parallelize Keyed/DefInjected scan (env `RIMLOC_PARALLEL=1` or `--parallel`); deterministic order preserved (#PR)
- - [validate] Report cross-file duplicates as `duplicate-global` with file list summary (#PR)
+- [parsers-xml] Parallelize Keyed/DefInjected scan (env `RIMLOC_PARALLEL=1` or `--parallel`); deterministic order preserved (#PR)
+- [validate] Report cross-file duplicates as `duplicate-global` with file list summary (#PR)
 
 ### Docs
 - [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
