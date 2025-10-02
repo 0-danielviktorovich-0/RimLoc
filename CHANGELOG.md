@@ -14,6 +14,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [cli] `coverage` command to report translated/missing counts (text/json).
 - [export/import-xliff] Minimal XLIFF 1.2 exporter/importer crates and CLI (`export-xliff`, `import-xliff`).
 - [gui/tauri] Backend commands to load/list dynamic parser plugins (for future UI hookup).
+- [parsers-xml] New `read_keyed_file_map(_with_comments)` API: robust Keyed reader with `<li>`/`<LineBreak/>`/CDATA and optional EN: comment override.
 
 ### Changed
 - [services/scan] Optionally merge fuzzy candidates; deterministic sort preserved.
