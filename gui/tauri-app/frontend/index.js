@@ -286,7 +286,9 @@ function renderScan(result) {
   rows.forEach((unit) => {
     const tr = document.createElement("tr");
     const key = document.createElement("td");
-    key.textContent = unit.key;
+    // Mark keys that have TM suggestions
+    const hasSugg = (window._tmMap && window._tmMap.size && window._tmMap.has(unit.key));
+    key.textContent = hasSugg ? `${unit.key} ★` : unit.key;
     const kind = document.createElement("td");
     kind.textContent = typeof unit.kind === "string" ? unit.kind : JSON.stringify(unit.kind);
     const source = document.createElement("td");
@@ -346,6 +348,15 @@ const pickPreviewBaseline = $("pick-preview-baseline"); if (pickPreviewBaseline)
 });
 const loadTmBtn = $("preview-load-tm"); if (loadTmBtn) loadTmBtn.addEventListener('click', () => handleLoadTM());
 
+// Hotkey: insert suggestion (Ctrl/Cmd+I)
+const targEdit = $("preview-target-edit"); if (targEdit) targEdit.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'i')) {
+    const btn = $("preview-apply-suggestion"); const s = btn?.dataset?.suggestion; if (s) {
+      e.preventDefault(); targEdit.value = s; updatePreviewWarnings($("preview-en").textContent||'', s); showToast(tr('inserted')||'Inserted');
+    }
+  }
+});
+
 
 function makePathRow(label, path) {
   const wrapper = document.createElement("div");
@@ -380,6 +391,33 @@ function renderLearn(result) {
   container.appendChild(paths);
   $("learn-open-out").disabled = false;
   debugLog("info", `Learn completed. Accepted ${result.accepted} / ${result.candidates}`);
+}
+
+// --- Strings Inventory ---
+function renderStrings(result) {
+  const body = $("strings-table-body"); const box = $("strings-result");
+  if (!body || !box) return;
+  body.textContent = '';
+  if (!result || !Array.isArray(result.items)) { box.textContent = tr('strings_empty'); return; }
+  for (const it of result.items.slice(0, 1000)) {
+    const tr = document.createElement('tr');
+    const tdP = document.createElement('td'); tdP.textContent = it.path || '';
+    const tdL = document.createElement('td'); tdL.textContent = String(it.line || '');
+    const tdT = document.createElement('td'); tdT.textContent = it.text || '';
+    tr.append(tdP, tdL, tdT); body.appendChild(tr);
+  }
+  box.textContent = `${tr('found')}: ${result.total || 0}`;
+}
+
+async function handleStrings(saveMode) {
+  const root = val('mod-root'); if (!root) return showToast(tr('select_mod_root_first'), true);
+  const req = { root, game_version: val('game-version')||null, include_all_versions: isChecked('scan-all-versions'), lang_dir: val('strings-lang-dir')||null };
+  if (saveMode === 'json') {
+    const path = await tauriDialog().save({ defaultPath: `${root.replace(/\\/g,'/')}/_learn/strings.json` }); if (!path) return;
+    req.out_json = path; await runAction(tr('saving_json'), () => tauriInvoke('scan_strings_gui', { request: req })); showToast(`${tr('saved')}: ${path}`); return;
+  }
+  const res = await runAction(tr('scanning'), () => tauriInvoke('scan_strings_gui', { request: req }));
+  renderStrings(res);
 }
 
 function renderExport(result) {
@@ -1464,6 +1502,9 @@ const I18N = {
     preview_missing_only: "Missing only",
     // Scan table filter
     scan_only_patches: "Only Patches in table",
+    strings_title: "Strings Inventory",
+    strings_run: "Run",
+    strings_empty: "No strings yet.",
     import_title: "Import PO → XML",
     import_run: "Import PO",
     po_file: "PO file",
@@ -1707,6 +1748,9 @@ const I18N = {
     preview_missing_only: "Только отсутствующие",
     // Scan table filter
     scan_only_patches: "Только Patches в таблице",
+    strings_title: "Инвентаризация Strings",
+    strings_run: "Показать",
+    strings_empty: "Ещё нет данных по Strings.",
     import_title: "Импорт PO → XML",
     import_run: "Импортировать PO",
     po_file: "Файл PO",
@@ -2204,6 +2248,10 @@ async function applyPreviewEdit() {
 const applyBtn = $("preview-apply"); if (applyBtn) applyBtn.addEventListener('click', applyPreviewEdit);
 const openEdited = $("preview-open-edited"); if (openEdited) openEdited.addEventListener('click', async () => { const p = openEdited.dataset.path; if (p) { await tauriInvoke('open_path', { path: p }); } });
 const applySugg = $("preview-apply-suggestion"); if (applySugg) applySugg.addEventListener('click', () => { const s = applySugg.dataset.suggestion; if (!s) return; const ed = $("preview-target-edit"); if (ed) { ed.value = s; updatePreviewWarnings($("preview-en").textContent||'', s); showToast(tr('inserted') || 'Inserted'); } });
+
+// Strings panel handlers
+const stringsRun = $("strings-run"); if (stringsRun) stringsRun.addEventListener('click', () => handleStrings());
+const stringsSave = $("strings-save"); if (stringsSave) stringsSave.addEventListener('click', () => handleStrings('json'));
 
 // --- Helper: placeholder extraction and warnings ---
 function extractPlaceholders(s) {

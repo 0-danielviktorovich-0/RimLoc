@@ -82,7 +82,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
-                        message: format!("Suspicious control chars: {}", codes.join(", ")),
+                        message: format!("Suspicious control chars: {} — Hint: remove hidden control characters (ZWSP/bi-di).", codes.join(", ")),
                     });
                 }
                 let mut placeholder_msg_emitted = false;
@@ -93,7 +93,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
-                        message: "Suspicious % placeholder".to_string(),
+                        message: "Suspicious % placeholder — Hint: use printf-like tokens (%s, %d) or escape '%%' as '%%'.".to_string(),
                     });
                     placeholder_msg_emitted = true;
                 }
@@ -148,7 +148,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
-                        message: msg.to_string(),
+                        message: format!("{} — Hint: ensure placeholders look like %s/%d or {{name}} and are balanced.", msg),
                     });
                     placeholder_msg_emitted = true;
                 }
@@ -162,7 +162,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
-                        message: "Placeholders present".to_string(),
+                        message: "Placeholders present — Hint: verify count and types match the source.".to_string(),
                     });
                 }
             }
