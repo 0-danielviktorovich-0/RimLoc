@@ -45,6 +45,9 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 zip = "0.6"
 tempfile = "3"
 
-[patch.crates-io]
-# Ensure the GUI's patched glib applies within the workspace
-glib = { path = "gui/tauri-app/src-tauri/vendor/glib-patched/glib-0.18.5" }
+# Note: a patched `glib` was previously applied at the workspace level
+# to work around a Linux-only issue in WebKitGTK builds. On macOS/Windows
+# the GTK stack is not in the dependency graph, which triggered Cargo
+# warnings about an unused patch. The patch is removed from the workspace
+# to avoid noise. If you need the patch for Linux packaging, add it
+# temporarily via `--config` or a target-specific workflow.
