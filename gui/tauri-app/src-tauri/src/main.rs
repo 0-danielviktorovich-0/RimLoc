@@ -10,6 +10,7 @@ use rimloc_services::{
     diff_xml, diff_xml_with_defs, lang_update, annotate_dry_run_plan, annotate_apply,
     make_init_plan, write_init_plan, import_po_to_mod_tree, validate_placeholders_cross_language,
 };
+use rimloc_services::plugins as svc_plugins;
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -236,6 +237,31 @@ fn emit_progress(window: &Window, state: &State<LogState>, action: &str, step: &
         append_log(&state.path, "DEBUG", &format!("[{}] {} {}%", action, step, pct.unwrap_or(0)));
         append_log(&state.path, "DEBUG", &msg);
     }
+}
+
+// --- Plugins ---
+#[derive(Debug, Deserialize)]
+struct LoadPluginRequest { path: String }
+
+#[derive(Debug, Serialize)]
+struct LoadPluginResponse { id: String }
+
+#[tauri::command]
+fn load_plugin_cmd(_window: Window, _state: State<LogState>, request: LoadPluginRequest) -> Result<LoadPluginResponse, ApiError> {
+    let p = PathBuf::from(&request.path);
+    svc_plugins::load_dynamic_plugin(&p).map_err(|e| ApiError { message: format!("{e}") })?;
+    // Return filename as id; registry stores Arc<dyn ParserPlugin> without direct IDs for dyn plugins
+    let id = p.file_name().and_then(|s| s.to_str()).unwrap_or("dyn").to_string();
+    Ok(LoadPluginResponse { id })
+}
+
+#[derive(Debug, Serialize)]
+struct ListPluginsResponse { ids: Vec<String> }
+
+#[tauri::command]
+fn list_plugins_cmd(_window: Window, _state: State<LogState>) -> Result<ListPluginsResponse, ApiError> {
+    let ids: Vec<String> = svc_plugins::iter().into_iter().map(|p| p.id().to_string()).collect();
+    Ok(ListPluginsResponse { ids })
 }
 
 fn write_profile(state: &State<LogState>, command: &str, start: std::time::Instant, extra: serde_json::Value) {
@@ -1981,6 +2007,8 @@ fn main() {
             ,apply_translation
             ,load_tm
             ,scan_strings_gui
+            ,load_plugin_cmd
+            ,list_plugins_cmd
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
