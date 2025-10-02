@@ -618,7 +618,9 @@ async function handleBuild() {
   try { console.log('Build result', result); } catch {}
   debugLog('info', `build done: files=${result.files}`);
   const box = $("build-result");
-  if (box) box.textContent = `${tr('built_to')}: ${result.outMod || result.out_mod}. ${tr('files')}: ${result.files}, Keys: ${result.totalKeys || result.total_keys || 0}`;
+  const outPath = result.outMod || result.out_mod;
+  if (box) box.textContent = `${tr('built_to')}: ${outPath}. ${tr('files')}: ${result.files}, Keys: ${result.totalKeys || result.total_keys || 0}`;
+  const openBtn = $("build-open-out"); if (openBtn) { openBtn.disabled = false; openBtn.dataset.path = outPath; }
   showToast(tr('build_complete'));
 }
 
@@ -878,6 +880,7 @@ function initEventHandlers() {
   if (pickBuildOut) pickBuildOut.addEventListener("click", pickDirectory("build-out"));
   const pickBuildFrom = document.querySelector('[data-action="pick-build-from-root"]');
   if (pickBuildFrom) pickBuildFrom.addEventListener("click", pickDirectory("build-from-root"));
+  const openBuildOut = $("build-open-out"); if (openBuildOut) openBuildOut.addEventListener('click', async () => { const p = openBuildOut.dataset.path; if (p) await tauriInvoke('open_path', { path: p }); });
 
   // Diff
   const diffRun = $("diff-run");
@@ -2025,7 +2028,7 @@ function renderPreview(rows) {
     tr.innerHTML = `<td>${escapeHtml(r.key)}${badge}</td><td>${escapeHtml(r.en)}</td><td>${escapeHtml(r.trg)}</td>`;
     tr.addEventListener('click', () => {
       window._selectedKey = r.key;
-      $("preview-en").textContent = r.en || '';
+      renderEnHighlighted(r.en||'');
       const ed = $("preview-target-edit"); if (ed) ed.value = r.trg || '';
       updatePreviewWarnings(r.en||'', ed?.value||'');
     });
@@ -2170,3 +2173,13 @@ function updatePreviewWarnings(en, trg) {
   box.textContent = lines.join('\n');
 }
 const editArea = $("preview-target-edit"); if (editArea) editArea.addEventListener('input', () => updatePreviewWarnings($("preview-en").textContent||'', editArea.value||''));
+
+function renderEnHighlighted(en) {
+  const box = $("preview-en"); if (!box) return;
+  let html = escapeHtml(en||'');
+  // highlight % and {name}
+  html = html.replace(/(%(?:\d+\$)?0?\d*[sdif])/g, '<mark class="ph">$1</mark>');
+  html = html.replace(/\{\s*([^{}\s]+)\s*\}/g, '<mark class="ph">{$1}</mark>');
+  // visualize <li> boundaries by splitting newlines (heuristic)
+  box.innerHTML = html;
+}

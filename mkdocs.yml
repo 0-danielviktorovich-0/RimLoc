@@ -76,7 +76,10 @@ nav:
       - Morph: cli/morph.md
       - Init: cli/init.md
       - Lang Update: cli/lang_update.md
-  - GUI: guide/gui.md
+  - GUI:
+      - Overview: guide/gui.md
+      - Preview & Edit (EN): guide/gui-preview.md
+      - Предпросмотр и редактор (RU): ru/guide/gui-preview.md
   - Formats & Concepts:
       - Configuration: guide/configuration.md
       - Placeholders: guide/placeholders.md
