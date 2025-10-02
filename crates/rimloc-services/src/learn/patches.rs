@@ -216,6 +216,7 @@ pub(crate) fn infer_definj_from_xpath_mode(
 }
 
 // Backward-compatible helper used by tests
+#[allow(dead_code)]
 fn infer_definj_from_xpath(xpath: &str, tag_path: &str) -> Option<InferredDefInjected> {
     infer_definj_from_xpath_mode(xpath, tag_path, false)
 }
