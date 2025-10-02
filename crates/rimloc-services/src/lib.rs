@@ -16,6 +16,7 @@ pub mod plugins_xml_ext;
 pub mod plugins_json;
 pub mod plugins_yaml;
 pub mod scan;
+pub mod keyed_merge;
 mod util;
 pub mod validate;
 

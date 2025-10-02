@@ -438,6 +438,22 @@ enum Commands {
         fuzzy: bool,
     },
 
+    /// Merge Keyed: English → target Keyed with EN comments and UNUSED block.
+    MergeKeyed {
+        /// Path to mod root.
+        #[arg(short, long)]
+        root: PathBuf,
+        /// Source language folder (default: English)
+        #[arg(long, default_value = "English")]
+        source_lang_dir: String,
+        /// Target language folder (e.g., Russian)
+        #[arg(long)]
+        target_lang_dir: String,
+        /// Output directory to write merged Keyed (if omitted, write into Languages/<target>/Keyed)
+        #[arg(long)]
+        out_dir: Option<PathBuf>,
+    },
+
     /// Validate strings and report issues (help localized via FTL).
     Validate {
         #[arg(short, long)]
@@ -998,6 +1014,13 @@ impl Runnable for Commands {
                 fuzzy,
             ),
             Commands::Schema { out_dir } => commands::schema::run_schema(out_dir),
+
+            Commands::MergeKeyed { root, source_lang_dir, target_lang_dir, out_dir } => {
+                let stats = rimloc_services::keyed_merge::merge_keyed(&root, &source_lang_dir, &target_lang_dir, out_dir.as_deref())?;
+                if use_color { use owo_colors::OwoColorize; println!("{} merge-keyed: files={}, keys={}, reused={}, unused={}", "✔".green(), stats.files, stats.keys_total, stats.reused, stats.unused); }
+                else { println!("merge-keyed: files={}, keys={}, reused={}, unused={}", stats.files, stats.keys_total, stats.reused, stats.unused); }
+                Ok(())
+            }
 
             Commands::Validate {
                 root,
