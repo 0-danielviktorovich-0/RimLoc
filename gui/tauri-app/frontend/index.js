@@ -469,6 +469,7 @@ async function handleScan(saveMode) {
     include_all_versions: isChecked("scan-all-versions"),
     source_lang: val("source-lang") || null,
     source_lang_dir: null,
+    use_en_comments: (isChecked("scan-use-comments") ? (val("scan-comments-prefix") || "EN:") : null),
     defs_root: val("scan-defs-root") || null,
     extra_fields: (val("scan-extra-fields") || "").split(',').map(s => s.trim()).filter(Boolean),
     defs_dicts: (($("scan-defs-dicts")?.value||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean)),
@@ -2205,6 +2206,24 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast(`${tr('saved')}: ${path}`);
 });
 
+// Diff save TXT reports
+const diffSaveTxt = $("diff-save-txt"); if (diffSaveTxt) diffSaveTxt.addEventListener("click", async () => {
+  const root = val("mod-root"); if (!root) return showToast(tr('select_mod_root_first'), true);
+  const dir = await tauriDialog().open({ directory: true, multiple: false, defaultPath: `${root.replace(/\\/g,'/')}/_learn/diff_txt` });
+  if (!dir) return;
+  const payload = {
+    root,
+    game_version: val("game-version") || null,
+    source_lang_dir: val("diff-source-lang-dir") || "English",
+    target_lang_dir: val("diff-target-lang-dir") || "Russian",
+    defs_root: val("diff-defs-root") || null,
+    baseline_po: val("diff-po") || null,
+    out_dir: dir,
+  };
+  await runAction('Saving TXT…', () => tauriInvoke("diff_xml_cmd", { request: payload }));
+  showToast(`${tr('saved')}: ${dir}`);
+});
+
 // === Preview panel ===
 function collectByKey(units, sourceLangDir, targetLangDir) {
   const map = new Map();
@@ -2434,7 +2453,8 @@ function renderEnHighlighted(en) {
   // highlight % and {name}
   html = html.replace(/(%(?:\d+\$)?0?\d*[sdif])/g, '<mark class="ph">$1</mark>');
   html = html.replace(/\{\s*([^{}\s]+)\s*\}/g, '<mark class="ph">{$1}</mark>');
-  // visualize <li> boundaries by splitting newlines (heuristic)
+  // visualize list item boundaries via newline markers (heuristic)
+  html = html.replace(/\n/g, '<span class="li-marker">⏎</span>\n');
   box.innerHTML = html;
 }
     coverage_title: "Coverage",

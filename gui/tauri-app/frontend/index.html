@@ -250,6 +250,14 @@
             <span data-i18n="scan_fuzzy">Fuzzy from Defs</span>
           </label>
           <label>
+            <input id="scan-use-comments" type="checkbox" />
+            <span>Use EN comments</span>
+          </label>
+          <label>
+            <span>Comments prefix</span>
+            <input id="scan-comments-prefix" type="text" value="EN:" />
+          </label>
+          <label>
             <input id="scan-parallel" type="checkbox" />
             <span>Parallel</span>
           </label>
@@ -788,6 +796,7 @@
           <div class="actions">
             <button type="button" id="diff-run" data-i18n="diff_run">Run diff</button>
             <button type="button" id="diff-save" data-i18n="save_report">Save report…</button>
+            <button type="button" id="diff-save-txt">Save TXT reports…</button>
           </div>
         </div>
         <div class="field-grid">

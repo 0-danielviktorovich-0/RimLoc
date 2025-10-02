@@ -266,6 +266,45 @@ pub fn scan_patches_as_units(
     Ok(out)
 }
 
+/// Override Keyed unit values with preceding XML comments that match a prefix (e.g., "EN:")
+/// for files under `Languages/<lang_dir>/Keyed/`. Returns number of overrides applied.
+pub fn override_keyed_units_from_comments(
+    units: &mut [TransUnit],
+    lang_dir: &str,
+    prefix: &str,
+) -> Result<usize> {
+    use std::collections::BTreeMap;
+    let mut applied = 0usize;
+    let mut cache: HashMap<PathBuf, BTreeMap<String, String>> = HashMap::new();
+    for u in units.iter_mut() {
+        let path_str = u.path.to_string_lossy();
+        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+            continue;
+        }
+        if !(path_str.contains("/Keyed/") || path_str.contains("\\Keyed\\")) {
+            continue;
+        }
+        if !crate::util::is_under_languages_dir(&u.path, lang_dir) {
+            continue;
+        }
+        let map = match cache.get(&u.path) {
+            Some(m) => m,
+            None => {
+                let m =
+                    rimloc_parsers_xml::read_keyed_file_map_with_comments(&u.path, Some(prefix))
+                        .unwrap_or_default();
+                cache.insert(u.path.clone(), m);
+                cache.get(&u.path).unwrap()
+            }
+        };
+        if let Some(val) = map.get(&u.key) {
+            u.source = Some(val.clone());
+            applied += 1;
+        }
+    }
+    Ok(applied)
+}
+
 /// Scan a RimWorld mod folder and return discovered translation units.
 /// This wraps `rimloc_parsers_xml::scan_keyed_xml` to provide a stable entrypoint
 /// for higher-level clients (CLI, GUI, LSP) without importing parser crates.

@@ -435,6 +435,9 @@ enum Commands {
         /// Source language folder name (e.g., "English"). Takes precedence.
         #[arg(long)]
         source_lang_dir: Option<String>,
+        /// Use preceding XML comments as EN source for Keyed (optional prefix, default: EN:)
+        #[arg(long = "use-en-comments", num_args = 0..=1, default_missing_value = "EN:")]
+        use_en_comments: Option<String>,
         /// Optional path to Defs directory; if set, Defs are scanned only under this path.
         #[arg(long)]
         defs_dir: Option<PathBuf>,
@@ -1065,6 +1068,7 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                use_en_comments,
                 defs_dir,
                 defs_field,
                 defs_dict,
@@ -1087,6 +1091,7 @@ impl Runnable for Commands {
                 lang,
                 source_lang,
                 source_lang_dir,
+                use_en_comments,
                 defs_dir,
                 defs_field,
                 defs_dict,
