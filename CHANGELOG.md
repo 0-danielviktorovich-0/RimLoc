@@ -42,6 +42,8 @@ Template (copy the sections you need):
 - [services/learn] Generate EN: comments alongside suggested DefInjected entries to help translators (#PR)
 - [parsers-xml/assets] Expand `defs_fields.json` with common fields from Core/popular mods; add handle-hinted list paths (e.g., `ingredients.li{h}.label`, `degreeDatas.li{h}.description`, `SoundDef.subSounds.li{h}.name`) (#PR)
 - [cli/scan] Add `--no-inherit` to disable ParentName inheritance when scanning Defs (for strict modes) (#PR)
+ - [parsers-xml] Parallelize Keyed/DefInjected scan (env `RIMLOC_PARALLEL=1` or `--parallel`); deterministic order preserved (#PR)
+ - [validate] Report cross-file duplicates as `duplicate-global` with file list summary (#PR)
 
 ### Docs
 - [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
