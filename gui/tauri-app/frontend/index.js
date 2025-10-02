@@ -624,11 +624,36 @@ function renderValidate(result) {
   const summary = document.createElement("p");
   summary.textContent = `Total: ${result.total}, errors: ${result.errors}, warnings: ${result.warnings}, info: ${result.infos}`;
   box.appendChild(summary);
-  const pre = document.createElement("pre");
-  pre.className = 'scroll-code';
-  const lines = (result.messages || []).slice(0, 500).map(m => `${(m.kind||'').toUpperCase()} ${m.path}${m.line?':'+m.line:''}: ${m.key} – ${m.message}`);
-  pre.textContent = lines.join("\n");
-  box.appendChild(pre);
+
+  // Build a simple table with clickable paths
+  const tblWrap = document.createElement('div');
+  tblWrap.className = 'table-wrapper';
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr><th>Kind</th><th>Key</th><th>Message</th><th>Path</th><th></th></tr>`;
+  tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  const rows = (result.messages || []).slice(0, 500);
+  for (const m of rows) {
+    const trEl = document.createElement('tr');
+    const kind = document.createElement('td'); kind.textContent = (m.kind||'');
+    const key = document.createElement('td'); key.textContent = (m.key||'');
+    const msg = document.createElement('td'); msg.textContent = (m.message||'');
+    const loc = document.createElement('td'); loc.textContent = `${m.path||''}${m.line?':'+m.line:''}`;
+    const act = document.createElement('td');
+    const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = 'Open';
+    btn.dataset.path = m.path || '';
+    btn.addEventListener('click', () => { if (btn.dataset.path) tauriInvoke('open_path', { path: btn.dataset.path }); });
+    act.appendChild(btn);
+    trEl.append(kind, key, msg, loc, act);
+    // style hints
+    if ((m.kind||'') === 'placeholder-check') trEl.style.background = 'rgba(255, 230, 150, 0.3)';
+    if ((m.kind||'') === 'duplicate' || (m.kind||'') === 'duplicate-global') trEl.style.background = 'rgba(255, 200, 200, 0.3)';
+    tbody.appendChild(trEl);
+  }
+  tbl.appendChild(tbody);
+  tblWrap.appendChild(tbl);
+  box.appendChild(tblWrap);
 }
 
 async function handleHealth() {
