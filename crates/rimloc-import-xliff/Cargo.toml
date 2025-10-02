@@ -1,0 +1,10 @@
+[package]
+name = "rimloc-import-xliff"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+color-eyre = "0.6"
+quick-xml = "0.36"
+rimloc-import-po = { path = "../rimloc-import-po" }
+

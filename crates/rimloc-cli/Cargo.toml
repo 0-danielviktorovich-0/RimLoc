@@ -36,6 +36,8 @@ rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 rimloc-services = { version = "0.1.0", path = "../rimloc-services" }
 rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
 rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
+rimloc-export-xliff = { version = "0.1.0", path = "../rimloc-export-xliff" }
+rimloc-import-xliff = { version = "0.1.0", path = "../rimloc-import-xliff" }
 schemars = { workspace = true }
 regex = "1"
 quick-xml = "0.36"
