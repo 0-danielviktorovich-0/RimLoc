@@ -24,7 +24,7 @@ serde = { version = "1", features = ["derive"] }
 roxmltree = { workspace = true }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 zip = { workspace = true }
-libloading = { version = "0.8" }
+libloading = { version = "0.9" }
 
 [dev-dependencies]
 tempfile = { workspace = true }
