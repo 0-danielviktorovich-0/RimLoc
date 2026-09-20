@@ -22,7 +22,7 @@ rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
 rimloc-export-csv = { path = "../../../crates/rimloc-export-csv" }
 rimloc-parsers-xml = { path = "../../../crates/rimloc-parsers-xml" }
 rimloc-export-po = { path = "../../../crates/rimloc-export-po" }
-schemars = "0.8"
+schemars = "1.0"
 color-eyre = "0.6"
 walkdir = "2"
 dirs = "5"
