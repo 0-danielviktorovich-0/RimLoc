@@ -43,7 +43,7 @@ jobs:
           SITE_URL: https://0-danielviktorovich-0.github.io/RimLoc/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
