@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-export-csv"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.70"
 description = "CSV exporter for RimLoc toolkit"
@@ -21,4 +21,4 @@ include = [
 [dependencies]
 csv = { workspace = true }
 color-eyre = { workspace = true }
-rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
+rimloc-core = { version = "0.1.1", path = "../rimloc-core" }

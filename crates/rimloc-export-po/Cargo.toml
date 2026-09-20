@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-export-po"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.70"
 description = "PO exporter for RimWorld mods (RimLoc toolkit)"
@@ -19,6 +19,6 @@ include = [
 
 [dependencies]
 color-eyre = { workspace = true }
-rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
+rimloc-core = { version = "0.1.1", path = "../rimloc-core" }
 tempfile = "3"
 regex = "1"

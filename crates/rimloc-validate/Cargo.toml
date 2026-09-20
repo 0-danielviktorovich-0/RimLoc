@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-validate"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.70"
 description = "Validation helpers for RimLoc to catch duplicates/placeholders issues"
@@ -19,5 +19,5 @@ include = [
 
 [dependencies]
 regex = "1"
-rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
+rimloc-core = { version = "0.1.1", path = "../rimloc-core" }
 color-eyre = { workspace = true }

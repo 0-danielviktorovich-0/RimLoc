@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-cli"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 rust-version = "1.70"
 build = "build.rs"
@@ -27,12 +27,12 @@ clap = { workspace = true }
 color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 walkdir = { workspace = true }
 owo-colors = "4"
-rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
-rimloc-parsers-xml = { version = "0.1.0", path = "../rimloc-parsers-xml" }
-rimloc-export-csv = { version = "0.1.0", path = "../rimloc-export-csv" }
-rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
-rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
-rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
+rimloc-core = { version = "0.1.1", path = "../rimloc-core" }
+rimloc-parsers-xml = { version = "0.1.1", path = "../rimloc-parsers-xml" }
+rimloc-export-csv = { version = "0.1.1", path = "../rimloc-export-csv" }
+rimloc-export-po = { version = "0.1.1", path = "../rimloc-export-po" }
+rimloc-validate = { version = "0.1.1", path = "../rimloc-validate" }
+rimloc-import-po = { version = "0.1.1", path = "../rimloc-import-po" }
 rimloc-services = { version = "0.1.0", path = "../rimloc-services" }
 rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
 rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
