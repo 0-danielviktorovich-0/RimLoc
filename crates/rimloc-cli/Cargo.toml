@@ -38,7 +38,7 @@ rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
 rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
 schemars = { workspace = true }
 regex = "1"
-quick-xml = "0.36"
+quick-xml = "0.42"
 reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 lru = "0.12"
 urlencoding = "2.1"
