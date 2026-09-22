@@ -33,6 +33,6 @@ Commands:
 Options:
       --no-color           Disable colored output
       --ui-lang <UI_LANG>  UI language code (e.g. en, ru, ja; defaults to system locale)
-      --quiet              Suppress startup banner and non-essential stdout messages (alias: --no-banner) [aliases: --no-banner]
+      --quiet              Suppress startup banner and non-essential stdout messages (alias: --no-banner) [alias: --no-banner]
   -h, --help               Print help
   -V, --version            Print version
