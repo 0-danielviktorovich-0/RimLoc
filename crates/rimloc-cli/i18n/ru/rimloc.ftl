@@ -264,3 +264,15 @@ translate-extracted = Извлечено строк источника: { $count
 translate-dryrun = Сухой прогон: юнитов { $units }, ~{ $batches } батчей; вызовов провайдера нет. Результат был бы в { $path }
 translate-po-saved = Переведённый PO сохранён в { $path }
 translate-summary = Переведено={ $translated }, с ошибками={ $failed }, уже готово={ $skipped }
+
+# compare
+help-compare-about = Сравнить переводы с источником и между собой
+help-compare-root = Путь к корню мода RimWorld
+help-compare-source-lang-dir = Каталог исходного языка (имя или полный путь)
+help-compare-set = Целевой набор в виде label=каталог (повторяемый)
+help-compare-glossary = JSON-глоссарий для метрик согласованности терминов
+help-compare-out-json = Сохранить JSON-отчёт в файл
+help-compare-out-md = Сохранить Markdown-отчёт в файл
+help-compare-format = Формат вывода в stdout: text | json
+compare-json-saved = JSON-отчёт сохранён в { $path }
+compare-md-saved = Markdown-отчёт сохранён в { $path }
