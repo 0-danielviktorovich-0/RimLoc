@@ -1,0 +1,479 @@
+{
+ "curated": [
+  {
+   "name": "Vanilla Weapons Expanded",
+   "packageId": "VanillaExpanded.VWE",
+   "description": "This mod introduces a comprehensive selection of over 30 new weapons spanning the Neolithic, Medieval, Industrial, and Spacer tech levels, seamlessly integrating into your RimWorld colony's arsenal. Each weapon has been carefully designed and balanced to ensure it aligns perfectly with the core game",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1814383360",
+   "languages": [
+    "Dutch",
+    "English",
+    "Japanese",
+    "Russian"
+   ],
+   "ru_files_top": 19,
+   "is_vanilla_expanded": true,
+   "languages_recursive": {
+    "Dutch": [
+     "Languages"
+    ],
+    "English": [
+     "Languages"
+    ],
+    "Japanese": [
+     "Languages"
+    ],
+    "Russian": [
+     "Languages"
+    ]
+   },
+   "russian_translation": [
+    {
+     "root": "Languages",
+     "files": 19
+    }
+   ],
+   "english_source": [
+    {
+     "root": "Languages",
+     "files": 1
+    }
+   ],
+   "load_folders": true,
+   "defs_roots": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "patch_files": 16,
+   "about_sha256": "c84288c650eaca4f4a31dc27f22e65a149edd259b4aefa97cdef598b71ab95dc",
+   "total_files": 560,
+   "known_special_features": []
+  },
+  {
+   "name": "Vanilla Furniture Expanded Russian Language Pack",
+   "packageId": "OW.RU.Furniture",
+   "description": "Перевод на русский язык мода Vanilla Furniture Expanded и всех модулей. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.04",
+   "modVersionIgnore": false,
+   "workshop_id": "2927850179",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": true,
+   "languages_recursive": {
+    "Russian": [
+     "1.6/Power/Languages",
+     "1.6/Factory_ACrafts/Languages",
+     "1.6/Factory_VBrewCaT/Languages",
+     "1.6/Security/Languages",
+     "1.6/Factory_Deserters/Languages",
+     "1.6/Factory_Genie/Languages",
+     "1.6/Factory_CookPlants/Languages",
+     "1.6/Security_Biotech/Languages",
+     "1.6/Security_Anomaly/Languages",
+     "1.6/Factory_ABiomes/Languages",
+     "1.6/Security_VWE_NonLethal/Languages",
+     "1.6/Spacer/Languages",
+     "1.6/Factory_Gravship/Languages",
+     "1.6/Factory_VGeneticsE/Languages",
+     "1.6/Architect/Languages",
+     "1.6/Factory_VCookE/Languages",
+     "1.6/Factory_Biotech/Languages",
+     "1.6/Factory_AAnimals/Languages",
+     "1.6/Factory_VPlantsEMore/Languages",
+     "1.6/Factory_Anomaly/Languages",
+     "1.6/Factory_VBrewE/Languages",
+     "1.6/Factory_Classical/Languages",
+     "1.6/Factory_CookOdyssey/Languages",
+     "1.6/Main/Languages",
+     "1.6/Factory_ABooks/Languages",
+     "1.6/Factory_Odyssey/Languages",
+     "1.6/Factory/Languages",
+     "1.6/Factory_MoreLabStuff/Languages",
+     "Languages",
+     "1.4/Power/Languages",
+     "1.4/Security/Languages",
+     "1.4/Art/Languages",
+     "1.4/Spacer/Languages",
+     "1.4/Architect/Languages",
+     "1.4/Medical/Languages",
+     "1.4/Farming/Languages",
+     "1.4/Production/Languages",
+     "1.4/Main/Languages",
+     "1.5/Power/Languages",
+     "1.5/Royalty/Languages",
+     "1.5/Security/Languages",
+     "1.5/Art/Languages",
+     "1.5/Ideology/Languages",
+     "1.5/Spacer/Languages",
+     "1.5/Architect/Languages",
+     "1.5/Medical/Languages",
+     "1.5/Farming/Languages",
+     "1.5/Production/Languages",
+     "1.5/Main/Languages"
+    ]
+   },
+   "russian_translation": [
+    {
+     "root": "1.6/Power/Languages",
+     "files": 10
+    },
+    {
+     "root": "1.6/Factory_ACrafts/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_VBrewCaT/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Security/Languages",
+     "files": 18
+    },
+    {
+     "root": "1.6/Factory_Deserters/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_Genie/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_CookPlants/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Security_Biotech/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Security_Anomaly/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_ABiomes/Languages",
+     "files": 3
+    },
+    {
+     "root": "1.6/Security_VWE_NonLethal/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Spacer/Languages",
+     "files": 11
+    },
+    {
+     "root": "1.6/Factory_Gravship/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_VGeneticsE/Languages",
+     "files": 2
+    },
+    {
+     "root": "1.6/Architect/Languages",
+     "files": 13
+    },
+    {
+     "root": "1.6/Factory_VCookE/Languages",
+     "files": 4
+    },
+    {
+     "root": "1.6/Factory_Biotech/Languages",
+     "files": 2
+    },
+    {
+     "root": "1.6/Factory_AAnimals/Languages",
+     "files": 3
+    },
+    {
+     "root": "1.6/Factory_VPlantsEMore/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_Anomaly/Languages",
+     "files": 3
+    },
+    {
+     "root": "1.6/Factory_VBrewE/Languages",
+     "files": 2
+    },
+    {
+     "root": "1.6/Factory_Classical/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_CookOdyssey/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Main/Languages",
+     "files": 25
+    },
+    {
+     "root": "1.6/Factory_ABooks/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.6/Factory_Odyssey/Languages",
+     "files": 3
+    },
+    {
+     "root": "1.6/Factory/Languages",
+     "files": 40
+    },
+    {
+     "root": "1.6/Factory_MoreLabStuff/Languages",
+     "files": 1
+    },
+    {
+     "root": "Languages",
+     "files": 5
+    },
+    {
+     "root": "1.4/Power/Languages",
+     "files": 10
+    },
+    {
+     "root": "1.4/Security/Languages",
+     "files": 28
+    },
+    {
+     "root": "1.4/Art/Languages",
+     "files": 9
+    },
+    {
+     "root": "1.4/Spacer/Languages",
+     "files": 9
+    },
+    {
+     "root": "1.4/Architect/Languages",
+     "files": 14
+    },
+    {
+     "root": "1.4/Medical/Languages",
+     "files": 4
+    },
+    {
+     "root": "1.4/Farming/Languages",
+     "files": 6
+    },
+    {
+     "root": "1.4/Production/Languages",
+     "files": 5
+    },
+    {
+     "root": "1.4/Main/Languages",
+     "files": 21
+    },
+    {
+     "root": "1.5/Power/Languages",
+     "files": 10
+    },
+    {
+     "root": "1.5/Royalty/Languages",
+     "files": 1
+    },
+    {
+     "root": "1.5/Security/Languages",
+     "files": 28
+    },
+    {
+     "root": "1.5/Art/Languages",
+     "files": 9
+    },
+    {
+     "root": "1.5/Ideology/Languages",
+     "files": 2
+    },
+    {
+     "root": "1.5/Spacer/Languages",
+     "files": 13
+    },
+    {
+     "root": "1.5/Architect/Languages",
+     "files": 13
+    },
+    {
+     "root": "1.5/Medical/Languages",
+     "files": 4
+    },
+    {
+     "root": "1.5/Farming/Languages",
+     "files": 6
+    },
+    {
+     "root": "1.5/Production/Languages",
+     "files": 5
+    },
+    {
+     "root": "1.5/Main/Languages",
+     "files": 27
+    }
+   ],
+   "english_source": [],
+   "load_folders": true,
+   "defs_roots": [],
+   "patch_files": 0,
+   "about_sha256": "2886e9e6ddfabdcc702453917cff6f99c97bf871cdc89b295ab2b2ed2fd13744",
+   "total_files": 387,
+   "known_special_features": [
+    "wordinfo"
+   ]
+  },
+  {
+   "name": "Vanilla Weapons Expanded Russian Language Pack",
+   "packageId": "OW.RU.Weapons",
+   "description": "Перевод на русский язык мода Vanilla Weapons Expanded и всех его модулей. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2126925929",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true,
+   "languages_recursive": {
+    "Russian": [
+     "LRR/Languages",
+     "BioferriteHW/Languages",
+     "Quickdraw/Languages",
+     "Achievements/Languages",
+     "Return/Languages",
+     "Laser_New/Languages",
+     "Common/Languages",
+     "Laser/Languages",
+     "Bioferrite/Languages",
+     "Makeshift/Languages",
+     "LRP/Languages",
+     "Settlers/Languages",
+     "Tribal/Languages",
+     "Lethal/Languages",
+     "Frontier/Languages",
+     "Heavy/Languages",
+     "Persona/Languages",
+     "Common_New/Languages",
+     "Grenades/Languages",
+     "Coilguns/Languages"
+    ]
+   },
+   "russian_translation": [
+    {
+     "root": "LRR/Languages",
+     "files": 4
+    },
+    {
+     "root": "BioferriteHW/Languages",
+     "files": 2
+    },
+    {
+     "root": "Quickdraw/Languages",
+     "files": 3
+    },
+    {
+     "root": "Achievements/Languages",
+     "files": 6
+    },
+    {
+     "root": "Return/Languages",
+     "files": 7
+    },
+    {
+     "root": "Laser_New/Languages",
+     "files": 8
+    },
+    {
+     "root": "Common/Languages",
+     "files": 16
+    },
+    {
+     "root": "Laser/Languages",
+     "files": 8
+    },
+    {
+     "root": "Bioferrite/Languages",
+     "files": 2
+    },
+    {
+     "root": "Makeshift/Languages",
+     "files": 3
+    },
+    {
+     "root": "LRP/Languages",
+     "files": 4
+    },
+    {
+     "root": "Settlers/Languages",
+     "files": 2
+    },
+    {
+     "root": "Tribal/Languages",
+     "files": 3
+    },
+    {
+     "root": "Lethal/Languages",
+     "files": 9
+    },
+    {
+     "root": "Frontier/Languages",
+     "files": 7
+    },
+    {
+     "root": "Heavy/Languages",
+     "files": 4
+    },
+    {
+     "root": "Persona/Languages",
+     "files": 3
+    },
+    {
+     "root": "Common_New/Languages",
+     "files": 18
+    },
+    {
+     "root": "Grenades/Languages",
+     "files": 2
+    },
+    {
+     "root": "Coilguns/Languages",
+     "files": 2
+    }
+   ],
+   "english_source": [],
+   "load_folders": true,
+   "defs_roots": [],
+   "patch_files": 0,
+   "about_sha256": "25eae42f0ce9cc9fe0ccd40746fc5bf02ba7f129f594f3dd134cb3d0074ed680",
+   "total_files": 118,
+   "known_special_features": []
+  }
+ ],
+ "reference": {
+  "vanilla_ru_tar": {
+   "path": "/Applications/RimWorld.app/Data/Core/Languages/Russian (Русский).tar",
+   "sha256": "aa6268c5ef0ab5b804d00a2fcce04631bd39af3639484c7b073f95667b83396a"
+  }
+ }
+}
