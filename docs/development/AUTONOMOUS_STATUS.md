@@ -4,7 +4,9 @@ Session: `zcode-rc-campaign` · Updated: 2026-09-23 (после Ф3) · **Не �
 Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stash diff, логи).
 
 ## Текущее состояние
-**Ф3 завершена. Следующая — Ф4 (архитектурный аудит + data-safety + observability), затем Ф5-имплементация гэпов из готовой матрицы.**
+**ИТЕРАЦИЯ 1 ЗАВЕРШЕНА** (Ф0–Ф6 + Ф9-acceptance + compare). CLI-пайплайн = RC-кандидат. Итоги: docs/development/FINAL_ACCEPTANCE.md.
+**СЛЕДУЮЩАЯ ИТЕРАЦИЯ (высший приоритет): Ф7 GUI** — Svelte 5 + TS бутстрап в gui/tauri-app: (1) frontend-v2 + vite + TS, (2) IPC-поверхность src-tauri ЗАМОРОЖЕНА — фронт ходит через существующие 38 команд, (3) экраны: мод-пикер → обзор проекта → редактор EN|RU (таблица, фильтры статусов, инлайн-правка, бейджи, LLM/TM-кнопки) → validate/diff/build/compare → провайдер-конфиг, (4) дизайн-проход скиллом ui-ux-pro-max, (5) tauri-driver E2E + полный GUI-джорни, (6) расщепление src-tauri/main.rs на command-модули при переносе.
+Затем: Ф8 бенчмарки → Ф10 формальные Pass A/B до чистых проходов → финальный отчёт → пуш по одобрению.
 
 ## Git (локальный main, AHEAD origin — не пушить)
 Коммиты кампании (сверху вниз):
