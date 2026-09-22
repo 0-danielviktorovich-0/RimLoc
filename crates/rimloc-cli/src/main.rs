@@ -1001,6 +1001,48 @@ enum Commands {
         only_diff: bool,
     },
 
+    /// Translate a mod via an LLM provider into a .po (help via FTL).
+    Translate {
+        /// Path to the RimWorld mod root
+        #[arg(long, short = 'r')]
+        root: PathBuf,
+        /// Provider: mock | anthropic | openai | zai | ollama
+        #[arg(long, default_value = "mock")]
+        provider: String,
+        /// Model name (defaults to the provider preset)
+        #[arg(long)]
+        model: Option<String>,
+        /// Base URL for OpenAI-compatible providers
+        #[arg(long)]
+        base_url: Option<String>,
+        /// Source language code
+        #[arg(long, default_value = "en")]
+        source_lang: String,
+        /// Target language code
+        #[arg(long, default_value = "ru")]
+        target_lang: String,
+        /// JSON glossary file {"en": "ru"} on top of the built-in one
+        #[arg(long)]
+        glossary: Option<PathBuf>,
+        /// Checkpoint file to resume interrupted translations
+        #[arg(long)]
+        checkpoint: Option<PathBuf>,
+        /// Output .po path
+        #[arg(long, default_value = "rimloc-translated.po")]
+        out_po: PathBuf,
+        /// Approximate character budget per batch
+        #[arg(long, default_value_t = 6000)]
+        batch_budget: usize,
+        /// Estimate scope only; no provider calls
+        #[arg(long, default_value_t = false)]
+        dry_run: bool,
+        /// Disable strict placeholder validation
+        #[arg(long, default_value_t = false)]
+        no_strict_placeholders: bool,
+        /// Env var name holding the API key (otherwise keychain/auto)
+        #[arg(long)]
+        key_env: Option<String>,
+    },
     /// Build a standalone translation mod from a .po file (help via FTL).
     BuildMod {
         #[arg(long)]
@@ -1494,6 +1536,35 @@ impl Runnable for Commands {
                 only_diff,
             ),
 
+            Commands::Translate {
+                root,
+                provider,
+                model,
+                base_url,
+                source_lang,
+                target_lang,
+                glossary,
+                checkpoint,
+                out_po,
+                batch_budget,
+                dry_run,
+                no_strict_placeholders,
+                key_env,
+            } => commands::translate::run_translate(
+                root,
+                provider,
+                model,
+                base_url,
+                source_lang,
+                target_lang,
+                glossary,
+                checkpoint,
+                out_po,
+                batch_budget,
+                dry_run,
+                no_strict_placeholders,
+                key_env,
+            ),
             Commands::BuildMod {
                 po,
                 out_mod,
