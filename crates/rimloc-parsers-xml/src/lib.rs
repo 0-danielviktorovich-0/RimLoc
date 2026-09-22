@@ -968,10 +968,7 @@ pub fn read_keyed_file_map_with_comments(
     comment_prefix: Option<&str>,
 ) -> CoreResult<BTreeMap<String, String>> {
     let mut map = BTreeMap::new();
-    let content = match fs::read_to_string(path) {
-        Ok(s) => s,
-        Err(e) => return Err(e.into()),
-    };
+    let content = fs::read_to_string(path)?;
     let mut reader = Reader::from_str(&content);
     reader.config_mut().trim_text(false);
     let mut buf = Vec::new();
@@ -1002,8 +999,8 @@ pub fn read_keyed_file_map_with_comments(
                     // Starting a top-level key under <LanguageData>
                     if let (Some(pref), Some(cmt)) = (prefix.as_deref(), pending_comment.take()) {
                         let trimmed = cmt.trim();
-                        if trimmed.starts_with(pref) {
-                            let val = trimmed[pref.len()..].trim().to_string();
+                        if let Some(rest) = trimmed.strip_prefix(pref) {
+                            let val = rest.trim().to_string();
                             if !val.is_empty() {
                                 fr.comment_override = Some(val);
                             }

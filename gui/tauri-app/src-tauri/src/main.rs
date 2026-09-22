@@ -785,7 +785,7 @@ fn scan_strings_gui(
             });
         }
     }
-    items.sort_by(|a, b| (a.path.clone(), a.line).cmp(&(b.path.clone(), b.line)));
+    items.sort_by_key(|a| (a.path.clone(), a.line));
     let saved_json = if let Some(path) = request.out_json.as_ref() {
         let path = make_absolute(&scan_root, Path::new(path));
         if let Some(parent) = path.parent() {
