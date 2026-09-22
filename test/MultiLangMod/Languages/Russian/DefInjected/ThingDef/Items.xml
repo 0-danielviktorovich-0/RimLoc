@@ -1,0 +1,6 @@
+<LanguageData>
+  <!-- EN: widget -->
+  <ML_Widget.label>виджет</ML_Widget.label>
+  <!-- EN: A widget used for translation regression tests. -->
+  <ML_Widget.description>Виджет для регрессионных тестов перевода.</ML_Widget.description>
+</LanguageData>

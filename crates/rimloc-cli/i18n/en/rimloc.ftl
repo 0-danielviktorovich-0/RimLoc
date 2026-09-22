@@ -214,7 +214,6 @@ help-diffxml-game-version = Game version folder to scan (e.g., 1.6 or v1.6); def
 help-diffxml-strict = Strict mode: return error if any difference is found
 
 diffxml-saved = Diff results saved to { $path }
-diffxml-summary = Diff summary: changed={ $changed }, only-in-translation={ $only_trg }, only-in-mod={ $only_src }
 
 # annotate
 help-annotate-about = Add or remove comments with original source text in translation XML files

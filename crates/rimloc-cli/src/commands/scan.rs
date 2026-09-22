@@ -243,10 +243,11 @@ pub fn run_scan(
     }
 
     let units = if let Some(dir) = source_lang_dir.clone() {
+        let dir = rimloc_services::normalize_lang_dir(&dir);
         let before = units.len();
         let mut filtered: Vec<_> = units
             .into_iter()
-            .filter(|u| is_source_for_lang_dir(&u.path, dir.as_str()))
+            .filter(|u| is_source_for_lang_dir(&u.path, &dir))
             .collect();
         filtered.sort_by(|a, b| {
             (
@@ -267,7 +268,7 @@ pub fn run_scan(
         let before = units.len();
         let mut filtered: Vec<_> = units
             .into_iter()
-            .filter(|u| is_source_for_lang_dir(&u.path, dir.as_str()))
+            .filter(|u| is_source_for_lang_dir(&u.path, &dir))
             .collect();
         filtered.sort_by(|a, b| {
             (
@@ -282,6 +283,29 @@ pub fn run_scan(
                 ))
         });
         tracing::info!(event = "scan_filtered_by_code", source_lang = %code, source_dir = %dir, before = before, after = filtered.len());
+        filtered
+    } else if let Some(dir) = lang.as_deref().map(rimloc_import_po::rimworld_lang_dir) {
+        // `--lang` filters the scan to one Languages/<dir> (English additionally
+        // includes Defs/* as the translation source). Without it, every language
+        // folder is collected and keys collide across translations.
+        let before = units.len();
+        let mut filtered: Vec<_> = units
+            .into_iter()
+            .filter(|u| is_source_for_lang_dir(&u.path, &dir))
+            .collect();
+        filtered.sort_by(|a, b| {
+            (
+                a.path.to_string_lossy(),
+                a.line.unwrap_or(0),
+                a.key.as_str(),
+            )
+                .cmp(&(
+                    b.path.to_string_lossy(),
+                    b.line.unwrap_or(0),
+                    b.key.as_str(),
+                ))
+        });
+        tracing::info!(event = "scan_filtered_by_lang", lang = %dir, before = before, after = filtered.len());
         filtered
     } else {
         units.sort_by(|a, b| {

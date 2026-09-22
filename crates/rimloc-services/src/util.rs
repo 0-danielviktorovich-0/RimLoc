@@ -16,6 +16,24 @@ pub fn is_under_languages_dir(path: &Path, lang_dir: &str) -> bool {
     false
 }
 
+/// Normalize a CLI language argument that may be either a bare directory
+/// name ("English") or a full path pointing at a language directory
+/// ("/path/to/mod/Languages/English") into the bare directory name used by
+/// `is_under_languages_dir`. Fixes coverage/validate receiving full paths.
+pub fn normalize_lang_dir(input: &str) -> String {
+    let t = input.trim();
+    if t.is_empty() {
+        return t.to_string();
+    }
+    let p = Path::new(t);
+    if t.contains('/') || t.contains('\\') || p.is_dir() || p.is_file() {
+        if let Some(name) = p.file_name().and_then(OsStr::to_str) {
+            return name.to_string();
+        }
+    }
+    t.to_string()
+}
+
 /// Return true if a path should be considered part of the source set for a given
 /// RimWorld language directory name. For English, treat both Languages/English and
 /// Defs as valid sources (since many mods omit English LanguageData and rely on Defs).

@@ -1773,3 +1773,108 @@ fn all_tr_keys_exist_in_en_ftl() {
         );
     }
 }
+
+// ---------------------------------------------------------------------------
+// Language scoping regressions (real-mod dogfood: VWE mixes NL/EN/JA/RU).
+// Fixture: test/MultiLangMod — same keys in English/Russian/Japanese + Defs.
+// ---------------------------------------------------------------------------
+
+fn scan_lang_json(root: &std::path::Path, args: &[&str]) -> Vec<(String, String)> {
+    // Returns (language-folder-or-Defs, key) pairs from scan --format json stdout.
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"])
+        .arg(root)
+        .args(args)
+        .args(["--format", "json"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let units: Vec<serde_json::Value> = serde_json::from_str(&out).expect("scan json");
+    units
+        .into_iter()
+        .map(|u| {
+            let path = u["path"].as_str().unwrap_or_default().to_string();
+            let scope = match path.split("/Languages/").nth(1) {
+                Some(rest) => rest.split('/').next().unwrap_or_default().to_string(),
+                None => "Defs".to_string(),
+            };
+            (scope, u["key"].as_str().unwrap_or_default().to_string())
+        })
+        .collect()
+}
+
+#[test]
+fn scan_lang_flag_filters_to_requested_language() {
+    let root = fixture("test/MultiLangMod");
+
+    let en = scan_lang_json(&root, &["--lang", "en"]);
+    assert!(
+        en.iter().all(|(scope, _)| scope == "English"),
+        "--lang en must collect only the English source set, got: {en:?}"
+    );
+    // Defs-derived strings surface under the English DefInjected target path;
+    // ML_Gadget exists only in Defs (no translation files), so its presence
+    // proves Defs were scanned on the English side.
+    assert!(
+        en.iter().any(|(_, key)| key == "ML_Gadget.description"),
+        "--lang en must include Defs-derived source strings"
+    );
+
+    let ru = scan_lang_json(&root, &["--lang", "ru"]);
+    assert!(
+        ru.iter().all(|(scope, _)| scope == "Russian"),
+        "--lang ru must collect only Russian folder, got: {ru:?}"
+    );
+    assert!(
+        !ru.iter().any(|(_, key)| key.starts_with("ML_Gadget")),
+        "--lang ru must not include untranslated Defs-only strings"
+    );
+}
+
+#[test]
+fn coverage_accepts_full_language_dir_paths() {
+    // Regression T6: full paths as --source-lang-dir/--target-lang-dir were
+    // compared as bare folder names, so coverage always reported 0.
+    let ws = workspace_root();
+    let root = ws.join("test/MultiLangMod");
+    let mut cmd = bin_cmd();
+    cmd.args(["coverage", "--root"])
+        .arg(&root)
+        .arg("--source-lang-dir")
+        .arg(root.join("Languages/English"))
+        .arg("--target-lang-dir")
+        .arg(root.join("Languages/Russian"));
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let line = out
+        .lines()
+        .find(|l| l.starts_with("Coverage:"))
+        .expect("coverage summary line");
+    // English side: Defs (label+description) + Keyed(2) + DefInjected(1) — at least 4 source keys
+    assert!(
+        line.contains("source="),
+        "unexpected coverage output: {line}"
+    );
+    assert!(
+        !line.contains("source=0"),
+        "coverage must be non-zero with full-path args: {line}"
+    );
+    assert!(
+        !line.contains("translated=0"),
+        "Russian translation must be recognized: {line}"
+    );
+}
+
+#[test]
+fn validate_does_not_flag_same_key_across_language_folders() {
+    // Regression T7: ML_Greeting exists in English, Russian and Japanese Keyed
+    // folders — that is normal RimWorld layout, not a duplicate.
+    let root = fixture("test/MultiLangMod");
+    let mut cmd = bin_cmd();
+    cmd.args(["validate", "--root"]).arg(&root);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    assert!(
+        !out.contains("duplicate-global"),
+        "same key across language folders must not be reported as duplicate-global: {out}"
+    );
+}

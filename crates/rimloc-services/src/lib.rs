@@ -48,6 +48,7 @@ pub use scan::{
     scan_units_with_defs_and_fields, AutoDefsContext,
 };
 pub use util::is_under_languages_dir;
+pub use util::normalize_lang_dir;
 pub use validate::validate_placeholders_cross_language;
 pub use validate::{validate_lists_cross_language, validate_orphans_cross_language};
 pub use validate::{

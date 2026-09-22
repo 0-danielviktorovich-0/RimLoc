@@ -15,3 +15,15 @@
 | T8 | P3 | DefInjected-сообщения validate имеют `:0` вместо номера строки | вывод validate | Линия из источника |
 
 Вывод: **основной сценарий «scan → coverage → validate» на реальном моде с несколькими языками не работает** (T5/T6) — это ядро P0, чинится до/вместе с безопасностью Ф2.
+
+## Статусы после фикса (2026-09-23)
+- **T5 FIXED**: `--lang` фильтрует скан на один Languages/<dir> (English дополнительно тянет Defs-строки под целевым путём). Регрессия: `scan_lang_flag_filters_to_requested_language` + фикстура MultiLangMod.
+- **T6 FIXED**: аргументы-каталоги нормализуются (полный путь → имя папки) в coverage и всех кросс-язычных проверках. VWE: source=370, translated=142 (38%). Регрессия: `coverage_accepts_full_language_dir_paths`.
+- **T7 FIXED**: (а) per-row validate целяется в перевод (--lang-dir/--lang/cfg.target_lang), а не в EN-источник через протечку конфига; (б) `duplicate-global` скоупится на языковую папку — один ключ в EN и RU больше не «дубликат». Регрессия: `validate_does_not_flag_same_key_across_language_folders`. Снапшот snapshot_validate_json обновлён (удалены 5 кросс-язычных false-positive).
+- **T1 FIXED**: дублирующийся Fluent-ключ `diffxml-summary` удалён из en+ru (паритет ключей сохранён).
+- **T2 NOT-A-BUG**: `--format json` без `--out-json` пишет в stdout (проверено на тёплом бинаре); первоначальная пустота — артефакт холодной компиляции.
+- **T3 NOT-A-BUG**: `--help` сабкоманд в stdout (проверено на тёплом бинаре).
+- T4: принято решение — дефолт (без флагов) остаётся «все языки», явная семантика через `--lang`/`--source-lang`; пересмотреть в контексте редактора GUI.
+- T8: отложено (P3, вместе с observability Ф4).
+
+Итог прогонов: cargo test --workspace — 79 passed / 0 failed; fmt clean; новых clippy-предупреждений нет.

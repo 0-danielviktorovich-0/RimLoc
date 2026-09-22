@@ -1,0 +1,7 @@
+<ModMetaData>
+  <name>MultiLang Mod</name>
+  <packageId>test.multilang</packageId>
+  <supportedVersions>
+    <li>1.5</li>
+  </supportedVersions>
+</ModMetaData>

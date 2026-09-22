@@ -162,7 +162,6 @@ help-diffxml-out-dir = Папка для записи txt-отчётов (Change
 help-diffxml-game-version = Папка версии игры для анализа (например, 1.6 или v1.6); по умолчанию выбирается самая новая
 help-diffxml-strict = Строгий режим: вернуть ошибку, если найдены отличия
 diffxml-saved = Результаты diff сохранены в { $path }
-diffxml-summary = Сводка diff: изменившиеся={ $changed }, только-в-переводе={ $only_trg }, только-в-моде={ $only_src }
 help-scan-use-en-comments = Использовать предшествующие XML‑комментарии как источник для Keyed (необязательный префикс; по умолчанию: "EN:")
 help-annotate-about = Добавлять или удалять комментарии с оригинальным текстом в переводных XML
 help-annotate-root = Путь к корню мода RimWorld

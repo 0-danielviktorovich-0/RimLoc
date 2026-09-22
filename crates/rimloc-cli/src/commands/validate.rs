@@ -109,10 +109,28 @@ pub fn run_validate(
     }
     let merged = rimloc_parsers_xml::merge_defs_dicts(&dicts);
 
+    // Per-row validation targets the translation: explicit --lang-dir / --lang,
+    // else the configured target language. The source language must not scope
+    // per-row checks (a config-set source leaked here and validated the English
+    // source instead of the translation); it only feeds cross-language checks.
+    let per_row_dir: Option<String> = target_lang_dir
+        .as_deref()
+        .map(rimloc_services::normalize_lang_dir)
+        .or_else(|| {
+            target_lang
+                .as_deref()
+                .map(rimloc_import_po::rimworld_lang_dir)
+        })
+        .or_else(|| {
+            cfg.target_lang
+                .as_deref()
+                .map(rimloc_import_po::rimworld_lang_dir)
+        });
+
     let mut msgs = rimloc_services::validate_under_root_with_defs_and_dict(
         &scan_root,
-        source_lang.as_deref().or(cfg.source_lang.as_deref()),
-        source_lang_dir.as_deref(),
+        None,
+        per_row_dir.as_deref(),
         defs_abs.as_deref(),
         &merged.0,
         &cli_defs_field,

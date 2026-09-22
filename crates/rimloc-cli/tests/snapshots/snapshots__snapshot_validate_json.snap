@@ -4,34 +4,10 @@ expression: v
 ---
 [
   {
-    "key": "Apparel_Parka.description",
-    "kind": "duplicate-global",
-    "line": 3,
-    "message": "Key appears in multiple files: /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml, /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/Spain/DefInjected/ThingDef/Apparel.xml",
-    "path": "<WS>/test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml",
-    "schema_version": 1
-  },
-  {
-    "key": "Apparel_Parka.label",
-    "kind": "duplicate-global",
-    "line": 2,
-    "message": "Key appears in multiple files: /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml, /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/Spain/DefInjected/ThingDef/Apparel.xml",
-    "path": "<WS>/test/TestMod/Languages/English/DefInjected/ThingDef/Apparel.xml",
-    "schema_version": 1
-  },
-  {
     "key": "DuplicateKey",
     "kind": "duplicate",
     "line": 2,
     "message": "Duplicate key in file",
-    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
-    "schema_version": 1
-  },
-  {
-    "key": "DuplicateKey",
-    "kind": "duplicate-global",
-    "line": 2,
-    "message": "Key appears in multiple files: /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/English/Keyed/Bad.xml, /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/Spain/Keyed/Bad.xml",
     "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
     "schema_version": 1
   },
@@ -48,14 +24,6 @@ expression: v
     "kind": "empty",
     "line": 4,
     "message": "Empty value",
-    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
-    "schema_version": 1
-  },
-  {
-    "key": "EmptyKey",
-    "kind": "duplicate-global",
-    "line": 4,
-    "message": "Key appears in multiple files: /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/English/Keyed/Bad.xml, /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/Spain/Keyed/Bad.xml",
     "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
     "schema_version": 1
   },
@@ -72,14 +40,6 @@ expression: v
     "kind": "placeholder-check",
     "line": 5,
     "message": "Placeholders present — Hint: verify count and types match the source.",
-    "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
-    "schema_version": 1
-  },
-  {
-    "key": "Placeholder",
-    "kind": "duplicate-global",
-    "line": 5,
-    "message": "Key appears in multiple files: /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/English/Keyed/Bad.xml, /Users/danielviktorovich/Developing/RimLoc/test/TestMod/Languages/Spain/Keyed/Bad.xml",
     "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
     "schema_version": 1
   },

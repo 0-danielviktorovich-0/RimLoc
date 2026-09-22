@@ -18,6 +18,13 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ### Changed
 - [services/scan] Optionally merge fuzzy candidates; deterministic sort preserved.
+- [cli/scan] `--lang` now filters the scan to a single `Languages/<dir>` (English additionally includes Defs-derived strings); previously the flag only affected the CSV column, so mods with several language folders produced mixed, colliding results.
+- [cli/validate] Per-row validation now targets the translation (`--lang-dir`, `--lang`, or config `target_lang`) instead of silently validating the English source picked up from config defaults.
+
+### Fixed
+- [services/validate] `duplicate-global` no longer reports the same key in different language folders (a translated Def is not a duplicate); duplicates are scoped per language folder.
+- [services/validate] `coverage` and cross-language checks accept full paths for language directory arguments (previously compared against bare folder names, so coverage always reported 0).
+- [cli/i18n] Removed duplicate Fluent key `diffxml-summary` that logged an ERROR on every CLI launch.
 
 <!--
 Template (copy the sections you need):

@@ -17,6 +17,8 @@ pub struct ValidationMessage {
 }
 
 /// Validator that reports duplicate keys per file using scanned TransUnits.
+type KeyFileEntries = Vec<(String, Option<usize>)>;
+
 pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     static RE_PCT: OnceLock<Regex> = OnceLock::new();
     static RE_BRACE_INNER: OnceLock<Regex> = OnceLock::new();
@@ -24,17 +26,22 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     let re_brace_inner = RE_BRACE_INNER.get_or_init(|| Regex::new(r"^\$?[A-Za-z0-9_]+$").unwrap());
 
     let mut by_file_key: HashMap<(String, String), Vec<Option<usize>>> = HashMap::new();
-    let mut by_key_files: HashMap<String, Vec<(String, Option<usize>)>> = HashMap::new();
+    let mut by_key_files: HashMap<(String, String), KeyFileEntries> = HashMap::new();
     for u in units {
         let path = u.path.to_string_lossy().to_string();
         by_file_key
-            .entry((path, u.key.clone()))
+            .entry((path.clone(), u.key.clone()))
             .or_default()
             .push(u.line);
+        // Cross-file duplicates are scoped per language folder: the same key in
+        // Languages/English and Languages/Russian is the same Def translated,
+        // not a duplicate. Only files within one scope (same language, or all
+        // outside Languages) are compared.
+        let scope = lang_scope_of(&path);
         by_key_files
-            .entry(u.key.clone())
+            .entry((scope, u.key.clone()))
             .or_default()
-            .push((u.path.to_string_lossy().to_string(), u.line));
+            .push((path, u.line));
     }
 
     // Report empty values
@@ -188,8 +195,8 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
         }
     }
 
-    // Cross-file duplicates: same key appears in multiple files under the scanned set
-    for (key, entries) in by_key_files {
+    // Cross-file duplicates: same key appears in multiple files of one scope
+    for ((_scope, key), entries) in by_key_files {
         // Normalize unique files
         use std::collections::BTreeSet;
         let mut files: BTreeSet<String> = BTreeSet::new();
@@ -216,6 +223,21 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     }
 
     Ok(msgs)
+}
+
+/// Duplicate-detection scope of a path: its Languages/<dir> folder name, or an
+/// empty scope for paths outside Languages (Defs and other source files).
+fn lang_scope_of(path: &str) -> String {
+    let mut comps = Path::new(path).components();
+    while let Some(c) = comps.next() {
+        if c.as_os_str().eq_ignore_ascii_case("Languages") {
+            if let Some(l) = comps.next() {
+                return l.as_os_str().to_string_lossy().to_string();
+            }
+            return String::new();
+        }
+    }
+    String::new()
 }
 
 /// Temporary minimalist scanner used by CLI integration tests that only
