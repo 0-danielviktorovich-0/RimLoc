@@ -284,6 +284,29 @@ struct LoadPluginResponse {
     id: String,
 }
 
+/// Paths from which dynamic scan plugins may be loaded from the UI.
+/// Plugin loading executes native code, so it is opt-in: the absolute library
+/// path must be listed in ~/.rimloc/plugins-allow.json as {"allow": ["…"]}.
+fn plugin_allowlist() -> Vec<PathBuf> {
+    let Some(home) = dirs::home_dir() else {
+        return Vec::new();
+    };
+    let cfg_path = home.join(".rimloc").join("plugins-allow.json");
+    let Ok(raw) = std::fs::read_to_string(cfg_path) else {
+        return Vec::new();
+    };
+    serde_json::from_str::<serde_json::Value>(&raw)
+        .ok()
+        .and_then(|v| v.get("allow").and_then(|a| a.as_array()).cloned())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|x| x.as_str())
+                .map(PathBuf::from)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 #[tauri::command]
 fn load_plugin_cmd(
     _window: Window,
@@ -291,6 +314,29 @@ fn load_plugin_cmd(
     request: LoadPluginRequest,
 ) -> Result<LoadPluginResponse, ApiError> {
     let p = PathBuf::from(&request.path);
+    let allowed_ext = p
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| matches!(e, "dylib" | "so" | "dll"))
+        .unwrap_or(false);
+    if !allowed_ext {
+        return Err(ApiError {
+            message: "Dynamic plugins must be .dylib/.so/.dll".into(),
+        });
+    }
+    let canon = p.canonicalize().map_err(|e| ApiError {
+        message: format!("Plugin path: {e}"),
+    })?;
+    if !plugin_allowlist().contains(&canon) {
+        return Err(ApiError {
+            message: format!(
+                "Plugin loading is disabled for this path. Native plugins execute code, so \
+                 each one must be allowlisted in ~/.rimloc/plugins-allow.json \
+                 ({{\"allow\": [\"{}\"]}}) and RimLoc restarted.",
+                canon.display()
+            ),
+        });
+    }
     svc_plugins::load_dynamic_plugin(&p).map_err(|e| ApiError {
         message: format!("{e}"),
     })?;
@@ -999,19 +1045,39 @@ struct CollectDiagRequest {
 }
 
 #[tauri::command]
-fn collect_diagnostics(
+fn collect_diagnostics_via_dialog(
+    window: Window,
     state: State<LogState>,
     req: CollectDiagRequest,
-) -> Result<String, ApiError> {
+) -> Result<Option<String>, ApiError> {
     let base = state
         .path
         .parent()
         .map(|p| p.to_path_buf())
         .unwrap_or_else(std::env::temp_dir);
-    let out = req
+    let default_path = req
         .out_path
-        .map(PathBuf::from)
-        .unwrap_or_else(|| base.join("diagnostics.txt"));
+        .unwrap_or_else(|| base.join("diagnostics.txt").display().to_string());
+    let mut builder = window.dialog().file();
+    let dp = PathBuf::from(&default_path);
+    if let Some(dir) = dp.parent() {
+        if dir.is_dir() {
+            builder = builder.set_directory(dir);
+        }
+    }
+    if let Some(name) = dp.file_name() {
+        builder = builder.set_file_name(name.to_string_lossy().to_string());
+    }
+    let Some(picked) = builder.blocking_save_file() else {
+        return Ok(None);
+    };
+    let out = PathBuf::from(picked.simplified().to_string());
+    let resolved = out.display().to_string();
+    write_diagnostics(&state, &out)?;
+    Ok(Some(resolved))
+}
+
+fn write_diagnostics(state: &LogState, out: &Path) -> Result<(), ApiError> {
     let mut buf = String::new();
     buf.push_str(&format!(
         "Diagnostics generated at: {}\n",
@@ -1037,8 +1103,8 @@ fn collect_diagnostics(
     if let Some(parent) = out.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
-    std::fs::write(&out, buf.as_bytes())?;
-    Ok(out.display().to_string())
+    std::fs::write(out, buf.as_bytes())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -3017,7 +3083,6 @@ fn main() {
     let _ = color_eyre::install();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             // Prepare log + profile paths
             let base = app
@@ -3067,12 +3132,12 @@ fn main() {
             init_lang_cmd,
             get_log_info,
             pick_directory,
-            save_text_file,
+            save_text_via_dialog,
             log_message,
             open_path,
             set_debug_options,
             get_diagnostics,
-            collect_diagnostics,
+            collect_diagnostics_via_dialog,
             simulate_error,
             simulate_panic,
             morph_cmd,
@@ -3122,33 +3187,52 @@ fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<Stri
     Ok(picked)
 }
 
+/// Save arbitrary text, but the destination is always confirmed by the user
+/// through the native save dialog opened on the Rust side. The WebView never
+/// supplies a writable path (an XSS could otherwise write anywhere).
 #[tauri::command]
-fn save_text_file(path: String, content: String) -> Result<String, ApiError> {
-    let p = PathBuf::from(path);
+fn save_text_via_dialog(
+    window: Window,
+    default_path: Option<String>,
+    content: String,
+) -> Result<Option<String>, ApiError> {
+    let mut builder = window.dialog().file();
+    if let Some(d) = default_path.as_deref() {
+        let pb = PathBuf::from(d);
+        if let Some(dir) = pb.parent() {
+            if dir.is_dir() {
+                builder = builder.set_directory(dir);
+            }
+        }
+        if let Some(name) = pb.file_name() {
+            builder = builder.set_file_name(name.to_string_lossy().to_string());
+        }
+    }
+    let Some(picked) = builder.blocking_save_file() else {
+        return Ok(None);
+    };
+    let p = PathBuf::from(picked.simplified().to_string());
     if let Some(parent) = p.parent() {
         std::fs::create_dir_all(parent)?;
     }
     std::fs::write(&p, content.as_bytes())?;
-    Ok(p.display().to_string())
+    Ok(Some(p.display().to_string()))
 }
 
 #[tauri::command]
 fn open_path(path: String) -> Result<(), ApiError> {
-    let p = PathBuf::from(path);
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open").arg(&p).spawn()?;
+    let p = PathBuf::from(&path);
+    // Never hand WebView-provided strings to a shell interpreter; `open` uses
+    // LaunchServices/ShellExecute/xdg-open directly, so path metacharacters are
+    // inert. Existence check keeps the command from being probed blindly.
+    if !p.exists() {
+        return Err(ApiError {
+            message: format!("Path does not exist: {path}"),
+        });
     }
-    #[cfg(target_os = "linux")]
-    {
-        std::process::Command::new("xdg-open").arg(&p).spawn()?;
-    }
-    #[cfg(target_os = "windows")]
-    {
-        std::process::Command::new("cmd")
-            .args(["/C", "start", "", &p.display().to_string()])
-            .spawn()?;
-    }
+    open::that_detached(&p).map_err(|e| ApiError {
+        message: format!("Failed to open path: {e}"),
+    })?;
     Ok(())
 }
 #[tauri::command]

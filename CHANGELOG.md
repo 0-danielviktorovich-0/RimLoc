@@ -22,6 +22,8 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [cli/validate] Per-row validation now targets the translation (`--lang-dir`, `--lang`, or config `target_lang`) instead of silently validating the English source picked up from config defaults.
 
 ### Fixed
+- [gui/security] Hardened the Tauri trust boundary: Content-Security-Policy replaces `csp: null`; arbitrary file writes (`save_text_file`, diagnostics out-path) now go through a native save dialog opened on the Rust side; dynamic plugin loading is opt-in via `~/.rimloc/plugins-allow.json`; `open_path` uses the platform open API instead of a shell interpreter; removed the unused shell plugin and asset protocol.
+- [services/lang-update] Fixed zip-slip: archive entry names are sanitized before extraction (rejects `..`, absolute paths, backslashes); malformed archives return an error instead of panicking.
 - [services/validate] `duplicate-global` no longer reports the same key in different language folders (a translated Def is not a duplicate); duplicates are scoped per language folder.
 - [services/validate] `coverage` and cross-language checks accept full paths for language directory arguments (previously compared against bare folder names, so coverage always reported 0).
 - [cli/i18n] Removed duplicate Fluent key `diffxml-summary` that logged an ERROR on every CLI launch.
