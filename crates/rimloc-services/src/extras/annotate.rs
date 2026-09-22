@@ -79,7 +79,7 @@ pub fn annotate(
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     if name == "LanguageData" {
                         in_language_data = true;
                     }
@@ -104,7 +104,7 @@ pub fn annotate(
                     out.write_event(Event::End(e.to_owned()))?;
                 }
                 Ok(Event::Empty(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     if in_language_data && stack.len() == 1 && !strip && src_map.contains_key(&name)
                     {
                         let comment = format!(
@@ -137,6 +137,7 @@ pub fn annotate(
                 Ok(Event::DocType(d)) => {
                     out.write_event(Event::DocType(d))?;
                 }
+                Ok(Event::GeneralRef(_)) => {}
                 Ok(Event::Eof) => break,
                 Err(_) => break,
             }
@@ -224,7 +225,7 @@ pub fn annotate_dry_run_plan(
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     if name == "LanguageData" {
                         in_language_data = true;
                     }
@@ -241,7 +242,7 @@ pub fn annotate_dry_run_plan(
                     }
                 }
                 Ok(Event::Empty(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     if in_language_data && stack.len() == 1 && !strip && src_map.contains_key(&name)
                     {
                         add_cnt += 1;

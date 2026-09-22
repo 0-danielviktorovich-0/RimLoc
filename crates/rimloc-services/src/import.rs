@@ -33,7 +33,7 @@ fn parse_language_file_keys(
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let name = e.name().as_ref().to_owned();
                 stack.push(name.clone());
                 if stack.len() == 2 && !name.is_empty() {
                     key = Some(name);
@@ -48,21 +48,14 @@ fn parse_language_file_keys(
             Ok(Event::Text(t)) => {
                 if stack.len() == 2 {
                     if let Some(k) = key.as_ref() {
-                        let v = t
-                            .unescape()
-                            .unwrap_or_else(|_| {
-                                std::borrow::Cow::Owned(
-                                    String::from_utf8_lossy(t.as_ref()).into_owned(),
-                                )
-                            })
-                            .to_string();
+                        let v = t.xml10_content().to_string();
                         acc.insert(k.clone(), v);
                     }
                 }
             }
             Ok(Event::Empty(e)) => {
                 if stack.len() == 1 {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     acc.insert(name, String::new());
                 }
             }

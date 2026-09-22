@@ -669,7 +669,7 @@ pub fn apply_diff_flags(
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     if name.eq_ignore_ascii_case("LanguageData") {
                         in_language_data = true;
                     }
@@ -686,7 +686,7 @@ pub fn apply_diff_flags(
                     out.write_event(Event::Start(e.to_owned()))?;
                 }
                 Ok(Event::Empty(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     if in_language_data && stack.len() == 1 {
                         if fuzzy.contains(name.as_str()) {
                             out.write_event(Event::Comment(BytesText::new(" FUZZY ")))?;
@@ -710,6 +710,7 @@ pub fn apply_diff_flags(
                 Ok(Event::PI(pi)) => out.write_event(Event::PI(pi))?,
                 Ok(Event::Comment(c)) => out.write_event(Event::Comment(c))?,
                 Ok(Event::DocType(d)) => out.write_event(Event::DocType(d))?,
+                Ok(Event::GeneralRef(g)) => out.write_event(Event::GeneralRef(g))?,
                 Ok(Event::Eof) => break,
                 Err(_) => break,
             }

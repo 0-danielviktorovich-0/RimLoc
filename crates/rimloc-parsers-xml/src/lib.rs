@@ -168,7 +168,7 @@ pub fn scan_keyed_xml_with_options(
         loop {
             match reader.read_event_into(&mut buf) {
                 Ok(Event::Start(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     let offset = reader.buffer_position();
                     let offset = usize::try_from(offset).unwrap_or(usize::MAX);
                     let line = line_for_offset(offset, &line_starts);
@@ -271,7 +271,7 @@ pub fn scan_keyed_xml_with_options(
                     }
                 }
                 Ok(Event::Empty(e)) => {
-                    let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                    let name = e.name().as_ref().to_owned();
                     let offset = reader.buffer_position();
                     let offset = usize::try_from(offset).unwrap_or(usize::MAX);
                     let line = line_for_offset(offset, &line_starts);
@@ -334,13 +334,7 @@ pub fn scan_keyed_xml_with_options(
                     }
                 }
                 Ok(Event::Text(t)) => {
-                    let text = t
-                        .unescape()
-                        .unwrap_or_else(|_| {
-                            Cow::Owned(String::from_utf8_lossy(t.as_ref()).into_owned())
-                        })
-                        .trim()
-                        .to_string();
+                    let text = t.xml10_content().trim().to_string();
                     if let Some(frame) = stack.last_mut() {
                         if !text.is_empty() {
                             // Preserve line-break semantics: if previous char is not a newline
@@ -352,7 +346,7 @@ pub fn scan_keyed_xml_with_options(
                     }
                 }
                 Ok(Event::CData(t)) => {
-                    let text = String::from_utf8_lossy(t.as_ref()).trim().to_string();
+                    let text = t.as_ref().trim().to_string();
                     if let Some(frame) = stack.last_mut() {
                         if !text.is_empty() {
                             frame.buffer.push_str(&text);
@@ -997,7 +991,7 @@ pub fn read_keyed_file_map_with_comments(
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let name = e.name().as_ref().to_owned();
                 let mut fr = Frame {
                     name,
                     buffer: String::new(),
@@ -1021,7 +1015,7 @@ pub fn read_keyed_file_map_with_comments(
             Ok(Event::Comment(c)) => {
                 // Remember comments that appear directly under <LanguageData>
                 if stack.len() == 1 {
-                    let s = String::from_utf8_lossy(c.as_ref()).to_string();
+                    let s = c.as_ref().to_owned();
                     pending_comment = Some(s);
                 }
             }
@@ -1063,7 +1057,7 @@ pub fn read_keyed_file_map_with_comments(
                 }
             }
             Ok(Event::Empty(e)) => {
-                let name = String::from_utf8_lossy(e.name().as_ref()).into_owned();
+                let name = e.name().as_ref().to_owned();
                 if name.eq_ignore_ascii_case("LineBreak") {
                     if let Some(parent) = stack.last_mut() {
                         parent.buffer.push('\n');
@@ -1082,7 +1076,7 @@ pub fn read_keyed_file_map_with_comments(
             }
             Ok(Event::Text(t)) => {
                 if let Some(frame) = stack.last_mut() {
-                    let text = t.unescape().unwrap_or_default().to_string();
+                    let text = t.xml10_content().to_string();
                     if !text.trim().is_empty() {
                         frame.buffer.push_str(text.trim());
                         frame.has_text = true;
@@ -1091,7 +1085,7 @@ pub fn read_keyed_file_map_with_comments(
             }
             Ok(Event::CData(t)) => {
                 if let Some(frame) = stack.last_mut() {
-                    let text = String::from_utf8_lossy(t.as_ref());
+                    let text = Cow::Borrowed(t.as_ref());
                     if !text.trim().is_empty() {
                         frame.buffer.push_str(text.trim());
                         frame.has_text = true;
