@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
-schemars = { version = "0.8", features = ["schemars_derive"] }
+schemars = "1"
 

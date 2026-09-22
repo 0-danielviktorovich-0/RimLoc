@@ -1,27 +1,22 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "DiffOutput",
   "type": "object",
-  "required": [
-    "changed",
-    "only_in_mod",
-    "only_in_translation"
-  ],
   "properties": {
     "changed": {
       "type": "array",
       "items": {
         "type": "array",
-        "items": [
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
           {
             "type": "string"
           },
           {
             "type": "string"
           }
-        ],
-        "maxItems": 2,
-        "minItems": 2
+        ]
       }
     },
     "only_in_mod": {
@@ -36,5 +31,10 @@
         "type": "string"
       }
     }
-  }
+  },
+  "required": [
+    "changed",
+    "only_in_translation",
+    "only_in_mod"
+  ]
 }

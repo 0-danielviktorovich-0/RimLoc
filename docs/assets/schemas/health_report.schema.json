@@ -1,32 +1,27 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "HealthReport",
   "type": "object",
-  "required": [
-    "checked",
-    "issues"
-  ],
   "properties": {
     "checked": {
       "type": "integer",
       "format": "uint",
-      "minimum": 0.0
+      "minimum": 0
     },
     "issues": {
       "type": "array",
       "items": {
-        "$ref": "#/definitions/HealthIssue"
+        "$ref": "#/$defs/HealthIssue"
       }
     }
   },
-  "definitions": {
+  "required": [
+    "checked",
+    "issues"
+  ],
+  "$defs": {
     "HealthIssue": {
       "type": "object",
-      "required": [
-        "category",
-        "error",
-        "path"
-      ],
       "properties": {
         "category": {
           "type": "string"
@@ -37,7 +32,12 @@
         "path": {
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "path",
+        "category",
+        "error"
+      ]
     }
   }
 }
