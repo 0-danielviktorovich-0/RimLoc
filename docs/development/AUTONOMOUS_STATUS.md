@@ -8,8 +8,10 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 
 ## Git (локальный main, AHEAD origin — не пушить)
 Коммиты кампании (сверху вниз):
+- `feat(cli): add translate command wiring the rimloc-llm subsystem` (517b226) — **e2e на VWE: 317 строк, mock-перевод → import-po → покрытие 38%→65%**, dry-run без вызовов, чекпоинт-резюм подтверждён
+- `feat(core): add rimloc-llm translation subsystem` + `llm: elide lifetime` — Provider trait, Anthropic + OpenAI-compat (openai/zai/ollama пресеты), MockProvider, движок (батчи/ретраи/чекпоинты/глоссарий/строгая валидация плейсхолдеров), 11 unit-тестов без сети
 - `ci: add CI quality gates and cargo-deny policy` — ci.yml (fmt/clippy/test×3OS/gui/deny), deny.toml, лицензии крейтам
-- `chore(deps): bump roxmltree 0.21, libloading 0.9, docs stack and actions` — + requirements-docs + workflows actions v7/v6/v5/v3
+- `chore(deps): bump roxmltree 0.21, libloading 0.9, docs stack and actions`
 - `chore(deps): bump schemars 0.8 -> 1.2 and regenerate JSON schemas`
 - `chore(deps): bump quick-xml 0.36 -> 0.42` (API-миграция: str-QName, xml10_content, Event::GeneralRef)
 - `chore(deps): bump zip 0.6 -> 8.6` (SimpleFileOptions в тестах)
@@ -20,12 +22,10 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 - `chore(repo): docs(repo): autonomous plan/status` (2b50aec)
 База: rebase 43 локальных коммитов на origin/main (+2 веб-коммита), clean. Bundle: `~/Developing/_rimloc-safety/rimloc-baseline-2026-09-23.bundle`, тег `f0-baseline-20260923`.
 
-## Состояние качества
-- `cargo test --workspace`: **82 passed / 0 failed** · `cargo fmt --check` clean · `cargo clippy --workspace --all-targets -- -D warnings` чисто · `cargo deny check` — все 4 категории ok (игноры задокументированы: lru заперт tauri ^0.12; unic-семейство unmaintained через tauri/wry)
-- Read-only гарантия: `testlab/scripts/verify-source-hashes.sh` — 1066 файлов, OK после всех прогонов
-- CLI догфуд: VWE scan --lang en = 325 EN-строк; coverage 370/142 (38%); validate скоупится на RU
-- Docs build (mkdocs 9.7.7 + i18n 1.3.1) — OK
-- GitHub: 30 Dependabot-PR закрыты с комментарием «superseded»; release-plz-ветка осталась
+## Состояние качества (после Ф6)
+- `cargo test --workspace`: зелёный (82+11 llm) · clippy -D warnings чисто · fmt clean · cargo-deny ok
+- Команда `rimloc translate` в CLI: mock/anthropic/openai/zai/ollama; FTL en+ru паритет
+- Полный цикл доказан: scan → translate(mock) → PO → import-po → validate → coverage 65%
 
 ## Артефакты кампании
 - `docs/development/AUTONOMOUS_PLAN.md` — дорожная карта Ф0–Ф10 + ограничения
@@ -36,13 +36,12 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 - `testlab/manifests/{installed-mods,real-mods}.json` — 287 модов, 186 VE, 161 VE без RU
 
 ## ДАЛЕЕ (по порядку)
-1. **Ф4** — архитектурный аудит (CLI main.rs 1805 строк, GUI main.rs ~3900, фронт index.js 2513 — расщепление), atomic write-утилита уже есть (util::write_atomic — проверить применение), run-reports, ресьюм lang-операций. Рефактор только с регрессионным покрытием (82 теста + джорни).
-2. **Ф5** — имплементация гэпов по COMPETITOR_MATRIX (приоритеты там: LLM-подсистема (Ф6 перекрывает), Strings-скан (частично есть: strings inventory panel), WordInfo-канонический формат (проверить Keyed/_Case.xml vs WordInfo/Case.txt — M), encoding normalization (BOM/CRLF) S, wl/bl-фильтры S, About.xml-паспорт M, source-text TM M, mod discovery M). rimloc compare — сюда же (JSON+MD: EN vs human vs LLM).
-3. **Ф6** — rimloc-llm: TranslationEngine/Provider/BatchPlanner/Glossary/Validator/RetryPolicy/CheckpointStore/CostEstimator; Anthropic + OpenAI-compat (пресеты OpenAI/Z.AI/Ollama) + MockProvider; keychain+env; БЕЗ платных вызовов.
-4. **Ф7** — Svelte 5 + TS редактор (ui-ux-pro-max дизайн), tauri-driver E2E, полный GUI-джорни.
-5. **Ф8** — бенчмарки на VWE (малый) и Multiplayer/SOS2 (большой), потом точечные оптимизации.
-6. **Ф9** — acceptance по research-файлу: APFS-клон .app + savedatafolder + batch + grep лога.
-7. **Ф10** — Pass A (engineering) + Pass B (hostile) до чистых проходов; FINAL_ACCEPTANCE.md; СТОП, ждать одобрения пуша.
+1. **СЕЙЧАС**: compare-сервис пишет субагент (владение: crates/rimloc-services/src/extras/compare.rs + mod.rs) → я интегрирую CLI-команду `rimloc compare` и прогоняю на VWE (human RU vs mock-LLM RU vs непереведённое).
+2. **Ф4-лёгкий**: CLI main.rs уже модульный по сути (clap-определения + commands/); расщепление GUI main.rs — в Ф7. Data-safety: write_atomic уже в services — аудит применений. Observability: run-report как JSON для translate/compare.
+3. **Ф7**: Svelte 5 + TS бутстрап в gui/tauri-app (frontend-v2 + vite), IPC-поверхность src-tauri заморожена; редактор EN|RU; ui-ux-pro-max дизайн-проход; tauri-driver E2E.
+4. **Ф8**: бенчмарки на VWE (малый) и SOS2 (большой), потом точечные оптимизации.
+5. **Ф9**: acceptance по research-файлу: APFS-клон .app + savedatafolder + batch + grep лога.
+6. **Ф10**: Pass A (engineering) + Pass B (hostile) до чистых проходов; FINAL_ACCEPTANCE.md; СТОП, ждать одобрения пуша.
 
 ## Решения/уроки (накопленное)
 - INSTA_UPDATE=always не сработал — снапшоты править файлом напрямую + rm *.snap.new
