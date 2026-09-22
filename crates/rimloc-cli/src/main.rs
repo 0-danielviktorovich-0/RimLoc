@@ -401,6 +401,22 @@ fn resolve_log_dir() -> std::path::PathBuf {
         .join(DEFAULT_LOGDIR)
 }
 
+#[derive(Debug, Clone, clap::Args)]
+pub(crate) struct CompareSetArgs {
+    pub label: String,
+    pub lang_dir: String,
+}
+
+fn parse_set(s: &str) -> Result<CompareSetArgs, String> {
+    let (label, dir) = s
+        .split_once('=')
+        .ok_or_else(|| format!("expected label=dir, got `{s}`"))?;
+    Ok(CompareSetArgs {
+        label: label.to_string(),
+        lang_dir: dir.to_string(),
+    })
+}
+
 #[derive(Parser)]
 #[command(name = "rimloc", version)]
 struct Cli {
@@ -1001,6 +1017,30 @@ enum Commands {
         only_diff: bool,
     },
 
+    /// Compare translations against the source and each other (help via FTL).
+    Compare {
+        /// Path to the RimWorld mod root
+        #[arg(long, short = 'r')]
+        root: PathBuf,
+        /// Source language folder (name or full path)
+        #[arg(long, default_value = "English")]
+        source_lang_dir: String,
+        /// Target set as label=folder (repeatable): --set human=Languages/Russian --set llm=Languages/RussianLlm
+        #[arg(long = "set", value_parser = parse_set)]
+        sets: Vec<CompareSetArgs>,
+        /// Optional JSON glossary for term-consistency metrics
+        #[arg(long)]
+        glossary: Option<PathBuf>,
+        /// Save JSON report to file
+        #[arg(long)]
+        out_json: Option<PathBuf>,
+        /// Save Markdown report to file
+        #[arg(long)]
+        out_md: Option<PathBuf>,
+        /// Output format when printing to stdout: text | json
+        #[arg(long, default_value = "text")]
+        format: String,
+    },
     /// Translate a mod via an LLM provider into a .po (help via FTL).
     Translate {
         /// Path to the RimWorld mod root
@@ -1536,6 +1576,28 @@ impl Runnable for Commands {
                 only_diff,
             ),
 
+            Commands::Compare {
+                root,
+                source_lang_dir,
+                sets,
+                glossary,
+                out_json,
+                out_md,
+                format,
+            } => commands::compare::run_compare(
+                root,
+                source_lang_dir,
+                sets.into_iter()
+                    .map(|s| commands::compare::CompareSetArg {
+                        label: s.label,
+                        lang_dir: s.lang_dir,
+                    })
+                    .collect(),
+                glossary,
+                out_json,
+                out_md,
+                format,
+            ),
             Commands::Translate {
                 root,
                 provider,

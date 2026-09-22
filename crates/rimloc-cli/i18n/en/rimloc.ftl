@@ -335,3 +335,15 @@ translate-extracted = Extracted { $count } source strings from { $path }
 translate-dryrun = Dry run: { $units } units, ~{ $batches } batches; no provider calls. Output would be { $path }
 translate-po-saved = Translated PO saved to { $path }
 translate-summary = Translated={ $translated }, failed={ $failed }, already-done={ $skipped }
+
+# compare
+help-compare-about = Compare translations against the source and each other
+help-compare-root = Path to the RimWorld mod root
+help-compare-source-lang-dir = Source language folder (name or full path)
+help-compare-set = Target set as label=folder (repeatable)
+help-compare-glossary = JSON glossary for term-consistency metrics
+help-compare-out-json = Save JSON report to file
+help-compare-out-md = Save Markdown report to file
+help-compare-format = Output format when printing to stdout: text | json
+compare-json-saved = JSON report saved to { $path }
+compare-md-saved = Markdown report saved to { $path }
