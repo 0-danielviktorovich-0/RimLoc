@@ -41,7 +41,7 @@ rimloc-import-xliff = { version = "0.1.0", path = "../rimloc-import-xliff" }
 schemars = { workspace = true }
 regex = "1"
 quick-xml = "0.36"
-reqwest = { version = "0.11", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "rustls", "query"] }
 lru = "0.12"
 urlencoding = "2.1"
 tracing = "0.1"
