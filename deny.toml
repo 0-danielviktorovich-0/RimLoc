@@ -1,0 +1,54 @@
+# cargo-deny configuration — see https://embarkstudios.github.io/cargo-deny/
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = [
+    # lru is pinned to ^0.12 by tauri 2.x; soundness fixes live in 0.16+/0.18+.
+    # Not reachable from RimLoc's own code — tauri-internal cache use.
+    "RUSTSEC-2026-0002",
+    "RUSTSEC-2026-0253",
+    # unmaintained transitive deps of the UI/XML stack; no fixed versions exist.
+    "RUSTSEC-2024-0436", # paste (via der/image stack)
+    "RUSTSEC-2024-0370", # proc-macro-error (via tauri macro deps)
+    # unic-* family is unmaintained (via tauri/wry text handling); no fork adopted upstream yet.
+    "RUSTSEC-2025-0075", # unic-char-range
+    "RUSTSEC-2025-0080", # unic-ucd-version
+    "RUSTSEC-2025-0081", # unic-common
+    "RUSTSEC-2025-0098", # unic-char-property
+    "RUSTSEC-2025-0100", # unic-ucd-ident
+]
+
+[licenses]
+version = 2
+allow = [
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "MIT",
+    "MIT-0",
+    "CC0-1.0",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "CDLA-Permissive-2.0",
+    "MPL-2.0",
+    "OpenSSL",
+    "bzip2-1.0.6",
+    "NCSA",
+]
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
