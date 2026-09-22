@@ -4240,6 +4240,7 @@ dependencies = [
  "rimloc-export-xliff",
  "rimloc-import-po",
  "rimloc-import-xliff",
+ "rimloc-llm",
  "rimloc-parsers-xml",
  "rimloc-services",
  "rimloc-validate",

@@ -29,6 +29,7 @@ walkdir = { workspace = true }
 owo-colors = "4"
 rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 rimloc-parsers-xml = { version = "0.1.0", path = "../rimloc-parsers-xml" }
+rimloc-llm = { path = "../rimloc-llm" }
 rimloc-export-csv = { version = "0.1.0", path = "../rimloc-export-csv" }
 rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
 rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }

@@ -315,3 +315,23 @@ help-morph-cache-size = Provider cache size (default: 1024)
 help-morph-pym-url = Pymorphy2 service URL (overrides PYMORPHY_URL)
 morph-summary = Morph generated { $processed } entries for { $lang }
 morph-provider-morpher-stub = Morpher API provider is not implemented yet; falling back to dummy rules
+
+# translate
+help-translate-about = Translate a mod via an LLM provider (result: a .po file for import-po/build-mod)
+help-translate-root = Path to the RimWorld mod root
+help-translate-provider = Provider: mock | anthropic | openai | zai | ollama
+help-translate-model = Model name (defaults to the provider preset)
+help-translate-base-url = Base URL for OpenAI-compatible providers
+help-translate-source-lang = Source language code
+help-translate-target-lang = Target language code
+help-translate-glossary = JSON glossary file on top of the built-in one
+help-translate-checkpoint = Checkpoint file to resume interrupted translations
+help-translate-out-po = Output .po path
+help-translate-batch-budget = Approximate character budget per batch
+help-translate-dry-run = Estimate scope only; no provider calls
+help-translate-no-strict-placeholders = Disable strict placeholder validation
+help-translate-key-env = Env var name holding the API key (otherwise keychain/auto)
+translate-extracted = Extracted { $count } source strings from { $path }
+translate-dryrun = Dry run: { $units } units, ~{ $batches } batches; no provider calls. Output would be { $path }
+translate-po-saved = Translated PO saved to { $path }
+translate-summary = Translated={ $translated }, failed={ $failed }, already-done={ $skipped }
