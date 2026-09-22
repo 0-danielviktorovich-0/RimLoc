@@ -25,7 +25,7 @@ rimloc-parsers-xml = { path = "../../../crates/rimloc-parsers-xml" }
 rimloc-export-po = { path = "../../../crates/rimloc-export-po" }
 rimloc-export-xliff = { path = "../../../crates/rimloc-export-xliff" }
 rimloc-import-xliff = { path = "../../../crates/rimloc-import-xliff" }
-roxmltree = "0.20"
+roxmltree = "0.21"
 schemars = "1"
 color-eyre = "0.6"
 walkdir = "2"
