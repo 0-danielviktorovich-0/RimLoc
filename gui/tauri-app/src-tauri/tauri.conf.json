@@ -8,9 +8,14 @@
   },
   "app": {
     "security": {
-      "csp": null,
-      "assetProtocol": { "enable": true },
-      "pattern": { "use": "brownfield" }
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": false,
+        "scope": []
+      },
+      "pattern": {
+        "use": "brownfield"
+      }
     },
     "withGlobalTauri": true,
     "windows": [
@@ -27,7 +32,10 @@
   },
   "bundle": {
     "active": true,
-    "icon": ["icons/icon.ico", "icons/icon.png"],
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
     "category": "DeveloperTool",
     "shortDescription": "Tauri desktop GUI for RimLoc",
     "publisher": "RimLoc Team"

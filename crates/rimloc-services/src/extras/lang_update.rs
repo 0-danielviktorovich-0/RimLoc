@@ -18,9 +18,30 @@ pub struct LangUpdatePlan {
     pub out_languages_dir: PathBuf,
 }
 
-fn open_zip_from_bytes(bytes: &[u8]) -> zip::ZipArchive<std::io::Cursor<&[u8]>> {
+fn open_zip_from_bytes(bytes: &[u8]) -> Result<zip::ZipArchive<std::io::Cursor<&[u8]>>> {
     let rdr = std::io::Cursor::new(bytes);
-    zip::ZipArchive::new(rdr).expect("invalid zip archive")
+    zip::ZipArchive::new(rdr).map_err(|e| color_eyre::eyre::eyre!("invalid zip archive: {e}"))
+}
+
+/// Validate a zip-relative path before it ever touches the filesystem.
+/// Rejects absolute paths, `..` traversal, current-dir components, Windows
+/// drive/prefix components, backslashes and NUL bytes (zip-slip guard).
+fn sanitize_zip_rel(rel: &str) -> Option<PathBuf> {
+    if rel.is_empty() || rel.contains('\\') || rel.contains('\0') {
+        return None;
+    }
+    let mut out = PathBuf::new();
+    for comp in Path::new(rel).components() {
+        match comp {
+            std::path::Component::Normal(c) => out.push(c),
+            _ => return None,
+        }
+    }
+    if out.as_os_str().is_empty() {
+        None
+    } else {
+        Some(out)
+    }
 }
 
 fn download_repo_zip(repo: &str, branch: Option<&str>) -> Result<Vec<u8>> {
@@ -70,7 +91,7 @@ fn plan_from_zip_bytes(
     target_lang_dir: &str,
     out_languages_dir: &Path,
 ) -> Result<LangUpdatePlan> {
-    let mut zip = open_zip_from_bytes(bytes);
+    let mut zip = open_zip_from_bytes(bytes)?;
     let mut files: Vec<LangUpdatePlanFile> = Vec::new();
     let mut total_bytes: u64 = 0;
     for i in 0..zip.len() {
@@ -89,6 +110,9 @@ fn plan_from_zip_bytes(
         {
             // rel path under <source_lang_dir>
             let rel = parts[4..].join("/");
+            if sanitize_zip_rel(&rel).is_none() {
+                continue; // traversal/malformed entry: excluded from the plan
+            }
             // target path will be out_languages_dir/<target_lang_dir>/<rel>
             let size = entry.size();
             files.push(LangUpdatePlanFile {
@@ -120,7 +144,7 @@ fn apply_plan(bytes: &[u8], plan: &LangUpdatePlan, backup: bool) -> Result<()> {
     }
     fs::create_dir_all(&lang_dir)?;
 
-    let mut zip = open_zip_from_bytes(bytes);
+    let mut zip = open_zip_from_bytes(bytes)?;
     for i in 0..zip.len() {
         let mut entry = zip.by_index(i)?;
         if !entry.is_file() {
@@ -134,7 +158,11 @@ fn apply_plan(bytes: &[u8], plan: &LangUpdatePlan, backup: bool) -> Result<()> {
             && parts[3] == plan.source_lang_dir
         {
             let rel = parts[4..].join("/");
-            let out_path = lang_dir.join(rel);
+            // zip-slip guard: never join raw entry names
+            let Some(rel_path) = sanitize_zip_rel(&rel) else {
+                continue;
+            };
+            let out_path = lang_dir.join(rel_path);
             if let Some(parent) = out_path.parent() {
                 fs::create_dir_all(parent)?;
             }
@@ -187,4 +215,66 @@ pub fn lang_update(
             out_dir: out_languages_dir.join(target_lang_dir),
         }),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write as _;
+
+    fn build_zip(entries: &[(&str, &str)]) -> Vec<u8> {
+        let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for (name, body) in entries {
+            w.start_file(*name, zip::write::FileOptions::default())
+                .unwrap();
+            w.write_all(body.as_bytes()).unwrap();
+        }
+        w.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn sanitize_rejects_traversal_and_absolute() {
+        assert!(sanitize_zip_rel("../../../etc/passwd").is_none());
+        assert!(sanitize_zip_rel("/abs/path.txt").is_none());
+        assert!(sanitize_zip_rel("a/../../b.txt").is_none());
+        assert!(sanitize_zip_rel("back\\slash.txt").is_none());
+        assert!(sanitize_zip_rel("").is_none());
+        assert!(sanitize_zip_rel("Core/Languages/English/Keyed/a.xml").is_some());
+    }
+
+    #[test]
+    fn apply_plan_never_writes_outside_target_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bytes = build_zip(&[
+            (
+                "repo-abc/Core/Languages/English/Keyed/ok.xml",
+                "<LanguageData/>",
+            ),
+            ("repo-abc/Core/Languages/English/../../evil.txt", "pwned"),
+        ]);
+        let plan = plan_from_zip_bytes(&bytes, "English", "Russian", &tmp.path()).unwrap();
+        // traversal entry must not appear in the plan at all
+        assert_eq!(plan.files.len(), 1, "plan: {:?}", plan.files);
+        apply_plan(&bytes, &plan, false).unwrap();
+        let wrote: Vec<_> = std::fs::read_dir(tmp.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .map(|e| e.file_name().to_string_lossy().to_string())
+            .collect();
+        assert!(
+            !wrote.iter().any(|n| n.contains("evil")),
+            "zip-slip: file escaped the target dir: {wrote:?}"
+        );
+        assert!(tmp
+            .path()
+            .join("Russian")
+            .join("Keyed")
+            .join("ok.xml")
+            .is_file());
+    }
+
+    #[test]
+    fn open_zip_rejects_garbage_without_panic() {
+        assert!(open_zip_from_bytes(b"not a zip").is_err());
+    }
 }

@@ -972,7 +972,7 @@ function initEventHandlers() {
   $("validate-run").addEventListener("click", handleValidate);
   const vpRun = $("validate-po-run"); if (vpRun) vpRun.addEventListener("click", handleValidatePo);
   const vpPick = document.querySelector('[data-action="pick-validate-po"]'); if (vpPick) vpPick.addEventListener("click", () => pickFile("validate-po-path", [{ name: "PO", extensions: ["po"] }])());
-  const vpSave = $("validate-po-save"); if (vpSave) vpSave.addEventListener("click", async () => { try { const po = val("validate-po-path"); if (!po) return; const res = await tauriInvoke("validate_po_gui", { req: { po_path: po, strict: isChecked("validate-po-strict") } }); const def = (po||'').replace(/\.po$/, '.validate.json'); const path = await tauriDialog().save({ defaultPath: def }); if (!path) return; await tauriInvoke("save_text_file", { path, content: JSON.stringify(res, null, 2) }); showToast(`${tr('saved')}: ${path}`); } catch(e) { showError(e); } });
+  const vpSave = $("validate-po-save"); if (vpSave) vpSave.addEventListener("click", async () => { try { const po = val("validate-po-path"); if (!po) return; const res = await tauriInvoke("validate_po_gui", { req: { po_path: po, strict: isChecked("validate-po-strict") } }); const def = (po||'').replace(/\.po$/, '.validate.json'); const saved = await tauriInvoke("save_text_via_dialog", { defaultPath: def, content: JSON.stringify(res, null, 2) }); if (!saved) return; showToast(`${tr('saved')}: ${saved}`); } catch(e) { showError(e); } });
   const pickDefs = document.querySelector('[data-action="pick-validate-defs"]');
   if (pickDefs) pickDefs.addEventListener("click", pickDirectory("validate-defs-root"));
   const pickValSchema = document.querySelector('[data-action="pick-validate-schema"]');
@@ -1402,20 +1402,16 @@ async function initDebugUI() {
     try {
       const info = await tauriInvoke("get_log_info");
       const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "console-buffer.txt");
-      const path = await tauriDialog().save({ defaultPath: def });
-      if (!path) return;
-      const content = $("debug-log").textContent || "";
-      await tauriInvoke("save_text_file", { path, content });
-      showToast(`${tr('saved')}: ${path}`);
+      const saved = await tauriInvoke("save_text_via_dialog", { defaultPath: def, content: $("debug-log").textContent || "" });
+      if (!saved) return;
+      showToast(`${tr('saved')}: ${saved}`);
     } catch (e) { showError(e); }
   });
   const collInline = $("collect-diagnostics-inline"); if (collInline) collInline.addEventListener("click", async () => {
     try {
       const info = await tauriInvoke("get_log_info");
       const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "diagnostics.txt");
-      const path = await tauriDialog().save({ defaultPath: def });
-      if (!path) return;
-      const saved = await tauriInvoke("collect_diagnostics", { req: { out_path: path } });
+      const saved = await tauriInvoke("collect_diagnostics_via_dialog", { req: { out_path: def } });
       showToast(`${tr('diagnostics_saved')}: ${saved}`);
     } catch (e) { showError(e); }
   });
@@ -1423,7 +1419,7 @@ async function initDebugUI() {
   const simPanInline = $("simulate-panic-inline"); if (simPanInline) simPanInline.addEventListener("click", async () => { try { await tauriInvoke("simulate_panic"); } catch (e) { showError(e); } });
   const lvInline = $("log-level-inline"); if (lvInline) lvInline.addEventListener("change", async () => { state.logLevel = lvInline.value; localStorage.setItem("rimloc.logLevel", state.logLevel); try { await tauriInvoke("set_debug_options", { opts: { minLevel: state.logLevel } }); } catch {} });
   const btInline = $("enable-backtrace-inline"); if (btInline) { btInline.checked = localStorage.getItem("rimloc.backtrace") === "1"; btInline.addEventListener("change", async () => { const on = btInline.checked; localStorage.setItem("rimloc.backtrace", on?"1":"0"); try { await tauriInvoke("set_debug_options", { opts: { backtrace: on } }); } catch {} }); }
-  const saveStructured = $("save-structured"); if (saveStructured) saveStructured.addEventListener("click", async () => { try { const path = await tauriDialog().save({ defaultPath: "rimloc-logs.jsonl" }); if (!path) return; const lines = state.logBuffer.map(e => JSON.stringify(e)).join("\n"); await tauriInvoke("save_text_file", { path, content: lines }); showToast(`${tr('saved')}: ${path}`); } catch(e) { showError(e); } });
+  const saveStructured = $("save-structured"); if (saveStructured) saveStructured.addEventListener("click", async () => { try { const saved = await tauriInvoke("save_text_via_dialog", { defaultPath: "rimloc-logs.jsonl", content: state.logBuffer.map(e => JSON.stringify(e)).join("\n") }); if (!saved) return; showToast(`${tr('saved')}: ${saved}`); } catch(e) { showError(e); } });
   const clearStructured = $("clear-structured"); if (clearStructured) clearStructured.addEventListener("click", () => { state.logBuffer = []; renderStructuredLogs(); });
   const filterEl = $("log-filter"); if (filterEl) filterEl.addEventListener('input', renderStructuredLogs);
   ["log-ui","log-backend","log-invoke","log-progress"].forEach(id => { const el=$(id); if (el) el.addEventListener('change', renderStructuredLogs); });
@@ -1435,11 +1431,9 @@ async function initDebugUI() {
     try {
       const info = await tauriInvoke("get_log_info");
       const def = (info?.logPath || info?.log_path || "gui.log").replace(/gui\.log$/, "console-buffer.txt");
-      const path = await tauriDialog().save({ defaultPath: def });
-      if (!path) return;
-      const content = $("debug-log").textContent || "";
-      await tauriInvoke("save_text_file", { path, content });
-      showToast(`${tr('saved')}: ${path}`);
+      const saved = await tauriInvoke("save_text_via_dialog", { defaultPath: def, content: $("debug-log").textContent || "" });
+      if (!saved) return;
+      showToast(`${tr('saved')}: ${saved}`);
     } catch (e) {
       showError(e);
     }
@@ -2457,12 +2451,12 @@ const stringsRun = $("strings-run"); if (stringsRun) stringsRun.addEventListener
 const stringsSave = $("strings-save"); if (stringsSave) stringsSave.addEventListener('click', () => handleStrings('json'));
 const stringsSaveCsv = $("strings-save-csv"); if (stringsSaveCsv) stringsSaveCsv.addEventListener('click', async () => {
   const items = window._stringsData || []; if (!items.length) return showToast(tr('strings_empty'));
-  const path = await tauriDialog().save({ defaultPath: 'strings.csv' }); if (!path) return;
   const esc = (s)=> '"'+String(s||'').replace(/"/g,'""')+'"';
   let csv = 'path,line,text\n';
   for (const it of items) { csv += `${esc(it.path)},${it.line},${esc(it.text)}\n`; }
-  await tauriInvoke('save_text_file', { path, content: csv });
-  showToast(`${tr('saved')}: ${path}`);
+  const saved = await tauriInvoke('save_text_via_dialog', { defaultPath: 'strings.csv', content: csv });
+  if (!saved) return;
+  showToast(`${tr('saved')}: ${saved}`);
 });
 const stringsTbody = $("strings-table-body"); if (stringsTbody) stringsTbody.addEventListener('click', async (e) => {
   let tr = e.target; while (tr && tr.tagName !== 'TR') tr = tr.parentElement; if (!tr) return;
