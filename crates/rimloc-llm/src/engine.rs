@@ -217,8 +217,8 @@ impl<'a> TranslationEngine<'a> {
 
 /// Split units into batches under an approximate character budget
 /// (deterministic: input order preserved).
-fn batch_by_budget<'u>(
-    units: &mut Vec<&'u TranslateUnit>,
+fn batch_by_budget(
+    units: &mut Vec<&TranslateUnit>,
     budget: usize,
 ) -> Vec<Vec<TranslateUnit>> {
     let mut batches = Vec::new();
