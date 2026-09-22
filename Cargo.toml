@@ -10,6 +10,7 @@ members = [
     "crates/rimloc-cli",
     "crates/rimloc-validate",
     "crates/rimloc-import-po",
+    "crates/rimloc-llm",
     "crates/rimloc-services",
     "crates/rimloc-domain",
     "crates/rimloc-config",
