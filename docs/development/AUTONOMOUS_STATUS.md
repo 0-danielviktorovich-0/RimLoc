@@ -4,7 +4,18 @@ Session: `zcode-rc-campaign` · Updated: 2026-09-23 (Ф0 in progress)
 Recovery point: this file + `~/Developing/_rimloc-safety/` (bundle, stash diff, logs).
 
 ## Current milestone
-**F0 — immutable baseline** (в работе: baseline build/test идёт в фоне).
+**Ф1 — testlab + догфуд** (F0 завершён, baseline зелёный). Дальше: фикс P0-тикетов T5/T6 (сломанное ядро scan/coverage), затем Ф2-безопасность.
+
+## Dogfood results (Ф1, до правок)
+Полные тикеты: `testlab/dogfood-tickets.md`. Ядро:
+- **T5 P0**: `scan --lang` не фильтрует — микс всех `Languages/*` (1625 записей / 760 уникальных, коллизии).
+- **T6 P0**: `coverage` = 0% даже на синтетическом фикстуре — команда нерабочая.
+- T7 P1: validate по всем языкам, false-positive дубли (li-нормализация), шум placeholder-check на EN.
+- T1 P1: дублирующийся Fluent-ключ diffxml-summary — ERROR ×2 на каждый запуск.
+- T2 P1: `scan --format json` не пишет в stdout без --out-json (непайпуем).
+- T3 P2: `--help` сабкоманд в stderr · T4 P2: дефолт scan = переводы вместо источника · T8 P3: `:0` вместо строк.
+- Манифесты: `testlab/manifests/{installed-mods,real-mods}.json` (287 модов, 186 VE, 161 VE без RU); hash-база 1066 файлов `source-mods-hashes.sha256` — read-only гарантия проверена (OK).
+- 6 конкурентов клонированы в `~/Developing/_competitors-rimloc/`.
 
 ## Git state (после интеграции)
 - `main` = `2c5a47e` — 43 локальных коммита rebase на origin/main (e774d67 + веб-коммиты `35746bb` dependabot.yml, `e14d709` SECURITY.md). Rebase чистый, конфликтов нет. **AHEAD 43, не пушилось — и не должно.**
@@ -15,10 +26,10 @@ Recovery point: this file + `~/Developing/_rimloc-safety/` (bundle, stash diff, 
 - `.github/dependabot.yml` на месте (cargo root + cargo gui + pip + github-actions; daily/weekly; labels; limit 10/10/5/10).
 
 ## Completed (F0)
-- Прочитан RimLoc/AGENTS.md; хуки включены (setup-git-hooks.sh); сессия zcode-rc-campaign начата.
-- Git-инспекция полная; stash проанализирован детально (без разрушения).
-- Bundle + safety-тег + сохранённые артефакты.
-- Rebase 43/2 — clean; дивергенция устранена локально.
+- **Baseline: build OK · tests all pass (exit 0) · fmt clean · clippy 4 warning (parsers-xml ×2, services ×1, gui ×1 — будут закрыты при вводе -D гейта).**
+- Прочитан RimLoc/AGENTS.md; хуки включены; сессия zcode-rc-campaign.
+- Git-инспекция; stash проанализирован (сохранён); bundle+тег `f0-baseline-20260923`; rebase 43/2 clean → main=2c5a47e; коммит статусов 2b50aec.
+- testlab создан: манифесты, hash-скрипты, тикеты догфуда; структура manifests/synthetic/adversarial/expected/minimized-regressions/scripts.
 
 ## In progress
 - Baseline `cargo build/test/fmt/clippy` в фоне → лог `~/Developing/_rimloc-safety/baseline-build-test.log`.
@@ -31,9 +42,11 @@ Recovery point: this file + `~/Developing/_rimloc-safety/` (bundle, stash diff, 
 - GUI i18n vendor-тесты были известны как падающие в старых логах коммитов — проверить в baseline.
 
 ## Next (по порядку)
-1. Дождаться baseline, записать результаты сюда, закоммитить статусные файлы.
-2. F1: testlab/ + манифесты (1814383360, 2927850179, 2126925929, ваниль-тар) + hash-скрипт + начальный `rimloc compare` дизайн + CLI-догфуд тикеты.
-3. F2 security по списку выше (суперсидить stash свежими плагинами).
+1. Закоммитить testlab + тикеты.
+2. **P0-фиксы ядра**: T5 (lang-фильтр scan), T6 (coverage) — с регрессионными тестами на реальном кейсе мультиязычного мода + минимизированные фикстуры в testlab.
+3. T7 (validate по языкам/li-дубли), T1 (Fluent-дубль), T2 (json stdout).
+4. Ф2 security (CSP, open_path, save_text_file, плагины, zip-slip) — суперсидить stash свежими tauri-plugin-dialog/shell.
+5. Ф3 CI+зависимости.
 
 ## Blockers
 Нет. (Baseline-результаты — ожидание, не блокер.)

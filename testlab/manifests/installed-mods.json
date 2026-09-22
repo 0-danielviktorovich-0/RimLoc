@@ -1,0 +1,5391 @@
+{
+ "generated": "local",
+ "mods_root": "/Applications/RimWorld.app/Mods",
+ "count": 287,
+ "mods": [
+  {
+   "name": "Pick Up And Haul",
+   "packageId": "Mehni.PickUpAndHaul",
+   "description": "\"Greatest hauling mod ever\" - Chicken Plucker\n\n\t v1.1.2¼\n\nColonists will gather stuff in their inventory, then haul it all to a stockpile.\n\nThis hauling mod will greatly increase hauling efficiency, because pawns can now carry more than one gun or t-shirt. Those smart and intelligent colonists can u",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1279012058",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Italian",
+    "Korean",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish",
+    "SpanishLatin",
+    "Ukrainian"
+   ],
+   "ru_files_top": 2,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Snap Out!",
+   "packageId": "weilbyte.snapout",
+   "description": "Gives your pawns the ability to try calm down a pawn in a mental break.",
+   "versions": [
+    "1.1",
+    "1.0",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1319782555",
+   "languages": [
+    "ChineseSimplified",
+    "Czech",
+    "English",
+    "French",
+    "German",
+    "Italian",
+    "Polish",
+    "Portuguese",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Dubs Mint Menus",
+   "packageId": "Dubwise.DubsMintMenus",
+   "description": "Adds new list boxes for recipe bills, health bills, plant selection, architect menu, research menu, and a quick select menu for designators, making it easier to find things when lots of mods are running.",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.3.1247",
+   "modVersionIgnore": false,
+   "workshop_id": "1446523594",
+   "languages": [
+    "ChineseSimplified",
+    "English",
+    "Korean",
+    "Portuguese",
+    "PortugueseBrazilian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Smart Speed",
+   "packageId": "sarg.smartspeed",
+   "description": "Allows the use of ultra speed and change event speed multiplier.\n\t \n<size=24>Features</size>\n\n- Enable ultra fast speed without Dev Mode\n- Add ultra speed icon\n- Set Event speed multiplier\n- Mod options: configure how much each of the speeds affects the game\n\n<size=24>Event Speed Mode</size>\n\n- Righ",
+   "versions": [
+    "1.6",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1504723424",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "[FSF] Filth Vanishes With Rain And Time",
+   "packageId": "FrozenSnowFox.FilthVanishesWithRainAndTime",
+   "description": "Changes the base filth def so every type of filth washes away with rain/snow and disappears after 14-15 days.",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1508341791",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "RimHUD",
+   "packageId": "Jaxe.RimHUD",
+   "description": "Mod Version: 1.17.5\\n\\nRimHUD is a UI mod that displays detailed information about a selected character or creature. The HUD display is integrated into the inspect pane which can be resized to fit the additional information. Alternatively, the HUD can display a separate floating window and can be do",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1508850027",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Interaction Bubbles",
+   "packageId": "Jaxe.Bubbles",
+   "description": "Mod Version: 4.2\\n\\n\\nShows bubbles when pawns perform a social interaction with the text that would normally only be found in the log.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1516158345",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Common Sense",
+   "packageId": "avilmask.CommonSense",
+   "description": "Allows your colonists to do things smarter. Check mod settings for more information.\n- chinese simplified by chrisxlite, HawnHan, qqcswc;\n- chinese traditional by Lak4CYUT, kkosos;\n- german by Katinka1988;\n- french by qux;\n- spanish by Crusader;",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1561769193",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Russian",
+    "Spanish"
+   ],
+   "ru_files_top": 2,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "NewRatkinPlus",
+   "packageId": "Solaris.RatkinRaceMod",
+   "description": "New Ratkin Race Mod.\nWhat is different from the old version?\n\n- Rebalance race stat and equipment\n- Add new clothes and weapons\n- Add fuctional and race characteristics.\n- Add race research\n- Add a variety of different jobs and fashions.\n- Add BackStory\n\nRatkin weapons have the following characteri",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1578693166",
+   "languages": [
+    "ChineseTraditional",
+    "English",
+    "Japanese",
+    "Japanese_AI",
+    "Korean",
+    "RimWaldo (림왈도)",
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "[NL] Facial Animation - WIP",
+   "packageId": "Nals.FacialAnimation",
+   "description": "This MOD provides the following animations. This MOD is currently WIP.\nTherefore, specifications and functions are subject to change.\n\nAdded animation\n- Blink\n- RemoveApparel\n- Wear\n- WaitCombat\n- Goto\n- LayDown\n- Lovin\n- Ingest\n- SocialRelax\n- StandAndBeSociallyActive\n- Wait_Downed\n- Mine\n\nFuture",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1635901197",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Bionic icons",
+   "packageId": "automatic.bionicicons",
+   "description": "Adds icons for body part boxes.",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1677616980",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Graphics Settings+",
+   "packageId": "Telefonmast.GraphicsSettings",
+   "description": "Ever wonder where RimWorld hid it's graphics settings?\n   Apparently there are none, so here you go, have some.\n   \n   Note that it only affects modded textures!",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1678847247",
+   "languages": [
+    "English",
+    "Korean (한국어)"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Furniture Expanded",
+   "packageId": "VanillaExpanded.VFECore",
+   "description": "I have always found vanilla furniture to be lacking in depth and quantity. After researching Complex Furniture, the research tree for furniture pretty much ends, with a couple of odd technologies adding things like Vitals Monitors and Hospital Beds along the way. As part of the Vanilla Furniture Exp",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1718190143",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Medical Module",
+   "packageId": "VanillaExpanded.VFEMedical",
+   "description": "Vanilla Furniture Expanded - Medical module adds several new pieces of furniture to allow players for higher variety of medical beds and linkables. Sterile walls have also been added with color-coded line markings, allowing users to color-code the rooms.",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1718191613",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded",
+   "packageId": "VanillaExpanded.VWE",
+   "description": "This mod introduces a comprehensive selection of over 30 new weapons spanning the Neolithic, Medieval, Industrial, and Spacer tech levels, seamlessly integrating into your RimWorld colony's arsenal. Each weapon has been carefully designed and balanced to ensure it aligns perfectly with the core game",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1814383360",
+   "languages": [
+    "Dutch",
+    "English",
+    "Japanese",
+    "Russian"
+   ],
+   "ru_files_top": 19,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Apparel Expanded",
+   "packageId": "VanillaExpanded.VAPPE",
+   "description": "Vanilla Apparel Expanded is part of a series of mods expanding on everyday life on the Rimworld. When paired together with a brand new Vanilla Weapons Expanded and Vanilla Armours Expanded, you can bring something to your game that will keep you interested in it for days.\n\nApparel is distributed in",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1814987817",
+   "languages": [
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Armour Expanded",
+   "packageId": "VanillaExpanded.VARME",
+   "description": "Vanilla Armour Expanded is part of a series of mods expanding on everyday life on the Rimworld. When paired together with a brand new Vanilla Weapons Expanded and Vanilla Apparel Expanded, you can bring something to your game that will keep you interested in it for days.\n\nArmor is spread across seve",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1814988282",
+   "languages": [
+    "Dutch",
+    "Japanese",
+    "Russian"
+   ],
+   "ru_files_top": 10,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Security",
+   "packageId": "VanillaExpanded.VFESecurity",
+   "description": "Vanilla Furniture Expanded - Security is a complete overhaul and rebalance of the original security module, addressing outdated balance and vastly expanding defensive options from early to late game.\nThe mod introduces new defenses across all tech levels:\n\n- Medieval: Adds the catapults, cavalry spi",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1845154007",
+   "languages": [
+    "English",
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Production",
+   "packageId": "VanillaExpanded.VFEProduction",
+   "description": "Vanilla Furniture Expanded - Production module, is an ideal mod to fill that late game hole in production. Once you set up your vanilla workstations with tool cabinets scattered everywhere, you essentially got as far as you possibly can. This carefully designed, vanilla-fitting mod adds a new layer",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1880253632",
+   "languages": [
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Hair Expanded",
+   "packageId": "VanillaExpanded.VHE",
+   "description": "We have all been there, with a colony of a hundred pawns where everyone looks somewhat the same. Starting colonists with no character to their looks. This mod is our attempt at fixing that.\n\nWe have worked hard to create a hundred new hairstyles that fit vanilla RimWorld perfectly! From tribals to s",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1888705256",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Quickdraw",
+   "packageId": "VanillaExpanded.VWEQ",
+   "description": "Vanilla Weapons Expanded - Quickdraw is an addition to a popular Vanilla Expanded mod series, adding four new quickdraw weapons. These firearms allow you to quickly respond to sudden enemy encounters, as special plasteel alloys allow you to reduce the aiming time to zero. There are drawbacks however",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1906780517",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Save Our Ship 2",
+   "packageId": "kentington.saveourship2",
+   "description": "Save Our Ship 2 is an unofficial expansion for RimWorld. Build a liveable spaceship and continue your colonists' stories in orbit - engaging in ship-to-ship combat with pirates, searching derelicts for treasure, and perhaps even discovering a phenomenal cosmic secret or two! SoS2 includes two custom",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1909914131",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Fishing Expanded",
+   "packageId": "VanillaExpanded.VCEF",
+   "description": "Vanilla Fishing Expanded is a first module in a brand new mod series “Vanilla Cuisine Expanded” from the Vanilla Expanded team. With such an important mechanic missing from the base game, we Oskar and Sarg have decided to introduce a way to catch fish in your local water sources, adding a bit of p",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1914064942",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Events Expanded",
+   "packageId": "VanillaExpanded.VEE",
+   "description": "Vanilla Events Expanded 2 is a comprehensive remake designed to breathe new life into events you can encounter in your game. It remains simple at it’s core, as it’s what kept the mod popular for years, while enhancing existing events to offer a more fleshed-out and immersive experience. Rather than",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1938420742",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Farming",
+   "packageId": "VanillaExpanded.VFEFarming",
+   "description": "Vanilla Furniture Expanded - Farming module is a great way to boost the efficiency of your colonies when it comes to providing food on the table. With a plethora of new hydroponics - one for early game and one for late game, you can really witness the technological progression of your colony - and g",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1957158779",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Art",
+   "packageId": "VanillaExpanded.VFEArt",
+   "description": "Vanilla Furniture Expanded - Art module is something long overdue. Being an artist, I struggled to comprehend why the only type of sculptures we can make are small, large or grand artworks on a tiny pedestal. It made Artistic skill pretty much undesirable. Come on, how many times have you said to yo",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1968134023",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Laser",
+   "packageId": "VanillaExpanded.VWEL",
+   "description": "Vanilla Weapons Expanded - Laser is an addition to one of the most popular mods of Vanilla Expanded collection - Vanilla Weapons Expanded, however it can be played without it. This mod adds a selection of ultratech weapons, with a small number of them craftable, whilst keeping the majority of them o",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "1989352844",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "CM Color Coded Mood Bar [1.1+]",
+   "packageId": "CrashM.ColorCodedMoodBar.11",
+   "description": "Color code each pawn's mood bar within the colonist bar based on their current mood.\\n\\nRed: extreme mental break threshold\\nOrange: major mental break threshold\\nYellow: minor mental break threshold\\nGray: neutral mood\\nLight Blue: content\\nGreen: happy\\n\\nAlso includes:\\n\\nBreak Box, an outline to",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2006605356",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Harmony",
+   "packageId": "brrainz.harmony",
+   "description": "",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "2.4.2.0",
+   "modVersionIgnore": false,
+   "workshop_id": "2009463077",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Textures Expanded",
+   "packageId": "VanillaExpanded.VTEXE",
+   "description": "Vanilla Textures Expanded is a full-scale overhaul of vanilla (unmodded) RimWorld textures, with its main aim being not only to fix less aesthetically pleasing textures, but also to bring vanilla aesthetic in-line with that of Vanilla Expanded mod series.\n\nThis texture pack includes over 450 texture",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2016436324",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Expanded Framework",
+   "packageId": "OskarPotocki.VanillaFactionsExpanded.Core",
+   "description": "Vanilla Expanded Framework incorporates a multitude of functionalities for different mods in order for us to boost performance by not duplicating code across several mods. Examples of shared functionality include custom base generation code with an amazing building export tool, customisable sieges,",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2023507013",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Spacer Module",
+   "packageId": "VanillaExpanded.VFESpacer",
+   "description": "Vanilla Furniture Expanded - Spacer gives your late-game colonies a proper high-tech upgrade. The old Spacer module was starting to feel a bit dated, so this overhaul adds slick, high-tech furniture that actually feels spacer-worthy: like advanced beds, illuminated furniture, modern couches, air pur",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2028381079",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Settlers",
+   "packageId": "OskarPotocki.VanillaFactionsExpanded.SettlersModule",
+   "description": "After the success of our Vanilla Factions Expanded - Medieval, which was a faction mod closing the gap between tribal faction and outlander faction, we have begun work on another faction mod - this time adding frontier settlers, inspired by western films. The scope of this mod is quite similar to ou",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2052918119",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Power",
+   "packageId": "VanillaExpanded.VFEPower",
+   "description": "Vanilla power generation is somewhat lackluster late game - Not only the game strongly encourages the use of solar panels and wind turbines as they provide significantly more energy at the cost of no fuel, but it also stops there - there is no technological progression in regards to power. Whether y",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2062943477",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Props and Decor",
+   "packageId": "VanillaExpanded.VFEPropsandDecor",
+   "description": "Vanilla Furniture Expanded - Props and Decor is a major mod release that has been in production for almost 8 months. The main aim is to provide much needed customizability to your bases and cities, a way to add some detail to your rooms and buildings, and to generally allow you to place more of “you",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2102143149",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Fishing Expanded Russian Language Pack",
+   "packageId": "OW.RU.Fishing",
+   "description": "Перевод на русский язык мода Vanilla Fishing Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2126439745",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded Russian Language Pack",
+   "packageId": "OW.RU.Weapons",
+   "description": "Перевод на русский язык мода Vanilla Weapons Expanded и всех его модулей. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2126925929",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Hair Expanded Russian Language Pack",
+   "packageId": "OW.RU.Hair",
+   "description": "Перевод на русский язык мода Vanilla Hair Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2132091615",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Apparel Expanded Russian Language Pack",
+   "packageId": "OW.RU.Apparel",
+   "description": "Перевод на русский язык мода Vanilla Apparel Expanded и дополнения Accessories. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2133165949",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Cooking Expanded",
+   "packageId": "VanillaExpanded.VCookE",
+   "description": "Vanilla Cooking Expanded is a core module in a brand new mod series “Vanilla Cuisine Expanded” from the Vanilla Expanded team, notably Sarg Bjornson, Oskar Potocki and Chowder. Whilst other mods work very well without it, Vanilla Cooking Expanded makes use of fish from Vanilla Fishing Expanded as we",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2134308519",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Plants Expanded",
+   "packageId": "VanillaExpanded.VPlantsE",
+   "description": "Vanilla Plants Expanded is a core module in a plant-based in the new mod series “Vanilla Cuisine Expanded” from the Vanilla Expanded team. After hours of designing, testing and  designing again, Sarg Bjornson, Oskar Potocki and Chowder are proud to present this content pack to help you with your Rim",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2134308522",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Cooking Expanded - Stews",
+   "packageId": "VanillaExpanded.VCookEStews",
+   "description": "Vanilla Cooking Expanded - Stews is a first sub-module to the new Vanilla Cuisine Expanded mod series. This particular mod introduces medieval stews - which are more nutritious, more expensive soups that are cooked over time on the wood-fired pot.\n\nIdeal for your medieval colonies and long winter ni",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2134312965",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Plants Expanded Russian Language Pack",
+   "packageId": "OW.RU.Plants",
+   "description": "Перевод на русский язык мода Vanilla Plants Expanded, модулей Succulents, More Plants и Mushrooms, а также модов Auto Plow Patch и Farmland. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2140324006",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Events Expanded Russian Language Pack",
+   "packageId": "OW.RU.Events",
+   "description": "Перевод на русский язык мода Vanilla Events Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2141736447",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Storytellers Expanded - Perry Persistent",
+   "packageId": "VSE.PerryPersistent",
+   "description": "Vanilla Storytellers Expanded is a brand new mod series featuring standalone storytellers, bringing new, unique mechanics to the game.\n\n“Perry Persistent conveys a story the same way he handles his investigations - with determination and attention to details.\n\nHe will constantly keep you on your toe",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2149702069",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Storytellers Expanded Russian Language Pack",
+   "packageId": "OW.RU.VSE",
+   "description": "Перевод на русский язык всех модов серии Vanilla Storytellers Expanded: \n  - Perry Persistent, \n  - Empress Evil, \n  - Freya Fierce, \n  - Igor Invader, \n  - Oskar Obnoxious, \n  - Diego Industrial, \n  - Maynard Medieval, \n  - Neron Neolithic, \n  - Winston Wave, \n  - RimWorld Rick,\n  - Noobert Nebulou",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2150723779",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Cooking Expanded - Sushi",
+   "packageId": "VanillaExpanded.VCookESushi",
+   "description": "Vanilla Cooking Expanded - Sushi is the second sub-module for Vanilla Cooking Expanded. This particular mod introduces sushi - a fish and rice based food that is immensely popular on the Rim.\n\nThe module is an amazing way to make good use of our fishing mod, since all sushi meals need fish. It also",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2158539170",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Brewing Expanded",
+   "packageId": "VanillaExpanded.VBrewE",
+   "description": "Vanilla Brewing Expanded is an alcohol-oriented module in “Vanilla Cuisine Expanded” from the Vanilla Expanded team, notably Sarg Bjornson, Oskar Potocki and Chowder. Whilst other mods such as Vanilla Plants Expanded and Vanilla Fishing Expanded work well as standalone, due to technical limitations",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2186560858",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Books Expanded",
+   "packageId": "VanillaExpanded.VBooksE",
+   "description": "Now updated to 1.5, which is a game update that introduces books to the base game. This mod is still viable: It allows you to write books, as well as newspapers. Vanilla Books Expanded is a mod allowing your colonists to pass their knowledge and skill to others. By writing a book about a particular",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2193152410",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Grenades",
+   "packageId": "VanillaExpanded.VWEG",
+   "description": "With a brand new utility item code introduced in RimWorld 1.2 update, I saw it as a perfect fit to make grenades be actually useful instead of forcing you to choose between a grenade and a rifle. By crafting grenade belts, you can now equip all vanilla and vanilla expanded grenade types on your pawn",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2194472657",
+   "languages": [
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Plants Expanded - Succulents",
+   "packageId": "VanillaExpanded.VPlantsESucculents",
+   "description": "Vanilla Plants Expanded - Succulents is an optional module for Vanilla Plants Expanded adding a variety of decorative plants, ideal to make your bases, houses, workstations and hospitals much prettier without having to maintain the flowerbeds. Succulents might provide only half of the beauty that fl",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2198652536",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Smarter Construction",
+   "packageId": "dhultgren.smarterconstruction",
+   "description": "Stop your pawns from constantly building themselves into a wall or blocking something that isn't built yet. Save game compatible.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2202185773",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Books Expanded Russian Language Pack",
+   "packageId": "OW.RU.Books",
+   "description": "Перевод на русский язык мода Vanilla Books Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2202361278",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Brewing Expanded - Coffees and Teas",
+   "packageId": "VanillaExpanded.VBrewECandT",
+   "description": "Vanilla Brewing Expanded - Coffees and Teas\n\t\nVanilla Brewing Expanded - Coffee and Tea is another sub-module to the new Vanilla Cuisine Expanded mod series. This particular mod introduces 8 new types of coffee and 9 new types of tea, with ties in to other Vanilla Cuisine Expanded mods, with each co",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2275449762",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Achievements Expanded",
+   "packageId": "vanillaexpanded.achievements",
+   "description": "Vanilla Achievements Expanded is a unique, never before seen in RimWorld modding achievement mod, part of the Vanilla Expanded mod series and a framework for other modders. \nThis mod adds an extensive achievement system, with various different stats being tracked. Players receive a pop up rewarding",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2288125657",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Achievements Expanded Russian Language Pack",
+   "packageId": "OW.RU.ACHIEVE",
+   "description": "Перевод на русский язык мода Vanilla Achievements Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2289313263",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Traits Expanded",
+   "packageId": "VanillaExpanded.VanillaTraitsExpanded",
+   "description": "Have you ever thought about how base game traits become repetitive after a while? Are you tired of seeing pyromaniac or kind pawn over and over again? Are you perhaps considering pyromaniac to be an instant death sentence in your colony? If for any of these questions the answer was ‘aye’, then look",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2296404655",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Mechanoids",
+   "packageId": "OskarPotocki.VFE.Mechanoid",
+   "description": "One of the first mods I ever came up with, and one that took the longest to design, draw, code and deliver, Vanilla Factions Expanded - Mechanoids is a mod unlike any other. A group of talented modders came together to make sure this mod is not only full of new interesting content, but also provides",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2329011599",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Heavy Weapons",
+   "packageId": "VanillaExpanded.VWEHW",
+   "description": "What I think this game was missing from the usual combat encounters is a punch, a smell of freshly fired bolters, the heat of an autocannon barrel and the look of surprise on the enemy faces as 10 homing missiles decimate their ranks. Vanilla Weapons Expanded - Heavy is our response to that task: Th",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2329126791",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Traits Expanded Russian Language Pack",
+   "packageId": "OW.RU.Traits",
+   "description": "Перевод на русский язык мода Vanilla Traits Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2337425872",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Animals Expanded — Endangered",
+   "packageId": "VanillaExpanded.VAEEndAndExt",
+   "description": "Remember how I said the Temperate animals mod was the last one? Well, people lie. There is still a few animals around the world that we did not yet make into actual RimWorld animals - and this time we have decided to also raise awareness of the big issue in our world - endangered species and animal",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2366589898",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Mechanoids Russian Language Pack",
+   "packageId": "OW.RU.Mechanoid",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Mechanoids и всех патчей. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2374533597",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Coilguns",
+   "packageId": "VanillaExpanded.VWEC",
+   "description": "The Vanilla Weapons Expanded 2 - Coilguns mod remakes the original submodule by introducing high-tier Spacer-tech mass drivers: the Gauss Rifle, Revolver, and Lance, all featuring absolute armor penetration. These weapons, unlocked via the \"Portable Mass Drivers\" research project, feature a signatur",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2375692535",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Makeshift",
+   "packageId": "VanillaExpanded.VWEMS",
+   "description": "Vanilla Weapons Expanded - Makeshift is a small module that fits perfectly with all the nutters playing Naked Brutality survival scenario, or roleplaying in a post-apocalyptic universe. Inspired directly by games like Rust and Fallout, as well as the improvised firearms of the Chechen rebels, these",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2419690698",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Social Interactions Expanded",
+   "packageId": "VanillaExpanded.VanillaSocialInteractionsExpanded",
+   "description": "Vanilla Social Interactions Expanded means to bring much more needed life to your pawns as well as the overall world map. This mod alters what pawns do in their spare time, adds some much needed content in regards to interactions that breathes fresh air into otherwise boring and stale game. Pawns no",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2439736083",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Social Interactions Expanded Russian Language Pack",
+   "packageId": "OW.RU.Social",
+   "description": "Перевод на русский язык мода Vanilla Social Interactions Expanded. Подробности ищите на странице в мастерской..",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2442101893",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Frontier",
+   "packageId": "VanillaExpanded.VWEFT",
+   "description": "One of the most commonly requested features for Vanilla Factions Expanded - Settlers was tech-locking their weapons. Sadly, vanilla game does not differentiate between ‘western-style’ weapons like revolvers and M14 assault rifles - for the game, it’s all industrial weapons. If we were to white list",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2454918139",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Non-Lethal",
+   "packageId": "VanillaExpanded.VWENL",
+   "description": "Vanilla Weapons Expanded - Non-Lethal has been a commonly requested weapon set. So many times prison breaks result in accidental deaths. So many times, an enemy raider is your colonist’s father and you accidentally put a sniper rifle round through his skull. So many times your berserk pawn starts to",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2454918354",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Tribal",
+   "packageId": "VanillaExpanded.VWETB",
+   "description": "Vanilla Weapons Expanded - Tribal is a new entry to Vanilla Weapons Expanded series aimed at introducing some new weapons New Tribe playing players can utilise for better defense capabilities. From light and heavy clubs, stone axes and throwing shards to slings and clay pots filled with chemfuel, tr",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2454918552",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Fishing Expanded - Fishing Treasures AddOn",
+   "packageId": "VanillaExpanded.VCEFAddon",
+   "description": "The Vanilla Fishing Expanded - Fishing Treasures AddOn adds modded items to the \"Special\" fishing chance in Vanilla Fishing Expanded.\n\n<size=24>Changelog</size>\n\nSee in GitHub",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2468543398",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Show Me Your Hands",
+   "packageId": "Mlie.ShowMeYourHands",
+   "description": "[img]https://img.litet.net/logos/Self-Info.png[/img]\n\nPawns show their hands on their weapon when drafted. \nShould work with most weapons, vanilla and modded.\n\nBased on [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2171708109]Clutter Weapon Hands[/url] but dynamically sets the hands ba",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.10",
+   "modVersionIgnore": false,
+   "workshop_id": "2475965842",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Russian"
+   ],
+   "ru_files_top": 7,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "RPG Style Inventory Revamped",
+   "packageId": "Sandy.RPGStyleInventory.avilmask.Revamped",
+   "description": "RPG style representation of the pawn's Gear Tab. That's a revamped version by avilmask. Thanks RunningBugs, kkosos for contribution.",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2478833213",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "Czech",
+    "English",
+    "French",
+    "Russian"
+   ],
+   "ru_files_top": 2,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Textures Expanded - Variations",
+   "packageId": "VanillaExpanded.VTEXVariations",
+   "description": "Vanilla Textures Expanded - Variations is a standalone release in the Vanilla Textures Expanded series, aiming at providing a LOT of visual variety to your vanilla bases.\n\nSo, what does it do? Basically, it provides building graphics variations for the majority of vanilla’s buildings. This means eve",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2493234474",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Expanded Framework Russian Language Pack",
+   "packageId": "OW.RU.CORE",
+   "description": "Перевод библиотеки для модов серии Vanilla Expanded. Рекомендуется устанавливать при использовании моих переводов. Включает строки, используемые во многих модах. Подробности ищите на странице в мастерской.\n  Скачать переводы в обход мастерской можно на странице проекта на GitHub https://github.com/O",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.03",
+   "modVersionIgnore": false,
+   "workshop_id": "2507140407",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Apparel Expanded — Accessories",
+   "packageId": "VanillaExpanded.VAEAccessories",
+   "description": "Vanilla Apparel Expanded - Accessories is a new installment in the Vanilla Expanded series. This time, our sight fell onto the accessories system, which is quite heavily limited in vanilla game. Smokepop belt, or Shield belt - these are your only choices. Are you rich enough to sport Royalty in your",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2521176396",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Icons and Symbols",
+   "packageId": "VanillaExpanded.Ideo.IconsandSymbols",
+   "description": "Vanilla Ideology Expanded is a mini-series of mods aimed at expanding the content in ideology - be it memes, relics and symbols or icons alike.\n\nIcons and Symbols module adds over 200 new icons for ideologies. Icons have been categorised based on their looks and utilise respective tags to make sure",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2552609458",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Realistic Rooms Rewritten",
+   "packageId": "Lucifer.RealisticRooms",
+   "description": "Makes room sizes more reasonable.\\n\\n1.3+",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2558042766",
+   "languages": [
+    "ChineseTraditional",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Relics and Artifacts",
+   "packageId": "VanillaExpanded.Ideo.RelicsAndArtifacts",
+   "description": "This mod adds another 40 'useless' relic items like Chalice, Ark or Shard in Ideology DLC. You can now find Shards of a Sword, mechanoid head, Mysterious orb and many, many more. Furthermore, this mod unlocks all the apparel in the game from being unable to spawn as relics, which means your colonist",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2564895018",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Hats and Rags",
+   "packageId": "VanillaExpanded.VIEHAR",
+   "description": "Vanilla Ideology Expanded is a mini-series of mods aimed at expanding the content in ideology - be it memes, relics and symbols or icons alike.\n\nThis mod introduces many new headgear types and one new outfit type for your ideological pawns. No longer you will be limited by the selected few new headw",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2567387768",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded Russian Language Pack",
+   "packageId": "OW.RU.VIE",
+   "description": "Перевод на русский язык модулей серии Vanilla Ideology Expanded:\n  - Relics and Artifacts\n  - Hats and Rags\n  - Splits and Schisms\n  - Memes and Structures\n  - Anima Theme\n  - Dryads\n  - Sophian Style\n\n  Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.03",
+   "modVersionIgnore": false,
+   "workshop_id": "2569397678",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Splits and Schisms",
+   "packageId": "VanillaExpanded.VIESAS",
+   "description": "The goal of this mod is to add a new mechanic to make ideologies a bit more of a gameplay affecting challenge, as well as introduce a new form of threat that needs to be countered by the player once the colony is big enough.\n\nIdeologies, while docile and strong in small societies, often tend to divi",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2573138902",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "XML Extensions",
+   "packageId": "imranfish.xmlextensions",
+   "description": "Extends the functionality of XML patch operations, and allows for the easy creation of mod settings. While this mod is loaded, XML errors will generate a stack trace.\n\n        packageId: imranfish.xmlextensions",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2574315206",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "[NL] Facial Animation - Experimentals",
+   "packageId": "Nals.FacialAnimationExperimentals",
+   "description": "Dear Users\n\n      Thank you using my Mods, Facial Animation has been patched by various modders.\n      I'm very happy about that. However, at the same time, it was becoming difficult to expand the functionality.\n\n      So, I decided to split Facial Animation into two mods. This mod is for th",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2581693737",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "DragSelect",
+   "packageId": "telardo.DragSelect",
+   "description": "This mod allows you to drag and select multiple items in trade, caravan, and transporter loading windows. \n(1.5) Now it works on Work priority tab. You can also right drag to erase the priorities.\n(1.6) Now it works for paste buttons in Work and Schedule tab.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.0.2",
+   "modVersionIgnore": false,
+   "workshop_id": "2599942235",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Architect",
+   "packageId": "VanillaExpanded.VFEArchitect",
+   "description": "Vanilla Furniture Expanded - Architect has been on my mind for a very long time. I always download every single mod adding new floors or fences, but I quickly become buried under all the new options, and eventually get pissed off because some of those options don't exactly fit Vanilla game in my eye",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2608762624",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Memes and Structures",
+   "packageId": "VanillaExpanded.VMemesE",
+   "description": "Vanilla Ideology Expanded is a mini-series of mods aimed at expanding the content in ideology - be it memes, relics and symbols or icons alike.\n\t\nThe goal of the Memes and Structures mod is to add unique memes, and… well, structures to your game. For some reason certain obvious choices like Shinto,",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2636329500",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Ancients",
+   "packageId": "VanillaExpanded.VFEA",
+   "description": "One faction we have never really tinkered with before is the Ancients. You might know them from popping out of the cryptosleep caskets in Ancient dangers, but what really is their story remains a mystery. With Ideology DLC, players can see the entire ancient battlefields of twisted metal, broken dow",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2654846754",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Anima Theme",
+   "packageId": "VanillaExpanded.VIEAT",
+   "description": "A lot of players perhaps are not too keen on Gauranlen trees in Ideology DLC being yet another 'magical', unexplainable tree in the hard sci-fi world of RimWorld. I was one of them. Vanilla Ideology Expanded - Anima Theme changes Gauranlen trees to be a special kind of anima tree - and everything su",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2666998627",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Ancients Russian Language Pack",
+   "packageId": "OW.RU.Ancients",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Ancients и Ancient Supply Slingshot Patch. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2686847475",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Outposts Expanded",
+   "packageId": "vanillaexpanded.outposts",
+   "description": "Vanilla Outposts Expanded will allow you to form a caravan, travel in the world map and create a camp. There are various types of camps, and each of them requires specific conditions to be met before they are set up. Each of these camps ships resources to the player. You are able to build a new Outp",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2688941031",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Outposts Expanded Russian Language Pack",
+   "packageId": "OW.RU.Outposts",
+   "description": "Перевод на русский язык мода Vanilla Outposts Expanded и трёх неофициальных дополнений: Unofficial Vanilla Outposts Expanded Expanded: Trading, Vanilla Outposts Expanded Expanded: Ranch и Vanilla Outposts Expanded Additional Outposts. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2689856888",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Dryads",
+   "packageId": "VanillaExpanded.Ideo.Dryads",
+   "description": "Vanilla Ideology Expanded - Dryads is a mod expanding on the selection of gauranlen dryads in the Ideology DLC. Whilst the idea behind them fulfilling the majority of the roles in your colony is neat, the current selection of dryads feels lackluster - they don’t particularly have any powerful abili",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2720631512",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Pirates",
+   "packageId": "OskarPotocki.VFE.Pirates",
+   "description": "One faction that always felt a little bit 'un-expanded' in vanilla RimWorld is the pirate faction. They feel more like evil outlanders than anything unique, and they don't really threaten late game colonies, nor do they provide engaging content in any way, shape or form. It always annoyed me that th",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2723801948",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Pirates Russian Language Pack",
+   "packageId": "OW.RU.Pirates",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Pirates. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2732234441",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Plants Expanded - More Plants",
+   "packageId": "VanillaExpanded.VPlantsEMore",
+   "description": "Vanilla Plants Expanded - More Plants is an add-on module for Vanilla Plants Expanded from the Vanilla Expanded team. This mod adds a variety of fruit plants and crops to spice up your fields even further, with each prop adding something different and unique, allowing you to use the power of farming",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2748889667",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Geological Landforms",
+   "packageId": "m00nl1ght.GeologicalLandforms",
+   "description": "Adds 44 landforms to the game, which generate biome-independently. The goal of this mod is to make map generation more interesting and varied, compared to the vanilla experience of simply having either a cliff or a coast on one edge of your map.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2773943594",
+   "languages": [
+    "English",
+    "Korean (한국어)",
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Backgrounds Expanded",
+   "packageId": "vanillaexpanded.backgrounds",
+   "description": "Vanilla Backgrounds Expanded is a mod that adds many new main menu and loading screen backgrounds inspired by RimWorld - all created by Oskar Potocki for the purpose of Vanilla Expanded mod series. With mod options, you will be fully able to customize what backgrounds appear in the game, whether th",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2775017012",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Trading Expanded",
+   "packageId": "VanillaExpanded.VanillaTradingExpanded",
+   "description": "Vanilla Trading Expanded is our take on the trading system and RimWorld, meant to add some much needed randomization, planning and strategy to otherwise stale trading. Currently in RimWorld, all values are flat and never change - meaning there are certain things that sell, and certain things that do",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2785616901",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Trading Expanded Russian Language Pack",
+   "packageId": "OW.RU.Trading",
+   "description": "Перевод на русский язык мода Vanilla Trading Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2787018584",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 6,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Classical",
+   "packageId": "OskarPotocki.VFE.Classical",
+   "description": "Unite the broken Republics against the common enemy. Stop the senators from squabbling and plotting against each other by completing a chain of missions to gain their favor. \nEach senator on your side will provide you with more political power in the senate, as well as new technologies, regular tri",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2787850474",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Classical Russian Language Pack",
+   "packageId": "OW.RU.Classical",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Classical. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2790332207",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Chemfuel Expanded",
+   "packageId": "VanillaExpanded.VChemfuelE",
+   "description": "Vanilla Chemfuel Expanded is a small mod created to showcase what the new Pipe network code is capable of in Vanilla Expanded framework. It adds a simple chain to extract Deepchem from the underground pockets and refine it into Chemfuel. It also adds storage solutions for both Deepchem and standard",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2792917473",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Map Preview",
+   "packageId": "m00nl1ght.MapPreview",
+   "description": "Adds a map preview to the world map.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2800857642",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "Korean (한국어)",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish",
+    "SpanishLatin",
+    "Turkish"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Genetics Expanded",
+   "packageId": "VanillaExpanded.VGeneticsE",
+   "description": "Vanilla Genetics Expanded is an overhaul to a popular mod by Sarg Bjornson called Genetic Rim. The mechanics of the predecessor have been improved greatly to fit Vanilla Expanded playstyle, offering many new paths to explore in a mid to late game colony. You can now incubate unique hybrids using bra",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2801160906",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Genetics Expanded - Русификатор",
+   "packageId": "Dmitry6.VanillaExpanded.VGeneticsE",
+   "description": "Перевод Vanilla Genetics Expanded на русский язык. Перевод на 1.6 выполнен в основном с помощью ии Gemeni 2.5 Pro. Но, также с ручным исправлением, чтобы сохранялся контекст перевода. Если есть какие-либо ошибки, то пишите в коментариях Steam под модом.\n• Авторы оригинального мода: Sarg Bjornson, er",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2805854947",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 127,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Genetics Expanded - More Lab Stuff",
+   "packageId": "VanillaExpanded.VGeneticsEMoreLabStuff",
+   "description": "Vanilla Genetics Expanded - More Lab Stuff adds a bunch of things to the main mod that we thought were a bit too complex, or too redundant, or a bit silly, so they are offered as an optional add-on for those who just want MORE STUFF.\n\t\n\t- New specialized boosters. Will probably add more as time goes",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2810324444",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Genetics Expanded - More Lab Stuff Russian Language Pack",
+   "packageId": "OW.RU.GeneticsMLS",
+   "description": "Перевод на русский язык модуля Vanilla Genetics Expanded - More Lab Stuff для Vanilla Genetics Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2811213079",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 17,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Persona Weapons Expanded",
+   "packageId": "VanillaExpanded.VPersonaWeaponsE",
+   "description": "Vanilla Persona Weapons Expanded is a mod that makes persona weapons a little bit more spicy - but only visually so. It never felt right that such a unique weapon does not actually look that unique - you can meet dozens of imperial royals, and all their persona weapons will just look like copies of",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2826922787",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Psycasts Expanded",
+   "packageId": "VanillaExpanded.VPsycastsE",
+   "description": "Vanilla Psycasts Expanded is potentially our Magnum Opus, a greatest, most exquisite, complex and visually stunning mod up to date. As always, it started with us simply not being satisfied with how Psycasts ended up being in Royalty DLC. This resulted in us wanting to expand on the concept, and expa",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2842502659",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Psycasts Expanded Russian Language Pack",
+   "packageId": "OW.RU.PSY",
+   "description": "Перевод на русский язык мода Vanilla Psycasts Expanded и дополнений Hemosage и Puppeteer. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2843348217",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Animals Expanded — Royal Animals",
+   "packageId": "VanillaExpanded.VAERoy",
+   "description": "Royal animals is something we have promised a long time ago, and never quite found the time to deliver. From the very initial notions, what we wanted to do is to introduce some special animals with unique gimmicks that could go alongside the pampered nobles in the Royalty DLC.\n\nThis is a great oppor",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2858079457",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Backstories Expanded",
+   "packageId": "VanillaExpanded.VanillaBackstoriesExpanded",
+   "description": "Vanilla Backstories Expanded was a mod suggested by my patrons right after we released Vanilla Backgrounds Expanded and everyone thought that was the mod adding backstories. It wasn’t. This one is.\n\nThis mod features over 150 backstories, carefully selected from the submissions from our Patrons and",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2861806869",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Clean Textures",
+   "packageId": "IH.Clean.Textures",
+   "description": "Мод Clean Textures заменяет стандартные текстуры поверхностей, а также текстуры из некоторых других модов. 220+ обновлённых проработанных текстур сделают ландшафты вашей колонии чище, ярче и визуально приятнее, сохраняя при этом атмосферу оригинальной игры.\nНе влияет на производительность игры. Не",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2865361569",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Backstories Expanded Russian Language Pack",
+   "packageId": "OW.RU.Backstories",
+   "description": "Перевод на русский язык мода Vanilla Backstories Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2869759953",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Animals Expanded",
+   "packageId": "VanillaExpanded.VanillaAnimalsExpanded",
+   "description": "Vanilla Animals Expanded is a large mod that contains almost all previous Vanilla Animals Expanded modules, this time merged into one big mod. Fear not, however - last thing we want is to bloat your game: you can now disable individual animals in mod options! You can only enable the animals that app",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2871933948",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Yayo's Animation (Continued)",
+   "packageId": "com.yayo.yayoAni.continued",
+   "description": "Original mod by YAYO! This is an update. You can find the original here:\nhttps://steamcommunity.com/sharedfiles/filedetails/?id=2575938407\n\nAdd Animation for Pawns\n\nSource code:\nhttps://github.com/DRA-Mods/Yayos-Animation",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2877292196",
+   "languages": [
+    "English",
+    "Korean (한국어)"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Helixien Gas Expanded",
+   "packageId": "VanillaExpanded.HelixienGas",
+   "description": "Vanilla Helixien Gas Expanded is a brand new mod for the release of RimWorld 1.4. With this update, we've decided that it's best we split Vanilla Furniture Expanded - Power and the Helixien gas, as not only it gives us more control over it, but it's also the only logical choice, as the helixien gas",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2877699803",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Saurid",
+   "packageId": "vanillaracesexpanded.saurid",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types ofxenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThis mod adds a new race called Saurids,",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2880990495",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Saurid Russian Language Pack",
+   "packageId": "OW.RU.Saurid",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Saurid. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2881370180",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 23,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Hussar",
+   "packageId": "vanillaracesexpanded.hussar",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types ofxenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThis mod expands on a xenotype of Hussar",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2893586390",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Hussar Russian Language Pack",
+   "packageId": "OW.RU.Hussar",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Hussar и неофициального патча Hussar Weapon Aptitude Remake. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2893646016",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "RimFridge: Now with Shelves!",
+   "packageId": "rimfridge.kv.rw",
+   "description": "Adds refrigerated racks to keep food and other perishables cold.  Ideal for use in dining rooms, freeing up labour from feeding prisoners, or keeping food on hand for cooks.\n\nRimFridges that are placed next to Nutrient Paste Dispenser will act as hoppers.\n\nBase RimFridge comes in 1x1, 1x2, and 2x2 v",
+   "versions": [
+    "1.6",
+    "1.5",
+    "1.4"
+   ],
+   "modVersion": "2.0.7",
+   "modVersionIgnore": false,
+   "workshop_id": "2898411376",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Hungarian",
+    "Japanese",
+    "Korean",
+    "Polish",
+    "Portuguese",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Races Expanded - Genie",
+   "packageId": "vanillaracesexpanded.genie",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types ofxenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThis mod expands on a xenotype of Genies",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2901424072",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Genie Russian Language Pack",
+   "packageId": "OW.RU.Genie",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Genie. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2902017088",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Cooking Expanded Russian Language Pack",
+   "packageId": "OW.RU.Cooking",
+   "description": "Обновлённый и улучшенный перевод на русский язык мода Vanilla Cooking Expanded и дополнений Stews, Sushi и Haute. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2914375951",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Brewing Expanded Russian Language Pack",
+   "packageId": "OW.RU.Brewing",
+   "description": "Перевод на русский язык мода Vanilla Brewing Expanded и дополнения Coffees and Teas. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.02",
+   "modVersionIgnore": false,
+   "workshop_id": "2914395524",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Custom Icons",
+   "packageId": "vanillaracesexpanded.customicons",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\t\n\tThis mod introduces hundreds of new i",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2917311689",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Settlers Russian Language Pack",
+   "packageId": "OW.RU.Settlers",
+   "description": "Обновлённый перевод на русский язык мода Vanilla Factions Expanded - Settlers. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2917360738",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 57,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Muzzle Flash",
+   "packageId": "IssacZhuang.MuzzleFlash",
+   "description": "add muzzule flash to the gun.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2917732219",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Nutrient Paste Expanded",
+   "packageId": "VanillaExpanded.VNutrientE",
+   "description": "Vanilla Nutrient Paste Expanded is a small mod created to showcase what the new Pipe network code is capable of in Vanilla Expanded framework. It adds a rather simple chain, unlocked with Nutrient Paste research project, allowing the player to store nutrient paste in advance without the need for con",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2920385763",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Phytokin",
+   "packageId": "vanillaracesexpanded.phytokin",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types ofxenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThis mod adds a new race called Phytokin",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2927323805",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded Russian Language Pack",
+   "packageId": "OW.RU.Furniture",
+   "description": "Перевод на русский язык мода Vanilla Furniture Expanded и всех модулей. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.04",
+   "modVersionIgnore": false,
+   "workshop_id": "2927850179",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Phytokin Russian Language Pack",
+   "packageId": "OW.RU.Phytokin",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Phytokin. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2927850559",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Prepatcher",
+   "packageId": "zetrith.prepatcher",
+   "description": "Prepatcher is a powerful library for mod developers and a mod manager.\n  \nIncludes Harmony v2.4.2 and PrepatcherAPI v1.2.0\n\nThe version for RimWorld 1.5 includes Harmony v2.3.3 and PrepatcherAPI v1.2.0\n\nThe version for RimWorld 1.4 includes Harmony v2.2.2 and PrepatcherAPI v1.2.0",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2934420800",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Factions Expanded - Empire",
+   "packageId": "OskarPotocki.VFE.Empire",
+   "description": "One thing I always wanted to do but never could bring myself to do is overhaul the Empire faction in the Royalty DLC. For such a mysterious, powerful entity in the political sphere of RimWorld, there is surprisingly little content around them. When I wanted to make a Royalty focused playthrough, I q",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2938820380",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Empire Russian Language Pack",
+   "packageId": "Mewn.RU.Empire",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Empire. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2942002763",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Melee Animation",
+   "packageId": "co.uk.epicguru.meleeanimation",
+   "description": "Adds detailed melee combat animations, including duels, executions, and unique skills. Also (optionally) adds lassos to pull enemies into melee range.\n\n * Equip colonists with melee weapons (or melee sidearms) and they will be animated!\n * Draft a melee colonist and you can right-click on targets to",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2944488802",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Animals Expanded Russian Language Pack",
+   "packageId": "Mewn.RU.ANIMALS",
+   "description": "Перевод на русский язык всех модулей серии Vanilla Animals Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2947390965",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Animals Expanded — Waste Animals",
+   "packageId": "VanillaExpanded.VAEWaste",
+   "description": "Embrace the toxic side of nature with the \"Vanilla Animals Expanded - Waste Animals\" mod! This unique mod expands the range of creatures found in highly polluted biomes, diversifying the environmental challenges and adding an extra layer of depth to your gameplay experience.\nVenture into the contami",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2962126499",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Sanguophage",
+   "packageId": "vanillaracesexpanded.sanguophage",
+   "description": "Introducing Vanilla Races Expanded - Sanguophage, a thrilling mod that adds a captivating layer of depth to the world of Rimworld. This expansive mod brings the ancient and terrifying power of vampiric bloodlines to life, infusing your gameplay with unique genes, incredible abilities, and unforgetta",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2963116383",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Sanguophage Russian Language Pack",
+   "packageId": "Mewn.RU.vanillaracesexpanded.sanguophage",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Sanguophage. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2964004159",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Android",
+   "packageId": "vanillaracesexpanded.android",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types ofxenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nIntroducing Vanilla Races Expanded - And",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.1.0",
+   "modVersionIgnore": false,
+   "workshop_id": "2975771801",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Android Russian Language Pack",
+   "packageId": "OW.RU.Android",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Android. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2977916968",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Waster",
+   "packageId": "vanillaracesexpanded.waster",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types ofxenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThis time, we have turned our attention",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2983471725",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Waster Russian Language Pack",
+   "packageId": "OW.RU.Waster",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Waster. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2983806100",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 11,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Ancot Library",
+   "packageId": "Ancot.AncotLibrary",
+   "description": "Framework of Ancot's Races.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2988801276",
+   "languages": [
+    "ChineseSimplified (简体中文)",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Psycasts Expanded - Hemosage",
+   "packageId": "VanillaExpanded.VPE.Hemosage",
+   "description": "Vanilla Psycasts Expanded - Hemosage introduces a brand new Psycaster path that can be selected if Vanilla Psycasts Expanded is found - hemosage. A hemosage utilises the power of hemogen to control the battlefield, and the abilities are focused on magnifying the strength of a sanguophage.\nHemosage h",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.0.2",
+   "modVersionIgnore": false,
+   "workshop_id": "2990596478",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Highmate",
+   "packageId": "vanillaracesexpanded.highmate",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThe goal of this mod is to greatly enha",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "2995385834",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Highmate Russian Language Pack",
+   "packageId": "Mewn.RU.vanillaracesexpanded.highmate",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Highmate. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "2995806520",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Plants Expanded - Mushrooms",
+   "packageId": "VanillaExpanded.VPlantsEMushrooms",
+   "description": "Vanilla Plants Expanded - Mushrooms is an optional module for Vanilla Plants Expanded adding a variety of new mushrooms. One common concern people have expressed is that being a tunneler - or simply living underground - prevents you from obtaining quite a lot of different, important resources.\n\nAs s",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3006389281",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Vehicles Expanded",
+   "packageId": "OskarPotocki.VanillaVehiclesExpanded",
+   "description": "Vanilla Vehicles Expanded is a long awaited mod utilising Smash Phil’s Vehicles framework. The main purpose of the mod is to add realistic and engaging mechanics surrounding vehicles of all kinds into the game. Not just the cars, but boats and airplanes too, this mod comes packed full of content and",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3014906877",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vehicle Framework",
+   "packageId": "SmashPhil.VehicleFramework",
+   "description": "Framework which allows the creation of vehicles in RimWorld.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.2144",
+   "modVersionIgnore": false,
+   "workshop_id": "3014915404",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Vehicles Expanded Russian Language Pack",
+   "packageId": "Mewn.RUS.VanillaVehiclesExpanded",
+   "description": "Перевод на русский язык модов Vanilla Vehicles Expanded, Vanilla Vehicles Expanded - Tier 3 и Vanilla Vehicles Expanded - Upgrades. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3015080696",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Deserters",
+   "packageId": "OskarPotocki.VFE.Deserters",
+   "description": "After the release of Vanilla Factions Expanded - Empire, a lot of you have requested that we tell the other side of this marvelous story - the story of Deserters. So many of you have requested it that in fact we made it our priority to release the Deserters faction expansion as soon as it was reason",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3025493377",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Psycasts Expanded - Puppeteer",
+   "packageId": "VanillaExpanded.VPE.Puppeteer",
+   "description": "Vanilla Psycasts Expanded - Puppeteer introduces a brand new, rare psycaster path available only to those who studied the secret arts in their childhood - notably, high imperial nobles. Puppeteer is a path focused on providing the master of puppets with mindless servants that he or she directly cont",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.0.3",
+   "modVersionIgnore": false,
+   "workshop_id": "3033779606",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Adaptive Storage Framework",
+   "packageId": "adaptive.storage.framework",
+   "description": "Adaptive Storage Framework contains various features to allow modders to better shape the way they want to make and change their own storage mods. It has added functionalities to change graphics depending on contents, tweak how items get displayed, how many graphics get displayed, how they get color",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3033901359",
+   "languages": [
+    "English",
+    "French"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Factions Expanded - Deserters Russian Language Pack",
+   "packageId": "Mewn.RU.Deserters",
+   "description": "Перевод Vanilla Factions Expanded - Deserters на русский язык. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3034481258",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Fungoid",
+   "packageId": "vanillaracesexpanded.fungoid",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nThe Fungoids are a new archite-dependen",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3042690053",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Fungoid Russian Language Pack",
+   "packageId": "OW.RU.Fungoid",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Fungoid. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3043555142",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 30,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Vehicles Expanded - Tier 3",
+   "packageId": "OskarPotocki.VanillaVehiclesExpandedTier3",
+   "description": "Delve deeper into the world of vehicular advancements with the Tier 3 expansion for Vanilla Vehicles Expanded. While the term \"Tier 3\" might conjure up images of futuristic, sci-fi machines for some, my focus has remained on the creation of highly specialized and rare vehicles that add both depth an",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3047892432",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Archon",
+   "packageId": "vanillaracesexpanded.archon",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nVanilla Races Expanded - Archon introdu",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3067715093",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Archon Russian Language Pack",
+   "packageId": "OW.RU.Archon",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Archon. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3073039057",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Tribals",
+   "packageId": "OskarPotocki.VFE.Tribals",
+   "description": "Venture into the heart of primitive survival with Vanilla Factions Expanded - Tribals. Starting as unsophisticated wild men with nothing but fire at your disposal, face the harsh reality of the wilderness as you strive to form a new tribe. Experience the crucial tribal gatherings that unlock a pathw",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3079786283",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Tribals Russian Language Pack",
+   "packageId": "Mewn.RUS.VFE.Tribals",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Tribals. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3098812288",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Lycanthrope",
+   "packageId": "vanillaracesexpanded.lycanthrope",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nVanilla Races Expanded - Lycanthrope ai",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3114453100",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Lycanthrope Russian Language Pack",
+   "packageId": "OW.RU.Lycanthrope",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Lycanthrope. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3114528834",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 35,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Recycling Expanded",
+   "packageId": "VanillaExpanded.Recycling",
+   "description": "Vanilla Recycling Expanded is our spin on recycling in RimWorld. No longer you will be left with hundreds of wastepacks that you will try to send away into distant parts of the world to forget about them. No longer you will have to try and cheese the game to get rid of pollution. Vanilla Recycl",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3155781848",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Recycling Expanded Russian Language Pack",
+   "packageId": "OW.RU.Recycling",
+   "description": "Перевод на русский язык мода Vanilla Recycling Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3157129626",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 17,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Pigskin",
+   "packageId": "vanillaracesexpanded.pigskin",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nOur goal for Vanilla Races Expanded - P",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3164798809",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Pigskin Russian Language Pack",
+   "packageId": "Mewn.RUS.vanillaracesexpanded.pigskin",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Pigskin. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3165600708",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Ideology Expanded - Sophian Style",
+   "packageId": "VanillaExpanded.Ideo.SophianStyle",
+   "description": "This mod introduces a brand new style, inspired by that of the Empire from Royalty DLC. Featuring numerous new textures for many structures and weapons in the game, this mod also features built-in interactions with many of the Vanilla Expanded mods, changing furniture from Vanilla Furniture Expanded",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3194606539",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Props and Decor Russian Language Pack",
+   "packageId": "Mewn.Rus.VFEPropsandDecor",
+   "description": "Перевод на русский язык мода Vanilla Furniture Expanded - Props and Decor. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3200949846",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Temperature Expanded",
+   "packageId": "VanillaExpanded.Temperature",
+   "description": "Introducing \"Vanilla Temperature Expanded,\" a mod that adds a detailed and controllable central heating system to your game. This mod brings in a new feature called Efficiency, which affects how well your heating system runs. It's all about giving you more control over the temperature in your colony",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3202046258",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Base Generation Expanded",
+   "packageId": "VanillaExpanded.BaseGeneration",
+   "description": "Vanilla Base Generation Expanded is a mod many have been waiting for. Probably one of the most disappoint aspects of venturing out in a caravan in RimWorld is the fact that no matter where you go and no matter what base you raid, after you’ve seen one, you’ve seen them all. Vanilla Bases tend to oft",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3209927822",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Armour Expanded Russian Language Pack",
+   "packageId": "OW.RU.Armour",
+   "description": "Перевод на русский язык мода Vanilla Armour Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3215448648",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Skills Expanded Russian Language Pack",
+   "packageId": "OW.RU.Skills",
+   "description": "Перевод на русский язык мода Vanilla Skills Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3215507769",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Chemfuel Expanded Russian Language Pack",
+   "packageId": "OW.RU.Chemfuel",
+   "description": "Перевод на русский язык мода Vanilla Chemfuel Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3215508274",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Backgrounds Expanded Russian Language Pack",
+   "packageId": "OW.RU.Backgrounds",
+   "description": "Перевод на русский язык мода Vanilla Backgrounds Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3215508624",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Storytellers Expanded - Winston Waves",
+   "packageId": "VanillaStorytellersExpanded.WinstonWave",
+   "description": "Vanilla Storytellers Expanded - Winston Waves is a unique type of storyteller that introduces a brand new game mode called Wave Survival. Unlike Igor, and other raid-spawning storytellers, Winston Waves has a complex system of threat and reward that scales the more waves the player has survived.\n\nPu",
+   "versions": [
+    "1.6",
+    "1.4",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3215569151",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vehicle Framework Russian Language Pack",
+   "packageId": "Mewn.Rus.VehicleFramework",
+   "description": "Перевод на русский язык мода Vehicle Framework. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3224248431",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Blood Animations",
+   "packageId": "Fuu.BloodAnimations",
+   "description": "Extreme violence!\n\nAdds blood sprays, animated bleeding, ricochets, impact debris, and bullet casings!\n\nDirectional blood sprays (Videos above)\n*Triggered by direct damage, such as bullets, explosions, and damaging psycasts, and the blood amount scales based on the damage done.\n*Blood particles las",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3228047321",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Helixien Gas Expanded Russian Language Pack",
+   "packageId": "OW.RU.Helixien",
+   "description": "Перевод на русский язык мода Vanilla Helixien Gas Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3228394895",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 18,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Nutrient Paste Expanded Russian Language Pack",
+   "packageId": "OW.RU.Nutrient",
+   "description": "Перевод на русский язык мода Vanilla Nutrient Paste Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "3228395157",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 8,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Search and Destroy (Continued)",
+   "packageId": "MemeGoddess.SearchAndDestroy",
+   "description": "Tired of pawns lounging about during the heat of the battle? Toggle Search and Destroy to let the AI take control over your pawns while you sit back and enjoy the slaughter. \n\nUsed the exact same AI as enemy pawns, so please don't get mad at me when your pawns screw up. This mod is intended to comp",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3232242247",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "German",
+    "Japanese",
+    "Korean",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "SimpleCameraSetting",
+   "packageId": "ray1203.SimpleCameraSetting",
+   "description": "There are a lot of great features in the camera+, but I made this mod because of the performance issue. \nYou can modify the zoom range, zoom speed, smooth zoom settings, etc.\nIf you want some more camera settings comment it!\n\nYou can make camera follows your pawn. Default key is backspace and you ca",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3232415388",
+   "languages": [
+    "English",
+    "Korean"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Races Expanded - Insector",
+   "packageId": "vanillaracesexpanded.insector",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nInsector is our final (for now) xenotyp",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3260509684",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Smarter Deconstruction and Mining (Continued)",
+   "packageId": "Mlie.SmarterDeconstructionAndMining",
+   "description": "[img]https://img.litet.net/logos/Info.png[/img]\nUpdate of legodude17s mod https://steamcommunity.com/sharedfiles/filedetails/?id=2398365712\n\n[img]https://img.litet.net/logos/Notice.png[/img]\n\n[table]\n    [tr][td][url=https://discord.gg/h5TY6DA][img]https://img.litet.net/logos/Discord.png[/img][/url]",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.1",
+   "modVersionIgnore": false,
+   "workshop_id": "3261302741",
+   "languages": [
+    "ChineseSimplified",
+    "English",
+    "French",
+    "German",
+    "Spanish"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Races Expanded - Insector Russian Language Pack",
+   "packageId": "VRE.GrimCheese.vanillaracesexpanded.insector",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Insector. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "3261783862",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Aspirations Expanded",
+   "packageId": "VanillaExpanded.VanillaAspirationsExpanded",
+   "description": "Vanilla Aspirations Expanded is another mod in our arsenal that aims to add depth to colonists, with a final aim being enhancing the storytelling and making characters more memorable. In a similar manner to The Sims aspirations, Vanilla Aspirations Expanded adds aspirations to colonists that the pla",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3268401022",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Aspirations Expanded Russian Language Pack",
+   "packageId": "OW.RU.Aspirations",
+   "description": "Перевод на русский язык мода Vanilla Aspirations Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3268525756",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded - Bioferrite",
+   "packageId": "VanillaExpanded.VWEBF",
+   "description": "Vanilla Weapons Expanded - Bioferrite aims to bring several new weapons inspired by the hellcat rifle in Anomaly DLC. These weapons will have unique, triggerable abilities that consume bioferrite charges. Without adding too much bloat, this mod allows you to unlock unique, useful guns as long as you",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3287469135",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Map Mode Framework",
+   "packageId": "NozoMe.MapModeFramework",
+   "description": "Adds switchable map modes to the world map as well as tools in C# for mod authors to create their own map modes.",
+   "versions": [
+    "1.6",
+    "1.5"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3296654393",
+   "languages": [
+    "English",
+    "Spanish"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Vehicles Expanded - Upgrades",
+   "packageId": "OskarPotocki.VanillaVehiclesExpandedUpgrades",
+   "description": "Elevate your gameplay with the Vanilla Vehicles Expanded - Upgrades, which offers a revolutionary enhancement to your vehicle management in-game. This mod introduces a comprehensive upgrade system that allows players to customize and enhance their vehicles using valuable in-game resources.\nHere’s wh",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3302208420",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Nice Hands Retexture",
+   "packageId": "Andromeda.NiceHands",
+   "description": "A little bit nicer humanlike hands",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3302328100",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Factions Expanded - Insectoids 2",
+   "packageId": "OskarPotocki.VFE.Insectoid2",
+   "description": "Dive into the \"Vanilla Factions Expanded - Insectoids 2\" mod and experience a thrilling expansion of the insectoid universe in the game. Here’s what you can look forward to:\n\nSummon and Battle New Bosses: Get ready to face off against new and formidable insectoid bosses. Research and build thumpers",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3309003431",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Ancient urban ruins",
+   "packageId": "XMB.AncientUrbanrUins.MO",
+   "description": "This mod offers a variety of urban exploration experiences and maps, featuring an extensive collection of architectural and debris art assets, and includes a system for importing floor plans and generating quest maps.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3316062206",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseSimplified (简体中文)",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Factions Expanded - Insectoids 2 Russian Language Pack",
+   "packageId": "VRE.GrimCheese.Insectoid2",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Insectoids 2. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3317031065",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Nice Health Tab",
+   "packageId": "Andromeda.NiceHealthTab",
+   "description": "A few hand-drawn pics for your health tab",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3328729902",
+   "languages": [
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Food Variety Expanded",
+   "packageId": "VanillaExpanded.VanillaFoodVarietyExpanded",
+   "description": "Vanilla Food Variety Expanded introduces a \"Food Variety\" need, adding a new layer of complexity to meal planning. This need keeps track of the range of meals and ingredients that each colonist consumes. A diverse diet enhances the \"Food Variety\" score, rewarding colonists with mood boosts for tryin",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3334272487",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Food Variety Expanded Russian Language Pack",
+   "packageId": "OW.RU.VanillaFoodVarietyExpanded",
+   "description": "Перевод на русский язык мода Vanilla Food Variety Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3338963732",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 9,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Anomaly Expanded - Insanity",
+   "packageId": "VanillaExpanded.VAnomalyEInsanity",
+   "description": "Vanilla Anomaly Expanded - Sanity introduces a new gameplay mechanic centered around a \"Sanity\" system, in many ways similar to Sanity present in other video games, representing your characters' mental and emotional connection to human concerns. You’ll need to manage the sanity levels of your coloni",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3342412435",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Anomaly Expanded - Insanity Russian Language Pack",
+   "packageId": "OW.RU.Insanity",
+   "description": "Перевод на русский язык мода Vanilla Anomaly Expanded - Insanity. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3347969733",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 18,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Exosuit Framework",
+   "packageId": "Aoba.Exosuit.Framework",
+   "description": "A framework mod that allows you to make your own customizable exosuit with a wide\n\t\tmodifiability and repair / maintenance hanger systems.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3352894993",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseSimplified (简体中文)",
+    "ChineseTraditional",
+    "ChineseTraditional (繁體中文)",
+    "English",
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "[ARY] Automatic Stump Chopping [1.5 - 1.6]",
+   "packageId": "Arylice.Rimworld.AutomaticStumpChopping",
+   "description": "Arylice's Automatic Stump Chopping\n#arylice #aryasc\n\nHave you ever watched your lumberjacks chop down trees, \nonly for them to leave those annoying stumps behind, \nand felt that urge to have everything perfectly tidy? \nYou wish they’d just finish the job completely?\nThis mod will solve this issue in",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.0",
+   "modVersionIgnore": false,
+   "workshop_id": "3357749890",
+   "languages": [
+    "English",
+    "French"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Automatic Parking",
+   "packageId": "rabiosus.vfautoparking",
+   "description": "Add automatic parking feature to the vehicle.\nClick on the gizmo to save the current position and orientation.\nThen, by clicking the gizmo again, the vehicle will automatically park at the saved location.\nUse the Go Park gizmo's parking options to update or clear the saved parking position.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3365473553",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Christmas Expanded",
+   "packageId": "VE.VanillaChristmasExpanded",
+   "description": "Festive season is approaching us fast, and I think it’s proper that Vanilla Expanded releases a big mod to celebrate that time. It’s been a very productive year for us, and with some festive content, we get to breathe, enjoy and celebrate this beautiful time of the year.\n\nVanilla Christmas Expanded",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3380695249",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Christmas Expanded Russian Language Pack",
+   "packageId": "OW.RU.Christmas",
+   "description": "Перевод на русский язык мода Vanilla Christmas Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3380768447",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "MultiFloors",
+   "packageId": "telardo.MultiFloors",
+   "description": "Multi-floors.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.1.3",
+   "modVersionIgnore": false,
+   "workshop_id": "3384660931",
+   "languages": [
+    "ChineseSimplified (简体中文)",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Use This Instead",
+   "packageId": "Mlie.UseThisInstead",
+   "description": "[img]https://img.litet.net/logos/Self-Info.png[/img]\n\n[b]TLDR: This mod scans your installed mods and suggest working/more updated replacements for those mods[/b]\n\nContinuations of mods has many names and has become an large part of the RimWorld modding community.\nIt can be hard to keep track of whe",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.152",
+   "modVersionIgnore": false,
+   "workshop_id": "3396308787",
+   "languages": [
+    "ChineseSimplified",
+    "English",
+    "French",
+    "German"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Adaptive Primitive Storage",
+   "packageId": "Adaptive.PrimitiveStorage",
+   "description": "An unoffical port of Primitive Storage from LWM's Deep Storage to the Adaptive Storage Framework using Phaneron's retexture and restyle.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3400037215",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Skills Expanded",
+   "packageId": "vanillaexpanded.skills",
+   "description": "Vanilla Skills Expanded is a new mod that expands on the vanilla skills system by introducing expertise to the extremely broad skill categories that vanilla has. Only 1 expertise per pawn can be gained. Expertise can only be gained in skills with both a passion and more than 15 levels. In addition,",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3400246558",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "I will be back",
+   "packageId": "HaiLuan.IWBB",
+   "description": "I will be back",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3400259397",
+   "languages": [
+    "ChineseSimplified (简体中文)",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Social Experience from Trade",
+   "packageId": "Krelinos.SocialEXPFromTrade",
+   "description": "In RimWorld, every skill gains experience when it is practiced. Every skill, except social when trading (and stonecutting but that mod exists already).\n\nIf you ever felt like your trade negotiator should have really learned a thing or two after settling a deal worth 10000+ silver, this mod does just",
+   "versions": [
+    "1.6",
+    "1.5",
+    "1.4",
+    "1.3"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3400608063",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Quests Expanded - The Generator",
+   "packageId": "vanillaquestsexpanded.generator",
+   "description": "In a world on the brink, one invention could change everything. Vanilla Quests Expanded: Generator invites you to uncover the secrets of the ARC — a powerful, ancient generator created by a brilliant, mysterious inventor.\n\nEmbark on a perilous quest to unlock its full potential, upgrade it with nucl",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3411401573",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "[sbz] Neat Storage",
+   "packageId": "sbz.NeatStorage",
+   "description": "Add 27 types of furniture for neat storage.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3416243474",
+   "languages": [
+    "French (Français)",
+    "German (Deutsch)",
+    "Korean (한국어)",
+    "Russian (Русский)"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vehicle Map Framework",
+   "packageId": "OELS.VehicleMapFramework",
+   "description": "This mod is a framework mod for vehicles using Vehicle Framework to put a map on vehicle which floors and buildings can be constructed.\nこのModはVehicle Frameworkを使用した車両に、床や建築物を建設可能なマップを載せるためのフレームワークMODです。\n這個模組是 **Vehicle Framework** 的擴展，讓車輛能夠變成一張可建造的地圖，你可以在上面蓋地板、建築，打造屬於自己的移動基地！",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.562",
+   "modVersionIgnore": false,
+   "workshop_id": "3426502333",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "Japanese",
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Technical map Vehicles",
+   "packageId": "MO.TechnicalMapVehicles",
+   "description": "The wildest modification, adding uranium cannons to the car.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3438366909",
+   "languages": [
+    "ChineseSimplified (简体中文)"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Quests Expanded - The Generator Russian Language Pack",
+   "packageId": "VRE.GrimCheese.vanillaquestsexpanded.generator",
+   "description": "Перевод на русский язык мода Vanilla Quests Expanded - The Generator. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.02",
+   "modVersionIgnore": false,
+   "workshop_id": "3444274992",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Medieval 2",
+   "packageId": "OskarPotocki.VFE.Medieval2",
+   "description": "A worthy successor to our beloved Vanilla Factions Expanded - Medieval and Vanilla Factions Expanded - Vikings, VFE-Medieval 2 builds upon everything that made the originals great. While this isn’t a medieval overhaul that removes late game content in favor of medieval content, we’ve carefully desig",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3444347874",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Factions Expanded - Medieval 2 Russian Language Pack",
+   "packageId": "OW.RU.Medieval2",
+   "description": "Перевод на русский язык мода Vanilla Factions Expanded - Medieval 2. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "3445043875",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Cooking Expanded - Haute",
+   "packageId": "VanillaExpanded.VCookEHaute",
+   "description": "Vanilla Cooking Expanded - Haute Module is a new addition to the Vanilla Cooking Expanded arsenal, utilising the various mechanics added by Vanilla Cooking Expanded mod. In Haute Meals, players will gain access to a brand new cooking station called electric haute section that will be utilised in cre",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3455694362",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Quests Expanded - Cryptoforge",
+   "packageId": "vanillaquestsexpanded.cryptoforge",
+   "description": "In Vanilla Quests Expanded: Cryptoforge, players embark on a perilous expedition into the planet’s icy north pole, uncovering the broken remains of a long-lost starship. Said to have belonged to a cryptoparticle-wielding nomadic civilization, this vessel, known as the Cryptoforge, has shattered as i",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3461526070",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "WASDed Pawn",
+   "packageId": "addvans.WASDedPawn",
+   "description": "Mod version: 1.1\nGet full control of your pawn in combat using WASDed mode. Move around using WASD, use weapons with LMB and aim with your mouse!\n\t\t\nDefault: press Y to go WASDed when a single drafted Pawn is chosen.\n\nLanguage: English\n\nNew features:\n• Sprint and Walk - increase or decrease your sp",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3471835151",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Dark Ages : Beasts and Monsters",
+   "packageId": "Van.Beasts",
+   "description": "Adds a variety of animals, beasts and monsters to your biomes.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3472275628",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Wolfein Race",
+   "packageId": "MelonDove.WolfeinRace",
+   "description": "The wolfein race.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3473140562",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "[sbz] Fridge",
+   "packageId": "sbz.NeatStorageFridge",
+   "description": "Add 7 types of fridges for neat storage.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3486264784",
+   "languages": [
+    "Korean"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Who shot my leg off?",
+   "packageId": "Tixiv.WhoShotMyLegOff",
+   "description": "A quality of life mod for Rimworld\n\nDid you ever notice that your colonist had a scar or a missing body part, and you just asked yourself: How did that happen? This mod will solve that problem. Now what happened and when it occurred will be displayed on each Hediff (health condition) forever.\n\nThe",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3491552121",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Quests Expanded - Deadlife",
+   "packageId": "vanillaquestsexpanded.deadlife",
+   "description": "In Vanilla Quests Expanded - Deadlife, players will uncover the dark legacy of Operation: Deadlife, a forgotten initiative from a long-extinct government that sought to secure humanity’s future, or perhaps its end. Scattered across the planet lie sealed ancient silos, each one brimming with the reso",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3497226454",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Useful Marks",
+   "packageId": "Andromeda.UsefulMarks",
+   "description": "Mark colonists with useful tags",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3506573327",
+   "languages": [
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 2,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Deep And Deeper",
+   "packageId": "Shashlichnik.DeepAndDeeper",
+   "description": "Out of steel? Neighbours not selling components? Your last plasteel chunk insect occupied? Empire take your last piece of Gold you needed to build a Multi-Analyzer?\n\nNo problems! Go low and dig deeper! Join the Deep Divers! \n\nDon't let the promise of riches cloud your vision, and who knows what wil",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3509420021",
+   "languages": [
+    "English",
+    "German",
+    "Russian",
+    "Spanish"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Hospitality (Continued)",
+   "packageId": "Orion.Hospitality",
+   "description": "Original mod by Orion\nhttps://steamcommunity.com/sharedfiles/filedetails/?id=753498552\nhttps://ludeon.com/forums/index.php?topic=11444.0\nGNU General Public License\nAll the same, if the original author requests it, I will remove this update.\n\npackageID of Orion.Hospitality has been retained for comp",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.1.3",
+   "modVersionIgnore": false,
+   "workshop_id": "3509486825",
+   "languages": [
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Italian",
+    "Polish",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish (Español(Castellano))",
+    "Ukranian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "QualityBuilder Unofficial 1.6",
+   "packageId": "hatti.qualitybuilder",
+   "description": "With QualityBuilder you are able to set a minimum quality you want on a Object you want to build.\nTired of placing, deconstructing and replacing 100 of beds just to get some decent ones? This has an end now! You can set the minimum quality you want to get from you selected objects.\n\nIf the finished",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.6.013",
+   "modVersionIgnore": false,
+   "workshop_id": "3512466087",
+   "languages": [
+    "ChineseTraditional",
+    "English",
+    "German",
+    "PortugueseBrazil",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Quality Colors (Continued)",
+   "packageId": "DawnsGlow.qualcolor",
+   "description": "Colors the items in the trade window based on quality.\n\nSuper simple mod, just colors items based on quality.\n\nFeatures settings, allowing you to change the color to your hearts desire!\n\nShould be compatible with everything.",
+   "versions": [
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3513846773",
+   "languages": [
+    "ChineseTraditional",
+    "English",
+    "German"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Nice Bill Tab",
+   "packageId": "Andromeda.NiceBillTab",
+   "description": "Let me tell you a fairy tale about beautiful UI in our beloved game",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3520130671",
+   "languages": [
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Auto-Cut Blight - 1.6",
+   "packageId": "Defi.AutoCutBlight",
+   "description": "Automatically designate blighted plants to be cut.\n\nI will remove this mod if the 1.5 version is still being maintained. Otherwise, I will continue to keep this one maintained\n\nOriginal mods;\n\n(1.5 Fork):\nSteam Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3225340303\n\n(1.4 and ea",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3520167264",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Cherry Picker",
+   "packageId": "Owlchemist.CherryPicker",
+   "description": "If you've ever found a mod you've liked except for one little part of it, this mod allows you to selectively remove content. It works by pseudo-removing the definitions, meaning they remain in the game so as not to cause in errors, but all references to them are cut so they do not show up anywhere.",
+   "versions": [
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3521312241",
+   "languages": [
+    "English",
+    "Japanese",
+    "Russian"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Ushankas Glittertech Expansion",
+   "packageId": "Ushanka.GlittertechExpansion",
+   "description": "A massive content expansion focused on enhancing the late-game experience. It introduces new offensive measures against mechanoids, ways to produce previously uncraftable recipes, and brings your colony one step closer to becoming a glitterworld paradise.\\n\\nYou can expect:\\n\\n   • Combat quests for",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3522676478",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Health Display",
+   "packageId": "GT.Sam.HealthDisplay",
+   "description": "Provides a more visual and interesting UI on top of the Health tab, allowing you to visually see the status of your colonists, animals and mechanoids. It's designed to be lightweight and fit the theme of Rimworld's UI and animals. This does not replace the main Health tab, and can be minimised at an",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3522897532",
+   "languages": [
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Performance - Slower Pawn Tick Rate",
+   "packageId": "Arkymn.SlowerPawnTickRate",
+   "description": "",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3524116050",
+   "languages": [
+    "English",
+    "PortugueseBrazilian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Smart Medicine - Continued",
+   "packageId": "Memegoddess.SmartMedicine",
+   "description": "Doctors will use medicine from their inventory. What a concept!\n\t\t\nDoctors can also use medicine from the patient's inventory, or anyone else on the map, even pack animals brought on a caravan.\n\nThey can also keep their inventory stocked with medicine. The Gear Tab has Settings for each Colonist.\n\nA",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3526251680",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Japanese",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 5,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Replace Stuff - Continued",
+   "packageId": "Memegoddess.ReplaceStuff",
+   "description": "Replace the stuff that a thing is made from, e.g. replace a wall's materials.\n\t\nThis mod does NOT deconstruct and reconstruct. It preserves the existing building and replaces materials in-place.\n\nAlso, blueprints are allowed over rock and fog.\n\t\nA new button in the Architect/Structure menu to replac",
+   "versions": [
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3526354009",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Japanese",
+    "Korean",
+    "Polish",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 3,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "[FSF] Better Exploration Loot",
+   "packageId": "FrozenSnowFox.BetterExplorationLoot",
+   "description": "Modifies the loot tables for a variety of things in the world to provide better and more worthwhile rewards.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3526957922",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Automatic Hydroponics",
+   "packageId": "Poncho.AutomaticHydroponics",
+   "description": "Adds a new high tech hydroponics bay that tends to itself.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3528490718",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Trains of the Rim",
+   "packageId": "princeofpluto.vehicles.trains",
+   "description": "Adds trains to Rimworld using Vehicle Framework",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3530446424",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Races Expanded - Starjack",
+   "packageId": "vanillaracesexpanded.starjack",
+   "description": "Vanilla Races Expanded is a brand new series of mods to enhance Biotech features, add to the storytelling and the world-building of RimWorld, and to introduce new, cool types of xenohumans, complete with their own unique genes, behaviors, mechanics and items.\n\nIn Vanilla Races Expanded – Starjack, w",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3531912428",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Races Expanded - Starjack Russian Language Pack",
+   "packageId": "OW.RU.Star",
+   "description": "Перевод на русский язык мода Vanilla Races Expanded - Starjack. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3535103186",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 9,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "[sbz] Gravship Storage",
+   "packageId": "sbz.GravshipStorage",
+   "description": "Add 8 types of furniture for Gravship.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3537905298",
+   "languages": [
+    "Korean (한국어)"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Choose Where To Land",
+   "packageId": "kearril.ChooseWhereToLand",
+   "description": "Choose Where To Land:\n\t\tSteam Workshop Link: https://steamcommunity.com/sharedfiles/filedetails/?id=3537970831\n\t\tGithub Link: https://github.com/kearril/Choose-Where-To-Land",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3537970831",
+   "languages": [
+    "ChineseSimplified (简体中文)",
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Temperature Expanded Russian Language Pack",
+   "packageId": "OW.RU.Temperature",
+   "description": "Перевод на русский язык мода Vanilla Temperature Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3542025634",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 2,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Simple Cape and Hood Retexture",
+   "packageId": "Stokes.simplehoodcape",
+   "description": "Simple retexture of the hood and cape\n\n    \tVersion 1.1\n    \t- Add optional replacement textures for Eltex Cape from Vanilla Psycast Expanded",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3543386604",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Walk the World",
+   "packageId": "addvans.WalkTheWorld",
+   "description": "Explore every inch of the planet! Walk your drafted pawns all the way to the corner of the map in order to move them to neighbor map. Attack hostile settlements, visit and trade with friendly settlements - become a fully independent explorer!\n\nTechnical note: map will reset after you leaving it, th",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3546716725",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Customize Weapon",
+   "packageId": "Vortex.CustomizeWeapon",
+   "description": "Customize Weapon: Modify weapons as much as you can. Built-in framework.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "0.23.3",
+   "modVersionIgnore": false,
+   "workshop_id": "3550585103",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 7,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "RunAndGun - Continued",
+   "packageId": "MemeGoddess.RunAndGun",
+   "description": "Your colonists can never be a true Rambo if they cannot gun while they are running. Therefore, this mod adds a mode that, when enabled, allows drafted colonists to shoot \nwhile moving at the cost of an accuracy and movement penalty.These penalties can be modified in the mod settings of this mod. \nS",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3562365100",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Italian",
+    "Japanese",
+    "Korean",
+    "KoreanFastChannel",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Quests Expanded - Deadlife Russian Language Pack",
+   "packageId": "OW.RU.Deadlife",
+   "description": "Перевод на русский язык мода Vanilla Quests Expanded - Deadlife. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "3563114641",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 39,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Quests Expanded - Cryptoforge Russian Language Pack",
+   "packageId": "OW.RU.Cryptoforge",
+   "description": "Перевод на русский язык мода Vanilla Quests Expanded - Cryptoforge. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3563279062",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 40,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Prepatcher",
+   "packageId": "jikulopo.prepatcher",
+   "description": "Prepatcher is a powerful library for mod developers and a mod manager.\n  \nIncludes Harmony v2.4.2 and PrepatcherAPI v1.2.0\n\nThe version for RimWorld 1.4 includes Harmony v2.2.2 and PrepatcherAPI v1.2.0\nThe version for RimWorld 1.5 includes Harmony v2.3.3 and PrepatcherAPI v1.2.0",
+   "versions": [
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.3.3",
+   "modVersionIgnore": false,
+   "workshop_id": "3563469557",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Dlc collaboration - Void universe",
+   "packageId": "HaiLuan.VoidUniverse",
+   "description": "Anomaly entities require vast space and long-term stable colonies,\nwhile Odyssey forces you to constantly relocate within the cramped confines of a starship.\nNo more compromises! This mod provides solutions—seamlessly bridging both DLCs!\n\nAll Anomaly events and entities—from Flesh Beasts to Spheres",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3587277884",
+   "languages": [
+    "ChineseSimplified (简体中文)",
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Gravship Expanded - Chapter 1",
+   "packageId": "vanillaexpanded.gravship",
+   "description": "The aim of Vanilla Gravship Expanded - Chapter 1 is to take gravships beyond being just a convenient portable base and make them feel like true, living ships that can anchor an entire run. Instead of a tool you unlock and don’t pay much attention to, the gravship becomes a home you must manage, upgr",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3609835606",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Nice Inventory Tab",
+   "packageId": "Andromeda.NiceInventoryTab",
+   "description": "Let me tell you a fairy tale about beautiful UI in our beloved game",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3609897594",
+   "languages": [
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 4,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Ponpeco Furnitures : Sci-Fi",
+   "packageId": "ponpeco.PFSF",
+   "description": "This is a furniture mod designed with a sci-fi aesthetic.\n\n    The pieces are inspired by starships, cyberspace, and futuristic research facilities.\n    I hope you’ll enjoy using them to create everything from sleek gravship interiors to the atmosphere of a Spacer-level colony!\n\n    Features\n\n    Al",
+   "versions": [
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "1.5",
+   "modVersionIgnore": false,
+   "workshop_id": "3610234567",
+   "languages": [
+    "Japanese"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Gravship Expanded - Chapter 1 Russian Language Pack",
+   "packageId": "OW.RU.Gravship1",
+   "description": "Перевод на русский язык мода Vanilla Gravship Expanded - Chapter 1. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "16.04",
+   "modVersionIgnore": false,
+   "workshop_id": "3615520226",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Quests Expanded - Ancients",
+   "packageId": "vanillaquestsexpanded.ancients",
+   "description": "They tried to improve the human body. Instead, they changed it into something unrecognizable. Vanilla Quests Expanded: Ancients sends you into subterranean vaults where abandoned archite machines still twist flesh and fate, reshaping anything that falls into their grasp.\n\nSearch the remnants of a ci",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3618306875",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Quests Expanded - Ancients Russian Language Pack",
+   "packageId": "OW.RU.Ancients",
+   "description": "Перевод на русский язык мода Vanilla Quests Expanded - Ancients. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "16.05",
+   "modVersionIgnore": false,
+   "workshop_id": "3626232280",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 64,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Faction Territories and Vassalage",
+   "packageId": "jaeger972.factionterritories",
+   "description": "Adds a  mode that draws territory regions around settlements for each faction.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3626725895",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Fantasy Biotech",
+   "packageId": "vr.fantasy.biotech",
+   "description": "A fantasy reimagining of Biotech",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "1.6.3.3",
+   "modVersionIgnore": false,
+   "workshop_id": "3632363090",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Layered Apparel",
+   "packageId": "costel.layeredapparel",
+   "description": "Give each colonist a personal style, or apply a shared uniform to a whole group. Cosmetics change how apparel looks while keeping actual equipment and its stats intact.\n\nFeatures:\n- Appearance editing: Adjust colors, and set size, position, and rotation separately for the front, sides, and back. Pr",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3632480044",
+   "languages": [
+    "English",
+    "Korean"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Landmarks Expanded",
+   "packageId": "VanillaExpanded.VExplorationE",
+   "description": "Vanilla Landmarks Expanded represents a substantial evolution of the original Vanilla Exploration Expanded concept. Our ambition is to enrich the world map, transforming it from a mere travel surface into a truly unique and engaging mix of environments. The goal is simple: to ensure that every journ",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3656316229",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Gerrymon's Greekcore Style",
+   "packageId": "Gerrymon.GreekcoreStyle",
+   "description": "Add half-fantasy half-historical Hellenic-themed Greekcore style. The main purpose of this stylepack is for providing more civilian apparel variety for classical era and continuous roleplay throughout industrial and spacer colonies, which means this should be treated as a complementary mod alongside",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3666883698",
+   "languages": [],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Simple Leadership",
+   "packageId": "pb3n.SimpleLeadership",
+   "description": "With Simple Leadership, you are given the ability to track Faction Leadership and Base Leadership. These leaders are generated with your world pawns, to give your planet more life and lets you assign faces to your enemies and allies.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3668307448",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Landmarks Expanded Russian Language Pack",
+   "packageId": "Mewn.RU.VanillaExpanded.VExplorationE",
+   "description": "Перевод на русский язык мода Vanilla Landmarks Expanded. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "16.01",
+   "modVersionIgnore": false,
+   "workshop_id": "3668789586",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 6,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Weapons Expanded (Remake) Russian Language Pack",
+   "packageId": "OW.RU.WeaponRemake",
+   "description": "Перевод на русский язык ремейка мода Vanilla Weapons Expanded и ремейков модулей. Перевод НЕ-ремейков остаётся в Vanilla Weapons Expanded Russian Language Pack и он совместим с этим переводом. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "16.03",
+   "modVersionIgnore": false,
+   "workshop_id": "3676250467",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Nice Plants Menu",
+   "packageId": "Andromeda.NicePlantsMenu",
+   "description": "Let me tell you a fairy tale about beautiful UI in our beloved game",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3685058533",
+   "languages": [
+    "English",
+    "Russian"
+   ],
+   "ru_files_top": 1,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Perspective Shift",
+   "packageId": "ferny.PerspectiveShift",
+   "description": "Play as your characters.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3686618980",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Furniture Expanded - Factory",
+   "packageId": "VanillaExpanded.VFEFactory",
+   "description": "Vanilla Furniture Expanded - Factories brings a full industrial revolution to the rim, replacing slow and expensive legacy systems with some tech-level appropriate automation! These new factories utilize a familiar bill-based UI, allowing you to set production targets like “Do until you have X” or “",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3686924415",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "SimpleBabyCarry",
+   "packageId": "b4ttl3m3ds.simplebabycarry",
+   "description": "Carry babies with craftable slings and carriers across tech levels without vanilla putting baby down again.\n\nKey features:\n- Baby rides visually on the carrier while they work, haul and fight\n- Physical damage taken by the carrier partially transfers to the baby - slings reduce the transfer, parents",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": "4.0.2",
+   "modVersionIgnore": false,
+   "workshop_id": "3692756679",
+   "languages": [
+    "English",
+    "French",
+    "German",
+    "Italian",
+    "Japanese",
+    "Korean",
+    "Polish",
+    "Russian",
+    "Spanish"
+   ],
+   "ru_files_top": 7,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Resource Delivery Helper",
+   "packageId": "ferny.ResourceDeliveryHelper",
+   "description": "",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3696859196",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Missile Girl - Performance Mod",
+   "packageId": "vr.missilegirl",
+   "description": "MissileGirl:\n\n        MissileGirl is mod that is designed to improve RimWorld Performance.\n\n        Important note: MissileGirl should be the last mod in your mod list.\n\n\n        Github Link: https://github.com/ViralReaction/MissileGirl\n\n        MissileGirl is OpenSource and for anyone to u",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3712928623",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "Italian",
+    "Korean",
+    "Portuguese",
+    "Russian",
+    "Spanish"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Quests Expanded - Drone Factory",
+   "packageId": "vanillaquestsexpanded.dronefactory",
+   "description": "In the Drone Factory mod, players are thrust into a rust-choked industrial conflict as the planet’s dormant war machines mysteriously blink back to life. The escalating crisis begins with expeditions into derelict drone scrapyards - valuable but perilous dens of discarded military hardware. Here, co",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3733951755",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Vanilla Quests Expanded - Drone Factory Russian Language Pack",
+   "packageId": "OW.RU.DroneFactory",
+   "description": "Перевод на русский язык мода Vanilla Quests Expanded - Drone Factory. Подробности ищите на странице в мастерской.",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3740838531",
+   "languages": [
+    "Russian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Yet Another Research Tree (YART)",
+   "packageId": "seohyeon.yart",
+   "description": "Yet Another Research Tree (YART) replaces the vanilla research tab with a custom, graph-based tech tree.\n\nFeatures\n- Automatic graph layout of all research, including projects and tabs added by other mods.\n- Per-channel research queue (vanilla bench, Anomaly knowledge, Vanilla Gravship Expanded, and",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3745434121",
+   "languages": [
+    "ChineseSimplified (简体中文)",
+    "ChineseTraditional (繁體中文)",
+    "English",
+    "French (Français)",
+    "German (Deutsch)",
+    "Japanese (日本語)",
+    "Korean (한국어)",
+    "Polish (Polski)",
+    "PortugueseBrazilian (Português Brasileiro)",
+    "Russian (Русский)",
+    "Spanish (Español(Castellano))"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Vanilla Plants Expanded - Flowers",
+   "packageId": "VanillaExpanded.VPEFlowers",
+   "description": "Vanilla Plants Expanded - Flowers adds a variety of new, decorative flora to your colony, enriching your gardens with a dynamic, season-based blooming system. Here is what you can expect:\n\n- Flowers follow specific blooming schedules throughout the year. During these periods, they reach peak beauty,",
+   "versions": [
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "3748351639",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": true
+  },
+  {
+   "name": "Allow Tool",
+   "packageId": "UnlimitedHugs.AllowTool",
+   "description": "Version: 3.14.0\n\nA set of tools to make your life on the Rim a bit easier.\nEasily forbid and unforbid items, select similar things, have things hauled urgently and affect the entire map with powerful new tool extensions.\n\nAll tools are found in the Architect > Orders menu. Right-click tools with the",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "761421485",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Korean",
+    "Polish",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 9,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "HugsLib",
+   "packageId": "UnlimitedHugs.HugsLib",
+   "description": "HugsLib is a library that provides shared functionality to other mods.\nVersion: 12.0.0",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "818773962",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Japanese",
+    "Korean",
+    "Polish",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish",
+    "SpanishLatin",
+    "Turkish"
+   ],
+   "ru_files_top": 3,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Dubs Bad Hygiene",
+   "packageId": "Dubwise.DubsBadHygiene",
+   "description": "Adds toilets, bathing, sewage, hygiene-related needs and mood effects, central heating, water management and thirst, irrigation, fertilizer, air conditioning, hot tubs, kitchen sinks, and more! Also includes a Lite mode for a simplified experience",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "3.1.2800",
+   "modVersionIgnore": false,
+   "workshop_id": "836308268",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "Czech",
+    "English",
+    "French",
+    "German",
+    "Korean",
+    "Polish",
+    "PortugueseBrazilian",
+    "Russian",
+    "Spanish",
+    "SpanishLatin",
+    "Ukrainian"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Humanoid Alien Races",
+   "packageId": "erdelf.HumanoidAlienRaces",
+   "description": "A framework for the creation of new alien races in Rimworld\n\nIf you ever thought that the racial diversity in rimworld is... not that diverse and you want to change that, you came to the right place. This framework allows to easily add new humanoid races without any C# knowledge, purely in xml.\n\n\nF",
+   "versions": [
+    "0.19",
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "839005762",
+   "languages": [
+    "English"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Camera+",
+   "packageId": "brrainz.cameraplus",
+   "description": "You want more zoom and different panning?\n\nPowered by Harmony Patch Library\n\nAndreas Pardeike\nEmail: andreas@pardeike.net\nSteam: pardeike\nTwitter: @pardeike",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": "3.4.7.0",
+   "modVersionIgnore": false,
+   "workshop_id": "867467808",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Japanese",
+    "Russian",
+    "Spanish",
+    "SpanishLatin"
+   ],
+   "ru_files_top": 3,
+   "is_vanilla_expanded": false
+  },
+  {
+   "name": "Simple sidearms",
+   "packageId": "PeteTimesSix.SimpleSidearms",
+   "description": "With the invention of pockets comes the idea of bringing EVEN MORE WEAPONS. Because your snipers are getting really tired of getting shanked.\n\nSee forum thread for details.\nhttps://ludeon.com/forums/index.php?topic=32497.0",
+   "versions": [
+    "1.0",
+    "1.1",
+    "1.2",
+    "1.3",
+    "1.4",
+    "1.5",
+    "1.6"
+   ],
+   "modVersion": null,
+   "modVersionIgnore": false,
+   "workshop_id": "927155256",
+   "languages": [
+    "ChineseSimplified",
+    "ChineseTraditional",
+    "English",
+    "French",
+    "German",
+    "Korean"
+   ],
+   "ru_files_top": 0,
+   "is_vanilla_expanded": false
+  }
+ ]
+}
