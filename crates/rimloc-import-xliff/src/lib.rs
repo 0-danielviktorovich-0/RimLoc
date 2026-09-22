@@ -17,28 +17,28 @@ pub fn read_xliff_12(path: &Path) -> Result<HashMap<String, String>> {
     loop {
         match reader.read_event_into(&mut buf) {
             Ok(Event::Start(e)) => {
-                let name = e.name().as_ref().to_vec();
-                if name.as_slice() == b"trans-unit" {
+                let name = e.name().as_ref().to_owned();
+                if name == "trans-unit" {
                     for a in e.attributes().flatten() {
-                        if a.key.as_ref() == b"id" {
-                            cur_id = Some(String::from_utf8_lossy(&a.value).to_string());
+                        if a.key.as_ref() == "id" {
+                            cur_id = Some(a.value.to_string());
                         }
                     }
-                } else if name.as_slice() == b"target" {
+                } else if name == "target" {
                     in_target = true;
                     cur_val.clear();
                 }
             }
             Ok(Event::Text(t)) => {
                 if in_target {
-                    cur_val.push_str(&t.unescape().unwrap_or_default());
+                    cur_val.push_str(t.xml10_content().as_ref());
                 }
             }
             Ok(Event::End(e)) => {
-                let name = e.name().as_ref().to_vec();
-                if name.as_slice() == b"target" {
+                let name = e.name().as_ref().to_owned();
+                if name == "target" {
                     in_target = false;
-                } else if name.as_slice() == b"trans-unit" {
+                } else if name == "trans-unit" {
                     if let Some(id) = cur_id.take() {
                         map.insert(id, cur_val.trim().to_string());
                         cur_val.clear();
