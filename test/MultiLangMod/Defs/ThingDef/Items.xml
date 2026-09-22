@@ -1,0 +1,12 @@
+<Defs>
+  <ThingDef>
+    <defName>ML_Widget</defName>
+    <label>widget</label>
+    <description>A widget used for translation regression tests.</description>
+  </ThingDef>
+  <ThingDef>
+    <defName>ML_Gadget</defName>
+    <label>gadget</label>
+    <description>A gadget that has no translation files at all.</description>
+  </ThingDef>
+</Defs>

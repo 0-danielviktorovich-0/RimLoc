@@ -9,7 +9,8 @@ pub fn validate_under_root(
 ) -> Result<Vec<ValidationMessage>> {
     let mut units = rimloc_parsers_xml::scan_all_units(scan_root)?;
     if let Some(dir) = source_lang_dir {
-        units.retain(|u| is_source_for_lang_dir(&u.path, dir));
+        let dir = crate::util::normalize_lang_dir(dir);
+        units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
     } else if let Some(code) = source_lang {
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
@@ -27,7 +28,8 @@ pub fn validate_under_root_with_defs(
 ) -> Result<Vec<ValidationMessage>> {
     let mut units = rimloc_parsers_xml::scan_all_units_with_defs(scan_root, defs_root)?;
     if let Some(dir) = source_lang_dir {
-        units.retain(|u| is_source_for_lang_dir(&u.path, dir));
+        let dir = crate::util::normalize_lang_dir(dir);
+        units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
     } else if let Some(code) = source_lang {
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
@@ -69,7 +71,8 @@ pub fn validate_under_root_with_defs_and_dict(
     let mut units =
         crate::scan::scan_units_with_defs_and_dict(scan_root, defs_root, dict, extra_fields)?;
     if let Some(dir) = source_lang_dir {
-        units.retain(|u| crate::util::is_source_for_lang_dir(&u.path, dir));
+        let dir = crate::util::normalize_lang_dir(dir);
+        units.retain(|u| crate::util::is_source_for_lang_dir(&u.path, &dir));
     } else if let Some(code) = source_lang {
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| crate::util::is_source_for_lang_dir(&u.path, &dir));
@@ -87,6 +90,8 @@ pub fn validate_placeholders_cross_language(
     target_lang_dir: &str,
     defs_root: Option<&Path>,
 ) -> Result<Vec<ValidationMessage>> {
+    let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
+    let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     fn extract_placeholders_like_cli(text: &str) -> std::collections::BTreeSet<String> {
         use regex::Regex;
         use std::sync::OnceLock;
@@ -120,13 +125,13 @@ pub fn validate_placeholders_cross_language(
     for u in units.drain(..) {
         let path = u.path.clone();
         let key = u.key.clone();
-        if is_source_for_lang_dir(&path, source_lang_dir) {
+        if is_source_for_lang_dir(&path, &source_lang_dir) {
             if let Some(s) = u.source.as_deref() {
                 if !s.trim().is_empty() {
                     src_map.entry(key).or_insert_with(|| s.to_string());
                 }
             }
-        } else if is_source_for_lang_dir(&path, target_lang_dir) {
+        } else if is_source_for_lang_dir(&path, &target_lang_dir) {
             if let Some(s) = u.source.as_deref() {
                 tgt_map.insert(
                     key,
@@ -164,6 +169,8 @@ pub fn validate_lists_cross_language(
     target_lang_dir: &str,
     defs_root: Option<&Path>,
 ) -> Result<Vec<ValidationMessage>> {
+    let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
+    let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     let mut units = if let Some(defs) = defs_root {
         rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
     } else {
@@ -175,9 +182,9 @@ pub fn validate_lists_cross_language(
         std::collections::HashMap::new();
     for u in units.drain(..) {
         if let Some(text) = u.source.as_deref() {
-            if is_source_for_lang_dir(&u.path, source_lang_dir) {
+            if is_source_for_lang_dir(&u.path, &source_lang_dir) {
                 src.insert(u.key.clone(), (text.to_string(), u.line));
-            } else if is_source_for_lang_dir(&u.path, target_lang_dir) {
+            } else if is_source_for_lang_dir(&u.path, &target_lang_dir) {
                 tgt.insert(
                     u.key.clone(),
                     (
@@ -223,6 +230,8 @@ pub fn validate_orphans_cross_language(
     target_lang_dir: &str,
     defs_root: Option<&Path>,
 ) -> Result<Vec<ValidationMessage>> {
+    let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
+    let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     let mut units = if let Some(defs) = defs_root {
         rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
     } else {
@@ -232,9 +241,9 @@ pub fn validate_orphans_cross_language(
     let mut tgt_map: std::collections::HashMap<String, (String, Option<usize>)> =
         std::collections::HashMap::new();
     for u in units.drain(..) {
-        if is_source_for_lang_dir(&u.path, source_lang_dir) {
+        if is_source_for_lang_dir(&u.path, &source_lang_dir) {
             src_keys.insert(u.key.clone());
-        } else if is_source_for_lang_dir(&u.path, target_lang_dir) {
+        } else if is_source_for_lang_dir(&u.path, &target_lang_dir) {
             tgt_map.insert(
                 u.key.clone(),
                 (u.path.to_string_lossy().into_owned(), u.line),
@@ -271,6 +280,8 @@ pub fn coverage_report(
     target_lang_dir: &str,
     defs_root: Option<&Path>,
 ) -> Result<CoverageReport> {
+    let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
+    let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     let mut units = if let Some(defs) = defs_root {
         rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
     } else {
@@ -281,9 +292,9 @@ pub fn coverage_report(
     let mut tgt: HashMap<String, String> = HashMap::new();
     for u in units.drain(..) {
         if let Some(text) = u.source.as_deref() {
-            if crate::util::is_source_for_lang_dir(&u.path, source_lang_dir) {
+            if crate::util::is_source_for_lang_dir(&u.path, &source_lang_dir) {
                 src.entry(u.key.clone()).or_insert_with(|| text.to_string());
-            } else if crate::util::is_source_for_lang_dir(&u.path, target_lang_dir) {
+            } else if crate::util::is_source_for_lang_dir(&u.path, &target_lang_dir) {
                 tgt.insert(u.key.clone(), text.to_string());
             }
         }
