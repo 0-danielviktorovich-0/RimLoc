@@ -77,10 +77,8 @@ pub fn scan_keyed_from_defs_special(root: &Path) -> Result<Vec<(String, String, 
                                     }
                                 }
                                 "tKeyTip" => tkey_tip = child.text().map(|s| s.trim().to_string()),
-                                "tooltip" => {
-                                    if tkey_tip_text.is_none() {
-                                        tkey_tip_text = child.text().map(|s| s.trim().to_string())
-                                    }
+                                "tooltip" if tkey_tip_text.is_none() => {
+                                    tkey_tip_text = child.text().map(|s| s.trim().to_string())
                                 }
                                 _ => {}
                             }

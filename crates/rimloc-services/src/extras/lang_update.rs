@@ -220,7 +220,6 @@ pub fn lang_update(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write as _;
 
     fn build_zip(entries: &[(&str, &str)]) -> Vec<u8> {
         let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
@@ -252,7 +251,7 @@ mod tests {
             ),
             ("repo-abc/Core/Languages/English/../../evil.txt", "pwned"),
         ]);
-        let plan = plan_from_zip_bytes(&bytes, "English", "Russian", &tmp.path()).unwrap();
+        let plan = plan_from_zip_bytes(&bytes, "English", "Russian", tmp.path()).unwrap();
         // traversal entry must not appear in the plan at all
         assert_eq!(plan.files.len(), 1, "plan: {:?}", plan.files);
         apply_plan(&bytes, &plan, false).unwrap();
