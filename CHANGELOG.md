@@ -27,6 +27,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [services/validate] `duplicate-global` no longer reports the same key in different language folders (a translated Def is not a duplicate); duplicates are scoped per language folder.
 - [services/validate] `coverage` and cross-language checks accept full paths for language directory arguments (previously compared against bare folder names, so coverage always reported 0).
 - [cli/i18n] Removed duplicate Fluent key `diffxml-summary` that logged an ERROR on every CLI launch.
+- [repo] Added a CI workflow running fmt, clippy (-D warnings), workspace tests on Linux/macOS/Windows, a Tauri GUI build, and cargo-deny; license fields added to crates missing them; deny.toml with advisories/license policy (transitive unmaintained deps pinned by tauri documented as ignored).
 
 <!--
 Template (copy the sections you need):
