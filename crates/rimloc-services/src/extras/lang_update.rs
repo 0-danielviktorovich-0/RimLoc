@@ -225,7 +225,7 @@ mod tests {
     fn build_zip(entries: &[(&str, &str)]) -> Vec<u8> {
         let mut w = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
         for (name, body) in entries {
-            w.start_file(*name, zip::write::FileOptions::default())
+            w.start_file(*name, zip::write::SimpleFileOptions::default())
                 .unwrap();
             w.write_all(body.as_bytes()).unwrap();
         }
