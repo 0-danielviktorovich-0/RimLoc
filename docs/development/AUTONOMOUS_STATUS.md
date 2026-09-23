@@ -380,3 +380,19 @@ indigo/comfortable), 4 направления визуально различи�
 Кандидаты: A Precision · B Aurora · C Workshop · D Editorial (+ гибриды типа «precision-редактор
 + aurora-home»). Палитры: indigo/blue/emerald/amber. Скриншоты: testlab/artifacts/gui-style-lab/.
 Бэкенд и остальные гейты НЕ ждут.
+
+### МАНДАТ: AI-архитектура продукта / GUI IA (24.09 ночь3) — G3
+- **G3** · обновить GUI_DESIGN_SPEC.md полной IA: режимы перевода (manual/TM/integrated AI/
+  external AI/agent — все на одной канон-модели), AI=draft до верификации (+provenance),
+  quality-режимы (Draft/Quality/Max/Suggest-only), external-AI workflow (batch→copy→import→
+  map по stable IDs→validate), protected content, review-queue, provider manager, zero-API
+  usefulness, cost UX, Quick Translate wizard (6 шагов), content types, workspace navigation,
+  Settings IA, Cmd+K palette, capability parity, detail panel (Context/Suggestions/Validation/
+  History), first-workspace coach, CTA next-action, звуки/уведомления опционально ·
+  зависит: G2 ✓ · P1 · риск низкий (доки + моки) · владение: D3 (GUI_DESIGN_SPEC.md) ·
+  status: D3 launched
+- **§24-25**: направления = темы/характер над ОДНОЙ IA (QA-контроль); гибрид Precision+ +
+  Aurora-polish + Editorial-typography рекомендован к оценке, но выбор — за владельцем.
+- **§27**: Keyed/DefInjected/TKey не главная навигация для новичков — user-oriented grouping,
+  техтипы в Advanced/Structure.
+- **§28**: имплементация против моков/адаптеров; глубокая привязка — только после фриза.
