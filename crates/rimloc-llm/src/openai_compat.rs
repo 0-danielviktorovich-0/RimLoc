@@ -57,10 +57,7 @@ impl OpenAiCompatProvider {
         let key = crate::provider::resolve_key(&self.key, &self.id)?;
         // Local inference servers (Ollama/LM Studio) need no API key. Only a
         // loopback endpoint may run keyless; anything remote requires one.
-        let is_local = self
-            .base_url
-            .contains("localhost")
-            || self.base_url.contains("127.0.0.1");
+        let is_local = self.base_url.contains("localhost") || self.base_url.contains("127.0.0.1");
         if key.is_none() && !is_local {
             return Err(LlmError::MissingKey(self.id.clone()));
         }
@@ -134,7 +131,7 @@ impl Provider for OpenAiCompatProvider {
             &req.units,
             &req.glossary,
         );
-        let (text, usage) = self.call(prompt::SYSTEM_PROMPT_RU, &user)?;
+        let (text, usage) = self.call(&prompt::system_prompt(&req.target_lang), &user)?;
         let results = parse_results_payload(&text, req)?;
         Ok(TranslateResponse { results, usage })
     }
