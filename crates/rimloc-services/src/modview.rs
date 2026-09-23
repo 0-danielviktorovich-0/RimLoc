@@ -22,6 +22,10 @@ pub struct EffectiveModView {
     pub conditional_dirs: Vec<PathBuf>,
     /// Translations live at the mod root for every layout style.
     pub languages_dir: PathBuf,
+    /// RimWorld collects Languages/ from EVERY content folder (root, Common/,
+    /// 1.6/, IfModActive dirs — verified in 1.6 decompile). Existing RU packs
+    /// shipping 1.6/Languages/Russian are invisible to a root-only lookup.
+    pub languages_dirs: Vec<PathBuf>,
 }
 
 impl EffectiveModView {
@@ -31,6 +35,18 @@ impl EffectiveModView {
         for dir in self.content_dirs.iter().chain(self.conditional_dirs.iter()) {
             let d = dir.join("Defs");
             if d.is_dir() {
+                out.push(d);
+            }
+        }
+        out
+    }
+
+    /// All Languages dirs the game would read (root + each content folder).
+    pub fn languages_dirs(&self) -> Vec<PathBuf> {
+        let mut out = vec![self.languages_dir.clone()];
+        for dir in self.content_dirs.iter().chain(self.conditional_dirs.iter()) {
+            let d = dir.join("Languages");
+            if d.is_dir() && !out.contains(&d) {
                 out.push(d);
             }
         }
@@ -64,7 +80,8 @@ fn parse_load_folders(xml: &str) -> Option<Vec<VersionFolders>> {
     }
     let mut out = Vec::new();
     for ver in root.children().filter(|n| n.is_element()) {
-        let tag = ver.tag_name().name().to_string();
+        // The game reads version tags case-insensitively (<V1.6> occurs in the wild).
+        let tag = ver.tag_name().name().to_lowercase();
         if !tag.starts_with('v') {
             continue;
         }
@@ -77,7 +94,10 @@ fn parse_load_folders(xml: &str) -> Option<Vec<VersionFolders>> {
             let Some(text) = li.text().map(str::trim).filter(|t| !t.is_empty()) else {
                 continue;
             };
-            if li.has_attribute("IfModActive") {
+            if li.has_attribute("IfModActive")
+                || li.has_attribute("IfModActiveAll")
+                || li.has_attribute("IfModNotActive")
+            {
                 conditional.push(text.to_string());
             } else {
                 plain.push(text.to_string());
@@ -89,12 +109,30 @@ fn parse_load_folders(xml: &str) -> Option<Vec<VersionFolders>> {
 }
 
 fn resolve_version_from_tags(tags: &[String], requested: Option<&str>) -> Option<String> {
+    // Tags are normalized to lowercase at parse time.
     if let Some(req) = requested {
-        let want = format!("v{req}");
+        let want = format!("v{}", req.to_lowercase());
+        if let Some(t) = tags.iter().find(|t| **t == want) {
+            return Some(t.trim_start_matches('v').to_string());
+        }
+        // Game fallback: the largest tag <= the requested version.
+        let req_parts: Vec<u64> = req.split('.').filter_map(|p| p.parse().ok()).collect();
         return tags
             .iter()
-            .find(|t| **t == want)
-            .cloned()
+            .filter(|t| {
+                let parts: Vec<u64> = t
+                    .trim_start_matches('v')
+                    .split('.')
+                    .filter_map(|p| p.parse().ok())
+                    .collect();
+                parts <= req_parts
+            })
+            .max_by_key(|t| {
+                t.trim_start_matches('v')
+                    .split('.')
+                    .filter_map(|p| p.parse::<u64>().ok())
+                    .collect::<Vec<_>>()
+            })
             .map(|t| t.trim_start_matches('v').to_string());
     }
     latest_version_tag(tags).map(|t| t.trim_start_matches('v').to_string())
@@ -113,6 +151,7 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                     version: None,
                     content_dirs: vec![root.to_path_buf()],
                     conditional_dirs: Vec::new(),
+                    languages_dirs: vec![languages_dir.clone()],
                     languages_dir,
                 });
             };
@@ -122,6 +161,7 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                     version: None,
                     content_dirs: vec![root.to_path_buf()],
                     conditional_dirs: Vec::new(),
+                    languages_dirs: vec![languages_dir.clone()],
                     languages_dir,
                 });
             };
@@ -150,11 +190,19 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                     conditional_dirs.push(dir);
                 }
             }
+            let mut languages_dirs = vec![languages_dir.clone()];
+            for dir in content_dirs.iter().chain(conditional_dirs.iter()) {
+                let d = dir.join("Languages");
+                if d.is_dir() && !languages_dirs.contains(&d) {
+                    languages_dirs.push(d);
+                }
+            }
             return Ok(EffectiveModView {
                 version: Some(version),
                 content_dirs,
                 conditional_dirs,
                 languages_dir,
+                languages_dirs,
             });
         }
     }
@@ -183,6 +231,7 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
             version: None,
             content_dirs: vec![root.to_path_buf()],
             conditional_dirs: Vec::new(),
+            languages_dirs: vec![languages_dir.clone()],
             languages_dir,
         });
     }
@@ -205,13 +254,21 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
             })
             .cloned(),
     };
+    let chosen_dir = chosen.clone().unwrap_or_else(|| root.to_path_buf());
+    let version_name = chosen
+        .as_ref()
+        .and_then(|d| d.file_name().and_then(|f| f.to_str()).map(str::to_string));
+    let mut languages_dirs = vec![languages_dir.clone()];
+    let lang_in_chosen = chosen_dir.join("Languages");
+    if lang_in_chosen.is_dir() {
+        languages_dirs.push(lang_in_chosen);
+    }
     Ok(EffectiveModView {
-        version: chosen
-            .as_ref()
-            .and_then(|d| d.file_name().and_then(|f| f.to_str()).map(str::to_string)),
-        content_dirs: vec![chosen.unwrap_or_else(|| root.to_path_buf())],
+        version: version_name,
+        content_dirs: vec![chosen_dir],
         conditional_dirs: Vec::new(),
         languages_dir,
+        languages_dirs,
     })
 }
 
@@ -272,5 +329,58 @@ mod tests {
         let view = effective_view(root, None).unwrap();
         assert_eq!(view.version.as_deref(), Some("1.6"));
         assert_eq!(view.content_dirs, vec![root.join("1.6")]);
+    }
+}
+
+#[cfg(test)]
+mod hardening_tests {
+    use super::*;
+
+    fn write(path: &Path, content: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, content).unwrap();
+    }
+
+    #[test]
+    fn case_insensitive_version_tags_and_conditional_variants() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><V1.5><li>Old</li></V1.5><v1.6>\
+             <li>Common</li>\
+             <li IfModActiveAll=\"a.b\">AllDir</li>\
+             <li IfModNotActive=\"c.d\">NotDir</li>\
+             </v1.6></loadFolders>",
+        );
+        std::fs::create_dir_all(root.join("Common")).unwrap();
+        std::fs::create_dir_all(root.join("AllDir")).unwrap();
+        std::fs::create_dir_all(root.join("NotDir")).unwrap();
+
+        let view = effective_view(root, Some("1.6")).unwrap();
+        assert_eq!(view.version.as_deref(), Some("1.6"));
+        assert!(view.content_dirs.contains(&root.join("Common")));
+        assert!(view.conditional_dirs.contains(&root.join("AllDir")));
+        assert!(view.conditional_dirs.contains(&root.join("NotDir")));
+        // Languages/ inside content dirs is collected too (game rule #1).
+        std::fs::create_dir_all(root.join("Common/Languages/Russian")).unwrap();
+        assert!(view
+            .languages_dirs()
+            .contains(&root.join("Common/Languages")));
+    }
+
+    #[test]
+    fn version_fallback_picks_largest_tag_le_requested() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><v1.4><li>1.4</li></v1.4><v1.5><li>1.5</li></v1.5></loadFolders>",
+        );
+        std::fs::create_dir_all(root.join("1.5")).unwrap();
+        // Game runs 1.6, mod ships up to 1.5 → game loads 1.5 content.
+        let view = effective_view(root, Some("1.6")).unwrap();
+        assert_eq!(view.version.as_deref(), Some("1.5"));
+        assert_eq!(view.content_dirs, vec![root.join("1.5")]);
     }
 }
