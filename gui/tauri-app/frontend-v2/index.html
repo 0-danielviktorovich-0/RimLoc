@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>RimLoc GUI</title>
+    <script>
+      // Apply persisted theme before first paint to avoid a light flash.
+      // Mirrors the triad from GUI_DESIGN_SPEC §1.1; dark is the default reference theme.
+      (function () {
+        var mode = 'dark';
+        try {
+          var saved = localStorage.getItem('rimloc.theme');
+          if (saved === 'light' || saved === 'dark' || saved === 'system') mode = saved;
+        } catch (e) { /* storage unavailable */ }
+        if (mode === 'system') {
+          var light = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+          mode = light ? 'light' : 'dark';
+        }
+        document.documentElement.dataset.theme = mode;
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
