@@ -429,7 +429,7 @@ mod gate_i4_acceptance {
         // Save/reopen between workflows (project persistence, Gate I3).
         let project_file = tmp.path().join("project.rimloc.json");
         crate::project_store::save_project(&project, &project_file).unwrap();
-        let mut project = crate::project_store::load_project(&project_file).unwrap();
+        let project = crate::project_store::load_project(&project_file).unwrap();
 
         let out_a = tmp.path().join("out-a");
         write_rimworld_translation(
@@ -577,15 +577,11 @@ mod gate_i4_acceptance {
         );
         // ...and the PO round trip writes the SAME RimWorld output.
         let out_b = tmp.path().join("out-b");
-        write_rimworld_translation(&mut project_b, &out_b, "Russian", "T", "t.b", "1.6").unwrap();
+        write_rimworld_translation(&project_b, &out_b, "Russian", "T", "t.b", "1.6").unwrap();
         let quest_b = std::fs::read_to_string(
             out_b.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
         )
         .unwrap();
         assert!(quest_b.contains("<SampleQuest.LetterLabelFavorReceiver.slateRef>Метка услуги<"));
-    }
-
-    fn clone_of(p: &Project) -> Project {
-        p.clone()
     }
 }
