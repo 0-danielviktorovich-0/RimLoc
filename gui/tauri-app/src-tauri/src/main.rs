@@ -17,7 +17,7 @@ use rimloc_services::{
     xml_health_scan,
 };
 use rimloc_services::{
-    autodiscover_defs_context, is_under_languages_dir, learn, scan_defs_with_meta,
+    autodiscover_defs_context, learn,
 };
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
@@ -1689,98 +1689,24 @@ fn export_po(
         })
         .unwrap_or_else(|| "English".to_string());
 
-    // 1) Keyed units filtered to source_dir (or all if source_dir is English and lack Languages/English)
-    let keyed_units = rimloc_parsers_xml::scan_keyed_xml(&scan_root).wrap_err("scan keyed")?;
-    let mut english_map: HashMap<String, rimloc_services::TransUnit> = HashMap::new();
-    for u in keyed_units
-        .into_iter()
-        .filter(|u| is_under_languages_dir(&u.path, &source_dir))
-    {
-        english_map.insert(u.key.clone(), u);
-    }
-
-    // 2) Defs meta units; map into TransUnit with target path under DefInjected using chosen source_dir
-    let defs_meta = scan_defs_with_meta(&scan_root, defs_abs.as_deref(), &merged, &extra_fields)
-        .wrap_err("scan defs meta")?;
-    for meta in defs_meta {
-        let key = meta.unit.key.clone();
-        let source = meta.unit.source.clone();
-        if source.is_none() {
-            continue;
-        }
-        let target_path = def_injected_target_path_for_export(
-            &scan_root,
-            &source_dir,
-            &meta.def_type,
-            &meta.unit.path,
-        );
-        let entry = english_map.entry(key.clone()).or_insert_with(|| {
-            let mut u = meta.unit.clone();
-            u.path = target_path.clone();
-            u.line = None;
-            u
-        });
-        if entry
-            .source
-            .as_ref()
-            .map(|s| s.trim().is_empty())
-            .unwrap_or(true)
-        {
-            entry.source = source.clone();
-        }
-        let path_str = entry.path.to_string_lossy();
-        if !path_str.contains("/DefInjected/") && !path_str.contains("\\DefInjected\\") {
-            entry.path = target_path;
-            entry.line = None;
-        }
-    }
-
-    let mut units: Vec<_> = english_map.into_values().collect();
-    units.sort_by(|a, b| {
-        (
-            a.path.to_string_lossy(),
-            a.line.unwrap_or(0),
-            a.key.as_str(),
-        )
-            .cmp(&(
-                b.path.to_string_lossy(),
-                b.line.unwrap_or(0),
-                b.key.as_str(),
-            ))
-    });
-
-    // Build TM map
-    let tm_map: Option<std::collections::HashMap<String, String>> = match tm_paths.as_deref() {
-        None => None,
-        Some([]) => None,
-        Some(roots) => {
-            let mut map = std::collections::HashMap::<String, String>::new();
-            for tm_path in roots {
-                if let Ok(units) = rimloc_parsers_xml::scan_keyed_xml(tm_path) {
-                    for u in units {
-                        if let Some(val) = u.source.as_deref() {
-                            let v = val.trim();
-                            if !v.is_empty() {
-                                map.insert(u.key, v.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-            Some(map)
-        }
-    };
-
-    // Write PO
-    let stats = rimloc_export_po::write_po_with_tm(
+    // Gate I2 consolidation: ONE PO-inventory builder (services) — the
+    // previous inline copy silently dropped TKey units (0 scan_defs_tkey
+    // calls). Services owns Keyed + Defs-by-dictionary + TKey + TM prefill.
+    let _ = &defs_abs;
+    let _ = &merged;
+    let _ = &extra_fields;
+    let effective_source_lang = request.source_lang.clone();
+    let stats = rimloc_services::export_po_with_tm(
+        &scan_root,
         &out_po_path,
-        &units,
         if request.pot {
             None
         } else {
             request.lang.as_deref()
         },
-        tm_map.as_ref(),
+        effective_source_lang.as_deref(),
+        Some(&source_dir),
+        tm_paths.as_deref(),
     )
     .wrap_err("export po")?;
 
@@ -1831,24 +1757,6 @@ fn export_po(
 }
 
 // Local helper: derive DefInjected target path for a given Defs file
-fn def_injected_target_path_for_export(
-    scan_root: &Path,
-    lang_dir: &str,
-    def_type: &str,
-    source_path: &Path,
-) -> PathBuf {
-    use std::ffi::OsStr;
-    let file_name = source_path
-        .file_name()
-        .map(|s| s.to_owned())
-        .unwrap_or_else(|| OsStr::new("Defs.xml").to_owned());
-    scan_root
-        .join("Languages")
-        .join(lang_dir)
-        .join("DefInjected")
-        .join(def_type)
-        .join(file_name)
-}
 
 #[tauri::command]
 fn validate_mod(
