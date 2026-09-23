@@ -11,6 +11,7 @@ pub mod extras;
 pub mod import;
 pub mod keyed_merge;
 pub mod learn;
+pub mod modview;
 pub mod plugins;
 pub mod plugins_json;
 pub mod plugins_msf;
@@ -41,6 +42,7 @@ pub use import::{
     import_po_to_file, import_po_to_mod_tree, import_po_to_mod_tree_with_progress, FileStat,
     ImportPlan, ImportSummary,
 };
+pub use modview::{effective_view, EffectiveModView};
 pub use rimloc_domain::{DiffOutput, HealthIssue, HealthReport};
 pub use scan::{
     autodiscover_defs_context, scan_defs_with_meta, scan_patches_as_units, scan_units,
