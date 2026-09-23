@@ -407,3 +407,17 @@ resolve() с конфликтами-диагностикой и финально
 **Дальше (воркер)**: движок поверх контракта — seed из текущих словарей/allowlist как
 BuiltInRule-пак, explain-API, подключение в scan_canonical (I2 InventoryContext), AI-адъюдикация
 по structural fingerprints (позже), TRANSLATION_ELIGIBILITY.md.
+
+### J-движок ленден (042e0b5, ревью ✓) + K-core ленден (34dc83d) — 24.09 ночь4
+- **J**: eligibility_engine.rs — 156 BuiltInRule-seed правил (2 kind + 5 NoTranslate +
+  126 def-type-scoped из embedded defs_dict — движок и экстрактор не могут разойтись —
+  + 23 leaf-паттерна); evaluate() через resolve() с guard'ом финальности
+  Deterministic-NON_TRANSLATABLE; загрузчик rule-паков deny_unknown_fields; explain-JSON.
+  7 тестов. Воркер-замечание принято: NoTranslate-финальность пока в engine-guard;
+  поднять в domain::resolve() при следующем заходе в контракт (записано).
+- **K-core**: detect_source_changes — rebuild effective inventory после апдейта мода →
+  классификация reusable/sourceChanged/new/obsolete; перевод сохраняется, source_changed
+  +Pending; ничего не удаляется (мандат 4 §3). SourceChangeReport для review-очередей.
+- **Остаток до FREEZE**: J-проводка в scan/GUI-потребители + TRANSLATION_ELIGIBILITY.md;
+  L observability (doctor, support bundle, Copy-for-AI, structured logs); после этого —
+  BACKEND FREEZE → delta-бандл. ⏸ Выбор стиля — за владельцем (не блокирует).
