@@ -99,6 +99,13 @@ pub fn run_translate(
             let mut preset: ProviderPreset = presets[id].clone();
             if let Some(m) = model {
                 preset.model = m;
+            } else if id == "ollama" {
+                // Local server: auto-detect the first installed model.
+                if let Some(u) = preset.base_url.as_deref() {
+                    if let Some(detected) = rimloc_llm::openai_compat::first_installed_model(u) {
+                        preset.model = detected;
+                    }
+                }
             }
             if let Some(u) = base_url {
                 preset.base_url = Some(u);
