@@ -421,3 +421,14 @@ BuiltInRule-пак, explain-API, подключение в scan_canonical (I2 In
 - **Остаток до FREEZE**: J-проводка в scan/GUI-потребители + TRANSLATION_ELIGIBILITY.md;
   L observability (doctor, support bundle, Copy-for-AI, structured logs); после этого —
   BACKEND FREEZE → delta-бандл. ⏸ Выбор стиля — за владельцем (не блокирует).
+
+### МАНДАТ: GUI Implementation Sprint (24.09) — G4
+Реализация IA из спеки как КЛИКАБЕЛЬНЫЙ продукт-мок (не документы!): Home (first-run +
+recent projects), Quick Translate wizard (7 шагов), External AI flow, Provider manager,
+quality-режимы, Workspace-навигация (Editor/Review/Glossary/TM/Project), user-oriented
+группировка вместо тех-типов, filter popover, detail panel (4 табы), Review screen,
+Existing translation analysis, Build/result, Settings (7 разделов), Help/Diagnostics,
+Cmd+K, coach, richer mock data (CJK/Cyrillic/длинные тексты/ошибки). Style Lab сравнивает
+направления на РЕПРЕЗЕНТАТИВНЫХ экранах после спринта; выбор стиля — только после пакета.
+Параллель: GUI-A (Home+Wizard+Existing) / GUI-B (Workspace+Review+Build) / GUI-C
+(Settings+Provider+Help+Palette) / GUI-D (polish) — lead держит shared-скелет. Mocks only.
