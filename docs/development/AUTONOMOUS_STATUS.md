@@ -12,9 +12,15 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 - `docs/development/COMPETITOR_MATRIX.md` v2 (субагент): implementation/design-матрица + **workflow-археология: OW.RU.* паки созданы конвейером автора RimLangKit** (OliveWizard/OneCodeUnit; отпечатки EncodingFixer/CommentInserter/CaseCreator в 191/191 файлах). Следов RimTrans/Text-grabber нет. Топ-5 adopt/adapt: формат сообщества как дефолт вывода, source-text TM, единый ExtractionFilter, About/discover/loadFolders, дозакрытие LLM-движка.
 - `docs/development/TRANSLATION_BENCHMARK.md` + слепой бенчмарк (§8): 0 реальных извлекательных миссов на VWE (adjudication: VEF-derived/version-skew/speculative); Genetics пак↔база 82.7%; provenance референса = AI Gemini + human (заявлено в About пака).
 
-**В полёте (владение субагентов, интегрировать после завершения):**
-- GAME_SOURCE_FINDINGS.md — load semantics + категории Translation Report из декомпила 1.6 (агент 343921f1)
-- OFFICIAL_LANG_PACKS.md — ru/de/ja/zh/uk репо: WordInfo-воркфлоу, LanguageCapabilities, 5 фикстур (агент ec18efdb)
+**OFFICIAL_LANG_PACKS.md — готов и интегрирован (0af951f):**
+- WordInfo только у ru/de/uk; ja/zh — без воркера и WordInfo
+- de: `{replace:}`-макрос (вложенный), автогенерация WordInfo через GitHub Actions; uk: 7 падежей без воркер-класса; ja/zh: легитимное переупорядочивание плейсхолдеров
+- Валидатор: set-based сравнение (порядок не важен для CJK) + внутренние плейсхолдеры `{replace:}` — зафиксировано 3 тестами
+- 5 first-party фикстур в testlab/fixtures-official/ с PROVENANCE.md (только парсинг-регрессия, не переводческий корпус — лицензия Ludeon-репо не объявлена)
+- Формат нестабилен даже в официальных репо (BOM ±, CRLF/LF) — парсер обязан быть толерантным
+
+**В полёте:**
+- GAME_SOURCE_FINDINGS.md — load semantics + категории Translation Report из декомпила 1.6 (агент 343921f1) → после получения: validate-правила по категориям отчёта (§C) + RIMWORLD_REFERENCE_AUDIT.md (§H)
 
 **Дальше (по завершении субагентов):**
 1. Интегрировать находки → docs/development/RIMWORLD_REFERENCE_AUDIT.md (§H, provenance-классификация)
