@@ -84,6 +84,28 @@ mod tests {
     }
 
     #[test]
+    fn german_replace_macro_inner_placeholders_counted() {
+        // Official de pack nests {0} inside {replace: ...} macros (Alerts.xml).
+        // Set-based comparison must see the inner {0}; the wrapper itself is
+        // not a placeholder token.
+        let src = "Colony has {0} invalid security entrances.";
+        let de = "{replace: sind {0} unmengen}";
+        let issues = check_pair("x", src, de);
+        assert!(
+            !issues.iter().any(|i| i.kind == "placeholder-missing"),
+            "inner {{0}} must be counted inside {{replace:}}: {issues:?}"
+        );
+    }
+
+    #[test]
+    fn reordered_placeholders_are_legitimate_for_cjk() {
+        // Official ja pack reorders {0},{4},{2},{3},{5} to fit Japanese syntax.
+        let src = "{0} is hunting {1}. ({2}/{3}) {4}";
+        let ja = "{1} が {0} を狩っています ({3}/{4}) {2}";
+        assert!(check_pair("x", src, ja).is_empty());
+    }
+
+    #[test]
     fn mismatch_is_detected() {
         let issues = check_pair("x", "Hello {0} and [PAWN_label]", "Привет {0}");
         assert_eq!(issues.len(), 1);
