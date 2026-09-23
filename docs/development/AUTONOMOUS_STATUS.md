@@ -25,6 +25,16 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 - Следующая фаза: GUI RC (дизайн через ui-ux-pro-max → Svelte 5 + TS → i18n ru/en → E2E).
 
 
+
+## LATEST — TKey integrity audit готов, review-бандлы готовы, Docs-UX база создана (2026-09-23)
+
+- **Два ревью-бандла для ChatGPT**: primary `RimLoc-TKey-68b5381-to-50f9483` (60 файлов) и supplement `RimLoc-TKey-50f9483-to-cf60ee7-supplement` (20 файлов) в `~/Developing/_rimloc-review/` + .sha256. Ревьюер проверяет: TKey-семантику, reconciliation чисел (112/226/358; «+226» = арифметическая ошибка двух баз), двойное извлечение (0), canonical-нормализацию, коллизии, coverage>1.0 фикс, независимость тестов, EN/RU-допущения, безопасность фриза.
+- **TKey реализован и прошёл integrity audit**: `scan_defs_tkey` (+226 записей в Core), идентичность `<defName>.<TKey>`, канонические суффиксы нормализуются fallback-only; 0 двойных/коллизий/необъяснённых. Коллизионные тесты поймали coverage>1.0 баг — исправлен.
+- **Inventory-аудит 22 CLI-команд**: 7 TKey-aware, 15 неуместны по дизайну; word-info/export-po нюансы задокументированы честно (5016be4 commit-message упоминал word-info избыточно — зафиксировано).
+- **DISCOVERABILITY.md** (SEO): топ-10 интентов, 12 topics, description, MkDocs-возможности; находка: docs/development/** утекает в sitemap → exclude_docs на фазе hardening.
+- **Docs-UX knowledge base создана в AI-OS** (кросс-проект): База-знаний/Эксперты/Документация-UX (references OpenClaw/Z.AI/OpenAI/Claude + Starlight/Fumadocs/Rspress/MkDocs, patterns ×25, bake-off ×19 критериев, starter-checklist) + скилл .agents/skills/docs-product-design (валидаторы зелёные, в AI-OS незакоммичено — норма Obsidian). Bake-off: RimLoc остаётся на MkDocs Material сейчас; AI-нативность — хуком билда; триггеры миграции документированы.
+- **Следующая фаза: GUI RC** — дизайн через ui-ux-pro-max, Svelte 5 + TS, редактор SOURCE|TARGET, i18n ru/en, tauri-driver E2E, полный джорни. Entry model заморожена (см. RIMWORLD_REFERENCE_AUDIT гейт-таблицу).
+
 ## И3 — ФАЗЫ ПО §AO (строгий порядок, не менять без причины)
 1. **GUI RC** (И2-E переносится сюда): Svelte 5 + TS, «Translate a mod» beginner-кнопка (§B), progressive disclosure 3 слоя (§C), first-run onboarding 3-5 экранов (§D), UI i18n ru/en (§F), редактор SOURCE|TARGET, E2E tauri-driver, полный GUI-джорни без CLI-fallback, Windows=first-class (§G), plain-language copy (§E)
 2. **Функциональные Pass A/B** (§35/36 предыдущего мандата)
