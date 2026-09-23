@@ -4,14 +4,18 @@
 //! uncovered samples, placeholder pairing and glossary mapping must never
 //! re-implement matching independently.
 //!
-//! Matching rules (§P1-5):
+//! Matching rules (§P1-5, adjudication §3/§4):
 //! 1. EXACT key match always wins.
-//! 2. Otherwise, a target key whose `.slateRef` / `.value.slateRef` suffix is
+//! 2. Otherwise a PROVEN alias matches: the target key is a known alternative
+//!    serialization path of a known TKey identity (typed registry entry, e.g.
+//!    official packs addressing an Odyssey TKey node via structural
+//!    `root.nodes.*` paths). Aliases are data, not code — they never come
+//!    from shape heuristics.
+//! 3. Otherwise, a target key whose `.slateRef` / `.value.slateRef` suffix is
 //!    stripped matches a source entry ONLY when that base identity is a known
-//!    TKey identity (from `scan_defs_tkey`). Shape-based stripping alone is
-//!    forbidden — a genuine `X.slateRef` DefInjected path must never alias an
-//!    unrelated `X` source entry.
-//! 3. When several target variants resolve to one source entry, resolution is
+//!    TKey identity. Shape-based stripping alone is forbidden — a genuine
+//!    `X.slateRef` DefInjected path must never alias an unrelated `X` entry.
+//! 4. When several target variants resolve to one source entry, resolution is
 //!    deterministic (§P1-7): candidates are sorted by key; the first with a
 //!    non-empty, non-TODO value wins; otherwise the alphabetically first.
 //!    Multi-variant presence is reported as a collision count, never silently
@@ -20,8 +24,67 @@
 use rimloc_core::TransUnit;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Base TKey identities (`<defName>.<TKey>`) known from extraction.
-pub type TKeyIndex = BTreeSet<String>;
+/// Typed TKey metadata (general form; per the meta-freeze correction this is
+/// NOT a growing string-special-case field):
+/// - `identities` — logical TKey identities (`<defName>.<TKey>`) proven to
+///   exist in the source corpus (`scan_defs_tkey`);
+/// - `aliases` — proven ALTERNATIVE serialization paths of a logical identity
+///   (structural addressing, e.g. official RU addressing an Odyssey TKey node
+///   via `SurveySite.root.nodes.…Letter.label.slateRef`). Map is
+///   `proven target path -> logical identity`.
+///
+/// Suffix handling stays context-derived at scan time; this registry never
+/// infers aliases from key shape.
+#[derive(Default, Debug, Clone)]
+pub struct TKeyRegistry {
+    pub identities: BTreeSet<String>,
+    pub aliases: BTreeMap<String, String>,
+}
+
+impl TKeyRegistry {
+    pub fn from_identities<I, S>(identities: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: Into<String>,
+    {
+        Self {
+            identities: identities.into_iter().map(Into::into).collect(),
+            aliases: BTreeMap::new(),
+        }
+    }
+
+    /// Resolve a target key to the logical source identity it addresses.
+    /// Order: exact identity -> proven alias -> known-suffix fallback.
+    /// `None` = the target does not address any known TKey identity.
+    pub fn identity_for(&self, target_key: &str) -> Option<String> {
+        if self.identities.contains(target_key) {
+            return Some(target_key.to_string());
+        }
+        if let Some(base) = self.aliases.get(target_key) {
+            return Some(base.clone());
+        }
+        let base = strip_tkey_suffix(target_key)?;
+        self.identities.contains(&base).then_some(base)
+    }
+
+    /// The logical identity a source key represents (identity or alias base).
+    /// Used when building the source-side index so an aliased source entry
+    /// lands under its logical identity, not its structural path.
+    pub fn identity_of_source(&self, source_key: &str) -> String {
+        self.aliases
+            .get(source_key)
+            .cloned()
+            .unwrap_or_else(|| source_key.to_string())
+    }
+
+    pub fn len(&self) -> usize {
+        self.identities.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.identities.is_empty()
+    }
+}
 
 pub fn is_todo(value: &str) -> bool {
     let t = value.trim();
@@ -54,17 +117,21 @@ pub fn resolve_value<'a>(candidates: &[&'a str]) -> Option<&'a str> {
     }
 }
 
-/// Index built from the source inventory + known TKey identities.
+/// Index built from the source inventory + the TKey registry.
 pub struct SourceMatcher<'a> {
     source: BTreeMap<String, &'a str>,
-    tkey: &'a TKeyIndex,
+    tkey: &'a TKeyRegistry,
 }
 
 impl<'a> SourceMatcher<'a> {
-    pub fn new(source: &'a [TransUnit], tkey: &'a TKeyIndex) -> Self {
+    pub fn new(source: &'a [TransUnit], tkey: &'a TKeyRegistry) -> Self {
         let mut map = BTreeMap::new();
         for u in source {
             if let Some(text) = u.source.as_deref().filter(|t| !t.trim().is_empty()) {
+                // A source entry recorded under a proven alias belongs to the
+                // logical identity; exact identity wins if both exist.
+                let logical = tkey.identity_of_source(&u.key);
+                map.entry(logical).or_insert(text);
                 map.entry(u.key.clone()).or_insert(text);
             }
         }
@@ -79,21 +146,19 @@ impl<'a> SourceMatcher<'a> {
         self.source.contains_key(key)
     }
 
-    /// Resolve a target key to its source entry (exact first, TKey fallback).
+    /// Resolve a target key to its source entry
+    /// (exact first, proven alias, then TKey-suffix fallback).
     /// `None` = no source counterpart (orphan candidate).
     pub fn source_for_target(&self, target_key: &str) -> Option<String> {
         if self.source.contains_key(target_key) {
             return Some(target_key.to_string());
         }
-        let base = strip_tkey_suffix(target_key)?;
-        if self.tkey.contains(&base) && self.source.contains_key(&base) {
-            return Some(base);
-        }
-        None
+        let logical = self.tkey.identity_for(target_key)?;
+        self.source.contains_key(&logical).then_some(logical)
     }
 
     /// Resolve a source key to target values (0, 1 or many candidates).
-    /// Multiple candidates = TKey suffix variants; caller applies
+    /// Multiple candidates = TKey suffix/alias variants; caller applies
     /// [`resolve_value`] for a deterministic winner and may count collisions.
     pub fn targets_for_source<'b>(
         &self,
@@ -104,9 +169,17 @@ impl<'a> SourceMatcher<'a> {
         if let Some(v) = targets.get(source_key) {
             out.push(v.as_str());
         }
-        let base = format!("{source_key}.");
+        let logical = self.tkey.identity_of_source(source_key);
         for (k, v) in targets {
-            if k.starts_with(&base) && strip_tkey_suffix(k).as_deref() == Some(source_key) {
+            if k == source_key {
+                continue;
+            }
+            let addresses = self
+                .tkey
+                .identity_for(k)
+                .as_deref()
+                .is_some_and(|id| id == logical);
+            if addresses {
                 out.push(v.as_str());
             }
         }
@@ -125,13 +198,13 @@ impl<'a> SourceMatcher<'a> {
 mod tests {
     use super::*;
 
-    fn idx(items: &[&str]) -> TKeyIndex {
-        items.iter().map(|s| s.to_string()).collect()
+    fn registry(ids: &[&str]) -> TKeyRegistry {
+        TKeyRegistry::from_identities(ids.iter().copied())
     }
 
     #[test]
     fn exact_wins_over_tkey_fallback() {
-        let tkey = idx(&["Mod.A"]);
+        let tkey = registry(&["Mod.A"]);
         let units = [u("Mod.A", "base"), u("Mod.A.slateRef", "slate path")];
         let m = SourceMatcher::new(&units, &tkey);
         // Exact source entry exists for Mod.A.slateRef itself.
@@ -143,7 +216,7 @@ mod tests {
 
     #[test]
     fn tkey_fallback_requires_known_identity() {
-        let tkey = idx(&["Mod.A"]);
+        let tkey = registry(&["Mod.A"]);
         let units = [u("Mod.A", "base")];
         let m = SourceMatcher::new(&units, &tkey);
         assert_eq!(
@@ -154,12 +227,64 @@ mod tests {
         assert_eq!(m.source_for_target("Other.slateRef"), None);
     }
 
+    #[test]
+    fn proven_alias_matches_without_suffix_rules() {
+        // Structural addressing (Odyssey style): the target path carries no
+        // TKey-shaped suffix at all — only the typed alias maps it.
+        let mut tkey = registry(&["SurveySite.LetterLabelDone"]);
+        tkey.aliases.insert(
+            "SurveySite.root.nodes.AllSignals.nodes.Letter.label.slateRef".into(),
+            "SurveySite.LetterLabelDone".into(),
+        );
+        let units = [u("SurveySite.LetterLabelDone", "Quest complete")];
+        let m = SourceMatcher::new(&units, &tkey);
+        assert_eq!(
+            m.source_for_target("SurveySite.root.nodes.AllSignals.nodes.Letter.label.slateRef")
+                .as_deref(),
+            Some("SurveySite.LetterLabelDone")
+        );
+        // An unregistered structural path stays unmatched (no shape guessing).
+        assert_eq!(
+            m.source_for_target("SurveySite.root.nodes.Other.label.slateRef"),
+            None
+        );
+    }
+
+    #[test]
+    fn alias_source_entry_lands_under_logical_identity() {
+        let mut tkey = registry(&["Def.Key"]);
+        tkey.aliases.insert(
+            "Def.root.nodes.Letter.text.slateRef".into(),
+            "Def.Key".into(),
+        );
+        // Source inventory stores the alias path (e.g. re-imported pack).
+        let units = [u("Def.root.nodes.Letter.text.slateRef", "text")];
+        let m = SourceMatcher::new(&units, &tkey);
+        assert_eq!(
+            m.source_for_target("Def.Key.value.slateRef").as_deref(),
+            Some("Def.Key")
+        );
+    }
+
+    #[test]
+    fn suffix_fallback_requires_known_identity_even_with_alias_support() {
+        let mut tkey = registry(&["A.B"]);
+        tkey.aliases.insert("A.alias.path".into(), "A.B".into());
+        let units = [u("A.B", "v")];
+        let m = SourceMatcher::new(&units, &tkey);
+        // Registered alias works...
+        assert_eq!(m.source_for_target("A.alias.path").as_deref(), Some("A.B"));
+        // ...unknown sibling paths still do not (suffix + shape are not proof).
+        assert_eq!(m.source_for_target("A.alias.other"), None);
+    }
+
     fn u(key: &str, text: &str) -> TransUnit {
         TransUnit {
             key: key.into(),
             source: Some(text.into()),
             path: "x".into(),
             line: None,
+            tkey: None,
         }
     }
 

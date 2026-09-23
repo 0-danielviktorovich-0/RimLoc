@@ -146,6 +146,7 @@ mod tests {
             source: Some(src.into()),
             path: PathBuf::from("/Mod/Languages/English/Keyed/A.xml"),
             line: Some(line),
+            tkey: None,
         }
     }
 

@@ -94,6 +94,7 @@ impl plugins::ParserPlugin for ModSettingsFrameworkPlugin {
                 let line = Some(line_for(op.range().start).unwrap_or(1));
                 if !label.is_empty() {
                     out.push(TransUnit {
+                        tkey: None,
                         key: id.clone(),
                         source: Some(label),
                         path: p.to_path_buf(),
@@ -102,6 +103,7 @@ impl plugins::ParserPlugin for ModSettingsFrameworkPlugin {
                 }
                 if !tooltip.is_empty() {
                     out.push(TransUnit {
+                        tkey: None,
                         key: format!("{}{}", id, "Tooltip"),
                         source: Some(tooltip),
                         path: p.to_path_buf(),

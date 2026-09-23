@@ -259,6 +259,7 @@ pub fn scan_patches_as_units(
                     // Keep patch file as path; exporters group to _Imported.xml when not under Languages
                     path: c.source_file.clone(),
                     line: None,
+                    tkey: None,
                 });
             }
         }

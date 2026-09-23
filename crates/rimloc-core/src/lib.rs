@@ -59,6 +59,30 @@ pub struct TransUnit {
     pub path: PathBuf,
     /// 1-based line number if available
     pub line: Option<usize>,
+    /// TKey provenance for units extracted from TKey-attributed XML nodes.
+    /// `key` stays the LOGICAL identity `<defName>.<TKey>`; the proven
+    /// serialization detail lives here (typed metadata, not key-shape).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tkey: Option<TKeyMeta>,
+}
+
+/// Typed TKey metadata (general form — never a growing special-case field):
+/// - `strategy` is the proven serialization class observed for the identity
+///   ("bare" for TipSetDef `li`, "slate_ref" for direct SlateRef fields,
+///   "parms_value_slate_ref" for `<parms>` descendants of QuestNode_SubScript);
+/// - `suffix` is the DefInjected path suffix implied by that strategy
+///   ("" / ".slateRef" / ".value.slateRef") — the primary proven path is
+///   `key + suffix`;
+/// - `contexts` counts source nodes sharing this identity (RimWorld
+///   field-assignment semantics: the LAST node in document order wins;
+///   a value above one means the pack shares one identity —
+///   see DLC-TKEY-ADJUDICATION §5).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TKeyMeta {
+    pub strategy: String,
+    pub suffix: String,
+    #[serde(default)]
+    pub contexts: u32,
 }
 
 /// Simple PO entry used by import/export utilities and tests.

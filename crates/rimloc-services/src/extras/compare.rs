@@ -361,6 +361,7 @@ mod tests {
             source: Some(source.to_string()),
             path: std::path::PathBuf::from("Languages/Russian/Keyed/Test.xml"),
             line: Some(1),
+            tkey: None,
         }
     }
 
@@ -499,6 +500,7 @@ mod tkey_collision_tests {
             source: Some(text.into()),
             path: "x".into(),
             line: None,
+            tkey: None,
         }
     }
 

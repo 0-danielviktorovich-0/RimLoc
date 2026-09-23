@@ -193,6 +193,7 @@ mod tests {
             source: Some(source.into()),
             path: "x.xml".into(),
             line: None,
+            tkey: None,
         }
     }
 

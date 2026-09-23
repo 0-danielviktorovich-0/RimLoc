@@ -351,6 +351,8 @@ pub fn run_scan(
                 line: Option<usize>,
                 key: &'a str,
                 value: Option<&'a str>,
+                #[serde(skip_serializing_if = "Option::is_none")]
+                tkey: Option<&'a rimloc_core::TKeyMeta>,
             }
             let items: Vec<JsonUnit<'_>> = units
                 .iter()
@@ -360,6 +362,7 @@ pub fn run_scan(
                     line: u.line,
                     key: u.key.as_str(),
                     value: u.source.as_deref(),
+                    tkey: u.tkey.as_ref(),
                 })
                 .collect();
 
