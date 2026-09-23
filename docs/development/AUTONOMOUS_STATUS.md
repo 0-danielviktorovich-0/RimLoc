@@ -30,7 +30,7 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 
 **Готово в этом мандате:**
 - `crates/rimloc-services/src/modview.rs` — **effective mod view (§B)**: парс LoadFolders.xml (BOM-толерантный, теги v1.x, `/`=корень, IfModActive→conditional отдельно), классический fallback 1.x-папок, `defs_roots()` для скоупинга извлечения. 3 теста. База для validate-орфанов и строгого patch-резолва.
-- `docs/development/COMPETITOR_MATRIX.md` v2 (субагент): implementation/design-матрица + **workflow-археология: OW.RU.* паки созданы конвейером автора RimLangKit** (OliveWizard/OneCodeUnit; отпечатки EncodingFixer/CommentInserter/CaseCreator в 191/191 файлах). Следов RimTrans/Text-grabber нет. Топ-5 adopt/adapt: формат сообщества как дефолт вывода, source-text TM, единый ExtractionFilter, About/discover/loadFolders, дозакрытие LLM-движка.
+- `docs/development/COMPETITOR_MATRIX.md` v2 (субагент): implementation/design-матрица + **workflow-археология: OW.RU.* паки — high-confidence inferred provenance = конвейер автора RimLangKit** (детерминированные отпечатки EncodingFixer/CommentInserter/CaseCreator в 191/191 файлах; прямого подтверждения автора нет). Следов RimTrans/Text-grabber нет. Топ-5 adopt/adapt: формат сообщества как дефолт вывода, source-text TM, единый ExtractionFilter, About/discover/loadFolders, дозакрытие LLM-движка.
 - `docs/development/TRANSLATION_BENCHMARK.md` + слепой бенчмарк (§8): 0 реальных извлекательных миссов на VWE (adjudication: VEF-derived/version-skew/speculative); Genetics пак↔база 82.7%; provenance референса = AI Gemini + human (заявлено в About пака).
 
 **OFFICIAL_LANG_PACKS.md — готов и интегрирован (0af951f):**
@@ -47,6 +47,8 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 **ВЕРСИОННАЯ ПОЛИТИКА (мандат Даниэля):** 1.6 — primary tested target; 1.5/1.4 — compatibility; старше — best-effort без заявлений о поддержке. Резолвер принимает явную версию (modview + resolve_game_version_root); union-скан — только явный `--include-all-versions` (maintenance-режим), по умолчанию всегда версия-скоупед. **`rimloc version-diff --from --to`** (ddaf141): unchanged/changed/new/removed + review-очередь, JSON/MD; на реальном VWE 1.5→1.6 = 317 unchanged. Project-level target version = `game_version` в rimloc.toml (уже был) + Auto (latest ≤).
 
 **WHOLE-GAME SUPPORT (мандат §A-H доп.):** Data-корни (Core/DLC) работают как источники — Core EN scan = 11549, официальный RU тар = 16681 (93% пересечения); резолвер принимает корни без About.xml; GAME_LOCALIZATION_SUPPORT.md (LocalizationSource-маппинг + translation-maintainer workflow + остатки: tar-адаптер, Strings/Backstories-извлечение, NoTranslate/TKey, DLC-прогон NOT TESTED). Гейт §1 ЗАКРЫТ (TODO-семантика + capability-aware WordInfo `rimloc word-info`: на VWE 158 лейблов без WordInfo).
+
+**ГЕЙТ §1 ЗАКРЫТ (классификация в RIMWORLD_REFERENCE_AUDIT.md)**: NoTranslate=закрыт (allowlist)+P2-диагностика; TKey=BLOCKED явно (0 употреблений в корпусе 287 модов, фикстур не построить — зарезервированный extension point); field-not-found=закрыт (orphan-диагностика, в GUI validation suite всегда); TODO=закрыт. **Entry model заморожена**: источники Keyed/DefInjected/Defs/Patches + TKey-reserved; статусы untranslated/translated/TODO-missing/orphan-invalid/sourceChanged/pending-review; идентичность (source kind, key, language pair). AQ-AU персистентны в AUTONOMOUS_PLAN.md (§И3).
 
 **Следующие задачи (по приоритету):**
 1. И2-E GUI Svelte 5 — крупнейший незакрытый кусок (редактор SOURCE|TARGET, i18n ru/en, E2E tauri-driver)

@@ -65,6 +65,18 @@
 
 См. OFFICIAL_LANG_PACKS.md (структура, воркфлоу, 5 фикстур в `testlab/fixtures-official/` с PROVENANCE). Использование: только парсинг-регрессия и моделирование capabilities; **не** источник утечки в blind-бенчмарки и не переводческий корпус (лицензия Ludeon-репо не объявлена).
 
+## Классификация остаточной семантики перед заморозкой GUI-контрактов (гейт §1)
+
+| Правило | Влияет на entry model? | Классификация |
+|---|---|---|
+| **NoTranslate/Unsaved** (атрибуты полей в коде игры) | Нет: извлечение RimLoc — allowlist-словарь переводимых полей; NoTranslate-поля в него не входят и не попадают в entries | **ЗАКРЫТО** (исключение по умолчанию) + P2-диагностика «unnecessary entries» для уже существующих переводов (парсинг атрибутов требует рефлексию/список — офлайн-curated список) |
+| **TKey (1.6)** | **Да** — создаёт записи с иной идентичностью ключей | **BLOCKED (явно)**: в локальном корпусе 287 модов ноль TKey-употреблений — построить корректный фикстур не из чего; выдуманный формат рискует стать неверным. Зарезервировано как extension point в entry model (source kind); разблокируется появлением реальных TKey-модов/данных |
+| **Field-not-found** (target-ключ ссылается на несуществующее поле/def) | Да — статус записи «invalid/orphan» | **ЗАКРЫТО давно**: `validate_orphans_cross_language` (target-ключи без source) — GUI-контракт обязан всегда включать orphan-проверку в validation suite (не за флагом) |
+| **TODO = отсутствие перевода** | Да — статус untranslated, не translated | **ЗАКРЫТО** (coverage + тест, этот же гейт) |
+| **generated-дефы / однословные строки без пробела** (правила пропуска missing-отчёта) | Влияет на сопоставимость coverage с числами игры, не на существование записи | **P2-паритет**: реализовать как режим «game-parity coverage» при сверке с Translation Report |
+
+**Итог гейта**: entry model заморожена в составе — источники (Keyed/DefInjected/Defs-fields/Patches-derived; TKey = зарезервированное расширение), статусы (untranslated/translated/TODO-missing/orphan-invalid/sourceChanged/pending-review), идентичность = (source kind, key, language pair). Контракт готов к GUI.
+
 ## Расхождения «документация vs текущее поведение» (зафиксировано)
 
 1. Backstories как `Backstories/Backstories.xml` — мёртвый legacy (1.6 = DefInjected/BackstoryDef); RimLoc не реализует старый формат — сознательно.

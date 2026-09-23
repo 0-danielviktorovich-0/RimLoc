@@ -124,6 +124,11 @@
 
 ## Workflow-археология русских референс-переводов (OW.RU.*)
 
+> **Provenance**: всё ниже — **high-confidence inferred provenance**: детерминированные байт-отпечатки
+> (BOM/CRLF/отступы/EN-комментарии/WordInfo-секции) совпадают с процессорами RimLangKit, а автор паков
+> (OliveWizard) и автор RimLangKit (OneCodeUnit) — одна GitHub-личность. Прямого подтверждения автора нет;
+> возможны ручные правки поверх сгенерированного. Абсолютное утверждение «сделано RimLangKit» не делается.
+
 **Корпус**: `/Applications/RimWorld.app/Mods/` — 287 модов; среди них **55 пакетов `OW.RU.*`** и 11 `Mewn.*`. About-авторы: `OliveWizard` (38 соло), остальное — соавторства с `Mewn Goddess`, `Amortem`, `Hart ty`, `Grim Cheese`. Эталон разбора: **OW.RU.CORE** = Workshop-id `2507140407` («Vanilla Expanded Framework Russian Language Pack», author OliveWizard, в description — ссылка на GitHub `OneCodeUnit/VanillaRussianExpanded`).
 
 **Артефакты в переводах (замерено по файлам):**
