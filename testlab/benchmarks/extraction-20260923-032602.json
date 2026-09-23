@@ -1,0 +1,160 @@
+[
+ {
+  "workshop_id": "1814383360",
+  "note": "VE weapons; DefInjected-heavy; partial human RU; LoadFolders+versions",
+  "source_entries": 317,
+  "reference_entries": 397,
+  "matched": 144,
+  "precision_vs_reference": 0.4543,
+  "recall_vs_reference": 0.3627,
+  "missed_by_reference": 173,
+  "extra_in_reference": 253,
+  "missed_categories": {
+   "DefInjected": 170,
+   "Keyed": 3
+  },
+  "extra_categories": {
+   "DefInjected": 253
+  },
+  "missed_sample": [
+   "Bullet_ChargeSniperRifle.label",
+   "Gun_DoomsdayRocket.description",
+   "Gun_DoomsdayRocket.label",
+   "Gun_DoomsdayRocket.tools.li.label",
+   "Gun_TripleRocket.description",
+   "Gun_TripleRocket.label",
+   "Gun_TripleRocket.tools.li.label",
+   "VWE_Arrow_Painful.label",
+   "VWE_Arrow_TraitIncendiary.label",
+   "VWE_BlastTips_Arrow.label",
+   "VWE_BlastTips_Bolt.label",
+   "VWE_BlastTips_Compound.label",
+   "VWE_BlastTips_LargeArrow.label",
+   "VWE_Bow_Compound.tools.li.label",
+   "VWE_Bow_Compound_Unique.description"
+  ],
+  "extra_sample": [
+   "Dam_OPToxin.deathMessage",
+   "Make_Gun_DoomsdayRocket.description",
+   "Make_Gun_DoomsdayRocket.jobString",
+   "Make_Gun_DoomsdayRocket.label",
+   "Make_Gun_TripleRocket.description",
+   "Make_Gun_TripleRocket.jobString",
+   "Make_Gun_TripleRocket.label",
+   "Make_VWE_Bow_Compound.description",
+   "Make_VWE_Bow_Compound.jobString",
+   "Make_VWE_Bow_Compound.label",
+   "Make_VWE_Bow_Crossbow.description",
+   "Make_VWE_Bow_Crossbow.jobString",
+   "Make_VWE_Bow_Crossbow.label",
+   "Make_VWE_Bow_Long.description",
+   "Make_VWE_Bow_Long.jobString"
+  ],
+  "placeholder_in_source_missed": 2
+ },
+ {
+  "workshop_id": "2927850179",
+  "note": "aggregate RU language pack (OW.RU.Furniture); many LoadFolders submods; WordInfo",
+  "source_entries": 0,
+  "reference_entries": 1647,
+  "matched": 0,
+  "precision_vs_reference": 0.0,
+  "recall_vs_reference": 0.0,
+  "missed_by_reference": 0,
+  "extra_in_reference": 1647,
+  "missed_categories": {},
+  "extra_categories": {
+   "DefInjected": 1460,
+   "Keyed": 187
+  },
+  "missed_sample": [],
+  "extra_sample": [
+   "AOMorefurniture.description",
+   "AOMorefurniture.label",
+   "AO_MusicHearingAbility.description",
+   "AO_MusicHearingAbility.label",
+   "Architect_AOMorefurniture.description",
+   "Architect_AOMorefurniture.label",
+   "ArtDescription_Archotech.rulePack.rulesStrings",
+   "ArtDescription_Hologram.rulePack.rulesStrings",
+   "ArtDescription_Pottery.rulePack.rulesStrings",
+   "ArtDescription_Rug.rulePack.rulesStrings",
+   "Bed_AdvBed.description",
+   "Bed_AdvBed.label",
+   "Bed_AdvDoubleBed.description",
+   "Bed_AdvDoubleBed.label",
+   "Bed_CryptoBed.description"
+  ],
+  "placeholder_in_source_missed": 0
+ },
+ {
+  "workshop_id": "2805854947",
+  "note": "Vanilla Genetics Expanded + RU (127 files; largest local reference)",
+  "source_entries": 0,
+  "reference_entries": 3425,
+  "matched": 0,
+  "precision_vs_reference": 0.0,
+  "recall_vs_reference": 0.0,
+  "missed_by_reference": 0,
+  "extra_in_reference": 3425,
+  "missed_categories": {},
+  "extra_categories": {
+   "DefInjected": 3218,
+   "Keyed": 207
+  },
+  "missed_sample": [],
+  "extra_sample": [
+   "AA_Bullet_TinyVenomBarb.description",
+   "AA_Bullet_TinyVenomBarb.label",
+   "AA_ExplodingWeb.description",
+   "AA_ExplodingWeb.label",
+   "AA_HugeQuill.description",
+   "AA_HugeQuill.label",
+   "BR_BeeExplosion.deathMessage",
+   "BR_BeeExplosion.label",
+   "CastoreumProd",
+   "ChemfuelProd",
+   "ChocolateEgg",
+   "ComponentIndustrialDesc",
+   "Cryofuel",
+   "FeatherGrowth",
+   "GR_AbandonedLab.description"
+  ],
+  "placeholder_in_source_missed": 0
+ },
+ {
+  "workshop_id": "3626232280",
+  "note": "Vanilla Quests Expanded - Ancients RU (64 files; quest/RulePack-heavy)",
+  "source_entries": 0,
+  "reference_entries": 677,
+  "matched": 0,
+  "precision_vs_reference": 0.0,
+  "recall_vs_reference": 0.0,
+  "missed_by_reference": 0,
+  "extra_in_reference": 677,
+  "missed_categories": {},
+  "extra_categories": {
+   "DefInjected": 586,
+   "Keyed": 91
+  },
+  "missed_sample": [],
+  "extra_sample": [
+   "VQEA_AberrationRedirector.description",
+   "VQEA_AberrationRedirector.label",
+   "VQEA_AddsBurningPassionIn",
+   "VQEA_AncientBioBattery.description",
+   "VQEA_AncientBioBattery.label",
+   "VQEA_AncientBroadcastingStation.description",
+   "VQEA_AncientBroadcastingStation.label",
+   "VQEA_AncientBroadcastingStation_Off.description",
+   "VQEA_AncientBroadcastingStation_Off.label",
+   "VQEA_AncientChemfuelGenerator.comps.6.jobString",
+   "VQEA_AncientChemfuelGenerator.comps.CompInteractablePowerPlant.activateDescString",
+   "VQEA_AncientChemfuelGenerator.comps.CompInteractablePowerPlant.activateLabelString",
+   "VQEA_AncientChemfuelGenerator.comps.CompInteractablePowerPlant.activatingString",
+   "VQEA_AncientChemfuelGenerator.comps.CompInteractablePowerPlant.activatingStringPending",
+   "VQEA_AncientChemfuelGenerator.comps.CompInteractablePowerPlant.guiLabelString"
+  ],
+  "placeholder_in_source_missed": 0
+ }
+]
