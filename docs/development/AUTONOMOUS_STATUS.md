@@ -322,5 +322,5 @@ SourceEntry — требование вписано в Gate I.
 |---|---|---|---|---|
 | c4384b2+4f9668f+этот (patch stage) | lead | 142/0, clippy 0, VWE | self | landed |
 | 63309a7 I1 док | A1 | n/a (док) | lead: факты подтверждены (GUI=0×scan_defs_tkey; sourceChanged=placeholder; PoEntry в core) | LANDED |
-| — баг из аудита | A1-находка | — | GUI PO-экспорт теряет TKey-юниты (три копии сборки PO: export.rs/GUI/translate.rs) → фикс в I2 (один exporter) | OPEN→I2 |
+| — баг из аудита | A1-находка | — | GUI PO-экспорт терял TKey — ИСПРАВЛЕНО (3b03ff5): GUI зовёт канонический exporter; translate.rs переклассифицирован как output-адаптер | CLOSED |
 | 6101e53 G1 фронт | A2 | npm build + svelte-check 0 + live smoke (агент) + lead build ✓ | lead: 29 файлов только во frontend-v2, 0 invoke/@tauri, мок-сторы | LANDED |
