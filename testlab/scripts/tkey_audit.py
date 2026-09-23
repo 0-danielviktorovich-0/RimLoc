@@ -14,6 +14,7 @@ Usage: python3 testlab/scripts/tkey_audit.py
 """
 import json
 import subprocess
+import tempfile
 import sys
 import glob
 import os
@@ -87,9 +88,10 @@ def main():
     report["A_nodes_total_with_text"] = all_nodes
     report["A_unique_defName_TKey_pairs_all_roots"] = len(all_pairs)
 
-    # B/C. Scan Core EN (primary tested target) and classify entries
-    raw = Path("/tmp/tkey-audit")
-    raw.mkdir(parents=True, exist_ok=True)
+    # B/C. Scan Core EN (primary tested target) and classify entries.
+    # F-hardening: outputs go to a fresh TemporaryDirectory — no stale /tmp
+    # state can poison a run (reproducibility by construction).
+    raw = Path(tempfile.mkdtemp(prefix="tkey-audit-"))
     scan1 = scan(DATA / "Core", "en", raw / "core-run1.json")
     scan2 = scan(DATA / "Core", "en", raw / "core-run2.json")
     report["reproducibility"] = {
@@ -134,20 +136,23 @@ def main():
         if len(tkey_entries) >= len(per_root_nodes["Core"]["pairs"]) else 0,
     }
 
-    # F. Official reference mapping (unpacked official RU Core pack)
+    # F. Official reference mapping (unpacked official RU Core pack).
+    # F-hardening: always extract into the run-local temp dir and require
+    # success; a missing/partial previous extraction cannot leak in.
     ru_file = raw / "core-ru.json"
-    if not ru_file.exists():
-        subprocess.run(
-            ["tar", "-xf",
-             "/Applications/RimWorld.app/Data/Core/Languages/Russian (Русский).tar",
-             "-C", "/tmp/core-ru/Languages/Russian"],
-            check=False,
-        )
-        subprocess.run(
-            [str(CLI), "--quiet", "scan", "--root", "/tmp/core-ru", "--lang", "ru",
-             "--format", "json", "--out-json", str(ru_file)],
-            check=True, capture_output=True,
-        )
+    core_ru = raw / "core-ru" / "Languages" / "Russian"
+    core_ru.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["tar", "-xf",
+         str(DATA / "Core" / "Languages" / "Russian (Русский).tar"),
+         "-C", str(core_ru)],
+        check=True,
+    )
+    subprocess.run(
+        [str(CLI), "--quiet", "scan", "--root", str(raw / "core-ru"), "--lang", "ru",
+         "--format", "json", "--out-json", str(ru_file)],
+        check=True, capture_output=True,
+    )
     ru = json.loads(ru_file.read_text())
     ru_keys = {u["key"] for u in ru}
 

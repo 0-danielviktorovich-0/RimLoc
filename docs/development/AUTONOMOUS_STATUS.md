@@ -216,10 +216,10 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
 |---|--------|--------|---------|
 | A | TKey output/round-trip end-to-end (writer по TKeyMeta, 4 стратегии, мульти-контексты) | **ACTIVE** — метадата/реестр/стратегии готовы (e4639f7); writer+e2e — впереди | e4639f7; §1.1 adjudication |
 | B | Каноническая унификация inventory/сервисов (+таблица consumer×capability) | **DONE** — один пайплайн (validate/coverage/word-info делегируют; double extraction устранён; VWE 38%→45%); таблица в CANONICAL_INVENTORY.md | 98db4b2 |
-| C | TKey-aware кросс-язычные валидаторы на каноническом матчёре | **OPEN** (coverage/compare гейт готовы, placeholders/orphans/sourceChanged — нет) | 3ea0e19 |
+| C | TKey-aware кросс-язычные валидаторы на каноническом матчёре | **DONE** — один typed Resolution (Matched{Exact/ProvenAlias/SuffixFallback}/Ambiguous/Unmatched); placeholders/lists/orphans на общем резолве, ambiguity = диагностика; sourceChanged — на канон-модели Gate I | c634ee0 |
 | D | D | **DONE** — кейсы A/B/C/D в CLI-регрессии (source=6/translated=4/missing=2: TODO=missing, absent=missing) | 3ea0e19 + 65af0f4 |
 | E | E | **DONE** — scan_defs_tkey ходит по явному defs_dir напрямую; внешняя директория покрыта тестом | 65af0f4 |
-| F | Hardening аудит-скриптов (tmp-каталоги, воспроизводимость) | **OPEN** (reconcile-скрипт уже самодостаточен) | b29ef68 |
+| F | Hardening аудит-скриптов (tmp-каталоги, воспроизводимость) | **DONE** — tkey_audit.py в свежем TemporaryDirectory, RU-тар извлекает с check=True каждый прогон; reconcile самодостаточен | этот коммит |
 | G | G | **DONE** — гейт-таблица и комментарии кода: система с 1.1/2020, 1.6 = primary tested | 65af0f4 |
 | H | Effective RimWorld load precedence (Def first-wins / Keyed last-wins / версии / DLC) | **OPEN** | — |
 | I | Каноническая project model / persistence / адаптеры (Mandate 2) | **OPEN** | — |
