@@ -16,9 +16,7 @@ use rimloc_services::{
     validate_under_root_with_defs, validate_under_root_with_defs_and_fields, write_init_plan,
     xml_health_scan,
 };
-use rimloc_services::{
-    autodiscover_defs_context, learn,
-};
+use rimloc_services::{autodiscover_defs_context, learn};
 use rimloc_services::{MorphOptions, MorphProvider};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashMap};
