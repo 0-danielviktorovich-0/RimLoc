@@ -13,7 +13,14 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 
 **БЛОКЕР (решение Даниэля 2026-09-23): локальные LLM не запускать — не хватает ресурсов.** → §9 (семантический бенчмарк реальной генерации) заблокирован; все структурные/извлекательные/GUI/конкурентные работы продолжаются. MockProvider остаётся для детерминированных тестов. Оllama-инфраструктура в коде осталась (keyless localhost + автодетект модели, коммит 34c9eb4) — пригодится, когда ресурсы позволят.
 
-**Найден и исправлен P1-баг**: version-резолвер падал на плоских модах (supportedVersions в About, но без папок 1.x/) — теперь fallback на корень (до бенчмарка §8 всплыл бы всё равно).
+**Найден и исправлен P1-баг**: version-резолвер падал на плоских модах — fallback на корень ТОЛЬКО при наличии версии в About/supportedVersions (защита от опечаток сохранена; 2 старых теста подтвердили семантику) + регрессионный тест.
+
+**Сделано в И2 к текущему моменту:**
+- §8 СЛЕПОЙ БЕНЧМАРК: corpus VWE/Genetics(base↔pack)/VFE/QEA; adjudication — ноль реальных извлекательных миссов на VWE (reference-extra = VEF-derived рецепты + version-skew + спекулятивные записи); Genetics: RimLoc 2340 ключей, пак перевёл 82.7%; docs/development/TRANSLATION_BENCHMARK.md + testlab/scripts/blind_benchmark.py
+- §4 PROVENANCE: Genetics-пак сам заявляет «AI Gemini 2.5 Pro + ручная правка» — слово gold убрано из лексикона
+- §1 МНОГОЯЗЫЧНОСТЬ: LLM-промпт параметризован (нейтральное ядро + capability-блоки ru/ja/uk/de/generic, выбор по коду и имени папки); аудит всех слоёв → docs/development/MULTILINGUAL_ARCHITECTURE.md; TM/glossary pair-scoping записан как требование F7
+- §5: субагент дописывает implementation-матрицу конкурентов (файл COMPETITOR_MATRIX.md — его владение)
+- §9 БЛОКЕР: локальная LLM запрещена Даниэлем (ресурсы), платные API не авторизованы
 
 И1 (архив):** (Ф0–Ф6 + Ф9-acceptance + compare). CLI-пайплайн = RC-кандидат. Итоги: docs/development/FINAL_ACCEPTANCE.md.
 **СЛЕДУЮЩАЯ ИТЕРАЦИЯ (высший приоритет): Ф7 GUI** — Svelte 5 + TS бутстрап в gui/tauri-app: (1) frontend-v2 + vite + TS, (2) IPC-поверхность src-tauri ЗАМОРОЖЕНА — фронт ходит через существующие 38 команд, (3) экраны: мод-пикер → обзор проекта → редактор EN|RU (таблица, фильтры статусов, инлайн-правка, бейджи, LLM/TM-кнопки) → validate/diff/build/compare → провайдер-конфиг, (4) дизайн-проход скиллом ui-ux-pro-max, (5) tauri-driver E2E + полный GUI-джорни, (6) расщепление src-tauri/main.rs на command-модули при переносе.
