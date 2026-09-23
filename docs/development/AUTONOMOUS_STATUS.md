@@ -221,7 +221,7 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
 | E | E | **DONE** — scan_defs_tkey ходит по явному defs_dir напрямую; внешняя директория покрыта тестом | 65af0f4 |
 | F | Hardening аудит-скриптов (tmp-каталоги, воспроизводимость) | **DONE** — tkey_audit.py в свежем TemporaryDirectory, RU-тар извлекает с check=True каждый прогон; reconcile самодостаточен | этот коммит |
 | G | G | **DONE** — гейт-таблица и комментарии кода: система с 1.1/2020, 1.6 = primary tested | 65af0f4 |
-| H | Effective RimWorld load precedence (Def first-wins / Keyed last-wins / версии / DLC) | **DONE** — apply_effective_precedence по декомпил-правилам; LoadFolders-aware scan_units_effective (ре-рутов бага устранена); VWE 195@1.5 vs 247@1.6; регрессии H1–H3; methodology-блок отделён от schema_version | этот коммит |
+| H | Effective RimWorld load precedence (Def first-wins / Keyed last-wins / версии / DLC) | **DONE** — apply_effective_precedence + scan_units_effective (ре-рут фикс); VWE 195@1.5 vs 247@1.6; регрессии H1–H3; methodology отделён от schema_version | 8c49e83 |
 | I | Каноническая project model / persistence / адаптеры (Mandate 2) | **OPEN** | — |
 | J | Eligibility/knowledge архитектура (Mandate 3) | **OPEN** | — |
 | K | Existing-translation maintenance (Mandate 4 §1–7) | **OPEN** | — |
