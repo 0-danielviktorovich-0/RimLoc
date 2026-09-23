@@ -352,3 +352,18 @@ SourceEntry — требование вписано в Gate I.
   вывод из Project.
 - Сабагенты: D1-retry (дизайн-токены/движение) и D2-retry (Style Lab) перезапущены под
   индивидуал-планом (первые запуски пали по квоте чужого плана); A1/A2/A3 — лендед+ревью.
+
+### I4-acceptance лендед (4a7f5d2, 0b0979a) — три workflow на одной модели
+Тест `gate_i4_acceptance::three_workflows_over_one_canonical_project` на реальной
+фикстуре test/TKeyMod:
+- **A native/no-PO**: build_project(Some 1.6, view=Exact) → apply_existing_translation
+  (RU-пак через канон-матчёр, ≥4 записей) → save/reopen (I3) → write_rimworld_translation
+  → TKey-suffix DefInjected + bare TipSetDef элементы с русским текстом, TODO=TODO. **Ни
+  одного PO-файла в цикле.**
+- **B PO interop**: тот же Project → PO-файл через TM-prefilled адаптер → read_po_entries →
+  внешний-стиль импорт в FRESH project (SourceMatcher + update_translation) → идентичный
+  RimWorld-вывод.
+- **C existing-translation**: покрыт A (import сохраняет работу, TODO остаётся TODO);
+  полный reopen-цикл — persistence I3.
+Gate I критерий «если workflows требуют разной бизнес-логики — не закрыт»: A/B/C делят
+build_project + SourceMatcher + bridge; PO — только адаптер на входе/выходе.
