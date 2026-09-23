@@ -1,0 +1,140 @@
+{
+  "definitions": {
+    "P1_raw_tkey_nodes": "every XML node with a TKey attribute inside a Defs tree",
+    "P2_translatable_nodes": "P1 with owned defName AND own non-empty text",
+    "P3_unique_identities": "unique (defName, TKey) pairs within P2",
+    "P4_serialization_tested": "identities matching official RU via bare/.slateRef/.value.slateRef"
+  },
+  "totals": {
+    "raw_tkey_nodes": 360,
+    "translatable_nodes": 358,
+    "unique_identities": 350,
+    "matched_nodes": 351,
+    "matched_identities": 343
+  },
+  "unmatched_identities": [
+    {
+      "root": "Royalty",
+      "identity": "EndGame_RoyalAscent.ArrivingPawnsDefiniteLabel",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "EndGame_RoyalAscent.ArrivingPawnsDefiniteLabel",
+        "EndGame_RoyalAscent.ArrivingPawnsDefiniteLabel.slateRef",
+        "EndGame_RoyalAscent.ArrivingPawnsDefiniteLabel.value.slateRef"
+      ]
+    },
+    {
+      "root": "Royalty",
+      "identity": "ThreatReward_Infestation_ItemPod.LetterTextInfestationArrived",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "ThreatReward_Infestation_ItemPod.LetterTextInfestationArrived",
+        "ThreatReward_Infestation_ItemPod.LetterTextInfestationArrived.slateRef",
+        "ThreatReward_Infestation_ItemPod.LetterTextInfestationArrived.value.slateRef"
+      ]
+    },
+    {
+      "root": "Royalty",
+      "identity": "Util_SpawnSiteThreat.LetterLabelSiteAppeared",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "Util_SpawnSiteThreat.LetterLabelSiteAppeared",
+        "Util_SpawnSiteThreat.LetterLabelSiteAppeared.slateRef",
+        "Util_SpawnSiteThreat.LetterLabelSiteAppeared.value.slateRef"
+      ]
+    },
+    {
+      "root": "Royalty",
+      "identity": "Util_SpawnSiteThreat.LetterTextSiteAppeared",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "Util_SpawnSiteThreat.LetterTextSiteAppeared",
+        "Util_SpawnSiteThreat.LetterTextSiteAppeared.slateRef",
+        "Util_SpawnSiteThreat.LetterTextSiteAppeared.value.slateRef"
+      ]
+    },
+    {
+      "root": "Odyssey",
+      "identity": "SurveySite.LetterLabelSurveySiteQuestCompleted",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "SurveySite.LetterLabelSurveySiteQuestCompleted",
+        "SurveySite.LetterLabelSurveySiteQuestCompleted.slateRef",
+        "SurveySite.LetterLabelSurveySiteQuestCompleted.value.slateRef"
+      ]
+    },
+    {
+      "root": "Odyssey",
+      "identity": "SurveySite.LetterTextSurveySiteQuestCompleted",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "SurveySite.LetterTextSurveySiteQuestCompleted",
+        "SurveySite.LetterTextSurveySiteQuestCompleted.slateRef",
+        "SurveySite.LetterTextSurveySiteQuestCompleted.value.slateRef"
+      ]
+    },
+    {
+      "root": "Odyssey",
+      "identity": "SurveySite.LetterTextSurveySiteRaid",
+      "def_has_other_ru_coverage": true,
+      "serialization_paths_tested": [
+        "SurveySite.LetterTextSurveySiteRaid",
+        "SurveySite.LetterTextSurveySiteRaid.slateRef",
+        "SurveySite.LetterTextSurveySiteRaid.value.slateRef"
+      ]
+    }
+  ],
+  "per_root": {
+    "Core": {
+      "raw_nodes": 112,
+      "translatable_nodes": 112,
+      "unique_identities": 112,
+      "matched_identities": 112,
+      "unmatched_identities": []
+    },
+    "Royalty": {
+      "raw_nodes": 210,
+      "translatable_nodes": 208,
+      "unique_identities": 200,
+      "matched_identities": 196,
+      "unmatched_identities": [
+        "EndGame_RoyalAscent.ArrivingPawnsDefiniteLabel",
+        "ThreatReward_Infestation_ItemPod.LetterTextInfestationArrived",
+        "Util_SpawnSiteThreat.LetterLabelSiteAppeared",
+        "Util_SpawnSiteThreat.LetterTextSiteAppeared"
+      ]
+    },
+    "Ideology": {
+      "raw_nodes": 3,
+      "translatable_nodes": 3,
+      "unique_identities": 3,
+      "matched_identities": 3,
+      "unmatched_identities": []
+    },
+    "Biotech": {
+      "raw_nodes": 5,
+      "translatable_nodes": 5,
+      "unique_identities": 5,
+      "matched_identities": 5,
+      "unmatched_identities": []
+    },
+    "Anomaly": {
+      "raw_nodes": 3,
+      "translatable_nodes": 3,
+      "unique_identities": 3,
+      "matched_identities": 3,
+      "unmatched_identities": []
+    },
+    "Odyssey": {
+      "raw_nodes": 27,
+      "translatable_nodes": 27,
+      "unique_identities": 27,
+      "matched_identities": 24,
+      "unmatched_identities": [
+        "SurveySite.LetterLabelSurveySiteQuestCompleted",
+        "SurveySite.LetterTextSurveySiteQuestCompleted",
+        "SurveySite.LetterTextSurveySiteRaid"
+      ]
+    }
+  }
+}

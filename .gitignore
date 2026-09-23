@@ -45,3 +45,7 @@ Thumbs.db
 # === Diff/debug helpers ===
 /staged.diff
 /unstaged.diff
+
+# === Test lab runtime artifacts (regenerable) ===
+/testlab/run/
+/testlab/benchmarks/raw/
