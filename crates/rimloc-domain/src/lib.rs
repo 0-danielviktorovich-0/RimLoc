@@ -2,6 +2,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 pub mod canonical;
+pub mod eligibility;
 
 pub const SCHEMA_VERSION: u32 = 1;
 
