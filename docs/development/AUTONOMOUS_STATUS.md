@@ -48,7 +48,14 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 
 **WHOLE-GAME SUPPORT (мандат §A-H доп.):** Data-корни (Core/DLC) работают как источники — Core EN scan = 11549, официальный RU тар = 16681 (93% пересечения); резолвер принимает корни без About.xml; GAME_LOCALIZATION_SUPPORT.md (LocalizationSource-маппинг + translation-maintainer workflow + остатки: tar-адаптер, Strings/Backstories-извлечение, NoTranslate/TKey, DLC-прогон NOT TESTED). Гейт §1 ЗАКРЫТ (TODO-семантика + capability-aware WordInfo `rimloc word-info`: на VWE 158 лейблов без WordInfo).
 
-**ГЕЙТ §1 ЗАКРЫТ (классификация в RIMWORLD_REFERENCE_AUDIT.md)**: NoTranslate=закрыт (allowlist)+P2-диагностика; TKey=BLOCKED явно (0 употреблений в корпусе 287 модов, фикстур не построить — зарезервированный extension point); field-not-found=закрыт (orphan-диагностика, в GUI validation suite всегда); TODO=закрыт. **Entry model заморожена**: источники Keyed/DefInjected/Defs/Patches + TKey-reserved; статусы untranslated/translated/TODO-missing/orphan-invalid/sourceChanged/pending-review; идентичность (source kind, key, language pair). AQ-AU персистентны в AUTONOMOUS_PLAN.md (§И3).
+**ГЕЙТ §1 ПЕРЕЗАКРЫТ по финальной коррекции (поправка Даниэля: TKey ≠ BLOCKED):**
+- TKey **РЕАЛИЗОВАН** (7646e9a): семантика выведена из installed 1.6 данных + официального RU-пака — `<defName>.<TKey>` + канонические суффиксы; `scan_defs_tkey` (+226 записей Core), фикс. тест, canonical-нормализация в compare/coverage; нераскрытый подслучай задокументирован (полный список типов узлов с `.value.`-вариантом — 2 из 112 наблюдений)
+- NoTranslate: регрессия `scan_never_emits_nontranslatable_technical_fields` (allowlist-гарантия «невозможно по конструкции»); дифф с Translation Report — при следующем acceptance-прогоне
+- Entry identity: SourceEntryId/TranslationUnit разделение задокументировано как доказуемо эквивалентное (TransUnit target-независим; pair-scoping на слоях перевода) — MULTILINGUAL_ARCHITECTURE.md
+- Семейства: Keyed/DefInjected/TKey(реализован)/Backstories(=DefInjected)/RulePack(через Defs-словарь) — модель покрывает; **Strings (.txt) — единственный известный формат вне модели, адаптер зафиксирован как остаток** (не блокирует: ключ-представление совместимо)
+- 116/0 тестов
+
+**ГЕЙТ §1 ЗАКРЫТ (первичная классификация):** NoTranslate=закрыт (allowlist)+P2-диагностика; TKey=BLOCKED явно (0 употреблений в корпусе 287 модов, фикстур не построить — зарезервированный extension point); field-not-found=закрыт (orphan-диагностика, в GUI validation suite всегда); TODO=закрыт. **Entry model заморожена**: источники Keyed/DefInjected/Defs/Patches + TKey-reserved; статусы untranslated/translated/TODO-missing/orphan-invalid/sourceChanged/pending-review; идентичность (source kind, key, language pair). AQ-AU персистентны в AUTONOMOUS_PLAN.md (§И3).
 
 **Следующие задачи (по приоритету):**
 1. И2-E GUI Svelte 5 — крупнейший незакрытый кусок (редактор SOURCE|TARGET, i18n ru/en, E2E tauri-driver)
