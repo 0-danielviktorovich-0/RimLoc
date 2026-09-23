@@ -94,7 +94,7 @@ impl Provider for AnthropicProvider {
             &req.units,
             &req.glossary,
         );
-        let (text, usage) = self.call(prompt::SYSTEM_PROMPT_RU, &user)?;
+        let (text, usage) = self.call(&prompt::system_prompt(&req.target_lang), &user)?;
         let results = crate::openai_compat::parse_results_payload(&text, req)?;
         Ok(TranslateResponse { results, usage })
     }
