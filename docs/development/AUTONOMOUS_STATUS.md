@@ -228,3 +228,22 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
 | L | Contributor/debugging/observability (Mandate 4 §8–39) | **OPEN** | — |
 
 Порядок: A→B→C→D→E→F→G→H → I → J → K → L → freeze → delta-бандл. GUI-дизайн/моки — параллельно, без привязки к legacy-состоянию.
+
+## УТОЧНЕНИЯ ВЛАДЕЛЬЦА (24.09) — границы GATE A и правило no-PO
+- **GATE A (8595129) доказывает**: семантику TKey-сериализации, все доказанные
+  стратегии, round-trip текущего PO-адаптера, корректность писателя. **НЕ** доказывает
+  приемлемость PO как канонической внутренней архитектуры.
+- **Gate I обязан включить no-PO acceptance**: source → canonical project state →
+  translation/editor/TM/MockProvider → validation → RimWorld writer → корректный TKey
+  output. Отдельно сохраняется interop-тест: canonical project → PO export/import →
+  canonical project (fidelity-матрица).
+- Текущий PO-based TKey E2E остаётся регрессией и станет эвиденсом совместимости
+  PO-адаптера после миграции.
+- **Темы GUI**: Light / Dark / System(Auto) — все три; «dark primary» = первичный
+  визуальный референс/дефолт, НЕ dark-only продукт.
+- **5 открытых вопросов GUI_DESIGN_SPEC** классифицированы (см. файл): обратимые
+  дефолты решаются автономно; к пользователю — только существенные продукт-решения.
+- **Issue #2 остаётся OPEN** до полного канонического цикла: existing translation →
+  import → preserve reusable → sourceChanged/new/obsolete/orphan классификация →
+  edit → close/reopen → validate → build. TM-prefill round-trip — поддерживающий
+  эвиденс, не закрытие.
