@@ -9,6 +9,24 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 Кумулятив И2: слепой бенчмарк (adjudication: 0 реальных миссов) · provenance (Gemini-AI пак; OW.RU.* = RimLangKit-конвейер) · многоязычный промпт · матрица конкурентов v2 · first-party аудит (13 категорий TranslationReport из декомпила DLL 1.6) · modview (LoadFolders) · version-diff · TODO-семантика · capability-aware WordInfo (`rimloc word-info`) · whole-game (Core EN 11549 / RU 16681 / 93%). Блокер: локальная LLM запрещена (ресурсы), платные API не авторизованы; GLM Flash через ZCode = разрешённый zero-cost путь для семантического бенчмарка (§20 мандата).
 
 
+
+## И3-GATE: P1-фиксы независимого ревью ChatGPT (ДО глубокой привязки GUI) — В РАБОТЕ
+
+Ревью: CORE TKEY EXTRACTION PASS, 112/112 PASS, FREEZE NOT YET. P1-очередь:
+- P1-1 unify inventory (scan_units/scan_units_auto/+dict/+fields — один канонический пайплайн, TKey везде) + регрессия на GUI/service path
+- P1-2 TKey round-trip: базовая идентичность `<defName>.<TKey>` НЕ сериализуется игрой — нужен path_hint (.slateRef / .value.slateRef / bare по типу узла) в TransUnit (additive, schema minor) + импорт-райтер + e2e фикстуры 3 форм
+- P1-3 кросс-язычные валидаторы (placeholders/lists/orphans) TKey-aware: exact → TKey-алиас ТОЛЬКО для известных TKey-идентичностей; тесты: .slateRef ок, .value.slateRef ок, bare ок, настоящий orphan, не-TKey .slateRef НЕ алиасится
+- P1-4 прямой регресс 5016be4: CLI coverage на TKey-фикстуре с target DefInjected: A) base→.slateRef translated=1; B) →.value.slateRef translated=1; C) TODO→missing; D) absent→missing
+- P1-5/P1-6/P1-7: один общий резолвер матчинга (coverage/uncovered-sample/placeholder/glossary — один результат), детерминизм (0/1/>1 кандидатов), тесты мультивариантности
+- P2-8 scan_defs_tkey external --defs-dir (ходить по defs_root напрямую) + регрессия
+- P2-9 tkey_audit.py: TemporaryDirectory, без stale /tmp кеша, reproducibility по полным нормализованным выводам
+- P2-10 DLC TKey adjudication (Royalty 208/200 — 8 дублей: исследовать) — субагент
+- P2-11 TKey НЕ «новое в 1.6» — система с 1.1 (май 2020, QuestScriptDefs/TipSetDefs): исправить доки/комментарии; 1.6 остаётся primary tested
+- P2-12 противоречия в RIMWORLD_REFERENCE_AUDIT (implemented vs not-parsing; identity-формулировки) + точное описание git-состояния («tracked clean; known untracked testlab artifacts»)
+- BROADER P1: load precedence (Defs first-wins, Keyed last-wins) — до Pass A, не блокирует Svelte-скаффолд
+
+**АРХИТЕКТУРНЫЙ ГЕЙТ (каноническая проектная модель)**: PO → adapter, не внутреннее состояние. Аудит PO-зависимостей → CANONICAL_PROJECT_MODEL.md; каноническая модель SourceEntry/TranslationUnit/(Project/LanguagePair/status/provenance); TKey round-trip как архитектурный тест; персистентность по evidence (не SQLite-ради-SQLite); GUI/LLM/TM/MCP — только от канонических сервисов; fidelity-матрица адаптеров; недеструктивная миграция. «Если архитектура УЖЕ удовлетворяет — задокументировать доказательство, не переписывать».
+
 ## LATEST — SUPPLEMENT БАНДЛ ГОТОВ (50f9483 → cf60ee7) + inventory-аудит 22 команд
 
 - **Supplement**: `~/Developing/_rimloc-review/RimLoc-TKey-50f9483-to-cf60ee7-supplement.zip` (20 файлов; SHA-256 `6d22fcfc92fa0b17d96585a364dd03cec3e767a7c18f0508e99f84c7292bcf26`; sha256-файл проверен shasum -c OK). COVERAGE-TKEY-FOLLOWUP.md: дефект (coverage = путь B scan_all_units* без TKey; scan/translate/compare = путь A с TKey), фикс в КОРНЕ семейства пути B (все потребители автоматически), полная таблица аудита 22 CLI-команд.
