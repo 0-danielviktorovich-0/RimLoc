@@ -47,6 +47,9 @@ pub struct PatchReport {
     pub applied_add: usize,
     pub applied_remove: usize,
     pub no_target: usize,
+    /// Ops inside runtime-conditional wrappers (match/nomatch): applied as
+    /// superset but the view stays POTENTIAL.
+    pub conditional_ops: usize,
     pub unsupported_count: usize,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub unsupported: Vec<UnsupportedOp>,
@@ -209,6 +212,27 @@ fn apply_operation_node(
             apply_operation_node(child, units, report, file);
             continue;
         }
+        // Conditional wrappers (PatchOperationFindMod match/nomatch): the
+        // branch is chosen at RUNTIME by mod presence. Offline we apply BOTH
+        // branches as a documented superset, but the view stays POTENTIAL.
+        if tag.eq_ignore_ascii_case("match") || tag.eq_ignore_ascii_case("nomatch") {
+            report.conditional_ops += 1;
+            let wrapper_class = child.attribute("Class").unwrap_or("");
+            if let Some(kind) = op_kind(wrapper_class.trim_start_matches("PatchOperation")) {
+                execute_op(kind, child, units, report, file);
+            } else {
+                apply_operation_node(child, units, report, file);
+            }
+            continue;
+        }
+        // Sequence forms wrap concrete ops in <li Class="PatchOperationX"> —
+        // dispatch by the Class attribute, the tag name is meaningless
+        // (real-mod corpus: 78% of sequence entries are Replace/Add/Remove).
+        let child_class = child.attribute("Class").unwrap_or("");
+        if let Some(kind) = op_kind(child_class.trim_start_matches("PatchOperation")) {
+            execute_op(kind, child, units, report, file);
+            continue;
+        }
         let Some(kind) = op_kind(tag) else {
             report.ops_total += 1;
             report.unsupported_count += 1;
@@ -266,8 +290,15 @@ fn execute_op(
                 .map(String::from);
             match value {
                 Some(text) => {
-                    if let Some(u) = units.iter_mut().find(|u| u.key == key) {
-                        u.source = Some(text);
+                    let mut hit = 0usize;
+                    for id in xp.def_name.split('\u{1}') {
+                        let full = format!("{id}.{}", xp.field_path);
+                        if let Some(u) = units.iter_mut().find(|u| u.key == full) {
+                            u.source = Some(text.clone());
+                            hit += 1;
+                        }
+                    }
+                    if hit > 0 {
                         report.applied_replace += 1;
                     } else {
                         report.no_target += 1;
@@ -388,6 +419,7 @@ impl PatchReport {
         self.applied_add += other.applied_add;
         self.applied_remove += other.applied_remove;
         self.no_target += other.no_target;
+        self.conditional_ops += other.conditional_ops;
         self.unsupported_count += other.unsupported_count;
         self.unsupported.extend(other.unsupported.iter().cloned());
     }
@@ -397,7 +429,7 @@ impl PatchReport {
     pub fn finalize(&mut self) {
         self.coverage = Some(if self.ops_total == 0 {
             PatchCoverage::None
-        } else if self.unsupported_count > 0 || self.no_target > 0 {
+        } else if self.unsupported_count > 0 || self.no_target > 0 || self.conditional_ops > 0 {
             PatchCoverage::Partial
         } else {
             PatchCoverage::Full
@@ -509,5 +541,90 @@ mod tests {
         assert_eq!(l.source.as_deref(), Some("Old label"));
         assert_eq!(rep.unsupported_count, 1);
         assert_eq!(rep.coverage, Some(PatchCoverage::Partial));
+    }
+}
+
+#[cfg(test)]
+mod a3_sequence_tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    /// A3 research top-1: canonical <operations><li Class="PatchOperationX">
+    /// sequence form must dispatch by Class, not fall to unsupported.
+    #[test]
+    fn sequence_li_class_form_is_supported() {
+        let dir = tempdir().unwrap();
+        let patches = dir.path().join("Patches");
+        fs::create_dir_all(&patches).unwrap();
+        fs::write(
+            patches.join("Seq.xml"),
+            r#"<Patch>
+  <Operation Class="PatchOperationSequence">
+    <operations>
+      <li Class="PatchOperationReplace">
+        <xpath>/Defs/ThingDef[defName="Widget"]/label</xpath>
+        <value>Seq replace</value>
+      </li>
+      <li Class="PatchOperationAdd">
+        <xpath>/Defs/ThingDef[defName="Widget"]</xpath>
+        <value><flavor>Added</flavor></value>
+      </li>
+    </operations>
+  </Operation>
+</Patch>"#,
+        )
+        .unwrap();
+        let units = vec![rimloc_core::TransUnit {
+            key: "Widget.label".into(),
+            source: Some("Old".into()),
+            path: "Defs/T.xml".into(),
+            line: None,
+            tkey: None,
+        }];
+        let (units, rep) = apply_patch_stage(units, &patches);
+        let l = units.iter().find(|u| u.key == "Widget.label").unwrap();
+        assert_eq!(l.source.as_deref(), Some("Seq replace"));
+        assert!(units.iter().any(|u| u.key == "Widget.flavor"));
+        assert_eq!(rep.unsupported_count, 0, "{rep:?}");
+        assert_eq!(rep.coverage, Some(PatchCoverage::Full));
+    }
+
+    /// match/nomatch branches apply as a superset but keep the view POTENTIAL.
+    #[test]
+    fn find_mod_wrappers_apply_superset_and_stay_partial() {
+        let dir = tempdir().unwrap();
+        let patches = dir.path().join("Patches");
+        fs::create_dir_all(&patches).unwrap();
+        fs::write(
+            patches.join("Cond.xml"),
+            r#"<Patch>
+  <Operation Class="PatchOperationFindMod">
+    <modName>SomeMod</modName>
+    <match Class="PatchOperationReplace">
+      <xpath>/Defs/ThingDef[defName="Widget"]/label</xpath>
+      <value>With mod</value>
+    </match>
+    <nomatch Class="PatchOperationReplace">
+      <xpath>/Defs/ThingDef[defName="Widget"]/label</xpath>
+      <value>Without mod</value>
+    </nomatch>
+  </Operation>
+</Patch>"#,
+        )
+        .unwrap();
+        let units = vec![rimloc_core::TransUnit {
+            key: "Widget.label".into(),
+            source: Some("Old".into()),
+            path: "Defs/T.xml".into(),
+            line: None,
+            tkey: None,
+        }];
+        let (units, rep) = apply_patch_stage(units, &patches);
+        assert!(rep.conditional_ops >= 2, "{rep:?}");
+        assert_eq!(rep.coverage, Some(PatchCoverage::Partial));
+        // Superset: the last branch wins deterministically.
+        let l = units.iter().find(|u| u.key == "Widget.label").unwrap();
+        assert_eq!(l.source.as_deref(), Some("Without mod"));
     }
 }
