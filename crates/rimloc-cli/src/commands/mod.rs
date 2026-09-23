@@ -14,5 +14,6 @@ pub mod schema;
 pub mod translate;
 pub mod validate;
 pub mod version_diff;
+pub mod wordinfo;
 pub mod xml_health;
 // re-export commonly used helpers if needed later

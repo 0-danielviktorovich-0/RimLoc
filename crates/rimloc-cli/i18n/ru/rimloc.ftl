@@ -287,3 +287,14 @@ help-version-diff-out-json = Сохранить JSON-отчёт в файл
 help-version-diff-out-md = Сохранить Markdown-отчёт в файл
 vdiff-json-saved = JSON-отчёт сохранён в { $path }
 vdiff-md-saved = Markdown-отчёт сохранён в { $path }
+
+# wordinfo
+help-wordinfo-about = Диагностика покрытия WordInfo переведённых лейблов (по возможностям языка: только ru/uk/de)
+help-wordinfo-root = Путь к корню мода RimWorld
+help-wordinfo-lang = Целевой язык (код или имя папки)
+help-wordinfo-out-scaffold = Выпустить каркас Case.txt для недостающих слов
+help-wordinfo-format = Формат вывода: text | json
+wordinfo-not-applicable = У языка `{ $lang }` нет WordInfo-возможности (его LanguageWorker не склоняет существительные)
+wordinfo-scaffold-saved = Каркас Case сохранён в { $path } — формы требуют проверки человеком
+wordinfo-summary = WordInfo: покрыто={ $covered }, отсутствует={ $missing }
+wordinfo-more = … и ещё { $count }
