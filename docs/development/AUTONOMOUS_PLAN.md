@@ -30,5 +30,15 @@ P0 security/data-loss/broken-core → P1 major correctness/real-mod/severe UX �
 - **F9 RimWorld acceptance** — isolated disposable profile (config copy, separate data dir, -logfile) — never touch production profile/saves/Workshop; chain: scan→translate→validate→build→isolated game load→game-log inspection→in-game smoke; real-load-only bugs → regression fixtures; if automation impossible → document + manual smoke steps.
 - **F10 convergence** — Pass A engineering (arch/quality/security/tests/CI/deps/stubs/perf) + Pass B hostile product (clean state, GUI journey, real mods, adversarial input, cancel/interrupt/resume, restart, provider failures, large project, real RimWorld); meaningful fix → rerun pass; RC gate: clean passes, no known P0/P1; FINAL_ACCEPTANCE.md; STOP, await push approval.
 
+## И3 PRODUCT & PUBLIC RELEASE (мандат A–AP + дополнения AQ-AU/AV)
+
+Порядок по §AO: GUI RC → Pass A/B → beginner UX acceptance → repo/docs hardening → agent/CLI skill → branch cleanup → release engineering → cross-platform RC → release notes/readiness → STOP (decision packet §AP).
+
+- **§AQ Codecov**: cargo-llvm-cov (Rust) + фронтенд-покрытие через тестовый стек; flags rust/frontend/integration, components core/services/extraction/validation/llm/tauri/frontend; базовый замер информационно, гейт = patch/new-code coverage; статус-чеки на main только после стабилизации; action pinned на immutable SHA.
+- **§AR/AS Actions audit**: инвентаризация всех workflows с локального HEAD (цель/триггеры/jobs/permissions/secrets/actions), классификация KEEP/REWRITE/MERGE/DELETE/DEFER; Trusted Publishing/OIDC для crates.io; без `|| true` в гейтах; SHA-pinning + комментарии версий; actionlint + security analyzer; информационные джобы называются информационными.
+- **§AT Release consolidation**: ОДИН release-authority; CI → artifacts → smoke → checksums → attestations → RC → явный approve-gate → stable → crates.io; Edge/nightly только если полезен.
+- **§AU Positioning**: после acceptance — «RimWorld Localization Workstation» (моды + база + DLC + языковые паки + maintenance/QA/version-aware); обновить description/topics/README/docs синхронно; не рекламировать непротестированное.
+- **§AV RimSort interop** (не блокирует RC): RIMSORT_INTEROP.md с классификацией VALUE/COUPLING/MAINTENANCE/RISK → IMPLEMENT NOW/DEFER/REJECT; RimLoc не становится мод-менеджером; чистый контракт «open in RimLoc».
+
 ## Parallelism
 Subagents on Flash models per Daniel's policy; git worktrees for disjoint tasks; explicit file/crate ownership; one architectural hotspot at a time; mandatory integration review before merge; subagent output not trusted blindly.
