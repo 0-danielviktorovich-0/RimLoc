@@ -1976,12 +1976,14 @@ fn coverage_matches_tkey_serialization_shapes_on_tkey_fixture() {
         "json",
     ]);
     let v: serde_json::Value = serde_json::from_str(&out.stdout).expect("coverage json");
-    // 5 source units = 4 TKey identities + 1 ordinary defs field
-    // (SampleQuest.label, no RU counterpart — stays missing).
-    assert_eq!(v["source_total"].as_u64(), Some(5), "{v}");
-    assert_eq!(v["target_total"].as_u64(), Some(4), "{v}");
+    // 6 source units = 5 TKey identities + 1 ordinary defs field.
+    // translated=4: bare, .slateRef and .value.slateRef all match; the TODO
+    // placeholder counts as MISSING (case C, RimWorld LoadedLanguage parity)
+    // and SampleQuest.label has no RU counterpart (case D absent).
+    assert_eq!(v["source_total"].as_u64(), Some(6), "{v}");
+    assert_eq!(v["target_total"].as_u64(), Some(5), "{v}");
     assert_eq!(v["translated"].as_u64(), Some(4), "{v}");
-    assert_eq!(v["missing"].as_u64(), Some(1), "{v}");
+    assert_eq!(v["missing"].as_u64(), Some(2), "{v}");
 }
 
 #[test]

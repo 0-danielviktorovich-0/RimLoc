@@ -8,6 +8,7 @@
   <QuestScriptDef>
     <defName>SampleQuest</defName>
     <label TKey="LetterLabelFavorReceiver">sample favor label</label>
+    <inspectString TKey="ExpiryTip">This quest expires in 10 days.</inspectString>
     <customLetterText TKey="LetterTextSample">
       Sample quest text.
     </customLetterText>
