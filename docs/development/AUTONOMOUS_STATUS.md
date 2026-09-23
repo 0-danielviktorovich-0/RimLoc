@@ -270,3 +270,11 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
    release — проверка лицензий перераспределения, нотисов и размера пакета. IBM Plex Sans
    и JetBrains Mono — SIL OFL 1.1: перераспределение внутри приложения допустимо, в репо
    кладутся файлы лицензий + THIRD-PARTY-NOTICES. Пункт в чек-листе repo/docs hardening.
+### Уточнение "effective source view" (24.09, выполнено до Gate I)
+Exact vs POTENTIAL (InventoryContext: version/DLC/mods/load order; RimSort-интеграция
+в будущем), конвейер Raw → version-effective → patch-applied → eligibility → inventory,
+patch-этап: bounded-поднабор replace/add/remove реализован (services::patches_effect,
+4 синтетических кейса мандата), unsupported классифицирован (Partial ⇒ POTENTIAL);
+file-order = RimLoc stand-in (задокументирован, не игровой контракт); provenance
+SourceEntry — требование вписано в Gate I.
+
