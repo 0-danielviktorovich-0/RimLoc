@@ -15,6 +15,27 @@ pub struct OpenAiCompatProvider {
     client: reqwest::blocking::Client,
 }
 
+/// Ask a local OpenAI-compatible server for its first installed model id
+/// (used so `--provider ollama` works without knowing model names).
+pub fn first_installed_model(base_url: &str) -> Option<String> {
+    let url = format!("{}/models", base_url.trim_end_matches('/'));
+    let v: serde_json::Value = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .ok()?
+        .get(url)
+        .send()
+        .ok()?
+        .json()
+        .ok()?;
+    v["data"]
+        .as_array()?
+        .iter()
+        .filter_map(|m| m["id"].as_str())
+        .next()
+        .map(str::to_string)
+}
+
 impl OpenAiCompatProvider {
     pub fn from_preset(preset: &crate::provider::ProviderPreset, key: KeySource) -> Self {
         Self {
@@ -33,9 +54,16 @@ impl OpenAiCompatProvider {
     }
 
     fn call(&self, system: &str, user: &str) -> Result<(String, Option<Usage>), LlmError> {
-        let Some(key) = crate::provider::resolve_key(&self.key, &self.id)? else {
+        let key = crate::provider::resolve_key(&self.key, &self.id)?;
+        // Local inference servers (Ollama/LM Studio) need no API key. Only a
+        // loopback endpoint may run keyless; anything remote requires one.
+        let is_local = self
+            .base_url
+            .contains("localhost")
+            || self.base_url.contains("127.0.0.1");
+        if key.is_none() && !is_local {
             return Err(LlmError::MissingKey(self.id.clone()));
-        };
+        }
         let body = serde_json::json!({
             "model": self.model,
             "messages": [
@@ -45,13 +73,11 @@ impl OpenAiCompatProvider {
             "temperature": 0.2,
         });
         let url = format!("{}/chat/completions", self.base_url.trim_end_matches('/'));
-        let resp = self
-            .client
-            .post(url)
-            .bearer_auth(key)
-            .json(&body)
-            .send()
-            .map_err(LlmError::Http)?;
+        let mut rb = self.client.post(url).json(&body);
+        if let Some(k) = key {
+            rb = rb.bearer_auth(k);
+        }
+        let resp = rb.send().map_err(LlmError::Http)?;
         let status = resp.status();
         if status.as_u16() == 429 {
             let after = resp

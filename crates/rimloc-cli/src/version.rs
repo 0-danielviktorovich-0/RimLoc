@@ -112,11 +112,21 @@ pub fn resolve_game_version_root(
                 .and_then(|s| s.to_str())
                 .map(|s| s.to_string());
             return Ok((path, name));
+        } else if entries.is_empty() {
+            // The mod has no versioned layout at all (flat mod with only
+            // supportedVersions in About.xml): the configured game version is
+            // moot — the root layout is the only one there is.
+            return Ok((base.to_path_buf(), None));
         } else {
             return Err(color_eyre::eyre::eyre!(
-                "Requested version '{}' not found under {}",
+                "Requested version '{}' not found under {} (available: {})",
                 req,
-                base.display()
+                base.display(),
+                entries
+                    .iter()
+                    .map(|e| e.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ));
         }
     }
