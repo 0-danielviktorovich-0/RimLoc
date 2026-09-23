@@ -1017,6 +1017,21 @@ enum Commands {
         only_diff: bool,
     },
 
+    /// Diagnose WordInfo coverage of translated labels (help via FTL).
+    WordInfo {
+        /// Path to the RimWorld mod root
+        #[arg(long, short = 'r')]
+        root: PathBuf,
+        /// Target language (code or folder name, e.g. ru / Russian)
+        #[arg(long)]
+        lang: String,
+        /// Emit a Case.txt scaffold for missing words (needs human review)
+        #[arg(long)]
+        out_scaffold: Option<PathBuf>,
+        /// Output format: text | json
+        #[arg(long, default_value = "text")]
+        format: String,
+    },
     /// Compare translatable source inventory across two mod versions (help via FTL).
     VersionDiff {
         /// Path to the RimWorld mod root
@@ -1597,6 +1612,12 @@ impl Runnable for Commands {
                 only_diff,
             ),
 
+            Commands::WordInfo {
+                root,
+                lang,
+                out_scaffold,
+                format,
+            } => commands::wordinfo::run_wordinfo(root, lang, out_scaffold, format),
             Commands::VersionDiff {
                 root,
                 from,

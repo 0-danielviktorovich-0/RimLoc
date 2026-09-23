@@ -303,7 +303,10 @@ pub fn coverage_report(
     let mut translated = 0usize;
     for (k, _) in src.iter() {
         if let Some(v) = tgt.get(k) {
-            if !v.trim().is_empty() {
+            // RimWorld parity (1.6 decompile, LoadedLanguage): a translation
+            // equal to the TODO placeholder counts as MISSING, not translated.
+            let todo = v.trim().eq_ignore_ascii_case("TODO") || v.trim().is_empty();
+            if !todo {
                 translated += 1;
             }
         }

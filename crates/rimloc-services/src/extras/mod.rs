@@ -5,4 +5,5 @@ pub mod init;
 pub mod lang_update;
 pub mod morph;
 pub mod version_diff;
+pub mod wordinfo;
 pub mod xml_health;

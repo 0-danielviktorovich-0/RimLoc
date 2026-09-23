@@ -27,6 +27,7 @@ Commands:
   export-xliff   Export extracted strings into a single XLIFF 1.2 file (for CAT tools)
   import-xliff   Import XLIFF 1.2 and write a single LanguageData XML (Keyed)
   import-po      Import .po  -  either into a single XML, or spread across existing mod structure
+  word-info      Diagnose WordInfo coverage of translated labels (help via FTL)
   version-diff   Compare translatable source inventory across two mod versions (help via FTL)
   compare        Compare translations against the source and each other (help via FTL)
   translate      Translate a mod via an LLM provider into a .po (help via FTL)

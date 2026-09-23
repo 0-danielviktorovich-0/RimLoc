@@ -358,3 +358,14 @@ help-version-diff-out-json = Save JSON report to file
 help-version-diff-out-md = Save Markdown report to file
 vdiff-json-saved = JSON report saved to { $path }
 vdiff-md-saved = Markdown report saved to { $path }
+
+# wordinfo
+help-wordinfo-about = Diagnose WordInfo coverage of translated labels (capability-aware: ru/uk/de only)
+help-wordinfo-root = Path to the RimWorld mod root
+help-wordinfo-lang = Target language (code or folder name)
+help-wordinfo-out-scaffold = Emit a Case.txt scaffold for missing words
+help-wordinfo-format = Output format: text | json
+wordinfo-not-applicable = Language `{ $lang }` has no WordInfo capability (its LanguageWorker does not decline nouns)
+wordinfo-scaffold-saved = Case scaffold saved to { $path } — forms need human review
+wordinfo-summary = WordInfo covered={ $covered }, missing={ $missing }
+wordinfo-more = … and { $count } more

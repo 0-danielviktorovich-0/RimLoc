@@ -1896,3 +1896,36 @@ fn version_config_falls_back_for_flat_mod_declaring_support() {
         .args(["--game-version", "9.9"]);
     cmd.assert().failure();
 }
+
+#[test]
+fn coverage_treats_todo_placeholder_as_missing() {
+    // RimWorld parity (1.6 LoadedLanguage): "TODO" is not a translation.
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    std::fs::create_dir_all(root.join("Languages/English/Keyed")).unwrap();
+    std::fs::create_dir_all(root.join("Languages/Russian/Keyed")).unwrap();
+    std::fs::write(
+        root.join("Languages/English/Keyed/K.xml"),
+        "<LanguageData>\n  <A>Hello world</A>\n  <B>Two words</B>\n  <C>Three word text</C>\n</LanguageData>\n",
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("Languages/Russian/Keyed/K.xml"),
+        "<LanguageData>\n  <A>Привет мир</A>\n  <B>TODO</B>\n  <C>todo</C>\n</LanguageData>\n",
+    )
+    .unwrap();
+
+    let mut cmd = bin_cmd();
+    cmd.args(["coverage", "--root"])
+        .arg(root)
+        .arg("--source-lang-dir")
+        .arg(root.join("Languages/English"))
+        .arg("--target-lang-dir")
+        .arg(root.join("Languages/Russian"));
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let line = out.lines().find(|l| l.starts_with("Coverage:")).unwrap();
+    // B and C are TODO → missing; only A translated.
+    assert!(line.contains("translated=1"), "{line}");
+    assert!(line.contains("missing=2"), "{line}");
+}
