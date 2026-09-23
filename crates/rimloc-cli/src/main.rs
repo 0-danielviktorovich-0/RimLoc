@@ -1017,6 +1017,27 @@ enum Commands {
         only_diff: bool,
     },
 
+    /// Compare translatable source inventory across two mod versions (help via FTL).
+    VersionDiff {
+        /// Path to the RimWorld mod root
+        #[arg(long, short = 'r')]
+        root: PathBuf,
+        /// Source version (e.g. 1.5)
+        #[arg(long)]
+        from: String,
+        /// Target version (e.g. 1.6)
+        #[arg(long)]
+        to: String,
+        /// Output format when printing to stdout: text | json
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// Save JSON report to file
+        #[arg(long)]
+        out_json: Option<PathBuf>,
+        /// Save Markdown report to file
+        #[arg(long)]
+        out_md: Option<PathBuf>,
+    },
     /// Compare translations against the source and each other (help via FTL).
     Compare {
         /// Path to the RimWorld mod root
@@ -1576,6 +1597,14 @@ impl Runnable for Commands {
                 only_diff,
             ),
 
+            Commands::VersionDiff {
+                root,
+                from,
+                to,
+                format,
+                out_json,
+                out_md,
+            } => commands::version_diff::run_version_diff(root, from, to, format, out_json, out_md),
             Commands::Compare {
                 root,
                 source_lang_dir,

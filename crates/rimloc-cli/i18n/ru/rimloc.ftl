@@ -276,3 +276,14 @@ help-compare-out-md = Сохранить Markdown-отчёт в файл
 help-compare-format = Формат вывода в stdout: text | json
 compare-json-saved = JSON-отчёт сохранён в { $path }
 compare-md-saved = Markdown-отчёт сохранён в { $path }
+
+# version-diff
+help-version-diff-about = Сравнить состав переводимых строк двух RimWorld-версий мода
+help-version-diff-root = Путь к корню мода RimWorld
+help-version-diff-from = Исходная версия (например 1.5)
+help-version-diff-to = Целевая версия (например 1.6)
+help-version-diff-format = Формат вывода в stdout: text | json
+help-version-diff-out-json = Сохранить JSON-отчёт в файл
+help-version-diff-out-md = Сохранить Markdown-отчёт в файл
+vdiff-json-saved = JSON-отчёт сохранён в { $path }
+vdiff-md-saved = Markdown-отчёт сохранён в { $path }
