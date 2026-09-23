@@ -8,6 +8,16 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 **Чекпоинт И2 (проверен): 114/0 тестов, clippy/deny чисто, HEAD 2e0f799+, дерево чисто, пуша нет.**
 Кумулятив И2: слепой бенчмарк (adjudication: 0 реальных миссов) · provenance (Gemini-AI пак; OW.RU.* = RimLangKit-конвейер) · многоязычный промпт · матрица конкурентов v2 · first-party аудит (13 категорий TranslationReport из декомпила DLL 1.6) · modview (LoadFolders) · version-diff · TODO-семантика · capability-aware WordInfo (`rimloc word-info`) · whole-game (Core EN 11549 / RU 16681 / 93%). Блокер: локальная LLM запрещена (ресурсы), платные API не авторизованы; GLM Flash через ZCode = разрешённый zero-cost путь для семантического бенчмарка (§20 мандата).
 
+
+## LATEST — REVIEW BUNDLE READY + фоновые агенты завершены (2026-09-23)
+
+- **Ревью-бандл готов**: `~/Developing/_rimloc-review/RimLoc-TKey-50f9483-review.zip` (60 файлов; SHA-256 `3e06b443dc1e385c85f40b1e7d06cb9578e07bf92676cc765490153d4bd5aacb`). Ревьюер проверяет: TKey-извлечение, reconciliation 112/226/358, двойное извлечение, canonical-нормализацию, коллизии, coverage>1.0 фикс, независимость тестов, EN/RU-допущения, безопасность фриза. Загрузить ZIP в ChatGPT.
+- **Post-bundle фикс (5016be4)**: coverage шёл через scan_all_units* без TKey-прохода (находка пакинг-агента) → TKey в полном инвентаре с дедупом. Ревьюерам оценивать 50f9483 + follow-up.
+- **DISCOVERABILITY.md готов** (SEO-стратегия): топ-интенты, description/topics proposal (12 живых topics), MkDocs-возможности (meta/canonical/sitemap+hreflang из коробки; OG через social-плагин; robots.txt статикой), **находка: docs/development/** утекает в публичный sitemap → exclude_docs на фазе hardening**.
+- **Docs-UX knowledge base** — субагент завершил: создана в AI-OS по конвенциям (База-знаний/Темы/Документация-UX: INDEX, references, patterns (24+), framework-bakeoff, starter-checklist) + скилл .agents/skills/docs-product-design/SKILL.md. Детали — в отчёте агента (интеграция/валидация скилла — при первой docs-фазе).
+- Следующая фаза: GUI RC (дизайн через ui-ux-pro-max → Svelte 5 + TS → i18n ru/en → E2E).
+
+
 ## И3 — ФАЗЫ ПО §AO (строгий порядок, не менять без причины)
 1. **GUI RC** (И2-E переносится сюда): Svelte 5 + TS, «Translate a mod» beginner-кнопка (§B), progressive disclosure 3 слоя (§C), first-run onboarding 3-5 экранов (§D), UI i18n ru/en (§F), редактор SOURCE|TARGET, E2E tauri-driver, полный GUI-джорни без CLI-fallback, Windows=first-class (§G), plain-language copy (§E)
 2. **Функциональные Pass A/B** (§35/36 предыдущего мандата)
