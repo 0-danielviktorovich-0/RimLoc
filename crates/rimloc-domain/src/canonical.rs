@@ -193,7 +193,7 @@ pub enum ViewLabel {
 }
 
 /// The canonical project: one source inventory + per-locale translations.
-#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Project {
     pub context: InventoryContext,
     pub entries: Vec<SourceEntry>,

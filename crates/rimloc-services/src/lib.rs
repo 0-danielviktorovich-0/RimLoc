@@ -20,6 +20,7 @@ pub mod plugins_json;
 pub mod plugins_msf;
 pub mod plugins_xml_ext;
 pub mod plugins_yaml;
+pub mod project_store;
 pub mod scan;
 mod util;
 pub mod validate;
