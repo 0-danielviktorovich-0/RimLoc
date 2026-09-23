@@ -299,10 +299,17 @@ pub fn coverage_report(
             }
         }
     }
+    // TKey entries: target side carries canonical suffixes (.slateRef / .value.slateRef)
+    // while extracted source identity is the base `<defName>.<TKey>`.
+    let tgt_canonical: HashMap<String, String> = tgt
+        .iter()
+        .map(|(k, v)| (crate::util::canonical_match_key(k), v.clone()))
+        .collect();
     let source_total = src.len();
     let mut translated = 0usize;
     for (k, _) in src.iter() {
-        if let Some(v) = tgt.get(k) {
+        let value = tgt.get(k).or_else(|| tgt_canonical.get(k));
+        if let Some(v) = value {
             // RimWorld parity (1.6 decompile, LoadedLanguage): a translation
             // equal to the TODO placeholder counts as MISSING, not translated.
             let todo = v.trim().eq_ignore_ascii_case("TODO") || v.trim().is_empty();

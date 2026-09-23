@@ -1,0 +1,15 @@
+<Defs>
+  <TipSetDef>
+    <defName>SampleTips</defName>
+    <tips>
+      <li TKey="DismissLetters">You can dismiss letters by right-clicking.</li>
+    </tips>
+  </TipSetDef>
+  <QuestScriptDef>
+    <defName>SampleQuest</defName>
+    <label TKey="LetterLabelFavorReceiver">sample favor label</label>
+    <customLetterText TKey="LetterTextSample">
+      Sample quest text.
+    </customLetterText>
+  </QuestScriptDef>
+</Defs>
