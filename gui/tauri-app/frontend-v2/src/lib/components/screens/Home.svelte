@@ -66,7 +66,7 @@
         type="button"
         class="card entry-card"
         data-testid="home.entry-existing"
-        onclick={() => router.navigate('workspace')}
+        onclick={() => router.navigate('existing')}
       >
         <span class="card-icon"><Icon name="folder-open" size={28} /></span>
         <span class="card-title">{t('home.entryExisting.title')}</span>
