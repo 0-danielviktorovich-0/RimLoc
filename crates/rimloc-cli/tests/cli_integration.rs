@@ -1929,3 +1929,28 @@ fn coverage_treats_todo_placeholder_as_missing() {
     assert!(line.contains("translated=1"), "{line}");
     assert!(line.contains("missing=2"), "{line}");
 }
+
+#[test]
+fn scan_never_emits_nontranslatable_technical_fields() {
+    // NoTranslate evidence: extraction is allowlist-driven, so technical/
+    // identity fields (defName, texPath, workerClass, defaultDamage) can never
+    // become translatable entries — this is the construction-level guarantee
+    // behind the NoTranslate classification (see RIMWORLD_REFERENCE_AUDIT.md).
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"])
+        .arg(fixture("test/MultiLangMod"))
+        .args(["--game-version", "1.5", "--lang", "en", "--format", "json"]);
+    let assert = cmd.assert().success();
+    let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    for forbidden in ["defName", "texPath", "workerClass", "defaultDamage"] {
+        let bad: Vec<&str> = out
+            .lines()
+            .filter(|l| l.contains(&format!(".{forbidden}\"")))
+            .map(|l| &l[..l.len().min(120)])
+            .collect();
+        assert!(
+            bad.is_empty(),
+            "technical field `{forbidden}` must never be extracted: {bad:?}"
+        );
+    }
+}
