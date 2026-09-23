@@ -3,7 +3,7 @@
 // everything else is local reactive state. No Tauri/IPC calls anywhere.
 
 import { mockEntries } from '../mock/data';
-import type { Entry, EntryKind, EntryStatus, SaveState } from '../mock/types';
+import type { Entry, EntryKind, EntryStatus, Origin, SaveState } from '../mock/types';
 
 export type StatusCounts = Record<EntryStatus, number>;
 
@@ -28,6 +28,8 @@ class ProjectStore {
   selectedId = $state<string | null>(null);
   filters = $state<EntryStatus[]>([]);
   category = $state<'all' | EntryKind>('all');
+  /** Provenance filter from the filter popover ('any' = no filter). */
+  originFilter = $state<Origin | 'any'>('any');
   search = $state('');
 
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -53,12 +55,14 @@ class ProjectStore {
     return counts;
   }
 
-  /** Mock of the service read: category + status multi-filter + debounced search, OR semantics on filters. */
+  /** Mock of the service read: category + status multi-filter + origin + debounced search.
+   * Dimensions combine with AND; statuses and kinds combine with OR within their dimension. */
   filtered(): Entry[] {
     const needle = this.search.trim().toLowerCase();
     return this.entries.filter((e) => {
       if (this.category !== 'all' && e.kind !== this.category) return false;
       if (this.filters.length > 0 && !this.filters.includes(e.status)) return false;
+      if (this.originFilter !== 'any' && e.origin !== this.originFilter) return false;
       if (needle) {
         const hay = `${e.source}\n${e.target}\n${e.key}`.toLowerCase();
         if (!hay.includes(needle)) return false;
@@ -77,8 +81,20 @@ class ProjectStore {
       : [...this.filters, status];
   }
 
+  /** Left-navigator single-select status view (user-oriented navigation, mandate §9). */
+  setStatusFilter(status: EntryStatus | null) {
+    this.filters = status ? [status] : [];
+  }
+
+  /** Number of active combined filters (statuses + kind + origin) for the badge. */
+  activeFilterCount(): number {
+    return this.filters.length + (this.category !== 'all' ? 1 : 0) + (this.originFilter !== 'any' ? 1 : 0);
+  }
+
   clearFilters() {
     this.filters = [];
+    this.category = 'all';
+    this.originFilter = 'any';
     this.search = '';
   }
 
@@ -167,6 +183,21 @@ class ProjectStore {
     if (entry) entry.status = status;
   }
 
+  /** Apply a SUGGESTIONS-tab pick. AI output never lands as translated (spec §8):
+   * it becomes pending_review; TM/import glossary picks count as accepted drafts. */
+  applySuggestion(id: string, text: string, origin: Origin) {
+    const entry = this.byId(id);
+    if (!entry) return;
+    entry.target = text;
+    entry.origin = origin;
+    entry.editedAt = new Date().toISOString();
+    if (origin === 'LLM') {
+      if (entry.status === 'untranslated' || entry.status === 'todo') entry.status = 'pending_review';
+    } else if (entry.status === 'untranslated' || entry.status === 'todo') {
+      entry.status = 'translated';
+    }
+  }
+
   setNote(id: string, note: string) {
     const entry = this.byId(id);
     if (entry) entry.note = note;
@@ -182,6 +213,7 @@ class ProjectStore {
     this.selectedId = null;
     this.filters = [];
     this.category = 'all';
+    this.originFilter = 'any';
     this.search = '';
   }
 }

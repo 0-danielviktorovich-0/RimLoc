@@ -1,8 +1,10 @@
 <script lang="ts">
-  // Dev-only panel: mock state toggles per spec §3 (every screen must expose
-  // loading / empty / error) + dataset reset. Not part of the product UI.
+  // Dev-only panel: route switcher, mock state toggles per spec §3 (every
+  // screen must expose loading / empty / error) + dataset reset. Not part of
+  // the product UI.
   import { t } from '../../i18n/store.svelte';
-  import { ui } from '../stores/ui.svelte';
+  import { router, ROUTES, type RouteId } from '../router.svelte';
+  import { ui, type HomeMode } from '../stores/ui.svelte';
   import { project } from '../stores/project.svelte';
 </script>
 
@@ -10,14 +12,27 @@
   <summary>{t('dev.title')}</summary>
   <div class="dev-body">
     <label class="dev-row">
-      <span>{t('dev.screen')}</span>
+      <span>{t('dev.route')}</span>
       <select
-        data-testid="dev.screen"
-        value={ui.screen}
-        onchange={(e) => (ui.screen = (e.currentTarget as HTMLSelectElement).value as 'home' | 'workspace')}
+        data-testid="dev.route"
+        value={router.route}
+        onchange={(e) => router.navigate((e.currentTarget as HTMLSelectElement).value as RouteId)}
       >
-        <option value="home">{t('dev.screen.home')}</option>
-        <option value="workspace">{t('dev.screen.workspace')}</option>
+        {#each ROUTES as r (r)}
+          <option value={r}>{r}</option>
+        {/each}
+      </select>
+    </label>
+
+    <label class="dev-row">
+      <span>{t('dev.homeMode')}</span>
+      <select
+        data-testid="dev.home-mode"
+        value={ui.homeMode}
+        onchange={(e) => (ui.homeMode = (e.currentTarget as HTMLSelectElement).value as HomeMode)}
+      >
+        <option value="returning">{t('dev.homeMode.returning')}</option>
+        <option value="first-run">{t('dev.homeMode.first-run')}</option>
       </select>
     </label>
 

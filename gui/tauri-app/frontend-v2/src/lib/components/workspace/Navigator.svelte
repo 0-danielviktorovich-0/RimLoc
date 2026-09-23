@@ -1,36 +1,92 @@
 <script lang="ts">
-  // Left navigator (spec §2.4, 240px): category list filtering the table.
+  // Left navigator, user-oriented (mandate §9): "All entries" + statuses come
+  // first; technical record kinds live collapsed under "Structure (advanced)".
+  // A status click is a single-select quick filter; "All entries" clears it.
   import { t } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
-  import type { EntryKind } from '../../mock/types';
+  import Icon from '../Icon.svelte';
+  import type { EntryStatus } from '../../mock/types';
 
-  const CATEGORIES: Array<'all' | EntryKind> = ['all', 'Keyed', 'DefInjected', 'TKey'];
+  // Most useful statuses for normal users (mandate §9); 'translated' stays
+  // reachable via the filter popover.
+  const STATUS_ITEMS: EntryStatus[] = [
+    'untranslated',
+    'pending_review',
+    'sourceChanged',
+    'todo',
+    'orphan'
+  ];
+
+  const KINDS = ['Keyed', 'DefInjected', 'TKey'] as const;
 
   let { kindCounts }: { kindCounts: Record<string, number> } = $props();
 
-  function label(kind: 'all' | EntryKind): string {
-    return kind === 'all' ? t('workspace.navigator.all') : t(`kind.${kind}`);
+  const statusCounts = $derived(project.statusCounts());
+  const total = $derived(project.entries.length);
+
+  function activeStatus(): EntryStatus | null {
+    return project.filters.length === 1 ? project.filters[0] : null;
   }
 </script>
 
 <nav class="navigator" aria-label={t('workspace.navigator.title')} data-testid="workspace.navigator">
   <p class="nav-title">{t('workspace.navigator.title')}</p>
   <ul class="nav-list">
-    {#each CATEGORIES as kind (kind)}
+    <li>
+      <button
+        type="button"
+        class="nav-item"
+        aria-pressed={project.filters.length === 0}
+        data-testid="workspace.navigator.all"
+        onclick={() => project.setStatusFilter(null)}
+      >
+        <span class="nav-label">{t('workspace.navigator.all')}</span>
+        <span class="nav-count" aria-hidden="true">{total}</span>
+      </button>
+    </li>
+  </ul>
+
+  <p class="nav-section">{t('workspace.navigator.status')}</p>
+  <ul class="nav-list">
+    {#each STATUS_ITEMS as status (status)}
       <li>
         <button
           type="button"
           class="nav-item"
-          aria-pressed={project.category === kind}
-          data-testid={`workspace.navigator.${kind}`}
-          onclick={() => (project.category = kind)}
+          aria-pressed={activeStatus() === status}
+          data-testid={`workspace.navigator.status.${status}`}
+          onclick={() =>
+            project.setStatusFilter(activeStatus() === status ? null : status)}
         >
-          <span class="nav-label">{label(kind)}</span>
-          <span class="nav-count" aria-hidden="true">{kindCounts[kind] ?? 0}</span>
+          <span class="nav-label">{t(`workspace.filter.${status}`)}</span>
+          <span class="nav-count" aria-hidden="true">{statusCounts[status]}</span>
         </button>
       </li>
     {/each}
   </ul>
+
+  <details class="advanced">
+    <summary data-testid="workspace.navigator.advanced">
+      <Icon name="layers" size={12} />
+      {t('workspace.navigator.advanced')}
+    </summary>
+    <ul class="nav-list">
+      {#each KINDS as kind (kind)}
+        <li>
+          <button
+            type="button"
+            class="nav-item"
+            aria-pressed={project.category === kind}
+            data-testid={`workspace.navigator.${kind}`}
+            onclick={() => (project.category = project.category === kind ? 'all' : kind)}
+          >
+            <span class="nav-label mono">{t(`kind.${kind}`)}</span>
+            <span class="nav-count" aria-hidden="true">{kindCounts[kind] ?? 0}</span>
+          </button>
+        </li>
+      {/each}
+    </ul>
+  </details>
 </nav>
 
 <style>
@@ -43,6 +99,14 @@
 
   .nav-title {
     margin: 0 0 var(--space-2);
+    font-size: var(--text-meta-size);
+    color: var(--color-muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .nav-section {
+    margin: var(--space-3) 0 var(--space-1);
     font-size: var(--text-meta-size);
     color: var(--color-muted-fg);
     text-transform: uppercase;
@@ -92,5 +156,39 @@
   .nav-count {
     font-size: var(--text-meta-size);
     color: var(--color-muted-fg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .advanced {
+    margin-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2);
+  }
+
+  .advanced summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-height: var(--control-h);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+  }
+
+  .advanced summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .advanced summary:hover {
+    background: var(--color-muted);
+    color: var(--color-fg);
+  }
+
+  .advanced ul {
+    margin-top: var(--space-1);
   }
 </style>
