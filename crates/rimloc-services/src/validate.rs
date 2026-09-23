@@ -1,4 +1,3 @@
-
 /// Canonical inventory sourcing for every validator/coverage consumer (B):
 /// delegates to the SAME pipeline as CLI scan (Keyed + Defs via learned/dict
 /// + TKey + DefInjected-path merge). Convenience variants below must never
@@ -131,11 +130,15 @@ pub fn validate_placeholders_cross_language(
     let mut src_map: std::collections::HashMap<String, String> = std::collections::HashMap::new();
     let mut tgt_map: std::collections::HashMap<String, (String, String, Option<usize>)> =
         std::collections::HashMap::new();
-
+    let mut tkey_identities: Vec<String> = Vec::new();
     for u in units.drain(..) {
         let path = u.path.clone();
         let key = u.key.clone();
+        let is_tkey = u.tkey.is_some();
         if is_source_for_lang_dir(&path, &source_lang_dir) {
+            if is_tkey {
+                tkey_identities.push(key.clone());
+            }
             if let Some(s) = u.source.as_deref() {
                 if !s.trim().is_empty() {
                     src_map.entry(key).or_insert_with(|| s.to_string());
@@ -151,20 +154,49 @@ pub fn validate_placeholders_cross_language(
         }
     }
 
-    // Compare placeholder sets
+    // Gate C: ONE shared resolution for every consumer. TKey-suffixed targets
+    // are checked against their resolved source; ambiguity is a diagnostic.
+    let src_units: Vec<rimloc_core::TransUnit> = src_map
+        .iter()
+        .map(|(k, s)| rimloc_core::TransUnit {
+            key: k.clone(),
+            source: Some(s.clone()),
+            path: std::path::PathBuf::new(),
+            line: None,
+            tkey: None,
+        })
+        .collect();
+    let tkey_registry = crate::matching::TKeyRegistry::from_identities(tkey_identities);
+    let matcher = crate::matching::SourceMatcher::new(&src_units, &tkey_registry);
     let mut msgs = Vec::new();
     for (key, (tgt, path, line)) in tgt_map.into_iter() {
-        if let Some(src) = src_map.get(&key) {
-            let src_ph = extract_placeholders_like_cli(src);
-            let tgt_ph = extract_placeholders_like_cli(&tgt);
-            if src_ph != tgt_ph {
+        match matcher.resolve_target(&key) {
+            crate::matching::Resolution::Matched { source_key, .. } => {
+                if let Some(src) = src_map.get(&source_key) {
+                    let src_ph = extract_placeholders_like_cli(src);
+                    let tgt_ph = extract_placeholders_like_cli(&tgt);
+                    if src_ph != tgt_ph {
+                        msgs.push(ValidationMessage {
+                            kind: "placeholder-check".into(),
+                            key,
+                            path,
+                            line,
+                            message: "Placeholder mismatch vs source".into(),
+                        });
+                    }
+                }
+            }
+            crate::matching::Resolution::Ambiguous { candidates, .. } => {
                 msgs.push(ValidationMessage {
-                    kind: "placeholder-check".into(),
+                    kind: "ambiguous-key".into(),
                     key,
                     path,
                     line,
-                    message: "Placeholder mismatch vs source".into(),
+                    message: format!("Ambiguous key: could address {}", candidates.join(", ")),
                 });
+            }
+            crate::matching::Resolution::Unmatched { .. } => {
+                // no source counterpart — the orphan validator owns this
             }
         }
     }
@@ -190,9 +222,14 @@ pub fn validate_lists_cross_language(
         std::collections::HashMap::new();
     let mut tgt: std::collections::HashMap<String, (String, String, Option<usize>)> =
         std::collections::HashMap::new();
+    let mut tkey_identities: Vec<String> = Vec::new();
     for u in units.drain(..) {
         if let Some(text) = u.source.as_deref() {
+            let is_tkey = u.tkey.is_some();
             if is_source_for_lang_dir(&u.path, &source_lang_dir) {
+                if is_tkey {
+                    tkey_identities.push(u.key.clone());
+                }
                 src.insert(u.key.clone(), (text.to_string(), u.line));
             } else if is_source_for_lang_dir(&u.path, &target_lang_dir) {
                 tgt.insert(
@@ -214,20 +251,46 @@ pub fn validate_lists_cross_language(
             s.matches('\n').count() + 1
         }
     }
+    let src_units: Vec<rimloc_core::TransUnit> = src
+        .iter()
+        .map(|(k, (s, line))| rimloc_core::TransUnit {
+            key: k.clone(),
+            source: Some(s.clone()),
+            path: std::path::PathBuf::new(),
+            line: *line,
+            tkey: None,
+        })
+        .collect();
+    let tkey_registry = crate::matching::TKeyRegistry::from_identities(tkey_identities);
+    let matcher = crate::matching::SourceMatcher::new(&src_units, &tkey_registry);
     let mut msgs = Vec::new();
     for (k, (t, path, line)) in tgt.into_iter() {
-        if let Some((s, _)) = src.get(&k) {
-            let cs = li_count(s);
-            let ct = li_count(&t);
-            if cs != ct {
+        match matcher.resolve_target(&k) {
+            crate::matching::Resolution::Matched { source_key, .. } => {
+                if let Some((s, _)) = src.get(&source_key) {
+                    let cs = li_count(s);
+                    let ct = li_count(&t);
+                    if cs != ct {
+                        msgs.push(ValidationMessage {
+                            kind: "list-mismatch".into(),
+                            key: k,
+                            path,
+                            line,
+                            message: format!("List items mismatch: src={cs} tgt={ct}"),
+                        });
+                    }
+                }
+            }
+            crate::matching::Resolution::Ambiguous { candidates, .. } => {
                 msgs.push(ValidationMessage {
-                    kind: "list-mismatch".into(),
+                    kind: "ambiguous-key".into(),
                     key: k,
                     path,
                     line,
-                    message: format!("List items mismatch: src={cs} tgt={ct}"),
+                    message: format!("Ambiguous key: could address {}", candidates.join(", ")),
                 });
             }
+            crate::matching::Resolution::Unmatched { .. } => {}
         }
     }
     Ok(msgs)
@@ -247,12 +310,17 @@ pub fn validate_orphans_cross_language(
     } else {
         scan_canonical(scan_root, None)?
     };
-    let mut src_keys: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    let mut src_units: Vec<rimloc_core::TransUnit> = Vec::new();
     let mut tgt_map: std::collections::HashMap<String, (String, Option<usize>)> =
         std::collections::HashMap::new();
+    let mut tkey_identities: Vec<String> = Vec::new();
     for u in units.drain(..) {
+        let is_tkey = u.tkey.is_some();
         if is_source_for_lang_dir(&u.path, &source_lang_dir) {
-            src_keys.insert(u.key.clone());
+            if is_tkey {
+                tkey_identities.push(u.key.clone());
+            }
+            src_units.push(u);
         } else if is_source_for_lang_dir(&u.path, &target_lang_dir) {
             tgt_map.insert(
                 u.key.clone(),
@@ -260,16 +328,31 @@ pub fn validate_orphans_cross_language(
             );
         }
     }
+    let tkey_registry = crate::matching::TKeyRegistry::from_identities(tkey_identities);
+    let matcher = crate::matching::SourceMatcher::new(&src_units, &tkey_registry);
     let mut msgs = Vec::new();
     for (k, (path, line)) in tgt_map.into_iter() {
-        if !src_keys.contains(&k) {
-            msgs.push(ValidationMessage {
-                kind: "orphan".into(),
-                key: k,
-                path,
-                line,
-                message: "Key missing in source".into(),
-            });
+        match matcher.resolve_target(&k) {
+            // Valid TKey alias/suffix variants are NOT orphans.
+            crate::matching::Resolution::Matched { .. } => {}
+            crate::matching::Resolution::Ambiguous { candidates, .. } => {
+                msgs.push(ValidationMessage {
+                    kind: "ambiguous-key".into(),
+                    key: k,
+                    path,
+                    line,
+                    message: format!("Ambiguous key: could address {}", candidates.join(", ")),
+                });
+            }
+            crate::matching::Resolution::Unmatched { .. } => {
+                msgs.push(ValidationMessage {
+                    kind: "orphan".into(),
+                    key: k,
+                    path,
+                    line,
+                    message: "Key missing in source".into(),
+                });
+            }
         }
     }
     Ok(msgs)
@@ -347,4 +430,78 @@ pub fn coverage_report(
         translated,
         missing,
     })
+}
+
+#[cfg(test)]
+mod gate_c_tests {
+    use super::*;
+
+    const DEFS: &str = r#"<Defs>
+  <QuestScriptDef>
+    <defName>Q</defName>
+    <label TKey="Lbl">Hello {0}</label>
+    <customLetterText TKey="Txt">Body text.</customLetterText>
+  </QuestScriptDef>
+  <ThingDef>
+    <defName>Bogus</defName>
+    <label>bogus label</label>
+  </ThingDef>
+</Defs>"#;
+
+    const RU: &str = r#"<LanguageData>
+  <Q.Lbl.slateRef>Привет</Q.Lbl.slateRef>
+  <Q.Txt.slateRef>Текст.</Q.Txt.slateRef>
+  <Ghost.Field.slateRef>хм</Ghost.Field.slateRef>
+  <Bogus.label.slateRef>не алиас</Bogus.label.slateRef>
+</LanguageData>"#;
+
+    fn fixture() -> tempfile::TempDir {
+        let tmp = tempfile::tempdir().unwrap();
+        let defs = tmp.path().join("Defs/Misc");
+        std::fs::create_dir_all(&defs).unwrap();
+        std::fs::write(defs.join("Q.xml"), DEFS).unwrap();
+        let ru = tmp
+            .path()
+            .join("Languages/Russian/DefInjected/QuestScriptDef");
+        std::fs::create_dir_all(&ru).unwrap();
+        std::fs::write(ru.join("Q.xml"), RU).unwrap();
+        tmp
+    }
+
+    /// Valid TKey-suffix targets are not orphans; genuinely unrelated
+    /// `.slateRef` paths (no TKey identity behind the base) stay orphans —
+    /// shape-stripping must not alias them to a plain source unit.
+    #[test]
+    fn orphans_use_shared_resolution() {
+        let tmp = fixture();
+        let mut msgs =
+            validate_orphans_cross_language(tmp.path(), "English", "Russian", None).unwrap();
+        msgs.sort_by(|a, b| a.key.cmp(&b.key));
+        let keys: Vec<&str> = msgs.iter().map(|m| m.key.as_str()).collect();
+        assert_eq!(
+            keys,
+            vec!["Bogus.label.slateRef", "Ghost.Field.slateRef"],
+            "{msgs:?}"
+        );
+        assert!(msgs.iter().all(|m| m.kind == "orphan"), "{msgs:?}");
+        // The two valid TKey-suffixed entries produced no orphan messages.
+    }
+
+    /// Placeholder checking works ACROSS the TKey-suffix resolution.
+    #[test]
+    fn placeholders_checked_across_tkey_suffix() {
+        let tmp = fixture();
+        let msgs =
+            validate_placeholders_cross_language(tmp.path(), "English", "Russian", None).unwrap();
+        assert_eq!(msgs.len(), 1, "{msgs:?}");
+        assert_eq!(msgs[0].key, "Q.Lbl.slateRef");
+        assert_eq!(msgs[0].kind, "placeholder-check");
+    }
+
+    #[test]
+    fn lists_validator_resolves_tkey_suffix_silently() {
+        let tmp = fixture();
+        let msgs = validate_lists_cross_language(tmp.path(), "English", "Russian", None).unwrap();
+        assert!(msgs.is_empty(), "{msgs:?}");
+    }
 }
