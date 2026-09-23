@@ -7,6 +7,7 @@ pub use rimloc_validate::ValidationMessage;
 
 pub mod build;
 pub mod canonical_bridge;
+pub mod eligibility_engine;
 pub mod export;
 pub mod extras;
 pub mod import;
@@ -30,6 +31,7 @@ pub use build::{
     build_from_po_dry_run, build_from_po_execute, build_from_po_with_progress, build_from_root,
     build_from_root_with_progress, BuildPlan,
 };
+pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
 pub use export::export_po_with_tm;
 pub use extras::annotate::{
     annotate as annotate_apply, annotate_dry_run_plan, AnnotateFilePlan, AnnotatePlan,
