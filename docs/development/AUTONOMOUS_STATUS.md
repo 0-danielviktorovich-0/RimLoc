@@ -367,3 +367,16 @@ SourceEntry — требование вписано в Gate I.
   полный reopen-цикл — persistence I3.
 Gate I критерий «если workflows требуют разной бизнес-логики — не закрыт»: A/B/C делят
 build_project + SourceMatcher + bridge; PO — только адаптер на входе/выходе.
+
+### D2 Style Lab лендед (e87072c) — ревью пройдено (24.09 ночь3)
+46 файлов во frontend-v2 + 23 скриншота в testlab/artifacts/gui-style-lab/. Проверено lead:
+сборка зелёная, лаборатория только за `?stylelab=1`/localStorage (прод-дефолт = precision/
+indigo/comfortable), 4 направления визуально различимы (precision Swiss flat / aurora градиентный
+акцент+глубина / workshop тёплый sand+медь / editorial засечки+контраст SOURCE|TARGET),
+контраст 300+ пар WCAG (dark primary #6366f1→#5b5ce2 — white-on-primary 4.47→AA).
+300+ пар в комментарии tokens.css. Включение: `?stylelab=1` или localStorage['rimloc.stylelab']='1'.
+
+## ⏸ USER DECISION — выбор визуального направления (блокирует ТОЛЬКО финализацию GUI-стиля)
+Кандидаты: A Precision · B Aurora · C Workshop · D Editorial (+ гибриды типа «precision-редактор
++ aurora-home»). Палитры: indigo/blue/emerald/amber. Скриншоты: testlab/artifacts/gui-style-lab/.
+Бэкенд и остальные гейты НЕ ждут.
