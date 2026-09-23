@@ -674,6 +674,19 @@ pub fn scan_all_units_with_defs_and_fields(
     if let Ok(mut defs) = scan_defs_xml_under_with_fields(root, defs_root, extra_fields) {
         units.append(&mut defs);
     }
+    // TKey nodes are part of the complete translation-unit inventory; every
+    // consumer of scan_all_units* (coverage, validate, wordinfo) must see them.
+    if let Ok(mut tkey) = scan_defs_tkey(root, defs_root) {
+        let mut seen: std::collections::HashSet<(String, String)> = units
+            .iter()
+            .map(|u| (u.path.to_string_lossy().to_string(), u.key.clone()))
+            .collect();
+        for u in tkey.drain(..) {
+            if seen.insert((u.path.to_string_lossy().to_string(), u.key.clone())) {
+                units.push(u);
+            }
+        }
+    }
     Ok(units)
 }
 
