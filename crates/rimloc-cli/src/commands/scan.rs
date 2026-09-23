@@ -40,7 +40,11 @@ pub fn run_scan(
         include_all_versions = include_all_versions
     );
 
-    let (scan_root, selected_version) = if include_all_versions {
+    // Gate H: LoadFolders mods stay rooted at the mod root — the effective
+    // view picks version content dirs; re-rooting to root/1.6 would lose the
+    // Common content (root Languages etc.).
+    let is_loadfolders_mod = root.join("LoadFolders.xml").is_file();
+    let (scan_root, selected_version) = if include_all_versions || is_loadfolders_mod {
         (root.clone(), None)
     } else {
         resolve_game_version_root(&root, game_version.as_deref())?
@@ -153,12 +157,24 @@ pub fn run_scan(
         std::env::set_var("RIMLOC_FUZZY", "1");
     }
 
-    let mut units = rimloc_services::scan_units_with_defs_and_dict(
-        &scan_root,
-        defs_abs.as_deref(),
-        &merged,
-        &extra_fields,
-    )?;
+    // Gate H: a LoadFolders mod is scanned as its EFFECTIVE view for the
+    // requested version (version-scoped Defs roots, never the cross-version
+    // union). Classic mods keep the single-root pipeline.
+    let mut units = if !include_all_versions && scan_root.join("LoadFolders.xml").is_file() {
+        rimloc_services::scan_units_effective(
+            &scan_root,
+            game_version.as_deref(),
+            &merged,
+            &extra_fields,
+        )?
+    } else {
+        rimloc_services::scan_units_with_defs_and_dict(
+            &scan_root,
+            defs_abs.as_deref(),
+            &merged,
+            &extra_fields,
+        )?
+    };
 
     // Optionally augment with plugin-derived units (e.g., XmlExtensions Settings/TKey)
     if with_plugins {

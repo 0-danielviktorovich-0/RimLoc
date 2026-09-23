@@ -20,6 +20,15 @@ fn merge_defs_units(
     lang_dir: &str,
     defs_meta: Vec<DefsMetaUnit>,
 ) {
+    // Gate H: duplicate defName across files — the game logs
+    // `Adding duplicate <DefType> name: X` and GetDefSilentFail returns the
+    // FIRST registration, so the first file's fields are authoritative and a
+    // later file's same-identity fields never enter the inventory.
+    let mut owned_identities: HashSet<(String, String)> = HashSet::new();
+    // Deterministic "first file" = lexicographic path order (the documented
+    // stand-in for the game's file-system enumeration on Windows).
+    let mut defs_meta = defs_meta;
+    defs_meta.sort_by(|a, b| a.unit.path.as_os_str().cmp(b.unit.path.as_os_str()));
     for meta in defs_meta {
         let mut unit = meta.unit;
         if unit
@@ -28,6 +37,9 @@ fn merge_defs_units(
             .map(|s| s.trim().is_empty())
             .unwrap_or(true)
         {
+            continue;
+        }
+        if !owned_identities.insert((meta.def_type.clone(), unit.key.clone())) {
             continue;
         }
         let target_path = def_injected_target_path(scan_root, lang_dir, &meta.def_type, &unit.path);
@@ -406,7 +418,106 @@ pub fn scan_units_with_defs_and_dict(
             });
         }
     }
+    apply_effective_precedence(&mut units);
     Ok(units)
+}
+
+/// Effective RimWorld source precedence (Gate H — semantic correctness, not
+/// duplicate cleanup). Authoritative rules from the 1.6 decompile
+/// (GAME_SOURCE_FINDINGS §1.4/§2.1):
+/// - Keyed: duplicate within ONE file → error in game, FIRST value taken;
+///   duplicates across files → `SetOrAdd`, LAST loaded wins (file order:
+///   lexicographic path is RimLoc's deterministic stand-in for Windows FS
+///   enumeration).
+/// - DefInjected: duplicate key → `SetOrAdd` overwrite, LAST wins.
+/// - Defs (duplicate defName): `GetDefSilentFail` takes the FIRST
+///   registration — enforced inside `merge_defs_units` (first file owns the
+///   identity); TKey shares Def semantics (first file wins, in-file
+///   last-wins per field assignment).
+/// Overridden values are dropped from the authoritative inventory; context
+/// preservation as diagnostics lands with the canonical model (Gate I).
+/// Paths stay case-exact except the already-documented case-insensitive
+/// About/LoadFolders resolution.
+pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
+    // Deterministic load order: ascending (path, line) — the documented
+    // stand-in for the game's file-system enumeration order.
+    units.sort_by(|a, b| {
+        (
+            a.path.to_string_lossy(),
+            a.line.unwrap_or(0),
+            a.key.as_str(),
+        )
+            .cmp(&(
+                b.path.to_string_lossy(),
+                b.line.unwrap_or(0),
+                b.key.as_str(),
+            ))
+    });
+    let is_keyed = |p: &std::path::Path| {
+        p.to_string_lossy().contains("/Keyed/") || p.to_string_lossy().contains("\\Keyed\\")
+    };
+    let is_definj = |p: &std::path::Path| {
+        p.to_string_lossy().contains("/DefInjected/")
+            || p.to_string_lossy().contains("\\DefInjected\\")
+    };
+    // Language-side scopes: fold to the effective winner per key WITHIN one
+    // language pack (EN source and RU target are separate LanguageDatabase
+    // entries — precedence never crosses languages).
+    // Keyed: winner = last file (cross-file last-wins) but within one file
+    // the FIRST occurrence (game logs an error and takes the first).
+    // DefInjected: last occurrence everywhere (SetOrAdd overwrite).
+    let lang_of = |p: &std::path::Path| -> String {
+        let s = p.to_string_lossy();
+        let s = s.replace('\\', "/");
+        match s.find("/Languages/") {
+            Some(i) => {
+                let rest = &s[i + "/Languages/".len()..];
+                rest.split('/').next().unwrap_or_default().to_string()
+            }
+            None => String::new(),
+        }
+    };
+    let mut effective: Vec<TransUnit> = Vec::with_capacity(units.len());
+    let mut index: std::collections::HashMap<(String, String), usize> =
+        std::collections::HashMap::new();
+    let mut first_in_file: std::collections::HashSet<(String, String)> =
+        std::collections::HashSet::new();
+    for u in units.drain(..) {
+        let scoped = is_keyed(&u.path) || is_definj(&u.path);
+        if !scoped {
+            effective.push(u);
+            continue;
+        }
+        let file = u.path.to_string_lossy().into_owned();
+        let lang = lang_of(&u.path);
+        let same_file_seen = first_in_file.contains(&(file.clone(), u.key.clone()));
+        first_in_file.insert((file.clone(), u.key.clone()));
+        let idx_key = (lang, u.key.clone());
+        match index.get(&idx_key).copied() {
+            None => {
+                index.insert(idx_key, effective.len());
+                effective.push(u);
+            }
+            Some(pos) if is_keyed(&effective[pos].path) && !same_file_seen => {
+                // Cross-file Keyed duplicate: last loaded wins.
+                effective[pos] = u;
+            }
+            Some(pos) if is_definj(&effective[pos].path) => {
+                // DefInjected SetOrAdd: every later occurrence overwrites,
+                // including within the same file.
+                effective[pos] = u;
+            }
+            Some(_) => {
+                // Keyed duplicate within the SAME file: the game logs
+                // `Duplicate keyed translation key` and takes the FIRST
+                // value, so the first stays the effective winner — but the
+                // duplicate unit is kept so the validator still reports the
+                // error (diagnostic preservation beats silent dropping).
+                effective.push(u);
+            }
+        }
+    }
+    *units = effective;
 }
 
 pub fn scan_defs_with_meta(
@@ -499,5 +610,132 @@ mod tkey_scan_tests {
             tkey_keys.contains(&"SampleQuest.LetterTextParms"),
             "{tkey_keys:?}"
         );
+    }
+}
+
+/// LoadFolders-aware effective scan (Gate H). When the mod carries a
+/// LoadFolders.xml and a target version is resolvable, Keyed/DefInjected come
+/// from the EFFECTIVE languages dirs and Defs ONLY from the EFFECTIVE Defs
+/// roots for that version — never the union across versions. Without
+/// LoadFolders this is equivalent to [`scan_units_with_defs_and_dict`].
+pub fn scan_units_effective(
+    root: &Path,
+    requested_version: Option<&str>,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> Result<Vec<TransUnit>> {
+    if !root.join("LoadFolders.xml").is_file() {
+        return scan_units_with_defs_and_dict(root, None, dict, extra_fields);
+    }
+    let view = crate::modview::effective_view(root, requested_version)?;
+
+    fn push_unique(units: &mut Vec<TransUnit>, seen: &mut HashSet<String>, u: TransUnit) {
+        let k = seen_key(&u.path, &u.key);
+        if seen.insert(k) {
+            units.push(u);
+        }
+    }
+
+    let mut units: Vec<TransUnit> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+
+    // Languages from the effective dirs only (root + content folders that
+    // exist for this version).
+    for lang_dir in view.languages_dirs() {
+        if let Ok(mut scoped) = rimloc_parsers_xml::scan_keyed_xml(&lang_dir) {
+            for u in scoped.drain(..) {
+                push_unique(&mut units, &mut seen, u);
+            }
+        }
+    }
+    // Defs strictly from the effective roots (version-scoped; IfModActive
+    // dirs are included per the documented offline superset policy).
+    for defs_root in view.defs_roots() {
+        let defs_root = Some(defs_root.as_path());
+        let defs_meta =
+            rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)?;
+        if let Ok(mut tkey) = rimloc_parsers_xml::scan_defs_tkey(root, defs_root) {
+            for u in tkey.drain(..) {
+                push_unique(&mut units, &mut seen, u);
+            }
+        }
+        merge_defs_units(
+            &mut units,
+            &mut seen,
+            root,
+            DEFAULT_SOURCE_LANG_DIR,
+            defs_meta,
+        );
+    }
+    apply_effective_precedence(&mut units);
+    Ok(units)
+}
+
+#[cfg(test)]
+mod gate_h_tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    /// H1: two active Defs files with the same def identity but different
+    /// text — RimWorld registers the first file and rejects the duplicate
+    /// defName (`Adding duplicate` + GetDefSilentFail first registration),
+    /// so the FIRST file's value is the effective source.
+    #[test]
+    fn def_duplicate_identity_first_file_wins() {
+        let dir = tempdir().unwrap();
+        let defs = dir.path().join("Defs");
+        fs::create_dir_all(&defs).unwrap();
+        fs::write(
+            defs.join("A_First.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>from A</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        fs::write(
+            defs.join("B_Second.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>from B</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        let auto = autodiscover_defs_context(dir.path()).unwrap();
+        let units = scan_units_effective(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+        let dup: Vec<_> = units.iter().filter(|u| u.key == "Dup.label").collect();
+        assert_eq!(dup.len(), 1, "{units:?}");
+        assert_eq!(dup[0].source.as_deref(), Some("from A"));
+    }
+
+    /// H2: Keyed duplicates. Cross-file → LAST loaded wins (SetOrAdd);
+    /// within one file → the game errors and takes the FIRST value (and the
+    /// duplicate is kept so validation still reports it).
+    #[test]
+    fn keyed_precedence_last_file_wins_in_file_first() {
+        let dir = tempdir().unwrap();
+        let en = dir.path().join("Languages/English/Keyed");
+        fs::create_dir_all(&en).unwrap();
+        fs::write(
+            en.join("A_First.xml"),
+            r#"<LanguageData><Greeting>first-file</Greeting></LanguageData>"#,
+        )
+        .unwrap();
+        fs::write(
+            en.join("Z_Last.xml"),
+            r#"<LanguageData><Greeting>last-file</Greeting></LanguageData>"#,
+        )
+        .unwrap();
+        fs::write(
+            en.join("Dup.xml"),
+            r#"<LanguageData><DupKey>one</DupKey><DupKey>two</DupKey></LanguageData>"#,
+        )
+        .unwrap();
+        let auto = autodiscover_defs_context(dir.path()).unwrap();
+        let units = scan_units_effective(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+        let find = |k: &str| units.iter().find(|u| u.key == k);
+        assert_eq!(
+            find("Greeting").unwrap().source.as_deref(),
+            Some("last-file"),
+            "{units:?}"
+        );
+        let dup: Vec<_> = units.iter().filter(|u| u.key == "DupKey").collect();
+        assert_eq!(dup.len(), 2, "{units:?}");
+        assert_eq!(dup[0].source.as_deref(), Some("one"));
     }
 }

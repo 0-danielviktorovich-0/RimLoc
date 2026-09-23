@@ -364,6 +364,24 @@ pub struct CoverageReport {
     pub target_total: usize,
     pub translated: usize,
     pub missing: usize,
+    /// Benchmark provenance (owner clarification 24.09): SEMANTIC methodology
+    /// identity, deliberately separate from the transport `schema_version`.
+    /// Historical numbers must stay comparable to their own methodology —
+    /// improving coverage semantics bumps this, not the JSON contract.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub methodology: Option<CoverageMethodology>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CoverageMethodology {
+    /// Inventory semantics: which entries exist and which one is effective.
+    pub inventory_semantics: &'static str,
+    /// Matcher semantics: how target keys resolve to source identities.
+    pub matcher_semantics: &'static str,
+    /// Eligibility ruleset currently shaping the inventory.
+    pub ruleset: &'static str,
+    /// Corpus identity: About packageId when readable, else the root path.
+    pub corpus_identity: String,
 }
 
 /// Compute translation coverage by matching keys between source and target.
@@ -429,8 +447,21 @@ pub fn coverage_report(
         target_total: tgt.len(),
         translated,
         missing,
+        methodology: Some(CoverageMethodology {
+            inventory_semantics: INVENTORY_SEMANTICS,
+            matcher_semantics: MATCHER_SEMANTICS,
+            ruleset: RULESET_SEMANTICS,
+            corpus_identity: crate::modview::about_package_id(scan_root)
+                .unwrap_or_else(|| scan_root.display().to_string()),
+        }),
     })
 }
+
+/// Semantic identity of the current inventory pipeline (bump on behaviour
+/// change; these are NOT transport versions).
+pub const INVENTORY_SEMANTICS: &str = "canonical-v2-effective-precedence";
+pub const MATCHER_SEMANTICS: &str = "tkey-registry-exact-alias-suffix-v2";
+pub const RULESET_SEMANTICS: &str = "built-in-dictionaries-v0";
 
 #[cfg(test)]
 mod gate_c_tests {
