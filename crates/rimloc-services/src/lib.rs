@@ -49,6 +49,7 @@ pub use scan::{
     scan_units_auto, scan_units_with_defs, scan_units_with_defs_and_dict,
     scan_units_with_defs_and_fields, AutoDefsContext,
 };
+pub use util::canonical_match_key;
 pub use util::is_source_for_lang_dir;
 pub use util::is_under_languages_dir;
 pub use util::normalize_lang_dir;

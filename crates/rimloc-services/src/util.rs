@@ -16,6 +16,19 @@ pub fn is_under_languages_dir(path: &Path, lang_dir: &str) -> bool {
     false
 }
 
+/// Canonical matching key for TKey-suffixed DefInjected entries. The game's
+/// canonical path adds type-dependent suffixes (`.slateRef`, `.value.slateRef`)
+/// to the base `<defName>.<TKey>` identity RimLoc extracts; matching layers
+/// normalize both sides through this function.
+pub fn canonical_match_key(key: &str) -> String {
+    for suffix in [".value.slateRef", ".slateRef"] {
+        if let Some(base) = key.strip_suffix(suffix) {
+            return base.to_string();
+        }
+    }
+    key.to_string()
+}
+
 /// Normalize a CLI language argument that may be either a bare directory
 /// name ("English") or a full path pointing at a language directory
 /// ("/path/to/mod/Languages/English") into the bare directory name used by

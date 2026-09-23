@@ -119,9 +119,15 @@ pub fn compare(
         .collect();
 
     let union_covered: BTreeSet<String> = key_maps.iter().flat_map(|m| m.keys().cloned()).collect();
+    // TKey entries: target files carry canonical suffixes (.slateRef/.value.slateRef)
+    // on top of the base `<defName>.<TKey>` identity.
+    let union_covered_canonical: BTreeSet<String> = union_covered
+        .iter()
+        .map(|k| crate::util::canonical_match_key(k))
+        .collect();
     let mut uncovered: Vec<String> = source_map
         .keys()
-        .filter(|k| !union_covered.contains(*k))
+        .filter(|k| !union_covered.contains(*k) && !union_covered_canonical.contains(*k))
         .cloned()
         .collect();
     uncovered.sort();
@@ -176,8 +182,12 @@ fn metrics_for_set(
             m.lookup_wrappers += 1;
         }
 
-        // Metrics that require a source counterpart.
-        if let Some(src) = source_map.get(&u.key) {
+        // Metrics that require a source counterpart. TKey target entries carry
+        // canonical suffixes; fall back to the base identity.
+        let src = source_map
+            .get(&u.key)
+            .or_else(|| source_map.get(&crate::util::canonical_match_key(&u.key)));
+        if let Some(src) = src {
             if placeholder_set(src) == placeholder_set(value) {
                 m.placeholder_ok += 1;
             } else {
@@ -216,7 +226,10 @@ fn metrics_for_set(
     } else {
         key_map
             .keys()
-            .filter(|k| source_map.contains_key(*k))
+            .filter(|k| {
+                source_map.contains_key(*k)
+                    || source_map.contains_key(&crate::util::canonical_match_key(k))
+            })
             .count() as f64
             / source_total as f64
     };

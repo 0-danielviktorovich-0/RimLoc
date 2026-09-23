@@ -2344,3 +2344,131 @@ mod defs_tests {
     // NOTE: RecipeDef.ingredients.* are schema-sensitive and vary across mods;
     // covered indirectly via dict/DSL integration tests elsewhere.
 }
+
+/// Extract translatable nodes carrying an explicit `TKey` attribute
+/// (RimWorld 1.6 TKey system: QuestScriptDefs, TipSetDefs, etc.).
+///
+/// Verified against installed 1.6 data and the official Russian pack:
+/// - `<li TKey="DismissLetters">…` in a TipSetDef with defName `GameplayTips`
+///   translates as DefInjected path `GameplayTips.DismissLetters`;
+/// - `<label TKey="LetterLabelFavorReceiver">` on QuestScriptDef `TradeRequest`
+///   translates as `TradeRequest.LetterLabelFavorReceiver.slateRef` (the game's
+///   canonical path adds a type-dependent suffix — normalized away when matching).
+///
+/// RimLoc emits the base identity `<defName>.<TKey>`; matching layers normalize
+/// suffixes (`.slateRef`, `.value.slateRef`).
+pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<TransUnit>> {
+    use walkdir::WalkDir;
+    let mut out = Vec::new();
+    let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
+    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+        let p = entry.path();
+        if !p.is_file() {
+            continue;
+        }
+        if p.extension()
+            .and_then(|e| e.to_str())
+            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+        {
+            continue;
+        }
+        let in_scope = if let Some(base) = defs_root {
+            p.starts_with(base)
+        } else {
+            let s = p.to_string_lossy();
+            s.contains("/Defs/") || s.contains("\\Defs\\")
+        };
+        if !in_scope {
+            continue;
+        }
+        let Ok(content) = fs::read_to_string(p) else {
+            continue;
+        };
+        let Ok(doc) = roxmltree::Document::parse(&content) else {
+            continue;
+        };
+        for node in doc.root_element().descendants().filter(|n| n.is_element()) {
+            let Some(tkey) = node.attribute("TKey") else {
+                continue;
+            };
+            if tkey.trim().is_empty() {
+                continue;
+            }
+            // Owning def: nearest ancestor (incl. self) that has a <defName> child.
+            let mut owner = Some(node);
+            let mut def_name: Option<&str> = None;
+            while let Some(cur) = owner {
+                if let Some(dn) = cur
+                    .children()
+                    .find(|c| c.is_element() && c.tag_name().name() == "defName")
+                    .and_then(|n| n.text())
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                {
+                    def_name = Some(dn);
+                    break;
+                }
+                owner = cur.parent().filter(|n| n.is_element());
+            }
+            let Some(def_name) = def_name else { continue };
+            let key = format!("{def_name}.{}", tkey.trim());
+            let text = node.text().unwrap_or_default().trim().to_string();
+            if text.is_empty() {
+                continue;
+            }
+            if seen.insert((p.to_string_lossy().to_string(), key.clone())) {
+                out.push(TransUnit {
+                    key,
+                    source: Some(text),
+                    path: p.to_path_buf(),
+                    line: None,
+                });
+            }
+        }
+    }
+    Ok(out)
+}
+
+#[cfg(test)]
+mod tkey_tests {
+    use super::*;
+
+    #[test]
+    fn tkey_nodes_extract_with_defname_tkey_identity() {
+        let tmp = tempfile::tempdir().unwrap();
+        let defs = tmp.path().join("Defs/Misc");
+        std::fs::create_dir_all(&defs).unwrap();
+        std::fs::write(
+            defs.join("TKeySamples.xml"),
+            r#"<Defs>
+  <TipSetDef>
+    <defName>SampleTips</defName>
+    <tips><li TKey="DismissLetters">You can dismiss letters by right-clicking.</li></tips>
+  </TipSetDef>
+  <QuestScriptDef>
+    <defName>SampleQuest</defName>
+    <label TKey="LetterLabelFavorReceiver">sample favor label</label>
+    <customLetterText TKey="LetterTextSample">Sample quest text.</customLetterText>
+  </QuestScriptDef>
+</Defs>"#,
+        )
+        .unwrap();
+        let units = scan_defs_tkey(tmp.path(), None).unwrap();
+        let keys: Vec<&str> = units.iter().map(|u| u.key.as_str()).collect();
+        assert!(keys.contains(&"SampleTips.DismissLetters"), "{keys:?}");
+        assert!(
+            keys.contains(&"SampleQuest.LetterLabelFavorReceiver"),
+            "{keys:?}"
+        );
+        assert!(keys.contains(&"SampleQuest.LetterTextSample"), "{keys:?}");
+        let tip = units
+            .iter()
+            .find(|u| u.key == "SampleTips.DismissLetters")
+            .unwrap();
+        assert!(tip
+            .source
+            .as_deref()
+            .unwrap()
+            .starts_with("You can dismiss"));
+    }
+}

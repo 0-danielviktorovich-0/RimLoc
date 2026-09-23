@@ -353,6 +353,16 @@ pub fn scan_units_with_defs_and_dict(
     let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
     let defs_meta =
         rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)?;
+    // TKey nodes (1.6 QuestScriptDefs/TipSetDefs/...): explicit translation keys
+    // on def fields, identity `<defName>.<TKey>`.
+    if let Ok(mut tkey) = rimloc_parsers_xml::scan_defs_tkey(root, defs_root) {
+        for u in tkey.drain(..) {
+            let k = seen_key(&u.path, &u.key);
+            if seen.insert(k) {
+                units.push(u);
+            }
+        }
+    }
     merge_defs_units(
         &mut units,
         &mut seen,
