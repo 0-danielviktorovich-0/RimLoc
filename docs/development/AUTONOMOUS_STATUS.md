@@ -278,3 +278,48 @@ patch-этап: bounded-поднабор replace/add/remove реализован
 file-order = RimLoc stand-in (задокументирован, не игровой контракт); provenance
 SourceEntry — требование вписано в Gate I.
 
+
+## ОРКЕСТРАЦИЯ (мандат 24.09) — lead = архитектор/интегратор, сабагенты = дефолт
+Политика: 2–5 параллельных воркеров на больших фазах; владение файлами явно;
+реализация в изолированных ветках/worktrees; вывод сабагента не доверяется до
+ревью диффа; implementer ≠ reviewer для важных изменений; milestone-интеграция
+малыми проверенными коммитами;research-агенты возвращают документы, QA — артефакты.
+Активные (A1/A2) запущены в общем дереве с разделением владения (см. ACTIVE AGENTS);
+при конфликте владения — сериализация или worktree.
+
+### DAG (ID · цель · зависит от · приоритет · риск · владение · статус)
+- **I1** · аудит дата-флоу → CANONICAL_PROJECT_MODEL.md · зависит: H · P1 · низкий ·
+  read-only + один новый док · ACTIVE (A1)
+- **I2** · типизированная каноническая модель (SourceEntry/Translation/Project/
+  InventoryContext) · зависит: I1 · P1 · ВЫСОКИЙ · lead лично + reviewer · OPEN
+- **I3** · project persistence POC (по evidence из I2) · зависит: I2 · P1 · высокий ·
+  отдельный воркер после I2 · OPEN
+- **I4** · acceptance A/B/C (native no-PO / PO-interop / existing-translation) на
+  одной модели · зависит: I2(+I3) · P1 · высокий · lead + QA-агент · OPEN
+- **J1** · eligibility-движок (прецедент, explain, rule-паки без кода) · зависит: I2 ·
+  P1 · средний · воркер (контракт от lead) · OPEN
+- **K1** · existing-translation first-class (классификация
+  reusable/sourceChanged/new/obsolete) · зависит: I2 · P1 · средний · воркер · OPEN
+- **L1** · observability (structured logs, operation-id, doctor, support bundle) ·
+  зависит: частично независимо · P2 · низкий · воркер · OPEN
+- **R1** · PatchOperations research (полный список операций/семантика/конкуренты) ·
+  независим · P2 · низкий · read-only researcher · ACTIVE (A3, запуск)
+- **G1** · Svelte GUI мок-скаффолд по спеке · независим (моки, без бэкенда) · P1 ·
+  низкий · gui/tauri-app/frontend-v2 · ACTIVE (A2)
+- **Q1** · real-mod QA корпус (VWE/Genetics/… регресс-прогоны после гейтов) ·
+  независим · P2 · низкий · testlab-артефакты · OPEN
+
+### ACTIVE AGENTS
+- **A1** — канон-модель аудит (Gate I шаг 1) · owns: docs/development/
+  CANONICAL_PROJECT_MODEL.md (новый) · depends: H · status: implementing
+- **A2** — GUI Svelte-мок · owns: gui/tauri-app/frontend-v2/ · must-not: Rust/
+  бэкенд, frontendDist · status: implementing against mocks
+- **A3** — PatchOperations researcher · read-only · output: findings-док на ревью ·
+  status: launching (lead)
+
+### INTEGRATION QUEUE
+| Коммит | Агент | Тесты | Ревью | Статус |
+|---|---|---|---|---|
+| c4384b2+4f9668f+этот (patch stage) | lead | 142/0, clippy 0, VWE | self | landed |
+| (ожидание) I1 док | A1 | n/a (док) | lead-ревью фактов | in-flight |
+| (ожидание) G1 фронт | A2 | npm build | lead-ревью инвариантов (без бэкенда) | in-flight |
