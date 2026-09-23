@@ -247,3 +247,26 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
   import → preserve reusable → sourceChanged/new/obsolete/orphan классификация →
   edit → close/reopen → validate → build. TM-prefill round-trip — поддерживающий
   эвиденс, не закрытие.
+
+## АРХИТЕКТУРНЫЕ УТОЧНЕНИЯ (24.09, после Gate B; позиция ЧПТ + наша)
+1. **`scan_units_with_defs_and_dict` — реализация, не доменный контракт.** Каноническая
+   РЕАЛИЗАЦИЯ сегодня; типизированный canonical inventory service/context — часть миграции
+   Gate I (не переименовать ради эстетики сейчас). Наша добавка: при Gate I типизированный
+   сервис ОБОРАЧИВАЕТ эту реализацию (один шов), а лестница `scan_units / _with_defs /
+   _with_defs_and_fields / _with_defs_and_dict / _auto` сворачивается в options-структуру.
+2. **Provenance бенчмарков обязателен.** Каждый coverage/benchmark-отчёт фиксирует:
+   версию семантики инвентаря, матчёра, целевую версию RimWorld, identity корпуса
+   (hash/manifest), provenance референсов, версию eligibility/ruleset. Исторические числа
+   НЕ перезаписывать как одну методику: 38% = parsers+double-extraction+без словарей
+   (пре-B), 45% = canonical v1 (пост-B), 65% = догфуд T6 до TKey-гейта (другая методика,
+   superseded). Наша добавка: meta-блок в coverage/compare JSON — аддитивный
+   (schema_version не ломаем, пустые поля skip).
+3. **Словари → eligibility-слой с provenance (Gate J).** Инвентарь вправе включать
+   верифицированные learned-правила, но скрытое изменение инвентаря словарём без
+   объяснимого evidence запрещено структурно в J. Не блокирует C. Наша добавка:
+   у AutoDefsContext уже есть learned_sources (пути файлов) — в J они становятся
+   evidence в explain-выдаче.
+4. **Шрифты в GUI.** Бандл допустим (офлайн + детерминированный E2E), но перед public
+   release — проверка лицензий перераспределения, нотисов и размера пакета. IBM Plex Sans
+   и JetBrains Mono — SIL OFL 1.1: перераспределение внутри приложения допустимо, в репо
+   кладутся файлы лицензий + THIRD-PARTY-NOTICES. Пункт в чек-листе repo/docs hardening.
