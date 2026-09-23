@@ -1,16 +1,27 @@
 <script lang="ts">
-  // Translator Workspace (spec §2.4): three-panel layout, status chips,
-  // SOURCE|TARGET table with inline editing, context panel. Mock states
-  // (loading / empty / error) are forced from the dev panel.
+  // Translator Workspace (mandate §8-11): five top tabs (Editor / Review /
+  // Glossary / TM / Project), a toolbar with project identity, the lifecycle
+  // stage indicator and the contextual CTA, plus the three-panel editor with
+  // user-oriented navigator, filter bar and the 4-tab detail panel.
+  // Mock states (loading / empty / error) are forced from the dev panel.
   import { t } from '../../../i18n/store.svelte';
   import { ui } from '../../stores/ui.svelte';
   import { project } from '../../stores/project.svelte';
+  import { router } from '../../router.svelte';
   import Navigator from '../workspace/Navigator.svelte';
-  import StatusChips from '../workspace/StatusChips.svelte';
+  import FilterBar from '../workspace/FilterBar.svelte';
   import EntryTable from '../workspace/EntryTable.svelte';
-  import ContextPanel from '../workspace/ContextPanel.svelte';
+  import DetailPanel from '../workspace/DetailPanel.svelte';
+  import Tabs from '../workspace/Tabs.svelte';
+  import StageIndicator from '../workspace/StageIndicator.svelte';
+  import ReviewStub from '../workspace/ReviewStub.svelte';
+  import GlossaryStub from '../workspace/GlossaryStub.svelte';
+  import TMStub from '../workspace/TMStub.svelte';
+  import ProjectPanel from '../workspace/ProjectPanel.svelte';
   import Icon from '../Icon.svelte';
   import { MOCK_ERROR_CODE, MOCK_ERROR_RAW } from '../../../lib/mock/data';
+
+  let { initialTab = 'editor' }: { initialTab?: 'editor' | 'review' } = $props();
 
   const SKELETON_ROWS = 8; // spec §3: table loading shows 8 placeholder rows
 
@@ -21,6 +32,27 @@
     return acc;
   });
   const rows = $derived(project.filtered());
+
+  // Lifecycle (mandate §19): where am I / what next. Translation work is the
+  // active stage while unfinished entries exist; the CTA routes by problems.
+  const stage = $derived(
+    counts.untranslated + counts.todo > 0 ? 'translate' : 'validate'
+  );
+  const problems = $derived(counts.pending_review + counts.sourceChanged);
+
+  const wsTabs = $derived([
+    { id: 'editor', label: t('workspace.tab.editor') },
+    { id: 'review', label: t('workspace.tab.review'), count: problems },
+    { id: 'glossary', label: t('workspace.tab.glossary') },
+    { id: 'tm', label: t('workspace.tab.tm') },
+    { id: 'project', label: t('workspace.tab.project') }
+  ]);
+
+  let tab: string = $state('editor');
+  // Deep links (#/review) drive the tab while the Workspace is mounted.
+  $effect(() => {
+    tab = initialTab;
+  });
 
   // Below 1100px the context panel becomes a bottom sheet (spec §2.4).
   let contextOpen = $state(false);
@@ -57,7 +89,7 @@
   function closeProject() {
     // Spec principle 3 (no data loss): flush pending drafts before leaving.
     project.flushAll();
-    ui.closeWorkspace();
+    router.navigate('home');
   }
 
   function retry() {
@@ -71,33 +103,66 @@
 <section class="workspace" aria-label={t('workspace.title')}>
   <div class="toolbar">
     <h1 class="toolbar-title">{t('workspace.title')}</h1>
-    <span class="toolbar-hint">
-      <span class="toolbar-hint-icon" aria-hidden="true"><Icon name="arrow-right" size={12} /></span>
-      {t('workspace.editor.hint')}
+    <span class="toolbar-meta mono" data-testid="workspace.meta">
+      {project.projectName} · en → {project.targetLocale.toUpperCase()} · {t('workspace.meta.version')}
     </span>
-    <button
-      type="button"
-      class="btn context-toggle"
-      aria-expanded={contextOpen}
-      aria-controls="workspace-context"
-      data-testid="workspace.context-toggle"
-      onclick={() => (contextOpen = !contextOpen)}
-    >
-      <Icon name="info" size={14} />
-      {t('workspace.context.label')}
-    </button>
-    <button
-      type="button"
-      class="btn"
-      data-testid="workspace.close-project"
-      onclick={closeProject}
-    >
-      <Icon name="close" size={14} />
-      {t('workspace.closeProject')}
-    </button>
+    <StageIndicator {stage} />
+    <div class="toolbar-actions">
+      <button
+        type="button"
+        class="btn context-toggle"
+        aria-expanded={contextOpen}
+        aria-controls="workspace-context"
+        data-testid="workspace.context-toggle"
+        onclick={() => (contextOpen = !contextOpen)}
+      >
+        <Icon name="info" size={14} />
+        {t('workspace.detail.label')}
+      </button>
+      {#if problems > 0}
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="workspace.cta-review"
+          onclick={() => router.navigate('review')}
+        >
+          <Icon name="clipboard-check" size={14} />
+          {t('workspace.cta.reviewIssues', { count: problems })}
+        </button>
+      {:else}
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="workspace.cta-build"
+          onclick={() => router.navigate('build')}
+        >
+          <Icon name="package" size={14} />
+          {t('workspace.cta.build')}
+        </button>
+      {/if}
+      <button
+        type="button"
+        class="btn"
+        data-testid="workspace.close-project"
+        onclick={closeProject}
+      >
+        <Icon name="close" size={14} />
+        {t('workspace.closeProject')}
+      </button>
+    </div>
   </div>
 
-  {#if ui.wsState === 'loading'}
+  <Tabs tabs={wsTabs} active={tab} label={t('workspace.tabs.label')} onSelect={(id) => (tab = id)} />
+
+  {#if tab === 'review'}
+    <ReviewStub />
+  {:else if tab === 'glossary'}
+    <GlossaryStub />
+  {:else if tab === 'tm'}
+    <TMStub />
+  {:else if tab === 'project'}
+    <ProjectPanel />
+  {:else if ui.wsState === 'loading'}
     <div class="loading" role="status" aria-live="polite">
       <p class="loading-text">{t('workspace.state.loading')}</p>
       <div class="chips-skeleton" aria-hidden="true"></div>
@@ -142,7 +207,7 @@
             oninput={onSearchInput}
           />
         </div>
-        <StatusChips {counts} />
+        <FilterBar {counts} />
         {#if rows.length === 0}
           <div class="no-results" data-testid="workspace.no-results">
             <p class="state-title">{t('workspace.noResults.title')}</p>
@@ -157,7 +222,7 @@
       </div>
       <div class="pane-right" class:open={contextOpen}>
         <div class="sheet-head">
-          <span class="sheet-title">{t('workspace.context.label')}</span>
+          <span class="sheet-title">{t('workspace.detail.label')}</span>
           <button
             type="button"
             class="btn sheet-close"
@@ -168,7 +233,7 @@
             <Icon name="close" size={14} />
           </button>
         </div>
-        <ContextPanel entry={project.selected} />
+        <DetailPanel entry={project.selected} />
       </div>
     </div>
   {/if}
@@ -200,17 +265,18 @@
     letter-spacing: var(--heading-tracking);
   }
 
-  .toolbar-hint {
-    margin-right: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-meta-size);
+  .toolbar-meta {
     color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    white-space: nowrap;
   }
 
-  .toolbar-hint-icon {
-    display: inline-flex;
+  .toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+    flex: none;
   }
 
   /* Context toggle + sheet chrome exist only on narrow viewports. */
@@ -365,6 +431,13 @@
     }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-row {
+      animation: none;
+      opacity: 0.55;
+    }
+  }
+
   /* Below 1100px the context panel folds into a bottom sheet (spec §2.4):
      fixed to the viewport bottom, slides with EMPHASIS motion, dismissed by
      the sheet close button or Escape. The grid keeps two panes. */
@@ -377,7 +450,7 @@
       display: inline-flex;
     }
 
-    .toolbar-hint {
+    .toolbar-meta {
       display: none;
     }
 

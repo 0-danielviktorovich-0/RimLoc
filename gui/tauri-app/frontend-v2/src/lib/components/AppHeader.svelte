@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Global header per spec §2.1: app name, project + target locale (when a project
-  // is open), theme triad and interface language switch.
+  // Global header per spec §2.1: app name, nav to app-level routes, project
+  // meta (when a project route is open), theme triad and interface language.
+  // Deliberately not overloaded (mandate §8): only Home / Settings / Help icons.
   import Icon from './Icon.svelte';
   import { t } from '../../i18n/store.svelte';
   import type { Locale } from '../../i18n/store.svelte';
   import type { ThemeMode } from '../stores/theme.svelte';
   import { theme } from '../stores/theme.svelte';
   import { i18n } from '../../i18n/store.svelte';
-  import { ui } from '../stores/ui.svelte';
+  import { router } from '../router.svelte';
   import { project } from '../stores/project.svelte';
 
   const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
@@ -18,16 +19,40 @@
     dark: 'moon',
     system: 'monitor'
   };
+
+  const NAV_ITEMS = [
+    { route: 'home', icon: 'home', key: 'nav.home' },
+    { route: 'settings', icon: 'settings', key: 'nav.settings' },
+    { route: 'help', icon: 'help', key: 'nav.help' }
+  ] as const;
 </script>
 
 <header class="app-header">
   <div class="brand">
     <span class="brand-name">{t('common.appName')}</span>
-    {#if ui.screen === 'workspace'}
+
+    <nav class="nav" aria-label={t('nav.home')}>
+      {#each NAV_ITEMS as item (item.route)}
+        <button
+          type="button"
+          class="nav-btn"
+          aria-label={t(item.key)}
+          title={t(item.key)}
+          aria-current={router.route === item.route ? 'page' : undefined}
+          data-testid={`nav.${item.route}`}
+          onclick={() => router.navigate(item.route)}
+        >
+          <Icon name={item.icon} size={14} />
+        </button>
+      {/each}
+    </nav>
+
+    {#if router.isProjectRoute()}
       <span class="brand-meta" aria-hidden="true">·</span>
       <span class="brand-project">
         {t('header.project')}: <span class="mono">{project.projectName}</span> ·
-        {t('header.locale')}: <span class="mono">{project.targetLocale.toUpperCase()}</span>
+        <span class="mono">en → {project.targetLocale.toUpperCase()}</span> ·
+        {t('workspace.meta.version')}
       </span>
     {/if}
   </div>
@@ -91,6 +116,36 @@
     font-size: var(--text-heading-size);
     font-weight: var(--text-heading-weight);
     letter-spacing: var(--heading-tracking);
+  }
+
+  .nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: var(--space-2);
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--control-h);
+    height: var(--control-h);
+    border-radius: var(--radius-sm);
+    color: var(--color-muted-fg);
+    transition:
+      background var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out);
+  }
+
+  .nav-btn:hover {
+    background: var(--color-muted);
+    color: var(--color-fg);
+  }
+
+  .nav-btn[aria-current='page'] {
+    background: var(--nav-active-bg);
+    color: var(--color-primary-text);
   }
 
   .brand-project {
