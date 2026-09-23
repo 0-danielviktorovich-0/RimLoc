@@ -7,4 +7,5 @@ license = "GPL-3.0-only"
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 schemars = "1"
+rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 

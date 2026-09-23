@@ -20,6 +20,7 @@ include = [
 
 [dependencies]
 serde = { workspace = true }
+schemars = "1"
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 regex = { workspace = true }

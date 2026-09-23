@@ -77,7 +77,7 @@ pub struct TransUnit {
 ///   field-assignment semantics: the LAST node in document order wins;
 ///   a value above one means the pack shares one identity —
 ///   see DLC-TKEY-ADJUDICATION §5).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema)]
 pub struct TKeyMeta {
     pub strategy: String,
     pub suffix: String,

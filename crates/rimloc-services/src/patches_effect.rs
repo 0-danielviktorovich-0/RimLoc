@@ -378,6 +378,33 @@ pub fn maybe_apply_patch_stage(
 
 pub type CoreResult<T> = Result<T>;
 
+impl PatchReport {
+    /// Fold a per-directory report into an aggregate (patch dirs are applied
+    /// in game-equivalent order: root first, then content dirs sorted).
+    pub fn merge_from(&mut self, other: &PatchReport) {
+        self.files_scanned += other.files_scanned;
+        self.ops_total += other.ops_total;
+        self.applied_replace += other.applied_replace;
+        self.applied_add += other.applied_add;
+        self.applied_remove += other.applied_remove;
+        self.no_target += other.no_target;
+        self.unsupported_count += other.unsupported_count;
+        self.unsupported.extend(other.unsupported.iter().cloned());
+    }
+
+    /// Finalize aggregate coverage from the folded counters (services stay
+    /// logging-free; structured logging lands with Gate L observability).
+    pub fn finalize(&mut self) {
+        self.coverage = Some(if self.ops_total == 0 {
+            PatchCoverage::None
+        } else if self.unsupported_count > 0 || self.no_target > 0 {
+            PatchCoverage::Partial
+        } else {
+            PatchCoverage::Full
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -482,32 +509,5 @@ mod tests {
         assert_eq!(l.source.as_deref(), Some("Old label"));
         assert_eq!(rep.unsupported_count, 1);
         assert_eq!(rep.coverage, Some(PatchCoverage::Partial));
-    }
-}
-
-impl PatchReport {
-    /// Fold a per-directory report into an aggregate (patch dirs are applied
-    /// in game-equivalent order: root first, then content dirs sorted).
-    pub fn merge_from(&mut self, other: &PatchReport) {
-        self.files_scanned += other.files_scanned;
-        self.ops_total += other.ops_total;
-        self.applied_replace += other.applied_replace;
-        self.applied_add += other.applied_add;
-        self.applied_remove += other.applied_remove;
-        self.no_target += other.no_target;
-        self.unsupported_count += other.unsupported_count;
-        self.unsupported.extend(other.unsupported.iter().cloned());
-    }
-
-    /// Finalize aggregate coverage from the folded counters (services stay
-    /// logging-free; structured logging lands with Gate L observability).
-    pub fn finalize(&mut self) {
-        self.coverage = Some(if self.ops_total == 0 {
-            PatchCoverage::None
-        } else if self.unsupported_count > 0 || self.no_target > 0 {
-            PatchCoverage::Partial
-        } else {
-            PatchCoverage::Full
-        });
     }
 }
