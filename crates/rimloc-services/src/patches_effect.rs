@@ -96,8 +96,8 @@ fn parse_xpath(xpath: &str) -> Option<ParsedXpath> {
                 if def_name.is_some() || !fields.is_empty() {
                     return None;
                 }
-                let inner = p.trim();
-                let value = p.trim()
+                let value = p
+                    .trim()
                     .strip_prefix("defName=")
                     .map(str::trim)
                     .and_then(|v| v.strip_prefix('"'))
