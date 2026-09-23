@@ -212,6 +212,16 @@ pub fn scan_units_auto(root: &Path) -> Result<Vec<TransUnit>> {
     let auto = autodiscover_defs_context(root)?;
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
     let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
+    // TKey units are part of the canonical inventory (P1-1): consumers of the
+    // auto entrypoint (word-info) must see the same entries as CLI scan.
+    if let Ok(mut tkey) = rimloc_parsers_xml::scan_defs_tkey(root, None) {
+        for u in tkey.drain(..) {
+            let k = seen_key(&u.path, &u.key);
+            if seen.insert(k) {
+                units.push(u);
+            }
+        }
+    }
     let defs_meta =
         rimloc_parsers_xml::scan_defs_with_dict_meta(root, None, &auto.dict, &auto.extra_fields)?;
     merge_defs_units(
