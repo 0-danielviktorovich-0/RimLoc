@@ -1878,3 +1878,21 @@ fn validate_does_not_flag_same_key_across_language_folders() {
         "same key across language folders must not be reported as duplicate-global: {out}"
     );
 }
+
+#[test]
+fn version_config_falls_back_for_flat_mod_declaring_support() {
+    // Regression (iteration 2): MultiLangMod is flat (no 1.x/ dirs) but About
+    // declares 1.5; a configured game_version=1.5 must resolve to the root.
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"])
+        .arg(fixture("test/MultiLangMod"))
+        .args(["--game-version", "1.5", "--lang", "en", "--format", "json"]);
+    cmd.assert().success();
+
+    // Unknown version on a flat mod must still fail (typo protection).
+    let mut cmd = bin_cmd();
+    cmd.args(["scan", "--root"])
+        .arg(fixture("test/MultiLangMod"))
+        .args(["--game-version", "9.9"]);
+    cmd.assert().failure();
+}
