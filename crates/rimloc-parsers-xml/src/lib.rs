@@ -2376,7 +2376,8 @@ mod defs_tests {
 }
 
 /// Extract translatable nodes carrying an explicit `TKey` attribute
-/// (RimWorld 1.6 TKey system: QuestScriptDefs, TipSetDefs, etc.).
+/// (RimWorld TKey system, present since 1.1 in 2020; QuestScriptDefs,
+/// TipSetDefs, etc. Primary tested corpus: installed 1.6).
 ///
 /// Verified against installed 1.6 data and the official Russian pack:
 /// - `<li TKey="DismissLetters">…` in a TipSetDef with defName `GameplayTips`
@@ -2389,7 +2390,8 @@ mod defs_tests {
 /// suffixes (`.slateRef`, `.value.slateRef`).
 /// Serialization strategy of a TKey node, derived from its XML context.
 ///
-/// Proven on the whole vanilla 1.6 corpus (DLC-TKEY-ADJUDICATION §3,
+/// Proven on the whole vanilla 1.6 corpus — the primary tested version —
+/// (DLC-TKEY-ADJUDICATION §3,
 /// 351 matched nodes / 343 identities, zero exceptions):
 /// - `bare` — TipSetDef `li` nodes (DefInjected path has no suffix);
 /// - `parms_value_slate_ref` — nodes under a `<parms>` element of a
@@ -2436,7 +2438,11 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
     }
     let mut acc: BTreeMap<String, Acc> = BTreeMap::new();
 
-    for entry in WalkDir::new(root)
+    // An explicit defs_root is authoritative: walk IT directly so an external
+    // directory outside `root` also works (P2-8). Without it, fall back to the
+    // "/Defs/" path-shape heuristic under `root`.
+    let walk_base: &Path = defs_root.unwrap_or(root);
+    for entry in WalkDir::new(walk_base)
         .sort_by_file_name()
         .into_iter()
         .filter_map(|e| e.ok())
@@ -2451,14 +2457,11 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
         {
             continue;
         }
-        let in_scope = if let Some(base) = defs_root {
-            p.starts_with(base)
-        } else {
+        if defs_root.is_none() {
             let s = p.to_string_lossy();
-            s.contains("/Defs/") || s.contains("\\Defs\\")
-        };
-        if !in_scope {
-            continue;
+            if !(s.contains("/Defs/") || s.contains("\\Defs\\")) {
+                continue;
+            }
         }
         let Ok(content) = fs::read_to_string(p) else {
             continue;
@@ -2682,5 +2685,35 @@ mod tkey_tests {
         assert_eq!(units.len(), 1, "{units:?}");
         assert_eq!(units[0].source.as_deref(), Some("from first file"));
         assert_eq!(units[0].tkey.as_ref().unwrap().contexts, 1);
+    }
+}
+
+#[cfg(test)]
+mod tkey_defs_dir_tests {
+    use super::*;
+
+    #[test]
+    fn tkey_scan_accepts_external_defs_dir_outside_root() {
+        // P2-8: an explicit --defs-dir outside the scan root must work.
+        let mod_dir = tempfile::tempdir().unwrap();
+        let ext_defs = tempfile::tempdir().unwrap();
+        let defs = ext_defs.path().join("Defs");
+        std::fs::create_dir_all(&defs).unwrap();
+        std::fs::write(
+            defs.join("Ext.xml"),
+            r#"<Defs>
+  <QuestScriptDef>
+    <defName>ExtQuest</defName>
+    <label TKey="ExtKey">external defs text</label>
+  </QuestScriptDef>
+</Defs>"#,
+        )
+        .unwrap();
+        // Root contains NO Defs at all.
+        std::fs::create_dir_all(mod_dir.path().join("About")).unwrap();
+        let units = scan_defs_tkey(mod_dir.path(), Some(defs.as_path())).unwrap();
+        assert_eq!(units.len(), 1, "{units:?}");
+        assert_eq!(units[0].key, "ExtQuest.ExtKey");
+        assert_eq!(units[0].tkey.as_ref().unwrap().suffix, ".slateRef");
     }
 }
