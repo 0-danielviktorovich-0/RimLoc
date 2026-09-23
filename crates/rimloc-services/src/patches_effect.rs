@@ -97,8 +97,7 @@ fn parse_xpath(xpath: &str) -> Option<ParsedXpath> {
                     return None;
                 }
                 let inner = p.trim();
-                let inner = p.trim();
-                let value = inner
+                let value = p.trim()
                     .strip_prefix("defName=")
                     .map(str::trim)
                     .and_then(|v| v.strip_prefix('"'))
@@ -148,7 +147,7 @@ pub fn apply_patch_stage(
             p.is_file()
                 && p.extension()
                     .and_then(|e| e.to_str())
-                    .map_or(false, |ext| ext.eq_ignore_ascii_case("xml"))
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("xml"))
         })
         .collect();
     files.sort();
@@ -321,7 +320,7 @@ fn execute_op(
                         }
                     } else {
                         for el in element_children {
-                            let leaf = collect_leaf_fields(el, &el.tag_name().name());
+                            let leaf = collect_leaf_fields(el, el.tag_name().name());
                             for (sub_path, text) in leaf {
                                 units.push(rimloc_core::TransUnit {
                                     key: format!("{target_key}.{sub_path}"),
