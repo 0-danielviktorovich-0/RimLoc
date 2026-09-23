@@ -316,6 +316,8 @@ SourceEntry — требование вписано в Gate I.
   бэкенд, frontendDist · status: implementing against mocks
 - **A3** — PatchOperations researcher · read-only · output: findings-док на ревью ·
   status: launching (lead)
+- **D1** — дизайн-исследование (motion + tokens) · docs/GUI_MOTION_SYSTEM.md,
+  docs/GUI_DESIGN_TOKENS.md · LANDED+ревью (86/176 строк, WCAG-пары, 4 направления)
 
 ### INTEGRATION QUEUE
 | Коммит | Агент | Тесты | Ревью | Статус |
