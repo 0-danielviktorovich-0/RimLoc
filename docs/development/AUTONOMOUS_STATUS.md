@@ -199,3 +199,14 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 - `--lang` ранее был только CSV-колонкой; Defs-юниты получают путь Languages/English/DefInjected-цели (is_source_for_lang_dir("English") их ловит)
 - duplicate-global скоупится на языковую папку (EN+RU одного ключа = норма)
 - stash pre-purge-wip: сохранён, суперсэжден Ф2 (dialog/shell плагины вошли в Ф2 коммит)
+
+## LATEST · 2026-09-23 · финальная коррекция TKey (4 пункта) ЗАКРЫТА, P1-3/P1-4 частично
+HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · clippy 0 · fmt ok · НЕ пушено.
+
+**Коррекция-1 (популяции)**: `testlab/scripts/tkey_population_reconcile.py` + отчёт `testlab/reports/tkey-population-reconcile.json`. Авторитетные определения в `DLC-TKEY-ADJUDICATION.md §1.1`: P1 raw=360, P2 translatable=358 (−2 textless-контейнера PawnLend DutyRules), P3 идентичности=350, P4 serialization-tested=351 узел/343 идентичности. 7 unmatched машинно перечислены: 4 Royalty gap (дока исправлена: было «3») + 3 Odyssey structural. Официальный RU распаковывается скриптом в gitignored `testlab/run/`.
+
+**Коррекции-2/3/4 (e4639f7)**: `TKeyMeta {strategy, suffix, contexts}` на TransUnit (key = логическая идентичность; метадата типизированная, не string-спецкейс). scan_defs_tkey выводит стратегию из контекста: TipSetDef li→bare, parms-потомок QuestNode_SubScript→parms_value_slate_ref (`.value.slateRef`), остальное→slate_ref. Дубли (defName,TKey): первый файл владеет идентичностью, внутри файла last-wins (RimWorld field-assignment), contexts сохранён. Машино-воспроизведение: Core 112 = 90 bare+20 slate+2 parms; все корни дают P3=350; Royalty 200 юнитов, 8 дуплов contexts=2. `TKeyRegistry {identities, aliases}` в matching.rs: порядок exact → proven alias → known-suffix; structural-алиасы = данные реестра, не shape-эвристика (Odyssey-кейс покрыт тестом).
+
+**P1-3 (3ea0e19)**: coverage_report и compare гейтят canonical-фоллбэк через реестр (форма `identity_for`), shape-stripping без гейта устранён в coverage+compare. **P1-4**: test/TKeyMod расширен (parms-узел + RU DefInjected на 3 суффикс-формы); CLI-регрессии: coverage 5/4/4/1 (4 TKey сматчены, ordinary label — missing), scan эмитит parms-стратегию.
+
+**Далее**: P1-2 остаток (import-po writer строит путь из key+TKeyMeta.suffix; e2e round-trip фикстуры), P1-1 unify scan-вариантов, P2-8 (scan_defs_tkey внешний defs_dir), canonical project-model audit → затем GUI RC (ui-ux-pro-max → Svelte 5).
