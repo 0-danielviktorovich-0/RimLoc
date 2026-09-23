@@ -91,6 +91,34 @@ pub fn is_todo(value: &str) -> bool {
     t.is_empty() || t.eq_ignore_ascii_case("TODO")
 }
 
+/// How a target key reached its source entry (Gate C provenance).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MatchOrigin {
+    /// Target key equals the source key verbatim.
+    Exact,
+    /// Target key is a registered proven alias of the identity.
+    ProvenAlias,
+    /// Target key = identity + a known context-derived TKey suffix.
+    SuffixFallback,
+}
+
+/// Shared resolution outcome for cross-language consumers.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Resolution {
+    Matched {
+        origin: MatchOrigin,
+        source_key: String,
+    },
+    /// The target key plausibly belongs to more than one source identity;
+    /// callers must emit a diagnostic, never an arbitrary winner.
+    Ambiguous {
+        target_key: String,
+        candidates: Vec<String>,
+    },
+    /// No source counterpart (orphan candidate).
+    Unmatched { target_key: String },
+}
+
 /// Strip a TKey canonical suffix if present.
 pub fn strip_tkey_suffix(key: &str) -> Option<String> {
     for suffix in [".value.slateRef", ".slateRef"] {
@@ -150,11 +178,50 @@ impl<'a> SourceMatcher<'a> {
     /// (exact first, proven alias, then TKey-suffix fallback).
     /// `None` = no source counterpart (orphan candidate).
     pub fn source_for_target(&self, target_key: &str) -> Option<String> {
-        if self.source.contains_key(target_key) {
-            return Some(target_key.to_string());
+        match self.resolve_target(target_key) {
+            Resolution::Matched { source_key, .. } => Some(source_key),
+            _ => None,
         }
-        let logical = self.tkey.identity_for(target_key)?;
-        self.source.contains_key(&logical).then_some(logical)
+    }
+
+    /// THE shared resolved-match result (Gate C): coverage, compare,
+    /// placeholder/list/orphan/sourceChanged diagnostics all map THIS to their
+    /// own reports; none re-derives alias resolution.
+    pub fn resolve_target(&self, target_key: &str) -> Resolution {
+        if self.source.contains_key(target_key) {
+            // Exact presence is authoritative UNLESS the same key is also a
+            // proven alias pointing at a DIFFERENT identity — then the target
+            // could legitimately belong to either and the caller must surface
+            // ambiguity instead of picking an arbitrary winner.
+            if let Some(base) = self.tkey.aliases.get(target_key) {
+                if base != target_key {
+                    return Resolution::Ambiguous {
+                        target_key: target_key.to_string(),
+                        candidates: vec![target_key.to_string(), base.clone()],
+                    };
+                }
+            }
+            return Resolution::Matched {
+                origin: MatchOrigin::Exact,
+                source_key: target_key.to_string(),
+            };
+        }
+        match self.tkey.identity_for(target_key) {
+            Some(logical) if self.source.contains_key(&logical) => {
+                let origin = if self.tkey.aliases.contains_key(target_key) {
+                    MatchOrigin::ProvenAlias
+                } else {
+                    MatchOrigin::SuffixFallback
+                };
+                Resolution::Matched {
+                    origin,
+                    source_key: logical,
+                }
+            }
+            _ => Resolution::Unmatched {
+                target_key: target_key.to_string(),
+            },
+        }
     }
 
     /// Resolve a source key to target values (0, 1 or many candidates).
@@ -263,6 +330,68 @@ mod tests {
         assert_eq!(
             m.source_for_target("Def.Key.value.slateRef").as_deref(),
             Some("Def.Key")
+        );
+    }
+
+    #[test]
+    fn resolve_target_reports_origin_precedence() {
+        let mut tkey = registry(&["A.B"]);
+        tkey.aliases.insert("A.struct.path".into(), "A.B".into());
+        let units = [u("A.B", "v"), u("A.B.value.slateRef", "w")];
+        let m = SourceMatcher::new(&units, &tkey);
+        assert_eq!(
+            m.resolve_target("A.B"),
+            Resolution::Matched {
+                origin: MatchOrigin::Exact,
+                source_key: "A.B".into()
+            }
+        );
+        assert_eq!(
+            m.resolve_target("A.struct.path"),
+            Resolution::Matched {
+                origin: MatchOrigin::ProvenAlias,
+                source_key: "A.B".into()
+            }
+        );
+        assert_eq!(
+            m.resolve_target("A.B.slateRef"),
+            Resolution::Matched {
+                origin: MatchOrigin::SuffixFallback,
+                source_key: "A.B".into()
+            }
+        );
+        assert_eq!(
+            m.resolve_target("Z.Nope.slateRef"),
+            Resolution::Unmatched {
+                target_key: "Z.Nope.slateRef".into()
+            }
+        );
+    }
+
+    #[test]
+    fn resolve_target_flags_exact_alias_collision_as_ambiguous() {
+        let mut tkey = registry(&["A.B"]);
+        tkey.aliases.insert("A.C".into(), "A.B".into());
+        let units = [u("A.B", "v"), u("A.C", "other entry")];
+        let m = SourceMatcher::new(&units, &tkey);
+        // A.C exists as a real source entry AND aliases A.B: a target "A.C"
+        // could belong to either — diagnostic, not arbitrary winner.
+        assert_eq!(
+            m.resolve_target("A.C"),
+            Resolution::Ambiguous {
+                target_key: "A.C".into(),
+                candidates: vec!["A.C".into(), "A.B".into()]
+            }
+        );
+        // Without the colliding exact entry the same alias resolves cleanly.
+        let units2 = [u("A.B", "v")];
+        let m2 = SourceMatcher::new(&units2, &tkey);
+        assert_eq!(
+            m2.resolve_target("A.C"),
+            Resolution::Matched {
+                origin: MatchOrigin::ProvenAlias,
+                source_key: "A.B".into()
+            }
         );
     }
 

@@ -43,7 +43,7 @@ pub use import::{
     import_po_to_file, import_po_to_mod_tree, import_po_to_mod_tree_with_progress, FileStat,
     ImportPlan, ImportSummary,
 };
-pub use matching::{SourceMatcher, TKeyRegistry};
+pub use matching::{MatchOrigin, Resolution, SourceMatcher, TKeyRegistry};
 pub use modview::{effective_view, EffectiveModView};
 pub use rimloc_domain::{DiffOutput, HealthIssue, HealthReport};
 pub use scan::{
