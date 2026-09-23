@@ -1954,3 +1954,47 @@ fn scan_never_emits_nontranslatable_technical_fields() {
         );
     }
 }
+
+// ---------------------------------------------------------------------------
+// P1-4 TKey regressions (fixture: test/TKeyMod with RU DefInjected).
+// All three proven serialization shapes must match through the registry-gated
+// fallback: bare (TipSetDef li), .slateRef (direct field) and
+// .value.slateRef (parms descendant of QuestNode_SubScript).
+// ---------------------------------------------------------------------------
+#[test]
+fn coverage_matches_tkey_serialization_shapes_on_tkey_fixture() {
+    let root = fixture("test/TKeyMod");
+    let out = run_ok(&[
+        "coverage",
+        "--root",
+        root.to_str().unwrap(),
+        "--source-lang-dir",
+        "English",
+        "--target-lang-dir",
+        "Russian",
+        "--format",
+        "json",
+    ]);
+    let v: serde_json::Value = serde_json::from_str(&out.stdout).expect("coverage json");
+    // 5 source units = 4 TKey identities + 1 ordinary defs field
+    // (SampleQuest.label, no RU counterpart — stays missing).
+    assert_eq!(v["source_total"].as_u64(), Some(5), "{v}");
+    assert_eq!(v["target_total"].as_u64(), Some(4), "{v}");
+    assert_eq!(v["translated"].as_u64(), Some(4), "{v}");
+    assert_eq!(v["missing"].as_u64(), Some(1), "{v}");
+}
+
+#[test]
+fn scan_emits_tkey_metadata_strategies_on_tkey_fixture() {
+    let root = fixture("test/TKeyMod");
+    let units = scan_lang_json(&root, &["--lang", "English"]);
+    let tkeys: Vec<(String, String)> = units
+        .iter()
+        .filter(|(scope, _)| scope == "Defs")
+        .cloned()
+        .collect();
+    // The parms shape must be present alongside bare and slate_ref shapes.
+    let keys: Vec<&str> = tkeys.iter().map(|(_, k)| k.as_str()).collect();
+    assert!(keys.contains(&"SampleQuest.LetterTextParms"), "{keys:?}");
+    assert!(keys.contains(&"SampleTips.DismissLetters"), "{keys:?}");
+}

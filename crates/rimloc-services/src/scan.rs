@@ -441,3 +441,51 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tkey_scan_tests {
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn tkey_defs_pass_includes_parms_shape_via_services_pipeline() {
+        let dir = tempdir().unwrap();
+        let defs = dir.path().join("Defs/Misc");
+        fs::create_dir_all(&defs).unwrap();
+        fs::write(
+            defs.join("TKeySamples.xml"),
+            r#"<Defs>
+  <TipSetDef>
+    <defName>SampleTips</defName>
+    <tips><li TKey="DismissLetters">tip text</li></tips>
+  </TipSetDef>
+  <QuestScriptDef>
+    <defName>SampleQuest</defName>
+    <label TKey="LetterLabelFavorReceiver">favor label</label>
+    <customLetterText TKey="LetterTextSample">quest text.</customLetterText>
+    <node Class="QuestNode_SubScript">
+      <parms>
+        <li Class="NamedParm">
+          <key>letterText</key>
+          <value TKey="LetterTextParms">parms text</value>
+        </li>
+      </parms>
+    </node>
+  </QuestScriptDef>
+</Defs>"#,
+        )
+        .unwrap();
+        let units = scan_units_with_defs_and_dict(dir.path(), None, &HashMap::new(), &[]).unwrap();
+        let tkey_keys: Vec<&str> = units
+            .iter()
+            .filter(|u| u.tkey.is_some())
+            .map(|u| u.key.as_str())
+            .collect();
+        assert_eq!(tkey_keys.len(), 4, "{tkey_keys:?}");
+        assert!(
+            tkey_keys.contains(&"SampleQuest.LetterTextParms"),
+            "{tkey_keys:?}"
+        );
+    }
+}
