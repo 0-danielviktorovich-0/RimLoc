@@ -9,6 +9,13 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 Кумулятив И2: слепой бенчмарк (adjudication: 0 реальных миссов) · provenance (Gemini-AI пак; OW.RU.* = RimLangKit-конвейер) · многоязычный промпт · матрица конкурентов v2 · first-party аудит (13 категорий TranslationReport из декомпила DLL 1.6) · modview (LoadFolders) · version-diff · TODO-семантика · capability-aware WordInfo (`rimloc word-info`) · whole-game (Core EN 11549 / RU 16681 / 93%). Блокер: локальная LLM запрещена (ресурсы), платные API не авторизованы; GLM Flash через ZCode = разрешённый zero-cost путь для семантического бенчмарка (§20 мандата).
 
 
+## LATEST — SUPPLEMENT БАНДЛ ГОТОВ (50f9483 → cf60ee7) + inventory-аудит 22 команд
+
+- **Supplement**: `~/Developing/_rimloc-review/RimLoc-TKey-50f9483-to-cf60ee7-supplement.zip` (20 файлов; SHA-256 `6d22fcfc92fa0b17d96585a364dd03cec3e767a7c18f0508e99f84c7292bcf26`; sha256-файл проверен shasum -c OK). COVERAGE-TKEY-FOLLOWUP.md: дефект (coverage = путь B scan_all_units* без TKey; scan/translate/compare = путь A с TKey), фикс в КОРНЕ семейства пути B (все потребители автоматически), полная таблица аудита 22 CLI-команд.
+- **Inventory-аудит итог**: 7 команд TKey-aware (scan/coverage/validate/compare/translate/version-diff/diff-xml); 15 — TKey неуместен по дизайну (build/import/export/annotate/learn-*/morph/…); 2 честных наблюдения не-дефектного класса: word-info отсекает TKey фильтрами независимо от сканера; export-po — Keyed-only ограничение PO-контура (кандидат в тикет).
+- **Расхождение с коммит-сообщением 5016be4** зафиксировано честно: фикс НЕ затронул word-info (слово в сообщении избыточно).
+- Оба бандла готовы к загрузке в ChatGPT: primary (60 файлов) + supplement (20 файлов).
+
 ## LATEST — REVIEW BUNDLE READY + фоновые агенты завершены (2026-09-23)
 
 - **Ревью-бандл готов**: `~/Developing/_rimloc-review/RimLoc-TKey-50f9483-review.zip` (60 файлов; SHA-256 `3e06b443dc1e385c85f40b1e7d06cb9578e07bf92676cc765490153d4bd5aacb`). Ревьюер проверяет: TKey-извлечение, reconciliation 112/226/358, двойное извлечение, canonical-нормализацию, коллизии, coverage>1.0 фикс, независимость тестов, EN/RU-допущения, безопасность фриза. Загрузить ZIP в ChatGPT.
