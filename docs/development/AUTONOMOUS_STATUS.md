@@ -3,7 +3,27 @@
 Session: `zcode-rc-campaign` · Updated: 2026-09-23 (после Ф3) · **Не пушить — вся работа локально.**
 Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stash diff, логи).
 
-## Текущее состояние — ИТЕРАЦИЯ 2 (продолжение по расширенной спецификации Даниэля)
+## Текущее состояние — ИТЕРАЦИЯ 2 (progress: 104 теста, 2 субагента в полёте)
+
+**Новый мандат Даниэля (2026-09-23): FIRST-PARTY RimWorld reference audit (§A–H)** — RimWorld как первоисточник (декомпил в .app/Source, Ludeon-репо, Translation Report как оракул), effective mod view, provenance-иерархия документации.
+
+**Готово в этом мандате:**
+- `crates/rimloc-services/src/modview.rs` — **effective mod view (§B)**: парс LoadFolders.xml (BOM-толерантный, теги v1.x, `/`=корень, IfModActive→conditional отдельно), классический fallback 1.x-папок, `defs_roots()` для скоупинга извлечения. 3 теста. База для validate-орфанов и строгого patch-резолва.
+- `docs/development/COMPETITOR_MATRIX.md` v2 (субагент): implementation/design-матрица + **workflow-археология: OW.RU.* паки созданы конвейером автора RimLangKit** (OliveWizard/OneCodeUnit; отпечатки EncodingFixer/CommentInserter/CaseCreator в 191/191 файлах). Следов RimTrans/Text-grabber нет. Топ-5 adopt/adapt: формат сообщества как дефолт вывода, source-text TM, единый ExtractionFilter, About/discover/loadFolders, дозакрытие LLM-движка.
+- `docs/development/TRANSLATION_BENCHMARK.md` + слепой бенчмарк (§8): 0 реальных извлекательных миссов на VWE (adjudication: VEF-derived/version-skew/speculative); Genetics пак↔база 82.7%; provenance референса = AI Gemini + human (заявлено в About пака).
+
+**В полёте (владение субагентов, интегрировать после завершения):**
+- GAME_SOURCE_FINDINGS.md — load semantics + категории Translation Report из декомпила 1.6 (агент 343921f1)
+- OFFICIAL_LANG_PACKS.md — ru/de/ja/zh/uk репо: WordInfo-воркфлоу, LanguageCapabilities, 5 фикстур (агент ec18efdb)
+
+**Дальше (по завершении субагентов):**
+1. Интегрировать находки → docs/development/RIMWORLD_REFERENCE_AUDIT.md (§H, provenance-классификация)
+2. Translation Report категории → новые validate-правила (§C): missing DefInjected/Keyed, unnecessary translations, argument discrepancies
+3. WordInfo: генератор + missing-WordInfo диагностика + официальные паки как regression-корпус (§F)
+4. И2-E GUI (Svelte 5, редактор SOURCE|TARGET, i18n ru/en, E2E) — крупнейший оставшийся кусок
+5. И2-F RimWorld acceptance 2+ кейса → И2-G Pass A/B → финал
+
+**И2 ранние фазы (архив):** (продолжение по расширенной спецификации Даниэля)
 
 **Реверификация чекпоинта И1 (2026-09-23, независимо повторена):**
 - git: clean, ahead 62, HEAD=3019135 ✓
