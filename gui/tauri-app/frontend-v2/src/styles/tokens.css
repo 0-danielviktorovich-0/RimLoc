@@ -1,0 +1,225 @@
+/*
+ * Token architecture — Layer 1 (primitives) + Layer 2 (semantic) + Layer 3 (component).
+ * Per docs/development/GUI_DESIGN_SPEC.md §1; components reference ONLY the semantic
+ * and component layers — raw values in component CSS are forbidden.
+ *
+ * Layers:
+ *   1. Primitives (--p-*): raw ramp values, theme- and direction-independent.
+ *   2. Semantic  (--color-*): mapped from primitives; re-pointed by
+ *      [data-theme] / [data-style] / [data-palette] on <html>.
+ *   3. Component (--space-*, --radius-*, --motion-*, --row-*, --shadow-*,
+ *      --card-*, --control-h, fonts): consumed directly by components;
+ *      re-pointed by [data-style] and [data-density].
+ *
+ * Override files (imported from app.css in this order):
+ *   style-precision.css → style-aurora.css → style-workshop.css → style-editorial.css
+ *   → palettes.css (owns --color-primary*) → density.css (owns density scale).
+ *
+ * VERIFIED CONTRAST (WCAG 2.1, computed 2026-09-24; full matrix 300+ pairs in
+ * the style-lab change report; minima: text 4.5:1, UI graphics 3:1):
+ *
+ *   TEXT PAIRS (4.5:1 floor)                                  light  dark
+ *   fg on bg / fg on surface (precision)                      17.1 / 17.9   17.1 / 15.0
+ *   muted-fg on bg / surface / muted (precision)              7.2 / 7.6 / 6.9   7.0 / 6.1 / 5.2
+ *   workshop fg on bg / muted-fg on surface                   12.9   11.2 / 5.7
+ *   editorial fg on bg / muted-fg on surface                  16.4   14.7 / 6.4
+ *   primary-fg on primary (indigo)                            6.29   5.15
+ *   primary-fg on primary-hover (indigo)                      7.90   5.71
+ *   primary-text on surface (indigo)                          6.29   5.25
+ *   primary-fg on primary (amber)                             5.63   8.29
+ *   success / warning / error / info on surface               5.0 / 5.0 / 4.8 / 6.7   8.2 / 9.4 / 5.7 / 6.2
+ *   origin human / TM / LLM on surface                        7.6 / 5.5 / 7.1   6.1 / 7.6 / 7.6
+ *
+ *   STATUS DOTS/BADGES on surface + bg (3:1 UI-graphics floor, all pass):
+ *   untranslated 5.0/4.8 (light) · 9.4/10.7 (dark)   translated 5.0/4.8 · 8.2/9.3
+ *   todo 6.3/6.0 · 5.6/6.4      sourceChanged 4.8/4.6 · 7.5/8.6
+ *   pending_review 6.9/6.6 · 6.1/7.0   orphan 4.7/4.5 · 6.1/7.0
+ *
+ * Deviations from the spec §1.2 baseline, forced by verification:
+ *   dark primary #6366f1 → #5b5ce2 (white-on-primary was 4.47, under 4.5);
+ *   a separate --color-primary-text token carries accent-as-TEXT usage so
+ *   palettes can satisfy button-bg and text roles independently.
+ */
+
+/* ---------------------------------------------------------------- *
+ * Layer 1 — primitives (raw ramp steps actually consumed below)
+ * ---------------------------------------------------------------- */
+:root {
+  /* accent ramps — indigo is the baseline palette */
+  --p-indigo-300: #a5b4fc;
+  --p-indigo-400: #818cf8;
+  --p-indigo-500: #5b5ce2; /* dark-mode button base (white 5.15) */
+  --p-indigo-550: #4f53e3; /* dark-mode hover          */
+  --p-indigo-600: #4f46e5; /* light-mode base          */
+  --p-indigo-700: #4338ca; /* light-mode hover         */
+  --p-blue-600: #2563eb;
+  --p-blue-700: #1d4ed8;
+  --p-blue-800: #1e40af;
+  --p-blue-400: #60a5fa;
+  --p-blue-300: #93c5fd;
+  --p-emerald-700: #047857;
+  --p-emerald-800: #065f46;
+  --p-emerald-550: #0e9f74; /* dark-mode base (dark fg 4.94) */
+  --p-emerald-450: #12b57c; /* dark-mode hover               */
+  --p-emerald-300: #34d399;
+  --p-emerald-950: #04231a; /* dark-mode fg on emerald       */
+  --p-amber-750: #a1520a; /* light-mode base (white 5.63)  */
+  --p-amber-800: #85430c; /* light-mode hover              */
+  --p-amber-500: #f59e0b; /* dark-mode base                */
+  --p-amber-400: #fbbf24; /* dark-mode hover + focus       */
+  --p-amber-950: #231503; /* dark-mode fg on amber         */
+
+  /* neutral ramps — slate (precision/aurora/editorial) + warm sand (workshop) */
+  --p-slate-50: #f8fafc;
+  --p-slate-100: #f1f5f9;
+  --p-slate-200: #e2e8f0;
+  --p-slate-300: #cbd5e1;
+  --p-slate-400: #94a3b8;
+  --p-slate-500: #64748b;
+  --p-slate-600: #475569;
+  --p-slate-800: #272f42;
+  --p-slate-850: #1b2336;
+  --p-slate-900: #0f172a;
+}
+
+/* ---------------------------------------------------------------- *
+ * Layer 2 — semantic (baseline = precision / indigo / light)
+ * ---------------------------------------------------------------- */
+:root {
+  --color-bg: var(--p-slate-50);
+  --color-fg: var(--p-slate-900);
+  --color-surface: #ffffff;
+  --color-surface-fg: var(--p-slate-900);
+  --color-muted: var(--p-slate-100);
+  --color-muted-fg: var(--p-slate-600);
+  --color-border: var(--p-slate-200);
+  --color-border-strong: var(--p-slate-300);
+  --color-header: var(--color-surface);
+
+  /* accent: --color-primary is a BUTTON/SURFACE role (pair with --color-primary-fg);
+     --color-primary-text is the accent-as-TEXT role on bg/surface. */
+  --color-primary: var(--p-indigo-600);
+  --color-primary-fg: #ffffff;
+  --color-primary-hover: var(--p-indigo-700);
+  --color-primary-text: var(--p-indigo-600);
+  --color-focus-ring: #2563eb;
+  --color-destructive: #dc2626;
+
+  /* entry statuses (dot + badge text; see contrast table above) */
+  --color-status-untranslated: #b45309;
+  --color-status-translated: #15803d;
+  --color-status-todo: #1d4ed8;
+  --color-status-source-changed: #c2410c;
+  --color-status-pending-review: #6d28d9;
+  --color-status-orphan: #64748b;
+
+  /* feedback */
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #dc2626;
+  --color-info: #1d4ed8;
+
+  /* provenance origins (text on surface) */
+  --color-origin-human: var(--p-slate-600);
+  --color-origin-tm: #0f766e;
+  --color-origin-llm: #6d28d9;
+
+  /* dimmed SOURCE column (editorial dims it; others keep full strength) */
+  --color-source-text: var(--color-fg);
+}
+
+[data-theme='dark'] {
+  --color-bg: var(--p-slate-900);
+  --color-fg: var(--p-slate-50);
+  --color-surface: var(--p-slate-850);
+  --color-surface-fg: var(--p-slate-50);
+  --color-muted: var(--p-slate-800);
+  --color-muted-fg: var(--p-slate-400);
+  --color-border: #334155;
+  --color-border-strong: #475569;
+
+  --color-primary: var(--p-indigo-500);
+  --color-primary-fg: #ffffff;
+  --color-primary-hover: var(--p-indigo-550);
+  --color-primary-text: var(--p-indigo-400);
+  --color-focus-ring: var(--p-blue-400);
+  --color-destructive: #f87171;
+
+  --color-status-untranslated: #fbbf24;
+  --color-status-translated: #34d399;
+  --color-status-todo: #60a5fa;
+  --color-status-source-changed: #fb923c;
+  --color-status-pending-review: #a78bfa;
+  --color-status-orphan: #94a3b8;
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+
+  --color-origin-human: var(--p-slate-400);
+  --color-origin-tm: #2dd4bf;
+  --color-origin-llm: #c4b5fd;
+}
+
+/* ---------------------------------------------------------------- *
+ * Layer 3 — component tokens
+ * ---------------------------------------------------------------- */
+:root {
+  /* Typography */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-heading: var(--font-ui);
+  --text-base-size: 14px;
+  --text-base-lh: 1.5;
+  --text-dense-size: 13px;
+  --text-dense-lh: 1.45;
+  --text-meta-size: 12px;
+  --text-meta-lh: 1.4;
+  --text-heading-size: 19px;
+  --text-heading-weight: 600;
+  --heading-tracking: normal;
+
+  /* Spacing (dense dashboard, 4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Motion — FAST for hover/press/focus feedback, STANDARD for state swaps,
+     EMPHASIS for panel/sheet entrances. Rows and lists are never animated. */
+  --motion-fast: 120ms;
+  --motion-standard: 180ms;
+  --motion-emphasis: 240ms;
+  --motion-panel: var(--motion-standard); /* legacy alias (pre-style-lab) */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Density (comfortable baseline; compact re-points in density.css) */
+  --row-height: 40px;
+  --row-font-size: var(--text-dense-size);
+  --row-lh: var(--text-dense-lh);
+  --control-h: 32px; /* click targets >= 32px in comfortable (spec §1.4) */
+
+  /* Elevation + direction accents (flat baseline) */
+  --shadow-card: none;
+  --shadow-hover: none;
+  --shadow-panel: none;
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 18%);
+  --grad-accent: none;
+  --card-hover-transform: none;
+  --btn-press-transform: translateY(1px);
+  --card-icon-pad: 0px;
+  --card-icon-radius: var(--radius-md);
+  --card-icon-bg: transparent;
+  --card-icon-fg: var(--color-primary-text);
+  --row-accent: var(--color-primary);
+  --nav-active-bg: var(--color-muted);
+}

@@ -4,11 +4,22 @@
   // the mock project store — no backend.
   import { t, i18n } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
+  import Icon from '../Icon.svelte';
   import type { Entry, TkeyStrategy } from '../../mock/types';
 
   const CONTEXT_REGION_ID = 'workspace-context';
 
   let { entry }: { entry: Entry | null } = $props();
+
+  // Validation indicator (mock phase): status is the proxy. pass = translated;
+  // fail = untranslated / source changed; otherwise not applicable.
+  const validation = $derived.by(() => {
+    if (!entry) return null;
+    if (entry.status === 'translated') return { state: 'pass', icon: 'circle-check' } as const;
+    if (entry.status === 'untranslated' || entry.status === 'sourceChanged')
+      return { state: 'fail', icon: 'warning' } as const;
+    return { state: 'na', icon: 'info' } as const;
+  });
 
   function strategyLabel(strategy: TkeyStrategy): string {
     const key = strategy === '.value.slateRef' ? 'valueSlateRef' : strategy.replace('.', '');
@@ -52,6 +63,13 @@
       <p class="context-kind">{t(`kind.${entry.kind}`)}</p>
       <h2 class="context-key mono">{entry.key}</h2>
 
+      {#if validation}
+        <p class="validation validation-{validation.state}" data-testid="workspace.context.validation">
+          <Icon name={validation.icon} size={14} />
+          <span>{t(`workspace.context.validation.${validation.state}`)}</span>
+        </p>
+      {/if}
+
       <dl class="meta">
         <div class="meta-row">
           <dt>{t('workspace.context.file')}</dt>
@@ -74,7 +92,9 @@
         <div class="meta-row">
           <dt>{t('workspace.context.origin')}</dt>
           <dd>
-            {entry.origin ? t(`workspace.context.origin.${entry.origin}`) : '—'}
+            <span class:origin class:origin-human={entry.origin === 'human'} class:origin-tm={entry.origin === 'TM'} class:origin-llm={entry.origin === 'LLM'}>
+              {entry.origin ? t(`workspace.context.origin.${entry.origin}`) : '—'}
+            </span>
           </dd>
         </div>
         <div class="meta-row">
@@ -137,7 +157,10 @@
       </div>
     </div>
   {:else}
-    <p class="hint no-selection">{t('workspace.context.noSelection')}</p>
+    <p class="hint no-selection">
+      <span class="hint-icon" aria-hidden="true"><Icon name="info" size={14} /></span>
+      {t('workspace.context.noSelection')}
+    </p>
   {/if}
 </aside>
 
@@ -145,6 +168,7 @@
   .context {
     border-left: 1px solid var(--color-border);
     background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
     overflow-y: auto;
     padding: var(--space-3) var(--space-4);
   }
@@ -153,6 +177,44 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+  }
+
+  /* Validation indicator: icon + color + text — color is never the only carrier. */
+  .validation {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-meta-size);
+  }
+
+  .validation :global(svg) {
+    flex: none;
+  }
+
+  .validation-pass {
+    color: var(--color-success);
+  }
+
+  .validation-fail {
+    color: var(--color-warning);
+  }
+
+  .validation-na {
+    color: var(--color-muted-fg);
+  }
+
+  /* Provenance origin is tinted text on surface (AA pairs in tokens.css). */
+  .origin-human {
+    color: var(--color-origin-human);
+  }
+
+  .origin-tm {
+    color: var(--color-origin-tm);
+  }
+
+  .origin-llm {
+    color: var(--color-origin-llm);
   }
 
   .context-kind {
@@ -277,6 +339,11 @@
   .hint {
     color: var(--color-muted-fg);
     font-size: var(--text-base-size);
+  }
+
+  .hint-icon {
+    display: inline-flex;
+    margin-right: var(--space-1);
   }
 
   .no-selection {

@@ -168,9 +168,15 @@
             {#if badge(entry) === 'saving'}
               <span class="badge saving">{t('workspace.editor.saving')}</span>
             {:else if badge(entry) === 'saved'}
-              <span class="badge saved">{t('workspace.editor.saved')}</span>
+              <span class="badge saved">
+                <Icon name="circle-check" size={12} />
+                {t('workspace.editor.saved')}
+              </span>
             {:else if badge(entry) === 'dirty'}
-              <span class="badge dirty">{t('workspace.editor.draft')}</span>
+              <span class="badge dirty">
+                <Icon name="edit" size={12} />
+                {t('workspace.editor.draft')}
+              </span>
             {/if}
           {/if}
         </div>
@@ -192,18 +198,19 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    font-size: var(--text-dense-size);
-    line-height: var(--text-dense-lh);
+    font-size: var(--row-font-size);
+    line-height: var(--row-lh);
   }
 
+  /* Rows change state instantly — lists and tables are never animated
+     (spec §1.4); only the editor input and badges carry motion. */
   .row {
     display: grid;
     grid-template-columns: 28px minmax(220px, 1fr) minmax(260px, 1.2fr) 28px;
     align-items: stretch;
-    min-height: 40px;
+    min-height: var(--row-height);
     border-bottom: 1px solid var(--color-border);
     background: var(--color-surface);
-    transition: background var(--motion-fast);
   }
 
   .row:hover {
@@ -212,7 +219,7 @@
 
   .row.selected {
     background: var(--color-muted);
-    box-shadow: inset 2px 0 0 var(--color-primary);
+    box-shadow: inset 2px 0 0 var(--row-accent);
   }
 
   .row.head {
@@ -248,7 +255,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--color-fg);
+    /* Direction-owned: editorial dims SOURCE to build the SOURCE|TARGET axis */
+    color: var(--color-source-text);
   }
 
   /* TKey family sources are paths/identifiers: mono per spec §1.3. */
@@ -272,10 +280,21 @@
     padding: var(--space-1);
   }
 
+  /* Inline-edit transition: the input itself eases its border and halo —
+     the row layout is untouched, so nothing jumps. */
   .editor {
     width: 100%;
-    min-height: 30px;
+    min-height: var(--control-h);
     padding: var(--space-1) var(--space-2);
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-fast) var(--ease-out);
+  }
+
+  .editor:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
 
   .dot {
@@ -311,10 +330,17 @@
 
   .badge {
     flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     font-size: var(--text-meta-size);
     padding: 0 var(--space-1);
     border-radius: var(--radius-sm);
     white-space: nowrap;
+  }
+
+  .badge :global(svg) {
+    flex: none;
   }
 
   .badge.saving {
@@ -322,11 +348,12 @@
     font-style: italic;
   }
 
+  /* Validation feedback: pass (check) and draft (edit) carry icon + color. */
   .badge.saved {
-    color: var(--color-status-translated);
+    color: var(--color-success);
   }
 
   .badge.dirty {
-    color: var(--color-muted-fg);
+    color: var(--color-warning);
   }
 </style>

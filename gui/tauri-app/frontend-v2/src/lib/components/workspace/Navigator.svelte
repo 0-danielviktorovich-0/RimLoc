@@ -64,21 +64,28 @@
     justify-content: space-between;
     gap: var(--space-2);
     width: 100%;
-    min-height: 32px;
+    min-height: var(--control-h);
     padding: var(--space-1) var(--space-2);
     border-radius: var(--radius-sm);
     color: var(--color-fg);
     text-align: left;
-    transition: background var(--motion-fast);
+    transition:
+      background var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-out);
   }
 
   .nav-item:hover {
     background: var(--color-muted);
   }
 
+  .nav-item:active {
+    transform: var(--btn-press-transform);
+  }
+
   .nav-item[aria-pressed='true'] {
-    background: var(--color-muted);
-    color: var(--color-primary);
+    background: var(--nav-active-bg);
+    color: var(--color-primary-text);
     font-weight: 600;
   }
 

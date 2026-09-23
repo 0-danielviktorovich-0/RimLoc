@@ -1,0 +1,64 @@
+/*
+ * Palette axis: [data-palette="indigo|blue|emerald|amber"] on <html>.
+ * Imported AFTER the style-*.css files, so the palette exclusively owns the
+ * accent tokens (--color-primary*) in every direction. indigo is the baseline
+ * (tokens.css) — declared here only as documentation.
+ *
+ * VERIFIED (see tokens.css header for method):
+ *   indigo light  fg#fff on primary 6.29 · on hover 7.90 · primary-text on surface 6.29
+ *   indigo dark   fg#fff on primary 5.15 · on hover 5.71 · primary-text on surface 5.25
+ *   blue   light  fg#fff on primary 5.6+ · primary-text on surface 5.6+
+ *   blue   dark   fg#fff on primary 5.2+ · primary-text #60a5fa on surface 5.2+
+ *   emerald light fg#fff on primary 5.4+ · primary-text on surface 5.4+
+ *   emerald dark  fg#04231a on primary 4.94 · on hover 6.29 · primary-text #34d399 on surface 6.9+
+ *   amber  light  fg#fff on primary 5.63 · on hover 7.49 · primary-text on surface 5.63
+ *   amber  dark   fg#231503 on primary 8.29 · on hover 10.66 · primary-text #fbbf24 on surface 8.2+
+ */
+
+[data-palette='indigo'] {
+  /* baseline, see tokens.css */
+}
+
+[data-palette='blue'] {
+  --color-primary: var(--p-blue-700);
+  --color-primary-hover: var(--p-blue-800);
+  --color-primary-text: var(--p-blue-700);
+  --color-focus-ring: var(--p-blue-600);
+}
+
+[data-palette='blue'][data-theme='dark'] {
+  --color-primary: var(--p-blue-600);
+  --color-primary-hover: var(--p-blue-700);
+  --color-primary-text: var(--p-blue-400);
+  --color-focus-ring: var(--p-blue-300);
+}
+
+[data-palette='emerald'] {
+  --color-primary: var(--p-emerald-700);
+  --color-primary-hover: var(--p-emerald-800);
+  --color-primary-text: var(--p-emerald-700);
+  --color-focus-ring: #059669;
+}
+
+[data-palette='emerald'][data-theme='dark'] {
+  --color-primary: var(--p-emerald-550);
+  --color-primary-hover: var(--p-emerald-450);
+  --color-primary-fg: var(--p-emerald-950);
+  --color-primary-text: var(--p-emerald-300);
+  --color-focus-ring: #6ee7b7;
+}
+
+[data-palette='amber'] {
+  --color-primary: var(--p-amber-750);
+  --color-primary-hover: var(--p-amber-800);
+  --color-primary-text: var(--p-amber-750);
+  --color-focus-ring: #b45309;
+}
+
+[data-palette='amber'][data-theme='dark'] {
+  --color-primary: var(--p-amber-500);
+  --color-primary-hover: var(--p-amber-400);
+  --color-primary-fg: var(--p-amber-950);
+  --color-primary-text: var(--p-amber-400);
+  --color-focus-ring: var(--p-amber-400);
+}

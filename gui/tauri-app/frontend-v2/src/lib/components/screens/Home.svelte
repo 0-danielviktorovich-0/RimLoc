@@ -71,8 +71,10 @@
   }
 
   .home-title {
+    font-family: var(--font-heading);
     font-size: var(--text-heading-size);
     font-weight: var(--text-heading-weight);
+    letter-spacing: var(--heading-tracking);
     margin: 0 0 var(--space-6);
   }
 
@@ -103,23 +105,39 @@
     gap: var(--space-2);
     text-align: left;
     min-height: 148px;
-    transition: border-color var(--motion-fast), box-shadow var(--motion-fast);
+    box-shadow: var(--shadow-card);
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-out);
   }
 
   .entry-card:hover {
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+    box-shadow: var(--shadow-hover);
+    transform: var(--card-hover-transform);
+  }
+
+  .entry-card:active {
+    transform: var(--btn-press-transform);
   }
 
   .card-icon {
-    color: var(--color-primary);
+    color: var(--card-icon-fg);
+    background: var(--card-icon-bg);
+    padding: var(--card-icon-pad);
+    border-radius: var(--card-icon-radius);
     display: inline-flex;
+    /* Keep the icon chip hug-content even when it carries a filled background. */
+    align-self: flex-start;
     margin-bottom: var(--space-2);
   }
 
   .card-title {
+    font-family: var(--font-heading);
     font-size: 16px;
     font-weight: 600;
+    letter-spacing: var(--heading-tracking);
   }
 
   .card-desc {

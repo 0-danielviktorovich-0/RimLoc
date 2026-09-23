@@ -1,0 +1,13 @@
+/*
+ * Density axis: [data-density="comfortable|compact"] on <html>.
+ * Re-points the density scale only (row height, table font, control heights,
+ * table paddings). Click targets: >= 32px in comfortable (spec §1.4); compact
+ * intentionally tightens in-table controls to 28px — the workspace table is
+ * the dense working surface, chrome controls stay at 32px.
+ */
+[data-density='compact'] {
+  --row-height: 32px;
+  --row-font-size: 12.5px;
+  --row-lh: 1.35;
+  --control-h: 28px;
+}

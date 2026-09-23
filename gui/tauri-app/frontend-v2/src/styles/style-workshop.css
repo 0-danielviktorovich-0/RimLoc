@@ -1,0 +1,59 @@
+/*
+ * Style direction: WORKSHOP — тёплые тактильные поверхности, характер
+ * моддерской мастерской. Профессиональный инструмент, НЕ RimWorld-брендинг:
+ * ни логотипов, ни игровых ассетов — только тёплая материальная палитра,
+ * чуть более крупные радиусы и заметное тактильное нажатие.
+ *
+ * Contrasts verified (see tokens.css header):
+ *   light: fg #29231a on bg 12.9 · on surface 14.4; muted-fg #5f5647 on
+ *   surface 6.9 / on muted 6.0; primary-text (amber #a1520a) on surface 5.6.
+ *   dark:  fg #f4eee1 on bg 13.0 · on surface 11.2; muted-fg #b3a78f on
+ *   surface 6.5 / on muted 5.2.
+ */
+
+[data-style='workshop'] {
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --btn-press-transform: translateY(1px);
+  --card-icon-pad: 6px;
+  --card-icon-radius: 8px;
+  --row-accent: var(--color-primary);
+  --nav-active-bg: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+[data-style='workshop'][data-theme='light'] {
+  --color-bg: #f6f1e7;
+  --color-fg: #29231a;
+  --color-surface: #fffdf9;
+  --color-surface-fg: #29231a;
+  --color-muted: #efe7d8;
+  --color-muted-fg: #5f5647;
+  --color-border: #e4daca;
+  --color-border-strong: #cfc2a9;
+  --color-header: #fbf7ee;
+  /* orphan dot keeps AA on the warm surface */
+  --color-status-orphan: #6b6154;
+  /* slightly deepened amber warning for the warm light surface (3.2:1 dot) */
+  --color-status-untranslated: #9a4a09;
+  --color-warning: #9a4a09;
+  --shadow-card: 0 1px 3px rgb(72 56 32 / 8%), 0 6px 18px rgb(72 56 32 / 6%);
+  --shadow-hover: 0 2px 5px rgb(72 56 32 / 10%), 0 12px 26px rgb(72 56 32 / 12%);
+  --shadow-panel: 0 10px 28px rgb(72 56 32 / 10%);
+}
+
+[data-style='workshop'][data-theme='dark'] {
+  --color-bg: #211c15;
+  --color-fg: #f4eee1;
+  --color-surface: #2b241b;
+  --color-surface-fg: #f4eee1;
+  --color-muted: #383023;
+  --color-muted-fg: #b3a78f;
+  --color-border: #453b2c;
+  --color-border-strong: #5a4d39;
+  --color-header: #272117;
+  --color-status-orphan: #b3a78f;
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 35%), 0 8px 22px rgb(0 0 0 / 25%);
+  --shadow-hover: 0 2px 5px rgb(0 0 0 / 40%), 0 12px 28px rgb(0 0 0 / 35%);
+  --shadow-panel: 0 10px 28px rgb(0 0 0 / 40%);
+}

@@ -1,0 +1,23 @@
+/*
+ * Style direction: PRECISION — Swiss Minimalism доведён до конца.
+ * Baseline semantic tokens in tokens.css ARE precision, so this file re-states
+ * only the character choices (flat, hairline, square-ish, silent) — a no-op
+ * against the baseline kept as documentation of the direction.
+ *
+ * Character: flat surfaces · hairline borders · no gradients · no elevation ·
+ * micro-labels uppercase with tracking · row accent 2px.
+ */
+[data-style='precision'] {
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --shadow-card: none;
+  --shadow-hover: none;
+  --shadow-panel: none;
+  --grad-accent: none;
+  --card-hover-transform: none;
+  --card-icon-pad: 0px;
+  --heading-tracking: normal;
+  --row-accent: var(--color-primary);
+  --color-source-text: var(--color-fg);
+}

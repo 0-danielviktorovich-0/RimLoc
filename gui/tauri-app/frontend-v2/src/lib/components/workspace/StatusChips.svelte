@@ -6,6 +6,7 @@
   import { project } from '../../stores/project.svelte';
   import type { StatusCounts } from '../../stores/project.svelte';
   import type { EntryStatus } from '../../mock/types';
+  import Icon from '../Icon.svelte';
 
   let { counts }: { counts: StatusCounts } = $props();
 
@@ -26,6 +27,7 @@
 </script>
 
 <div class="chips" role="group" aria-label={t('workspace.filter.label')}>
+  <span class="chips-icon" aria-hidden="true"><Icon name="filter" size={14} /></span>
   {#each STATUSES as status (status)}
     <button
       type="button"
@@ -45,24 +47,33 @@
   .chips {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--color-border);
     flex: none;
   }
 
+  .chips-icon {
+    display: inline-flex;
+    color: var(--color-muted-fg);
+  }
+
   .chip {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    min-height: 32px;
+    min-height: var(--control-h);
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     background: var(--color-surface);
     font-size: var(--text-meta-size);
     color: var(--color-fg);
-    transition: border-color var(--motion-fast), background var(--motion-fast);
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      background var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-out);
   }
 
   .chip:hover {
@@ -70,9 +81,14 @@
     background: var(--color-muted);
   }
 
+  /* Press feedback on chips — microinteraction, instant enough to feel direct. */
+  .chip:active {
+    transform: var(--btn-press-transform);
+  }
+
   .chip[aria-pressed='true'] {
     border-color: var(--color-primary);
-    background: var(--color-muted);
+    background: var(--nav-active-bg);
   }
 
   .dot {

@@ -20,6 +20,25 @@
         }
         document.documentElement.dataset.theme = mode;
       })();
+      // Apply persisted style-lab axes before first paint (same anti-flash rule).
+      // Defaults equal the shipped baseline, so production is unaffected.
+      (function () {
+        var allowed = {
+          style: ['precision', 'aurora', 'workshop', 'editorial'],
+          palette: ['indigo', 'blue', 'emerald', 'amber'],
+          density: ['comfortable', 'compact']
+        };
+        var defaults = { style: 'precision', palette: 'indigo', density: 'comfortable' };
+        var el = document.documentElement;
+        for (var axis in allowed) {
+          var v = defaults[axis];
+          try {
+            var saved = localStorage.getItem('rimloc.style.' + axis);
+            if (saved && allowed[axis].indexOf(saved) !== -1) v = saved;
+          } catch (e) { /* storage unavailable */ }
+          el.dataset[axis] = v;
+        }
+      })();
     </script>
   </head>
   <body>

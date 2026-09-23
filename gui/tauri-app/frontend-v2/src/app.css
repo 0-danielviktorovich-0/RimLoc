@@ -1,84 +1,30 @@
 /*
- * Design tokens per docs/development/GUI_DESIGN_SPEC.md §1.
- * Components must only reference these custom properties — raw hex values are forbidden.
+ * Design system entry stylesheet.
+ * Tokens live in ./styles/ (primitive → semantic → component layers, see
+ * tokens.css for the layer map and the verified AA contrast table):
+ *
+ *   1. tokens.css            layers 1-3, baseline = precision/indigo/light+dark
+ *   2. style-precision.css   [data-style] direction overrides (baseline)
+ *   3. style-aurora.css      gradients + selective depth
+ *   4. style-workshop.css    warm tactile surfaces
+ *   5. style-editorial.css   typography-first, SOURCE|TARGET contrast
+ *   6. palettes.css          [data-palette] accent hue swaps (owns --color-primary*)
+ *   7. density.css           [data-density] density scale
+ *
+ * Import order IS the cascade contract: later files win on equal specificity.
+ * Components must only reference custom properties — raw hex values are forbidden.
  *
  * Fonts: system stack for now (task decision). Bundled IBM Plex Sans + JetBrains Mono
  * with full Cyrillic subsets is planned later (spec open question #5).
  */
 
-:root {
-  /* Light theme (reference for contrast checks) */
-  --color-bg: #f8fafc;
-  --color-fg: #0f172a;
-  --color-surface: #ffffff;
-  --color-surface-fg: #0f172a;
-  --color-muted: #f1f5f9;
-  --color-muted-fg: #475569;
-  --color-border: #e2e8f0;
-  --color-border-strong: #cbd5e1;
-  --color-primary: #4f46e5;
-  --color-primary-fg: #ffffff;
-  --color-primary-hover: #4338ca;
-  --color-focus-ring: #2563eb;
-  --color-destructive: #dc2626;
-  --color-status-untranslated: #b45309;
-  --color-status-translated: #15803d;
-  --color-status-todo: #1d4ed8;
-  --color-status-source-changed: #c2410c;
-  --color-status-pending-review: #6d28d9;
-  --color-status-orphan: #64748b;
-
-  /* Typography */
-  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
-  --text-base-size: 14px;
-  --text-base-lh: 1.5;
-  --text-dense-size: 13px;
-  --text-dense-lh: 1.45;
-  --text-meta-size: 12px;
-  --text-meta-lh: 1.4;
-  --text-heading-size: 19px;
-  --text-heading-weight: 600;
-
-  /* Spacing (dense dashboard, 4px base) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-
-  /* Radii */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-
-  /* Motion */
-  --motion-fast: 150ms ease-out;
-  --motion-panel: 200ms ease-out;
-}
-
-[data-theme='dark'] {
-  --color-bg: #0f172a;
-  --color-fg: #f8fafc;
-  --color-surface: #1b2336;
-  --color-surface-fg: #f8fafc;
-  --color-muted: #272f42;
-  --color-muted-fg: #94a3b8;
-  --color-border: #334155;
-  --color-border-strong: #475569;
-  --color-primary: #6366f1;
-  --color-primary-fg: #ffffff;
-  --color-primary-hover: #818cf8;
-  --color-focus-ring: #60a5fa;
-  --color-destructive: #f87171;
-  --color-status-untranslated: #fbbf24;
-  --color-status-translated: #34d399;
-  --color-status-todo: #60a5fa;
-  --color-status-source-changed: #fb923c;
-  --color-status-pending-review: #a78bfa;
-  --color-status-orphan: #94a3b8;
-}
+@import './styles/tokens.css';
+@import './styles/style-precision.css';
+@import './styles/style-aurora.css';
+@import './styles/style-workshop.css';
+@import './styles/style-editorial.css';
+@import './styles/palettes.css';
+@import './styles/density.css';
 
 *,
 *::before,
@@ -137,17 +83,26 @@ button.btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 32px;
+  min-height: var(--control-h);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-surface-fg);
-  transition: background var(--motion-fast), border-color var(--motion-fast);
+  transition:
+    background var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
 }
 
 button.btn:hover {
   background: var(--color-muted);
+}
+
+/* Press feedback: microinteraction, not decoration — the transform variable
+   lets directions tune it (workshop presses deeper, others stay subtle). */
+button.btn:active {
+  transform: var(--btn-press-transform);
 }
 
 button.btn-primary {
@@ -179,11 +134,14 @@ button.btn-primary:hover {
   font-size: var(--text-dense-size);
 }
 
+/* Reduced motion: keep only opacity-free instant state swaps. Transforms
+   (press/lift) and keyframes are silenced entirely. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
+    transform: none !important;
   }
 }
