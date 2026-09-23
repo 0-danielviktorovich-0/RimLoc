@@ -434,6 +434,7 @@ pub fn scan_units_with_defs_and_dict(
 ///   registration — enforced inside `merge_defs_units` (first file owns the
 ///   identity); TKey shares Def semantics (first file wins, in-file
 ///   last-wins per field assignment).
+///
 /// Overridden values are dropped from the authoritative inventory; context
 /// preservation as diagnostics lands with the canonical model (Gate I).
 /// Paths stay case-exact except the already-documented case-insensitive
