@@ -324,3 +324,16 @@ SourceEntry — требование вписано в Gate I.
 | 63309a7 I1 док | A1 | n/a (док) | lead: факты подтверждены (GUI=0×scan_defs_tkey; sourceChanged=placeholder; PoEntry в core) | LANDED |
 | — баг из аудита | A1-находка | — | GUI PO-экспорт терял TKey — ИСПРАВЛЕНО (3b03ff5): GUI зовёт канонический exporter; translate.rs переклассифицирован как output-адаптер | CLOSED |
 | 6101e53 G1 фронт | A2 | npm build + svelte-check 0 + live smoke (агент) + lead build ✓ | lead: 29 файлов только во frontend-v2, 0 invoke/@tauri, мок-сторы | LANDED |
+
+### МАНДАТ: визуальный Style Lab (24.09 ночь) — DAG-записи
+- **G2** · Style Lab + 4 визуальных направления (Precision/Aurora/Workshop/Editorial + wildcard
+  опционально) · зависит: G1 ✓ · P1 (продукт-решение у владельца = USER PRODUCT DECISION) ·
+  риск: низкий (только frontend-v2, изоляция от бэкенда) · владение: D1 (research-доки) /
+  D2 (frontend-v2/**) / D3 (a11y+workspace ревью) · acceptance: живое переключение
+  style/theme/palette/density на ОДНИХ данных; light+dark first-class; WCAG AA; motion-система;
+  dev-only лаборатория (не прод-UI); GUI_STYLE_COMPARISON/GUI_MOTION_SYSTEM/GUI_DESIGN_TOKENS.md ·
+  status: D1+D2 launched
+- **UX-флоуs стабильны** (Home/Onboarding/Workspace/SOURCE|TARGET/фильтры/чипы/контекст-панель):
+  сравниваем ДИЗАЙН-СИСТЕМЫ на одинаковых данных, не IA. Брендинг не копируем — принципы.
+- **Выбор направления** = deliberate USER PRODUCT DECISION: на следующем чекпоинте — пакет
+  выбора (3-4 финалиста + скриншоты + trade-offs + палитры), бэкенд не ждёт.
