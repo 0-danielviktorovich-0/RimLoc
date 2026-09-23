@@ -2512,6 +2512,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
                     a.unit.tkey = Some(rimloc_core::TKeyMeta {
                         strategy: strategy.to_string(),
                         suffix: suffix.to_string(),
+                        def_type: def_tag.to_string(),
                         contexts: a.contexts,
                     });
                 }
@@ -2529,6 +2530,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
                                 tkey: Some(rimloc_core::TKeyMeta {
                                     strategy: strategy.to_string(),
                                     suffix: suffix.to_string(),
+                                    def_type: def_tag.to_string(),
                                     contexts: 1,
                                 }),
                             },
@@ -2605,6 +2607,7 @@ mod tkey_tests {
             &rimloc_core::TKeyMeta {
                 strategy: "bare".into(),
                 suffix: "".into(),
+                def_type: "TipSetDef".into(),
                 contexts: 1
             }
         );
@@ -2614,6 +2617,7 @@ mod tkey_tests {
             &rimloc_core::TKeyMeta {
                 strategy: "slate_ref".into(),
                 suffix: ".slateRef".into(),
+                def_type: "QuestScriptDef".into(),
                 contexts: 1
             }
         );
@@ -2623,6 +2627,7 @@ mod tkey_tests {
             &rimloc_core::TKeyMeta {
                 strategy: "parms_value_slate_ref".into(),
                 suffix: ".value.slateRef".into(),
+                def_type: "QuestScriptDef".into(),
                 contexts: 1
             }
         );

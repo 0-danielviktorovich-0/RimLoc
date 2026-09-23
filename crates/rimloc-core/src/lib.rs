@@ -81,6 +81,9 @@ pub struct TransUnit {
 pub struct TKeyMeta {
     pub strategy: String,
     pub suffix: String,
+    /// Owning Def type (e.g. "QuestScriptDef") — provenance needed to
+    /// reconstruct the DefInjected output location on round-trip.
+    pub def_type: String,
     #[serde(default)]
     pub contexts: u32,
 }
