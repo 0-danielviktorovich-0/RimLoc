@@ -337,3 +337,16 @@ SourceEntry — требование вписано в Gate I.
   сравниваем ДИЗАЙН-СИСТЕМЫ на одинаковых данных, не IA. Брендинг не копируем — принципы.
 - **Выбор направления** = deliberate USER PRODUCT DECISION: на следующем чекпоинте — пакет
   выбора (3-4 финалиста + скриншоты + trade-offs + палитры), бэкенд не ждёт.
+
+### I3/I4-core лендед (24.09 ночь2)
+- **I3 (bdfb3a4)**: persistence POC — versioned JSON (`schema_version` контейнера отделён
+  от домена), атомарная запись, детерминированная сериализация, reject чужих версий;
+  SQLite DEFERRED по evidence (нет query-потребностей), seam = функции store. Тесты:
+  детерминизм, save→load равенство, reject.
+- **I4-core (f128cbf)**: `services::project` — build_project (effective scan + patch-stage
+  provenance + Exact/Potential), apply_existing_translation (канон-матчёр, origin=Imported,
+  без тихой перезаписи, TODO-паритет), write_rimworld_translation (Keyed + DefInjected
+  straight from Project — **workflow A без PO**), provenance_summary. Тест: TKey-suffix
+  вывод из Project.
+- Сабагенты: D1-retry (дизайн-токены/движение) и D2-retry (Style Lab) перезапущены под
+  индивидуал-планом (первые запуски пали по квоте чужого плана); A1/A2/A3 — лендед+ревью.
