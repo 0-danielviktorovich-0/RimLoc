@@ -74,3 +74,49 @@ LoadFolders-модов считает по mod-root; переходит на т�
 с контекстом (версия/языки) при Gate I. Исторические числа снабжаются
 methodology-блоком (inventory_semantics = `canonical-v2-effective-precedence`),
 транспортный schema_version при этом НЕ меняется.
+
+## Exact vs POTENTIAL: различие контекстов (уточнение владельца, 24.09)
+
+Инвентарь обязан честно помечать, ЧТО он представляет:
+
+| Контекст | Вид | Метка |
+|---|---|---|
+| Известны версия + активные моды/DLC/load order (RimSort/modlist) | **EXACT effective view** | authoritative |
+| Только папка мода; `IfModActive`-условия не проверяемы | **POTENTIAL/CONDITIONAL** (superset) | НЕ называется runtime-истиной |
+
+`InventoryContext` (Gate I) несёт, где доступно: target RimWorld version · active DLC ·
+active mods · load order. Off-line политика IfModActive-включения остаётся superset-политикой
+и маркируется POTENTIAL, пока контекст не поднят до EXACT.
+
+### Конвейер источника (каноническая архитектура)
+```
+Raw source → version/LoadFolders effective content → patch-applied effective content
+→ translation eligibility → canonical SourceEntry inventory
+```
+
+### Patch-этап (реализованный ограниченный поднабор)
+**Аудит**: игра применяет патчи к объединённому XML ДО создания дефов
+(GAME_SOURCE_FINDINGS §1.4/8) ⇒ пост-патч Defs = то, что видит переводчик.
+RimLoc сегодня сканирует PRE-patch Defs + text-кандидаты патчей (learn/patches,
+opt-in `with_patches`) — т.е. инвентарь был pre-patch superset'ом.
+**Реализовано** (`services::patches_effect`): `replace`/`add`/`remove` (включая
+`<operations>`-списки и канонический `Class="PatchOperationX"`) с literal-xpath
+`/Defs/Tag[defName="X"]/field…`; add с element-value создаёт новые юниты полей.
+**Классифицировано как unsupported** (счётчик + sample в PatchReport): прочие
+xpath-формы (атрибутные предикаты, `ancestor::`, функции), прочие классы операций
+(TextOperations и т.п.), add к корню /Defs. Unsupported ⇒ coverage=Partial ⇒ вид
+остаётся POTENTIAL — pre-patch данные никогда не выдаются за runtime-истину.
+
+### Порядок файлов — RimLoc stand-in, не игровой контракт
+Runtime НЕ гарантирует порядок перечисления файлов в папке
+(GAME_SOURCE_FINDINGS §1.4: «сортировки по алфавиту нет — порядок определяется ФС»).
+Лексикографический порядок RimLoc — детерминизм для воспроизводимости, а не
+эквивалентность рантайму; для ключей с разным текстом в разных файлах (Keyed)
+поведение RimLoc детерминировано + in-file дубликаты отдаются валидатору как
+диагностика. Claim «exact» для таких случаев не делается.
+
+### Provenance SourceEntry (требование к Gate I)
+Canonical SourceEntry должен уметь объяснить происхождение: raw source ·
+selected version/content root · conditional LoadFolders branch · patch-transformed ·
+overridden source context. В GUI новичку эта сложность не показывается — слой
+диагностики/расширенного контекста переводчика.

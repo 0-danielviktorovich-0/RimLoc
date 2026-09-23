@@ -13,6 +13,7 @@ pub mod keyed_merge;
 pub mod learn;
 pub mod matching;
 pub mod modview;
+pub mod patches_effect;
 pub mod plugins;
 pub mod plugins_json;
 pub mod plugins_msf;
