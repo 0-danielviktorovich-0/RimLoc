@@ -1,7 +1,7 @@
 /// Canonical inventory sourcing for every validator/coverage consumer (B):
-/// delegates to the SAME pipeline as CLI scan (Keyed + Defs via learned/dict
-/// + TKey + DefInjected-path merge). Convenience variants below must never
-/// build a subtly different entry set — see docs/development/CANONICAL_INVENTORY.md.
+/// delegates to the SAME pipeline as CLI scan (Keyed, Defs via learned dict,
+/// TKey and DefInjected-path merge). Convenience variants below must never
+/// build a subtly different entry set (see the canonical inventory doc).
 fn scan_canonical(
     scan_root: &Path,
     defs_root: Option<&Path>,
