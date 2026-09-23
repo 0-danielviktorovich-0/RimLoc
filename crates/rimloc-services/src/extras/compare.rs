@@ -102,6 +102,14 @@ pub fn compare(
         }
     }
     let source_total = source_map.len();
+    // Known TKey identities gate every canonical-suffix fallback (§P1-5):
+    // they come from extraction metadata, never from key shape.
+    let tkey_registry = crate::matching::TKeyRegistry::from_identities(
+        source
+            .iter()
+            .filter(|u| u.tkey.is_some())
+            .map(|u| u.key.clone()),
+    );
 
     // Per set: key -> value map used for coverage/unique keys (first wins).
     let key_maps: Vec<HashMap<String, String>> = sets
@@ -119,15 +127,15 @@ pub fn compare(
         .collect();
 
     let union_covered: BTreeSet<String> = key_maps.iter().flat_map(|m| m.keys().cloned()).collect();
-    // TKey entries: target files carry canonical suffixes (.slateRef/.value.slateRef)
-    // on top of the base `<defName>.<TKey>` identity.
-    let union_covered_canonical: BTreeSet<String> = union_covered
+    // A source key is covered when some target key addresses it exactly or
+    // via a registry-gated canonical variant (known TKey identity only).
+    let union_addressed: BTreeSet<String> = union_covered
         .iter()
-        .map(|k| crate::util::canonical_match_key(k))
+        .filter_map(|t| tkey_registry.identity_for(t))
         .collect();
     let mut uncovered: Vec<String> = source_map
         .keys()
-        .filter(|k| !union_covered.contains(*k) && !union_covered_canonical.contains(*k))
+        .filter(|k| !union_covered.contains(*k) && !union_addressed.contains(*k))
         .cloned()
         .collect();
     uncovered.sort();
@@ -136,7 +144,16 @@ pub fn compare(
     let metrics = sets
         .iter()
         .zip(key_maps.iter())
-        .map(|(set, key_map)| metrics_for_set(set, key_map, &source_map, source_total, glossary))
+        .map(|(set, key_map)| {
+            metrics_for_set(
+                set,
+                key_map,
+                &source_map,
+                &tkey_registry,
+                source_total,
+                glossary,
+            )
+        })
         .collect();
 
     CompareReport {
@@ -151,6 +168,7 @@ fn metrics_for_set(
     set: &CompareInputSet,
     key_map: &HashMap<String, String>,
     source_map: &HashMap<String, String>,
+    tkey_registry: &crate::matching::TKeyRegistry,
     source_total: usize,
     glossary: Option<&BTreeMap<String, String>>,
 ) -> SetMetrics {
@@ -183,10 +201,13 @@ fn metrics_for_set(
         }
 
         // Metrics that require a source counterpart. TKey target entries carry
-        // canonical suffixes; fall back to the base identity.
-        let src = source_map
-            .get(&u.key)
-            .or_else(|| source_map.get(&crate::util::canonical_match_key(&u.key)));
+        // canonical suffixes; the fallback goes through the identity registry
+        // (exact -> proven alias -> known-suffix), never raw shape stripping.
+        let src = source_map.get(&u.key).or_else(|| {
+            tkey_registry
+                .identity_for(&u.key)
+                .and_then(|base| source_map.get(&base))
+        });
         if let Some(src) = src {
             if placeholder_set(src) == placeholder_set(value) {
                 m.placeholder_ok += 1;
@@ -232,8 +253,9 @@ fn metrics_for_set(
                 if source_map.contains_key(k) {
                     Some(k.clone())
                 } else {
-                    let c = crate::util::canonical_match_key(k);
-                    source_map.contains_key(&c).then_some(c)
+                    tkey_registry
+                        .identity_for(k)
+                        .filter(|base| source_map.contains_key(base))
                 }
             })
             .collect();

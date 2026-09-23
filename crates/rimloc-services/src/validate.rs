@@ -288,6 +288,14 @@ pub fn coverage_report(
         rimloc_parsers_xml::scan_all_units(scan_root)?
     };
     use std::collections::HashMap;
+    // Known TKey identities gate the canonical fallback below (§P1-5);
+    // captured before the drain consumes the units.
+    let tkey_registry = crate::matching::TKeyRegistry::from_identities(
+        units
+            .iter()
+            .filter(|u| u.tkey.is_some())
+            .map(|u| u.key.clone()),
+    );
     let mut src: HashMap<String, String> = HashMap::new();
     let mut tgt: HashMap<String, String> = HashMap::new();
     for u in units.drain(..) {
@@ -308,7 +316,11 @@ pub fn coverage_report(
     let source_total = src.len();
     let mut translated = 0usize;
     for (k, _) in src.iter() {
-        let value = tgt.get(k).or_else(|| tgt_canonical.get(k));
+        let value = tgt.get(k).or_else(|| {
+            tkey_registry
+                .identity_for(k)
+                .and_then(|base| tgt_canonical.get(&base))
+        });
         if let Some(v) = value {
             // RimWorld parity (1.6 decompile, LoadedLanguage): a translation
             // equal to the TODO placeholder counts as MISSING, not translated.

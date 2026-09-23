@@ -11,5 +11,13 @@
     <customLetterText TKey="LetterTextSample">
       Sample quest text.
     </customLetterText>
+      <node Class="QuestNode_SubScript">
+      <parms>
+        <li Class="NamedParm">
+          <key>letterText</key>
+          <value TKey="LetterTextParms">Parms-proven quest text.</value>
+        </li>
+      </parms>
+    </node>
   </QuestScriptDef>
 </Defs>
