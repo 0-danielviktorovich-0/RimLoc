@@ -211,3 +211,14 @@ GUI `load_tm` :2789), glossary (`llm/glossary.rs:11`), LLM (`translate.rs:32`) �
 identity · source text · TKey meta · provenance · статусы) — заполняется
 фактами после реализации шага 2; скелет фиксируется здесь, чтобы гейт был
 проверяемым.
+
+## I2-консолидация (24.09, исполнено)
+
+| Копия сборки PO-инвентаря | Вердикт | Действие |
+|---|---|---|
+| `services/export.rs` (GATE A: Keyed+Defs+TKey+TM) | **канон** | KEEP — единственный |
+| GUI `main.rs` inline-копия (теряла TKey) | LEGACY-дубль | **REMOVE** → 3b03ff5 зовёт `export_po_with_tm`; мёртвый хелпер удалён |
+| `cli/translate.rs` ручная PO-эмиссия | ADAPTER (writer переведённого PO над канон-юнитами, не сборка инвентаря) | KEEP, переклассифицирован |
+
+SourceChanged (аудит-находка: не реализован) — модель добавила `Translation.source_changed`
++ `Project.mark_source_changed` (05432de); проводка в K1-пайплайн.
