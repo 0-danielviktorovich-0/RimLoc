@@ -48,7 +48,7 @@ pub use modview::{effective_view, EffectiveModView};
 pub use rimloc_domain::{DiffOutput, HealthIssue, HealthReport};
 pub use scan::{
     autodiscover_defs_context, scan_defs_with_meta, scan_patches_as_units, scan_units,
-    scan_units_auto, scan_units_with_defs, scan_units_with_defs_and_dict,
+    scan_units_auto, scan_units_effective, scan_units_with_defs, scan_units_with_defs_and_dict,
     scan_units_with_defs_and_fields, AutoDefsContext,
 };
 pub use util::canonical_match_key;

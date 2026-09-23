@@ -41,3 +41,36 @@ source=317/translated=144/missing=173 (**45%**) — минус 55 фантомн
 Новый потребитель = вызов канонического входа. Изменение состава инвентаря =
 правка одного пайплайна + строки в этой таблице. GUI никогда не зовёт parsers
 напрямую (кроме keyed-only TM-подсказок в export-потоке, фиксируется в таблице).
+
+## Gate H — эффективный source view (семантика, не чистка дублей)
+
+Правила precedence по декомпилу 1.6 (GAME_SOURCE_FINDINGS §1.4/§1.5/§2.1), применены
+в `services::scan::apply_effective_precedence` + `scan_units_effective`:
+
+| Случай | Правило игры | Реализация |
+|---|---|---|
+| Keyed, дубликат в одном файле | ошибка `Duplicate keyed translation key`, берётся ПЕРВЫЙ | победитель = первый; дубликат сохраняется для диагностики валидатором |
+| Keyed, дубликат между файлами | `SetOrAdd`, побеждает ПОСЛЕДНИЙ загруженный | last-wins по лексикографическому пути (детерминированный стенд-ин для FS-порядка Windows) |
+| DefInjected, дубликат ключа | `SetOrAdd` перезапись | last-wins |
+| Defs, дубликат defName | обе записи в БД, `GetDefSilentFail` берёт первую | first-file-wins по (def_type, key) с сортировкой путей; второй деф целиком вне инвентаря |
+| TKey | Def-семантика (первый файл) + last-wins поля в файле | было в scan_defs_tkey (e4639f7) |
+| Precedence никогда не пересекает языковые пакеты | EN и RU — разные LoadedLanguage | фолд партиционируется по языковой папке |
+| Пути | case-exact везде, кроме About/LoadFolders (case-insensitive resolve) | воспроизведено; LoadFolders-теги парсятся lowercase-толерантно |
+
+LoadFolders: LoadFolders-моды больше не ре-рутятся в `root/<версию>` (терялся Common);
+`scan_units_effective` берёт Languages из effective-директорий и Defs СТРОГО из
+effective-корней версии (IfModActive — по документированной offline-superset политике).
+
+**Real-mod эвиденс (VWE 1814383360, LoadFolders v1.4/1.5/1.6)**: до H скан был union
+(317 юнитов при любой --game-version, Defs версий терялись в merge); после H —
+**195 юнитов @1.5 vs 247 @1.6**, версии дают разные effective-инвентари.
+
+Синтетические регрессии: def first-file-wins (A/B файлы), keyed last-file + in-file
+first с сохранённым дубликатом-диагностикой, LoadFolders-фикстура
+`test/LoadFoldersMod` (Versioned.label выбирается по версии; OnlySixteen только @1.6).
+
+**Известный хвост (Gate I)**: coverage-команда пока без `--game-version` — для
+LoadFolders-модов считает по mod-root; переходит на типизированный inventory-сервис
+с контекстом (версия/языки) при Gate I. Исторические числа снабжаются
+methodology-блоком (inventory_semantics = `canonical-v2-effective-precedence`),
+транспортный schema_version при этом НЕ меняется.

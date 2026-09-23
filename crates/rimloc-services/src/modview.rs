@@ -384,3 +384,11 @@ mod hardening_tests {
         assert_eq!(view.content_dirs, vec![root.join("1.5")]);
     }
 }
+
+/// Best-effort corpus identity: the About.xml packageId, if present.
+pub fn about_package_id(root: &Path) -> Option<String> {
+    let text = std::fs::read_to_string(root.join("About/About.xml")).ok()?;
+    let start = text.find("<packageId>")? + "<packageId>".len();
+    let end = start + text[start..].find("</packageId>")?;
+    Some(text[start..end].trim().to_string())
+}

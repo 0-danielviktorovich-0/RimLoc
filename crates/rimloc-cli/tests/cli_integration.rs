@@ -2076,3 +2076,60 @@ fn tkey_round_trip_export_tm_build_produces_valid_definjected() {
         "{tips}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Gate H evidence: effective RimWorld source precedence.
+// H3 — LoadFolders/version: changing the target version changes the
+// effective winner (real-mod analogue: VWE 1814383360, 195 units @1.5 vs
+// 247 @1.6 — recorded in CANONICAL_INVENTORY.md).
+// ---------------------------------------------------------------------------
+#[test]
+fn loadfolders_scan_is_version_scoped() {
+    let root = fixture("test/LoadFoldersMod");
+    let run = |ver: &str| {
+        let out = run_ok(&[
+            "scan",
+            "--root",
+            root.to_str().unwrap(),
+            "--game-version",
+            ver,
+            "--lang",
+            "English",
+            "--format",
+            "json",
+        ]);
+        let units: Vec<serde_json::Value> = serde_json::from_str(&out.stdout).unwrap();
+        units
+    };
+    let v15 = run("1.5");
+    let v16 = run("1.6");
+
+    let value = |units: &[serde_json::Value], key: &str| -> Option<String> {
+        units
+            .iter()
+            .find(|u| u["key"].as_str() == Some(key))
+            .and_then(|u| u["value"].as_str().map(String::from))
+    };
+
+    // Def identity lives in BOTH version roots; the effective winner is the
+    // requested version's file, not the union and not a sorted accident.
+    assert_eq!(
+        value(&v15, "Versioned.label").as_deref(),
+        Some("Label from 1.5"),
+        "1.5 view: {v15:?}"
+    );
+    assert_eq!(
+        value(&v16, "Versioned.label").as_deref(),
+        Some("Label from 1.6"),
+        "1.6 view: {v16:?}"
+    );
+    // Content dirs not active in 1.5 do not contribute.
+    assert!(value(&v15, "OnlySixteen").is_none(), "1.5 view: {v15:?}");
+    assert_eq!(
+        value(&v16, "OnlySixteen").as_deref(),
+        Some("sixteen-only"),
+        "{v16:?}"
+    );
+    // Common languages stay present in both.
+    assert_eq!(value(&v15, "Greeting").as_deref(), Some("hello"));
+}
