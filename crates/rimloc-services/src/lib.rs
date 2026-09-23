@@ -6,6 +6,7 @@ pub use rimloc_export_po::PoStats as ExportPoStats;
 pub use rimloc_validate::ValidationMessage;
 
 pub mod build;
+pub mod canonical_bridge;
 pub mod export;
 pub mod extras;
 pub mod import;

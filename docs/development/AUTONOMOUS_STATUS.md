@@ -321,5 +321,6 @@ SourceEntry — требование вписано в Gate I.
 | Коммит | Агент | Тесты | Ревью | Статус |
 |---|---|---|---|---|
 | c4384b2+4f9668f+этот (patch stage) | lead | 142/0, clippy 0, VWE | self | landed |
-| (ожидание) I1 док | A1 | n/a (док) | lead-ревью фактов | in-flight |
+| 63309a7 I1 док | A1 | n/a (док) | lead: факты подтверждены (GUI=0×scan_defs_tkey; sourceChanged=placeholder; PoEntry в core) | LANDED |
+| — баг из аудита | A1-находка | — | GUI PO-экспорт теряет TKey-юниты (три копии сборки PO: export.rs/GUI/translate.rs) → фикс в I2 (один exporter) | OPEN→I2 |
 | (ожидание) G1 фронт | A2 | npm build | lead-ревью инвариантов (без бэкенда) | in-flight |
