@@ -418,6 +418,16 @@ pub fn scan_units_with_defs_and_dict(
             });
         }
     }
+    let mut patch_dirs = vec![root.join("Patches")];
+    let mut merged = crate::patches_effect::PatchReport::default();
+    for pd in patch_dirs.drain(..) {
+        if pd.is_dir() {
+            let (u, r) = crate::patches_effect::apply_patch_stage(units, &pd);
+            units = u;
+            merged.merge_from(&r);
+        }
+    }
+    merged.finalize();
     apply_effective_precedence(&mut units);
     Ok(units)
 }
@@ -668,6 +678,19 @@ pub fn scan_units_effective(
             defs_meta,
         );
     }
+    let mut patch_dirs = vec![root.join("Patches")];
+    for dir in view.content_dirs.iter().chain(view.conditional_dirs.iter()) {
+        patch_dirs.push(dir.join("Patches"));
+    }
+    let mut merged = crate::patches_effect::PatchReport::default();
+    for pd in patch_dirs.drain(..) {
+        if pd.is_dir() {
+            let (u, r) = crate::patches_effect::apply_patch_stage(units, &pd);
+            units = u;
+            merged.merge_from(&r);
+        }
+    }
+    merged.finalize();
     apply_effective_precedence(&mut units);
     Ok(units)
 }
