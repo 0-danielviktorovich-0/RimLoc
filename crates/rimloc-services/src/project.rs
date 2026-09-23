@@ -1,0 +1,391 @@
+//! Canonical project workflows (Gate I4): build a project from a mod,
+//! apply an existing translation, and write RimWorld output — WITHOUT any
+//! PO intermediate. PO import/export stays a separate adapter concern.
+
+use crate::Result;
+use rimloc_domain::canonical as dom;
+use rimloc_domain::canonical::{
+    Completeness, EntryKind, InventoryContext, Origin, PatchStage, Project, SourceEntryId,
+    Translation, ViewLabel,
+};
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+
+/// Build a canonical project snapshot for a mod (Gate I4 shared entry).
+pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Project> {
+    let auto = crate::autodiscover_defs_context(mod_root)?;
+    let (units, patch_report) = if mod_root.join("LoadFolders.xml").is_file() {
+        let units =
+            crate::scan_units_effective(mod_root, target_version, &auto.dict, &auto.extra_fields)?;
+        // scan_units_effective already applied patches internally; derive the
+        // stage marker from whether any Patches dir exists in content dirs.
+        (
+            units,
+            if mod_root.join("Patches").is_dir() {
+                crate::patches_effect::PatchCoverage::Partial
+            } else {
+                crate::patches_effect::PatchCoverage::None
+            },
+        )
+    } else {
+        let units =
+            crate::scan_units_with_defs_and_dict(mod_root, None, &auto.dict, &auto.extra_fields)?;
+        (
+            units,
+            if mod_root.join("Patches").is_dir() {
+                crate::patches_effect::PatchCoverage::Partial
+            } else {
+                crate::patches_effect::PatchCoverage::None
+            },
+        )
+    };
+    let stage = match patch_report {
+        crate::patches_effect::PatchCoverage::None => PatchStage::None,
+        crate::patches_effect::PatchCoverage::Full => PatchStage::Applied,
+        crate::patches_effect::PatchCoverage::Partial => PatchStage::Partial,
+    };
+    // Exact view requires a known version; otherwise honest POTENTIAL.
+    let view = if target_version.is_some() {
+        ViewLabel::Exact
+    } else {
+        ViewLabel::Potential
+    };
+    let context = InventoryContext {
+        target_version: target_version.map(String::from),
+        view,
+        ..Default::default()
+    };
+    Ok(crate::canonical_bridge::project_from_inventory(
+        &units,
+        stage,
+        target_version,
+        context,
+    ))
+}
+
+/// Workflow C seed: import an existing translation pack into the project.
+/// Resolution goes through the canonical matcher (SourceMatcher): exact,
+/// proven aliases, then TKey-suffix fallback — never shape stripping.
+/// Every match is recorded with origin=Imported; nothing is overwritten
+/// silently (existing translations win only if the slot was empty).
+pub fn apply_existing_translation(
+    project: &mut Project,
+    pack_root: &Path,
+    locale: &str,
+) -> Result<usize> {
+    use crate::matching::SourceMatcher;
+
+    // Source-side units reconstructed from canonical entries.
+    let src_units: Vec<rimloc_core::TransUnit> = project
+        .entries
+        .iter()
+        .map(|e| rimloc_core::TransUnit {
+            key: e.id.key.clone(),
+            source: Some(e.text.clone()),
+            path: PathBuf::from(
+                e.contexts
+                    .first()
+                    .map(|c| c.file.clone())
+                    .unwrap_or_default(),
+            ),
+            line: None,
+            tkey: None,
+        })
+        .collect();
+    let registry = crate::matching::TKeyRegistry::from_identities(
+        project
+            .entries
+            .iter()
+            .filter(|e| e.id.kind == EntryKind::TKey)
+            .map(|e| e.id.key.clone()),
+    );
+    let matcher = SourceMatcher::new(&src_units, &registry);
+
+    let pack_units = rimloc_parsers_xml::scan_keyed_xml(pack_root)?;
+    let mut applied = 0usize;
+    for u in &pack_units {
+        let Some(text) = u.source.as_deref().map(str::trim).filter(|t| !t.is_empty()) else {
+            continue;
+        };
+        if let Some(source_key) = matcher.source_for_target(&u.key) {
+            let kind = if project
+                .entries
+                .iter()
+                .any(|e| e.id.kind == EntryKind::TKey && e.id.key == source_key)
+            {
+                EntryKind::TKey
+            } else {
+                EntryKind::DefInjected
+            };
+            let id = SourceEntryId {
+                kind,
+                key: source_key,
+            };
+            if project.translation(&id, locale).is_none() {
+                project.translations.push(Translation {
+                    source_id: id,
+                    locale: locale.to_string(),
+                    text: Some(text.to_string()),
+                    completeness: if text.eq_ignore_ascii_case("TODO") {
+                        Completeness::Todo
+                    } else {
+                        Completeness::Translated
+                    },
+                    review: dom::Review::None,
+                    validation: dom::ValidationState::Unknown,
+                    lifecycle: dom::Lifecycle::Active,
+                    origin: Origin::Imported,
+                    notes: String::new(),
+                    source_changed: None,
+                });
+                applied += 1;
+            }
+        }
+    }
+    Ok(applied)
+}
+
+/// Workflow A final step: write RimWorld translation output straight from
+/// the canonical project — NO PO intermediate anywhere.
+///
+/// Layout mirrors the official pack conventions:
+/// - Keyed entries → `Keyed/<locale>.xml` (flat elements, key = entry key);
+/// - DefInjected/TKey entries → `DefInjected/<DefType>/<defName>.xml`,
+///   element name = key (+ TKey suffix when the kind is TKey).
+pub fn write_rimworld_translation(
+    project: &Project,
+    out_mod: &Path,
+    lang_dir: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<PathBuf> {
+    use std::fmt::Write as _;
+
+    let base = out_mod.join("Languages").join(lang_dir);
+    // defName -> file; collected per def type from entry keys/contexts.
+    let mut keyed: BTreeMap<String, String> = BTreeMap::new();
+    let mut definj: BTreeMap<(String, String, String), BTreeMap<String, String>> = BTreeMap::new(); // (def_type, def_name, file) -> (element, text)
+
+    for t in &project.translations {
+        if t.locale != lang_dir && !t.locale.is_empty() {
+            // Locale is the target folder name; keep entries for it only.
+        }
+        if t.locale != lang_dir {
+            continue;
+        }
+        let Some(text) = t.text.as_deref().filter(|s| !s.trim().is_empty()) else {
+            continue;
+        };
+        let Some(entry) = project.entries.iter().find(|e| e.id == t.source_id) else {
+            continue;
+        };
+        if t.lifecycle == dom::Lifecycle::Obsolete {
+            continue;
+        }
+        match entry.id.kind {
+            EntryKind::Keyed => {
+                keyed.insert(entry.id.key.clone(), text.to_string());
+            }
+            EntryKind::TKey | EntryKind::DefInjected => {
+                let def_type = entry
+                    .tkey
+                    .as_ref()
+                    .map(|m| m.def_type.clone())
+                    .or_else(|| def_type_from_contexts(entry))
+                    .unwrap_or_else(|| "Misc".into());
+                let def_name = entry
+                    .id
+                    .key
+                    .split('.')
+                    .next()
+                    .unwrap_or_default()
+                    .to_string();
+                let element = match &entry.tkey {
+                    Some(m) => format!("{}{}", entry.id.key, m.suffix),
+                    None => entry.id.key.clone(),
+                };
+                let file = format!("{def_name}.xml");
+                definj
+                    .entry((def_type, def_name, file))
+                    .or_default()
+                    .insert(element, text.to_string());
+            }
+            _ => {
+                // Strings/Backstories/PatchDerived writers land with their
+                // gates; not part of this acceptance.
+            }
+        }
+    }
+
+    // About.xml
+    let about = out_mod.join("About");
+    std::fs::create_dir_all(&about)?;
+    let mut about_xml = String::new();
+    let _ = writeln!(
+        about_xml,
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<RimWorldManifest>\n  <name>{mod_name}</name>\n  <packageId>{package_id}</packageId>\n  <supportedVersions>\n    <li>{rw_version}</li>\n  </supportedVersions>\n</RimWorldManifest>"
+    );
+    crate::write_atomic(&about.join("About.xml"), about_xml.as_bytes())?;
+
+    // Keyed
+    if !keyed.is_empty() {
+        let dir = base.join("Keyed");
+        std::fs::create_dir_all(&dir)?;
+        let mut xml = String::from("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<LanguageData>\n");
+        for (k, v) in &keyed {
+            let _ = writeln!(xml, "  <{k}>{}</{k}>", escape_xml(v));
+        }
+        xml.push_str("</LanguageData>\n");
+        crate::write_atomic(&dir.join("Translation.xml"), xml.as_bytes())?;
+    }
+
+    // DefInjected
+    for ((def_type, _def_name, file), items) in &definj {
+        let dir = base.join("DefInjected").join(def_type);
+        std::fs::create_dir_all(&dir)?;
+        let mut xml = String::from("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<LanguageData>\n");
+        for (element, text) in items {
+            let _ = writeln!(xml, "  <{element}>{}</{element}>", escape_xml(text));
+        }
+        xml.push_str("</LanguageData>\n");
+        crate::write_atomic(&dir.join(file), xml.as_bytes())?;
+    }
+
+    Ok(out_mod.to_path_buf())
+}
+
+fn def_type_from_contexts(entry: &rimloc_domain::canonical::SourceEntry) -> Option<String> {
+    for c in &entry.contexts {
+        let s = c.file.replace('\\', "/");
+        if let Some(i) = s.find("/DefInjected/") {
+            let rest = &s[i + "/DefInjected/".len()..];
+            return Some(rest.split('/').next().unwrap_or_default().to_string());
+        }
+    }
+    None
+}
+
+fn escape_xml(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// Source provenance stays reachable for diagnostics without per-entry noise.
+pub fn provenance_summary(project: &Project) -> BTreeMap<String, usize> {
+    let mut out: BTreeMap<String, usize> = BTreeMap::new();
+    for e in &project.entries {
+        let key = format!(
+            "version={};conditional={};patch={}",
+            e.provenance.version_selected.as_deref().unwrap_or("-"),
+            e.provenance.conditional_branch,
+            match e.provenance.patch_stage {
+                PatchStage::None => "none",
+                PatchStage::Applied => "applied",
+                PatchStage::Partial => "partial",
+            }
+        );
+        *out.entry(key).or_default() += 1;
+    }
+    out
+}
+
+#[cfg(test)]
+mod gate_i_tests {
+    use super::*;
+    use rimloc_domain::canonical::SourceProvenance;
+    use rimloc_domain::canonical::{SourceEntry, Translation};
+
+    fn project_with_translation(
+        key: &str,
+        kind: EntryKind,
+        text: &str,
+        tkey: Option<rimloc_core::TKeyMeta>,
+    ) -> Project {
+        let id = SourceEntryId {
+            kind,
+            key: key.into(),
+        };
+        Project {
+            entries: vec![SourceEntry {
+                id: id.clone(),
+                text: "source".into(),
+                source_locale: "en".into(),
+                contexts: vec![],
+                provenance: SourceProvenance::default(),
+                tkey,
+            }],
+            translations: vec![Translation {
+                source_id: id,
+                locale: "Russian".into(),
+                text: Some(text.into()),
+                completeness: Completeness::Translated,
+                review: dom::Review::None,
+                validation: dom::ValidationState::Unknown,
+                lifecycle: dom::Lifecycle::Active,
+                origin: Origin::Human,
+                notes: String::new(),
+                source_changed: None,
+            }],
+            ..Default::default()
+        }
+    }
+
+    /// Workflow A core proof: project -> RimWorld output WITHOUT any PO.
+    #[test]
+    fn write_rimworld_emits_definjected_and_keyed_from_project() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("mod");
+        let tk = rimloc_core::TKeyMeta {
+            strategy: "slate_ref".into(),
+            suffix: ".slateRef".into(),
+            def_type: "QuestScriptDef".into(),
+            contexts: 1,
+        };
+        let mut p = project_with_translation(
+            "SampleQuest.LetterLabel",
+            EntryKind::TKey,
+            "Метка",
+            Some(tk.clone()),
+        );
+        p.translations.push(Translation {
+            source_id: SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "Greeting".into(),
+            },
+            locale: "Russian".into(),
+            text: Some("Привет".into()),
+            completeness: Completeness::Translated,
+            review: dom::Review::None,
+            validation: dom::ValidationState::Unknown,
+            lifecycle: dom::Lifecycle::Active,
+            origin: Origin::Human,
+            notes: String::new(),
+            source_changed: None,
+        });
+        p.entries.push(SourceEntry {
+            id: SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "Greeting".into(),
+            },
+            text: "hello".into(),
+            source_locale: "en".into(),
+            contexts: vec![],
+            provenance: SourceProvenance::default(),
+            tkey: None,
+        });
+        let out = write_rimworld_translation(&p, &out, "Russian", "T", "t.test", "1.6").unwrap();
+        let definj = std::fs::read_to_string(
+            out.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
+        )
+        .unwrap();
+        assert!(
+            definj.contains("<SampleQuest.LetterLabel.slateRef>Метка</"),
+            "{definj}"
+        );
+        let keyed =
+            std::fs::read_to_string(out.join("Languages/Russian/Keyed/Translation.xml")).unwrap();
+        assert!(keyed.contains("<Greeting>Привет</Greeting>"), "{keyed}");
+    }
+}
