@@ -577,3 +577,194 @@ mod gate_i4_acceptance {
         assert!(quest_b.contains("<SampleQuest.LetterLabelFavorReceiver.slateRef>Метка услуги<"));
     }
 }
+
+/// Maintenance pipeline (Gate K): after the source mod updated, rebuild the
+/// effective inventory and compare per canonical identity. Translations whose
+/// source text changed are flagged (sourceChanged + Pending review); new
+/// source identities become plain untranslated entries; vanished identities
+/// keep their translations but are marked obsolete in diagnostics count.
+/// Nothing is deleted — user work is preserved (mandate 4 §3).
+pub fn detect_source_changes(
+    project: &mut Project,
+    updated_mod_root: &Path,
+    target_version: Option<&str>,
+) -> Result<SourceChangeReport> {
+    let fresh = build_project(updated_mod_root, target_version)?;
+    let mut report = SourceChangeReport::default();
+
+    let fresh_by_key: std::collections::HashMap<&str, &rimloc_domain::canonical::SourceEntry> =
+        fresh
+            .entries
+            .iter()
+            .map(|e| (e.id.key.as_str(), e))
+            .collect();
+    let old_by_key: std::collections::HashMap<&str, &rimloc_domain::canonical::SourceEntry> =
+        project
+            .entries
+            .iter()
+            .map(|e| (e.id.key.as_str(), e))
+            .collect();
+
+    // 1. Changed source text for translated entries.
+    for t in &mut project.translations {
+        if t.text.is_none() {
+            continue;
+        }
+        if let Some(old_entry) = old_by_key.get(t.source_id.key.as_str()) {
+            match fresh_by_key.get(t.source_id.key.as_str()) {
+                Some(new_entry) => {
+                    if new_entry.text != old_entry.text && t.source_changed.is_none() {
+                        t.source_changed = Some("source text changed".into());
+                        t.review = dom::Review::Pending;
+                        report.source_changed += 1;
+                    }
+                }
+                None => {
+                    t.lifecycle = dom::Lifecycle::Obsolete;
+                    report.obsolete += 1;
+                }
+            }
+        }
+    }
+
+    // 2. New source identities -> fresh untranslated entries in the project.
+    // Owned keys end the borrow of project.entries before we push into it.
+    let old_keys: std::collections::HashSet<String> =
+        old_by_key.keys().map(|k| k.to_string()).collect();
+    for e in &fresh.entries {
+        if !old_keys.contains(&e.id.key) {
+            let mut entry = e.clone();
+            entry.provenance.version_selected = target_version
+                .map(String::from)
+                .or_else(|| entry.provenance.version_selected.clone());
+            project.entries.push(entry);
+            report.new_source += 1;
+        }
+    }
+
+    // 3. Reusable: translations whose source text is unchanged stay as-is.
+    report.reusable = project
+        .translations
+        .iter()
+        .filter(|t| t.text.is_some() && t.source_changed.is_none())
+        .count();
+
+    Ok(report)
+}
+
+/// Classification result of a source update (mandate 4 §3).
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct SourceChangeReport {
+    pub reusable: usize,
+    pub source_changed: usize,
+    pub new_source: usize,
+    pub obsolete: usize,
+}
+
+#[cfg(test)]
+mod gate_k_tests {
+    use super::*;
+    use rimloc_domain::canonical::SourceProvenance;
+    use rimloc_domain::canonical::{
+        Completeness, EntryKind, Origin, Project, SourceEntry, SourceEntryId,
+    };
+
+    fn entry(key: &str, text: &str) -> SourceEntry {
+        SourceEntry {
+            id: SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: key.into(),
+            },
+            text: text.into(),
+            source_locale: "en".into(),
+            contexts: vec![],
+            provenance: SourceProvenance::default(),
+            tkey: None,
+        }
+    }
+
+    /// A source text change flags the translation for review; unchanged work
+    /// stays reusable; a vanished identity becomes obsolete; nothing is lost.
+    #[test]
+    fn source_update_classifies_translations() {
+        let updated = tempfile::tempdir().unwrap();
+        let defs = updated.path().join("Defs");
+        std::fs::create_dir_all(&defs).unwrap();
+        std::fs::write(
+            defs.join("K.xml"),
+            r#"<Defs><ThingDef><defName>A</defName><label>CHANGED text</label></ThingDef>
+  <ThingDef><defName>C</defName><label>brand new</label></ThingDef>
+  <ThingDef><defName>D</defName><label>untouched</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        // Disable patches dir interference: none exists.
+
+        let mut p = Project::default();
+        // A: translated, source changed now.
+        p.entries.push(entry("A.label", "old text"));
+        // B: translated, source vanished.
+        p.entries.push(entry("B.label", "gone source"));
+        // C: new identity (added below by detector).
+        p.entries.push(entry("D.label", "untouched"));
+
+        p.update_translation(
+            SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "A.label".into(),
+            },
+            "Russian",
+            Some("старый перевод".into()),
+            Origin::Human,
+        );
+        p.update_translation(
+            SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "B.label".into(),
+            },
+            "Russian",
+            Some("перевод осиротел".into()),
+            Origin::Human,
+        );
+        p.update_translation(
+            SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "D.label".into(),
+            },
+            "Russian",
+            Some("не трогать".into()),
+            Origin::Human,
+        );
+
+        let report = detect_source_changes(&mut p, updated.path(), None).unwrap();
+        assert_eq!(report.source_changed, 1, "{report:?}");
+        assert_eq!(report.new_source, 1, "{report:?}");
+        assert_eq!(report.obsolete, 1, "{report:?}");
+        assert!(report.reusable >= 1, "{report:?}");
+
+        let a = p
+            .translation(
+                &SourceEntryId {
+                    kind: EntryKind::Keyed,
+                    key: "A.label".into(),
+                },
+                "Russian",
+            )
+            .unwrap();
+        assert!(a.source_changed.is_some());
+        assert_eq!(a.review, dom::Review::Pending);
+        assert_eq!(
+            p.translation(
+                &SourceEntryId {
+                    kind: EntryKind::Keyed,
+                    key: "B.label".into()
+                },
+                "Russian"
+            )
+            .unwrap()
+            .lifecycle,
+            dom::Lifecycle::Obsolete
+        );
+        // Old translation text preserved even though source changed.
+        assert_eq!(a.text.as_deref(), Some("старый перевод"));
+    }
+}
