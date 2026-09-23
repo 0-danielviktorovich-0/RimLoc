@@ -19,8 +19,19 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 - 5 first-party фикстур в testlab/fixtures-official/ с PROVENANCE.md (только парсинг-регрессия, не переводческий корпус — лицензия Ludeon-репо не объявлена)
 - Формат нестабилен даже в официальных репо (BOM ±, CRLF/LF) — парсер обязан быть толерантным
 
-**В полёте:**
-- GAME_SOURCE_FINDINGS.md — load semantics + категории Translation Report из декомпила 1.6 (агент 343921f1) → после получения: validate-правила по категориям отчёта (§C) + RIMWORLD_REFERENCE_AUDIT.md (§H)
+**GAME_SOURCE_FINDINGS.md — готов (декомпил DLL 1.6.4871, не community-2018):** 13 категорий TranslationReport дословно; load rules (Languages из каждой content-папки, li descending+дедуп, Keyed last-wins, регистронезависимые теги, фолбэк ≤); TKey-система (1.6-новое). Поправки: отчёт пишется на Desktop; Backstories legacy мёртв.
+
+**RIMWORLD_REFERENCE_AUDIT.md (§H) — создан** (0e01c74): иерархия источников, маппинг 13 категорий → подсистемы RimLoc (✓/частично/✗ с приоритетами), 3 задокументированных расхождения «документация vs рантайм».
+
+**ВЕРСИОННАЯ ПОЛИТИКА (мандат Даниэля):** 1.6 — primary tested target; 1.5/1.4 — compatibility; старше — best-effort без заявлений о поддержке. Резолвер принимает явную версию (modview + resolve_game_version_root); union-скан — только явный `--include-all-versions` (maintenance-режим), по умолчанию всегда версия-скоупед. **`rimloc version-diff --from --to`** (ddaf141): unchanged/changed/new/removed + review-очередь, JSON/MD; на реальном VWE 1.5→1.6 = 317 unchanged. Project-level target version = `game_version` в rimloc.toml (уже был) + Auto (latest ≤).
+
+**Следующие задачи (по приоритету):**
+1. И2-E GUI Svelte 5 — крупнейший незакрытый кусок (редактор SOURCE|TARGET, i18n ru/en, E2E tauri-driver)
+2. P2 из reference audit: NoTranslate-атрибуты, TKey-пути, TODO-семантика в coverage, поле-не-найдено валидация — каждая с фикстурой
+3. WordInfo-генератор (ru/uk/de capability) с missing-WordInfo диагностикой (§F)
+4. И2-F acceptance 2+ кейса (поправка: отчёт на Desktop) → Pass A/B → финал
+
+**И2 завершённые фазы (архив):**
 
 **Дальше (по завершении субагентов):**
 1. Интегрировать находки → docs/development/RIMWORLD_REFERENCE_AUDIT.md (§H, provenance-классификация)
