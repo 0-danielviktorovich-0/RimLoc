@@ -27,6 +27,14 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 
 **АРХИТЕКТУРНЫЙ ГЕЙТ (каноническая проектная модель)**: PO → adapter, не внутреннее состояние. Аудит PO-зависимостей → CANONICAL_PROJECT_MODEL.md; каноническая модель SourceEntry/TranslationUnit/(Project/LanguagePair/status/provenance); TKey round-trip как архитектурный тест; персистентность по evidence (не SQLite-ради-SQLite); GUI/LLM/TM/MCP — только от канонических сервисов; fidelity-матрица адаптеров; недеструктивная миграция. «Если архитектура УЖЕ удовлетворяет — задокументировать доказательство, не переписывать».
 
+
+## P1-ПРОГРЕСС (И3-GATE): фундамент резолвера готов (fdd3076), интеграция — следующая
+
+- **ГОТОВО**: services::matching::SourceMatcher — ЕДИНЫЙ резолвер (P1-6): exact→TKey-fallback ТОЛЬКО для известных TKey-идентичностей (P1-5), детерминированный мультивариантный выбор (P1-7: non-TODO предпочтение, сортировка), 3 теста. 120 тестов зелёные.
+- **СЛЕДУЮЩИЙ КОММИТ (интеграция)**: coverage_report → SourceMatcher (замена tgt_exact/tgt_canonical словарей; TODO-правило через resolve); compare metrics/uncovered-sample/placeholder/glossary → тот же резолвер (P1-6 частично остался); валидаторы cross-language → SourceMatcher (P1-3); P1-4 регрессии A-D через CLI coverage на test/TKeyMod + Languages/Russian/DefInjected TKey-suffixed цели.
+- **ПОТОМ**: P1-2 round-trip (TransUnit.tkey_suffix additive + import-po writer .slateRef/.value.slateRef/bare по типу узла; проверка по 208 Royalty узлам — субагент DLC-adjudication в полёте); P1-1 unify (scan_units_auto += TKey); P2-8 external defs_root; P2-11 TKey с 1.1 (НЕ 1.6!) — исправить доки; P2-12 противоречия аудита; P2-9 audit-script hardening.
+- **АРХИТЕКТУРНЫЙ ГЕЙТ** (каноническая модель, PO=adapter): аудит → CANONICAL_PROJECT_MODEL.md; «если уже удовлетворяет — задокументировать доказательство».
+
 ## LATEST — SUPPLEMENT БАНДЛ ГОТОВ (50f9483 → cf60ee7) + inventory-аудит 22 команд
 
 - **Supplement**: `~/Developing/_rimloc-review/RimLoc-TKey-50f9483-to-cf60ee7-supplement.zip` (20 файлов; SHA-256 `6d22fcfc92fa0b17d96585a364dd03cec3e767a7c18f0508e99f84c7292bcf26`; sha256-файл проверен shasum -c OK). COVERAGE-TKEY-FOLLOWUP.md: дефект (coverage = путь B scan_all_units* без TKey; scan/translate/compare = путь A с TKey), фикс в КОРНЕ семейства пути B (все потребители автоматически), полная таблица аудита 22 CLI-команд.
