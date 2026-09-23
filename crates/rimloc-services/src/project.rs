@@ -433,7 +433,7 @@ mod gate_i4_acceptance {
 
         let out_a = tmp.path().join("out-a");
         write_rimworld_translation(
-            &mut clone_of(&project),
+            &project,
             &out_a,
             "Russian",
             "T",
