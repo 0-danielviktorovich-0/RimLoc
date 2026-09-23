@@ -347,3 +347,14 @@ help-compare-out-md = Save Markdown report to file
 help-compare-format = Output format when printing to stdout: text | json
 compare-json-saved = JSON report saved to { $path }
 compare-md-saved = Markdown report saved to { $path }
+
+# version-diff
+help-version-diff-about = Compare the translatable source inventory of two RimWorld versions of a mod
+help-version-diff-root = Path to the RimWorld mod root
+help-version-diff-from = Source version (e.g. 1.5)
+help-version-diff-to = Target version (e.g. 1.6)
+help-version-diff-format = Output format when printing to stdout: text | json
+help-version-diff-out-json = Save JSON report to file
+help-version-diff-out-md = Save Markdown report to file
+vdiff-json-saved = JSON report saved to { $path }
+vdiff-md-saved = Markdown report saved to { $path }
