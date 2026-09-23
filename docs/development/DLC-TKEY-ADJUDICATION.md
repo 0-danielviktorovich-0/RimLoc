@@ -2,8 +2,8 @@
 
 **Дата**: 2026-09-23 · **Скоуп**: TKey-узлы Defs всех корней, сопоставление с официальным RU, дубли Royalty, суффикс-правило.
 **Данные**: `/Applications/RimWorld.app/Data/{Core,Royalty,Ideology,Biotech,Anomaly,Odyssey}/Defs` (READ-ONLY, не менялись).
-**Официальный RU**: тары `Russian (Русский).tar` из той же установки, распакованы в `/tmp/adjudic-ru/<root>/`. Для всех шести корней официальный RU есть в установке — репо `/tmp/RimWorld-ru` не понадобился.
-**Инструмент**: сканер `/tmp/adjudic/tkey_scan.py` (xml.etree, методика `testlab/scripts/tkey_audit.py`: узлы с непустым текстом; canonical-фоллбэк — снятие `.value.slateRef`/`.slateRef`), машинный отчёт `/tmp/adjudic/tkey-report.json`.
+**Официальный RU**: тары `Russian (Русский).tar` из той же установки; первоначально распакованы в `/tmp/adjudic-ru/<root>/` (временный путь), теперь воспроизводимо — `testlab/scripts/tkey_population_reconcile.py` сам распаковывает в `testlab/run/official-ru-extract/<root>/`.
+**Инструменты**: сканер `/tmp/adjudic/tkey_scan.py` (исходная методика, временный путь) и — **воспроизводимая замена** — `testlab/scripts/tkey_population_reconcile.py` с отчётом `testlab/reports/tkey-population-reconcile.json`; методика `testlab/scripts/tkey_audit.py` (узлы с непустым текстом; canonical-фоллбэк — снятие `.value.slateRef`/`.slateRef`).
 **Калибровка**: на Core сканер воспроизвёл известный эталон точно — 112 узлов / 112 пар, 90 exact + 22 canonical (20 `.slateRef` + 2 `.value.slateRef`), 0 unmatched. Методике доверять можно.
 
 Пути ниже — относительно `/Applications/RimWorld.app/Data/`, если не указано иное.
@@ -23,6 +23,19 @@
 | **Итого** | **360** | **358** | **350** | **8** | | | |
 
 Разница «узлов всего» vs «с текстом» = 2 TKey-контейнера без собственного текста в Royalty (см. §5). Counts Core/Royalty/Ideology/Biotech/Anomaly/Odyssey = 112/208/3/5/3/27, всего 358 — совпадают с зафиксированными в `RIMWORLD_REFERENCE_AUDIT.md`.
+
+## 1.1. Авторитетные определения популяций (single source of truth)
+
+Числа 358, 351 и 343 — не противоречащие замеры, а **разные популяции одного корпуса**. Единственное определение (воспроизводится `testlab/scripts/tkey_population_reconcile.py`, машинный отчёт `testlab/reports/tkey-population-reconcile.json`):
+
+| # | Популяция | Определение | Всего |
+|---|---|---|---|
+| P1 | **Raw TKey nodes** | каждый XML-узел с атрибутом `TKey` в Defs-дереве принадлежащего Def'а | **360** |
+| P2 | **Translatable TKey nodes** | P1 ∩ {defName-владелец непуст} ∩ {собственный непустой текст} | **358** |
+| P3 | **Unique logical identities** | уникальные пары `(defName, TKey)` внутри P2 (несколько узлов могут делить идентичность — см. §5) | **350** |
+| P4 | **Serialization-tested** | идентичности, чей кандидат `<defName>.<TKey>{,․slateRef,․value.slateRef}` найден в официальном RU: 351 узел / **343 идентичности** | **343 из 350** |
+
+Исключения на каждом шаге перечислены машинно в отчёте: P1→P2 теряет ровно 2 textless-контейнера (`PawnLend.DutyRulesAny/Royal`, §6); P3→P4 не сматчивает ровно **7 идентичностей** — 4 Royalty gap + 3 Odyssey structural-addressed (§4). Любой другой документ с TKey-числами обязан ссылаться на эти определения или использовать их имена.
 
 ## 2. Сопоставление с официальным RU (per root)
 
@@ -111,7 +124,7 @@ Exact-пару дают только `TipSetDef` (`li`-узлы): 90+20+3+5+3+6 
 1. **Правило идентичности подтверждено на DLC**: идентичность TKey-узла = `(defName, TKey)`; дедуп при скане обязателен и достаточен (8/8 дублей Royalty имеют одну RU-запись; случай «один узел — много RU-записей» не встречается ни разу).
 2. **Суффикс-правило подтверждено и уточнено** (351 узел / 343 пары сматчены без единого исключения): `TipSetDef li` → без суффикса; parms-потомок `QuestNode_SubScript` → `.value.slateRef`; остальной QuestScriptDef (включая `value` QuestNode_Set и `rules` RulePack) → `.slateRef`. Суффикс — функция контекста, не тега.
 3. **Новое знание против Core-эталона**: официальный RU может адресовать TKey-узел структурным путём (`root.nodes.…` с именами по Class) — Odyssey, 3 пары. Matcher'у нужен structural-алиас (или статус `sourceChanged`/`pending-review` вместо ложного `unmatched`), иначе Odyssey-подобные паки будут «терять» перевод.
-4. **3 пары официального RU действительно нет** (§4) — это легитимный кейс `untranslated`, фикстура на него нужна.
+4. **4 пары официального RU действительно нет** (§4: Util_SpawnSiteThreat ×2, ThreatReward_Infestation_ItemPod ×1, EndGame_RoyalAscent ×1) — легитимный кейс `untranslated`, фикстура на него нужна. Вместе с 3 Odyssey structural это ровно 7 unmatched-идентичностей из §1.1.
 
 ### Регрессионные фикстуры (минимальные сниппеты из реальных данных)
 
