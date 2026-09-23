@@ -432,15 +432,7 @@ mod gate_i4_acceptance {
         let project = crate::project_store::load_project(&project_file).unwrap();
 
         let out_a = tmp.path().join("out-a");
-        write_rimworld_translation(
-            &project,
-            &out_a,
-            "Russian",
-            "T",
-            "t.a",
-            "1.6",
-        )
-        .unwrap();
+        write_rimworld_translation(&project, &out_a, "Russian", "T", "t.a", "1.6").unwrap();
         let quest_a = std::fs::read_to_string(
             out_a.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
         )
