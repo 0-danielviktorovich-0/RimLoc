@@ -91,6 +91,35 @@ fn is_version_directory(path: &Path) -> bool {
         .is_some()
 }
 
+/// True when About/supportedVersions explicitly declares the version. Protects
+/// against typos while allowing flat mods to honor a configured game version.
+fn flat_mod_supports_version(base: &Path, requested: &str) -> bool {
+    let about = base.join("About").join("About.xml");
+    let Ok(content) = fs::read_to_string(&about) else {
+        return false;
+    };
+    let Some(block) = content.find("<supportedVersions>").and_then(|start| {
+        let rest = &content[start..];
+        content[start..]
+            .find("</supportedVersions>")
+            .map(|end| &rest[..end])
+    }) else {
+        return false;
+    };
+    // <li>1.5</li> entries; exact match on the requested string.
+    let mut from = 0usize;
+    while let Some(a) = block[from..].find("<li>").map(|i| i + from) {
+        let Some(b) = block[a..].find("</li>").map(|i| i + a) else {
+            break;
+        };
+        if block[a + 4..b].trim() == requested {
+            return true;
+        }
+        from = b;
+    }
+    false
+}
+
 pub fn resolve_game_version_root(
     base: &Path,
     requested: Option<&str>,
@@ -112,10 +141,10 @@ pub fn resolve_game_version_root(
                 .and_then(|s| s.to_str())
                 .map(|s| s.to_string());
             return Ok((path, name));
-        } else if entries.is_empty() {
-            // The mod has no versioned layout at all (flat mod with only
-            // supportedVersions in About.xml): the configured game version is
-            // moot — the root layout is the only one there is.
+        } else if entries.is_empty() && flat_mod_supports_version(base, req) {
+            // Flat mod (no versioned folders) that explicitly declares the
+            // requested version in About/supportedVersions: the root layout is
+            // the only one there is.
             return Ok((base.to_path_buf(), None));
         } else {
             return Err(color_eyre::eyre::eyre!(
