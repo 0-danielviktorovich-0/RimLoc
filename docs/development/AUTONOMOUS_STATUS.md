@@ -396,3 +396,14 @@ indigo/comfortable), 4 направления визуально различи�
 - **§27**: Keyed/DefInjected/TKey не главная навигация для новичков — user-oriented grouping,
   техтипы в Advanced/Structure.
 - **§28**: имплементация против моков/адаптеров; глубокая привязка — только после фриза.
+
+### J-контракт лендед (69e9163) — lead-владение, имплементация wiring → воркер
+`rimloc-domain/eligibility`: Decision/Authority/Evidence/Conflict/Verdict + декларативная
+схема Rule (селекторы defType/fieldPath/packageId/entryKind + provenance, БЕЗ исполнения
+кода) + лестница PRECEDENCE (FirstPartyAttr → AssemblyMetadata → BuiltIn → Community →
+User → ProjectOverride → ReferencePack → Heuristic → AiProposal) + детерминированный
+resolve() с конфликтами-диагностикой и финальностью Deterministic-NON_TRANSLATABLE
+(NoTranslate-защита). AI = AiProposal, не правда. Тесты: прецедент/финальность/unknown.
+**Дальше (воркер)**: движок поверх контракта — seed из текущих словарей/allowlist как
+BuiltInRule-пак, explain-API, подключение в scan_canonical (I2 InventoryContext), AI-адъюдикация
+по structural fingerprints (позже), TRANSLATION_ELIGIBILITY.md.
