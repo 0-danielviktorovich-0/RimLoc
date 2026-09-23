@@ -1,0 +1,189 @@
+/*
+ * Design tokens per docs/development/GUI_DESIGN_SPEC.md §1.
+ * Components must only reference these custom properties — raw hex values are forbidden.
+ *
+ * Fonts: system stack for now (task decision). Bundled IBM Plex Sans + JetBrains Mono
+ * with full Cyrillic subsets is planned later (spec open question #5).
+ */
+
+:root {
+  /* Light theme (reference for contrast checks) */
+  --color-bg: #f8fafc;
+  --color-fg: #0f172a;
+  --color-surface: #ffffff;
+  --color-surface-fg: #0f172a;
+  --color-muted: #f1f5f9;
+  --color-muted-fg: #475569;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-primary: #4f46e5;
+  --color-primary-fg: #ffffff;
+  --color-primary-hover: #4338ca;
+  --color-focus-ring: #2563eb;
+  --color-destructive: #dc2626;
+  --color-status-untranslated: #b45309;
+  --color-status-translated: #15803d;
+  --color-status-todo: #1d4ed8;
+  --color-status-source-changed: #c2410c;
+  --color-status-pending-review: #6d28d9;
+  --color-status-orphan: #64748b;
+
+  /* Typography */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --text-base-size: 14px;
+  --text-base-lh: 1.5;
+  --text-dense-size: 13px;
+  --text-dense-lh: 1.45;
+  --text-meta-size: 12px;
+  --text-meta-lh: 1.4;
+  --text-heading-size: 19px;
+  --text-heading-weight: 600;
+
+  /* Spacing (dense dashboard, 4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Motion */
+  --motion-fast: 150ms ease-out;
+  --motion-panel: 200ms ease-out;
+}
+
+[data-theme='dark'] {
+  --color-bg: #0f172a;
+  --color-fg: #f8fafc;
+  --color-surface: #1b2336;
+  --color-surface-fg: #f8fafc;
+  --color-muted: #272f42;
+  --color-muted-fg: #94a3b8;
+  --color-border: #334155;
+  --color-border-strong: #475569;
+  --color-primary: #6366f1;
+  --color-primary-fg: #ffffff;
+  --color-primary-hover: #818cf8;
+  --color-focus-ring: #60a5fa;
+  --color-destructive: #f87171;
+  --color-status-untranslated: #fbbf24;
+  --color-status-translated: #34d399;
+  --color-status-todo: #60a5fa;
+  --color-status-source-changed: #fb923c;
+  --color-status-pending-review: #a78bfa;
+  --color-status-orphan: #94a3b8;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-ui);
+  font-size: var(--text-base-size);
+  line-height: var(--text-base-lh);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: var(--color-surface-fg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+}
+
+button.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-surface-fg);
+  transition: background var(--motion-fast), border-color var(--motion-fast);
+}
+
+button.btn:hover {
+  background: var(--color-muted);
+}
+
+button.btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-primary-fg);
+}
+
+button.btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+/* Visually hidden but exposed to assistive tech. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-dense-size);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
