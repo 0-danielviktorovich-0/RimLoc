@@ -210,3 +210,21 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
 **P1-3 (3ea0e19)**: coverage_report и compare гейтят canonical-фоллбэк через реестр (форма `identity_for`), shape-stripping без гейта устранён в coverage+compare. **P1-4**: test/TKeyMod расширен (parms-узел + RU DefInjected на 3 суффикс-формы); CLI-регрессии: coverage 5/4/4/1 (4 TKey сматчены, ordinary label — missing), scan эмитит parms-стратегию.
 
 **Далее**: P1-2 остаток (import-po writer строит путь из key+TKeyMeta.suffix; e2e round-trip фикстуры), P1-1 unify scan-вариантов, P2-8 (scan_defs_tkey внешний defs_dir), canonical project-model audit → затем GUI RC (ui-ux-pro-max → Svelte 5).
+
+## BACKEND GATE CHECKLIST (A–L, по именам — авторитетный остаток; обновлять по мере работы)
+| # | Задача | Статус | Эвиденс |
+|---|--------|--------|---------|
+| A | TKey output/round-trip end-to-end (writer по TKeyMeta, 4 стратегии, мульти-контексты) | **ACTIVE** — метадата/реестр/стратегии готовы (e4639f7); writer+e2e — впереди | e4639f7; §1.1 adjudication |
+| B | Каноническая унификация inventory/сервисов (+таблица consumer×capability) | **OPEN** | — |
+| C | TKey-aware кросс-язычные валидаторы на каноническом матчёре | **OPEN** (coverage/compare гейт готовы, placeholders/orphans/sourceChanged — нет) | 3ea0e19 |
+| D | Полнота coverage/consumer-регрессий | **PARTIAL** — A/B-кейсы есть; C (TODO→missing) и D (absent→missing) добавить | 3ea0e19 |
+| E | Внешний `--defs-dir` TKey-поведение + регрессия | **OPEN** | — |
+| F | Hardening аудит-скриптов (tmp-каталоги, воспроизводимость) | **OPEN** (reconcile-скрипт уже самодостаточен) | b29ef68 |
+| G | Доки/комментарии: TKey с 1.1, 1.6 = primary tested | **OPEN** | — |
+| H | Effective RimWorld load precedence (Def first-wins / Keyed last-wins / версии / DLC) | **OPEN** | — |
+| I | Каноническая project model / persistence / адаптеры (Mandate 2) | **OPEN** | — |
+| J | Eligibility/knowledge архитектура (Mandate 3) | **OPEN** | — |
+| K | Existing-translation maintenance (Mandate 4 §1–7) | **OPEN** | — |
+| L | Contributor/debugging/observability (Mandate 4 §8–39) | **OPEN** | — |
+
+Порядок: A→B→C→D→E→F→G→H → I → J → K → L → freeze → delta-бандл. GUI-дизайн/моки — параллельно, без привязки к legacy-состоянию.

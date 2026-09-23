@@ -42,3 +42,146 @@ P0 security/data-loss/broken-core → P1 major correctness/real-mod/severe UX �
 
 ## Parallelism
 Subagents on Flash models per Daniel's policy; git worktrees for disjoint tasks; explicit file/crate ownership; one architectural hotspot at a time; mandatory integration review before merge; subagent output not trusted blindly.
+
+## BACKEND STABILIZATION GATE — кумулятивная координация (мандаты 2026-09-23 вечер)
+
+Все мандаты ниже **кумулятивны** к предыдущим. Это НЕ четыре независимых редизайна —
+ОДИН связный DAG вокруг канонической архитектуры. Приоритет исполнения:
+
+1. корректность/P1-фиксы независимого ревью (остатки) →
+2. TKey round-trip + канонический матчёр/инвентарь →
+3. точная effective-семантика контента RimWorld →
+4. каноническая типизированная project/source/translation модель →
+5. PO в роль адаптера →
+6. Eligibility/Knowledge Engine в канонический инвентарь →
+7. first-class поддержка существующих переводов (maintenance) →
+8. contributor/debugging/observability фундамент →
+9. фриз бэкенд-контрактов →
+10. глубокая интеграция Svelte GUI →
+11. продолжение одобренной GUI/product/pass-A/pass-B/public-release кампании.
+
+Параллелить только неконфликтное: GUI-дизайн/визуал/i18n/onboarding/моки идут
+пока бэкенд стабилизируется; НЕ привязывать постоянное GUI-состояние к legacy
+PO-центричным структурам до принятия бэкенд-гейта (граница сервис/адаптер или моки).
+
+**Не переделывать сделанное**: популяции 360/358/350/351/343, машинный reconcile,
+7 unmatched, TKeyMeta, контекстные стратегии, дубль-контексты Royalty, TKeyRegistry,
+exact-first+алиасы+гейт суффикса, coverage/compare матчёр, TKey-фикстура CLI-регрессии —
+ЗАКРЫТО с эвиденсом (44fd9ac); не переоткрывать без новых противоречий.
+
+### Нормализованный остаток независимого ревью — по ИМЕНАМ (A–L, авторитетный чек-лист)
+Ведётся в AUTONOMOUS_STATUS.md; статусы OPEN/ACTIVE/BLOCKED/DONE с коммитом/эвиденсом.
+A. TKey output/round-trip сериализация end-to-end (writer по TKeyMeta, все 4 стратегии;
+   одна логическая идентичность → один primary output + алиасы + мульти-контексты)
+B. каноническая унификация inventory/сервисов (scan/coverage/compare/validate/word-info/
+   translate/GUI/MCP — одно определение «все записи»; машиночитаемая таблица consumer ×
+   {entrypoint, effective-mod, version, TKey, eligibility, language, exceptions})
+C. TKey-aware кросс-язычные валидаторы (placeholders/lists/orphans/sourceChanged —
+   канонический матчёр; порядок exact → typed alias → allowed fallback → ambiguity/
+   no-match; alias≠orphan; настоящий .slateRef не алиасится; ambiguity = диагностика)
+D. полнота прямых coverage/consumer-регрессий (кейсы A .slateRef/B .value.slateRef —
+   есть; C TODO→missing, D absent→missing — добавить)
+E. внешний `--defs-dir` в scan_defs_tkey (ходит по root, фильтр starts_with) + регрессия
+F. hardening аудит-скриптов (временные каталоги, без stale /tmp, полные нормализованные
+   сравнения, воспроизводимость)
+G. устаревшие доки/комментарии: TKey существует с 1.1 (май 2020), 1.6 = primary tested
+H. effective RimWorld load precedence: Common/версии/LoadFolders/Def first-wins/
+   Keyed last-wins/дубли полей/зависимости-DLC/path-case; authoritative источник = тот,
+   что реально берёт игра; перекрытые контексты = диагностика (не «union как source»)
+I. каноническая project model / persistence / адаптеры (см. Mandate 2)
+J. eligibility/knowledge архитектура (см. Mandate 3)
+K. existing-translation maintenance/import (см. Mandate 4 §1–7)
+L. contributor/debugging/observability инфраструктура (см. Mandate 4 §8–39)
+
+### MANDATE 2 — каноническая проектная модель / формат-адаптеры (кратко)
+Цель: типизированная каноническая внутренняя модель, независимая от PO/JSON/XLIFF/GUI/CLI.
+PO = interchange-адаптер, НЕ внутреннее состояние. Слои: RimWorld-адаптеры → effective
+content resolver → eligibility/schema engine → канонический SourceEntry-инвентарь →
+Project/Translation state → TM/глоссарий/LLM/валидация/diff/wordinfo → сервис-слой →
+GUI/CLI/MCP → выходные адаптеры (RimWorld/PO/JSON/XLIFF). ОДНА доменная модель.
+- Сначала АУДИТ реального дата-флоу из кода (не по памяти) → CANONICAL_PROJECT_MODEL.md;
+  классификация зависимостей DOMAIN/ADAPTER/TRANSPORT/LEGACY × KEEP/MIGRATE/REMOVE.
+- SourceEntry: стабильная identity (target-независимая!), EntryKind семейства Keyed/
+  DefInjected/TKey/Strings-RulePack/Backstories/Patch-derived (структурная типизация по
+  поведению), source locale, мульти-контексты, location/version/provenance/hash,
+  serialization metadata (TKey), валидационные поля.
+- Translation: source_entry_id + target locale + text + status + provenance + notes +
+  validation + sourceChanged + origin (human/TM/LLM/imported). Статусы: UNTRANSLATED/
+  TRANSLATED/TODO/SOURCE_CHANGED/PENDING_REVIEW/INVALID-ORPHAN/OBSOLETE/AMBIGUOUS —
+  размерности (completeness/review/validation/lifecycle) вместо одного гигантского enum,
+  если так чище по реальным workflow.
+- TKey round-trip = обязательный модельный тест (весь цикл). Effective content = часть
+  source provenance. Source-адаптеры (Mod/Core/DLC/LanguagePack) кормят одну модель.
+- JSON machine format: явная схема+версия (не случайный serde-вывод). XLIFF: оценить,
+  если bounded — сделать, иначе DEFERRED с границей адаптера. CSV — только под реальный
+  workflow с честной матрицей потерь.
+- Persistence: по evidence (SQLite/файлы/manifest+db), портируемость/экспорт обязателен.
+  TM/глоссарий/LLM/валидация — на канонических юнитах, pair-scoped, без обязательного PO.
+  GUI: update_translation(entry_id, locale, text). CLI: те же сервисы. MCP: напрямую
+  сервисы. Fidelity-матрица FULL/PARTIAL/LOST/N.A. — фактическая.
+- Миграция по шагам без big-bang, обратная совместимость версионируется; acceptance:
+  no-PO workflow (scan→project→MockProvider→validate→build) + PO-interop workflow +
+  reopen/recovery; после гейта — фриз контрактов.
+
+### MANDATE 3 — adaptive eligibility/knowledge (кратко)
+Цель: максимум детерминированной корректности, минимум AI. ОДИН eligibility-компонент
+в каноническом инвентаре (никаких отдельных «AI-сканеров»). Возврат TRANSLATABLE/
+NON_TRANSLATABLE/REVIEW/UNKNOWN + структурированный evidence; explainability (decision/
+authority/evidence/rule); классы уверенности DETERMINISTIC/VERIFIED/STRONG_INFERENCE/
+HEURISTIC/UNKNOWN (без фейковых процентов).
+- Версионная translation schema из first-party семантики (MustTranslate/NoTranslate/
+  TranslationHandle) для 1.6; кастомные моды: metadata-only статический инспекшн
+  сборок (БЕЗ исполнения кода; untrusted input; негативные тесты).
+- Прецедент знаний: first-party → assembly metadata → verified schema → built-in →
+  verified community → user → project → reference evidence → эвристики → AI-пропозалы;
+  явный NoTranslate не перекрывается эвристикой/AI молча.
+- Словари/allowlist = кэш/совместимость, не единственный источник правды. Unknown
+  строковые поля НЕ теряются молча: структурные fingerprint'ы (packageId+DefType+path+…
+  → одна задача, не 500 AI-вызовов), POTENTIALLY TRANSLATABLE/TECHNICAL/UNKNOWN на
+  review; adversarial-тесты на технические строки (defName/packageId/пути/классы/URL).
+- Reference mining: blind inventory → reveal reference → unexplained target →
+  классификация REAL MISS/OBSOLETE/GENERATED/ALIAS/INVALID/VERSION SKEW; reference
+  НЕ утекает в слепые замеры. AI adjudication: маленький evidence-бандл, structured
+  output (TRANSLATE/DO_NOT_TRANSLATE/UNCERTAIN + reason), кэш по fingerprint+версиям,
+  платные API только с разрешения; AI = proposal, промоушен-лестница project→user→
+  community candidate→verified; декларативные rule-паки (селекторы/решения/provenance,
+  БЕЗ исполнения кода), конфликты диагностируемы. «Teach RimLoc» GUI-концепт;
+  explain API; agent evidence API; `localization-audit` для авторов модов (DLL-строки —
+  диагностика, defer если шумно). Фикстуры unknown-модов A–I; ре-модный бенчмарк после
+  изменений (misses/false positives/unknown/resolution split). Доки: TRANSLATION_ELIGIBILITY.md.
+
+### MANDATE 4 — existing-translation maintenance / contributor / observability (кратко)
+- Issue #2 = обычный пользовательский workflow «продолжить существующий перевод»:
+  source + существующий пак → import → канонический матчинг → сохранить валидную работу
+  → классификация REUSABLE/SOURCE_CHANGED/NEW/OBSOLETE/ORPHAN/AMBIGUOUS/UNKNOWN/
+  GENERATED → редактирование → validate → build. GUI: «Translate a new mod» vs
+  «Open existing translation». Provenance импорта (human/tool/AI/unknown). Dry-run
+  для деструктивных операций. Интеграция с version-diff/sourceChanged, без второго
+  движка обновлений. Референс-майнинг = продвинутый побочный бонус. Реальные кейсы
+  A–F (полный/частичный/старый/obsolete/алиасы-TKey/чужой инструмент).
+- Contributor quality: лестница TIER 0–5 (compile → unit → integration/fixtures →
+  реальные моды → GUI E2E → изолированный RimWorld) с матрицей «изменение → минимальный
+  tier»; real bug → minimized fixture → regression; security-матрица негативных кейсов
+  (path traversal/malformed/oversized/unsafe URL/секреты/arbitrary rule); coverage =
+  поддержка, не вендетта; `cargo xtask verify` (--changed/--full/--real-mods/--security/
+  --release), кроссплатформенно; Contributor skill для vibe-coder'а (issue→evidence PR),
+  инспекция существующих AI-OS скиллов перед созданием (не дублировать), lazy discovery;
+  evidence contract (7 вопросов). Non-programmer E2E-упражнение.
+- Observability: structured logs (operation id/stage/counters/timing, без секретов),
+  correlation IDs, user-facing ошибки (что случилось/что изменилось/что дальше),
+  `rimloc doctor` + GUI «Diagnose», sanitized support bundle (report/diagnostics/
+  environment/reproduction/логи/фикстура, manifest; redaction ключей/путей/авторских
+  модов), «Copy for AI» (reproduce-first промпт), GitHub-issue-friendly значения,
+  GUI semantic automation (roles/names/WebDriver/фикстуры/MockProvider), safe test mode
+  (без privileged backdoor), failure artifacts, root-cause дисциплина, perf по замерам.
+  Доки: CONTRIBUTOR_TEST_STRATEGY.md, DEBUGGING_OBSERVABILITY.md.
+
+### BACKEND FREEZE ACCEPTANCE (до глубокой привязки GUI)
+Один канонический инвентарь · корректный effective source view · типизированный TKey
+round-trip · все кросс-язычные потребители на каноническом матчёре · импорт существующих
+переводов сохраняет работу · PO не обязателен внутри · канонический project state ·
+identity target-независима · мульти-контексты · eligibility объясним · unknown
+представим · расширения безопасны · регрессии зелёные · ре-модный корпус без регрессий.
+После гейта — компактный DELTA-бандл для финального ChatGPT-ревью (только дифф от
+прошлого чекпоинта + перечисленные артефакты), GUI-работа продолжается параллельно.
+Никогда: push/release/stash-delete/branch-delete.
