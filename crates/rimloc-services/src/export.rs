@@ -69,6 +69,40 @@ pub fn export_po_with_tm(
         }
     }
 
+    // TKey units (QuestScriptDefs/TipSetDefs/... — system present since
+    // RimWorld 1.1): the logical identity `<defName>.<TKey>` serializes to
+    // `<defName>.<TKey><suffix>` inside `DefInjected/<DefType>/<defName>.xml`.
+    // The typed metadata (strategy/suffix/def_type) drives the target path —
+    // the writer never guesses from key shape.
+    if let Ok(tkey_units) = rimloc_parsers_xml::scan_defs_tkey(scan_root, None) {
+        for u in tkey_units {
+            let Some(meta) = u.tkey else { continue };
+            let Some(text) = u.source.clone().filter(|t| !t.trim().is_empty()) else {
+                continue;
+            };
+            let def_name = u.key.split('.').next().unwrap_or_default().to_string();
+            if def_name.is_empty() || meta.def_type.is_empty() {
+                continue;
+            }
+            let target_key = format!("{}{}", u.key, meta.suffix);
+            let target_path = scan_root
+                .join("Languages")
+                .join(&src_dir)
+                .join("DefInjected")
+                .join(&meta.def_type)
+                .join(format!("{def_name}.xml"));
+            english_map
+                .entry(target_key.clone())
+                .or_insert_with(|| rimloc_core::TransUnit {
+                    key: target_key,
+                    source: Some(text),
+                    path: target_path,
+                    line: None,
+                    tkey: Some(meta),
+                });
+        }
+    }
+
     let mut filtered: Vec<_> = english_map.into_values().collect();
     filtered.sort_by(|a, b| {
         (

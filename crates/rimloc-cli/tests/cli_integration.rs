@@ -2000,3 +2000,76 @@ fn scan_emits_tkey_metadata_strategies_on_tkey_fixture() {
     assert!(keys.contains(&"SampleQuest.LetterTextParms"), "{keys:?}");
     assert!(keys.contains(&"SampleTips.DismissLetters"), "{keys:?}");
 }
+
+// ---------------------------------------------------------------------------
+// P1-2 TKey round-trip (gate A): source Defs TKey -> PO with proven target
+// paths -> TM-prefilled build -> correct DefInjected output for all three
+// serialization strategies (bare / .slateRef / .value.slateRef).
+// ---------------------------------------------------------------------------
+#[test]
+fn tkey_round_trip_export_tm_build_produces_valid_definjected() {
+    let root = fixture("test/TKeyMod");
+    let tmp = tempfile::TempDir::new().unwrap();
+    let po = tmp.path().join("rt.po");
+    let out_mod = tmp.path().join("rt-mod");
+
+    run_ok(&[
+        "export-po",
+        "--root",
+        root.to_str().unwrap(),
+        "--out-po",
+        po.to_str().unwrap(),
+        "--tm-root",
+        root.join("Languages/Russian").to_str().unwrap(),
+    ]);
+    run_ok(&[
+        "build-mod",
+        "--po",
+        po.to_str().unwrap(),
+        "--out-mod",
+        out_mod.to_str().unwrap(),
+        "--lang",
+        "ru",
+        "--name",
+        "TKey RT",
+        "--package-id",
+        "rt.tkey.test",
+        "--rw-version",
+        "1.6",
+        "--lang-dir",
+        "Russian",
+    ]);
+
+    let quest = std::fs::read_to_string(
+        out_mod.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
+    )
+    .unwrap();
+    // Proven serialization paths, not guessed shapes:
+    assert!(
+        quest.contains("<SampleQuest.LetterLabelFavorReceiver.slateRef>Метка услуги</"),
+        "{quest}"
+    );
+    assert!(
+        quest.contains("<SampleQuest.LetterTextParms.value.slateRef>Пармс-текст.</"),
+        "{quest}"
+    );
+    assert!(
+        quest.contains("<SampleQuest.LetterTextSample.slateRef>Текст квеста.</"),
+        "{quest}"
+    );
+    // TODO placeholder survives the round-trip as TODO.
+    assert!(
+        quest.contains("<SampleQuest.ExpiryTip.slateRef>TODO</"),
+        "{quest}"
+    );
+
+    let tips = std::fs::read_to_string(
+        out_mod.join("Languages/Russian/DefInjected/TipSetDef/SampleTips.xml"),
+    )
+    .unwrap();
+    // Bare strategy: no suffix for TipSetDef li.
+    assert!(
+        tips.contains("<SampleTips.DismissLetters>Подсказки"),
+        "{tips}"
+    );
+}
