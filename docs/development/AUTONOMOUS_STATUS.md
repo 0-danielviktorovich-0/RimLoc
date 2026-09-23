@@ -3,7 +3,28 @@
 Session: `zcode-rc-campaign` · Updated: 2026-09-23 (после Ф3) · **Не пушить — вся работа локально.**
 Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stash diff, логи).
 
-## Текущее состояние — ИТЕРАЦИЯ 2 (progress: 104 теста, 2 субагента в полёте)
+## Текущее состояние — ИТЕРАЦИЯ 2 ЗАВЕРШЕНА → И3 (PRODUCT & PUBLIC RELEASE, мандат A–AP)
+
+**Чекпоинт И2 (проверен): 114/0 тестов, clippy/deny чисто, HEAD 2e0f799+, дерево чисто, пуша нет.**
+Кумулятив И2: слепой бенчмарк (adjudication: 0 реальных миссов) · provenance (Gemini-AI пак; OW.RU.* = RimLangKit-конвейер) · многоязычный промпт · матрица конкурентов v2 · first-party аудит (13 категорий TranslationReport из декомпила DLL 1.6) · modview (LoadFolders) · version-diff · TODO-семантика · capability-aware WordInfo (`rimloc word-info`) · whole-game (Core EN 11549 / RU 16681 / 93%). Блокер: локальная LLM запрещена (ресурсы), платные API не авторизованы; GLM Flash через ZCode = разрешённый zero-cost путь для семантического бенчмарка (§20 мандата).
+
+## И3 — ФАЗЫ ПО §AO (строгий порядок, не менять без причины)
+1. **GUI RC** (И2-E переносится сюда): Svelte 5 + TS, «Translate a mod» beginner-кнопка (§B), progressive disclosure 3 слоя (§C), first-run onboarding 3-5 экранов (§D), UI i18n ru/en (§F), редактор SOURCE|TARGET, E2E tauri-driver, полный GUI-джорни без CLI-fallback, Windows=first-class (§G), plain-language copy (§E)
+2. **Функциональные Pass A/B** (§35/36 предыдущего мандата)
+3. **Beginner-player UX acceptance** (§27)
+4. **Repo/docs hardening**: README=продуктовая лендинг (§I), docs-IA по аудиториям (§H), SECURITY.md реальный (§L), CONTRIBUTING (§M), CoC (§N), AGENTS-рефактор + nested (§O), CHANGELOG чистка (§P), SUPPORT.md (§T), issue/PR-формы (§S), позиционирование «RimWorld Localization Workstation» (AU)
+5. **Agent/CLI skill hardening**: agent-friendly CLI (§V: JSON/exit-codes/--non-interactive), RimLoc AI USER SKILL (§U, ≠ AGENTS.md), MCP thin adapter если останется scope (§X)
+6. **WordInfo/MCP** — по остатку
+7. **Branch cleanup audit** → BRANCH_CLEANUP.md (§Q/AL, без удалений до одобрения)
+8. **Release engineering**: единый release-authority (§AT/Y), Codecov (§AQ: llvm-cov, flags rust/frontend, patch-gate), security-аудит workflows (§AS: SHA-pin, OIDC, без || true в гейтах), RELEASE_ENGINEERING.md (§AM)
+9. **Cross-platform RC** (§AA/AB): Win/macOS/Linux артефакты + smoke, signing prepared-not-faked (§AC), SBOM/attestations (§AD)
+10. **Release notes + PUBLIC_RELEASE_READINESS.md** (§AE/AF/AN), RimSort-interop → RIMSORT_INTEROP.md (§AV, не блокирует), community testing plan (§AJ, без рассылки)
+11. **STOP** → decision packet (§AP), ждать одобрения
+
+**Новые документы к созданию**: RELEASE_ENGINEERING.md · PUBLIC_RELEASE_READINESS.md · BRANCH_CLEANUP.md · RIMSORT_INTEROP.md · ai-user-skill (упаковка по конвенциям агентов) · .github/release.yml
+**Жёсткие правила И3**: без пуша/релиза/удалений; Windows проверять на реальных артефактах; не рекламировать непротестированное; без AI-маркетингового воды; «high-confidence inferred provenance» для отпечатков.
+
+## И2 (архив — всё закрыто):
 
 **Новый мандат Даниэля (2026-09-23): FIRST-PARTY RimWorld reference audit (§A–H)** — RimWorld как первоисточник (декомпил в .app/Source, Ludeon-репо, Translation Report как оракул), effective mod view, provenance-иерархия документации.
 
