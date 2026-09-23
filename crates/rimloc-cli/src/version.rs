@@ -96,7 +96,10 @@ fn is_version_directory(path: &Path) -> bool {
 fn flat_mod_supports_version(base: &Path, requested: &str) -> bool {
     let about = base.join("About").join("About.xml");
     let Ok(content) = fs::read_to_string(&about) else {
-        return false;
+        // No About.xml at all: this is not a mod (e.g. a game Data root like
+        // Core/DLC — whole-game localization targets). Nothing declares
+        // versions, so the flat root is the only layout.
+        return !base.join("About").exists();
     };
     let Some(block) = content.find("<supportedVersions>").and_then(|start| {
         let rest = &content[start..];

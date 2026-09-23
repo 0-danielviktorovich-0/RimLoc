@@ -25,6 +25,8 @@ Recovery point: этот файл + `~/Developing/_rimloc-safety/` (bundle, stas
 
 **ВЕРСИОННАЯ ПОЛИТИКА (мандат Даниэля):** 1.6 — primary tested target; 1.5/1.4 — compatibility; старше — best-effort без заявлений о поддержке. Резолвер принимает явную версию (modview + resolve_game_version_root); union-скан — только явный `--include-all-versions` (maintenance-режим), по умолчанию всегда версия-скоупед. **`rimloc version-diff --from --to`** (ddaf141): unchanged/changed/new/removed + review-очередь, JSON/MD; на реальном VWE 1.5→1.6 = 317 unchanged. Project-level target version = `game_version` в rimloc.toml (уже был) + Auto (latest ≤).
 
+**WHOLE-GAME SUPPORT (мандат §A-H доп.):** Data-корни (Core/DLC) работают как источники — Core EN scan = 11549, официальный RU тар = 16681 (93% пересечения); резолвер принимает корни без About.xml; GAME_LOCALIZATION_SUPPORT.md (LocalizationSource-маппинг + translation-maintainer workflow + остатки: tar-адаптер, Strings/Backstories-извлечение, NoTranslate/TKey, DLC-прогон NOT TESTED). Гейт §1 ЗАКРЫТ (TODO-семантика + capability-aware WordInfo `rimloc word-info`: на VWE 158 лейблов без WordInfo).
+
 **Следующие задачи (по приоритету):**
 1. И2-E GUI Svelte 5 — крупнейший незакрытый кусок (редактор SOURCE|TARGET, i18n ru/en, E2E tauri-driver)
 2. P2 из reference audit: NoTranslate-атрибуты, TKey-пути, TODO-семантика в coverage, поле-не-найдено валидация — каждая с фикстурой
