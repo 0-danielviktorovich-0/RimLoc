@@ -221,17 +221,23 @@ fn metrics_for_set(
     }
 
     m.unique_keys = key_map.len();
+    // One source entry counts as covered at most once, even when several
+    // canonical-suffix variants of the same TKey identity exist in the pack.
     m.coverage_of_source = if source_total == 0 {
         0.0
     } else {
-        key_map
+        let covered: std::collections::BTreeSet<String> = key_map
             .keys()
-            .filter(|k| {
-                source_map.contains_key(*k)
-                    || source_map.contains_key(&crate::util::canonical_match_key(k))
+            .filter_map(|k| {
+                if source_map.contains_key(k) {
+                    Some(k.clone())
+                } else {
+                    let c = crate::util::canonical_match_key(k);
+                    source_map.contains_key(&c).then_some(c)
+                }
             })
-            .count() as f64
-            / source_total as f64
+            .collect();
+        covered.len() as f64 / source_total as f64
     };
     m.avg_len_ratio = if ratio_count == 0 {
         0.0
@@ -479,5 +485,68 @@ mod tests {
             .expect("human row in markdown");
         assert!(line.contains("50.0%"), "coverage in row: {line}");
         assert!(md.contains("Source strings (unique keys): 2"));
+    }
+}
+
+#[cfg(test)]
+mod tkey_collision_tests {
+    use super::*;
+    use rimloc_core::TransUnit;
+
+    fn u(key: &str, text: &str) -> TransUnit {
+        TransUnit {
+            key: key.into(),
+            source: Some(text.into()),
+            path: "x".into(),
+            line: None,
+        }
+    }
+
+    #[test]
+    fn tkey_suffix_variants_stay_distinct_as_units() {
+        // .slateRef / .value.slateRef / no-suffix are three REAL DefInjected
+        // entries in a pack; canonical matching may bridge them to one source
+        // entry, but the report must keep counting them as separate target
+        // entries (no lossy collapse of distinct units).
+        let source = vec![u("GameplayTips.DismissLetters", "Dismiss letters.")];
+        let set = CompareInputSet {
+            label: "official".into(),
+            units: vec![
+                u("GameplayTips.DismissLetters", "Убрать письма."),
+                u(
+                    "GameplayTips.DismissLetters.slateRef",
+                    "Убрать письма (slate).",
+                ),
+                u(
+                    "GameplayTips.DismissLetters.value.slateRef",
+                    "Убрать письма (value slate).",
+                ),
+            ],
+        };
+        let report = compare(&source, &[set], None);
+        let m = &report.sets[0];
+        assert_eq!(m.entries, 3, "distinct units must not collapse");
+        assert_eq!(m.coverage_of_source, 1.0);
+    }
+
+    #[test]
+    fn canonical_fallback_does_not_shadow_exact_match_of_other_entry() {
+        // Two distinct source entries: base TKey identity and a genuine
+        // .slateRef-path entry. Target has only the .slateRef one — the base
+        // entry must stay uncovered (canonical fallback must not shadow it).
+        let source = vec![
+            u("Mod.A", "base tkey text"),
+            u("Mod.A.slateRef", "slate path text"),
+        ];
+        let set = CompareInputSet {
+            label: "pack".into(),
+            units: vec![u("Mod.A.slateRef", "перевод")],
+        };
+        let report = compare(&source, &[set], None);
+        let m = &report.sets[0];
+        assert!(
+            m.coverage_of_source < 1.0,
+            "distinct base entry must not be shadowed by canonical fallback"
+        );
     }
 }
