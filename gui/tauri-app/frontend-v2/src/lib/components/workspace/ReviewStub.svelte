@@ -1,9 +1,15 @@
 <script lang="ts">
-  // Review tab (mandate §12) — phase-2 stub with the real overview numbers and
-  // issue categories so the lifecycle CTA has somewhere honest to land.
+  // Review tab (mandate §12): the full QA experience. Project-wide counters
+  // (173 / 36 / 24 / 11) sit on top; below, an interactive queue over the
+  // entries loaded in this session — select an issue to open its entry in
+  // context, then [Fix] / [Ignore with reason] / [Mark reviewed]. All actions
+  // are mocks over the local stores (review + project).
   import Icon from '../Icon.svelte';
-  import { t } from '../../../i18n/store.svelte';
-  import { mockReviewCategories, mockReviewOverview } from '../../mock/wizard';
+  import { t, i18n } from '../../../i18n/store.svelte';
+  import { project } from '../../stores/project.svelte';
+  import { review, type ReviewIssue } from '../../stores/review.svelte';
+  import { router } from '../../router.svelte';
+  import { mockReviewOverview, mockReviewCategories } from '../../mock/wizard';
 
   const OVERVIEW = [
     { key: 'needsReview', value: mockReviewOverview.needsReview, icon: 'clipboard-check' },
@@ -11,34 +17,292 @@
     { key: 'sourceChanged', value: mockReviewOverview.sourceChanged, icon: 'alert' },
     { key: 'glossaryConflicts', value: mockReviewOverview.glossaryConflicts, icon: 'book' }
   ] as const;
+
+  const KIND_ICONS: Record<string, string> = {
+    placeholder_mismatch: 'warning',
+    glossary: 'book',
+    untranslated_suspect: 'languages',
+    wordinfo: 'info',
+    ambiguity: 'lightbulb',
+    ai_concern: 'sparkles'
+  };
+
+  const selected = $derived(review.selected);
+  const selectedEntry = $derived(selected ? project.byId(selected.entryId) ?? null : null);
+  const resolvedCount = $derived(Object.keys(review.resolutions).length);
+
+  // Drop session resolutions that no longer match a live issue (dev reset).
+  $effect(() => {
+    review.pruneStale(new Set(review.issues.map((i) => i.id)));
+  });
+
+  function fmt(n: number): string {
+    return new Intl.NumberFormat(i18n.locale === 'ru' ? 'ru-RU' : 'en-US').format(n);
+  }
+
+  function snippet(text: string, max = 90): string {
+    const one = text.replace(/\s+/g, ' ').trim();
+    return one.length > max ? `${one.slice(0, max - 1)}…` : one;
+  }
+
+  function issueIcon(issue: ReviewIssue): string {
+    return KIND_ICONS[issue.kind] ?? 'info';
+  }
+
+  function gotoBuild() {
+    router.navigate('build');
+  }
+
+  function onWindowKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Escape' || !selected) return;
+    if (review.editingId) review.cancelFix();
+    else if (review.ignoringId) review.cancelIgnore();
+    else review.closeContext();
+  }
 </script>
 
-<section class="review" aria-labelledby="review-heading" data-testid="workspace.review-stub">
-  <h2 id="review-heading" class="title">{t('review.title')}</h2>
+<svelte:window onkeydown={onWindowKeydown} />
+
+<section class="review" aria-labelledby="review-heading" data-testid="workspace.review">
+  <div class="head">
+    <h2 id="review-heading" class="title">{t('review.title')}</h2>
+    <p class="scope">{t('review.scope')}</p>
+  </div>
 
   <dl class="overview">
     {#each OVERVIEW as o (o.key)}
-      <div class="card">
+      <div class="card" data-testid={`review.overview.${o.key}`}>
         <dt>
           <Icon name={o.icon} size={14} />
           {t(`review.${o.key}`)}
         </dt>
-        <dd class="mono">{new Intl.NumberFormat('en-US').format(o.value)}</dd>
+        <dd class="mono">{fmt(o.value)}</dd>
       </div>
     {/each}
   </dl>
 
-  <h3 class="section">{t('review.categories')}</h3>
-  <ul class="categories">
+  <div class="chips" role="group" aria-label={t('review.categories')} data-testid="review.categories">
+    <button
+      type="button"
+      class="chip"
+      class:active={review.activeKind === 'all'}
+      aria-pressed={review.activeKind === 'all'}
+      data-testid="review.category.all"
+      onclick={() => review.setKind('all')}
+    >
+      {t('review.categories.all')}
+      <span class="mono count">{fmt(review.active.length)}</span>
+    </button>
     {#each mockReviewCategories as c (c.id)}
-      <li class="cat">
-        <span>{t(`issue.${c.id}`)}</span>
-        <span class="mono count">{c.count}</span>
-      </li>
+      <button
+        type="button"
+        class="chip"
+        class:active={review.activeKind === c.id}
+        aria-pressed={review.activeKind === c.id}
+        data-testid={`review.category.${c.id}`}
+        onclick={() => review.setKind(c.id)}
+      >
+        {t(`issue.${c.id}`)}
+        <span class="mono count">{fmt(review.countsByKind[c.id] ?? 0)}</span>
+      </button>
     {/each}
-  </ul>
+  </div>
 
-  <p class="note">{t('review.note')}</p>
+  <div class="layout">
+    <div class="queue-pane">
+      {#if review.active.length === 0}
+        <div class="clear-card" data-testid="review.queue-empty">
+          <p class="clear-title">
+            <Icon name="circle-check" size={16} />
+            {t('review.queue.empty.title')}
+          </p>
+          <p class="clear-desc">{t('review.queue.empty.desc')}</p>
+          <button type="button" class="btn btn-primary" data-testid="review.queue-empty.build" onclick={gotoBuild}>
+            <Icon name="package" size={14} />
+            {t('workspace.cta.build')}
+          </button>
+        </div>
+      {:else}
+        <ul class="queue" aria-label={t('review.queue')}>
+          {#each review.active as issue (issue.id)}
+            {@const entry = project.byId(issue.entryId)}
+            <li>
+              <button
+                type="button"
+                class="row"
+                class:selected={review.selectedId === issue.id}
+                class:sev-error={issue.severity === 'error'}
+                aria-current={review.selectedId === issue.id ? 'true' : undefined}
+                data-testid={`review.issue.${issue.id}`}
+                onclick={() => review.open(issue)}
+              >
+                <span class="row-icon sev-{issue.severity}">
+                  <Icon name={issue.severity === 'error' ? 'warning' : issueIcon(issue)} size={15} />
+                </span>
+                <span class="row-main">
+                  <span class="row-kind">{t(`issue.${issue.kind}`)}</span>
+                  <span class="row-key mono">{entry?.key}</span>
+                  <span class="row-snippet">{snippet(issue.message ?? entry?.source ?? '')}</span>
+                </span>
+                <span class="row-loc mono">{entry?.file.split('/').pop()}:{entry?.line}</span>
+                <Icon name="chevron-right" size={14} />
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {/if}
+      {#if resolvedCount > 0}
+        <p class="resolved-note" data-testid="review.resolved-note">
+          <Icon name="circle-check" size={13} />
+          {t('review.resolvedNote', { count: fmt(resolvedCount) })}
+        </p>
+      {/if}
+    </div>
+
+    {#if selected && selectedEntry}
+      <aside class="context" aria-label={t('review.context.label')} data-testid="review.context">
+        <div class="context-head">
+          <div>
+            <p class="context-kind">{t(`kind.${selectedEntry.kind}`)}</p>
+            <h3 class="context-key mono">{selectedEntry.key}</h3>
+          </div>
+          <button
+            type="button"
+            class="btn context-close"
+            aria-label={t('common.close')}
+            data-testid="review.context-close"
+            onclick={() => review.closeContext()}
+          >
+            <Icon name="close" size={14} />
+          </button>
+        </div>
+
+        <p class="callout callout-{selected.severity}" data-testid="review.context-issue">
+          <Icon name={selected.severity === 'error' ? 'warning' : issueIcon(selected)} size={14} />
+          <span>
+            <strong>{t(`issue.${selected.kind}`)}</strong>
+            {selected.message ?? t('review.context.noDetails')}
+          </span>
+        </p>
+
+        <dl class="blocks">
+          <div class="block">
+            <dt>{t('workspace.col.source')}</dt>
+            <dd class="text">{selectedEntry.source}</dd>
+          </div>
+          <div class="block">
+            <dt>{t('workspace.col.target')}</dt>
+            <dd class="text" class:empty={!selectedEntry.target}>
+              {selectedEntry.target || t('review.context.untranslated')}
+            </dd>
+          </div>
+        </dl>
+
+        {#if review.editingId === selected.id}
+          <div class="fix-editor" data-testid="review.fix-editor">
+            <label class="field-label" for="review-fix-text">{t('review.fix.hint')}</label>
+            <textarea
+              id="review-fix-text"
+              rows="3"
+              bind:value={review.fixText[selected.id]}
+              data-testid="review.fix-text"
+            ></textarea>
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-primary"
+                data-testid="review.fix-save"
+                onclick={() => review.saveFix(selected)}
+              >
+                <Icon name="check" size={14} />
+                {t('review.fix.save')}
+              </button>
+              <button type="button" class="btn" data-testid="review.fix-cancel" onclick={() => review.cancelFix()}>
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        {:else if review.ignoringId === selected.id}
+          <div class="fix-editor" data-testid="review.ignore-form">
+            <label class="field-label" for="review-ignore-reason">{t('review.ignore.reason')}</label>
+            <input
+              id="review-ignore-reason"
+              type="text"
+              bind:value={review.ignoreDraft}
+              placeholder={t('review.ignore.placeholder')}
+              data-testid="review.ignore-reason"
+              onkeydown={(e) => {
+                if (e.key === 'Enter') review.confirmIgnore(selected);
+              }}
+            />
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn btn-primary"
+                disabled={!review.ignoreDraft.trim()}
+                data-testid="review.ignore-confirm"
+                onclick={() => review.confirmIgnore(selected)}
+              >
+                {t('review.ignore.confirm')}
+              </button>
+              <button type="button" class="btn" data-testid="review.ignore-cancel" onclick={() => review.cancelIgnore()}>
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        {:else}
+          <div class="actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-testid="review.fix"
+              onclick={() => review.startFix(selected)}
+            >
+              <Icon name="edit" size={14} />
+              {t('review.fix')}
+            </button>
+            <button type="button" class="btn" data-testid="review.ignore" onclick={() => review.startIgnore(selected)}>
+              {t('review.ignore')}
+            </button>
+            <button
+              type="button"
+              class="btn"
+              data-testid="review.mark-reviewed"
+              onclick={() => review.markReviewed(selected)}
+            >
+              <Icon name="clipboard-check" size={14} />
+              {t('review.markReviewed')}
+            </button>
+          </div>
+        {/if}
+
+        {#if selectedEntry.usages && selectedEntry.usages.length > 0}
+          <div class="meta-block">
+            <p class="meta-label">{t('workspace.detail.usages')}</p>
+            <ul class="usages">
+              {#each selectedEntry.usages as u (u)}
+                <li>{u}</li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+
+        {#if selectedEntry.sourcePrev}
+          <div class="meta-block">
+            <p class="meta-label">{t('workspace.detail.sourcePrev')}</p>
+            <p class="meta-value">{selectedEntry.sourcePrev}</p>
+          </div>
+        {/if}
+
+        <div class="meta-block">
+          <p class="meta-label">{t('workspace.detail.advanced')}</p>
+          <p class="meta-value mono">
+            {t('workspace.detail.file')}: {selectedEntry.file} · {t('workspace.detail.line')}: {selectedEntry.line}
+          </p>
+        </div>
+      </aside>
+    {/if}
+  </div>
 </section>
 
 <style>
@@ -48,7 +312,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-    max-width: 640px;
+  }
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
   }
 
   .title {
@@ -59,6 +329,13 @@
     letter-spacing: var(--heading-tracking);
   }
 
+  .scope {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  /* Overview counters (project-wide) */
   .overview {
     margin: 0;
     display: grid;
@@ -97,44 +374,341 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .section {
-    margin: var(--space-2) 0 0;
+  /* Category chips */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    transition:
+      background var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out);
+  }
+
+  .chip:hover {
+    background: var(--color-muted);
+  }
+
+  .chip.active {
+    border-color: var(--color-primary);
+    background: var(--color-muted);
+  }
+
+  .chip .count {
+    color: var(--color-muted-fg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chip.active .count {
+    color: var(--color-fg);
+  }
+
+  /* Two-pane layout: queue + context */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  @media (max-width: 1100px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .queue-pane {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .queue {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    text-align: left;
+    transition:
+      border-color var(--motion-fast) var(--ease-out),
+      background var(--motion-fast) var(--ease-out);
+  }
+
+  .row:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-muted);
+  }
+
+  .row.selected {
+    border-color: var(--color-primary);
+    background: var(--color-muted);
+  }
+
+  .row-icon {
+    display: inline-flex;
+  }
+
+  .row-icon.sev-error {
+    color: var(--color-destructive);
+  }
+
+  .row-icon.sev-warning {
+    color: var(--color-warning);
+  }
+
+  .row-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .row-kind {
+    font-weight: 600;
+    font-size: var(--text-dense-size);
+  }
+
+  .row-key {
+    color: var(--color-muted-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-snippet {
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-loc {
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    white-space: nowrap;
+  }
+
+  .row :global(svg:last-child) {
+    color: var(--color-muted-fg);
+  }
+
+  /* Queue empty state */
+  .clear-card {
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .clear-title {
+    margin: 0;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-success);
+  }
+
+  .clear-desc {
+    margin: 0;
+    color: var(--color-muted-fg);
+  }
+
+  .resolved-note {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  /* Context pane */
+  .context {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-panel);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    position: sticky;
+    top: 0;
+  }
+
+  .context-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .context-kind {
+    margin: 0;
     font-size: var(--text-meta-size);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--color-muted-fg);
   }
 
-  .categories {
+  .context-key {
+    margin: 2px 0 0;
+    font-size: var(--text-base-size);
+    overflow-wrap: anywhere;
+  }
+
+  .context-close {
+    flex: none;
+    padding: 0 var(--space-2);
+    min-height: var(--control-h);
+  }
+
+  .callout {
+    margin: 0;
+    display: flex;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-dense-size);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-warning);
+  }
+
+  .callout strong {
+    margin-right: var(--space-1);
+  }
+
+  .callout-error {
+    border-left-color: var(--color-destructive);
+  }
+
+  .callout-warning {
+    border-left-color: var(--color-warning);
+  }
+
+  /* Source/target blocks */
+  .blocks {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .block dt {
+    font-size: var(--text-meta-size);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted-fg);
+    margin-bottom: 2px;
+  }
+
+  .block .text {
+    margin: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-muted);
+    padding: var(--space-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .block .text.empty {
+    color: var(--color-muted-fg);
+    font-style: italic;
+  }
+
+  /* Fix editor + ignore form */
+  .fix-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .field-label {
+    font-size: var(--text-meta-size);
+    color: var(--color-muted-fg);
+  }
+
+  .fix-editor textarea,
+  .fix-editor input {
+    width: 100%;
+  }
+
+  .form-actions,
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Context meta */
+  .meta-block {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2);
+  }
+
+  .meta-label {
+    margin: 0 0 2px;
+    font-size: var(--text-meta-size);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-muted-fg);
+  }
+
+  .meta-value {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .usages {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    gap: var(--space-1);
   }
 
-  .cat {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-1) 0;
-    border-bottom: 1px solid var(--color-border);
-    font-size: var(--text-base-size);
-  }
-
-  .cat:last-child {
-    border-bottom: none;
-  }
-
-  .count {
-    color: var(--color-muted-fg);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .note {
-    margin: var(--space-2) 0 0;
-    color: var(--color-muted-fg);
+  .usages li {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 1px var(--space-2);
     font-size: var(--text-meta-size);
+    background: var(--color-muted);
   }
 </style>

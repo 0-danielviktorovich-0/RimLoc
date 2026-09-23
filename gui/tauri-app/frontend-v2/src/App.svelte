@@ -7,6 +7,7 @@
   import Wizard from './lib/components/screens/Wizard.svelte';
   import Workspace from './lib/components/screens/Workspace.svelte';
   import BuildStub from './lib/components/screens/BuildStub.svelte';
+  import Existing from './lib/components/screens/Existing.svelte';
   import Phase2Stub from './lib/components/screens/Phase2Stub.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
   import StyleLab from './lib/components/StyleLab.svelte';
@@ -27,6 +28,8 @@
     <Workspace initialTab={router.route === 'review' ? 'review' : 'editor'} />
   {:else if router.route === 'build'}
     <BuildStub />
+  {:else if router.route === 'existing'}
+    <Existing />
   {:else}
     <Phase2Stub route={router.route} />
   {/if}

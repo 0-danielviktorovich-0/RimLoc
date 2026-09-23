@@ -13,6 +13,7 @@ export type RouteId =
   | 'workspace'
   | 'review'
   | 'build'
+  | 'existing'
   | 'settings'
   | 'providers'
   | 'help';
@@ -23,6 +24,7 @@ export const ROUTES: RouteId[] = [
   'workspace',
   'review',
   'build',
+  'existing',
   'settings',
   'providers',
   'help'
