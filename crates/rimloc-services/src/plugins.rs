@@ -79,6 +79,7 @@ impl ParserPlugin for DynPlugin {
                 source: u.source,
                 path: PathBuf::from(u.path),
                 line: u.line,
+                tkey: None,
             })
             .collect())
     }

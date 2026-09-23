@@ -201,6 +201,7 @@ pub fn scan_keyed_xml_with_options(
                                         opts.definj_drop_def_type,
                                     );
                                     local.push(TransUnit {
+                                        tkey: None,
                                         key,
                                         source: Some(frame.buffer.clone()),
                                         path: p.clone(),
@@ -236,6 +237,7 @@ pub fn scan_keyed_xml_with_options(
                             };
                             if opts.include_empty_keys || !source.is_empty() {
                                 local.push(TransUnit {
+                                    tkey: None,
                                     key: frame.name,
                                     source: Some(source),
                                     path: p.clone(),
@@ -262,6 +264,7 @@ pub fn scan_keyed_xml_with_options(
                                 opts.definj_drop_def_type,
                             );
                             local.push(TransUnit {
+                                tkey: None,
                                 key,
                                 source: Some(frame.buffer),
                                 path: p.clone(),
@@ -284,6 +287,7 @@ pub fn scan_keyed_xml_with_options(
                     {
                         if opts.include_empty_keys {
                             local.push(TransUnit {
+                                tkey: None,
                                 key: name,
                                 source: Some(String::new()),
                                 path: p.clone(),
@@ -325,6 +329,7 @@ pub fn scan_keyed_xml_with_options(
                                 opts.definj_drop_def_type,
                             );
                             local.push(TransUnit {
+                                tkey: None,
                                 key,
                                 source: Some(String::new()),
                                 path: p.clone(),
@@ -638,6 +643,7 @@ pub fn scan_defs_xml_under_with_fields(
                 }
                 if let Some(val) = found_val {
                     out.push(TransUnit {
+                        tkey: None,
                         key: format!("{}.{}", def_name, field),
                         source: Some(val),
                         path: p.to_path_buf(),
@@ -1277,6 +1283,7 @@ pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<
                         if human_like {
                             let line = line_for_offset(child.range().start, &line_starts);
                             out.push(TransUnit {
+                                tkey: None,
                                 key: format!("{}.{}", def_name, name),
                                 source: Some(t.to_string()),
                                 path: p.to_path_buf(),
@@ -1589,6 +1596,7 @@ pub fn scan_defs_with_dict_meta(
                                                 });
                                             out_local.push(DefsMetaUnit {
                                                 unit: TransUnit {
+                                                    tkey: None,
                                                     key: format!("{}.{}", def_name, display_path),
                                                     source: Some(v),
                                                     path: p.clone(),
@@ -1611,6 +1619,7 @@ pub fn scan_defs_with_dict_meta(
                                 });
                                 out_local.push(DefsMetaUnit {
                                     unit: TransUnit {
+                                        tkey: None,
                                         key: format!("{}.{}", def_name, display_path),
                                         source: Some(v.to_string()),
                                         path: p.clone(),
@@ -1638,6 +1647,7 @@ pub fn scan_defs_with_dict_meta(
                                 });
                                 out_local.push(DefsMetaUnit {
                                     unit: TransUnit {
+                                        tkey: None,
                                         key: format!("{}.{}", def_name, f),
                                         source: Some(val.to_string()),
                                         path: p.clone(),
@@ -1708,6 +1718,7 @@ pub fn scan_defs_with_dict_meta(
                                                     });
                                                 out_local.push(DefsMetaUnit {
                                                     unit: TransUnit {
+                                                        tkey: None,
                                                         key: format!("{}.{}", def_name, f),
                                                         source: Some(val.to_string()),
                                                         path: p.clone(),
@@ -1750,6 +1761,7 @@ pub fn scan_defs_with_dict_meta(
                                     });
                                     out_local.push(DefsMetaUnit {
                                         unit: TransUnit {
+                                            tkey: None,
                                             key: format!("{}.{}", def_name, f),
                                             source: Some(val),
                                             path: p.clone(),
@@ -1909,6 +1921,7 @@ pub fn scan_defs_with_dict_meta(
                                     });
                                     out.push(DefsMetaUnit {
                                         unit: TransUnit {
+                                            tkey: None,
                                             key: format!("{}.{path}", def_name),
                                             source: Some(v),
                                             path: p.to_path_buf(),
@@ -1932,6 +1945,7 @@ pub fn scan_defs_with_dict_meta(
                         });
                         out.push(DefsMetaUnit {
                             unit: TransUnit {
+                                tkey: None,
                                 key: format!("{}.{}", def_name, display_path),
                                 source: Some(v.to_string()),
                                 path: p.to_path_buf(),
@@ -1960,6 +1974,7 @@ pub fn scan_defs_with_dict_meta(
                         });
                         out.push(DefsMetaUnit {
                             unit: TransUnit {
+                                tkey: None,
                                 key: format!("{}.{}", def_name, f),
                                 source: Some(val.to_string()),
                                 path: p.to_path_buf(),
@@ -2023,6 +2038,7 @@ pub fn scan_defs_with_dict_meta(
                                         });
                                         out.push(DefsMetaUnit {
                                             unit: TransUnit {
+                                                tkey: None,
                                                 key: format!("{}.{}", def_name, f),
                                                 source: Some(val.to_string()),
                                                 path: p.to_path_buf(),
@@ -2064,6 +2080,7 @@ pub fn scan_defs_with_dict_meta(
                             });
                             out.push(DefsMetaUnit {
                                 unit: TransUnit {
+                                    tkey: None,
                                     key: format!("{}.{}", def_name, f),
                                     source: Some(val),
                                     path: p.to_path_buf(),
@@ -2370,11 +2387,60 @@ mod defs_tests {
 ///
 /// RimLoc emits the base identity `<defName>.<TKey>`; matching layers normalize
 /// suffixes (`.slateRef`, `.value.slateRef`).
+/// Serialization strategy of a TKey node, derived from its XML context.
+///
+/// Proven on the whole vanilla 1.6 corpus (DLC-TKEY-ADJUDICATION §3,
+/// 351 matched nodes / 343 identities, zero exceptions):
+/// - `bare` — TipSetDef `li` nodes (DefInjected path has no suffix);
+/// - `parms_value_slate_ref` — nodes under a `<parms>` element of a
+///   `QuestNode_SubScript` def (dictionary slot elided from the path);
+/// - `slate_ref` — any other direct SlateRef field of the def.
+fn tkey_strategy(def_tag: &str, node: roxmltree::Node) -> (&'static str, &'static str) {
+    if def_tag == "TipSetDef" && node.tag_name().name() == "li" {
+        return ("bare", "");
+    }
+    let mut under_parms = false;
+    let mut under_subscript = false;
+    for anc in node.ancestors().skip(1) {
+        if anc.tag_name().name() == "parms" {
+            under_parms = true;
+        }
+        if anc
+            .attribute("Class")
+            .is_some_and(|c| c.starts_with("QuestNode_SubScript"))
+        {
+            under_subscript = true;
+        }
+    }
+    if under_parms && under_subscript {
+        ("parms_value_slate_ref", ".value.slateRef")
+    } else {
+        ("slate_ref", ".slateRef")
+    }
+}
+
 pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<TransUnit>> {
+    use std::collections::BTreeMap;
     use walkdir::WalkDir;
-    let mut out = Vec::new();
-    let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
-    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
+
+    // Logical identity -> accumulated unit. RimWorld load semantics:
+    // a duplicate defName in a LATER file is rejected (first file owns the
+    // identity), while a repeated field inside the SAME file is a plain
+    // assignment overwrite (last node in document order wins). The context
+    // count preserves how many nodes share the identity
+    // (DLC-TKEY-ADJUDICATION §5).
+    struct Acc {
+        unit: TransUnit,
+        file: std::path::PathBuf,
+        contexts: u32,
+    }
+    let mut acc: BTreeMap<String, Acc> = BTreeMap::new();
+
+    for entry in WalkDir::new(root)
+        .sort_by_file_name()
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
         let p = entry.path();
         if !p.is_file() {
             continue;
@@ -2410,6 +2476,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
             // Owning def: nearest ancestor (incl. self) that has a <defName> child.
             let mut owner = Some(node);
             let mut def_name: Option<&str> = None;
+            let mut def_tag = "";
             while let Some(cur) = owner {
                 if let Some(dn) = cur
                     .children()
@@ -2419,27 +2486,56 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
                     .filter(|s| !s.is_empty())
                 {
                     def_name = Some(dn);
+                    def_tag = cur.tag_name().name();
                     break;
                 }
                 owner = cur.parent().filter(|n| n.is_element());
             }
             let Some(def_name) = def_name else { continue };
-            let key = format!("{def_name}.{}", tkey.trim());
+            let identity = format!("{def_name}.{}", tkey.trim());
             let text = node.text().unwrap_or_default().trim().to_string();
             if text.is_empty() {
                 continue;
             }
-            if seen.insert((p.to_string_lossy().to_string(), key.clone())) {
-                out.push(TransUnit {
-                    key,
-                    source: Some(text),
-                    path: p.to_path_buf(),
-                    line: None,
-                });
+            let (strategy, suffix) = tkey_strategy(def_tag, node);
+            match acc.get_mut(&identity) {
+                // Identity already owned by an earlier file: that def wins,
+                // later files are rejected duplicates — skip entirely.
+                Some(a) if a.file != p => {}
+                // Same file again: RimWorld field-assignment last-wins.
+                Some(a) => {
+                    a.unit.source = Some(text);
+                    a.contexts += 1;
+                    a.unit.tkey = Some(rimloc_core::TKeyMeta {
+                        strategy: strategy.to_string(),
+                        suffix: suffix.to_string(),
+                        contexts: a.contexts,
+                    });
+                }
+                None => {
+                    acc.insert(
+                        identity.clone(),
+                        Acc {
+                            contexts: 1,
+                            file: p.to_path_buf(),
+                            unit: TransUnit {
+                                key: identity,
+                                source: Some(text),
+                                path: p.to_path_buf(),
+                                line: None,
+                                tkey: Some(rimloc_core::TKeyMeta {
+                                    strategy: strategy.to_string(),
+                                    suffix: suffix.to_string(),
+                                    contexts: 1,
+                                }),
+                            },
+                        },
+                    );
+                }
             }
         }
     }
-    Ok(out)
+    Ok(acc.into_values().map(|a| a.unit).collect())
 }
 
 #[cfg(test)]
@@ -2462,6 +2558,14 @@ mod tkey_tests {
     <defName>SampleQuest</defName>
     <label TKey="LetterLabelFavorReceiver">sample favor label</label>
     <customLetterText TKey="LetterTextSample">Sample quest text.</customLetterText>
+    <node Class="QuestNode_SubScript">
+      <parms>
+        <li Class="NamedParm">
+          <key>letterText</key>
+          <value TKey="LetterTextParms">parms-proven text</value>
+        </li>
+      </parms>
+    </node>
   </QuestScriptDef>
 </Defs>"#,
         )
@@ -2483,5 +2587,100 @@ mod tkey_tests {
             .as_deref()
             .unwrap()
             .starts_with("You can dismiss"));
+        let meta = |k: &str| {
+            units
+                .iter()
+                .find(|u| u.key == k)
+                .unwrap()
+                .tkey
+                .as_ref()
+                .unwrap()
+        };
+        // TipSetDef li: bare, no suffix.
+        assert_eq!(
+            meta("SampleTips.DismissLetters"),
+            &rimloc_core::TKeyMeta {
+                strategy: "bare".into(),
+                suffix: "".into(),
+                contexts: 1
+            }
+        );
+        // Direct QuestScriptDef field: slate_ref / .slateRef.
+        assert_eq!(
+            meta("SampleQuest.LetterLabelFavorReceiver"),
+            &rimloc_core::TKeyMeta {
+                strategy: "slate_ref".into(),
+                suffix: ".slateRef".into(),
+                contexts: 1
+            }
+        );
+        // parms descendant of QuestNode_SubScript: parms_value_slate_ref.
+        assert_eq!(
+            meta("SampleQuest.LetterTextParms"),
+            &rimloc_core::TKeyMeta {
+                strategy: "parms_value_slate_ref".into(),
+                suffix: ".value.slateRef".into(),
+                contexts: 1
+            }
+        );
+    }
+
+    #[test]
+    fn tkey_duplicate_identity_last_wins_with_context_count() {
+        let tmp = tempfile::tempdir().unwrap();
+        let defs = tmp.path().join("Defs/Misc");
+        std::fs::create_dir_all(&defs).unwrap();
+        std::fs::write(
+            defs.join("DupIdentity.xml"),
+            r#"<Defs>
+  <QuestScriptDef>
+    <defName>IntroQuest</defName>
+    <node Class="QuestNode_Letter">
+      <label TKey="LetterLabelDied">first branch: died</label>
+    </node>
+    <node Class="QuestNode_Letter">
+      <label TKey="LetterLabelDied">second branch: left behind</label>
+    </node>
+  </QuestScriptDef>
+</Defs>"#,
+        )
+        .unwrap();
+        let units = scan_defs_tkey(tmp.path(), None).unwrap();
+        assert_eq!(units.len(), 1, "{units:?}");
+        let u = &units[0];
+        assert_eq!(u.key, "IntroQuest.LetterLabelDied");
+        // RimWorld field-assignment semantics: the LAST node wins at load.
+        assert_eq!(u.source.as_deref(), Some("second branch: left behind"));
+        let meta = u.tkey.as_ref().unwrap();
+        assert_eq!(meta.contexts, 2);
+        assert_eq!(meta.strategy, "slate_ref");
+    }
+
+    #[test]
+    fn tkey_duplicate_defname_later_file_is_rejected_duplicate() {
+        let tmp = tempfile::tempdir().unwrap();
+        let defs = tmp.path().join("Defs/Misc");
+        std::fs::create_dir_all(&defs).unwrap();
+        for (name, text) in [
+            ("A_First.xml", "from first file"),
+            ("B_Second.xml", "from second"),
+        ] {
+            std::fs::write(
+                defs.join(name),
+                format!(
+                    r#"<Defs>
+  <QuestScriptDef>
+    <defName>SharedDef</defName>
+    <label TKey="SharedKey">{text}</label>
+  </QuestScriptDef>
+</Defs>"#
+                ),
+            )
+            .unwrap();
+        }
+        let units = scan_defs_tkey(tmp.path(), None).unwrap();
+        assert_eq!(units.len(), 1, "{units:?}");
+        assert_eq!(units[0].source.as_deref(), Some("from first file"));
+        assert_eq!(units[0].tkey.as_ref().unwrap().contexts, 1);
     }
 }

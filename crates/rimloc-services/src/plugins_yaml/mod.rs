@@ -121,6 +121,7 @@ impl plugins::ParserPlugin for YamlKeyedPlugin {
                     source: Some(v),
                     path: p.to_path_buf(),
                     line: None,
+                    tkey: None,
                 });
             }
         }

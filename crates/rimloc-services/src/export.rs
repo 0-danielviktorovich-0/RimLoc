@@ -51,6 +51,7 @@ pub fn export_po_with_tm(
                 source: source.clone(),
                 path: target_path.clone(),
                 line: None,
+                tkey: None,
             });
         if entry
             .source

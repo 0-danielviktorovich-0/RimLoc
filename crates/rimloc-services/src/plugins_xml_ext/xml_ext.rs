@@ -100,6 +100,7 @@ impl super::super::plugins::ParserPlugin for XmlExtensionsSettingsPlugin {
                             source: Some(label.clone()),
                             path: p.to_path_buf(),
                             line: Some(line_for(def.range().start).unwrap_or(1)),
+                            tkey: None,
                         });
                     }
                 }
@@ -110,6 +111,7 @@ impl super::super::plugins::ParserPlugin for XmlExtensionsSettingsPlugin {
                             source: Some(text_or_tip.clone()),
                             path: p.to_path_buf(),
                             line: Some(line_for(def.range().start).unwrap_or(1)),
+                            tkey: None,
                         });
                     }
                 }
@@ -126,6 +128,7 @@ impl super::super::plugins::ParserPlugin for XmlExtensionsSettingsPlugin {
                                 source: Some(val.to_string()),
                                 path: p.to_path_buf(),
                                 line: Some(line_for(node.range().start).unwrap_or(1)),
+                                tkey: None,
                             });
                         }
                     }

@@ -121,6 +121,7 @@ impl plugins::ParserPlugin for JsonKeyedPlugin {
                     source: Some(v),
                     path: p.to_path_buf(),
                     line: None,
+                    tkey: None,
                 });
             }
         }
