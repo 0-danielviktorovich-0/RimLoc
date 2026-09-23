@@ -215,7 +215,7 @@ HEAD 3ea0e19 (после b29ef68, e4639f7, 3ea0e19) · 128/0 тестов · cli
 | # | Задача | Статус | Эвиденс |
 |---|--------|--------|---------|
 | A | TKey output/round-trip end-to-end (writer по TKeyMeta, 4 стратегии, мульти-контексты) | **ACTIVE** — метадата/реестр/стратегии готовы (e4639f7); writer+e2e — впереди | e4639f7; §1.1 adjudication |
-| B | Каноническая унификация inventory/сервисов (+таблица consumer×capability) | **OPEN** | — |
+| B | Каноническая унификация inventory/сервисов (+таблица consumer×capability) | **DONE** — один пайплайн (validate/coverage/word-info делегируют; double extraction устранён; VWE 38%→45%); таблица в CANONICAL_INVENTORY.md | 98db4b2 |
 | C | TKey-aware кросс-язычные валидаторы на каноническом матчёре | **OPEN** (coverage/compare гейт готовы, placeholders/orphans/sourceChanged — нет) | 3ea0e19 |
 | D | D | **DONE** — кейсы A/B/C/D в CLI-регрессии (source=6/translated=4/missing=2: TODO=missing, absent=missing) | 3ea0e19 + 65af0f4 |
 | E | E | **DONE** — scan_defs_tkey ходит по явному defs_dir напрямую; внешняя директория покрыта тестом | 65af0f4 |
