@@ -664,9 +664,8 @@ pub struct SourceChangeReport {
 #[cfg(test)]
 mod gate_k_tests {
     use super::*;
-    use rimloc_domain::canonical::SourceProvenance;
     use rimloc_domain::canonical::{
-        Completeness, EntryKind, Origin, Project, SourceEntry, SourceEntryId,
+        Completeness, EntryKind, Origin, Project, SourceEntry, SourceEntryId, SourceProvenance,
     };
 
     fn entry(key: &str, text: &str) -> SourceEntry {
