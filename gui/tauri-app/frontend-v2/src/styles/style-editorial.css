@@ -1,0 +1,56 @@
+/*
+ * Style direction: EDITORIAL — типографика вперёд, контраст SOURCE|TARGET,
+ * content-first. Меньше хрома: волосяные линейки вместо боксов, острые углы,
+ * засечковый заголовок (системная Georgia — офлайн-инструмент, бандла шрифтов
+ * пока нет, spec open question #5), SOURCE приглушён, TARGET — полный тон.
+ *
+ * Contrasts verified (see tokens.css header):
+ *   light: fg #141414 on bg 16.4 · on surface 17.9; muted-fg #57534e on
+ *   surface 7.5 / on muted 6.8.  dark: fg #f5f4f2 on bg 14.7 · on surface
+ *   12.2; muted-fg #a8a29e on surface 6.4 / on muted 5.0.
+ *   --color-source-text = muted-fg keeps SOURCE text >= 6.4 in both themes.
+ */
+
+[data-style='editorial'] {
+  --font-heading: Georgia, 'Times New Roman', serif;
+  --text-heading-size: 22px;
+  --text-heading-weight: 500;
+  --heading-tracking: -0.01em;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 5px;
+  --shadow-card: none;
+  --shadow-hover: none;
+  --shadow-panel: none;
+  --card-hover-transform: none;
+  --card-icon-pad: 0px;
+  --card-icon-bg: transparent;
+  --card-icon-fg: var(--color-primary-text);
+  --row-accent: var(--color-primary);
+  --nav-active-bg: var(--color-muted);
+}
+
+[data-style='editorial'][data-theme='light'] {
+  --color-bg: #faf9f7;
+  --color-fg: #141414;
+  --color-surface: #ffffff;
+  --color-surface-fg: #141414;
+  --color-muted: #f2f0ec;
+  --color-muted-fg: #57534e;
+  --color-border: #e7e5e0;
+  --color-border-strong: #d6d3ce;
+  /* SOURCE column dimmed — the SOURCE|TARGET contrast axis of this direction */
+  --color-source-text: var(--color-muted-fg);
+}
+
+[data-style='editorial'][data-theme='dark'] {
+  --color-bg: #151417;
+  --color-fg: #f5f4f2;
+  --color-surface: #1e1d21;
+  --color-surface-fg: #f5f4f2;
+  --color-muted: #28272c;
+  --color-muted-fg: #a8a29e;
+  --color-border: #37353b;
+  --color-border-strong: #4c494f;
+  --color-source-text: var(--color-muted-fg);
+}

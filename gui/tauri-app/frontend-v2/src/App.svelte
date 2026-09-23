@@ -5,7 +5,9 @@
   import Home from './lib/components/screens/Home.svelte';
   import Workspace from './lib/components/screens/Workspace.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
+  import StyleLab from './lib/components/StyleLab.svelte';
   import { ui } from './lib/stores/ui.svelte';
+  import { stylelab } from './lib/stores/stylelab.svelte';
 </script>
 
 <AppHeader />
@@ -19,6 +21,11 @@
 </main>
 
 <DevPanel />
+
+<!-- Style Lab is dev-only: gated behind ?stylelab=1 / localStorage opt-in. -->
+{#if stylelab.enabled}
+  <StyleLab />
+{/if}
 
 <style>
   .app-main {

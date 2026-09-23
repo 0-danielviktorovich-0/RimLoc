@@ -87,7 +87,10 @@
   }
 
   .brand-name {
+    font-family: var(--font-heading);
+    font-size: var(--text-heading-size);
     font-weight: var(--text-heading-weight);
+    letter-spacing: var(--heading-tracking);
   }
 
   .brand-project {

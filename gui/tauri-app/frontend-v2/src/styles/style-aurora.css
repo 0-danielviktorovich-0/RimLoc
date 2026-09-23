@@ -1,0 +1,61 @@
+/*
+ * Style direction: AURORA — контролируемые градиенты + селективная глубина.
+ * Полированный home (градиентный wash фона, chip-иконки, lift на hover),
+ * сдержанный dense workspace (та же плоская таблица, глубина только на панелях).
+ *
+ * Contrasts verified: see tokens.css header. Statuses/borders inherit from
+ * tokens.css; only bg/surface/muted and elevation/accent components differ.
+ */
+
+/* Same-in-both-themes character */
+[data-style='aurora'] {
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --grad-accent: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
+  --card-hover-transform: translateY(-2px);
+  --card-icon-pad: 8px;
+  --card-icon-radius: 12px;
+  --card-icon-bg: var(--grad-accent);
+  --card-icon-fg: #ffffff;
+  --heading-tracking: -0.01em;
+  --nav-active-bg: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+[data-style='aurora'][data-theme='light'] {
+  --color-bg: #f5f6fc;
+  --color-surface: #ffffff;
+  --color-muted: #eef0f9;
+  --color-border: #e3e6f4;
+  --color-border-strong: #ccd2ea;
+  /* fg/muted-fg stay slate-on-light: verified 17.5+ / 7.1+ against these tints */
+  --shadow-card: 0 1px 2px rgb(23 23 60 / 5%), 0 8px 24px rgb(23 23 60 / 7%);
+  --shadow-hover: 0 2px 4px rgb(23 23 60 / 6%), 0 14px 32px rgb(23 23 60 / 12%);
+  --shadow-panel: 0 12px 32px rgb(23 23 60 / 10%);
+}
+
+[data-style='aurora'][data-theme='dark'] {
+  --color-bg: #0c1122;
+  --color-surface: #1a2038;
+  --color-muted: #232b48;
+  --color-border: #2c3556;
+  --color-border-strong: #3e4a74;
+  /* fg #f8fafc on surface 14.6+, muted-fg #94a3b8 on surface 5.9+ (verified) */
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 30%);
+  --shadow-hover: 0 2px 4px rgb(0 0 0 / 45%), 0 14px 32px rgb(0 0 0 / 40%);
+  --shadow-panel: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+/* Ambient wash: home gets the aurora atmosphere, the dense workspace table
+   sits on plain --color-surface and stays calm. */
+[data-style='aurora'][data-theme='light'] body {
+  background: radial-gradient(1100px 500px at 85% -10%, rgb(99 102 241 / 10%), transparent 60%),
+    radial-gradient(900px 420px at -10% 110%, rgb(124 58 237 / 7%), transparent 55%),
+    var(--color-bg);
+}
+
+[data-style='aurora'][data-theme='dark'] body {
+  background: radial-gradient(1100px 520px at 78% -12%, rgb(99 102 241 / 16%), transparent 60%),
+    radial-gradient(900px 440px at -8% 112%, rgb(124 58 237 / 12%), transparent 55%),
+    var(--color-bg);
+}
