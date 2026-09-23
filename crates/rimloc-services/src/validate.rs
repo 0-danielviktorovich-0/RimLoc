@@ -1,3 +1,16 @@
+
+/// Canonical inventory sourcing for every validator/coverage consumer (B):
+/// delegates to the SAME pipeline as CLI scan (Keyed + Defs via learned/dict
+/// + TKey + DefInjected-path merge). Convenience variants below must never
+/// build a subtly different entry set — see docs/development/CANONICAL_INVENTORY.md.
+fn scan_canonical(
+    scan_root: &Path,
+    defs_root: Option<&Path>,
+) -> Result<Vec<rimloc_core::TransUnit>> {
+    let auto = crate::scan::autodiscover_defs_context(scan_root)?;
+    crate::scan::scan_units_with_defs_and_dict(scan_root, defs_root, &auto.dict, &auto.extra_fields)
+}
+
 use crate::{util::is_source_for_lang_dir, Result, ValidationMessage};
 use std::path::Path;
 
@@ -7,7 +20,7 @@ pub fn validate_under_root(
     source_lang: Option<&str>,
     source_lang_dir: Option<&str>,
 ) -> Result<Vec<ValidationMessage>> {
-    let mut units = rimloc_parsers_xml::scan_all_units(scan_root)?;
+    let mut units = scan_canonical(scan_root, None)?;
     if let Some(dir) = source_lang_dir {
         let dir = crate::util::normalize_lang_dir(dir);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
@@ -26,7 +39,7 @@ pub fn validate_under_root_with_defs(
     source_lang_dir: Option<&str>,
     defs_root: Option<&Path>,
 ) -> Result<Vec<ValidationMessage>> {
-    let mut units = rimloc_parsers_xml::scan_all_units_with_defs(scan_root, defs_root)?;
+    let mut units = scan_canonical(scan_root, defs_root)?;
     if let Some(dir) = source_lang_dir {
         let dir = crate::util::normalize_lang_dir(dir);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
@@ -45,11 +58,8 @@ pub fn validate_under_root_with_defs_and_fields(
     defs_root: Option<&Path>,
     extra_fields: &[String],
 ) -> Result<Vec<ValidationMessage>> {
-    let mut units = rimloc_parsers_xml::scan_all_units_with_defs_and_fields(
-        scan_root,
-        defs_root,
-        extra_fields,
-    )?;
+    let _ = extra_fields; // already covered by autodiscovered canonical scan
+    let mut units = scan_canonical(scan_root, defs_root)?;
     if let Some(dir) = source_lang_dir {
         units.retain(|u| is_source_for_lang_dir(&u.path, dir));
     } else if let Some(code) = source_lang {
@@ -112,9 +122,9 @@ pub fn validate_placeholders_cross_language(
     }
     // Scan everything, then filter per language
     let mut units = if let Some(defs) = defs_root {
-        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+        scan_canonical(scan_root, Some(defs))?
     } else {
-        rimloc_parsers_xml::scan_all_units(scan_root)?
+        scan_canonical(scan_root, None)?
     };
 
     // Split into source and target
@@ -172,9 +182,9 @@ pub fn validate_lists_cross_language(
     let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
     let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     let mut units = if let Some(defs) = defs_root {
-        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+        scan_canonical(scan_root, Some(defs))?
     } else {
-        rimloc_parsers_xml::scan_all_units(scan_root)?
+        scan_canonical(scan_root, None)?
     };
     let mut src: std::collections::HashMap<String, (String, Option<usize>)> =
         std::collections::HashMap::new();
@@ -233,9 +243,9 @@ pub fn validate_orphans_cross_language(
     let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
     let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     let mut units = if let Some(defs) = defs_root {
-        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+        scan_canonical(scan_root, Some(defs))?
     } else {
-        rimloc_parsers_xml::scan_all_units(scan_root)?
+        scan_canonical(scan_root, None)?
     };
     let mut src_keys: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     let mut tgt_map: std::collections::HashMap<String, (String, Option<usize>)> =
@@ -283,9 +293,9 @@ pub fn coverage_report(
     let source_lang_dir = crate::util::normalize_lang_dir(source_lang_dir);
     let target_lang_dir = crate::util::normalize_lang_dir(target_lang_dir);
     let mut units = if let Some(defs) = defs_root {
-        rimloc_parsers_xml::scan_all_units_with_defs(scan_root, Some(defs))?
+        scan_canonical(scan_root, Some(defs))?
     } else {
-        rimloc_parsers_xml::scan_all_units(scan_root)?
+        scan_canonical(scan_root, None)?
     };
     use std::collections::HashMap;
     // Known TKey identities gate the canonical fallback below (§P1-5);
