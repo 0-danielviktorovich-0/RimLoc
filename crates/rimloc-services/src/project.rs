@@ -389,3 +389,203 @@ mod gate_i_tests {
         assert!(keyed.contains("<Greeting>Привет</Greeting>"), "{keyed}");
     }
 }
+
+#[cfg(test)]
+mod gate_i4_acceptance {
+    use super::*;
+    use rimloc_domain::canonical::EntryKind;
+
+    const FIXTURE: &str = "test/TKeyMod";
+
+    fn fixture_path() -> PathBuf {
+        // Integration-style: run against the repo fixture (crate dir -> repo
+        // root -> test/).
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../")
+            .join(FIXTURE)
+            .canonicalize()
+            .expect("fixture exists")
+    }
+
+    /// THE Gate I acceptance: all three workflows over ONE canonical model.
+    ///
+    /// A. native/no-PO:  source -> project -> apply existing RU -> write.
+    /// B. PO interop:    project -> PO file -> import -> project -> write.
+    /// C. existing pack: covered by A's import step (preserve + TODO parity),
+    ///    plus reopen via the persistence store between workflows.
+    #[test]
+    fn three_workflows_over_one_canonical_project() {
+        let root = fixture_path();
+        let tmp = tempfile::tempdir().unwrap();
+
+        // ---------- Workflow A: build + import existing RU + write ----------
+        let mut project = build_project(&root, Some("1.6")).unwrap();
+        // The view is EXACT for a known version; patches absent -> stage None.
+        assert_eq!(project.context.view, ViewLabel::Exact);
+        let ru_dir = root.join("Languages/Russian");
+        let applied = apply_existing_translation(&mut project, &ru_dir, "Russian").unwrap();
+        assert!(applied >= 4, "existing RU entries must map, got {applied}");
+
+        // Save/reopen between workflows (project persistence, Gate I3).
+        let project_file = tmp.path().join("project.rimloc.json");
+        crate::project_store::save_project(&project, &project_file).unwrap();
+        let mut project = crate::project_store::load_project(&project_file).unwrap();
+
+        let out_a = tmp.path().join("out-a");
+        write_rimworld_translation(
+            &mut clone_of(&project),
+            &out_a,
+            "Russian",
+            "T",
+            "t.a",
+            "1.6",
+        )
+        .unwrap();
+        let quest_a = std::fs::read_to_string(
+            out_a.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
+        )
+        .unwrap();
+        assert!(
+            quest_a.contains("<SampleQuest.LetterLabelFavorReceiver.slateRef>Метка услуги<"),
+            "{quest_a}"
+        );
+        assert!(
+            quest_a.contains("<SampleQuest.LetterTextParms.value.slateRef>Пармс-текст.<"),
+            "{quest_a}"
+        );
+        assert!(
+            quest_a.contains("<SampleQuest.ExpiryTip.slateRef>TODO</"),
+            "{quest_a}"
+        );
+        let tips_a = std::fs::read_to_string(
+            out_a.join("Languages/Russian/DefInjected/TipSetDef/SampleTips.xml"),
+        )
+        .unwrap();
+        assert!(
+            tips_a.contains("<SampleTips.DismissLetters>Подсказки"),
+            "{tips_a}"
+        );
+
+        // ---------- Workflow B: PO interoperability adapter ----------
+        // project -> PO file (adapter export over canonical translations)...
+        let po_path = tmp.path().join("interop.po");
+        let po_units: Vec<rimloc_core::TransUnit> = project
+            .translations
+            .iter()
+            .filter(|t| t.locale == "Russian")
+            .filter_map(|t| {
+                project
+                    .entries
+                    .iter()
+                    .find(|e| e.id == t.source_id)
+                    .map(|e| rimloc_core::TransUnit {
+                        key: match (&e.id.kind, &e.tkey) {
+                            (EntryKind::TKey, Some(m)) => format!("{}{}", e.id.key, m.suffix),
+                            _ => e.id.key.clone(),
+                        },
+                        source: Some(e.text.clone()),
+                        path: PathBuf::from(format!(
+                            "Languages/Russian/DefInjected/{}.xml",
+                            e.tkey
+                                .as_ref()
+                                .map(|m| m.def_type.clone())
+                                .unwrap_or_else(|| "Misc".into())
+                        )),
+                        line: None,
+                        tkey: None,
+                    })
+            })
+            .collect();
+        // msgstr filled from the project's own translations (as if a
+        // translator had completed them in an external PO editor).
+        let tm_map: std::collections::HashMap<String, String> = project
+            .translations
+            .iter()
+            .filter(|t| t.locale == "Russian")
+            .filter_map(|t| {
+                project
+                    .entries
+                    .iter()
+                    .find(|e| e.id == t.source_id)
+                    .and_then(|e| {
+                        t.text.clone().map(|text| {
+                            let key = match (&e.id.kind, &e.tkey) {
+                                (EntryKind::TKey, Some(m)) => {
+                                    format!("{}{}", e.id.key, m.suffix)
+                                }
+                                _ => e.id.key.clone(),
+                            };
+                            (key, text)
+                        })
+                    })
+            })
+            .collect();
+        rimloc_export_po::write_po_with_tm(&po_path, &po_units, Some("ru"), Some(&tm_map)).unwrap();
+        // ...external-like import into a FRESH project (same source scan)...
+        let mut project_b = build_project(&root, Some("1.6")).unwrap();
+        let entries = rimloc_import_po::read_po_entries(&po_path).unwrap();
+        let matcher_units: Vec<rimloc_core::TransUnit> = project_b
+            .entries
+            .iter()
+            .map(|e| rimloc_core::TransUnit {
+                key: e.id.key.clone(),
+                source: Some(e.text.clone()),
+                path: PathBuf::new(),
+                line: None,
+                tkey: None,
+            })
+            .collect();
+        let registry = crate::matching::TKeyRegistry::from_identities(
+            project_b
+                .entries
+                .iter()
+                .filter(|e| e.id.kind == EntryKind::TKey)
+                .map(|e| e.id.key.clone()),
+        );
+        let matcher = crate::matching::SourceMatcher::new(&matcher_units, &registry);
+        let mut merged = 0;
+        for e in &entries {
+            let v = e.value.trim();
+            if v.is_empty() {
+                continue;
+            }
+            if let Some(source_key) = matcher.source_for_target(&e.key) {
+                let kind = if project_b
+                    .entries
+                    .iter()
+                    .any(|en| en.id.kind == EntryKind::TKey && en.id.key == source_key)
+                {
+                    EntryKind::TKey
+                } else {
+                    EntryKind::DefInjected
+                };
+                project_b.update_translation(
+                    SourceEntryId {
+                        kind,
+                        key: source_key,
+                    },
+                    "Russian",
+                    Some(v.to_string()),
+                    dom::Origin::Imported,
+                );
+                merged += 1;
+            }
+        }
+        assert!(
+            merged >= 4,
+            "PO interop must restore translations, got {merged}"
+        );
+        // ...and the PO round trip writes the SAME RimWorld output.
+        let out_b = tmp.path().join("out-b");
+        write_rimworld_translation(&mut project_b, &out_b, "Russian", "T", "t.b", "1.6").unwrap();
+        let quest_b = std::fs::read_to_string(
+            out_b.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
+        )
+        .unwrap();
+        assert!(quest_b.contains("<SampleQuest.LetterLabelFavorReceiver.slateRef>Метка услуги<"));
+    }
+
+    fn clone_of(p: &Project) -> Project {
+        p.clone()
+    }
+}
