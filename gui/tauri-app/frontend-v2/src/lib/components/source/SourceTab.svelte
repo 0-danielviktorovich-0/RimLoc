@@ -15,7 +15,12 @@
     type SourceUsage
   } from '../../source/types';
   import { source, SOURCE_SCENARIOS } from '../../source/store.svelte';
+  import { isDevScenarios } from '../../source/dev';
   import { loadEditorChoice } from '../../source/editor';
+
+  // Scenario controls are a developer tool (W6 scenario browser is the
+  // integrated home post-freeze); hidden in product builds unless opted in.
+  const devScenarios = isDevScenarios();
 
   interface Props {
     entry: {
@@ -229,19 +234,21 @@
           </div>
         {/each}
       </dl>
-      <label class="scenario-row">
-        <span>{t('source.scenario.label')}</span>
-        <select
-          data-testid="source.scenario.select"
-          value={source.scenarioId}
-          onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
-        >
-          {#each SOURCE_SCENARIOS as s (s.id)}
-            <option value={s.id}>{s.id}</option>
-          {/each}
-        </select>
-      </label>
-      <p class="hint">{t('source.scenario.hint')}</p>
+      {#if devScenarios}
+        <label class="scenario-row">
+          <span>{t('source.scenario.label')}</span>
+          <select
+            data-testid="source.scenario.select"
+            value={source.scenarioId}
+            onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
+          >
+            {#each SOURCE_SCENARIOS as s (s.id)}
+              <option value={s.id}>{s.id}</option>
+            {/each}
+          </select>
+        </label>
+        <p class="hint">{t('source.scenario.hint')}</p>
+      {/if}
     </details>
   </div>
 {:else}
@@ -252,18 +259,20 @@
       {t('source.empty.noData', { id: entry.id })}
     </p>
     <p class="hint">{t('source.empty.covered', { ids: source.coveredEntryIds().join(', ') })}</p>
-    <label class="scenario-row">
-      <span>{t('source.scenario.label')}</span>
-      <select
-        data-testid="source.scenario.select.empty"
-        value={source.scenarioId}
-        onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
-      >
-        {#each SOURCE_SCENARIOS as s (s.id)}
-          <option value={s.id}>{s.id}</option>
-        {/each}
-      </select>
-    </label>
+    {#if devScenarios}
+      <label class="scenario-row">
+        <span>{t('source.scenario.label')}</span>
+        <select
+          data-testid="source.scenario.select.empty"
+          value={source.scenarioId}
+          onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
+        >
+          {#each SOURCE_SCENARIOS as s (s.id)}
+            <option value={s.id}>{s.id}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
   </div>
 {/if}
 
