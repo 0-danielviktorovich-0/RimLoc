@@ -342,13 +342,11 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
     let has_source_side = mod_root.join("Defs").is_dir()
         || mod_root.join("Languages").join("English").is_dir()
         || mod_root.join("LoadFolders.xml").is_file();
-    if project.entries.is_empty() {
-        if has_source_side {
-            fail(
-                &mut failures,
-                "G3b inventory is EMPTY although the mod ships source-side content (Defs or English Languages) — canonical scan lost everything".into(),
-            );
-        }
+    if project.entries.is_empty() && has_source_side {
+        fail(
+            &mut failures,
+            "G3b inventory is EMPTY although the mod ships source-side content (Defs or English Languages) — canonical scan lost everything".into(),
+        );
     }
 
     // G4 — view honesty, checked on the model itself.
