@@ -122,6 +122,21 @@
     }
   }
 
+  /** Escape closes the viewer and hands focus back to the app (029 #4). */
+  function onEscape(e: KeyboardEvent) {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    source.closeViewer();
+    (document.querySelector('[data-testid="workspace.context"]') as HTMLElement | null)?.focus?.();
+  }
+
+  function bind(el: HTMLDivElement): void {
+    if (!el.dataset.escBound) {
+      el.dataset.escBound = '1';
+      el.addEventListener('keydown', onEscape);
+    }
+  }
+
   let copyState = $state<'idle' | 'copied' | 'fallback'>('idle');
 
   async function copySelection(text: string, labelKey: string) {
@@ -140,6 +155,7 @@
     aria-modal="true"
     aria-label={t('source.viewer.title')}
     data-testid="source.viewer"
+    use:bind
     onclick={(e) => {
       if (e.target === e.currentTarget) source.closeViewer();
     }}

@@ -4,7 +4,9 @@
   // Mounted once from the Workspace shell (project-scoped surfaces); the
   // external-change banner is exposed separately as SourceChangeBanner so
   // hosts can place it where it fits.
+  import { onMount } from 'svelte';
   import { t } from '../../../i18n/store.svelte';
+  import { installSourceShortcutDispatcher } from '../../source/dispatch.svelte';
   import Icon from '../Icon.svelte';
   import SourceContextMenu from './SourceContextMenu.svelte';
   import SourceViewer from './SourceViewer.svelte';
@@ -12,6 +14,8 @@
   import { source } from '../../source/store.svelte';
 
   const toast = $derived(source.lastMockAction);
+
+  onMount(() => installSourceShortcutDispatcher());
 </script>
 
 <SourceContextMenu />
