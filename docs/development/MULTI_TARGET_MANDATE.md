@@ -1,3 +1,4 @@
+<!-- mandate_id: g5-multi-target | wave: G5-W2 | scope: multi-target workspace: active target, switcher, manager, per-target state -->
 ===============================================================================
 (G4/G5 — кумулятивный мандат владельца, 2026-09-24; единый фронтенд-DAG, одна IA)
 MULTI-TARGET LANGUAGE WORKSPACE / EDITOR UX

@@ -1,3 +1,4 @@
+<!-- mandate_id: g5-source-inspector | wave: G5-W7 | scope: read-only source viewer, one-click actions, external editor -->
 # МАНДАТ: Source Inspector / File Navigation / External Editor (G5-W7, 2026-09-24)
 
 Сжатая персистенция. Инвариант: **исходники RimWorld/Workshop/модов — read-only по

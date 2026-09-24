@@ -1,3 +1,4 @@
+<!-- mandate_id: g5-qa | wave: G5-W1/W4/W5 | scope: owner hands-on QA corrections: wizard branching, providers, editors, diagnostics -->
 ===============================================================================
 (G4/G5 — кумулятивный мандат владельца, 2026-09-24; единый фронтенд-DAG, одна IA)
 AI TRANSLATION PRODUCT ARCHITECTURE / GUI INFORMATION ARCHITECTURE

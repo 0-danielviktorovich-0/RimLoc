@@ -1,3 +1,4 @@
+<!-- mandate_id: g4-sprint | wave: G4 | scope: GUI implementation sprint: home, wizard, workspace, settings, palette -->
 GUI IMPLEMENTATION SPRINT (G4) — мандат владельца, 2026-09-24
 ======================================================================
 ===============================================================================

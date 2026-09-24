@@ -1,3 +1,4 @@
+<!-- mandate_id: g5-chat-batch | wave: G5-W3 | scope: chat-based AI translation round-trip, batch manager, sizing/profiles -->
 ===============================================================================
 (G4/G5 — кумулятивный мандат владельца, 2026-09-24; единый фронтенд-DAG, одна IA)
 CHAT-BASED AI TRANSLATION / NO-API ROUND-TRIP

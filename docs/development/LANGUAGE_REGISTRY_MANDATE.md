@@ -1,3 +1,4 @@
+<!-- mandate_id: g5-languages | wave: G5-W2 | scope: extensible language registry, custom languages, generic capabilities -->
 ===============================================================================
 (G4/G5 — кумулятивный мандат владельца, 2026-09-24; единый фронтенд-DAG, одна IA)
 OWNER HANDS-ON GUI QA — FUNCTIONAL UX CORRECTION PASS
