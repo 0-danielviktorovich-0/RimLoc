@@ -101,6 +101,22 @@ describe('scenario deep-links apply real state', () => {
     expect(onboarding.script).toBe('demo');
   });
 
+  it('cold-boot workspace/demo-tour seeds the demo and stays in the workspace (tail fix)', () => {
+    // Cold boot: the deep-link is in the hash BEFORE any component mounts.
+    goto('#/workspace?scenario=workspace/demo-tour');
+    mountCmp(App);
+    flushSync();
+    expect(project.projectName).toBe('RimLoc Demo');
+    expect(onboarding.open).toBe(true);
+    expect(onboarding.script).toBe('demo');
+    // The Home step is skipped (demo already seeded): tour sits on the row step.
+    expect(onboarding.step).toBe(1);
+    expect(exists('onboarding.overlay')).toBe(true);
+    // The init order must not bounce the scenario to Home.
+    expect(window.location.hash).toContain('#/workspace');
+    expect(window.location.hash).not.toBe('#/home');
+  });
+
   it('unknown scenario ids are ignored without crashing', () => {
     ui.homeMode = 'returning'; // prove the bogus URL changes nothing
     goto('#/home?scenario=bogus/scenario');
