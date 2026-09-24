@@ -49,3 +49,8 @@ Thumbs.db
 # === Test lab runtime artifacts (regenerable) ===
 /testlab/run/
 /testlab/benchmarks/raw/
+
+# === Node ===
+# Worktrees link frontend node_modules for local builds; never source.
+# (no trailing slash: the worktree entry is a SYMLINK, not a directory)
+node_modules

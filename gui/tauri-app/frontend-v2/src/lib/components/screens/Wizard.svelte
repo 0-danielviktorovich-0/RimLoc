@@ -12,6 +12,7 @@
   import Icon from '../Icon.svelte';
   import { t, i18n } from '../../../i18n/store.svelte';
   import { router } from '../../router.svelte';
+  import { devMode } from '../../stores/devmode.svelte';
   import {
     mockDlc,
     mockInstallations,
@@ -42,6 +43,19 @@
 
   let step = $state(1);
   let content = $state<ContentKind>('mod');
+
+  // W6 scenario deep-links: `#/wizard?scenario=wizard/<branch>` preselects the
+  // content branch exactly as a user click would. Dev-gated together with the
+  // scenario runner — with the mode off, unknown/malicious deep-links are
+  // ignored and the wizard starts from its default branch.
+  $effect(() => {
+    if (!devMode.enabled) return;
+    const query = window.location.hash.split('?')[1];
+    const scenario = query ? new URLSearchParams(query).get('scenario') : null;
+    if (scenario === 'wizard/base-game') content = 'base';
+    else if (scenario === 'wizard/dlc') content = 'dlc';
+    else if (scenario === 'wizard/language-pack') content = 'pack';
+  });
 
   // Selection state per content branch — preserved across branch switches and
   // back-navigation (QA mandate §2: "back does not reset the choice").
