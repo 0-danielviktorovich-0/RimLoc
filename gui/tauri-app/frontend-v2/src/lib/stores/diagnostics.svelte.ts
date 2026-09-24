@@ -16,10 +16,13 @@ import { i18n } from '../../i18n/store.svelte';
 import { languages } from '../languages/store.svelte';
 import { registry } from '../languages/registry';
 
-/** Mock locations the bundle shows with home-path normalization. */
-export const SOURCE_LOCATION =
-  '/Users/danielviktorovich/Library/Application Support/Steam/steamapps/workshop/content/294100/2890901044';
-export const OUTPUT_LOCATION = '/Users/danielviktorovich/Projects/TestMod/Languages';
+/**
+ * Mock locations the bundle shows with home-path normalization. Synthetic
+ * generic fixtures on purpose: no real username/company/workshop id of the
+ * owner may appear in code or tests (the live pipeline binds real paths).
+ */
+export const SOURCE_LOCATION = `/Users/<user>/Library/Application Support/Steam/steamapps/workshop/content/294100/<publishedfileid>`;
+export const OUTPUT_LOCATION = '/Users/<user>/Projects/<mod>/Languages';
 
 /** Replay steps shown while the scenario runs. */
 export interface ScenarioStep {
@@ -40,7 +43,9 @@ function initialSteps(): ScenarioStep[] {
   ];
 }
 
-class DiagnosticsStore {
+// Exported for regression tests (fresh instances, fake timers); the app
+// uses the singleton below.
+export class DiagnosticsStore {
   phase = $state<DiagnosticsPhase>('idle');
   steps = $state<ScenarioStep[]>(initialSteps());
   causal = $state<CausalContext | null>(null);
@@ -68,11 +73,16 @@ class DiagnosticsStore {
    * Replay the controlled known failure: run the pipeline, let the validator
    * fail on keyed-04, assemble the structured causal context. Store reads the
    * live provider/locale state so the context reflects the actual session.
+   *
+   * A rerun clears the previous causal context FIRST: while the new run is
+   * 'running', no stale operation id / bundle / prompt may remain readable or
+   * copyable as if it were the fresh result.
    */
   runScenario() {
     this.clearTimers();
     this.phase = 'running';
     this.steps = initialSteps();
+    this.causal = null;
     this.bundle = null;
     this.aiPrompt = '';
 

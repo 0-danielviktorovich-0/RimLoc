@@ -824,14 +824,18 @@ export const en: Record<string, string> = {
   'help.bugreport.copyAI': 'Copy for AI',
   'help.copied': 'Copied to clipboard',
 
-  // Diagnostics workstation (mandate §16-§17, W5)
+  // Diagnostics workstation (mandate §16-§17, W5). The scenario is a guided
+  // DEMO: the draft loses a placeholder, the validator catches it — copy says
+  // so explicitly, and the screen carries a visible demo badge until the W6
+  // global mock/live badge.
   'diagnostics.title': 'Diagnostics',
+  'diagnostics.demoBadge': 'Demo scenario (mock)',
   'diagnostics.subtitle':
-    'Replay a known failure, read the structured cause and build a support bundle that a human — or an AI — can act on without seeing your secrets.',
-  'diagnostics.scenario.title': 'Controlled failure scenario',
+    'A guided demo of the diagnostics loop: a scripted sample failure, its structured cause, and a support bundle a human — or an AI — can act on without seeing your secrets.',
+  'diagnostics.scenario.title': 'Controlled sample failure',
   'diagnostics.scenario.desc':
-    'Replays a real validation failure against this project: the validator loses a placeholder in a keyed entry and the pipeline assembles the cause around it.',
-  'diagnostics.scenario.knownFailure': 'Known failure: placeholder mismatch in {key} during validation.',
+    'A demonstration, not a real failure: the draft translation for a keyed entry loses a placeholder from its source, the validator catches the loss, and the pipeline assembles the cause around that spot. Project data is not modified.',
+  'diagnostics.scenario.knownFailure': 'Demo failure: the draft for {key} loses its placeholder during validation.',
   'diagnostics.run': 'Run diagnostics',
   'diagnostics.runAgain': 'Run again',
   'diagnostics.step.inventory': 'Read source inventory',
@@ -892,6 +896,7 @@ export const en: Record<string, string> = {
   'bundle.reason.envSecret': 'Secret env value',
   'bundle.reason.keychain': 'Keychain data',
   'bundle.reason.signing': 'Signing identity',
+  'bundle.reason.sensitiveField': 'Sensitive field',
   'bundle.reason.thirdParty': 'Third-party game content',
   'bundle.reason.homePath': 'Home path normalized to ~',
   'bundle.reason.too-large': 'Too large, not needed for this failure',
