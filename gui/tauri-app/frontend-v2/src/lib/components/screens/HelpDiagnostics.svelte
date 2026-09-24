@@ -82,6 +82,13 @@
     router.navigate('workspace');
   }
 
+  // W6: replay the guided demo tour (Open Demo → … → Build demo). It starts
+  // on Home where the demo lives; replayable on demand.
+  function replayDemoTour() {
+    onboarding.replay('demo');
+    router.navigate('home');
+  }
+
   // W5: the quick checks stay here; the causal-context workstation (controlled
   // failure → structured context → sanitized bundle) lives on #/diagnostics.
   function openDiagnostics() {
@@ -138,14 +145,21 @@
     </ol>
   </article>
 
-  <!-- Replay onboarding -->
+  <!-- Replay onboarding + guided demo tour (W6) -->
   <article class="card" data-testid="help.replay">
     <h2 class="card-title"><Icon name="lightbulb" size={16} /> {t('help.replay.title')}</h2>
     <p class="text">{t('help.replay.desc')}</p>
-    <button type="button" class="btn" data-testid="help.replay.action" onclick={replayOnboarding}>
-      <Icon name="arrow-right" size={14} />
-      {t('help.replay.action')}
-    </button>
+    <div class="row">
+      <button type="button" class="btn" data-testid="help.replay.action" onclick={replayOnboarding}>
+        <Icon name="arrow-right" size={14} />
+        {t('help.replay.action')}
+      </button>
+      <button type="button" class="btn" data-testid="help.replay.demoTour" onclick={replayDemoTour}>
+        <Icon name="play" size={14} />
+        {t('help.replay.demoTour')}
+      </button>
+    </div>
+    <p class="text">{t('help.replay.demoTourDesc')}</p>
   </article>
 
   <!-- Shortcuts (mandate §14): full remappable table with conflict detection;

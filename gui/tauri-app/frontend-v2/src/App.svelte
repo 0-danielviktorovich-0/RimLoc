@@ -13,6 +13,7 @@
   import TMEditor from './lib/components/screens/TMEditor.svelte';
   import Phase2Stub from './lib/components/screens/Phase2Stub.svelte';
   import Diagnostics from './lib/components/screens/Diagnostics.svelte';
+  import OnboardingCoach from './lib/components/OnboardingCoach.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
   import StyleLab from './lib/components/StyleLab.svelte';
   import { router } from './lib/router.svelte';
@@ -53,6 +54,10 @@
 </main>
 
 <DevPanel />
+
+<!-- W6: anchored product tour lives at shell level — the guided demo script
+     spans Home → Workspace → Review → Build, so it survives route changes. -->
+<OnboardingCoach />
 
 <!-- Style Lab is dev-only: gated behind ?stylelab=1 / localStorage opt-in. -->
 {#if stylelab.enabled}
