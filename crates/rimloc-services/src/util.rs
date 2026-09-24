@@ -159,16 +159,17 @@ pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()>
 /// Canonical containment view of a path with REAL symlink resolution,
 /// portable prefix semantics included:
 ///
-/// - platform prefix (Windows drive / UNC) is preserved verbatim in the
-///   rebuilt `PathBuf`, so `C:\…` vs `D:\…` and UNC roots compare natively;
-/// - every existing component is checked with `symlink_metadata`; a symlink
-///   target is resolved iteratively (relative targets against the resolved
-///   prefix), `..` is applied to the resolved prefix;
-/// - only `NotFound` is treated as "non-existing tail" (resolved lexically,
-///   where no further symlinks can appear until a `..` pops back into
-///   existing territory, which is re-checked); any other IO error
-///   (permission, not-a-directory, …) fails closed with `Err`;
-/// - `std::fs::canonicalize` short-circuits fully-existing paths.
+/// - the LONGEST EXISTING PREFIX is resolved with `std::fs::canonicalize`
+///   (extended-length `\\?\` form + canonical case on Windows) and the
+///   non-existing tail is appended onto that base — so the slow path lands
+///   in the exact same representation as the fast path and containment
+///   (`starts_with`) compares like with like;
+/// - every existing component is additionally checked with
+///   `symlink_metadata`; a symlink target is resolved iteratively (relative
+///   targets against the resolved prefix), `..` is applied to the resolved
+///   prefix;
+/// - only `NotFound` is treated as "non-existing tail"; any other IO error
+///   (permission, not-a-directory, …) fails closed with `Err`.
 ///
 /// Containment callers must fail closed on `Err` rather than guess.
 pub fn canonical_view(path: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
@@ -183,20 +184,50 @@ pub fn canonical_view(path: &std::path::Path) -> std::io::Result<std::path::Path
         }
     }
 
-    // Fast path: the path exists as-is — std canonicalize is authoritative.
+    // Fast path: the path exists as-is — std canonicalize is authoritative
+    // (extended-length prefix + canonical case on Windows).
     if let Ok(c) = path.canonicalize() {
         return Ok(c);
     }
 
-    let mut resolved = if path.is_absolute() {
-        PathBuf::new()
+    let abs = if path.is_absolute() {
+        path.to_path_buf()
     } else {
         // Relative candidate: failure to learn the cwd is an error, not a
         // silent "." default.
-        std::env::current_dir()?
+        std::env::current_dir()?.join(path)
     };
 
-    let mut pending: std::collections::VecDeque<Step> = path.components().map(map).collect();
+    // Seed the resolver with the LONGEST EXISTING PREFIX, canonically
+    // resolved. This is what keeps fast and slow paths comparable: both
+    // share the same canonical prefix form and case before the
+    // non-existing tail is appended.
+    let components: Vec<Component<'_>> = abs.components().collect();
+    let mut keep = components.len();
+    let canonical_base = loop {
+        if keep == 0 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "no existing anchor to resolve the path against",
+            ));
+        }
+        let mut candidate = PathBuf::new();
+        for c in &components[..keep] {
+            candidate.push(c.as_os_str());
+        }
+        match candidate.canonicalize() {
+            Ok(c) => break c,
+            // Shrinking the prefix may cross back into existing territory
+            // (not-a-directory chains etc.); only shrinking past a missing
+            // entry is benign — anything else fails closed.
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => keep -= 1,
+            Err(e) => return Err(e),
+        }
+    };
+
+    let mut resolved = canonical_base;
+    let mut pending: std::collections::VecDeque<Step> =
+        components[keep..].iter().map(|&c| map(c)).collect();
     let mut jumps = 0usize;
 
     while let Some(step) = pending.pop_front() {
@@ -412,5 +443,48 @@ mod tests {
         ));
         // Forward-slash spellings of a drive resolve to the same view.
         assert!(is_within(Path::new("C:/src/sub/.."), Path::new(r"C:\\src")));
+    }
+
+    // Round-016: fast path (std canonicalize, extended-length + canonical
+    // case) and slow path (canonical base + non-existing tail) must land in
+    // the SAME representation, or starts_with containment misses.
+    #[cfg(windows)]
+    #[test]
+    fn slow_path_matches_fast_path_prefix_and_case() {
+        let base =
+            std::env::temp_dir().join(format!("rimloc-canonical-parity-{}", std::process::id()));
+        let source = base.join("Source"); // existing, mixed case
+        std::fs::create_dir_all(&source).expect("dirs");
+
+        // Existing root + non-existing nested output = contained (the guard
+        // rejects), and the slow view is IDENTICAL to the fast view.
+        let nested = source.join("new").join("bundle");
+        assert!(is_within(&nested, &source), "nested output contained");
+        let fast = canonical_view(&source).expect("fast");
+        let slow = canonical_view(&nested).expect("slow");
+        assert!(slow.starts_with(&fast), "slow {slow:?} vs fast {fast:?}");
+
+        // Case alias of the existing root normalizes to the canonical case:
+        // the slow view of base/source/new equals the fast view of Source/new.
+        let lower_alias = base.join("source").join("new");
+        assert_eq!(
+            canonical_view(&lower_alias).expect("alias slow"),
+            slow,
+            "case alias must normalize to the canonical case"
+        );
+
+        // Extended-length spelling of the same root is the same view.
+        let ext = PathBuf::from(format!(r"\\?\{}", source.display()));
+        assert_eq!(
+            canonical_view(&ext).expect("ext fast"),
+            canonical_view(&source).expect("std fast"),
+            "extended-length and standard spellings agree"
+        );
+        assert!(is_within(&ext.join("new"), &source));
+
+        // Different drive stays outside.
+        assert!(!is_within(Path::new(r"D:\new"), &source));
+
+        std::fs::remove_dir_all(&base).ok();
     }
 }
