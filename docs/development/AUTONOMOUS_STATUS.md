@@ -487,3 +487,11 @@ GUI productization не задерживаются.
   из provenance резолвера) + generated output viewer (SOURCE_INSPECTOR_MANDATE.md);
   live-acceptance после фриза.
 Порядок: W1 ✓ → W2 ✓ → W3 → W4 → W5 → W6/W7 → FREEZE.
+
+### КОРРЕКЦИЯ DAG (25.09): две параллельные полосы, W3-W7 не блокируют FREEZE
+BACKEND: J-проводка → L → FREEZE → real UI binding → LIVE ACCEPTANCE GATE.
+GUI: W3 → W4 → W5 → W6 (pre-freeze mock/contract) → W7 (pre-freeze mock) — параллельно;
+W6/W7 post-freeze = live binding/acceptance. PRE-FREEZE контракт для Source Inspector:
+canonical provenance должен отвечать what file / where / which candidate won / why
+(Добавить winner-reason в provenance до фриза). Авторитетный слепок кампании:
+**docs/development/CAMPAIGN_SNAPSHOT.md** (обновлять на каждом чекпоинте).
