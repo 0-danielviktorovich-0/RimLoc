@@ -13,6 +13,10 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [cli] `merge-keyed` command to run the above.
 - [cli] `coverage` command to report translated/missing counts (text/json).
 - [export/import-xliff] Minimal XLIFF 1.2 exporter/importer crates and CLI (`export-xliff`, `import-xliff`).
+- [cli/doctor] New `doctor` command: environment diagnostics (RimWorld install, version, mod dirs, provider configuration presence, output writability) with OK/WARNING/ERROR/NOT CHECKED statuses, remediation hints and `--format json`.
+- [cli/validate] New `--support-bundle <OUT_DIR>` flag: captures the actual validation results into a sanitized support bundle (report.md, diagnostics.json, sanitized environment.json, sha256 manifest) for root-cause diagnosis; a run with issues is preserved as a failed operation.
+- [services] Support-bundle API (`collect_support_bundle*`): secret-aware sanitizer with Included/Redacted/Excluded preview (credentials, tokens, home paths, env allowlist), structured operation log with operation IDs and causal error chains, output boundary guards against writing into read-only source trees.
+- [services] Symlink-safe atomic writes: staging files are created with unique names via `create_new` (a pre-planted temp symlink can no longer be truncated), so user and game files cannot be overwritten through temp paths.
 - [gui/tauri] Backend commands to load/list dynamic parser plugins (for future UI hookup).
 - [parsers-xml] New `read_keyed_file_map(_with_comments)` API: robust Keyed reader with `<li>`/`<LineBreak/>`/CDATA and optional EN: comment override.
 
