@@ -19,6 +19,12 @@ export const en: Record<string, string> = {
   'common.delete': 'Delete',
   'common.done': 'Done',
 
+  // Global data-mode badge (W6, MOCK_LIVE_ONBOARDING_MANDATE §1): honest on
+  // every route and every build — never gated by import.meta.env.DEV.
+  'mockbadge.label': 'Demo data (mock)',
+  'mockbadge.title':
+    'This scaffold runs on synthetic demo data with zero backend calls. The live mode arrives after the backend freeze through the RimLocClient transport boundary.',
+
   'theme.label': 'Theme',
   'theme.light': 'Light',
   'theme.dark': 'Dark',
@@ -844,10 +850,9 @@ export const en: Record<string, string> = {
 
   // Diagnostics workstation (mandate §16-§17, W5). The scenario is a guided
   // DEMO: the draft loses a placeholder, the validator catches it — copy says
-  // so explicitly, and the screen carries a visible demo badge until the W6
-  // global mock/live badge.
+  // so explicitly. The demo/mock framing itself is owned by the global
+  // MockBadge in the app header (W6).
   'diagnostics.title': 'Diagnostics',
-  'diagnostics.demoBadge': 'Demo scenario (mock)',
   'diagnostics.subtitle':
     'A guided demo of the diagnostics loop: a scripted sample failure, its structured cause, and a support bundle a human — or an AI — can act on without seeing your secrets.',
   'diagnostics.scenario.title': 'Controlled sample failure',
