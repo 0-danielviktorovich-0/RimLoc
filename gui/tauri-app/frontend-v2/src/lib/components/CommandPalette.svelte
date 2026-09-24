@@ -6,28 +6,72 @@
   // but the element lives outside #app.
   import Icon from './Icon.svelte';
   import { t } from '../../i18n/store.svelte';
-  import { router, type RouteId } from '../router.svelte';
+  import { router, PROJECT_ROUTES, type RouteId } from '../router.svelte';
   import { palette } from '../stores/palette.svelte';
+  import { languages } from '../languages/store.svelte';
 
   interface PaletteAction {
     id: string;
     labelKey: string;
     icon: string;
     route: RouteId;
+    /** Interpolation params for the label. */
+    params?: Record<string, string | number>;
+    /** Custom runner (language actions): when set, no navigation happens. */
+    onRun?: () => void;
   }
 
-  const ACTIONS: PaletteAction[] = [
-    { id: 'translate-selected', labelKey: 'palette.action.translateSelected', icon: 'sparkles', route: 'workspace' },
-    { id: 'validate-project', labelKey: 'palette.action.validateProject', icon: 'circle-check', route: 'workspace' },
-    { id: 'review-errors', labelKey: 'palette.action.reviewErrors', icon: 'warning', route: 'review' },
-    { id: 'build-translation', labelKey: 'palette.action.buildTranslation', icon: 'package', route: 'build' },
-    { id: 'open-project', labelKey: 'palette.action.openProject', icon: 'folder-open', route: 'home' },
-    { id: 'compare-versions', labelKey: 'palette.action.compareVersions', icon: 'layers', route: 'workspace' },
-    { id: 'open-settings', labelKey: 'palette.action.openSettings', icon: 'settings', route: 'settings' },
-    { id: 'configure-ai', labelKey: 'palette.action.configureAI', icon: 'cpu', route: 'providers' },
-    { id: 'run-diagnostics', labelKey: 'palette.action.runDiagnostics', icon: 'clipboard-check', route: 'help' },
-    { id: 'show-shortcuts', labelKey: 'palette.action.showShortcuts', icon: 'lightbulb', route: 'help' }
-  ];
+  /** Language manager lives in the Workspace; open it there from any route. */
+  function openManagerInWorkspace(intent: 'manage' | 'add'): () => void {
+    return () => {
+      languages.openManager(intent);
+      if (!(PROJECT_ROUTES as string[]).includes(router.route)) router.navigate('workspace');
+    };
+  }
+
+  /** Static actions plus one live action per target locale (W2). */
+  function buildActions(): PaletteAction[] {
+    const base: PaletteAction[] = [
+      { id: 'translate-selected', labelKey: 'palette.action.translateSelected', icon: 'sparkles', route: 'workspace' },
+      { id: 'validate-project', labelKey: 'palette.action.validateProject', icon: 'circle-check', route: 'workspace' },
+      { id: 'review-errors', labelKey: 'palette.action.reviewErrors', icon: 'warning', route: 'review' },
+      { id: 'build-translation', labelKey: 'palette.action.buildTranslation', icon: 'package', route: 'build' },
+      { id: 'open-project', labelKey: 'palette.action.openProject', icon: 'folder-open', route: 'home' },
+      { id: 'compare-versions', labelKey: 'palette.action.compareVersions', icon: 'layers', route: 'workspace' },
+      { id: 'open-settings', labelKey: 'palette.action.openSettings', icon: 'settings', route: 'settings' },
+      { id: 'configure-ai', labelKey: 'palette.action.configureAI', icon: 'cpu', route: 'providers' },
+      { id: 'run-diagnostics', labelKey: 'palette.action.runDiagnostics', icon: 'clipboard-check', route: 'help' },
+      { id: 'show-shortcuts', labelKey: 'palette.action.showShortcuts', icon: 'lightbulb', route: 'help' }
+    ];
+    // Multi-target language actions (W2): switch → <lang>, add, manage.
+    const languageActions: PaletteAction[] = languages
+      .summaries()
+      .map((s) => ({
+        id: `switch-target-${s.locale}`,
+        labelKey: 'palette.action.switchTarget',
+        icon: 'languages',
+        route: 'workspace' as RouteId,
+        params: { name: s.definition.nativeName },
+        onRun: () => languages.setActive(s.locale)
+      }));
+    languageActions.push(
+      {
+        id: 'add-target-language',
+        labelKey: 'languages.switcher.add',
+        icon: 'file-plus',
+        route: 'workspace',
+        onRun: openManagerInWorkspace('add')
+      },
+      {
+        id: 'manage-languages',
+        labelKey: 'languages.switcher.manage',
+        icon: 'languages',
+        route: 'workspace',
+        onRun: openManagerInWorkspace('manage')
+      }
+    );
+    return [...base, ...languageActions];
+  }
 
   let query = $state('');
   let active = $state(0);
@@ -51,10 +95,13 @@
     return 100 - gaps;
   }
 
+  // Rebuilt reactively so freshly added targets appear in the palette.
+  const actions = $derived(buildActions());
+
   const results = $derived.by(() => {
     const q = query.trim();
-    if (!q) return ACTIONS;
-    return ACTIONS.map((a) => ({ a, s: Math.max(score(t(a.labelKey), q), score(a.id, q) - 10) }))
+    if (!q) return actions;
+    return actions.map((a) => ({ a, s: Math.max(score(t(a.labelKey, a.params), q), score(a.id, q) - 10) }))
       .filter((r) => r.s >= 0)
       .sort((x, y) => y.s - x.s)
       .map((r) => r.a);
@@ -62,6 +109,10 @@
 
   function run(action: PaletteAction) {
     palette.hide();
+    if (action.onRun) {
+      action.onRun();
+      return;
+    }
     router.navigate(action.route);
   }
 
@@ -155,7 +206,7 @@
             onclick={() => run(action)}
           >
             <Icon name={action.icon} size={15} />
-            <span class="opt-label">{t(action.labelKey)}</span>
+            <span class="opt-label">{t(action.labelKey, action.params)}</span>
             <Icon name="arrow-right" size={13} />
           </li>
         {:else}

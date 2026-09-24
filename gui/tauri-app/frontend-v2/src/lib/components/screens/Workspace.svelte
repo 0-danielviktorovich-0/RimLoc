@@ -8,6 +8,8 @@
   import { ui } from '../../stores/ui.svelte';
   import { project } from '../../stores/project.svelte';
   import { router } from '../../router.svelte';
+  import TargetSwitcher from '../../languages/TargetSwitcher.svelte';
+  import LanguageManager from '../LanguageManager.svelte';
   import Navigator from '../workspace/Navigator.svelte';
   import FilterBar from '../workspace/FilterBar.svelte';
   import EntryTable from '../workspace/EntryTable.svelte';
@@ -108,12 +110,19 @@
 
 <OnboardingCoach />
 
+<!-- Language Manager dialog (W2): opened from the header switcher or the
+     command palette; overlay is viewport-fixed. -->
+<LanguageManager />
+
 <section class="workspace" aria-label={t('workspace.title')}>
   <div class="toolbar">
     <h1 class="toolbar-title">{t('workspace.title')}</h1>
     <span class="toolbar-meta mono" data-testid="workspace.meta">
-      {project.projectName} · en → {project.targetLocale.toUpperCase()} · {t('workspace.meta.version')}
+      {project.projectName} · {t('workspace.meta.version')}
     </span>
+    <!-- Multi-target header (W2): English → [Русский ▾] [+] + pinned tabs.
+         Project language pair, independent of the interface language. -->
+    <TargetSwitcher />
     <StageIndicator {stage} />
     <div class="toolbar-actions">
       <button
