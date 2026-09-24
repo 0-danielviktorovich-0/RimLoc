@@ -52,6 +52,11 @@ pub use import::{
 };
 pub use matching::{MatchOrigin, Resolution, SourceMatcher, TKeyRegistry};
 pub use modview::{effective_view, EffectiveModView};
+pub use observability::{
+    collect_support_bundle_for, generate_operation_id, sha256_hex, BundleFile, ClassifyReport,
+    ErrorRecord, FieldDecision, OperationLog, ProjectMeta, Sanitizer, StageRecord, SupportBundle,
+    SupportBundleInputs, REDACTION_MARKER,
+};
 pub use rimloc_domain::{DiffOutput, HealthIssue, HealthReport};
 pub use scan::{
     autodiscover_defs_context, scan_defs_with_meta, scan_patches_as_units, scan_units,
