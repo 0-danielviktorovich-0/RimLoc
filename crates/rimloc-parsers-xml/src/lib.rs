@@ -206,6 +206,7 @@ pub fn scan_keyed_xml_with_options(
                                         source: Some(frame.buffer.clone()),
                                         path: p.clone(),
                                         line: frame.line,
+                                        ..Default::default()
                                     });
                                     continue;
                                 }
@@ -242,6 +243,7 @@ pub fn scan_keyed_xml_with_options(
                                     source: Some(source),
                                     path: p.clone(),
                                     line: frame.line,
+                                    ..Default::default()
                                 });
                             }
                         } else if opts.nested
@@ -269,6 +271,7 @@ pub fn scan_keyed_xml_with_options(
                                 source: Some(frame.buffer),
                                 path: p.clone(),
                                 line: frame.line,
+                                ..Default::default()
                             });
                         }
                     }
@@ -292,6 +295,7 @@ pub fn scan_keyed_xml_with_options(
                                 source: Some(String::new()),
                                 path: p.clone(),
                                 line,
+                                ..Default::default()
                             });
                         }
                     } else if stack.len() >= 2 {
@@ -334,6 +338,7 @@ pub fn scan_keyed_xml_with_options(
                                 source: Some(String::new()),
                                 path: p.clone(),
                                 line,
+                                ..Default::default()
                             });
                         }
                     }
@@ -648,6 +653,7 @@ pub fn scan_defs_xml_under_with_fields(
                         source: Some(val),
                         path: p.to_path_buf(),
                         line,
+                        ..Default::default()
                     });
                 }
             }
@@ -1288,6 +1294,7 @@ pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<
                                 source: Some(t.to_string()),
                                 path: p.to_path_buf(),
                                 line,
+                                ..Default::default()
                             });
                         }
                     }
@@ -1601,6 +1608,7 @@ pub fn scan_defs_with_dict_meta(
                                                     source: Some(v),
                                                     path: p.clone(),
                                                     line,
+                                                    ..Default::default()
                                                 },
                                                 def_type: def_type.clone(),
                                                 def_name: def_name.clone(),
@@ -1624,6 +1632,7 @@ pub fn scan_defs_with_dict_meta(
                                         source: Some(v.to_string()),
                                         path: p.clone(),
                                         line,
+                                        ..Default::default()
                                     },
                                     def_type: def_type.clone(),
                                     def_name: def_name.clone(),
@@ -1652,6 +1661,7 @@ pub fn scan_defs_with_dict_meta(
                                         source: Some(val.to_string()),
                                         path: p.clone(),
                                         line,
+                                        ..Default::default()
                                     },
                                     def_type: def_type.clone(),
                                     def_name: def_name.clone(),
@@ -1723,6 +1733,7 @@ pub fn scan_defs_with_dict_meta(
                                                         source: Some(val.to_string()),
                                                         path: p.clone(),
                                                         line,
+                                                        ..Default::default()
                                                     },
                                                     def_type: def_type.clone(),
                                                     def_name: def_name.clone(),
@@ -1766,6 +1777,7 @@ pub fn scan_defs_with_dict_meta(
                                             source: Some(val),
                                             path: p.clone(),
                                             line,
+                                            ..Default::default()
                                         },
                                         def_type: def_type.clone(),
                                         def_name: def_name.clone(),
@@ -1926,6 +1938,7 @@ pub fn scan_defs_with_dict_meta(
                                             source: Some(v),
                                             path: p.to_path_buf(),
                                             line,
+                                            ..Default::default()
                                         },
                                         def_type: def_type.clone(),
                                         def_name: def_name.clone(),
@@ -1950,6 +1963,7 @@ pub fn scan_defs_with_dict_meta(
                                 source: Some(v.to_string()),
                                 path: p.to_path_buf(),
                                 line,
+                                ..Default::default()
                             },
                             def_type: def_type.clone(),
                             def_name: def_name.clone(),
@@ -1979,6 +1993,7 @@ pub fn scan_defs_with_dict_meta(
                                 source: Some(val.to_string()),
                                 path: p.to_path_buf(),
                                 line,
+                                ..Default::default()
                             },
                             def_type: def_type.clone(),
                             def_name: def_name.clone(),
@@ -2043,6 +2058,7 @@ pub fn scan_defs_with_dict_meta(
                                                 source: Some(val.to_string()),
                                                 path: p.to_path_buf(),
                                                 line,
+                                                ..Default::default()
                                             },
                                             def_type: def_type.clone(),
                                             def_name: def_name.clone(),
@@ -2085,6 +2101,7 @@ pub fn scan_defs_with_dict_meta(
                                     source: Some(val),
                                     path: p.to_path_buf(),
                                     line,
+                                    ..Default::default()
                                 },
                                 def_type: def_type.clone(),
                                 def_name: def_name.clone(),
@@ -2425,16 +2442,34 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
     use std::collections::BTreeMap;
     use walkdir::WalkDir;
 
+    fn line_for_offset(offset: usize, starts: &[usize]) -> Option<usize> {
+        if starts.is_empty() {
+            return None;
+        }
+        match starts.binary_search(&offset) {
+            Ok(idx) => Some(idx + 1),
+            Err(idx) if idx > 0 => Some(idx),
+            _ => Some(1),
+        }
+    }
+
     // Logical identity -> accumulated unit. RimWorld load semantics:
     // a duplicate defName in a LATER file is rejected (first file owns the
     // identity), while a repeated field inside the SAME file is a plain
     // assignment overwrite (last node in document order wins). The context
-    // count preserves how many nodes share the identity
-    // (DLC-TKEY-ADJUDICATION §5).
+    // count preserves how many nodes share the identity, and every accepted
+    // node's real location is recorded (Source Inspector mandate §14:
+    // Primary location + Other usages — captured in the SAME parser pass,
+    // never a second scanner).
     struct Acc {
         unit: TransUnit,
         file: std::path::PathBuf,
         contexts: u32,
+        /// Real line numbers of every accepted node, document order.
+        usages: Vec<Option<usize>>,
+        strategy: &'static str,
+        suffix: &'static str,
+        def_type: String,
     }
     let mut acc: BTreeMap<String, Acc> = BTreeMap::new();
 
@@ -2469,6 +2504,13 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
         let Ok(doc) = roxmltree::Document::parse(&content) else {
             continue;
         };
+        // Parser-guaranteed line numbers for every TKey node of this file.
+        let line_starts: Vec<usize> = content
+            .bytes()
+            .enumerate()
+            .filter(|(_, b)| *b == b'\n')
+            .map(|(i, _)| i + 1)
+            .collect();
         for node in doc.root_element().descendants().filter(|n| n.is_element()) {
             let Some(tkey) = node.attribute("TKey") else {
                 continue;
@@ -2495,44 +2537,45 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
                 owner = cur.parent().filter(|n| n.is_element());
             }
             let Some(def_name) = def_name else { continue };
+            // The accumulation key includes the DEF TYPE: two def types may
+            // share defName and TKey, and those are different identities
+            // (the logical unit key stays `{defName}.{TKey}`).
+            let acc_key = format!("{def_tag}\u{1}{def_name}.{}", tkey.trim());
             let identity = format!("{def_name}.{}", tkey.trim());
             let text = node.text().unwrap_or_default().trim().to_string();
             if text.is_empty() {
                 continue;
             }
             let (strategy, suffix) = tkey_strategy(def_tag, node);
-            match acc.get_mut(&identity) {
+            let line = line_for_offset(node.range().start, &line_starts);
+            match acc.get_mut(&acc_key) {
                 // Identity already owned by an earlier file: that def wins,
-                // later files are rejected duplicates — skip entirely.
+                // later files are rejected duplicates — skip entirely. Their
+                // locations are NOT usages (rejected Def ≠ same-file node).
                 Some(a) if a.file != p => {}
                 // Same file again: RimWorld field-assignment last-wins.
                 Some(a) => {
                     a.unit.source = Some(text);
                     a.contexts += 1;
-                    a.unit.tkey = Some(rimloc_core::TKeyMeta {
-                        strategy: strategy.to_string(),
-                        suffix: suffix.to_string(),
-                        def_type: def_tag.to_string(),
-                        contexts: a.contexts,
-                    });
+                    a.usages.push(line);
+                    a.strategy = strategy;
+                    a.suffix = suffix;
                 }
                 None => {
                     acc.insert(
-                        identity.clone(),
+                        acc_key,
                         Acc {
                             contexts: 1,
                             file: p.to_path_buf(),
+                            usages: vec![line],
+                            strategy,
+                            suffix,
+                            def_type: def_tag.to_string(),
                             unit: TransUnit {
                                 key: identity,
                                 source: Some(text),
                                 path: p.to_path_buf(),
-                                line: None,
-                                tkey: Some(rimloc_core::TKeyMeta {
-                                    strategy: strategy.to_string(),
-                                    suffix: suffix.to_string(),
-                                    def_type: def_tag.to_string(),
-                                    contexts: 1,
-                                }),
+                                ..Default::default()
                             },
                         },
                     );
@@ -2540,7 +2583,46 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
             }
         }
     }
-    Ok(acc.into_values().map(|a| a.unit).collect())
+    Ok(acc
+        .into_values()
+        .map(|a| {
+            let mut unit = a.unit;
+            // Primary location = the effective (last) assignment; earlier
+            // nodes are other usages. Single-node identities are plain
+            // first-file winners; repeated same-file assignment has its own
+            // reason.
+            let last_line = a.usages.last().copied().flatten();
+            unit.line = last_line;
+            unit.src = Some(rimloc_core::SourceRef {
+                file: a.file.clone(),
+                line: last_line,
+            });
+            unit.selected_by = Some(
+                if a.contexts > 1 {
+                    rimloc_core::winner_reason::TKEY_LAST_ASSIGNMENT
+                } else {
+                    rimloc_core::winner_reason::DEFS_FIRST_FILE
+                }
+                .into(),
+            );
+            let locations: Vec<rimloc_core::SourceRef> = a
+                .usages
+                .iter()
+                .map(|line| rimloc_core::SourceRef {
+                    file: a.file.clone(),
+                    line: *line,
+                })
+                .collect();
+            unit.tkey = Some(rimloc_core::TKeyMeta {
+                strategy: a.strategy.to_string(),
+                suffix: a.suffix.to_string(),
+                def_type: a.def_type,
+                contexts: a.contexts,
+                locations,
+            });
+            unit
+        })
+        .collect())
 }
 
 #[cfg(test)]
@@ -2601,36 +2683,55 @@ mod tkey_tests {
                 .as_ref()
                 .unwrap()
         };
+        // Per-field asserts: each parsed identity now also carries its real
+        // node location (mandate §14), which the expected literals below do
+        // not pin — locations are asserted separately.
+        fn fields(m: &rimloc_core::TKeyMeta) -> (&str, &str, &str, u32) {
+            (
+                m.strategy.as_str(),
+                m.suffix.as_str(),
+                m.def_type.as_str(),
+                m.contexts,
+            )
+        }
         // TipSetDef li: bare, no suffix.
         assert_eq!(
-            meta("SampleTips.DismissLetters"),
-            &rimloc_core::TKeyMeta {
-                strategy: "bare".into(),
-                suffix: "".into(),
-                def_type: "TipSetDef".into(),
-                contexts: 1
-            }
+            fields(meta("SampleTips.DismissLetters")),
+            ("bare", "", "TipSetDef", 1)
         );
         // Direct QuestScriptDef field: slate_ref / .slateRef.
         assert_eq!(
-            meta("SampleQuest.LetterLabelFavorReceiver"),
-            &rimloc_core::TKeyMeta {
-                strategy: "slate_ref".into(),
-                suffix: ".slateRef".into(),
-                def_type: "QuestScriptDef".into(),
-                contexts: 1
-            }
+            fields(meta("SampleQuest.LetterLabelFavorReceiver")),
+            ("slate_ref", ".slateRef", "QuestScriptDef", 1)
         );
         // parms descendant of QuestNode_SubScript: parms_value_slate_ref.
         assert_eq!(
-            meta("SampleQuest.LetterTextParms"),
-            &rimloc_core::TKeyMeta {
-                strategy: "parms_value_slate_ref".into(),
-                suffix: ".value.slateRef".into(),
-                def_type: "QuestScriptDef".into(),
-                contexts: 1
-            }
+            fields(meta("SampleQuest.LetterTextParms")),
+            (
+                "parms_value_slate_ref",
+                ".value.slateRef",
+                "QuestScriptDef",
+                1
+            )
         );
+        // Every identity carries exactly one real, parser-guaranteed location.
+        for k in [
+            "SampleTips.DismissLetters",
+            "SampleQuest.LetterLabelFavorReceiver",
+            "SampleQuest.LetterTextParms",
+        ] {
+            let m = meta(k);
+            assert_eq!(m.locations.len(), 1, "{k}");
+            assert!(
+                m.locations[0]
+                    .file
+                    .to_string_lossy()
+                    .ends_with("TKeySamples.xml"),
+                "{k}: {:?}",
+                m.locations[0].file
+            );
+            assert!(m.locations[0].line.is_some(), "{k}");
+        }
     }
 
     #[test]

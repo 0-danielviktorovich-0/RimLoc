@@ -211,6 +211,7 @@ pub fn validate_placeholders_cross_language(
             path: std::path::PathBuf::new(),
             line: None,
             tkey: None,
+            ..Default::default()
         })
         .collect();
     let tkey_registry = crate::matching::TKeyRegistry::from_identities(tkey_identities);
@@ -310,6 +311,7 @@ pub fn validate_lists_cross_language(
             path: std::path::PathBuf::new(),
             line: *line,
             tkey: None,
+            ..Default::default()
         })
         .collect();
     let tkey_registry = crate::matching::TKeyRegistry::from_identities(tkey_identities);

@@ -37,6 +37,7 @@ mod tests {
             path: PathBuf::from("/mod/Languages/English/Keyed/X.xml"),
             line: Some(42),
             tkey: None,
+            ..Default::default()
         }
     }
 

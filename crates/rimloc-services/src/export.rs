@@ -52,6 +52,7 @@ pub fn export_po_with_tm(
                 path: target_path.clone(),
                 line: None,
                 tkey: None,
+                ..Default::default()
             });
         if entry
             .source
@@ -99,6 +100,7 @@ pub fn export_po_with_tm(
                     path: target_path,
                     line: None,
                     tkey: Some(meta),
+                    ..Default::default()
                 });
         }
     }
