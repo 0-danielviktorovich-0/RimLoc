@@ -242,6 +242,19 @@ pub fn apply_existing_translation(
 /// - Keyed entries → `Keyed/<locale>.xml` (flat elements, key = entry key);
 /// - DefInjected/TKey entries → `DefInjected/<DefType>/<defName>.xml`,
 ///   element name = key (+ TKey suffix when the kind is TKey).
+///
+/// Result of a native output write: the output mod root plus the
+/// identities that were SKIPPED because their def type could not be
+/// resolved from any provenance. A skipped entry is never guessed into a
+/// "Misc" catalog — the identity stays unknown by contract, and the report
+/// names it for review/rescan.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WriteReport {
+    pub out_mod: PathBuf,
+    /// Display identities skipped as unknown-def-type (sorted, unique).
+    pub skipped_unknown_type: Vec<String>,
+}
+
 pub fn write_rimworld_translation(
     project: &Project,
     out_mod: &Path,
@@ -249,13 +262,14 @@ pub fn write_rimworld_translation(
     mod_name: &str,
     package_id: &str,
     rw_version: &str,
-) -> Result<PathBuf> {
+) -> Result<WriteReport> {
     use std::fmt::Write as _;
 
     let base = out_mod.join("Languages").join(lang_dir);
     // defName -> file; collected per def type from entry keys/contexts.
     let mut keyed: BTreeMap<String, String> = BTreeMap::new();
     let mut definj: BTreeMap<(String, String, String), BTreeMap<String, String>> = BTreeMap::new(); // (def_type, def_name, file) -> (element, text)
+    let mut skipped_unknown_type: Vec<String> = Vec::new();
 
     for t in &project.translations {
         if t.locale != lang_dir && !t.locale.is_empty() {
@@ -281,13 +295,22 @@ pub fn write_rimworld_translation(
                 // The identity discriminator is authoritative for output
                 // grouping: each def type lands in its own DefInjected
                 // catalog even when defName/field keys collide across types.
-                let def_type = entry
+                // An entry with NO resolvable type is SKIPPED with a
+                // diagnostic — never guessed into a functional "Misc"
+                // catalog (unknown stays unknown by contract).
+                let Some(def_type) = entry
                     .id
                     .def_type
                     .clone()
                     .or_else(|| entry.tkey.as_ref().map(|m| m.def_type.clone()))
                     .or_else(|| def_type_from_contexts(entry))
-                    .unwrap_or_else(|| "Misc".into());
+                else {
+                    let identity = entry.id.display_identity();
+                    if !skipped_unknown_type.contains(&identity) {
+                        skipped_unknown_type.push(identity);
+                    }
+                    continue;
+                };
                 let def_name = entry
                     .id
                     .key
@@ -346,7 +369,10 @@ pub fn write_rimworld_translation(
         crate::write_atomic(&dir.join(file), xml.as_bytes())?;
     }
 
-    Ok(out_mod.to_path_buf())
+    Ok(WriteReport {
+        out_mod: out_mod.to_path_buf(),
+        skipped_unknown_type,
+    })
 }
 
 fn def_type_from_contexts(entry: &rimloc_domain::canonical::SourceEntry) -> Option<String> {
@@ -473,7 +499,8 @@ mod gate_i_tests {
             provenance: SourceProvenance::default(),
             tkey: None,
         });
-        let out = write_rimworld_translation(&p, &out, "Russian", "T", "t.test", "1.6").unwrap();
+        let report = write_rimworld_translation(&p, &out, "Russian", "T", "t.test", "1.6").unwrap();
+        let out = report.out_mod;
         let definj = std::fs::read_to_string(
             out.join("Languages/Russian/DefInjected/QuestScriptDef/SampleQuest.xml"),
         )
@@ -671,6 +698,7 @@ mod identity_regression {
     //! detection. Keyed import is fixed by the same scope work.
     use super::*;
     use rimloc_domain::canonical::SourceEntry;
+    use rimloc_domain::canonical::{ContextRole, SourceProvenance};
 
     fn write_def(path: &std::path::Path, body: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -926,6 +954,72 @@ mod identity_regression {
             Some("способность")
         );
     }
+    /// P2-1: an entry with NO resolvable def type (post-v1-migration
+    /// "unknown stays None") is SKIPPED from native output and named in the
+    /// write report — never guessed into a functional
+    /// `DefInjected/Misc/...` catalog.
+    #[test]
+    fn unknown_def_type_entry_is_skipped_not_misc() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        write_def(
+            &root.join("Defs/Widget.xml"),
+            r#"<Defs><ThingDef><defName>Widget</defName><label>real label</label></ThingDef></Defs>"#,
+        );
+        let mut p = build_project(&root, Some("1.6")).unwrap();
+        // A legacy entry whose type is genuinely unknown everywhere.
+        let unknown = SourceEntryId {
+            kind: EntryKind::DefInjected,
+            key: "Ghost.label".into(),
+            def_type: None,
+        };
+        p.entries.push(SourceEntry {
+            id: unknown.clone(),
+            text: "ghost text".into(),
+            source_locale: "en".into(),
+            contexts: vec![rimloc_domain::canonical::SourceContext {
+                file: "legacy/Unknown.xml".into(),
+                line: None,
+                def_type: None,
+                role: ContextRole::Effective,
+            }],
+            provenance: SourceProvenance::default(),
+            tkey: None,
+        });
+        p.update_translation(
+            unknown.clone(),
+            "Russian",
+            Some("призрак".into()),
+            Origin::Human,
+        );
+        let widget_id = SourceEntryId {
+            kind: EntryKind::DefInjected,
+            key: "Widget.label".into(),
+            def_type: Some("ThingDef".into()),
+        };
+        p.update_translation(widget_id, "Russian", Some("метка".into()), Origin::Human);
+
+        let out = dir.path().join("out");
+        let report = write_rimworld_translation(&p, &out, "Russian", "T", "t.p2", "1.6").unwrap();
+        assert_eq!(
+            report.skipped_unknown_type,
+            vec!["def_injected·Ghost.label"],
+            "the unknown entry is named, not guessed"
+        );
+        // The real entry is written; no Misc catalog exists at all.
+        let widget =
+            std::fs::read_to_string(out.join("Languages/Russian/DefInjected/ThingDef/Widget.xml"))
+                .unwrap();
+        assert!(
+            widget.contains("метка") || widget.contains("label"),
+            "{widget}"
+        );
+        assert!(
+            !out.join("Languages/Russian/DefInjected/Misc").exists(),
+            "no invented Misc catalog"
+        );
+    }
+
     /// 028-2: same DefType AND same display key for a plain DefInjected
     /// sidecar AND a TKey identity — both entries exist, and scoped pack
     /// import lands each pack line on its OWN kind (native element exact
