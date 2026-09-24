@@ -25,6 +25,24 @@ export const en: Record<string, string> = {
   'mockbadge.title':
     'This scaffold runs on synthetic demo data with zero backend calls. The live mode arrives after the backend freeze through the RimLocClient transport boundary.',
 
+  // Bundled demo project (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
+  'home.demo.title': 'RimLoc Demo',
+  'home.demo.mark': 'synthetic demo project',
+  'home.demo.desc': 'A bundled sample: Keyed, DefInjected, TKey, placeholders, a glossary conflict, a review queue and multiple targets. No game folders involved.',
+  'home.demo.open': 'Open demo project',
+  'home.demo.again': 'Reopen demo project',
+  'home.demo.reset': 'Reset demo to start',
+
+  // No-mods empty state (W6, mandate §9)
+  'home.nomods.title': 'No mods found',
+  'home.nomods.desc': 'RimLoc could not see a mod to translate. You can start from the bundled demo, point at a folder, or configure the game installation.',
+  'home.nomods.demo': 'Try demo project',
+  'home.nomods.folder': 'Choose folder',
+  'home.nomods.note': 'The folder picker is a mock in this build — no OS dialog exists yet. It arrives with the live backend after the freeze.',
+  'home.nomods.configure': 'Configure installation',
+  'home.nomods.later': 'Not now',
+  'home.nomods.laterDesc': 'Go back to the regular Home screen.',
+
   'theme.label': 'Theme',
   'theme.light': 'Light',
   'theme.dark': 'Dark',
@@ -983,6 +1001,7 @@ export const en: Record<string, string> = {
   'dev.homeMode': 'Home view',
   'dev.homeMode.first-run': 'First run',
   'dev.homeMode.returning': 'Returning',
+  'dev.homeMode.no-mods': 'No mods',
   'dev.homeState': 'Home state',
   'dev.homeState.ready': 'Normal',
   'dev.homeState.loading': 'Loading',

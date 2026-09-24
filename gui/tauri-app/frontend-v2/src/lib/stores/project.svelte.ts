@@ -15,9 +15,15 @@ function cloneInitial(): Entry[] {
   return structuredClone(mockEntries);
 }
 
+/** Pristine project name — restored by reset() so the demo/dev reset returns
+ * the store to its exact starting identity. */
+const DEFAULT_PROJECT_NAME = 'TestMod';
+
 class ProjectStore {
-  projectName = $state('TestMod');
+  projectName = $state(DEFAULT_PROJECT_NAME);
   targetLocale = $state('ru');
+  /** True only while the workspace shows the bundled W6 demo project. */
+  isDemo = $state(false);
 
   entries = $state<Entry[]>(cloneInitial());
 
@@ -208,6 +214,7 @@ class ProjectStore {
     this.flushAll();
     this.timers.clear();
     this.entries = cloneInitial();
+    this.projectName = DEFAULT_PROJECT_NAME;
     this.drafts = {};
     this.saveStates = {};
     this.selectedId = null;
@@ -215,6 +222,7 @@ class ProjectStore {
     this.category = 'all';
     this.originFilter = 'any';
     this.search = '';
+    this.isDemo = false;
   }
 }
 
