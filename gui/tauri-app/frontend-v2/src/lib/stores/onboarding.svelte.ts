@@ -72,12 +72,19 @@ class OnboardingStore {
   /** Whether the guided demo tour was ever started (persisted). */
   demoTourSeen = $state(false);
   /**
-   * Guided-action ledger for the RUNNING tour: step id -> the user actually
-   * performed the action (not just pressed Next). The final demo step reads
-   * this ledger: success copy is only allowed when the work really happened.
-   * Reset on every script start; not persisted — it describes one pass.
+   * Guided-action ledger for the RUNNING tour: step id -> the action actually
+   * COMPLETED successfully (recorded only after the awaited result, never at
+   * click start). The final demo step reads this ledger: success copy is only
+   * allowed when the work really happened. Reset on every script start; not
+   * persisted — it describes one pass.
    */
   guidedDone = $state<Record<string, boolean>>({});
+  /**
+   * Bumped by every script start: async guided actions compare their captured
+   * pass id against this when they finally complete — a stale completion
+   * arriving after Skip/replay must not mark or advance the new pass.
+   */
+  passId = $state(0);
 
   constructor() {
     this.seen = readSeen();
@@ -98,12 +105,14 @@ class OnboardingStore {
   }
 
   /** Open a script at step 0. The guided ledger starts empty — a fresh pass
-   * must earn its success copy with real actions. */
+   * must earn its success copy with real actions. A new passId invalidates
+   * async completions that belonged to a previous pass. */
   startScript(script: TourScript) {
     this.script = script;
     this.total = script === 'coach' ? COACH_TOTAL : DEMO_TOTAL;
     this.step = 0;
     this.guidedDone = {};
+    this.passId += 1;
     this.open = true;
   }
 

@@ -4,6 +4,9 @@
 
 import { mockEntries } from '../mock/data';
 import type { Entry, EntryKind, EntryStatus, Origin, SaveState } from '../mock/types';
+// W6/034: a project generation change aborts any in-flight mock build — a
+// fresh project must not inherit a done/running build from the old one.
+import { buildState } from '../mock/buildState.svelte';
 
 export type StatusCounts = Record<EntryStatus, number>;
 
@@ -39,6 +42,19 @@ class ProjectStore {
   search = $state('');
 
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
+  /**
+   * W6 (lead 034): staged-but-not-fired commit bookkeeping. A commit captures
+   * the project generation and the entry's draft epoch; at fire time a stale
+   * commit resolves false WITHOUT writing — so a pending demo save can never
+   * land in a replaced project/locale and an older commit can never overwrite
+   * a newer draft.
+   */
+  private generation = 0;
+  private draftEpoch: Record<string, number> = {};
+  private pendingCommits = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout>; resolve: (ok: boolean) => void; gen: number; epoch: number }
+  >();
 
   byId(id: string): Entry | undefined {
     return this.entries.find((e) => e.id === id);
@@ -104,25 +120,31 @@ class ProjectStore {
     this.search = '';
   }
 
-  /** Stage a draft; schedules the debounced autosave commit. */
+  /** Stage a draft; schedules the debounced autosave commit. Each new draft
+   * bumps the entry's epoch, so an older staged commit becomes stale and can
+   * never overwrite the newer text when its timer fires. */
   setDraft(id: string, text: string) {
     const entry = this.byId(id);
     if (!entry) return;
+    this.draftEpoch[id] = (this.draftEpoch[id] ?? 0) + 1;
     this.drafts[id] = text;
     this.saveStates[id] = 'dirty';
     this.scheduleSave(id);
   }
 
-  /** Flush immediately (blur, Tab navigation, project close). */
-  flushDraft(id: string) {
+  /** Flush immediately (blur, Tab navigation, project close). Resolves true
+   * when a pending draft was actually committed (W6: guided actions await the
+   * real save instead of assuming it). */
+  flushDraft(id: string): Promise<boolean> {
     const pending = this.timers.get(id);
     if (pending !== undefined) {
       clearTimeout(pending);
       this.timers.delete(id);
     }
     if (this.saveStates[id] === 'dirty' && this.drafts[id] !== undefined) {
-      this.commit(id, this.drafts[id]);
+      return this.commit(id, this.drafts[id], this.draftEpoch[id] ?? 0);
     }
+    return Promise.resolve(false);
   }
 
   /** Cancel an uncommitted draft (Esc in the editor) and stop its autosave timer. */
@@ -136,28 +158,56 @@ class ProjectStore {
     this.saveStates[id] = 'idle';
   }
 
-  /** Mock of `update_translation(entry_id, locale, text)` with simulated latency. */
-  private commit(id: string, text: string) {
+  /** Mock of `update_translation(entry_id, locale, text)` with simulated
+   * latency. Resolves true when the write actually landed on the entry.
+   * W6 (lead 034): the commit is bound to the project generation it was
+   * staged in and to the entry's draft epoch — a stale completion resolves
+   * false and writes NOTHING (no target, no draft, no save-state churn). */
+  private commit(id: string, text: string, epoch: number): Promise<boolean> {
+    const gen = this.generation;
     this.saveStates[id] = 'saving';
-    setTimeout(() => {
-      const entry = this.byId(id);
-      if (entry) {
-        entry.target = text;
-        const trimmed = text.trim();
-        if (trimmed && (entry.status === 'untranslated' || entry.status === 'todo')) {
-          entry.status = 'translated';
-        } else if (!trimmed && entry.status === 'translated') {
-          entry.status = 'untranslated';
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.pendingCommits.delete(id);
+        if (gen !== this.generation || this.draftEpoch[id] !== epoch) {
+          resolve(false); // stale: project replaced or a newer draft exists
+          return;
         }
-        entry.editedAt = new Date().toISOString();
-        if (entry.origin && entry.origin !== 'human') entry.origin = 'human';
-      }
-      delete this.drafts[id];
-      this.saveStates[id] = 'saved';
-      setTimeout(() => {
-        if (this.saveStates[id] === 'saved') this.saveStates[id] = 'idle';
-      }, SAVED_INDICATOR_MS);
-    }, SAVING_INDICATOR_MS);
+        const entry = this.byId(id);
+        let ok = false;
+        if (entry) {
+          entry.target = text;
+          const trimmed = text.trim();
+          if (trimmed && (entry.status === 'untranslated' || entry.status === 'todo')) {
+            entry.status = 'translated';
+          } else if (!trimmed && entry.status === 'translated') {
+            entry.status = 'untranslated';
+          }
+          entry.editedAt = new Date().toISOString();
+          if (entry.origin && entry.origin !== 'human') entry.origin = 'human';
+          ok = true;
+        }
+        delete this.drafts[id];
+        this.saveStates[id] = 'saved';
+        setTimeout(() => {
+          if (this.saveStates[id] === 'saved') this.saveStates[id] = 'idle';
+        }, SAVED_INDICATOR_MS);
+        resolve(ok);
+      }, SAVING_INDICATOR_MS);
+      this.pendingCommits.set(id, { timer, resolve, gen, epoch });
+    });
+  }
+
+  /** Cancel staged-but-not-fired commits: they resolve false and write
+   * nothing (W6/034). Used on locale switches — a commit staged for one
+   * locale must never land after the active dataset changed. */
+  cancelPendingCommits(): void {
+    for (const [id, pending] of this.pendingCommits) {
+      clearTimeout(pending.timer);
+      this.saveStates[id] = 'idle';
+      pending.resolve(false);
+    }
+    this.pendingCommits.clear();
   }
 
   private scheduleSave(id: string) {
@@ -168,7 +218,7 @@ class ProjectStore {
       setTimeout(() => {
         this.timers.delete(id);
         if (this.drafts[id] !== undefined && this.saveStates[id] === 'dirty') {
-          this.commit(id, this.drafts[id]);
+          this.commit(id, this.drafts[id], this.draftEpoch[id] ?? 0);
         }
       }, AUTOSAVE_DEBOUNCE_MS)
     );
@@ -209,10 +259,15 @@ class ProjectStore {
     if (entry) entry.note = note;
   }
 
-  /** Reset to the pristine mock dataset (dev panel). */
+  /** Reset to the pristine mock dataset (dev panel). W6/034: pending commits
+   * are CANCELLED, not flushed — a staged demo save must never land in the
+   * replaced project. Bumping the generation also invalidates them. */
   reset() {
-    this.flushAll();
+    this.cancelPendingCommits();
     this.timers.clear();
+    this.generation += 1;
+    buildState.reset();
+    this.draftEpoch = {};
     this.entries = cloneInitial();
     this.projectName = DEFAULT_PROJECT_NAME;
     this.drafts = {};

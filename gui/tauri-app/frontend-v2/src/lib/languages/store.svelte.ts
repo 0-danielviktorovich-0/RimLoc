@@ -244,6 +244,9 @@ class MultiTargetStore {
    */
   setActive(locale: string) {
     if (!this.targets[locale] || locale === this.activeLocale) return;
+    // W6/034: a commit staged for the OLD locale must never land after the
+    // active dataset was substituted.
+    project.cancelPendingCommits();
     this.flushDraftsSync();
     this.captureBack(this.activeLocale);
     this.applyDataset(locale);

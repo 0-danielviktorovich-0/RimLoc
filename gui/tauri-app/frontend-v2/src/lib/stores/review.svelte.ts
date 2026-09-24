@@ -184,6 +184,19 @@ class ReviewStore {
     }
     if (this.selectedId && !valid.has(this.selectedId)) this.selectedId = null;
   }
+
+  /** W6 demo isolation: a fresh demo pass starts with a clean review session
+   * (no stale resolutions/selection carried over from a previous run). */
+  resetSession() {
+    this.resolutions = {};
+    this.reasons = {};
+    this.fixText = {};
+    this.selectedId = null;
+    this.editingId = null;
+    this.ignoringId = null;
+    this.ignoreDraft = '';
+    this.activeKind = 'all';
+  }
 }
 
 export const review = new ReviewStore();

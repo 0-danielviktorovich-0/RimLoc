@@ -87,10 +87,39 @@
     };
   });
 
-  function runAction() {
-    onboarding.markGuided(step.id);
-    step.action?.run();
-    onboarding.next();
+  // W6 (lead 027): a guided action is recorded ONLY after it verifiably
+  // completed. While it runs, the button is busy; a result landing after a
+  // Skip/replay/step-change belongs to a dead pass and is discarded without
+  // marking or advancing.
+  // Pending is per-step: the user may move on while an earlier action is
+  // still in flight — that in-flight result cannot earn its own mark, and a
+  // later action is never blocked by it.
+  let pendingStep = $state<string | null>(null);
+  let actionFailed = $state(false);
+
+  async function runAction() {
+    const action = step.action;
+    if (!action || pendingStep === step.id) return;
+    pendingStep = step.id;
+    actionFailed = false;
+    const passId = onboarding.passId;
+    const stepAt = onboarding.step;
+    let ok = false;
+    try {
+      ok = (await action.run()) !== false;
+    } catch {
+      ok = false;
+    }
+    if (pendingStep === step.id) pendingStep = null;
+    if (passId !== onboarding.passId || !onboarding.open || onboarding.step !== stepAt) {
+      return; // stale completion — belongs to a pass that no longer exists
+    }
+    if (ok) {
+      onboarding.markGuided(step.id);
+      onboarding.next();
+    } else {
+      actionFailed = true;
+    }
   }
 </script>
 
@@ -123,6 +152,9 @@
       {#if honest}
         <p class="honest-note" data-testid="onboarding.honest-note">{t('tour.honestNote')}</p>
       {/if}
+      {#if actionFailed}
+        <p class="honest-note" data-testid="onboarding.action-failed">{t('tour.actionFailed')}</p>
+      {/if}
 
       <div class="dots" aria-hidden="true">
         {#each Array(onboarding.total) as _, i (i)}
@@ -145,10 +177,17 @@
             {t('onboarding.skip')}
           </button>
           {#if step.action}
-            <!-- Guided action performs the real work; plain Next stays
-                 available for skip-ahead — the final step's honest variant
-                 then reports the outstanding work instead of fake success. -->
-            <button type="button" class="btn btn-primary" data-testid={step.action.testid} onclick={runAction}>
+            <!-- Guided action performs the real work and is recorded only
+                 after it verifiably completes; plain Next stays available for
+                 skip-ahead — the final step's honest variant then reports the
+                 outstanding work instead of fake success. -->
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-testid={step.action.testid}
+              disabled={pendingStep === step.id}
+              onclick={runAction}
+            >
               {t(step.action.labelKey)}
               <Icon name="arrow-right" size={14} />
             </button>
