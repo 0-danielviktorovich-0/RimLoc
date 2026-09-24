@@ -47,6 +47,14 @@ Future-readiness ограничение, НЕ стройка: официальн
   resolution. `scan_units_auto` с отдельным bridge не заменяет этот путь.
 - `projectId` — сохранённая непрозрачная идентичность; путь — изменяемые метаданные.
   Entry ID содержит полный принятый discriminator, не один отображаемый ключ.
+- UI отправляет типизированные намерения редактирования (полный entry ID, язык,
+  текст, разрешённое действие), не замену целого canonical Project. Сервис сам разрешает
+  identity/eligibility, устанавливает status/provenance и сохраняет изменения; клиент
+  не может подменять source roots, contexts, NoTranslate или output locations.
+- Непрозрачный project ID, revision и содержимое сохраняются одной атомарной операцией.
+  Индекс недавних проектов — восстанавливаемая производная, не вторая половина
+  обязательной транзакции. Сбой между project-save и index-update не теряет возможность
+  открыть проект. Расширение persistence envelope — после приёмки J с передачей владения.
 - Изменения проекта сериализованы: подготовить состояние → атомарно сохранить →
   подтвердить и опубликовать revision. Ошибка сохраняет прежнее состояние и dirty draft.
   `expectedRevision` и project/session epoch защищают от старых ответов и записи после
@@ -72,6 +80,10 @@ Future-readiness ограничение, НЕ стройка: официальн
   reopen → review/validate → safe build → inspect source → diagnose actual failure.
   Ручной chat-batch workflow с ID, parsing, stale guard и review/apply работает без API;
   existing/TM/glossary сохраняют provenance и read-only scope.
+- Первый lifecycle seam: create/open/list → editable intents → atomic save → restart/reopen.
+  Framework-neutral contracts/session orchestration остаются в services, Tauri — тонкий
+  адаптер; новый контрактный crate ради этого среза не требуется. Проверка revision,
+  внешнего content hash и запись выполняются в одной сериализованной границе проекта.
 - Сначала небольшой typed seam, затем независимые project-journey и discovery/source/
   diagnostics модули. Один владелец SDK types и Tauri registrations. Conformance fixtures
   дополняются проверкой собранного Tauri-приложения на реальном read-only моде и изолированных
