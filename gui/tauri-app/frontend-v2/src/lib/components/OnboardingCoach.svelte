@@ -1,41 +1,118 @@
 <script lang="ts">
-  // Contextual onboarding coach (QA mandate §20): 4-step skippable overlay on
-  // the first Workspace open, replayable from Help. Visibility and persistence
-  // live in stores/onboarding.svelte.ts; this component only renders steps.
+  // Anchored product tour (W6, MOCK_LIVE_ONBOARDING_MANDATE §4-§5/§7): a dim
+  // layer with a real highlighted control per step and a card that can go
+  // Back on every step, run a guided REAL action, Skip or advance with
+  // progress. Two scripts share this renderer: the W1 4-step workspace coach
+  // (first open, replay from Help — behavior and testids preserved) and the
+  // guided demo flow. Not a text carousel: every step points at the actual
+  // screen the user is about to act on.
+  // Missing anchors degrade honestly to a centered card (narrow layouts,
+  // jsdom) — the tour never blocks the UI.
   import Icon from './Icon.svelte';
   import { t } from '../../i18n/store.svelte';
   import { onboarding } from '../stores/onboarding.svelte';
+  import { router } from '../router.svelte';
+  import { stepsFor, type TourStep } from '../onboarding/steps';
 
-  const STEPS = [
-    { title: 'onboarding.s1.title', text: 'onboarding.s1.text', icon: 'search' },
-    { title: 'onboarding.s2.title', text: 'onboarding.s2.text', icon: 'edit' },
-    { title: 'onboarding.s3.title', text: 'onboarding.s3.text', icon: 'filter' },
-    { title: 'onboarding.s4.title', text: 'onboarding.s4.text', icon: 'package' }
-  ] as const;
+  const steps = $derived(stepsFor(onboarding.script));
+  const step: TourStep = $derived(steps[Math.min(onboarding.step, steps.length - 1)]);
+  const last = $derived(onboarding.step >= onboarding.total - 1);
 
-  const last = $derived(onboarding.step === STEPS.length - 1);
+  interface Box {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  }
+  let box = $state<Box | null>(null);
+  let cardPos = $state<{ top: number; left: number } | null>(null);
+
+  function measure() {
+    if (!onboarding.open) return;
+    const selector = step.anchor;
+    const el = selector ? document.querySelector<HTMLElement>(selector) : null;
+    if (!el) {
+      box = null;
+      cardPos = null;
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) {
+      // No layout information (jsdom, hidden pane) — centered fallback.
+      box = null;
+      cardPos = null;
+      return;
+    }
+    const pad = 6;
+    box = {
+      top: Math.max(0, r.top - pad),
+      left: Math.max(0, r.left - pad),
+      width: r.width + pad * 2,
+      height: r.height + pad * 2
+    };
+    // Place the card below the anchor, or above when there is no room.
+    const below = r.bottom + 12;
+    const cardH = 190;
+    const top = below + cardH > window.innerHeight ? Math.max(12, r.top - cardH - 12) : below;
+    cardPos = {
+      top,
+      left: Math.min(Math.max(12, r.left), Math.max(12, window.innerWidth - 372))
+    };
+  }
+
+  // Re-measure whenever the step changes; navigate to the step's route only
+  // when the step ENTERS (never yank the user back if they wander off
+  // mid-step), then keep the anchor glued on resize/scroll.
+  let enteredKey = '';
+  $effect(() => {
+    const key = `${onboarding.script}:${onboarding.step}:${onboarding.open}`;
+    if (onboarding.open && key !== enteredKey) {
+      enteredKey = key;
+      if (step.route && router.route !== step.route) {
+        router.navigate(step.route);
+      }
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    window.addEventListener('scroll', measure, true);
+    return () => {
+      window.removeEventListener('resize', measure);
+      window.removeEventListener('scroll', measure, true);
+    };
+  });
+
+  function runAction() {
+    step.action?.run();
+    onboarding.next();
+  }
 </script>
 
 {#if onboarding.open}
-  <div
-    class="overlay"
-    data-testid="onboarding.overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="onboarding-title"
-  >
-    <div class="card">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="tour" data-testid="onboarding.overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
+    {#if box}
+      <!-- Spotlight: one huge box-shadow dims everything around the anchor. -->
+      <div class="spotlight" style={`top:${box.top}px;left:${box.left}px;width:${box.width}px;height:${box.height}px`} data-testid="onboarding.anchor"></div>
+    {:else}
+      <div class="dim"></div>
+    {/if}
+
+    <div
+      class="card"
+      class:anchored={cardPos}
+      style={cardPos ? `top:${cardPos.top}px;left:${cardPos.left}px` : ''}
+    >
       <p class="step-of" data-testid="onboarding.step-of">
-        {t('onboarding.step', { step: onboarding.step + 1, total: STEPS.length })}
+        {t('onboarding.step', { step: onboarding.step + 1, total: onboarding.total })}
       </p>
       <h2 id="onboarding-title" class="title">
-        <Icon name={STEPS[onboarding.step].icon} size={18} />
-        {t(STEPS[onboarding.step].title)}
+        <Icon name="lightbulb" size={18} />
+        {t(step.titleKey)}
       </h2>
-      <p class="text">{t(STEPS[onboarding.step].text)}</p>
+      <p class="text">{t(step.textKey)}</p>
 
       <div class="dots" aria-hidden="true">
-        {#each STEPS as _, i (i)}
+        {#each Array(onboarding.total) as _, i (i)}
           <span class="dot" class:active={i === onboarding.step}></span>
         {/each}
       </div>
@@ -44,46 +121,75 @@
         <button
           type="button"
           class="btn"
-          data-testid="onboarding.skip"
-          onclick={() => onboarding.finish()}
+          data-testid="onboarding.back"
+          disabled={onboarding.step === 0}
+          onclick={() => onboarding.back()}
         >
-          {t('onboarding.skip')}
+          {t('common.back')}
         </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          data-testid="onboarding.next"
-          onclick={() => onboarding.next(STEPS.length)}
-        >
-          {last ? t('onboarding.finish') : t('onboarding.next')}
-          <Icon name="arrow-right" size={14} />
-        </button>
+        <div class="right">
+          <button type="button" class="btn" data-testid="onboarding.skip" onclick={() => onboarding.finish()}>
+            {t('onboarding.skip')}
+          </button>
+          {#if step.action}
+            <button type="button" class="btn btn-primary" data-testid={step.action.testid} onclick={runAction}>
+              {t(step.action.labelKey)}
+              <Icon name="arrow-right" size={14} />
+            </button>
+          {:else}
+            <button type="button" class="btn btn-primary" data-testid="onboarding.next" onclick={() => onboarding.next()}>
+              {last ? (onboarding.script === 'demo' ? t('common.done') : t('onboarding.finish')) : t('onboarding.next')}
+              <Icon name="arrow-right" size={14} />
+            </button>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
 {/if}
 
 <style>
-  .overlay {
+  .tour {
     position: fixed;
     inset: 0;
     z-index: 60;
+  }
+
+  .dim {
+    position: absolute;
+    inset: 0;
     background: var(--color-overlay-bg, rgb(0 0 0 / 45%));
-    display: grid;
-    place-items: center;
-    padding: var(--space-4);
+  }
+
+  .spotlight {
+    position: absolute;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 0 0 9999px var(--color-overlay-bg, rgb(0 0 0 / 45%));
+    pointer-events: none;
+    transition: all var(--motion-standard) var(--ease-out);
   }
 
   .card {
-    width: min(440px, 100%);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(400px, calc(100vw - var(--space-8)));
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
     box-shadow: var(--shadow-overlay);
-    padding: var(--space-6);
+    padding: var(--space-5);
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .card.anchored {
+    position: fixed;
+    transform: none;
+    width: min(360px, calc(100vw - var(--space-6)));
   }
 
   .step-of {
@@ -133,6 +239,13 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    margin-top: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  .right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
   }
 </style>
