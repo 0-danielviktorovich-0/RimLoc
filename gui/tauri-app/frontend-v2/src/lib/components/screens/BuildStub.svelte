@@ -9,12 +9,14 @@
   import { project } from '../../stores/project.svelte';
   import { review } from '../../stores/review.svelte';
   import { router } from '../../router.svelte';
+  // W6 (lead 027): the phase machine lives in ONE shared mock store so the
+  // product tour presses the same engine the real button uses — and only a
+  // completed run can count as completed anywhere.
+  import { buildState } from '../../mock/buildState.svelte';
 
-  type Phase = 'ready' | 'building' | 'done';
-  const BUILD_MS = 1400;
   const INSTALL_MS = 900;
 
-  let phase = $state<Phase>('ready');
+  const phase = $derived(buildState.phase);
   let installState = $state<'idle' | 'installing' | 'installed'>('idle');
   let toast = $state('');
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -51,15 +53,12 @@
   }
 
   function runBuild() {
-    phase = 'building';
+    buildState.start();
     installState = 'idle';
-    setTimeout(() => {
-      phase = 'done';
-    }, BUILD_MS);
   }
 
   function retest() {
-    phase = 'ready';
+    buildState.reset();
     installState = 'idle';
   }
 
@@ -141,7 +140,7 @@
           <Icon name="package" size={14} />
           {phase === 'building' ? t('build.building') : t('build.button')}
         </button>
-        {#if phase === 'ready'}
+        {#if phase === 'idle'}
           <button type="button" class="btn" data-testid="build.back-editor" onclick={() => router.navigate('workspace')}>
             <Icon name="edit" size={14} />
             {t('wizard.w7.openEditor')}
