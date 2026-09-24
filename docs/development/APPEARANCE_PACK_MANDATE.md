@@ -1,3 +1,4 @@
+<!-- mandate_id: g6-appearance | wave: G6 | scope: theme/layout packs, profiles, trust boundary, deferred extensions -->
 # МАНДАТ: Customizable UI / Theme / Layout Pack Architecture (G6, 2026-09-24)
 
 Кумулятивный мандат владельца. Три уровня кастомизации, НЕ смешивать:

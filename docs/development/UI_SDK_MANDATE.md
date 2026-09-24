@@ -1,3 +1,4 @@
+<!-- mandate_id: g6-ui-sdk | wave: G6 | scope: replaceable frontend readiness: neutral contract, one transport, mocks -->
 # МАНДАТ: Replaceable Frontend / UI SDK Architecture (G6-future, 2026-09-24)
 
 Future-readiness ограничение, НЕ стройка: официальный Svelte UI остаётся основным.

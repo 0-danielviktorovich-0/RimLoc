@@ -1,3 +1,4 @@
+<!-- mandate_id: g5-mock-live | wave: G5-W6 | scope: mock/live boundary, onboarding tour, demo project, scenario browser -->
 # МАНДАТ: Mock/Live boundary + onboarding tour + scenario browser (G5-W6, 2026-09-24)
 
 Сжатая персистенция (полный текст у владельца). Кумулятивно к G4/G5.
