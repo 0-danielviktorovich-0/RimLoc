@@ -107,6 +107,14 @@ never reaches a file.
 
 ### Real path: `rimloc validate --support-bundle <out>`
 
+Every validation finding carries a deliberate typed `severity`
+(error / warning / info) assigned at the emission site in
+`rimloc-validate` — never derived from message text. Only errors fail the
+operation; warnings/info stay successful while being preserved as typed
+`validation_findings` in the bundle context and split into
+errors/warnings/info/total counters. The `--format json` array gains an
+additive `severity` field per item; the text output shows `[kind/severity]`.
+
 The production wiring of "diagnose a controlled known failure": the
 validate command runs the REAL validator and, with the opt-in
 `--support-bundle <out>` flag, captures its actual results into the bundle —

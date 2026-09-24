@@ -7,9 +7,41 @@ pub use rimloc_core::parse_simple_po as parse_po_string;
 
 use rimloc_core::{Result as CoreResult, TransUnit};
 
+/// Deliberate severity of a validation finding, assigned AT THE EMISSION
+/// SITE by the checker that owns the rule — never derived from localized or
+/// free-form message text, and never inferred from `kind` alone.
+///
+/// Classification (documented per emission):
+/// - `Error`   — the string is broken or breaks the game (empty required
+///   translation, unbalanced/invalid placeholder, real placeholder
+///   mismatch, list count mismatch, duplicate key the game will never
+///   load, engine/extractor divergence on a non-translatable entry).
+/// - `Warning` — suspicious but not load-breaking (invisible/bi-di control
+///   characters, cross-file duplicate of one scope, ambiguous key
+///   reference, orphaned translation without a source counterpart).
+/// - `Info`    — informational notes that require no action (placeholder
+///   presence hint asking to verify counts against the source).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ValidationSeverity {
+    Error,
+    Warning,
+    Info,
+}
+
+impl ValidationSeverity {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ValidationSeverity::Error => "error",
+            ValidationSeverity::Warning => "warning",
+            ValidationSeverity::Info => "info",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ValidationMessage {
     pub kind: String,
+    pub severity: ValidationSeverity,
     pub key: String,
     pub path: String,
     pub line: Option<usize>,
@@ -48,8 +80,10 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     let mut msgs = Vec::new();
     for u in units {
         if u.source.as_deref().map_or(true, |s| s.trim().is_empty()) {
+            // Empty required translation → real failure.
             msgs.push(ValidationMessage {
                 kind: "empty".to_string(),
+                severity: ValidationSeverity::Error,
                 key: u.key.clone(),
                 path: u.path.to_string_lossy().to_string(),
                 line: u.line,
@@ -87,8 +121,10 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                         .into_iter()
                         .map(|c| format!("U+{:04X}", c as u32))
                         .collect();
+                    // Suspicious, not load-breaking → warning.
                     msgs.push(ValidationMessage {
                         kind: "invisible-char".to_string(),
+                        severity: ValidationSeverity::Warning,
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
@@ -98,8 +134,10 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                 let mut placeholder_msg_emitted = false;
                 let bad_percent = rimloc_core::placeholders::is_bad_percent(text);
                 if bad_percent {
+                    // A suspicious % token breaks the rendered string → error.
                     msgs.push(ValidationMessage {
                         kind: "placeholder-check".to_string(),
+                        severity: ValidationSeverity::Error,
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
@@ -153,8 +191,10 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                     brace_error = Some("Unmatched opening brace");
                 }
                 if let Some(msg) = brace_error {
+                    // Broken braces break the rendered string → error.
                     msgs.push(ValidationMessage {
                         kind: "placeholder-check".to_string(),
+                        severity: ValidationSeverity::Error,
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
@@ -167,8 +207,11 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                 let has_any_placeholder =
                     text.contains('%') || text.contains('{') || text.contains('}');
                 if has_any_placeholder && !placeholder_msg_emitted {
+                    // Pure informational: placeholders are present and well
+                    // formed; the human verifies counts against the source.
                     msgs.push(ValidationMessage {
                         kind: "placeholder-check".to_string(),
+                        severity: ValidationSeverity::Info,
                         key: u.key.clone(),
                         path: u.path.to_string_lossy().to_string(),
                         line: u.line,
@@ -185,8 +228,11 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
         if lines.len() > 1 {
             // duplicate detected in the same file
             let line = lines.into_iter().flatten().next();
+            // The game keeps the FIRST registration; later duplicates never
+            // load → real failure.
             msgs.push(ValidationMessage {
                 kind: "duplicate".to_string(),
+                severity: ValidationSeverity::Error,
                 key,
                 path,
                 line,
@@ -209,8 +255,11 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                 .first()
                 .cloned()
                 .unwrap_or_else(|| (String::new(), None));
+            // Same scope, several files: suspicious (possible accidental
+            // copy), but the game resolves it → warning.
             msgs.push(ValidationMessage {
                 kind: "duplicate-global".to_string(),
+                severity: ValidationSeverity::Warning,
                 key,
                 path,
                 line,
@@ -245,4 +294,60 @@ fn lang_scope_of(path: &str) -> String {
 /// TODO: implement full XML scan or integrate with validate crate.
 pub fn scan_keyed_xml(_root: &Path) -> CoreResult<Vec<TransUnit>> {
     Ok(Vec::new())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn unit(key: &str, source: &str) -> TransUnit {
+        TransUnit {
+            key: key.to_string(),
+            source: Some(source.to_string()),
+            path: PathBuf::from("Languages/English/Keyed/T.xml"),
+            line: Some(3),
+            tkey: None,
+        }
+    }
+
+    /// The severity class is assigned at the emission site and must stay
+    /// deliberate (026): presence hints are Info, broken placeholders /
+    /// empty translations / duplicates are Error, suspicious-but-not-
+    /// breaking findings are Warning.
+    #[test]
+    fn severities_are_deliberate_per_emission() {
+        let units = vec![
+            unit("Good.label", "Hello {0}!"), // info: presence hint
+            unit("Broken.label", "Hi {0"),    // error: unmatched brace
+            unit("Empty.label", "   "),       // error: empty translation
+            unit("Dup.label", "one"),         // error: duplicate (below)
+            unit("Dup.label", "two"),
+            unit("Weird.label", "a\u{200B}b"), // warning: invisible char
+        ];
+        let msgs = validate(&units).expect("validate");
+        let sev_of = |kind: &str, key: &str| {
+            msgs.iter()
+                .find(|m| m.kind == kind && m.key == key)
+                .map(|m| m.severity)
+                .unwrap_or_else(|| {
+                    let msg = format!("no {kind}/{key} in {msgs:?}");
+                    panic!("{}", msg);
+                })
+        };
+        assert_eq!(
+            sev_of("placeholder-check", "Good.label"),
+            ValidationSeverity::Info
+        );
+        assert_eq!(
+            sev_of("placeholder-check", "Broken.label"),
+            ValidationSeverity::Error
+        );
+        assert_eq!(sev_of("empty", "Empty.label"), ValidationSeverity::Error);
+        assert_eq!(sev_of("duplicate", "Dup.label"), ValidationSeverity::Error);
+        assert_eq!(
+            sev_of("invisible-char", "Weird.label"),
+            ValidationSeverity::Warning
+        );
+    }
 }
