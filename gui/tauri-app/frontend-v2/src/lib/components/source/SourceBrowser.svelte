@@ -4,13 +4,19 @@
   // candidates render fixture DATA with reason keys — the GUI computes no
   // winner. Compare shows source ↔ canonical target ↔ generated output; the
   // generated pane is labelled a build artifact, never a second truth.
+  // Lead review 029 #1: the compare overlay is independent of the browser
+  // modal — openCompare from the SOURCE tab works with the browser shut, and
+  // browser file rows open the EXPLICIT file in the viewer (no fallback).
   import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
-  import { project } from '../../stores/project.svelte';
   import { isMissingFile, type SourceFileContent } from '../../source/types';
   import { source } from '../../source/store.svelte';
 
-  const browser = $derived(source.browser ? source.scenario.browser : null);
+  const browserOpen = $derived(source.browser);
+  const browser = $derived(source.scenario.browser);
+  const compareEntryId = $derived(source.compare);
+  const triple = $derived(compareEntryId ? source.compareFor(compareEntryId) : null);
+  const generated = $derived(triple?.generated ?? null);
 
   let versionSel = $state<string | null>(null);
   let folderSel = $state<string | null>(null);
@@ -20,7 +26,7 @@
 
   $effect(() => {
     // reset local choices when the modal re-opens or the scenario changes
-    if (source.browser) {
+    if (browserOpen) {
       versionSel = browser?.versions.find((v) => v.selected)?.label ?? null;
       folderSel = browser?.loadFolders.find((f) => f.selected)?.label ?? null;
       openCategory = null;
@@ -29,9 +35,12 @@
     }
   });
 
-  const compareEntryId = $derived(source.compare);
-  const triple = $derived(compareEntryId ? source.compareFor(compareEntryId) : null);
-  const generated = $derived(triple?.generated ?? null);
+  $effect(() => {
+    if (compareEntryId) {
+      compareOpen = false;
+      viewedFile = null;
+    }
+  });
 
   const generatedLines = $derived.by(() => {
     if (!generated) return [] as { no: number; text: string; highlighted: boolean }[];
@@ -44,23 +53,39 @@
     });
   });
 
+  /** File rows open the EXPLICIT file in the viewer (029 #1). */
   function openFile(path: string) {
     viewedFile = path;
-    const f = source.fileFor(path);
-    if (!isMissingFile(f)) {
-      // jump straight into the full viewer for the resolved file
-      source.openFileViewer(path);
-    }
+    source.openFile(path);
   }
 
   function nodeLineText(content: SourceFileContent, spanStart: number | null): string {
     if (spanStart === null) return '';
     return content.lines[spanStart - 1] ?? '';
   }
+
+  /** Escape closes whichever overlay is on top, focus returns to the page. */
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    if (compareEntryId) {
+      source.closeCompare();
+      return;
+    }
+    if (browserOpen) source.closeBrowser();
+    (document.querySelector('[data-testid="workspace.context"]') as HTMLElement | null)?.focus?.();
+  }
+
+  function bind(el: HTMLDivElement): void {
+    if (!el.dataset.escBound) {
+      el.dataset.escBound = '1';
+      el.addEventListener('keydown', onKeydown);
+    }
+  }
 </script>
 
-{#if browser}
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions -->
+{#if browserOpen}
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions -->
   <div
     class="overlay"
     role="dialog"
@@ -68,6 +93,7 @@
     aria-modal="true"
     aria-label={t('source.browser.title')}
     data-testid="source.browser"
+    use:bind
     onclick={(e) => {
       if (e.target === e.currentTarget) source.closeBrowser();
     }}
@@ -182,53 +208,81 @@
           </section>
         {/if}
       {/if}
+    </div>
+  </div>
+{/if}
 
-      {#if compareEntryId && triple}
-        <section class="compare" data-testid="source.compare">
-          <h4>
-            <Icon name="git-compare" size={13} />
-            {t('source.compare.title')}
-          </h4>
-          <div class="panes">
-            <div class="pane">
-              <span class="pane-title">{t('source.compare.source')}</span>
-              <p class="mono text">{triple.sourceText}</p>
-            </div>
-            <div class="pane">
-              <span class="pane-title">{t('source.compare.target')}</span>
-              <p class="mono text">{triple.targetText ?? '—'}</p>
-            </div>
-            <div class="pane">
-              <span class="pane-title">{t('source.compare.generated')}</span>
-              <div class="gen mono">
-                {#each generatedLines as l (l.no)}
-                  <div class="gen-row" class:hl={l.highlighted}>
-                    <span class="no">{l.no}</span>
-                    <span>{l.text}</span>
-                  </div>
-                {/each}
-              </div>
+{#if compareEntryId && triple}
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions -->
+  <div
+    class="overlay"
+    role="dialog"
+    tabindex="-1"
+    aria-modal="true"
+    aria-label={t('source.compare.title')}
+    data-testid="source.compare.overlay"
+    use:bind
+    onclick={(e) => {
+      if (e.target === e.currentTarget) source.closeCompare();
+    }}
+  >
+    <div class="sheet">
+      <header>
+        <h3>
+          <Icon name="git-compare" size={15} />
+          {t('source.compare.title')}
+        </h3>
+        <button
+          type="button"
+          class="btn subtle"
+          aria-label={t('common.close')}
+          data-testid="source.compare.close"
+          onclick={() => source.closeCompare()}
+        >
+          <Icon name="close" size={14} />
+        </button>
+      </header>
+
+      <section class="compare" data-testid="source.compare">
+        <div class="panes">
+          <div class="pane">
+            <span class="pane-title">{t('source.compare.source')}</span>
+            <p class="mono text">{triple.sourceText}</p>
+          </div>
+          <div class="pane">
+            <span class="pane-title">{t('source.compare.target')}</span>
+            <p class="mono text">{triple.targetText ?? '—'}</p>
+          </div>
+          <div class="pane">
+            <span class="pane-title">{t('source.compare.generated')}</span>
+            <div class="gen mono">
+              {#each generatedLines as l (l.no)}
+                <div class="gen-row" class:hl={l.highlighted}>
+                  <span class="no">{l.no}</span>
+                  <span>{l.text}</span>
+                </div>
+              {/each}
             </div>
           </div>
-          <p class="note">{t('source.compare.notTruth')}</p>
-          <div class="actions">
-            <button
-              type="button"
-              class="btn"
-              onclick={() => {
-                compareOpen = !compareOpen;
-              }}
-            >
-              {compareOpen ? t('source.compare.hideFile') : t('source.compare.showFile')}
+        </div>
+        <p class="note">{t('source.compare.notTruth')}</p>
+        <div class="actions">
+          <button
+            type="button"
+            class="btn"
+            onclick={() => {
+              compareOpen = !compareOpen;
+            }}
+          >
+            {compareOpen ? t('source.compare.hideFile') : t('source.compare.showFile')}
+          </button>
+          {#if compareOpen && generated}
+            <button type="button" class="btn" onclick={() => source.openFile(generated.path)}>
+              {t('source.compare.openViewer')}
             </button>
-            {#if compareOpen && generated}
-              <button type="button" class="btn" onclick={() => source.openFileViewer(generated.path)}>
-                {t('source.compare.openViewer')}
-              </button>
-            {/if}
-          </div>
-        </section>
-      {/if}
+          {/if}
+        </div>
+      </section>
     </div>
   </div>
 {/if}

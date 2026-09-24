@@ -40,7 +40,9 @@
   function testLaunch() {
     const template = templateFor(choice);
     const result = source.planEditorLaunch(choice, {
-      location: { displayPath: 'Languages/English/Keyed/Misc_Gameplay.xml', line: 12, column: null }
+      displayPath: 'Languages/English/Keyed/Misc_Gameplay.xml',
+      line: 12,
+      column: null
     });
     if (!result.ok) {
       preview = { ok: false, reasonKey: result.reasonKey };

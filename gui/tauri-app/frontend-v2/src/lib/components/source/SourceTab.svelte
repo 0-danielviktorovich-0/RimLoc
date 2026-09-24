@@ -48,7 +48,7 @@
    *  what WOULD run. No process is started (mock/pre-freeze). */
   function openInEditor() {
     if (!primary) return;
-    const plan = source.planEditorLaunch(loadEditorChoice(), primary);
+    const plan = source.planEditorLaunch(loadEditorChoice(), primary.location);
     if (!plan.ok) {
       editorState = { ok: false, text: '', errorKey: plan.reasonKey };
       return;
