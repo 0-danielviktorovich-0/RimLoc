@@ -5,19 +5,27 @@
   // fixture guarantees them; spans highlight the current node and drive
   // node→entry navigation; folding folds a span's body lines; search counts
   // and walks matches. Copy uses the fulfilled-write-or-fallback helper.
-    import Icon from '../Icon.svelte';
+    import { tick } from 'svelte';
+  import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
   import { isMissingFile, type SourceFileContent } from '../../source/types';
   import { source } from '../../source/store.svelte';
 
-  const viewerState = $derived(source.viewer);
-  const entryId = $derived(viewerState?.entryId ?? null);
-  const usageIndex = $derived(viewerState?.usageIndex ?? 0);
+  // Lead review 029 #1: two viewer targets — an entry+usage anchor OR an
+  // explicit fixture file (generated / shadowed / unmapped / missing). The
+  // requested file renders as-is; no unrelated first-entry fallback.
+  const target = $derived(source.viewer);
+  const entryId = $derived(target?.kind === 'entry' ? target.entryId : null);
+  const usageIndex = $derived(target?.kind === 'entry' ? target.usageIndex : 0);
   const data = $derived(entryId ? source.contextFor(entryId) : null);
   const usage = $derived(data?.usages[Math.min(usageIndex, (data?.usages.length ?? 1) - 1)] ?? null);
-  const file = $derived(usage ? source.fileFor(usage.location.path) : null);
+  const path = $derived(
+    target === null ? null : target.kind === 'file' ? target.path : (usage?.location.path ?? null)
+  );
+  const file = $derived(path !== null ? source.fileFor(path) : null);
   const content = $derived(file && !isMissingFile(file) ? (file as SourceFileContent) : null);
+  const missing = $derived(file !== null && isMissingFile(file));
 
   const activeSpan = $derived.by(() => {
     if (!content || !usage) return null;
@@ -34,6 +42,7 @@
     void content?.path;
     folded = new Set();
     query = '';
+    matchIdx = 0;
   });
 
   let query = $state('');
@@ -49,10 +58,39 @@
     return hits;
   });
 
+  // Lead review 029 #4: keep the index valid across query changes —
+  // a stale "3/1" was possible before the clamp.
+  $effect(() => {
+    if (matchIdx >= matchingLines.length) matchIdx = Math.max(0, matchingLines.length - 1);
+  });
+
+  /** Unfold folded spans covering the line, then scroll it into view. */
+  async function revealLine(lineNo: number | null) {
+    if (lineNo === null || !content) return;
+    for (const s of content.spans) {
+      if (s.start === null || s.end === null || s.start === s.end) continue;
+      if (lineNo > s.start && lineNo <= s.end && folded.has(s.nodeId)) {
+        const next = new Set(folded);
+        next.delete(s.nodeId);
+        folded = next;
+      }
+    }
+    await tick();
+    document.querySelector(`[data-line="${lineNo}"]`)?.scrollIntoView({ block: 'center' });
+  }
+
   function nextMatch() {
     if (matchingLines.length === 0) return;
     matchIdx = (matchIdx + 1) % matchingLines.length;
+    void revealLine(matchingLines[matchIdx]);
   }
+
+  // Reveal the anchored node when the viewer opens on an entry usage.
+  $effect(() => {
+    if (target?.kind === 'entry' && usage && usage.location.line !== null) {
+      void revealLine(usage.location.line);
+    }
+  });
 
   function inFoldedBody(lineNo: number): boolean {
     if (!content) return false;
@@ -93,7 +131,7 @@
   }
 </script>
 
-{#if viewerState && entryId}
+{#if target && (target.kind === 'file' || entryId)}
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions, a11y_no_noninteractive_element_interactions -->
   <div
     class="overlay"

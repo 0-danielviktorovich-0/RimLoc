@@ -54,7 +54,7 @@
 
   function openEditor() {
     if (!menu || !primary) return;
-    const plan = source.planEditorLaunch(loadEditorChoice(), primary);
+    const plan = source.planEditorLaunch(loadEditorChoice(), primary.location);
     if (!plan.ok) {
       source.noteMockAction(plan.reasonKey);
     } else {
