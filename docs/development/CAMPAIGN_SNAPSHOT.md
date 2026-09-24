@@ -30,7 +30,7 @@ Astra. Ресурсная дисциплина: только /tmp/rimloc-cargo-s
 CARGO_INCREMENTAL=0), без самодельных локов/вторых таргетов/избыточных полных прогонов.
 
 ## Verify at session start (изменчивое)
-- Последний main-срез: `8484c4f` (BACKEND FREEZE; GUI-интеграция в gui-integration a5b9825) → **проверь `git rev-parse HEAD`**.
+- Последний main-срез: `57ed0c9` (BACKEND FREEZE + GUI W6+W7 интеграция, гейт закрыт) → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
@@ -70,7 +70,7 @@ Backend заморожен на интегрированном HEAD `4b4d8c3` (�
 Дальше по бэкенду: typed binding seam (proposal v2: /tmp/rimloc-binding-first-slice.md)
 и live acceptance — после GUI-гейта.
 
-## GUI LANE — интеграция W6+W7 (сейчас)
+## GUI LANE — интегрирована в main (25.09)
 - **W6 сдан** (`codex/w6-demo`, 8 коммитов `51ada48..eb9fe40`): глобальный Demo-бейдж
   (без DEV-гейта), демо-проект + no-mods действия, anchored тур на реальных действиях,
   dev-гейт scenario tooling, общий MOCK build engine, pending-save generation-гварды.
@@ -79,10 +79,10 @@ Backend заморожен на интегрированном HEAD `4b4d8c3` (�
   provenance, nullable локации), read-only Viewer (без innerHTML), palette/context menu,
   Advanced Browser + Compare, External editor argv, shortcut dispatcher (unbound),
   Unreleased. 99/99 тестов, check 0/0, build ok. Все 5 коррекций 029 закрыты.
-- **GUI-интеграция** (`codex/gui-integration` @ `a5b9825`): волны W6 (42334a8) и W7
-  (2c9f3e9) смёржены, repair Workspace merge artifact + реальная версия в бандле.
-  Ожидается: независимое merge-ревью, полный гейт check/test/build + браузер
-  (оба пути тура, dev-гейт, SOURCE-флоу, изоляция обычного проекта).
+- **GUI-интеграция в main** (`c1ddae1` → amend `57ed0c9`): мерж W6+W7 волн,
+  независимое merge-ревью J = ok (lossy-резолвов нет), tidy (scrollIntoView стаб,
+  node_modules в gitignore). Гейт на main: check 0/0, 147/147, build ok.
+  Хвост W6: cold-boot scenario deep-link (не блокер, у W6).
 - Известный хвост: после смёрживания W4.5 заменить `MOCK_APP_VERSION` →
   `src/lib/version.ts` (инструкция в /tmp/rimloc-W45-handoff.md).
 - **W6/W7 POST-FREEZE**: live binding + live acceptance на реальных данных
