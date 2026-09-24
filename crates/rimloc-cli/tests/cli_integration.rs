@@ -615,9 +615,13 @@ fn validate_detects_issues_in_bad_xml() {
     assert_all_present(
         &out,
         &[
-            ("[duplicate]", bad_xml_en.as_path(), "DuplicateKey"),
-            ("[empty]", bad_xml_en.as_path(), "EmptyKey"),
-            ("[placeholder-check]", bad_xml_en.as_path(), "Placeholder"),
+            ("[duplicate/error]", bad_xml_en.as_path(), "DuplicateKey"),
+            ("[empty/error]", bad_xml_en.as_path(), "EmptyKey"),
+            (
+                "[placeholder-check/info]",
+                bad_xml_en.as_path(),
+                "Placeholder",
+            ),
             ("DuplicateKey", bad_xml_en.as_path(), "DuplicateKey"),
             ("EmptyKey", bad_xml_en.as_path(), "EmptyKey"),
             ("Placeholder", bad_xml_en.as_path(), "Placeholder"),
@@ -629,12 +633,12 @@ fn validate_detects_issues_in_bad_xml() {
     // At least one occurrence of each category (rich diagnostics)
     assert_count_at_least(
         &out,
-        "[duplicate]",
+        "[duplicate/error]",
         1,
         &ti18n!(
             "test-validate-atleast-duplicates",
             min = 1,
-            count = out.matches("[duplicate]").count()
+            count = out.matches("[duplicate/error]").count()
         ),
         CTX_NONE,
         bad_xml_en.as_path(),
@@ -642,12 +646,12 @@ fn validate_detects_issues_in_bad_xml() {
     );
     assert_count_at_least(
         &out,
-        "[empty]",
+        "[empty/error]",
         1,
         &ti18n!(
             "test-validate-atleast-empty",
             min = 1,
-            count = out.matches("[empty]").count()
+            count = out.matches("[empty/error]").count()
         ),
         CTX_NONE,
         bad_xml_en.as_path(),
@@ -655,12 +659,12 @@ fn validate_detects_issues_in_bad_xml() {
     );
     assert_count_at_least(
         &out,
-        "[placeholder-check]",
+        "[placeholder-check/info]",
         1,
         &ti18n!(
             "test-validate-atleast-placeholder",
             min = 1,
-            count = out.matches("[placeholder-check]").count()
+            count = out.matches("[placeholder-check/info]").count()
         ),
         CTX_NONE,
         bad_xml_en.as_path(),

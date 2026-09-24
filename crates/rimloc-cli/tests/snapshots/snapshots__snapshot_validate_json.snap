@@ -1,5 +1,6 @@
 ---
 source: crates/rimloc-cli/tests/snapshots.rs
+assertion_line: 91
 expression: v
 ---
 [
@@ -9,7 +10,8 @@ expression: v
     "line": 2,
     "message": "Duplicate key in file",
     "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
-    "schema_version": 1
+    "schema_version": 1,
+    "severity": "error"
   },
   {
     "key": "DuplicateKey",
@@ -17,7 +19,8 @@ expression: v
     "line": 2,
     "message": "Duplicate key in file",
     "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
-    "schema_version": 1
+    "schema_version": 1,
+    "severity": "error"
   },
   {
     "key": "EmptyKey",
@@ -25,7 +28,8 @@ expression: v
     "line": 4,
     "message": "Empty value",
     "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
-    "schema_version": 1
+    "schema_version": 1,
+    "severity": "error"
   },
   {
     "key": "EmptyKey",
@@ -33,7 +37,8 @@ expression: v
     "line": 4,
     "message": "Empty value",
     "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
-    "schema_version": 1
+    "schema_version": 1,
+    "severity": "error"
   },
   {
     "key": "Placeholder",
@@ -41,7 +46,8 @@ expression: v
     "line": 5,
     "message": "Placeholders present — Hint: verify count and types match the source.",
     "path": "<WS>/test/TestMod/Languages/English/Keyed/Bad.xml",
-    "schema_version": 1
+    "schema_version": 1,
+    "severity": "info"
   },
   {
     "key": "Placeholder",
@@ -49,6 +55,7 @@ expression: v
     "line": 5,
     "message": "Placeholders present — Hint: verify count and types match the source.",
     "path": "<WS>/test/TestMod/Languages/Spain/Keyed/Bad.xml",
-    "schema_version": 1
+    "schema_version": 1,
+    "severity": "info"
   }
 ]
