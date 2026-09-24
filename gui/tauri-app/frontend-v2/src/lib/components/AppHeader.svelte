@@ -12,6 +12,7 @@
   import { project } from '../stores/project.svelte';
   import { languages } from '../languages/store.svelte';
   import { registry } from '../languages/registry';
+  import MockBadge from './MockBadge.svelte';
 
   const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
   const LOCALES: Locale[] = ['ru', 'en'];
@@ -32,6 +33,10 @@
 <header class="app-header">
   <div class="brand">
     <span class="brand-name">{t('common.appName')}</span>
+
+    <!-- W6: global data-mode honesty chip — visible on every route and every
+         build; the whole scaffold runs on synthetic demo data (mandate §1). -->
+    <MockBadge />
 
     <nav class="nav" aria-label={t('nav.home')}>
       {#each NAV_ITEMS as item (item.route)}
