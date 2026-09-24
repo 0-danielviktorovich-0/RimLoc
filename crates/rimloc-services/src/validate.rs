@@ -40,7 +40,9 @@ fn eligibility_diagnostics(units: &[rimloc_core::TransUnit]) -> Vec<ValidationMe
                 .copied()
                 .unwrap_or((Path::new(""), None));
             Some(ValidationMessage {
+                // Present translation breaks Def loading → real failure.
                 kind: "non-translatable-flagged".into(),
+                severity: rimloc_validate::ValidationSeverity::Error,
                 key,
                 path: path.display().to_string(),
                 line,
@@ -221,8 +223,10 @@ pub fn validate_placeholders_cross_language(
                     let src_ph = extract_placeholders_like_cli(src);
                     let tgt_ph = extract_placeholders_like_cli(&tgt);
                     if src_ph != tgt_ph {
+                        // Real mismatch breaks the formatted string → error.
                         msgs.push(ValidationMessage {
                             kind: "placeholder-check".into(),
+                            severity: rimloc_validate::ValidationSeverity::Error,
                             key,
                             path,
                             line,
@@ -232,8 +236,10 @@ pub fn validate_placeholders_cross_language(
                 }
             }
             crate::matching::Resolution::Ambiguous { candidates, .. } => {
+                // Ambiguity stays an explicit diagnostic → warning.
                 msgs.push(ValidationMessage {
                     kind: "ambiguous-key".into(),
+                    severity: rimloc_validate::ValidationSeverity::Warning,
                     key,
                     path,
                     line,
@@ -316,8 +322,10 @@ pub fn validate_lists_cross_language(
                     let cs = li_count(s);
                     let ct = li_count(&t);
                     if cs != ct {
+                        // List count mismatch breaks in-game lists → error.
                         msgs.push(ValidationMessage {
                             kind: "list-mismatch".into(),
+                            severity: rimloc_validate::ValidationSeverity::Error,
                             key: k,
                             path,
                             line,
@@ -327,8 +335,10 @@ pub fn validate_lists_cross_language(
                 }
             }
             crate::matching::Resolution::Ambiguous { candidates, .. } => {
+                // Ambiguity stays an explicit diagnostic → warning.
                 msgs.push(ValidationMessage {
                     kind: "ambiguous-key".into(),
+                    severity: rimloc_validate::ValidationSeverity::Warning,
                     key: k,
                     path,
                     line,
@@ -381,8 +391,10 @@ pub fn validate_orphans_cross_language(
             // Valid TKey alias/suffix variants are NOT orphans.
             crate::matching::Resolution::Matched { .. } => {}
             crate::matching::Resolution::Ambiguous { candidates, .. } => {
+                // Ambiguity stays an explicit diagnostic → warning.
                 msgs.push(ValidationMessage {
                     kind: "ambiguous-key".into(),
+                    severity: rimloc_validate::ValidationSeverity::Warning,
                     key: k,
                     path,
                     line,
@@ -390,8 +402,11 @@ pub fn validate_orphans_cross_language(
                 });
             }
             crate::matching::Resolution::Unmatched { .. } => {
+                // Translation without a source counterpart (likely stale
+                // after a rename) — suspicious, not load-breaking → warning.
                 msgs.push(ValidationMessage {
                     kind: "orphan".into(),
+                    severity: rimloc_validate::ValidationSeverity::Warning,
                     key: k,
                     path,
                     line,
