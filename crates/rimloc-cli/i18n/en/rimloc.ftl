@@ -378,3 +378,4 @@ doctor-summary = Summary: { $ok } ok, { $warning } warning, { $error } error, { 
 
 # validate support bundle (gate L)
 support-bundle-written = Support bundle written to { $path }
+validate-severity-summary = Findings by severity: { $error } error, { $warning } warning, { $info } info

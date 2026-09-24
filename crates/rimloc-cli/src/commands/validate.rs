@@ -210,15 +210,37 @@ pub fn run_validate(
     // issues is a failed operation and stays unfinished in the bundle —
     // the id, the causal entries and the affected keys are what an
     // independent reviewer needs; nothing is synthesized.
+    // Severity split (drives operation status, bundle counters and the
+    // human summary).
+    let (mut errors, mut warnings, mut info) = (0u64, 0u64, 0u64);
+    for m in &msgs {
+        match m.severity {
+            rimloc_validate::ValidationSeverity::Error => errors += 1,
+            rimloc_validate::ValidationSeverity::Warning => warnings += 1,
+            rimloc_validate::ValidationSeverity::Info => info += 1,
+        }
+    }
+
     if let Some(bundle_out) = support_bundle.as_ref() {
+        // Severity-driven: only real Error findings fail the operation;
+        // warnings/info stay successful while keeping every finding in the
+        // structured, sanitized bundle context.
         let mut op = rimloc_services::OperationLog::new("validate");
         op.begin_stage("validate");
-        op.counter("validate", "issues", msgs.len() as u64);
-        for m in &msgs {
+        op.counter("validate", "findings_total", msgs.len() as u64);
+        op.counter("validate", "errors", errors);
+        op.counter("validate", "warnings", warnings);
+        op.counter("validate", "info", info);
+        // Only Error findings become causal-chain entries; warnings/info are
+        // preserved as typed validation_findings in the payload context.
+        for m in msgs
+            .iter()
+            .filter(|m| m.severity == rimloc_validate::ValidationSeverity::Error)
+        {
             let entry = format!(
                 "{} [{}] {} ({}:{}): {}",
                 m.kind,
-                m.kind,
+                m.severity.as_str(),
                 m.key,
                 m.path,
                 m.line.unwrap_or(0),
@@ -227,7 +249,9 @@ pub fn run_validate(
             op.error_message("validate", entry.as_str());
         }
         op.end_stage("validate");
-        if msgs.is_empty() {
+        // Failed only from real error findings (or a runtime failure above);
+        // warnings/info keep the run successful while still recorded.
+        if errors == 0 {
             op.finish();
         }
 
@@ -239,13 +263,31 @@ pub fn run_validate(
         for m in &msgs {
             *kinds.entry(m.kind.as_str()).or_default() += 1;
         }
+        let findings: Vec<serde_json::Value> = msgs
+            .iter()
+            .map(|m| {
+                serde_json::json!({
+                    "kind": m.kind,
+                    "severity": m.severity.as_str(),
+                    "key": m.key,
+                    "path": m.path,
+                    "line": m.line,
+                    "message": m.message,
+                })
+            })
+            .collect();
         let meta = rimloc_services::ProjectMeta {
             name: scan_root
                 .file_name()
                 .map(|n| n.to_string_lossy().into_owned()),
             target_lang: per_row_dir.clone(),
             rimloc_version: Some(env!("CARGO_PKG_VERSION").to_string()),
-            extra: serde_json::json!({ "issue_kinds": kinds }),
+            // Every finding (errors, warnings, info) stays in the structured,
+            // sanitized bundle context.
+            extra: serde_json::json!({
+                "issue_kinds": kinds,
+                "validation_findings": findings,
+            }),
             ..Default::default()
         };
         let bundle = rimloc_services::collect_support_bundle_for(
@@ -269,6 +311,7 @@ pub fn run_validate(
         struct JsonMsg<'a> {
             schema_version: u32,
             kind: &'a str,
+            severity: &'a str,
             key: &'a str,
             path: &'a str,
             line: Option<usize>,
@@ -279,6 +322,7 @@ pub fn run_validate(
             .map(|m| JsonMsg {
                 schema_version: crate::OUTPUT_SCHEMA_VERSION,
                 kind: m.kind.as_str(),
+                severity: m.severity.as_str(),
                 key: m.key.as_str(),
                 path: m.path.as_str(),
                 line: m.line,
@@ -299,8 +343,9 @@ pub fn run_validate(
         for m in msgs {
             if !use_color {
                 println!(
-                    "[{}] {} ({}:{}) — {}",
+                    "[{}/{}] {} ({}:{}) — {}",
                     m.kind,
+                    m.severity.as_str(),
                     m.key,
                     m.path,
                     m.line.unwrap_or(0),
@@ -316,9 +361,10 @@ pub fn run_validate(
                 };
                 let plain_kind_token = m.kind.as_str();
                 println!(
-                    "{} [{}] {} ({}:{}) — {}",
+                    "{} [{}/{}] {} ({}:{}) — {}",
                     tag,
                     plain_kind_token,
+                    m.severity.as_str(),
                     m.key.green(),
                     m.path.blue(),
                     m.line.unwrap_or(0).to_string().magenta(),
@@ -329,6 +375,12 @@ pub fn run_validate(
                 }
             }
         }
+        crate::ui_info!(
+            "validate-severity-summary",
+            error = errors,
+            warning = warnings,
+            info = info
+        );
     }
     Ok(())
 }

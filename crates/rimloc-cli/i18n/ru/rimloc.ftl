@@ -307,3 +307,4 @@ doctor-summary = Итог: { $ok } ok, { $warning } предупреждение
 
 # validate support bundle (gate L)
 support-bundle-written = Санитизированный бандл диагностики записан в { $path }
+validate-severity-summary = Находки по критичности: { $error } error, { $warning } warning, { $info } info

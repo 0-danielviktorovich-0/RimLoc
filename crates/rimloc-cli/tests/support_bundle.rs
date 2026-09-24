@@ -50,12 +50,12 @@ fn validate_failure_flows_into_sanitized_support_bundle() {
     // 2) a placeholder mismatch surfaced via --compare-placeholders.
     std::fs::write(
         eng.join("Actions.xml"),
-        "<LanguageData>\n  <Greet.label>Hi {0}!</Greet.label>\n  <Bye.label>Bye</Bye.label>\n</LanguageData>\n",
+        "<LanguageData>\n  <Greet.label>Hi {0}!</Greet.label>\n  <Bye.label>Bye</Bye.label>\n  <Tip.label>Tip {0}!</Tip.label>\n</LanguageData>\n",
     )
     .expect("write en");
     std::fs::write(
         rus.join("Actions.xml"),
-        "<LanguageData>\n  <Greet.label></Greet.label>\n  <Bye.label>Пока</Bye.label>\n</LanguageData>\n",
+        "<LanguageData>\n  <Greet.label></Greet.label>\n  <Bye.label>Пока</Bye.label>\n  <Tip.label>Совет {0}!</Tip.label>\n</LanguageData>\n",
     )
     .expect("write ru");
     let sentinel = mod_root.join("sentinel.txt");
@@ -84,7 +84,7 @@ fn validate_failure_flows_into_sanitized_support_bundle() {
     // The real validator actually ran and found real issues (so the captured
     // failure is genuine, not a hand-seeded one).
     assert!(
-        stdout.contains("[empty]") || stdout.contains("[placeholder-check]"),
+        stdout.contains("[empty/error]") || stdout.contains("[placeholder-check/error]"),
         "validator must report real issues, got: {stdout}"
     );
 
@@ -123,10 +123,22 @@ fn validate_failure_flows_into_sanitized_support_bundle() {
         operation["name"],
         serde_json::Value::String("validate".to_string())
     );
+    // Severity split of the REAL findings (026): 2 errors — the empty
+    // Russian label and the placeholder mismatch — plus 1 info (the
+    // placeholder presence hint on the well-formed Tip.label): an
+    // Info+Error mixture in one run.
+    let counters = &operation["stages"][0]["counters"];
+    assert_eq!(counters["errors"], serde_json::Value::from(2), "2 errors");
     assert_eq!(
-        operation["stages"][0]["counters"]["issues"],
-        serde_json::Value::from(2),
-        "both real issues captured"
+        counters["warnings"],
+        serde_json::Value::from(0),
+        "0 warnings"
+    );
+    assert_eq!(counters["info"], serde_json::Value::from(1), "1 info hint");
+    assert_eq!(
+        counters["findings_total"],
+        serde_json::Value::from(3),
+        "all findings counted"
     );
     // Failed run stays failed — never a synthetic success. The derived
     // status agrees: unfinished with errors = failed.
@@ -136,11 +148,30 @@ fn validate_failure_flows_into_sanitized_support_bundle() {
         serde_json::Value::String("failed".to_string())
     );
 
+    // Every finding (both severities) survives in the sanitized structured
+    // context; only errors become causal entries.
+    let findings = diagnostics["project_meta"]["extra"]["validation_findings"]
+        .as_array()
+        .expect("validation_findings")
+        .clone();
+    assert_eq!(findings.len(), 3, "all findings preserved");
+    let severities: Vec<&str> = findings
+        .iter()
+        .filter_map(|f| f["severity"].as_str())
+        .collect();
+    // Emission order of the real validator (Tip.info comes from the
+    // per-row pass ordering; both errors from the empty label and the
+    // cross-language mismatch).
+    assert_eq!(severities, vec!["error", "info", "error"]);
+    // Causal entries carry only the Error findings.
+    let causal = operation["errors"].as_array().expect("errors");
+    assert_eq!(causal.len(), 2, "only error findings in the causal chain");
+
     // Affected keys derive from the actual validator output.
     let stdout_keys: Vec<&str> = stdout
         .lines()
         .filter_map(|l| {
-            // text format: "[kind] key (path:line) — message"
+            // text format: "[kind/severity] key (path:line) — message"
             let rest = l.split("] ").nth(1)?;
             let key = rest.split(" (").next()?;
             if key.is_empty() {
@@ -250,14 +281,118 @@ fn json_stdout_stays_parseable_with_support_bundle() {
     )
     .expect("json");
     assert_eq!(
-        diagnostics["operation"]["stages"][0]["counters"]["issues"],
+        diagnostics["operation"]["stages"][0]["counters"]["errors"],
         serde_json::Value::from(items.len() as u64),
-        "actual issue count captured"
+        "actual error count captured"
+    );
+    assert_eq!(
+        diagnostics["operation"]["stages"][0]["counters"]["findings_total"],
+        serde_json::Value::from(items.len() as u64),
+        "findings total captured"
     );
     assert!(
         diagnostics["operation"]["finished_at"].is_null(),
         "failed run stays failed"
     );
+}
+
+// 026 positive control (lead's CleanFixture shape): a VALID {0} pair is
+// only an Info finding — validation succeeds, the finding survives in the
+// bundle, and the whole JSON stdout stays parseable.
+#[test]
+fn placeholder_info_keeps_validation_successful_with_bundle() {
+    let tmp = tempfile::tempdir().expect("tmp");
+    let mod_root = tmp.path().join("MyMod");
+    let eng = mod_root.join("Languages/English/Keyed");
+    let rus = mod_root.join("Languages/Russian/Keyed");
+    std::fs::create_dir_all(&eng).expect("dirs");
+    std::fs::create_dir_all(&rus).expect("dirs");
+    std::fs::write(
+        eng.join("Actions.xml"),
+        "<LanguageData>\n  <Greeting.label>Hello {0}!</Greeting.label>\n</LanguageData>\n",
+    )
+    .expect("write en");
+    std::fs::write(
+        rus.join("Actions.xml"),
+        "<LanguageData>\n  <Greeting.label>Привет {0}!</Greeting.label>\n</LanguageData>\n",
+    )
+    .expect("write ru");
+    let sentinel = mod_root.join("sentinel.txt");
+    std::fs::write(&sentinel, b"KEEP").expect("sentinel");
+    let before = tree_snapshot(&mod_root);
+
+    let bundle_out = tmp.path().join("bundle-out");
+    let output = bin()
+        .args([
+            "--quiet",
+            "validate",
+            "--format",
+            "json",
+            "--root",
+            mod_root.to_str().expect("utf8 root"),
+            "--lang-dir",
+            "Russian",
+            "--compare-placeholders",
+            "--support-bundle",
+            bundle_out.to_str().expect("utf8 out"),
+        ])
+        .output()
+        .expect("run rimloc validate");
+    assert!(output.status.success(), "info-only run must succeed");
+
+    // Whole stdout parses as the JSON contract.
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let issues: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("whole stdout is valid JSON");
+    let items = issues.as_array().expect("array").clone();
+    assert!(!items.is_empty(), "the Info finding is still reported");
+    for item in &items {
+        assert_eq!(
+            item["severity"].as_str(),
+            Some("info"),
+            "valid pair yields only info findings: {items:?}"
+        );
+    }
+
+    // Validation with warnings/info = SUCCESSFUL; the finding survives in
+    // the structured context and the human report.
+    let diagnostics: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(bundle_out.join("diagnostics.json")).expect("diagnostics"),
+    )
+    .expect("json");
+    let operation = &diagnostics["operation"];
+    assert_eq!(
+        operation["status"],
+        serde_json::Value::String("succeeded".to_string())
+    );
+    let counters = &operation["stages"][0]["counters"];
+    assert_eq!(counters["errors"], serde_json::Value::from(0));
+    assert_eq!(counters["info"], serde_json::Value::from(1));
+    assert_eq!(counters["findings_total"], serde_json::Value::from(1));
+    let findings = diagnostics["project_meta"]["extra"]["validation_findings"]
+        .as_array()
+        .expect("findings");
+    assert_eq!(findings.len(), 1);
+    assert_eq!(
+        findings[0]["severity"],
+        serde_json::Value::String("info".to_string())
+    );
+    assert!(
+        findings[0]["message"]
+            .as_str()
+            .map(|m| m.contains("Placeholders present"))
+            .unwrap_or(false),
+        "presence hint preserved: {findings:?}"
+    );
+    let report = std::fs::read_to_string(bundle_out.join("report.md")).expect("report");
+    assert!(
+        report.contains("Placeholders present"),
+        "info finding in report"
+    );
+
+    // Source tree byte-identical.
+    assert_eq!(tree_snapshot(&mod_root), before, "source untouched");
+    assert_eq!(std::fs::read(&sentinel).expect("sentinel"), b"KEEP");
 }
 
 #[test]
@@ -306,7 +441,7 @@ fn validate_clean_run_support_bundle_marks_operation_finished() {
         "clean run derives succeeded"
     );
     assert_eq!(
-        diagnostics["operation"]["stages"][0]["counters"]["issues"],
+        diagnostics["operation"]["stages"][0]["counters"]["findings_total"],
         serde_json::Value::from(0)
     );
 }
