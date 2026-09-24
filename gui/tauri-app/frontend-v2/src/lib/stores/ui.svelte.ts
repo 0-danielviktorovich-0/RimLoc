@@ -3,8 +3,9 @@
 // force loading/empty/error on Home and Workspace.
 export type SimpleState = 'ready' | 'loading' | 'error';
 export type WorkspaceState = 'ready' | 'loading' | 'empty' | 'error';
-/** Home renders either the onboarding (first-run) or the recent-projects (returning) view. */
-export type HomeMode = 'first-run' | 'returning';
+/** Home renders onboarding (first-run), recent projects (returning) or the
+ * no-mods empty state with Try Demo (W6, MOCK_LIVE_ONBOARDING_MANDATE §9). */
+export type HomeMode = 'first-run' | 'returning' | 'no-mods';
 
 class UiStore {
   homeState = $state<SimpleState>('ready');

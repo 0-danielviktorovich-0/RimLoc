@@ -25,6 +25,24 @@ export const ru: Record<string, string> = {
   'mockbadge.title':
     'Этот скаффолд работает на синтетических демо-данных, вызовов бэкенда нет. Живой режим придёт после фриза бэкенда через границу RimLocClient-транспорта.',
 
+  // Встроенный демо-проект (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
+  'home.demo.title': 'RimLoc Demo',
+  'home.demo.mark': 'синтетический демо-проект',
+  'home.demo.desc': 'Встроенный образец: Keyed, DefInjected, TKey, плейсхолдеры, конфликт глоссария, очередь проверки и несколько языков. Игровые папки не задействованы.',
+  'home.demo.open': 'Открыть демо-проект',
+  'home.demo.again': 'Открыть демо заново',
+  'home.demo.reset': 'Сбросить демо к началу',
+
+  // Состояние «моды не найдены» (W6, мандат §9)
+  'home.nomods.title': 'Моды не найдены',
+  'home.nomods.desc': 'RimLoc не видит мода для перевода. Начните со встроенного демо, укажите папку или настройте установку игры.',
+  'home.nomods.demo': 'Попробовать демо-проект',
+  'home.nomods.folder': 'Выбрать папку',
+  'home.nomods.note': 'Выбор папки в этой сборке — мок: диалога ОС ещё нет. Он появится вместе с живым бэкендом после фриза.',
+  'home.nomods.configure': 'Настроить установку',
+  'home.nomods.later': 'Не сейчас',
+  'home.nomods.laterDesc': 'Вернуться к обычному экрану Home.',
+
   'theme.label': 'Тема',
   'theme.light': 'Светлая',
   'theme.dark': 'Тёмная',
@@ -985,6 +1003,7 @@ export const ru: Record<string, string> = {
   'dev.homeMode': 'Вид Home',
   'dev.homeMode.first-run': 'Первый запуск',
   'dev.homeMode.returning': 'Возвращение',
+  'dev.homeMode.no-mods': 'Без модов',
   'dev.homeState': 'Состояние Home',
   'dev.homeState.ready': 'Обычное',
   'dev.homeState.loading': 'Загрузка',
