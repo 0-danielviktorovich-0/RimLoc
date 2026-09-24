@@ -3,10 +3,16 @@
 // the tour guides the user to REAL controls and performs REAL mock actions —
 // nothing is faked as "implemented" behind the scenes.
 //
+// Guided honesty (lead review 024): the final demo step reflects what actually
+// happened. `requires` lists guided action ids that must have been performed
+// on this pass; when any is missing the step shows its honest fallback copy
+// (outstanding work) instead of a fabricated "translation ready" claim.
+//
 // Anchors are CSS selectors over existing data-testids. A missing anchor is
 // never fatal: the tour falls back to a centered card (honest degradation in
 // narrow layouts and jsdom, where layout boxes are zero-sized).
 import { project } from '../stores/project.svelte';
+import { review } from '../stores/review.svelte';
 import { router, type RouteId } from '../router.svelte';
 import { demoProject } from '../demo/demoProject.svelte';
 import type { TourScript } from '../stores/onboarding.svelte';
@@ -31,6 +37,13 @@ export interface TourStep {
   action?: TourAction;
   /** Last step shows the finish label instead of Next. */
   final?: boolean;
+  /**
+   * Guided action ids that the success copy requires. When any is missing,
+   * honestTitleKey/honestTextKey replace the success copy.
+   */
+  requires?: string[];
+  honestTitleKey?: string;
+  honestTextKey?: string;
 }
 
 export const COACH_STEPS: TourStep[] = [
@@ -64,6 +77,21 @@ export const COACH_STEPS: TourStep[] = [
     final: true
   }
 ];
+
+/** The corrected demo target for the intentional placeholder error: keeps
+ * every source placeholder, so the derived mismatch genuinely clears. */
+const KEYED_06_FIX = '{ENEMYPAWN_nameFull} из {ENEMYFACTION_name} — на вас напали!';
+
+/** Real review fix of the intentional error: open → edit → save, exactly the
+ * buttons a user would press (writes through the shared project store). */
+function fixKeyed06(): void {
+  const issue = review.issues.find((i) => i.id === 'keyed-06:placeholder_mismatch');
+  if (!issue) return; // already fixed on this pass — idempotent
+  review.open(issue);
+  review.startFix(issue);
+  review.fixText[issue.id] = KEYED_06_FIX;
+  review.saveFix(issue);
+}
 
 export const DEMO_STEPS: TourStep[] = [
   {
@@ -102,7 +130,13 @@ export const DEMO_STEPS: TourStep[] = [
     action: {
       labelKey: 'tour.d3.action',
       testid: 'tour.action.d3',
-      run: () => project.setStatus('keyed-04', 'translated')
+      run: () => {
+        // A real isolated demo edit: stage the draft, then save it through
+        // the same debounced commit path the editor uses (text mutates,
+        // status TODO → translated, origin → human).
+        project.setDraft('keyed-04', 'Изгнать {PAWN_nameDef}?');
+        project.flushDraft('keyed-04');
+      }
     }
   },
   {
@@ -117,7 +151,7 @@ export const DEMO_STEPS: TourStep[] = [
     titleKey: 'tour.d5.title',
     textKey: 'tour.d5.text',
     route: 'workspace',
-    anchor: '[data-testid="tabs.review"]',
+    anchor: '[data-testid="workspace.row.keyed-06"]',
     action: {
       labelKey: 'tour.d5.action',
       testid: 'tour.action.d5',
@@ -129,14 +163,19 @@ export const DEMO_STEPS: TourStep[] = [
     titleKey: 'tour.d6.title',
     textKey: 'tour.d6.text',
     route: 'review',
-    anchor: '[data-testid="review.categories"]'
+    anchor: '[data-testid="review.categories"]',
+    action: {
+      labelKey: 'tour.d6.action',
+      testid: 'tour.action.d6',
+      run: fixKeyed06
+    }
   },
   {
     id: 'd7',
     titleKey: 'tour.d7.title',
     textKey: 'tour.d7.text',
     route: 'review',
-    anchor: '[data-testid="workspace.cta-review"], [data-testid="workspace.cta-build"]',
+    anchor: '[data-testid="review.categories"]',
     action: {
       labelKey: 'tour.d7.action',
       testid: 'tour.action.d7',
@@ -148,7 +187,16 @@ export const DEMO_STEPS: TourStep[] = [
     titleKey: 'tour.d8.title',
     textKey: 'tour.d8.text',
     route: 'build',
-    anchor: '[data-testid="build.run"]'
+    anchor: '[data-testid="build.run"]',
+    action: {
+      labelKey: 'tour.d8.action',
+      testid: 'tour.action.d8',
+      // Press the REAL existing demo-build control — the same button a user
+      // clicks. No second build engine lives in the tour.
+      run: () => {
+        (document.querySelector('[data-testid="build.run"]') as HTMLButtonElement | null)?.click();
+      }
+    }
   },
   {
     id: 'd9',
@@ -156,7 +204,11 @@ export const DEMO_STEPS: TourStep[] = [
     textKey: 'tour.d9.text',
     route: 'build',
     anchor: '[data-testid="build.done"]',
-    final: true
+    final: true,
+    // Success copy only when the work actually happened this pass.
+    requires: ['d3', 'd6', 'd8'],
+    honestTitleKey: 'tour.d9.honest.title',
+    honestTextKey: 'tour.d9.honest.text'
   }
 ];
 
