@@ -19,7 +19,7 @@ engineering/product passes, документация, упаковка и вос
 готовится к распространению, но push, публикация и релиз требуют решения владельца.
 
 ## Verify at session start (изменчивое)
-- Последний проверенный main-срез: `26d279b` (L implementation, ещё не acceptance)
+- Последний main-срез: `c8907cf` (L follow-ups + W4.5; ещё не backend acceptance)
   → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
@@ -67,14 +67,23 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
 3. **L observability — implementation `26d279b`, не принят**: doctor, support bundle + redaction preview,
    Copy-for-AI, structured logs, operation IDs. Acceptance: известный сбой → causal
    context → очищенный bundle → независимое воспроизведение/диагноз.
-   Lead повторил 195 workspace tests и clippy; отдельная проба подтвердила закрытие
+   Lead повторил build/fmt/clippy и **199 workspace tests** после `c3cb2ea`;
+   source hash guard: 1066 файлов без изменений. Отдельная проба подтвердила закрытие
    обходов через nonexistent sibling с `..` и predictable atomic temp symlink.
-   Это проверки среза, не финальная приёмка меняющегося дерева. Остались review fixes:
-   embedded provider-token redaction (capturing group сохраняла секрет); Windows
-   canonical-prefix parity для nonexistent descendants; doctor не оставляет новые
-   каталоги и сообщает ошибку cleanup; реальный failed validate → исходный operation
-   ID/cause/affected → публичный bundle вместо вручную сконструированной ошибки.
-   Коррекции доставлены тому же GLM. Windows runtime ещё не проверен; утверждение,
+   `b9ff22d/cf54c64/c3cb2ea` закрывают token masking, prefix parity, doctor cleanup
+   и реальный `validate --support-bundle`; `161449b/220a346` сохраняют JSON stdout
+   и убирают новый API выше заявленного MSRV (полный MSRV ещё не проверен).
+   Blind GLM-review только четырёх bundle-файлов верно определил обе реальные
+   ошибки и исходный operation ID; manifest hashes совпали, source fixture неизменна.
+   `c8907cf` исправляет version/locale over-redaction, collection timestamp и
+   running/succeeded/failed в JSON/отчёте; lead повторил 22 observability + 3 CLI tests.
+   **L остаётся OPEN по positive-control evidence**: корректные `Hello {0}!` →
+   `Привет {0}!` дают информационный placeholder hint, который записывается как
+   ошибка и делает status failed. Следующий fix — typed ValidationSeverity на местах
+   генерации, сохранение всех findings, success для info/warning-only; без сравнения
+   текстов сообщений. services/validate.rs severity edits передаются L, J020 не меняет
+   этот файл. Дефектная контрольная фикстура и исходные hash-данные сохраняются.
+   Windows runtime ещё не проверен; утверждение,
    что std::fs::rename не заменяет файл в Windows, проверено и отклонено как неверное.
 4. **BACKEND FREEZE** → компактный delta-бандл (дифф от 50f9483) для ChatGPT.
 5. POST-FREEZE: real UI binding → LIVE ACCEPTANCE GATE (W6 §3 / W7 §26 мандатов).
@@ -86,12 +95,12 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
 - **W3 лендена** (`935f70c`, acceptance `0f91203`): гибридная стратегия, chat-batch
   manager, stale-import/suggestion защита. Mandate identity guard: `91ed049`.
 - **W4 лендена** (`3fa2039`): provider instances, glossary/TM, shortcuts, About.
-  **W4.5 на интеграционной ветке**: `9432b14` + `f207453`, включены в
-  `codex/gui-integration` с сохранением W5. Credential references/export, read-only
+  **W4.5 принята и включена в main** (`9cedd4e/ad9a002/d5c7c28`) с сохранением W5.
+  Credential references/export, read-only
   reference-корпуса, shortcut safety, общая версия из GUI package metadata;
   transient connection status не клонируется, смена endpoint/key гасит stale probe.
   Lead проверил объединённый финальный срез `548f4cb`: check 0/0, **73 tests**, build.
-  Main ещё не содержит эту интеграцию.
+  Git tree frontend-v2 в main совпадает с проверенным интеграционным срезом.
 - **W5 mock принят** (`05876f5` + `13f7c31`): diagnostics + redaction preview,
   Project screen, QA по **8 персонам**; demo-подписи, sensitive-key redaction,
   сброс старого causal context при повторе и 22 новых регрессионных теста.
@@ -104,6 +113,10 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   `../_rimloc-worktrees/w6-demo` от `13f7c31`: честный глобальный demo-бейдж, scenario
   browser, anchored tour, изолированный demo project, REVIEW SCREEN MAP
   (MOCK_LIVE_ONBOARDING_MANDATE.md). Доставка и resume подтверждены.
+  Первый срез включён только в `codex/gui-integration` (`3ef2e23`): check 0/0,
+  **105 tests**, build. **Не принят**: браузер подтвердил tour-success без реальной
+  demo-сборки; dev scenario deep-links действуют в production preview. Исправления
+  доставлены тому же GLM, исходные логические коммиты сохранены.
 - **W7 PRE-FREEZE — ACTIVE**: тот же GLM-исследователь переиспользован для source
   inspector mock в `../_rimloc-worktrees/w7-source` от `993115b`; ACK и running
   подтверждены. SOURCE tab, viewer, context/palette actions, source browser,
@@ -127,6 +140,11 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   `agent_41830365-1e44-46e4-83d1-0f04f308ff13`, `../_rimloc-worktrees/w45-ux`.
   Старые J/W4 transports истекли; замены запущены только после неудачного reuse.
   `303d726` уже предок их базы; не портировать/реимплементировать существующий J.
+- Provenance `feb0a63` прошёл независимое **статическое** GLM-ревью, без новых blockers
+  кроме identity loss; динамическая приёмка интегрированного backend ещё впереди.
+  W4.5-reviewer переиспользован для узкого corpus acceptance helper в
+  `../_rimloc-worktrees/rc-corpus` (ACK/resume подтверждены); реальные данные не коммитятся,
+  вывод только в уникальный `/tmp/rimloc-corpus-*`, hash guard до/после, без `--update`.
 - Доставку задания проверять по подтверждению активного turn; срочные UI-коррекции
   отправлять через Steer, не оставлять в очереди. Локальный mailbox
   `/tmp/rimloc-control/PROTOCOL.md` → background listener в существующем coordinator →
