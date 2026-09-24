@@ -20,6 +20,7 @@
   import { router } from './lib/router.svelte';
   import { ui } from './lib/stores/ui.svelte';
   import { stylelab } from './lib/stores/stylelab.svelte';
+  import { devMode } from './lib/stores/devmode.svelte';
 </script>
 
 <AppHeader />
@@ -54,15 +55,18 @@
   {/if}
 </main>
 
-<DevPanel />
+<!-- W6: developer tooling (dev panel, scenario browser) is gated behind ONE
+     explicit dev/testing mode — vite dev, ?dev=1 or a persisted opt-in. The
+     global Demo-data badge above stays unconditional in every build. -->
+{#if devMode.enabled}
+  <DevPanel />
+  <ScenarioBrowser />
+{/if}
 
 <!-- W6: anchored product tour lives at shell level — the guided demo script
-     spans Home → Workspace → Review → Build, so it survives route changes. -->
+     spans Home → Workspace → Review → Build, so it survives route changes.
+     This is product onboarding, NOT dev tooling: never gated. -->
 <OnboardingCoach />
-
-<!-- W6: dev scenario browser + deep-link runner (?scenario=<id>); the picker
-     opens from the dev panel, deep-links apply regardless. -->
-<ScenarioBrowser />
 
 <!-- Style Lab is dev-only: gated behind ?stylelab=1 / localStorage opt-in. -->
 {#if stylelab.enabled}

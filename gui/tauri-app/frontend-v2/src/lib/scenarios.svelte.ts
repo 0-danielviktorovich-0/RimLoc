@@ -6,6 +6,7 @@
 // affect the future production MockTransport guard, which stays a CI/xtask
 // concern after the freeze.
 import { ui } from './stores/ui.svelte';
+import { devMode } from './stores/devmode.svelte';
 import { router, type RouteId } from './router.svelte';
 import { project } from './stores/project.svelte';
 import { languages } from './languages/store.svelte';
@@ -124,8 +125,10 @@ export function scenarioHref(scenario: Scenario): string {
   return `#/${scenario.route}?scenario=${scenario.id}`;
 }
 
-/** Run a scenario: its setup, then the canonical navigation. */
+/** Run a scenario: its setup, then the canonical navigation. Dev-only guard
+ * lives here too so a programmatic caller cannot bypass the mode. */
 export function runScenario(scenario: Scenario): void {
+  if (!devMode.enabled) return;
   scenario.run?.();
   router.navigate(scenario.route);
 }
@@ -145,6 +148,9 @@ export function findScenario(id: string): Scenario | undefined {
 let lastSeenHash = '';
 
 function applyScenarioFromHash(): void {
+  // Dev/testing gate: when the mode is off, ANY ?scenario= value — known,
+  // unknown or malicious — is ignored without touching a single store.
+  if (!devMode.enabled) return;
   const hash = window.location.hash;
   if (hash === lastSeenHash) return;
   lastSeenHash = hash;
