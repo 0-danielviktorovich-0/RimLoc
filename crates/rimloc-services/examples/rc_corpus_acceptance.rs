@@ -214,13 +214,19 @@ fn kind_name(k: EntryKind) -> &'static str {
     }
 }
 
-/// Def type the native writer will use for this entry (mirrors the
-/// documented output rule in `write_rimworld_translation`: TKey metadata →
-/// `/DefInjected/` segment of a context file → "Misc" fallback). Canonical
-/// IDs only — no path guessing beyond the writer's own rule.
-fn writer_def_type(e: &rimloc_domain::canonical::SourceEntry) -> String {
+/// Def type the native writer will use for this entry (mirrors the CURRENT
+/// documented output rule in `write_rimworld_translation`, af937fd):
+/// id discriminator → TKey metadata → `/DefInjected/` segment of a context
+/// file → NONE (the entry is SKIPPED from output and reported — never a
+/// "Misc" guess). Canonical IDs only.
+fn writer_def_type(e: &rimloc_domain::canonical::SourceEntry) -> Option<String> {
+    if let Some(dt) = &e.id.def_type {
+        if !dt.trim().is_empty() {
+            return Some(dt.clone());
+        }
+    }
     if let Some(m) = &e.tkey {
-        return m.def_type.clone();
+        return Some(m.def_type.clone());
     }
     for c in &e.contexts {
         let s = c.file.replace('\\', "/");
@@ -230,11 +236,11 @@ fn writer_def_type(e: &rimloc_domain::canonical::SourceEntry) -> String {
                 .next()
                 .unwrap_or_default();
             if !seg.is_empty() {
-                return seg.to_string();
+                return Some(seg.to_string());
             }
         }
     }
-    "Misc".into()
+    None
 }
 
 /// Output identity the writer produces for one translation: (def-type scope,
@@ -244,7 +250,9 @@ fn writer_def_type(e: &rimloc_domain::canonical::SourceEntry) -> String {
 fn output_identity(e: &rimloc_domain::canonical::SourceEntry) -> Option<(String, String)> {
     match e.id.kind {
         EntryKind::Keyed => Some(("Keyed".into(), e.id.key.clone())),
-        EntryKind::DefInjected => Some((writer_def_type(e), e.id.key.clone())),
+        // Unknown def type: the writer skips the entry (af937fd) — the
+        // expected model must skip it too, never render a "Misc" scope.
+        EntryKind::DefInjected => writer_def_type(e).map(|dt| (dt, e.id.key.clone())),
         EntryKind::TKey => {
             let m = e.tkey.as_ref()?;
             Some((m.def_type.clone(), format!("{}{}", e.id.key, m.suffix)))
@@ -339,9 +347,13 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
 
     // G3b — empty inventory is a failure when the mod carries source-side
     // content; a target-only mod legitimately has no English source.
-    let has_source_side = mod_root.join("Defs").is_dir()
-        || mod_root.join("Languages").join("English").is_dir()
-        || mod_root.join("LoadFolders.xml").is_file();
+    // Source-side = Defs or an English Languages dir. A LoadFolders.xml
+    // alone does NOT imply source content: pure translation mods ship
+    // LoadFolders + Languages/<target> only, and their canonical inventory
+    // is legitimately empty (013-2 contract) — misclassifying them as
+    // source mods made G3b fire on RU-only packs.
+    let has_source_side =
+        mod_root.join("Defs").is_dir() || mod_root.join("Languages").join("English").is_dir();
     if project.entries.is_empty() && has_source_side {
         fail(
             &mut failures,
