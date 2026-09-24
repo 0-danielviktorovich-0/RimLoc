@@ -7,7 +7,13 @@ import { click, exists, mountCmp, q } from './helpers';
 import { mockEntries } from '../src/lib/mock/data';
 import { project } from '../src/lib/stores/project.svelte';
 import { source } from '../src/lib/source/store.svelte';
-import { buildLaunchPlan, splitArgsText } from '../src/lib/source/editor';
+import {
+  buildLaunchPlan,
+  loadEditorChoice,
+  splitArgsText,
+  splitArgsTextStrict,
+  templateFor
+} from '../src/lib/source/editor';
 import { shortcuts } from '../src/lib/stores/shortcuts.svelte';
 import { i18n } from '../src/i18n/store.svelte';
 import DetailPanel from '../src/lib/components/workspace/DetailPanel.svelte';
@@ -225,12 +231,76 @@ describe('w7 #8: editor launch plans are structural', () => {
     expect(
       splitArgsText('"/Applications/Мой Редактор.app" --wait "{path}.xml"')
     ).toEqual(['/Applications/Мой Редактор.app', '--wait', '{path}.xml']);
+    // lead review 029 #2: an unbalanced quote is a typed rejection
+    expect(splitArgsTextStrict('"/Applications/Мой')).toEqual({
+      ok: false,
+      reasonKey: 'source.editor.error.unbalancedQuote'
+    });
     const r = buildLaunchPlan(
       { executable: '/usr/local/bin/右クリック', argsTemplate: ['--goto', '{path}:{line}:{column}'] },
       { path: 'Docs/файл пробел.xml', line: 12, column: 4 }
     );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.plan.args).toEqual(['--goto', 'Docs/файл пробел.xml:12:4']);
+  });
+});
+
+describe('w7 #8b: literal substitution safety (lead 029 #2)', () => {
+  const target = { path: 'Мой $& {line}.xml', line: 12, column: 4 };
+
+  it('replacement text is never reinterpreted ($&, ${}, braces stay literal)', () => {
+    const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{path}'] }, target);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.args).toEqual(['Мой $& {line}.xml']);
+  });
+
+  it('repeated tokens all resolve in one pass', () => {
+    const r = buildLaunchPlan(
+      { executable: 'ed', argsTemplate: ['{path}', '{path}:{line}:{column}', '{path}'] },
+      { path: 'a b.xml', line: 3, column: 7 }
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.args).toEqual(['a b.xml', 'a b.xml:3:7', 'a b.xml']);
+  });
+
+  it('standalone {column} substitutes ONLY the column', () => {
+    const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{path}', '{column}'] }, { path: 'a.xml', line: 12, column: 4 });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.args).toEqual(['a.xml', '4']);
+  });
+
+  it('unknown or malformed placeholders are rejected', () => {
+    for (const tok of ['{bogus_1}', '{}', '{LINE }']) {
+      const r = buildLaunchPlan({ executable: 'ed', argsTemplate: [tok] }, { path: 'a.xml', line: 1, column: 1 });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.unknownPlaceholder');
+    }
+  });
+
+  it('line/column must be positive integers when required', () => {
+    for (const line of [null, 0, -3, 1.5]) {
+      const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{line}'] }, { path: 'a.xml', line, column: null });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.noLine');
+    }
+    const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{column}'] }, { path: 'a.xml', line: 1, column: 0 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.noColumn');
+  });
+
+  it('corrupt persisted editor choice falls back to defaults', () => {
+    localStorage.setItem('rimloc.source.editor', '{"preset":{"evil":1},"custom":null}');
+    const c = loadEditorChoice();
+    expect(c.preset).toBe('system');
+    localStorage.setItem('rimloc.source.editor', 'not json at all');
+    expect(loadEditorChoice().preset).toBe('system');
+    localStorage.removeItem('rimloc.source.editor');
+  });
+
+  it('templateFor rejects an unbalanced custom template', () => {
+    const r = templateFor({ preset: 'custom', custom: { executable: 'ed', argsText: '"unclosed' } });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.unbalancedQuote');
   });
 });
 

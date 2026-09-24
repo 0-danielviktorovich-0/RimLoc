@@ -219,7 +219,12 @@ class SourceStore {
       line: loc.line,
       column: loc.column
     };
-    const result = buildLaunchPlan(templateFor(choice), target);
+    const tpl = templateFor(choice);
+    if (!tpl.ok) return tpl;
+    const result = buildLaunchPlan(
+      { executable: tpl.plan.executable, argsTemplate: tpl.plan.args },
+      target
+    );
     if (!result.ok) return result;
     return { ok: true, argv: [result.plan.executable, ...result.plan.args] };
   }
