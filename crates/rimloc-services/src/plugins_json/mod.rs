@@ -122,6 +122,7 @@ impl plugins::ParserPlugin for JsonKeyedPlugin {
                     path: p.to_path_buf(),
                     line: None,
                     tkey: None,
+                    ..Default::default()
                 });
             }
         }

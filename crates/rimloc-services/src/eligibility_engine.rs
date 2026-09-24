@@ -325,12 +325,14 @@ impl EligibilityEngine {
 // Matching and resolution helpers
 // ---------------------------------------------------------------------------
 
-/// Known def type of an entry: TKey metadata wins, else the first context.
+/// Known def type of an entry: the identity discriminator wins (it is the
+/// provenance-backed scope), then TKey metadata, then the first context.
 fn entry_def_type(entry: &SourceEntry) -> Option<&str> {
     entry
-        .tkey
-        .as_ref()
-        .map(|m| m.def_type.as_str())
+        .id
+        .def_type
+        .as_deref()
+        .or_else(|| entry.tkey.as_ref().map(|m| m.def_type.as_str()))
         .or_else(|| entry.contexts.first().and_then(|c| c.def_type.as_deref()))
 }
 
@@ -570,6 +572,7 @@ mod tests {
             id: SourceEntryId {
                 kind,
                 key: key.into(),
+                def_type: None,
             },
             text: "Hello".into(),
             source_locale: "en".into(),
@@ -691,6 +694,7 @@ mod tests {
             suffix: ".slateRef".into(),
             def_type: "QuestScriptDef".into(),
             contexts: 1,
+            locations: Vec::new(),
         });
         let v = engine.evaluate(&tkey_entry, None);
         assert_eq!(v.decision, Decision::Translatable);

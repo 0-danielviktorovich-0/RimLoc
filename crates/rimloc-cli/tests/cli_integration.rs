@@ -1430,6 +1430,13 @@ fn scan_for_hardcoded_user_strings_in(dir: &std::path::Path, include_tests: bool
                 {
                     continue;
                 }
+                // Skip examples/ directories: acceptance-harness examples are
+                // developer tooling with contracted MACHINE output (JSON report
+                // + artifact path), not localized product UI. Product i18n
+                // rules still apply to every src/ and tests/ file.
+                if name == "examples" {
+                    continue;
+                }
                 offenders.extend(scan_for_hardcoded_user_strings_in(&path, include_tests));
                 continue;
             }

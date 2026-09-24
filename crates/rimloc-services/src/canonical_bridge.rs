@@ -34,15 +34,62 @@ fn kind_for(path: &Path, tkey: bool) -> EntryKind {
     }
 }
 
+/// Def type segment of a DefInjected path (real sidecar or the canonical
+/// virtual output path the scan builds for Defs-derived units):
+/// `.../DefInjected/ThingDef/X.xml` -> "ThingDef". Exact case — def types
+/// that differ only by case are different types, never folded.
+pub(crate) fn definjected_def_type(path: &Path) -> Option<String> {
+    definjected_def_type_str(&path.to_string_lossy())
+}
+
+/// String form of [`definjected_def_type`] for callers holding raw path
+/// text (persistence migration evidence).
+pub(crate) fn definjected_def_type_str(path: &str) -> Option<String> {
+    let s = path.replace('\\', "/");
+    let i = s.find("/DefInjected/")?;
+    s[i + "/DefInjected/".len()..]
+        .split('/')
+        .next()
+        .filter(|seg| !seg.is_empty())
+        .map(str::to_string)
+}
+
+/// The def-type discriminator of a unit, for kinds that are def-type-scoped
+/// (DefInjected, TKey). Everything else stays `None` — a Keyed key has no
+/// def-type scope, and an unknown type is never turned into a fake
+/// identity.
+fn def_type_discriminator(kind: EntryKind, u: &TransUnit) -> Option<String> {
+    match kind {
+        EntryKind::DefInjected | EntryKind::TKey => u
+            .tkey
+            .as_ref()
+            .map(|m| m.def_type.clone())
+            .or_else(|| definjected_def_type(&u.path)),
+        _ => None,
+    }
+}
+
+/// Source context of one unit: the REAL effective source file when the scan
+/// recorded one (Defs-derived units carry the virtual output path in
+/// `path`), honest location only — a line is present where the parser
+/// computed one, never fabricated (Source Inspector mandate §1).
+fn context_parts(u: &TransUnit) -> (String, Option<usize>) {
+    match &u.src {
+        Some(src) => (src.file.display().to_string(), src.line.or(u.line)),
+        None => (u.path.display().to_string(), u.line),
+    }
+}
+
 /// Convert an effective inventory into canonical source entries. Units that
 /// share one identity (same kind+key) collapse into one entry whose first
 /// context is Effective and the rest Overridden (Gate H diagnostics).
 ///
-/// `selected_by` records WHY the effective occurrence won (winner-reason
-/// provenance vocabulary: "version-selected", "loadfolders", "first-file-wins",
-/// "keyed-last-wins", "patch-applied"). Pass `None` when the batch-level
-/// winner reason is per-family and unknown at this granularity — never a
-/// label that would be true for only part of the inventory.
+/// Winner-reason provenance is per entry: a unit's own `selected_by`
+/// (stamped by the scan pipeline at the decision point) is the truth; the
+/// `selected_by` parameter is only a batch-level FALLBACK for inventories
+/// whose winner reason is genuinely uniform (e.g. LoadFolders resolution
+/// chose every root). Pass `None` rather than a label that would be true for
+/// only part of the inventory.
 pub fn source_entries(
     units: &[TransUnit],
     patch_stage: PatchStage,
@@ -53,14 +100,27 @@ pub fn source_entries(
     let mut by_id: BTreeMap<SourceEntryId, SourceEntry> = BTreeMap::new();
     for u in units {
         let kind = kind_for(&u.path, u.tkey.is_some());
+        // Def-type discriminator from REAL provenance only (TKey metadata or
+        // the DefInjected path segment). Two def types sharing one logical
+        // key are two distinct Defs — separate entries, never a collapsed
+        // one. Kinds without a def-type scope (Keyed) stay `None`; an
+        // unknown type is never guessed into a "Misc" identity.
         let id = SourceEntryId {
+            def_type: def_type_discriminator(kind, u),
             kind,
             key: u.key.clone(),
         };
+        let (file, line) = context_parts(u);
         let ctx = SourceContext {
-            file: u.path.display().to_string(),
-            line: u.line,
-            def_type: u.tkey.as_ref().map(|m| m.def_type.clone()),
+            file,
+            line,
+            // TKey metadata wins; otherwise the DefInjected path segment
+            // names the owning def type (sidecar or canonical virtual path).
+            def_type: u
+                .tkey
+                .as_ref()
+                .map(|m| m.def_type.clone())
+                .or_else(|| definjected_def_type(&u.path)),
             role: ContextRole::Effective,
         };
         let text = u.source.clone().unwrap_or_default();
@@ -74,6 +134,27 @@ pub fn source_entries(
                 });
             }
             None => {
+                // Mandate §14 (TKey/multi-context): Primary location + Other
+                // usages — never pretend to be one source. A TKey identity
+                // shared by several same-file nodes keeps every node's real
+                // location; the primary (last assignment, effective text)
+                // leads, earlier nodes follow as overridden usages. Rejected
+                // cross-file duplicates are NOT here (the parser never
+                // records their locations).
+                let mut contexts = vec![ctx];
+                if let Some(meta) = &u.tkey {
+                    if meta.locations.len() > 1 {
+                        let def_type = Some(meta.def_type.clone());
+                        for loc in &meta.locations[..meta.locations.len() - 1] {
+                            contexts.push(SourceContext {
+                                file: loc.file.display().to_string(),
+                                line: loc.line,
+                                def_type: def_type.clone(),
+                                role: ContextRole::Overridden,
+                            });
+                        }
+                    }
+                }
                 order.push(id.clone());
                 by_id.insert(
                     id.clone(),
@@ -81,12 +162,15 @@ pub fn source_entries(
                         id,
                         text,
                         source_locale: "en".into(),
-                        contexts: vec![ctx],
+                        contexts,
                         provenance: SourceProvenance {
                             version_selected: version.map(String::from),
-                            conditional_branch: false,
+                            conditional_branch: u.conditional,
                             patch_stage,
-                            selected_by: selected_by.map(String::from),
+                            selected_by: u
+                                .selected_by
+                                .clone()
+                                .or_else(|| selected_by.map(String::from)),
                         },
                         tkey: u.tkey.clone(),
                     },
@@ -132,6 +216,7 @@ mod tests {
             path: Path::new(path).to_path_buf(),
             line: Some(7),
             tkey,
+            ..Default::default()
         }
     }
 
@@ -159,6 +244,7 @@ mod tests {
                     suffix: ".slateRef".into(),
                     def_type: "QuestScriptDef".into(),
                     contexts: 1,
+                    locations: Vec::new(),
                 }),
             ),
         ];
