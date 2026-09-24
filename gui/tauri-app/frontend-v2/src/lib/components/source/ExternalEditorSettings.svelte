@@ -22,7 +22,13 @@
   let preview = $state<{ ok: boolean; argv?: string[]; reasonKey?: string } | null>(null);
   let savedFlash = $state(false);
 
-  const argsItems = $derived(choice.preset === 'custom' ? splitArgsText(choice.custom.argsText) : templateFor(choice).argsTemplate);
+  const argsItems = $derived.by(() => {
+    if (choice.preset !== 'custom') {
+      const tpl = templateFor(choice);
+      return tpl.ok ? tpl.plan.args : [];
+    }
+    return splitArgsText(choice.custom.argsText); // live typing preview: lenient
+  });
 
   function selectPreset(id: EditorId) {
     choice = { ...choice, preset: id };
@@ -39,6 +45,10 @@
    *  shows the exact argv array. No process starts; "would launch" only. */
   function testLaunch() {
     const template = templateFor(choice);
+    if (!template.ok) {
+      preview = { ok: false, reasonKey: template.reasonKey };
+      return;
+    }
     const result = source.planEditorLaunch(choice, {
       displayPath: 'Languages/English/Keyed/Misc_Gameplay.xml',
       line: 12,
@@ -48,13 +58,13 @@
       preview = { ok: false, reasonKey: result.reasonKey };
       return;
     }
-    // templateFor keeps placeholders; planEditorLaunch already substituted —
-    // show both shapes so the user sees the mapping.
+    // template output keeps placeholders; planEditorLaunch already
+    // substituted — show both shapes so the user sees the mapping.
     preview = {
       ok: true,
       argv: [
         t('source.editor.preview.template'),
-        JSON.stringify([template.executable, ...template.argsTemplate]),
+        JSON.stringify([template.plan.executable, ...template.plan.args]),
         t('source.editor.preview.substituted'),
         JSON.stringify(result.argv)
       ]
