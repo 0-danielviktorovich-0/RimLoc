@@ -9,12 +9,21 @@
 3. После каждого гейта/волны обновлять ТОЛЬКО: закрытые гейты, текущие полосы, следующие
    задачи, новые инварианты/дыры. Хронологический лог не вести — он живёт в git log.
 
+## Цель и финальная граница
+Довести продукт до качества публичной релизной версии: новичок проходит полный GUI-путь,
+проект сохраняется и восстанавливается, переводы валидируются и собираются вне источников,
+ошибки объяснимы, реальные моды проходят изолированную игровую проверку. Затем независимые
+engineering/product passes, документация, упаковка и воспроизводимый пакет пользовательской
+приёмки по AUTONOMOUS_PLAN.md. Моки, unit-тесты и CLI baseline не заменяют live acceptance.
+Непроверенные платформы и внешние release-гейты явно остаются открытыми; локальный RC
+готовится к распространению, но push, публикация и релиз требуют решения владельца.
+
 ## Verify at session start (изменчивое)
 - Проверенный lead baseline: `0e37b0c` → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
-- Диск: на проверке 25.09 было ~17 GiB свободно; **проверяй df перед
-  утверждениями**. Не размножать cargo-кэши в worktrees.
+- Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
+  сборками и утверждениями**. Не размножать cargo-кэши в worktrees.
 - Style Lab dev-сервер: nohup на :5199, лог /tmp/rimloc-stylelab.log; может быть мёртв —
   рестарт `npm run dev -- --port 5199 --strictPort` из frontend-v2.
 
@@ -49,10 +58,11 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
 3. **L observability — ACTIVE, не принят**: doctor, support bundle + redaction preview,
    Copy-for-AI, structured logs, operation IDs. Acceptance: известный сбой → causal
    context → очищенный bundle → независимое воспроизведение/диагноз.
-   Review blockers: string/array secrets проходят JSON sanitizer (lead воспроизвёл
-   синтетическим ключом); очистка всех артефактов и env-preview неполна; bundle должен
-   сохранять исходный failed operation, а doctor — защищать source/output границу и
-   существующие файлы. Исправления с регрессиями переданы активному L-исполнителю.
+   Review blockers: совместная очистка секрета и домашнего пути в одной строке;
+   очистка всех артефактов и explicit env allowlist; сохранение исходного failed
+   operation; source/output граница внутри публичного bundle service, а не только CLI.
+   Lead воспроизвёл compound leak синтетическими данными; исправления с регрессиями
+   доставлены активному L-исполнителю. Сетевой сбой продолжен в той же сессии с WIP.
 4. **BACKEND FREEZE** → компактный delta-бандл (дифф от 50f9483) для ChatGPT.
 5. POST-FREEZE: real UI binding → LIVE ACCEPTANCE GATE (W6 §3 / W7 §26 мандатов).
 
@@ -65,15 +75,17 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
 - **W4 лендена** (`3fa2039`): provider instances, glossary/TM, shortcuts, About.
   **W4.5 остаётся**: явные credential references при duplicate, безопасный export,
   mutability/provenance reference-корпусов, shortcut safety, version из build metadata.
-- **W5 реализована** (`05876f5`), review ещё открыт: diagnostics mock + redaction
-  preview, Project screen, QA по **8 персонам**. Lead независимо повторил check 0/0,
-  vitest 20/20, build и браузерный цикл Diagnose → causal context → bundle.
-  Это mock-проверка; существующие 20 тестов не покрывают новые W5 сценарии.
-  Осталось: честные demo-подписи, redaction обычных sensitive keys, очистка старого
-  causal context при повторе, регрессии и единая версия вместе с W4.5.
-  Уточнения acceptance: AUTONOMOUS_STATUS.md, секция W4.5/W5.
-- **W6 PRE-FREEZE**: mock-бейдж «Demo data», scenario browser, anchored tour, demo
-  project, REVIEW SCREEN MAP (MOCK_LIVE_ONBOARDING_MANDATE.md).
+- **W5 mock принят** (`05876f5` + `13f7c31`): diagnostics + redaction preview,
+  Project screen, QA по **8 персонам**; demo-подписи, sensitive-key redaction,
+  сброс старого causal context при повторе и 22 новых регрессионных теста.
+  Lead независимо повторил на `13f7c31`: check 0/0, vitest **42/42**, build;
+  браузерный цикл Diagnose → causal context → bundle проверен на первом срезе.
+  Общая версия из GUI package metadata интегрируется вместе с W4.5, без version bump.
+  Live диагностика зависит от принятого L и будущего service binding.
+- **W6 PRE-FREEZE — ACTIVE**: тот же W5-исполнитель продолжает в отдельном worktree
+  `../_rimloc-worktrees/w6-demo` от `13f7c31`: честный глобальный demo-бейдж, scenario
+  browser, anchored tour, изолированный demo project, REVIEW SCREEN MAP
+  (MOCK_LIVE_ONBOARDING_MANDATE.md). Доставка и resume подтверждены.
 - **W7 PRE-FREEZE**: source inspector mock — SOURCE tab, one-click actions (контракт
   проверяется в backend пункте 2, пока не принят) (SOURCE_INSPECTOR_MANDATE.md).
 - **W6/W7 POST-FREEZE**: live binding + live acceptance на реальных данных (машина
@@ -94,9 +106,14 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   Старые J/W4 transports истекли; замены запущены только после неудачного reuse.
   `303d726` уже предок их базы; не портировать/реимплементировать существующий J.
 - Доставку задания проверять по подтверждению активного turn; срочные UI-коррекции
-  отправлять через Steer, не оставлять в очереди. Завершение отслеживает read-only CLI
-  `app-server` → `session/subagents`; watcher `/tmp/rimloc-zcode-watch.py` без модельных
-  вызовов уже сообщил о W5. Runtime-хелперы в /tmp могут исчезнуть — перепроверять.
+  отправлять через Steer, не оставлять в очереди. Локальный mailbox
+  `/tmp/rimloc-control/PROTOCOL.md` → background listener в существующем coordinator →
+  native SendMessage → atomic ACK проверен реальными исправлениями и resume W6.
+  Общий ZCode UI разделяется с другими проектами; mailbox устраняет гонку фокуса.
+  Завершение отслеживает read-only CLI `app-server` → `session/subagents`; watcher
+  `/tmp/rimloc-zcode-watch.py` без модельных вызовов. Нативный status success с текстом
+  ошибки API считается transport failure, не успехом реализации. Runtime-хелперы
+  в /tmp могут исчезнуть — перепроверять; ACK означает доставку, не приёмку кода.
 - Независимый baseline на `0e37b0c`: workspace build/test (168 passed), fmt check,
   clippy `-D warnings`; GUI check 0/0, vitest 20/20, production build — PASS.
   Это baseline, не acceptance будущих изменений и не live acceptance.
