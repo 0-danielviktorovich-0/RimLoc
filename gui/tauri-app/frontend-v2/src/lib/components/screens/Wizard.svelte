@@ -43,6 +43,17 @@
   let step = $state(1);
   let content = $state<ContentKind>('mod');
 
+  // W6 scenario deep-links: `#/wizard?scenario=wizard/<branch>` preselects the
+  // content branch exactly as a user click would (dev scenario browser and
+  // E2E URLs; unknown ids keep the default 'mod').
+  $effect(() => {
+    const query = window.location.hash.split('?')[1];
+    const scenario = query ? new URLSearchParams(query).get('scenario') : null;
+    if (scenario === 'wizard/base-game') content = 'base';
+    else if (scenario === 'wizard/dlc') content = 'dlc';
+    else if (scenario === 'wizard/language-pack') content = 'pack';
+  });
+
   // Selection state per content branch — preserved across branch switches and
   // back-navigation (QA mandate §2: "back does not reset the choice").
   let modId = $state<string | null>(mockMods[0].id);
