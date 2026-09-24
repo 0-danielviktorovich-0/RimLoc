@@ -59,6 +59,11 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
    target-only и TKey-only+foreign-pack не должны становиться English source;
    version-only layout без LoadFolders тоже обязан честно разрешать выбранную версию.
    Само наличие сериализуемого поля не закрывает Source Inspector gate.
+   **Identity blocker доказан**: разные DefTypes с одинаковым `Dup.label` сливаются
+   в bridge kind+key. До freeze — structured optional DefType discriminator,
+   scoped import/matching и безопасная project-container v1→v2 migration; ambiguous
+   старые проекты не переписываются и не получают угаданный перевод. Полный ID
+   сохраняется в persistence, source-change detection и generated output.
 3. **L observability — implementation `26d279b`, не принят**: doctor, support bundle + redaction preview,
    Copy-for-AI, structured logs, operation IDs. Acceptance: известный сбой → causal
    context → очищенный bundle → независимое воспроизведение/диагноз.
@@ -85,8 +90,8 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   `codex/gui-integration` с сохранением W5. Credential references/export, read-only
   reference-корпуса, shortcut safety, общая версия из GUI package metadata;
   transient connection status не клонируется, смена endpoint/key гасит stale probe.
-  Lead проверил объединённый первый срез: check 0/0, 68 tests, build; финальный
-  follow-up проверяется отдельно. Main ещё не содержит эту интеграцию.
+  Lead проверил объединённый финальный срез `548f4cb`: check 0/0, **73 tests**, build.
+  Main ещё не содержит эту интеграцию.
 - **W5 mock принят** (`05876f5` + `13f7c31`): diagnostics + redaction preview,
   Project screen, QA по **8 персонам**; demo-подписи, sensitive-key redaction,
   сброс старого causal context при повторе и 22 новых регрессионных теста.
@@ -148,6 +153,9 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
 xtask/CI после фриза); Style Lab = dev-only (?stylelab=1); бизнес-логика вне фронтенда;
 один транспорт (UI → RimLocClient → TauriTransport), никаких invoke() в компонентах;
 project data не в фронтенд-форматах.
+Решения post-freeze binding сохранены в UI_SDK_MANDATE.md: persist-before-ack,
+revision/epoch, защищённый source/output, реальная диагностика, закрытие unsafe legacy
+Tauri routes и обязательная приёмка нового GUI; это требования, не статус реализации.
 
 ## ⏸ Pending owner decisions
 1. Визуальное направление (Precision/Aurora/Workshop/Editorial + палитра + гибрид) —

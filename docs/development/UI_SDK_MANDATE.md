@@ -36,3 +36,44 @@ Future-readiness ограничение, НЕ стройка: официальн
 
 СЕЙЧАС ТРЕБУЕТСЯ ТОЛЬКО: чистая service/UI граница; централизованный транспорт; нейтральные
 контракты; структурные токены; переиспользуемые моки; ноль бизнес-правды во фронтенде.
+
+## Решения lead для post-freeze binding
+
+Это требования к реализации и приёмке, не заявление о готовности. Начало binding:
+приняты L и provenance/identity, выполнен compact delta review. Новые UI-фреймворки,
+универсальная plugin-система и перестройка каталогов по-прежнему вне RC.
+
+- Создание проекта вызывает принятый `build_project`, включая version/patch/source
+  resolution. `scan_units_auto` с отдельным bridge не заменяет этот путь.
+- `projectId` — сохранённая непрозрачная идентичность; путь — изменяемые метаданные.
+  Entry ID содержит полный принятый discriminator, не один отображаемый ключ.
+- Изменения проекта сериализованы: подготовить состояние → атомарно сохранить →
+  подтвердить и опубликовать revision. Ошибка сохраняет прежнее состояние и dirty draft.
+  `expectedRevision` и project/session epoch защищают от старых ответов и записи после
+  смены проекта/языка. Внешние изменения проверяются сильнее одного mtime; без silent overwrite.
+- Native validation/preview/build используют canonical translations и один план вывода,
+  без промежуточного PO. Service guard запрещает вывод во все известные source/game/
+  Workshop roots, включая не выбранный сейчас мод. Проверяются symlink и path traversal.
+- Отмена — проверяемые checkpoints и безопасный staged output, не только UI callback.
+  Отмена/сбой не возвращают успех и не устанавливают частичный результат в источники.
+- Диагностика всегда очищена: исходный failed operation ID, причины и affected entries
+  сохраняются; preview/copy/write используют один sanitized payload, без `redact=false`.
+- Source actions принимают project/entry/context identity. Backend разрешает известный
+  путь, проверяет корни, symlink, тип и наличие файла; чтение ограничено по размеру.
+  External editor — executable + массив аргументов, без shell interpolation.
+- Production Tauri registration не оставляет callable legacy `apply_translation`,
+  arbitrary-write/open/plugin routes в обход guard. Наличие permissions-файла само по
+  себе не доказывает enforcement — проверяется фактическая поверхность команд.
+- Один нейтральный SDK проверяет method/params/response/version. Capabilities отражают
+  реальные операции; typed unsupported допустим в промежуточном срезе, не как RC completion.
+- Live production entry не содержит MockTransport, fake connected providers или fake
+  successful saves. Явный demo/dev flow отделён; глобальный badge зависит от data mode.
+- Обязательный путь нового GUI: create → source → targets → edit/switch → save/restart/
+  reopen → review/validate → safe build → inspect source → diagnose actual failure.
+  Ручной chat-batch workflow с ID, parsing, stale guard и review/apply работает без API;
+  existing/TM/glossary сохраняют provenance и read-only scope.
+- Сначала небольшой typed seam, затем независимые project-journey и discovery/source/
+  diagnostics модули. Один владелец SDK types и Tauri registrations. Conformance fixtures
+  дополняются проверкой собранного Tauri-приложения на реальном read-only моде и изолированных
+  файлах. Наличие CI-конфига не заменяет запуск на платформе; signing/publishing —
+  отдельные внешние гейты, не разрешение на платные действия или выпуск.
