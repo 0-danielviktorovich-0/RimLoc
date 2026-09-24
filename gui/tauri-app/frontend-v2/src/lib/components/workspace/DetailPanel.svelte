@@ -7,6 +7,7 @@
   import { project } from '../../stores/project.svelte';
   import Icon from '../Icon.svelte';
   import Tabs from './Tabs.svelte';
+  import SourceTab from '../source/SourceTab.svelte';
   import type { Entry, HistoryEvent, IssueKind, Origin, Suggestion, TkeyStrategy } from '../../mock/types';
 
   const CONTEXT_REGION_ID = 'workspace-context';
@@ -29,6 +30,7 @@
     const hist = entry?.history?.length ?? 0;
     return [
       { id: 'context', label: t('workspace.detail.tab.context') },
+      { id: 'source', label: t('workspace.detail.tab.source') },
       { id: 'suggestions', label: t('workspace.detail.tab.suggestions'), count: sugg },
       { id: 'validation', label: t('workspace.detail.tab.validation'), count: issues },
       { id: 'history', label: t('workspace.detail.tab.history'), count: hist }
@@ -238,6 +240,8 @@
             {t('workspace.detail.markReview')}
           </button>
         </div>
+      {:else if tab === 'source'}
+        <SourceTab entry={entry} />
       {:else if tab === 'suggestions'}
         {#if entry.suggestions && entry.suggestions.length > 0}
           <ul class="suggestions">
