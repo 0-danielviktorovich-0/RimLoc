@@ -74,9 +74,12 @@ export type EditorLaunchPlanResult =
 
 const PLACEHOLDER = /^\{(path|line|column)\}$/;
 
-/** Split the typed args text into array items: whitespace separates,
- *  double quotes group one item (spaces/Unicode stay literal inside). */
-export function splitArgsText(text: string): string[] {
+/** Result of the strict arg-text split: items, or an unbalanced-quote
+ *  rejection (lead review 029 #2). Quotes always group ONE argument;
+ *  spaces and Unicode stay literal inside items. */
+export type SplitArgsResult = { ok: true; items: string[] } | { ok: false; reasonKey: string };
+
+export function splitArgsTextStrict(text: string): SplitArgsResult {
   const out: string[] = [];
   let cur = '';
   let quoted = false;
@@ -96,12 +99,48 @@ export function splitArgsText(text: string): string[] {
     cur += ch;
     hasContent = true;
   }
+  if (quoted) return { ok: false, reasonKey: 'source.editor.error.unbalancedQuote' };
   if (hasContent) out.push(cur);
-  return out;
+  return { ok: true, items: out };
 }
 
-/** Substitute {path}/{line}/{column} literally; reject malformed/unknown
- *  placeholders and unusable targets. Pure — no side effects, no shell. */
+/** Lenient split kept for live template preview (ignores unbalanced quotes). */
+export function splitArgsText(text: string): string[] {
+  const r = splitArgsTextStrict(text);
+  return r.ok ? r.items : [];
+}
+
+/** A positive, safe integer — the only kind line/column may take. */
+function isPositiveInt(v: number | null | undefined): v is number {
+  return typeof v === 'number' && Number.isSafeInteger(v) && v > 0;
+}
+
+/** Resolve ONE placeholder token to its literal replacement. */
+function resolvePlaceholder(name: string, target: EditorTarget): string {
+  if (name === 'path') return target.path;
+  if (name === 'line') {
+    if (!isPositiveInt(target.line)) throw new PlaceholderError('source.editor.error.noLine');
+    return String(target.line);
+  }
+  // column
+  if (!isPositiveInt(target.column)) throw new PlaceholderError('source.editor.error.noColumn');
+  return String(target.column);
+}
+
+class PlaceholderError extends Error {
+  constructor(public reasonKey: string) {
+    super(reasonKey);
+  }
+}
+
+/**
+ * Substitute {path}/{line}/{column} in ONE pass with a callback: the
+ * replacement values are inserted LITERALLY and are never re-scanned, so
+ * "$&"/"${}"/braces inside a resolved path stay exactly as they are, and
+ * repeated tokens all resolve. Unknown or malformed placeholders are
+ * rejected up front; line/column must be positive integers when required.
+ * Pure — no side effects, no shell, nothing launches.
+ */
 export function buildLaunchPlan(
   template: { executable: string; argsTemplate: string[] },
   target: EditorTarget
@@ -113,50 +152,30 @@ export function buildLaunchPlan(
   if (!target.path.trim()) {
     return { ok: false, reasonKey: 'source.editor.error.noPath' };
   }
+  const TOKEN = /\{([a-zA-Z0-9_]*)\}/g;
+  // ANY brace group is treated as a placeholder attempt — empty or unknown
+  // names ({}, {bogus_1}, {LINE }) are rejected, not silently passed through.
+  const ANY_BRACE = /\{([^{}]*)\}/g;
   const args: string[] = [];
-  for (const raw of template.argsTemplate) {
-    const m = PLACEHOLDER.exec(raw);
-    if (m) {
-      const name = m[1];
-      if (name === 'path') {
-        args.push(target.path);
-      } else if (name === 'line') {
-        if (target.line === null) return { ok: false, reasonKey: 'source.editor.error.noLine' };
-        args.push(String(target.line));
-      } else {
-        if (target.column === null || target.line === null) {
-          return { ok: false, reasonKey: 'source.editor.error.noColumn' };
-        }
-        args.push(`${target.line}:${target.column}`);
-      }
-      continue;
-    }
-    // Any embedded placeholder inside a token that is not exactly one —
-    // e.g. "{path}:{line}" — is handled here: only known placeholders may
-    // appear, unknown names are rejected.
-    const embedded = raw.match(/\{[a-zA-Z]+\}/g);
-    if (embedded) {
-      for (const ph of embedded) {
-        if (!PLACEHOLDER.test(ph)) {
+  try {
+    for (const raw of template.argsTemplate) {
+      // validate every token in this argument before touching the string
+      for (const m of raw.matchAll(ANY_BRACE)) {
+        const name = m[1];
+        if (name !== 'path' && name !== 'line' && name !== 'column') {
           return { ok: false, reasonKey: 'source.editor.error.unknownPlaceholder' };
         }
-      }
-      let value = raw;
-      value = value.replace('{path}', target.path);
-      if (value.includes('{line}')) {
-        if (target.line === null) return { ok: false, reasonKey: 'source.editor.error.noLine' };
-        value = value.replace('{line}', String(target.line));
-      }
-      if (value.includes('{column}')) {
-        if (target.column === null || target.line === null) {
-          return { ok: false, reasonKey: 'source.editor.error.noColumn' };
+        if (name === 'line' || name === 'column') {
+          const v = name === 'line' ? target.line : target.column;
+          if (!isPositiveInt(v)) return { ok: false, reasonKey: name === 'line' ? 'source.editor.error.noLine' : 'source.editor.error.noColumn' };
         }
-        value = value.replace('{column}', String(target.column));
       }
-      args.push(value);
-      continue;
+      // single pass: callback results are literal by specification
+      args.push(raw.replace(TOKEN, (_m, name: string) => resolvePlaceholder(name, target)));
     }
-    args.push(raw); // literal token: spaces/Unicode stay as typed
+  } catch (e) {
+    if (e instanceof PlaceholderError) return { ok: false, reasonKey: e.reasonKey };
+    throw e;
   }
   return { ok: true, plan: { executable, args } };
 }
@@ -173,8 +192,21 @@ export function loadEditorChoice(): StoredEditorChoice {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as StoredEditorChoice;
-      if (EDITOR_PRESETS.some((p) => p.id === parsed.preset)) return parsed;
+      const parsed = JSON.parse(raw) as Partial<StoredEditorChoice> | null;
+      // Lead review 029 #2: corrupt localStorage must never break Settings —
+      // every field is type-checked and unknown presets fall back to defaults.
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        typeof parsed.preset === 'string' &&
+        EDITOR_PRESETS.some((p) => p.id === parsed.preset) &&
+        typeof parsed.custom === 'object' &&
+        parsed.custom !== null &&
+        typeof parsed.custom.executable === 'string' &&
+        typeof parsed.custom.argsText === 'string'
+      ) {
+        return { preset: parsed.preset, custom: parsed.custom };
+      }
     }
   } catch {
     // fall through to defaults
@@ -190,14 +222,17 @@ export function saveEditorChoice(choice: StoredEditorChoice): void {
   }
 }
 
-/** Effective template for the chosen preset (custom uses stored config). */
-export function templateFor(choice: StoredEditorChoice): { executable: string; argsTemplate: string[] } {
+/** Effective template for the chosen preset (custom uses stored config).
+ *  Result-shaped: an unbalanced quote in the custom template is a typed
+ *  rejection, never a silently mis-split argument. */
+export function templateFor(choice: StoredEditorChoice): EditorLaunchPlanResult {
   if (choice.preset === 'custom') {
-    return {
-      executable: choice.custom.executable,
-      argsTemplate: splitArgsText(choice.custom.argsText)
-    };
+    const executable = choice.custom.executable.trim();
+    if (!executable) return { ok: false, reasonKey: 'source.editor.error.noExecutable' };
+    const split = splitArgsTextStrict(choice.custom.argsText);
+    if (!split.ok) return split;
+    return { ok: true, plan: { executable, args: split.items } };
   }
   const preset = EDITOR_PRESETS.find((p) => p.id === choice.preset) ?? EDITOR_PRESETS[0];
-  return { executable: preset.executable, argsTemplate: preset.argsTemplate };
+  return { ok: true, plan: { executable: preset.executable, args: preset.argsTemplate } };
 }

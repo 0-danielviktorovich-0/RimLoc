@@ -15,7 +15,12 @@
     type SourceUsage
   } from '../../source/types';
   import { source, SOURCE_SCENARIOS } from '../../source/store.svelte';
+  import { devMode } from '../../stores/devmode.svelte';
   import { loadEditorChoice } from '../../source/editor';
+
+  // Scenario controls are a developer tool (W6 scenario browser is the
+  // integrated home post-freeze); gated by the ONE explicit dev mode (W6).
+  const devScenarios = devMode.enabled;
 
   interface Props {
     entry: {
@@ -48,7 +53,7 @@
    *  what WOULD run. No process is started (mock/pre-freeze). */
   function openInEditor() {
     if (!primary) return;
-    const plan = source.planEditorLaunch(loadEditorChoice(), primary);
+    const plan = source.planEditorLaunch(loadEditorChoice(), primary.location);
     if (!plan.ok) {
       editorState = { ok: false, text: '', errorKey: plan.reasonKey };
       return;
@@ -229,19 +234,21 @@
           </div>
         {/each}
       </dl>
-      <label class="scenario-row">
-        <span>{t('source.scenario.label')}</span>
-        <select
-          data-testid="source.scenario.select"
-          value={source.scenarioId}
-          onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
-        >
-          {#each SOURCE_SCENARIOS as s (s.id)}
-            <option value={s.id}>{s.id}</option>
-          {/each}
-        </select>
-      </label>
-      <p class="hint">{t('source.scenario.hint')}</p>
+      {#if devScenarios}
+        <label class="scenario-row">
+          <span>{t('source.scenario.label')}</span>
+          <select
+            data-testid="source.scenario.select"
+            value={source.scenarioId}
+            onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
+          >
+            {#each SOURCE_SCENARIOS as s (s.id)}
+              <option value={s.id}>{s.id}</option>
+            {/each}
+          </select>
+        </label>
+        <p class="hint">{t('source.scenario.hint')}</p>
+      {/if}
     </details>
   </div>
 {:else}
@@ -252,18 +259,20 @@
       {t('source.empty.noData', { id: entry.id })}
     </p>
     <p class="hint">{t('source.empty.covered', { ids: source.coveredEntryIds().join(', ') })}</p>
-    <label class="scenario-row">
-      <span>{t('source.scenario.label')}</span>
-      <select
-        data-testid="source.scenario.select.empty"
-        value={source.scenarioId}
-        onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
-      >
-        {#each SOURCE_SCENARIOS as s (s.id)}
-          <option value={s.id}>{s.id}</option>
-        {/each}
-      </select>
-    </label>
+    {#if devScenarios}
+      <label class="scenario-row">
+        <span>{t('source.scenario.label')}</span>
+        <select
+          data-testid="source.scenario.select.empty"
+          value={source.scenarioId}
+          onchange={(e) => source.setScenario((e.currentTarget as HTMLSelectElement).value)}
+        >
+          {#each SOURCE_SCENARIOS as s (s.id)}
+            <option value={s.id}>{s.id}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
   </div>
 {/if}
 

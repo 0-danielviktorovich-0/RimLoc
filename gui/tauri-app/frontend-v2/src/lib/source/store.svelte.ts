@@ -14,7 +14,6 @@ import {
 import type {
   CompareTriple,
   MockActionFeedback,
-  SourceBrowserData,
   SourceEntryData,
   SourceFile,
   SourceScenario,
@@ -24,7 +23,14 @@ import type {
 export { SOURCE_SCENARIOS };
 export type { StoredEditorChoice };
 
-type ViewerState = { entryId: string; usageIndex: number } | null;
+/** Viewer target (lead review 029 #1): an entry+usage pair OR an explicit
+ *  fixture file. The explicit form is what generated / shadowed / unmapped /
+ *  missing files use — the viewer renders THAT file, never a first-entry
+ *  fallback of unrelated content. */
+export type ViewerTarget =
+  | { kind: 'entry'; entryId: string; usageIndex: number }
+  | { kind: 'file'; path: string };
+
 type MenuState = { entryId: string; x: number; y: number } | null;
 
 class SourceStore {
@@ -32,8 +38,8 @@ class SourceStore {
   scenarioId = $state(DEFAULT_SCENARIO_ID);
   /** Which entry's context menu is open and where. */
   menu = $state<MenuState>(null);
-  /** Open read-only viewer (entry + usage). */
-  viewer = $state<ViewerState>(null);
+  /** Open read-only viewer target. */
+  viewer = $state<ViewerTarget | null>(null);
   /** Advanced source browser modal. */
   browser = $state(false);
   /** Compare modal for an entry with a fixture triple. */
@@ -53,12 +59,18 @@ class SourceStore {
   }
 
   setScenario(id: string) {
-    if (SOURCE_SCENARIOS.some((s) => s.id === id)) {
-      this.scenarioId = id;
-      this.menu = null;
-      // The banner is a property of the scenario; reset transitions on switch.
-      this.changeState = this.scenario.externalChange ? 'visible' : 'hidden';
-    }
+    if (!SOURCE_SCENARIOS.some((s) => s.id === id)) return;
+    this.scenarioId = id;
+    // Lead review 029 #1: a scenario switch invalidates stale overlay/action
+    // state — the old viewer file, compare triple, clipboard fallback, menu
+    // and toast all belong to the previous demo dataset.
+    this.viewer = null;
+    this.compare = null;
+    this.clipboardFallback = null;
+    this.menu = null;
+    this.lastMockAction = null;
+    this.changeInitialized = true;
+    this.changeState = this.scenario.externalChange ? 'visible' : 'hidden';
   }
 
   /** Source facts for an entry under the ACTIVE scenario, or null when the
@@ -73,7 +85,15 @@ class SourceStore {
   }
 
   fileFor(path: string): SourceFile {
-    return this.scenario.files[path] ?? { path, displayPath: path, kind: 'effective', missing: true, reasonKey: 'source.missing.reason' };
+    return (
+      this.scenario.files[path] ?? {
+        path,
+        displayPath: path,
+        kind: 'effective',
+        missing: true,
+        reasonKey: 'source.missing.reason'
+      }
+    );
   }
 
   // ------------------------------------------------------------- transitions
@@ -87,7 +107,14 @@ class SourceStore {
 
   openViewer(entryId: string, usageIndex = 0) {
     this.menu = null;
-    this.viewer = { entryId, usageIndex };
+    this.viewer = { kind: 'entry', entryId, usageIndex };
+  }
+
+  /** Viewer for an EXPLICIT fixture file — generated, shadowed, unmapped or
+   *  missing. The requested path is never swapped for another entry's file. */
+  openFile(path: string) {
+    this.menu = null;
+    this.viewer = { kind: 'file', path };
   }
 
   closeViewer() {
@@ -134,7 +161,7 @@ class SourceStore {
 
   changeShow() {
     const ec = this.scenario.externalChange;
-    if (ec) this.openFileViewer(ec.file);
+    if (ec) this.openFile(ec.file);
   }
 
   changeRescan() {
@@ -148,23 +175,8 @@ class SourceStore {
   }
 
   changeRearm() {
+    this.changeInitialized = true;
     this.changeState = this.scenario.externalChange ? 'visible' : 'hidden';
-  }
-
-  /** Viewer directly for a file path (browser rows, changed file). */
-  openFileViewer(path: string, usageIndex = -1) {
-    const data = Object.entries(this.scenario.entries).find(([, d]) =>
-      d.usages.some((u) => u.location.path === path)
-    );
-    if (data) {
-      const idx = data[1].usages.findIndex((u) => u.location.path === path);
-      this.viewer = { entryId: data[0], usageIndex: idx === -1 ? 0 : idx };
-      return;
-    }
-    // No entry mapped (pure file view): fall back to the first entry of the
-    // scenario so the viewer has an anchor; the file itself drives content.
-    const first = Object.keys(this.scenario.entries)[0];
-    if (first) this.viewer = { entryId: first, usageIndex };
   }
 
   // ------------------------------------------------------------ mock honesty
@@ -195,23 +207,26 @@ class SourceStore {
   }
 
   // ------------------------------------------------------------ editor (mock)
-  /** Build + validate the structured launch plan for a usage (§8). Returns
-   *  either the argv preview or a typed rejection; NOTHING is launched. */
+  /** Build + validate the structured launch plan for a location (§8).
+   *  Accepts the minimal location shape so any usage OR explicit file path
+   *  can be planned; returns the argv preview or a typed rejection. */
   planEditorLaunch(
     choice: StoredEditorChoice,
-    usage: { location: { displayPath: string; line: number | null; column: number | null } }
+    loc: { displayPath: string; line: number | null; column: number | null }
   ): { ok: true; argv: string[] } | { ok: false; reasonKey: string } {
     const target: EditorTarget = {
-      path: usage.location.displayPath,
-      line: usage.location.line,
-      column: usage.location.column
+      path: loc.displayPath,
+      line: loc.line,
+      column: loc.column
     };
-    const result = buildLaunchPlan(templateFor(choice), target);
+    const tpl = templateFor(choice);
+    if (!tpl.ok) return tpl;
+    const result = buildLaunchPlan(
+      { executable: tpl.plan.executable, argsTemplate: tpl.plan.args },
+      target
+    );
     if (!result.ok) return result;
-    return {
-      ok: true,
-      argv: [result.plan.executable, ...result.plan.args]
-    };
+    return { ok: true, argv: [result.plan.executable, ...result.plan.args] };
   }
 }
 
