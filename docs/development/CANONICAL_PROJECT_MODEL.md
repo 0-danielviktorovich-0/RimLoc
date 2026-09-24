@@ -155,7 +155,12 @@ InventoryContext; `PatchReport` (patches_effect.rs:43) — patch-provenance;
 **SourceEntry** — стабильная запись источника:
 - `stable identity`: target-независимый id (не serialized путь); serialized пути —
   производные, через `TKeyMeta.suffix` (`core/lib.rs:81`); `source hash` для
-  sourceChanged.
+  sourceChanged. РЕАЛИЗОВАНО как `SourceEntryId` = kind + key + опциональный
+  def-type дискриминатор (identity fix, pre-freeze blocker): DefInjected/TKey
+  скоупятся реальным provenance (TKey-метаданные или сегмент DefInjected-пути
+  effective-контекста), Keyed остаётся unscoped, «Misc» не выдумывается. Два
+  def type с одним `{defName}.{field}` — две записи, у каждой свой текст,
+  контексты, переводы и свой каталог в generated output.
 - `EntryKind`: Keyed · DefInjected · TKey · Strings/RulePack · Backstories ·
   Patch-derived (сегодня все сводятся к key+path, кроме Strings — `gui main.rs:725`).
 - `source locale`, `source contexts` (мульти-контекст: несколько узлов на identity
@@ -222,3 +227,17 @@ identity · source text · TKey meta · provenance · статусы) — зап
 
 SourceChanged (аудит-находка: не реализован) — модель добавила `Translation.source_changed`
 + `Project.mark_source_changed` (05432de); проводка в K1-пайплайн.
+
+## Persistence container (project_store)
+
+Контейнер файла проекта версионируется отдельно от домена и от
+`RIMLOC_SCHEMA_VERSION` (CLI-транспорт, не менялся): `schema_version: 2`
+содержит плоский `Project` с identity-дискриминатором в `SourceEntryId`.
+Чтение v1 совместимо: дискриминатор выводится ТОЛЬКО из однозначных
+консистентных evidence (TKey-метаданные; либо все контексты записи с одним
+def type), ссылки переводов пере-таргетятся вместе с записями. Если evidence
+показывает уже-схлопнутые разные def type (v1-коллапс) или ссылка не мапится
+уникально — load падает с typed-диагностикой (`ProjectLoadDiagnostic`,
+запрос rescan/review), байты файла не изменяются, проект не перезаписывается.
+v2 читается с валидацией уникальности identity и ссылок. Обычные Keyed и
+однозначные TKey v1-проекты переносятся без потерь.
