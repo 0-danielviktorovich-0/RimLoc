@@ -6,12 +6,13 @@
 //     pristine dataset;
 //   - the no-mods Home offers Try Demo / Choose folder / Configure
 //     installation, where only the honest ones do anything.
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
 import App from '../src/App.svelte';
 import { project } from '../src/lib/stores/project.svelte';
 import { ui } from '../src/lib/stores/ui.svelte';
 import { i18n } from '../src/i18n/store.svelte';
+import { onboarding } from '../src/lib/stores/onboarding.svelte';
 import { demoProject, DEMO_PROJECT_NAME } from '../src/lib/demo/demoProject.svelte';
 import { mockEntries } from '../src/lib/mock/data';
 import { click, cleanupMounted, exists, goto, mountCmp, q } from './helpers';
@@ -94,6 +95,12 @@ function targetLocales(): string[] {
 }
 
 describe('Home: demo card and no-mods state', () => {
+  beforeEach(() => {
+    cleanupMounted();
+    // A leftover open tour from a previous test must not hijack navigation.
+    onboarding.open = false;
+  });
+
   it('shows the marked demo project card and opens it isolated', () => {
     ui.homeMode = 'returning';
     goto('#/home');
