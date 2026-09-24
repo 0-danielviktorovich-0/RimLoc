@@ -194,6 +194,7 @@ mod tests {
             path: "x.xml".into(),
             line: None,
             tkey: None,
+            ..Default::default()
         }
     }
 

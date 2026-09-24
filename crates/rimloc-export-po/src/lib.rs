@@ -147,6 +147,7 @@ mod tests {
             path: PathBuf::from("/Mod/Languages/English/Keyed/A.xml"),
             line: Some(line),
             tkey: None,
+            ..Default::default()
         }
     }
 

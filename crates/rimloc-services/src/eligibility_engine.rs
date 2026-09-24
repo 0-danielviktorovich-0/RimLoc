@@ -691,6 +691,7 @@ mod tests {
             suffix: ".slateRef".into(),
             def_type: "QuestScriptDef".into(),
             contexts: 1,
+            locations: Vec::new(),
         });
         let v = engine.evaluate(&tkey_entry, None);
         assert_eq!(v.decision, Decision::Translatable);

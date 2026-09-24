@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <ThingDef>
+    <defName>Patched</defName>
+    <label>patched base</label>
+  </ThingDef>
+  <ThingDef>
+    <defName>Solo</defName>
+    <label>solo label</label>
+  </ThingDef>
+</Defs>

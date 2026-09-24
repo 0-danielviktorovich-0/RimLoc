@@ -94,6 +94,7 @@ mod tests {
                     suffix: ".slateRef".into(),
                     def_type: "QuestScriptDef".into(),
                     contexts: 1,
+                    locations: Vec::new(),
                 }),
             }],
             translations: vec![Translation {

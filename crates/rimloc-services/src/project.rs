@@ -12,40 +12,48 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// Build a canonical project snapshot for a mod (Gate I4 shared entry).
+///
+/// Provenance honesty (pre-freeze, Source Inspector mandate):
+/// - patch coverage comes from the REAL patch report of the scan pipeline,
+///   not from "a Patches dir exists";
+/// - `version_selected` is the version actually RESOLVED (LoadFolders tag or
+///   version dir), `None` for a flat mod — the requested game version stays
+///   in `context.target_version`;
+/// - the view is EXACT only when a version is known, no `IfModActive`
+///   (unresolved) content dirs are included, and patch coverage is not
+///   partial; otherwise it is an honest POTENTIAL/CONDITIONAL superset;
+/// - winner reasons are per entry (stamped by the scan pipeline), so no
+///   batch-level `selected_by` label is passed here.
 pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Project> {
     let auto = crate::autodiscover_defs_context(mod_root)?;
-    let (units, patch_report) = if mod_root.join("LoadFolders.xml").is_file() {
-        let units =
-            crate::scan_units_effective(mod_root, target_version, &auto.dict, &auto.extra_fields)?;
-        // scan_units_effective already applied patches internally; derive the
-        // stage marker from whether any Patches dir exists in content dirs.
-        (
-            units,
-            if mod_root.join("Patches").is_dir() {
-                crate::patches_effect::PatchCoverage::Partial
-            } else {
-                crate::patches_effect::PatchCoverage::None
-            },
-        )
-    } else {
-        let units =
-            crate::scan_units_with_defs_and_dict(mod_root, None, &auto.dict, &auto.extra_fields)?;
-        (
-            units,
-            if mod_root.join("Patches").is_dir() {
-                crate::patches_effect::PatchCoverage::Partial
-            } else {
-                crate::patches_effect::PatchCoverage::None
-            },
-        )
+    // ONE effective pipeline for every layout: the modview resolver decides
+    // between flat, classic version dirs and LoadFolders, so a version-only
+    // mod is never scanned as a cross-version union.
+    let scan = crate::scan::scan_units_effective_full(
+        mod_root,
+        target_version,
+        &auto.dict,
+        &auto.extra_fields,
+    )?;
+    let mut units = scan.units;
+    // The canonical source inventory is the ENGLISH source: units under
+    // Languages/<other> are existing target packs, not source text.
+    crate::scan::retain_source_language_units(&mut units);
+    let stage = match scan.patch.coverage {
+        Some(crate::patches_effect::PatchCoverage::Full) => PatchStage::Applied,
+        Some(crate::patches_effect::PatchCoverage::Partial) => PatchStage::Partial,
+        _ => PatchStage::None,
     };
-    let stage = match patch_report {
-        crate::patches_effect::PatchCoverage::None => PatchStage::None,
-        crate::patches_effect::PatchCoverage::Full => PatchStage::Applied,
-        crate::patches_effect::PatchCoverage::Partial => PatchStage::Partial,
-    };
-    // Exact view requires a known version; otherwise honest POTENTIAL.
-    let view = if target_version.is_some() {
+    let conditional_roots = scan
+        .view
+        .as_ref()
+        .is_some_and(|v| !v.conditional_dirs.is_empty());
+    // The version the RESOLUTION selected (LoadFolders tag or version dir);
+    // for a flat mod nothing was version-selected.
+    let resolved_version = scan.view.as_ref().and_then(|v| v.version.clone());
+    // Exact view requires a known version, no unresolved conditional roots,
+    // and full (or no) patch coverage; otherwise honest POTENTIAL.
+    let view = if target_version.is_some() && !conditional_roots && stage != PatchStage::Partial {
         ViewLabel::Exact
     } else {
         ViewLabel::Potential
@@ -55,20 +63,11 @@ pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Pr
         view,
         ..Default::default()
     };
-    // Winner-reason provenance: the LoadFolders path resolved WHICH content
-    // roots loaded, so every entry can honestly say "loadfolders". The flat
-    // path's winner is per-family (Defs/TKey first-file vs Keyed/DefInjected
-    // last-wins) — a batch label would be a lie, so it stays unset until
-    // per-entry capture lands (Source Inspector).
-    let selected_by = mod_root
-        .join("LoadFolders.xml")
-        .is_file()
-        .then_some("loadfolders");
     Ok(crate::canonical_bridge::project_from_inventory(
         &units,
         stage,
-        target_version,
-        selected_by,
+        resolved_version.as_deref(),
+        None,
         context,
     ))
 }
@@ -100,6 +99,7 @@ pub fn apply_existing_translation(
             ),
             line: None,
             tkey: None,
+            ..Default::default()
         })
         .collect();
     let registry = crate::matching::TKeyRegistry::from_identities(
@@ -352,6 +352,7 @@ mod gate_i_tests {
             suffix: ".slateRef".into(),
             def_type: "QuestScriptDef".into(),
             contexts: 1,
+            locations: Vec::new(),
         };
         let mut p = project_with_translation(
             "SampleQuest.LetterLabel",
@@ -495,6 +496,7 @@ mod gate_i4_acceptance {
                         )),
                         line: None,
                         tkey: None,
+                        ..Default::default()
                     })
             })
             .collect();
@@ -535,6 +537,7 @@ mod gate_i4_acceptance {
                 path: PathBuf::new(),
                 line: None,
                 tkey: None,
+                ..Default::default()
             })
             .collect();
         let registry = crate::matching::TKeyRegistry::from_identities(
@@ -660,6 +663,470 @@ pub fn detect_source_changes(
         .count();
 
     Ok(report)
+}
+
+#[cfg(test)]
+mod provenance_regression {
+    //! Pre-freeze provenance regressions (Source Inspector mandate §1/§7/§14).
+    //! Fixture: test/ProvenanceMod — a LoadFolders mod exercising every
+    //! winner-reason family on ONE inventory: Defs first-file across content
+    //! dirs, Keyed last-file/in-file-first, DefInjected SetOrAdd, patch
+    //! application, an IfModActive conditional dir and a foreign target pack.
+    use super::*;
+    use rimloc_domain::canonical::{ContextRole, SourceEntry};
+
+    const FIXTURE: &str = "test/ProvenanceMod";
+
+    fn fixture_path() -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../")
+            .join(FIXTURE)
+            .canonicalize()
+            .expect("fixture exists")
+    }
+
+    fn entry<'a>(p: &'a Project, key: &str) -> &'a SourceEntry {
+        p.entries
+            .iter()
+            .find(|e| e.id.key == key)
+            .unwrap_or_else(|| {
+                panic!(
+                    "entry {key} missing; have {:?}",
+                    p.entries.iter().map(|e| &e.id.key).collect::<Vec<_>>()
+                )
+            })
+    }
+
+    /// Per-entry winner reasons: the effective occurrence must say WHY it won
+    /// (family rule that decided it), and Defs entries must carry the REAL
+    /// source file — not the virtual DefInjected output path.
+    #[test]
+    fn per_entry_winner_reasons_and_real_source_file() {
+        let root = fixture_path();
+        let p = build_project(&root, Some("1.6")).unwrap();
+
+        // Defs duplicate identity across content dirs: the FIRST registration
+        // wins (LoadFolders li order: root before 1.6) — not last-file.
+        let dup = entry(&p, "Dup.label");
+        assert_eq!(dup.text, "root-wins", "{:?}", dup.contexts);
+        assert_eq!(
+            dup.provenance.selected_by.as_deref(),
+            Some("first-file-wins")
+        );
+        let ctx = &dup.contexts[0];
+        assert_eq!(ctx.role, ContextRole::Effective);
+        assert!(
+            ctx.file.ends_with("Defs/A_Root.xml"),
+            "real effective source file expected, got {}",
+            ctx.file
+        );
+        assert!(
+            !ctx.file.contains("DefInjected"),
+            "source context must not point at the virtual output path: {}",
+            ctx.file
+        );
+        assert!(ctx.line.is_some(), "parser-guaranteed line must survive");
+        assert_eq!(ctx.def_type.as_deref(), Some("ThingDef"));
+
+        // Keyed cross-file duplicate: last loaded file wins.
+        let g = entry(&p, "Greeting");
+        assert_eq!(g.text, "last-file");
+        assert_eq!(g.provenance.selected_by.as_deref(), Some("keyed-last-wins"));
+
+        // Keyed same-file duplicate: the FIRST value wins, the duplicate is
+        // kept as an Overridden context (mandate §14: primary + other usages).
+        let dupk = entry(&p, "DupKey");
+        assert_eq!(dupk.text, "one");
+        assert_eq!(
+            dupk.provenance.selected_by.as_deref(),
+            Some("keyed-first-in-file")
+        );
+        assert_eq!(dupk.contexts.len(), 2);
+        assert_eq!(dupk.contexts[0].role, ContextRole::Effective);
+        assert_eq!(dupk.contexts[1].role, ContextRole::Overridden);
+        assert_eq!(dupk.contexts[1].file, dupk.contexts[0].file);
+
+        // DefInjected sidecar SetOrAdd: the last file overwrites.
+        let sidecar = entry(&p, "Solo.label");
+        assert_eq!(sidecar.text, "sidecar-z");
+        assert_eq!(
+            sidecar.provenance.selected_by.as_deref(),
+            Some("definjected-setoradd")
+        );
+
+        // Patched content: the patch operation is why this value won.
+        let patched = entry(&p, "Patched.label");
+        assert_eq!(patched.text, "patched by op");
+        assert_eq!(
+            patched.provenance.selected_by.as_deref(),
+            Some("patch-applied")
+        );
+
+        // IfModActive content is marked per-entry, with the resolved version.
+        let cond = entry(&p, "CondD.label");
+        assert!(cond.provenance.conditional_branch);
+        assert_eq!(cond.provenance.version_selected.as_deref(), Some("1.6"));
+        assert!(
+            cond.contexts[0]
+                .file
+                .replace('\\', "/")
+                .contains("1.6/Cond/Defs/C.xml"),
+            "{}",
+            cond.contexts[0].file
+        );
+    }
+
+    /// Exact is honest: unresolved conditional roots and partial patch
+    /// coverage downgrade the view; full supported coverage stays Applied
+    /// (not the old "Patches dir exists → Partial" guess).
+    #[test]
+    fn exact_requires_no_conditionals_and_full_patch_coverage() {
+        let root = fixture_path();
+        let p = build_project(&root, Some("1.6")).unwrap();
+        assert_eq!(p.context.target_version.as_deref(), Some("1.6"));
+        // The IfModActive dir is included in the offline superset — the
+        // inventory is a CONDITIONAL superset, not exact runtime truth.
+        assert_eq!(p.context.view, ViewLabel::Potential);
+        assert_eq!(
+            entry(&p, "Patched.label").provenance.patch_stage,
+            PatchStage::Applied,
+            "the only patch op is supported and hit its target"
+        );
+
+        // Without the conditional dir the same mod would be Exact.
+        let p2 = build_project(&root, None).unwrap();
+        assert_eq!(p2.context.view, ViewLabel::Potential);
+    }
+
+    /// A foreign target pack (Languages/Russian) is TARGET content, never
+    /// English source: neither entry text nor a phantom context, and a
+    /// key that exists only in the target pack is not a source entry.
+    #[test]
+    fn foreign_target_pack_is_not_english_source() {
+        let root = fixture_path();
+        let p = build_project(&root, Some("1.6")).unwrap();
+        assert!(
+            !p.entries.iter().any(|e| e.text == "Привет"),
+            "Russian pack text must not enter the EN source inventory"
+        );
+        assert!(
+            !p.entries.iter().any(|e| e.id.key == "OnlyRussian"),
+            "a key existing only in the target pack is not English source"
+        );
+        assert!(
+            p.entries.iter().all(|e| {
+                e.contexts
+                    .iter()
+                    .all(|c| !c.file.replace('\\', "/").contains("/Russian/"))
+            }),
+            "target-pack occurrences must not appear as contexts"
+        );
+        assert!(p.entries.iter().any(|e| e.text == "last-file"));
+        assert!(p.entries.iter().all(|e| e.source_locale == "en"));
+    }
+
+    /// Flat mod without LoadFolders/version dirs: nothing was
+    /// version-selected, so version_selected stays None even when a game
+    /// version is requested; the view is still Exact (no conditionals, no
+    /// patches).
+    #[test]
+    fn flat_mod_records_no_version_selection() {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../test/TKeyMod")
+            .canonicalize()
+            .unwrap();
+        let p = build_project(&root, Some("1.6")).unwrap();
+        assert_eq!(p.context.view, ViewLabel::Exact);
+        assert!(
+            p.entries
+                .iter()
+                .all(|e| e.provenance.version_selected.is_none()),
+            "flat mod: no version root was selected"
+        );
+    }
+
+    /// Unsupported patch op → Partial coverage → POTENTIAL view even with a
+    /// known version (patch coverage must come from the real report, not
+    /// from directory existence).
+    #[test]
+    fn partial_patch_coverage_blocks_exact_view() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("Defs/T.xml"),
+            r#"<Defs><ThingDef><defName>Widget</defName><label>a label</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("Patches")).unwrap();
+        std::fs::write(
+            root.join("Patches/P.xml"),
+            r#"<Patch><Operation Class="PatchOperationUnknownThing"><xpath>/Defs/ThingDef[defName="Widget"]/label</xpath><value>x</value></Operation></Patch>"#,
+        )
+        .unwrap();
+        let p = build_project(root, Some("1.6")).unwrap();
+        assert_eq!(
+            entry(&p, "Widget.label").provenance.patch_stage,
+            PatchStage::Partial
+        );
+        assert_eq!(p.context.view, ViewLabel::Potential);
+    }
+
+    /// LoadFolders version fallback: when the requested game version exceeds
+    /// the mod's tags, the RESOLVED version (largest ≤ requested) is what was
+    /// selected — provenance must record 1.5, not the requested 1.6.
+    #[test]
+    fn version_fallback_records_resolved_version() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("1.5/Defs")).unwrap();
+        std::fs::write(
+            root.join("LoadFolders.xml"),
+            "<loadFolders><v1.5><li>1.5</li></v1.5></loadFolders>",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("1.5/Defs/D.xml"),
+            r#"<Defs><ThingDef><defName>F</defName><label>fallback label</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        let p = build_project(root, Some("1.6")).unwrap();
+        assert_eq!(p.context.target_version.as_deref(), Some("1.6"));
+        assert_eq!(
+            entry(&p, "F.label").provenance.version_selected.as_deref(),
+            Some("1.5"),
+            "provenance must record the resolved 1.5 root, not the requested 1.6"
+        );
+    }
+
+    /// TKey shares Defs semantics: a duplicate identity in a later content
+    /// dir is rejected — one entry, first file's text, first-file reason.
+    #[test]
+    fn tkey_duplicate_across_content_dirs_first_file_wins() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::create_dir_all(root.join("1.6/Defs")).unwrap();
+        std::fs::write(
+            root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>/</li><li>1.6</li></v1.6></loadFolders>",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Defs/Q.xml"),
+            r#"<Defs><QuestScriptDef><defName>Sample</defName><label TKey="LetterLabel">root tkey</label></QuestScriptDef></Defs>"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("1.6/Defs/Q2.xml"),
+            r#"<Defs><QuestScriptDef><defName>Sample</defName><label TKey="LetterLabel">version tkey</label></QuestScriptDef></Defs>"#,
+        )
+        .unwrap();
+        let p = build_project(root, Some("1.6")).unwrap();
+        let tk = entry(&p, "Sample.LetterLabel");
+        assert_eq!(tk.id.kind, EntryKind::TKey);
+        assert_eq!(tk.text, "root tkey");
+        assert_eq!(tk.contexts.len(), 1, "{:?}", tk.contexts);
+        assert_eq!(
+            tk.provenance.selected_by.as_deref(),
+            Some("first-file-wins")
+        );
+    }
+
+    /// Mandate §14 (TKey/multi-context): an identity shared by several
+    /// same-file nodes keeps Primary location + Other usages. The LAST
+    /// field assignment in document order is the effective text; the
+    /// winner reason is the actual same-file re-assignment, not
+    /// first-file-wins. Locations are parser-guaranteed (captured in the
+    /// same parser pass) and survive the project persistence roundtrip.
+    #[test]
+    fn tkey_same_file_shared_nodes_primary_plus_other_usages() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("Defs/Q.xml"),
+            r#"<Defs>
+  <QuestScriptDef>
+    <defName>Sample</defName>
+    <label TKey="LetterLabel">first text</label>
+    <description TKey="LetterLabel">second text</description>
+  </QuestScriptDef>
+</Defs>"#,
+        )
+        .unwrap();
+        let p = build_project(root, None).unwrap();
+        let tk = entry(&p, "Sample.LetterLabel");
+        assert_eq!(tk.id.kind, EntryKind::TKey);
+        assert_eq!(tk.text, "second text", "last same-file assignment wins");
+        assert_eq!(
+            tk.provenance.selected_by.as_deref(),
+            Some("tkey-last-assignment")
+        );
+        assert_eq!(tk.tkey.as_ref().unwrap().contexts, 2);
+        assert_eq!(tk.tkey.as_ref().unwrap().locations.len(), 2);
+        // Primary (effective) leads; the overwritten earlier node follows.
+        assert_eq!(tk.contexts.len(), 2, "{:?}", tk.contexts);
+        assert_eq!(tk.contexts[0].role, ContextRole::Effective);
+        assert_eq!(tk.contexts[1].role, ContextRole::Overridden);
+        for c in &tk.contexts {
+            assert!(
+                c.file.ends_with("Defs/Q.xml"),
+                "real source file expected, got {}",
+                c.file
+            );
+            assert!(c.line.is_some(), "parser-guaranteed line required");
+            assert_eq!(c.def_type.as_deref(), Some("QuestScriptDef"));
+        }
+        assert!(
+            tk.contexts[0].line > tk.contexts[1].line,
+            "effective node must be the LATER one: {:?}",
+            tk.contexts
+        );
+        // Persistence roundtrip keeps primary + other usages.
+        let file = dir.path().join("project.rimloc.json");
+        crate::project_store::save_project(&p, &file).unwrap();
+        let reloaded = crate::project_store::load_project(&file).unwrap();
+        let tk2 = entry(&reloaded, "Sample.LetterLabel");
+        assert_eq!(tk2.contexts.len(), 2);
+        assert_eq!(tk2.contexts[0].role, ContextRole::Effective);
+        assert_eq!(tk2.contexts[0].line, tk.contexts[0].line);
+        assert_eq!(tk2.contexts[1].role, ContextRole::Overridden);
+        assert_eq!(tk2.contexts[1].line, tk.contexts[1].line);
+    }
+
+    /// A mod that ships ONLY a target pack has no English source at all —
+    /// the canonical project must stay empty rather than label foreign
+    /// target text as `en`.
+    #[test]
+    fn target_only_pack_is_never_english_source() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Languages/Russian/Keyed")).unwrap();
+        std::fs::write(
+            root.join("Languages/Russian/Keyed/K.xml"),
+            "<LanguageData>\n  <Greeting>Привет</Greeting>\n</LanguageData>\n",
+        )
+        .unwrap();
+        let p = build_project(root, Some("1.6")).unwrap();
+        assert!(
+            p.entries.is_empty(),
+            "target-only pack must not become source: {:?}",
+            p.entries.iter().map(|e| &e.id.key).collect::<Vec<_>>()
+        );
+    }
+
+    /// TKey-only Defs source + a Russian sidecar: the TKey entry stays, the
+    /// foreign pack never leaks into source text or contexts.
+    #[test]
+    fn tkey_only_defs_with_target_sidecar_has_no_foreign_source() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::create_dir_all(root.join("Languages/Russian/Keyed")).unwrap();
+        std::fs::write(
+            root.join("Defs/Q.xml"),
+            r#"<Defs><QuestScriptDef><defName>Sample</defName><label TKey="LetterLabel">quest text</label></QuestScriptDef></Defs>"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Languages/Russian/Keyed/K.xml"),
+            "<LanguageData>\n  <Greeting>Привет</Greeting>\n</LanguageData>\n",
+        )
+        .unwrap();
+        let p = build_project(root, None).unwrap();
+        assert_eq!(p.entries.len(), 1, "{:?}", p.entries);
+        assert_eq!(p.entries[0].id.key, "Sample.LetterLabel");
+        assert_eq!(p.entries[0].text, "quest text");
+        assert!(p.entries.iter().all(|e| e.source_locale == "en"));
+        assert!(p.entries.iter().all(|e| e
+            .contexts
+            .iter()
+            .all(|c| !c.file.replace('\\', "/").contains("/Russian/"))));
+    }
+
+    /// Version-only layouts (no LoadFolders.xml): the SAME modview resolver
+    /// picks the version dir, so content is version-scoped (never a 1.5+1.6
+    /// union) and the selected version is recorded — no false Exact.
+    #[test]
+    fn version_only_layout_uses_the_version_resolver() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("1.5/Defs")).unwrap();
+        std::fs::create_dir_all(root.join("1.6/Defs")).unwrap();
+        std::fs::write(
+            root.join("1.5/Defs/A.xml"),
+            r#"<Defs><ThingDef><defName>F</defName><label>v15 label</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("1.6/Defs/B.xml"),
+            r#"<Defs><ThingDef><defName>E</defName><label>v16 label</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        // Requested 1.5 → only 1.5 content, selected version recorded.
+        let p = build_project(root, Some("1.5")).unwrap();
+        assert_eq!(entry(&p, "F.label").text, "v15 label");
+        assert!(p.entries.iter().all(|e| e.id.key != "E.label"));
+        assert_eq!(
+            entry(&p, "F.label").provenance.version_selected.as_deref(),
+            Some("1.5")
+        );
+        assert_eq!(p.context.view, ViewLabel::Exact);
+        // No request → the highest version dir is selected.
+        let p = build_project(root, None).unwrap();
+        assert_eq!(entry(&p, "E.label").text, "v16 label");
+        assert!(p.entries.iter().all(|e| e.id.key != "F.label"));
+        assert_eq!(
+            entry(&p, "E.label").provenance.version_selected.as_deref(),
+            Some("1.6")
+        );
+    }
+
+    /// KNOWN LIMITATION, documented for the pre-freeze review (NOT silently
+    /// accepted): canonical identity is kind+key, so two DEF TYPES sharing
+    /// defName+field collapse into one canonical entry. The scan-level
+    /// precedence keeps both occurrences (def-type-aware scopes), and the
+    /// bridge preserves the losing def type as an Overridden context — but
+    /// a domain identity migration (key carrying the def type) is a
+    /// breaking contract change that belongs to the lead, not this fix.
+    #[test]
+    fn def_type_key_collision_collapses_in_canonical_model() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>thing label</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Defs/B_Ability.xml"),
+            r#"<Defs><AbilityDef><defName>Dup</defName><label>ability label</label></AbilityDef></Defs>"#,
+        )
+        .unwrap();
+        let p = build_project(root, Some("1.6")).unwrap();
+        let matches: Vec<_> = p
+            .entries
+            .iter()
+            .filter(|e| e.id.key == "Dup.label")
+            .collect();
+        assert_eq!(matches.len(), 1, "documented canonical collapse");
+        assert_eq!(matches[0].id.kind, EntryKind::DefInjected);
+        assert_eq!(matches[0].contexts.len(), 2, "{:?}", matches[0].contexts);
+        // Deterministic stand-in order (lexicographic path) decides the
+        // effective side of the collapse: AbilityDef sorts first here.
+        assert_eq!(
+            matches[0].contexts[0].def_type.as_deref(),
+            Some("AbilityDef")
+        );
+        assert_eq!(matches[0].text, "ability label");
+        assert_eq!(
+            matches[0].contexts[1].def_type.as_deref(),
+            Some("ThingDef"),
+            "losing def type stays visible as a context"
+        );
+    }
 }
 
 /// Classification result of a source update (mandate 4 §3).
