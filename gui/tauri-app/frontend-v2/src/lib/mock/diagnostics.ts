@@ -17,8 +17,15 @@
 // Pure data + pure functions: no Svelte runes, no DOM. The store
 // (stores/diagnostics.svelte.ts) owns the reactive phases.
 
-/** Canonical app/package metadata (W4 requirement 4: one source, not a hand string). */
-export const APP_VERSION = '0.1.0';
+/**
+ * MOCK stand-in for the application version. NOT canonical metadata: W4
+ * requirement 4 asks for ONE canonical version module (built from real
+ * package/build metadata), which does not exist yet in the frontend mock.
+ * When the W4.5 version module lands, this literal is replaced by an import
+ * from it — see the W5 handoff "integration dependency" note. The same swap
+ * should retire the hardcoded "RimLoc 0.1.0" literal in About.svelte (W4).
+ */
+export const MOCK_APP_VERSION = '0.1.0';
 
 /** RimWorld version of the mock project (matches workspace.meta.version). */
 export const RW_VERSION = 'RimWorld 1.6';
@@ -158,12 +165,13 @@ export interface RawBundleLine {
 }
 
 export type BundleRuleId =
+  | 'sensitive-field'
   | 'api-key'
   | 'auth-header'
   | 'token'
+  | 'env-secret'
   | 'keychain'
   | 'signing'
-  | 'env-secret'
   | 'third-party-content';
 
 /** How one raw line survived sanitization. */
@@ -196,7 +204,7 @@ export interface BundlePreview {
 export function buildRawBundle(ctx: CausalContext | null, extra: { sourceLocation: string; outputLocation: string }): RawBundleLine[] {
   const opId = ctx?.operationId ?? 'op-vld-000000';
   return [
-    { key: 'app.version', value: `RimLoc ${APP_VERSION} (mock)`, labelKey: 'bundle.item.appVersion' },
+    { key: 'app.version', value: `RimLoc ${MOCK_APP_VERSION} (mock)`, labelKey: 'bundle.item.appVersion' },
     { key: 'causal.operation', value: opId, labelKey: 'bundle.item.operation' },
     { key: 'causal.stage', value: ctx?.stage ?? 'validate', labelKey: 'bundle.item.stage' },
     { key: 'causal.error', value: ctx ? `${ctx.errorCode}: ${ctx.expected} / ${ctx.actual}` : 'PLACEHOLDER_MISMATCH (known failure replay)', labelKey: 'bundle.item.error' },
@@ -233,8 +241,8 @@ export function buildRawBundle(ctx: CausalContext | null, extra: { sourceLocatio
     { key: 'provider.openai.license_token', value: 'token=ghp_4tX9kQ7Lm3vT8wZ1cD4bN2pR6yU1sE8vW5q', labelKey: 'bundle.item.token' },
     { key: 'env.RIMLOC_PROVIDER_KEY', value: 'sk-proj-AAAAsecretvalueAAAA', labelKey: 'bundle.item.envSecret' },
     { key: 'env.RIMLOC_LOCALE', value: 'ru', labelKey: 'bundle.item.envLocale' },
-    { key: 'credentials.keychain_ref', value: 'keychain://rimloc/openai (service tilda-… style refs)', labelKey: 'bundle.item.keychain' },
-    { key: 'build.signing_identity', value: 'Developer ID Application: OOO PEREZAGRUZKA (TEAM1234AB)', labelKey: 'bundle.item.signing' },
+    { key: 'credentials.keychain_ref', value: 'keychain://rimloc/openai', labelKey: 'bundle.item.keychain' },
+    { key: 'build.signing_identity', value: 'Developer ID Application: <org> (TEAM0000000)', labelKey: 'bundle.item.signing' },
     // --- excluded by design: never bundled, shown in the Excluded section ---
     { key: 'session.full_log', value: 'app.log (2.4 MB, 18 402 lines)', labelKey: 'bundle.item.fullLog', excludedByDesign: 'too-large' },
     { key: 'project.database', value: 'project.db — full inventory + translations', labelKey: 'bundle.item.database', excludedByDesign: 'bulk-user-content' },
@@ -247,6 +255,17 @@ const REDACTION_RULES: Array<{
   test: (key: string, value: string) => boolean;
   reasonKey: string;
 }> = [
+  // Key-name rule FIRST: a sensitive field name is redacted regardless of the
+  // value shape (provider.password='plain-sensitive', apiKey='opaque' must
+  // never survive sanitization just because the value lacks a sk-/Bearer
+  // pattern). Deliberately small — the live pipeline later trusts backend
+  // authority, not a second competing business engine in the frontend.
+  {
+    id: 'sensitive-field',
+    reasonKey: 'bundle.reason.sensitiveField',
+    test: (k) =>
+      /(passw(or)?d|secret|credential|api[_-]?key|(^|[._-])(key|token|auth)([._-]|$))/i.test(k)
+  },
   { id: 'api-key', reasonKey: 'bundle.reason.apiKey', test: (_k, v) => /\bsk-[a-z0-9-]{8,}/i.test(v) },
   { id: 'auth-header', reasonKey: 'bundle.reason.authHeader', test: (_k, v) => /\bauthorization\s*:|\bbearer\s+\S/i.test(v) },
   { id: 'token', reasonKey: 'bundle.reason.token', test: (k, v) => /\btoken\b/i.test(k) || /\b(token|ghp_)[=:]\s*\S/i.test(v) || /\bghp_[a-z0-9]{16,}/i.test(v) },
@@ -258,8 +277,15 @@ const REDACTION_RULES: Array<{
 
 const REDACTED_PLACEHOLDER = '[REDACTED]';
 
-/** Normalize an absolute home path (`/Users/name/...` → `~/...`) for display. */
-export function normalizeHomePath(value: string, homePrefix = '/Users/danielviktorovich'): string {
+/**
+ * Synthetic home prefix for mock fixtures — generic on purpose (no real
+ * username/company/workshop ids of the owner in code or tests). The live
+ * pipeline will pass the real home prefix from the backend.
+ */
+export const MOCK_HOME_PREFIX = '/Users/<user>';
+
+/** Normalize an absolute home path (`/Users/<user>/...` → `~/...`) for display. */
+export function normalizeHomePath(value: string, homePrefix: string = MOCK_HOME_PREFIX): string {
   return value.startsWith(homePrefix) ? `~${value.slice(homePrefix.length)}` : value;
 }
 
@@ -267,6 +293,8 @@ export function normalizeHomePath(value: string, homePrefix = '/Users/danielvikt
  * Run the raw bundle through the redaction engine. Home paths are normalized
  * (kept — a path is diagnostic value), secrets and third-party content are
  * redacted with a visible reason, by-design exclusions land in Excluded.
+ * Excluded lines never leak raw content either: if a value trips a redaction
+ * rule it is masked before display.
  */
 export function sanitizeBundle(lines: RawBundleLine[], homePrefix?: string): BundlePreview {
   const included: BundleItem[] = [];
@@ -275,10 +303,11 @@ export function sanitizeBundle(lines: RawBundleLine[], homePrefix?: string): Bun
 
   for (const line of lines) {
     if (line.excludedByDesign) {
+      const dangerous = REDACTION_RULES.some((r) => r.test(line.key, line.value));
       excluded.push({
         key: line.key,
         labelKey: line.labelKey,
-        value: line.value,
+        value: dangerous ? REDACTED_PLACEHOLDER : line.value,
         state: 'excluded',
         reasonKey: `bundle.reason.${line.excludedByDesign}`,
         ruleId: 'excluded-by-design'
