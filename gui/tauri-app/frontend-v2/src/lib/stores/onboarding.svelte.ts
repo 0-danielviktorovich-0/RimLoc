@@ -104,13 +104,15 @@ class OnboardingStore {
     }
   }
 
-  /** Open a script at step 0. The guided ledger starts empty — a fresh pass
-   * must earn its success copy with real actions. A new passId invalidates
-   * async completions that belonged to a previous pass. */
-  startScript(script: TourScript) {
+  /** Open a script (optionally from a later step — e.g. the workspace-scoped
+   * demo-tour scenario skips the Home step because the demo is already
+   * seeded). The guided ledger starts empty — a fresh pass must earn its
+   * success copy with real actions. A new passId invalidates async
+   * completions that belonged to a previous pass. */
+  startScript(script: TourScript, startStep = 0) {
     this.script = script;
     this.total = script === 'coach' ? COACH_TOTAL : DEMO_TOTAL;
-    this.step = 0;
+    this.step = Math.max(0, Math.min(startStep, this.total - 1));
     this.guidedDone = {};
     this.passId += 1;
     this.open = true;
@@ -144,10 +146,11 @@ class OnboardingStore {
     if (script === 'demo') this.markDemoTourStarted();
   }
 
-  /** Guided demo tour entry (Home demo card / Help / scenario browser). */
-  startDemoTour() {
+  /** Guided demo tour entry (Home demo card / Help / scenario browser).
+   * startStep 1 skips the Home step — used when the demo is already seeded. */
+  startDemoTour(startStep = 0) {
     this.markDemoTourStarted();
-    this.startScript('demo');
+    this.startScript('demo', startStep);
   }
 
   private markDemoTourStarted() {
