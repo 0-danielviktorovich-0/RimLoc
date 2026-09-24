@@ -673,6 +673,24 @@ export const ru: Record<string, string> = {
   'providers.inst.edit': 'Изменить',
   'providers.inst.rename': 'Переименовать',
   'providers.inst.duplicate': 'Дублировать',
+  'providers.inst.export': 'Экспортировать',
+  'providers.export.done': 'Экспортировано (мок): JSON без секретов — поля ключа отсутствуют целиком.',
+  'providers.inst.cred.shared': 'общая ссылка keychain',
+  'providers.inst.cred.sharedHint': 'Ссылается на тот же keychain-ключ, что и оригинал — сам секрет не копировался.',
+  'providers.inst.cred.missing': 'нужен ключ',
+  'providers.duplicate.title': 'Дублировать «{name}»',
+  'providers.duplicate.note': 'Копируется только не-секретная конфигурация (имя, base URL, модель, протокол). Решите, что делать с ключом:',
+  'providers.duplicate.reuse': 'Переиспользовать ссылку keychain (общий)',
+  'providers.duplicate.needs': 'Без ключа (нужен ключ)',
+  'providers.duplicate.reuseUnavailable': 'У оригинала ещё нет ссылки keychain — сначала сохраните ключ.',
+  'providers.duplicate.local': 'Дублировать (локальный, без ключа)',
+  'providers.duplicate.localNote': 'Копируется только не-секретная конфигурация. Сервис локальный — ключ не участвует.',
+  'providers.duplicate.localFlash': 'Скопировано: локальный провайдер без ключа (мок).',
+  'providers.duplicate.sharedFlash': 'Скопировано: используется общий keychain-ключ с оригиналом (мок).',
+  'providers.duplicate.missingFlash': 'Скопировано: нужен свой ключ (мок).',
+  'providers.export.unavailable': 'Буфер обмена недоступен в этом окружении — скопируйте JSON ниже вручную (мок-экспорт).',
+  'providers.export.denied': 'Запись в буфер обмена отклонена — скопируйте JSON ниже вручную (мок-экспорт).',
+  'providers.export.fallbackNote': 'Конфигурация провайдера (без секретов):',
   'providers.inst.removeConfirm': 'Удалить?',
   'providers.inst.removeWarn': 'Повторное нажатие удаляет провайдера. Ключ в keychain не трогается.',
   'providers.form.key': 'Ключ',
@@ -905,7 +923,10 @@ export const ru: Record<string, string> = {
   'bundle.reason.bulk-user-content': 'Массовый пользовательский контент',
   'bundle.reason.third-party-visuals': 'Чужие визуальные материалы',
 
-  // Shortcuts editor (mandate §14, W4): remap + conflicts + reset
+  // Shortcuts editor (mandate §14, W4): remap + conflicts + reset.
+  // Классы опасности по W4.5 (п.3): конфликт команд RimLoc — ошибка и
+  // блокирует; системные сочетания — предупреждение; конвенционные —
+  // пояснение. Предупреждения никогда не блокируют сохранение кастомизации.
   'shortcuts.col.command': 'Команда',
   'shortcuts.col.combo': 'Сочетание',
   'shortcuts.col.actions': 'Действия',
@@ -920,12 +941,25 @@ export const ru: Record<string, string> = {
   'shortcuts.def.markReviewed': 'Отметить проверенной',
   'shortcuts.change': 'Изменить',
   'shortcuts.listening': 'Нажмите сочетание…',
-  'shortcuts.duplicate': 'дубликат',
-  'shortcuts.conflict': 'Конфликт сочетаний: {count}. Переназначьте одну из команд.',
+  'shortcuts.issue.rimlocConflict': 'Конфликт команд RimLoc',
+  'shortcuts.issue.systemReserved': 'системное сочетание',
+  'shortcuts.issue.convention': 'перекрывает общепринятое сочетание',
+  'shortcuts.blocked': 'Не сохранено: это сочетание уже занято другой командой RimLoc.',
+  'shortcuts.warnReserved': 'Сочетаний, зарезервированных системой: {count} — сохранены, но система может их перехватывать.',
+  'shortcuts.infoConvention': 'Сочетаний, перекрывающих общепринятые: {count} — сохранены как кастомизация.',
   'shortcuts.platform.mac': 'Модификатор на macOS — ⌘ Cmd.',
   'shortcuts.platform.other': 'Модификатор на Windows и Linux — Ctrl.',
   'shortcuts.platform.hint': 'Назначенное сочетание подхватится в редакторе (мок).',
   'shortcuts.resetAll': 'Вернуть все по умолчанию',
+
+  // Mutability provenance (W4.5, п.2): происхождение записей глоссария/TM.
+  'mutability.label': 'Происхождение',
+  'mutability.user-created': 'Создано пользователем',
+  'mutability.project-created': 'Создано проектом',
+  'mutability.imported': 'Импортировано',
+  'mutability.reference-read-only': 'Справочник (только чтение)',
+  'mutability.readOnlyReason':
+    'Справочные корпуса — только чтение: привязка не должна деструктивно менять справочный материал. Скопируйте запись, чтобы править.',
 
   // About (mandate §24, W4): карта в Справке
   'about.title': 'О программе',

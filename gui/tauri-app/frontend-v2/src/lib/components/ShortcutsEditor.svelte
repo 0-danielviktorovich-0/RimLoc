@@ -1,21 +1,30 @@
 <script lang="ts">
   // Remappable shortcut table (mandate §14). Click a row's "Change" button to
-  // capture the next key press; duplicates between commands are highlighted
-  // (conflict detection is derived in the store). Modifier follows platform
-  // convention: Cmd on macOS, Ctrl elsewhere — the store detects it once via
-  // navigator.platform, the note below explains the rule to the user.
+  // capture the next key press. Safety classes (W4.5 requirement #3):
+  //   - a combo already used by another RimLoc command is an ERROR and the
+  //     customization is NOT saved — the row shows a blocking note;
+  //   - system-reserved combos (Cmd+Q / Cmd+W / Cmd+Tab class) save with a
+  //     warning badge — customization is never hard-blocked by warnings;
+  //   - convention-shadowing combos (Cmd+S / Cmd+Z class on a different
+  //     command) save with an info badge.
+  // Modifier follows platform convention: Cmd on macOS, Ctrl elsewhere — the
+  // store detects it once via navigator.platform.
   import Icon from './Icon.svelte';
   import { t } from '../../i18n/store.svelte';
   import {
     shortcuts,
     SHORTCUT_DEFS,
     comboLabel,
+    classifyBinding,
     IS_MAC,
-    type ShortcutId
+    type ShortcutId,
+    type ShortcutIssueClass
   } from '../stores/shortcuts.svelte';
 
   /** Shortcut currently waiting for a key press (only one at a time). */
   let capturing = $state<ShortcutId | null>(null);
+  /** Blocked (error-class) attempt: id → shown until the next capture. */
+  let blockedId = $state<ShortcutId | null>(null);
 
   $effect(() => {
     if (!capturing) return;
@@ -33,26 +42,47 @@
         capturing = null;
         return;
       }
+      // RimLoc-command conflicts are the only hard block (W4.5 #3a):
+      // system-reserved and convention combos save with warnings instead.
+      const candidate = classifyBinding(target, binding, shortcuts.bindings);
+      if (candidate?.kind === 'rimloc-conflict') {
+        blockedId = target;
+        capturing = null;
+        return;
+      }
       shortcuts.assign(target, binding);
+      blockedId = null;
       capturing = null;
     };
     window.addEventListener('keydown', onKey, { capture: true });
     return () => window.removeEventListener('keydown', onKey, { capture: true });
   });
 
-  const conflicts = $derived(shortcuts.conflictMap());
-  const hasConflicts = $derived(conflicts.size > 0);
-
   function startCapture(id: ShortcutId) {
+    blockedId = null;
     capturing = capturing === id ? null : id;
+  }
+
+  const issues = $derived(shortcuts.issues());
+  const warningCount = $derived(issues.filter((i) => i.cls === 'warning').length);
+  const infoCount = $derived(issues.filter((i) => i.cls === 'info').length);
+
+  function rowClass(cls: ShortcutIssueClass | null): string {
+    return cls === 'error' ? 'row-error' : cls === 'warning' ? 'row-warning' : cls === 'info' ? 'row-info' : '';
   }
 </script>
 
 <div class="sc" data-testid="shortcuts.editor">
-  {#if hasConflicts}
-    <p class="conflict-note" role="alert" data-testid="shortcuts.conflicts">
+  {#if warningCount > 0}
+    <p class="note warn" role="status" data-testid="shortcuts.warnReserved">
       <Icon name="warning" size={14} />
-      {t('shortcuts.conflict', { count: conflicts.size })}
+      {t('shortcuts.warnReserved', { count: warningCount })}
+    </p>
+  {/if}
+  {#if infoCount > 0}
+    <p class="note info" role="status" data-testid="shortcuts.infoConvention">
+      <Icon name="info" size={14} />
+      {t('shortcuts.infoConvention', { count: infoCount })}
     </p>
   {/if}
 
@@ -67,14 +97,30 @@
     <tbody>
       {#each SHORTCUT_DEFS as def (def.id)}
         {@const binding = shortcuts.binding(def.id)}
-        {@const isConflict = shortcuts.isConflicting(def.id)}
-        <tr class:conflict={isConflict} data-testid={`shortcuts.row.${def.id}`}>
+        {@const issue = shortcuts.issueFor(def.id)}
+        <tr class={rowClass(issue?.cls ?? null)} data-testid={`shortcuts.row.${def.id}`}>
           <td class="cmd">
             {t(def.labelKey)}
-            {#if isConflict}
-              <span class="dup" data-testid={`shortcuts.dup.${def.id}`}>
+            {#if issue?.kind === 'rimloc-conflict'}
+              <span class="flag err" data-testid={`shortcuts.conflict.${def.id}`}>
                 <Icon name="warning" size={12} />
-                {t('shortcuts.duplicate')}
+                {t('shortcuts.issue.rimlocConflict')}
+              </span>
+            {:else if issue?.kind === 'system-reserved'}
+              <span class="flag warn" data-testid={`shortcuts.reserved.${def.id}`}>
+                <Icon name="warning" size={12} />
+                {t('shortcuts.issue.systemReserved')}
+              </span>
+            {:else if issue?.kind === 'convention'}
+              <span class="flag info" data-testid={`shortcuts.convention.${def.id}`}>
+                <Icon name="info" size={12} />
+                {t('shortcuts.issue.convention')}
+              </span>
+            {/if}
+            {#if blockedId === def.id}
+              <span class="flag err blocked" role="alert" data-testid={`shortcuts.blocked.${def.id}`}>
+                <Icon name="warning" size={12} />
+                {t('shortcuts.blocked')}
               </span>
             {/if}
           </td>
@@ -132,13 +178,45 @@
     width: 100%;
   }
 
-  .conflict-note {
+  .note {
     margin: 0;
     display: flex;
     align-items: center;
     gap: var(--space-1);
-    color: var(--color-warning);
     font-size: var(--text-meta-size);
+  }
+
+  .note.warn {
+    color: var(--color-warning);
+  }
+
+  .note.info {
+    color: var(--color-muted-fg);
+  }
+
+  .flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--text-meta-size);
+  }
+
+  .flag.err {
+    color: var(--color-error);
+  }
+
+  .flag.warn {
+    color: var(--color-warning);
+  }
+
+  .flag.info {
+    color: var(--color-muted-fg);
+  }
+
+  .flag.blocked {
+    border: 1px solid var(--color-error);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-1);
   }
 
   .table {
@@ -172,14 +250,6 @@
     flex-wrap: wrap;
   }
 
-  .dup {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    color: var(--color-warning);
-    font-size: var(--text-meta-size);
-  }
-
   .combo {
     white-space: nowrap;
   }
@@ -200,9 +270,18 @@
     color: var(--color-primary-text);
   }
 
-  tr.conflict .kbd {
+  tr.row-warning .kbd {
     border-color: var(--color-warning);
     color: var(--color-warning);
+  }
+
+  tr.row-info .kbd {
+    color: var(--color-muted-fg);
+  }
+
+  tr.row-error .kbd {
+    border-color: var(--color-error);
+    color: var(--color-error);
   }
 
   .row-actions {

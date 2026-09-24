@@ -1,14 +1,19 @@
 <script lang="ts">
-  // Translation Memory editor (mandate §11): search, similarity, origin
-  // project, provenance, use/apply (mock), edit/delete, import/export and a
-  // duplicates view. Import/export are mocks — no file I/O. The mock corpus is
-  // 14 rows; a production corpus runs to tens of thousands, so the real table
-  // must be virtualized (see the note at the bottom — same requirement as the
-  // Workspace table in spec §2.4).
-  import Icon from '../Icon.svelte';
-  import { t } from '../../../i18n/store.svelte';
-  import { router } from '../../router.svelte';
-  import { tm, type TmEntry, type TmOrigin } from '../../stores/tm.svelte';
+// Translation Memory editor (mandate §11): search, similarity, origin
+// project, provenance, use/apply (mock), edit/delete, import/export and a
+// duplicates view. Import/export are mocks — no file I/O. The mock corpus is
+// 14 rows; a production corpus runs to tens of thousands, so the real table
+// must be virtualized (see the note at the bottom — same requirement as the
+// Workspace table in spec §2.4).
+//
+// Mutability provenance (W4.5 requirement #2): each row shows where it came
+// from; reference-read-only rows have edit/delete disabled with a tooltip
+// explaining why, and the mock batch-import marks its rows `imported`.
+import Icon from '../Icon.svelte';
+import { t } from '../../../i18n/store.svelte';
+import { router } from '../../router.svelte';
+import { tm, type TmEntry, type TmOrigin } from '../../stores/tm.svelte';
+import { isReadOnly, mutabilityKey, type Mutability } from '../../mutability';
 
   let query = $state('');
   let onlyDuplicates = $state(false);
@@ -52,7 +57,12 @@
     imported: 'workspace.detail.origin.imported'
   };
 
+  function readOnly(e: TmEntry): boolean {
+    return isReadOnly(e.mutability);
+  }
+
   function openEdit(entry: TmEntry) {
+    if (readOnly(entry)) return; // store refuses anyway; button is disabled
     form = {
       editingId: entry.id,
       source: entry.source,
@@ -82,7 +92,7 @@
       return;
     }
     confirmingRemove = null;
-    tm.remove(id);
+    tm.remove(id); // store refuses reference-read-only rows
     applied = { ...applied, [id]: false };
   }
 
@@ -96,8 +106,21 @@
     timers.push(timer);
   }
 
-  /** Mock import: nothing is read; only the status line confirms. */
+  /**
+   * Mock batch import: appends a canned pair marked `imported` (W4.5 #2) so
+   * the provenance is visible; no file is read.
+   */
   function mockImport() {
+    tm.addImported({
+      source: 'Select a research project to begin.',
+      target: 'Выберите исследовательский проект, чтобы начать.',
+      sourceLang: 'en',
+      targetLang: 'ru',
+      similarity: 100,
+      originProject: 'Imported pack 2026-09',
+      provenance: 'imported',
+      addedAt: '2026-09-25'
+    });
     flashIo();
   }
 
@@ -186,11 +209,13 @@
           <th scope="col">{t('tm.match')}</th>
           <th scope="col">{t('tm.ed.origin')}</th>
           <th scope="col">{t('tm.from')}</th>
+          <th scope="col">{t('mutability.label')}</th>
           <th scope="col"><span class="visually-hidden">{t('shortcuts.col.actions')}</span></th>
         </tr>
       </thead>
       <tbody>
         {#each filtered as entry (entry.id)}
+          {@const locked = readOnly(entry)}
           <tr class:duplicate={dupIds.has(entry.id)} data-testid={`tm.row.${entry.id}`}>
             <td class="source-cell">
               <span class="mono">{entry.source}</span>
@@ -208,11 +233,29 @@
               <span class="mono pair"> {entry.sourceLang} → {entry.targetLang}</span>
             </td>
             <td class="origin-cell">{entry.originProject}</td>
+            <td class="mut-cell">
+              <span
+                class="chip mut"
+                class:locked
+                data-testid={`tm.mut.${entry.id}`}
+                title={locked ? t('mutability.readOnlyReason') : undefined}
+              >
+                {#if locked}<Icon name="lock-closed" size={10} />{/if}
+                {t(mutabilityKey(entry.mutability as Mutability))}
+              </span>
+            </td>
             <td class="row-actions">
               <button type="button" class="btn subtle" data-testid={`tm.apply.${entry.id}`} onclick={() => applyEntry(entry.id)}>
                 {applied[entry.id] ? t('tm.ed.applied') : t('tm.ed.apply')}
               </button>
-              <button type="button" class="btn subtle" data-testid={`tm.edit.${entry.id}`} onclick={() => openEdit(entry)}>
+              <button
+                type="button"
+                class="btn subtle"
+                data-testid={`tm.edit.${entry.id}`}
+                disabled={locked}
+                title={locked ? t('mutability.readOnlyReason') : undefined}
+                onclick={() => openEdit(entry)}
+              >
                 <Icon name="edit" size={13} />
                 {t('providers.inst.edit')}
               </button>
@@ -220,6 +263,8 @@
                 type="button"
                 class="btn subtle danger-text"
                 data-testid={`tm.delete.${entry.id}`}
+                disabled={locked}
+                title={locked ? t('mutability.readOnlyReason') : undefined}
                 onclick={() => removeEntry(entry.id)}
               >
                 {confirmingRemove === entry.id ? t('glossary.ed.deleteConfirm') : t('common.delete')}
@@ -228,7 +273,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="empty" data-testid="tm.empty">
+            <td colspan="7" class="empty" data-testid="tm.empty">
               {t('tm.ed.empty')}
             </td>
           </tr>
@@ -496,6 +541,16 @@
     font-size: var(--text-dense-size);
     max-width: 160px;
     overflow-wrap: anywhere;
+  }
+
+  .mut-cell {
+    white-space: nowrap;
+  }
+
+  .chip.mut.locked {
+    color: var(--color-warning);
+    border-color: var(--color-warning);
+    gap: 3px;
   }
 
   .row-actions {

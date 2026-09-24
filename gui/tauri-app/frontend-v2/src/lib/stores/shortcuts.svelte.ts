@@ -2,8 +2,17 @@
 // command has a remappable combo; defaults follow platform conventions:
 // Meta on macOS, Ctrl elsewhere (IS_MAC is detected once via navigator.platform).
 //
-// Conflict detection is derived, not stored: two commands bound to the same
-// (mod, key) pair are highlighted by the editor, nothing is blocked silently.
+// Conflict handling has three safety classes (W4.5 integration requirement
+// #3) — classification is derived here, never stored:
+//   (a) 'rimloc-conflict' — ERROR: the combo is already bound to another
+//       RimLoc command. The editor REFUSES to save such a customization.
+//   (b) 'system-reserved' — WARNING: the combo belongs to the OS
+//       (Cmd+Q / Cmd+W / Cmd+Tab on macOS; the Ctrl+Q / Ctrl+W equivalents
+//       elsewhere — Alt+Tab and Ctrl+Alt+Del cannot even reach a webview).
+//       Saved, but the user is warned the OS will likely intercept it.
+//   (c) 'convention' — INFO: the combo shadows a common app convention
+//       (Cmd+S save, Cmd+Z undo, …) without matching this command's own
+//       default. Saved, flagged so the choice is conscious.
 // Bindings persist to localStorage like the rest of the GUI settings.
 
 export type ShortcutId =
@@ -22,6 +31,19 @@ export interface ShortcutBinding {
   key: string;
   /** true = platform modifier: Cmd on macOS, Ctrl elsewhere. */
   mod: boolean;
+}
+
+/** Safety class of a binding issue (see module docstring). */
+export type ShortcutIssueClass = 'error' | 'warning' | 'info';
+/** What kind of hazard the binding hits. */
+export type ShortcutIssueKind = 'rimloc-conflict' | 'system-reserved' | 'convention';
+
+export interface ShortcutIssue {
+  id: ShortcutId;
+  cls: ShortcutIssueClass;
+  kind: ShortcutIssueKind;
+  /** Combo signature the issue is about. */
+  sig: string;
 }
 
 export const IS_MAC: boolean =
@@ -69,6 +91,58 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
 ];
 
 const STORAGE_KEY = 'rimloc.shortcuts';
+
+/** Signature of a binding: `mod+<key>` or `<key>`. */
+export function signatureOf(b: ShortcutBinding): string {
+  return `${b.mod ? 'mod+' : ''}${b.key.toLowerCase()}`;
+}
+
+// OS-reserved modifier combos per platform (W4.5 #3, class b). On macOS the
+// hard-reserved trio is Cmd+Q (quit), Cmd+W (close window), Cmd+Tab (app
+// switch). Windows/Linux use the same roles via Alt+F4 / Ctrl+W / Alt+Tab —
+// only the Ctrl+W and Ctrl+Q equivalents can be expressed with the single-
+// modifier binding model (Alt-combos and Ctrl+Alt+Del never reach a webview
+// as key events), so those two are classified.
+const SYSTEM_RESERVED_MAC = new Set(['q', 'w', 'tab']);
+const SYSTEM_RESERVED_OTHER = new Set(['q', 'w']);
+
+function isSystemReserved(b: ShortcutBinding): boolean {
+  if (!b.mod) return false;
+  const key = b.key.toLowerCase();
+  return IS_MAC ? SYSTEM_RESERVED_MAC.has(key) : SYSTEM_RESERVED_OTHER.has(key);
+}
+
+// Common application conventions (W4.5 #3, class c): overriding one of these
+// with a different command is allowed but deserves an info-level flag.
+const CONVENTION_MOD_KEYS = new Set(['s', 'z', 'f', 'c', 'v', 'x', 'a', 'p']);
+
+/**
+ * Classify a binding for a command against the CURRENT bindings of the
+ * others (candidate = what would be in effect after assignment). Returns
+ * null when the combo is safe. Priority: rimloc conflict > system-reserved
+ * > convention. Pure function — the editor uses it both for live candidates
+ * and (bound to the stored state) for badges on existing rows.
+ */
+export function classifyBinding(
+  id: ShortcutId,
+  binding: ShortcutBinding,
+  allBindings: Record<ShortcutId, ShortcutBinding>
+): ShortcutIssue | null {
+  const sig = signatureOf(binding);
+  const rimlocClash = SHORTCUT_DEFS.some((d) => d.id !== id && signatureOf(allBindings[d.id]) === sig);
+  if (rimlocClash) return { id, cls: 'error', kind: 'rimloc-conflict', sig };
+  if (isSystemReserved(binding)) return { id, cls: 'warning', kind: 'system-reserved', sig };
+  const isConvention = binding.mod && CONVENTION_MOD_KEYS.has(binding.key.toLowerCase());
+  if (isConvention) {
+    const ownDefault = SHORTCUT_DEFS.find((d) => d.id === id)?.defaultBinding;
+    // Matching your own default (e.g. Cmd+S on "Save edit") IS the
+    // convention — only flag when a convention combo moved to another command.
+    if (ownDefault && signatureOf(ownDefault) !== sig) {
+      return { id, cls: 'info', kind: 'convention', sig };
+    }
+  }
+  return null;
+}
 
 function defaultBindings(): Record<ShortcutId, ShortcutBinding> {
   const out = {} as Record<ShortcutId, ShortcutBinding>;
@@ -134,7 +208,7 @@ class ShortcutsStore {
     const groups = new Map<string, ShortcutId[]>();
     for (const d of SHORTCUT_DEFS) {
       const b = this.bindings[d.id];
-      const sig = `${b.mod ? 'mod+' : ''}${b.key.toLowerCase()}`;
+      const sig = signatureOf(b);
       const arr = groups.get(sig) ?? [];
       arr.push(d.id);
       groups.set(sig, arr);
@@ -148,8 +222,17 @@ class ShortcutsStore {
 
   isConflicting(id: ShortcutId): boolean {
     const b = this.bindings[id];
-    const sig = `${b.mod ? 'mod+' : ''}${b.key.toLowerCase()}`;
-    return (this.conflictMap().get(sig)?.length ?? 0) > 1;
+    return (this.conflictMap().get(signatureOf(b))?.length ?? 0) > 1;
+  }
+
+  /** Full safety classification of a command's CURRENT binding (W4.5 #3). */
+  issueFor(id: ShortcutId): ShortcutIssue | null {
+    return classifyBinding(id, this.bindings[id], this.bindings);
+  }
+
+  /** All current issues across commands, for the summary notes. */
+  issues(): ShortcutIssue[] {
+    return SHORTCUT_DEFS.map((d) => this.issueFor(d.id)).filter((i): i is ShortcutIssue => i !== null);
   }
 
   private persist() {
