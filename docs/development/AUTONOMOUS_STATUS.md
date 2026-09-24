@@ -478,3 +478,12 @@ GUI productization не задерживаются.
   TauriTransport); моки/корпус переиспользуемы; бизнес-правда не во фронтенде.
 - Отложено (не строить): Layout Builder, community registry, L3 extensions, альтернативные
   фронтенды, UI_EXTENSION_ARCHITECTURE.md — после появления реализации.
+
+### G5-дополнение (24.09): W6/W7 мандаты персистены
+- **W6** mock/live boundary + onboarding tour + demo project + scenario browser + review
+  screen map (MOCK_LIVE_ONBOARDING_MANDATE.md); live-gate после FREEZE на машине владельца.
+- **W7** source inspector: read-only viewer + one-click source actions + external editor
+  (структурный запуск без shell-строк) + effective-source awareness («Why this source?»
+  из provenance резолвера) + generated output viewer (SOURCE_INSPECTOR_MANDATE.md);
+  live-acceptance после фриза.
+Порядок: W1 ✓ → W2 ✓ → W3 → W4 → W5 → W6/W7 → FREEZE.
