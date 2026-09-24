@@ -18,10 +18,16 @@
   import GlossaryStub from '../workspace/GlossaryStub.svelte';
   import TMStub from '../workspace/TMStub.svelte';
   import ProjectPanel from '../workspace/ProjectPanel.svelte';
+  import OnboardingCoach from '../OnboardingCoach.svelte';
   import Icon from '../Icon.svelte';
   import { MOCK_ERROR_CODE, MOCK_ERROR_RAW } from '../../../lib/mock/data';
+  import { onboarding } from '../../stores/onboarding.svelte';
 
   let { initialTab = 'editor' }: { initialTab?: 'editor' | 'review' } = $props();
+
+  // First open of the workspace starts the coach unless it was dismissed
+  // earlier (QA mandate §20: skippable, replayable from Help).
+  onboarding.startIfFirstRun();
 
   const SKELETON_ROWS = 8; // spec §3: table loading shows 8 placeholder rows
 
@@ -99,6 +105,8 @@
 </script>
 
 <svelte:window onkeydown={onWindowKeydown} />
+
+<OnboardingCoach />
 
 <section class="workspace" aria-label={t('workspace.title')}>
   <div class="toolbar">
