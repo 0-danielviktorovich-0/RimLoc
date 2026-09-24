@@ -6,6 +6,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- [gui] Source Inspector (W7, mock scope): SOURCE tab with effective location, nullable line/column, provenance "why" facts, primary + other usages, read-only viewer with search/folding/copy, advanced source browser with ACTIVE/shadowed candidates, compare source/translation/generated, context menu and palette actions, external-editor launch plan (structural argv, demo only — no editor is launched and no files are touched).
 - [parsers-xml] Normalize nested DefInjected dotted keys by dropping leading def type segment when it matches the file's DefInjected/<DefType> folder; preserves mixed types and flat keys.
 - [parsers-xml] Extended Defs DSL: multiple attribute predicates (name[@a=v&@b=w]) and indexed selection (name[2], name[#2], name[index=2]).
 - [cli/scan] New `--fuzzy` flag to include heuristic string fields from Defs not covered by dicts (RIMLOC_FUZZY=1).

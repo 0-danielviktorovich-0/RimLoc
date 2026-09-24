@@ -7,8 +7,15 @@ import { click, exists, mountCmp, q } from './helpers';
 import { mockEntries } from '../src/lib/mock/data';
 import { project } from '../src/lib/stores/project.svelte';
 import { source } from '../src/lib/source/store.svelte';
-import { buildLaunchPlan, splitArgsText } from '../src/lib/source/editor';
+import {
+  buildLaunchPlan,
+  loadEditorChoice,
+  splitArgsText,
+  splitArgsTextStrict,
+  templateFor
+} from '../src/lib/source/editor';
 import { shortcuts } from '../src/lib/stores/shortcuts.svelte';
+import { installSourceShortcutDispatcher } from '../src/lib/source/dispatch.svelte';
 import { i18n } from '../src/i18n/store.svelte';
 import DetailPanel from '../src/lib/components/workspace/DetailPanel.svelte';
 import SourceOverlays from '../src/lib/components/source/SourceOverlays.svelte';
@@ -225,12 +232,76 @@ describe('w7 #8: editor launch plans are structural', () => {
     expect(
       splitArgsText('"/Applications/Мой Редактор.app" --wait "{path}.xml"')
     ).toEqual(['/Applications/Мой Редактор.app', '--wait', '{path}.xml']);
+    // lead review 029 #2: an unbalanced quote is a typed rejection
+    expect(splitArgsTextStrict('"/Applications/Мой')).toEqual({
+      ok: false,
+      reasonKey: 'source.editor.error.unbalancedQuote'
+    });
     const r = buildLaunchPlan(
       { executable: '/usr/local/bin/右クリック', argsTemplate: ['--goto', '{path}:{line}:{column}'] },
       { path: 'Docs/файл пробел.xml', line: 12, column: 4 }
     );
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.plan.args).toEqual(['--goto', 'Docs/файл пробел.xml:12:4']);
+  });
+});
+
+describe('w7 #8b: literal substitution safety (lead 029 #2)', () => {
+  const target = { path: 'Мой $& {line}.xml', line: 12, column: 4 };
+
+  it('replacement text is never reinterpreted ($&, ${}, braces stay literal)', () => {
+    const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{path}'] }, target);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.args).toEqual(['Мой $& {line}.xml']);
+  });
+
+  it('repeated tokens all resolve in one pass', () => {
+    const r = buildLaunchPlan(
+      { executable: 'ed', argsTemplate: ['{path}', '{path}:{line}:{column}', '{path}'] },
+      { path: 'a b.xml', line: 3, column: 7 }
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.args).toEqual(['a b.xml', 'a b.xml:3:7', 'a b.xml']);
+  });
+
+  it('standalone {column} substitutes ONLY the column', () => {
+    const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{path}', '{column}'] }, { path: 'a.xml', line: 12, column: 4 });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.plan.args).toEqual(['a.xml', '4']);
+  });
+
+  it('unknown or malformed placeholders are rejected', () => {
+    for (const tok of ['{bogus_1}', '{}', '{LINE }']) {
+      const r = buildLaunchPlan({ executable: 'ed', argsTemplate: [tok] }, { path: 'a.xml', line: 1, column: 1 });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.unknownPlaceholder');
+    }
+  });
+
+  it('line/column must be positive integers when required', () => {
+    for (const line of [null, 0, -3, 1.5]) {
+      const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{line}'] }, { path: 'a.xml', line, column: null });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.noLine');
+    }
+    const r = buildLaunchPlan({ executable: 'ed', argsTemplate: ['{column}'] }, { path: 'a.xml', line: 1, column: 0 });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.noColumn');
+  });
+
+  it('corrupt persisted editor choice falls back to defaults', () => {
+    localStorage.setItem('rimloc.source.editor', '{"preset":{"evil":1},"custom":null}');
+    const c = loadEditorChoice();
+    expect(c.preset).toBe('system');
+    localStorage.setItem('rimloc.source.editor', 'not json at all');
+    expect(loadEditorChoice().preset).toBe('system');
+    localStorage.removeItem('rimloc.source.editor');
+  });
+
+  it('templateFor rejects an unbalanced custom template', () => {
+    const r = templateFor({ preset: 'custom', custom: { executable: 'ed', argsText: '"unclosed' } });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reasonKey).toBe('source.editor.error.unbalancedQuote');
   });
 });
 
@@ -255,5 +326,91 @@ describe('w7 #9: unbound source shortcuts coexist with W4.5 registry', () => {
     shortcuts.assign('save', { key: 'q', mod: true });
     expect(shortcuts.issueFor('save')?.kind).toBe('system-reserved');
     shortcuts.resetAll();
+  });
+});
+
+describe('w7 #10: runtime shortcut dispatcher (lead 029 #3)', () => {
+  beforeEach(() => {
+    reset();
+    shortcuts.resetAll();
+    installSourceShortcutDispatcher();
+  });
+
+  it('assigned binding triggers the browser action', () => {
+    shortcuts.assign('sourceBrowser', { key: 'b', mod: true });
+    project.select('di-02');
+    mountCmp(SourceOverlays);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }));
+    flushSync();
+    expect(source.browser).toBe(true);
+    source.closeBrowser();
+    shortcuts.resetAll();
+  });
+
+  it('unbound commands stay inert', () => {
+    project.select('di-02');
+    mountCmp(SourceOverlays);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true }));
+    flushSync();
+    expect(source.viewer).toBeNull();
+  });
+
+  it('typing in an editable target never fires the dispatcher', () => {
+    shortcuts.assign('sourceBrowser', { key: 'b', mod: true });
+    mountCmp(SourceOverlays);
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true }));
+    flushSync();
+    expect(source.browser).toBe(false);
+    input.remove();
+    shortcuts.resetAll();
+  });
+
+  it('entry actions without a selection report honestly (palette parity)', () => {
+    shortcuts.assign('sourceOpen', { key: 'o', mod: true });
+    mountCmp(SourceOverlays);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true }));
+    flushSync();
+    expect(source.viewer).toBeNull();
+    expect(source.lastMockAction?.labelKey).toBe('source.palette.noSelection');
+    shortcuts.resetAll();
+  });
+});
+
+describe('w7 #11: search index clamp and Escape close (lead 029 #4)', () => {
+  beforeEach(reset);
+
+  it('advancing then narrowing the query shows a valid index (never 3/1)', async () => {
+    source.setScenario('source/tkey-multi-context');
+    source.openViewer('tk-01', 0);
+    mountCmp(SourceOverlays);
+    const input = q('source.viewer.search') as HTMLInputElement;
+    const set = (v: string) => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      proto.call(input, v);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      flushSync();
+    };
+    set('o'); // several matches
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    flushSync();
+    set('winter is close'); // exactly one match
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(q('source.viewer.matchCount').textContent).toContain('1/1');
+  });
+
+  it('Escape closes the viewer', () => {
+    source.setScenario('source/simple');
+    source.openViewer('keyed-01', 0);
+    mountCmp(SourceOverlays);
+    expect(exists('source.viewer')).toBe(true);
+    document
+      .querySelector('[data-testid="source.viewer"]')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    flushSync();
+    expect(exists('source.viewer')).toBe(false);
   });
 });
