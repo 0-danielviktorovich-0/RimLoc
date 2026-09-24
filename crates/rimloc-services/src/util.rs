@@ -137,9 +137,11 @@ pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()>
                 drop(f);
                 match write {
                     Ok(()) => {
-                        return fs::rename(&tmp, path).inspect_err(|_| {
+                        let rename_result = fs::rename(&tmp, path);
+                        if rename_result.is_err() {
                             let _ = fs::remove_file(&tmp);
-                        });
+                        }
+                        return rename_result;
                     }
                     Err(e) => {
                         let _ = fs::remove_file(&tmp);
