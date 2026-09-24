@@ -14,6 +14,7 @@
   import Phase2Stub from './lib/components/screens/Phase2Stub.svelte';
   import Diagnostics from './lib/components/screens/Diagnostics.svelte';
   import OnboardingCoach from './lib/components/OnboardingCoach.svelte';
+  import ScenarioBrowser from './lib/components/ScenarioBrowser.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
   import StyleLab from './lib/components/StyleLab.svelte';
   import { router } from './lib/router.svelte';
@@ -58,6 +59,10 @@
 <!-- W6: anchored product tour lives at shell level — the guided demo script
      spans Home → Workspace → Review → Build, so it survives route changes. -->
 <OnboardingCoach />
+
+<!-- W6: dev scenario browser + deep-link runner (?scenario=<id>); the picker
+     opens from the dev panel, deep-links apply regardless. -->
+<ScenarioBrowser />
 
 <!-- Style Lab is dev-only: gated behind ?stylelab=1 / localStorage opt-in. -->
 {#if stylelab.enabled}
