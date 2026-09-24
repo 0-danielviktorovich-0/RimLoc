@@ -432,3 +432,34 @@ Cmd+K, coach, richer mock data (CJK/Cyrillic/длинные тексты/оши�
 направления на РЕПРЕЗЕНТАТИВНЫХ экранах после спринта; выбор стиля — только после пакета.
 Параллель: GUI-A (Home+Wizard+Existing) / GUI-B (Workspace+Review+Build) / GUI-C
 (Settings+Provider+Help+Palette) / GUI-D (polish) — lead держит shared-скелет. Mocks only.
+
+## G5 — ЕДИНЫЙ ФРОНТЕНД-DAG (кумулятивные мандаты 24.09: GUI QA + Language Registry + Chat Batch + Multi-Target)
+Полные тексты: docs/development/{GUI_QA_MANDATE,LANGUAGE_REGISTRY_MANDATE,CHAT_BATCH_MANDATE,MULTI_TARGET_MANDATE}.md
++ GUI_SPRINT_MANDATE.md (G4). Одна IA, один продукт; направления стилей = темы.
+
+### Волны (владение файлами изолировано, lead интегрирует)
+- **W1 (ACTIVE, воркер)** — владелец-баги функциональности P0: wizard как конечный автомат
+  (Back-навигация, Base Game/DLC/Language Pack — свои шаги, не «mods»-реюз); naming «Новый
+  перевод»; Replay-onboarding bug; проверка мультиязычных пар в моках. Регрессии на каждый
+  баг (мандат GUI_QA §27). Тест-кейсы на чинящее.
+- **W2** — Language Registry + multi-target (адаптер по семантике канон-модели: один source
+  inventory + N target-локалей, active_target_locale, switcher в хедере, +Add language,
+  Language Manager, custom language → Generic capabilities, stale-AI-защита per-target,
+  persistence, palette actions; UI-локаль ≠ source ≠ target — E2E).
+- **W3** — Hybrid translation strategy (use-existing-knowledge чекбоксы + translate-remaining
+  radio; Manual всегда доступен; strategy меняется после создания; advanced pipeline —
+  концепт; quality presets документированы) + Chat batch manager (стабильные batch ID,
+  revision/source-change защита, preview/apply, retry-split, chat-профили, batch sizing
+  Auto+пресеты+advanced, response schema версия) — GUI-моки + доменные типы по контракту.
+- **W4** — Provider templates+instances (несколько инстансов, enable/disable/default/rename/
+  duplicate/test), glossary editor, TM editor, knowledge/rules inspector (J-контракт),
+  shortcuts editor, panel collapse, About/credits, config-inventory классификация.
+- **W5** — diagnostics root-cause + redaction preview (L-синергия), lifecycle-терминология
+  (Translate→Check→Build кандидаты), Project screen productization, capability parity audit,
+  fresh-user QA-прогон 6 ролей, visual polish.
+- **ПОСЛЕ W1-W5**: ident-screen style comparison package → ⏸ выбор владельца.
+
+### Инварианты
+Моки/адаптеры до фриза; канон-модель — источник семантики адаптеров (§30 multi-target:
+«не изобретать фронтенд-only стор, расходящийся с каноном»); UI-локаль ≠ source ≠ target
+(E2E); AI/чат-ответы = untrusted данные (только поля схемы); стили не меняют IA.
