@@ -87,6 +87,7 @@ mod tests {
                     version_selected: Some("1.6".into()),
                     conditional_branch: false,
                     patch_stage: PatchStage::Applied,
+                    selected_by: None,
                 },
                 tkey: Some(rimloc_core::TKeyMeta {
                     strategy: "slate_ref".into(),

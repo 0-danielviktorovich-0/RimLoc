@@ -37,10 +37,17 @@ fn kind_for(path: &Path, tkey: bool) -> EntryKind {
 /// Convert an effective inventory into canonical source entries. Units that
 /// share one identity (same kind+key) collapse into one entry whose first
 /// context is Effective and the rest Overridden (Gate H diagnostics).
+///
+/// `selected_by` records WHY the effective occurrence won (winner-reason
+/// provenance vocabulary: "version-selected", "loadfolders", "first-file-wins",
+/// "keyed-last-wins", "patch-applied"). Pass `None` when the batch-level
+/// winner reason is per-family and unknown at this granularity — never a
+/// label that would be true for only part of the inventory.
 pub fn source_entries(
     units: &[TransUnit],
     patch_stage: PatchStage,
     version: Option<&str>,
+    selected_by: Option<&str>,
 ) -> Vec<SourceEntry> {
     let mut order: Vec<SourceEntryId> = Vec::new();
     let mut by_id: BTreeMap<SourceEntryId, SourceEntry> = BTreeMap::new();
@@ -79,6 +86,7 @@ pub fn source_entries(
                             version_selected: version.map(String::from),
                             conditional_branch: false,
                             patch_stage,
+                            selected_by: selected_by.map(String::from),
                         },
                         tkey: u.tkey.clone(),
                     },
@@ -97,11 +105,12 @@ pub fn project_from_inventory(
     units: &[TransUnit],
     patch_stage: PatchStage,
     version: Option<&str>,
+    selected_by: Option<&str>,
     context: rimloc_domain::canonical::InventoryContext,
 ) -> Project {
     let mut p = Project {
         context,
-        entries: source_entries(units, patch_stage, version),
+        entries: source_entries(units, patch_stage, version, selected_by),
         translations: Vec::new(),
     };
     if p.context.view == ViewLabel::Potential && p.context.target_version.is_none() {
@@ -153,7 +162,7 @@ mod tests {
                 }),
             ),
         ];
-        let entries = source_entries(&units, PatchStage::None, Some("1.6"));
+        let entries = source_entries(&units, PatchStage::None, Some("1.6"), Some("loadfolders"));
         assert_eq!(entries.len(), 3);
         assert_eq!(entries[0].id.kind, EntryKind::Keyed);
         assert_eq!(entries[1].id.kind, EntryKind::DefInjected);
@@ -163,6 +172,10 @@ mod tests {
             entries[2].provenance.version_selected.as_deref(),
             Some("1.6")
         );
+        // Winner-reason provenance reaches every entry of the batch.
+        assert!(entries
+            .iter()
+            .all(|e| e.provenance.selected_by.as_deref() == Some("loadfolders")));
     }
 
     /// One identity, two occurrences -> ONE entry, second context Overridden.
@@ -182,7 +195,7 @@ mod tests {
                 None,
             ),
         ];
-        let entries = source_entries(&units, PatchStage::None, None);
+        let entries = source_entries(&units, PatchStage::None, None, None);
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].text, "first");
         assert_eq!(entries[0].contexts.len(), 2);
@@ -197,13 +210,16 @@ mod tests {
             &units,
             PatchStage::None,
             None,
+            None,
             rimloc_domain::canonical::InventoryContext::default(),
         );
         assert_eq!(p.context.view, ViewLabel::Potential);
+        assert!(p.entries[0].provenance.selected_by.is_none());
         let p2 = project_from_inventory(
             &units,
             PatchStage::Applied,
             Some("1.6"),
+            Some("version-selected"),
             rimloc_domain::canonical::InventoryContext {
                 target_version: Some("1.6".into()),
                 view: ViewLabel::Exact,
@@ -211,5 +227,9 @@ mod tests {
             },
         );
         assert_eq!(p2.context.view, ViewLabel::Exact);
+        assert_eq!(
+            p2.entries[0].provenance.selected_by.as_deref(),
+            Some("version-selected")
+        );
     }
 }

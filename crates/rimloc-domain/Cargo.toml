@@ -9,3 +9,6 @@ serde = { workspace = true, features = ["derive"] }
 schemars = "1"
 rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 
+[dev-dependencies]
+serde_json = "1"
+

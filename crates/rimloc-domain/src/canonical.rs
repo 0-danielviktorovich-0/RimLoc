@@ -75,6 +75,13 @@ pub struct SourceProvenance {
     /// Patch stage coverage that produced this content.
     #[serde(default)]
     pub patch_stage: PatchStage,
+    /// Why the effective occurrence won (pre-freeze contract, Source
+    /// Inspector mandate): "version-selected", "loadfolders", "first-file-wins",
+    /// "keyed-last-wins", "patch-applied". `None` = winner reason not captured
+    /// at this granularity (the flat-scan winner is per-family, so a batch
+    /// label would be a lie; per-entry capture is planned).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub selected_by: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -292,6 +299,7 @@ mod tests {
                 version_selected: Some("1.6".into()),
                 conditional_branch: false,
                 patch_stage: PatchStage::Applied,
+                selected_by: Some("loadfolders".into()),
             },
             tkey: None,
         }
@@ -316,6 +324,30 @@ mod tests {
         assert!(p.translation(&id, "ja").is_some());
         // Still ONE source entry — not duplicated per locale.
         assert_eq!(p.entries.len(), 1);
+    }
+
+    /// Provenance winner-reason contract (pre-freeze, Source Inspector):
+    /// `selected_by` round-trips when set and stays absent from JSON when
+    /// unknown — the field must not bloat every serialized entry.
+    #[test]
+    fn provenance_selected_by_roundtrips_and_omits_when_unset() {
+        let mut p = SourceProvenance {
+            version_selected: Some("1.6".into()),
+            conditional_branch: false,
+            patch_stage: PatchStage::Applied,
+            selected_by: Some("keyed-last-wins".into()),
+        };
+        let json = serde_json::to_value(&p).unwrap();
+        assert_eq!(json["selected_by"], "keyed-last-wins");
+        let back: SourceProvenance = serde_json::from_value(json).unwrap();
+        assert_eq!(back.selected_by.as_deref(), Some("keyed-last-wins"));
+
+        p.selected_by = None;
+        let json = serde_json::to_value(&p).unwrap();
+        assert!(json.get("selected_by").is_none());
+        // Older artifacts without the field still deserialize (serde default).
+        let legacy: SourceProvenance = serde_json::from_str(r#"{"patch_stage": "none"}"#).unwrap();
+        assert!(legacy.selected_by.is_none());
     }
 
     #[test]

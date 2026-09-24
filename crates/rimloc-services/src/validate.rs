@@ -13,6 +13,47 @@ fn scan_canonical(
 use crate::{util::is_source_for_lang_dir, Result, ValidationMessage};
 use std::path::Path;
 
+/// Gate J wiring: run the eligibility engine over the canonical inventory and
+/// surface entries the engine rules NON_TRANSLATABLE yet that reached the
+/// inventory anyway (wild DefInjected sidecars carrying `defName`/`texPath`…).
+/// Each hit is an engine/extractor divergence signal — a valuable diagnostic,
+/// not noise; Translatable entries never produce messages.
+fn eligibility_diagnostics(units: &[rimloc_core::TransUnit]) -> Vec<ValidationMessage> {
+    use rimloc_domain::eligibility::Decision;
+    let location: std::collections::HashMap<&str, (&Path, Option<usize>)> = units
+        .iter()
+        .map(|u| (u.key.as_str(), (u.path.as_path(), u.line)))
+        .collect();
+    crate::eligibility_engine::evaluate_units(units)
+        .into_iter()
+        .filter_map(|(key, verdict)| {
+            if verdict.decision != Decision::NonTranslatable {
+                return None;
+            }
+            let rule = verdict
+                .evidence
+                .first()
+                .map(|e| e.rule_id.as_str())
+                .unwrap_or("unknown-rule");
+            let (path, line) = location
+                .get(key.as_str())
+                .copied()
+                .unwrap_or((Path::new(""), None));
+            Some(ValidationMessage {
+                kind: "non-translatable-flagged".into(),
+                key,
+                path: path.display().to_string(),
+                line,
+                message: format!(
+                    "Entry is non-translatable by the eligibility engine \
+                     (rule: {rule}) but is present in the inventory — \
+                     engine/extractor divergence; translating it breaks Def loading"
+                ),
+            })
+        })
+        .collect()
+}
+
 /// Validate scanned units under a root with optional filtering by language folder/code.
 pub fn validate_under_root(
     scan_root: &Path,
@@ -27,7 +68,8 @@ pub fn validate_under_root(
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
     }
-    let msgs = rimloc_validate::validate(&units)?;
+    let mut msgs = rimloc_validate::validate(&units)?;
+    msgs.extend(eligibility_diagnostics(&units));
     Ok(msgs)
 }
 
@@ -46,7 +88,8 @@ pub fn validate_under_root_with_defs(
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
     }
-    let msgs = rimloc_validate::validate(&units)?;
+    let mut msgs = rimloc_validate::validate(&units)?;
+    msgs.extend(eligibility_diagnostics(&units));
     Ok(msgs)
 }
 
@@ -65,7 +108,8 @@ pub fn validate_under_root_with_defs_and_fields(
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| is_source_for_lang_dir(&u.path, &dir));
     }
-    let msgs = rimloc_validate::validate(&units)?;
+    let mut msgs = rimloc_validate::validate(&units)?;
+    msgs.extend(eligibility_diagnostics(&units));
     Ok(msgs)
 }
 
@@ -86,7 +130,8 @@ pub fn validate_under_root_with_defs_and_dict(
         let dir = rimloc_import_po::rimworld_lang_dir(code);
         units.retain(|u| crate::util::is_source_for_lang_dir(&u.path, &dir));
     }
-    let msgs = rimloc_validate::validate(&units)?;
+    let mut msgs = rimloc_validate::validate(&units)?;
+    msgs.extend(eligibility_diagnostics(&units));
     Ok(msgs)
 }
 
@@ -527,6 +572,44 @@ mod gate_c_tests {
         assert_eq!(msgs.len(), 1, "{msgs:?}");
         assert_eq!(msgs[0].key, "Q.Lbl.slateRef");
         assert_eq!(msgs[0].kind, "placeholder-check");
+    }
+
+    /// Gate J wiring: a NonTranslatable-by-engine entry that nonetheless
+    /// reached the inventory (wild DefInjected sidecar carrying `defName`)
+    /// surfaces exactly ONE divergence diagnostic; Translatable entries on
+    /// the same inventory stay silent.
+    #[test]
+    fn notranslate_in_inventory_yields_one_divergence_diagnostic() {
+        let tmp = tempfile::tempdir().unwrap();
+        let defs = tmp.path().join("Defs/Misc");
+        std::fs::create_dir_all(&defs).unwrap();
+        std::fs::write(defs.join("Q.xml"), DEFS).unwrap();
+        let en_definj = tmp.path().join("Languages/English/DefInjected/ThingDef");
+        std::fs::create_dir_all(&en_definj).unwrap();
+        std::fs::write(
+            en_definj.join("Bogus.xml"),
+            r#"<LanguageData>
+  <Bogus.defName>Bogus</Bogus.defName>
+  <Bogus.label>bogus label</Bogus.label>
+</LanguageData>"#,
+        )
+        .unwrap();
+
+        let msgs = validate_under_root(tmp.path(), None, None).unwrap();
+        let flagged: Vec<&ValidationMessage> = msgs
+            .iter()
+            .filter(|m| m.kind == "non-translatable-flagged")
+            .collect();
+        assert_eq!(flagged.len(), 1, "{msgs:?}");
+        assert_eq!(flagged[0].key, "Bogus.defName");
+        assert!(
+            flagged[0].message.contains("builtin:notranslate:defName"),
+            "{:?}",
+            flagged[0].message
+        );
+        assert_eq!(flagged[0].line, Some(2), "location resolved from the unit");
+        // The translatable sibling on the same sidecar produced no message.
+        assert!(!msgs.iter().any(|m| m.key == "Bogus.label"));
     }
 
     #[test]

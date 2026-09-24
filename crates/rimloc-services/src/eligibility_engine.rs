@@ -15,7 +15,8 @@
 //! component; scan/GUI/LLM/compare/import must call it instead of deciding
 //! themselves.
 
-use rimloc_domain::canonical::{EntryKind, SourceEntry};
+use rimloc_core::TransUnit;
+use rimloc_domain::canonical::{EntryKind, PatchStage, SourceEntry};
 use rimloc_domain::eligibility::{
     authority_of, resolve, Authority, Conflict, Decision, Evidence, EvidenceSource, Rule, Verdict,
     PRECEDENCE,
@@ -532,6 +533,29 @@ fn enforce_notranslate_finality(verdict: &mut Verdict, candidates: &[Verdict]) {
 }
 
 // ---------------------------------------------------------------------------
+// Inventory wiring helper
+// ---------------------------------------------------------------------------
+
+/// Decide a whole scan-world inventory (Gate J wiring for validators that
+/// speak [`TransUnit`], not canonical entries). Units are bridged to canonical
+/// form by the ONE conversion point ([`crate::canonical_bridge`]), so the
+/// engine sees exactly the identities (kind + collapsed duplicate semantics)
+/// the rest of the pipeline sees.
+///
+/// This convenience constructs a builtin-only engine per call — fine for
+/// batch diagnostics; full-featured consumers (GUI explain, project
+/// workflows) should build [`SourceEntry`] values once via the bridge and
+/// reuse one [`EligibilityEngine`] that also carries user/project rule packs.
+pub fn evaluate_units(units: &[TransUnit]) -> Vec<(String, Verdict)> {
+    let entries = crate::canonical_bridge::source_entries(units, PatchStage::None, None, None);
+    let engine = EligibilityEngine::new();
+    entries
+        .iter()
+        .map(|e| (e.id.key.clone(), engine.evaluate(e, None)))
+        .collect()
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -829,5 +853,52 @@ mod tests {
         let mut out = r.clone();
         out.package_id = Some(package_id.into());
         out
+    }
+
+    /// Seed-pack shape contract: the composition the eligibility doc states.
+    /// Any change to the builtin vocabulary must consciously update the doc
+    /// (docs/development/TRANSLATION_ELIGIBILITY.md).
+    #[test]
+    fn seed_pack_shape_matches_documented_composition() {
+        let rules = builtin_seed_rules();
+        let kind = rules.iter().filter(|r| r.entry_kind.is_some()).count();
+        let notranslate = rules
+            .iter()
+            .filter(|r| r.id.starts_with("builtin:notranslate:"))
+            .count();
+        let dict_pairs = {
+            let dict = rimloc_parsers_xml::load_embedded_defs_dict();
+            let mut pairs: Vec<(&String, &String)> = dict
+                .0
+                .iter()
+                .flat_map(|(dt, fields)| fields.iter().map(move |f| (dt, f)))
+                .collect();
+            pairs.sort();
+            pairs.dedup();
+            pairs.len()
+        };
+        let leaves = TRANSLATABLE_LEAVES.len();
+        assert_eq!(kind, 2, "two first-party kind rules (TKey, Keyed)");
+        assert_eq!(notranslate, 5, "the [NoTranslate]-family field rules");
+        assert_eq!(
+            rules.len(),
+            kind + notranslate + dict_pairs + leaves,
+            "seed pack is exactly kind + NoTranslate + def-type dict + leaf rules"
+        );
+        // Rule ids are unique — rule packs are addressed by id in conflicts
+        // and explain output.
+        let mut ids: Vec<&str> = rules.iter().map(|r| r.id.as_str()).collect();
+        ids.sort_unstable();
+        let before = ids.len();
+        ids.dedup();
+        assert_eq!(ids.len(), before, "duplicate seed rule ids");
+        // The documented total (155): 2 kind + 5 NoTranslate + 126 def-type
+        // dict pairs + 22 universal leaf patterns.
+        assert_eq!(
+            rules.len(),
+            155,
+            "seed pack drifted from the documented 155 rules; update \
+             docs/development/TRANSLATION_ELIGIBILITY.md consciously"
+        );
     }
 }
