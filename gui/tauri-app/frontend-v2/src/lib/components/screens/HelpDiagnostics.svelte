@@ -13,6 +13,8 @@
   import { providers } from '../../stores/providers.svelte';
   import { project } from '../../stores/project.svelte';
   import { onboarding } from '../../stores/onboarding.svelte';
+  import ShortcutsEditor from '../ShortcutsEditor.svelte';
+  import About from './About.svelte';
 
   type CheckState = 'pending' | 'ok' | 'warn' | 'fail';
 
@@ -128,29 +130,11 @@
     </button>
   </article>
 
-  <!-- Shortcuts -->
+  <!-- Shortcuts (mandate §14): full remappable table with conflict detection;
+       the static key list moved into the editor component. -->
   <article class="card" data-testid="help.shortcuts">
     <h2 class="card-title"><Icon name="sliders" size={16} /> {t('help.shortcuts.title')}</h2>
-    <table class="keys">
-      <tbody>
-        <tr>
-          <td><kbd class="kbd">⌘K</kbd> <span class="kbd-sep">/</span> <kbd class="kbd">Ctrl+K</kbd></td>
-          <td>{t('help.shortcuts.palette')}</td>
-        </tr>
-        <tr>
-          <td><kbd class="kbd">Enter</kbd></td>
-          <td>{t('help.shortcuts.save')}</td>
-        </tr>
-        <tr>
-          <td><kbd class="kbd">Esc</kbd></td>
-          <td>{t('help.shortcuts.cancel')}</td>
-        </tr>
-        <tr>
-          <td><kbd class="kbd">Tab</kbd></td>
-          <td>{t('help.shortcuts.next')}</td>
-        </tr>
-      </tbody>
-    </table>
+    <ShortcutsEditor />
   </article>
 
   <!-- Documentation -->
@@ -240,6 +224,9 @@
       <pre class="report mono" data-testid="help.bugreport.preview">{bugReport}</pre>
     {/if}
   </article>
+
+  <!-- About (mandate §24): version, credits, license and font notices. -->
+  <About />
 </section>
 
 <style>
@@ -317,36 +304,6 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-  }
-
-  .keys {
-    border-collapse: collapse;
-    width: 100%;
-  }
-
-  .keys td {
-    padding: var(--space-1) 0;
-    vertical-align: baseline;
-  }
-
-  .keys td:first-child {
-    width: 160px;
-    white-space: nowrap;
-  }
-
-  .kbd {
-    font-family: var(--font-mono);
-    font-size: var(--text-meta-size);
-    border: 1px solid var(--color-border-strong);
-    border-bottom-width: 2px;
-    border-radius: var(--radius-sm);
-    padding: 1px var(--space-1);
-    background: var(--color-muted);
-  }
-
-  .kbd-sep {
-    color: var(--color-muted-fg);
-    font-size: var(--text-meta-size);
   }
 
   .qa {

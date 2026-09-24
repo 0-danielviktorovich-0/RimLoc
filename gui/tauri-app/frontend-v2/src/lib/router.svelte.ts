@@ -19,7 +19,9 @@ export type RouteId =
   | 'chat'
   | 'settings'
   | 'providers'
-  | 'help';
+  | 'help'
+  | 'glossary'
+  | 'tm';
 
 export const ROUTES: RouteId[] = [
   'home',
@@ -31,7 +33,9 @@ export const ROUTES: RouteId[] = [
   'chat',
   'settings',
   'providers',
-  'help'
+  'help',
+  'glossary',
+  'tm'
 ];
 
 export const PROJECT_ROUTES: RouteId[] = ['workspace', 'review', 'build'];
