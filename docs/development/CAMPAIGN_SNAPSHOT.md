@@ -48,6 +48,13 @@ subject ≤72 символов. Факты (диск/порты/процессы
 verify-facts-before-reporting.
 
 ## Закрытые гейты (не переоткрывать без новых доказательств)
+**BACKEND FREEZE (25.09, координатор по evidence; интегрированный HEAD `4b4d8c3`)**:
+L observability (принят независимо: 203 теста/43 сьюта + CLI негатив/позитив контролы),
+J typed identity + v2 миграция + честный WriteReport (независимое ревью L: P1 нет),
+corpus harness на 3 реальных модах + синтетике: status=pass (дважды: J и координатор),
+source hash-гард 1066 unchanged. Windows runtime/MSRV и подпись — явно неверифицированы
+(открытые RC-пункты, не блокируют локальный freeze).
+
 A TKey round-trip · B канон-инвентарь (один пайплайн) · C typed Resolution валидаторов ·
 D coverage-регрессии (TODO=missing, absent=missing) · E внешний defs-dir · F hardening
 аудита · G TKey-доки «система с 1.1» · H effective precedence (Keyed last-file/in-file
