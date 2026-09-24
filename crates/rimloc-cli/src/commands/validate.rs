@@ -258,7 +258,10 @@ pub fn run_validate(
             bundle_out,
         )?;
         let path = bundle.dir.display().to_string();
-        crate::ui_out!("support-bundle-written", path = path.as_str());
+        // Machine-readable stdout is a contract: with --format json the
+        // whole stdout must parse, so the bundle notice goes to stderr
+        // (localized, consistent with the rest of the CLI).
+        crate::ui_info!("support-bundle-written", path = path.as_str());
     }
 
     if format == "json" {

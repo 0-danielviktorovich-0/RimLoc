@@ -178,6 +178,83 @@ fn validate_failure_flows_into_sanitized_support_bundle() {
     );
 }
 
+// Round-021: with --format json the WHOLE stdout is machine-readable —
+// the support-bundle notice must go to stderr and never pollute it.
+#[test]
+fn json_stdout_stays_parseable_with_support_bundle() {
+    let tmp = tempfile::tempdir().expect("tmp");
+    let mod_root = tmp.path().join("MyMod");
+    let eng = mod_root.join("Languages/English/Keyed");
+    let rus = mod_root.join("Languages/Russian/Keyed");
+    std::fs::create_dir_all(&eng).expect("dirs");
+    std::fs::create_dir_all(&rus).expect("dirs");
+    std::fs::write(
+        eng.join("Actions.xml"),
+        "<LanguageData>\n  <Greet.label>Hi {0}!</Greet.label>\n</LanguageData>\n",
+    )
+    .expect("write en");
+    std::fs::write(
+        rus.join("Actions.xml"),
+        "<LanguageData>\n  <Greet.label></Greet.label>\n</LanguageData>\n",
+    )
+    .expect("write ru");
+
+    let bundle_out = tmp.path().join("bundle-out");
+    let output = bin()
+        .args([
+            "--quiet",
+            "validate",
+            "--format",
+            "json",
+            "--root",
+            mod_root.to_str().expect("utf8 root"),
+            "--source-lang-dir",
+            "English",
+            "--lang-dir",
+            "Russian",
+            "--support-bundle",
+            bundle_out.to_str().expect("utf8 out"),
+        ])
+        .output()
+        .expect("run rimloc validate");
+
+    // The WHOLE stdout must parse as the documented JSON array of issues.
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let issues: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("whole stdout is valid JSON");
+    let items = issues.as_array().expect("json array");
+    assert!(!items.is_empty(), "real validator issues present: {stdout}");
+    assert!(
+        items
+            .iter()
+            .all(|i| i.get("kind").is_some() && i.get("key").is_some()),
+        "issue objects keep their documented shape"
+    );
+
+    // The localized bundle notice went to stderr, not stdout.
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(
+        stderr.contains(&bundle_out.display().to_string()),
+        "bundle path announced on stderr: {stderr}"
+    );
+
+    // The bundle itself exists and preserves the causal results.
+    assert!(bundle_out.join("manifest.json").exists());
+    let diagnostics: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(bundle_out.join("diagnostics.json")).expect("diagnostics"),
+    )
+    .expect("json");
+    assert_eq!(
+        diagnostics["operation"]["stages"][0]["counters"]["issues"],
+        serde_json::Value::from(items.len() as u64),
+        "actual issue count captured"
+    );
+    assert!(
+        diagnostics["operation"]["finished_at"].is_null(),
+        "failed run stays failed"
+    );
+}
+
 #[test]
 fn validate_clean_run_support_bundle_marks_operation_finished() {
     let tmp = tempfile::tempdir().expect("tmp");
