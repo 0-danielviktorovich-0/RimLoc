@@ -32,6 +32,7 @@
   import { providers } from '../../stores/providers.svelte';
   import ProviderManager from './ProviderManager.svelte';
   import HelpDiagnostics from './HelpDiagnostics.svelte';
+  import ExternalEditorSettings from '../source/ExternalEditorSettings.svelte';
   import '../../palette-boot.svelte';
 
   let { route }: { route: Extract<RouteId, 'settings' | 'providers' | 'help'> } = $props();
@@ -450,6 +451,9 @@
               {t('settings.editor.shortcutsMore')}
             </button>
           </div>
+
+          <!-- W7: external editor (SOURCE_INSPECTOR_MANDATE §8) — honest mock -->
+          <ExternalEditorSettings />
         </div>
       {:else if section === 'appearance'}
         <div class="panel" data-testid="settings.panel.appearance">
