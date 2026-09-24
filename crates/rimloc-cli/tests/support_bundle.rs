@@ -128,8 +128,13 @@ fn validate_failure_flows_into_sanitized_support_bundle() {
         serde_json::Value::from(2),
         "both real issues captured"
     );
-    // Failed run stays failed — never a synthetic success.
+    // Failed run stays failed — never a synthetic success. The derived
+    // status agrees: unfinished with errors = failed.
     assert!(operation["finished_at"].is_null());
+    assert_eq!(
+        operation["status"],
+        serde_json::Value::String("failed".to_string())
+    );
 
     // Affected keys derive from the actual validator output.
     let stdout_keys: Vec<&str> = stdout
@@ -295,6 +300,11 @@ fn validate_clean_run_support_bundle_marks_operation_finished() {
     .expect("json");
     // A clean run is a successful operation: finish() happened.
     assert!(diagnostics["operation"]["finished_at"].is_string());
+    assert_eq!(
+        diagnostics["operation"]["status"],
+        serde_json::Value::String("succeeded".to_string()),
+        "clean run derives succeeded"
+    );
     assert_eq!(
         diagnostics["operation"]["stages"][0]["counters"]["issues"],
         serde_json::Value::from(0)
