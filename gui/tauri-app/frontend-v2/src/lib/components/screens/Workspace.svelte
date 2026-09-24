@@ -22,6 +22,7 @@
   import ProjectPanel from '../workspace/ProjectPanel.svelte';
   import SourceOverlays from '../source/SourceOverlays.svelte';
   import SourceChangeBanner from '../source/SourceChangeBanner.svelte';
+=======
   import Icon from '../Icon.svelte';
   import { MOCK_ERROR_CODE, MOCK_ERROR_RAW } from '../../../lib/mock/data';
   import { onboarding } from '../../stores/onboarding.svelte';

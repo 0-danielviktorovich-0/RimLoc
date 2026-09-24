@@ -15,13 +15,19 @@ import { project } from '../stores/project.svelte';
 import { review } from '../stores/review.svelte';
 import { router, type RouteId } from '../router.svelte';
 import { demoProject } from '../demo/demoProject.svelte';
+import { buildState } from '../mock/buildState.svelte';
 import type { TourScript } from '../stores/onboarding.svelte';
 
 export interface TourAction {
   /** i18n key of the action button label. */
   labelKey: string;
   testid: string;
-  run: () => void;
+  /**
+   * Performs the real action. Returns (or resolves to) FALSE when the action
+   * did not complete — wrong demo identity, unavailable control, cancelled
+   * run. Only a TRUE result may be recorded as done and advance the tour.
+   */
+  run: () => boolean | Promise<boolean>;
 }
 
 export interface TourStep {
@@ -82,15 +88,27 @@ export const COACH_STEPS: TourStep[] = [
  * every source placeholder, so the derived mismatch genuinely clears. */
 const KEYED_06_FIX = '{ENEMYPAWN_nameFull} из {ENEMYFACTION_name} — на вас напали!';
 
+/** Demo-identity guard (027): a scripted MUTATING action may only run while
+ * the bundled demo is the active project. Skipping the "Open demo" step can
+ * never write into the regular project or earn later guided marks. */
+function demoActive(): boolean {
+  return demoProject.active && project.isDemo;
+}
+
 /** Real review fix of the intentional error: open → edit → save, exactly the
- * buttons a user would press (writes through the shared project store). */
-function fixKeyed06(): void {
+ * buttons a user would press (writes through the shared project store).
+ * Returns true only when the issue is verifiably resolved. */
+function fixKeyed06(): boolean {
   const issue = review.issues.find((i) => i.id === 'keyed-06:placeholder_mismatch');
-  if (!issue) return; // already fixed on this pass — idempotent
+  if (!issue) return false; // already fixed on this pass — idempotent
   review.open(issue);
   review.startFix(issue);
   review.fixText[issue.id] = KEYED_06_FIX;
   review.saveFix(issue);
+  return (
+    review.resolutions[issue.id] === 'fixed' &&
+    (project.byId('keyed-06')?.target ?? '').includes('{ENEMYPAWN_nameFull}')
+  );
 }
 
 export const DEMO_STEPS: TourStep[] = [
@@ -106,6 +124,7 @@ export const DEMO_STEPS: TourStep[] = [
       run: () => {
         demoProject.seed();
         router.navigate('workspace');
+        return demoProject.active;
       }
     }
   },
@@ -118,7 +137,11 @@ export const DEMO_STEPS: TourStep[] = [
     action: {
       labelKey: 'tour.d2.action',
       testid: 'tour.action.d2',
-      run: () => project.select('keyed-04')
+      run: () => {
+        if (!demoActive()) return false;
+        project.select('keyed-04');
+        return true;
+      }
     }
   },
   {
@@ -131,11 +154,12 @@ export const DEMO_STEPS: TourStep[] = [
       labelKey: 'tour.d3.action',
       testid: 'tour.action.d3',
       run: () => {
+        if (!demoActive()) return false;
         // A real isolated demo edit: stage the draft, then save it through
-        // the same debounced commit path the editor uses (text mutates,
-        // status TODO → translated, origin → human).
+        // the same debounced commit path the editor uses. The promise
+        // resolves when the write actually landed on the entry.
         project.setDraft('keyed-04', 'Изгнать {PAWN_nameDef}?');
-        project.flushDraft('keyed-04');
+        return project.flushDraft('keyed-04');
       }
     }
   },
@@ -155,7 +179,10 @@ export const DEMO_STEPS: TourStep[] = [
     action: {
       labelKey: 'tour.d5.action',
       testid: 'tour.action.d5',
-      run: () => router.navigate('review')
+      run: () => {
+        router.navigate('review');
+        return true;
+      }
     }
   },
   {
@@ -167,7 +194,10 @@ export const DEMO_STEPS: TourStep[] = [
     action: {
       labelKey: 'tour.d6.action',
       testid: 'tour.action.d6',
-      run: fixKeyed06
+      run: () => {
+        if (!demoActive()) return false;
+        return fixKeyed06();
+      }
     }
   },
   {
@@ -179,7 +209,10 @@ export const DEMO_STEPS: TourStep[] = [
     action: {
       labelKey: 'tour.d7.action',
       testid: 'tour.action.d7',
-      run: () => router.navigate('build')
+      run: () => {
+        router.navigate('build');
+        return true;
+      }
     }
   },
   {
@@ -191,10 +224,13 @@ export const DEMO_STEPS: TourStep[] = [
     action: {
       labelKey: 'tour.d8.action',
       testid: 'tour.action.d8',
-      // Press the REAL existing demo-build control — the same button a user
-      // clicks. No second build engine lives in the tour.
+      // Starts the SAME shared mock build engine the real button starts;
+      // resolves only when that run verifiably completed (027). A reset,
+      // a second start or a demo-identity guard yields false.
       run: () => {
-        (document.querySelector('[data-testid="build.run"]') as HTMLButtonElement | null)?.click();
+        if (!demoActive()) return false;
+        if (buildState.phase === 'building') return false;
+        return buildState.start().done;
       }
     }
   },

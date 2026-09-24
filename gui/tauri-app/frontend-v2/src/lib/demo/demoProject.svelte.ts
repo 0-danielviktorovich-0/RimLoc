@@ -17,6 +17,8 @@
 import { project } from '../stores/project.svelte';
 import { languages } from '../languages/store.svelte';
 import { diagnostics } from '../stores/diagnostics.svelte';
+import { review } from '../stores/review.svelte';
+import { buildState } from '../mock/buildState.svelte';
 
 /** Synthetic identity of the bundled demo project. */
 export const DEMO_PROJECT_NAME = 'RimLoc Demo';
@@ -34,6 +36,10 @@ class DemoProjectStore {
     project.reset();
     languages.initFromPristine();
     diagnostics.reset();
+    // Demo isolation (027): a fresh pass also starts with clean review
+    // session state and no half-finished mock build.
+    review.resetSession();
+    buildState.reset();
     project.projectName = DEMO_PROJECT_NAME;
     project.isDemo = true;
     this.active = true;

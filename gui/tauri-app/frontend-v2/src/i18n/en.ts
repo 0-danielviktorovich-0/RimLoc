@@ -855,6 +855,7 @@ export const en: Record<string, string> = {
   'tour.missing.d6': 'the intentional error was not fixed',
   'tour.missing.d8': 'the demo build was not run',
   'tour.honestNote': 'Honest mode: this screen never claims success that did not happen.',
+  'tour.actionFailed': 'Did not complete: the action is unavailable for the current state. Open the demo project (step 1) and try again.',
   'help.replay.title': 'Replay onboarding',
   'help.replay.desc': 'The 4-step editor coach overlay shown on first open of the workspace.',
   'help.replay.action': 'Show tips in the editor',
