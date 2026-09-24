@@ -9,12 +9,12 @@
   import { i18n } from '../../../i18n/store.svelte';
   import { theme } from '../../stores/theme.svelte';
   import { stylelab } from '../../stores/stylelab.svelte';
-  import { settings } from '../../stores/settings.svelte';
   import { providers } from '../../stores/providers.svelte';
-  import { project } from '../../stores/project.svelte';
   import { onboarding } from '../../stores/onboarding.svelte';
+  import { diagnostics } from '../../stores/diagnostics.svelte';
   import ShortcutsEditor from '../ShortcutsEditor.svelte';
   import About from './About.svelte';
+  import BundlePreview from './BundlePreview.svelte';
 
   type CheckState = 'pending' | 'ok' | 'warn' | 'fail';
 
@@ -44,6 +44,7 @@
   });
 
   const counts = $derived(providers.counts());
+  const bundle = $derived(diagnostics.bundle);
 
   function runDiagnostics() {
     timers.forEach(clearTimeout);
@@ -81,6 +82,32 @@
     router.navigate('workspace');
   }
 
+  // W5: the quick checks stay here; the causal-context workstation (controlled
+  // failure → structured context → sanitized bundle) lives on #/diagnostics.
+  function openDiagnostics() {
+    router.navigate('diagnostics');
+  }
+
+  // §17 redaction preview: prepare builds the sanitized bundle (Included /
+  // Redacted / Excluded) from the last causal context; Copy for AI produces
+  // the compact reviewer prompt instead of a raw settings dump.
+  function prepareBugReport() {
+    reportShown = true;
+    diagnostics.prepareBundle();
+  }
+
+  function copyForAi() {
+    navigator.clipboard
+      ?.writeText(diagnostics.aiPrompt)
+      .then(() => {
+        copied = 'bug';
+        timers.push(setTimeout(() => (copied = ''), 2000));
+      })
+      .catch(() => {
+        /* clipboard unavailable (non-secure context) — keep the mock */
+      });
+  }
+
   const diagText = $derived.by(() => {
     if (diagState !== 'done') return '';
     const lines = [
@@ -91,15 +118,6 @@
     ];
     return lines.join('\n');
   });
-
-  const bugReport = $derived.by(() => [
-    'RimLoc bug report (mock)',
-    `app: 0.1.0 · ui: ${i18n.locale} · theme: ${theme.mode}`,
-    `style: ${stylelab.style}/${stylelab.palette}/${stylelab.density} · motion: ${settings.data.motion}`,
-    `project: ${project.projectName} · en → ${project.targetLocale}`,
-    `diagnostics: ${diagState === 'done' ? `${checks.filter((ch) => ch.state === 'warn').length} warning(s)` : 'not run'}`,
-    'last error: ERR_MOCK_EXAMPLE (mandate §16 demonstrates the L/observability workflow)'
-  ].join('\n'));
 </script>
 
 <section class="help" aria-labelledby="help-heading">
@@ -201,27 +219,41 @@
         </p>
       {/if}
     {/if}
+
+    <!-- W5: deep-dive workstation (controlled failure → causal context →
+         sanitized bundle). The quick check above stays the shallow path. -->
+    <div class="row">
+      <button type="button" class="btn" data-testid="help.diagnose.deep" onclick={openDiagnostics}>
+        {t('help.diagnose.deep')}
+        <Icon name="arrow-right" size={14} />
+      </button>
+      <span class="text deep-note">{t('help.diagnose.deepNote')}</span>
+    </div>
   </article>
 
-  <!-- Bug report -->
+  <!-- Bug report (§17): the report is assembled as a SANITIZED bundle. The
+       preview shows all three sections so the user sees exactly what leaves
+       the machine before copying anything. -->
   <article class="card" data-testid="help.bugreport">
     <h2 class="card-title"><Icon name="package" size={16} /> {t('help.bugreport.title')}</h2>
     <p class="text">{t('help.bugreport.desc')}</p>
     <div class="row">
-      <button type="button" class="btn btn-primary" data-testid="help.bugreport.prepare" onclick={() => (reportShown = true)}>
+      <button type="button" class="btn btn-primary" data-testid="help.bugreport.prepare" onclick={prepareBugReport}>
         <Icon name="clipboard-check" size={14} />
         {t('help.bugreport.prepare')}
       </button>
-      <button type="button" class="btn" data-testid="help.bugreport.copyAI" onclick={() => copyText('bug', bugReport)}>
-        <Icon name="copy" size={14} />
-        {t('help.bugreport.copyAI')}
-      </button>
+      {#if bundle}
+        <button type="button" class="btn" data-testid="help.bugreport.copyAI" onclick={copyForAi}>
+          <Icon name="copy" size={14} />
+          {t('help.bugreport.copyAI')}
+        </button>
+      {/if}
       {#if copied === 'bug'}
         <span class="copied" role="status">{t('help.copied')}</span>
       {/if}
     </div>
-    {#if reportShown}
-      <pre class="report mono" data-testid="help.bugreport.preview">{bugReport}</pre>
+    {#if reportShown && bundle}
+      <BundlePreview preview={bundle} />
     {/if}
   </article>
 
@@ -375,14 +407,8 @@
     font-size: var(--text-meta-size);
   }
 
-  .report {
-    margin: 0;
-    background: var(--color-muted);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    padding: var(--space-3);
-    overflow-x: auto;
-    white-space: pre-wrap;
+  .deep-note {
+    font-size: var(--text-meta-size);
   }
 
   @keyframes check-in {
