@@ -369,3 +369,9 @@ wordinfo-not-applicable = Language `{ $lang }` has no WordInfo capability (its L
 wordinfo-scaffold-saved = Case scaffold saved to { $path } — forms need human review
 wordinfo-summary = WordInfo covered={ $covered }, missing={ $missing }
 wordinfo-more = … and { $count } more
+
+# doctor (gate L observability)
+doctor-title = RimLoc doctor
+doctor-line = { $tag } { $name } { $detail }
+doctor-remediation =     -> { $hint }
+doctor-summary = Summary: { $ok } ok, { $warning } warning, { $error } error, { $not_checked } not checked
