@@ -894,6 +894,90 @@ pub fn scan_units_effective_view(
 }
 
 #[cfg(test)]
+mod loadfolders_ru_only_tests {
+    //! Corpus G3b regression (real forms: 2927850179 / 2126925929). A
+    //! Russian-only translation mod under a versioned LoadFolders layout
+    //! must RESOLVE fully (Languages of the root, plain `li` subpackages and
+    //! IfModActive subpackages all scanned) — the empty canonical inventory
+    //! then comes from the EN-source contract, not from a lost scan.
+    use super::*;
+    use rimloc_domain::canonical::ViewLabel;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write(path: &std::path::Path, body: &str) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, body).unwrap();
+    }
+
+    /// 2126925929 shape: plain `li` subpackage (Common) + IfModActive one.
+    #[test]
+    fn ru_only_named_subpackages_resolve_before_guard() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>Common</li>             <li IfModActive=\"VanillaExpanded.VWEL\">Laser</li></v1.6></loadFolders>",
+        );
+        write(
+            &root.join("Common/Languages/Russian/DefInjected/ThingDef/W.xml"),
+            "<LanguageData>\n  <Gun.label>винтовка</Gun.label>\n</LanguageData>\n",
+        );
+        write(
+            &root.join("Laser/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData>\n  <LaserKey>лазер</LaserKey>\n</LanguageData>\n",
+        );
+        let auto = autodiscover_defs_context(root).unwrap();
+        let scan =
+            scan_units_effective_full(root, Some("1.6"), &auto.dict, &auto.extra_fields).unwrap();
+        // The resolver activated BOTH subpackages: plain and conditional.
+        assert!(scan
+            .units
+            .iter()
+            .any(|u| u.key == "Gun.label" && !u.conditional));
+        assert!(scan
+            .units
+            .iter()
+            .any(|u| u.key == "LaserKey" && u.conditional));
+        assert_eq!(scan.view.as_ref().unwrap().version.as_deref(), Some("1.6"));
+        // The canonical project honestly has zero EN-source entries: every
+        // scanned unit is target-side (Russian), nothing was lost silently
+        // by a resolver failure.
+        let p = crate::project::build_project(root, Some("1.6")).unwrap();
+        assert!(p.entries.is_empty());
+        assert_eq!(p.context.view, ViewLabel::Potential);
+    }
+
+    /// 2927850179 shape: `li>/` root + IfModActive subpackages that carry
+    /// Languages/Russian inside; the root Languages has no English either.
+    #[test]
+    fn ru_only_root_plus_conditional_subpackages_resolve() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>/</li>             <li IfModActive=\"VanillaExpanded.VFECore\">1.6/Main</li></v1.6></loadFolders>",
+        );
+        write(
+            &root.join("1.6/Main/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData>\n  <MainKey>основной</MainKey>\n</LanguageData>\n",
+        );
+        write(
+            &root.join("Languages/Russian/DefInjected/ThingDef/R.xml"),
+            "<LanguageData>\n  <Root.label>корень</Root.label>\n</LanguageData>\n",
+        );
+        let auto = autodiscover_defs_context(root).unwrap();
+        let scan =
+            scan_units_effective_full(root, Some("1.6"), &auto.dict, &auto.extra_fields).unwrap();
+        assert!(scan.units.iter().any(|u| u.key == "MainKey"));
+        assert!(scan.units.iter().any(|u| u.key == "Root.label"));
+        assert_eq!(scan.view.as_ref().unwrap().version.as_deref(), Some("1.6"));
+        let p = crate::project::build_project(root, Some("1.6")).unwrap();
+        assert!(p.entries.is_empty());
+    }
+}
+
+#[cfg(test)]
 mod gate_h_tests {
     use super::*;
     use std::fs;
