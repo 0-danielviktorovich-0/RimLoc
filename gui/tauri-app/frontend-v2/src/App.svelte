@@ -12,6 +12,7 @@
   import GlossaryEditor from './lib/components/screens/GlossaryEditor.svelte';
   import TMEditor from './lib/components/screens/TMEditor.svelte';
   import Phase2Stub from './lib/components/screens/Phase2Stub.svelte';
+  import Diagnostics from './lib/components/screens/Diagnostics.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
   import StyleLab from './lib/components/StyleLab.svelte';
   import { router } from './lib/router.svelte';
@@ -42,6 +43,10 @@
   {:else if router.route === 'tm'}
     <!-- Translation memory editor (mandate §11, W4). -->
     <TMEditor />
+  {:else if router.route === 'diagnostics'}
+    <!-- Diagnostics workstation: controlled failure → causal context →
+         sanitized bundle (mandate §16-§17, W5). -->
+    <Diagnostics />
   {:else}
     <Phase2Stub route={router.route} />
   {/if}
