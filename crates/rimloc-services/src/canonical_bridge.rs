@@ -36,15 +36,37 @@ fn kind_for(path: &Path, tkey: bool) -> EntryKind {
 
 /// Def type segment of a DefInjected path (real sidecar or the canonical
 /// virtual output path the scan builds for Defs-derived units):
-/// `.../DefInjected/ThingDef/X.xml` -> "ThingDef".
-fn definjected_def_type(path: &Path) -> Option<String> {
-    let s = path.to_string_lossy().replace('\\', "/");
+/// `.../DefInjected/ThingDef/X.xml` -> "ThingDef". Exact case — def types
+/// that differ only by case are different types, never folded.
+pub(crate) fn definjected_def_type(path: &Path) -> Option<String> {
+    definjected_def_type_str(&path.to_string_lossy())
+}
+
+/// String form of [`definjected_def_type`] for callers holding raw path
+/// text (persistence migration evidence).
+pub(crate) fn definjected_def_type_str(path: &str) -> Option<String> {
+    let s = path.replace('\\', "/");
     let i = s.find("/DefInjected/")?;
     s[i + "/DefInjected/".len()..]
         .split('/')
         .next()
         .filter(|seg| !seg.is_empty())
         .map(str::to_string)
+}
+
+/// The def-type discriminator of a unit, for kinds that are def-type-scoped
+/// (DefInjected, TKey). Everything else stays `None` — a Keyed key has no
+/// def-type scope, and an unknown type is never turned into a fake
+/// identity.
+fn def_type_discriminator(kind: EntryKind, u: &TransUnit) -> Option<String> {
+    match kind {
+        EntryKind::DefInjected | EntryKind::TKey => u
+            .tkey
+            .as_ref()
+            .map(|m| m.def_type.clone())
+            .or_else(|| definjected_def_type(&u.path)),
+        _ => None,
+    }
 }
 
 /// Source context of one unit: the REAL effective source file when the scan
@@ -78,7 +100,13 @@ pub fn source_entries(
     let mut by_id: BTreeMap<SourceEntryId, SourceEntry> = BTreeMap::new();
     for u in units {
         let kind = kind_for(&u.path, u.tkey.is_some());
+        // Def-type discriminator from REAL provenance only (TKey metadata or
+        // the DefInjected path segment). Two def types sharing one logical
+        // key are two distinct Defs — separate entries, never a collapsed
+        // one. Kinds without a def-type scope (Keyed) stay `None`; an
+        // unknown type is never guessed into a "Misc" identity.
         let id = SourceEntryId {
+            def_type: def_type_discriminator(kind, u),
             kind,
             key: u.key.clone(),
         };
