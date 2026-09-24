@@ -33,6 +33,7 @@
       >
         <option value="returning">{t('dev.homeMode.returning')}</option>
         <option value="first-run">{t('dev.homeMode.first-run')}</option>
+        <option value="no-mods">{t('dev.homeMode.no-mods')}</option>
       </select>
     </label>
 
