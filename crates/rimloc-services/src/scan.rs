@@ -1,5 +1,9 @@
 use crate::plugins;
-use crate::{util::def_injected_target_path, Result, TransUnit};
+use crate::{
+    util::{def_injected_target_path, is_under_languages_dir},
+    Result, TransUnit,
+};
+use rimloc_core::{winner_reason, SourceRef};
 use rimloc_parsers_xml::DefsMetaUnit;
 use serde::Deserialize;
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -13,20 +17,28 @@ fn seen_key(path: &Path, key: &str) -> String {
     format!("{normalized}|{key}")
 }
 
+/// Defs duplicate semantics (Gate H): the game logs
+/// `Adding duplicate <DefType> name: X` and GetDefSilentFail returns the
+/// FIRST registration, so the first file's fields are authoritative and a
+/// later file's same-identity fields never enter the inventory.
+///
+/// `owned` carries the registered identities ACROSS calls so a LoadFolders
+/// mod's content dirs resolve in view order (`/` before `1.6`, unconditional
+/// before IfModActive) and the first dir's registration wins — not whichever
+/// file happens to sort last. Every kept unit records the real source
+/// location (`src`) and the `first-file-wins` winner reason; `path` stays
+/// the canonical DefInjected output path for export grouping.
 fn merge_defs_units(
     units: &mut Vec<TransUnit>,
     seen: &mut HashSet<String>,
     scan_root: &Path,
     lang_dir: &str,
     defs_meta: Vec<DefsMetaUnit>,
+    owned: &mut HashSet<(String, String)>,
 ) {
-    // Gate H: duplicate defName across files — the game logs
-    // `Adding duplicate <DefType> name: X` and GetDefSilentFail returns the
-    // FIRST registration, so the first file's fields are authoritative and a
-    // later file's same-identity fields never enter the inventory.
-    let mut owned_identities: HashSet<(String, String)> = HashSet::new();
-    // Deterministic "first file" = lexicographic path order (the documented
-    // stand-in for the game's file-system enumeration on Windows).
+    // Deterministic "first file" = lexicographic path order within one batch
+    // (the documented stand-in for the game's file-system enumeration on
+    // Windows); cross-dir order comes from the caller's view order.
     let mut defs_meta = defs_meta;
     defs_meta.sort_by(|a, b| a.unit.path.as_os_str().cmp(b.unit.path.as_os_str()));
     for meta in defs_meta {
@@ -39,12 +51,48 @@ fn merge_defs_units(
         {
             continue;
         }
-        if !owned_identities.insert((meta.def_type.clone(), unit.key.clone())) {
+        if !owned.insert((meta.def_type.clone(), unit.key.clone())) {
             continue;
         }
+        unit.src = Some(SourceRef {
+            file: unit.path.clone(),
+            line: unit.line,
+        });
+        unit.selected_by = Some(winner_reason::DEFS_FIRST_FILE.into());
         let target_path = def_injected_target_path(scan_root, lang_dir, &meta.def_type, &unit.path);
         unit.path = target_path;
         unit.line = None;
+        let key = seen_key(&unit.path, &unit.key);
+        if seen.insert(key) {
+            units.push(unit);
+        }
+    }
+}
+
+/// TKey units share Defs semantics (first registration wins). The parser
+/// deduplicates inside one scan call and already stamps the winner reason
+/// (first-file-wins, or tkey-last-assignment when several same-file nodes
+/// share the identity); this wrapper deduplicates ACROSS content dirs
+/// (LoadFolders view order) via the shared `owned` set — the winning file's
+/// own reason is preserved.
+fn merge_tkey_units(
+    units: &mut Vec<TransUnit>,
+    seen: &mut HashSet<String>,
+    tkey_units: Vec<TransUnit>,
+    owned: &mut HashSet<(String, String)>,
+) {
+    let mut tkey_units = tkey_units;
+    tkey_units.sort_by(|a, b| a.path.as_os_str().cmp(b.path.as_os_str()));
+    for mut unit in tkey_units {
+        let Some(def_type) = unit.tkey.as_ref().map(|m| m.def_type.clone()) else {
+            continue;
+        };
+        if !owned.insert((def_type, unit.key.clone())) {
+            continue;
+        }
+        if unit.selected_by.is_none() {
+            unit.selected_by = Some(winner_reason::DEFS_FIRST_FILE.into());
+        }
         let key = seen_key(&unit.path, &unit.key);
         if seen.insert(key) {
             units.push(unit);
@@ -226,22 +274,20 @@ pub fn scan_units_auto(root: &Path) -> Result<Vec<TransUnit>> {
     let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
     // TKey units are part of the canonical inventory (P1-1): consumers of the
     // auto entrypoint (word-info) must see the same entries as CLI scan.
-    if let Ok(mut tkey) = rimloc_parsers_xml::scan_defs_tkey(root, None) {
-        for u in tkey.drain(..) {
-            let k = seen_key(&u.path, &u.key);
-            if seen.insert(k) {
-                units.push(u);
-            }
-        }
+    if let Ok(tkey) = rimloc_parsers_xml::scan_defs_tkey(root, None) {
+        let mut owned_tkey: HashSet<(String, String)> = HashSet::new();
+        merge_tkey_units(&mut units, &mut seen, tkey, &mut owned_tkey);
     }
     let defs_meta =
         rimloc_parsers_xml::scan_defs_with_dict_meta(root, None, &auto.dict, &auto.extra_fields)?;
+    let mut owned_defs: HashSet<(String, String)> = HashSet::new();
     merge_defs_units(
         &mut units,
         &mut seen,
         root,
         DEFAULT_SOURCE_LANG_DIR,
         defs_meta,
+        &mut owned_defs,
     );
     Ok(units)
 }
@@ -282,6 +328,7 @@ pub fn scan_patches_as_units(
                     path: c.source_file.clone(),
                     line: None,
                     tkey: None,
+                    ..Default::default()
                 });
             }
         }
@@ -372,6 +419,19 @@ pub fn scan_units_with_defs_and_dict(
     dict: &std::collections::HashMap<String, Vec<String>>,
     extra_fields: &[String],
 ) -> Result<Vec<TransUnit>> {
+    Ok(scan_units_with_defs_and_dict_full(root, defs_root, dict, extra_fields)?.units)
+}
+
+/// Full-result variant of [`scan_units_with_defs_and_dict`]: the same single
+/// pipeline, but it also surfaces the REAL patch report (coverage computed
+/// from the applied operations, not guessed from directory existence).
+/// Flat mods have no mod view.
+pub fn scan_units_with_defs_and_dict_full(
+    root: &Path,
+    defs_root: Option<&std::path::Path>,
+    dict: &std::collections::HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> Result<EffectiveScan> {
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
     let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
     let defs_meta =
@@ -380,20 +440,18 @@ pub fn scan_units_with_defs_and_dict(
     // since RimWorld 1.1, 2020 — 1.6 is the primary tested corpus):
     // explicit translation keys
     // on def fields, identity `<defName>.<TKey>`.
-    if let Ok(mut tkey) = rimloc_parsers_xml::scan_defs_tkey(root, defs_root) {
-        for u in tkey.drain(..) {
-            let k = seen_key(&u.path, &u.key);
-            if seen.insert(k) {
-                units.push(u);
-            }
-        }
+    if let Ok(tkey) = rimloc_parsers_xml::scan_defs_tkey(root, defs_root) {
+        let mut owned_tkey: HashSet<(String, String)> = HashSet::new();
+        merge_tkey_units(&mut units, &mut seen, tkey, &mut owned_tkey);
     }
+    let mut owned_defs: HashSet<(String, String)> = HashSet::new();
     merge_defs_units(
         &mut units,
         &mut seen,
         root,
         DEFAULT_SOURCE_LANG_DIR,
         defs_meta,
+        &mut owned_defs,
     );
     // Optional fuzzy candidates from Defs
     if matches!(std::env::var("RIMLOC_FUZZY"), Ok(v) if v.trim()=="1") {
@@ -429,7 +487,22 @@ pub fn scan_units_with_defs_and_dict(
     }
     merged.finalize();
     apply_effective_precedence(&mut units);
-    Ok(units)
+    Ok(EffectiveScan {
+        units,
+        patch: merged,
+        view: None,
+    })
+}
+
+/// Full result of the canonical scan pipeline: the effective units, the REAL
+/// patch report (coverage from the operations actually evaluated) and the
+/// resolved mod view (`None` for a flat mod without LoadFolders/version
+/// dirs). One pipeline, richer evidence — never a parallel scanner.
+#[derive(Debug, Default)]
+pub struct EffectiveScan {
+    pub units: Vec<TransUnit>,
+    pub patch: crate::patches_effect::PatchReport,
+    pub view: Option<crate::modview::EffectiveModView>,
 }
 
 /// Effective RimWorld source precedence (Gate H — semantic correctness, not
@@ -449,6 +522,13 @@ pub fn scan_units_with_defs_and_dict(
 /// preservation as diagnostics lands with the canonical model (Gate I).
 /// Paths stay case-exact except the already-documented case-insensitive
 /// About/LoadFolders resolution.
+///
+/// Every surviving winner records WHY it won in `selected_by`
+/// ([`rimloc_core::winner_reason`]): the family rule that decided it
+/// (`first-file-wins` / `keyed-last-wins` / `keyed-first-in-file` /
+/// `definjected-setoradd`), or an earlier, more specific producer
+/// (`patch-applied`). View-selection facts stay in the canonical
+/// provenance (`version_selected`/`conditional_branch`).
 pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
     // Deterministic load order: ascending (path, line) — the documented
     // stand-in for the game's file-system enumeration order.
@@ -471,6 +551,21 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
         p.to_string_lossy().contains("/DefInjected/")
             || p.to_string_lossy().contains("\\DefInjected\\")
     };
+    // DefInjected identities live per DEF TYPE: two def types may share the
+    // same `{defName}.{field}` key, and those are different Defs — never
+    // competitors. The scope segment after /DefInjected/ (real sidecar or
+    // canonical virtual output path) carries it.
+    let definj_scope = |p: &std::path::Path| -> String {
+        let s = p.to_string_lossy().replace('\\', "/");
+        match s.find("/DefInjected/") {
+            Some(i) => s[i + "/DefInjected/".len()..]
+                .split('/')
+                .next()
+                .unwrap_or_default()
+                .to_ascii_lowercase(),
+            None => String::new(),
+        }
+    };
     // Language-side scopes: fold to the effective winner per key WITHIN one
     // language pack (EN source and RU target are separate LanguageDatabase
     // entries — precedence never crosses languages).
@@ -489,7 +584,7 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
         }
     };
     let mut effective: Vec<TransUnit> = Vec::with_capacity(units.len());
-    let mut index: std::collections::HashMap<(String, String), usize> =
+    let mut index: std::collections::HashMap<(String, String, String), usize> =
         std::collections::HashMap::new();
     let mut first_in_file: std::collections::HashSet<(String, String)> =
         std::collections::HashSet::new();
@@ -503,19 +598,43 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
         let lang = lang_of(&u.path);
         let same_file_seen = first_in_file.contains(&(file.clone(), u.key.clone()));
         first_in_file.insert((file.clone(), u.key.clone()));
-        let idx_key = (lang, u.key.clone());
+        let scope = if is_keyed(&u.path) {
+            "keyed".to_string()
+        } else {
+            format!("definj:{}", definj_scope(&u.path))
+        };
+        let idx_key = (lang, scope, u.key.clone());
         match index.get(&idx_key).copied() {
             None => {
+                // First occurrence: it wins by its family rule — unless a
+                // more specific producer (a patch operation) already claimed
+                // the reason.
+                let mut u = u;
+                if u.selected_by.is_none() {
+                    u.selected_by = Some(if is_keyed(&u.path) {
+                        winner_reason::KEYED_FIRST_IN_FILE.into()
+                    } else {
+                        winner_reason::DEFINJECTED_SETORADD.into()
+                    });
+                }
                 index.insert(idx_key, effective.len());
                 effective.push(u);
             }
             Some(pos) if is_keyed(&effective[pos].path) && !same_file_seen => {
                 // Cross-file Keyed duplicate: last loaded wins.
+                let mut u = u;
+                if u.selected_by.as_deref() != Some(winner_reason::PATCH_APPLIED) {
+                    u.selected_by = Some(winner_reason::KEYED_LAST_FILE.into());
+                }
                 effective[pos] = u;
             }
             Some(pos) if is_definj(&effective[pos].path) => {
                 // DefInjected SetOrAdd: every later occurrence overwrites,
                 // including within the same file.
+                let mut u = u;
+                if u.selected_by.as_deref() != Some(winner_reason::PATCH_APPLIED) {
+                    u.selected_by = Some(winner_reason::DEFINJECTED_SETORADD.into());
+                }
                 effective[pos] = u;
             }
             Some(_) => {
@@ -524,11 +643,35 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
                 // value, so the first stays the effective winner — but the
                 // duplicate unit is kept so the validator still reports the
                 // error (diagnostic preservation beats silent dropping).
+                // The duplicate is a loser: it carries no winner reason.
+                let mut u = u;
+                u.selected_by = None;
                 effective.push(u);
             }
         }
     }
     *units = effective;
+}
+
+/// Keep the canonical source inventory on the SOURCE language side: units
+/// under `Languages/<other>` are existing TARGET packs (someone else's
+/// translations), never English source text — the canonical model hard-codes
+/// `source_locale: "en"`, so a foreign pack must not become the source even
+/// when the mod ships no English sidecar at all (a target-only pack or a
+/// TKey-only Defs mod). Units outside Languages/ (Defs, TKey, patch
+/// candidates) are always source-side; this guard runs on the CANONICAL
+/// path only — the legacy scan APIs keep their whole-language behaviour.
+pub fn retain_source_language_units(units: &mut Vec<TransUnit>) {
+    let in_any_languages = |p: &std::path::Path| {
+        let s = p.to_string_lossy();
+        s.contains("/Languages/") || s.contains("\\Languages\\")
+    };
+    units.retain(|u| {
+        if !in_any_languages(&u.path) {
+            return true;
+        }
+        is_under_languages_dir(&u.path, DEFAULT_SOURCE_LANG_DIR)
+    });
 }
 
 pub fn scan_defs_with_meta(
@@ -635,27 +778,68 @@ pub fn scan_units_effective(
     dict: &HashMap<String, Vec<String>>,
     extra_fields: &[String],
 ) -> Result<Vec<TransUnit>> {
-    if !root.join("LoadFolders.xml").is_file() {
-        return scan_units_with_defs_and_dict(root, None, dict, extra_fields);
-    }
+    Ok(scan_units_effective_full(root, requested_version, dict, extra_fields)?.units)
+}
+
+/// Full-result variant of [`scan_units_effective`]: the same single pipeline
+/// plus the REAL patch report and the resolved mod view (version + which
+/// dirs came from `IfModActive` branches), so callers can derive honest
+/// provenance and view labels instead of re-deriving them.
+pub fn scan_units_effective_full(
+    root: &Path,
+    requested_version: Option<&str>,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> Result<EffectiveScan> {
     let view = crate::modview::effective_view(root, requested_version)?;
-
-    fn push_unique(units: &mut Vec<TransUnit>, seen: &mut HashSet<String>, u: TransUnit) {
-        let k = seen_key(&u.path, &u.key);
-        if seen.insert(k) {
-            units.push(u);
-        }
+    // A genuinely flat mod (no version dirs chosen, everything at root) is
+    // exactly the legacy single-root pipeline. Everything else — LoadFolders
+    // or a classic version-dir layout — is scanned through the SAME
+    // view-driven path, so the version resolver always decides which roots
+    // load (never a cross-version union).
+    let flat = view.version.is_none()
+        && view.conditional_dirs.is_empty()
+        && view.content_dirs.len() == 1
+        && view.content_dirs[0] == root;
+    if flat {
+        let mut scan = scan_units_with_defs_and_dict_full(root, None, dict, extra_fields)?;
+        scan.view = Some(view);
+        return Ok(scan);
     }
+    scan_units_effective_view(root, view, dict, extra_fields)
+}
 
+/// View-driven effective scan: the resolved [`EffectiveModView`] decides
+/// which Languages dirs and Defs roots load — reused verbatim by both the
+/// LoadFolders and the classic version-dir layouts (one pipeline, one
+/// resolver, no re-derived precedence anywhere).
+pub fn scan_units_effective_view(
+    root: &Path,
+    view: crate::modview::EffectiveModView,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> Result<EffectiveScan> {
     let mut units: Vec<TransUnit> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
+    // First-registration books shared ACROSS content dirs: view order
+    // (root, 1.6, IfModActive superset) decides which file owns an identity.
+    let mut owned_defs: HashSet<(String, String)> = HashSet::new();
+    let mut owned_tkey: HashSet<(String, String)> = HashSet::new();
 
     // Languages from the effective dirs only (root + content folders that
     // exist for this version).
     for lang_dir in view.languages_dirs() {
         if let Ok(mut scoped) = rimloc_parsers_xml::scan_keyed_xml(&lang_dir) {
+            // Same-file duplicates are Gate H diagnostics (the in-file loser
+            // becomes an Overridden context) — dedup only ACROSS language
+            // dirs, never within one scan batch.
+            let mut batch: HashSet<String> = HashSet::new();
             for u in scoped.drain(..) {
-                push_unique(&mut units, &mut seen, u);
+                let k = seen_key(&u.path, &u.key);
+                let dup_in_batch = !batch.insert(k.clone());
+                if dup_in_batch || seen.insert(k) {
+                    units.push(u);
+                }
             }
         }
     }
@@ -665,10 +849,8 @@ pub fn scan_units_effective(
         let defs_root = Some(defs_root.as_path());
         let defs_meta =
             rimloc_parsers_xml::scan_defs_with_dict_meta(root, defs_root, dict, extra_fields)?;
-        if let Ok(mut tkey) = rimloc_parsers_xml::scan_defs_tkey(root, defs_root) {
-            for u in tkey.drain(..) {
-                push_unique(&mut units, &mut seen, u);
-            }
+        if let Ok(tkey) = rimloc_parsers_xml::scan_defs_tkey(root, defs_root) {
+            merge_tkey_units(&mut units, &mut seen, tkey, &mut owned_tkey);
         }
         merge_defs_units(
             &mut units,
@@ -676,6 +858,7 @@ pub fn scan_units_effective(
             root,
             DEFAULT_SOURCE_LANG_DIR,
             defs_meta,
+            &mut owned_defs,
         );
     }
     let mut patch_dirs = vec![root.join("Patches")];
@@ -691,8 +874,23 @@ pub fn scan_units_effective(
         }
     }
     merged.finalize();
+    // Per-entry conditional provenance: a unit whose effective source file
+    // (or canonical path) sits under an IfModActive dir is part of the
+    // offline superset only — the game loads it conditionally.
+    if !view.conditional_dirs.is_empty() {
+        for u in units.iter_mut() {
+            let under = view.conditional_dirs.iter().any(|d| {
+                u.path.starts_with(d) || u.src.as_ref().is_some_and(|s| s.file.starts_with(d))
+            });
+            u.conditional = under;
+        }
+    }
     apply_effective_precedence(&mut units);
-    Ok(units)
+    Ok(EffectiveScan {
+        units,
+        patch: merged,
+        view: Some(view),
+    })
 }
 
 #[cfg(test)]

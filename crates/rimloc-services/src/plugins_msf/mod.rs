@@ -99,6 +99,7 @@ impl plugins::ParserPlugin for ModSettingsFrameworkPlugin {
                         source: Some(label),
                         path: p.to_path_buf(),
                         line,
+                        ..Default::default()
                     });
                 }
                 if !tooltip.is_empty() {
@@ -108,6 +109,7 @@ impl plugins::ParserPlugin for ModSettingsFrameworkPlugin {
                         source: Some(tooltip),
                         path: p.to_path_buf(),
                         line,
+                        ..Default::default()
                     });
                 }
             }

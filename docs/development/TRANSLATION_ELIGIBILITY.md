@@ -102,14 +102,20 @@ structural_heuristic > ai_proposal
 Записи `translatable` сообщений не создают; kind `review-eligibility`
 зарезервирован для отдельной поверхности разбора.
 
-Winner-reason provenance: в `SourceProvenance` канонической модели появилось
-поле `selected_by` («version-selected», «loadfolders», «first-file-wins»,
-«keyed-last-wins», «patch-applied») — часть pre-freeze контракта Source
-Inspector: provenance обязан отвечать «что за файл / где / какой кандидат
-победил / почему». Путь LoadFolders проставляет «loadfolders»; плоский скан
-пока не проставляет ничего: там победитель зависит от семейства (Defs/TKey —
-первый файл, Keyed/DefInjected — последний), и батч-метка была бы ложью —
-постраничный захват в плане.
+Winner-reason provenance: в `SourceProvenance` канонической модели живёт
+поле `selected_by` — часть pre-freeze контракта Source Inspector:
+provenance обязан отвечать «что за файл / где / какой кандидат победил /
+почему». Постраничный захват реализован: скан-пайплайн ставит причину
+победы в точке решения (`rimloc_core::winner_reason`): «first-file-wins»
+(Defs/TKey, в том числе между контент-директориями LoadFolders),
+«keyed-last-wins» и «keyed-first-in-file» (Keyed), «definjected-setoradd»
+(DefInjected), «tkey-last-assignment» (несколько узлов одного файла на
+одном TKey), «patch-applied» (значение произвёл патч-оп). Факты выбора
+корней остаются в `version_selected` (разрешённая версия) и
+`conditional_branch` (IfModActive-супермножество) той же записи provenance.
+Реальный effective source file Defs-записей несёт `SourceContext.file`
+(виртуальный DefInjected output path — отдельный канал `TransUnit.path`);
+line — только там, где её гарантирует парсер.
 
 ## План (отдельные полосы)
 
@@ -118,4 +124,3 @@ Inspector: provenance обязан отвечать «что за файл / г�
 - **AI-адъюдикация**: разбор `review`-записей по fingerprints — AI предлагает
   (`ai_proposal`), человек подтверждает; знание фиксируется декларативно в
   rule-паках, а не кодом.
-- **Постраничный `selected_by`**: winner-reason на уровне записи, а не батча.

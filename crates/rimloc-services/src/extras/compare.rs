@@ -384,6 +384,7 @@ mod tests {
             path: std::path::PathBuf::from("Languages/Russian/Keyed/Test.xml"),
             line: Some(1),
             tkey: None,
+            ..Default::default()
         }
     }
 
@@ -523,6 +524,7 @@ mod tkey_collision_tests {
             path: "x".into(),
             line: None,
             tkey: None,
+            ..Default::default()
         }
     }
 

@@ -6,6 +6,10 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- [core/services] Per-entry source provenance (pre-freeze, Source Inspector mandate): `TransUnit` gains `src` (real effective source file + parser-guaranteed line for Defs-derived units whose `path` is the canonical output path), `selected_by` (winner reason stamped at the scan decision point: first-file-wins / keyed-last-wins / keyed-first-in-file / definjected-setoradd / tkey-last-assignment / patch-applied) and `conditional` (unit from an `IfModActive` LoadFolders dir); canonical `SourceContext` now points at the real source file, and `SourceProvenance.selected_by` / `conditional_branch` are filled per entry.
+- [parsers-xml] `TKeyMeta.locations`: real per-node source locations of same-file shared TKey identities (Primary + Other usages, Source Inspector §14), captured in the same parser pass; the canonical bridge emits the Primary (effective last assignment) plus earlier nodes as contexts.
+- [services/scan] `scan_units_effective_full` / `scan_units_with_defs_and_dict_full` / `scan_units_effective_view`: the single scan pipeline also surfaces the real patch report and the resolved mod view; LoadFolders first-registration semantics now hold ACROSS content dirs (view order decides, not path sort); version-only layouts go through the same version resolver.
+- [services/scan] `retain_source_language_units`: the canonical project never treats a foreign target pack (Languages/<other>) as English source — even for target-only or TKey-only mods.
 - [parsers-xml] Normalize nested DefInjected dotted keys by dropping leading def type segment when it matches the file's DefInjected/<DefType> folder; preserves mixed types and flat keys.
 - [parsers-xml] Extended Defs DSL: multiple attribute predicates (name[@a=v&@b=w]) and indexed selection (name[2], name[#2], name[index=2]).
 - [cli/scan] New `--fuzzy` flag to include heuristic string fields from Defs not covered by dicts (RIMLOC_FUZZY=1).
@@ -26,6 +30,9 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [cli/validate] Per-row validation now targets the translation (`--lang-dir`, `--lang`, or config `target_lang`) instead of silently validating the English source picked up from config defaults.
 
 ### Fixed
+- [services/scan] DefInjected precedence is def-type-scoped: two def types sharing `{defName}.{field}` no longer destroy each other at unit level (canonical kind+key collapse stays a documented limitation).
+- [services/scan] LoadFolders effective scan no longer drops same-file Keyed duplicates (kept as Gate H diagnostics / Overridden contexts).
+- [services/project] `build_project` no longer fakes patch coverage from "a Patches dir exists" and no longer asserts EXACT with unresolved `IfModActive` dirs or partial patch coverage; `version_selected` records the resolved, not the requested, version.
 - [gui/security] Hardened the Tauri trust boundary: Content-Security-Policy replaces `csp: null`; arbitrary file writes (`save_text_file`, diagnostics out-path) now go through a native save dialog opened on the Rust side; dynamic plugin loading is opt-in via `~/.rimloc/plugins-allow.json`; `open_path` uses the platform open API instead of a shell interpreter; removed the unused shell plugin and asset protocol.
 - [services/lang-update] Fixed zip-slip: archive entry names are sanitized before extraction (rejects `..`, absolute paths, backslashes); malformed archives return an error instead of panicking.
 - [services/validate] `duplicate-global` no longer reports the same key in different language folders (a translated Def is not a duplicate); duplicates are scoped per language folder.
