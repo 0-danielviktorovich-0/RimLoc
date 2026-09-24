@@ -24,7 +24,13 @@ export type ShortcutId =
   | 'nextUntranslated'
   | 'nextIssue'
   | 'prevIssue'
-  | 'markReviewed';
+  | 'markReviewed'
+  // W7 source commands (SOURCE_INSPECTOR_MANDATE §15): remappable entries
+  // with UNBOUND defaults — no new fixed shortcuts ship, existing bindings,
+  // conflict and reserved classification are untouched.
+  | 'sourceOpen'
+  | 'sourceBrowser'
+  | 'sourceCompare';
 
 export interface ShortcutBinding {
   /** KeyboardEvent.key, lowercased single character or named key. */
@@ -87,7 +93,12 @@ export const SHORTCUT_DEFS: ShortcutDef[] = [
   { id: 'nextUntranslated', labelKey: 'shortcuts.def.nextUntranslated', defaultBinding: { key: 'tab', mod: false } },
   { id: 'nextIssue', labelKey: 'shortcuts.def.nextIssue', defaultBinding: { key: 'n', mod: true } },
   { id: 'prevIssue', labelKey: 'shortcuts.def.prevIssue', defaultBinding: { key: 'p', mod: true } },
-  { id: 'markReviewed', labelKey: 'shortcuts.def.markReviewed', defaultBinding: { key: 'm', mod: true } }
+  { id: 'markReviewed', labelKey: 'shortcuts.def.markReviewed', defaultBinding: { key: 'm', mod: true } },
+  // Unbound by default ({ key: '' }): the command exists in the remappable
+  // registry and the palette; it takes a key only when the user assigns one.
+  { id: 'sourceOpen', labelKey: 'shortcuts.def.sourceOpen', defaultBinding: { key: '', mod: false } },
+  { id: 'sourceBrowser', labelKey: 'shortcuts.def.sourceBrowser', defaultBinding: { key: '', mod: false } },
+  { id: 'sourceCompare', labelKey: 'shortcuts.def.sourceCompare', defaultBinding: { key: '', mod: false } }
 ];
 
 const STORAGE_KEY = 'rimloc.shortcuts';
@@ -128,8 +139,9 @@ export function classifyBinding(
   binding: ShortcutBinding,
   allBindings: Record<ShortcutId, ShortcutBinding>
 ): ShortcutIssue | null {
+  if (binding.key === '') return null; // unbound: no combo, no hazards
   const sig = signatureOf(binding);
-  const rimlocClash = SHORTCUT_DEFS.some((d) => d.id !== id && signatureOf(allBindings[d.id]) === sig);
+  const rimlocClash = SHORTCUT_DEFS.some((d) => d.id !== id && allBindings[d.id].key !== '' && signatureOf(allBindings[d.id]) === sig);
   if (rimlocClash) return { id, cls: 'error', kind: 'rimloc-conflict', sig };
   if (isSystemReserved(binding)) return { id, cls: 'warning', kind: 'system-reserved', sig };
   const isConvention = binding.mod && CONVENTION_MOD_KEYS.has(binding.key.toLowerCase());
@@ -208,6 +220,7 @@ class ShortcutsStore {
     const groups = new Map<string, ShortcutId[]>();
     for (const d of SHORTCUT_DEFS) {
       const b = this.bindings[d.id];
+      if (b.key === '') continue; // unbound: no combo, never conflicts
       const sig = signatureOf(b);
       const arr = groups.get(sig) ?? [];
       arr.push(d.id);
