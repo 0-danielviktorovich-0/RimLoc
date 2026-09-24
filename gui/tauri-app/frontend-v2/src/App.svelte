@@ -8,6 +8,7 @@
   import Workspace from './lib/components/screens/Workspace.svelte';
   import BuildStub from './lib/components/screens/BuildStub.svelte';
   import Existing from './lib/components/screens/Existing.svelte';
+  import ChatBatchManager from './lib/components/chat/ChatBatchManager.svelte';
   import Phase2Stub from './lib/components/screens/Phase2Stub.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
   import StyleLab from './lib/components/StyleLab.svelte';
@@ -30,6 +31,9 @@
     <BuildStub />
   {:else if router.route === 'existing'}
     <Existing />
+  {:else if router.route === 'chat'}
+    <!-- Chat-batch manager (spec §10): also opened from the wizard result. -->
+    <ChatBatchManager />
   {:else}
     <Phase2Stub route={router.route} />
   {/if}

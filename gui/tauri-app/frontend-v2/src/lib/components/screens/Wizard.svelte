@@ -25,7 +25,11 @@
   const STEPS = 7;
 
   type ContentKind = 'mod' | 'base' | 'dlc' | 'pack';
-  type Method = 'manual' | 'tm' | 'ai' | 'external';
+  // Strategy step (wave W3): the old mutually-exclusive "method" cards became
+  // two blocks — what existing knowledge to use (checkboxes) and how to
+  // translate the remainder (one choice). Manual editing is always available
+  // afterwards and is no longer modeled as a project-wide exclusive mode.
+  type Remaining = 'manual' | 'ai' | 'chat' | 'skip';
   type Quality = 'fast' | 'balanced' | 'max' | 'suggest';
 
   const LOCALES = [
@@ -51,7 +55,13 @@
   );
 
   let targetLocale = $state('ru');
-  let method = $state<Method>('tm');
+
+  // Strategy step state: existing-knowledge checkboxes default on; the
+  // remainder choice defaults to manual — zero cost, nothing to confirm.
+  let useTranslation = $state(true);
+  let useTm = $state(true);
+  let useGlossary = $state(true);
+  let remaining = $state<Remaining>('manual');
   let quality = $state<Quality>('balanced');
 
   // Step 6 simulation
@@ -115,6 +125,16 @@
   const processed = $derived(Math.round((mockPreflight.entries * progress) / 100));
   const finished = $derived(progress >= 100);
 
+  // Preflight counters recompute from the strategy: TM matches and the
+  // existing-pack coverage only count when their checkbox is on; whatever is
+  // left either gets translated by the chosen remainder path or stays
+  // untranslated when the user opted out.
+  const PACK_MATCHES = 243;
+  const reusableNow = $derived((useTm ? mockPreflight.reusable : 0) + (useTranslation ? PACK_MATCHES : 0));
+  const leftover = $derived(Math.max(0, mockPreflight.entries - reusableNow));
+  const needNow = $derived(remaining === 'skip' ? 0 : leftover);
+  const skippedNow = $derived(remaining === 'skip' ? leftover : 0);
+
   function fmt(n: number): string {
     return new Intl.NumberFormat(i18n.locale === 'ru' ? 'ru-RU' : 'en-US').format(n);
   }
@@ -166,7 +186,7 @@
     }
   });
 
-  function open(r: 'review' | 'workspace' | 'build') {
+  function open(r: 'review' | 'workspace' | 'build' | 'chat') {
     router.navigate(r);
   }
 </script>
@@ -398,21 +418,64 @@
     <fieldset class="panel">
       <legend class="panel-title">{t('wizard.w4.title')}</legend>
       <p class="panel-desc">{t('wizard.w4.desc')}</p>
-      <div class="option-grid two">
-        {#each [['manual', 'edit'], ['tm', 'database'], ['ai', 'cpu'], ['external', 'external']] as const as [m, icon] (m)}
-          <button
-            type="button"
-            class="option"
-            aria-pressed={method === m}
-            data-testid={`wizard.method.${m}`}
-            onclick={() => (method = m)}
-          >
-            <Icon name={icon} size={18} />
-            <span class="option-title">{t(`wizard.w4.${m}`)}</span>
-            <span class="option-desc">{t(`wizard.w4.${m}Desc`)}</span>
-          </button>
-        {/each}
+
+      <!-- Block A: existing knowledge — checkboxes, freely combinable. -->
+      <div class="strategy-block" role="group" aria-labelledby="wizard-existing-title">
+        <span class="block-title" id="wizard-existing-title">{t('wizard.w4.existing.title')}</span>
+        <ul class="check-list">
+          <li>
+            <label class="check-row">
+              <input
+                type="checkbox"
+                bind:checked={useTranslation}
+                data-testid="wizard.existing.translation"
+              />
+              <span class="check-name">{t('wizard.w4.existing.translation')}</span>
+              <span class="check-desc">{t('wizard.w4.existing.translationDesc')}</span>
+            </label>
+          </li>
+          <li>
+            <label class="check-row">
+              <input type="checkbox" bind:checked={useTm} data-testid="wizard.existing.tm" />
+              <span class="check-name">{t('wizard.w4.existing.tm')}</span>
+              <span class="check-desc">{t('wizard.w4.existing.tmDesc')}</span>
+            </label>
+          </li>
+          <li>
+            <label class="check-row">
+              <input type="checkbox" bind:checked={useGlossary} data-testid="wizard.existing.glossary" />
+              <span class="check-name">{t('wizard.w4.existing.glossary')}</span>
+              <span class="check-desc">{t('wizard.w4.existing.glossaryDesc')}</span>
+            </label>
+          </li>
+        </ul>
       </div>
+
+      <!-- Block B: how to translate the remainder — one choice. -->
+      <div class="strategy-block" role="group" aria-labelledby="wizard-remaining-title">
+        <span class="block-title" id="wizard-remaining-title">{t('wizard.w4.remaining.title')}</span>
+        <div class="option-grid two" role="radiogroup" aria-label={t('wizard.w4.remaining.title')}>
+          {#each [['manual', 'edit'], ['ai', 'cpu'], ['chat', 'external'], ['skip', 'clock']] as const as [m, icon] (m)}
+            <button
+              type="button"
+              class="option"
+              role="radio"
+              aria-checked={remaining === m}
+              data-testid={`wizard.remaining.${m}`}
+              onclick={() => (remaining = m)}
+            >
+              <Icon name={icon} size={18} />
+              <span class="option-title">{t(`wizard.w4.remaining.${m}`)}</span>
+              <span class="option-desc">{t(`wizard.w4.remaining.${m}Desc`)}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <p class="note strategy-note" data-testid="wizard.strategy-note">
+        {t('wizard.w4.editNote')} {t('wizard.w4.changeable')}
+      </p>
+
       <label class="field">
         <span class="field-label">{t('wizard.w4.quality')}</span>
         <select bind:value={quality} data-testid="wizard.quality">
@@ -422,8 +485,10 @@
           <option value="suggest">{t('wizard.w4.quality.suggest')}</option>
         </select>
       </label>
-      {#if method === 'ai' || method === 'external'}
+      {#if remaining === 'ai'}
         <p class="note cost" data-testid="wizard.cost-note">{t('wizard.w4.cost')}</p>
+      {:else if remaining === 'chat'}
+        <p class="note" data-testid="wizard.chat-note">{t('wizard.w4.chatNote')}</p>
       {/if}
     </fieldset>
   {:else if step === 5}
@@ -436,12 +501,18 @@
         </div>
         <div class="pf-row">
           <dt>{t('wizard.w5.reusable')}</dt>
-          <dd class="mono">{fmt(mockPreflight.reusable)}</dd>
+          <dd class="mono">{fmt(reusableNow)}</dd>
         </div>
         <div class="pf-row">
           <dt>{t('wizard.w5.need')}</dt>
-          <dd class="mono">{fmt(mockPreflight.needTranslation)}</dd>
+          <dd class="mono">{fmt(needNow)}</dd>
         </div>
+        {#if skippedNow > 0}
+          <div class="pf-row">
+            <dt>{t('wizard.w5.skipped')}</dt>
+            <dd class="mono warn">{fmt(skippedNow)}</dd>
+          </div>
+        {/if}
         <div class="pf-row">
           <dt>{t('wizard.w5.attention')}</dt>
           <dd class="mono warn">{fmt(mockPreflight.attention)}</dd>
@@ -522,6 +593,12 @@
           <Icon name="edit" size={14} />
           {t('wizard.w7.openEditor')}
         </button>
+        {#if remaining === 'chat'}
+          <button type="button" class="btn" data-testid="wizard.result-chat" onclick={() => open('chat')}>
+            <Icon name="external" size={14} />
+            {t('wizard.w7.openChat')}
+          </button>
+        {/if}
         <button type="button" class="btn" data-testid="wizard.result-build" onclick={() => open('build')}>
           <Icon name="package" size={14} />
           {t('wizard.w7.build')}
@@ -829,6 +906,70 @@
 
   .note.cost {
     color: var(--color-warning);
+  }
+
+  /* Strategy step: two composed blocks instead of exclusive method cards. */
+  .strategy-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  .block-title {
+    font-weight: 600;
+  }
+
+  .check-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-h);
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: border-color var(--motion-fast) var(--ease-out);
+  }
+
+  .check-row:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  .check-row input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--color-primary);
+    flex: none;
+  }
+
+  .check-name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .check-desc {
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    min-width: 0;
+  }
+
+  .strategy-note {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-2);
   }
 
   .preflight {

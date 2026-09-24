@@ -1,11 +1,13 @@
 // Minimal hash router (mandate phase 1): #/home, #/wizard, #/workspace,
-// #/review, #/build, #/settings, #/providers, #/help. No dependencies; the
-// hash is the single source of truth, so browser back/forward works and deep
-// links (#/review from the wizard result) open the right screen.
+// #/review, #/build, #/existing, #/chat, #/settings, #/providers, #/help. No
+// dependencies; the hash is the single source of truth, so browser
+// back/forward works and deep links (#/review from the wizard result) open
+// the right screen. #/chat is the chat-batch manager (spec §10, W3), reached
+// from the wizard result or by direct link.
 //
 // Project-scoped routes (workspace/review/build) render the Workspace shell;
-// app-level routes are Home, Wizard and the phase-2 stubs (settings,
-// providers, help).
+// app-level routes are Home, Wizard, Existing, Chat and the phase-2 stubs
+// (settings, providers, help).
 
 export type RouteId =
   | 'home'
@@ -14,6 +16,7 @@ export type RouteId =
   | 'review'
   | 'build'
   | 'existing'
+  | 'chat'
   | 'settings'
   | 'providers'
   | 'help';
@@ -25,6 +28,7 @@ export const ROUTES: RouteId[] = [
   'review',
   'build',
   'existing',
+  'chat',
   'settings',
   'providers',
   'help'
