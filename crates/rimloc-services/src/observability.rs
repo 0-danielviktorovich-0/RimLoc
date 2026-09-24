@@ -270,6 +270,12 @@ static RE_SECRET_PREFIX: Lazy<Regex> =
 
 // Secret fragments embedded inside free text (masked in place so the
 // surrounding diagnostic context survives).
+//
+// Replacement policy (see `redact_secret_fragments`): a regex with capture
+// group 1 must carry ONLY a static label ("Authorization: ", "token: "),
+// which survives next to the marker; the credential itself must NEVER be
+// inside group 1. Whole-token patterns are non-capturing so the entire
+// match is replaced.
 static RE_PEM_BLOCK: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?s)-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----")
         .expect("valid regex")
@@ -278,17 +284,17 @@ static RE_AUTH_HEADER_MID: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)(authorization\s*[:=]\s*)(bearer\s+)?\S+").expect("valid regex"));
 static RE_KV_SECRET_MID: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
-        r#"(?i)\b(api[_-]?key|secret|password|passwd|access[_-]?token|auth[_-]?token|token)\s*[=:]\s*[^\s;&,"']+"#,
+        r#"(?i)\b((?:api[_-]?key|secret|password|passwd|access[_-]?token|auth[_-]?token|token)\s*[=:]\s*)[^\s;&,"']+"#,
     )
     .expect("valid regex")
 });
 static RE_BEARER_MID: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)\bbearer\s+[A-Za-z0-9._\-]{8,}").expect("valid regex"));
+    Lazy::new(|| Regex::new(r"(?i)(\bbearer\s)[A-Za-z0-9._\-]{8,}").expect("valid regex"));
 static RE_SK_TOKEN_MID: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\bsk[-_][A-Za-z0-9_-]{8,}").expect("valid regex"));
 static RE_PROVIDER_TOKEN_MID: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
-        r"\b(ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16})",
+        r"\b(?:ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16})",
     )
     .expect("valid regex")
 });
@@ -1482,6 +1488,46 @@ mod tests {
     }
 
     #[test]
+    fn sanitizer_masks_provider_tokens_table_with_context_kept() {
+        // Table-driven: every provider token family must be fully masked by
+        // the mid-text pass — the credential itself must never survive as a
+        // "label" prefix next to the marker.
+        let san = Sanitizer::new();
+        let cases = [
+            "AKIA1234567890ABCDEF",
+            "ghp_0123456789abcdefghij",
+            "gho_0123456789abcdefghij",
+            "github_pat_0123456789abcdefghij",
+            "xoxb-0123456789-abcdef",
+            "xoxp-1-2-3-abcdef0123",
+        ];
+        for token in cases {
+            let value = format!("request failed while using {token} upstream");
+            match san.decide("error_log", &value) {
+                FieldDecision::Included(Some(masked)) => {
+                    assert!(
+                        masked.contains("request failed while using"),
+                        "context kept for {token}: {masked}"
+                    );
+                    assert!(masked.contains(REDACTION_MARKER), "masked: {masked}");
+                    assert!(
+                        !masked.contains(token),
+                        "token {token} survived in: {masked}"
+                    );
+                    assert!(
+                        !masked.contains("AKIA") && !masked.contains("ghp_"),
+                        "credential prefix survived in: {masked}"
+                    );
+                }
+                other => {
+                    let msg = format!("{token}: expected kept-with-mask, got {other:?}");
+                    panic!("{}", msg);
+                }
+            }
+        }
+    }
+
+    #[test]
     fn sanitizer_env_allowlist_is_minimal_and_excludes_strangers() {
         let san = Sanitizer::new();
         let fields = [
@@ -1960,6 +2006,71 @@ mod tests {
             }
         }
         sha256_hex(acc.as_bytes())
+    }
+
+    #[test]
+    fn bundle_provider_tokens_never_reach_any_output_file() {
+        // Table-driven over the PUBLIC bundle: synthetic provider tokens are
+        // embedded in real validator-shaped contexts; every one of the four
+        // output files must be clean while the surrounding causal message
+        // survives.
+        let tmp = tempfile::tempdir().expect("tmp");
+        let mod_root = make_mod_fixture(tmp.path());
+        let bundle_dir = tmp.path().join("bundle");
+
+        let mut failed = OperationLog::new("validate_po");
+        failed.begin_stage("validate");
+        failed.error_message(
+            "validate",
+            "provider upstream said ghp_0123456789abcdefghij and AKIA1234567890ABCDEF both rejected",
+        );
+        failed.end_stage("validate");
+
+        let bundle = collect_support_bundle_for(
+            &SupportBundleInputs {
+                scan_root: mod_root,
+                project_meta: ProjectMeta {
+                    name: Some("Test".into()),
+                    extra: serde_json::json!({
+                        "note": "retry after gho_0123456789abcdefghij and xoxb-0123456789-abcdef failed",
+                        "pat": "github_pat_0123456789abcdefghij",
+                    }),
+                    ..Default::default()
+                },
+                operation: Some(failed),
+                affected: vec![],
+            },
+            &bundle_dir,
+        )
+        .expect("bundle");
+        assert_eq!(bundle.files.len(), 3);
+
+        let tokens = [
+            "ghp_0123456789abcdefghij",
+            "gho_0123456789abcdefghij",
+            "github_pat_0123456789abcdefghij",
+            "xoxb-0123456789-abcdef",
+            "AKIA1234567890ABCDEF",
+        ];
+        for name in [
+            "report.md",
+            "diagnostics.json",
+            "environment.json",
+            "manifest.json",
+        ] {
+            let content = read_to_string(&bundle_dir.join(name));
+            for t in tokens {
+                assert!(!content.contains(t), "{name} leaked {t}");
+            }
+        }
+        // Context survives in the human report.
+        let report = read_to_string(&bundle_dir.join("report.md"));
+        assert!(
+            report.contains("both rejected"),
+            "causal message context kept: {}",
+            report
+        );
+        assert!(report.contains(REDACTION_MARKER));
     }
 
     #[test]

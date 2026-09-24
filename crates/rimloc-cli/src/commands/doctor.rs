@@ -251,20 +251,38 @@ fn check_output_writable(out_dir: &Path, forbidden_roots: &[PathBuf]) -> Check {
         }
     }
 
-    if let Err(e) = std::fs::create_dir_all(out_dir) {
+    // The doctor never creates directories: a missing out_dir stays missing.
+    // The probe runs in the nearest existing ancestor and the report states
+    // explicitly what was (and was not) tested.
+    let mut missing_leaves: Vec<std::ffi::OsString> = Vec::new();
+    let mut probe_dir = out_dir.to_path_buf();
+    while !probe_dir.exists() {
+        match (probe_dir.parent(), probe_dir.file_name()) {
+            (Some(parent), Some(name)) => {
+                missing_leaves.push(name.to_os_string());
+                probe_dir = parent.to_path_buf();
+            }
+            _ => break,
+        }
+    }
+    if !probe_dir.is_dir() {
         return Check::error(
             "output_writable",
-            format!("cannot create {}: {e}", out_dir.display()),
+            format!(
+                "nearest existing ancestor {} is not a directory",
+                probe_dir.display()
+            ),
             "choose an existing, writable --out-dir for exports and support bundles",
         );
     }
+
     // Unique probe name + create_new: an existing file or symlink can never
     // be opened/truncated through this path.
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or(0);
-    let probe = out_dir.join(format!(
+    let probe = probe_dir.join(format!(
         ".rimloc-doctor-probe-{}-{nanos:x}",
         std::process::id()
     ));
@@ -276,21 +294,58 @@ fn check_output_writable(out_dir: &Path, forbidden_roots: &[PathBuf]) -> Check {
         Ok(mut f) => {
             let write_ok = f.write_all(b"rimloc doctor probe").is_ok();
             drop(f);
-            let _ = std::fs::remove_file(&probe);
-            if write_ok {
-                Check::ok(
-                    "output_writable",
-                    format!("{} is writable", out_dir.display()),
-                )
+            // Cleanup honesty: a leftover probe file is pollution we caused,
+            // so a failed removal must not be reported as a clean OK.
+            let cleanup = std::fs::remove_file(&probe);
+            let missing_note = if missing_leaves.is_empty() {
+                String::new()
             } else {
-                Check::error(
+                let names: Vec<String> = missing_leaves
+                    .iter()
+                    .rev()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .collect();
+                format!(
+                    "; missing leaf {} NOT created (RimLoc creates it on real writes)",
+                    names.join("/")
+                )
+            };
+            if !write_ok {
+                return Check::error(
                     "output_writable",
                     format!(
                         "{} accepted file creation but not writes",
-                        out_dir.display()
+                        probe_dir.display()
                     ),
                     "check disk space and permissions",
-                )
+                );
+            }
+            match cleanup {
+                Ok(()) => Check::ok(
+                    "output_writable",
+                    format!(
+                        "{} is writable{}",
+                        out_dir.display(),
+                        if missing_leaves.is_empty() {
+                            String::new()
+                        } else {
+                            format!(
+                                " (probe ran in nearest existing ancestor {}{})",
+                                probe_dir.display(),
+                                missing_note
+                            )
+                        }
+                    ),
+                ),
+                Err(e) => Check::warning(
+                    "output_writable",
+                    format!(
+                        "{} is writable but the probe file {} could not be removed: {e}",
+                        probe_dir.display(),
+                        probe.display()
+                    ),
+                    "remove the leftover .rimloc-doctor-probe file manually",
+                ),
             }
         }
         Err(e) => Check::error(
@@ -463,8 +518,17 @@ mod tests {
         assert_eq!(check_mod_dirs(Some(missing)).status, "error");
 
         let tmp = tempfile::tempdir().expect("tmp");
-        let writable = check_output_writable(&tmp.path().join("out"), &[]);
+        // Missing out_dir is probed at the nearest existing ancestor and is
+        // NOT created as a side effect.
+        let missing_out = tmp.path().join("out");
+        let writable = check_output_writable(&missing_out, &[]);
         assert_eq!(writable.status, "ok");
+        assert!(
+            writable.detail.contains("NOT created"),
+            "must state what was tested: {}",
+            writable.detail
+        );
+        assert!(!missing_out.exists(), "missing out_dir must stay missing");
     }
 
     #[test]
@@ -514,6 +578,18 @@ mod tests {
         assert_eq!(
             std::fs::read_to_string(out.join("keep.txt")).expect("keep"),
             "keepme"
+        );
+        // Missing nested leaf under a writable ancestor: probed at the
+        // ancestor, leaf stays missing, fixture whole.
+        let nested = out.join("deep/leaf");
+        let c = check_output_writable(&nested, &[]);
+        assert_eq!(c.status, "ok", "got: {:?}", c.detail);
+        assert!(c.detail.contains("NOT created"));
+        assert!(!nested.exists(), "missing leaf must stay missing");
+        assert_eq!(
+            std::fs::read_to_string(out.join("keep.txt")).expect("keep"),
+            "keepme",
+            "fixture whole after nested probe"
         );
     }
 
