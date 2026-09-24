@@ -54,6 +54,9 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
    `canonical_bridge` берёт source location из `TransUnit.path`, хотя Defs merge
    переписывает этот путь в выходной DefInjected. Требуются реальные исходные локации,
    per-entry winner-reason и регрессии (Defs/Keyed/LoadFolders/TKey multi-context).
+   Проверка WIP: счётчик TKey usages не заменяет реальные primary/other locations;
+   target-only и TKey-only+foreign-pack не должны становиться English source;
+   version-only layout без LoadFolders тоже обязан честно разрешать выбранную версию.
    Само наличие сериализуемого поля не закрывает Source Inspector gate.
 3. **L observability — ACTIVE, не принят**: doctor, support bundle + redaction preview,
    Copy-for-AI, structured logs, operation IDs. Acceptance: известный сбой → causal
@@ -62,7 +65,10 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
    очистка всех артефактов и explicit env allowlist; сохранение исходного failed
    operation; source/output граница внутри публичного bundle service, а не только CLI.
    Lead воспроизвёл compound leak синтетическими данными; исправления с регрессиями
-   доставлены активному L-исполнителю. Сетевой сбой продолжен в той же сессии с WIP.
+   доставлены активному L-исполнителю. Следующая независимая проба доказала два обхода
+   source/output guard: nonexistent sibling path с `..` и predictable atomic temp
+   symlink. Оба закрываются тестами публичного bundle API с неизменным source hash.
+   Сетевой сбой продолжен в той же сессии с WIP.
 4. **BACKEND FREEZE** → компактный delta-бандл (дифф от 50f9483) для ChatGPT.
 5. POST-FREEZE: real UI binding → LIVE ACCEPTANCE GATE (W6 §3 / W7 §26 мандатов).
 
@@ -79,7 +85,8 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   Project screen, QA по **8 персонам**; demo-подписи, sensitive-key redaction,
   сброс старого causal context при повторе и 22 новых регрессионных теста.
   Lead независимо повторил на `13f7c31`: check 0/0, vitest **42/42**, build;
-  браузерный цикл Diagnose → causal context → bundle проверен на первом срезе.
+  браузерный повтор на этом же срезе подтвердил demo-подпись, сброс старой причины,
+  новый operation ID и сохранение этого ID в очищенном bundle.
   Общая версия из GUI package metadata интегрируется вместе с W4.5, без version bump.
   Live диагностика зависит от принятого L и будущего service binding.
 - **W6 PRE-FREEZE — ACTIVE**: тот же W5-исполнитель продолжает в отдельном worktree
@@ -114,6 +121,12 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   `/tmp/rimloc-zcode-watch.py` без модельных вызовов. Нативный status success с текстом
   ошибки API считается transport failure, не успехом реализации. Runtime-хелперы
   в /tmp могут исчезнуть — перепроверять; ACK означает доставку, не приёмку кода.
+- Общий cargo target между расходящимися worktrees дал подтверждённое повторное
+  использование чужого workspace artifact. Все Rust-проверки сериализовать через
+  `/tmp/rimloc-cargo-serial.py WORKTREE <cargo args>`: lock + при смене worktree очистка
+  только workspace-пакетов, внешний dependency cache сохраняется. Проверить наличие
+  wrapper при возобновлении. Не менять исходники под ошибки от чужих cached types;
+  финальная приёмка — на едином интегрированном дереве.
 - Независимый baseline на `0e37b0c`: workspace build/test (168 passed), fmt check,
   clippy `-D warnings`; GUI check 0/0, vitest 20/20, production build — PASS.
   Это baseline, не acceptance будущих изменений и не live acceptance.
