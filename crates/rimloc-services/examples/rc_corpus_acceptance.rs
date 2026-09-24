@@ -180,10 +180,9 @@ fn run(mods: Vec<PathBuf>) -> Result<(), String> {
         "mods": mods_report,
     });
     let summary_path = artifact.join("summary.json");
-    let bytes = serde_json::to_vec_pretty(&summary)
-        .map_err(|e| format!("cannot render summary: {e}"))?;
-    std::fs::write(&summary_path, bytes)
-        .map_err(|e| format!("cannot write summary: {e}"))?;
+    let bytes =
+        serde_json::to_vec_pretty(&summary).map_err(|e| format!("cannot render summary: {e}"))?;
+    std::fs::write(&summary_path, bytes).map_err(|e| format!("cannot write summary: {e}"))?;
     println!(
         "{}",
         serde_json::to_string(&summary).map_err(|e| format!("cannot render stdout report: {e}"))?
@@ -364,7 +363,10 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
     }
     let view = project.context.view;
     if view == ViewLabel::Exact {
-        let any_conditional = project.entries.iter().any(|e| e.provenance.conditional_branch);
+        let any_conditional = project
+            .entries
+            .iter()
+            .any(|e| e.provenance.conditional_branch);
         let any_partial = project
             .entries
             .iter()
@@ -403,20 +405,29 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
                 if added.len() != imported {
                     fail(
                         &mut failures,
-                        format!("G6 import bookkeeping: applied {imported} but {} records appended", added.len()),
+                        format!(
+                            "G6 import bookkeeping: applied {imported} but {} records appended",
+                            added.len()
+                        ),
                     );
                 }
                 for t in added {
                     if t.origin != Origin::Imported {
                         fail(
                             &mut failures,
-                            format!("G6 imported record {} has origin {:?}, expected Imported", t.source_id.key, t.origin),
+                            format!(
+                                "G6 imported record {} has origin {:?}, expected Imported",
+                                t.source_id.key, t.origin
+                            ),
                         );
                     }
                     if t.locale != LANG {
                         fail(
                             &mut failures,
-                            format!("G6 imported record {} has locale {:?}, expected {LANG}", t.source_id.key, t.locale),
+                            format!(
+                                "G6 imported record {} has locale {:?}, expected {LANG}",
+                                t.source_id.key, t.locale
+                            ),
                         );
                     }
                     if import_texts.len() < 10 {
@@ -431,7 +442,10 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
                 if imported > project.entries.len() {
                     fail(
                         &mut failures,
-                        format!("G6 imported {imported} > inventory {}", project.entries.len()),
+                        format!(
+                            "G6 imported {imported} > inventory {}",
+                            project.entries.len()
+                        ),
                     );
                 }
             }
@@ -447,7 +461,10 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
     let generation_source: Project = match load_project(&post_path) {
         Ok(p) => p,
         Err(e) => {
-            fail(&mut failures, format!("G7 reload for generation failed: {e}"));
+            fail(
+                &mut failures,
+                format!("G7 reload for generation failed: {e}"),
+            );
             project.clone()
         }
     };
@@ -476,13 +493,22 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
         if t.locale != LANG {
             continue;
         }
-        if t.text.as_deref().map(str::trim).filter(|s| !s.is_empty()).is_none() {
+        if t.text
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .is_none()
+        {
             continue;
         }
         if t.lifecycle == rimloc_domain::canonical::Lifecycle::Obsolete {
             continue;
         }
-        let Some(e) = generation_source.entries.iter().find(|e| e.id == t.source_id) else {
+        let Some(e) = generation_source
+            .entries
+            .iter()
+            .find(|e| e.id == t.source_id)
+        else {
             continue;
         };
         match output_identity(e) {
@@ -529,13 +555,20 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
                 if !lost.is_empty() {
                     fail(
                         &mut failures,
-                        format!("G8 LOST generated output ({} identities): {:?}", lost.len(), &lost[..lost.len().min(10)]),
+                        format!(
+                            "G8 LOST generated output ({} identities): {:?}",
+                            lost.len(),
+                            &lost[..lost.len().min(10)]
+                        ),
                     );
                 }
                 if !invented.is_empty() {
                     fail(
                         &mut failures,
-                        format!("G8 INVENTED generated output not backed by translations: {:?}", &invented[..invented.len().min(10)]),
+                        format!(
+                            "G8 INVENTED generated output not backed by translations: {:?}",
+                            &invented[..invented.len().min(10)]
+                        ),
                     );
                 }
                 if !corrupted.is_empty() {
@@ -547,7 +580,10 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
                 if !duplicate_identities.is_empty() {
                     fail(
                         &mut failures,
-                        format!("G8 duplicate output identities: {:?}", &duplicate_identities[..duplicate_identities.len().min(10)]),
+                        format!(
+                            "G8 duplicate output identities: {:?}",
+                            &duplicate_identities[..duplicate_identities.len().min(10)]
+                        ),
                     );
                 }
                 reparsed = units.len();
@@ -573,7 +609,10 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
                     ),
                 }
             }
-            Err(e) => fail(&mut failures, format!("G8 re-parse of generated output failed: {e}")),
+            Err(e) => fail(
+                &mut failures,
+                format!("G8 re-parse of generated output failed: {e}"),
+            ),
         }
     }
 

@@ -308,6 +308,9 @@ mod tests {
             path: PathBuf::from("Languages/English/Keyed/T.xml"),
             line: Some(3),
             tkey: None,
+            src: None,
+            selected_by: None,
+            conditional: false,
         }
     }
 
