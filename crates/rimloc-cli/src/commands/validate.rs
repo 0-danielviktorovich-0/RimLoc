@@ -21,6 +21,7 @@ pub fn run_validate(
     report_orphans: bool,
     target_lang: Option<String>,
     target_lang_dir: Option<String>,
+    support_bundle: Option<std::path::PathBuf>,
     use_color: bool,
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "validate_args", root = ?root, game_version = ?game_version, include_all_versions = include_all_versions);
@@ -204,6 +205,62 @@ pub fn run_validate(
             msgs.append(&mut extra);
         }
     }
+    // Opt-in support bundle: capture the ACTUAL validator results (issue
+    // kinds, keys, paths, messages) into a sanitized bundle. A run with
+    // issues is a failed operation and stays unfinished in the bundle —
+    // the id, the causal entries and the affected keys are what an
+    // independent reviewer needs; nothing is synthesized.
+    if let Some(bundle_out) = support_bundle.as_ref() {
+        let mut op = rimloc_services::OperationLog::new("validate");
+        op.begin_stage("validate");
+        op.counter("validate", "issues", msgs.len() as u64);
+        for m in &msgs {
+            let entry = format!(
+                "{} [{}] {} ({}:{}): {}",
+                m.kind,
+                m.kind,
+                m.key,
+                m.path,
+                m.line.unwrap_or(0),
+                m.message
+            );
+            op.error_message("validate", entry.as_str());
+        }
+        op.end_stage("validate");
+        if msgs.is_empty() {
+            op.finish();
+        }
+
+        let affected: Vec<String> = msgs
+            .iter()
+            .map(|m| format!("{}:{}", m.path, m.key))
+            .collect();
+        let mut kinds: std::collections::BTreeMap<&str, u64> = Default::default();
+        for m in &msgs {
+            *kinds.entry(m.kind.as_str()).or_default() += 1;
+        }
+        let meta = rimloc_services::ProjectMeta {
+            name: scan_root
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned()),
+            target_lang: per_row_dir.clone(),
+            rimloc_version: Some(env!("CARGO_PKG_VERSION").to_string()),
+            extra: serde_json::json!({ "issue_kinds": kinds }),
+            ..Default::default()
+        };
+        let bundle = rimloc_services::collect_support_bundle_for(
+            &rimloc_services::SupportBundleInputs {
+                scan_root: scan_root.clone(),
+                project_meta: meta,
+                operation: Some(op),
+                affected,
+            },
+            bundle_out,
+        )?;
+        let path = bundle.dir.display().to_string();
+        crate::ui_out!("support-bundle-written", path = path.as_str());
+    }
+
     if format == "json" {
         #[derive(serde::Serialize)]
         struct JsonMsg<'a> {

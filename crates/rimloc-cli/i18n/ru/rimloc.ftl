@@ -304,3 +304,6 @@ doctor-title = RimLoc doctor
 doctor-line = { $tag } { $name } { $detail }
 doctor-remediation =     -> { $hint }
 doctor-summary = Итог: { $ok } ok, { $warning } предупреждение, { $error } ошибок, { $not_checked } не проверено
+
+# validate support bundle (gate L)
+support-bundle-written = Санитизированный бандл диагностики записан в { $path }

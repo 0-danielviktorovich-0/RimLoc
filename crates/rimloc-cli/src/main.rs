@@ -567,6 +567,10 @@ enum Commands {
         /// Target translation folder name (e.g., "Russian")
         #[arg(long)]
         lang_dir: Option<String>,
+        /// Opt-in: write a sanitized support bundle with the ACTUAL
+        /// validation results into this directory (must be outside the mod).
+        #[arg(long, value_name = "OUT_DIR")]
+        support_bundle: Option<PathBuf>,
     },
 
     /// Validate .po placeholder consistency (msgid vs msgstr); help via FTL.
@@ -1376,6 +1380,7 @@ impl Runnable for Commands {
                 report_orphans,
                 lang,
                 lang_dir,
+                support_bundle,
             } => commands::validate::run_validate(
                 root,
                 source_lang,
@@ -1392,6 +1397,7 @@ impl Runnable for Commands {
                 report_orphans,
                 lang,
                 lang_dir,
+                support_bundle,
                 use_color,
             ),
 

@@ -23,7 +23,7 @@ Checks and statuses (`ok` / `warning` / `error` / `not_checked`):
 | `mod_dirs` | `--game-root` | `Mods/` listable, N mod directories |
 | `mod_root` | `--root` (optional) | mod root exists, `Languages/` folders listable |
 | `provider_config` | — | env presence of `RIMLOC_ANTHROPIC_API_KEY` / `RIMLOC_OPENAI_API_KEY` / `RIMLOC_ZAI_API_KEY`. **Presence only — values are never read or printed.** Keychain (service `rimloc-llm`) is not probed by the CLI build (no `keychain` feature) and the output says so |
-| `output_writable` | `--out-dir` (default `.`) | refuses destinations inside the game/mod trees (canonical view, symlink aliases + parent traversal included) BEFORE mkdir; then a unique-name `create_new` probe (an existing file can never be truncated or followed through a symlink) |
+| `output_writable` | `--out-dir` (default `.`) | refuses destinations inside the game/mod trees (canonical view, symlink aliases + parent traversal included) BEFORE mkdir; then a unique-name `create_new` probe (an existing file can never be truncated or followed through a symlink). The doctor NEVER creates directories: a missing `--out-dir` is probed at its nearest existing ancestor and the detail states that the missing leaf was not created; a failed probe cleanup is reported as a warning, not a clean OK |
 
 Missing inputs produce `not_checked` with a remediation hint, not an error.
 Exit code is always 0: doctor is a report, not a gate. `--format json`
@@ -73,7 +73,10 @@ in sequence (compound values get both transforms). Whole-value secrets are
   → `Redacted`.
 - **Value looks secret** (`sk-…`, `Bearer …`, PEM, `ghp_`/`github_pat_`/
   `xox*-`/`AKIA`, ≥32-char hex, ≥40-char opaque tokens) → `Redacted`
-  regardless of key name.
+  regardless of key name. Replacement policy: group 1 of a masking regex
+  may carry ONLY a static label (`Authorization: `, `token: `); whole-token
+  patterns are non-capturing, so a credential can never survive as a label
+  prefix next to the marker.
 - **Secret inside free text** (`Authorization: Bearer x`, `apiKey=…`
   mid-string) → kept with the token masked in place; surrounding
   diagnostic context survives.
@@ -92,6 +95,19 @@ be written. `sanitize_json(&Value)` applies the same rules to arbitrary
 never reaches a file.
 
 ## Support bundle
+
+### Real path: `rimloc validate --support-bundle <out>`
+
+The production wiring of "diagnose a controlled known failure": the
+validate command runs the REAL validator and, with the opt-in
+`--support-bundle <out>` flag, captures its actual results into the bundle —
+issue kinds/keys/paths/messages become the operation's causal entries and
+affected ids, counters carry `issues`, and a run WITH issues is preserved
+as an unfinished (failed) operation. A clean run finishes normally. The
+same services capture feeds the GUI diagnostics lane later; no
+provider/network calls are involved.
+
+### Helper API
 
 ```rust
 use rimloc_services::{collect_support_bundle_for, SupportBundleInputs, ProjectMeta};
@@ -133,13 +149,15 @@ inside the source. Scanning problems are recorded in the log as errors —
 the bundle still builds, because a failure context is exactly when you need
 it.
 
-Regressions (`observability.rs` tests): adversarial metadata with
-compound path+token values asserting zero synthetic keys and zero home
-prefixes across ALL four output files; a controlled validator failure whose
-operation id, stage, counters, causal chain and unfinished state survive
-into the bundle (an independent reader can name the cause from `report.md`
-alone); sibling-traversal, equal, symlink-alias and recursive
-sentinel/hash invariance for rejected destinations.
+Regressions: `crates/rimloc-cli/tests/support_bundle.rs` runs the REAL CLI
+(`validate --support-bundle`) on a broken fixture and asserts an
+independent reader can diagnose the cause from the bundle alone (operation
+id, unfinished state, affected keys, real validator kinds) while the source
+tree stays byte-identical; `observability.rs` helper tests cover the
+serialization contract (adversarial metadata with compound path+token
+values, provider-token table AKIA/ghp/gho/github_pat/xox across all four
+output files, unfinished-state preservation) — these hand-build the log and
+do NOT replace the end-to-end path above.
 
 ## Deliberately deferred
 
