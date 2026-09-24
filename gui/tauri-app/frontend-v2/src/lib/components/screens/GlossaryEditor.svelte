@@ -1,13 +1,18 @@
 <script lang="ts">
-  // Glossary editor (mandate §10): search / add / edit / delete over bound
-  // source→target terms with scope (project vs user), accepted variants and
-  // case-sensitivity. Import/export are mocks — buttons flash a status, no
-  // file I/O. Conflicts (two terms claiming the same normalized source) are
-  // surfaced in a dedicated view instead of failing silently.
-  import Icon from '../Icon.svelte';
-  import { t } from '../../../i18n/store.svelte';
-  import { router } from '../../router.svelte';
-  import { glossary, type GlossaryScope, type GlossaryTerm } from '../../stores/glossary.svelte';
+// Glossary editor (mandate §10): search / add / edit / delete over bound
+// source→target terms with scope (project vs user), accepted variants and
+// case-sensitivity. Import/export are mocks — buttons flash a status, no
+// file I/O. Conflicts (two terms claiming the same normalized source) are
+// surfaced in a dedicated view instead of failing silently.
+//
+// Mutability provenance (W4.5 requirement #2): each row shows where it came
+// from; reference-read-only rows have edit/delete disabled with a tooltip
+// explaining why, and the mock batch-import marks its terms `imported`.
+import Icon from '../Icon.svelte';
+import { t } from '../../../i18n/store.svelte';
+import { router } from '../../router.svelte';
+import { glossary, type GlossaryScope, type GlossaryTerm } from '../../stores/glossary.svelte';
+import { isReadOnly, mutabilityKey, type Mutability } from '../../mutability';
 
   const LANGS = ['en', 'ru', 'uk', 'de', 'es', 'fr', 'ja', 'zh-hans'];
 
@@ -62,7 +67,12 @@
     };
   }
 
+  function readOnly(term: GlossaryTerm): boolean {
+    return isReadOnly(term.mutability);
+  }
+
   function openEdit(term: GlossaryTerm) {
+    if (readOnly(term)) return; // store refuses anyway; button is disabled
     form = {
       editingId: term.id,
       source: term.source,
@@ -103,11 +113,24 @@
       return;
     }
     confirmingRemove = null;
-    glossary.remove(id);
+    glossary.remove(id); // store refuses reference-read-only terms
   }
 
-  /** Mock import: nothing is read; the button confirms with a status line. */
+  /**
+   * Mock batch import: appends a canned term marked `imported` (W4.5 #2) so
+   * the provenance is visible; no file is read.
+   */
   function mockImport() {
+    glossary.addImported({
+      source: 'minified resource',
+      target: 'упакованный ресурс',
+      note: '',
+      sourceLang: 'en',
+      targetLang: 'ru',
+      scope: 'project',
+      variants: [],
+      caseSensitive: false
+    });
     imported = true;
     clearTimeout(importedTimer);
     importedTimer = setTimeout(() => (imported = false), 2400);
@@ -220,12 +243,14 @@
           <th scope="col">{t('glossary.translation')}</th>
           <th scope="col">{t('glossary.ed.pair')}</th>
           <th scope="col">{t('glossary.ed.scope')}</th>
+          <th scope="col">{t('mutability.label')}</th>
           <th scope="col">{t('glossary.ed.variants')}</th>
           <th scope="col"><span class="visually-hidden">{t('shortcuts.col.actions')}</span></th>
         </tr>
       </thead>
       <tbody>
         {#each filtered as term (term.id)}
+          {@const locked = readOnly(term)}
           <tr data-testid={`glossary.row.${term.id}`}>
             <td class="term-cell">
               <span class="mono">{term.source}</span>
@@ -241,6 +266,17 @@
             <td>
               <span class="chip scope">{term.scope === 'project' ? t('glossary.ed.scope.project') : t('glossary.ed.scope.user')}</span>
             </td>
+            <td class="mut-cell">
+              <span
+                class="chip mut"
+                class:locked
+                data-testid={`glossary.mut.${term.id}`}
+                title={locked ? t('mutability.readOnlyReason') : undefined}
+              >
+                {#if locked}<Icon name="lock-closed" size={10} />{/if}
+                {t(mutabilityKey(term.mutability as Mutability))}
+              </span>
+            </td>
             <td class="variants-cell">
               {#if term.variants.length > 0}
                 {term.variants.join(', ')}
@@ -249,7 +285,14 @@
               {/if}
             </td>
             <td class="row-actions">
-              <button type="button" class="btn subtle" data-testid={`glossary.edit.${term.id}`} onclick={() => openEdit(term)}>
+              <button
+                type="button"
+                class="btn subtle"
+                data-testid={`glossary.edit.${term.id}`}
+                disabled={locked}
+                title={locked ? t('mutability.readOnlyReason') : undefined}
+                onclick={() => openEdit(term)}
+              >
                 <Icon name="edit" size={13} />
                 {t('providers.inst.edit')}
               </button>
@@ -257,6 +300,8 @@
                 type="button"
                 class="btn subtle danger-text"
                 data-testid={`glossary.delete.${term.id}`}
+                disabled={locked}
+                title={locked ? t('mutability.readOnlyReason') : undefined}
                 onclick={() => removeTerm(term.id)}
               >
                 {confirmingRemove === term.id ? t('glossary.ed.deleteConfirm') : t('common.delete')}
@@ -265,7 +310,7 @@
           </tr>
         {:else}
           <tr>
-            <td colspan="6" class="empty" data-testid="glossary.empty">
+            <td colspan="7" class="empty" data-testid="glossary.empty">
               {t('glossary.ed.empty')}
             </td>
           </tr>
@@ -480,7 +525,7 @@
   .table {
     border-collapse: collapse;
     width: 100%;
-    min-width: 720px;
+    min-width: 780px;
   }
 
   th {
@@ -558,6 +603,21 @@
   .chip.scope {
     margin-left: 0;
     font-family: inherit;
+  }
+
+  .mut-cell {
+    white-space: nowrap;
+  }
+
+  .chip.mut {
+    margin-left: 0;
+    font-family: inherit;
+    gap: 3px;
+  }
+
+  .chip.mut.locked {
+    color: var(--color-warning);
+    border-color: var(--color-warning);
   }
 
   .muted {
