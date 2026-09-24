@@ -129,6 +129,10 @@
               <span class="listening" role="status" data-testid={`shortcuts.listening.${def.id}`}>
                 {t('shortcuts.listening')}
               </span>
+            {:else if binding.key === ''}
+              <kbd class="kbd unbound" data-testid={`shortcuts.combo.${def.id}`}>
+                {t('shortcuts.unbound')}
+              </kbd>
             {:else}
               <kbd class="kbd" data-testid={`shortcuts.combo.${def.id}`}>{comboLabel(binding)}</kbd>
             {/if}
@@ -254,6 +258,11 @@
     white-space: nowrap;
   }
 
+  .kbd.unbound {
+    opacity: 0.6;
+    border-style: dashed;
+    font-weight: 400;
+  }
   .kbd {
     font-family: var(--font-mono);
     font-size: var(--text-meta-size);

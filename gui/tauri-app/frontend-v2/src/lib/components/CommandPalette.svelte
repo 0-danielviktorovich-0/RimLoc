@@ -9,6 +9,8 @@
   import { router, PROJECT_ROUTES, type RouteId } from '../router.svelte';
   import { palette } from '../stores/palette.svelte';
   import { languages } from '../languages/store.svelte';
+  import { project } from '../stores/project.svelte';
+  import { source } from '../source/store.svelte';
 
   interface PaletteAction {
     id: string;
@@ -29,6 +31,20 @@
     };
   }
 
+  /** W7 source actions: they operate on the SELECTED workspace entry; the
+   *  palette reports honestly when nothing is selected instead of guessing. */
+  function requireSelectedEntry(run: (entryId: string) => void): () => void {
+    return () => {
+      const selected = project.selected;
+      if (!selected) {
+        source.noteMockAction('source.palette.noSelection');
+        return;
+      }
+      if (!(PROJECT_ROUTES as string[]).includes(router.route)) router.navigate('workspace');
+      run(selected.id);
+    };
+  }
+
   /** Static actions plus one live action per target locale (W2). */
   function buildActions(): PaletteAction[] {
     const base: PaletteAction[] = [
@@ -44,7 +60,33 @@
       { id: 'open-tm', labelKey: 'palette.action.openTM', icon: 'database', route: 'tm' },
       { id: 'open-about', labelKey: 'palette.action.openAbout', icon: 'info', route: 'help' },
       { id: 'run-diagnostics', labelKey: 'palette.action.runDiagnostics', icon: 'clipboard-check', route: 'help' },
-      { id: 'show-shortcuts', labelKey: 'palette.action.showShortcuts', icon: 'lightbulb', route: 'help' }
+      { id: 'show-shortcuts', labelKey: 'palette.action.showShortcuts', icon: 'lightbulb', route: 'help' },
+      // W7 source actions (SOURCE_INSPECTOR_MANDATE §15): palette-driven,
+      // remappable shortcut entries exist with unbound defaults.
+      {
+        id: 'source-open-location',
+        labelKey: 'palette.action.openSourceLocation',
+        icon: 'file-code',
+        route: 'workspace',
+        onRun: requireSelectedEntry((entryId) => source.openViewer(entryId, 0))
+      },
+      {
+        id: 'source-browser',
+        labelKey: 'palette.action.openSourceBrowser',
+        icon: 'layers',
+        route: 'workspace',
+        onRun: () => {
+          if (!(PROJECT_ROUTES as string[]).includes(router.route)) router.navigate('workspace');
+          source.openBrowser();
+        }
+      },
+      {
+        id: 'source-compare',
+        labelKey: 'palette.action.sourceCompare',
+        icon: 'git-compare',
+        route: 'workspace',
+        onRun: requireSelectedEntry((entryId) => source.openCompare(entryId))
+      }
     ];
     // Multi-target language actions (W2): switch → <lang>, add, manage.
     const languageActions: PaletteAction[] = languages
