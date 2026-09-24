@@ -55,10 +55,20 @@ pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Pr
         view,
         ..Default::default()
     };
+    // Winner-reason provenance: the LoadFolders path resolved WHICH content
+    // roots loaded, so every entry can honestly say "loadfolders". The flat
+    // path's winner is per-family (Defs/TKey first-file vs Keyed/DefInjected
+    // last-wins) — a batch label would be a lie, so it stays unset until
+    // per-entry capture lands (Source Inspector).
+    let selected_by = mod_root
+        .join("LoadFolders.xml")
+        .is_file()
+        .then_some("loadfolders");
     Ok(crate::canonical_bridge::project_from_inventory(
         &units,
         stage,
         target_version,
+        selected_by,
         context,
     ))
 }
