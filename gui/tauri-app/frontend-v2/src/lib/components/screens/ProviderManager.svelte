@@ -211,12 +211,21 @@
   /** Inline rename: id of the instance whose name is an input right now. */
   let renaming = $state<string | null>(null);
   let renameDraft = $state('');
+  /** Flash timers are fire-and-forget; cleaned up on unmount. */
   let timers: ReturnType<typeof setTimeout>[] = [];
+  /**
+   * In-flight connection probes, one per instance id (lead 017). Tracked
+   * separately from flash timers so a config/key change can cancel the probe
+   * of THAT instance — a stale 800ms callback must never resolve a provider
+   * whose configuration changed while the probe was in flight.
+   */
+  let testTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
   $effect(() => {
     return () => {
       clearTimeout(flashTimer);
       timers.forEach(clearTimeout);
+      Object.values(testTimers).forEach(clearTimeout);
     };
   });
 
@@ -286,17 +295,50 @@
     }
   }
 
+  /** Cancel an in-flight connection probe for an instance, if any. */
+  function cancelProbe(id: string) {
+    const timer = testTimers[id];
+    if (timer) {
+      clearTimeout(timer);
+      delete testTimers[id];
+    }
+  }
+
+  /**
+   * Connection-state invalidation (lead 017): after an endpoint / protocol /
+   * model / credential change, a completed "connected" verdict — and any
+   * probe still in flight — no longer describes this provider. Drop the
+   * probe and reset to the honest settled state: local families are shown
+   * offline, cloud providers need a fresh verification ("not configured").
+   */
+  function invalidateConnection(inst: Instance) {
+    cancelProbe(inst.id);
+    if (inst.status === 'testing' || inst.status === 'connected') {
+      inst.status = familyMeta(inst.family).privacy === 'local' ? 'offline' : 'not_configured';
+    }
+  }
+
   function saveForm() {
     if (!form) return;
     const name = form.name.trim() || t(`providers.example.${form.family}`);
     if (form.editingId) {
       const inst = instances.find((i) => i.id === form!.editingId);
       if (inst) {
+        // Connection relevance is judged BEFORE the mutation: endpoint,
+        // protocol auth, discovery mode and model changes void the old
+        // connection verdict (lead 017). A rename alone does not.
+        const newBaseUrl = form.baseUrl.trim() || familyMeta(inst.family).defaultBaseUrl;
+        const newModel = form.model.trim() || inst.model;
+        const connectionChanged =
+          inst.baseUrl !== newBaseUrl ||
+          inst.model !== newModel ||
+          inst.auth !== form.auth ||
+          inst.discovery !== form.discovery;
         inst.name = name;
-        inst.baseUrl = form.baseUrl.trim() || familyMeta(inst.family).defaultBaseUrl;
+        inst.baseUrl = newBaseUrl;
         inst.auth = form.auth;
         inst.discovery = form.discovery;
-        inst.model = form.model.trim() || inst.model;
+        inst.model = newModel;
         if (form.hasKey) {
           inst.hasKey = true;
           // Editing keeps an existing own handle; a fresh key on a keyless
@@ -307,6 +349,7 @@
         // unless the instance intentionally shares another entry's reference.
         if (inst.credential !== 'shared-ref') inst.credential = credentialFor(inst.auth, inst.hasKey);
         if (inst.auth === 'none') inst.credential = 'not_required';
+        if (connectionChanged) invalidateConnection(inst);
       }
       showFlash(form.editingId, 'providers.action.saved');
     } else {
@@ -347,10 +390,12 @@
    *  Saving a key here gives the instance its OWN keychain entry — a shared
    *  reference is only produced by the explicit duplicate decision, and
    *  saving over a shared reference DETACHES the copy into its own entry
-   *  (behavior-review 008 #2). */
+   *  (behavior-review 008 #2). A credential change also voids the previous
+   *  connection verdict and any in-flight probe (lead 017). */
   function replaceKey(id: string) {
     const inst = instances.find((i) => i.id === id);
     if (inst) {
+      invalidateConnection(inst);
       inst.hasKey = true;
       if (inst.auth === 'keychain') {
         if (inst.credential === 'shared-ref' || !inst.credRef) {
@@ -368,8 +413,11 @@
   function testConnection(id: string) {
     const inst = instances.find((i) => i.id === id);
     if (!inst) return;
+    // One probe per instance: a fresh test cancels any previous one (lead 017).
+    cancelProbe(id);
     inst.status = 'testing';
-    const timer = setTimeout(() => {
+    testTimers[id] = setTimeout(() => {
+      delete testTimers[id];
       const target = instances.find((i) => i.id === id);
       if (!target) return;
       if (!target.enabled) target.status = 'not_configured';
@@ -377,7 +425,6 @@
       else target.status = target.hasKey ? 'connected' : 'not_configured';
       syncLegacy();
     }, 800);
-    timers.push(timer);
   }
 
   function toggleEnabled(id: string) {
@@ -386,6 +433,8 @@
     inst.enabled = !inst.enabled;
     if (!inst.enabled) {
       inst.isDefault = false;
+      // A disabled provider has no live connection: drop any probe with it.
+      invalidateConnection(inst);
       inst.status = 'not_configured';
     }
     // Keep exactly one default among enabled instances.
@@ -427,6 +476,11 @@
     // only be reused when the source actually resolves one.
     if (mode === 'shared-ref' && !(src.auth === 'keychain' && src.hasKey && src.credRef)) return;
     duplicating = null;
+    // Transient statuses never travel (independent review F1): a probe in
+    // flight belongs to the SOURCE's testConnection timer, which only ever
+    // resolves the source — a copy inheriting "testing" would stay in it
+    // forever. The copy starts from the source's settled status instead.
+    const settledStatus = src.status === 'testing' ? 'not_configured' : src.status;
     // Spread of the non-secret projection, not of the source object: the
     // keychain flag is never carried over as a cloneable value.
     const copy: Instance = {
@@ -444,7 +498,7 @@
       // Same keychain identity behaves like the source; a keyless copy starts
       // unconfigured; a local no-key family stays honestly offline.
       status:
-        mode === 'shared-ref' || src.auth === 'none' ? src.status : 'not_configured'
+        mode === 'shared-ref' || src.auth === 'none' ? settledStatus : 'not_configured'
     };
     instances = [...instances, copy];
     revalidateCredentials();
@@ -514,6 +568,7 @@
       return;
     }
     confirmingRemove = null;
+    cancelProbe(id); // no stale callback for a removed provider (lead 017)
     instances = instances.filter((i) => i.id !== id);
     // Hand the default role to a surviving enabled instance.
     if (!instances.some((i) => i.enabled && i.isDefault)) {
