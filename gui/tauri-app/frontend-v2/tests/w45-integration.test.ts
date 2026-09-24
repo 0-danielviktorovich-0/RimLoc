@@ -169,6 +169,125 @@ describe('w45 #1: provider credential semantics', () => {
     expect(q('providers.inst.inst-4').getAttribute('data-cred-ref')).toBe('');
   });
 
+  it('duplicate never inherits a transient "testing" status (review F1)', async () => {
+    // Deterministic probe window: fake timers freeze testConnection's 800ms
+    // resolve until we explicitly run it.
+    vi.useFakeTimers();
+    try {
+      mountCmp(ProviderManager);
+      click('providers.inst.test.inst-1');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Testing');
+      // Duplicate with the probe still in flight (the 800ms window).
+      click('providers.inst.duplicate.inst-1');
+      click('providers.inst.duplicateReuse.inst-1');
+      // The copy starts from a SETTLED status, never "testing".
+      expect(q('providers.inst.status.inst-4').textContent).not.toContain('Testing');
+      expect(q('providers.inst.status.inst-4').textContent).toContain('Not configured');
+      // The source probe resolves; the copy has no timer and stays settled.
+      vi.runAllTimers();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Connected');
+      expect(q('providers.inst.status.inst-4').textContent).toContain('Not configured');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  /** Simulate typing into a bound input and let the binding microtasks
+   *  settle BEFORE the next action (avoids a post-save binding read racing
+   *  the {#if form} teardown). */
+  async function typeInto(testid: string, value: string) {
+    const input = q(testid) as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    flushSync();
+    await Promise.resolve();
+    await Promise.resolve();
+    flushSync();
+  }
+
+  it('editing endpoint during a probe voids the verdict; stale completion is ignored (lead 017)', async () => {
+    vi.useFakeTimers();
+    try {
+      mountCmp(ProviderManager);
+      click('providers.inst.test.inst-1');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Testing');
+      // Change the base URL while the probe is in flight and save.
+      click('providers.inst.edit.inst-1');
+      await typeInto('providers.form.baseUrl', 'https://changed.example/v1');
+      click('providers.form.save');
+      // Invalidated immediately: no "connected" verdict for changed config.
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Not configured');
+      // The stale 800ms callback was cancelled — it must NOT reconnect.
+      vi.runAllTimers();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Not configured');
+      const card = q('providers.inst.inst-1').textContent ?? '';
+      expect(card).toContain('https://changed.example/v1');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('replacing the key during a probe voids the verdict; stale completion is ignored (lead 017)', () => {
+    vi.useFakeTimers();
+    try {
+      mountCmp(ProviderManager);
+      click('providers.inst.test.inst-1');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Testing');
+      click('providers.inst.replaceKey.inst-1');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Not configured');
+      vi.runAllTimers();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Not configured');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a completed "connected" verdict is invalidated by a later endpoint or key change (lead 017)', async () => {
+    vi.useFakeTimers();
+    try {
+      mountCmp(ProviderManager);
+      // Reach a settled connected verdict.
+      click('providers.inst.test.inst-1');
+      vi.runAllTimers();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Connected');
+      // Endpoint change → the old verdict no longer describes the provider.
+      click('providers.inst.edit.inst-1');
+      await typeInto('providers.form.baseUrl', 'https://moved.example/v1');
+      click('providers.form.save');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Not configured');
+      // Same for a key change on a fresh connected verdict.
+      click('providers.inst.test.inst-1');
+      vi.runAllTimers();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Connected');
+      click('providers.inst.replaceKey.inst-1');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Not configured');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a pure rename does NOT invalidate a connected verdict (lead 017 scoping)', async () => {
+    vi.useFakeTimers();
+    try {
+      mountCmp(ProviderManager);
+      click('providers.inst.test.inst-1');
+      vi.runAllTimers();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Connected');
+      click('providers.inst.rename.inst-1');
+      await typeInto('providers.inst.renameInput.inst-1', 'Renamed only');
+      click('providers.inst.renameSave.inst-1');
+      expect(q('providers.inst.status.inst-1').textContent).toContain('Connected');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('export JSON contains NO credential fields at all (absent, not empty)', async () => {
     const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
