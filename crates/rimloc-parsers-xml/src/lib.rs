@@ -2537,6 +2537,10 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
                 owner = cur.parent().filter(|n| n.is_element());
             }
             let Some(def_name) = def_name else { continue };
+            // The accumulation key includes the DEF TYPE: two def types may
+            // share defName and TKey, and those are different identities
+            // (the logical unit key stays `{defName}.{TKey}`).
+            let acc_key = format!("{def_tag}\u{1}{def_name}.{}", tkey.trim());
             let identity = format!("{def_name}.{}", tkey.trim());
             let text = node.text().unwrap_or_default().trim().to_string();
             if text.is_empty() {
@@ -2544,7 +2548,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
             }
             let (strategy, suffix) = tkey_strategy(def_tag, node);
             let line = line_for_offset(node.range().start, &line_starts);
-            match acc.get_mut(&identity) {
+            match acc.get_mut(&acc_key) {
                 // Identity already owned by an earlier file: that def wins,
                 // later files are rejected duplicates — skip entirely. Their
                 // locations are NOT usages (rejected Def ≠ same-file node).
@@ -2559,7 +2563,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
                 }
                 None => {
                     acc.insert(
-                        identity.clone(),
+                        acc_key,
                         Acc {
                             contexts: 1,
                             file: p.to_path_buf(),

@@ -75,7 +75,10 @@ pub struct TransUnit {
     /// Why this occurrence is the effective winner — winner-reason
     /// provenance from [`winner_reason`], set by the scan pipeline at the
     /// decision point (Gate H semantics, Source Inspector mandate §7).
-    /// `None` = no precedence decision involved this unit.
+    /// A family rule is RECORDED whenever it resolved the identity, even
+    /// for a singleton (e.g. `keyed-first-in-file` on a unique key).
+    /// `None` = the metadata is unavailable or was not recorded (legacy
+    /// artifacts), not "no decision was made".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub selected_by: Option<String>,
     /// The unit comes from an `IfModActive` (game-state dependent)

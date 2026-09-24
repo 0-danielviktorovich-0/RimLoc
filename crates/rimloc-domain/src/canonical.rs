@@ -14,8 +14,9 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-/// Stable identity of a source entry. `kind` + `key` must be unique inside a
-/// project for one source version; locale is deliberately absent.
+/// Stable identity of a source entry. `kind` + `key` + `def_type` must be
+/// unique inside a project for one source version; locale is deliberately
+/// absent.
 #[derive(
     Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
@@ -23,6 +24,36 @@ pub struct SourceEntryId {
     pub kind: EntryKind,
     /// Logical key: Keyed key, `<defName>.<field>`, or `<defName>.<TKey>`.
     pub key: String,
+    /// Def-type discriminator for def-type-scoped kinds (DefInjected, TKey):
+    /// the owning def type from REAL provenance (TKey metadata or the
+    /// DefInjected path segment of the effective context). Participates in
+    /// identity: two def types sharing one `{defName}.{field}` key are two
+    /// distinct Defs — separate entries, separate translations. `None` =
+    /// the kind is not def-type-scoped (Keyed) or the type is genuinely
+    /// unknown; a "Misc"-like guess is never invented.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub def_type: Option<String>,
+}
+
+impl SourceEntryId {
+    /// Human-readable rendering of the FULL identity, for DIAGNOSTICS only.
+    /// The struct itself (deriving Eq/Ord/Hash) is the identity used in
+    /// maps, sets and comparisons — a concatenated string is lossy and must
+    /// never act as an identity key.
+    pub fn display_identity(&self) -> String {
+        let kind = match self.kind {
+            EntryKind::Keyed => "keyed",
+            EntryKind::DefInjected => "def_injected",
+            EntryKind::TKey => "t_key",
+            EntryKind::Strings => "strings",
+            EntryKind::Backstories => "backstories",
+            EntryKind::PatchDerived => "patch_derived",
+        };
+        match &self.def_type {
+            Some(dt) => format!("{kind}·{dt}·{}", self.key),
+            None => format!("{kind}·{}", self.key),
+        }
+    }
 }
 
 /// First-party localization mechanism families (extensible; variants only
@@ -81,7 +112,8 @@ pub struct SourceProvenance {
     /// "first-file-wins", "keyed-last-wins", "keyed-first-in-file",
     /// "tkey-last-assignment", "definjected-setoradd", "patch-applied";
     /// view-selection facts stay in `version_selected`/`conditional_branch`.
-    /// `None` = no precedence decision involved the entry.
+    /// `None` = the metadata is unavailable or was not recorded (legacy
+    /// artifacts), not "no decision was made".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub selected_by: Option<String>,
 }
@@ -288,6 +320,7 @@ mod tests {
             id: SourceEntryId {
                 kind: EntryKind::TKey,
                 key: key.into(),
+                def_type: None,
             },
             text: "Hello".into(),
             source_locale: "en".into(),
@@ -318,6 +351,7 @@ mod tests {
         let id = SourceEntryId {
             kind: EntryKind::TKey,
             key: "Q.Key".into(),
+            def_type: None,
         };
         p.update_translation(id.clone(), "ru", Some("Привет".into()), Origin::Human);
         p.update_translation(id.clone(), "ja", Some("こんにちは".into()), Origin::Human);
@@ -362,6 +396,7 @@ mod tests {
         let id = SourceEntryId {
             kind: EntryKind::TKey,
             key: "Q.Key".into(),
+            def_type: None,
         };
         p.update_translation(id.clone(), "ru", Some("TODO".into()), Origin::Tm);
         assert_eq!(

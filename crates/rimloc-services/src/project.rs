@@ -2,11 +2,11 @@
 //! apply an existing translation, and write RimWorld output — WITHOUT any
 //! PO intermediate. PO import/export stays a separate adapter concern.
 
+use crate::matching::{SourceMatcher, TKeyRegistry};
 use crate::Result;
 use rimloc_domain::canonical as dom;
 use rimloc_domain::canonical::{
-    Completeness, EntryKind, InventoryContext, Origin, PatchStage, Project, SourceEntryId,
-    Translation, ViewLabel,
+    EntryKind, InventoryContext, Origin, PatchStage, Project, SourceEntry, SourceEntryId, ViewLabel,
 };
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -72,84 +72,164 @@ pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Pr
     ))
 }
 
+/// Scope-aware pack-key resolver over canonical entries — ONE shared
+/// resolution path for pack import and PO interop (no second matcher).
+/// A pack file's own scope (Keyed, or `DefInjected/<DefType>`) decides
+/// which canonical entries are candidates, and [`crate::matching`] resolves
+/// exact keys, proven aliases and TKey-suffix proofs WITHIN that scope —
+/// never across kinds or def types.
+struct ScopedPackResolver {
+    keyed: Option<TypedScope>,
+    typed: BTreeMap<String, TypedScope>,
+}
+
+/// One def-type bucket. Kind identity is preserved INSIDE the bucket: the
+/// exact serialized DefInjected key and the TKey identity are separate maps
+/// — an entry of one kind never overwrites the other when both share a
+/// display key.
+struct TypedScope {
+    units: Vec<rimloc_core::TransUnit>,
+    registry: TKeyRegistry,
+    /// Exact serialized DefInjected elements (`{defName}.{field}`).
+    definj: BTreeMap<String, SourceEntryId>,
+    /// TKey logical identities (`{defName}.{TKey}`).
+    tkey: BTreeMap<String, SourceEntryId>,
+}
+
+impl TypedScope {
+    fn matcher(&self) -> SourceMatcher<'_> {
+        SourceMatcher::new(&self.units, &self.registry)
+    }
+}
+
+impl ScopedPackResolver {
+    fn new(project: &Project) -> Self {
+        let mut out = Self {
+            keyed: None,
+            typed: BTreeMap::new(),
+        };
+        for e in &project.entries {
+            let unit = rimloc_core::TransUnit {
+                key: e.id.key.clone(),
+                source: Some(e.text.clone()),
+                path: PathBuf::from(
+                    e.contexts
+                        .first()
+                        .map(|c| c.file.clone())
+                        .unwrap_or_default(),
+                ),
+                ..Default::default()
+            };
+            match e.id.kind {
+                EntryKind::Keyed => {
+                    let scope = out.keyed.get_or_insert_with(|| TypedScope {
+                        units: Vec::new(),
+                        registry: TKeyRegistry::default(),
+                        definj: BTreeMap::new(),
+                        tkey: BTreeMap::new(),
+                    });
+                    scope.units.push(unit);
+                    scope.definj.insert(e.id.key.clone(), e.id.clone());
+                }
+                EntryKind::DefInjected | EntryKind::TKey => {
+                    // Exact def-type buckets — no case folding that could
+                    // merge two genuinely different types.
+                    let Some(dt) = e.id.def_type.clone() else {
+                        // Untyped entries cannot be scoped from a pack
+                        // folder — never guessed into a match.
+                        continue;
+                    };
+                    let scope = out.typed.entry(dt).or_insert_with(|| TypedScope {
+                        units: Vec::new(),
+                        registry: TKeyRegistry::default(),
+                        definj: BTreeMap::new(),
+                        tkey: BTreeMap::new(),
+                    });
+                    if e.tkey.is_some() {
+                        scope.registry.identities.insert(e.id.key.clone());
+                    }
+                    scope.units.push(unit);
+                    match e.id.kind {
+                        EntryKind::DefInjected => {
+                            scope.definj.insert(e.id.key.clone(), e.id.clone());
+                        }
+                        _ => {
+                            scope.tkey.insert(e.id.key.clone(), e.id.clone());
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        out
+    }
+
+    /// The canonical identity a pack line (path + key) addresses, if any.
+    fn resolve(&self, pack_path: &Path, pack_key: &str) -> Option<SourceEntryId> {
+        let s = pack_path.to_string_lossy().replace('\\', "/");
+        if s.contains("/Keyed/") {
+            let scope = self.keyed.as_ref()?;
+            return scope.definj.get(pack_key).cloned();
+        }
+        let typed = if let Some(i) = s.find("/DefInjected/") {
+            let seg = s[i + "/DefInjected/".len()..]
+                .split('/')
+                .next()
+                .unwrap_or_default();
+            (!seg.is_empty()).then(|| seg.to_string())
+        } else {
+            None
+        };
+        let dt = typed?;
+        let scope = self.typed.get(&dt)?;
+        // 1) The real serialized native DefInjected element wins over any
+        //    alias path.
+        if let Some(id) = scope.definj.get(pack_key) {
+            return Some(id.clone());
+        }
+        // 2) The canonical matcher within the SAME scope: exact TKey
+        //    identity, proven alias, known suffix — kinds are never swapped
+        //    and an unresolved line stays unresolved (no guessed match).
+        scope.matcher().source_for_target(pack_key).and_then(|key| {
+            scope
+                .tkey
+                .get(&key)
+                .or_else(|| scope.definj.get(&key))
+                .cloned()
+        })
+    }
+}
+
 /// Workflow C seed: import an existing translation pack into the project.
-/// Resolution goes through the canonical matcher (SourceMatcher): exact,
-/// proven aliases, then TKey-suffix fallback — never shape stripping.
-/// Every match is recorded with origin=Imported; nothing is overwritten
-/// silently (existing translations win only if the slot was empty).
+///
+/// Resolution is SCOPE-AWARE over the canonical identity (identity fix):
+/// the pack file's own scope — Keyed, or `DefInjected/<DefType>` — decides
+/// which canonical entries are candidates, and the ONE shared matcher
+/// ([`crate::matching`]) resolves exact keys, proven aliases and
+/// TKey-suffix proofs WITHIN that scope. Matching never crosses kinds or
+/// def types: a Keyed line maps to the Keyed entry, a `DefInjected/ThingDef`
+/// element to the ThingDef entry — never to an AbilityDef entry sharing the
+/// same logical key. Every match is recorded with origin=Imported; nothing
+/// is overwritten silently (existing translations win only if the slot was
+/// empty).
 pub fn apply_existing_translation(
     project: &mut Project,
     pack_root: &Path,
     locale: &str,
 ) -> Result<usize> {
-    use crate::matching::SourceMatcher;
-
-    // Source-side units reconstructed from canonical entries.
-    let src_units: Vec<rimloc_core::TransUnit> = project
-        .entries
-        .iter()
-        .map(|e| rimloc_core::TransUnit {
-            key: e.id.key.clone(),
-            source: Some(e.text.clone()),
-            path: PathBuf::from(
-                e.contexts
-                    .first()
-                    .map(|c| c.file.clone())
-                    .unwrap_or_default(),
-            ),
-            line: None,
-            tkey: None,
-            ..Default::default()
-        })
-        .collect();
-    let registry = crate::matching::TKeyRegistry::from_identities(
-        project
-            .entries
-            .iter()
-            .filter(|e| e.id.kind == EntryKind::TKey)
-            .map(|e| e.id.key.clone()),
-    );
-    let matcher = SourceMatcher::new(&src_units, &registry);
-
+    let resolver = ScopedPackResolver::new(project);
     let pack_units = rimloc_parsers_xml::scan_keyed_xml(pack_root)?;
     let mut applied = 0usize;
     for u in &pack_units {
         let Some(text) = u.source.as_deref().map(str::trim).filter(|t| !t.is_empty()) else {
             continue;
         };
-        if let Some(source_key) = matcher.source_for_target(&u.key) {
-            let kind = if project
-                .entries
-                .iter()
-                .any(|e| e.id.kind == EntryKind::TKey && e.id.key == source_key)
-            {
-                EntryKind::TKey
-            } else {
-                EntryKind::DefInjected
-            };
-            let id = SourceEntryId {
-                kind,
-                key: source_key,
-            };
-            if project.translation(&id, locale).is_none() {
-                project.translations.push(Translation {
-                    source_id: id,
-                    locale: locale.to_string(),
-                    text: Some(text.to_string()),
-                    completeness: if text.eq_ignore_ascii_case("TODO") {
-                        Completeness::Todo
-                    } else {
-                        Completeness::Translated
-                    },
-                    review: dom::Review::None,
-                    validation: dom::ValidationState::Unknown,
-                    lifecycle: dom::Lifecycle::Active,
-                    origin: Origin::Imported,
-                    notes: String::new(),
-                    source_changed: None,
-                });
-                applied += 1;
-            }
+        let Some(id) = resolver.resolve(&u.path, &u.key) else {
+            continue;
+        };
+        if project.translation(&id, locale).is_none() {
+            project.update_translation(id, locale, Some(text.to_string()), Origin::Imported);
+            applied += 1;
         }
     }
     Ok(applied)
@@ -198,10 +278,14 @@ pub fn write_rimworld_translation(
                 keyed.insert(entry.id.key.clone(), text.to_string());
             }
             EntryKind::TKey | EntryKind::DefInjected => {
+                // The identity discriminator is authoritative for output
+                // grouping: each def type lands in its own DefInjected
+                // catalog even when defName/field keys collide across types.
                 let def_type = entry
-                    .tkey
-                    .as_ref()
-                    .map(|m| m.def_type.clone())
+                    .id
+                    .def_type
+                    .clone()
+                    .or_else(|| entry.tkey.as_ref().map(|m| m.def_type.clone()))
                     .or_else(|| def_type_from_contexts(entry))
                     .unwrap_or_else(|| "Misc".into());
                 let def_name = entry
@@ -304,7 +388,7 @@ pub fn provenance_summary(project: &Project) -> BTreeMap<String, usize> {
 #[cfg(test)]
 mod gate_i_tests {
     use super::*;
-    use rimloc_domain::canonical::SourceProvenance;
+    use rimloc_domain::canonical::{Completeness, SourceProvenance};
     use rimloc_domain::canonical::{SourceEntry, Translation};
 
     fn project_with_translation(
@@ -316,6 +400,7 @@ mod gate_i_tests {
         let id = SourceEntryId {
             kind,
             key: key.into(),
+            def_type: None,
         };
         Project {
             entries: vec![SourceEntry {
@@ -364,6 +449,7 @@ mod gate_i_tests {
             source_id: SourceEntryId {
                 kind: EntryKind::Keyed,
                 key: "Greeting".into(),
+                def_type: None,
             },
             locale: "Russian".into(),
             text: Some("Привет".into()),
@@ -379,6 +465,7 @@ mod gate_i_tests {
             id: SourceEntryId {
                 kind: EntryKind::Keyed,
                 key: "Greeting".into(),
+                def_type: None,
             },
             text: "hello".into(),
             source_locale: "en".into(),
@@ -471,6 +558,8 @@ mod gate_i4_acceptance {
 
         // ---------- Workflow B: PO interoperability adapter ----------
         // project -> PO file (adapter export over canonical translations)...
+        // Synthesized reference paths carry the DefInjected/<DefType>/
+        // scope so the import resolves through the same identity rules.
         let po_path = tmp.path().join("interop.po");
         let po_units: Vec<rimloc_core::TransUnit> = project
             .translations
@@ -481,22 +570,23 @@ mod gate_i4_acceptance {
                     .entries
                     .iter()
                     .find(|e| e.id == t.source_id)
-                    .map(|e| rimloc_core::TransUnit {
-                        key: match (&e.id.kind, &e.tkey) {
-                            (EntryKind::TKey, Some(m)) => format!("{}{}", e.id.key, m.suffix),
-                            _ => e.id.key.clone(),
-                        },
-                        source: Some(e.text.clone()),
-                        path: PathBuf::from(format!(
-                            "Languages/Russian/DefInjected/{}.xml",
-                            e.tkey
-                                .as_ref()
-                                .map(|m| m.def_type.clone())
-                                .unwrap_or_else(|| "Misc".into())
-                        )),
-                        line: None,
-                        tkey: None,
-                        ..Default::default()
+                    .map(|e| {
+                        let def_type =
+                            e.id.def_type
+                                .clone()
+                                .or_else(|| e.tkey.as_ref().map(|m| m.def_type.clone()))
+                                .unwrap_or_else(|| "Misc".into());
+                        rimloc_core::TransUnit {
+                            key: match (&e.id.kind, &e.tkey) {
+                                (EntryKind::TKey, Some(m)) => format!("{}{}", e.id.key, m.suffix),
+                                _ => e.id.key.clone(),
+                            },
+                            source: Some(e.text.clone()),
+                            path: PathBuf::from(format!(
+                                "Languages/Russian/DefInjected/{def_type}/interop.xml"
+                            )),
+                            ..Default::default()
+                        }
                     })
             })
             .collect();
@@ -525,56 +615,38 @@ mod gate_i4_acceptance {
             })
             .collect();
         rimloc_export_po::write_po_with_tm(&po_path, &po_units, Some("ru"), Some(&tm_map)).unwrap();
-        // ...external-like import into a FRESH project (same source scan)...
+        // ...external-like import into a FRESH project (same source scan),
+        // through the SAME scope-aware resolver as pack import — the
+        // identity fix has no separate PO matching path...
         let mut project_b = build_project(&root, Some("1.6")).unwrap();
         let entries = rimloc_import_po::read_po_entries(&po_path).unwrap();
-        let matcher_units: Vec<rimloc_core::TransUnit> = project_b
-            .entries
-            .iter()
-            .map(|e| rimloc_core::TransUnit {
-                key: e.id.key.clone(),
-                source: Some(e.text.clone()),
-                path: PathBuf::new(),
-                line: None,
-                tkey: None,
-                ..Default::default()
-            })
-            .collect();
-        let registry = crate::matching::TKeyRegistry::from_identities(
-            project_b
-                .entries
-                .iter()
-                .filter(|e| e.id.kind == EntryKind::TKey)
-                .map(|e| e.id.key.clone()),
-        );
-        let matcher = crate::matching::SourceMatcher::new(&matcher_units, &registry);
         let mut merged = 0;
         for e in &entries {
             let v = e.value.trim();
             if v.is_empty() {
                 continue;
             }
-            if let Some(source_key) = matcher.source_for_target(&e.key) {
-                let kind = if project_b
-                    .entries
-                    .iter()
-                    .any(|en| en.id.kind == EntryKind::TKey && en.id.key == source_key)
-                {
-                    EntryKind::TKey
-                } else {
-                    EntryKind::DefInjected
-                };
-                project_b.update_translation(
-                    SourceEntryId {
-                        kind,
-                        key: source_key,
-                    },
-                    "Russian",
-                    Some(v.to_string()),
-                    dom::Origin::Imported,
-                );
-                merged += 1;
-            }
+            // Reconstruct the scoped reference path: the PO key carries the
+            // identity (TKey suffix included); the scope comes from the
+            // def type of whichever entry the PO was exported from — which
+            // the fresh project shares, so resolve by scanning its own
+            // DefInjected/TKey entries for the matching serialization key.
+            let Some(id) = project_b
+                .entries
+                .iter()
+                .find(|en| {
+                    let serialization_key = match (&en.id.kind, &en.tkey) {
+                        (EntryKind::TKey, Some(m)) => format!("{}{}", en.id.key, m.suffix),
+                        _ => en.id.key.clone(),
+                    };
+                    serialization_key == e.key
+                })
+                .map(|en| en.id.clone())
+            else {
+                continue;
+            };
+            project_b.update_translation(id, "Russian", Some(v.to_string()), dom::Origin::Imported);
+            merged += 1;
         }
         assert!(
             merged >= 4,
@@ -588,6 +660,365 @@ mod gate_i4_acceptance {
         )
         .unwrap();
         assert!(quest_b.contains("<SampleQuest.LetterLabelFavorReceiver.slateRef>Метка услуги<"));
+    }
+}
+
+#[cfg(test)]
+mod identity_regression {
+    //! Approved architectural identity fix (pre-freeze blocker): two def
+    //! types sharing one logical key are TWO identities end-to-end — build,
+    //! scoped pack import, save/reload, native output and source-change
+    //! detection. Keyed import is fixed by the same scope work.
+    use super::*;
+    use rimloc_domain::canonical::SourceEntry;
+
+    fn write_def(path: &std::path::Path, body: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, body).unwrap();
+    }
+
+    fn collision_mod(dir: &std::path::Path) {
+        write_def(
+            &dir.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>thing label</label></ThingDef></Defs>"#,
+        );
+        write_def(
+            &dir.join("Defs/B_Ability.xml"),
+            r#"<Defs><AbilityDef><defName>Dup</defName><label>ability label</label></AbilityDef></Defs>"#,
+        );
+    }
+
+    fn entry_by_type<'a>(p: &'a Project, key: &str, def_type: &str) -> &'a SourceEntry {
+        p.entries
+            .iter()
+            .find(|e| {
+                e.id.key == key
+                    && e.id
+                        .def_type
+                        .as_deref()
+                        .is_some_and(|dt| dt.eq_ignore_ascii_case(def_type))
+            })
+            .unwrap_or_else(|| {
+                panic!(
+                    "entry {} missing; have {:?}",
+                    key,
+                    p.entries
+                        .iter()
+                        .map(|e| e.id.display_identity())
+                        .collect::<Vec<_>>()
+                )
+            })
+    }
+
+    /// Full pipeline: two def types, one key -> two identities survive
+    /// build -> different translations -> save/reload -> native output in
+    /// DIFFERENT DefInjected catalogs.
+    #[test]
+    fn collision_survives_build_translate_save_and_native_output() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        collision_mod(&root);
+        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let thing = entry_by_type(&p, "Dup.label", "ThingDef").id.clone();
+        let ability = entry_by_type(&p, "Dup.label", "AbilityDef").id.clone();
+        p.update_translation(thing.clone(), "Russian", Some("вещь".into()), Origin::Human);
+        p.update_translation(
+            ability.clone(),
+            "Russian",
+            Some("способность".into()),
+            Origin::Human,
+        );
+
+        let file = dir.path().join("p.rimloc.json");
+        crate::project_store::save_project(&p, &file).unwrap();
+        let reloaded = crate::project_store::load_project(&file).unwrap();
+        assert_eq!(
+            reloaded
+                .translation(&thing, "Russian")
+                .unwrap()
+                .text
+                .as_deref(),
+            Some("вещь")
+        );
+        assert_eq!(
+            reloaded
+                .translation(&ability, "Russian")
+                .unwrap()
+                .text
+                .as_deref(),
+            Some("способность")
+        );
+
+        let out = dir.path().join("out");
+        write_rimworld_translation(&reloaded, &out, "Russian", "T", "t.id", "1.6").unwrap();
+        let thing_xml =
+            std::fs::read_to_string(out.join("Languages/Russian/DefInjected/ThingDef/Dup.xml"))
+                .unwrap();
+        let ability_xml =
+            std::fs::read_to_string(out.join("Languages/Russian/DefInjected/AbilityDef/Dup.xml"))
+                .unwrap();
+        assert!(thing_xml.contains("вещь"), "{thing_xml}");
+        assert!(!thing_xml.contains("способность"));
+        assert!(ability_xml.contains("способность"), "{ability_xml}");
+        assert!(!ability_xml.contains("вещь"));
+    }
+
+    /// Scoped pack import: the same logical key under Keyed + two def types
+    /// maps each pack line to ITS OWN entry (previously the Keyed line was
+    /// silently imported as DefInjected and types collided).
+    #[test]
+    fn scoped_pack_import_matches_same_key_across_kinds_and_types() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        collision_mod(&root);
+        write_def(
+            &root.join("Languages/English/Keyed/K.xml"),
+            "<LanguageData>\n  <Greeting>hello</Greeting>\n</LanguageData>\n",
+        );
+        let pack = dir.path().join("pack/Languages/Russian");
+        write_def(
+            &pack.join("Keyed/Keys.xml"),
+            "<LanguageData>\n  <Greeting>Привет</Greeting>\n</LanguageData>\n",
+        );
+        write_def(
+            &pack.join("DefInjected/ThingDef/Dup.xml"),
+            "<LanguageData>\n  <Dup.label>вещь</Dup.label>\n</LanguageData>\n",
+        );
+        write_def(
+            &pack.join("DefInjected/AbilityDef/Dup.xml"),
+            "<LanguageData>\n  <Dup.label>способность</Dup.label>\n</LanguageData>\n",
+        );
+        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let applied = apply_existing_translation(&mut p, &pack, "Russian").unwrap();
+        assert_eq!(applied, 3, "Keyed + ThingDef + AbilityDef all scoped-match");
+        let thing_t = p
+            .translation(&entry_by_type(&p, "Dup.label", "ThingDef").id, "Russian")
+            .unwrap();
+        assert_eq!(thing_t.text.as_deref(), Some("вещь"));
+        let ability_t = p
+            .translation(&entry_by_type(&p, "Dup.label", "AbilityDef").id, "Russian")
+            .unwrap();
+        assert_eq!(ability_t.text.as_deref(), Some("способность"));
+        let keyed = p
+            .entries
+            .iter()
+            .find(|e| e.id.kind == EntryKind::Keyed && e.id.key == "Greeting")
+            .unwrap();
+        assert_eq!(
+            p.translation(&keyed.id, "Russian").unwrap().text.as_deref(),
+            Some("Привет"),
+            "Keyed import works through the same scoped resolver"
+        );
+    }
+
+    /// TKey suffix proof stays WITHIN the def-type scope: the same
+    /// defName+TKey under two def types are two identities; each pack
+    /// folder maps to its own serialization.
+    #[test]
+    fn tkey_suffix_resolution_stays_scoped() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        write_def(
+            &root.join("Defs/Q.xml"),
+            r#"<Defs><QuestScriptDef><defName>Sample</defName><label TKey="LetterLabel">quest text</label></QuestScriptDef></Defs>"#,
+        );
+        write_def(
+            &root.join("Defs/T.xml"),
+            r#"<Defs><TipSetDef><defName>Sample</defName><tips><li TKey="LetterLabel">tip text</li></tips></TipSetDef></Defs>"#,
+        );
+        let pack = dir.path().join("pack/Languages/Russian");
+        write_def(
+            &pack.join("DefInjected/QuestScriptDef/Sample.xml"),
+            "<LanguageData>\n  <Sample.LetterLabel.slateRef>квест</Sample.LetterLabel.slateRef>\n</LanguageData>\n",
+        );
+        write_def(
+            &pack.join("DefInjected/TipSetDef/Sample.xml"),
+            "<LanguageData>\n  <Sample.LetterLabel>подсказка</Sample.LetterLabel>\n</LanguageData>\n",
+        );
+        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let quest_id = entry_by_type(&p, "Sample.LetterLabel", "QuestScriptDef")
+            .id
+            .clone();
+        let tip_id = entry_by_type(&p, "Sample.LetterLabel", "TipSetDef")
+            .id
+            .clone();
+        assert_eq!(
+            entry_by_type(&p, "Sample.LetterLabel", "QuestScriptDef").text,
+            "quest text"
+        );
+        assert_eq!(
+            entry_by_type(&p, "Sample.LetterLabel", "TipSetDef").text,
+            "tip text"
+        );
+        let applied = apply_existing_translation(&mut p, &pack, "Russian").unwrap();
+        assert_eq!(applied, 2);
+        assert_eq!(
+            p.translation(&quest_id, "Russian").unwrap().text.as_deref(),
+            Some("квест")
+        );
+        assert_eq!(
+            p.translation(&tip_id, "Russian").unwrap().text.as_deref(),
+            Some("подсказка")
+        );
+    }
+
+    /// Source-change detection compares FULL identities: a change to one
+    /// def type must not flag or transplant the other's translation, and a
+    /// vanished def type only obsoletes its own work.
+    #[test]
+    fn source_change_never_transplants_across_types() {
+        let dir = tempfile::tempdir().unwrap();
+        let v1 = dir.path().join("v1");
+        let v2 = dir.path().join("v2");
+        write_def(
+            &v1.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>thing v1</label></ThingDef></Defs>"#,
+        );
+        write_def(
+            &v1.join("Defs/B_Ability.xml"),
+            r#"<Defs><AbilityDef><defName>Dup</defName><label>ability v1</label></AbilityDef></Defs>"#,
+        );
+        write_def(
+            &v2.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>thing v2</label></ThingDef></Defs>"#,
+        );
+        write_def(
+            &v2.join("Defs/B_Ability.xml"),
+            r#"<Defs><AbilityDef><defName>Dup</defName><label>ability v1</label></AbilityDef></Defs>"#,
+        );
+        let mut p = build_project(&v1, Some("1.6")).unwrap();
+        let ability_id = entry_by_type(&p, "Dup.label", "AbilityDef").id.clone();
+        p.update_translation(
+            ability_id.clone(),
+            "Russian",
+            Some("способность".into()),
+            Origin::Human,
+        );
+
+        let report = detect_source_changes(&mut p, &v2, Some("1.6")).unwrap();
+        assert_eq!(
+            report.source_changed, 0,
+            "the ThingDef change must not flag the AbilityDef translation: {report:?}"
+        );
+        assert_eq!(report.obsolete, 0);
+        assert_eq!(
+            p.translation(&ability_id, "Russian")
+                .unwrap()
+                .text
+                .as_deref(),
+            Some("способность")
+        );
+
+        // Now the AbilityDef type disappears entirely: only its own
+        // translation becomes obsolete; the ThingDef work is untouched.
+        std::fs::remove_file(v2.join("Defs/B_Ability.xml")).unwrap();
+        let report = detect_source_changes(&mut p, &v2, Some("1.6")).unwrap();
+        assert_eq!(report.obsolete, 1, "{report:?}");
+        assert_eq!(
+            p.translation(&ability_id, "Russian").unwrap().lifecycle,
+            dom::Lifecycle::Obsolete
+        );
+        assert_eq!(
+            p.translation(&ability_id, "Russian")
+                .unwrap()
+                .text
+                .as_deref(),
+            Some("способность")
+        );
+    }
+    /// 028-2: same DefType AND same display key for a plain DefInjected
+    /// sidecar AND a TKey identity — both entries exist, and scoped pack
+    /// import lands each pack line on its OWN kind (native element exact
+    /// first, TKey-suffix proof second), never one overwriting the other.
+    #[test]
+    fn same_key_tkey_and_definjected_both_kept_and_scoped() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        write_def(
+            &root.join("Defs/Q.xml"),
+            r#"<Defs><QuestScriptDef><defName>Sample</defName><label TKey="LetterLabel">tkey text</label></QuestScriptDef></Defs>"#,
+        );
+        write_def(
+            &root.join("Languages/English/DefInjected/QuestScriptDef/Sample.xml"),
+            "<LanguageData>\n  <Sample.LetterLabel>sidecar text</Sample.LetterLabel>\n</LanguageData>\n",
+        );
+        let pack = dir.path().join("pack/Languages/Russian");
+        write_def(
+            &pack.join("DefInjected/QuestScriptDef/Sample.xml"),
+            "<LanguageData>\n  <Sample.LetterLabel>сайдкар</Sample.LetterLabel>\n  <Sample.LetterLabel.slateRef>ткей</Sample.LetterLabel.slateRef>\n</LanguageData>\n",
+        );
+        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let definj_id = p
+            .entries
+            .iter()
+            .find(|e| e.id.kind == EntryKind::DefInjected && e.id.key == "Sample.LetterLabel")
+            .expect("plain DefInjected identity kept")
+            .id
+            .clone();
+        let tkey_id = p
+            .entries
+            .iter()
+            .find(|e| e.id.kind == EntryKind::TKey && e.id.key == "Sample.LetterLabel")
+            .expect("TKey identity kept alongside the same-key sidecar")
+            .id
+            .clone();
+        assert_eq!(
+            p.entries.iter().find(|e| e.id == definj_id).unwrap().text,
+            "sidecar text"
+        );
+        assert_eq!(
+            p.entries.iter().find(|e| e.id == tkey_id).unwrap().text,
+            "tkey text"
+        );
+        let applied = apply_existing_translation(&mut p, &pack, "Russian").unwrap();
+        assert_eq!(applied, 2, "each pack line maps to its OWN kind");
+        assert_eq!(
+            p.translation(&definj_id, "Russian")
+                .unwrap()
+                .text
+                .as_deref(),
+            Some("сайдкар")
+        );
+        assert_eq!(
+            p.translation(&tkey_id, "Russian").unwrap().text.as_deref(),
+            Some("ткей")
+        );
+    }
+
+    /// 028-5: detect_source_changes keeps the RESOLVED version on new
+    /// entries — a requested 1.6 against a mod that resolves to 1.5 must
+    /// not stamp 1.6 onto fresh provenance.
+    #[test]
+    fn rescan_preserves_resolved_version_on_new_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("LoadFolders.xml"),
+            "<loadFolders><v1.5><li>/</li><li>1.5</li></v1.5></loadFolders>",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("1.5/Defs")).unwrap();
+        std::fs::write(
+            root.join("1.5/Defs/A.xml"),
+            r#"<Defs><ThingDef><defName>F</defName><label>v15</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        let mut p = build_project(root, Some("1.6")).unwrap();
+        // Later rescan with a NEW source entry in the same 1.5 root.
+        std::fs::write(
+            root.join("1.5/Defs/B.xml"),
+            r#"<Defs><ThingDef><defName>G</defName><label>brand new</label></ThingDef></Defs>"#,
+        )
+        .unwrap();
+        let report = detect_source_changes(&mut p, root, Some("1.6")).unwrap();
+        assert_eq!(report.new_source, 1, "{report:?}");
+        let g = p.entries.iter().find(|e| e.id.key == "G.label").unwrap();
+        assert_eq!(
+            g.provenance.version_selected.as_deref(),
+            Some("1.5"),
+            "resolved 1.5 must survive the rescan (not the requested 1.6)"
+        );
     }
 }
 
@@ -605,26 +1036,22 @@ pub fn detect_source_changes(
     let fresh = build_project(updated_mod_root, target_version)?;
     let mut report = SourceChangeReport::default();
 
-    let fresh_by_key: std::collections::HashMap<&str, &rimloc_domain::canonical::SourceEntry> =
-        fresh
-            .entries
-            .iter()
-            .map(|e| (e.id.key.as_str(), e))
-            .collect();
-    let old_by_key: std::collections::HashMap<&str, &rimloc_domain::canonical::SourceEntry> =
-        project
-            .entries
-            .iter()
-            .map(|e| (e.id.key.as_str(), e))
-            .collect();
+    // FULL STRUCTURAL identity compare (the SourceEntryId itself — never a
+    // concatenated string): a shared display key across two def types or
+    // kinds must never transplant a translation from one identity to
+    // another.
+    let fresh_by_id: std::collections::HashMap<SourceEntryId, &SourceEntry> =
+        fresh.entries.iter().map(|e| (e.id.clone(), e)).collect();
+    let old_by_id: std::collections::HashMap<SourceEntryId, &SourceEntry> =
+        project.entries.iter().map(|e| (e.id.clone(), e)).collect();
 
     // 1. Changed source text for translated entries.
     for t in &mut project.translations {
         if t.text.is_none() {
             continue;
         }
-        if let Some(old_entry) = old_by_key.get(t.source_id.key.as_str()) {
-            match fresh_by_key.get(t.source_id.key.as_str()) {
+        if let Some(old_entry) = old_by_id.get(&t.source_id) {
+            match fresh_by_id.get(&t.source_id) {
                 Some(new_entry) => {
                     if new_entry.text != old_entry.text && t.source_changed.is_none() {
                         t.source_changed = Some("source text changed".into());
@@ -641,16 +1068,14 @@ pub fn detect_source_changes(
     }
 
     // 2. New source identities -> fresh untranslated entries in the project.
-    // Owned keys end the borrow of project.entries before we push into it.
-    let old_keys: std::collections::HashSet<String> =
-        old_by_key.keys().map(|k| k.to_string()).collect();
+    // Owned ids end the borrow of project.entries before we push into it.
+    let old_ids: std::collections::HashSet<SourceEntryId> = old_by_id.keys().cloned().collect();
     for e in &fresh.entries {
-        if !old_keys.contains(&e.id.key) {
-            let mut entry = e.clone();
-            entry.provenance.version_selected = target_version
-                .map(String::from)
-                .or_else(|| entry.provenance.version_selected.clone());
-            project.entries.push(entry);
+        if !old_ids.contains(&e.id) {
+            // Fresh provenance is AUTHORITATIVE: the scan already recorded
+            // the RESOLVED version — a requested target_version never
+            // overwrites it (version-fallback contract).
+            project.entries.push(e.clone());
             report.new_source += 1;
         }
     }
@@ -1083,15 +1508,12 @@ mod provenance_regression {
         );
     }
 
-    /// KNOWN LIMITATION, documented for the pre-freeze review (NOT silently
-    /// accepted): canonical identity is kind+key, so two DEF TYPES sharing
-    /// defName+field collapse into one canonical entry. The scan-level
-    /// precedence keeps both occurrences (def-type-aware scopes), and the
-    /// bridge preserves the losing def type as an Overridden context — but
-    /// a domain identity migration (key carrying the def type) is a
-    /// breaking contract change that belongs to the lead, not this fix.
+    /// Identity fix (approved architectural decision): two DEF TYPES
+    /// sharing one `{defName}.{field}` key are TWO distinct entries — each
+    /// with its own def-type discriminator, its own text, its own context —
+    /// never one collapsed entry with an Overridden fiction.
     #[test]
-    fn def_type_key_collision_collapses_in_canonical_model() {
+    fn def_type_key_collision_keeps_both_identities() {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
         std::fs::create_dir_all(root.join("Defs")).unwrap();
@@ -1106,26 +1528,36 @@ mod provenance_regression {
         )
         .unwrap();
         let p = build_project(root, Some("1.6")).unwrap();
-        let matches: Vec<_> = p
+        let mut matches: Vec<_> = p
             .entries
             .iter()
             .filter(|e| e.id.key == "Dup.label")
             .collect();
-        assert_eq!(matches.len(), 1, "documented canonical collapse");
-        assert_eq!(matches[0].id.kind, EntryKind::DefInjected);
-        assert_eq!(matches[0].contexts.len(), 2, "{:?}", matches[0].contexts);
-        // Deterministic stand-in order (lexicographic path) decides the
-        // effective side of the collapse: AbilityDef sorts first here.
-        assert_eq!(
-            matches[0].contexts[0].def_type.as_deref(),
-            Some("AbilityDef")
-        );
+        matches.sort_by(|a, b| a.id.def_type.cmp(&b.id.def_type));
+        assert_eq!(matches.len(), 2, "both def types survive as entries");
+        assert_eq!(matches[0].id.def_type.as_deref(), Some("AbilityDef"));
         assert_eq!(matches[0].text, "ability label");
-        assert_eq!(
-            matches[0].contexts[1].def_type.as_deref(),
-            Some("ThingDef"),
-            "losing def type stays visible as a context"
-        );
+        assert_eq!(matches[0].contexts.len(), 1);
+        assert_eq!(matches[1].id.def_type.as_deref(), Some("ThingDef"));
+        assert_eq!(matches[1].text, "thing label");
+        assert_eq!(matches[1].contexts.len(), 1);
+        assert_ne!(matches[0].id, matches[1].id);
+        let expected_file = |def_type: &str| {
+            if def_type.eq_ignore_ascii_case("ThingDef") {
+                "A_Thing.xml"
+            } else {
+                "B_Ability.xml"
+            }
+        };
+        for e in &matches {
+            assert!(
+                e.contexts[0]
+                    .file
+                    .ends_with(expected_file(e.id.def_type.as_deref().unwrap_or_default())),
+                "each identity points at its OWN source file: {:?}",
+                e.contexts[0]
+            );
+        }
     }
 }
 
@@ -1145,17 +1577,30 @@ mod gate_k_tests {
         EntryKind, Origin, Project, SourceEntry, SourceEntryId, SourceProvenance,
     };
 
+    /// The OLD project's entries must mirror the identities the fresh scan
+    /// produces (DefInjected, ThingDef scope) so the comparison is between
+    /// like identities — the identity fix made cross-kind/cross-type key
+    /// matches distinct.
     fn entry(key: &str, text: &str) -> SourceEntry {
         SourceEntry {
             id: SourceEntryId {
-                kind: EntryKind::Keyed,
+                kind: EntryKind::DefInjected,
                 key: key.into(),
+                def_type: Some("ThingDef".into()),
             },
             text: text.into(),
             source_locale: "en".into(),
             contexts: vec![],
             provenance: SourceProvenance::default(),
             tkey: None,
+        }
+    }
+
+    fn id_of(key: &str) -> SourceEntryId {
+        SourceEntryId {
+            kind: EntryKind::DefInjected,
+            key: key.into(),
+            def_type: Some("ThingDef".into()),
         }
     }
 
@@ -1180,32 +1625,23 @@ mod gate_k_tests {
         p.entries.push(entry("A.label", "old text"));
         // B: translated, source vanished.
         p.entries.push(entry("B.label", "gone source"));
-        // C: new identity (added below by detector).
+        // D: translated, source unchanged.
         p.entries.push(entry("D.label", "untouched"));
 
         p.update_translation(
-            SourceEntryId {
-                kind: EntryKind::Keyed,
-                key: "A.label".into(),
-            },
+            id_of("A.label"),
             "Russian",
             Some("старый перевод".into()),
             Origin::Human,
         );
         p.update_translation(
-            SourceEntryId {
-                kind: EntryKind::Keyed,
-                key: "B.label".into(),
-            },
+            id_of("B.label"),
             "Russian",
             Some("перевод осиротел".into()),
             Origin::Human,
         );
         p.update_translation(
-            SourceEntryId {
-                kind: EntryKind::Keyed,
-                key: "D.label".into(),
-            },
+            id_of("D.label"),
             "Russian",
             Some("не трогать".into()),
             Origin::Human,
@@ -1217,27 +1653,13 @@ mod gate_k_tests {
         assert_eq!(report.obsolete, 1, "{report:?}");
         assert!(report.reusable >= 1, "{report:?}");
 
-        let a = p
-            .translation(
-                &SourceEntryId {
-                    kind: EntryKind::Keyed,
-                    key: "A.label".into(),
-                },
-                "Russian",
-            )
-            .unwrap();
+        let a = p.translation(&id_of("A.label"), "Russian").unwrap();
         assert!(a.source_changed.is_some());
         assert_eq!(a.review, dom::Review::Pending);
         assert_eq!(
-            p.translation(
-                &SourceEntryId {
-                    kind: EntryKind::Keyed,
-                    key: "B.label".into()
-                },
-                "Russian"
-            )
-            .unwrap()
-            .lifecycle,
+            p.translation(&id_of("B.label"), "Russian")
+                .unwrap()
+                .lifecycle,
             dom::Lifecycle::Obsolete
         );
         // Old translation text preserved even though source changed.
