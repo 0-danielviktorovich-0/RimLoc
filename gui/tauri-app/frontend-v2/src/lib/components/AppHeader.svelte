@@ -10,6 +10,8 @@
   import { i18n } from '../../i18n/store.svelte';
   import { router } from '../router.svelte';
   import { project } from '../stores/project.svelte';
+  import { languages } from '../languages/store.svelte';
+  import { registry } from '../languages/registry';
 
   const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
   const LOCALES: Locale[] = ['ru', 'en'];
@@ -51,7 +53,11 @@
       <span class="brand-meta" aria-hidden="true">·</span>
       <span class="brand-project">
         {t('header.project')}: <span class="mono">{project.projectName}</span> ·
-        <span class="mono">en → {project.targetLocale.toUpperCase()}</span> ·
+        <!-- Multi-target (W2): the pair follows the ACTIVE target locale, not a
+             fixed one; it stays independent of the interface language below. -->
+        <span class="mono">
+          {registry.resolve(languages.sourceLocale).nativeName} → {languages.activeDefinition.nativeName}
+        </span> ·
         {t('workspace.meta.version')}
       </span>
     {/if}
