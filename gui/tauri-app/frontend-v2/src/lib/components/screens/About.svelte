@@ -3,8 +3,11 @@
   // ownership, repository link and licensing — including the third-party
   // font notices (IBM Plex / JetBrains Mono ship under the SIL OFL 1.1).
   // Rendered as a card inside Help; version matches the bug-report block.
+  // The version comes from the single version module (W4.5 requirement #4) —
+  // never a hardcoded literal here.
   import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
+  import { APP_VERSION } from '../../version';
 
   const REPO_URL = 'https://github.com/0-danielviktorovich-0/RimLoc';
 </script>
@@ -17,7 +20,7 @@
   <dl class="meta">
     <div class="meta-row">
       <dt>{t('about.version')}</dt>
-      <dd class="mono" data-testid="help.about.version">RimLoc 0.1.0</dd>
+      <dd class="mono" data-testid="help.about.version">RimLoc {APP_VERSION}</dd>
     </div>
     <div class="meta-row">
       <dt>{t('about.maintainer')}</dt>

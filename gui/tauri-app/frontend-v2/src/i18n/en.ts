@@ -670,6 +670,24 @@ export const en: Record<string, string> = {
   'providers.inst.edit': 'Edit',
   'providers.inst.rename': 'Rename',
   'providers.inst.duplicate': 'Duplicate',
+  'providers.inst.export': 'Export',
+  'providers.export.done': 'Exported (mock): JSON without credentials — key fields are omitted entirely.',
+  'providers.inst.cred.shared': 'shared keychain reference',
+  'providers.inst.cred.sharedHint': 'Resolves to the same keychain entry as the original — the secret itself was never copied.',
+  'providers.inst.cred.missing': 'needs credential',
+  'providers.duplicate.title': 'Duplicate “{name}”',
+  'providers.duplicate.note': 'Only non-secret configuration is copied (name, base URL, model, protocol). Decide what happens to the credential:',
+  'providers.duplicate.reuse': 'Reuse keychain reference (shared)',
+  'providers.duplicate.needs': 'Without key (needs credential)',
+  'providers.duplicate.reuseUnavailable': 'The original has no keychain reference yet — save a key first.',
+  'providers.duplicate.local': 'Duplicate (local, no key)',
+  'providers.duplicate.localNote': 'Only non-secret configuration is copied. The service runs locally — no key is involved.',
+  'providers.duplicate.localFlash': 'Duplicated: local provider without a key (mock).',
+  'providers.duplicate.sharedFlash': 'Duplicated: shares the original’s keychain reference (mock).',
+  'providers.duplicate.missingFlash': 'Duplicated: needs its own credential (mock).',
+  'providers.export.unavailable': 'Clipboard unavailable in this context — copy the JSON below manually (mock export).',
+  'providers.export.denied': 'Clipboard write was denied — copy the JSON below manually (mock export).',
+  'providers.export.fallbackNote': 'Provider configuration (credentials excluded):',
   'providers.inst.removeConfirm': 'Remove?',
   'providers.inst.removeWarn': 'Click again to remove the provider. The keychain entry is untouched.',
   'providers.form.key': 'Key',
@@ -903,7 +921,10 @@ export const en: Record<string, string> = {
   'bundle.reason.bulk-user-content': 'Bulk user content',
   'bundle.reason.third-party-visuals': 'Third-party visuals',
 
-  // Shortcuts editor (mandate §14, W4): remap + conflicts + reset
+  // Shortcuts editor (mandate §14, W4): remap + conflicts + reset.
+  // Safety classes per W4.5 requirement #3: rimloc conflicts are errors and
+  // block; system-reserved combos warn; convention combos inform — warnings
+  // never block saving a customization.
   'shortcuts.col.command': 'Command',
   'shortcuts.col.combo': 'Combo',
   'shortcuts.col.actions': 'Actions',
@@ -918,12 +939,25 @@ export const en: Record<string, string> = {
   'shortcuts.def.markReviewed': 'Mark reviewed',
   'shortcuts.change': 'Change',
   'shortcuts.listening': 'Press a combo…',
-  'shortcuts.duplicate': 'duplicate',
-  'shortcuts.conflict': 'Combo conflict: {count}. Remap one of the commands.',
+  'shortcuts.issue.rimlocConflict': 'RimLoc conflict',
+  'shortcuts.issue.systemReserved': 'system-reserved combo',
+  'shortcuts.issue.convention': 'shadows a common convention',
+  'shortcuts.blocked': 'Not saved: another RimLoc command already uses this combo.',
+  'shortcuts.warnReserved': '{count} shortcut(s) use system-reserved combos — saved, but the OS may intercept them.',
+  'shortcuts.infoConvention': '{count} shortcut(s) shadow common app conventions — saved as customized.',
   'shortcuts.platform.mac': 'The modifier on macOS is ⌘ Cmd.',
   'shortcuts.platform.other': 'The modifier on Windows and Linux is Ctrl.',
   'shortcuts.platform.hint': 'The binding is picked up by the editor (mock).',
   'shortcuts.resetAll': 'Reset all to defaults',
+
+  // Mutability provenance (W4.5 requirement #2): glossary/TM records.
+  'mutability.label': 'Origin',
+  'mutability.user-created': 'User-created',
+  'mutability.project-created': 'Project-created',
+  'mutability.imported': 'Imported',
+  'mutability.reference-read-only': 'Reference (read-only)',
+  'mutability.readOnlyReason':
+    'Reference corpora are read-only: the live binding must not destructively mutate reference material. Duplicate the record to edit it.',
 
   // About (mandate §24, W4): card inside Help
   'about.title': 'About',

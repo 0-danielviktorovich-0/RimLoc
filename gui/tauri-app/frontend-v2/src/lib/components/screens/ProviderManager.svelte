@@ -8,6 +8,26 @@
   //   Ollama", "My VPS") with the full lifecycle: enable/disable, default
   //   mark, rename, duplicate, edit, remove, connection test.
   //
+  // Credential semantics (W4.5 requirement #1, behavior-review 008):
+  //   - Duplicate copies ONLY non-secret configuration (name / base URL /
+  //     model / protocol). The secret itself never travels; the copy gets an
+  //     explicit credential decision: reuse a shared keychain reference
+  //     (possible only when the source HAS a resolvable reference), or start
+  //     in "needs credential" state. Local no-key families duplicate plainly
+  //     — honestly offline, no paid-credential claims.
+  //   - Credential identity is an OPAQUE mock keychain handle (`credRef`),
+  //     never a secret and never exported. Own and shared providers resolve
+  //     the same handle; replacing the key on a shared copy detaches it into
+  //     its own handle. The keychain entry itself is never removed by the UI
+  //     (see removeWarn), so a surviving shared copy keeps resolving honestly.
+  //     Invariant kept after every mutation: hasKey=true ⇒ credRef present —
+  //     a provider can never claim "connected" on a non-resolvable credential.
+  //   - Export serializes the provider WITHOUT any credential fields at all —
+  //     auth / key flags / credRef are absent keys, never empty strings.
+  //   - Export reports success only after the clipboard write fulfilled; on
+  //     rejection or a missing clipboard API it falls back to a selectable
+  //     JSON block the user can copy manually.
+  //
   // Secrets are NEVER rendered: the key row shows a keychain flag only
   // ("•••• (keychain)"), never a value. Everything here is mock state — no
   // provider is contacted. Instance changes are synced back to the legacy
@@ -20,6 +40,15 @@
   type Family = ProviderId;
   type Discovery = 'auto' | 'manual';
   type Auth = 'keychain' | 'none';
+  /**
+   * Provenance of the credential a provider instance resolves to:
+   *   own          — this instance has its own keychain entry;
+   *   shared-ref   — resolves to the SAME keychain entry as the original
+   *                  (reference reused at duplicate, never copied);
+   *   missing      — credential required by the protocol but not present;
+   *   not_required — protocol family needs no key (local services).
+   */
+  type CredentialState = 'own' | 'shared-ref' | 'missing' | 'not_required';
 
   interface Instance {
     id: string;
@@ -31,6 +60,14 @@
     auth: Auth;
     /** Keychain flag only — no secret ever lives in this component. */
     hasKey: boolean;
+    /**
+     * Opaque mock keychain handle this instance resolves to (e.g. "kc-1").
+     * An identity for sharing — NOT a secret, never rendered, never exported.
+     * Null = no resolvable credential.
+     */
+    credRef: string | null;
+    /** Where the credential reference comes from (see CredentialState). */
+    credential: CredentialState;
     enabled: boolean;
     isDefault: boolean;
     status: ProviderStatus;
@@ -95,9 +132,17 @@
   }
 
   let nextNum = 4;
+  /** Mock keychain handle sequence — identities only, never secret values. */
+  let nextKc = 2;
+
+  /** A fresh OWN keychain handle for an instance that saves a key. */
+  function newKcRef(): string {
+    return `kc-${nextKc++}`;
+  }
 
   // Mock configured instances: one healthy cloud default, one local offline,
   // one custom not-yet-tested endpoint — three different lifecycle states.
+  // `credential`/`credRef` record provenance and identity; never secret values.
   let instances = $state<Instance[]>([
     {
       id: 'inst-1',
@@ -108,6 +153,8 @@
       discovery: 'auto',
       auth: 'keychain',
       hasKey: true,
+      credRef: 'kc-1',
+      credential: 'own',
       enabled: true,
       isDefault: true,
       status: 'connected'
@@ -121,6 +168,8 @@
       discovery: 'auto',
       auth: 'none',
       hasKey: false,
+      credRef: null,
+      credential: 'not_required',
       enabled: true,
       isDefault: false,
       status: 'offline'
@@ -134,6 +183,8 @@
       discovery: 'manual',
       auth: 'keychain',
       hasKey: false,
+      credRef: null,
+      credential: 'missing',
       enabled: false,
       isDefault: false,
       status: 'not_configured'
@@ -213,6 +264,28 @@
     form.auth = f.privacy === 'local' ? 'none' : 'keychain';
   }
 
+  /** Credential provenance implied by the form state at creation/edit. */
+  function credentialFor(auth: Auth, hasKey: boolean): CredentialState {
+    if (auth === 'none') return 'not_required';
+    return hasKey ? 'own' : 'missing';
+  }
+
+  /**
+   * Honest-state invariant (behavior-review 008): a provider that claims a
+   * key MUST resolve a keychain handle; otherwise it downgrades to a truthful
+   * "needs credential". Called after every credential-affecting mutation.
+   */
+  function revalidateCredentials() {
+    for (const inst of instances) {
+      if (inst.hasKey && !inst.credRef) {
+        inst.hasKey = false;
+        inst.credential = inst.auth === 'none' ? 'not_required' : 'missing';
+        if (inst.status === 'connected') inst.status = 'not_configured';
+      }
+      if (!inst.hasKey && inst.credRef) inst.credRef = null;
+    }
+  }
+
   function saveForm() {
     if (!form) return;
     const name = form.name.trim() || t(`providers.example.${form.family}`);
@@ -224,7 +297,16 @@
         inst.auth = form.auth;
         inst.discovery = form.discovery;
         inst.model = form.model.trim() || inst.model;
-        if (form.hasKey) inst.hasKey = true;
+        if (form.hasKey) {
+          inst.hasKey = true;
+          // Editing keeps an existing own handle; a fresh key on a keyless
+          // instance mints its own handle (never manufactures a shared one).
+          if (!inst.credRef) inst.credRef = newKcRef();
+        }
+        // Editing may move auth/hasKey — recompute credential provenance
+        // unless the instance intentionally shares another entry's reference.
+        if (inst.credential !== 'shared-ref') inst.credential = credentialFor(inst.auth, inst.hasKey);
+        if (inst.auth === 'none') inst.credential = 'not_required';
       }
       showFlash(form.editingId, 'providers.action.saved');
     } else {
@@ -240,16 +322,20 @@
           discovery: form.discovery,
           auth: form.auth,
           hasKey: form.hasKey,
+          credRef: null,
+          credential: credentialFor(form.auth, form.hasKey),
           enabled: true,
           isDefault: false,
           status: form.family === 'ollama' ? 'offline' : 'not_configured'
         }
       ];
       form = null;
+      revalidateCredentials();
       syncLegacy();
       return;
     }
     form = null;
+    revalidateCredentials();
     syncLegacy();
   }
 
@@ -257,11 +343,25 @@
     form = null;
   }
 
-  /** Mock keychain prompt: flips the flag, no secret enters the UI. */
+  /** Mock keychain prompt: flips the flag, no secret enters the UI.
+   *  Saving a key here gives the instance its OWN keychain entry — a shared
+   *  reference is only produced by the explicit duplicate decision, and
+   *  saving over a shared reference DETACHES the copy into its own entry
+   *  (behavior-review 008 #2). */
   function replaceKey(id: string) {
     const inst = instances.find((i) => i.id === id);
-    if (inst) inst.hasKey = true;
+    if (inst) {
+      inst.hasKey = true;
+      if (inst.auth === 'keychain') {
+        if (inst.credential === 'shared-ref' || !inst.credRef) {
+          // Detach: the copy now owns a fresh keychain entry.
+          inst.credRef = newKcRef();
+          inst.credential = 'own';
+        }
+      }
+    }
     showFlash(id, 'providers.test.keySaved');
+    revalidateCredentials();
     syncLegacy();
   }
 
@@ -311,18 +411,101 @@
     renaming = null;
   }
 
-  function duplicate(id: string) {
+  /** Two-step duplicate: first click opens the credential decision, the
+   *  chosen option completes it (W4.5 requirement #1 — duplicate copies ONLY
+   *  non-secret configuration and decides the credential explicitly). */
+  let duplicating = $state<string | null>(null);
+
+  function startDuplicate(id: string) {
+    duplicating = duplicating === id ? null : id;
+  }
+
+  function duplicate(id: string, mode: 'shared-ref' | 'missing') {
     const src = instances.find((i) => i.id === id);
     if (!src) return;
-    // Spread, not structuredClone: $state proxies cannot be cloned directly.
+    // Handler-side guard (behavior-review 008 #1): a shared reference can
+    // only be reused when the source actually resolves one.
+    if (mode === 'shared-ref' && !(src.auth === 'keychain' && src.hasKey && src.credRef)) return;
+    duplicating = null;
+    // Spread of the non-secret projection, not of the source object: the
+    // keychain flag is never carried over as a cloneable value.
     const copy: Instance = {
-      ...src,
+      ...nonSecretConfig(src),
       id: `inst-${nextNum++}`,
       name: t('providers.inst.copyOf', { name: src.name }),
-      isDefault: false
+      auth: src.auth,
+      // Reuse RESOLVES THE SAME keychain identity; it is a reference, not a
+      // copied value. Needs-credential starts with nothing resolvable.
+      hasKey: mode === 'shared-ref',
+      credRef: mode === 'shared-ref' ? src.credRef : null,
+      credential: src.auth === 'none' ? 'not_required' : mode,
+      enabled: true,
+      isDefault: false,
+      // Same keychain identity behaves like the source; a keyless copy starts
+      // unconfigured; a local no-key family stays honestly offline.
+      status:
+        mode === 'shared-ref' || src.auth === 'none' ? src.status : 'not_configured'
     };
     instances = [...instances, copy];
+    revalidateCredentials();
     syncLegacy();
+    showFlash(
+      copy.id,
+      mode === 'shared-ref'
+        ? 'providers.duplicate.sharedFlash'
+        : src.auth === 'none'
+          ? 'providers.duplicate.localFlash'
+          : 'providers.duplicate.missingFlash'
+    );
+  }
+
+  /**
+   * Non-secret projection of an instance: name / base URL / model / protocol
+   * (family + discovery). No auth, no key flags, no credential provenance,
+   * no keychain handle — the same shape `exportInstance` writes, so what you
+   * export is what a duplicate would carry. Reference IDs are excluded.
+   */
+  function nonSecretConfig(src: Instance) {
+    return {
+      name: src.name,
+      family: src.family,
+      baseUrl: src.baseUrl,
+      model: src.model,
+      discovery: src.discovery
+    };
+  }
+
+  /** Clipboard outcome for the export flow (behavior-review 008 #3). */
+  let exportFallback: { id: string; json: string } | null = $state(null);
+
+  /**
+   * Mock export: serializes the NON-SECRET provider configuration as JSON.
+   * Credential fields (auth / hasKey / credential / credRef) are omitted
+   * entirely — absent keys, never empty strings. Success is reported only
+   * after the clipboard write FULFILLED; on rejection or a missing clipboard
+   * API the JSON is shown as a selectable block to copy manually instead of
+   * a false "done".
+   */
+  async function exportInstance(id: string) {
+    const src = instances.find((i) => i.id === id);
+    if (!src) return;
+    const json = JSON.stringify(nonSecretConfig(src), null, 2);
+    const clipboard = navigator.clipboard;
+    if (!clipboard?.writeText) {
+      // Clipboard API unavailable — reviewable fallback, no false success.
+      exportFallback = { id, json };
+      showFlash(id, 'providers.export.unavailable');
+      return;
+    }
+    try {
+      await clipboard.writeText(json);
+      exportFallback = null;
+      showFlash(id, 'providers.export.done');
+    } catch {
+      // Write denied/failed — selectable JSON fallback, explicit message.
+      exportFallback = { id, json };
+      showFlash(id, 'providers.export.denied');
+    }
   }
 
   function removeInstance(id: string) {
@@ -337,6 +520,10 @@
       const heir = instances.find((i) => i.enabled);
       if (heir) heir.isDefault = true;
     }
+    // The keychain entry itself is never removed (removeWarn says so), so
+    // shared copies of a removed provider keep resolving the same handle —
+    // no silent "connected" lie. revalidate enforces hasKey ⇒ credRef.
+    revalidateCredentials();
     syncLegacy();
   }
 
@@ -392,6 +579,7 @@
           class="card"
           class:disabled={!inst.enabled}
           data-testid={`providers.inst.${inst.id}`}
+          data-cred-ref={inst.credRef ?? ''}
         >
           <header class="card-head">
             <span class="card-icon"><Icon name="cpu" size={18} /></span>
@@ -453,8 +641,23 @@
               <dt>{t('providers.form.key')}</dt>
               <dd class="key-cell">
                 <span class="mono" data-testid={`providers.inst.key.${inst.id}`}>
-                  {inst.hasKey ? '•••• •••• (keychain)' : t('providers.key.none')}
+                  {inst.hasKey
+                    ? inst.credential === 'shared-ref'
+                      ? `•••• •••• (${t('providers.inst.cred.shared')})`
+                      : '•••• •••• (keychain)'
+                    : t('providers.key.none')}
                 </span>
+                {#if inst.credential === 'shared-ref'}
+                  <span class="badge cred-shared" data-testid={`providers.inst.credShared.${inst.id}`} title={t('providers.inst.cred.sharedHint')}>
+                    <Icon name="link" size={11} />
+                    {t('providers.inst.cred.shared')}
+                  </span>
+                {:else if inst.credential === 'missing'}
+                  <span class="badge cred-missing" data-testid={`providers.inst.credMissing.${inst.id}`}>
+                    <Icon name="warning" size={11} />
+                    {t('providers.inst.cred.missing')}
+                  </span>
+                {/if}
                 {#if inst.auth === 'keychain'}
                   <button
                     type="button"
@@ -489,8 +692,12 @@
                 {t('providers.inst.rename')}
               </button>
             {/if}
-            <button type="button" class="btn" data-testid={`providers.inst.duplicate.${inst.id}`} onclick={() => duplicate(inst.id)}>
+            <button type="button" class="btn" data-testid={`providers.inst.duplicate.${inst.id}`} onclick={() => startDuplicate(inst.id)}>
               {t('providers.inst.duplicate')}
+            </button>
+            <button type="button" class="btn" data-testid={`providers.inst.export.${inst.id}`} onclick={() => exportInstance(inst.id)}>
+              <Icon name="download" size={14} />
+              {t('providers.inst.export')}
             </button>
             {#if !inst.isDefault}
               <button type="button" class="btn subtle" data-testid={`providers.inst.makeDefault.${inst.id}`} onclick={() => makeDefault(inst.id)}>
@@ -511,8 +718,58 @@
             <p class="hint warn" role="alert">{t('providers.inst.removeWarn')}</p>
           {/if}
 
+          {#if duplicating === inst.id}
+            <div class="dup-choice" data-testid={`providers.inst.duplicateChoice.${inst.id}`} role="group" aria-label={t('providers.duplicate.title', { name: inst.name })}>
+              <p class="dup-choice-title">{t('providers.duplicate.title', { name: inst.name })}</p>
+              {#if inst.auth === 'none'}
+                <p class="dup-choice-note">{t('providers.duplicate.localNote')}</p>
+                <div class="dup-choice-actions">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-testid={`providers.inst.duplicateLocal.${inst.id}`}
+                    onclick={() => duplicate(inst.id, 'missing')}
+                  >
+                    {t('providers.duplicate.local')}
+                  </button>
+                  <button type="button" class="btn subtle" onclick={() => (duplicating = null)}>{t('common.cancel')}</button>
+                </div>
+              {:else}
+                <p class="dup-choice-note">{t('providers.duplicate.note')}</p>
+                <div class="dup-choice-actions">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    data-testid={`providers.inst.duplicateReuse.${inst.id}`}
+                    disabled={!(inst.hasKey && inst.credRef)}
+                    title={inst.hasKey && inst.credRef ? undefined : t('providers.duplicate.reuseUnavailable')}
+                    onclick={() => duplicate(inst.id, 'shared-ref')}
+                  >
+                    {t('providers.duplicate.reuse')}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn"
+                    data-testid={`providers.inst.duplicateMissing.${inst.id}`}
+                    onclick={() => duplicate(inst.id, 'missing')}
+                  >
+                    {t('providers.duplicate.needs')}
+                  </button>
+                  <button type="button" class="btn subtle" onclick={() => (duplicating = null)}>{t('common.cancel')}</button>
+                </div>
+              {/if}
+            </div>
+          {/if}
+
+          {#if exportFallback?.id === inst.id}
+            <div class="export-fallback" data-testid={`providers.inst.exportFallback.${inst.id}`}>
+              <p class="dup-choice-note">{t('providers.export.fallbackNote')}</p>
+              <pre class="export-json" data-testid={`providers.inst.exportJson.${inst.id}`}>{exportFallback.json}</pre>
+            </div>
+          {/if}
+
           {#if flash[inst.id]}
-            <p class="flash" role="status">{t(flash[inst.id]!)}</p>
+            <p class="flash" role="status" data-testid={`providers.inst.flash.${inst.id}`}>{t(flash[inst.id]!)}</p>
           {:else if inst.enabled && inst.status === 'offline'}
             <p class="hint warn"><Icon name="warning" size={13} /> {t('providers.offline.hint')}</p>
           {:else if !inst.enabled}
@@ -816,6 +1073,77 @@
     color: var(--color-primary-text);
     border: 1px solid var(--color-border);
     white-space: nowrap;
+  }
+
+  .badge.cred-shared,
+  .badge.cred-missing {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: var(--text-meta-size);
+    padding: 0 var(--space-2);
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .badge.cred-shared {
+    color: var(--color-primary-text);
+    border: 1px dashed var(--color-border-strong);
+  }
+
+  .badge.cred-missing {
+    color: var(--color-warning);
+    border: 1px solid var(--color-warning);
+  }
+
+  .dup-choice {
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .dup-choice-title {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .dup-choice-note {
+    margin: 0;
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  .dup-choice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .export-fallback {
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .export-json {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-meta-size);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    overflow-x: auto;
+    user-select: all;
+    white-space: pre;
   }
 
   .rename-row {
