@@ -10,11 +10,11 @@
    задачи, новые инварианты/дыры. Хронологический лог не вести — он живёт в git log.
 
 ## Verify at session start (изменчивое)
-- HEAD на момент последнего обновления снапшота: `0c882d2` → **проверь `git rev-parse HEAD`**.
+- Проверенный lead baseline: `0e37b0c` → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: expect clean; чужие незакоммиченные хвосты параллельных агентов —
   не трогать мимоходом.
-- Диск: было ~3.7 GB критично → владелец почистил (~48 GB); **проверяй df перед
-  утверждениями**. `RimLoc/target` (~23 GB) — регенерируемый cargo-кэш.
+- Диск: на проверке 25.09 было ~17 GiB свободно; **проверяй df перед
+  утверждениями**. Не размножать cargo-кэши в worktrees.
 - Style Lab dev-сервер: nohup на :5199, лог /tmp/rimloc-stylelab.log; может быть мёртв —
   рестарт `npm run dev -- --port 5199 --strictPort` из frontend-v2.
 
@@ -37,12 +37,18 @@ FindMod/or-предикаты, ~50% реального покрытия). Клю
 c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
 
 ## BACKEND LANE (сейчас)
-1. **J-проводка**: scan_canonical/validate/GUI вызывают eligibility evaluate() вместо
-   собственных решений; TRANSLATION_ELIGIBILITY.md.
-2. **PRE-FREEZE contract check**: canonical provenance должен уметь отвечать what file /
-   where / which candidate won / why (добавить winner-reason в SourceProvenance до фриза).
-3. **L observability**: doctor, support bundle + redaction preview, Copy-for-AI,
-   structured logs, operation IDs.
+1. **J-проводка лендена** (`303d726`): eligibility diagnostics + optional
+   `SourceProvenance.selected_by`; см. TRANSLATION_ELIGIBILITY.md. Это не доказательство
+   завершённого live GUI binding.
+2. **PRE-FREEZE contract check — OPEN по новому evidence**: в `build_project()` flat
+   scan оставляет `selected_by=None`, LoadFolders получает общую batch-метку;
+   `canonical_bridge` берёт source location из `TransUnit.path`, хотя Defs merge
+   переписывает этот путь в выходной DefInjected. Требуются реальные исходные локации,
+   per-entry winner-reason и регрессии (Defs/Keyed/LoadFolders/TKey multi-context).
+   Само наличие сериализуемого поля не закрывает Source Inspector gate.
+3. **L observability — ACTIVE, не принят**: doctor, support bundle + redaction preview,
+   Copy-for-AI, structured logs, operation IDs. Acceptance: известный сбой → causal
+   context → очищенный bundle → независимое воспроизведение/диагноз.
 4. **BACKEND FREEZE** → компактный delta-бандл (дифф от 50f9483) для ChatGPT.
 5. POST-FREEZE: real UI binding → LIVE ACCEPTANCE GATE (W6 §3 / W7 §26 мандатов).
 
@@ -50,20 +56,33 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
 Лендено: фаза 1 (роутер/rich-mock/Home/Wizard/Workspace UX), GUI-A (Review/Build/
 Existing), GUI-B (Settings/Providers/Help/Cmd+K), W1 (wizard-автомат/replay/naming),
 W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 доки.
-- **W3 — СЛЕДУЮЩАЯ ЗАДАЧА**: гибридная стратегия (existing/TM/glossary чекбоксами +
-  «перевести оставшееся» радио; Manual всегда; меняется после создания) + chat-batch
-  manager (стабильные batch ID, revision/source-change защита, preview/apply, retry-split,
-  чат-профили, sizing Auto/пресеты/advanced). Мандат: CHAT_BATCH_MANDATE.md.
-- W4: provider templates+instances, glossary/TM редакторы, rules inspector, shortcuts
-  editor, panel collapse, About (GUI_QA_MANDATE.md §6-15/24).
-- W5: diagnostics root-cause + redaction preview, lifecycle-терминология, Project screen,
-  capability parity audit, fresh-user QA 6 ролей (GUI_QA_MANDATE §16-21/28-29).
+- **W3 лендена** (`935f70c`, acceptance `0f91203`): гибридная стратегия, chat-batch
+  manager, stale-import/suggestion защита. Mandate identity guard: `91ed049`.
+- **W4 лендена** (`3fa2039`): provider instances, glossary/TM, shortcuts, About.
+  **W4.5 остаётся**: явные credential references при duplicate, безопасный export,
+  mutability/provenance reference-корпусов, shortcut safety, version из build metadata.
+- **W5 ACTIVE, не принята**: diagnostics root-cause + redaction preview, Project screen,
+  capability parity и QA по **8 персонам** (базовые 6 + base-game/DLC + keyboard/a11y).
+  Уточнения acceptance: AUTONOMOUS_STATUS.md, секция W4.5/W5.
 - **W6 PRE-FREEZE**: mock-бейдж «Demo data», scenario browser, anchored tour, demo
   project, REVIEW SCREEN MAP (MOCK_LIVE_ONBOARDING_MANDATE.md).
 - **W7 PRE-FREEZE**: source inspector mock — SOURCE tab, one-click actions (контракт уже
   покрыт backend пунктом 2) (SOURCE_INSPECTOR_MANDATE.md).
 - **W6/W7 POST-FREEZE**: live binding + live acceptance на реальных данных (машина
   владельца: RimWorld 1.6 + Odyssey).
+
+## Исполнение и интеграционный review
+- Lead: текущая Codex-задача; архитектура, snapshot, независимые проверки и интеграция.
+  Основная реализация — существующие GLM-сессии ZCode; сначала reuse, не дублирование.
+- ZCode coordinator: `sess_be9620ba-0118-4457-8ee4-354d3e97c327` (RimLoc).
+  L: `agent_2ba7172f-de60-4338-b7d9-8269ea223ee1`; W5:
+  `agent_d2a2be70-b36b-4142-ad1b-f4480fbc7227`. Их состояние **verify at session start**.
+  Временный operational handoff: `/tmp/rimloc-glm-handoff.md` (может отсутствовать).
+- Независимый baseline на `0e37b0c`: workspace build/test (168 passed), fmt check,
+  clippy `-D warnings`; GUI check 0/0, vitest 20/20, production build — PASS.
+  Это baseline, не acceptance будущих изменений и не live acceptance.
+- Freeze зависит от L и доказанного provenance-контракта; GUI W4.5–W7 продолжается
+  независимо. После freeze — compact delta review → real binding → live acceptance.
 
 ## Mock/live boundary
 Моки/адаптеры до фриза; dev-бейдж «Demo data»; прод не шипит MockTransport (guard в
