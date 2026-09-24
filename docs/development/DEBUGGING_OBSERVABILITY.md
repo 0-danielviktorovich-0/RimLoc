@@ -61,6 +61,15 @@ process). Lifecycle is honest: `end_stage` only closes a stage;
 without `finish` reports no `finished_at` — a crashed operation stays
 looking like one.
 
+Every export (`to_value`, `to_json_pretty`, `write_json`, bundle payloads)
+injects a derived `status` field, computed from lifecycle + recorded
+errors: unfinished with errors = `failed`; unfinished without errors =
+`running`; finished without errors = `succeeded`; finished with errors =
+`failed` (never claims success). The value is derived on demand, so legacy
+serialized logs without it remain readable and re-export consistently; the
+support-bundle report renders the same derived status (section title and
+"Operation state" line), not a hard-coded failed label.
+
 ## Sanitizer (`services::observability::Sanitizer`)
 
 One composable text pipeline (`sanitize_text`): mask secret fragments
@@ -125,6 +134,13 @@ let bundle = collect_support_bundle_for(
     &out_dir, // must NOT be inside scan_root (canonical containment, fail-closed)
 )?;
 ```
+
+Report-truth guarantees: the report headers (RimLoc/RimWorld version,
+target language) are rendered from the SAME sanitized ProjectMeta JSON as
+the payloads — benign values stay verbatim in every artifact, whole-value
+secrets degrade to `[REDACTED]` everywhere — and the collection operation
+is finished before the report is rendered, so its `finished at` timestamp
+is real (never a placeholder for an operation still running).
 
 Files, all via the shared symlink-safe `write_atomic`:
 

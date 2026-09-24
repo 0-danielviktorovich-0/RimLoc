@@ -103,7 +103,9 @@ pub struct OperationLog {
     pub operation_id: String,
     pub name: String,
     pub started_at: String,
+    #[serde(default)]
     pub stages: Vec<StageRecord>,
+    #[serde(default)]
     pub errors: Vec<ErrorRecord>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub finished_at: Option<String>,
@@ -209,21 +211,61 @@ impl OperationLog {
         self.total_duration_ms = Some(self.started.elapsed().as_millis() as u64);
     }
 
-    /// Serialize to a pretty JSON value.
+    /// Derived machine-readable status from lifecycle + recorded errors:
+    /// unfinished with errors = `failed`; unfinished without errors =
+    /// `running`; finished without errors = `succeeded`; finished with
+    /// errors = `failed` (a finished run with errors never claims success).
+    /// Derived on demand — never stored — so older serialized logs without
+    /// the field stay readable and every export agrees.
+    pub fn status(&self) -> OperationStatus {
+        match (self.finished_at.is_some(), self.errors.is_empty()) {
+            (true, true) => OperationStatus::Succeeded,
+            (_, false) => OperationStatus::Failed,
+            (false, true) => OperationStatus::Running,
+        }
+    }
+
+    /// Serialize to a pretty JSON value, injecting the derived `status`.
     pub fn to_value(&self) -> serde_json::Value {
-        serde_json::to_value(self).unwrap_or(serde_json::Value::Null)
+        let mut v = serde_json::to_value(self).unwrap_or(serde_json::Value::Null);
+        if let serde_json::Value::Object(ref mut m) = v {
+            m.insert(
+                "status".to_string(),
+                serde_json::Value::String(self.status().as_str().to_string()),
+            );
+        }
+        v
     }
 
-    /// Serialize to pretty JSON text.
+    /// Serialize to pretty JSON text (derived `status` included).
     pub fn to_json_pretty(&self) -> Result<String> {
-        Ok(serde_json::to_string_pretty(self)?)
+        Ok(serde_json::to_string_pretty(&self.to_value())?)
     }
 
-    /// Persist the log as JSON via `write_atomic`.
+    /// Persist the log as JSON via `write_atomic` (derived `status` included).
     pub fn write_json(&self, path: &Path) -> std::io::Result<()> {
-        let mut json = serde_json::to_string_pretty(self).unwrap_or_else(|_| "{}".to_string());
+        let mut json =
+            serde_json::to_string_pretty(&self.to_value()).unwrap_or_else(|_| "{}".to_string());
         json.push('\n');
         write_atomic(path, json.as_bytes())
+    }
+}
+
+/// Machine-readable derived status of an [`OperationLog`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OperationStatus {
+    Running,
+    Succeeded,
+    Failed,
+}
+
+impl OperationStatus {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            OperationStatus::Running => "running",
+            OperationStatus::Succeeded => "succeeded",
+            OperationStatus::Failed => "failed",
+        }
     }
 }
 
@@ -840,6 +882,22 @@ fn build_report_md(ctx: &ReportContext<'_>) -> Result<String> {
         env_report,
         affected,
     } = *ctx;
+    // ONE sanitized ProjectMeta JSON drives the payload, the header fields
+    // and the redaction summary: benign versions/languages stay verbatim,
+    // whole-value secrets degrade to the marker. Rendering the header from
+    // anything else either over-redacts benign values or leaks secrets.
+    let mut meta_value = serde_json::to_value(project)?;
+    if meta_value
+        .get("rimloc_version")
+        .map(|v| v.is_null())
+        .unwrap_or(true)
+    {
+        meta_value["rimloc_version"] =
+            serde_json::Value::String(env!("CARGO_PKG_VERSION").to_string());
+    }
+    let (meta_clean, meta_report) = san.sanitize_json(&meta_value);
+    let field = |key: &str| -> Option<&str> { meta_clean[key].as_str() };
+
     // Sanitize the primary operation (if any) once and render from the
     // sanitized copy — what the reader sees is exactly what was sanitized.
     let primary_clean = primary.map(|op| san.sanitize_json(&op.to_value()).0);
@@ -856,9 +914,23 @@ fn build_report_md(ctx: &ReportContext<'_>) -> Result<String> {
                 clean["operation_id"].as_str().unwrap_or("?"),
                 clean["name"].as_str().unwrap_or("?")
             ));
-            if !op.is_finished() {
-                md.push_str("- Operation state: NOT finished (failed/crashed) — preserved as-is\n");
+            // Derived status: identical semantics to the JSON payload.
+            match clean["status"].as_str() {
+                Some("failed") if op.is_finished() => {
+                    md.push_str("- Operation state: **failed** (finished with errors)\n");
+                }
+                Some("failed") => {
+                    md.push_str(
+                        "- Operation state: **failed** (NOT finished — failed/crashed) — preserved as-is\n",
+                    );
+                }
+                Some("running") => {
+                    md.push_str("- Operation state: **running** — preserved as-is\n");
+                }
+                _ => md.push_str("- Operation state: **succeeded**\n"),
             }
+            // The collection operation is finished before the report is
+            // rendered, so this is a real timestamp, never a guess.
             md.push_str(&format!(
                 "- Collection: `{}` finished at {}\n",
                 collection.operation_id,
@@ -874,37 +946,29 @@ fn build_report_md(ctx: &ReportContext<'_>) -> Result<String> {
     }
     md.push_str(&format!("- Generated: {}\n", rfc3339_now()));
     md.push_str(&format!("- Scan root: {scan_root_display}\n"));
-    // Every header field goes through the same composable pipeline; a
-    // whole-value secret degrades to the redaction marker, never raw text.
-    let rimloc_version = project
-        .rimloc_version
-        .clone()
-        .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
-    md.push_str(&format!(
-        "- RimLoc version: {}\n",
-        san.sanitize_text(&rimloc_version)
-            .unwrap_or_else(|| REDACTION_MARKER.to_string())
-    ));
-    if let Some(v) = &project.rw_version {
-        md.push_str(&format!(
-            "- RimWorld version: {}\n",
-            san.sanitize_text(v)
-                .unwrap_or_else(|| REDACTION_MARKER.to_string())
-        ));
+    // Header fields come from the sanitized meta: benign values render
+    // verbatim, a whole-value secret renders as the marker, absent fields
+    // render as nothing.
+    if let Some(v) = field("rimloc_version") {
+        md.push_str(&format!("- RimLoc version: {v}\n"));
     }
-    if let Some(v) = &project.target_lang {
-        md.push_str(&format!(
-            "- Target language: {}\n",
-            san.sanitize_text(v)
-                .unwrap_or_else(|| REDACTION_MARKER.to_string())
-        ));
+    if let Some(v) = field("rw_version") {
+        md.push_str(&format!("- RimWorld version: {v}\n"));
+    }
+    if let Some(v) = field("target_lang") {
+        md.push_str(&format!("- Target language: {v}\n"));
     }
     md.push('\n');
 
     // Causal context of the diagnosed operation comes first: this is the
-    // part an independent reviewer needs.
+    // part an independent reviewer needs. The section title follows the
+    // derived status — a succeeded operation is not labelled failed.
     if let Some(clean) = &primary_clean {
-        md.push_str("## Failed operation context\n\n");
+        match clean["status"].as_str() {
+            Some("running") => md.push_str("## Diagnosed operation context (running)\n\n"),
+            Some("succeeded") => md.push_str("## Operation context (succeeded)\n\n"),
+            _ => md.push_str("## Failed operation context\n\n"),
+        }
         if let Some(stages) = clean["stages"].as_array() {
             md.push_str("| stage | started | finished | duration_ms |\n|---|---|---|---|\n");
             for s in stages {
@@ -984,8 +1048,6 @@ fn build_report_md(ctx: &ReportContext<'_>) -> Result<String> {
 
     // Redaction summary describes the actual final payload: metadata,
     // environment (incl. excluded env vars) and serialized operation logs.
-    let meta_value = serde_json::to_value(project)?;
-    let (_, meta_report) = san.sanitize_json(&meta_value);
     md.push_str("## Redaction summary\n\n");
     md.push_str(&format!(
         "- Included fields: {}\n- Redacted fields: {} (metadata: {}, environment: {}, operation logs: masked in place)\n- Excluded fields: {} (environment outside the allowlist)\n",
@@ -1016,11 +1078,12 @@ fn build_report_md(ctx: &ReportContext<'_>) -> Result<String> {
     for (k, v) in env_pairs {
         md.push_str(&format!("- `{k}`: {v}\n"));
     }
-    let (extra_clean, _) = san.sanitize_json(&project.extra);
-    if let serde_json::Value::Object(map) = &extra_clean {
+    if let Some(extra_clean) = meta_clean.get("extra") {
+        let empty_obj = serde_json::Map::new();
+        let map = extra_clean.as_object().unwrap_or(&empty_obj);
         if !map.is_empty() {
             md.push_str("\n## Project metadata (sanitized)\n\n```json\n");
-            md.push_str(&serde_json::to_string_pretty(&extra_clean)?);
+            md.push_str(&serde_json::to_string_pretty(extra_clean)?);
             md.push_str("\n```\n");
         }
     }
@@ -1091,8 +1154,11 @@ pub fn collect_support_bundle_for(
     let counts = collect_scan_counts(&inputs.scan_root, &mut op);
     op.end_stage("diagnostics");
 
-    // Stage: report — human summary (uses sanitized copies of every source).
-    op.begin_stage("report");
+    // All data gathering is done: finish the collection operation BEFORE
+    // the report is rendered, so the report reflects a genuinely completed
+    // collection (a real finished_at, never a guessed one). The report
+    // rendering itself is presentation, not a recorded stage.
+    op.finish();
     let affected_sanitized: Vec<String> = inputs
         .affected
         .iter()
@@ -1118,11 +1184,6 @@ pub fn collect_support_bundle_for(
     })?;
     let report_path = out_dir.join("report.md");
     write_atomic(&report_path, report_md.as_bytes())?;
-    op.end_stage("report");
-
-    // The persisted collection log is complete before anything writes it —
-    // no half-finished stage is ever serialized.
-    op.finish();
 
     // Diagnostics payload: diagnosed operation verbatim in structure but
     // sanitized in content; collection log; counts; sanitized meta
@@ -1279,6 +1340,62 @@ mod tests {
     }
 
     // --- operation id -------------------------------------------------------
+
+    #[test]
+    fn operation_status_is_derived_lifecycle_and_error_aware() {
+        // unfinished, no errors → running
+        let mut running = OperationLog::new("r");
+        running.begin_stage("work");
+        assert_eq!(running.status(), OperationStatus::Running);
+        assert_eq!(
+            running.to_value()["status"],
+            serde_json::Value::String("running".to_string())
+        );
+
+        // unfinished, with errors → failed
+        let mut failed = OperationLog::new("f");
+        failed.begin_stage("v");
+        failed.error_message("v", "boom");
+        failed.end_stage("v");
+        assert_eq!(failed.status(), OperationStatus::Failed);
+
+        // finished, no errors → succeeded
+        let mut ok = OperationLog::new("ok");
+        ok.begin_stage("w");
+        ok.end_stage("w");
+        ok.finish();
+        assert_eq!(ok.status(), OperationStatus::Succeeded);
+        assert!(ok.to_json_pretty().expect("json").contains("\"succeeded\""));
+
+        // finished, with errors → failed (a finished run with errors never
+        // claims success)
+        let mut fin_err = OperationLog::new("fe");
+        fin_err.begin_stage("w");
+        fin_err.error_message("w", "boom");
+        fin_err.end_stage("w");
+        fin_err.finish();
+        assert!(fin_err.is_finished());
+        assert_eq!(fin_err.status(), OperationStatus::Failed);
+        assert_eq!(
+            fin_err.to_value()["status"],
+            serde_json::Value::String("failed".to_string())
+        );
+
+        // Legacy serialized logs WITHOUT the derived field stay readable
+        // and re-derive the status on export.
+        let legacy = serde_json::json!({
+            "operation_id": "op-legacy",
+            "name": "legacy",
+            "started_at": "2026-01-01T00:00:00.000Z",
+            "stages": [],
+        });
+        let parsed: OperationLog = serde_json::from_value(legacy).expect("legacy parses");
+        assert_eq!(parsed.status(), OperationStatus::Running);
+        assert_eq!(
+            parsed.to_value()["status"],
+            serde_json::Value::String("running".to_string())
+        );
+    }
 
     #[test]
     fn operation_ids_are_unique_and_prefixed() {
@@ -1785,6 +1902,34 @@ mod tests {
         let diag = read_to_string(&bundle_dir.join("diagnostics.json"));
         assert!(diag.contains("operation_id"));
         assert!(diag.contains("stages"));
+        // Report truth (023): benign header fields render VERBATIM and
+        // identically across artifacts; the collection completion is a real
+        // timestamp, never a placeholder.
+        assert!(
+            report.contains("- RimWorld version: 1.6"),
+            "benign version kept verbatim"
+        );
+        assert!(report.contains("- Target language: Russian"));
+        assert!(report.contains("- RimLoc version: 0.1.0-alpha.1"));
+        assert!(
+            diag.contains("\"rw_version\": \"1.6\""),
+            "same value in diagnostics"
+        );
+        assert!(
+            !report.contains("finished at ?"),
+            "no placeholder completion"
+        );
+        // Derived collection status agrees with the finished, error-free run.
+        let diag_json: serde_json::Value = serde_json::from_str(&diag).expect("diag json");
+        assert_eq!(
+            diag_json["collection"]["status"].as_str(),
+            Some("succeeded"),
+            "collection derived status"
+        );
+        assert!(
+            diag_json["collection"]["finished_at"].is_string(),
+            "real completion timestamp in diagnostics"
+        );
     }
 
     #[test]
@@ -1975,6 +2120,12 @@ mod tests {
             "context kept in report"
         );
         assert!(report.contains(REDACTION_MARKER));
+        // 023 bug 1: a whole-value secret in a header field is masked in the
+        // report instead of leaking raw, while the label survives.
+        assert!(
+            report.contains("RimWorld version: [REDACTED]"),
+            "secret header masked, label kept"
+        );
         assert!(report.contains(&bundle.operation_id));
         let env = read_to_string(&bundle_dir.join("environment.json"));
         assert!(
