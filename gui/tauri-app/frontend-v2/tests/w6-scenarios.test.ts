@@ -1,20 +1,29 @@
 // W6 regression: dev scenario browser and scenario deep-links
-// (MOCK_LIVE_ONBOARDING_MANDATE §11).
+// (MOCK_LIVE_ONBOARDING_MANDATE §11; lead 024 dev-gate).
 //   - stable, unique scenario ids with reproducible deep-links;
-//   - deep-links apply real setup actions (home modes, demo seeding,
-//     multi-target switch, diagnostics bundle) via the hash alone;
-//   - unknown scenario ids are ignored honestly;
-//   - the browser opens from the dev panel and lists every scenario.
-import { describe, expect, it } from 'vitest';
+//   - deep-links apply real setup actions — but ONLY in dev/testing mode;
+//   - with the mode off, any ?scenario= value (known/unknown/malicious) is
+//     ignored without touching a single store;
+//   - the browser dialog opens from the dev panel, which is itself dev-gated.
+import { beforeEach, describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
 import App from '../src/App.svelte';
 import { SCENARIOS, findScenario, scenarioHref } from '../src/lib/scenarios.svelte';
 import { scenarioBrowser } from '../src/lib/scenarios.svelte';
+import { devMode } from '../src/lib/stores/devmode.svelte';
 import { onboarding } from '../src/lib/stores/onboarding.svelte';
 import { ui } from '../src/lib/stores/ui.svelte';
 import { project } from '../src/lib/stores/project.svelte';
 import { diagnostics } from '../src/lib/stores/diagnostics.svelte';
 import { cleanupMounted, exists, goto, mountCmp, q } from './helpers';
+import { demoProject } from '../src/lib/demo/demoProject.svelte';
+
+beforeEach(() => {
+  cleanupMounted();
+  // Tests drive the gate explicitly; import.meta.env.DEV is true under
+  // vitest, so the disabled cases must flip the store off by hand.
+  devMode.enable();
+});
 
 describe('scenario registry', () => {
   it('has unique stable ids in group/id form', () => {
@@ -101,6 +110,35 @@ describe('scenario deep-links apply real state', () => {
     expect(ui.homeMode).toBe('returning');
   });
 
+  it('with dev mode OFF, a known scenario deep-link mutates nothing (lead 024)', () => {
+    devMode.disable();
+    demoProject.leave(); // cancel demo leakage from earlier tests in this file
+    const snapshot = JSON.stringify(project.entries);
+    ui.homeMode = 'returning';
+    goto('#/home?scenario=home/no-mods');
+    mountCmp(App);
+    flushSync();
+    // The deep-link is inert: no home-mode switch, no seeding, no reset.
+    expect(ui.homeMode).toBe('returning');
+    expect(project.projectName).toBe('TestMod');
+    expect(project.isDemo).toBe(false);
+    expect(JSON.stringify(project.entries)).toBe(snapshot);
+    // Re-enabling applies the pending deep-link on the next navigation pass.
+    devMode.enable();
+    goto('#/workspace');
+    goto('#/home?scenario=home/no-mods');
+    flushSync();
+    expect(ui.homeMode).toBe('no-mods');
+  });
+
+  it('with dev mode OFF, diagnostics deep-link does not build a bundle', () => {
+    devMode.disable();
+    goto('#/diagnostics?scenario=diagnostics/bundle-preview');
+    mountCmp(App);
+    flushSync();
+    expect(diagnostics.bundle).toBeNull();
+  });
+
   function languagesActive(): string {
     // The switcher pins reflect the active locale; read the persisted shape.
     const raw = window.localStorage.getItem('rimloc.project.testmod.multitarget.v1');
@@ -110,7 +148,18 @@ describe('scenario deep-links apply real state', () => {
 });
 
 describe('scenario browser dialog (dev panel entry)', () => {
+  it('dev panel and scenario picker are dev-gated (hidden when mode is off)', () => {
+    devMode.disable();
+    goto('#/home');
+    mountCmp(App);
+    expect(exists('dev.panel')).toBe(false);
+    expect(exists('dev.scenarios')).toBe(false);
+    // The MockBadge stays — data-mode honesty is unconditional.
+    expect(exists('mock-badge')).toBe(true);
+  });
+
   it('opens from the dev panel, lists all scenarios, closes', () => {
+    devMode.enable();
     goto('#/home');
     mountCmp(App);
     // Dev panel is a closed <details> by default — open it first.
