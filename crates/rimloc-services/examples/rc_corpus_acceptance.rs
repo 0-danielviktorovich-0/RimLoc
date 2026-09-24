@@ -88,14 +88,14 @@ fn main() {
     let mods = match parse_args() {
         Ok(m) => m,
         Err(e) => {
-            eprintln!("error: {e}");
+            eprintln!("{e}");
             std::process::exit(2);
         }
     };
     match run(mods) {
         Ok(()) => std::process::exit(0),
         Err(e) => {
-            eprintln!("error: {e}");
+            eprintln!("{e}");
             std::process::exit(2);
         }
     }
@@ -188,7 +188,8 @@ fn run(mods: Vec<PathBuf>) -> Result<(), String> {
         "{}",
         serde_json::to_string(&summary).map_err(|e| format!("cannot render stdout report: {e}"))?
     );
-    println!("artifact: {}", artifact.display());
+    let artifact_line = format!("artifact: {}", artifact.display());
+    println!("{artifact_line}");
     if any_failed {
         // Gate failures are the CONTRACTED non-zero outcome (exit 1);
         // misuse errors take exit 2 through the caller.
