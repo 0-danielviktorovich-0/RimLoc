@@ -30,8 +30,7 @@ Astra. Ресурсная дисциплина: только /tmp/rimloc-cargo-s
 CARGO_INCREMENTAL=0), без самодельных локов/вторых таргетов/избыточных полных прогонов.
 
 ## Verify at session start (изменчивое)
-- Последний main-срез: `dad131f` (L принят ad37903 + W4.5 + docs typed-intent/durable-ID;
-  J identity gate открыт до 035-фикса) → **проверь `git rev-parse HEAD`**.
+- Последний main-срез: `8484c4f` (BACKEND FREEZE; GUI-интеграция в gui-integration a5b9825) → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
@@ -64,131 +63,40 @@ NoTranslate-финальность) · K-core detect_source_changes · патч-
 FindMod/or-предикаты, ~50% реального покрытия). Ключевые коммиты: 8595129, 98db4b2,
 c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
 
-## BACKEND LANE (сейчас)
-1. **J-проводка лендена** (`303d726`): eligibility diagnostics + optional
-   `SourceProvenance.selected_by`; см. TRANSLATION_ELIGIBILITY.md. Это не доказательство
-   завершённого live GUI binding.
-2. **PRE-FREEZE contract check — OPEN по новому evidence**: в `build_project()` flat
-   scan оставляет `selected_by=None`, LoadFolders получает общую batch-метку;
-   `canonical_bridge` берёт source location из `TransUnit.path`, хотя Defs merge
-   переписывает этот путь в выходной DefInjected. Требуются реальные исходные локации,
-   per-entry winner-reason и регрессии (Defs/Keyed/LoadFolders/TKey multi-context).
-   Проверка WIP: счётчик TKey usages не заменяет реальные primary/other locations;
-   target-only и TKey-only+foreign-pack не должны становиться English source;
-   version-only layout без LoadFolders тоже обязан честно разрешать выбранную версию.
-   Само наличие сериализуемого поля не закрывает Source Inspector gate.
-   **Identity blocker доказан**: разные DefTypes с одинаковым `Dup.label` сливаются
-   в bridge kind+key. До freeze — structured optional DefType discriminator,
-   scoped import/matching и безопасная project-container v1→v2 migration; ambiguous
-   старые проекты не переписываются и не получают угаданный перевод. Полный ID
-   сохраняется в persistence, source-change detection и generated output.
-3. **L observability — ПРИНЯТ на локальной платформе** (`ad37903` поверх `c8907cf`):
-   doctor, support bundle + redaction preview, Copy-for-AI, structured operation logs.
-   Lead независимо повторил build/fmt/clippy и **203 workspace tests (43 suites)**.
-   Реальные CLI negative/positive controls на сохранённых фикстурах: пустой перевод
-   и потерянный placeholder → failed; корректный `{0}` → succeeded с сохранённой
-   info-находкой. JSON stdout целый, metadata отчёта видимы, manifest SHA/size верны,
-   исходные файлы не изменены. Typed ValidationSeverity задаётся у каждого producer;
-   все findings сохраняются, только ошибки проваливают операцию. Blind GLM-review
-   только четырёх bundle-файлов правильно диагностировал обе ошибки и operation ID.
-   Проверены compound secret/path masking, output containment (включая `..` после
-   nonexistent component) и защита от заранее созданного temp symlink; общий
-   source hash guard ранее подтвердил 1066 неизменённых файлов. Артефакты независимой
-   проверки: `/tmp/rimloc-lead-L-026-*.log`, `/tmp/rimloc-lead-L-acceptance/`.
-   Windows runtime и полный MSRV ещё не проверены; это локальная приёмка L,
-   не backend freeze и не live GUI acceptance.
-4. **BACKEND FREEZE** → компактный delta-бандл (дифф от 50f9483) для ChatGPT.
-5. POST-FREEZE: real UI binding → LIVE ACCEPTANCE GATE (W6 §3 / W7 §26 мандатов).
+## BACKEND LANE — FREEZE (25.09)
+Backend заморожен на интегрированном HEAD `4b4d8c3` (см. BACKEND FREEZE в закрытых
+гейтах). Все правки бэкенда после фриза — только через delta-процесс: компактный дифф
+от `50f9483` → независимое GLM-ревью → фиксы реальных P0/P1 → повторные гейты.
+Дальше по бэкенду: typed binding seam (proposal v2: /tmp/rimloc-binding-first-slice.md)
+и live acceptance — после GUI-гейта.
 
-## GUI LANE (сейчас)
-Лендено: фаза 1 (роутер/rich-mock/Home/Wizard/Workspace UX), GUI-A (Review/Build/
-Existing), GUI-B (Settings/Providers/Help/Cmd+K), W1 (wizard-автомат/replay/naming),
-W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 доки.
-- **W3 лендена** (`935f70c`, acceptance `0f91203`): гибридная стратегия, chat-batch
-  manager, stale-import/suggestion защита. Mandate identity guard: `91ed049`.
-- **W4 лендена** (`3fa2039`): provider instances, glossary/TM, shortcuts, About.
-  **W4.5 принята и включена в main** (`9cedd4e/ad9a002/d5c7c28`) с сохранением W5.
-  Credential references/export, read-only
-  reference-корпуса, shortcut safety, общая версия из GUI package metadata;
-  transient connection status не клонируется, смена endpoint/key гасит stale probe.
-  Lead проверил объединённый финальный срез `548f4cb`: check 0/0, **73 tests**, build.
-  Git tree frontend-v2 в main совпадает с проверенным интеграционным срезом.
-- **W5 mock принят** (`05876f5` + `13f7c31`): diagnostics + redaction preview,
-  Project screen, QA по **8 персонам**; demo-подписи, sensitive-key redaction,
-  сброс старого causal context при повторе и 22 новых регрессионных теста.
-  Lead независимо повторил на `13f7c31`: check 0/0, vitest **42/42**, build;
-  браузерный повтор на этом же срезе подтвердил demo-подпись, сброс старой причины,
-  новый operation ID и сохранение этого ID в очищенном bundle.
-  Общая версия из GUI package metadata интегрируется вместе с W4.5, без version bump.
-  Live диагностика зависит от принятого L и будущего service binding.
-- **W6 PRE-FREEZE — ACTIVE**: тот же W5-исполнитель продолжает в отдельном worktree
-  `../_rimloc-worktrees/w6-demo` от `13f7c31`: честный глобальный demo-бейдж, scenario
-  browser, anchored tour, изолированный demo project, REVIEW SCREEN MAP
-  (MOCK_LIVE_ONBOARDING_MANDATE.md). Доставка и resume подтверждены.
-  Первый срез включён только в `codex/gui-integration` (`3ef2e23`): check 0/0,
-  **105 tests**, build. **Не принят**: браузер подтвердил tour-success без demo-сборки.
-  `80a128c/51166f9` добавляют dev-guard и настоящие demo edit/fix, но ревью нашло
-  преждевременный success до завершения build. Тот же GLM закрывает completion,
-  cancellation/stale-epoch и запрет действий тура над обычным проектом (027).
-- **W7 PRE-FREEZE — ACTIVE**: тот же GLM-исследователь переиспользован для source
-  inspector mock в `../_rimloc-worktrees/w7-source` от `993115b`; ACK и running
-  подтверждены. SOURCE tab, viewer, context/palette actions, source browser,
-  external editor settings; backend-контракт пункта 2 пока не принят.
-  Срез `9eef331..d8257c2` создан, но не принят: независимый review выявил потерю
-  явного file target в viewer, искажение editor argv и неработающие remaps.
-  Исправления 029 реально доставлены тому же GLM; нужны регрессии + browser QA.
-- **W6/W7 POST-FREEZE**: live binding + live acceptance на реальных данных (машина
-  владельца: RimWorld 1.6 + Odyssey).
+## GUI LANE — интеграция W6+W7 (сейчас)
+- **W6 сдан** (`codex/w6-demo`, 8 коммитов `51ada48..eb9fe40`): глобальный Demo-бейдж
+  (без DEV-гейта), демо-проект + no-mods действия, anchored тур на реальных действиях,
+  dev-гейт scenario tooling, общий MOCK build engine, pending-save generation-гварды.
+  85/85 тестов, check 0/0, build ok, браузер оба пути тура, Workshop Dark без wash.
+- **W7 сдан** (`codex/w7-source`, 8 коммитов `9eef331..1982bbf`): SOURCE-таб (честный
+  provenance, nullable локации), read-only Viewer (без innerHTML), palette/context menu,
+  Advanced Browser + Compare, External editor argv, shortcut dispatcher (unbound),
+  Unreleased. 99/99 тестов, check 0/0, build ok. Все 5 коррекций 029 закрыты.
+- **GUI-интеграция** (`codex/gui-integration` @ `a5b9825`): волны W6 (42334a8) и W7
+  (2c9f3e9) смёржены, repair Workspace merge artifact + реальная версия в бандле.
+  Ожидается: независимое merge-ревью, полный гейт check/test/build + браузер
+  (оба пути тура, dev-гейт, SOURCE-флоу, изоляция обычного проекта).
+- Известный хвост: после смёрживания W4.5 заменить `MOCK_APP_VERSION` →
+  `src/lib/version.ts` (инструкция в /tmp/rimloc-W45-handoff.md).
+- **W6/W7 POST-FREEZE**: live binding + live acceptance на реальных данных
+  (машина владельца: RimWorld 1.6 + Odyssey).
 
 ## Исполнение и интеграционный review
-- Lead: текущая Codex-задача; архитектура, snapshot, независимые проверки и интеграция.
-  Основная реализация — существующие GLM-сессии ZCode; сначала reuse, не дублирование.
-  Реализация — GLM-5.3-Flash через существующий план ZCode; Astra-субагентов нет.
-  Один ограниченный независимый L-review выполнен GPT-5.6 Sol/medium через AI-OS
-  Session Hub; findings проверены lead, reviewer завершён и detached, slot освобождён.
-  Не переключаться на Ollama cloud/API ради делегирования: это отдельная авторизация.
-- ZCode coordinator: `sess_be9620ba-0118-4457-8ee4-354d3e97c327` (RimLoc).
-  L: `agent_2ba7172f-de60-4338-b7d9-8269ea223ee1`; W5:
-  `agent_d2a2be70-b36b-4142-ad1b-f4480fbc7227`. Их состояние **verify at session start**.
-  Временный operational handoff: `/tmp/rimloc-glm-handoff.md` (может отсутствовать).
-- Provenance: `agent_ab5a8765-0acd-4e8e-9076-f91969976bfe`, worktree
-  `../_rimloc-worktrees/rc-provenance`; W4.5:
-  `agent_41830365-1e44-46e4-83d1-0f04f308ff13`, `../_rimloc-worktrees/w45-ux`.
-  Старые J/W4 transports истекли; замены запущены только после неудачного reuse.
-  `303d726` уже предок их базы; не портировать/реимплементировать существующий J.
-- Provenance `feb0a63` прошёл независимое **статическое** GLM-ревью, без новых blockers
-  кроме identity loss. На backend-integration `ce33458` lead повторил 12 provenance
-  tests; этот срез содержит reproducer identity collision, не закрывает identity gate.
-  028 требует typed ID maps, полное legacy type evidence, invariant check до save
-  и сохранение фактически resolved версии после rescan; ACK доставки подтверждён.
-  W4.5-reviewer переиспользован для узкого corpus acceptance helper в
-  `../_rimloc-worktrees/rc-corpus` (ACK/resume подтверждены); реальные данные не коммитятся,
-  вывод только в уникальный `/tmp/rimloc-corpus-*`, hash guard до/после, без `--update`.
-- Доставку задания проверять по подтверждению активного turn; срочные UI-коррекции
-  отправлять через Steer, не оставлять в очереди. Локальный mailbox
-  `/tmp/rimloc-control/PROTOCOL.md` → background listener в существующем coordinator →
-  native SendMessage → atomic ACK проверен реальными исправлениями и resume W6.
-  Общий ZCode UI разделяется с другими проектами; mailbox устраняет гонку фокуса.
-  Завершение отслеживает read-only CLI `app-server` → `session/subagents`; watcher
-  `/tmp/rimloc-zcode-watch.py` без модельных вызовов. Нативный status success с текстом
-  ошибки API считается transport failure, не успехом реализации. Runtime-хелперы
-  в /tmp могут исчезнуть — перепроверять; ACK означает доставку, не приёмку кода.
-- Общий cargo target между расходящимися worktrees дал подтверждённое повторное
-  использование чужого workspace artifact. Все Rust-проверки сериализовать через
-  `/tmp/rimloc-cargo-serial.py WORKTREE <cargo args>`: lock + при смене worktree очистка
-  только workspace-пакетов, внешний dependency cache сохраняется. Проверить наличие
-  wrapper при возобновлении. Не менять исходники под ошибки от чужих cached types;
-  финальная приёмка — на едином интегрированном дереве.
-- Независимый baseline на `0e37b0c`: workspace build/test (168 passed), fmt check,
-  clippy `-D warnings`; GUI check 0/0, vitest 20/20, production build — PASS.
-  Это baseline, не acceptance будущих изменений и не live acceptance.
-- После L тот же worker готовит ограниченный read-only план первого typed binding
-  seam; реализация начнётся после freeze/delta-review. Диск критически ограничен:
-  новые target-кэши и повторные полные прогоны без причины запрещены; чистить только
-  собственные воспроизводимые build artifacts в безопасной границе, не чужие данные.
-- Freeze зависит от принятого L и доказанного provenance/identity-контракта; GUI W4.5–W7 продолжается
-  независимо. После freeze — compact delta review → real binding → live acceptance.
-
+- Операционная модель — секция «Операционная модель» выше: GLM-координатор
+  (sess_be9620ba) владеет интеграцией/рутинным ревью/снапшотом/stage-acceptance.
+- Воркеры (reuse, не дублировать): L `agent_2ba7172f…`, W6 `agent_d2a2be70…`,
+  W7 `agent_2b0654cc…`, J `agent_ab5a8765…`, corpus/W4.5 `agent_41830365…`.
+  Состояние — verify at session start. Взаимные независимые ревью обязательны
+  на интеграционных коммитах; каждый чек — через /tmp/rimloc-cargo-serial.py.
+- Milestone-файлы: /tmp/rimloc-control/milestones/NNN.json (needs_astra только
+  для архитектуры/безопасности/платного/релиза и финального RC).
 ## Mock/live boundary
 Моки/адаптеры до фриза; dev-бейдж «Demo data»; прод не шипит MockTransport (guard в
 xtask/CI после фриза); Style Lab = dev-only (?stylelab=1); бизнес-логика вне фронтенда;
