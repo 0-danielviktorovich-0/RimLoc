@@ -15,6 +15,7 @@ import {
   templateFor
 } from '../src/lib/source/editor';
 import { shortcuts } from '../src/lib/stores/shortcuts.svelte';
+import { installSourceShortcutDispatcher } from '../src/lib/source/dispatch.svelte';
 import { i18n } from '../src/i18n/store.svelte';
 import DetailPanel from '../src/lib/components/workspace/DetailPanel.svelte';
 import SourceOverlays from '../src/lib/components/source/SourceOverlays.svelte';
@@ -325,5 +326,91 @@ describe('w7 #9: unbound source shortcuts coexist with W4.5 registry', () => {
     shortcuts.assign('save', { key: 'q', mod: true });
     expect(shortcuts.issueFor('save')?.kind).toBe('system-reserved');
     shortcuts.resetAll();
+  });
+});
+
+describe('w7 #10: runtime shortcut dispatcher (lead 029 #3)', () => {
+  beforeEach(() => {
+    reset();
+    shortcuts.resetAll();
+    installSourceShortcutDispatcher();
+  });
+
+  it('assigned binding triggers the browser action', () => {
+    shortcuts.assign('sourceBrowser', { key: 'b', mod: true });
+    project.select('di-02');
+    mountCmp(SourceOverlays);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }));
+    flushSync();
+    expect(source.browser).toBe(true);
+    source.closeBrowser();
+    shortcuts.resetAll();
+  });
+
+  it('unbound commands stay inert', () => {
+    project.select('di-02');
+    mountCmp(SourceOverlays);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true }));
+    flushSync();
+    expect(source.viewer).toBeNull();
+  });
+
+  it('typing in an editable target never fires the dispatcher', () => {
+    shortcuts.assign('sourceBrowser', { key: 'b', mod: true });
+    mountCmp(SourceOverlays);
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true, bubbles: true }));
+    flushSync();
+    expect(source.browser).toBe(false);
+    input.remove();
+    shortcuts.resetAll();
+  });
+
+  it('entry actions without a selection report honestly (palette parity)', () => {
+    shortcuts.assign('sourceOpen', { key: 'o', mod: true });
+    mountCmp(SourceOverlays);
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'o', ctrlKey: true }));
+    flushSync();
+    expect(source.viewer).toBeNull();
+    expect(source.lastMockAction?.labelKey).toBe('source.palette.noSelection');
+    shortcuts.resetAll();
+  });
+});
+
+describe('w7 #11: search index clamp and Escape close (lead 029 #4)', () => {
+  beforeEach(reset);
+
+  it('advancing then narrowing the query shows a valid index (never 3/1)', async () => {
+    source.setScenario('source/tkey-multi-context');
+    source.openViewer('tk-01', 0);
+    mountCmp(SourceOverlays);
+    const input = q('source.viewer.search') as HTMLInputElement;
+    const set = (v: string) => {
+      const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      proto.call(input, v);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      flushSync();
+    };
+    set('o'); // several matches
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    flushSync();
+    set('winter is close'); // exactly one match
+    await new Promise((r) => setTimeout(r, 0));
+    flushSync();
+    expect(q('source.viewer.matchCount').textContent).toContain('1/1');
+  });
+
+  it('Escape closes the viewer', () => {
+    source.setScenario('source/simple');
+    source.openViewer('keyed-01', 0);
+    mountCmp(SourceOverlays);
+    expect(exists('source.viewer')).toBe(true);
+    document
+      .querySelector('[data-testid="source.viewer"]')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    flushSync();
+    expect(exists('source.viewer')).toBe(false);
   });
 });
