@@ -510,3 +510,29 @@ canonical provenance должен отвечать what file / where / which can
 → suggestion/conflict), safe-записи применяются. Реализуется регрессией
 frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (та же
 семантика, что stale-тесты W2, но полный цикл экспорт→правка→импорт).
+
+### W4 принят; интеграционные требования W4.5/W5 (25.09) — персистенция
+1. **Provider credentials**: duplicate копирует только не-секретную конфигурацию + явное
+   решение (reuse reference / запросить новую); export исключает credentials по умолчанию,
+   Keychain-значения никогда не сериализуются. Регрессии обязательны.
+2. **Glossary/TM mutability**: provenance/scope различает user-created / project-created /
+   imported / reference-read-only; live binding не требует деструктивной мутации reference-
+   корпусов. GUI прост, семантика в сторе.
+3. **Shortcuts safety**: различать конфликт команд RimLoc / системно-зарезервированные /
+   сомнительные комбинации — предупреждать соразмерно, не блокировать кастомизацию жёстко.
+4. **About version** — из канонических build/package метаданных, не ручная строка во
+   фронтенде (сейчас мок = один источник; при привязке — Cargo/pkg version).
+5. **W5 diagnostics acceptance**: не «бандл сгенерирован», а controlled known failure →
+   Diagnose → causal context → sanitized bundle → независимый ревьюер/ИИ воспроизводит или
+   называет вероятную причину. Малый релевантный causal trace > сырые логи.
+6. **Redaction preview**: явные Included / Redacted / Excluded; автозащита credentials/
+   auth headers/tokens/Keychain/signing/лишние env/пути/чужой контент — при сохранении
+   диагностической пользы.
+7. **Project screen (W5)**: авторитетный human-readable обзор (content, source locale,
+   target locales + active, RW версия, source/output location, health, source-update state)
+   со ссылками в спец-инструменты; не клон Settings.
+8. **QA personas**: 6 базовых + base-game/DLC maintainer + keyboard/a11y-oriented = 8 линз
+   над одними workflow.
+9. **FREEZE lanes независимы**: FREEZE требует L complete + Source-Inspector winner-reason
+   contract (✓ 303d726) + прочие pre-freeze контракты. W6/W7 полировка не ждёт фриза, и
+   фриз не ждёт GUI.
