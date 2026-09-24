@@ -22,7 +22,7 @@
 
 import { project } from '../stores/project.svelte';
 import { mockEntries } from '../mock/data';
-import type { Entry, EntryIssue, EntryStatus, Origin } from '../mock/types';
+import type { Entry, EntryIssue, EntryStatus, Origin, Suggestion } from '../mock/types';
 import { registry, SOURCE_LOCALE, type LanguageDefinition } from './registry';
 import { corpusEditedAt, corpusForLocale, corpusOrigin, type AddFlow } from './corpus';
 
@@ -33,6 +33,8 @@ export interface TargetEntryState {
   origin: Origin | null;
   editedAt: string | null;
   issues: EntryIssue[];
+  /** Suggestions parked on this translation (e.g. stale AI drafts); never auto-applied. */
+  suggestions?: Suggestion[];
 }
 
 /** One target locale's dataset: the locale-scoped slice of canonical translations. */
@@ -428,7 +430,17 @@ class MultiTargetStore {
     const exportedRev = batch.revs[entryId];
     if (exportedRev === undefined) return { status: 'unknown-entry' };
     const currentRev = target.revs[entryId] ?? 1;
-    if (currentRev !== exportedRev) return { status: 'stale', currentRev };
+    if (currentRev !== exportedRev) {
+      // Stale (mandate §12): the AI draft NEVER writes — it is parked as an
+      // LLM suggestion for the reviewer (W3 hybrid acceptance), while the
+      // human text and its revision stay untouched.
+      stored.suggestions = [...(stored.suggestions ?? []), { source: 'LLM', text }];
+      if (batch.locale === this.activeLocale) {
+        const entry = project.byId(entryId);
+        if (entry) entry.suggestions = [...(entry.suggestions ?? []), { source: 'LLM', text }];
+      }
+      return { status: 'stale', currentRev };
+    }
     stored.target = text;
     stored.status = 'pending_review';
     stored.origin = 'LLM';
@@ -450,6 +462,72 @@ class MultiTargetStore {
   /** Current revision of an entry in a locale (diagnostics / advanced UI). */
   revisionOf(locale: string, entryId: string): number | undefined {
     return this.targets[locale]?.revs[entryId];
+  }
+
+  // ---------------------------------------------------------------- batch fills (W3 hybrid)
+
+  /**
+   * Fill empty targets from translation-memory hits (controlled hybrid, W3).
+   * TM NEVER overwrites existing work: only entries whose target is still
+   * empty are filled. Writes are origin 'TM', status 'translated', revision
+   * bumped; the active locale's live entries mirror the write immediately.
+   */
+  applyTm(locale: string, updates: Record<string, string>): { applied: number; skipped: number } {
+    const target = this.targets[locale];
+    if (!target) return { applied: 0, skipped: 0 };
+    let applied = 0;
+    let skipped = 0;
+    for (const [id, text] of Object.entries(updates)) {
+      const stored = target.entries[id];
+      if (!stored || stored.target.trim() !== '') {
+        skipped += 1;
+        continue;
+      }
+      stored.target = text;
+      stored.status = 'translated';
+      stored.origin = 'TM';
+      stored.editedAt = nowIso();
+      target.revs[id] = (target.revs[id] ?? 1) + 1;
+      applied += 1;
+      if (locale === this.activeLocale) {
+        const entry = project.byId(id);
+        if (entry) {
+          entry.target = text;
+          entry.status = 'translated';
+          entry.origin = 'TM';
+          entry.editedAt = stored.editedAt;
+        }
+      }
+    }
+    if (applied > 0) target.lastModified = nowIso();
+    return { applied, skipped };
+  }
+
+  /**
+   * A human editor commit at the store boundary (W3 hybrid): overwrite the
+   * target text, mark it human-owned and bump the revision — the anchor the
+   * stale-AI protection compares exported revisions against.
+   */
+  applyHumanEdit(locale: string, entryId: string, text: string): boolean {
+    const target = this.targets[locale];
+    const stored = target?.entries[entryId];
+    if (!target || !stored) return false;
+    stored.target = text;
+    stored.status = 'translated';
+    stored.origin = 'human';
+    stored.editedAt = nowIso();
+    target.revs[entryId] = (target.revs[entryId] ?? 1) + 1;
+    target.lastModified = nowIso();
+    if (locale === this.activeLocale) {
+      const entry = project.byId(entryId);
+      if (entry) {
+        entry.target = text;
+        entry.status = 'translated';
+        entry.origin = 'human';
+        entry.editedAt = stored.editedAt;
+      }
+    }
+    return true;
   }
 
   // ---------------------------------------------------------------- manager dialog
