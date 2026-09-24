@@ -4,6 +4,10 @@
   let { name, size = 16 }: { name: string; size?: number } = $props();
 
   const PATHS: Record<string, string> = {
+    'file-code':
+      'M14 3v4a1 1 0 0 0 1 1h4 M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z M10 13l-2 2 2 2 M14 13l2 2-2 2',
+    'git-compare':
+      'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M6 9v6a3 3 0 0 0 3 3h4 M18 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 15V9a3 3 0 0 0-3-3h-4 M13 3l3 3-3 3 M11 18l-3 3 3 3',
     'file-plus':
       'M14 3v4a1 1 0 0 0 1 1h4 M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z M12 12v6 M9 15h6',
     'folder-open':

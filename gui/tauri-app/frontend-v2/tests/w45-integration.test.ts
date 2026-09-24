@@ -499,7 +499,11 @@ describe('w45 #3: shortcut safety classes', () => {
 
   it('every RimLoc command has a default and every default is clean', () => {
     for (const def of SHORTCUT_DEFS) {
-      expect(def.defaultBinding.key).toBeTruthy();
+      // W7: source commands ship UNBOUND ({ key: '' }) — no new fixed
+      // shortcuts; classification of an unbound binding is clean by design.
+      if (def.defaultBinding.key !== '') {
+        expect(def.defaultBinding.key).toBeTruthy();
+      }
       expect(classifyBinding(def.id, { ...def.defaultBinding }, shortcuts.bindings)).toBeNull();
     }
   });

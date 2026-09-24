@@ -6,6 +6,7 @@
   import { router, ROUTES, type RouteId } from '../router.svelte';
   import { ui, type HomeMode } from '../stores/ui.svelte';
   import { project } from '../stores/project.svelte';
+  import { scenarioBrowser } from '../scenarios.svelte';
 </script>
 
 <details class="dev" data-testid="dev.panel">
@@ -33,6 +34,7 @@
       >
         <option value="returning">{t('dev.homeMode.returning')}</option>
         <option value="first-run">{t('dev.homeMode.first-run')}</option>
+        <option value="no-mods">{t('dev.homeMode.no-mods')}</option>
       </select>
     </label>
 
@@ -71,6 +73,11 @@
 
     <button type="button" class="btn" data-testid="dev.reset" onclick={() => project.reset()}>
       {t('dev.reset')}
+    </button>
+
+    <!-- W6: dev scenario browser (dev-only tooling, mandate §11). -->
+    <button type="button" class="btn" data-testid="dev.scenarios" onclick={() => scenarioBrowser.show()}>
+      {t('dev.scenarios')}
     </button>
 
     <p class="dev-note">{t('dev.summary')}</p>

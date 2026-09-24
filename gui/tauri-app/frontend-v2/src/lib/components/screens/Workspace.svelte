@@ -20,7 +20,8 @@
   import GlossaryStub from '../workspace/GlossaryStub.svelte';
   import TMStub from '../workspace/TMStub.svelte';
   import ProjectPanel from '../workspace/ProjectPanel.svelte';
-  import OnboardingCoach from '../OnboardingCoach.svelte';
+  import SourceOverlays from '../source/SourceOverlays.svelte';
+  import SourceChangeBanner from '../source/SourceChangeBanner.svelte';
   import Icon from '../Icon.svelte';
   import { MOCK_ERROR_CODE, MOCK_ERROR_RAW } from '../../../lib/mock/data';
   import { onboarding } from '../../stores/onboarding.svelte';
@@ -108,7 +109,8 @@
 
 <svelte:window onkeydown={onWindowKeydown} />
 
-<OnboardingCoach />
+<!-- W6: the onboarding coach moved to App level (the anchored tour spans
+     Home → Workspace → Review → Build), so it is no longer mounted here. -->
 
 <!-- Language Manager dialog (W2): opened from the header switcher or the
      command palette; overlay is viewport-fixed. -->
@@ -170,6 +172,11 @@
   </div>
 
   <Tabs tabs={wsTabs} active={tab} label={t('workspace.tabs.label')} onSelect={(id) => (tab = id)} />
+
+  {#if tab === 'editor'}
+    <!-- W7: external-change demo banner above the editor surface -->
+    <SourceChangeBanner />
+  {/if}
 
   {#if tab === 'review'}
     <ReviewStub />
@@ -254,6 +261,9 @@
       </div>
     </div>
   {/if}
+
+  <!-- W7 source overlays: context menu, viewer, browser/compare, mock toasts -->
+  <SourceOverlays />
 </section>
 
 <style>

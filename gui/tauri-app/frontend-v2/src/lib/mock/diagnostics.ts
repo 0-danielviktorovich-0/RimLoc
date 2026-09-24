@@ -196,7 +196,7 @@ export interface BundlePreview {
 export function buildRawBundle(ctx: CausalContext | null, extra: { sourceLocation: string; outputLocation: string }): RawBundleLine[] {
   const opId = ctx?.operationId ?? 'op-vld-000000';
   return [
-    { key: 'app.version', value: `RimLoc ${APP_VERSION} (mock)`, labelKey: 'bundle.item.appVersion' },
+    { key: 'app.version', value: `RimLoc ${APP_VERSION}`, labelKey: 'bundle.item.appVersion' },
     { key: 'causal.operation', value: opId, labelKey: 'bundle.item.operation' },
     { key: 'causal.stage', value: ctx?.stage ?? 'validate', labelKey: 'bundle.item.stage' },
     { key: 'causal.error', value: ctx ? `${ctx.errorCode}: ${ctx.expected} / ${ctx.actual}` : 'PLACEHOLDER_MISMATCH (known failure replay)', labelKey: 'bundle.item.error' },
