@@ -19,7 +19,8 @@ engineering/product passes, документация, упаковка и вос
 готовится к распространению, но push, публикация и релиз требуют решения владельца.
 
 ## Verify at session start (изменчивое)
-- Проверенный lead baseline: `0e37b0c` → **проверь `git rev-parse HEAD`**.
+- Последний проверенный main-срез: `26d279b` (L implementation, ещё не acceptance)
+  → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
@@ -58,17 +59,18 @@ c634ee0, 5df8bd6, 8c49e83, 042e0b5, 34dc83d, 916202b, b29ef68, 0c882d2.
    target-only и TKey-only+foreign-pack не должны становиться English source;
    version-only layout без LoadFolders тоже обязан честно разрешать выбранную версию.
    Само наличие сериализуемого поля не закрывает Source Inspector gate.
-3. **L observability — ACTIVE, не принят**: doctor, support bundle + redaction preview,
+3. **L observability — implementation `26d279b`, не принят**: doctor, support bundle + redaction preview,
    Copy-for-AI, structured logs, operation IDs. Acceptance: известный сбой → causal
    context → очищенный bundle → независимое воспроизведение/диагноз.
-   Review blockers: совместная очистка секрета и домашнего пути в одной строке;
-   очистка всех артефактов и explicit env allowlist; сохранение исходного failed
-   operation; source/output граница внутри публичного bundle service, а не только CLI.
-   Lead воспроизвёл compound leak синтетическими данными; исправления с регрессиями
-   доставлены активному L-исполнителю. Следующая независимая проба доказала два обхода
-   source/output guard: nonexistent sibling path с `..` и predictable atomic temp
-   symlink. Оба закрываются тестами публичного bundle API с неизменным source hash.
-   Сетевой сбой продолжен в той же сессии с WIP.
+   Lead повторил 195 workspace tests и clippy; отдельная проба подтвердила закрытие
+   обходов через nonexistent sibling с `..` и predictable atomic temp symlink.
+   Это проверки среза, не финальная приёмка меняющегося дерева. Остались review fixes:
+   embedded provider-token redaction (capturing group сохраняла секрет); Windows
+   canonical-prefix parity для nonexistent descendants; doctor не оставляет новые
+   каталоги и сообщает ошибку cleanup; реальный failed validate → исходный operation
+   ID/cause/affected → публичный bundle вместо вручную сконструированной ошибки.
+   Коррекции доставлены тому же GLM. Windows runtime ещё не проверен; утверждение,
+   что std::fs::rename не заменяет файл в Windows, проверено и отклонено как неверное.
 4. **BACKEND FREEZE** → компактный delta-бандл (дифф от 50f9483) для ChatGPT.
 5. POST-FREEZE: real UI binding → LIVE ACCEPTANCE GATE (W6 §3 / W7 §26 мандатов).
 
@@ -79,8 +81,12 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
 - **W3 лендена** (`935f70c`, acceptance `0f91203`): гибридная стратегия, chat-batch
   manager, stale-import/suggestion защита. Mandate identity guard: `91ed049`.
 - **W4 лендена** (`3fa2039`): provider instances, glossary/TM, shortcuts, About.
-  **W4.5 остаётся**: явные credential references при duplicate, безопасный export,
-  mutability/provenance reference-корпусов, shortcut safety, version из build metadata.
+  **W4.5 на интеграционной ветке**: `9432b14` + `f207453`, включены в
+  `codex/gui-integration` с сохранением W5. Credential references/export, read-only
+  reference-корпуса, shortcut safety, общая версия из GUI package metadata;
+  transient connection status не клонируется, смена endpoint/key гасит stale probe.
+  Lead проверил объединённый первый срез: check 0/0, 68 tests, build; финальный
+  follow-up проверяется отдельно. Main ещё не содержит эту интеграцию.
 - **W5 mock принят** (`05876f5` + `13f7c31`): diagnostics + redaction preview,
   Project screen, QA по **8 персонам**; demo-подписи, sensitive-key redaction,
   сброс старого causal context при повторе и 22 новых регрессионных теста.
@@ -93,15 +99,19 @@ W2 (language registry/multi-target/stale-AI per-target), Style Lab, D1/D3 док
   `../_rimloc-worktrees/w6-demo` от `13f7c31`: честный глобальный demo-бейдж, scenario
   browser, anchored tour, изолированный demo project, REVIEW SCREEN MAP
   (MOCK_LIVE_ONBOARDING_MANDATE.md). Доставка и resume подтверждены.
-- **W7 PRE-FREEZE**: source inspector mock — SOURCE tab, one-click actions (контракт
-  проверяется в backend пункте 2, пока не принят) (SOURCE_INSPECTOR_MANDATE.md).
+- **W7 PRE-FREEZE — ACTIVE**: тот же GLM-исследователь переиспользован для source
+  inspector mock в `../_rimloc-worktrees/w7-source` от `993115b`; ACK и running
+  подтверждены. SOURCE tab, viewer, context/palette actions, source browser,
+  external editor settings; backend-контракт пункта 2 пока не принят.
 - **W6/W7 POST-FREEZE**: live binding + live acceptance на реальных данных (машина
   владельца: RimWorld 1.6 + Odyssey).
 
 ## Исполнение и интеграционный review
 - Lead: текущая Codex-задача; архитектура, snapshot, независимые проверки и интеграция.
   Основная реализация — существующие GLM-сессии ZCode; сначала reuse, не дублирование.
-  Все исполнители — GLM-5.3-Flash через существующий план ZCode; Astra-субагентов нет.
+  Реализация — GLM-5.3-Flash через существующий план ZCode; Astra-субагентов нет.
+  Один ограниченный независимый L-review выполнен GPT-5.6 Sol/medium через AI-OS
+  Session Hub; findings проверены lead, reviewer завершён и detached, slot освобождён.
   Не переключаться на Ollama cloud/API ради делегирования: это отдельная авторизация.
 - ZCode coordinator: `sess_be9620ba-0118-4457-8ee4-354d3e97c327` (RimLoc).
   L: `agent_2ba7172f-de60-4338-b7d9-8269ea223ee1`; W5:
