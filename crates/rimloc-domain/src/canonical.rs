@@ -76,10 +76,12 @@ pub struct SourceProvenance {
     #[serde(default)]
     pub patch_stage: PatchStage,
     /// Why the effective occurrence won (pre-freeze contract, Source
-    /// Inspector mandate): "version-selected", "loadfolders", "first-file-wins",
-    /// "keyed-last-wins", "patch-applied". `None` = winner reason not captured
-    /// at this granularity (the flat-scan winner is per-family, so a batch
-    /// label would be a lie; per-entry capture is planned).
+    /// Inspector mandate). Filled PER ENTRY by the scan pipeline at the
+    /// decision point — `rimloc_core::winner_reason` vocabulary:
+    /// "first-file-wins", "keyed-last-wins", "keyed-first-in-file",
+    /// "tkey-last-assignment", "definjected-setoradd", "patch-applied";
+    /// view-selection facts stay in `version_selected`/`conditional_branch`.
+    /// `None` = no precedence decision involved the entry.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub selected_by: Option<String>,
 }

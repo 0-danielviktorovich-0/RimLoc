@@ -414,6 +414,7 @@ mod tests {
             path: "x".into(),
             line: None,
             tkey: None,
+            ..Default::default()
         }
     }
 

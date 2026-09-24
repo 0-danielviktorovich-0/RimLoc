@@ -295,6 +295,9 @@ fn execute_op(
                         let full = format!("{id}.{}", xp.field_path);
                         if let Some(u) = units.iter_mut().find(|u| u.key == full) {
                             u.source = Some(text.clone());
+                            // The patch operation is why this value won
+                            // (winner-reason provenance, Source Inspector).
+                            u.selected_by = Some(rimloc_core::winner_reason::PATCH_APPLIED.into());
                             hit += 1;
                         }
                     }
@@ -344,6 +347,8 @@ fn execute_op(
                         if let Some(text) = vn.text().map(str::trim).filter(|t| !t.is_empty()) {
                             if let Some(u) = units.iter_mut().find(|u| u.key == target_key) {
                                 u.source = Some(text.to_string());
+                                u.selected_by =
+                                    Some(rimloc_core::winner_reason::PATCH_APPLIED.into());
                                 report.applied_add += 1;
                             } else {
                                 report.no_target += 1;
@@ -359,6 +364,12 @@ fn execute_op(
                                     path: file.to_path_buf(),
                                     line: None,
                                     tkey: None,
+                                    // Patch-produced content: the op is why
+                                    // this unit exists at all.
+                                    selected_by: Some(
+                                        rimloc_core::winner_reason::PATCH_APPLIED.into(),
+                                    ),
+                                    ..Default::default()
                                 });
                                 report.applied_add += 1;
                             }
@@ -476,6 +487,7 @@ mod tests {
             path: "Defs/Thing.xml".into(),
             line: None,
             tkey: None,
+            ..Default::default()
         }
     }
 
@@ -581,6 +593,7 @@ mod a3_sequence_tests {
             path: "Defs/T.xml".into(),
             line: None,
             tkey: None,
+            ..Default::default()
         }];
         let (units, rep) = apply_patch_stage(units, &patches);
         let l = units.iter().find(|u| u.key == "Widget.label").unwrap();
@@ -619,6 +632,7 @@ mod a3_sequence_tests {
             path: "Defs/T.xml".into(),
             line: None,
             tkey: None,
+            ..Default::default()
         }];
         let (units, rep) = apply_patch_stage(units, &patches);
         assert!(rep.conditional_ops >= 2, "{rep:?}");
