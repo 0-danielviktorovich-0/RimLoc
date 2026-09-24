@@ -463,3 +463,18 @@ Cmd+K, coach, richer mock data (CJK/Cyrillic/длинные тексты/оши�
 Моки/адаптеры до фриза; канон-модель — источник семантики адаптеров (§30 multi-target:
 «не изобретать фронтенд-only стор, расходящийся с каноном»); UI-локаль ≠ source ≠ target
 (E2E); AI/чат-ответы = untrusted данные (только поля схемы); стили не меняют IA.
+
+### G6 — Future-readiness записано (24.09): Appearance Packs + Replaceable Frontend/UI SDK
+Оба мандата — «зафиксировать архитектурную границу», НЕ новая стройка; backend freeze и
+GUI productization не задерживаются.
+- Персистены: `APPEARANCE_PACK_MANDATE.md`, `UI_SDK_MANDATE.md` + создан
+  `APPEARANCE_PACK_ARCHITECTURE.md` (L1 Theme / L2 Layout / L3 Developer Extension —
+  декларативно, без кода; инварианты: паки меняют презентацию не семантику; ноль
+  привилегий; safe fallback; versioned schema; a11y-гейт; dogfood встроенных направлений
+  как first-party pack'ов потом; `.rimloctheme/.rimloclayout/.rimlocprofile`).
+- СЕЙЧАС требуется (уже выполнено/соблюдается): токены структурны; Style Lab чист; без
+  style-форков компонентов; центральный транспорт и нейтральные контракты — цель при
+  привязке GUI к бэкенду после фриза (никаких invoke() в компонентах — UI → RimLocClient →
+  TauriTransport); моки/корпус переиспользуемы; бизнес-правда не во фронтенде.
+- Отложено (не строить): Layout Builder, community registry, L3 extensions, альтернативные
+  фронтенды, UI_EXTENSION_ARCHITECTURE.md — после появления реализации.
