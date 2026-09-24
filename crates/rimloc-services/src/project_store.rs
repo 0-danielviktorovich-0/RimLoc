@@ -234,10 +234,26 @@ fn entry_def_type_evidence(
     // Legacy v1 bridge left context def_type empty but recorded the canonical
     // virtual output path (`.../DefInjected/<DefType>/...`) — unambiguous
     // path evidence that keeps normal old translations attached to their
-    // fresh typed identities.
-    if let Some(c) = entry.contexts.first() {
+    // fresh typed identities. ALL contexts are considered: an authentic v1
+    // collapsed collision carries TWO virtual paths (two def types), which
+    // must FAIL like any other collapsed evidence — the first path is never
+    // silently taken as the whole truth.
+    let mut path_distinct: Vec<String> = Vec::new();
+    for c in &entry.contexts {
         if let Some(dt) = crate::canonical_bridge::definjected_def_type_str(&c.file) {
-            push(&mut sources, Some(&dt));
+            if !path_distinct.iter().any(|known| known == &dt) {
+                path_distinct.push(dt);
+            }
+        }
+    }
+    match path_distinct.len() {
+        0 => {}
+        1 => push(&mut sources, Some(&path_distinct[0])),
+        _ => {
+            return Err(ProjectLoadDiagnostic::AmbiguousDefType {
+                key: entry.id.key.clone(),
+                types: path_distinct,
+            });
         }
     }
     match sources.len() {
@@ -753,5 +769,119 @@ mod tests {
         let msg = format!("{err:#}");
         assert!(msg.contains("contradictory def-type evidence"), "{msg}");
         assert_eq!(std::fs::read_to_string(&path).unwrap(), original);
+    }
+    /// 035: an authentic pre-feb v1 collapsed collision carries TWO
+    /// untyped contexts whose virtual paths prove TWO def types — the
+    /// migration must reject it (both orders), never silently take the
+    /// first path's type; the bytes stay untouched.
+    #[test]
+    fn v1_collapsed_two_path_collision_is_rejected_both_orders() {
+        let entry_contexts = |first: &str, second: &str| {
+            format!(
+                r#"{{
+  "schema_version": 1,
+  "context": {{ "view": "potential" }},
+  "entries": [
+    {{
+      "id": {{ "kind": "def_injected", "key": "Wild.label" }},
+      "text": "some label",
+      "source_locale": "en",
+      "contexts": [
+        {{
+          "file": "mod/Languages/English/DefInjected/{first}/Wild.xml",
+          "line": null,
+          "role": "effective"
+        }},
+        {{
+          "file": "mod/Languages/English/DefInjected/{second}/Wild.xml",
+          "line": null,
+          "role": "overridden"
+        }}
+      ],
+      "provenance": {{ "patch_stage": "none" }}
+    }}
+  ],
+  "translations": [
+    {{
+      "source_id": {{ "kind": "def_injected", "key": "Wild.label" }},
+      "locale": "ru", "text": "старый перевод",
+      "completeness": "translated", "review": "none",
+      "validation": "unknown", "lifecycle": "active", "origin": "human"
+    }}
+  ]
+}}
+"#
+            )
+        };
+        let dir = tempfile::tempdir().unwrap();
+        for (order, first, second) in [
+            ("thingdef-first", "ThingDef", "PawnKindDef"),
+            ("pawnkinddef-first", "PawnKindDef", "ThingDef"),
+        ] {
+            let path = dir.path().join(format!("{order}.rimloc.json"));
+            let raw = entry_contexts(first, second);
+            std::fs::write(&path, &raw).unwrap();
+            let err = load_project(&path).unwrap_err();
+            let msg = format!("{err:#}");
+            assert!(
+                msg.contains("ambiguous v1 entry")
+                    && msg.contains("ThingDef")
+                    && msg.contains("PawnKindDef"),
+                "[{order}] {msg}"
+            );
+            assert_eq!(
+                std::fs::read_to_string(&path).unwrap(),
+                raw,
+                "[{order}] failed load must not modify the file"
+            );
+        }
+    }
+
+    /// Consistent multiple legacy paths (same def type, several contexts)
+    /// migrate normally — only genuinely conflicting types fail.
+    #[test]
+    fn v1_consistent_multiple_legacy_paths_migrate() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("p.rimloc.json");
+        let v1 = r#"{
+  "schema_version": 1,
+  "context": { "view": "potential" },
+  "entries": [
+    {
+      "id": { "kind": "def_injected", "key": "Wild.label" },
+      "text": "some label",
+      "source_locale": "en",
+      "contexts": [
+        {
+          "file": "mod/Languages/English/DefInjected/ThingDef/Wild.xml",
+          "line": null,
+          "role": "effective"
+        },
+        {
+          "file": "mod/Languages/English/DefInjected/ThingDef/Wild2.xml",
+          "line": null,
+          "role": "overridden"
+        }
+      ],
+      "provenance": { "patch_stage": "none" }
+    }
+  ],
+  "translations": [
+    {
+      "source_id": { "kind": "def_injected", "key": "Wild.label" },
+      "locale": "ru", "text": "метка",
+      "completeness": "translated", "review": "none",
+      "validation": "unknown", "lifecycle": "active", "origin": "human"
+    }
+  ]
+}
+"#;
+        std::fs::write(&path, v1).unwrap();
+        let loaded = load_project(&path).unwrap();
+        assert_eq!(loaded.entries[0].id.def_type.as_deref(), Some("ThingDef"));
+        assert_eq!(
+            loaded.translations[0].source_id.def_type.as_deref(),
+            Some("ThingDef")
+        );
     }
 }
