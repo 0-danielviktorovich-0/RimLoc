@@ -5,7 +5,6 @@
 // companies or workshop ids.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  MOCK_APP_VERSION,
   MOCK_HOME_PREFIX,
   SCENARIO_ENTRY,
   buildAiPrompt,
@@ -18,6 +17,7 @@ import {
 } from '../src/lib/mock/diagnostics';
 import { SOURCE_LOCATION, OUTPUT_LOCATION, DiagnosticsStore } from '../src/lib/stores/diagnostics.svelte';
 import { providers } from '../src/lib/stores/providers.svelte';
+import { APP_VERSION } from '../src/lib/version';
 
 const CAUSAL_ENV = {
   providerCounts: { connected: 1, notConfigured: 2, offline: 1 },
@@ -250,8 +250,10 @@ describe('diagnostics store phase machine', () => {
 });
 
 describe('mock fixtures stay synthetic', () => {
-  it('version literal is a labelled mock stand-in, not canonical metadata', () => {
-    expect(MOCK_APP_VERSION).toMatch(/^\d+\.\d+\.\d+$/);
+  it('reports the same application version as About and labels demo data', () => {
+    const version = buildRawBundle(null, { sourceLocation: 'source', outputLocation: 'output' })
+      .find((line) => line.key === 'app.version');
+    expect(version?.value).toBe(`RimLoc ${APP_VERSION} (mock)`);
   });
 
   it('locations use generic placeholders, not real owner paths', () => {
