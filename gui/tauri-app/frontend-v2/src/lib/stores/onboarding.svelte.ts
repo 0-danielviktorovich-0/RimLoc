@@ -71,6 +71,13 @@ class OnboardingStore {
   outcome = $state<TourOutcome | null>(readOutcome());
   /** Whether the guided demo tour was ever started (persisted). */
   demoTourSeen = $state(false);
+  /**
+   * Guided-action ledger for the RUNNING tour: step id -> the user actually
+   * performed the action (not just pressed Next). The final demo step reads
+   * this ledger: success copy is only allowed when the work really happened.
+   * Reset on every script start; not persisted — it describes one pass.
+   */
+  guidedDone = $state<Record<string, boolean>>({});
 
   constructor() {
     this.seen = readSeen();
@@ -90,12 +97,24 @@ class OnboardingStore {
     }
   }
 
-  /** Open a script at step 0. */
+  /** Open a script at step 0. The guided ledger starts empty — a fresh pass
+   * must earn its success copy with real actions. */
   startScript(script: TourScript) {
     this.script = script;
     this.total = script === 'coach' ? COACH_TOTAL : DEMO_TOTAL;
     this.step = 0;
+    this.guidedDone = {};
     this.open = true;
+  }
+
+  /** Record that a guided action was actually performed on this pass. */
+  markGuided(stepId: string) {
+    this.guidedDone[stepId] = true;
+  }
+
+  /** Guided ids from `requires` that were NOT performed on this pass. */
+  missingGuided(requires: readonly string[]): string[] {
+    return requires.filter((id) => !this.guidedDone[id]);
   }
 
   /**

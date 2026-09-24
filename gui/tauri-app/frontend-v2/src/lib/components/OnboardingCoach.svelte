@@ -17,6 +17,12 @@
   const steps = $derived(stepsFor(onboarding.script));
   const step: TourStep = $derived(steps[Math.min(onboarding.step, steps.length - 1)]);
   const last = $derived(onboarding.step >= onboarding.total - 1);
+  // Guided honesty: when this step requires performed actions and some are
+  // missing, show the honest fallback copy instead of a success claim.
+  const missing = $derived(step.requires ? onboarding.missingGuided(step.requires) : []);
+  const honest = $derived(missing.length > 0 && !!step.honestTitleKey);
+  const titleKey = $derived(honest ? (step.honestTitleKey as string) : step.titleKey);
+  const textKey = $derived(honest ? (step.honestTextKey as string) : step.textKey);
 
   interface Box {
     top: number;
@@ -82,6 +88,7 @@
   });
 
   function runAction() {
+    onboarding.markGuided(step.id);
     step.action?.run();
     onboarding.next();
   }
@@ -107,9 +114,15 @@
       </p>
       <h2 id="onboarding-title" class="title">
         <Icon name="lightbulb" size={18} />
-        {t(step.titleKey)}
+        {t(titleKey)}
       </h2>
-      <p class="text">{t(step.textKey)}</p>
+      <p class="text">
+        {t(textKey, honest ? { list: missing.map((id) => t(`tour.missing.${id}`)).join(', ') } : undefined)}
+      </p>
+
+      {#if honest}
+        <p class="honest-note" data-testid="onboarding.honest-note">{t('tour.honestNote')}</p>
+      {/if}
 
       <div class="dots" aria-hidden="true">
         {#each Array(onboarding.total) as _, i (i)}
@@ -132,10 +145,18 @@
             {t('onboarding.skip')}
           </button>
           {#if step.action}
+            <!-- Guided action performs the real work; plain Next stays
+                 available for skip-ahead — the final step's honest variant
+                 then reports the outstanding work instead of fake success. -->
             <button type="button" class="btn btn-primary" data-testid={step.action.testid} onclick={runAction}>
               {t(step.action.labelKey)}
               <Icon name="arrow-right" size={14} />
             </button>
+            {#if !last}
+              <button type="button" class="btn" data-testid="onboarding.next" onclick={() => onboarding.next()}>
+                {t('onboarding.next')}
+              </button>
+            {/if}
           {:else}
             <button type="button" class="btn btn-primary" data-testid="onboarding.next" onclick={() => onboarding.next()}>
               {last ? (onboarding.script === 'demo' ? t('common.done') : t('onboarding.finish')) : t('onboarding.next')}
@@ -216,6 +237,15 @@
   .text {
     margin: 0;
     color: var(--color-muted-fg);
+  }
+
+  .honest-note {
+    margin: 0;
+    color: var(--color-warning);
+    font-size: var(--text-meta-size);
+    border: 1px dashed var(--color-warning);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
   }
 
   .dots {
