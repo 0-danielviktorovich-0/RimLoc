@@ -253,7 +253,7 @@ describe('mock fixtures stay synthetic', () => {
   it('reports the same application version as About and labels demo data', () => {
     const version = buildRawBundle(null, { sourceLocation: 'source', outputLocation: 'output' })
       .find((line) => line.key === 'app.version');
-    expect(version?.value).toBe(`RimLoc ${APP_VERSION} (mock)`);
+    expect(version?.value).toBe(`RimLoc ${APP_VERSION}`);
   });
 
   it('locations use generic placeholders, not real owner paths', () => {
