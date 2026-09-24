@@ -495,3 +495,18 @@ W6/W7 post-freeze = live binding/acceptance. PRE-FREEZE контракт для 
 canonical provenance должен отвечать what file / where / which candidate won / why
 (Добавить winner-reason в provenance до фриза). Авторитетный слепок кампании:
 **docs/development/CAMPAIGN_SNAPSHOT.md** (обновлять на каждом чекпоинте).
+
+### W3 REVIEW SCREEN MAP (для запроса скриншотов; сценарии dev-only)
+| Экран | Клик-путь | Scenario |
+|---|---|---|
+| Wizard hybrid strategy | Home → Create translation → шаг 4 | wizard/strategy |
+| Chat Batch Manager | Wizard шаг 7 → «Открыть чат-батчи» или #/chat | chat/batches |
+| Advanced batch settings | #/chat → Sizing Large (префилл) или панель | chat/advanced |
+| Import preview (safe+stale+structural+missing) | #/chat → батч-3 [Проверить 4] | chat/preview |
+
+### Гибридный acceptance (контролируемый, мок-слой)
+Сценарий: TM fill → AI-chat batch (фиксация ревизий) → human правит одну
+экспортированную запись → import stale AI-ответа → human-текст выживает (запись
+→ suggestion/conflict), safe-записи применяются. Реализуется регрессией
+frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (та же
+семантика, что stale-тесты W2, но полный цикл экспорт→правка→импорт).
