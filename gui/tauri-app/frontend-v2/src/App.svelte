@@ -9,6 +9,8 @@
   import BuildStub from './lib/components/screens/BuildStub.svelte';
   import Existing from './lib/components/screens/Existing.svelte';
   import ChatBatchManager from './lib/components/chat/ChatBatchManager.svelte';
+  import GlossaryEditor from './lib/components/screens/GlossaryEditor.svelte';
+  import TMEditor from './lib/components/screens/TMEditor.svelte';
   import Phase2Stub from './lib/components/screens/Phase2Stub.svelte';
   import DevPanel from './lib/components/DevPanel.svelte';
   import StyleLab from './lib/components/StyleLab.svelte';
@@ -34,6 +36,12 @@
   {:else if router.route === 'chat'}
     <!-- Chat-batch manager (spec §10): also opened from the wizard result. -->
     <ChatBatchManager />
+  {:else if router.route === 'glossary'}
+    <!-- Project glossary editor (mandate §10, W4). -->
+    <GlossaryEditor />
+  {:else if router.route === 'tm'}
+    <!-- Translation memory editor (mandate §11, W4). -->
+    <TMEditor />
   {:else}
     <Phase2Stub route={router.route} />
   {/if}

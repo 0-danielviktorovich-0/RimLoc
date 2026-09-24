@@ -40,6 +40,9 @@
       { id: 'compare-versions', labelKey: 'palette.action.compareVersions', icon: 'layers', route: 'workspace' },
       { id: 'open-settings', labelKey: 'palette.action.openSettings', icon: 'settings', route: 'settings' },
       { id: 'configure-ai', labelKey: 'palette.action.configureAI', icon: 'cpu', route: 'providers' },
+      { id: 'open-glossary', labelKey: 'palette.action.openGlossary', icon: 'book', route: 'glossary' },
+      { id: 'open-tm', labelKey: 'palette.action.openTM', icon: 'database', route: 'tm' },
+      { id: 'open-about', labelKey: 'palette.action.openAbout', icon: 'info', route: 'help' },
       { id: 'run-diagnostics', labelKey: 'palette.action.runDiagnostics', icon: 'clipboard-check', route: 'help' },
       { id: 'show-shortcuts', labelKey: 'palette.action.showShortcuts', icon: 'lightbulb', route: 'help' }
     ];
