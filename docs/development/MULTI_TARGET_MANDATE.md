@@ -1,664 +1,674 @@
 ===============================================================================
 (G4/G5 — кумулятивный мандат владельца, 2026-09-24; единый фронтенд-DAG, одна IA)
-CHAT-BASED AI TRANSLATION / NO-API ROUND-TRIP
+MULTI-TARGET LANGUAGE WORKSPACE / EDITOR UX
 ===============================================================================
 
-Add a first-class translation workflow for users who have access to consumer AI
-chat products but do NOT have, cannot afford, or do not want to configure API
-access.
+This mandate extends the current GUI QA, Language Registry and hybrid
+translation workflow requirements.
 
-Examples include ordinary browser/app conversations with:
+The owner's additional hands-on feedback:
 
-- ChatGPT
-- Claude
-- Gemini
-- GLM
-- other general AI chats.
+Switching target language should be fast and obvious DIRECTLY inside the
+translation workspace.
 
-This must NOT require an API key.
+RimLoc should be architected for:
 
-Treat this as a supported product workflow, not a hidden JSON export trick.
+one canonical source inventory
++
+one or more target-language translations
+
+rather than forcing independent duplicated projects for every target language.
+
+Do not compromise beginner simplicity.
 
 ===============================================================================
-1. USER-FACING NAME
+1. PROJECT / TARGET MODEL
 ===============================================================================
 
-Avoid developer terminology such as "external provider" on beginner surfaces.
+Conceptually separate:
 
-Evaluate wording such as:
+PROJECT
+- source content
+- source locale
+- RimWorld/version context
+- canonical source inventory
+
+TARGET TRANSLATIONS
+- one or more target locales
+- independent translation state/progress
+- validation state
+- provenance
+- review state.
+
+Example:
+
+Project:
+Vanilla Furniture Expanded
+Source: English
+
+Targets:
+Russian
+Ukrainian
+Japanese
+German.
+
+The v1 beginner flow may initially create one target.
+
+The canonical architecture should not require project duplication to add another
+target later.
+
+===============================================================================
+2. ACTIVE TARGET
+===============================================================================
+
+Introduce an explicit concept:
+
+active_target_locale
+
+Workspace displays/edits the active target translation.
+
+Changing active target must NOT:
+
+- rescan the mod;
+- rebuild source inventory;
+- create a separate project;
+- lose editor position/state unnecessarily.
+
+It should switch the translation dataset over the same canonical source entries.
+
+===============================================================================
+3. WORKSPACE LANGUAGE SWITCHER
+===============================================================================
+
+Add a clear target-language selector in the Workspace header.
+
+Conceptual UI:
+
+English → [ Русский ▾ ] [ + ]
+
+Clicking target opens a searchable language switcher.
+
+Example:
+
+Русский           87%   12 issues
+Українська        44%    8 issues
+日本語             13%   31 issues
+Deutsch           92%    3 issues
+
++ Add target language
++ Manage languages
++ Compare languages
+
+Do not confuse this control with application UI-language selection.
+
+===============================================================================
+4. PINNED TARGET TABS
+===============================================================================
+
+Evaluate optional pinned language tabs for translators maintaining a small
+number of target languages simultaneously.
+
+Example:
+
+SOURCE English
+
+[ Русский 87% ] [ Українська 44% ] [ 日本語 13% ] [+]
+
+Avoid showing an unbounded row of 10+ language tabs.
+
+Allow users to pin a small working set while other target locales remain in the
+dropdown/manager.
+
+Use the simplest design that tests well.
+
+===============================================================================
+5. ADD LANGUAGE FROM WORKSPACE
+===============================================================================
+
+The `+` action beside target locale should allow adding another target language
+without leaving the editor.
+
+Flow:
+
++ Add language
+→ search known languages
+→ select
+or
+→ Create custom language.
+
+Then initialize translation state safely.
+
+Do not hide this capability only in deep Settings.
+
+===============================================================================
+6. LANGUAGE MANAGER
+===============================================================================
+
+Provide a proper project-level Languages management surface.
+
+Show:
+
+SOURCE
+English
+
+TARGETS
+
+Russian
+progress
+issues
+last modified
+
+Ukrainian
+progress
+issues
+
+Japanese
+...
+
+Actions may include:
+
+- Open / make active
+- Pin to editor
+- Compare
+- Import translation
+- Export translation
+- Language-specific settings
+- Detach/remove safely
+
++ Add target language.
+
+===============================================================================
+7. CUSTOM LANGUAGE
+===============================================================================
+
+Language Registry must support user-defined locales.
+
+Simple dialog:
+
+Display name
+Native name
+Locale identifier
+
+Advanced fields only when needed:
+
+- RimWorld folder/name
+- script
+- writing direction
+- capability overrides
+- normalization behavior.
+
+Assign Generic LanguageCapabilities by default.
+
+Do not prevent translation merely because RimLoc lacks special morphology
+support.
+
+===============================================================================
+8. LOCALE, NOT ONLY LANGUAGE
+===============================================================================
+
+The underlying registry should support locale-level distinctions, not only
+coarse language names.
+
+Examples:
+
+pt-BR
+pt-PT
+zh-Hans
+zh-Hant
+es-ES
+es-419
+
+Do not force all variants of a language into one target identity.
+
+Use human-friendly names in the GUI.
+
+===============================================================================
+9. RTL READINESS
+===============================================================================
+
+Where inexpensive architecturally, avoid assumptions that all target languages
+are LTR.
+
+User-defined/future locales may be RTL.
+
+Do not require full RTL product localization immediately, but keep editor
+language metadata capable of expressing text direction.
+
+Test a representative RTL text rendering case later.
+
+===============================================================================
+10. TARGET-SPECIFIC STATE
+===============================================================================
+
+Switching target language must switch all appropriate target-specific state:
+
+- translated text
+- statuses
+- validation
+- review state
+- glossary
+- TM
+- AI provenance
+- notes if target-specific
+- sourceChanged review state
+- progress.
+
+Source context remains shared.
+
+===============================================================================
+11. LANGUAGE-PAIR TM / GLOSSARY
+===============================================================================
+
+Workspace should make the active language pair clear.
+
+TM and glossary lookup must use:
+
+source locale
++
+active target locale.
+
+Example:
+
+EN→RU glossary
+
+must not silently appear as:
+
+EN→JA.
+
+Professional UI may visibly label resource scope.
+
+===============================================================================
+12. LANGUAGE-SPECIFIC AI CONFIGURATION
+===============================================================================
+
+Allow project default AI settings.
+
+Also architect optional target-language overrides.
+
+Example:
+
+Project default:
+GLM
+
+Japanese:
+Claude override
 
 Russian:
-"Через чат с ИИ — без API"
+project default
 
-English:
-"Use AI chat — no API key"
+Do not expose this complexity in beginner flow unless needed.
 
-with a concise explanation:
+Language settings may offer:
 
-RimLoc prepares the text and context.
-The user sends it to their AI chat and imports the response back.
-
-Advanced documentation may call this:
-
-External AI batch workflow.
+Use project default
+or
+Override.
 
 ===============================================================================
-2. SAME CANONICAL PROJECT MODEL
+13. TARGET SWITCH DURING AI JOBS
 ===============================================================================
 
-Chat-based translation must use the SAME canonical SourceEntry / Translation
-model as:
+If an AI translation job is running for Russian, the user should be allowed to
+switch to Japanese or another target where technically safe.
 
-- manual editing
-- integrated AI
-- TM
-- existing translations
-- future MCP/agents.
+Clearly show background activity:
 
-Do NOT create a separate chat-translation project representation.
+Russian
+AI translating 1,842 / 5,200
 
-===============================================================================
-3. BASIC USER JOURNEY
-===============================================================================
+Switching UI target must not cancel or corrupt the existing job.
 
-Implement/design the beginner workflow:
+Background jobs must identify:
 
-Select untranslated/problem entries
-→ Translate with AI chat
-→ RimLoc prepares a batch
-→ Copy prompt / Export batch
-→ user sends it to ChatGPT/Claude/GLM/etc.
-→ user receives response
-→ Paste response / Import response file
-→ RimLoc validates and maps results
-→ preview conflicts/problems
-→ apply valid translations
-→ review invalid/uncertain entries.
-
-No manual per-string copy/paste should be required.
-
-===============================================================================
-4. BATCH MANAGER
-===============================================================================
-
-Large projects must be split into manageable resumable batches.
-
-Track per batch:
-
-NOT STARTED
-EXPORTED / COPIED
-WAITING FOR RESPONSE
-IMPORTED
-PARTIAL
-NEEDS REVIEW
-DONE.
-
-Show progress such as:
-
-Batch 3 of 8
-72 / 76 accepted
-4 need review.
-
-Provide:
-
-[ Copy next batch ]
-
-after successful import.
-
-Users should be able to stop today and continue tomorrow.
-
-===============================================================================
-5. STABLE BATCH IDENTITY
-===============================================================================
-
-Each batch must have stable structured identity.
-
-At minimum evaluate:
-
-project_id
-target_locale
-batch_id
-schema_version
-entry IDs
-entry/source revisions
-relevant project/source fingerprint.
-
-Never rely on response order alone.
-
-===============================================================================
-6. ENTRY PAYLOAD
-===============================================================================
-
-Include only useful structured context.
-
-Potential fields:
-
-entry_id
-source_revision
-source text
-source locale
+project
 target locale
-EntryKind
-RimWorld/mod context
-usage/context
-glossary constraints
-TM examples where valuable
-protected placeholders/tokens
-related terminology
-current translation where appropriate.
-
-Do not include unnecessary entire project/mod content.
-
-Keep token usage efficient.
+operation ID.
 
 ===============================================================================
-7. PROMPT GENERATOR
+14. MULTIPLE TARGET JOBS
 ===============================================================================
 
-Generate a high-quality provider-neutral prompt automatically.
+Architect jobs so independent target-language operations can eventually run in
+parallel where provider/resource limits allow.
 
-Requirements should include:
+Example:
 
-- translate to target locale;
-- preserve every entry ID;
-- do not skip entries silently;
-- preserve protected tokens exactly;
-- respect glossary;
-- preserve RimWorld grammar constructs;
-- return structured response only;
-- mark uncertainty rather than hallucinating.
+Russian translation job
+Japanese validation job
 
-Allow provider-specific prompt variants later if they materially improve
-reliability.
+without state collision.
 
-The normal user should not need to write a translation prompt manually.
+Do not implement uncontrolled concurrency merely because architecture allows it.
+
+Use job/resource limits.
 
 ===============================================================================
-8. RESPONSE FORMAT
+15. STALE AI WRITE PROTECTION PER TARGET
 ===============================================================================
 
-Define a stable versioned response schema.
+The previously required revision protection must be target-specific.
 
-Conceptually:
+AI result for:
 
-batch_id
-entries:
-  id
-  translation
-  needs_review
-  optional note/reason.
+SourceEntry X
+Target RU
+Revision 17
 
-Do not require models to echo large source/context fields unnecessarily.
+must never overwrite:
 
-Keep response compact and robust.
+Target RU
+Revision 18 human edit.
 
-===============================================================================
-9. HUMAN-FRIENDLY IMPORT
-===============================================================================
-
-Normal user import options:
-
-- Paste AI response
-- Import response file.
-
-Do not require the user to understand JSON.
-
-If parsing fails, explain what is wrong and offer:
-
-- retry/copy corrected response instruction
-- manual review
-- partial recovery where safe.
-
-Do not discard correctly parsed entries because one entry is malformed if
-partial safe import is possible.
-
-===============================================================================
-10. UNTRUSTED RESPONSE BOUNDARY
-===============================================================================
-
-Treat AI chat output as untrusted data.
-
-It must NEVER be interpreted as:
-
-- file paths to write arbitrarily
-- shell commands
-- configuration commands
-- rule-pack code
-- executable instructions.
-
-Only accept translation fields defined by the response schema.
-
-Unknown fields must not grant capabilities.
-
-===============================================================================
-11. ID VALIDATION
-===============================================================================
-
-Reject or flag:
-
-- unknown entry IDs
-- duplicate IDs
-- wrong batch ID
-- wrong project
-- wrong target locale
-- missing required entries
-- entries from another batch.
-
-Never map by text/order alone when stable ID exists.
-
-===============================================================================
-12. REVISION / STALE RESPONSE PROTECTION
-===============================================================================
-
-A batch captures source/translation revision.
-
-If the user edits an entry after batch export:
-
-AI response MUST NOT silently overwrite the newer human work.
-
-Conceptually:
-
-export translation revision N
-
-if current revision == N:
-safe to apply
-
-if current revision > N:
-conflict
-→ AI result becomes suggestion
-→ preserve current human text.
-
-Apply per target locale.
+It must also never accidentally write into Target JA.
 
 Add regression tests.
 
 ===============================================================================
-13. SOURCE CHANGE PROTECTION
+16. SOURCE LANGUAGE CHANGES
 ===============================================================================
 
-If source text changed after batch export:
+Changing SOURCE locale is much more consequential than changing target.
 
-do not blindly import the old translation.
+Do not present it as an equally casual switch after project initialization.
 
-Mark:
+If future workflows allow changing source language:
 
-SOURCE_CHANGED / STALE_BATCH
+- explain impact;
+- rebuild/reconcile source inventory;
+- preserve target work only when safe.
 
-and require review/retranslation.
-
-===============================================================================
-14. STRUCTURAL VALIDATION
-===============================================================================
-
-Before applying imported response validate:
-
-- placeholders
-- TKey/lookup constructs
-- RulePack/grammar tokens
-- identifiers
-- markup
-- XML-sensitive content
-- glossary constraints where deterministic
-- expected entry completeness.
-
-Clean entries may apply.
-
-Problems enter Review.
+Target switching should be cheap.
+Source switching should be deliberate.
 
 ===============================================================================
-15. PREVIEW / APPLY
+17. LANGUAGE COMPARISON MODE
 ===============================================================================
 
-Before applying a batch show a concise result:
-
-76 responses
-
-71 ready to apply
-3 structural problems
-1 stale human edit
-1 missing response
-
-Actions:
-
-[ Apply 71 safe translations ]
-[ Review 5 problems ]
-
-Do not make users choose entry by entry when most are clean.
-
-===============================================================================
-16. PROVENANCE
-===============================================================================
-
-Imported translations should retain provenance such as:
-
-AI_CHAT
-
-plus optionally:
-
-declared provider/model
-batch ID
-timestamp
-review state.
-
-Do not pretend provider/model is verified when the user merely selects/types
-it manually.
-
-User may optionally label:
-
-ChatGPT
-Claude
-GLM
-Gemini
-Other/Unknown.
-
-===============================================================================
-17. MULTIPLE AI CHATS / PROVIDERS
-===============================================================================
-
-One project may use different chat products for different batches.
+Evaluate an advanced multi-target comparison view.
 
 Example:
 
-Batch 1–3 → ChatGPT
-Batch 4–5 → Claude
-Batch 6–8 → GLM.
+SOURCE
+English
 
-RimLoc should not care as long as response schema is valid.
+TARGET A
+Russian
 
-Preserve per-entry/batch provenance.
+TARGET B
+Ukrainian
 
-===============================================================================
-18. COPY / DOWNLOAD OPTIONS
-===============================================================================
+Use cases:
 
-Offer appropriate options:
+- terminology consistency
+- closely related languages
+- translation-team review
+- reference comparison.
 
-[ Copy prompt ]
-[ Copy data + prompt ]
-[ Export AI batch ]
+Do not make this the default editor.
 
-Advanced export may produce:
+Potential layouts:
 
-prompt.md
-batch.json
+Source | RU | UK
 
-or a self-contained bundle.
+or
 
-Do not require files for the simplest workflow.
+Source
+RU
+UK
 
-===============================================================================
-19. IMPORT OPTIONS
-===============================================================================
+depending on width.
 
-Offer:
-
-[ Paste response ]
-[ Import response file ]
-
-Future integration may support direct share/open workflows.
-
-Do not require clipboard access where platform policies prevent it.
+Support 2 target comparisons initially rather than arbitrary 10-column tables.
 
 ===============================================================================
-20. TOKEN-AWARE BATCHING
+18. REFERENCE LANGUAGE
 ===============================================================================
 
-Automatically choose reasonable batch sizes based on:
+Allow an existing other-language translation to be used as a REFERENCE without
+changing canonical source identity.
 
-- source length
-- context size
-- glossary
-- target model/chat constraints where known.
+Example:
 
-Default:
+English source
+Russian target
+existing German translation as secondary reference.
 
-Auto.
+This can help human translators.
 
-Advanced settings may allow:
+Do NOT automatically translate RU from German while pretending English was the
+semantic source.
 
-smaller / standard / larger context batches.
-
-Do not ask beginners for token counts.
-
-===============================================================================
-21. STRUCTURAL FINGERPRINT / REPEATED CONTEXT OPTIMIZATION
-===============================================================================
-
-Avoid repeating identical context/glossary data unnecessarily in every entry.
-
-Where format allows, provide shared batch-level context.
-
-Optimize for consumer-chat context limits.
-
-Do not sacrifice clarity/reliability for extreme compression.
+Mark reference language clearly.
 
 ===============================================================================
-22. DIFFICULT-ENTRY CHAT WORKFLOW
+19. CREATE TARGET FROM EXISTING TRANSLATION
 ===============================================================================
 
-Allow a translator to send only selected difficult entries to external AI.
+When adding a target locale offer initialization options conceptually:
 
-Example editor action:
+- Empty
+- Existing language pack
+- Translation Memory
+- Import file
+- optional reference from another target
+- AI later.
 
-Ask AI chat about selected entry
-
-RimLoc prepares:
-
-source
-current translation
-context
-glossary
-validation issue
-related terms.
-
-User can import the suggestion safely.
+Do not force AI.
 
 ===============================================================================
-23. NO PROVIDER LOCK-IN
+20. LANGUAGE PROGRESS
 ===============================================================================
 
-Generated batch format should be provider-neutral.
+Each target should expose independent progress such as:
 
-Do not make the user choose ChatGPT-specific format merely to use consumer chat.
+translated
+needs review
+source changed
+validation errors
+obsolete.
 
-Provider-specific prompt tuning may exist as an optional presentation layer.
+Use concise summaries in switcher/Language Manager.
 
-===============================================================================
-24. EXTERNAL CHAT QUALITY MODES
-===============================================================================
-
-Where useful, prompt generation may support:
-
-Draft
-Quality
-Maximum quality
-Review only.
-
-For Maximum quality, RimLoc may generate separate prompts:
-
-Translation pass
-Review pass
-
-without assuming the same chat/model is independent evidence.
-
-Explain expected extra work.
+Avoid information overload.
 
 ===============================================================================
-25. OFFLINE / MANUAL COMPATIBILITY
+21. TARGET REMOVAL SAFETY
 ===============================================================================
 
-The project remains fully usable even if the user never completes a chat batch.
+Removing a target translation can destroy significant work.
 
-They can always:
+Default behavior should avoid permanent loss.
 
-- edit manually
-- use TM
-- import existing translation
-- validate/build.
+Evaluate:
 
-Chat workflow is optional.
+Detach from active project
+Export first
+Archive
+Permanent delete
 
-===============================================================================
-26. GUI PLACEMENT
-===============================================================================
+Destructive delete should:
 
-Expose chat-based AI in:
+- be explicit
+- explain amount of affected work
+- require confirmation.
 
-Quick Translate strategy
-and
-Workspace translation actions.
-
-Possible Workspace actions:
-
-Translate untranslated with AI chat
-Prepare selected for AI chat
-Import AI response.
-
-Do not hide it only inside Settings.
+Do not delete source inventory.
 
 ===============================================================================
-27. BATCH HISTORY
+22. KEYBOARD / COMMAND PALETTE
 ===============================================================================
 
-Project should retain useful batch history:
+Provide fast language switching for professional users.
 
-batch ID
-target
-entries
-export time
-import status
-provenance.
+Command Palette actions:
 
-Allow users to see:
+Switch target → Russian
+Switch target → Japanese
+Add target language
+Manage languages
+Compare languages.
 
-which batches are unfinished.
+Evaluate a remappable keyboard shortcut for opening the language switcher.
 
-Do not store the entire chat transcript unless user explicitly imports it.
-
-===============================================================================
-28. PRIVACY PREVIEW
-===============================================================================
-
-Before export/copy, explain that selected source text/context will be sent by the
-user to an external AI service.
-
-Allow preview of what RimLoc generated.
-
-Do not include:
-
-API keys
-user secrets
-irrelevant filesystem paths
-private project notes not needed for translation
-
-unless explicitly selected.
+Do not hardcode a shortcut that conflicts with common OS/editor conventions.
 
 ===============================================================================
-29. "COPY NEXT BATCH" UX
+23. PROJECT HEADER
 ===============================================================================
 
-Optimize repeated workflow.
+Workspace header should make source/active-target relationship obvious without
+clutter.
 
-After import:
+Example:
 
-Batch 3/8 complete
+TestMod
+English → Russian
+RimWorld 1.6
 
-[ Review problems ]
-[ Copy next batch ]
+The target portion may be interactive.
 
-Avoid forcing user back through the wizard.
-
-===============================================================================
-30. IMPORT ROBUSTNESS TEST CORPUS
-===============================================================================
-
-Test responses containing:
-
-- reordered entries
-- missing entry
-- duplicate entry
-- unknown ID
-- malformed JSON
-- Markdown code fences
-- commentary before/after JSON
-- altered placeholders
-- stale revision
-- wrong target locale
-- partial response
-- valid multilingual Unicode.
-
-Parser may be user-friendly but must remain strict about semantic identity.
+Do not duplicate the full language manager in the header.
 
 ===============================================================================
-31. COPY-PASTE ACCEPTANCE TEST
+24. BEGINNER FLOW
 ===============================================================================
 
-Run an actual end-to-end controlled acceptance:
+Quick Translate remains simple.
 
-RimLoc project
-→ create AI-chat batch
-→ copy prompt/data
-→ give it to an independent chat/model
-→ receive response
-→ paste/import
-→ validate
-→ apply
-→ build.
+Normal player:
 
-No API integration may be used in this acceptance.
+choose content
+→ choose ONE target
+→ translate.
 
-Document usability problems.
+Do not force multi-target concepts into beginner onboarding.
+
+After project creation advanced users can add targets.
 
 ===============================================================================
-32. AI SKILL / AGENT COMPATIBILITY
+25. WHOLE-GAME / DLC TRANSLATOR USE CASE
 ===============================================================================
 
-Use the same batch schema for future RimLoc AI skills/agents where useful.
+Multi-target architecture is especially valuable for base-game/DLC localization
+teams.
 
-A coding/AI agent may consume/export the structured batch directly without
-manual copy/paste.
+One source inventory can serve multiple maintained language packs.
 
-Do not create a separate incompatible agent translation format.
-
-===============================================================================
-33. DOCUMENTATION
-===============================================================================
-
-Later public docs should have a beginner guide:
-
-"Translate with ChatGPT/Claude/another AI chat without an API key."
-
-Explain:
-
-copy
-→ send
-→ import
-→ review
-
-in a short visual tutorial.
-
-Do not require API terminology.
+Do not make this capability mod-only.
 
 ===============================================================================
-34. ACCEPTANCE
+26. PSEUDO-LOCALE READINESS
 ===============================================================================
 
-Before calling chat-based translation ready prove:
+Evaluate supporting a development pseudo-locale later.
 
-- no API key required;
-- user can translate several batches across multiple sessions;
-- model response order does not matter;
-- unknown IDs cannot modify project;
-- stale AI response cannot overwrite human edits;
-- sourceChanged batch is blocked/reviewed;
-- placeholders are validated;
-- partial valid import is recoverable;
-- target locale cannot be mixed;
-- provenance remains;
-- real translated output builds successfully;
-- workflow is understandable to a nontechnical user.
+Purpose:
 
-Continue autonomously.
+- detect hardcoded UI strings
+- detect clipping
+- stress long text
+- verify Unicode/layout.
+
+Do not prioritize above real target languages.
+
+Keep Language Registry flexible enough that pseudo locales are possible.
+
+===============================================================================
+27. UI LANGUAGE REMAINS SEPARATE
+===============================================================================
+
+Repeat as an invariant:
+
+Application UI locale
+≠
+Project source locale
+≠
+Active target locale.
+
+Switching RU/EN interface language must NOT alter project translation language.
+
+Add E2E regression.
+
+===============================================================================
+28. PERSISTENCE
+===============================================================================
+
+Persist:
+
+- project target list
+- active target
+- pinned languages
+- per-target settings
+- per-target progress/state.
+
+Reopening the project must restore the user's language workspace.
+
+===============================================================================
+29. GUI TESTS
+===============================================================================
+
+Add tests for:
+
+- switch RU → JA target
+- translation data changes appropriately
+- source remains identical
+- TM/glossary scope changes
+- add custom language
+- custom language persists
+- UI locale switch does not affect target
+- stale RU AI result cannot modify JA
+- remove/detach target is safe
+- reopen restores active target
+- keyboard/command palette switch.
+
+===============================================================================
+30. BACKEND CONTRACT
+===============================================================================
+
+Do NOT invent a frontend-only target-language store that diverges from the
+canonical project model.
+
+During mock phase use a clean adapter matching the intended backend semantics.
+
+After backend freeze bind it to the canonical Project/Translation model.
+
+===============================================================================
+31. VISUAL DESIGN
+===============================================================================
+
+Language switching must remain visually lightweight.
+
+Do not introduce a giant toolbar solely for target management.
+
+Target switcher should feel comparable to changing:
+
+branch
+workspace
+document locale
+
+in a professional tool.
+
+Use subtle progress/issue indicators.
+
+===============================================================================
+32. DELIVERABLE
+===============================================================================
+
+Extend:
+
+GUI_DESIGN_SPEC.md
+GUI_UX_ACCEPTANCE.md
+
+and implement the interactive mock for:
+
+- Workspace target switcher
+- Add language
+- Language Manager
+- target progress
+- persistence mock
+- command-palette language actions.
+
+Continue in parallel with other GUI QA work.
 
 No push.
 No release.
