@@ -48,18 +48,12 @@
 </script>
 
 <section class="diag" aria-labelledby="diag-heading">
-  <div class="heading-row">
-    <h1 id="diag-heading" class="title">
-      <Icon name="cpu" size={20} />
-      {t('diagnostics.title')}
-    </h1>
-    <!-- Demo indicator: this whole screen runs a scripted MOCK scenario until
-         the global W6 mock/live badge lands. Visible on every phase. -->
-    <span class="demo-badge" data-testid="diagnostics.demoBadge" title={t('diagnostics.demoBadge')}>
-      <Icon name="info" size={12} />
-      {t('diagnostics.demoBadge')}
-    </span>
-  </div>
+  <!-- W6: the local demo badge was consolidated into the global MockBadge in
+       the app header — the data-mode truth is now shown on every route. -->
+  <h1 id="diag-heading" class="title">
+    <Icon name="cpu" size={20} />
+    {t('diagnostics.title')}
+  </h1>
   <p class="subtitle">{t('diagnostics.subtitle')}</p>
 
   <!-- 1. Controlled known failure (W4.5/W5 item 5: acceptance is a reviewer
@@ -222,23 +216,15 @@
     gap: var(--space-2);
   }
 
-  .heading-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-3);
-  }
-
-  .demo-badge {
+  .title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--text-heading-size);
+    font-weight: var(--text-heading-weight);
+    letter-spacing: var(--heading-tracking);
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    padding: 2px var(--space-2);
-    border: 1px dashed var(--color-warning);
-    border-radius: var(--radius-sm);
-    color: var(--color-warning);
-    font-size: var(--text-meta-size);
-    white-space: nowrap;
+    gap: var(--space-2);
   }
 
   .subtitle {
