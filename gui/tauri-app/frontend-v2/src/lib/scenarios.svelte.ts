@@ -68,8 +68,10 @@ export const SCENARIOS: Scenario[] = [
     route: 'workspace',
     labelKey: 'scenarios.s.workspace/demo-tour',
     run: () => {
+      // The demo is seeded here, so the tour starts on the workspace step —
+      // a cold boot with this deep-link must not bounce to Home.
       demoProject.seed();
-      onboarding.startDemoTour();
+      onboarding.startDemoTour(1);
     }
   },
   // review / build
