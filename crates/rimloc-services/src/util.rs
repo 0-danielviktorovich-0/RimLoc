@@ -1,5 +1,7 @@
 use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn is_under_languages_dir(path: &Path, lang_dir: &str) -> bool {
     let mut comps = path.components();
@@ -85,18 +87,330 @@ pub fn def_injected_target_path(
         .join(file_name)
 }
 
+/// Monotonic counter making temp file names collision-free within a process.
+static TMP_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+/// Atomically write `bytes` to `path` with symlink-safe staging:
+///
+/// - the staging file is created under a unique name with `create_new`, so a
+///   pre-planted temp symlink (or a concurrently written temp) can never be
+///   opened or truncated through this path — `create_new` refuses to follow
+///   a symlink AT THE STAGING LEAF itself;
+/// - parent directories of the staging path may still resolve symlinks the
+///   way the OS does; keeping the destination outside read-only trees is the
+///   caller's boundary policy (see `is_within`);
+/// - the final `rename` replaces the destination atomically and does not
+///   follow a symlink at the destination leaf — a planted symlink there is
+///   replaced itself instead of being written through.
+///
+/// Shared by every RimLoc writer (bundle artifacts, reports, exports); keep
+/// it symlink-safe when touching.
 pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
     use std::fs;
     use std::io::Write;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).ok();
     }
-    let tmp = path.with_extension("tmp.write");
-    {
-        let mut f = fs::File::create(&tmp)?;
-        f.write_all(bytes)?;
-        f.flush()?;
+    let dir = path.parent().unwrap_or_else(|| Path::new("."));
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "file".to_string());
+    let mut attempt: u32 = 0;
+    loop {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let n = TMP_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let tmp = dir.join(format!(
+            ".{name}.tmp.{}-{nanos:x}-{n:03}",
+            std::process::id()
+        ));
+        match fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp)
+        {
+            Ok(mut f) => {
+                let write = f.write_all(bytes).and_then(|_| f.flush());
+                drop(f);
+                match write {
+                    Ok(()) => {
+                        return fs::rename(&tmp, path).inspect_err(|_| {
+                            let _ = fs::remove_file(&tmp);
+                        });
+                    }
+                    Err(e) => {
+                        let _ = fs::remove_file(&tmp);
+                        return Err(e);
+                    }
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists && attempt < 8 => {
+                // Astronomically unlikely (pid+nanos+counter); just retry.
+                attempt += 1;
+            }
+            Err(e) => return Err(e),
+        }
     }
-    fs::rename(&tmp, path)?;
-    Ok(())
+}
+
+/// Canonical containment view of a path with REAL symlink resolution,
+/// portable prefix semantics included:
+///
+/// - platform prefix (Windows drive / UNC) is preserved verbatim in the
+///   rebuilt `PathBuf`, so `C:\…` vs `D:\…` and UNC roots compare natively;
+/// - every existing component is checked with `symlink_metadata`; a symlink
+///   target is resolved iteratively (relative targets against the resolved
+///   prefix), `..` is applied to the resolved prefix;
+/// - only `NotFound` is treated as "non-existing tail" (resolved lexically,
+///   where no further symlinks can appear until a `..` pops back into
+///   existing territory, which is re-checked); any other IO error
+///   (permission, not-a-directory, …) fails closed with `Err`;
+/// - `std::fs::canonicalize` short-circuits fully-existing paths.
+///
+/// Containment callers must fail closed on `Err` rather than guess.
+pub fn canonical_view(path: &std::path::Path) -> std::io::Result<std::path::PathBuf> {
+    const MAX_JUMPS: usize = 64;
+    fn map(c: Component<'_>) -> Step {
+        match c {
+            Component::RootDir => Step::Root,
+            Component::Prefix(p) => Step::Prefix(p.as_os_str().to_os_string()),
+            Component::CurDir => Step::Cur,
+            Component::ParentDir => Step::Parent,
+            Component::Normal(n) => Step::Name(n.to_os_string()),
+        }
+    }
+
+    // Fast path: the path exists as-is — std canonicalize is authoritative.
+    if let Ok(c) = path.canonicalize() {
+        return Ok(c);
+    }
+
+    let mut resolved = if path.is_absolute() {
+        PathBuf::new()
+    } else {
+        // Relative candidate: failure to learn the cwd is an error, not a
+        // silent "." default.
+        std::env::current_dir()?
+    };
+
+    let mut pending: std::collections::VecDeque<Step> = path.components().map(map).collect();
+    let mut jumps = 0usize;
+
+    while let Some(step) = pending.pop_front() {
+        match step {
+            Step::Root => {
+                // On Windows this is the root separator right after a prefix;
+                // on POSIX the leading "/".
+                resolved.push(std::path::MAIN_SEPARATOR.to_string());
+            }
+            Step::Prefix(p) => {
+                resolved.push(p);
+            }
+            Step::Cur => {}
+            Step::Parent => {
+                resolved.pop();
+            }
+            Step::Name(name) => {
+                resolved.push(&name);
+                match std::fs::symlink_metadata(&resolved) {
+                    Ok(md) if md.file_type().is_symlink() => {
+                        jumps += 1;
+                        if jumps > MAX_JUMPS {
+                            return Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidInput,
+                                "symlink loop or too many link jumps while resolving path",
+                            ));
+                        }
+                        let target = std::fs::read_link(&resolved)?;
+                        resolved.pop(); // the link itself is replaced by its target
+                        for c in target.components().rev() {
+                            pending.push_front(map(c));
+                        }
+                    }
+                    Ok(_) => {}
+                    // Only a missing entry is benign: no symlink can hide in
+                    // a non-existing tail. Anything else fails closed.
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(e),
+                }
+            }
+        }
+    }
+
+    if resolved.as_os_str().is_empty() {
+        resolved.push(".");
+    }
+    Ok(resolved)
+}
+
+#[derive(Debug)]
+enum Step {
+    Root,
+    Prefix(std::ffi::OsString),
+    Name(std::ffi::OsString),
+    Parent,
+    Cur,
+}
+
+/// True when `candidate` is equal to or nested inside `root` after real
+/// symlink resolution (sibling traversals and symlink aliases included).
+/// Fail-closed: an unresolvable candidate is treated as contained, so that
+/// write guards reject instead of guessing.
+pub fn is_within(candidate: &std::path::Path, root: &std::path::Path) -> bool {
+    if root.as_os_str().is_empty() {
+        return false;
+    }
+    match (canonical_view(candidate), canonical_view(root)) {
+        (Ok(c), Ok(r)) => c.starts_with(&r),
+        _ => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_atomic_never_follows_preplanted_temp_symlink() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let source = tmp.path().join("source");
+        let out = tmp.path().join("out");
+        std::fs::create_dir_all(&source).expect("dirs");
+        std::fs::create_dir_all(&out).expect("dirs");
+        let sentinel = source.join("sentinel.txt");
+        std::fs::write(&sentinel, b"KEEP").expect("sentinel");
+
+        // Pre-plant every historically predictable temp name as symlinks
+        // into the source sentinel (old name scheme + dot-prefixed variant).
+        let target = out.join("environment.json");
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(&sentinel, out.join("environment.tmp.write"))
+                .expect("plant old-name symlink");
+            std::os::unix::fs::symlink(&sentinel, out.join(".environment.json.tmp.write"))
+                .expect("plant dot-name symlink");
+        }
+
+        write_atomic(&target, b"FRESH").expect("write");
+        assert_eq!(
+            std::fs::read(&sentinel).expect("read sentinel"),
+            b"KEEP",
+            "sentinel must survive pre-planted temp symlinks"
+        );
+        assert_eq!(std::fs::read(&target).expect("read target"), b"FRESH");
+
+        // Overwrite through the same path keeps working (rename replaces).
+        write_atomic(&target, b"SECOND").expect("overwrite");
+        assert_eq!(std::fs::read(&target).expect("read"), b"SECOND");
+        assert_eq!(std::fs::read(&sentinel).expect("sentinel"), b"KEEP");
+
+        // No NEW staging leftovers; the pre-planted symlinks themselves must
+        // survive untouched (write_atomic never deletes foreign entries).
+        let mut names: Vec<String> = std::fs::read_dir(&out)
+            .expect("readdir")
+            .flatten()
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        let mut expected = vec![
+            ".environment.json.tmp.write".to_string(),
+            "environment.json".to_string(),
+            "environment.tmp.write".to_string(),
+        ];
+        expected.sort();
+        assert_eq!(names, expected, "exactly target + planted symlinks remain");
+    }
+
+    #[test]
+    fn containment_catches_sibling_traversal_and_symlinks() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let base = tmp.path();
+        let source = base.join("source");
+        let out = base.join("out");
+        std::fs::create_dir_all(source.join("Defs")).expect("dirs");
+        std::fs::create_dir_all(&out).expect("dirs");
+
+        // Lead probe case: sibling dirs + non-existing traversal tail.
+        let traversal = out.join("missing/../../source/bundle");
+        assert!(
+            is_within(&traversal, &source),
+            "sibling traversal into source must be caught"
+        );
+        // The resolved view lands inside the source, not in `out`.
+        let view = canonical_view(&traversal).expect("resolvable");
+        let source_view = canonical_view(&source).expect("source view");
+        assert!(view.starts_with(source_view));
+
+        // Escaping traversal OUT of the source must NOT false-positive.
+        let escape = source.join("Defs/../../../outside");
+        assert!(
+            !is_within(&escape, &source),
+            "traversal escaping the source is outside"
+        );
+
+        // Symlink alias into the source → contained.
+        #[cfg(unix)]
+        {
+            let alias = base.join("alias");
+            std::os::unix::fs::symlink(&source, &alias).expect("symlink");
+            assert!(is_within(&alias.join("bundle"), &source));
+
+            // Symlink pointing OUT of the source → not contained (no false
+            // positive on the destination that the link resolves to).
+            let jump_out = source.join("jump");
+            std::os::unix::fs::symlink(&out, &jump_out).expect("symlink out");
+            assert!(!is_within(&jump_out, &source));
+
+            // Dangling symlink resolves deterministically to its (missing)
+            // target — not ambiguous, so it must NOT fail closed.
+            let dangling = base.join("dangling");
+            std::os::unix::fs::symlink(base.join("nowhere"), &dangling).expect("symlink");
+            let view = canonical_view(&dangling).expect("dangling resolves");
+            assert!(view.ends_with("nowhere"));
+            assert!(!is_within(&dangling, &source));
+
+            // Symlink loop → fail-closed via Err.
+            let a = base.join("loop-a");
+            let b = base.join("loop-b");
+            std::os::unix::fs::symlink(&b, &a).expect("symlink a→b");
+            std::os::unix::fs::symlink(&a, &b).expect("symlink b→a");
+            assert!(canonical_view(&a.join("x")).is_err(), "loop must error");
+        }
+
+        // Plain containment and plain outside.
+        assert!(is_within(&source.join("Defs/x.xml"), &source));
+        assert!(!is_within(&out, &source));
+    }
+
+    // Windows prefix semantics: compiled on every platform, EXECUTABLE only
+    // on Windows — a macOS run does NOT prove these; run on a Windows host
+    // (cargo test -p rimloc-services) before relying on them.
+    #[cfg(windows)]
+    #[test]
+    fn containment_distinguishes_drive_and_unc_prefixes() {
+        // Different drives are never contained, even with matching names.
+        assert!(!is_within(Path::new(r"D:\data"), Path::new(r"C:\src")));
+        assert!(!is_within(Path::new(r"C:\src"), Path::new(r"D:\src")));
+        // Same drive: containment and sibling discrimination.
+        assert!(is_within(Path::new(r"C:\src\sub"), Path::new(r"C:\src")));
+        assert!(!is_within(Path::new(r"C:\srcx"), Path::new(r"C:\src")));
+        // UNC roots are preserved and compared natively.
+        assert!(is_within(
+            Path::new(r"\\server\share\src\sub"),
+            Path::new(r"\\server\share\src")
+        ));
+        assert!(!is_within(
+            Path::new(r"\\server\share\other"),
+            Path::new(r"\\server\share\src")
+        ));
+        assert!(!is_within(
+            Path::new(r"\\otherserver\share\src"),
+            Path::new(r"\\server\share\src")
+        ));
+        // Forward-slash spellings of a drive resolve to the same view.
+        assert!(is_within(Path::new("C:/src/sub/.."), Path::new(r"C:\\src")));
+    }
 }

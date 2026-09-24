@@ -15,6 +15,7 @@ pub mod keyed_merge;
 pub mod learn;
 pub mod matching;
 pub mod modview;
+pub mod observability;
 pub mod patches_effect;
 pub mod plugins;
 pub mod plugins_json;
@@ -58,8 +59,10 @@ pub use scan::{
     scan_units_with_defs_and_fields, AutoDefsContext,
 };
 pub use util::canonical_match_key;
+pub use util::canonical_view;
 pub use util::is_source_for_lang_dir;
 pub use util::is_under_languages_dir;
+pub use util::is_within;
 pub use util::normalize_lang_dir;
 pub use util::write_atomic;
 pub use validate::validate_placeholders_cross_language;

@@ -298,3 +298,9 @@ wordinfo-not-applicable = У языка `{ $lang }` нет WordInfo-возмож
 wordinfo-scaffold-saved = Каркас Case сохранён в { $path } — формы требуют проверки человеком
 wordinfo-summary = WordInfo: покрыто={ $covered }, отсутствует={ $missing }
 wordinfo-more = … и ещё { $count }
+
+# doctor (gate L observability)
+doctor-title = RimLoc doctor
+doctor-line = { $tag } { $name } { $detail }
+doctor-remediation =     -> { $hint }
+doctor-summary = Итог: { $ok } ok, { $warning } предупреждение, { $error } ошибок, { $not_checked } не проверено

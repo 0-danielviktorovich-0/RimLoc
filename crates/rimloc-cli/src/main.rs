@@ -1147,6 +1147,23 @@ enum Commands {
         #[arg(long, default_value_t = false)]
         dedupe: bool,
     },
+
+    /// Environment diagnostics: RW install, version, mod dirs, provider
+    /// config (presence only) and output writability. Always exits 0.
+    Doctor {
+        /// Path to the RimWorld installation root (the folder containing Data/ and Mods/).
+        #[arg(long)]
+        game_root: Option<PathBuf>,
+        /// Optional path to a mod root to check Languages/ readability.
+        #[arg(long, short = 'r')]
+        root: Option<PathBuf>,
+        /// Directory whose writability is probed (exports/bundles target).
+        #[arg(long, default_value = ".")]
+        out_dir: PathBuf,
+        /// Output format: "text" (default) or "json".
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        format: String,
+    },
 }
 
 #[allow(dead_code)]
@@ -1858,6 +1875,13 @@ impl Runnable for Commands {
                 cache_size,
                 pymorphy_url,
             ),
+
+            Commands::Doctor {
+                game_root,
+                root,
+                out_dir,
+                format,
+            } => commands::doctor::run_doctor(game_root, root, out_dir, format),
         };
 
         match &result {

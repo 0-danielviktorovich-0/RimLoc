@@ -2,6 +2,7 @@ pub mod annotate;
 pub mod build_mod;
 pub mod compare;
 pub mod diff_xml;
+pub mod doctor;
 pub mod export_po;
 pub mod import_po;
 pub mod init;
