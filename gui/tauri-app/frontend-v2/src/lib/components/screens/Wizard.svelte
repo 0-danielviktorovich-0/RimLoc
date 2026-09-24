@@ -1,13 +1,21 @@
 <script lang="ts">
-  // Quick Translate wizard (mandate §4, spec §14): seven clickable steps over
-  // mocks only — content → select → languages → method → preflight → progress
-  // → result. Step 5 numbers come from the mock store (mock/wizard.ts), not
-  // from the editor corpus. Progress runs on a local interval; pause/cancel
-  // are real for the simulation.
+  // Quick Translate wizard (mandate §4, QA mandate §2): seven clickable steps
+  // over mocks only, with step 2 as a finite state machine — the selection
+  // panel branches by the content type chosen on step 1: MOD → discovered
+  // mods + folder/drop, BASE GAME → detected installations (Core/version),
+  // DLC → installation + checkboxes of installed DLC, LANGUAGE PACK → pack
+  // selection + language mapping. Selections live per branch, so going back
+  // to the content step (or switching the type) never resets a made choice.
+  // Step 5 numbers come from the mock store (mock/wizard.ts), not from the
+  // editor corpus. Progress runs on a local interval; pause/cancel are real
+  // for the simulation.
   import Icon from '../Icon.svelte';
   import { t, i18n } from '../../../i18n/store.svelte';
   import { router } from '../../router.svelte';
   import {
+    mockDlc,
+    mockInstallations,
+    mockLanguagePacks,
     mockMods,
     mockPreflight,
     mockResult,
@@ -30,7 +38,18 @@
 
   let step = $state(1);
   let content = $state<ContentKind>('mod');
+
+  // Selection state per content branch — preserved across branch switches and
+  // back-navigation (QA mandate §2: "back does not reset the choice").
   let modId = $state<string | null>(mockMods[0].id);
+  let installId = $state<string | null>(mockInstallations[0]?.id ?? null);
+  let dlcIds = $state<string[]>([]);
+  let packId = $state<string | null>(mockLanguagePacks[0]?.id ?? null);
+  /** Per-pack language mapping (language the pack delivers), keyed by pack id. */
+  let packTargets = $state<Record<string, string>>(
+    Object.fromEntries(mockLanguagePacks.map((p) => [p.id, p.to]))
+  );
+
   let targetLocale = $state('ru');
   let method = $state<Method>('tm');
   let quality = $state<Quality>('balanced');
@@ -41,6 +60,50 @@
   let cancelled = $state(false);
 
   const selectedMod = $derived(mockMods.find((m) => m.id === modId) ?? null);
+  const selectedInstall = $derived(
+    mockInstallations.find((i) => i.id === installId) ?? null
+  );
+  const selectedDlc = $derived(
+    mockDlc.filter((d) => d.installed && dlcIds.includes(d.id))
+  );
+  const selectedPack = $derived(
+    mockLanguagePacks.find((p) => p.id === packId) ?? null
+  );
+
+  /** Whether the current branch has a valid selection for Next. */
+  const branchReady = $derived.by(() => {
+    switch (content) {
+      case 'mod':
+        return modId !== null;
+      case 'base':
+        return installId !== null;
+      case 'dlc':
+        return dlcIds.length > 0;
+      case 'pack':
+        return packId !== null;
+    }
+  });
+
+  /** Human summary of the branch selection, shown on preflight (step 5). */
+  const selectionSummary = $derived.by(() => {
+    switch (content) {
+      case 'mod':
+        return selectedMod ? `${selectedMod.name} · v${selectedMod.version}` : null;
+      case 'base':
+        return selectedInstall
+          ? `${selectedInstall.label} · Core v${selectedInstall.version}`
+          : null;
+      case 'dlc':
+        return selectedDlc.length > 0 ? selectedDlc.map((d) => d.name).join(', ') : null;
+      case 'pack':
+        return selectedPack
+          ? `${selectedPack.name} · ${selectedPack.from.toUpperCase()} → ${(
+              packTargets[selectedPack.id] ?? selectedPack.to
+            ).toUpperCase()}`
+          : null;
+    }
+  });
+
   const currentPhase = $derived.by(() => {
     let acc = 0;
     for (const p of wizardPhases) {
@@ -56,9 +119,17 @@
     return new Intl.NumberFormat(i18n.locale === 'ru' ? 'ru-RU' : 'en-US').format(n);
   }
 
+  function toggleDlc(id: string) {
+    const d = mockDlc.find((x) => x.id === id);
+    if (!d || !d.installed) return;
+    dlcIds = dlcIds.includes(id) ? dlcIds.filter((x) => x !== id) : [...dlcIds, id];
+  }
+
   function go(dir: 1 | -1) {
     const next = step + dir;
     if (next < 1 || next > STEPS) return;
+    // Guard: never advance out of the selection step without a branch choice.
+    if (dir === 1 && step === 2 && !branchReady) return;
     step = next;
     if (step === 6 && !finished) {
       // Re-entering the run step restarts a cancelled simulation.
@@ -142,36 +213,162 @@
       </div>
     </fieldset>
   {:else if step === 2}
-    <fieldset class="panel">
+    <fieldset class="panel" data-testid={`wizard.step2.${content}`}>
       <legend class="panel-title">{t('wizard.w2.title')}</legend>
-      <p class="panel-desc">{t('wizard.w2.detected')}</p>
-      <ul class="mod-list" role="radiogroup" aria-label={t('wizard.w2.title')}>
-        {#each mockMods as m (m.id)}
-          <li>
-            <button
-              type="button"
-              class="mod"
-              role="radio"
-              aria-checked={modId === m.id}
-              data-testid={`wizard.mod.${m.id}`}
-              onclick={() => {
-                modId = m.id;
-                content = 'mod';
-              }}
-            >
-              <span class="mod-name">{m.name}</span>
-              <span class="mod-meta">{t('wizard.w2.author')} {m.author} · v{m.version} · {fmt(m.defs)} {t('wizard.w2.defs')}</span>
-            </button>
-          </li>
-        {/each}
-      </ul>
-      <div class="dropzone">
-        <button type="button" class="btn" data-testid="wizard.choose-folder">
-          <Icon name="folder-open" size={14} />
-          {t('wizard.w2.folder')}
-        </button>
-        <span class="drop-hint">{t('wizard.w2.drop')}</span>
-      </div>
+      <p class="panel-desc">{t(`wizard.w2.subtitle.${content}`)}</p>
+
+      {#if content === 'mod'}
+        <!-- MOD branch: discovered mods + folder/drop (mandate §14). -->
+        <ul class="mod-list" role="radiogroup" aria-label={t('wizard.w2.subtitle.mod')}>
+          {#each mockMods as m (m.id)}
+            <li>
+              <button
+                type="button"
+                class="mod"
+                role="radio"
+                aria-checked={modId === m.id}
+                data-testid={`wizard.mod.${m.id}`}
+                onclick={() => (modId = m.id)}
+              >
+                <span class="mod-name">{m.name}</span>
+                <span class="mod-meta">{t('wizard.w2.author')} {m.author} · v{m.version} · {fmt(m.defs)} {t('wizard.w2.defs')}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <div class="dropzone">
+          <button type="button" class="btn" data-testid="wizard.choose-folder">
+            <Icon name="folder-open" size={14} />
+            {t('wizard.w2.folder')}
+          </button>
+          <span class="drop-hint">{t('wizard.w2.drop')}</span>
+        </div>
+      {:else if content === 'base'}
+        <!-- BASE GAME branch: detected installations, Core + version. -->
+        <ul class="mod-list" role="radiogroup" aria-label={t('wizard.w2.subtitle.base')}>
+          {#each mockInstallations as inst (inst.id)}
+            <li>
+              <button
+                type="button"
+                class="mod"
+                role="radio"
+                aria-checked={installId === inst.id}
+                data-testid={`wizard.install.${inst.id}`}
+                onclick={() => (installId = inst.id)}
+              >
+                <span class="mod-name"><Icon name="database" size={14} /> {inst.label}</span>
+                <span class="mod-meta">Core v{inst.version} · <span class="mono">{inst.path}</span></span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      {:else if content === 'dlc'}
+        <!-- DLC branch: installation first, then installed-DLC checkboxes. -->
+        <div class="sub-field">
+          <span class="field-label">{t('wizard.w2.installation')}</span>
+          <ul class="mod-list" role="radiogroup" aria-label={t('wizard.w2.installation')}>
+            {#each mockInstallations as inst (inst.id)}
+              <li>
+                <button
+                  type="button"
+                  class="mod"
+                  role="radio"
+                  aria-checked={installId === inst.id}
+                  data-testid={`wizard.install.${inst.id}`}
+                  onclick={() => (installId = inst.id)}
+                >
+                  <span class="mod-name"><Icon name="database" size={14} /> {inst.label}</span>
+                  <span class="mod-meta">Core v{inst.version}</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </div>
+        <ul class="mod-list" role="group" aria-label={t('wizard.w1.dlc')}>
+          {#each mockDlc as d (d.id)}
+            <li>
+              <label class="mod dlc-row" class:disabled={!d.installed}>
+                <input
+                  type="checkbox"
+                  checked={dlcIds.includes(d.id)}
+                  disabled={!d.installed}
+                  data-testid={`wizard.dlc.${d.id}`}
+                  onchange={() => toggleDlc(d.id)}
+                />
+                <span class="mod-name"><Icon name="layers" size={14} /> {d.name}</span>
+                <span class="mod-meta">
+                  v{d.version}{#if !d.installed} · {t('wizard.w2.dlc.notInstalled')}{/if}
+                </span>
+                {#if dlcIds.includes(d.id)}
+                  <span class="dlc-check"><Icon name="check" size={14} /></span>
+                {/if}
+              </label>
+            </li>
+          {/each}
+        </ul>
+        <p class="note" data-testid="wizard.dlc-count">
+          {#if dlcIds.length > 0}
+            {t('wizard.w2.dlc.selected', { count: dlcIds.length })}
+          {:else}
+            {t('wizard.w2.dlc.needOne')}
+          {/if}
+        </p>
+      {:else}
+        <!-- LANGUAGE PACK branch: pack selection + language/source mapping. -->
+        <ul class="mod-list" role="radiogroup" aria-label={t('wizard.w2.subtitle.pack')}>
+          {#each mockLanguagePacks as p (p.id)}
+            <li>
+              <button
+                type="button"
+                class="mod"
+                role="radio"
+                aria-checked={packId === p.id}
+                data-testid={`wizard.pack.${p.id}`}
+                onclick={() => (packId = p.id)}
+              >
+                <span class="mod-name">
+                  <Icon name="languages" size={14} /> {p.name}
+                  <span class="origin" data-testid={`wizard.pack-origin.${p.id}`}>{t(`wizard.w2.pack.origin.${p.origin}`)}</span>
+                </span>
+                <span class="mod-meta">{fmt(p.entries)} {t('wizard.w2.defs')} · v{p.version}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        {#if selectedPack}
+          <div class="mapping" data-testid="wizard.pack-mapping">
+            <span class="field-label">{t('wizard.w2.pack.mapping')}</span>
+            <div class="lang-grid">
+              <label class="field">
+                <span class="field-label">
+                  {t('wizard.w2.pack.from')}
+                  <span class="auto">{t('wizard.w3.autoDetected')}</span>
+                </span>
+                <select value={selectedPack.from} disabled data-testid="wizard.pack-from">
+                  <option value={selectedPack.from}>English</option>
+                </select>
+              </label>
+              <label class="field">
+                <span class="field-label">{t('wizard.w2.pack.to')}</span>
+                <select
+                  value={packTargets[selectedPack.id] ?? selectedPack.to}
+                  onchange={(e) => {
+                    if (selectedPack) packTargets[selectedPack.id] = (e.currentTarget as HTMLSelectElement).value;
+                  }}
+                  data-testid="wizard.pack-to"
+                >
+                  {#each LOCALES as l (l.id)}
+                    <option value={l.id}>{l.label}</option>
+                  {/each}
+                </select>
+              </label>
+            </div>
+            <p class="note">
+              {t('wizard.w2.pack.entries', { count: fmt(selectedPack.entries) })}
+            </p>
+          </div>
+        {/if}
+      {/if}
     </fieldset>
   {:else if step === 3}
     <fieldset class="panel">
@@ -250,9 +447,9 @@
           <dd class="mono warn">{fmt(mockPreflight.attention)}</dd>
         </div>
       </dl>
-      {#if selectedMod}
-        <p class="note">
-          <span class="mono">{selectedMod.name}</span> · v{selectedMod.version}
+      {#if selectionSummary}
+        <p class="note" data-testid="wizard.selection-summary">
+          {t('wizard.w2.selected.summary', { name: selectionSummary })}
         </p>
       {/if}
       <p class="note">{t('wizard.w5.note')}</p>
@@ -355,7 +552,7 @@
           type="button"
           class="btn btn-primary"
           data-testid="wizard.next"
-          disabled={step === 2 && modId === null}
+          disabled={step === 2 && !branchReady}
           onclick={() => go(1)}
         >
           {t('common.next')}
@@ -540,6 +737,60 @@
   .drop-hint {
     color: var(--color-muted-fg);
     font-size: var(--text-meta-size);
+  }
+
+  /* Content-branch extras: DLC checkbox rows and pack mapping. */
+  .dlc-row {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .dlc-row input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--color-primary);
+    flex: none;
+  }
+
+  .dlc-row.disabled {
+    opacity: 0.55;
+  }
+
+  .dlc-check {
+    margin-left: auto;
+    color: var(--color-primary);
+    display: inline-flex;
+  }
+
+  .mod-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .origin {
+    margin-left: var(--space-2);
+    padding: 1px var(--space-1);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    font-weight: 400;
+  }
+
+  .sub-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .mapping {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
   }
 
   .lang-grid {

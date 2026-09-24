@@ -12,6 +12,7 @@
   import { settings } from '../../stores/settings.svelte';
   import { providers } from '../../stores/providers.svelte';
   import { project } from '../../stores/project.svelte';
+  import { onboarding } from '../../stores/onboarding.svelte';
 
   type CheckState = 'pending' | 'ok' | 'warn' | 'fail';
 
@@ -69,6 +70,15 @@
       });
   }
 
+  // QA mandate §13: "Replay tips" must actually re-show the onboarding
+  // overlay in the Workspace — clear the persisted seen-flag, open the
+  // overlay, then navigate. If the Workspace is already mounted (impossible
+  // from Help, but safe) navigation is a no-op and the overlay still opens.
+  function replayOnboarding() {
+    onboarding.replay();
+    router.navigate('workspace');
+  }
+
   const diagText = $derived.by(() => {
     if (diagState !== 'done') return '';
     const lines = [
@@ -112,7 +122,7 @@
   <article class="card" data-testid="help.replay">
     <h2 class="card-title"><Icon name="lightbulb" size={16} /> {t('help.replay.title')}</h2>
     <p class="text">{t('help.replay.desc')}</p>
-    <button type="button" class="btn" data-testid="help.replay.action" onclick={() => router.navigate('workspace')}>
+    <button type="button" class="btn" data-testid="help.replay.action" onclick={replayOnboarding}>
       <Icon name="arrow-right" size={14} />
       {t('help.replay.action')}
     </button>

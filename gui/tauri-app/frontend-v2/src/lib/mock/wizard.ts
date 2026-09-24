@@ -19,6 +19,97 @@ export const mockMods: WizardMod[] = [
   { id: 'kaizen', name: '改善 Kaizen Module', author: 'Hoshino', version: '0.9.1', defs: 154 }
 ];
 
+// Content-branch mocks (QA mandate §2/§14): wizard step 2 branches by content
+// type — base game needs installations, DLC needs installed expansions and a
+// language pack needs its language mapping. Numbers are fictional but shape-
+// faithful to RimWorld content.
+
+export interface WizardInstallation {
+  id: string;
+  /** Human label: store + platform. */
+  label: string;
+  /** Game build version, shown as the Core version for this installation. */
+  version: string;
+  path: string;
+}
+
+/** Auto-detected game installations for the base-game/DLC branches. */
+export const mockInstallations: WizardInstallation[] = [
+  {
+    id: 'steam-win',
+    label: 'Steam · Windows',
+    version: '1.6.4537',
+    path: 'C:/Program Files (x86)/Steam/steamapps/common/RimWorld'
+  },
+  {
+    id: 'gog-mac',
+    label: 'GOG · macOS',
+    version: '1.5.4409',
+    path: '/Applications/RimWorld/RimWorldMac.app'
+  }
+];
+
+export interface WizardDlc {
+  id: string;
+  name: string;
+  version: string;
+  /** Only installed DLC can be selected for translation. */
+  installed: boolean;
+}
+
+/** Known RimWorld DLC with the installed flag per mock state. */
+export const mockDlc: WizardDlc[] = [
+  { id: 'royalty', name: 'Royalty', version: '1.6.4537', installed: true },
+  { id: 'ideology', name: 'Ideology', version: '1.6.4537', installed: true },
+  { id: 'biotech', name: 'Biotech', version: '1.6.4537', installed: true },
+  { id: 'anomaly', name: 'Anomaly', version: '1.6.4537', installed: true },
+  { id: 'odyssey', name: 'Odyssey', version: '1.6.4537', installed: false }
+];
+
+export interface WizardLanguagePack {
+  id: string;
+  name: string;
+  /** Source language the pack translates from. */
+  from: string;
+  /** Language the pack delivers. */
+  to: string;
+  /** Pack source: shipped with the game or community-maintained. */
+  origin: 'official' | 'community';
+  version: string;
+  entries: number;
+}
+
+/** Detected language packs for the language-pack branch. */
+export const mockLanguagePacks: WizardLanguagePack[] = [
+  {
+    id: 'core-ru',
+    name: 'RimWorld Core — Русский',
+    from: 'en',
+    to: 'ru',
+    origin: 'official',
+    version: '1.6.4537',
+    entries: 4096
+  },
+  {
+    id: 'core-de',
+    name: 'Deutsch (Community)',
+    from: 'en',
+    to: 'de',
+    origin: 'community',
+    version: '1.5.4409',
+    entries: 3877
+  },
+  {
+    id: 'core-ja',
+    name: '日本語 (Community)',
+    from: 'en',
+    to: 'ja',
+    origin: 'community',
+    version: '1.5.4409',
+    entries: 3712
+  }
+];
+
 /** Wizard step 5 preflight counters (mandate §4 example). */
 export const mockPreflight = {
   entries: 1842,
