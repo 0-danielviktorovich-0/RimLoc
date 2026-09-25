@@ -1,43 +1,67 @@
+// Enforcement + smoke tests for the Tauri shell (binding wave 2).
+// Wired back into the build in this wave: the file had been dead since
+// 7fc196f (moved here without a `mod tests;` declaration) and its legacy
+// smoke bodies rotted against removed api_* functions — they are gone.
 #[cfg(test)]
 mod tests {
-  use super::*;
-  use std::path::PathBuf;
+  use crate::{LEGACY_PRIVILEGED_COMMANDS, LIVE_COMMANDS};
 
-  fn ws_root() -> PathBuf { PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap().parent().unwrap().to_path_buf() }
+  /// The ORIGINAL registration (pre-binding-wave main.rs) — the partition
+  /// base for the wave-2 deregistration enforcement (lead decision 033 #4).
+  const ORIGINAL_REGISTERED: &[&str] = &[
+    "get_app_info", "scan_mod", "learn_defs", "export_po", "validate_mod",
+    "xml_health", "import_po", "build_mod", "diff_xml_cmd", "lang_update_cmd",
+    "annotate_cmd", "init_lang_cmd", "get_log_info", "pick_directory",
+    "save_text_via_dialog", "log_message", "open_path", "set_debug_options",
+    "get_diagnostics", "collect_diagnostics_via_dialog", "simulate_error",
+    "simulate_panic", "morph_cmd", "learn_keyed_cmd", "dump_schemas",
+    "get_profile", "validate_po_gui", "learn_patches_cmd", "get_cli_i18n",
+    "apply_translation", "load_tm", "scan_strings_gui", "load_plugin_cmd",
+    "list_plugins_cmd", "coverage_gui", "export_xliff_gui", "import_xliff_gui",
+    "merge_keyed_gui",
+  ];
 
   #[test]
-  fn version_nonempty() {
-    let v = crate::api_app_version().unwrap();
-    assert!(!v.is_empty());
+  fn live_entry_registers_every_contract_command() {
+    for name in rimloc_gui_lib::contract_adapter::CONTRACT_COMMANDS {
+      assert!(
+        LIVE_COMMANDS.contains(name),
+        "contract command `{name}` missing from the live registration"
+      );
+    }
   }
 
   #[test]
-  fn schema_dump_tmp() {
-    let dir = tempfile::tempdir().unwrap();
-    let out = crate::api_schema_dump(dir.path().display().to_string()).unwrap();
-    assert!(std::path::Path::new(&out).exists());
+  fn live_entry_never_registers_privileged_legacy_commands() {
+    for name in LEGACY_PRIVILEGED_COMMANDS {
+      assert!(
+        !LIVE_COMMANDS.contains(name),
+        "privileged legacy command `{name}` must not be in the live registration"
+      );
+    }
   }
 
   #[test]
-  fn smoke_diff_and_reports() {
-    let root = ws_root().join("test/TestMod");
-    let diff = crate::api_diff_xml(root.display().to_string(), Some("en".into()), None, Some("ru".into()), None, None).unwrap();
-    assert!(diff.only_in_mod.len() >= 0);
-    let outd = tempfile::tempdir().unwrap();
-    let saved = crate::api_diff_save_reports(ws_root().join("test/TestMod").display().to_string(), Some("en".into()), None, Some("ru".into()), None, None, outd.path().display().to_string()).unwrap();
-    assert!(std::path::Path::new(&saved).exists());
+  fn live_and_legacy_sets_partition_the_original_registration() {
+    for name in ORIGINAL_REGISTERED {
+      let in_live = LIVE_COMMANDS.contains(name);
+      let in_legacy = LEGACY_PRIVILEGED_COMMANDS.contains(name);
+      assert!(
+        in_live ^ in_legacy,
+        "command `{name}` must live in exactly one registration set (live={in_live}, legacy={in_legacy})"
+      );
+    }
+    assert_eq!(
+      LIVE_COMMANDS.len() + LEGACY_PRIVILEGED_COMMANDS.len(),
+      ORIGINAL_REGISTERED.len() + rimloc_gui_lib::contract_adapter::CONTRACT_COMMANDS.len()
+    );
   }
 
   #[test]
-  fn smoke_annotate_and_import_dry() {
-    let root = ws_root().join("test/TestMod");
-    let plan = crate::api_annotate_dry(root.display().to_string(), Some("en".into()), None, Some("ru".into()), None, Some("EN:".into()), false).unwrap();
-    assert!(plan.processed >= 0);
-    let dir = tempfile::tempdir().unwrap();
-    let po = dir.path().join("mod.po");
-    rimloc_services::export_po_with_tm(root.as_path(), po.as_path(), Some("ru"), Some("en"), None, None).unwrap();
-    let plan2 = crate::api_import_po_dry(po.display().to_string(), root.display().to_string(), Some("ru".into()), None, false, false, None, true).unwrap();
-    assert!(plan2.total_keys >= 0);
+  fn supplementary_regex_no_privileged_pattern_in_live() {
+    let live = LIVE_COMMANDS.join("\n");
+    for pattern in ["apply_translation", "save_text", "open_path", "plugin", "simulate_", "morph_cmd"] {
+      assert!(!live.contains(pattern), "live registration leaks `{pattern}`");
+    }
   }
 }
-
