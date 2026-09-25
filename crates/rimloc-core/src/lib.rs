@@ -186,6 +186,29 @@ pub enum RimLocError {
     Other(String),
 }
 
+pub mod xml_chars {
+    //! XML 1.0 character validity (H3): control characters outside the
+    //! XML 1.0 char set cannot be escaped — even numeric character
+    //! references to them are invalid — so any text carrying one must be
+    //! rejected BEFORE it reaches an XML writer (RimWorld drops the whole
+    //! file otherwise).
+
+    /// True when `c` is a legal XML 1.0 character (char class #2:
+    /// tab/LF/CR plus the printable Unicode ranges).
+    pub fn is_xml_char(c: char) -> bool {
+        matches!(c,
+            '\u{09}' | '\u{0A}' | '\u{0D}'
+            | '\u{20}'..='\u{D7FF}'
+            | '\u{E000}'..='\u{FFFD}'
+            | '\u{10000}'..='\u{10FFFF}')
+    }
+
+    /// First character of `text` that is not a legal XML 1.0 character.
+    pub fn find_invalid_xml_char(text: &str) -> Option<char> {
+        text.chars().find(|&c| !is_xml_char(c))
+    }
+}
+
 /// Parse a minimal subset of PO syntax used across the workspace.
 /// Supports single-line `msgid`/`msgstr` pairs and optional reference lines (`#: ...`).
 pub fn parse_simple_po(input: &str) -> Result<Vec<PoEntry>> {
