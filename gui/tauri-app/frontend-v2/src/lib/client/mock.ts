@@ -263,6 +263,18 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             t.validation = validationFor(t.text);
             applied += 1;
           });
+          // Rust invariant (session.rs applied == 0): NOTHING acked changes
+          // when every intent was refused — no revision bump, no save, no
+          // dirty state; the response echoes the CURRENT revision.
+          if (applied === 0) {
+            return {
+              job_id: `mock-job-${p.revision}`,
+              revision: p.revision,
+              applied: 0,
+              skipped,
+              cancelled: false
+            } as ContractMethodMap[M]['result'];
+          }
           p.revision += 1;
           const result: ApplyIntentsResponseDto = {
             job_id: `mock-job-${p.revision}`,
