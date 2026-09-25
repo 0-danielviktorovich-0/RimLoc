@@ -13,9 +13,12 @@ import type {
   ApplyIntentsResponseDto,
   ContractErrorCode,
   ContractHandshakeDto,
+  DiagnoseResponseDto,
+  ExportProjectResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
-  TranslationIntentDto
+  TranslationIntentDto,
+  ValidateProjectResponseDto
 } from './types';
 import { UI_CONTRACT_VERSION } from './types';
 import {
@@ -146,6 +149,43 @@ export class RimLocClient {
 
   async cancelNext(projectId: string): Promise<boolean> {
     return this.call('project_cancel_next', { project_id: projectId });
+  }
+
+  /** Read-only validation over the trusted session state (epoch-guarded).
+   *  `status: 'failed'` = error-severity findings present. */
+  async validateProject(
+    projectId: string,
+    sessionEpoch: number,
+    locale?: string
+  ): Promise<ValidateProjectResponseDto> {
+    return this.call('project_validate', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      ...(locale ? { locale } : {})
+    });
+  }
+
+  /** Isolated native export into a CALLER-SPECIFIED out directory; the
+   *  services guard refuses source-tree/managed-root targets and the
+   *  result is reparse-verified before the ack. `locale` is the strict
+   *  folder form ("Russian"). */
+  async exportProject(
+    projectId: string,
+    sessionEpoch: number,
+    outDir: string,
+    locale: string
+  ): Promise<ExportProjectResponseDto> {
+    return this.call('project_export', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      out_dir: outDir,
+      locale
+    });
+  }
+
+  /** Sanitized support bundle over the project's LAST FAILED operation. */
+  async diagnoseProject(projectId: string, outDir: string): Promise<DiagnoseResponseDto> {
+    return this.call('project_diagnose', { project_id: projectId, out_dir: outDir });
   }
 }
 

@@ -9,8 +9,11 @@ import type {
   ContractHandshakeDto,
   ContractMethod,
   CreateProjectRequestDto,
+  DiagnoseResponseDto,
+  ExportProjectResponseDto,
   ProjectSnapshotDto,
-  ProjectSummaryDto
+  ProjectSummaryDto,
+  ValidateProjectResponseDto
 } from './types';
 
 /** Method params/result map — the whole wire surface, statically. */
@@ -23,6 +26,19 @@ export interface ContractMethodMap {
   project_apply_intents: { params: { request: ApplyIntentsRequestDto }; result: ApplyIntentsResponseDto };
   project_refresh: { params: { project_id: string }; result: ProjectSnapshotDto };
   project_cancel_next: { params: { project_id: string }; result: boolean };
+  // final night wave: validate/build/diagnostics over the contract
+  project_validate: {
+    params: { project_id: string; session_epoch: number; locale?: string };
+    result: ValidateProjectResponseDto;
+  };
+  project_export: {
+    params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
+    result: ExportProjectResponseDto;
+  };
+  project_diagnose: {
+    params: { project_id: string; out_dir: string };
+    result: DiagnoseResponseDto;
+  };
 }
 
 export type TransportMode = 'tauri' | 'mock';
