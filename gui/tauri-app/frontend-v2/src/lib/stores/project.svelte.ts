@@ -441,7 +441,13 @@ class ProjectStore {
   async listContractProjects(): Promise<ProjectSummaryDto[]> {
     try {
       return await this.cc().listProjects();
-    } catch {
+    } catch (e) {
+      // Built-GUI lesson (2026-09-26): this catch used to be silent, so a
+      // dead transport was indistinguishable from "no projects yet". Log it.
+      console.error(
+        '[rimloc] project_list failed:',
+        e instanceof ContractClientError ? `${e.code}: ${e.message}` : e
+      );
       return [];
     }
   }
