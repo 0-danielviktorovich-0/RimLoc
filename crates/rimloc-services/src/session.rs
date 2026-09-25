@@ -295,27 +295,57 @@ impl ProjectSessionManager {
 
     /// `project_list`: every managed project — live states merged over the
     /// derived disk scan (the registry is recoverable, never authoritative).
+    /// Unloadable files are skipped here; use [`Self::list_report`] when
+    /// the caller can surface diagnostics (M2).
     pub fn list(&self) -> Vec<ProjectSummary> {
+        self.list_report().projects
+    }
+
+    /// The full list view (M2): loadable projects PLUS explicit
+    /// diagnostics for managed files that could not be loaded — corruption
+    /// never looks like "the project is gone".
+    pub fn list_report(&self) -> crate::contract::ProjectListReport {
         let mut out: BTreeMap<ProjectId, ProjectSummary> = BTreeMap::new();
+        let mut unloadable: Vec<crate::contract::UnloadableProject> = Vec::new();
+        let suffix = format!(".{MANAGED_EXT}");
         if let Ok(entries) = std::fs::read_dir(&self.managed_root) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) != Some(MANAGED_EXT) {
-                    continue;
-                }
-                let Some(id) = path.file_stem().map(|s| s.to_string_lossy().into_owned()) else {
+                // Match by full file name: `Path::extension` of
+                // `proj-x.rimloc.json` is "json", so an extension compare
+                // against "rimloc.json" silently skipped EVERY managed
+                // file (the disk half of the list was dead code).
+                let Some(id) = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .and_then(|n| n.strip_suffix(&suffix))
+                    .map(str::to_owned)
+                else {
                     continue;
                 };
-                if let Ok(loaded) = load_project_with_meta(&path) {
-                    out.insert(
-                        id.clone(),
-                        ProjectSummary {
-                            project_id: id.clone(),
-                            name: loaded.meta.display_name.unwrap_or_else(|| id.clone()),
-                            revision: loaded.meta.revision.unwrap_or(1),
-                            target_version: loaded.project.context.target_version.clone(),
-                        },
-                    );
+                match load_project_with_meta(&path) {
+                    Ok(loaded) => {
+                        out.insert(
+                            id.clone(),
+                            ProjectSummary {
+                                project_id: id.clone(),
+                                name: loaded.meta.display_name.unwrap_or_else(|| id.clone()),
+                                revision: loaded.meta.revision.unwrap_or(1),
+                                target_version: loaded.project.context.target_version.clone(),
+                            },
+                        );
+                    }
+                    Err(e) => {
+                        let reason = if e.to_string().contains("schema_version") {
+                            "schema_version"
+                        } else {
+                            "corrupt_project"
+                        };
+                        unloadable.push(crate::contract::UnloadableProject {
+                            project_id: id,
+                            reason: reason.to_string(),
+                        });
+                    }
                 }
             }
         }
@@ -331,7 +361,10 @@ impl ProjectSessionManager {
                 },
             );
         }
-        out.into_values().collect()
+        crate::contract::ProjectListReport {
+            projects: out.into_values().collect(),
+            unloadable,
+        }
     }
 
     /// Recovery path: discard in-memory (possibly dirty) state and reload
@@ -2251,5 +2284,40 @@ mod tests {
         let id_end = about[id_start..].find("</packageId>").unwrap() + id_start;
         let package_id = &about[id_start..id_end];
         assert_eq!(package_id, "rimloc.my-mod-test", "{about}");
+    }
+
+    /// M2: a corrupt managed file is reported by list_report (typed
+    /// reason) instead of silently disappearing; list() still returns
+    /// only loadable projects; reopen of the corrupt file stays a typed
+    /// failure with intact bytes.
+    #[test]
+    fn corrupt_project_file_is_surfaced_in_list_report() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // Corrupt the durable record on disk (simulated disk fault).
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let bytes = fs::read(&path).unwrap();
+        let cut = bytes.len() * 6 / 10;
+        fs::write(&path, &bytes[..cut]).unwrap();
+
+        // A FRESH manager (restart) scans only disk — the corrupt file is
+        // now explicitly reported. (The live session legitimately shadows
+        // the disk with its in-memory state.)
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let report = mgr2.list_report();
+        assert!(report.projects.is_empty(), "{report:?}");
+        assert_eq!(report.unloadable.len(), 1, "{report:?}");
+        assert_eq!(report.unloadable[0].project_id, snap.project_id);
+        assert_eq!(report.unloadable[0].reason, "corrupt_project");
+
+        // list() keeps its shape (only loadable projects)...
+        assert!(mgr2.list().is_empty());
+        // ...and a raw bytes view remains possible: the file still exists.
+        assert!(path.is_file());
     }
 }

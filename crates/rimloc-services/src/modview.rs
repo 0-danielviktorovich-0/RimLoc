@@ -175,7 +175,7 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                     // a Workshop mod must not make RimLoc scan arbitrary
                     // directories. Anything resolving outside the root is
                     // a typed refusal (real symlink views included).
-                    let dir = root.join(&entry);
+                    let dir = root.join(entry);
                     if !crate::is_within(&dir, root) {
                         color_eyre::eyre::bail!(
                             "LoadFolders.xml entry `{entry}` resolves outside the mod root `{}`: external content folders are not scanned; keep all content inside the mod",
@@ -196,7 +196,7 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                 let dir = if entry == "/" {
                     root.to_path_buf()
                 } else {
-                    let dir = root.join(&entry);
+                    let dir = root.join(entry);
                     if !crate::is_within(&dir, root) {
                         color_eyre::eyre::bail!(
                             "LoadFolders.xml (IfModActive) entry `{entry}` resolves outside the mod root `{}`: external content folders are not scanned; keep all content inside the mod",

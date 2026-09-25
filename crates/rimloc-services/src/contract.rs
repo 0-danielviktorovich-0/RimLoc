@@ -267,6 +267,26 @@ pub struct ProjectSummary {
     pub target_version: Option<String>,
 }
 
+/// A managed project file that could NOT be loaded (M2). Surfaced
+/// explicitly instead of silently disappearing from the list — corruption
+/// (disk fault, bad backup rollback) must never look like "the project is
+/// gone".
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct UnloadableProject {
+    pub project_id: ProjectId,
+    /// Stable lowercase reason code: `corrupt_project` (unreadable/broken
+    /// JSON) or `schema_version` (unsupported container version).
+    pub reason: String,
+}
+
+/// The full list view: loadable projects plus explicit diagnostics for
+/// unloadable managed files (M2).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProjectListReport {
+    pub projects: Vec<ProjectSummary>,
+    pub unloadable: Vec<UnloadableProject>,
+}
+
 /// Parameters of `project_create`: build a canonical project from a
 /// read-only source mod and persist it under a fresh opaque id.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
