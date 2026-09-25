@@ -27,7 +27,6 @@ pub mod plugins_yaml;
 pub mod project;
 pub mod project_store;
 pub mod scan;
-pub mod session;
 mod util;
 pub mod validate;
 
