@@ -30,6 +30,9 @@ pub fn make_init_plan(
     source_lang_dir: &str,
     target_lang_dir: &str,
 ) -> Result<InitPlan> {
+    // H1: the target folder is joined into the output paths — strict form
+    // + containment BEFORE anything is planned or written.
+    crate::util::ensure_lang_write_target(root, target_lang_dir)?;
     let units = scan_units(root)?;
     let mut grouped: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for u in &units {

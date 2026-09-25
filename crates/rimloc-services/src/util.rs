@@ -323,6 +323,37 @@ pub fn is_within_allow(candidate: &std::path::Path, root: &std::path::Path) -> b
     }
 }
 
+/// Strict language-folder form for WRITE paths (H1 — the CLI sibling of
+/// the session's locale guard, P1-2): the folder is joined into
+/// `<mod>/Languages/<dir>/...`, and `Path::join` with an absolute string
+/// replaces the whole prefix. Anything but a plain folder name (letters,
+/// digits, `_`, `-`) is rejected before any path is built.
+pub fn lang_dir_form_ok(lang_dir: &str) -> bool {
+    static LANG_DIR_FORM: once_cell::sync::Lazy<regex::Regex> =
+        once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[A-Za-z0-9_-]+$").unwrap());
+    LANG_DIR_FORM.is_match(lang_dir)
+}
+
+/// Combined write-target guard (H1): strict folder form PLUS containment
+/// — the joined `Languages/<dir>` base must stay inside the mod root
+/// (deny-direction containment; symlink aliases included).
+pub fn ensure_lang_write_target(mod_root: &std::path::Path, lang_dir: &str) -> crate::Result<()> {
+    if !lang_dir_form_ok(lang_dir) {
+        color_eyre::eyre::bail!(
+            "malformed language folder `{lang_dir}`: expected a plain folder name (letters, digits, `_`, `-`); traversal or absolute paths are not allowed"
+        );
+    }
+    let base = mod_root.join("Languages").join(lang_dir);
+    if !crate::is_within(&base, mod_root) {
+        color_eyre::eyre::bail!(
+            "language folder `{}` resolves outside the mod root `{}`",
+            base.display(),
+            mod_root.display()
+        );
+    }
+    Ok(())
+}
+
 /// Strict XML 1.0 character verification of every `.xml` file under
 /// `root` (H3 tripwire): the lenient scanner can silently accept raw
 /// control characters that a strict parser — and the game — would reject

@@ -13,6 +13,9 @@ pub fn build_from_root(
 ) -> Result<(Vec<(PathBuf, usize)>, usize)> {
     use std::collections::{BTreeMap, HashSet};
 
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
+
     let mut grouped: BTreeMap<PathBuf, Vec<(String, String)>> = BTreeMap::new();
     let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](.+)$").unwrap();
     let mut total_keys = 0usize;
@@ -94,6 +97,9 @@ pub fn build_from_root_with_progress(
     mut progress: impl FnMut(usize, usize, &Path),
 ) -> Result<(Vec<(PathBuf, usize)>, usize)> {
     use regex::Regex;
+
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
     use std::collections::{BTreeMap, HashSet};
     let re = Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](?P<rel>.+)$").unwrap();
     let mut grouped: BTreeMap<PathBuf, Vec<(String, String)>> = BTreeMap::new();
@@ -187,6 +193,8 @@ pub fn build_from_po_dry_run(
     rw_version: &str,
     dedupe: bool,
 ) -> Result<BuildPlan> {
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
     let plan = rimloc_import_po::build_translation_mod_dry_run_opts(
         po,
         out_mod,
@@ -216,6 +224,8 @@ pub fn build_from_po_execute(
     rw_version: &str,
     dedupe: bool,
 ) -> Result<()> {
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
     rimloc_import_po::build_translation_mod_with_langdir_opts(
         po,
         out_mod,
@@ -239,6 +249,8 @@ pub fn build_from_po_with_progress(
     dedupe: bool,
     mut progress: impl FnMut(usize, usize, &Path),
 ) -> Result<()> {
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
     // Read entries and group by relative path under Languages/
     let entries = rimloc_import_po::read_po_entries(po)?;
     let re =

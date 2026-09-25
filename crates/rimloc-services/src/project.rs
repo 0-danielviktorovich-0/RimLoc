@@ -271,6 +271,10 @@ pub fn write_rimworld_translation(
 ) -> Result<WriteReport> {
     use std::fmt::Write as _;
 
+    // H1: the deepest write choke point — every caller (session export,
+    // CLI build paths) gets the strict form + containment guard.
+    crate::util::ensure_lang_write_target(out_mod, lang_dir)?;
+
     let base = out_mod.join("Languages").join(lang_dir);
     // defName -> file; collected per def type from entry keys/contexts.
     let mut keyed: BTreeMap<String, String> = BTreeMap::new();
