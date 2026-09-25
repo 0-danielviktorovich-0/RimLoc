@@ -167,4 +167,31 @@ describe('contract snapshot carries origin and validation', () => {
       spy.mockRestore();
     }
   });
+
+  it('a skipped intent (applied: 0) mutates nothing locally (review P2)', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'Keyed:MessageLetterArrived';
+    const before = { ...project.byId(id)! };
+    expect(before.origin).toBe('imported');
+
+    // Force an UNKNOWN identity → the backend answers Ok with skipped[0]
+    // (session.rs semantics: refusals are data, not failures). The UI must
+    // not claim a human edit or computed validation for a stored nothing.
+    (
+      project as unknown as {
+        contractIdentities: Record<string, { kind: string; key: string }>;
+      }
+    ).contractIdentities[id] = { kind: 'Keyed', key: 'GhostEntryNeverScanned' };
+
+    project.setDraft(id, 'локальная правка-которая-не-пролезет');
+    expect(await project.flushDraft(id)).toBe(false); // applied: 0
+
+    const entry = project.byId(id)!;
+    expect(entry.target).toBe(before.target);
+    expect(entry.origin).toBe(before.origin);
+    expect(entry.validation).toBe(before.validation);
+    expect(entry.validationIssues).toEqual(before.validationIssues);
+    // The draft stays staged (persist-before-ack): nothing was stored.
+    expect(project.saveStates[id]).toBe('dirty');
+  });
 });
