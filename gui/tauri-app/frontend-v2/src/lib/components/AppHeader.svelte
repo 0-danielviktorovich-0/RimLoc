@@ -35,8 +35,18 @@
     <span class="brand-name">{t('common.appName')}</span>
 
     <!-- W6: global data-mode honesty chip — visible on every route and every
-         build; the whole scaffold runs on synthetic demo data (mandate §1). -->
-    <MockBadge />
+         build. Audit P1-4: the chip now tells the DATA-MODE truth — on a real
+         contract project it becomes the live badge instead of claiming that
+         everything is demo data (mandate: the global badge depends on the
+         data mode). -->
+    {#if project.source === 'contract'}
+      <span class="live-badge" data-testid="live-badge" title={t('livebadge.title')}>
+        <Icon name="circle-check" size={12} />
+        {t('livebadge.label')}
+      </span>
+    {:else}
+      <MockBadge />
+    {/if}
 
     <nav class="nav" aria-label={t('nav.home')}>
       {#each NAV_ITEMS as item (item.route)}
@@ -169,6 +179,21 @@
 
   .brand-meta {
     color: var(--color-muted-fg);
+  }
+
+  /* Audit P1-4: the honest live counterpart of the mock badge — same chip
+     shape, calm positive color instead of the warning tone. */
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    white-space: nowrap;
+    cursor: help;
   }
 
   .controls {

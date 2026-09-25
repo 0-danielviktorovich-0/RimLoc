@@ -30,6 +30,12 @@ export const ru: Record<string, string> = {
   'capability.unsupported.title': 'Пока недоступно: операция ждёт контракт-слайс. {reason}',
   'capability.unsupported.note': 'Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}',
 
+  // Честный live-вариант бейджа (аудит P1-4): на контракт-проекте глобальный
+  // чип показывает живой режим вместо «демо-данные».
+  'livebadge.label': 'Живой проект (контракт)',
+  'livebadge.title':
+    'Открыт реальный проект через контракт RimLocClient → Tauri: данные не демо-фикстуры, правки сохраняются в управляемый проект.',
+
   // Встроенный демо-проект (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
   'home.demo.mark': 'синтетический демо-проект',
