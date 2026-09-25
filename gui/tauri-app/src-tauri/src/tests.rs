@@ -60,7 +60,7 @@ mod tests {
   #[test]
   fn supplementary_regex_no_privileged_pattern_in_live() {
     let live = LIVE_COMMANDS.join("\n");
-    for pattern in ["apply_translation", "save_text", "open_path", "plugin", "simulate_", "morph_cmd", "dump_schemas", "get_profile"] {
+    for pattern in ["apply_translation", "save_text", "open_path", "plugin", "simulate_", "morph_cmd", "dump_schemas", "get_profile", "load_tm"] {
       assert!(!live.contains(pattern), "live registration leaks `{pattern}`");
     }
   }
@@ -80,5 +80,23 @@ mod tests {
         "`{name}` must be in the privileged legacy set"
       );
     }
+  }
+
+  /// Night audit P1-2: load_tm reads ANY caller-chosen baseline PO and
+  /// walkdir-walks ANY caller-chosen tm_roots with no root containment or
+  /// symlink checks — arbitrary read, same exposure class as open_path.
+  /// The live entry (and therefore frontend-v2 via the one transport seam)
+  /// must never reach it; it returns with root guards via the contract TM
+  /// slice.
+  #[test]
+  fn load_tm_is_privileged_legacy_arbitrary_read() {
+    assert!(
+      !LIVE_COMMANDS.contains(&"load_tm"),
+      "load_tm must not be live: unrestricted caller-chosen paths"
+    );
+    assert!(
+      LEGACY_PRIVILEGED_COMMANDS.contains(&"load_tm"),
+      "load_tm must be in the privileged legacy set"
+    );
   }
 }

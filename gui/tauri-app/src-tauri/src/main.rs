@@ -3014,7 +3014,6 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "diff_xml_cmd",
     "get_cli_i18n",
     "pick_directory",
-    "load_tm",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3050,6 +3049,12 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
     "get_log_info",
     "dump_schemas",
     "get_profile",
+    // Night audit P1-2: load_tm reads ANY caller-chosen baseline PO and
+    // walkdir-walks ANY caller-chosen tm_roots with no root containment or
+    // symlink checks — an arbitrary-read surface, same class as open_path.
+    // Frontend-v2 never calls it; it returns with root guards when the TM
+    // slice lands over the contract.
+    "load_tm",
 ];
 
 fn legacy_commands_enabled() -> bool {
@@ -3139,8 +3144,7 @@ fn main() {
             coverage_gui,
             diff_xml_cmd,
             get_cli_i18n,
-            pick_directory,
-            load_tm
+            pick_directory
         ])
     };
     builder
