@@ -37,10 +37,13 @@
     ];
   });
 
-  // Validation indicator (mock phase): status is the proxy. pass = translated;
-  // fail = untranslated / source changed; otherwise not applicable.
+  // Validation indicator. Audit P1-1: contract snapshots carry the REAL
+  // validation dimension — it wins whenever present; fixture records without
+  // contract validation keep the status proxy (mock phase).
   const validation = $derived.by(() => {
     if (!entry) return null;
+    if (entry.validation === 'ok') return { state: 'pass', icon: 'circle-check' } as const;
+    if (entry.validation === 'issues') return { state: 'fail', icon: 'warning' } as const;
     if (entry.status === 'translated') return { state: 'pass', icon: 'circle-check' } as const;
     if (entry.status === 'untranslated' || entry.status === 'sourceChanged')
       return { state: 'fail', icon: 'warning' } as const;
@@ -291,6 +294,20 @@
                   <span class="sev">{t(`validation.severity.${issue.severity}`)}</span>
                 </p>
                 <p class="issue-msg">{issue.message}</p>
+              </li>
+            {/each}
+          </ul>
+        {:else if entry.validationIssues && entry.validationIssues.length > 0}
+          <!-- Audit P1-1: canonical validation findings from the contract
+               snapshot, surfaced verbatim until the validate slice lands. -->
+          <ul class="issues">
+            {#each entry.validationIssues as message, i (i)}
+              <li class="issue issue-warning" data-testid={`workspace.validationIssue.${i}`}>
+                <p class="issue-head">
+                  <Icon name="warning" size={13} />
+                  {t('workspace.detail.validation.fail')}
+                </p>
+                <p class="issue-msg">{message}</p>
               </li>
             {/each}
           </ul>

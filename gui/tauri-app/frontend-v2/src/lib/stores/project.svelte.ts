@@ -20,6 +20,16 @@ const AUTOSAVE_DEBOUNCE_MS = 800; // spec open question #2: 800ms debounce
 const SAVING_INDICATOR_MS = 350; // simulated latency so the "saving…" badge is visible
 const SAVED_INDICATOR_MS = 1200;
 
+/** Audit P1-1: canonical Origin (serde snake_case on the wire) → the UI
+ *  provenance vocabulary used by the workspace filter. */
+const CONTRACT_ORIGIN_TO_UI: Record<string, Origin | undefined> = {
+  human: 'human',
+  tm: 'TM',
+  llm: 'LLM',
+  imported: 'imported',
+  unknown: undefined
+};
+
 function cloneInitial(): Entry[] {
   return structuredClone(mockEntries);
 }
@@ -307,6 +317,20 @@ class ProjectStore {
       if (t.completeness === 'todo') entry.status = 'todo';
       else if (t.text !== null && t.text !== '') entry.status = 'translated';
       if (t.review === 'needs_review') entry.status = 'pending_review';
+      // Audit P1-1: provenance and validation ride the snapshot — the DTO
+      // already carries them; dropping them left the provenance filter and
+      // validation badges dead in live mode.
+      entry.origin = CONTRACT_ORIGIN_TO_UI[t.origin] ?? null;
+      if (t.validation === 'ok') {
+        entry.validation = 'ok';
+        entry.validationIssues = undefined;
+      } else if (typeof t.validation === 'object' && t.validation !== null) {
+        entry.validation = 'issues';
+        entry.validationIssues = t.validation.issues;
+      } else {
+        entry.validation = 'unknown';
+        entry.validationIssues = undefined;
+      }
     }
     this.flushAll();
     this.cancelPendingCommits();
@@ -388,6 +412,19 @@ class ProjectStore {
         entry.target = text;
         if (entry.status === 'untranslated' || entry.status === 'todo') entry.status = 'translated';
         entry.editedAt = new Date().toISOString();
+        // Audit P1-1 mirror of session.rs: an applied edit re-stamps
+        // provenance as Human so the provenance filter stays truthful.
+        entry.origin = 'human';
+        // Placeholder suspicion classifies as Issues on the backend; the
+        // message mirrors session.rs and the authoritative state arrives
+        // with the next snapshot/refresh.
+        if (/%(?!%|[a-zA-Z]|\{|\d+\$)/.test(text)) {
+          entry.validation = 'issues';
+          entry.validationIssues = ['suspicious placeholder (single % not part of a known token)'];
+        } else {
+          entry.validation = 'ok';
+          entry.validationIssues = undefined;
+        }
       }
       return resp.applied > 0;
     } catch (e) {
@@ -444,6 +481,13 @@ class ProjectStore {
         intents: [{ entry: entryId, locale: 'Russian', action, text }]
       });
       this.contractRevision = resp.revision;
+      // Audit P1-1: any applied intent re-stamps provenance as Human
+      // (session.rs semantics) — keep the local view in step until the
+      // next snapshot/refresh.
+      if (resp.applied > 0) {
+        const entry = this.byId(id);
+        if (entry) entry.origin = 'human';
+      }
       return resp.applied > 0;
     } catch (e) {
       rollback?.();

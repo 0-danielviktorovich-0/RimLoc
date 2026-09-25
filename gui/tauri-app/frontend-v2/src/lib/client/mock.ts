@@ -32,6 +32,10 @@ interface MockTranslation {
   locale: string;
   text: string | null;
   completeness: 'untranslated' | 'todo' | 'translated';
+  /** Wire values mirroring the canonical Origin (serde snake_case). */
+  origin?: 'unknown' | 'human' | 'tm' | 'llm' | 'imported';
+  /** Wire values mirroring the canonical ValidationState. */
+  validation?: 'unknown' | 'ok' | { issues: string[] };
 }
 
 interface MockProject {
@@ -45,6 +49,17 @@ interface MockProject {
 
 function entryId(kind: string, key: string) {
   return { kind, key };
+}
+
+/** Mirror of the Rust apply_intent severity rule (session.rs): a suspicious
+ *  placeholder classifies the stored validation as Issues, else Ok. */
+function validationFor(text: string | null): 'unknown' | 'ok' | { issues: string[] } {
+  if (text === null) return 'ok';
+  // single % not part of a known token ({n} / %% / %letter)
+  const bad = /%(?!%|[a-zA-Z]|\{|\d+\$)/.test(text);
+  return bad
+    ? { issues: ['suspicious placeholder (single % not part of a known token)'] }
+    : 'ok';
 }
 
 function mkProject(id: string, name: string): MockProject {
@@ -63,10 +78,14 @@ function mkProject(id: string, name: string): MockProject {
       { id: entryId('DefInjected', 'MeleeWeapon_LongSword.label'), text: 'longsword' }
     ],
     translations: [
-      { id: entryId('Keyed', 'MessageLetterArrived'), locale: 'Russian', text: '{0}: Пришло письмо.', completeness: 'translated' },
-      { id: entryId('Keyed', 'AncientComplexWarning'), locale: 'Russian', text: null, completeness: 'untranslated' },
-      { id: { kind: 'DefInjected', key: 'Gun_AssaultRifle.label', def_type: 'Weapons' }, locale: 'Russian', text: 'штурмовая винтовка', completeness: 'translated' },
-      { id: entryId('DefInjected', 'MeleeWeapon_LongSword.label'), locale: 'Russian', text: null, completeness: 'untranslated' }
+      // Audit P1-1 teeth: the corpus carries REAL provenance/validation so
+      // the snapshot mapping (origin → filter, validation → badges) is
+      // exercised against the same wire values the Rust bridge emits.
+      { id: entryId('Keyed', 'MessageLetterArrived'), locale: 'Russian', text: '{0}: Пришло письмо.', completeness: 'translated', origin: 'imported', validation: 'ok' },
+      { id: entryId('Keyed', 'AncientComplexWarning'), locale: 'Russian', text: null, completeness: 'untranslated', origin: 'unknown', validation: 'unknown' },
+      // Deliberate tooth: issues classification on a stored translation.
+      { id: { kind: 'DefInjected', key: 'Gun_AssaultRifle.label', def_type: 'Weapons' }, locale: 'Russian', text: 'штурмовая винтовка', completeness: 'translated', origin: 'human', validation: { issues: ['suspicious placeholder (single % not part of a known token)'] } },
+      { id: entryId('DefInjected', 'MeleeWeapon_LongSword.label'), locale: 'Russian', text: null, completeness: 'untranslated', origin: 'unknown', validation: 'unknown' }
     ]
   };
 }
@@ -78,6 +97,30 @@ export function createMockState() {
     mkProject('mock-normal-0002', 'My Mod')
   ];
   return { projects };
+}
+
+/** ONE snapshot builder for every read method — mirrors snapshot_of on the
+ *  Rust side and echoes the stored provenance/validation wire values. */
+function snapshotOf(p: MockProject): ProjectSnapshotDto {
+  return {
+    project_id: p.project_id,
+    revision: p.revision,
+    session_epoch: p.session_epoch,
+    project: {
+      context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' },
+      entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })),
+      translations: p.translations.map((t) => ({
+        source_id: t.id,
+        locale: t.locale,
+        text: t.text,
+        completeness: t.completeness,
+        review: 'none',
+        validation: t.validation ?? 'unknown',
+        lifecycle: 'active',
+        origin: t.origin ?? 'human'
+      }))
+    }
+  };
 }
 
 export function createMockTransport(state = createMockState()): RimLocTransport & {
@@ -132,23 +175,13 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
           const id = `mock-${String(state.projects.length + 1).padStart(4, '0')}`;
           const p = mkProject(id, req.mod_root.path.split('/').pop() ?? id);
           state.projects.push(p);
-          const snap: ProjectSnapshotDto = {
-            project_id: p.project_id,
-            revision: p.revision,
-            session_epoch: p.session_epoch,
-            project: { context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' }, entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })), translations: p.translations.map((t) => ({ source_id: t.id, locale: t.locale, text: t.text, completeness: t.completeness, review: 'none', validation: 'unknown', lifecycle: 'active', origin: 'human' })) }
-          };
+          const snap: ProjectSnapshotDto = snapshotOf(p);
           return snap as ContractMethodMap[M]['result'];
         }
         case 'project_open': {
           const p = find((params as { project_id: string }).project_id);
           p.session_epoch += 1;
-          const snap: ProjectSnapshotDto = {
-            project_id: p.project_id,
-            revision: p.revision,
-            session_epoch: p.session_epoch,
-            project: { context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' }, entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })), translations: p.translations.map((t) => ({ source_id: t.id, locale: t.locale, text: t.text, completeness: t.completeness, review: 'none', validation: 'unknown', lifecycle: 'active', origin: 'human' })) }
-          };
+          const snap: ProjectSnapshotDto = snapshotOf(p);
           return snap as ContractMethodMap[M]['result'];
         }
         case 'project_list': {
@@ -161,12 +194,7 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         }
         case 'project_snapshot': {
           const p = find((params as { project_id: string }).project_id);
-          const snap: ProjectSnapshotDto = {
-            project_id: p.project_id,
-            revision: p.revision,
-            session_epoch: p.session_epoch,
-            project: { context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' }, entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })), translations: p.translations.map((t) => ({ source_id: t.id, locale: t.locale, text: t.text, completeness: t.completeness, review: 'none', validation: 'unknown', lifecycle: 'active', origin: 'human' })) }
-          };
+          const snap: ProjectSnapshotDto = snapshotOf(p);
           return snap as ContractMethodMap[M]['result'];
         }
         case 'project_apply_intents': {
@@ -202,6 +230,11 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
               t.text = null;
               t.completeness = 'untranslated';
             }
+            // Audit P1-1 mirror of session.rs apply_intent: EVERY applied
+            // intent re-stamps provenance as Human and recomputes the
+            // stored validation from the resulting text.
+            t.origin = 'human';
+            t.validation = validationFor(t.text);
             applied += 1;
           });
           p.revision += 1;
@@ -217,12 +250,7 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         case 'project_refresh': {
           const p = find((params as { project_id: string }).project_id);
           p.session_epoch += 1;
-          const snap: ProjectSnapshotDto = {
-            project_id: p.project_id,
-            revision: p.revision,
-            session_epoch: p.session_epoch,
-            project: { context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' }, entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })), translations: p.translations.map((t) => ({ source_id: t.id, locale: t.locale, text: t.text, completeness: t.completeness, review: 'none', validation: 'unknown', lifecycle: 'active', origin: 'human' })) }
-          };
+          const snap: ProjectSnapshotDto = snapshotOf(p);
           return snap as ContractMethodMap[M]['result'];
         }
         case 'project_cancel_next': {

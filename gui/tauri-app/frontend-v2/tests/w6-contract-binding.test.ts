@@ -102,3 +102,58 @@ describe('project store on the contract client', () => {
     expect(languages.activeLocale).toBe('ru');
   });
 });
+
+// Audit P1-1: the snapshot mapping must carry provenance (origin) and the
+// validation dimension — dropping them left the provenance filter and the
+// validation badges dead in live mode.
+describe('contract snapshot carries origin and validation', () => {
+  beforeEach(() => {
+    project.reset();
+  });
+
+  it('origin=imported from the snapshot is visible to the provenance filter', async () => {
+    await project.createContractProject('/mods/Demo');
+    const imported = project.byId('Keyed:MessageLetterArrived');
+    expect(imported?.origin).toBe('imported');
+    expect(imported?.validation).toBe('ok');
+
+    project.originFilter = 'imported';
+    const filtered = project.filtered().map((e) => e.id);
+    expect(filtered).toContain('Keyed:MessageLetterArrived');
+    expect(filtered).not.toContain('Keyed:AncientComplexWarning');
+    project.originFilter = 'any';
+  });
+
+  it('validation issues ride the snapshot and reach the detail badge', async () => {
+    await project.createContractProject('/mods/Demo');
+    const flagged = project.byId('DefInjected:Gun_AssaultRifle.label:Weapons');
+    expect(flagged?.validation).toBe('issues');
+    expect(flagged?.validationIssues?.length).toBeGreaterThan(0);
+    // The untranslated fixture row keeps the honest unknown state.
+    expect(project.byId('Keyed:AncientComplexWarning')?.validation).toBe('unknown');
+  });
+
+  it('an applied edit re-stamps origin as human and recomputes validation', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'Keyed:MessageLetterArrived';
+    project.setDraft(id, '{0}: Пришло письмо (правка).');
+    expect(await project.flushDraft(id)).toBe(true);
+    const entry = project.byId(id);
+    expect(entry?.origin).toBe('human');
+    expect(entry?.validation).toBe('ok');
+    // And the provenance filter follows the re-stamp.
+    project.originFilter = 'human';
+    expect(project.filtered().map((e) => e.id)).toContain(id);
+    project.originFilter = 'any';
+  });
+
+  it('a suspicious placeholder classifies validation as issues', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'Keyed:AncientComplexWarning';
+    project.setDraft(id, 'Предупреждение: 50% нестабильно.');
+    expect(await project.flushDraft(id)).toBe(true);
+    const entry = project.byId(id);
+    expect(entry?.validation).toBe('issues');
+    expect(entry?.validationIssues?.[0]).toContain('placeholder');
+  });
+});

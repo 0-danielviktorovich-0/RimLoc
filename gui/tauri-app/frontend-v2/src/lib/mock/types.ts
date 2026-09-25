@@ -86,6 +86,12 @@ export interface Entry {
   /** TKey only: which serialization strategy produced this record. */
   strategy?: TkeyStrategy;
   origin?: Origin | null;
+  /** Contract validation dimension (audit P1-1): 'ok'/'issues' come from the
+   *  canonical Translation; absent = fixture records without contract state
+   *  (the DetailPanel falls back to the status proxy for those). */
+  validation?: 'unknown' | 'ok' | 'issues';
+  /** Issue strings when validation === 'issues' (canonical ValidationState). */
+  validationIssues?: string[];
   editedAt?: string | null;
   note?: string;
   /** TKey multi-contexts; absent for plain Keyed/DefInjected records. */
