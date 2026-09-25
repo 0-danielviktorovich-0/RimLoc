@@ -6,11 +6,12 @@
 //   - a stale revision keeps the dirty draft and mutates nothing;
 //   - reopen refreshes the epoch and works again;
 //   - the fixture multi-target switcher is locked in contract mode.
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { project } from '../src/lib/stores/project.svelte';
 import { languages } from '../src/lib/languages/store.svelte';
 import { review } from '../src/lib/stores/review.svelte';
 import { buildState } from '../src/lib/mock/buildState.svelte';
+import { RimLocClient } from '../src/lib/client/client';
 
 describe('project store on the contract client', () => {
   beforeEach(() => {
@@ -155,5 +156,15 @@ describe('contract snapshot carries origin and validation', () => {
     const entry = project.byId(id);
     expect(entry?.validation).toBe('issues');
     expect(entry?.validationIssues?.[0]).toContain('placeholder');
+  });
+
+  it('project_create carries the pinned target version (v1 decision)', async () => {
+    const spy = vi.spyOn(RimLocClient.prototype, 'createProject');
+    try {
+      await project.createContractProject('/mods/Demo');
+      expect(spy).toHaveBeenCalledWith('/mods/Demo', '1.6');
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

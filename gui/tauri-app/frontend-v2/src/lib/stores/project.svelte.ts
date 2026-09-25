@@ -30,6 +30,12 @@ const CONTRACT_ORIGIN_TO_UI: Record<string, Origin | undefined> = {
   unknown: undefined
 };
 
+/** v1 decision (night handoff): the GUI pins the RimWorld target version at
+ *  create until the version-resolution journey lands. The contract request
+ *  already carries it (CreateProjectRequestDto.target_version) and the
+ *  backend folds it into the project context via build_project. */
+export const DEFAULT_TARGET_VERSION = '1.6';
+
 function cloneInitial(): Entry[] {
   return structuredClone(mockEntries);
 }
@@ -355,9 +361,12 @@ class ProjectStore {
   }
 
   /** Create a project from a real mod folder (mode 'tauri'). */
-  async createContractProject(modRoot: string): Promise<boolean> {
+  async createContractProject(
+    modRoot: string,
+    targetVersion: string = DEFAULT_TARGET_VERSION
+  ): Promise<boolean> {
     try {
-      const snap = await this.cc().createProject(modRoot);
+      const snap = await this.cc().createProject(modRoot, targetVersion);
       this.applyContractSnapshot(snap);
       return true;
     } catch (e) {
