@@ -7,6 +7,7 @@ pub use rimloc_validate::ValidationMessage;
 
 pub mod build;
 pub mod canonical_bridge;
+pub mod contract;
 pub mod eligibility_engine;
 pub mod export;
 pub mod extras;
@@ -25,12 +26,19 @@ pub mod plugins_yaml;
 pub mod project;
 pub mod project_store;
 pub mod scan;
+pub mod session;
 mod util;
 pub mod validate;
 
 pub use build::{
     build_from_po_dry_run, build_from_po_execute, build_from_po_with_progress, build_from_root,
     build_from_root_with_progress, BuildPlan,
+};
+pub use contract::{
+    capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse, Capability,
+    CapabilityReport, ContractError, ContractErrorCode, CreateProjectRequest, IntentAction, JobId,
+    PathBufDto, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch,
+    TranslationIntent, UnsupportedCapability, UI_CONTRACT_VERSION,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
 pub use export::export_po_with_tm;
