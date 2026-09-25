@@ -46,6 +46,10 @@ interface MockProject {
   session_epoch: number;
   /** Source root the project was created from (export guard tooth). */
   mod_root?: string;
+  /** Test hook state: the managed file changed behind our back — the next
+   *  apply refuses with `project_changed_on_disk` until refresh adopts the
+   *  disk (mirrors the Rust disk-hash gate, session.rs). */
+  disk_dirty?: boolean;
   entries: { id: { kind: string; key: string; def_type?: string }, text: string }[];
   translations: MockTranslation[];
 }
@@ -103,12 +107,17 @@ export function createMockState() {
 }
 
 /** ONE snapshot builder for every read method — mirrors snapshot_of on the
- *  Rust side and echoes the stored provenance/validation wire values. */
+ *  Rust side: provenance/validation wire values + the additive v2 fields
+ *  (dirty / acked_revision). */
 function snapshotOf(p: MockProject): ProjectSnapshotDto {
   return {
     project_id: p.project_id,
     revision: p.revision,
     session_epoch: p.session_epoch,
+    // v2 wire: an external disk change leaves the session dirty until
+    // refresh adopts the disk (Rust: applied-but-unacked semantics).
+    dirty: p.disk_dirty === true,
+    acked_revision: p.revision,
     project: {
       context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' },
       entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })),
@@ -129,6 +138,9 @@ function snapshotOf(p: MockProject): ProjectSnapshotDto {
 export function createMockTransport(state = createMockState()): RimLocTransport & {
   /** Test hook: bump the persisted revision behind the client's back. */
   forceExternalRevision(projectId: string, revision: number): void;
+  /** Test hook: simulate an external disk change — the next apply refuses
+   *  with `project_changed_on_disk` until refresh adopts the disk. */
+  forceExternalDiskChange(projectId: string): void;
 } {
   const find = (id: string): MockProject => {
     const p = state.projects.find((x) => x.project_id === id);
@@ -206,6 +218,14 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         case 'project_apply_intents': {
           const req = (params as { request: ApplyIntentsRequestDto }).request;
           const p = find(req.project_id);
+          // Mirror of the Rust disk-hash gate: an external change refuses
+          // the apply until refresh adopts the disk (typed, not silent).
+          if (p.disk_dirty) {
+            throw new MockContractError(
+              'project_changed_on_disk',
+              'the managed file changed on disk since your last read'
+            );
+          }
           if (req.session_epoch !== p.session_epoch) {
             throw new MockContractError('stale_epoch', 'a newer session opened this project', { expected: p.session_epoch });
           }
@@ -255,6 +275,9 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         }
         case 'project_refresh': {
           const p = find((params as { project_id: string }).project_id);
+          // Refresh adopts the DISK: the external change is accepted and the
+          // session is no longer dirty (Rust: disk wins, dirty discarded).
+          p.disk_dirty = false;
           p.session_epoch += 1;
           const snap: ProjectSnapshotDto = snapshotOf(p);
           return snap as ContractMethodMap[M]['result'];
@@ -386,6 +409,9 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
     },
     forceExternalRevision(projectId: string, revision: number) {
       find(projectId).revision = revision;
+    },
+    forceExternalDiskChange(projectId: string) {
+      find(projectId).disk_dirty = true;
     }
   };
 }
