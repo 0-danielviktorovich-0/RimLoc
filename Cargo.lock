@@ -4344,6 +4344,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "tempfile",
  "thiserror 1.0.69",
  "walkdir",
 ]
