@@ -3012,8 +3012,6 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "xml_health",
     "coverage_gui",
     "diff_xml_cmd",
-    "dump_schemas",
-    "get_profile",
     "get_cli_i18n",
     "pick_directory",
     "load_tm",
@@ -3050,6 +3048,8 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
     "import_xliff_gui",
     "merge_keyed_gui",
     "get_log_info",
+    "dump_schemas",
+    "get_profile",
 ];
 
 fn legacy_commands_enabled() -> bool {
@@ -3138,8 +3138,6 @@ fn main() {
             xml_health,
             coverage_gui,
             diff_xml_cmd,
-            dump_schemas,
-            get_profile,
             get_cli_i18n,
             pick_directory,
             load_tm

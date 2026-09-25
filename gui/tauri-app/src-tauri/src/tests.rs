@@ -60,8 +60,25 @@ mod tests {
   #[test]
   fn supplementary_regex_no_privileged_pattern_in_live() {
     let live = LIVE_COMMANDS.join("\n");
-    for pattern in ["apply_translation", "save_text", "open_path", "plugin", "simulate_", "morph_cmd"] {
+    for pattern in ["apply_translation", "save_text", "open_path", "plugin", "simulate_", "morph_cmd", "dump_schemas", "get_profile"] {
       assert!(!live.contains(pattern), "live registration leaks `{pattern}`");
+    }
+  }
+
+  /// P2-1/P2-2 (J cross-review): dump_schemas writes 5 schema files into a
+  /// caller-chosen directory; get_profile returns raw profile.jsonl records
+  /// — both are privileged legacy now, never in the live entry.
+  #[test]
+  fn dump_schemas_and_get_profile_are_privileged_legacy() {
+    for name in ["dump_schemas", "get_profile"] {
+      assert!(
+        !LIVE_COMMANDS.contains(&name),
+        "`{name}` must not be live"
+      );
+      assert!(
+        LEGACY_PRIVILEGED_COMMANDS.contains(&name),
+        "`{name}` must be in the privileged legacy set"
+      );
     }
   }
 }
