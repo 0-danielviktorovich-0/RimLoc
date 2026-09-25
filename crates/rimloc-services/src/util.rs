@@ -354,6 +354,35 @@ pub fn ensure_lang_write_target(mod_root: &std::path::Path, lang_dir: &str) -> c
     Ok(())
 }
 
+/// RimWorld packageId derived from an arbitrary human name (H4): the game
+/// requires `<author>.<mod>` over a restricted charset — a raw folder name
+/// like `My Mod & <Test>` is not a valid packageId. The slug keeps only
+/// `[a-z0-9-]` (everything else collapses to `-`), and the fixed `rimloc.`
+/// author segment guarantees the required single-dot shape.
+pub fn package_id_slug(name: &str) -> String {
+    let mut slug = String::new();
+    let mut last_dash = true; // suppress leading dashes
+    for c in name.chars() {
+        if c.is_ascii_lowercase() || c.is_ascii_digit() {
+            slug.push(c);
+            last_dash = false;
+        } else if c.is_ascii_uppercase() {
+            slug.push(c.to_ascii_lowercase());
+            last_dash = false;
+        } else if !last_dash {
+            slug.push('-');
+            last_dash = true;
+        }
+    }
+    while slug.ends_with('-') {
+        slug.pop();
+    }
+    if slug.is_empty() {
+        slug.push_str("translation");
+    }
+    format!("rimloc.{slug}")
+}
+
 /// Strict XML 1.0 character verification of every `.xml` file under
 /// `root` (H3 tripwire): the lenient scanner can silently accept raw
 /// control characters that a strict parser — and the game — would reject
@@ -645,5 +674,20 @@ mod tests {
         std::fs::remove_file(&bad).expect("cleanup");
         std::fs::write(nested.join("notes.txt"), "raw \u{0c} bytes fine here").expect("write txt");
         verify_xml_char_validity(tmp.path()).expect("only .xml files are verified");
+    }
+    /// H4: packageId slugs keep the RimWorld `<author>.<mod>` shape over a
+    /// restricted charset for arbitrary human names.
+    #[test]
+    fn package_id_slug_is_rimworld_shaped() {
+        assert_eq!(package_id_slug("My Mod & <Test>"), "rimloc.my-mod-test");
+        assert_eq!(package_id_slug("Урон 50%"), "rimloc.50");
+        assert_eq!(package_id_slug("..."), "rimloc.translation");
+        let slug = package_id_slug("Over-the-Top v2.0!");
+        assert!(
+            regex::Regex::new(r"^rimloc\.[a-z0-9-]+$")
+                .unwrap()
+                .is_match(&slug),
+            "{slug}"
+        );
     }
 }
