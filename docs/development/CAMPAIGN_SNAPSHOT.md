@@ -30,7 +30,7 @@ Astra. Ресурсная дисциплина: только /tmp/rimloc-cargo-s
 CARGO_INCREMENTAL=0), без самодельных локов/вторых таргетов/избыточных полных прогонов.
 
 ## Verify at session start (изменчивое)
-- Последний main-срез: `57ed0c9` (BACKEND FREEZE + GUI W6+W7 интеграция, гейт закрыт) → **проверь `git rev-parse HEAD`**.
+- Последний main-срез: `860a3cf` (freeze + GUI + binding waves: контракт, адаптер, дерегистрация, UI-клиент) → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
@@ -69,6 +69,17 @@ Backend заморожен на интегрированном HEAD `4b4d8c3` (�
 от `50f9483` → независимое GLM-ревью → фиксы реальных P0/P1 → повторные гейты.
 Дальше по бэкенду: typed binding seam (proposal v2: /tmp/rimloc-binding-first-slice.md)
 и live acceptance — после GUI-гейта.
+
+## BINDING — волны 1-2 на main (25.09)
+- **Волна 1** (J, `9eab757`): services contract/session/apply-intents + envelope;
+  L-кросс-ревью → P1 traversal → d03eec1 fail-closed guard. Services 131/0.
+- **Волна 2** (W7-воркер, `860a3cf`): src-tauri contract_adapter (8 команд pass-through,
+  handshake + capability report 7+7); дерегистрация — live = contract + 11 safe read-only,
+  27 привилегированных под RIMLOC_LEGACY_COMMANDS=1, enforcement strict-xor (38+8);
+  frontend client types/transport/mock/client (version-gate, epoch/revision, typed ошибки).
+  Кросс-ревью J: merge-ready после 2×P2 (dump_schemas/get_profile → privileged).
+- **Сторы ещё на моках**: переключение сторов на RimLocClient и frontendDist →
+  frontend-v2 — следующая волна (built-GUI journey).
 
 ## GUI LANE — интегрирована в main (25.09)
 - **W6 сдан** (`codex/w6-demo`, 8 коммитов `51ada48..eb9fe40`): глобальный Demo-бейдж
