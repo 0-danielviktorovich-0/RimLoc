@@ -164,6 +164,10 @@ pub struct MorphResult {
 }
 
 pub fn generate(root: &Path, opts: &MorphOptions) -> Result<MorphResult> {
+    // H1 follow-up: the generated Keyed files land under
+    // Languages/<target_lang_dir> — strict form + containment before any
+    // scan or write.
+    crate::util::ensure_lang_write_target(root, &opts.target_lang_dir)?;
     let re_key = opts
         .filter_key_regex
         .as_deref()
@@ -277,4 +281,52 @@ pub fn generate(root: &Path, opts: &MorphOptions) -> Result<MorphResult> {
         warn_no_morpher: opts.provider == MorphProvider::MorpherApi && morpher_token.is_none(),
         warn_no_pymorphy: opts.provider == MorphProvider::Pymorphy2 && pym_url.is_none(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write(path: &Path, body: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, body).unwrap();
+    }
+
+    fn opts(lang: &str) -> MorphOptions {
+        MorphOptions {
+            provider: MorphProvider::Dummy,
+            target_lang_dir: lang.into(),
+            filter_key_regex: None,
+            limit: None,
+            timeout_ms: 1000,
+            cache_size: 16,
+            pymorphy_url: None,
+        }
+    }
+
+    /// H1 follow-up: morph writes its generated Keyed files under
+    /// Languages/<target> — a traversal-shaped target folder is a typed
+    /// refusal with nothing written; the Dummy-provider happy path keeps
+    /// working with a plain folder name.
+    #[test]
+    fn morph_refuses_traversal_target_lang_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        write(
+            &root.join("Languages/Russian/Keyed/T.xml"),
+            "<LanguageData><Kot>Кот</Kot></LanguageData>",
+        );
+
+        let err = generate(root, &opts("../../evil")).unwrap_err();
+        assert!(
+            err.to_string().contains("malformed language folder"),
+            "{err}"
+        );
+        assert!(!tmp.path().join("evil").exists());
+
+        // Happy path: Dummy provider still generates its Keyed files.
+        let res = generate(root, &opts("Russian")).unwrap();
+        assert!(res.processed >= 1, "{res:?}");
+        assert!(root.join("Languages/Russian/Keyed/_Case.xml").exists());
+    }
 }
