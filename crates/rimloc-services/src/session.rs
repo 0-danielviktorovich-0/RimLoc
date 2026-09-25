@@ -869,7 +869,10 @@ impl ProjectSessionManager {
             out_dir,
             locale,
             &st.display_name,
-            &st.display_name,
+            // H4: the folder name is NOT a valid RimWorld packageId — a
+            // restricted-charset slug with the fixed `rimloc.` author
+            // segment is.
+            &crate::util::package_id_slug(&st.display_name),
             &rw_version,
         )
         .map_err(|e| {
@@ -2214,5 +2217,39 @@ mod tests {
 
     fn snap_of_create(mgr: &ProjectSessionManager, mod_root: &Path) -> ProjectId {
         mgr.create(mod_root, Some("1.6")).unwrap().project_id
+    }
+    /// H4: About.xml is valid XML even for hostile folder names, and the
+    /// packageId is a RimWorld-shaped slug, never the raw folder name.
+    #[test]
+    fn export_about_xml_is_escaped_and_package_id_is_a_slug() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("My Mod & <Test>");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "вещь")],
+        ))
+        .unwrap();
+
+        let out = dir.path().join("export-out");
+        let res = mgr
+            .export_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap();
+        assert_eq!(res.reparsed_keys, 1);
+
+        let about = std::fs::read_to_string(out.join("About/About.xml")).unwrap();
+        assert!(about.contains("My Mod &amp; &lt;Test&gt;"), "{about}");
+        assert!(
+            !about.contains("My Mod & <Test>"),
+            "raw special chars must not survive: {about}"
+        );
+        let id_start = about.find("<packageId>").unwrap() + "<packageId>".len();
+        let id_end = about[id_start..].find("</packageId>").unwrap() + id_start;
+        let package_id = &about[id_start..id_end];
+        assert_eq!(package_id, "rimloc.my-mod-test", "{about}");
     }
 }

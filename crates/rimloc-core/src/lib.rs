@@ -207,6 +207,25 @@ pub mod xml_chars {
     pub fn find_invalid_xml_char(text: &str) -> Option<char> {
         text.chars().find(|&c| !is_xml_char(c))
     }
+
+    /// Escape the five XML-special characters for use inside element text
+    /// (H4): `& < > " '`. Control characters are NOT handled here — they
+    /// cannot be escaped at all and must be rejected upstream
+    /// ([`find_invalid_xml_char`]).
+    pub fn escape_text(s: &str) -> String {
+        let mut out = String::with_capacity(s.len());
+        for c in s.chars() {
+            match c {
+                '&' => out.push_str("&amp;"),
+                '<' => out.push_str("&lt;"),
+                '>' => out.push_str("&gt;"),
+                '"' => out.push_str("&quot;"),
+                '\'' => out.push_str("&apos;"),
+                _ => out.push(c),
+            }
+        }
+        out
+    }
 }
 
 /// Parse a minimal subset of PO syntax used across the workspace.
