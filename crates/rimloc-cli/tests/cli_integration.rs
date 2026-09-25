@@ -2282,3 +2282,25 @@ fn cli_scan_refuses_loadfolders_entry_outside_root() {
     let out = String::from_utf8_lossy(&output.stdout);
     assert!(!out.contains("LEAKED-KEYED-TEXT-77"));
 }
+
+/// M1: a non-existent mod root is a loud refusal (non-zero exit), never a
+/// green "all clean" / empty "[]" report over nothing.
+#[test]
+fn cli_validate_and_scan_refuse_nonexistent_root() {
+    let tmp = tempfile::tempdir().unwrap();
+    let missing = tmp.path().join("no-such-mod");
+
+    bin_cmd()
+        .args(["validate", "--root"])
+        .arg(&missing)
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("does not exist"));
+
+    bin_cmd()
+        .args(["scan", "--root"])
+        .arg(&missing)
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("does not exist"));
+}
