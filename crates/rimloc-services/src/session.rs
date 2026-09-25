@@ -738,13 +738,31 @@ impl ProjectSessionManager {
         if st.epoch != session_epoch {
             return Err(ContractError::stale_epoch(session_epoch, st.epoch));
         }
+        // P1-2: the locale is joined into output paths
+        // (`Languages/<locale>/...`) by the export writer. Validate the
+        // strict folder form BEFORE any guard, path operation or write —
+        // a traversal-shaped locale must never reach the writer.
+        ensure_locale_form(locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_export");
         log.begin_stage("guard");
 
-        // Source-tree guard: the out dir must not be inside/equal the
-        // read-only source root (uses the fail-closed canonical view).
-        if !st.mod_root.as_os_str().is_empty() && crate::is_within(out_dir, &st.mod_root) {
+        // Read-only source-tree guard. Fail-closed (P2-2): a session
+        // recovered from disk after a restart carries no source root (the
+        // envelope does not persist it) — a guard that cannot be
+        // established must refuse the write, never silently disable
+        // itself.
+        if st.mod_root.as_os_str().is_empty() {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
+            ));
+        }
+        // The out dir must not be inside/equal the read-only source root
+        // (uses the fail-closed canonical view).
+        if crate::is_within(out_dir, &st.mod_root) {
             log.finish();
             return Err(ContractError::new(
                 ContractErrorCode::GuardOutputDenied,
@@ -855,6 +873,15 @@ impl ProjectSessionManager {
             .cloned()
             .ok_or_else(|| ContractError::project_not_found(project_id))?;
         let st = arc.lock().expect("project session poisoned");
+        // Fail-closed (P2-2): without the source root the bundle's
+        // out-of-source-tree guard is vacuous — refuse instead of writing
+        // an unverifiable bundle.
+        if st.mod_root.as_os_str().is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
+            ));
+        }
         let Some(operation) = st.last_failed_operation.clone() else {
             return Err(ContractError::new(
                 ContractErrorCode::ContractViolation,
@@ -893,6 +920,24 @@ impl ProjectSessionManager {
             redacted_count: bundle.redacted.len(),
             excluded_count: bundle.excluded.len(),
         })
+    }
+}
+
+/// Strict language-folder form for client locale strings (P1-2). A locale
+/// is joined into `Languages/<locale>/...` output paths by the export
+/// writer — anything but a plain folder name (letters, digits, `_`, `-`)
+/// is rejected BEFORE any path is built, mirroring the project-id form
+/// guard (`managed_path`). RimWorld language folders are Latin-ASCII by
+/// convention, which also rejects unicode-slash look-alikes and dots.
+fn ensure_locale_form(locale: &str) -> Result<(), String> {
+    static LOCALE_FORM: once_cell::sync::Lazy<regex::Regex> =
+        once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[A-Za-z0-9_-]+$").unwrap());
+    if LOCALE_FORM.is_match(locale) {
+        Ok(())
+    } else {
+        Err(format!(
+            "malformed locale `{locale}`: expected the language-folder form (letters, digits, `_`, `-`)"
+        ))
     }
 }
 
@@ -1023,6 +1068,11 @@ fn apply_intent(
     engine: &crate::eligibility_engine::EligibilityEngine,
     intent: &TranslationIntent,
 ) -> Result<(), (ContractErrorCode, String)> {
+    // Locale form first (P1-2): intent locales persist into the durable
+    // record, and a malformed one would poison every later export long
+    // before the writer materializes a path. Rejected per intent, as data.
+    ensure_locale_form(&intent.locale).map_err(|m| (ContractErrorCode::ContractViolation, m))?;
+
     // Identity resolution: FULL structural match against the trusted
     // inventory. No key-shape fallback, no "Misc" scope.
     let Some(pos) = project.entries.iter().position(|e| e.id == intent.entry) else {
@@ -1756,6 +1806,114 @@ mod tests {
         let out_inside = mod_root.join("Translation");
         let err = mgr
             .export_project(&snap_of_create(&mgr, &mod_root), 1, &out_inside, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// P1-2 security regression: client locales are joined into
+    /// `Languages/<locale>/...` output paths — traversal, absolute,
+    /// backslash and unicode-slash shapes are a typed rejection on EVERY
+    /// entry that takes a locale for writing (export) or persists one
+    /// (apply), with no filesystem side effects and no poison at rest.
+    #[test]
+    fn path_traversal_locales_are_rejected_on_every_write_entry() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let evil = [
+            "../../evil",
+            "/abs/evil",
+            "C:\\evil",
+            "ru/../../evil",
+            "ru\\..\\evil",
+            "ru\u{2044}evil", // FRACTION SLASH
+            "ru\u{2215}evil", // DIVISION SLASH
+            "..",
+            ".",
+            "",
+        ];
+        for (idx, loc) in evil.iter().enumerate() {
+            // Export entry: refused before the out dir is even created.
+            let out = dir.path().join(format!("never-{idx}"));
+            let err = mgr
+                .export_project(&snap.project_id, 1, &out, loc)
+                .unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::ContractViolation,
+                "[{loc}] {err}"
+            );
+            assert!(!out.exists(), "[{loc}] no write side effects");
+
+            // Apply entry: the intent is skipped as data, nothing persists
+            // (the poisoned locale never reaches the durable record).
+            let mut intent = set_text("Dup.label", "ThingDef", "x");
+            intent.locale = (*loc).to_string();
+            let res = mgr
+                .apply(&req(&snap.project_id, 1, 1, vec![intent]))
+                .unwrap();
+            assert_eq!(res.applied, 0, "[{loc}]");
+            assert_eq!(res.skipped.len(), 1, "[{loc}]");
+            assert_eq!(
+                res.skipped[0].code,
+                ContractErrorCode::ContractViolation,
+                "[{loc}]"
+            );
+        }
+        // No translation was persisted under any poisoned locale.
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        assert!(loaded.project.translations.is_empty());
+    }
+
+    /// P2-2 fail-closed: a restart-recovered session has no source root in
+    /// the envelope — export and diagnose refuse instead of running with
+    /// the read-only source-tree guard disabled.
+    #[test]
+    fn recovered_session_without_source_root_refuses_export_and_diagnose() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // "Restart": a fresh manager recovers from disk (no mod_root).
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+
+        let out = dir.path().join("export-out");
+        let err = mgr2
+            .export_project(
+                &reopened.project_id,
+                reopened.session_epoch,
+                &out,
+                "Russian",
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
+        assert!(!out.exists());
+        let err = mgr2
+            .diagnose(&reopened.project_id, &dir.path().join("bundle"))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
+        assert!(!dir.path().join("bundle").exists());
+    }
+
+    /// The managed-projects root is a protected write target too: export
+    /// artifacts never land next to the durable records.
+    #[test]
+    fn export_into_managed_root_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let err = mgr
+            .export_project(&snap.project_id, 1, &managed.join("out"), "Russian")
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
     }
