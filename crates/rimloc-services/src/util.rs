@@ -323,6 +323,105 @@ pub fn is_within_allow(candidate: &std::path::Path, root: &std::path::Path) -> b
     }
 }
 
+/// Strict language-folder form for WRITE paths (H1 — the CLI sibling of
+/// the session's locale guard, P1-2): the folder is joined into
+/// `<mod>/Languages/<dir>/...`, and `Path::join` with an absolute string
+/// replaces the whole prefix. Anything but a plain folder name (letters,
+/// digits, `_`, `-`) is rejected before any path is built.
+pub fn lang_dir_form_ok(lang_dir: &str) -> bool {
+    static LANG_DIR_FORM: once_cell::sync::Lazy<regex::Regex> =
+        once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[A-Za-z0-9_-]+$").unwrap());
+    LANG_DIR_FORM.is_match(lang_dir)
+}
+
+/// Combined write-target guard (H1): strict folder form PLUS containment
+/// — the joined `Languages/<dir>` base must stay inside the mod root
+/// (deny-direction containment; symlink aliases included).
+pub fn ensure_lang_write_target(mod_root: &std::path::Path, lang_dir: &str) -> crate::Result<()> {
+    if !lang_dir_form_ok(lang_dir) {
+        color_eyre::eyre::bail!(
+            "malformed language folder `{lang_dir}`: expected a plain folder name (letters, digits, `_`, `-`); traversal or absolute paths are not allowed"
+        );
+    }
+    let base = mod_root.join("Languages").join(lang_dir);
+    if !crate::is_within(&base, mod_root) {
+        color_eyre::eyre::bail!(
+            "language folder `{}` resolves outside the mod root `{}`",
+            base.display(),
+            mod_root.display()
+        );
+    }
+    Ok(())
+}
+
+/// RimWorld packageId derived from an arbitrary human name (H4): the game
+/// requires `<author>.<mod>` over a restricted charset — a raw folder name
+/// like `My Mod & <Test>` is not a valid packageId. The slug keeps only
+/// `[a-z0-9-]` (everything else collapses to `-`), and the fixed `rimloc.`
+/// author segment guarantees the required single-dot shape.
+pub fn package_id_slug(name: &str) -> String {
+    let mut slug = String::new();
+    let mut last_dash = true; // suppress leading dashes
+    for c in name.chars() {
+        if c.is_ascii_lowercase() || c.is_ascii_digit() {
+            slug.push(c);
+            last_dash = false;
+        } else if c.is_ascii_uppercase() {
+            slug.push(c.to_ascii_lowercase());
+            last_dash = false;
+        } else if !last_dash {
+            slug.push('-');
+            last_dash = true;
+        }
+    }
+    while slug.ends_with('-') {
+        slug.pop();
+    }
+    if slug.is_empty() {
+        slug.push_str("translation");
+    }
+    format!("rimloc.{slug}")
+}
+
+/// Strict XML 1.0 character verification of every `.xml` file under
+/// `root` (H3 tripwire): the lenient scanner can silently accept raw
+/// control characters that a strict parser — and the game — would reject
+/// with a whole-file drop. Export verification runs this AFTER the write;
+/// a failure here is a writer bug and must fail the operation, never ship.
+pub fn verify_xml_char_validity(root: &std::path::Path) -> crate::Result<()> {
+    fn walk(dir: &std::path::Path) -> crate::Result<()> {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path)?;
+                continue;
+            }
+            let is_xml = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.eq_ignore_ascii_case("xml"))
+                .unwrap_or(false);
+            if !is_xml {
+                continue;
+            }
+            let bytes = std::fs::read(&path)?;
+            let text = std::str::from_utf8(&bytes).map_err(|e| {
+                color_eyre::eyre::eyre!("written XML `{}` is not valid UTF-8: {e}", path.display())
+            })?;
+            if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) {
+                color_eyre::eyre::bail!(
+                    "written XML `{}` contains raw control character U+{:04X} that is invalid in XML 1.0",
+                    path.display(),
+                    bad as u32
+                );
+            }
+        }
+        Ok(())
+    }
+    walk(root)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -543,5 +642,52 @@ mod tests {
         // Empty root denies in both orientations (nothing to contain).
         assert!(!is_within(&nested, Path::new("")));
         assert!(!is_within_allow(&nested, Path::new("")));
+    }
+
+    /// H3 tripwire: the strict byte-level XML 1.0 char check catches raw
+    /// control characters the lenient scanner misses.
+    #[test]
+    fn verify_xml_char_validity_catches_raw_control_bytes() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let good = tmp.path().join("good.xml");
+        std::fs::write(
+            &good,
+            "<?xml version=\"1.0\"?><LanguageData><K>ок</K></LanguageData>",
+        )
+        .expect("write good");
+        verify_xml_char_validity(tmp.path()).expect("clean tree passes");
+
+        let nested = tmp.path().join("DefInjected").join("ThingDef");
+        std::fs::create_dir_all(&nested).expect("dirs");
+        let bad = nested.join("C.xml");
+        std::fs::write(
+            &bad,
+            "<LanguageData><C.label>плохой\u{7}текст</C.label></LanguageData>",
+        )
+        .expect("write bad");
+        let err = verify_xml_char_validity(tmp.path()).expect_err("control char caught");
+        assert!(
+            err.to_string().contains("U+0007"),
+            "names the offending codepoint: {err}"
+        );
+        // The non-xml sibling is never inspected.
+        std::fs::remove_file(&bad).expect("cleanup");
+        std::fs::write(nested.join("notes.txt"), "raw \u{0c} bytes fine here").expect("write txt");
+        verify_xml_char_validity(tmp.path()).expect("only .xml files are verified");
+    }
+    /// H4: packageId slugs keep the RimWorld `<author>.<mod>` shape over a
+    /// restricted charset for arbitrary human names.
+    #[test]
+    fn package_id_slug_is_rimworld_shaped() {
+        assert_eq!(package_id_slug("My Mod & <Test>"), "rimloc.my-mod-test");
+        assert_eq!(package_id_slug("Урон 50%"), "rimloc.50");
+        assert_eq!(package_id_slug("..."), "rimloc.translation");
+        let slug = package_id_slug("Over-the-Top v2.0!");
+        assert!(
+            regex::Regex::new(r"^rimloc\.[a-z0-9-]+$")
+                .unwrap()
+                .is_match(&slug),
+            "{slug}"
+        );
     }
 }

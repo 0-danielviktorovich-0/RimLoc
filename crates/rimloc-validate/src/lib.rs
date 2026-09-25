@@ -51,6 +51,35 @@ pub struct ValidationMessage {
 /// Validator that reports duplicate keys per file using scanned TransUnits.
 type KeyFileEntries = Vec<(String, Option<usize>)>;
 
+/// Invisible/bi-di control characters (M5): in TEXT they render
+/// deceptively; in KEYS they create look-alike identities and files with
+/// invisible names. Both are suspicious-but-not-load-breaking (026:
+/// warning severity).
+fn invisible_chars(text: &str) -> Vec<char> {
+    let mut hits: Vec<char> = Vec::new();
+    for ch in text.chars() {
+        match ch {
+            '\u{200B}' | // ZWSP
+            '\u{200C}' | // ZWNJ
+            '\u{200D}' | // ZWJ
+            '\u{200E}' | // LRM
+            '\u{200F}' | // RLM
+            '\u{202A}' | // LRE
+            '\u{202B}' | // RLE
+            '\u{202C}' | // PDF
+            '\u{202D}' | // LRO
+            '\u{202E}' | // RLO
+            '\u{2066}' | // LRI
+            '\u{2067}' | // RLI
+            '\u{2068}' | // FSI
+            '\u{2069}'   // PDI
+            => hits.push(ch),
+            _ => {}
+        }
+    }
+    hits
+}
+
 pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     static RE_PCT: OnceLock<Regex> = OnceLock::new();
     static RE_BRACE_INNER: OnceLock<Regex> = OnceLock::new();
@@ -79,6 +108,25 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     // Report empty values
     let mut msgs = Vec::new();
     for u in units {
+        // M5: invisible chars in the KEY itself.
+        let key_hits = invisible_chars(&u.key);
+        if !key_hits.is_empty() {
+            let codes: Vec<String> = key_hits
+                .iter()
+                .map(|c| format!("U+{:04X}", *c as u32))
+                .collect();
+            msgs.push(ValidationMessage {
+                kind: "invisible-char".to_string(),
+                severity: ValidationSeverity::Warning,
+                key: u.key.clone(),
+                path: u.path.to_string_lossy().to_string(),
+                line: u.line,
+                message: format!(
+                    "Invisible characters in KEY: {} — Hint: two look-alike keys differing only by invisible chars are never detected as duplicates; clean the key at the source.",
+                    codes.join(", ")
+                ),
+            });
+        }
         if u.source.as_deref().map_or(true, |s| s.trim().is_empty()) {
             // Empty required translation → real failure.
             msgs.push(ValidationMessage {
@@ -95,27 +143,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
         if let Some(text) = u.source.as_deref() {
             if !text.trim().is_empty() {
                 // Invisible/bi-di control characters
-                let mut invisible_hits: Vec<char> = Vec::new();
-                for ch in text.chars() {
-                    match ch {
-                        '\u{200B}' | // ZWSP
-                        '\u{200C}' | // ZWNJ
-                        '\u{200D}' | // ZWJ
-                        '\u{200E}' | // LRM
-                        '\u{200F}' | // RLM
-                        '\u{202A}' | // LRE
-                        '\u{202B}' | // RLE
-                        '\u{202C}' | // PDF
-                        '\u{202D}' | // LRO
-                        '\u{202E}' | // RLO
-                        '\u{2066}' | // LRI
-                        '\u{2067}' | // RLI
-                        '\u{2068}' | // FSI
-                        '\u{2069}'   // PDI
-                        => invisible_hits.push(ch),
-                        _ => {}
-                    }
-                }
+                let invisible_hits = invisible_chars(text);
                 if !invisible_hits.is_empty() {
                     let codes: Vec<String> = invisible_hits
                         .into_iter()
@@ -351,6 +379,21 @@ mod tests {
         assert_eq!(
             sev_of("invisible-char", "Weird.label"),
             ValidationSeverity::Warning
+        );
+    }
+    /// M5: invisible/bi-di characters in a KEY are a warning (026) —
+    /// look-alike keys and invisible filenames must be surfaced.
+    #[test]
+    fn invisible_chars_in_key_are_a_warning() {
+        let u = unit("Key\u{200b}Zwsp", "значение");
+        let msgs = validate(&[u]).unwrap();
+        assert!(
+            msgs.iter().any(|m| {
+                m.kind == "invisible-char"
+                    && m.severity == ValidationSeverity::Warning
+                    && m.key.contains('\u{200b}')
+            }),
+            "{msgs:?}"
         );
     }
 }

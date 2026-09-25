@@ -276,6 +276,8 @@ fn write_about_xml(
     use std::io::Write;
 
     let mut f = File::create(about_xml)?;
+    // H4: About.xml fields are user-controlled text — escaped, never raw
+    // (& < > in a folder name used to produce invalid XML the game drops).
     write!(
         f,
         r#"<ModMetaData>
@@ -287,7 +289,9 @@ fn write_about_xml(
   </supportedVersions>
 </ModMetaData>
 "#,
-        package_id, mod_name, rw_version
+        rimloc_core::xml_chars::escape_text(package_id),
+        rimloc_core::xml_chars::escape_text(mod_name),
+        rimloc_core::xml_chars::escape_text(rw_version)
     )?;
     Ok(())
 }

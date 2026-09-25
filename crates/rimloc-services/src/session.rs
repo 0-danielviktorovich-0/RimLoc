@@ -183,6 +183,7 @@ impl ProjectSessionManager {
             project_id: Some(project_id.clone()),
             revision: Some(revision),
             display_name: Some(display_name.clone()),
+            source_root: envelope_source_root(mod_root),
         };
         save_project_with_meta(&project, &meta, &path).map_err(|e| {
             ContractError::new(ContractErrorCode::SaveFailed, format!("create failed: {e}"))
@@ -242,10 +243,20 @@ impl ProjectSessionManager {
                     .unwrap_or_else(|| project_id.to_string());
                 let target_version = loaded.project.context.target_version.clone();
                 let revision = loaded.meta.revision.unwrap_or(1);
+                // H5: the source root is durable envelope state — a
+                // restart-recovered session restores it, keeping the
+                // read-only source-tree guard functional. Legacy envelopes
+                // (pre-H5) have none and stay fail-closed.
+                let mod_root = loaded
+                    .meta
+                    .source_root
+                    .clone()
+                    .map(PathBuf::from)
+                    .unwrap_or_default();
                 let state = SessionState {
                     path: path.clone(),
                     display_name,
-                    mod_root: PathBuf::new(),
+                    mod_root,
                     target_version,
                     epoch: 1,
                     revision,
@@ -284,27 +295,57 @@ impl ProjectSessionManager {
 
     /// `project_list`: every managed project — live states merged over the
     /// derived disk scan (the registry is recoverable, never authoritative).
+    /// Unloadable files are skipped here; use [`Self::list_report`] when
+    /// the caller can surface diagnostics (M2).
     pub fn list(&self) -> Vec<ProjectSummary> {
+        self.list_report().projects
+    }
+
+    /// The full list view (M2): loadable projects PLUS explicit
+    /// diagnostics for managed files that could not be loaded — corruption
+    /// never looks like "the project is gone".
+    pub fn list_report(&self) -> crate::contract::ProjectListReport {
         let mut out: BTreeMap<ProjectId, ProjectSummary> = BTreeMap::new();
+        let mut unloadable: Vec<crate::contract::UnloadableProject> = Vec::new();
+        let suffix = format!(".{MANAGED_EXT}");
         if let Ok(entries) = std::fs::read_dir(&self.managed_root) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) != Some(MANAGED_EXT) {
-                    continue;
-                }
-                let Some(id) = path.file_stem().map(|s| s.to_string_lossy().into_owned()) else {
+                // Match by full file name: `Path::extension` of
+                // `proj-x.rimloc.json` is "json", so an extension compare
+                // against "rimloc.json" silently skipped EVERY managed
+                // file (the disk half of the list was dead code).
+                let Some(id) = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .and_then(|n| n.strip_suffix(&suffix))
+                    .map(str::to_owned)
+                else {
                     continue;
                 };
-                if let Ok(loaded) = load_project_with_meta(&path) {
-                    out.insert(
-                        id.clone(),
-                        ProjectSummary {
-                            project_id: id.clone(),
-                            name: loaded.meta.display_name.unwrap_or_else(|| id.clone()),
-                            revision: loaded.meta.revision.unwrap_or(1),
-                            target_version: loaded.project.context.target_version.clone(),
-                        },
-                    );
+                match load_project_with_meta(&path) {
+                    Ok(loaded) => {
+                        out.insert(
+                            id.clone(),
+                            ProjectSummary {
+                                project_id: id.clone(),
+                                name: loaded.meta.display_name.unwrap_or_else(|| id.clone()),
+                                revision: loaded.meta.revision.unwrap_or(1),
+                                target_version: loaded.project.context.target_version.clone(),
+                            },
+                        );
+                    }
+                    Err(e) => {
+                        let reason = if e.to_string().contains("schema_version") {
+                            "schema_version"
+                        } else {
+                            "corrupt_project"
+                        };
+                        unloadable.push(crate::contract::UnloadableProject {
+                            project_id: id,
+                            reason: reason.to_string(),
+                        });
+                    }
                 }
             }
         }
@@ -320,7 +361,10 @@ impl ProjectSessionManager {
                 },
             );
         }
-        out.into_values().collect()
+        crate::contract::ProjectListReport {
+            projects: out.into_values().collect(),
+            unloadable,
+        }
     }
 
     /// Recovery path: discard in-memory (possibly dirty) state and reload
@@ -371,6 +415,12 @@ impl ProjectSessionManager {
             st.cancel_requested = false;
             if let Some(name) = loaded.meta.display_name {
                 st.display_name = name;
+            }
+            // H5: refresh adopts the durable source root when the envelope
+            // carries one (a legacy envelope leaves the current value —
+            // never erase a known root because a field is absent).
+            if let Some(src) = &loaded.meta.source_root {
+                st.mod_root = PathBuf::from(src);
             }
             st.target_version = target_version;
         }
@@ -480,6 +530,9 @@ impl ProjectSessionManager {
             project_id: Some(req.project_id.clone()),
             revision: Some(new_revision),
             display_name: Some(st.display_name.clone()),
+            // The source root is durable state: every save re-asserts it so
+            // a restart-recovered session keeps the export guard (H5).
+            source_root: envelope_source_root(&st.mod_root),
         };
         // External-change check: the managed file must look exactly like the
         // last state this session saw on disk.
@@ -790,6 +843,58 @@ impl ProjectSessionManager {
         }
         log.end_stage("guard");
 
+        // H3 pre-write content check: texts that are about to be written
+        // (target-locale translations + the display name landing in
+        // About.xml) must be XML 1.0-clean — control characters cannot be
+        // escaped, so they are a typed refusal, never a raw write.
+        let mut poisoned: Vec<String> = Vec::new();
+        for t in &st.project.translations {
+            if t.locale != locale {
+                continue;
+            }
+            let Some(text) = t.text.as_deref() else {
+                continue;
+            };
+            let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) else {
+                continue;
+            };
+            let identity = st
+                .project
+                .entries
+                .iter()
+                .find(|e| e.id == t.source_id)
+                .map(|e| e.id.display_identity())
+                .unwrap_or_else(|| t.source_id.key.clone());
+            if poisoned.len() < 5 {
+                poisoned.push(format!("{identity} (U+{:04X})", bad as u32));
+            } else {
+                poisoned.push("…".to_string());
+                break;
+            }
+        }
+        if !poisoned.is_empty() {
+            log.error_message("write", "XML-invalid control characters in export content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: translation text contains characters that are invalid in XML 1.0 — the game would drop the whole file. Fix the entries: {}",
+                    poisoned.join(", ")
+                ),
+            ));
+        }
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(&st.display_name) {
+            log.error_message("write", "XML-invalid control character in display name");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
+                    bad as u32
+                ),
+            ));
+        }
+
         let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
         log.begin_stage("write");
         let report = crate::project::write_rimworld_translation(
@@ -797,7 +902,10 @@ impl ProjectSessionManager {
             out_dir,
             locale,
             &st.display_name,
-            &st.display_name,
+            // H4: the folder name is NOT a valid RimWorld packageId — a
+            // restricted-charset slug with the fixed `rimloc.` author
+            // segment is.
+            &crate::util::package_id_slug(&st.display_name),
             &rw_version,
         )
         .map_err(|e| {
@@ -842,6 +950,18 @@ impl ProjectSessionManager {
                 ),
             ));
         }
+        // H3 strict tripwire: the lenient scanner above can silently
+        // accept XML a strict parser (and the game) would reject. Every
+        // written file is byte-verified against the XML 1.0 char set; a
+        // failure here is a writer bug and fails the export.
+        crate::util::verify_xml_char_validity(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("strict XML verification of the written output failed: {e}"),
+            )
+        })?;
         log.counter("reparse", "keys", units.len() as u64);
         log.end_stage("reparse");
         log.finish();
@@ -930,12 +1050,10 @@ impl ProjectSessionManager {
 /// is joined into `Languages/<locale>/...` output paths by the export
 /// writer — anything but a plain folder name (letters, digits, `_`, `-`)
 /// is rejected BEFORE any path is built, mirroring the project-id form
-/// guard (`managed_path`). RimWorld language folders are Latin-ASCII by
-/// convention, which also rejects unicode-slash look-alikes and dots.
+/// guard (`managed_path`). One form source for session and CLI: the
+/// predicate lives in [`crate::util::lang_dir_form_ok`].
 fn ensure_locale_form(locale: &str) -> Result<(), String> {
-    static LOCALE_FORM: once_cell::sync::Lazy<regex::Regex> =
-        once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[A-Za-z0-9_-]+$").unwrap());
-    if LOCALE_FORM.is_match(locale) {
+    if crate::util::lang_dir_form_ok(locale) {
         Ok(())
     } else {
         Err(format!(
@@ -1037,6 +1155,17 @@ fn disk_hash(path: &Path) -> Option<String> {
     std::fs::read(path).ok().map(|b| sha256_hex(&b))
 }
 
+/// Durable envelope form of the session's source root (H5): `None` when the
+/// session has no root (recovered legacy state) so the envelope keeps
+/// honestly saying "no source context", never an empty-string root.
+fn envelope_source_root(mod_root: &Path) -> Option<String> {
+    if mod_root.as_os_str().is_empty() {
+        None
+    } else {
+        Some(mod_root.to_string_lossy().into_owned())
+    }
+}
+
 fn schema_or_internal(err: &color_eyre::Report, project_id: &str) -> ContractError {
     let text = err.to_string();
     if text.contains("schema_version") {
@@ -1122,6 +1251,21 @@ fn apply_intent(
         IntentAction::MarkTodo => Some("TODO".to_string()),
         IntentAction::ClearTranslation => None,
     };
+    // H3: control characters cannot be escaped in XML 1.0 (even numeric
+    // references to them are invalid) — a text carrying one would be
+    // written raw and RimWorld would drop the whole file. Refused at
+    // emission, per intent.
+    if let Some(text) = &text {
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) {
+            return Err((
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "text contains a character that is invalid in XML 1.0 (U+{:04X}); remove the control character",
+                    bad as u32
+                ),
+            ));
+        }
+    }
     let completeness = match intent.action {
         IntentAction::SetTranslation => Completeness::Translated,
         IntentAction::MarkTodo => Completeness::Todo,
@@ -1396,6 +1540,7 @@ mod tests {
             project_id: Some(snap.project_id.clone()),
             revision: Some(9),
             display_name: Some("external".into()),
+            source_root: Some(mod_root.to_string_lossy().into_owned()),
         };
         save_project_with_meta(&external, &meta, &path).unwrap();
 
@@ -1873,11 +2018,11 @@ mod tests {
         assert!(loaded.project.translations.is_empty());
     }
 
-    /// P2-2 fail-closed: a restart-recovered session has no source root in
-    /// the envelope — export and diagnose refuse instead of running with
-    /// the read-only source-tree guard disabled.
+    /// P2-2/H5 fail-closed: a LEGACY envelope (pre-source_root field) has
+    /// no durable source root — export and diagnose refuse instead of
+    /// running with the read-only source-tree guard disabled.
     #[test]
-    fn recovered_session_without_source_root_refuses_export_and_diagnose() {
+    fn legacy_envelope_without_source_root_refuses_export_and_diagnose() {
         let dir = tempfile::tempdir().unwrap();
         let mod_root = dir.path().join("mod");
         two_types_mod(&mod_root);
@@ -1885,7 +2030,17 @@ mod tests {
         let mgr = ProjectSessionManager::new(&managed).unwrap();
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
 
-        // "Restart": a fresh manager recovers from disk (no mod_root).
+        // Rewrite the record as a LEGACY envelope: no source_root field.
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let loaded = load_project_with_meta(&path).unwrap();
+        let legacy = ProjectEnvelopeMeta {
+            project_id: loaded.meta.project_id.clone(),
+            revision: loaded.meta.revision,
+            display_name: loaded.meta.display_name.clone(),
+            source_root: None,
+        };
+        save_project_with_meta(&loaded.project, &legacy, &path).unwrap();
+
         let mgr2 = ProjectSessionManager::new(&managed).unwrap();
         let reopened = mgr2.open(&snap.project_id).unwrap();
 
@@ -1905,6 +2060,56 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
         assert!(!dir.path().join("bundle").exists());
+    }
+
+    /// H5: the source root is durable envelope state — create → save →
+    /// reopen (fresh manager = app restart) restores the full context, so
+    /// export works and the close-open-build cycle completes. refresh
+    /// keeps the root as well.
+    #[test]
+    fn reopen_restores_source_root_and_export_works() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "вещь")],
+        ))
+        .unwrap();
+
+        // "App restart": a fresh manager recovers from the envelope.
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+
+        let out = dir.path().join("export-out");
+        let res = mgr2
+            .export_project(
+                &reopened.project_id,
+                reopened.session_epoch,
+                &out,
+                "Russian",
+            )
+            .unwrap();
+        assert_eq!(res.reparsed_keys, 1);
+        assert!(out
+            .join("Languages/Russian/DefInjected/ThingDef/Dup.xml")
+            .exists());
+
+        // refresh adopts the durable root: export still works afterwards.
+        let refreshed = mgr2.refresh(&reopened.project_id).unwrap();
+        let out2 = dir.path().join("export-out-2");
+        mgr2.export_project(
+            &refreshed.project_id,
+            refreshed.session_epoch,
+            &out2,
+            "Russian",
+        )
+        .unwrap();
     }
 
     /// The managed-projects root is a protected write target too: export
@@ -1967,7 +2172,152 @@ mod tests {
         assert_eq!(refreshed.revision, refreshed.acked_revision);
     }
 
+    /// H3: control characters are invalid in XML 1.0 and cannot be
+    /// escaped — a text carrying one is refused at emission (per-intent
+    /// skip, nothing persists).
+    #[test]
+    fn control_char_text_is_refused_at_emission() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let mut intent = set_text("Dup.label", "ThingDef", "плохой\u{7}текст\u{c}конец");
+        let res = mgr
+            .apply(&req(&snap.project_id, 1, 1, vec![intent.clone()]))
+            .unwrap();
+        assert_eq!(res.applied, 0);
+        assert_eq!(res.skipped.len(), 1);
+        assert_eq!(res.skipped[0].code, ContractErrorCode::ContractViolation);
+        assert_eq!(res.revision, 1, "nothing acked");
+
+        // The clean twin of the same batch applies normally (the guard is
+        // character-scoped, not batch-scoped).
+        intent.text = Some("чистый текст".into());
+        let res = mgr
+            .apply(&req(&snap.project_id, 1, 1, vec![intent]))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+    }
+
+    /// H3 export refusal: a poisoned durable record (legacy state written
+    /// before the emission guard) cannot export — the failure names the
+    /// identity and no directory is written.
+    #[test]
+    fn export_refuses_control_char_content_and_writes_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // Poison the durable record directly (simulating pre-guard state):
+        // a translation carrying raw 0x07.
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let mut loaded = load_project_with_meta(&path).unwrap();
+        let entry_id = loaded.project.entries[0].id.clone();
+        loaded.project.translations.push(Translation {
+            source_id: entry_id,
+            locale: "Russian".into(),
+            text: Some("плохой\u{7}текст".into()),
+            completeness: Completeness::Translated,
+            review: rimloc_domain::canonical::Review::None,
+            validation: ValidationState::Ok,
+            lifecycle: rimloc_domain::canonical::Lifecycle::Active,
+            origin: Origin::Imported,
+            notes: String::new(),
+            source_changed: None,
+        });
+        save_project_with_meta(&loaded.project, &loaded.meta, &path).unwrap();
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        let out = dir.path().join("never-export");
+        let err = mgr2
+            .export_project(
+                &reopened.project_id,
+                reopened.session_epoch,
+                &out,
+                "Russian",
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation, "{err}");
+        assert!(err.message.contains("invalid in XML 1.0"), "{err}");
+        assert!(!out.exists(), "nothing was written");
+    }
+
     fn snap_of_create(mgr: &ProjectSessionManager, mod_root: &Path) -> ProjectId {
         mgr.create(mod_root, Some("1.6")).unwrap().project_id
+    }
+    /// H4: About.xml is valid XML even for hostile folder names, and the
+    /// packageId is a RimWorld-shaped slug, never the raw folder name.
+    #[test]
+    fn export_about_xml_is_escaped_and_package_id_is_a_slug() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("My Mod & <Test>");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "вещь")],
+        ))
+        .unwrap();
+
+        let out = dir.path().join("export-out");
+        let res = mgr
+            .export_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap();
+        assert_eq!(res.reparsed_keys, 1);
+
+        let about = std::fs::read_to_string(out.join("About/About.xml")).unwrap();
+        assert!(about.contains("My Mod &amp; &lt;Test&gt;"), "{about}");
+        assert!(
+            !about.contains("My Mod & <Test>"),
+            "raw special chars must not survive: {about}"
+        );
+        let id_start = about.find("<packageId>").unwrap() + "<packageId>".len();
+        let id_end = about[id_start..].find("</packageId>").unwrap() + id_start;
+        let package_id = &about[id_start..id_end];
+        assert_eq!(package_id, "rimloc.my-mod-test", "{about}");
+    }
+
+    /// M2: a corrupt managed file is reported by list_report (typed
+    /// reason) instead of silently disappearing; list() still returns
+    /// only loadable projects; reopen of the corrupt file stays a typed
+    /// failure with intact bytes.
+    #[test]
+    fn corrupt_project_file_is_surfaced_in_list_report() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // Corrupt the durable record on disk (simulated disk fault).
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let bytes = fs::read(&path).unwrap();
+        let cut = bytes.len() * 6 / 10;
+        fs::write(&path, &bytes[..cut]).unwrap();
+
+        // A FRESH manager (restart) scans only disk — the corrupt file is
+        // now explicitly reported. (The live session legitimately shadows
+        // the disk with its in-memory state.)
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let report = mgr2.list_report();
+        assert!(report.projects.is_empty(), "{report:?}");
+        assert_eq!(report.unloadable.len(), 1, "{report:?}");
+        assert_eq!(report.unloadable[0].project_id, snap.project_id);
+        assert_eq!(report.unloadable[0].reason, "corrupt_project");
+
+        // list() keeps its shape (only loadable projects)...
+        assert!(mgr2.list().is_empty());
+        // ...and a raw bytes view remains possible: the file still exists.
+        assert!(path.is_file());
     }
 }

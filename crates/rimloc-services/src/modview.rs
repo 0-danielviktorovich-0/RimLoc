@@ -170,7 +170,19 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                 let dir = if entry == "/" {
                     root.to_path_buf()
                 } else {
-                    root.join(entry)
+                    // H2: a `<li>` entry is a CONTENT SCOPE, and the join
+                    // with an absolute string replaces the whole prefix —
+                    // a Workshop mod must not make RimLoc scan arbitrary
+                    // directories. Anything resolving outside the root is
+                    // a typed refusal (real symlink views included).
+                    let dir = root.join(entry);
+                    if !crate::is_within(&dir, root) {
+                        color_eyre::eyre::bail!(
+                            "LoadFolders.xml entry `{entry}` resolves outside the mod root `{}`: external content folders are not scanned; keep all content inside the mod",
+                            root.display()
+                        );
+                    }
+                    dir
                 };
                 if dir.is_dir() {
                     content_dirs.push(dir);
@@ -184,7 +196,14 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
                 let dir = if entry == "/" {
                     root.to_path_buf()
                 } else {
-                    root.join(entry)
+                    let dir = root.join(entry);
+                    if !crate::is_within(&dir, root) {
+                        color_eyre::eyre::bail!(
+                            "LoadFolders.xml (IfModActive) entry `{entry}` resolves outside the mod root `{}`: external content folders are not scanned; keep all content inside the mod",
+                            root.display()
+                        );
+                    }
+                    dir
                 };
                 if dir.is_dir() {
                     conditional_dirs.push(dir);
@@ -391,4 +410,67 @@ pub fn about_package_id(root: &Path) -> Option<String> {
     let start = text.find("<packageId>")? + "<packageId>".len();
     let end = start + text[start..].find("</packageId>")?;
     Some(text[start..end].trim().to_string())
+}
+
+#[cfg(test)]
+mod loadfolders_containment_tests {
+    //! H2: LoadFolders `<li>` entries are content scopes — anything that
+    //! resolves outside the mod root is a typed refusal.
+
+    use super::*;
+
+    fn write(path: &Path, content: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, content).unwrap();
+    }
+
+    #[test]
+    fn entries_outside_root_are_refused() {
+        let tmp = tempfile::tempdir().unwrap();
+        let outside = tmp.path().join("outside");
+        write(
+            &outside.join("Languages/English/Keyed/S.xml"),
+            "<LanguageData><SecretKey.Outside>LEAKED-KEYED-TEXT-77</SecretKey.Outside></LanguageData>",
+        );
+
+        let root = tmp.path().join("escmod");
+        write(
+            &root.join("LoadFolders.xml"),
+            &format!(
+                "<loadFolders><v1.6><li>1.6</li><li>{}</li></v1.6></loadFolders>",
+                outside.display()
+            ),
+        );
+        write(&root.join("1.6/Defs/X.xml"), "<Defs/>");
+
+        let err = effective_view(&root, Some("1.6")).unwrap_err();
+        assert!(err.to_string().contains("outside the mod root"), "{err}");
+
+        // Relative traversal is refused the same way.
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>1.6</li><li>../outside</li></v1.6></loadFolders>",
+        );
+        let err = effective_view(&root, Some("1.6")).unwrap_err();
+        assert!(err.to_string().contains("outside the mod root"), "{err}");
+
+        // Conditional (IfModActive) entries get the same containment.
+        write(
+            &root.join("LoadFolders.xml"),
+            &format!(
+                "<loadFolders><v1.6><li>1.6</li><li IfModActive=\"X\">{}</li></v1.6></loadFolders>",
+                outside.display()
+            ),
+        );
+        let err = effective_view(&root, Some("1.6")).unwrap_err();
+        assert!(err.to_string().contains("outside the mod root"), "{err}");
+
+        // In-root entries still resolve (the guard is scoped to escapes).
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>1.6</li></v1.6></loadFolders>",
+        );
+        let view = effective_view(&root, Some("1.6")).unwrap();
+        assert!(view.content_dirs.contains(&root.join("1.6")));
+    }
 }
