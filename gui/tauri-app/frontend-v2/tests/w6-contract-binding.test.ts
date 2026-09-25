@@ -195,3 +195,88 @@ describe('contract snapshot carries origin and validation', () => {
     expect(project.saveStates[id]).toBe('dirty');
   });
 });
+
+// Pass A P1-1/P1-2: the typed-failure recovery path.
+//   - `project_changed_on_disk` must be recoverable IN the app (refresh
+//     adopts the disk; the client draft survives as dirty; the retry passes)
+//     — before this the only exit was an app restart;
+//   - typed failures must be VISIBLE in the workspace, not a silent dirty.
+import App from '../src/App.svelte';
+import { click, exists, goto, mountCmp, q } from './helpers';
+
+describe('typed failure recovery (Pass A P1-1/P1-2)', () => {
+  beforeEach(() => {
+    project.reset();
+  });
+
+  function diskHook() {
+    const client = (project as unknown as { cc: () => RimLocClient }).cc();
+    return client.transport as unknown as { forceExternalDiskChange: (id: string) => void };
+  }
+
+  it('changed_on_disk → adopt disk via refresh → the retry passes (P1-1)', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'Keyed:AncientComplexWarning';
+    const draft = 'локальная правка поверх диска';
+    project.setDraft(id, draft);
+    diskHook().forceExternalDiskChange(project.contractProjectId!);
+
+    // The apply refuses with the typed disk error; nothing is lost.
+    expect(await project.flushDraft(id)).toBe(false);
+    expect(project.contractError).toContain('project_changed_on_disk');
+    expect(project.drafts[id]).toBe(draft);
+    expect(project.saveStates[id]).toBe('dirty');
+
+    // Explicit adoption (the workspace banner button): the contract gates
+    // refresh behind confirmation because backend-dirty is discarded.
+    expect(await project.refreshContract()).toBe(true);
+    expect(project.contractError).toBe(null);
+    // The client draft SURVIVES the adoption.
+    expect(project.drafts[id]).toBe(draft);
+    expect(project.saveStates[id]).toBe('dirty');
+
+    // And the retry now passes on top of the adopted revision.
+    expect(await project.flushDraft(id)).toBe(true);
+    expect(project.byId(id)?.target).toBe(draft);
+    // v2 wire: the acked base followed the successful apply.
+    expect(project.contractAckedRevision).toBe(project.contractRevision);
+  });
+
+  it('a refused intent (applied: 0) sets contractError (P1-2)', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'Keyed:MessageLetterArrived';
+    (
+      project as unknown as {
+        contractIdentities: Record<string, { kind: string; key: string }>;
+      }
+    ).contractIdentities[id] = { kind: 'Keyed', key: 'GhostEntryNeverScanned' };
+    project.setDraft(id, 'правка-в-никуда');
+    expect(await project.flushDraft(id)).toBe(false);
+    // The refusal is DATA: the user sees who refused and why.
+    expect(project.contractError).toContain('contract_violation');
+    expect(project.contractError).toContain('GhostEntryNeverScanned');
+    expect(project.saveStates[id]).toBe('dirty');
+  });
+
+  it('the workspace banner surfaces the typed error and adoption clears it (P1-2 UI)', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'Keyed:MessageLetterArrived';
+    diskHook().forceExternalDiskChange(project.contractProjectId!);
+    project.setDraft(id, 'banner-draft');
+    expect(await project.flushDraft(id)).toBe(false);
+    expect(project.contractError).toContain('project_changed_on_disk');
+
+    goto('#/workspace');
+    mountCmp(App);
+    const banner = q('workspace.contract-error');
+    expect(banner.textContent).toContain('project_changed_on_disk');
+    expect(q('workspace.contract-reread').textContent).toContain('Принять версию на диске');
+
+    click('workspace.contract-reread');
+    await new Promise((r) => setTimeout(r, 10)); // the adoption is async
+    expect(project.contractError).toBe(null);
+    expect(exists('workspace.contract-error')).toBe(false);
+    // The draft is still there for the retry.
+    expect(project.drafts[id]).toBe('banner-draft');
+  });
+});

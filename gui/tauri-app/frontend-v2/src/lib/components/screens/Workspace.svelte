@@ -130,6 +130,27 @@
 <LanguageManager />
 
 <section class="workspace" aria-label={t('workspace.title')}>
+  <!-- Pass A P1-2: typed contract failures (save_failed / stale_epoch /
+       stale_revision / project_changed_on_disk / skipped intents) are DATA —
+       the workspace shows them verbatim with the contract-mandated explicit
+       disk-adoption recovery (refresh discards backend-dirty, disk wins). -->
+  {#if project.source === 'contract' && project.contractError}
+    <div class="contract-error" role="alert" data-testid="workspace.contract-error">
+      <Icon name="warning" size={14} />
+      <span class="mono msg">{project.contractError}</span>
+      <button
+        type="button"
+        class="btn"
+        data-testid="workspace.contract-reread"
+        disabled={project.refreshing}
+        title={t('workspace.contract.rereadHint')}
+        onclick={() => void project.refreshContract()}
+      >
+        <Icon name="git-compare" size={14} />
+        {project.refreshing ? t('workspace.contract.rereading') : t('workspace.contract.reread')}
+      </button>
+    </div>
+  {/if}
   <div class="toolbar">
     <h1 class="toolbar-title">{t('workspace.title')}</h1>
     <span class="toolbar-meta mono" data-testid="workspace.meta">
@@ -288,6 +309,26 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
+  }
+
+  /* Pass A P1-2: typed contract failure banner with the explicit
+     disk-adoption recovery action. */
+  .contract-error {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    border-bottom: 1px solid var(--color-destructive);
+    background: color-mix(in srgb, var(--color-destructive) 10%, transparent);
+    color: var(--color-destructive);
+    font-size: var(--text-meta-size);
+    flex: none;
+  }
+
+  .contract-error .msg {
+    word-break: break-all;
   }
 
   .toolbar {

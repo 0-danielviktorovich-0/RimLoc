@@ -72,6 +72,15 @@ class ProjectStore {
   contractEpoch = $state(0);
   contractError = $state<string | null>(null);
   /**
+   * v2 wire (contract.rs): the last durably ACKED revision. While the
+   * backend session is dirty, `apply` compares expected_revision against
+   * THIS — revision alone can be ahead of the ack and get rejected as
+   * stale_revision. Pass A 1.2.
+   */
+  contractAckedRevision = $state(0);
+  /** True while a disk-adoption refresh is in flight (workspace banner). */
+  refreshing = $state(false);
+  /**
    * W-built (P1): full STRUCTURAL identities per workspace entry id. The
    * backend resolves intents by exact structural match (kind+key+def_type,
    * no key-fallback — lead 033), so the def_type discriminator must survive
@@ -286,8 +295,14 @@ class ProjectStore {
 
   /** Map a canonical contract snapshot onto the workspace Entry shape.
    * Source fields are read-only by contract; the target comes from the
-   * translation rows of the active target locale (folder contract "Russian"). */
-  private applyContractSnapshot(snap: ProjectSnapshotDto) {
+   * translation rows of the active target locale (folder contract "Russian").
+   *
+   * `keepDrafts` (Pass A P1-1): the disk-adoption refresh maps the DISK
+   * truth but keeps the caller's unsaved drafts/draft epochs/save states —
+   * the backend discards ITS dirty state (disk wins), the client's local
+   * draft survives as dirty and the user can retry the save on top of the
+   * adopted revision. */
+  private applyContractSnapshot(snap: ProjectSnapshotDto, opts: { keepDrafts?: boolean } = {}) {
     const mapped: Entry[] = [];
     const byId = new Map<string, Entry>();
     this.contractIdentities = {};
@@ -338,26 +353,61 @@ class ProjectStore {
         entry.validationIssues = undefined;
       }
     }
-    this.flushAll();
-    this.cancelPendingCommits();
-    this.timers.clear();
-    this.generation += 1;
-    this.draftEpoch = {};
-    this.entries = mapped;
-    this.drafts = {};
-    this.saveStates = {};
-    this.selectedId = null;
-    this.filters = [];
-    this.category = 'all';
-    this.originFilter = 'any';
-    this.search = '';
+    if (opts.keepDrafts) {
+      // Recovery mapping: kill in-flight autosave timers (they abort on the
+      // generation bump anyway) and swap the entries, but KEEP the drafts,
+      // draft epochs and dirty save states.
+      this.timers.clear();
+      this.generation += 1;
+      this.entries = mapped;
+    } else {
+      this.flushAll();
+      this.cancelPendingCommits();
+      this.timers.clear();
+      this.generation += 1;
+      this.draftEpoch = {};
+      this.entries = mapped;
+      this.drafts = {};
+      this.saveStates = {};
+      this.selectedId = null;
+      this.filters = [];
+      this.category = 'all';
+      this.originFilter = 'any';
+      this.search = '';
+    }
     this.isDemo = false;
     this.contractProjectId = snap.project_id;
     this.contractRevision = snap.revision;
+    // v2 wire: the apply base is the last ACKED revision, not the (possibly
+    // ahead) in-memory revision.
+    this.contractAckedRevision = snap.acked_revision ?? snap.revision;
     this.contractEpoch = snap.session_epoch;
     this.contractError = null;
     this.projectName = snap.project_id;
     this.source = 'contract';
+  }
+
+  /** Pass A P1-1: adopt the DISK state after a typed failure
+   *  (`project_changed_on_disk` / `save_failed`). Contract doctrine: refresh
+   *  discards the backend's dirty state (disk wins) — so it is always an
+   *  EXPLICIT user action (the workspace banner button), never a silent
+   *  auto-call. The caller's local draft survives as dirty and can be
+   *  re-saved on top of the adopted revision. */
+  async refreshContract(): Promise<boolean> {
+    const projectId = this.contractProjectId;
+    if (!projectId || this.refreshing) return false;
+    this.refreshing = true;
+    try {
+      const snap = await this.cc().refresh(projectId);
+      this.applyContractSnapshot(snap, { keepDrafts: true });
+      this.contractError = null;
+      return true;
+    } catch (e) {
+      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      return false;
+    } finally {
+      this.refreshing = false;
+    }
   }
 
   /** Create a project from a real mod folder (mode 'tauri'). */
@@ -411,11 +461,14 @@ class ProjectStore {
       if (identity.def_type) entryId.def_type = identity.def_type;
       const resp = await this.cc().applyIntents({
         projectId,
-        expectedRevision: this.contractRevision,
+        // Pass A 1.2: while the backend session is dirty, the apply base is
+        // the last ACKED revision, not the (possibly ahead) in-memory one.
+        expectedRevision: this.contractAckedRevision || this.contractRevision,
         sessionEpoch: this.contractEpoch,
         intents: [{ entry: entryId, locale: 'Russian', action: 'set_translation', text }]
       });
       this.contractRevision = resp.revision;
+      this.contractAckedRevision = resp.revision; // apply acks to disk
       // Review P2: an Ok response may still carry applied: 0 with the intent
       // refused in `skipped` (NoTranslate finality, unknown identity) — the
       // backend stored NOTHING, so the local view must not claim a human
@@ -446,6 +499,12 @@ class ProjectStore {
         // semantics as the typed failure path — otherwise the row sticks
         // on "saving…" with no backend write behind it.
         this.saveStates[id] = 'dirty';
+        // Pass A 2.2: a refused intent is DATA, not a silent dirty — surface
+        // the typed refusal where the user works.
+        const sk = resp.skipped[0];
+        this.contractError = sk
+          ? `${sk.code}: ${sk.message}`
+          : 'contract_violation: the intent was skipped by the backend';
       }
       return resp.applied > 0;
     } catch (e) {
@@ -497,17 +556,25 @@ class ProjectStore {
     try {
       const resp = await this.cc().applyIntents({
         projectId,
-        expectedRevision: this.contractRevision,
+        // Pass A 1.2: acked revision is the apply base (see commitContract).
+        expectedRevision: this.contractAckedRevision || this.contractRevision,
         sessionEpoch: this.contractEpoch,
         intents: [{ entry: entryId, locale: 'Russian', action, text }]
       });
       this.contractRevision = resp.revision;
+      this.contractAckedRevision = resp.revision;
       // Audit P1-1: any applied intent re-stamps provenance as Human
       // (session.rs semantics) — keep the local view in step until the
       // next snapshot/refresh.
       if (resp.applied > 0) {
         const entry = this.byId(id);
         if (entry) entry.origin = 'human';
+      } else {
+        // Pass A 2.2: a refused intent is DATA — surface the typed refusal.
+        const sk = resp.skipped[0];
+        this.contractError = sk
+          ? `${sk.code}: ${sk.message}`
+          : 'contract_violation: the intent was skipped by the backend';
       }
       return resp.applied > 0;
     } catch (e) {
@@ -578,7 +645,10 @@ class ProjectStore {
     this.source = 'fixture';
     this.contractProjectId = null;
     this.contractRevision = 0;
+    this.contractAckedRevision = 0;
     this.contractEpoch = 0;
+    this.contractError = null;
+    this.refreshing = false;
   }
 }
 

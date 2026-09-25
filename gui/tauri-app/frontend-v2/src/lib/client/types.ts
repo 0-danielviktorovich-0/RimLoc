@@ -111,6 +111,14 @@ export interface ProjectSnapshotDto {
   project_id: string;
   revision: number;
   session_epoch: number;
+  /** Additive v2 (contract.rs): in-memory edits applied but NOT durably
+   *  acked (save_failed / external change). `refresh` DISCARDS backend
+   *  dirty edits (disk wins) — the client must gate refresh behind an
+   *  explicit confirmation. */
+  dirty?: boolean;
+  /** Additive v2 (contract.rs): the last durably ACKED revision — the
+   *  correct `expected_revision` base for apply while dirty. */
+  acked_revision?: number;
   project: CanonicalProjectDto;
 }
 

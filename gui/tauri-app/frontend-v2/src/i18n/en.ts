@@ -30,6 +30,12 @@ export const en: Record<string, string> = {
   'capability.unsupported.title': 'Not available yet: the operation waits for its contract slice. {reason}',
   'capability.unsupported.note': 'Contract build is not wired yet (backend slice in progress). {reason}',
 
+  // Recovery after a typed failure (Pass A P1-1/P1-2): refresh adopts the
+  // disk (backend-dirty discarded) — always an explicit user action.
+  'workspace.contract.reread': 'Adopt the on-disk version',
+  'workspace.contract.rereadHint': 'Re-read the project from disk. Your draft stays as a local draft; the disk version becomes the base for the retry.',
+  'workspace.contract.rereading': 'Re-reading…',
+
   // Live contract operations (final night wave): validate/export/diagnose
   // over the RimLocClient. Finding messages are backend data (EN); chips
   // and labels are localized.

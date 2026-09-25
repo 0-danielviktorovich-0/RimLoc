@@ -30,6 +30,12 @@ export const ru: Record<string, string> = {
   'capability.unsupported.title': 'Пока недоступно: операция ждёт контракт-слайс. {reason}',
   'capability.unsupported.note': 'Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}',
 
+  // Recovery после typed-отказа (Pass A P1-1/P1-2): refresh принимает диск
+  // (backend-dirty отбрасывается) — всегда явным действием пользователя.
+  'workspace.contract.reread': 'Принять версию на диске',
+  'workspace.contract.rereadHint': 'Перечитать проект с диска. Черновик останется как локальный draft; версия диска станет основой для повторной записи.',
+  'workspace.contract.rereading': 'Перечитываю…',
+
   // Живые контрактные операции (финальная волна): validate/export/diagnose
   // поверх RimLocClient. Сообщения находок — данные бэкенда (EN), чипы и
   // подписи локализованы.
