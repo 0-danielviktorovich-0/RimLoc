@@ -80,6 +80,7 @@ fn rel_keyed_path(path: &Path, lang_dir: &str) -> Option<PathBuf> {
     None
 }
 
+#[derive(Debug)]
 pub struct MergeKeyedStats {
     pub files: usize,
     pub keys_total: usize,
@@ -93,6 +94,9 @@ pub fn merge_keyed(
     target_lang_dir: &str,
     out_dir: Option<&Path>,
 ) -> Result<MergeKeyedStats> {
+    // H1 follow-up: the target folder is joined into read AND write paths
+    // under the root — strict form + containment before anything runs.
+    crate::util::ensure_lang_write_target(root, target_lang_dir)?;
     let mut stats = MergeKeyedStats {
         files: 0,
         keys_total: 0,
@@ -176,4 +180,39 @@ pub fn merge_keyed(
     }
 
     Ok(stats)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write(path: &Path, body: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, body).unwrap();
+    }
+
+    /// H1 follow-up: merge-keyed writes under Languages/<target> — a
+    /// traversal-shaped target folder is a typed refusal with nothing
+    /// written; a plain folder name keeps the merge working.
+    #[test]
+    fn merge_keyed_refuses_traversal_target_lang_dir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        write(
+            &root.join("Languages/English/Keyed/T.xml"),
+            "<LanguageData><K>hello</K></LanguageData>",
+        );
+
+        let err = merge_keyed(root, "English", "../../evil", None).unwrap_err();
+        assert!(
+            err.to_string().contains("malformed language folder"),
+            "{err}"
+        );
+        assert!(!tmp.path().join("evil").exists());
+
+        // Happy path still works with a plain folder name.
+        let stats = merge_keyed(root, "English", "Russian", None).unwrap();
+        assert_eq!(stats.files, 1);
+        assert!(root.join("Languages/Russian/Keyed/T.xml").exists());
+    }
 }
