@@ -112,9 +112,16 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
                 'job_cancel'
               ],
               unsupported: [
-                { capability: 'validate_via_contract', reason: 'next slice' },
-                { capability: 'build_via_contract', reason: 'next slice' },
-                { capability: 'diagnostics_via_contract', reason: 'next slice' }
+                // Audit P2-1: names mirror the Rust capability_report
+                // (crates/rimloc-services/src/contract.rs) EXACTLY — the
+                // stale *_via_contract aliases are gone.
+                { capability: 'validate_via_contract', reason: 'next slice: typed validation findings over the contract' },
+                { capability: 'build_export', reason: 'next slice: safe build/export behind the source-tree guard + jobs' },
+                { capability: 'source_inspector_actions', reason: 'next slice: identity-based source actions with size-limited reads' },
+                { capability: 'diagnostics_bundle', reason: 'next slice: sanitized support bundle surfaced over the contract' },
+                { capability: 'providers_settings', reason: 'later slice: provider/settings parity' },
+                { capability: 'entry_create_delete', reason: 'intents cover translation edits only; identities come from rescan' },
+                { capability: 'import_pack', reason: 'existing-pack import is not exposed as a contract intent yet' }
               ]
             }
           };

@@ -16,11 +16,22 @@
   import { router } from '../../router.svelte';
   import { RW_VERSION } from '../../mock/diagnostics';
   import { SOURCE_LOCATION, OUTPUT_LOCATION } from '../../stores/diagnostics.svelte';
+  import { capability, CAP_BUILD } from '../../client/capability.svelte';
 
   // ------------------------------------------------------------ lifecycle CTA
   const counts = $derived(project.statusCounts());
   const problems = $derived(counts.pending_review + counts.sourceChanged);
   const activeSummary = $derived(languages.summary(languages.activeLocale));
+  // Audit P1-5: honest degradation on a REAL contract project while the
+  // build slice has not landed (see Workspace for the same gate).
+  const buildBlocked = $derived(
+    project.source === 'contract' && capability.state(CAP_BUILD) === false
+  );
+  const buildBlockedTitle = $derived(
+    buildBlocked
+      ? t('capability.unsupported.title', { reason: capability.reason(CAP_BUILD) ?? '' })
+      : undefined
+  );
 
   // ------------------------------------------------------------ source update
   // Mock state machine for "the game/mod changed under the project":
@@ -109,7 +120,15 @@
         {t('workspace.cta.reviewIssues', { count: problems })}
       </button>
     {:else}
-      <button type="button" class="btn btn-primary" data-testid="workspace.project.cta" onclick={() => router.navigate('build')}>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-testid="workspace.project.cta"
+        disabled={buildBlocked}
+        title={buildBlockedTitle}
+        aria-disabled={buildBlocked}
+        onclick={() => router.navigate('build')}
+      >
         <Icon name="package" size={14} />
         {t('workspace.cta.build')}
       </button>

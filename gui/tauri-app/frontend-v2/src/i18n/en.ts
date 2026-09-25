@@ -25,6 +25,11 @@ export const en: Record<string, string> = {
   'mockbadge.title':
     'This scaffold runs on synthetic demo data with zero backend calls. The live mode arrives after the backend freeze through the RimLocClient transport boundary.',
 
+  // Honest capability degradation (audit P1-5): CTA/buttons gated by the
+  // handshake capability report while the J backend slices are pending.
+  'capability.unsupported.title': 'Not available yet: the operation waits for its contract slice. {reason}',
+  'capability.unsupported.note': 'Contract build is not wired yet (backend slice in progress). {reason}',
+
   // Bundled demo project (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
   'home.demo.mark': 'synthetic demo project',
