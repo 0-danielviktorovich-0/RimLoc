@@ -1088,6 +1088,15 @@ export const en: Record<string, string> = {
   'dev.summary': 'Zero backend calls: all data is local.',
   'dev.scenarios': 'Scenario browser',
 
+  // W-built boot gate + contract Home
+  'boot.configError.title': 'No backend in this launch',
+  'boot.configError.hint': 'Start the RimLoc desktop app for the live backend, or enable the demo mode (?dev=1 in the address bar) to browse the synthetic demo.',
+  'home.contract.title': 'RimLoc — live project',
+  'home.contract.desc': 'Create a translation project from a real mod folder, or reopen a recent one. The project stays on this machine.',
+  'home.contract.pathPlaceholder': 'Path to the mod folder…',
+  'home.contract.create': 'Create project',
+  'home.contract.open': 'Open',
+
   // Scenario browser (W6, dev-only; MOCK_LIVE_ONBOARDING_MANDATE §11)
   'scenarios.title': 'Scenario browser',
   'scenarios.hint': 'Dev-only. Every entry is a stable deep-link: the URL is reproducible in E2E and screenshots. Entries run real fixtures and real store actions.',

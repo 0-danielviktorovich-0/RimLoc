@@ -12,10 +12,48 @@
   import { mockProjects } from '../../mock/wizard';
   import { MOCK_ERROR_CODE, MOCK_ERROR_RAW } from '../../../lib/mock/data';
   import { demoProject } from '../../demo/demoProject.svelte';
+  import { project } from '../../stores/project.svelte';
+  import { clientInstance, ClientConfigError, type ResolvedClientMode } from '../../client/instance.svelte';
+  import type { ProjectSummaryDto } from '../../client/types';
 
   // NB: renamed to homeState — a prop named `state` makes the compiler parse
   // `$state(...)` as a legacy store subscription of that prop.
   let { state: homeState = 'ready' }: { state?: SimpleState } = $props();
+
+  // W-built: mode resolution at Home mount gates the whole fixture surface.
+  // 'tauri' = real client (contract panel); 'mock' = explicit demo/dev;
+  // 'none' = honest configuration error, no silent mock.
+  const mode: ResolvedClientMode = clientInstance.resolveMode();
+  let contractBusy = $state(false);
+  let contractError = $state<string | null>(null);
+  let modPath = $state('');
+  let contractRecents = $state<ProjectSummaryDto[]>([]);
+
+  async function createFromPath() {
+    if (contractBusy || !modPath.trim()) return;
+    contractBusy = true;
+    contractError = null;
+    const ok = await project.createContractProject(modPath.trim());
+    contractBusy = false;
+    if (ok) router.navigate('workspace');
+    else contractError = project.contractError;
+  }
+
+  async function openContract(id: string) {
+    if (contractBusy) return;
+    contractBusy = true;
+    contractError = null;
+    const ok = await project.openContractProject(id);
+    contractBusy = false;
+    if (ok) router.navigate('workspace');
+    else contractError = project.contractError;
+  }
+
+  $effect(() => {
+    if (mode !== 'tauri') return;
+    // Recent real projects for the returning-user view.
+    project.listContractProjects().then((list) => (contractRecents = list));
+  });
 
   const firstRun = $derived(ui.homeMode === 'first-run');
   const noMods = $derived(ui.homeMode === 'no-mods');
@@ -73,10 +111,12 @@
       <p class="nomods-title">{t('home.nomods.title')}</p>
       <p class="nomods-desc">{t('home.nomods.desc')}</p>
       <div class="nomods-actions">
-        <button type="button" class="btn btn-primary" data-testid="home.nomods.demo" onclick={openDemo}>
-          <Icon name="play" size={14} />
-          {t('home.nomods.demo')}
-        </button>
+        {#if mode !== 'tauri'}
+          <button type="button" class="btn btn-primary" data-testid="home.nomods.demo" onclick={openDemo}>
+            <Icon name="play" size={14} />
+            {t('home.nomods.demo')}
+          </button>
+        {/if}
         <button type="button" class="btn" data-testid="home.nomods.folder" onclick={() => (folderNote = true)}>
           <Icon name="folder-open" size={14} />
           {t('home.nomods.folder')}
@@ -136,9 +176,52 @@
       </div>
     {/if}
 
+    {#if mode === 'tauri'}
+      <!-- W-built: the REAL client panel — create/open a project from a mod
+           folder. Demo fixtures stay behind the explicit dev/demo mode. -->
+      <section class="demo contract" aria-labelledby="contract-heading" data-testid="home.contract">
+        <div class="demo-main">
+          <span class="demo-name">{t('home.contract.title')}</span>
+          <span class="demo-desc">{t('home.contract.desc')}</span>
+        </div>
+        <div class="contract-form">
+          <input
+            class="contract-path"
+            type="text"
+            placeholder={t('home.contract.pathPlaceholder')}
+            aria-label={t('home.contract.pathPlaceholder')}
+            data-testid="home.contract.path"
+            bind:value={modPath}
+            disabled={contractBusy}
+          />
+          <button type="button" class="btn btn-primary" data-testid="home.contract.create" disabled={contractBusy || !modPath.trim()} onclick={createFromPath}>
+            <Icon name="file-plus" size={14} />
+            {t('home.contract.create')}
+          </button>
+        </div>
+        {#if contractError}
+          <p class="nomods-note" role="alert" data-testid="home.contract.error">{contractError}</p>
+        {/if}
+        {#if contractRecents.length > 0}
+          <ul class="contract-recents">
+            {#each contractRecents as rp (rp.project_id)}
+              <li class="contract-recent">
+                <span class="mono">{rp.name}</span>
+                <button type="button" class="btn" data-testid={`home.contract.open.${rp.project_id}`} disabled={contractBusy} onclick={() => openContract(rp.project_id)}>
+                  {t('home.contract.open')}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </section>
+    {/if}
+
+    {#if mode !== 'tauri'}
     <!-- W6 demo project (mandate §6/§8): bundled, synthetic, RimLoc-owned and
          clearly marked so it is never confused with a real recent project.
-         State is isolated and deterministically resettable. -->
+         State is isolated and deterministically resettable. Demo surface is
+         explicit dev/demo only — hidden in the real (tauri) mode. -->
     <section class="demo" aria-labelledby="demo-heading" data-testid="home.demo">
       <div class="demo-main">
         <span class="demo-name">
@@ -159,6 +242,7 @@
         {/if}
       </div>
     </section>
+    {/if}
 
     {#if !firstRun && mockProjects.length > 0}
       <section class="recent" aria-labelledby="recent-heading" data-testid="home.recent">
@@ -412,6 +496,43 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+  }
+
+  .contract-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .contract-path {
+    flex: 1;
+    min-width: 220px;
+    min-height: var(--control-h);
+    padding: 0 var(--space-2);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-fg);
+  }
+
+  .contract-recents {
+    list-style: none;
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .contract-recent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    font-size: var(--text-dense-size);
   }
 
   .nomods-note {

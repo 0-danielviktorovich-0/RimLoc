@@ -7,6 +7,12 @@ import type { Entry, EntryKind, EntryStatus, Origin, SaveState } from '../mock/t
 // W6/034: a project generation change aborts any in-flight mock build — a
 // fresh project must not inherit a done/running build from the old one.
 import { buildState } from '../mock/buildState.svelte';
+// W-built: in 'tauri' mode the project lifecycle flows through the REAL
+// RimLocClient (contract v1); the fixture dataset below is the explicit
+// demo/dev mock (devMode) and is never a silent production default.
+import { clientInstance } from '../client/instance.svelte';
+import { ContractClientError, type RimLocClient } from '../client/client';
+import type { ProjectSnapshotDto, ProjectSummaryDto } from '../client/types';
 
 export type StatusCounts = Record<EntryStatus, number>;
 
@@ -40,6 +46,21 @@ class ProjectStore {
   /** Provenance filter from the filter popover ('any' = no filter). */
   originFilter = $state<Origin | 'any'>('any');
   search = $state('');
+
+  // --- W-built: contract binding (mode 'tauri') ---
+  /** 'fixture' = the explicit demo/dev mock dataset; 'contract' = real
+   * snapshots through RimLocClient. Chosen by the client mode, never silently. */
+  source = $state<'fixture' | 'contract'>('fixture');
+  contractProjectId = $state<string | null>(null);
+  contractRevision = $state(0);
+  contractEpoch = $state(0);
+  contractError = $state<string | null>(null);
+  private rimloc: RimLocClient | null = null;
+
+  private cc(): RimLocClient {
+    if (!this.rimloc) this.rimloc = clientInstance.getClient();
+    return this.rimloc;
+  }
 
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
   /**
@@ -166,6 +187,11 @@ class ProjectStore {
   private commit(id: string, text: string, epoch: number): Promise<boolean> {
     const gen = this.generation;
     this.saveStates[id] = 'saving';
+    if (this.source === 'contract') {
+      // Real client path (027 semantics still hold: the guided action
+      // resolves only when the save verifiably landed).
+      return this.commitContract(id, text, gen, epoch);
+    }
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         this.pendingCommits.delete(id);
@@ -233,6 +259,126 @@ class ProjectStore {
     return Object.values(this.saveStates).some((s) => s === 'dirty' || s === 'saving');
   }
 
+  // ---------------------------------------------------------------- contract (W-built)
+
+  /** Map a canonical contract snapshot onto the workspace Entry shape.
+   * Source fields are read-only by contract; the target comes from the
+   * translation rows of the active target locale (folder contract "Russian"). */
+  private applyContractSnapshot(snap: ProjectSnapshotDto) {
+    const mapped: Entry[] = [];
+    const byId = new Map<string, Entry>();
+    for (const e of snap.project.entries) {
+      const id = `${e.id.kind}:${e.id.key}`;
+      const kind: EntryKind = e.id.kind === 'DefInjected' || e.id.kind === 'TKey' ? e.id.kind : 'Keyed';
+      const entry: Entry = {
+        id,
+        kind,
+        key: e.id.key,
+        source: e.text,
+        target: '',
+        status: 'untranslated',
+        file: '',
+        line: 0
+      };
+      mapped.push(entry);
+      byId.set(id, entry);
+    }
+    for (const t of snap.project.translations) {
+      const id = `${t.source_id.kind}:${t.source_id.key}`;
+      const entry = byId.get(id);
+      if (!entry) continue;
+      if (!(t.locale ?? '').toLowerCase().startsWith('ru')) continue; // active target slice
+      entry.target = t.text ?? '';
+      if (t.completeness === 'todo') entry.status = 'todo';
+      else if (t.text !== null && t.text !== '') entry.status = 'translated';
+      if (t.review === 'needs_review') entry.status = 'pending_review';
+    }
+    this.flushAll();
+    this.cancelPendingCommits();
+    this.timers.clear();
+    this.generation += 1;
+    this.draftEpoch = {};
+    this.entries = mapped;
+    this.drafts = {};
+    this.saveStates = {};
+    this.selectedId = null;
+    this.filters = [];
+    this.category = 'all';
+    this.originFilter = 'any';
+    this.search = '';
+    this.isDemo = false;
+    this.contractProjectId = snap.project_id;
+    this.contractRevision = snap.revision;
+    this.contractEpoch = snap.session_epoch;
+    this.contractError = null;
+    this.projectName = snap.project_id;
+    this.source = 'contract';
+  }
+
+  /** Create a project from a real mod folder (mode 'tauri'). */
+  async createContractProject(modRoot: string): Promise<boolean> {
+    try {
+      const snap = await this.cc().createProject(modRoot);
+      this.applyContractSnapshot(snap);
+      return true;
+    } catch (e) {
+      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      return false;
+    }
+  }
+
+  /** Reopen a project by id (restart journey: fresh launch → open). */
+  async openContractProject(projectId: string): Promise<boolean> {
+    try {
+      const snap = await this.cc().openProject(projectId);
+      this.applyContractSnapshot(snap);
+      return true;
+    } catch (e) {
+      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      return false;
+    }
+  }
+
+  /** Recent projects for the contract-mode Home (real list). */
+  async listContractProjects(): Promise<ProjectSummaryDto[]> {
+    try {
+      return await this.cc().listProjects();
+    } catch {
+      return [];
+    }
+  }
+
+  /** Contract save: one typed set_translation intent with lost-update guards.
+   * On failure the dirty draft is KEPT (persist-before-ack) and false returns. */
+  private async commitContract(id: string, text: string, gen: number, epoch: number): Promise<boolean> {
+    if (gen !== this.generation || this.draftEpoch[id] !== epoch) return false;
+    const [kind, ...rest] = id.split(':');
+    const projectId = this.contractProjectId;
+    if (!projectId) return false;
+    try {
+      const resp = await this.cc().applyIntents({
+        projectId,
+        expectedRevision: this.contractRevision,
+        sessionEpoch: this.contractEpoch,
+        intents: [{ entry: { kind, key: rest.join(':') }, locale: 'Russian', action: 'set_translation', text }]
+      });
+      this.contractRevision = resp.revision;
+      const entry = this.byId(id);
+      if (entry) {
+        entry.target = text;
+        if (entry.status === 'untranslated' || entry.status === 'todo') entry.status = 'translated';
+        entry.editedAt = new Date().toISOString();
+      }
+      return resp.applied > 0;
+    } catch (e) {
+      // persist-before-ack: the draft stays staged for retry; the typed
+      // error is surfaced without ever clearing the caller's text.
+      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.saveStates[id] = 'dirty';
+      return false;
+    }
+  }
+
   /** Context panel actions. */
   setStatus(id: string, status: EntryStatus) {
     const entry = this.byId(id);
@@ -278,6 +424,10 @@ class ProjectStore {
     this.originFilter = 'any';
     this.search = '';
     this.isDemo = false;
+    this.source = 'fixture';
+    this.contractProjectId = null;
+    this.contractRevision = 0;
+    this.contractEpoch = 0;
   }
 }
 

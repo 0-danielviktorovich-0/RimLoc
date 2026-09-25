@@ -244,6 +244,9 @@ class MultiTargetStore {
    */
   setActive(locale: string) {
     if (!this.targets[locale] || locale === this.activeLocale) return;
+    // W-built: contract v1 is single-target (the snapshot's own locale) —
+    // the fixture multi-target switcher is demo/dev-only.
+    if (project.source === 'contract') return;
     // W6/034: a commit staged for the OLD locale must never land after the
     // active dataset was substituted.
     project.cancelPendingCommits();
