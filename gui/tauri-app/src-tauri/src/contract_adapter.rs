@@ -102,7 +102,10 @@ pub fn project_create(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.create(std::path::Path::new(&request.mod_root.path), request.target_version.as_deref())
+    manager.create(
+        std::path::Path::new(&request.mod_root.path),
+        request.target_version.as_deref(),
+    )
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -118,9 +121,7 @@ pub fn project_open(
 }
 
 #[tauri::command(rename_all = "snake_case")]
-pub fn project_list(
-    state: State<'_, ContractState>,
-) -> Vec<ProjectSummary> {
+pub fn project_list(state: State<'_, ContractState>) -> Vec<ProjectSummary> {
     let manager = state
         .manager
         .lock()
@@ -185,8 +186,10 @@ pub fn project_validate(
     project_id: String,
     session_epoch: u64,
     locale: Option<String>,
-) -> Result<rimloc_services::contract::ValidateProjectResponse, rimloc_services::contract::ContractError>
-{
+) -> Result<
+    rimloc_services::contract::ValidateProjectResponse,
+    rimloc_services::contract::ContractError,
+> {
     let manager = state
         .manager
         .lock()
@@ -204,13 +207,20 @@ pub fn project_export(
     session_epoch: u64,
     out_dir: String,
     locale: String,
-) -> Result<rimloc_services::contract::ExportProjectResponse, rimloc_services::contract::ContractError>
-{
+) -> Result<
+    rimloc_services::contract::ExportProjectResponse,
+    rimloc_services::contract::ContractError,
+> {
     let manager = state
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.export_project(&project_id, session_epoch, std::path::Path::new(&out_dir), &locale)
+    manager.export_project(
+        &project_id,
+        session_epoch,
+        std::path::Path::new(&out_dir),
+        &locale,
+    )
 }
 
 /// `project_diagnose` — sanitized support bundle over the project's last
@@ -253,9 +263,19 @@ mod tests {
             .capabilities
             .supported
             .iter()
-            .map(|c| serde_json::to_value(c).unwrap().as_str().unwrap().to_string())
+            .map(|c| {
+                serde_json::to_value(c)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string()
+            })
             .collect();
-        for cap in ["project_validate", "project_build_export", "project_diagnostics_bundle"] {
+        for cap in [
+            "project_validate",
+            "project_build_export",
+            "project_diagnostics_bundle",
+        ] {
             assert!(
                 supported.iter().any(|s| s == cap),
                 "capability {cap} must be supported"
