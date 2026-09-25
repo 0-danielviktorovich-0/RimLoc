@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { flushSync } from 'svelte';
 import App from '../src/App.svelte';
 import { i18n } from '../src/i18n/store.svelte';
-import { cleanupMounted, exists, goto, mountCmp } from './helpers';
+import { project } from '../src/lib/stores/project.svelte';
+import { cleanupMounted, exists, goto, mountCmp, q } from './helpers';
 
 describe('global mock badge', () => {
   it('is visible on every route of the app shell', () => {
@@ -45,5 +46,40 @@ describe('global mock badge', () => {
     flushSync();
     expect(exists('diagnostics.demoBadge')).toBe(false);
     expect(exists('mock-badge')).toBe(true);
+  });
+});
+
+// Audit P1-4 regression: the global chip must tell the DATA-MODE truth. On a
+// real contract project the mock badge was a lie ("Демо-данные") while real
+// edits persisted into the managed project — the chip becomes the honest
+// live badge; fixture/demo data keeps the mock badge.
+describe('data-mode badge truth', () => {
+  it('shows the live badge on a contract project, never the mock one', async () => {
+    const ok = await project.createContractProject('/mods/Demo');
+    expect(ok).toBe(true);
+    expect(project.source).toBe('contract');
+
+    for (const route of ['home', 'workspace', 'build', 'diagnostics']) {
+      goto(`#/${route}`);
+      mountCmp(App);
+      expect(exists('live-badge'), `live badge on #/${route}`).toBe(true);
+      expect(exists('mock-badge'), `no mock badge on #/${route}`).toBe(false);
+      cleanupMounted();
+    }
+    goto('#/workspace');
+    // The locale state persists across tests in this file (an earlier test
+    // switched to EN) — pin RU for the label assertion.
+    i18n.setLocale('ru');
+    mountCmp(App);
+    expect(q('live-badge').textContent).toContain('Живой проект');
+    cleanupMounted();
+  });
+
+  it('keeps the mock badge on fixture/demo data', () => {
+    project.reset(); // back to the explicit fixture dataset
+    goto('#/home');
+    mountCmp(App);
+    expect(exists('mock-badge')).toBe(true);
+    expect(exists('live-badge')).toBe(false);
   });
 });

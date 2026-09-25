@@ -30,6 +30,12 @@ export const en: Record<string, string> = {
   'capability.unsupported.title': 'Not available yet: the operation waits for its contract slice. {reason}',
   'capability.unsupported.note': 'Contract build is not wired yet (backend slice in progress). {reason}',
 
+  // Honest live counterpart of the mock badge (audit P1-4): on a contract
+  // project the global chip shows the live mode instead of claiming demo data.
+  'livebadge.label': 'Live project (contract)',
+  'livebadge.title':
+    'A real project is open over the RimLocClient → Tauri contract: the data is not demo fixtures and edits persist into the managed project.',
+
   // Bundled demo project (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
   'home.demo.mark': 'synthetic demo project',
