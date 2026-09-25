@@ -122,7 +122,10 @@ impl ProjectSessionManager {
         let path = self
             .managed_root
             .join(format!("{project_id}.{MANAGED_EXT}"));
-        if !crate::util::is_within(&path, &self.managed_root) {
+        // ALLOW-direction check (P2-7): this check GRANTS access to the
+        // computed path, so containment must be proven — an unresolvable
+        // path refuses, it is not treated as contained.
+        if !crate::util::is_within_allow(&path, &self.managed_root) {
             return Err(ContractError::new(
                 ContractErrorCode::GuardOutputDenied,
                 "managed project path escapes the managed root".to_string(),
