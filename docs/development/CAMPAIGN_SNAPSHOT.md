@@ -30,7 +30,7 @@ Astra. Ресурсная дисциплина: только /tmp/rimloc-cargo-s
 CARGO_INCREMENTAL=0), без самодельных локов/вторых таргетов/избыточных полных прогонов.
 
 ## Verify at session start (изменчивое)
-- Последний main-срез: `860a3cf` (freeze + GUI + binding waves: контракт, адаптер, дерегистрация, UI-клиент) → **проверь `git rev-parse HEAD`**.
+- Последний main-срез: `ee9967b` (+ built-gui: сторы на RimLocClient, frontendDist v2, intents с полным структурным id) → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
@@ -78,8 +78,10 @@ Backend заморожен на интегрированном HEAD `4b4d8c3` (�
   27 привилегированных под RIMLOC_LEGACY_COMMANDS=1, enforcement strict-xor (38+8);
   frontend client types/transport/mock/client (version-gate, epoch/revision, typed ошибки).
   Кросс-ревью J: merge-ready после 2×P2 (dump_schemas/get_profile → privileged).
-- **Сторы ещё на моках**: переключение сторов на RimLocClient и frontendDist →
-  frontend-v2 — следующая волна (built-GUI journey).
+- **Сторы на RimLocClient** (`ee9967b`): tauri/mock/none транспорт-гейт, intents с полным
+  структурным id, prod fixture-утечки загейтены, действия проксируются/честно отказаны.
+  Кросс-ревью L: merge-ready. Built-бинарник собирается и стабилен; интерактивный
+  клик-путь по WKWebView — владелец (5 шагов в /tmp/rimloc-built-journey-handoff.md).
 
 ## GUI LANE — интегрирована в main (25.09)
 - **W6 сдан** (`codex/w6-demo`, 8 коммитов `51ada48..eb9fe40`): глобальный Demo-бейдж
