@@ -8,7 +8,6 @@ pub use rimloc_validate::ValidationMessage;
 pub mod build;
 pub mod canonical_bridge;
 pub mod contract;
-pub mod session;
 pub mod eligibility_engine;
 pub mod export;
 pub mod extras;
@@ -27,6 +26,7 @@ pub mod plugins_yaml;
 pub mod project;
 pub mod project_store;
 pub mod scan;
+pub mod session;
 mod util;
 pub mod validate;
 
@@ -41,7 +41,6 @@ pub use contract::{
     TranslationIntent, UnsupportedCapability, UI_CONTRACT_VERSION,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
-pub use session::ProjectSessionManager;
 pub use export::export_po_with_tm;
 pub use extras::annotate::{
     annotate as annotate_apply, annotate_dry_run_plan, AnnotateFilePlan, AnnotatePlan,
@@ -72,6 +71,7 @@ pub use scan::{
     scan_units_auto, scan_units_effective, scan_units_with_defs, scan_units_with_defs_and_dict,
     scan_units_with_defs_and_fields, AutoDefsContext,
 };
+pub use session::ProjectSessionManager;
 pub use util::canonical_match_key;
 pub use util::canonical_view;
 pub use util::is_source_for_lang_dir;
