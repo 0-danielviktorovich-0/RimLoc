@@ -288,17 +288,38 @@ enum Step {
     Cur,
 }
 
-/// True when `candidate` is equal to or nested inside `root` after real
-/// symlink resolution (sibling traversals and symlink aliases included).
-/// Fail-closed: an unresolvable candidate is treated as contained, so that
-/// write guards reject instead of guessing.
+/// DENY-direction containment: true when `candidate` is equal to or nested
+/// inside `root` after real symlink resolution (sibling traversals and
+/// symlink aliases included). For write guards of the shape
+/// `if is_within(target, protected_root) { reject }`: an UNRESOLVABLE
+/// candidate is treated as contained, so the guard rejects instead of
+/// guessing. Never use this to GRANT access — for allow-direction checks
+/// use [`is_within_allow`].
 pub fn is_within(candidate: &std::path::Path, root: &std::path::Path) -> bool {
     if root.as_os_str().is_empty() {
         return false;
     }
     match (canonical_view(candidate), canonical_view(root)) {
         (Ok(c), Ok(r)) => c.starts_with(&r),
+        // Deny orientation: unresolvable → treated as contained → reject.
         _ => true,
+    }
+}
+
+/// ALLOW-direction containment: true ONLY when containment is proven —
+/// both paths resolve through the real symlink view AND `candidate` is
+/// equal to or nested inside `root`. Any canonicalization failure is a
+/// plain `false`: an allow decision must never rest on an unverified
+/// path. For deny-direction guards (`reject when contained`) use
+/// [`is_within`], whose failure mode rejects.
+pub fn is_within_allow(candidate: &std::path::Path, root: &std::path::Path) -> bool {
+    if root.as_os_str().is_empty() {
+        return false;
+    }
+    match (canonical_view(candidate), canonical_view(root)) {
+        (Ok(c), Ok(r)) => c.starts_with(&r),
+        // Allow orientation: containment must be PROVEN.
+        _ => false,
     }
 }
 
@@ -488,5 +509,39 @@ mod tests {
         assert!(!is_within(Path::new(r"D:\new"), &source));
 
         std::fs::remove_dir_all(&base).ok();
+    }
+
+    /// P2-7: the two containment orientations fail in OPPOSITE, honest
+    /// directions. An unresolvable candidate (an existing FILE used as an
+    /// intermediate component → ENOTDIR) is deny-safe for `is_within`
+    /// (treated as contained, so write guards reject) and refuses to grant
+    /// for `is_within_allow`. Proven containment behaves identically in
+    /// both.
+    #[test]
+    fn deny_and_allow_orientations_fail_opposite_ways_on_unresolvable() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let source = tmp.path().join("source");
+        let blocker = tmp.path().join("blocker");
+        std::fs::create_dir_all(&source).expect("dirs");
+        std::fs::write(&blocker, b"not a dir").expect("file");
+
+        // Unresolvable candidate: `blocker/child` cannot exist.
+        let unresolvable = blocker.join("child");
+        assert!(is_within(&unresolvable, &source), "deny-safe: reject");
+        assert!(!is_within_allow(&unresolvable, &source), "no grant");
+
+        // Proven containment agrees in both orientations.
+        let nested = source.join("Defs").join("x.xml");
+        assert!(is_within(&nested, &source));
+        assert!(is_within_allow(&nested, &source));
+
+        // Proven escape agrees in both orientations.
+        let sibling = tmp.path().join("elsewhere");
+        assert!(!is_within(&sibling, &source));
+        assert!(!is_within_allow(&sibling, &source));
+
+        // Empty root denies in both orientations (nothing to contain).
+        assert!(!is_within(&nested, Path::new("")));
+        assert!(!is_within_allow(&nested, Path::new("")));
     }
 }
