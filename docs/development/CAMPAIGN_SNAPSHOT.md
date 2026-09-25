@@ -29,6 +29,13 @@ cherry-picks, гейт-чеки и роутинг задач. Те же 5 GLM-в
 Astra. Ресурсная дисциплина: только /tmp/rimloc-cargo-serial.py (flock, общий target,
 CARGO_INCREMENTAL=0), без самодельных локов/вторых таргетов/избыточных полных прогонов.
 
+**Постоянная цель (уточнение владельца, 26.09)**: ОДНА постоянная цель покрывает весь
+исходный PLAN/MANDATE/SNAPSHOT до evidence-backed local RC/live acceptance — ночные
+смены лишь окна исполнения. В конце окна (09:55) цель ставится на ПАУЗУ с чекпоинтом
+(воркеры остановлены, WIP на диске, mailbox не перезаряжается) — не помечается
+завершённой; следующее авторизованное окно возобновляет ту же цель. Единственный
+критерий завершения кампании — evidence-backed local RC/live acceptance.
+
 ## Verify at session start (изменчивое)
 - Последний main-срез: `ee9967b` (+ built-gui: сторы на RimLocClient, frontendDist v2, intents с полным структурным id) → **проверь `git rev-parse HEAD`**.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
