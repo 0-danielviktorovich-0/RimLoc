@@ -323,6 +323,45 @@ pub fn is_within_allow(candidate: &std::path::Path, root: &std::path::Path) -> b
     }
 }
 
+/// Strict XML 1.0 character verification of every `.xml` file under
+/// `root` (H3 tripwire): the lenient scanner can silently accept raw
+/// control characters that a strict parser — and the game — would reject
+/// with a whole-file drop. Export verification runs this AFTER the write;
+/// a failure here is a writer bug and must fail the operation, never ship.
+pub fn verify_xml_char_validity(root: &std::path::Path) -> crate::Result<()> {
+    fn walk(dir: &std::path::Path) -> crate::Result<()> {
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                walk(&path)?;
+                continue;
+            }
+            let is_xml = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.eq_ignore_ascii_case("xml"))
+                .unwrap_or(false);
+            if !is_xml {
+                continue;
+            }
+            let bytes = std::fs::read(&path)?;
+            let text = std::str::from_utf8(&bytes).map_err(|e| {
+                color_eyre::eyre::eyre!("written XML `{}` is not valid UTF-8: {e}", path.display())
+            })?;
+            if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) {
+                color_eyre::eyre::bail!(
+                    "written XML `{}` contains raw control character U+{:04X} that is invalid in XML 1.0",
+                    path.display(),
+                    bad as u32
+                );
+            }
+        }
+        Ok(())
+    }
+    walk(root)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -543,5 +582,37 @@ mod tests {
         // Empty root denies in both orientations (nothing to contain).
         assert!(!is_within(&nested, Path::new("")));
         assert!(!is_within_allow(&nested, Path::new("")));
+    }
+
+    /// H3 tripwire: the strict byte-level XML 1.0 char check catches raw
+    /// control characters the lenient scanner misses.
+    #[test]
+    fn verify_xml_char_validity_catches_raw_control_bytes() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let good = tmp.path().join("good.xml");
+        std::fs::write(
+            &good,
+            "<?xml version=\"1.0\"?><LanguageData><K>ок</K></LanguageData>",
+        )
+        .expect("write good");
+        verify_xml_char_validity(tmp.path()).expect("clean tree passes");
+
+        let nested = tmp.path().join("DefInjected").join("ThingDef");
+        std::fs::create_dir_all(&nested).expect("dirs");
+        let bad = nested.join("C.xml");
+        std::fs::write(
+            &bad,
+            "<LanguageData><C.label>плохой\u{7}текст</C.label></LanguageData>",
+        )
+        .expect("write bad");
+        let err = verify_xml_char_validity(tmp.path()).expect_err("control char caught");
+        assert!(
+            err.to_string().contains("U+0007"),
+            "names the offending codepoint: {err}"
+        );
+        // The non-xml sibling is never inspected.
+        std::fs::remove_file(&bad).expect("cleanup");
+        std::fs::write(nested.join("notes.txt"), "raw \u{0c} bytes fine here").expect("write txt");
+        verify_xml_char_validity(tmp.path()).expect("only .xml files are verified");
     }
 }

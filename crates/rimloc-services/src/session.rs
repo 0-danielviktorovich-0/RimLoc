@@ -810,6 +810,58 @@ impl ProjectSessionManager {
         }
         log.end_stage("guard");
 
+        // H3 pre-write content check: texts that are about to be written
+        // (target-locale translations + the display name landing in
+        // About.xml) must be XML 1.0-clean — control characters cannot be
+        // escaped, so they are a typed refusal, never a raw write.
+        let mut poisoned: Vec<String> = Vec::new();
+        for t in &st.project.translations {
+            if t.locale != locale {
+                continue;
+            }
+            let Some(text) = t.text.as_deref() else {
+                continue;
+            };
+            let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) else {
+                continue;
+            };
+            let identity = st
+                .project
+                .entries
+                .iter()
+                .find(|e| e.id == t.source_id)
+                .map(|e| e.id.display_identity())
+                .unwrap_or_else(|| t.source_id.key.clone());
+            if poisoned.len() < 5 {
+                poisoned.push(format!("{identity} (U+{:04X})", bad as u32));
+            } else {
+                poisoned.push("…".to_string());
+                break;
+            }
+        }
+        if !poisoned.is_empty() {
+            log.error_message("write", "XML-invalid control characters in export content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: translation text contains characters that are invalid in XML 1.0 — the game would drop the whole file. Fix the entries: {}",
+                    poisoned.join(", ")
+                ),
+            ));
+        }
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(&st.display_name) {
+            log.error_message("write", "XML-invalid control character in display name");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
+                    bad as u32
+                ),
+            ));
+        }
+
         let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
         log.begin_stage("write");
         let report = crate::project::write_rimworld_translation(
@@ -862,6 +914,18 @@ impl ProjectSessionManager {
                 ),
             ));
         }
+        // H3 strict tripwire: the lenient scanner above can silently
+        // accept XML a strict parser (and the game) would reject. Every
+        // written file is byte-verified against the XML 1.0 char set; a
+        // failure here is a writer bug and fails the export.
+        crate::util::verify_xml_char_validity(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("strict XML verification of the written output failed: {e}"),
+            )
+        })?;
         log.counter("reparse", "keys", units.len() as u64);
         log.end_stage("reparse");
         log.finish();
@@ -1153,6 +1217,21 @@ fn apply_intent(
         IntentAction::MarkTodo => Some("TODO".to_string()),
         IntentAction::ClearTranslation => None,
     };
+    // H3: control characters cannot be escaped in XML 1.0 (even numeric
+    // references to them are invalid) — a text carrying one would be
+    // written raw and RimWorld would drop the whole file. Refused at
+    // emission, per intent.
+    if let Some(text) = &text {
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) {
+            return Err((
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "text contains a character that is invalid in XML 1.0 (U+{:04X}); remove the control character",
+                    bad as u32
+                ),
+            ));
+        }
+    }
     let completeness = match intent.action {
         IntentAction::SetTranslation => Completeness::Translated,
         IntentAction::MarkTodo => Completeness::Todo,
@@ -2057,6 +2136,82 @@ mod tests {
         let refreshed = mgr.refresh(&snap.project_id).unwrap();
         assert!(!refreshed.dirty);
         assert_eq!(refreshed.revision, refreshed.acked_revision);
+    }
+
+    /// H3: control characters are invalid in XML 1.0 and cannot be
+    /// escaped — a text carrying one is refused at emission (per-intent
+    /// skip, nothing persists).
+    #[test]
+    fn control_char_text_is_refused_at_emission() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let mut intent = set_text("Dup.label", "ThingDef", "плохой\u{7}текст\u{c}конец");
+        let res = mgr
+            .apply(&req(&snap.project_id, 1, 1, vec![intent.clone()]))
+            .unwrap();
+        assert_eq!(res.applied, 0);
+        assert_eq!(res.skipped.len(), 1);
+        assert_eq!(res.skipped[0].code, ContractErrorCode::ContractViolation);
+        assert_eq!(res.revision, 1, "nothing acked");
+
+        // The clean twin of the same batch applies normally (the guard is
+        // character-scoped, not batch-scoped).
+        intent.text = Some("чистый текст".into());
+        let res = mgr
+            .apply(&req(&snap.project_id, 1, 1, vec![intent]))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+    }
+
+    /// H3 export refusal: a poisoned durable record (legacy state written
+    /// before the emission guard) cannot export — the failure names the
+    /// identity and no directory is written.
+    #[test]
+    fn export_refuses_control_char_content_and_writes_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // Poison the durable record directly (simulating pre-guard state):
+        // a translation carrying raw 0x07.
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let mut loaded = load_project_with_meta(&path).unwrap();
+        let entry_id = loaded.project.entries[0].id.clone();
+        loaded.project.translations.push(Translation {
+            source_id: entry_id,
+            locale: "Russian".into(),
+            text: Some("плохой\u{7}текст".into()),
+            completeness: Completeness::Translated,
+            review: rimloc_domain::canonical::Review::None,
+            validation: ValidationState::Ok,
+            lifecycle: rimloc_domain::canonical::Lifecycle::Active,
+            origin: Origin::Imported,
+            notes: String::new(),
+            source_changed: None,
+        });
+        save_project_with_meta(&loaded.project, &loaded.meta, &path).unwrap();
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        let out = dir.path().join("never-export");
+        let err = mgr2
+            .export_project(
+                &reopened.project_id,
+                reopened.session_epoch,
+                &out,
+                "Russian",
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation, "{err}");
+        assert!(err.message.contains("invalid in XML 1.0"), "{err}");
+        assert!(!out.exists(), "nothing was written");
     }
 
     fn snap_of_create(mgr: &ProjectSessionManager, mod_root: &Path) -> ProjectId {
