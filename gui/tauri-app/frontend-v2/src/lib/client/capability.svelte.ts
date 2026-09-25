@@ -19,12 +19,14 @@ import type { CapabilityReportDto } from './types';
 import { ContractClientError } from './client';
 import { clientInstance } from './instance.svelte';
 
-/** Capability names as the Rust side reports them (contract.rs
- * capability_report). Keep in sync with crates/rimloc-services. */
-export const CAP_VALIDATE = 'validate_via_contract';
-export const CAP_BUILD = 'build_export';
+/** Capability names as the Rust side reports them on the wire
+ *  (contract.rs capability_report: the supported list serializes the
+ *  Capability enum snake_case; unsupported entries are plain strings).
+ *  Keep in sync with crates/rimloc-services. */
+export const CAP_VALIDATE = 'project_validate';
+export const CAP_BUILD = 'project_build_export';
 export const CAP_SOURCE_ACTIONS = 'source_inspector_actions';
-export const CAP_DIAGNOSTICS = 'diagnostics_bundle';
+export const CAP_DIAGNOSTICS = 'project_diagnostics_bundle';
 export const CAP_PROVIDERS = 'providers_settings';
 
 class CapabilityStore {

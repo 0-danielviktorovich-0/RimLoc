@@ -30,6 +30,37 @@ export const en: Record<string, string> = {
   'capability.unsupported.title': 'Not available yet: the operation waits for its contract slice. {reason}',
   'capability.unsupported.note': 'Contract build is not wired yet (backend slice in progress). {reason}',
 
+  // Live contract operations (final night wave): validate/export/diagnose
+  // over the RimLocClient. Finding messages are backend data (EN); chips
+  // and labels are localized.
+  'contractops.running': 'Running…',
+  'contractops.validate.title': 'Validation (contract)',
+  'contractops.validate.desc': 'Read-only over the trusted session state; the project is never mutated. Errors fail the operation and become the diagnostics target.',
+  'contractops.validate.run': 'Validate project',
+  'contractops.validate.rerun': 'Validate again',
+  'contractops.validate.status.succeeded': 'No errors found',
+  'contractops.validate.status.failed': 'Errors found',
+  'contractops.counts.errors': 'Errors',
+  'contractops.counts.warnings': 'Warnings',
+  'contractops.counts.info': 'Info',
+  'contractops.findings.empty': 'No findings.',
+  'contractops.export.title': 'Build translation (contract)',
+  'contractops.export.desc': 'Isolated output into a directory YOU choose (never the source tree — the backend guard refuses it). Language folder: {locale}.',
+  'contractops.export.outdir': 'Output directory',
+  'contractops.export.run': 'Build and write',
+  'contractops.export.done': 'Written and reparse-verified.',
+  'contractops.export.files': 'Files',
+  'contractops.export.reparsed': 'Keys re-parsed',
+  'contractops.export.skipped': 'Skipped unknown types ({count})',
+  'contractops.diagnose.title': 'Diagnostics (contract)',
+  'contractops.diagnose.desc': 'Sanitized bundle over the last failed operation: operation id, cause, affected entries. The folder stays outside the source tree.',
+  'contractops.diagnose.outdir': 'Bundle directory',
+  'contractops.diagnose.run': 'Collect bundle',
+  'contractops.diagnose.done': 'Bundle collected.',
+  'contractops.diagnose.operation': 'Operation',
+  'contractops.diagnose.redacted': 'Redacted',
+  'contractops.diagnose.excluded': 'Excluded',
+
   // Honest live counterpart of the mock badge (audit P1-4): on a contract
   // project the global chip shows the live mode instead of claiming demo data.
   'livebadge.label': 'Live project (contract)',

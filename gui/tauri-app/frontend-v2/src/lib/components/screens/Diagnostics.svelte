@@ -14,6 +14,7 @@
   import BundlePreview from './BundlePreview.svelte';
   import { registry } from '../../languages/registry';
   import { capability, CAP_DIAGNOSTICS } from '../../client/capability.svelte';
+  import ContractOps from './ContractOps.svelte';
 
   let copied = $state(false);
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
@@ -28,6 +29,11 @@
     diagBlocked
       ? t('capability.unsupported.title', { reason: capability.reason(CAP_DIAGNOSTICS) ?? '' })
       : undefined
+  );
+  // Final night wave: the bundle capability is SUPPORTED now — a live
+  // contract project collects a real sanitized bundle instead of the replay.
+  const liveContractDiagnostics = $derived(
+    project.source === 'contract' && capability.state(CAP_DIAGNOSTICS) === true
   );
 
   $effect(() => () => {
@@ -69,6 +75,11 @@
   </h1>
   <p class="subtitle">{t('diagnostics.subtitle')}</p>
 
+  <!-- Final night wave: live contract projects collect a REAL sanitized
+       bundle; the controlled-failure replay below stays fixture-only. -->
+  {#if liveContractDiagnostics}
+    <ContractOps kind="diagnostics" />
+  {:else}
   <!-- 1. Controlled known failure (W4.5/W5 item 5: acceptance is a reviewer
        naming the cause, not "a bundle was generated"). -->
   <article class="card" data-testid="diagnostics.scenario">
@@ -214,6 +225,7 @@
       </div>
       <p class="text">{t('diagnostics.copyAiNote')}</p>
     </article>
+  {/if}
   {/if}
 </section>
 

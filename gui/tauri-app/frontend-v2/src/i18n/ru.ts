@@ -30,6 +30,37 @@ export const ru: Record<string, string> = {
   'capability.unsupported.title': 'Пока недоступно: операция ждёт контракт-слайс. {reason}',
   'capability.unsupported.note': 'Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}',
 
+  // Живые контрактные операции (финальная волна): validate/export/diagnose
+  // поверх RimLocClient. Сообщения находок — данные бэкенда (EN), чипы и
+  // подписи локализованы.
+  'contractops.running': 'Выполняется…',
+  'contractops.validate.title': 'Валидация (контракт)',
+  'contractops.validate.desc': 'Чтение над доверенным состоянием проекта; проект не меняется. Ошибки делают операцию неуспешной и становятся целью диагностики.',
+  'contractops.validate.run': 'Проверить проект',
+  'contractops.validate.rerun': 'Проверить снова',
+  'contractops.validate.status.succeeded': 'Замечаний-ошибок нет',
+  'contractops.validate.status.failed': 'Есть ошибки',
+  'contractops.counts.errors': 'Ошибки',
+  'contractops.counts.warnings': 'Предупреждения',
+  'contractops.counts.info': 'Инфо',
+  'contractops.findings.empty': 'Замечаний нет.',
+  'contractops.export.title': 'Сборка перевода (контракт)',
+  'contractops.export.desc': 'Изолированный вывод в указанную вами папку (не в дерево исходников — guard бэкенда отклонит). Язык папки: {locale}.',
+  'contractops.export.outdir': 'Папка вывода',
+  'contractops.export.run': 'Собрать и записать',
+  'contractops.export.done': 'Записано и перепроверено сканером.',
+  'contractops.export.files': 'Файлов',
+  'contractops.export.reparsed': 'Ключей перепарсено',
+  'contractops.export.skipped': 'Пропущены неизвестные типы ({count})',
+  'contractops.diagnose.title': 'Диагностика (контракт)',
+  'contractops.diagnose.desc': 'Санитизированный бандл по последней неуспешной операции: id операции, причина, затронутые записи. Папка — вне дерева исходников.',
+  'contractops.diagnose.outdir': 'Папка бандла',
+  'contractops.diagnose.run': 'Собрать бандл',
+  'contractops.diagnose.done': 'Бандл собран.',
+  'contractops.diagnose.operation': 'Операция',
+  'contractops.diagnose.redacted': 'Санитизировано',
+  'contractops.diagnose.excluded': 'Исключено',
+
   // Честный live-вариант бейджа (аудит P1-4): на контракт-проекте глобальный
   // чип показывает живой режим вместо «демо-данные».
   'livebadge.label': 'Живой проект (контракт)',
