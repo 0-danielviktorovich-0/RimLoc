@@ -37,4 +37,12 @@ regex = "1"
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
 
+[lib]
+name = "rimloc_gui_lib"
+path = "src/lib.rs"
+
+[dev-dependencies]
+tauri = { version = "2", features = ["test"] }
+tempfile = "3"
+
  

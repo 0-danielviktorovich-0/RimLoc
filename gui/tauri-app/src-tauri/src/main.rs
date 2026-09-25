@@ -1,6 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console on Windows in release
 
 use chrono::Utc;
+use rimloc_gui_lib::contract_adapter;
+
+// Enforcement + smoke tests (dead since 7fc196f restored as compile-wired).
+#[cfg(test)]
+mod tests;
 use color_eyre::eyre::WrapErr;
 use rimloc_domain::{ScanUnit, SCHEMA_VERSION};
 use rimloc_export_csv as export_csv;
@@ -2985,45 +2990,95 @@ fn find_version_directory(base: &Path, requested: &str) -> Option<PathBuf> {
     None
 }
 
+/// Commands registered in the PRODUCTION live entry: contract + SAFE
+/// read-only legacy extras. Mirrors the live generate_handler! list below —
+/// src/tests.rs binds this constant to the enforcement assertions.
+pub const LIVE_COMMANDS: &[&str] = &[
+    // binding contract (wave 2)
+    "contract_handshake",
+    "project_create",
+    "project_open",
+    "project_list",
+    "project_snapshot",
+    "project_apply_intents",
+    "project_refresh",
+    "project_cancel_next",
+    // safe read-only legacy extras
+    "get_app_info",
+    "scan_mod",
+    "scan_strings_gui",
+    "validate_mod",
+    "validate_po_gui",
+    "xml_health",
+    "coverage_gui",
+    "diff_xml_cmd",
+    "dump_schemas",
+    "get_profile",
+    "get_cli_i18n",
+    "pick_directory",
+    "load_tm",
+];
+
+/// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
+/// loading, provider invocation, raw diagnostics): registered ONLY when
+/// RIMLOC_LEGACY_COMMANDS=1 — never in the production live entry
+/// (lead decision 033 #4). The legacy 3-file UI degrades without these;
+/// accepted (the new GUI journey is the product target).
+pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
+    "apply_translation",
+    "save_text_via_dialog",
+    "open_path",
+    "load_plugin_cmd",
+    "list_plugins_cmd",
+    "log_message",
+    "set_debug_options",
+    "get_diagnostics",
+    "collect_diagnostics_via_dialog",
+    "simulate_error",
+    "simulate_panic",
+    "morph_cmd",
+    "learn_defs",
+    "learn_keyed_cmd",
+    "learn_patches_cmd",
+    "init_lang_cmd",
+    "lang_update_cmd",
+    "annotate_cmd",
+    "export_po",
+    "import_po",
+    "build_mod",
+    "export_xliff_gui",
+    "import_xliff_gui",
+    "merge_keyed_gui",
+    "get_log_info",
+];
+
+fn legacy_commands_enabled() -> bool {
+    std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
+}
+
 fn main() {
     let _ = color_eyre::install();
-    tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
-        .setup(|app| {
-            // Prepare log + profile paths
-            let base = app
-                .path()
-                .app_data_dir()
-                .unwrap_or_else(|_| dirs::data_dir().unwrap_or_else(std::env::temp_dir));
-            // keep our fixed app folder name for consistency across OSes
-            let logs_dir = base.join("RimLoc").join("logs");
-            let log_path = logs_dir.join("gui.log");
-            let profile_path = logs_dir.join("profile.jsonl");
-            let _ = std::fs::create_dir_all(&logs_dir);
-            // Write a startup banner
-            if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&log_path) {
-                let _ = writeln!(f, "=== RimLoc GUI start v{} ===", env!("CARGO_PKG_VERSION"));
-            }
-            // ensure profile file exists
-            let _ = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(&profile_path);
-            app.manage(LogState {
-                path: log_path.clone(),
-            });
-            let main_window = app.get_webview_window("main");
-            if let Some(window) = main_window {
-                let _ = window.emit(
-                    "app-info",
-                    AppInfo {
-                        version: env!("CARGO_PKG_VERSION").to_string(),
-                    },
-                );
-            }
-            Ok(())
-        })
-        .invoke_handler(tauri::generate_handler![
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init());
+    let builder = match contract_adapter::attach_contract(builder, contract_adapter::default_managed_root()) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("contract managed root init failed: {e}");
+            return;
+        }
+    };
+    let builder = if legacy_commands_enabled() {
+        builder.invoke_handler(tauri::generate_handler![
+            // binding contract (always registered)
+            rimloc_gui_lib::contract_adapter::contract_handshake,
+            rimloc_gui_lib::contract_adapter::project_create,
+            rimloc_gui_lib::contract_adapter::project_open,
+            rimloc_gui_lib::contract_adapter::project_list,
+            rimloc_gui_lib::contract_adapter::project_snapshot,
+            rimloc_gui_lib::contract_adapter::project_apply_intents,
+            rimloc_gui_lib::contract_adapter::project_refresh,
+            rimloc_gui_lib::contract_adapter::project_cancel_next,
+            // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
             learn_defs,
@@ -3063,6 +3118,68 @@ fn main() {
             import_xliff_gui,
             merge_keyed_gui
         ])
+    } else {
+        builder.invoke_handler(tauri::generate_handler![
+            // binding contract (wave 2) — production live entry
+            rimloc_gui_lib::contract_adapter::contract_handshake,
+            rimloc_gui_lib::contract_adapter::project_create,
+            rimloc_gui_lib::contract_adapter::project_open,
+            rimloc_gui_lib::contract_adapter::project_list,
+            rimloc_gui_lib::contract_adapter::project_snapshot,
+            rimloc_gui_lib::contract_adapter::project_apply_intents,
+            rimloc_gui_lib::contract_adapter::project_refresh,
+            rimloc_gui_lib::contract_adapter::project_cancel_next,
+            // safe read-only legacy extras (until contract analogs land)
+            get_app_info,
+            scan_mod,
+            scan_strings_gui,
+            validate_mod,
+            validate_po_gui,
+            xml_health,
+            coverage_gui,
+            diff_xml_cmd,
+            dump_schemas,
+            get_profile,
+            get_cli_i18n,
+            pick_directory,
+            load_tm
+        ])
+    };
+    builder
+        .setup(|app| {
+            // Prepare log + profile paths
+            let base = app
+                .path()
+                .app_data_dir()
+                .unwrap_or_else(|_| dirs::data_dir().unwrap_or_else(std::env::temp_dir));
+            // keep our fixed app folder name for consistency across OSes
+            let logs_dir = base.join("RimLoc").join("logs");
+            let log_path = logs_dir.join("gui.log");
+            let profile_path = logs_dir.join("profile.jsonl");
+            let _ = std::fs::create_dir_all(&logs_dir);
+            // Write a startup banner
+            if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&log_path) {
+                let _ = writeln!(f, "=== RimLoc GUI start v{} ===", env!("CARGO_PKG_VERSION"));
+            }
+            // ensure profile file exists
+            let _ = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&profile_path);
+            app.manage(LogState {
+                path: log_path.clone(),
+            });
+            let main_window = app.get_webview_window("main");
+            if let Some(window) = main_window {
+                let _ = window.emit(
+                    "app-info",
+                    AppInfo {
+                        version: env!("CARGO_PKG_VERSION").to_string(),
+                    },
+                );
+            }
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
