@@ -8,6 +8,7 @@ pub use rimloc_validate::ValidationMessage;
 pub mod build;
 pub mod canonical_bridge;
 pub mod contract;
+pub mod session;
 pub mod eligibility_engine;
 pub mod export;
 pub mod extras;
@@ -41,6 +42,7 @@ pub use contract::{
     TranslationIntent, UnsupportedCapability, UI_CONTRACT_VERSION,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
+pub use session::ProjectSessionManager;
 pub use export::export_po_with_tm;
 pub use extras::annotate::{
     annotate as annotate_apply, annotate_dry_run_plan, AnnotateFilePlan, AnnotatePlan,
