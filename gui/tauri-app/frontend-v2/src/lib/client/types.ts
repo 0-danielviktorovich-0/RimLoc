@@ -121,6 +121,51 @@ export interface ProjectSummaryDto {
   target_version?: string;
 }
 
+// --- validate / export / diagnose (final night wave; mirrors contract.rs
+// ValidationFinding / ValidateProjectResponse / ExportProjectResponse /
+// DiagnoseResponse) ---
+/** One typed validation finding; `id` carries the FULL structural identity
+ *  when the finding resolves to an inventory entry. */
+export interface ValidationFindingDto {
+  id?: SourceEntryIdDto;
+  severity: 'error' | 'warning' | 'info';
+  kind: string;
+  key: string;
+  path: string;
+  line?: number;
+  message: string;
+}
+
+export interface ValidateProjectResponseDto {
+  job_id: string;
+  /** 'failed' only when error-severity findings exist (026 semantics). */
+  status: 'succeeded' | 'failed';
+  findings: ValidationFindingDto[];
+  error_count: number;
+  warning_count: number;
+  info_count: number;
+  locale?: string;
+}
+
+export interface ExportProjectResponseDto {
+  job_id: string;
+  out_dir: { path: string };
+  files_written: number;
+  /** Keys the EXISTING scanner re-parsed from the written output. */
+  reparsed_keys: number;
+  skipped_unknown_type: string[];
+}
+
+export interface DiagnoseResponseDto {
+  job_id: string;
+  /** Sanitized bundle directory (outside the read-only source tree). */
+  bundle_dir: { path: string };
+  operation_id: string;
+  files: string[];
+  redacted_count: number;
+  excluded_count: number;
+}
+
 // --- handshake / capabilities ---
 export interface UnsupportedCapabilityDto {
   capability: string;
@@ -147,4 +192,7 @@ export type ContractMethod =
   | 'project_snapshot'
   | 'project_apply_intents'
   | 'project_refresh'
-  | 'project_cancel_next';
+  | 'project_cancel_next'
+  | 'project_validate'
+  | 'project_export'
+  | 'project_diagnose';

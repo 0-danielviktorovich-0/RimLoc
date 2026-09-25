@@ -13,7 +13,8 @@ import type {
   ContractMethod,
   ProjectSnapshotDto,
   ProjectSummaryDto,
-  TranslationIntentDto
+  TranslationIntentDto,
+  ValidateProjectResponseDto
 } from './types';
 import type { ContractMethodMap, RimLocTransport } from './transport';
 
@@ -43,6 +44,8 @@ interface MockProject {
   name: string;
   revision: number;
   session_epoch: number;
+  /** Source root the project was created from (export guard tooth). */
+  mod_root?: string;
   entries: { id: { kind: string; key: string; def_type?: string }, text: string }[];
   translations: MockTranslation[];
 }
@@ -152,16 +155,18 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
                 'project_snapshot',
                 'project_apply_intents',
                 'project_refresh',
-                'job_cancel'
+                'job_cancel',
+                // Final night wave: mirrors the Rust capability_report
+                // (contract.rs) — validate/build/diagnostics are supported.
+                'project_validate',
+                'project_build_export',
+                'project_diagnostics_bundle'
               ],
               unsupported: [
                 // Audit P2-1: names mirror the Rust capability_report
                 // (crates/rimloc-services/src/contract.rs) EXACTLY — the
                 // stale *_via_contract aliases are gone.
-                { capability: 'validate_via_contract', reason: 'next slice: typed validation findings over the contract' },
-                { capability: 'build_export', reason: 'next slice: safe build/export behind the source-tree guard + jobs' },
                 { capability: 'source_inspector_actions', reason: 'next slice: identity-based source actions with size-limited reads' },
-                { capability: 'diagnostics_bundle', reason: 'next slice: sanitized support bundle surfaced over the contract' },
                 { capability: 'providers_settings', reason: 'later slice: provider/settings parity' },
                 { capability: 'entry_create_delete', reason: 'intents cover translation edits only; identities come from rescan' },
                 { capability: 'import_pack', reason: 'existing-pack import is not exposed as a contract intent yet' }
@@ -174,6 +179,7 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
           const req = (params as { request: CreateProjectRequestDto }).request;
           const id = `mock-${String(state.projects.length + 1).padStart(4, '0')}`;
           const p = mkProject(id, req.mod_root.path.split('/').pop() ?? id);
+          p.mod_root = req.mod_root.path; // export-guard tooth
           state.projects.push(p);
           const snap: ProjectSnapshotDto = snapshotOf(p);
           return snap as ContractMethodMap[M]['result'];
@@ -255,6 +261,126 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         }
         case 'project_cancel_next': {
           return true as ContractMethodMap[M]['result'];
+        }
+        // --- final night wave: validate/build/diagnostics -------------------
+        // Scenario rules mirror the real semantics: findings derive from the
+        // STORED state (never invented), refusals are typed errors.
+        case 'project_validate': {
+          const { project_id, session_epoch, locale } = params as {
+            project_id: string;
+            session_epoch: number;
+            locale?: string;
+          };
+          const p = find(project_id);
+          if (p.session_epoch !== session_epoch) {
+            throw new MockContractError('stale_epoch', 'a newer session opened this project', {
+              expected: p.session_epoch
+            });
+          }
+          const findings: ValidateProjectResponseDto['findings'] = [];
+          for (const t of p.translations) {
+            if (!(t.locale ?? '').toLowerCase().startsWith('ru')) continue;
+            const entry = p.entries.find(
+              (e) => e.id.kind === t.id.kind && e.id.key === t.id.key && (e.id.def_type ?? undefined) === (t.id.def_type ?? undefined)
+            );
+            const identity = { id: t.id, path: entry ? `Defs/${t.id.kind}.xml` : '' };
+            if (t.validation && typeof t.validation === 'object') {
+              findings.push({
+                ...identity,
+                severity: 'error',
+                kind: 'placeholder',
+                key: t.id.key,
+                message: t.validation.issues[0] ?? 'validation issue'
+              });
+            } else if (t.completeness === 'untranslated') {
+              findings.push({
+                ...identity,
+                severity: 'warning',
+                kind: 'untranslated',
+                key: t.id.key,
+                message: `not translated yet (${locale ?? 'all locales'})`
+              });
+            } else if (t.completeness === 'todo') {
+              findings.push({
+                ...identity,
+                severity: 'warning',
+                kind: 'todo',
+                key: t.id.key,
+                message: 'literal TODO placeholder counts as missing'
+              });
+            }
+          }
+          const error_count = findings.filter((f) => f.severity === 'error').length;
+          const warning_count = findings.filter((f) => f.severity === 'warning').length;
+          const info_count = findings.filter((f) => f.severity === 'info').length;
+          p.revision += 0; // validate NEVER mutates (read-only)
+          return {
+            job_id: `mock-validate-${p.revision}`,
+            status: error_count > 0 ? 'failed' : 'succeeded',
+            findings,
+            error_count,
+            warning_count,
+            info_count,
+            ...(locale ? { locale } : {})
+          } as ContractMethodMap[M]['result'];
+        }
+        case 'project_export': {
+          const { project_id, session_epoch, out_dir, locale } = params as {
+            project_id: string;
+            session_epoch: number;
+            out_dir: string;
+            locale: string;
+          };
+          const p = find(project_id);
+          if (p.session_epoch !== session_epoch) {
+            throw new MockContractError('stale_epoch', 'a newer session opened this project', {
+              expected: p.session_epoch
+            });
+          }
+          // Mirror of the strict language-folder form guard (session P1-2):
+          // the locale joins output paths, so 'ru' must be refused — the
+          // caller sends the FOLDER form ('Russian').
+          if (!/^[A-Z][A-Za-z]*$/.test(locale)) {
+            throw new MockContractError(
+              'contract_violation',
+              `locale \`${locale}\` is not the strict language-folder form (e.g. Russian)`
+            );
+          }
+          // Mirror of the source-tree guard: an out dir inside the project's
+          // own mod root is a denied self-overwrite (guard_output_denied).
+          if (p.mod_root && (out_dir === p.mod_root || out_dir.startsWith(p.mod_root + '/'))) {
+            throw new MockContractError(
+              'guard_output_denied',
+              'the output directory sits inside the read-only source tree'
+            );
+          }
+          const written = p.translations.filter(
+            (t) => t.text !== null && t.text !== '' && (t.locale ?? '').toLowerCase().startsWith('ru')
+          );
+          // Writer tooth: DefInjected entries with an UNKNOWN def type are
+          // skipped and surfaced for review (delta risk #5).
+          const skipped_unknown_type = p.entries
+            .filter((e) => e.id.kind === 'DefInjected' && !e.id.def_type)
+            .map((e) => e.id.key);
+          return {
+            job_id: `mock-export-${p.revision}`,
+            out_dir: { path: out_dir },
+            files_written: written.length,
+            reparsed_keys: written.length, // reparse parity before ack
+            skipped_unknown_type
+          } as ContractMethodMap[M]['result'];
+        }
+        case 'project_diagnose': {
+          const { project_id, out_dir } = params as { project_id: string; out_dir: string };
+          const p = find(project_id);
+          return {
+            job_id: `mock-diagnose-${p.revision}`,
+            bundle_dir: { path: `${out_dir}/rimloc-bundle-${p.revision}` },
+            operation_id: `mock-op-${p.revision}`,
+            files: ['operation.json', 'affected.json', 'environment.json'],
+            redacted_count: 3,
+            excluded_count: 1
+          } as ContractMethodMap[M]['result'];
         }
       }
     },
