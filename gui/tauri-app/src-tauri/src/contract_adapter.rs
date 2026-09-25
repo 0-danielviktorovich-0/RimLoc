@@ -80,7 +80,7 @@ pub struct ContractHandshake {
     pub capabilities: CapabilityReport,
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn contract_handshake() -> ContractHandshake {
     ContractHandshake {
         ui_contract_version: ui_contract_version(),
@@ -88,7 +88,7 @@ pub fn contract_handshake() -> ContractHandshake {
     }
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_create(
     state: State<'_, ContractState>,
     request: CreateProjectRequest,
@@ -100,7 +100,7 @@ pub fn project_create(
     manager.create(std::path::Path::new(&request.mod_root.path), request.target_version.as_deref())
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_open(
     state: State<'_, ContractState>,
     project_id: String,
@@ -112,7 +112,7 @@ pub fn project_open(
     manager.open(&project_id)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_list(
     state: State<'_, ContractState>,
 ) -> Vec<ProjectSummary> {
@@ -123,7 +123,7 @@ pub fn project_list(
     manager.list()
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_snapshot(
     state: State<'_, ContractState>,
     project_id: String,
@@ -135,7 +135,7 @@ pub fn project_snapshot(
     manager.snapshot(&project_id)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_apply_intents(
     state: State<'_, ContractState>,
     request: ApplyIntentsRequest,
@@ -147,7 +147,7 @@ pub fn project_apply_intents(
     manager.apply(&request)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_refresh(
     state: State<'_, ContractState>,
     project_id: String,
@@ -159,7 +159,7 @@ pub fn project_refresh(
     manager.refresh(&project_id)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn project_cancel_next(
     state: State<'_, ContractState>,
     project_id: String,
