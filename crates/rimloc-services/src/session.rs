@@ -183,6 +183,7 @@ impl ProjectSessionManager {
             project_id: Some(project_id.clone()),
             revision: Some(revision),
             display_name: Some(display_name.clone()),
+            source_root: envelope_source_root(mod_root),
         };
         save_project_with_meta(&project, &meta, &path).map_err(|e| {
             ContractError::new(ContractErrorCode::SaveFailed, format!("create failed: {e}"))
@@ -242,10 +243,20 @@ impl ProjectSessionManager {
                     .unwrap_or_else(|| project_id.to_string());
                 let target_version = loaded.project.context.target_version.clone();
                 let revision = loaded.meta.revision.unwrap_or(1);
+                // H5: the source root is durable envelope state — a
+                // restart-recovered session restores it, keeping the
+                // read-only source-tree guard functional. Legacy envelopes
+                // (pre-H5) have none and stay fail-closed.
+                let mod_root = loaded
+                    .meta
+                    .source_root
+                    .clone()
+                    .map(PathBuf::from)
+                    .unwrap_or_default();
                 let state = SessionState {
                     path: path.clone(),
                     display_name,
-                    mod_root: PathBuf::new(),
+                    mod_root,
                     target_version,
                     epoch: 1,
                     revision,
@@ -372,6 +383,12 @@ impl ProjectSessionManager {
             if let Some(name) = loaded.meta.display_name {
                 st.display_name = name;
             }
+            // H5: refresh adopts the durable source root when the envelope
+            // carries one (a legacy envelope leaves the current value —
+            // never erase a known root because a field is absent).
+            if let Some(src) = &loaded.meta.source_root {
+                st.mod_root = PathBuf::from(src);
+            }
             st.target_version = target_version;
         }
         let st = arc.lock().expect("project session poisoned");
@@ -480,6 +497,9 @@ impl ProjectSessionManager {
             project_id: Some(req.project_id.clone()),
             revision: Some(new_revision),
             display_name: Some(st.display_name.clone()),
+            // The source root is durable state: every save re-asserts it so
+            // a restart-recovered session keeps the export guard (H5).
+            source_root: envelope_source_root(&st.mod_root),
         };
         // External-change check: the managed file must look exactly like the
         // last state this session saw on disk.
@@ -1037,6 +1057,17 @@ fn disk_hash(path: &Path) -> Option<String> {
     std::fs::read(path).ok().map(|b| sha256_hex(&b))
 }
 
+/// Durable envelope form of the session's source root (H5): `None` when the
+/// session has no root (recovered legacy state) so the envelope keeps
+/// honestly saying "no source context", never an empty-string root.
+fn envelope_source_root(mod_root: &Path) -> Option<String> {
+    if mod_root.as_os_str().is_empty() {
+        None
+    } else {
+        Some(mod_root.to_string_lossy().into_owned())
+    }
+}
+
 fn schema_or_internal(err: &color_eyre::Report, project_id: &str) -> ContractError {
     let text = err.to_string();
     if text.contains("schema_version") {
@@ -1396,6 +1427,7 @@ mod tests {
             project_id: Some(snap.project_id.clone()),
             revision: Some(9),
             display_name: Some("external".into()),
+            source_root: Some(mod_root.to_string_lossy().into_owned()),
         };
         save_project_with_meta(&external, &meta, &path).unwrap();
 
@@ -1873,11 +1905,11 @@ mod tests {
         assert!(loaded.project.translations.is_empty());
     }
 
-    /// P2-2 fail-closed: a restart-recovered session has no source root in
-    /// the envelope — export and diagnose refuse instead of running with
-    /// the read-only source-tree guard disabled.
+    /// P2-2/H5 fail-closed: a LEGACY envelope (pre-source_root field) has
+    /// no durable source root — export and diagnose refuse instead of
+    /// running with the read-only source-tree guard disabled.
     #[test]
-    fn recovered_session_without_source_root_refuses_export_and_diagnose() {
+    fn legacy_envelope_without_source_root_refuses_export_and_diagnose() {
         let dir = tempfile::tempdir().unwrap();
         let mod_root = dir.path().join("mod");
         two_types_mod(&mod_root);
@@ -1885,7 +1917,17 @@ mod tests {
         let mgr = ProjectSessionManager::new(&managed).unwrap();
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
 
-        // "Restart": a fresh manager recovers from disk (no mod_root).
+        // Rewrite the record as a LEGACY envelope: no source_root field.
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let loaded = load_project_with_meta(&path).unwrap();
+        let legacy = ProjectEnvelopeMeta {
+            project_id: loaded.meta.project_id.clone(),
+            revision: loaded.meta.revision,
+            display_name: loaded.meta.display_name.clone(),
+            source_root: None,
+        };
+        save_project_with_meta(&loaded.project, &legacy, &path).unwrap();
+
         let mgr2 = ProjectSessionManager::new(&managed).unwrap();
         let reopened = mgr2.open(&snap.project_id).unwrap();
 
@@ -1905,6 +1947,56 @@ mod tests {
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
         assert!(!dir.path().join("bundle").exists());
+    }
+
+    /// H5: the source root is durable envelope state — create → save →
+    /// reopen (fresh manager = app restart) restores the full context, so
+    /// export works and the close-open-build cycle completes. refresh
+    /// keeps the root as well.
+    #[test]
+    fn reopen_restores_source_root_and_export_works() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "вещь")],
+        ))
+        .unwrap();
+
+        // "App restart": a fresh manager recovers from the envelope.
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+
+        let out = dir.path().join("export-out");
+        let res = mgr2
+            .export_project(
+                &reopened.project_id,
+                reopened.session_epoch,
+                &out,
+                "Russian",
+            )
+            .unwrap();
+        assert_eq!(res.reparsed_keys, 1);
+        assert!(out
+            .join("Languages/Russian/DefInjected/ThingDef/Dup.xml")
+            .exists());
+
+        // refresh adopts the durable root: export still works afterwards.
+        let refreshed = mgr2.refresh(&reopened.project_id).unwrap();
+        let out2 = dir.path().join("export-out-2");
+        mgr2.export_project(
+            &refreshed.project_id,
+            refreshed.session_epoch,
+            &out2,
+            "Russian",
+        )
+        .unwrap();
     }
 
     /// The managed-projects root is a protected write target too: export
