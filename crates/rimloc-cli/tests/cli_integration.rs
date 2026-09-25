@@ -2239,3 +2239,46 @@ fn cli_lang_dir_symlink_escape_is_refused() {
         "nothing was written through the symlink"
     );
 }
+
+/// H2: a LoadFolders.xml `<li>` entry pointing OUTSIDE the mod root is a
+/// typed scan refusal — the external content (LEAKED key) is never read.
+#[test]
+fn cli_scan_refuses_loadfolders_entry_outside_root() {
+    let tmp = tempfile::tempdir().unwrap();
+    let outside = tmp.path().join("outside");
+    fs::create_dir_all(outside.join("Languages/English/Keyed")).unwrap();
+    fs::write(
+        outside.join("Languages/English/Keyed/S.xml"),
+        "<LanguageData><SecretKey.Outside>LEAKED-KEYED-TEXT-77</SecretKey.Outside></LanguageData>",
+    )
+    .unwrap();
+
+    let escmod = tmp.path().join("escmod");
+    fs::create_dir_all(escmod.join("1.6")).unwrap();
+    fs::write(
+        escmod.join("LoadFolders.xml"),
+        format!(
+            "<loadFolders><v1.6><li>1.6</li><li>{}</li></v1.6></loadFolders>",
+            outside.display()
+        ),
+    )
+    .unwrap();
+
+    bin_cmd()
+        .args(["scan", "--root"])
+        .arg(&escmod)
+        .args(["--game-version", "1.6", "--format", "json"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("outside the mod root"));
+
+    // The leaked key never reached the output.
+    let output = bin_cmd()
+        .args(["scan", "--root"])
+        .arg(&escmod)
+        .args(["--game-version", "1.6", "--format", "json"])
+        .output()
+        .unwrap();
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(!out.contains("LEAKED-KEYED-TEXT-77"));
+}
