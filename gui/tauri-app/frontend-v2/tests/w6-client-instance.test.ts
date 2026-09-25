@@ -2,7 +2,11 @@
 // present, mock only with an explicit dev/demo opt-in, and an honest
 // configuration error otherwise (never a silent mock default).
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
+import { flushSync } from 'svelte';
+import App from '../src/App.svelte';
 import { clientInstance, ClientConfigError } from '../src/lib/client/instance.svelte';
+import { click, cleanupMounted, exists, goto, mountCmp } from './helpers';
+import { project } from '../src/lib/stores/project.svelte';
 import { devMode } from '../src/lib/stores/devmode.svelte';
 
 describe('client instance mode gate', () => {
@@ -33,5 +37,40 @@ describe('client instance mode gate', () => {
     };
     const client = clientInstance.getClient();
     expect(client.mode).toBe('tauri');
+  });
+});
+
+describe('tauri mode Home surface (P2-a: no fixture leak)', () => {
+  it('fixture cards are hidden and the live panel is shown', async () => {
+    cleanupMounted();
+    devMode.disable();
+    (window as unknown as { __TAURI_INTERNALS__?: { invoke: unknown } }).__TAURI_INTERNALS__ = {
+      invoke: vi.fn()
+    };
+    window.location.hash = '#/home';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    mountCmp(App);
+    flushSync();
+    expect(exists('home.entry-new')).toBe(false);
+    expect(exists('home.entry-existing')).toBe(false);
+    expect(exists('home.demo')).toBe(false);
+    expect(exists('home.contract.create')).toBe(true);
+    expect(exists('mock-badge')).toBe(true); // data-mode honesty stays
+    cleanupMounted();
+    delete (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
+  });
+
+  it('fixture workspace shows the not-persisted notice (P2-a)', async () => {
+    cleanupMounted();
+    devMode.disable();
+    project.reset(); // plain fixture dataset
+    window.location.hash = '#/workspace';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    mountCmp(App);
+    flushSync();
+    // The overview lives on the Project tab.
+    click('tabs.project');
+    expect(exists('workspace.project.fixture')).toBe(true);
+    expect(exists('workspace.project.live')).toBe(false);
   });
 });

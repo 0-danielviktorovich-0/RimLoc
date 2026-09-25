@@ -1098,6 +1098,8 @@ export const ru: Record<string, string> = {
   'home.contract.pathPlaceholder': 'Путь к папке мода…',
   'home.contract.create': 'Создать проект',
   'home.contract.open': 'Открыть',
+  'workspace.project.fixtureDataset': 'Демо-датасет — правки не сохраняются',
+  'workspace.project.live': 'живой контракт',
 
   // Браузер сценариев (W6, только dev; MOCK_LIVE_ONBOARDING_MANDATE §11)
   'scenarios.title': 'Браузер сценариев',

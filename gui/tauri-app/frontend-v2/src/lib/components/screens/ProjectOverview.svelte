@@ -92,6 +92,13 @@
     <span class="name mono" data-testid="workspace.project.name">{project.projectName}</span>
     <span class="chip">{t('workspace.project.contentKind')}</span>
     <span class="chip mono" data-testid="workspace.project.rwversion">{RW_VERSION}</span>
+    {#if project.source === 'contract'}
+      <span class="chip live-chip" data-testid="workspace.project.live">{t('workspace.project.live')}</span>
+    {:else}
+      <span class="chip fixture-chip" data-testid="workspace.project.fixture" title={t('workspace.project.fixtureNote')}>
+        {t('workspace.project.fixtureDataset')}
+      </span>
+    {/if}
   </div>
 
   <!-- Lifecycle CTA (§15/§21): what remains → what next. -->
@@ -351,6 +358,21 @@
 
   .cta-row {
     display: flex;
+  }
+
+  .fixture-chip,
+  .live-chip {
+    border-style: dashed;
+  }
+
+  .fixture-chip {
+    color: var(--color-warning);
+    border-color: var(--color-warning);
+  }
+
+  .live-chip {
+    color: var(--color-success);
+    border-color: var(--color-success);
   }
 
   .block {
