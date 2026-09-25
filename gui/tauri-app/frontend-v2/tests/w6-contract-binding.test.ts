@@ -279,4 +279,54 @@ describe('typed failure recovery (Pass A P1-1/P1-2)', () => {
     // The draft is still there for the retry.
     expect(project.drafts[id]).toBe('banner-draft');
   });
+
+  it('a refused apply never advances the acked base (verifier P2)', async () => {
+    await project.createContractProject('/mods/Demo');
+    // Model a DIRTY session (save_failed semantics, session.rs): the
+    // backend revision runs ahead of the last acked revision.
+    project.contractRevision = 9;
+    project.contractAckedRevision = 1;
+
+    const id = 'Keyed:MessageLetterArrived';
+    (
+      project as unknown as {
+        contractIdentities: Record<string, { kind: string; key: string }>;
+      }
+    ).contractIdentities[id] = { kind: 'Keyed', key: 'GhostEntry' };
+
+    // A dirty backend echoes its own AHEAD revision on an Ok-but-refused
+    // apply (session.rs applied: 0 → revision: st.revision, no bump).
+    const orig = RimLocClient.prototype.applyIntents;
+    const spy = vi
+      .spyOn(RimLocClient.prototype, 'applyIntents')
+      .mockImplementation(async function (this: unknown, args) {
+        const res = await orig.call(this, args);
+        return { ...res, revision: 9 };
+      });
+    try {
+      project.setDraft(id, 'правка при dirty');
+      expect(await project.flushDraft(id)).toBe(false);
+      // The base did NOT adopt the echoed ahead revision.
+      expect(project.contractAckedRevision).toBe(1);
+      expect(project.contractRevision).toBe(9);
+    } finally {
+      spy.mockRestore();
+    }
+
+    // The retry (fixed text, valid identity) still sends the ACKED base —
+    // no stale_revision deadlock — and passes.
+    (
+      project as unknown as {
+        contractIdentities: Record<string, { kind: string; key: string }>;
+      }
+    ).contractIdentities[id] = { kind: 'Keyed', key: 'MessageLetterArrived' };
+    const retrySpy = vi.spyOn(RimLocClient.prototype, 'applyIntents');
+    try {
+      expect(await project.flushDraft(id)).toBe(true);
+      expect(retrySpy.mock.calls[0][0].expectedRevision).toBe(1);
+      expect(project.contractAckedRevision).toBe(2);
+    } finally {
+      retrySpy.mockRestore();
+    }
+  });
 });

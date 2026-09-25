@@ -467,13 +467,14 @@ class ProjectStore {
         sessionEpoch: this.contractEpoch,
         intents: [{ entry: entryId, locale: 'Russian', action: 'set_translation', text }]
       });
-      this.contractRevision = resp.revision;
-      this.contractAckedRevision = resp.revision; // apply acks to disk
-      // Review P2: an Ok response may still carry applied: 0 with the intent
-      // refused in `skipped` (NoTranslate finality, unknown identity) — the
-      // backend stored NOTHING, so the local view must not claim a human
-      // edit, computed validation, or the target text.
+      // Verifier P2: the acked base moves ONLY on an applied response. On a
+      // refusal (applied: 0) a dirty backend echoes its own AHEAD revision
+      // (session.rs: "no revision bump, no save, no dirty state" — yet
+      // st.revision may already lead acked after a save_failed); adopting
+      // it as the base would deadlock every later apply on stale_revision.
       if (resp.applied > 0) {
+        this.contractRevision = resp.revision; // apply acks to disk
+        this.contractAckedRevision = resp.revision;
         const entry = this.byId(id);
         if (entry) {
           entry.target = text;
@@ -561,12 +562,12 @@ class ProjectStore {
         sessionEpoch: this.contractEpoch,
         intents: [{ entry: entryId, locale: 'Russian', action, text }]
       });
-      this.contractRevision = resp.revision;
-      this.contractAckedRevision = resp.revision;
-      // Audit P1-1: any applied intent re-stamps provenance as Human
-      // (session.rs semantics) — keep the local view in step until the
-      // next snapshot/refresh.
+      // Verifier P2: the acked base moves ONLY on an applied response (see
+      // commitContract) — a refusal must never adopt the backend's ahead
+      // revision as the base.
       if (resp.applied > 0) {
+        this.contractRevision = resp.revision;
+        this.contractAckedRevision = resp.revision;
         const entry = this.byId(id);
         if (entry) entry.origin = 'human';
       } else {
