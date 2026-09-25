@@ -14,6 +14,7 @@
   // completed run can count as completed anywhere.
   import { buildState } from '../../mock/buildState.svelte';
   import { capability, CAP_BUILD } from '../../client/capability.svelte';
+  import ContractOps from './ContractOps.svelte';
 
   const INSTALL_MS = 900;
 
@@ -32,6 +33,11 @@
     buildBlocked
       ? t('capability.unsupported.title', { reason: capability.reason(CAP_BUILD) ?? '' })
       : undefined
+  );
+  // Final night wave: when the capability IS supported, a contract project
+  // renders the LIVE validate/export panel instead of the demo engine.
+  const liveContractBuild = $derived(
+    project.source === 'contract' && capability.state(CAP_BUILD) === true
   );
 
   const counts = $derived(project.statusCounts());
@@ -90,6 +96,11 @@
 <section class="build" aria-labelledby="build-heading">
   <h1 id="build-heading" class="title">{t('build.title')}</h1>
 
+  <!-- Final night wave: a live contract project runs validate/export over
+       the REAL contract; the demo engine below stays fixture-only. -->
+  {#if liveContractBuild}
+    <ContractOps kind="build" />
+  {:else}
   {#if phase !== 'done'}
     <div class="card" data-testid="build.summary">
       <div class="row">
@@ -264,6 +275,7 @@
   {/if}
 
   <p class="note">{t('build.note')}</p>
+  {/if}
 </section>
 
 <style>
