@@ -21,8 +21,23 @@
   import { ui } from './lib/stores/ui.svelte';
   import { stylelab } from './lib/stores/stylelab.svelte';
   import { devMode } from './lib/stores/devmode.svelte';
+  import { clientInstance } from './lib/client/instance.svelte';
+  import { t } from './i18n/store.svelte';
+
+  // W-built boot gate: no Tauri bridge and no explicit dev/demo opt-in means
+  // the honest configuration error — the mock is never a silent default.
+  const bootMode = clientInstance.resolveMode();
 </script>
 
+{#if bootMode === 'none'}
+  <main class="app-main">
+    <section class="cfg-error" role="alert" aria-labelledby="cfg-title" data-testid="boot.config-error">
+      <h1 id="cfg-title">{t('boot.configError.title')}</h1>
+      <p class="cfg-text">{clientInstance.configError}</p>
+      <p class="cfg-text">{t('boot.configError.hint')}</p>
+    </section>
+  </main>
+{:else}
 <AppHeader />
 
 <main class="app-main">
@@ -81,4 +96,29 @@
     flex-direction: column;
     overflow: hidden;
   }
+
+  .cfg-error {
+    margin: var(--space-8) auto;
+    max-width: 560px;
+    border: 1px solid var(--color-destructive);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .cfg-error h1 {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-size: var(--text-heading-size);
+    color: var(--color-destructive);
+  }
+
+  .cfg-text {
+    margin: 0;
+    color: var(--color-muted-fg);
+  }
 </style>
+{/if}
