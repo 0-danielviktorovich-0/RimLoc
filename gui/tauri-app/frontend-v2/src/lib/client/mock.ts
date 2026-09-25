@@ -28,7 +28,7 @@ export class MockContractError extends Error implements ContractErrorDto {
 }
 
 interface MockTranslation {
-  id: { kind: string; key: string };
+  id: { kind: string; key: string; def_type?: string };
   locale: string;
   text: string | null;
   completeness: 'untranslated' | 'todo' | 'translated';
@@ -39,7 +39,7 @@ interface MockProject {
   name: string;
   revision: number;
   session_epoch: number;
-  entries: { id: { kind: string; key: string }; text: string }[];
+  entries: { id: { kind: string; key: string; def_type?: string }, text: string }[];
   translations: MockTranslation[];
 }
 
@@ -56,13 +56,16 @@ function mkProject(id: string, name: string): MockProject {
     entries: [
       { id: entryId('Keyed', 'MessageLetterArrived'), text: '{0}: A letter has arrived.' },
       { id: entryId('Keyed', 'AncientComplexWarning'), text: 'Warning: the ancient complex is unstable.' },
-      { id: entryId('DefInjected', 'Gun_AssaultRifle.label'), text: 'assault rifle' },
+      // P1 regression tooth: this entry carries a def_type discriminator —
+      // intents without the FULL structural identity are skipped, matching
+      // the real backend's strict structural resolution.
+      { id: { kind: 'DefInjected', key: 'Gun_AssaultRifle.label', def_type: 'Weapons' }, text: 'assault rifle' },
       { id: entryId('DefInjected', 'MeleeWeapon_LongSword.label'), text: 'longsword' }
     ],
     translations: [
       { id: entryId('Keyed', 'MessageLetterArrived'), locale: 'Russian', text: '{0}: Пришло письмо.', completeness: 'translated' },
       { id: entryId('Keyed', 'AncientComplexWarning'), locale: 'Russian', text: null, completeness: 'untranslated' },
-      { id: entryId('DefInjected', 'Gun_AssaultRifle.label'), locale: 'Russian', text: 'штурмовая винтовка', completeness: 'translated' },
+      { id: { kind: 'DefInjected', key: 'Gun_AssaultRifle.label', def_type: 'Weapons' }, locale: 'Russian', text: 'штурмовая винтовка', completeness: 'translated' },
       { id: entryId('DefInjected', 'MeleeWeapon_LongSword.label'), locale: 'Russian', text: null, completeness: 'untranslated' }
     ]
   };
@@ -172,7 +175,11 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
           let applied = 0;
           req.intents.forEach((intent: TranslationIntentDto, index: number) => {
             const t = p.translations.find(
-              (x) => x.id.kind === intent.entry.kind && x.id.key === intent.entry.key && x.locale === intent.locale
+              (x) =>
+                x.id.kind === intent.entry.kind &&
+                x.id.key === intent.entry.key &&
+                x.locale === intent.locale &&
+                (x.id.def_type ?? undefined) === intent.entry.def_type
             );
             if (!t) {
               skipped.push({ index, code: 'contract_violation', message: `unknown identity ${intent.entry.kind}:${intent.entry.key}` });

@@ -75,6 +75,27 @@ describe('project store on the contract client', () => {
     expect(list.length).toBeGreaterThanOrEqual(2);
   });
 
+  it('typed DefInjected edit carries the FULL structural id (P1)', async () => {
+    await project.createContractProject('/mods/Demo');
+    const id = 'DefInjected:Gun_AssaultRifle.label:Weapons';
+    const typed = project.byId(id);
+    expect(typed).toBeDefined(); // def_type survived the snapshot mapping
+    expect(typed?.source).toBe('assault rifle');
+    expect(project.contractIdentities[id]?.def_type).toBe('Weapons');
+    project.setDraft(id, 'штурмовая винтовка (правка)');
+    // The mock skips intents whose identity lacks def_type — success proves
+    // the discriminator rode along.
+    expect(await project.flushDraft(id)).toBe(true);
+    expect(project.byId(id)?.target).toBe('штурмовая винтовка (правка)');
+  });
+
+  it('untouched Keyed ids keep working without def_type', async () => {
+    await project.createContractProject('/mods/Demo');
+    project.setDraft('Keyed:MessageLetterArrived', '{0}: Пришло письмо (правка).');
+    expect(await project.flushDraft('Keyed:MessageLetterArrived')).toBe(true);
+    expect(project.contractIdentities['Keyed:MessageLetterArrived']?.def_type).toBeUndefined();
+  });
+
   it('the fixture locale switcher is locked in contract mode', async () => {
     await project.createContractProject('/mods/Demo');
     languages.setActive('uk');

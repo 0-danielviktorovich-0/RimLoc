@@ -12,7 +12,7 @@ import { buildState } from '../mock/buildState.svelte';
 // demo/dev mock (devMode) and is never a silent production default.
 import { clientInstance } from '../client/instance.svelte';
 import { ContractClientError, type RimLocClient } from '../client/client';
-import type { ProjectSnapshotDto, ProjectSummaryDto } from '../client/types';
+import type { ProjectSnapshotDto, ProjectSummaryDto, SourceEntryIdDto } from '../client/types';
 
 export type StatusCounts = Record<EntryStatus, number>;
 
@@ -55,6 +55,13 @@ class ProjectStore {
   contractRevision = $state(0);
   contractEpoch = $state(0);
   contractError = $state<string | null>(null);
+  /**
+   * W-built (P1): full STRUCTURAL identities per workspace entry id. The
+   * backend resolves intents by exact structural match (kind+key+def_type,
+   * no key-fallback — lead 033), so the def_type discriminator must survive
+   * the snapshot→workspace mapping and ride every intent.
+   */
+  private contractIdentities: Record<string, SourceEntryIdDto> = {};
   private rimloc: RimLocClient | null = null;
 
   private cc(): RimLocClient {
@@ -267,8 +274,16 @@ class ProjectStore {
   private applyContractSnapshot(snap: ProjectSnapshotDto) {
     const mapped: Entry[] = [];
     const byId = new Map<string, Entry>();
+    this.contractIdentities = {};
+    const structuralId = (id: { kind: string; key: string; def_type?: string }): string => {
+      // P1: the def_type discriminator is part of the structural identity —
+      // dropping it makes any typed DefInjected/TKey intent unresolvable.
+      return id.def_type ? `${id.kind}:${id.key}:${id.def_type}` : `${id.kind}:${id.key}`;
+    };
     for (const e of snap.project.entries) {
-      const id = `${e.id.kind}:${e.id.key}`;
+      const id = structuralId(e.id);
+      this.contractIdentities[id] = { kind: e.id.kind, key: e.id.key };
+      if (e.id.def_type) this.contractIdentities[id].def_type = e.id.def_type;
       const kind: EntryKind = e.id.kind === 'DefInjected' || e.id.kind === 'TKey' ? e.id.kind : 'Keyed';
       const entry: Entry = {
         id,
@@ -284,7 +299,7 @@ class ProjectStore {
       byId.set(id, entry);
     }
     for (const t of snap.project.translations) {
-      const id = `${t.source_id.kind}:${t.source_id.key}`;
+      const id = structuralId(t.source_id);
       const entry = byId.get(id);
       if (!entry) continue;
       if (!(t.locale ?? '').toLowerCase().startsWith('ru')) continue; // active target slice
@@ -352,15 +367,20 @@ class ProjectStore {
    * On failure the dirty draft is KEPT (persist-before-ack) and false returns. */
   private async commitContract(id: string, text: string, gen: number, epoch: number): Promise<boolean> {
     if (gen !== this.generation || this.draftEpoch[id] !== epoch) return false;
-    const [kind, ...rest] = id.split(':');
+    const identity = this.contractIdentities[id];
     const projectId = this.contractProjectId;
-    if (!projectId) return false;
+    if (!identity || !projectId) return false;
     try {
+      const entryId: { kind: string; key: string; def_type?: string } = {
+        kind: identity.kind,
+        key: identity.key
+      };
+      if (identity.def_type) entryId.def_type = identity.def_type;
       const resp = await this.cc().applyIntents({
         projectId,
         expectedRevision: this.contractRevision,
         sessionEpoch: this.contractEpoch,
-        intents: [{ entry: { kind, key: rest.join(':') }, locale: 'Russian', action: 'set_translation', text }]
+        intents: [{ entry: entryId, locale: 'Russian', action: 'set_translation', text }]
       });
       this.contractRevision = resp.revision;
       const entry = this.byId(id);
@@ -379,17 +399,76 @@ class ProjectStore {
     }
   }
 
-  /** Context panel actions. */
+  /** Context panel actions. W-built (P2-b): in contract mode only statuses
+   * expressible as v1 intents are proxied (and reverted if the backend
+   * rejects); anything else stays untouched instead of being silently lost
+   * on reopen. */
   setStatus(id: string, status: EntryStatus) {
     const entry = this.byId(id);
-    if (entry) entry.status = status;
+    if (!entry) return;
+    if (this.source !== 'contract') {
+      entry.status = status;
+      return;
+    }
+    if (status !== 'translated' && status !== 'todo') return; // not in v1 slice
+    const prevStatus = entry.status;
+    const intentText = status === 'translated' ? entry.target : 'TODO';
+    const action = status === 'translated' ? 'set_translation' : 'mark_todo';
+    void this.applyIntentAsync(id, action, intentText, () => {
+      entry.status = prevStatus; // rollback on typed rejection
+    });
+    entry.status = status; // optimistic; rolled back on rejection
+  }
+
+  /** Fire one v1 intent; on success bumps the revision, on typed rejection
+   * surfaces the error and runs the caller's rollback. */
+  private async applyIntentAsync(
+    id: string,
+    action: 'set_translation' | 'mark_todo' | 'clear_translation',
+    text: string | undefined,
+    rollback?: () => void
+  ): Promise<boolean> {
+    const identity = this.contractIdentities[id];
+    const projectId = this.contractProjectId;
+    if (!identity || !projectId) return false;
+    const entryId: { kind: string; key: string; def_type?: string } = {
+      kind: identity.kind,
+      key: identity.key
+    };
+    if (identity.def_type) entryId.def_type = identity.def_type;
+    try {
+      const resp = await this.cc().applyIntents({
+        projectId,
+        expectedRevision: this.contractRevision,
+        sessionEpoch: this.contractEpoch,
+        intents: [{ entry: entryId, locale: 'Russian', action, text }]
+      });
+      this.contractRevision = resp.revision;
+      return resp.applied > 0;
+    } catch (e) {
+      rollback?.();
+      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      return false;
+    }
   }
 
   /** Apply a SUGGESTIONS-tab pick. AI output never lands as translated (spec §8):
-   * it becomes pending_review; TM/import glossary picks count as accepted drafts. */
+   * it becomes pending_review; TM/import glossary picks count as accepted drafts.
+   * W-built (P2-b): in contract mode this is a REAL set_translation intent —
+   * the text applies only after the backend accepts it. */
   applySuggestion(id: string, text: string, origin: Origin) {
     const entry = this.byId(id);
     if (!entry) return;
+    if (this.source === 'contract') {
+      const prevTarget = entry.target;
+      void this.applyIntentAsync(id, 'set_translation', text).then((ok) => {
+        if (!ok) {
+          entry.target = prevTarget; // rejection: nothing silently lost
+        }
+      });
+      entry.target = text; // optimistic draft display until the response
+      return;
+    }
     entry.target = text;
     entry.origin = origin;
     entry.editedAt = new Date().toISOString();
@@ -402,7 +481,14 @@ class ProjectStore {
 
   setNote(id: string, note: string) {
     const entry = this.byId(id);
-    if (entry) entry.note = note;
+    if (!entry) return;
+    if (this.source === 'contract') {
+      // P2-b: notes are not in the v1 contract slice — refused loudly instead
+      // of being silently dropped on reopen.
+      this.contractError = 'notes: local only in this slice (not persisted to the project)';
+      return;
+    }
+    entry.note = note;
   }
 
   /** Reset to the pristine mock dataset (dev panel). W6/034: pending commits

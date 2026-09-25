@@ -1096,6 +1096,8 @@ export const en: Record<string, string> = {
   'home.contract.pathPlaceholder': 'Path to the mod folder…',
   'home.contract.create': 'Create project',
   'home.contract.open': 'Open',
+  'workspace.project.fixtureDataset': 'Demo dataset — edits are not saved',
+  'workspace.project.live': 'live project',
 
   // Scenario browser (W6, dev-only; MOCK_LIVE_ONBOARDING_MANDATE §11)
   'scenarios.title': 'Scenario browser',

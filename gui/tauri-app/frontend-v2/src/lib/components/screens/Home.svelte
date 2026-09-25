@@ -139,7 +139,11 @@
       </button>
     </div>
   {:else}
+    <!-- W-built (P2-a): the fixture wizard/existing paths are demo/dev-only —
+         in the real (tauri) mode they would show bundled data that looks real
+         while edits never persist. The contract panel above is the surface. -->
     <div class="cards">
+      {#if mode !== 'tauri'}
       <button
         type="button"
         class="card entry-card"
@@ -161,6 +165,7 @@
         <span class="card-title">{t('home.entryExisting.title')}</span>
         <span class="card-desc">{t('home.entryExisting.description')}</span>
       </button>
+      {/if}
     </div>
 
     {#if firstRun}
@@ -244,7 +249,7 @@
     </section>
     {/if}
 
-    {#if !firstRun && mockProjects.length > 0}
+    {#if !firstRun && mode !== 'tauri' && mockProjects.length > 0}
       <section class="recent" aria-labelledby="recent-heading" data-testid="home.recent">
         <h2 id="recent-heading" class="recent-title">{t('home.recent.title')}</h2>
         <ul class="recent-list">
