@@ -43,6 +43,14 @@ pub fn run_scan(
     // Gate H: LoadFolders mods stay rooted at the mod root — the effective
     // view picks version content dirs; re-rooting to root/1.6 would lose the
     // Common content (root Languages etc.).
+    // M1: a typo in the path must be a loud refusal, never an empty
+    // "[]" report over nothing.
+    if !root.is_dir() {
+        color_eyre::eyre::bail!(
+            "mod root `{}` does not exist or is not a directory; nothing to scan",
+            root.display()
+        );
+    }
     let is_loadfolders_mod = root.join("LoadFolders.xml").is_file();
     let (scan_root, selected_version) = if include_all_versions || is_loadfolders_mod {
         (root.clone(), None)

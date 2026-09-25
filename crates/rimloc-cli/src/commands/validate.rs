@@ -26,6 +26,14 @@ pub fn run_validate(
 ) -> color_eyre::Result<()> {
     tracing::debug!(event = "validate_args", root = ?root, game_version = ?game_version, include_all_versions = include_all_versions);
 
+    // M1: a typo in the path must be a loud refusal, never a green
+    // "all clean" report over nothing.
+    if !root.is_dir() {
+        color_eyre::eyre::bail!(
+            "mod root `{}` does not exist or is not a directory; nothing to validate",
+            root.display()
+        );
+    }
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let effective_version = game_version.or(cfg.game_version.clone());
     let (scan_root, selected_version) = if include_all_versions {
