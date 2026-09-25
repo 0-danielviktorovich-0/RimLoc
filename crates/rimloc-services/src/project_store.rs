@@ -120,6 +120,24 @@ impl std::fmt::Display for ProjectLoadDiagnostic {
 
 impl std::error::Error for ProjectLoadDiagnostic {}
 
+/// Additive binding-envelope metadata (binding first slice, 033): the
+/// durable opaque project id and content revision live in the SAME atomic
+/// managed-project record as the content — there is no second authoritative
+/// index. All fields optional: legacy v2 files (and bare `save_project`
+/// writes) load unchanged, and bare saves keep writing without the fields.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ProjectEnvelopeMeta {
+    /// Opaque durable id minted by the session layer (never path-derived).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
+    /// Durable monotonic content revision; bumps on every acked change.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub revision: Option<u64>,
+    /// Human display name captured at create (mod folder name).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct ProjectFile {
     /// Persistence container version (transport), independent of the domain
@@ -127,6 +145,16 @@ struct ProjectFile {
     schema_version: u32,
     #[serde(flatten)]
     project: Project,
+    /// Binding envelope metadata (additive within v2; omitted when bare).
+    #[serde(flatten)]
+    meta: ProjectEnvelopeMeta,
+}
+
+/// A loaded project together with its binding-envelope metadata.
+#[derive(Debug, Clone)]
+pub struct LoadedProject {
+    pub project: Project,
+    pub meta: ProjectEnvelopeMeta,
 }
 
 /// Serialize deterministically (BTree/Vec field order is stable; maps sorted
@@ -135,12 +163,49 @@ pub fn serialize_project(project: &Project) -> std::io::Result<Vec<u8>> {
     let file = ProjectFile {
         schema_version: PROJECT_FILE_VERSION,
         project: project.clone(),
+        meta: ProjectEnvelopeMeta::default(),
     };
     let s = serde_json::to_string_pretty(&file)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
     let mut out = s.into_bytes();
     out.push(b'\n');
     Ok(out)
+}
+
+/// Serialize with binding-envelope metadata (same container, same
+/// validation path).
+pub fn serialize_project_with_meta(
+    project: &Project,
+    meta: &ProjectEnvelopeMeta,
+) -> std::io::Result<Vec<u8>> {
+    let file = ProjectFile {
+        schema_version: PROJECT_FILE_VERSION,
+        project: project.clone(),
+        meta: meta.clone(),
+    };
+    let s = serde_json::to_string_pretty(&file)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+    let mut out = s.into_bytes();
+    out.push(b'\n');
+    Ok(out)
+}
+
+/// Save atomically with binding-envelope metadata. Same validating-save
+/// contract as [`save_project`]: the proposed state must pass the same
+/// checker the loader uses BEFORE any byte is written.
+pub fn save_project_with_meta(
+    project: &Project,
+    meta: &ProjectEnvelopeMeta,
+    path: &Path,
+) -> std::io::Result<()> {
+    validate_v2(project.clone()).map_err(|d| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("{d}; action: {}", d.action()),
+        )
+    })?;
+    let bytes = serialize_project_with_meta(project, meta)?;
+    crate::write_atomic(path, &bytes)
 }
 
 /// Save atomically: tmp file → rename, never a torn project file. The
@@ -156,6 +221,48 @@ pub fn save_project(project: &Project, path: &Path) -> std::io::Result<()> {
     })?;
     let bytes = serialize_project(project)?;
     crate::write_atomic(path, &bytes)
+}
+
+/// Load a project file WITH its binding-envelope metadata (dispatches v1/v2
+/// like [`load_project`]; v1 files carry no envelope — defaults apply).
+pub fn load_project_with_meta(path: &Path) -> Result<LoadedProject> {
+    let text = std::fs::read_to_string(path)?;
+    load_project_str_with_meta(&text)
+}
+
+/// String form of [`load_project_with_meta`].
+pub fn load_project_str_with_meta(text: &str) -> Result<LoadedProject> {
+    let value: serde_json::Value = serde_json::from_str(text)?;
+    let version = value
+        .get("schema_version")
+        .and_then(|v| v.as_u64())
+        .ok_or_else(|| color_eyre::eyre::eyre!("project file missing schema_version"))?;
+    match u32::try_from(version) {
+        Ok(v) if v == PROJECT_FILE_VERSION => {
+            let file: ProjectFile = serde_json::from_value(value)?;
+            let project = validate_v2(file.project)
+                .map_err::<color_eyre::Report, _>(std::convert::Into::into)?;
+            Ok(LoadedProject {
+                project,
+                meta: file.meta,
+            })
+        }
+        Ok(v) if v == PROJECT_FILE_VERSION_V1 => {
+            let file: ProjectFile = serde_json::from_value(value)?;
+            let project: Project = migrate_v1(file.project)
+                .map_err::<color_eyre::Report, _>(std::convert::Into::into)?;
+            let project =
+                validate_v2(project).map_err::<color_eyre::Report, _>(std::convert::Into::into)?;
+            // v1 predates the envelope: no durable id/revision existed.
+            Ok(LoadedProject {
+                project,
+                meta: ProjectEnvelopeMeta::default(),
+            })
+        }
+        _ => Err(color_eyre::eyre::eyre!(
+            "project file schema_version {version} not supported (expected {PROJECT_FILE_VERSION})"
+        )),
+    }
 }
 
 /// Load a project file, dispatching on the container version. Loading never
@@ -883,5 +990,45 @@ mod tests {
             loaded.translations[0].source_id.def_type.as_deref(),
             Some("ThingDef")
         );
+    }
+    /// Binding envelope (033): the durable id/revision ride the SAME
+    /// atomic record as the content; bare saves keep writing legacy-shaped
+    /// v2 files that still load.
+    #[test]
+    fn envelope_meta_round_trips_and_stays_additive() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("p.rimloc.json");
+
+        // Bare save (no meta): file has no envelope fields, loads fine.
+        save_project(&sample(), &path).unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(!text.contains("project_id"), "{text}");
+        assert!(!text.contains("\"revision\""), "{text}");
+        let bare = load_project(&path).unwrap();
+        assert_eq!(bare.entries.len(), sample().entries.len());
+
+        // Meta save: id + revision + display name ride along.
+        let meta = ProjectEnvelopeMeta {
+            project_id: Some("proj-abc".into()),
+            revision: Some(7),
+            display_name: Some("My Mod".into()),
+        };
+        save_project_with_meta(&sample(), &meta, &path).unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            text.contains("\"schema_version\": 2"),
+            "still the v2 container: {text}"
+        );
+        let loaded = load_project_with_meta(&path).unwrap();
+        assert_eq!(loaded.meta.project_id.as_deref(), Some("proj-abc"));
+        assert_eq!(loaded.meta.revision, Some(7));
+        assert_eq!(loaded.meta.display_name.as_deref(), Some("My Mod"));
+
+        // Old-shaped bare v2 (no envelope fields) still loads with defaults.
+        let bare_v2 = "{\"schema_version\": 2, \"context\": {\"view\": \"potential\"}, \"entries\": [], \"translations\": []}\n"
+            .to_string();
+        std::fs::write(&path, bare_v2).unwrap();
+        let loaded = load_project(&path).unwrap();
+        assert!(loaded.entries.is_empty());
     }
 }
