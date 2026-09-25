@@ -78,6 +78,7 @@ pub use util::is_source_for_lang_dir;
 pub use util::is_under_languages_dir;
 pub use util::is_within;
 pub use util::normalize_lang_dir;
+pub use util::package_id_slug;
 pub use util::write_atomic;
 pub use validate::validate_placeholders_cross_language;
 pub use validate::{validate_lists_cross_language, validate_orphans_cross_language};

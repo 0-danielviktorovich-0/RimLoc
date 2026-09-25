@@ -271,6 +271,10 @@ pub fn write_rimworld_translation(
 ) -> Result<WriteReport> {
     use std::fmt::Write as _;
 
+    // H1: the deepest write choke point — every caller (session export,
+    // CLI build paths) gets the strict form + containment guard.
+    crate::util::ensure_lang_write_target(out_mod, lang_dir)?;
+
     let base = out_mod.join("Languages").join(lang_dir);
     // defName -> file; collected per def type from entry keys/contexts.
     let mut keyed: BTreeMap<String, String> = BTreeMap::new();
@@ -345,9 +349,14 @@ pub fn write_rimworld_translation(
     let about = out_mod.join("About");
     std::fs::create_dir_all(&about)?;
     let mut about_xml = String::new();
+    // H4: manifest fields are user-controlled text — escaped, never raw
+    // (& < > in a folder name used to produce invalid XML).
     let _ = writeln!(
         about_xml,
-        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<RimWorldManifest>\n  <name>{mod_name}</name>\n  <packageId>{package_id}</packageId>\n  <supportedVersions>\n    <li>{rw_version}</li>\n  </supportedVersions>\n</RimWorldManifest>"
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<RimWorldManifest>\n  <name>{}</name>\n  <packageId>{}</packageId>\n  <supportedVersions>\n    <li>{}</li>\n  </supportedVersions>\n</RimWorldManifest>",
+        rimloc_core::xml_chars::escape_text(mod_name),
+        rimloc_core::xml_chars::escape_text(package_id),
+        rimloc_core::xml_chars::escape_text(rw_version)
     );
     crate::write_atomic(&about.join("About.xml"), about_xml.as_bytes())?;
 

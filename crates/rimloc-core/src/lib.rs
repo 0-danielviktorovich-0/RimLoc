@@ -186,6 +186,48 @@ pub enum RimLocError {
     Other(String),
 }
 
+pub mod xml_chars {
+    //! XML 1.0 character validity (H3): control characters outside the
+    //! XML 1.0 char set cannot be escaped — even numeric character
+    //! references to them are invalid — so any text carrying one must be
+    //! rejected BEFORE it reaches an XML writer (RimWorld drops the whole
+    //! file otherwise).
+
+    /// True when `c` is a legal XML 1.0 character (char class #2:
+    /// tab/LF/CR plus the printable Unicode ranges).
+    pub fn is_xml_char(c: char) -> bool {
+        matches!(c,
+            '\u{09}' | '\u{0A}' | '\u{0D}'
+            | '\u{20}'..='\u{D7FF}'
+            | '\u{E000}'..='\u{FFFD}'
+            | '\u{10000}'..='\u{10FFFF}')
+    }
+
+    /// First character of `text` that is not a legal XML 1.0 character.
+    pub fn find_invalid_xml_char(text: &str) -> Option<char> {
+        text.chars().find(|&c| !is_xml_char(c))
+    }
+
+    /// Escape the five XML-special characters for use inside element text
+    /// (H4): `& < > " '`. Control characters are NOT handled here — they
+    /// cannot be escaped at all and must be rejected upstream
+    /// ([`find_invalid_xml_char`]).
+    pub fn escape_text(s: &str) -> String {
+        let mut out = String::with_capacity(s.len());
+        for c in s.chars() {
+            match c {
+                '&' => out.push_str("&amp;"),
+                '<' => out.push_str("&lt;"),
+                '>' => out.push_str("&gt;"),
+                '"' => out.push_str("&quot;"),
+                '\'' => out.push_str("&apos;"),
+                _ => out.push(c),
+            }
+        }
+        out
+    }
+}
+
 /// Parse a minimal subset of PO syntax used across the workspace.
 /// Supports single-line `msgid`/`msgstr` pairs and optional reference lines (`#: ...`).
 pub fn parse_simple_po(input: &str) -> Result<Vec<PoEntry>> {

@@ -136,6 +136,14 @@ pub struct ProjectEnvelopeMeta {
     /// Human display name captured at create (mod folder name).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub display_name: Option<String>,
+    /// Read-only source mod root the project was built from (H5). Durable
+    /// state: a session reopened after an app restart restores it, so the
+    /// export/diagnose source-tree guard stays functional and the
+    /// close-open-build cycle completes. `None` on legacy envelopes and
+    /// bare saves — those sessions stay fail-closed for export (the guard
+    /// refuses instead of silently disabling itself).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_root: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -1012,6 +1020,7 @@ mod tests {
             project_id: Some("proj-abc".into()),
             revision: Some(7),
             display_name: Some("My Mod".into()),
+            source_root: None,
         };
         save_project_with_meta(&sample(), &meta, &path).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
