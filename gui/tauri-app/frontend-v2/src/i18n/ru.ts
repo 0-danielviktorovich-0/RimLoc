@@ -25,6 +25,11 @@ export const ru: Record<string, string> = {
   'mockbadge.title':
     'Этот скаффолд работает на синтетических демо-данных, вызовов бэкенда нет. Живой режим придёт после фриза бэкенда через границу RimLocClient-транспорта.',
 
+  // Honest capability degradation (audit P1-5): CTA/buttons gated by the
+  // handshake capability report while the J backend slices are pending.
+  'capability.unsupported.title': 'Пока недоступно: операция ждёт контракт-слайс. {reason}',
+  'capability.unsupported.note': 'Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}',
+
   // Встроенный демо-проект (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
   'home.demo.mark': 'синтетический демо-проект',

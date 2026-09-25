@@ -13,9 +13,22 @@
   import { diagnostics } from '../../stores/diagnostics.svelte';
   import BundlePreview from './BundlePreview.svelte';
   import { registry } from '../../languages/registry';
+  import { capability, CAP_DIAGNOSTICS } from '../../client/capability.svelte';
 
   let copied = $state(false);
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // Audit P1-5: on a REAL contract project the diagnostics actions degrade
+  // honestly until the sanitized-bundle slice lands over the contract; the
+  // demo/fixture replay stays a marked demo.
+  const diagBlocked = $derived(
+    project.source === 'contract' && capability.state(CAP_DIAGNOSTICS) === false
+  );
+  const diagBlockedTitle = $derived(
+    diagBlocked
+      ? t('capability.unsupported.title', { reason: capability.reason(CAP_DIAGNOSTICS) ?? '' })
+      : undefined
+  );
 
   $effect(() => () => {
     diagnostics.reset();
@@ -66,7 +79,9 @@
         type="button"
         class="btn btn-primary"
         data-testid="diagnostics.run"
-        disabled={phase === 'running'}
+        disabled={phase === 'running' || diagBlocked}
+        title={diagBlockedTitle}
+        aria-disabled={diagBlocked}
         onclick={() => diagnostics.runScenario()}
       >
         <Icon name="play" size={14} />
@@ -166,7 +181,15 @@
       </div>
 
       <div class="row">
-        <button type="button" class="btn btn-primary" data-testid="diagnostics.prepare" onclick={() => diagnostics.prepareBundle()}>
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="diagnostics.prepare"
+          disabled={diagBlocked}
+          title={diagBlockedTitle}
+          aria-disabled={diagBlocked}
+          onclick={() => diagnostics.prepareBundle()}
+        >
           <Icon name="package" size={14} />
           {t('diagnostics.prepare')}
         </button>

@@ -13,6 +13,7 @@
   // product tour presses the same engine the real button uses — and only a
   // completed run can count as completed anywhere.
   import { buildState } from '../../mock/buildState.svelte';
+  import { capability, CAP_BUILD } from '../../client/capability.svelte';
 
   const INSTALL_MS = 900;
 
@@ -20,6 +21,18 @@
   let installState = $state<'idle' | 'installing' | 'installed'>('idle');
   let toast = $state('');
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // Audit P1-5: on a REAL contract project the build action is gated by the
+  // backend capability report until the J slice lands — the demo/fixture
+  // flow keeps its marked simulation.
+  const buildBlocked = $derived(
+    project.source === 'contract' && capability.state(CAP_BUILD) === false
+  );
+  const buildBlockedTitle = $derived(
+    buildBlocked
+      ? t('capability.unsupported.title', { reason: capability.reason(CAP_BUILD) ?? '' })
+      : undefined
+  );
 
   const counts = $derived(project.statusCounts());
   const total = $derived(project.entries.length);
@@ -134,7 +147,9 @@
           type="button"
           class="btn btn-primary"
           data-testid="build.run"
-          disabled={phase === 'building'}
+          disabled={phase === 'building' || buildBlocked}
+          title={buildBlockedTitle}
+          aria-disabled={buildBlocked}
           onclick={runBuild}
         >
           <Icon name="package" size={14} />
@@ -147,6 +162,13 @@
           </button>
         {/if}
       </div>
+
+      {#if buildBlocked}
+        <p class="status" role="note" data-testid="build.capability-note">
+          <Icon name="info" size={14} />
+          {t('capability.unsupported.note', { reason: capability.reason(CAP_BUILD) ?? '' })}
+        </p>
+      {/if}
 
       {#if phase === 'building'}
         <p class="status" role="status" aria-live="polite" data-testid="build.building">

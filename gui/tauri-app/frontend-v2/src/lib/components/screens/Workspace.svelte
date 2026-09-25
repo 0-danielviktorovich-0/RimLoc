@@ -25,8 +25,21 @@
   import Icon from '../Icon.svelte';
   import { MOCK_ERROR_CODE, MOCK_ERROR_RAW } from '../../../lib/mock/data';
   import { onboarding } from '../../stores/onboarding.svelte';
+  import { capability, CAP_BUILD } from '../../client/capability.svelte';
 
   let { initialTab = 'editor' }: { initialTab?: 'editor' | 'review' } = $props();
+
+  // Audit P1-5: the build CTA degrades honestly on a REAL contract project
+  // when the backend slice has not landed yet (capability report says so).
+  // Demo/fixture projects keep their marked demo build flow.
+  const buildBlocked = $derived(
+    project.source === 'contract' && capability.state(CAP_BUILD) === false
+  );
+  const buildBlockedTitle = $derived(
+    buildBlocked
+      ? t('capability.unsupported.title', { reason: capability.reason(CAP_BUILD) ?? '' })
+      : undefined
+  );
 
   // First open of the workspace starts the coach unless it was dismissed
   // earlier (QA mandate §20: skippable, replayable from Help).
@@ -153,6 +166,9 @@
           type="button"
           class="btn btn-primary"
           data-testid="workspace.cta-build"
+          disabled={buildBlocked}
+          title={buildBlockedTitle}
+          aria-disabled={buildBlocked}
           onclick={() => router.navigate('build')}
         >
           <Icon name="package" size={14} />

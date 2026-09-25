@@ -22,11 +22,19 @@
   import { stylelab } from './lib/stores/stylelab.svelte';
   import { devMode } from './lib/stores/devmode.svelte';
   import { clientInstance } from './lib/client/instance.svelte';
+  import { capability } from './lib/client/capability.svelte';
   import { t } from './i18n/store.svelte';
 
   // W-built boot gate: no Tauri bridge and no explicit dev/demo opt-in means
   // the honest configuration error — the mock is never a silent default.
   const bootMode = clientInstance.resolveMode();
+
+  // Audit P1-5: fetch the capability report once at boot so the validate/
+  // build/diagnostics CTAs can degrade honestly (disabled + reason) against
+  // the REAL backend slice boundary instead of dead-ending in mock stubs.
+  $effect(() => {
+    if (bootMode !== 'none') void capability.ensure();
+  });
 </script>
 
 {#if bootMode === 'none'}
