@@ -137,6 +137,9 @@ pub fn import_po_to_mod_tree(
     only_diff: bool,
     report: bool,
 ) -> Result<(Option<ImportPlan>, Option<ImportSummary>)> {
+    // H1: the language folder is joined into every output path - strict
+    // form + containment BEFORE anything is planned or written.
+    crate::util::ensure_lang_write_target(root, lang_folder)?;
     use std::collections::HashMap;
     let mut entries = rimloc_import_po::read_po_entries(po)?;
     if !keep_empty {
@@ -346,6 +349,8 @@ pub fn import_po_to_mod_tree_with_progress(
     report: bool,
     mut progress: impl FnMut(usize, usize, &Path),
 ) -> Result<ImportSummary> {
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(root, lang_folder)?;
     use std::collections::HashMap;
     let mut entries = rimloc_import_po::read_po_entries(po)?;
     if !keep_empty {

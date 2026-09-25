@@ -2144,3 +2144,98 @@ fn loadfolders_scan_is_version_scoped() {
     // Common languages stay present in both.
     assert_eq!(value(&v15, "Greeting").as_deref(), Some("hello"));
 }
+
+/// H1: CLI language folders are joined into write paths — traversal,
+/// absolute and backslash shapes are refused with a typed error, and
+/// nothing is written outside the mod root.
+#[test]
+fn cli_lang_dir_traversal_is_refused_on_write_commands() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("mod");
+    fs::create_dir_all(root.join("Defs")).unwrap();
+
+    // Minimal PO for the import/build commands.
+    let po = tmp.path().join("t.po");
+    fs::write(
+        &po,
+        "msgctxt \"ThingDef/Dup.label\"\nmsgid \"thing\"\nmsgstr \"вещь\"\n",
+    )
+    .unwrap();
+
+    let evil_dirs = [
+        "../../evil-init",
+        "/tmp/rimloc-cli-absolute-evil",
+        "C:\\evil",
+        "ru/../../evil-x",
+    ];
+    for dir in evil_dirs {
+        // init: refused before any scan or write.
+        bin_cmd()
+            .args(["init", "--root"])
+            .arg(&root)
+            .args(["--lang", "ru", "--lang-dir", dir])
+            .assert()
+            .failure()
+            .stderr(predicates::str::contains("malformed language folder"));
+
+        // import-po: refused before anything is written into the tree.
+        bin_cmd()
+            .args(["import-po", "--po"])
+            .arg(&po)
+            .args(["--mod-root"])
+            .arg(&root)
+            .args(["--lang-dir", dir])
+            .assert()
+            .failure()
+            .stderr(predicates::str::contains("malformed language folder"));
+
+        // build-mod: refused before the output tree is created.
+        bin_cmd()
+            .args([
+                "build-mod",
+                "--po",
+                po.to_str().unwrap(),
+                "--out-mod",
+                tmp.path().join("out").to_str().unwrap(),
+                "--lang",
+                "ru",
+                "--lang-dir",
+                dir,
+            ])
+            .assert()
+            .failure()
+            .stderr(predicates::str::contains("malformed language folder"));
+    }
+
+    // Zero side effects outside the mod root.
+    assert!(!tmp.path().join("evil-init").exists());
+    assert!(!tmp.path().join("evil-x").exists());
+    assert!(!std::path::Path::new("/tmp/rimloc-cli-absolute-evil").exists());
+}
+
+/// H1 containment branch: a bare folder name passes the form check, but
+/// `Languages/<name>` being a symlink pointing OUT of the mod root is
+/// refused (deny-direction containment, symlink aliases included).
+#[test]
+#[cfg(unix)]
+fn cli_lang_dir_symlink_escape_is_refused() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("mod");
+    fs::create_dir_all(root.join("Languages")).unwrap();
+    let outside = tmp.path().join("outside");
+    fs::create_dir_all(&outside).unwrap();
+    std::os::unix::fs::symlink(&outside, root.join("Languages").join("Evil")).unwrap();
+
+    bin_cmd()
+        .args(["init", "--root"])
+        .arg(&root)
+        .args(["--lang", "ru", "--lang-dir", "Evil"])
+        .assert()
+        .failure()
+        .stderr(predicates::str::contains("resolves outside the mod root"));
+
+    assert!(
+        !outside.join("Languages").exists(),
+        "nothing was written through the symlink"
+    );
+}

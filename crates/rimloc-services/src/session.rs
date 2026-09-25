@@ -1014,12 +1014,10 @@ impl ProjectSessionManager {
 /// is joined into `Languages/<locale>/...` output paths by the export
 /// writer — anything but a plain folder name (letters, digits, `_`, `-`)
 /// is rejected BEFORE any path is built, mirroring the project-id form
-/// guard (`managed_path`). RimWorld language folders are Latin-ASCII by
-/// convention, which also rejects unicode-slash look-alikes and dots.
+/// guard (`managed_path`). One form source for session and CLI: the
+/// predicate lives in [`crate::util::lang_dir_form_ok`].
 fn ensure_locale_form(locale: &str) -> Result<(), String> {
-    static LOCALE_FORM: once_cell::sync::Lazy<regex::Regex> =
-        once_cell::sync::Lazy::new(|| regex::Regex::new(r"^[A-Za-z0-9_-]+$").unwrap());
-    if LOCALE_FORM.is_match(locale) {
+    if crate::util::lang_dir_form_ok(locale) {
         Ok(())
     } else {
         Err(format!(
