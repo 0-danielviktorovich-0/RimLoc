@@ -416,24 +416,36 @@ class ProjectStore {
         intents: [{ entry: entryId, locale: 'Russian', action: 'set_translation', text }]
       });
       this.contractRevision = resp.revision;
-      const entry = this.byId(id);
-      if (entry) {
-        entry.target = text;
-        if (entry.status === 'untranslated' || entry.status === 'todo') entry.status = 'translated';
-        entry.editedAt = new Date().toISOString();
-        // Audit P1-1 mirror of session.rs: an applied edit re-stamps
-        // provenance as Human so the provenance filter stays truthful.
-        entry.origin = 'human';
-        // Placeholder suspicion classifies as Issues on the backend; the
-        // message mirrors session.rs and the authoritative state arrives
-        // with the next snapshot/refresh.
-        if (/%(?!%|[a-zA-Z]|\{|\d+\$)/.test(text)) {
-          entry.validation = 'issues';
-          entry.validationIssues = ['suspicious placeholder (single % not part of a known token)'];
-        } else {
-          entry.validation = 'ok';
-          entry.validationIssues = undefined;
+      // Review P2: an Ok response may still carry applied: 0 with the intent
+      // refused in `skipped` (NoTranslate finality, unknown identity) — the
+      // backend stored NOTHING, so the local view must not claim a human
+      // edit, computed validation, or the target text.
+      if (resp.applied > 0) {
+        const entry = this.byId(id);
+        if (entry) {
+          entry.target = text;
+          if (entry.status === 'untranslated' || entry.status === 'todo') entry.status = 'translated';
+          entry.editedAt = new Date().toISOString();
+          // Audit P1-1 mirror of session.rs: an applied edit re-stamps
+          // provenance as Human so the provenance filter stays truthful.
+          entry.origin = 'human';
+          // Placeholder suspicion classifies as Issues on the backend; the
+          // message mirrors session.rs and the authoritative state arrives
+          // with the next snapshot/refresh.
+          if (/%(?!%|[a-zA-Z]|\{|\d+\$)/.test(text)) {
+            entry.validation = 'issues';
+            entry.validationIssues = ['suspicious placeholder (single % not part of a known token)'];
+          } else {
+            entry.validation = 'ok';
+            entry.validationIssues = undefined;
+          }
         }
+      }
+      if (resp.applied === 0) {
+        // Nothing stored: keep the draft staged with the same 'dirty'
+        // semantics as the typed failure path — otherwise the row sticks
+        // on "saving…" with no backend write behind it.
+        this.saveStates[id] = 'dirty';
       }
       return resp.applied > 0;
     } catch (e) {
