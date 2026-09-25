@@ -253,6 +253,12 @@ pub struct WriteReport {
     pub out_mod: PathBuf,
     /// Display identities skipped as unknown-def-type (sorted, unique).
     pub skipped_unknown_type: Vec<String>,
+    /// Leaf keys actually written into the Languages tree (unique Keyed
+    /// keys + DefInjected elements). This is the WRITER's own acceptance
+    /// accounting; the export reparse guard compares the scanner output
+    /// against it instead of re-deriving the acceptance filters
+    /// (re-derivation drifts from the writer and yields false mismatches).
+    pub keys_written: usize,
 }
 
 pub fn write_rimworld_translation(
@@ -369,9 +375,11 @@ pub fn write_rimworld_translation(
         crate::write_atomic(&dir.join(file), xml.as_bytes())?;
     }
 
+    let keys_written = keyed.len() + definj.values().map(|items| items.len()).sum::<usize>();
     Ok(WriteReport {
         out_mod: out_mod.to_path_buf(),
         skipped_unknown_type,
+        keys_written,
     })
 }
 
