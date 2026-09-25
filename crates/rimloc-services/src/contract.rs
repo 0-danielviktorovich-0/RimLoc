@@ -292,6 +292,9 @@ pub enum Capability {
     ProjectApplyIntents,
     ProjectRefresh,
     JobCancel,
+    ProjectValidate,
+    ProjectBuildExport,
+    ProjectDiagnosticsBundle,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -323,23 +326,14 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectApplyIntents,
             Capability::ProjectRefresh,
             Capability::JobCancel,
+            Capability::ProjectValidate,
+            Capability::ProjectBuildExport,
+            Capability::ProjectDiagnosticsBundle,
         ],
         unsupported: vec![
             UnsupportedCapability {
-                capability: "validate_via_contract".into(),
-                reason: "next slice: typed ValidationSeverity findings over the contract".into(),
-            },
-            UnsupportedCapability {
-                capability: "build_export".into(),
-                reason: "next slice: safe build/export behind the source-tree guard + jobs".into(),
-            },
-            UnsupportedCapability {
                 capability: "source_inspector_actions".into(),
                 reason: "next slice: identity-based source actions with size-limited reads".into(),
-            },
-            UnsupportedCapability {
-                capability: "diagnostics_bundle".into(),
-                reason: "next slice: sanitized support bundle surfaced over the contract".into(),
             },
             UnsupportedCapability {
                 capability: "providers_settings".into(),
@@ -355,6 +349,68 @@ pub fn capability_report() -> CapabilityReport {
             },
         ],
     }
+}
+
+/// One typed validation finding over the canonical inventory. `id` carries
+/// the FULL structural identity when the finding resolves to an inventory
+/// entry; `key`/`path` stay raw (validator wording) for diagnostics.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ValidationFinding {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<SourceEntryId>,
+    /// "error" | "warning" | "info" (ValidationSeverity wording).
+    pub severity: String,
+    pub kind: String,
+    pub key: String,
+    pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+    pub message: String,
+}
+
+/// Result of `project_validate`: typed findings over the trusted session
+/// state. The operation NEVER mutates the project; `status` is "failed"
+/// only when error-severity findings exist (026 semantics — warnings/info
+/// are successful and reported).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ValidateProjectResponse {
+    pub job_id: JobId,
+    /// "succeeded" | "failed" (failed = error-severity findings present).
+    pub status: String,
+    pub findings: Vec<ValidationFinding>,
+    pub error_count: usize,
+    pub warning_count: usize,
+    pub info_count: usize,
+    /// Locale the findings were produced for (all locales when unfiltered).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub locale: Option<String>,
+}
+
+/// Result of `project_export`: the isolated native output written from the
+/// trusted session state, reparse-verified BEFORE the ack.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectResponse {
+    pub job_id: JobId,
+    pub out_dir: PathBufDto,
+    pub files_written: usize,
+    /// Keys the EXISTING scanner re-parsed from the written output.
+    pub reparsed_keys: usize,
+    /// Unknown-def-type entries skipped by the writer (surfaced for
+    /// review/rescan — delta risk #5).
+    pub skipped_unknown_type: Vec<String>,
+}
+
+/// Result of `project_diagnose`: a sanitized support bundle describing the
+/// project's last FAILED operation (id, cause, affected identities).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct DiagnoseResponse {
+    pub job_id: JobId,
+    /// Sanitized bundle (path is OUTSIDE the read-only source tree).
+    pub bundle_dir: PathBufDto,
+    pub operation_id: String,
+    pub files: Vec<String>,
+    pub redacted_count: usize,
+    pub excluded_count: usize,
 }
 
 #[cfg(test)]
@@ -398,17 +454,25 @@ mod tests {
     }
 
     /// The capability report is honest: this slice's supported list, and
-    /// every unsupported entry carries a reason.
+    /// every unsupported entry carries a reason. The validate / build /
+    /// diagnostics wave moved from unsupported to a live services surface
+    /// in this slice — it must not linger in the unsupported report.
     #[test]
     fn capability_report_lists_slice_boundary() {
         let report = capability_report();
         assert_eq!(report.contract_version, 1);
         assert!(report.supported.contains(&Capability::ProjectApplyIntents));
-        assert!(report.unsupported.iter().all(|u| !u.reason.is_empty()));
+        assert!(report.supported.contains(&Capability::ProjectValidate));
+        assert!(report.supported.contains(&Capability::ProjectBuildExport));
         assert!(report
-            .unsupported
-            .iter()
-            .any(|u| u.capability == "validate_via_contract"));
+            .supported
+            .contains(&Capability::ProjectDiagnosticsBundle));
+        assert!(report.unsupported.iter().all(|u| !u.reason.is_empty()));
+        assert!(!report.unsupported.iter().any(|u| {
+            u.capability == "validate_via_contract"
+                || u.capability == "build_export"
+                || u.capability == "diagnostics_bundle"
+        }));
     }
 
     /// Intents round-trip with the full structural identity.
