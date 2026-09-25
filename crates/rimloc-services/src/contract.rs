@@ -239,6 +239,19 @@ pub struct ProjectSnapshot {
     pub project_id: ProjectId,
     pub revision: Revision,
     pub session_epoch: SessionEpoch,
+    /// True when in-memory edits are applied but NOT durably acked
+    /// (`save_failed` / external change). `refresh` DISCARDS dirty edits
+    /// (disk wins) — the client must gate refresh behind an explicit
+    /// discard confirmation instead of silently destroying the draft.
+    /// Additive v2 field (defaults keep older payloads loadable).
+    #[serde(default)]
+    pub dirty: bool,
+    /// The last durably ACKED revision. While dirty, `apply` compares its
+    /// `expected_revision` against this — a snapshot exposing only
+    /// `revision` would hand the client a base the next apply rejects as
+    /// `stale_revision`. Additive v2 field.
+    #[serde(default)]
+    pub acked_revision: Revision,
     pub project: Project,
 }
 

@@ -1057,6 +1057,8 @@ fn snapshot_of(project_id: &str, st: &SessionState) -> ProjectSnapshot {
         project_id: project_id.to_string(),
         revision: st.revision,
         session_epoch: st.epoch,
+        dirty: st.dirty,
+        acked_revision: st.acked_revision,
         project: st.project.clone(),
     }
 }
@@ -1919,6 +1921,50 @@ mod tests {
             .export_project(&snap.project_id, 1, &managed.join("out"), "Russian")
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// P2-4 (backend half): the snapshot exposes the dirty flag and the
+    /// last acked revision, so the client can GATE refresh (which discards
+    /// dirty edits) and retry applies against a legal base instead of a
+    /// revision the next apply would reject.
+    #[test]
+    fn snapshot_exposes_dirty_state_and_acked_revision() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert!(!snap.dirty);
+        assert_eq!(snap.acked_revision, snap.revision);
+
+        // Capture a pristine copy for the later refresh, then break the
+        // durable write → the applied state is dirty in memory only.
+        let file_path = mgr.managed_path(&snap.project_id).unwrap();
+        let pristine = load_project_with_meta(&file_path).unwrap();
+        fs::remove_file(&file_path).unwrap();
+        fs::create_dir(&file_path).unwrap();
+        let err = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![set_text("Dup.label", "ThingDef", "метка")],
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::SaveFailed);
+
+        let dirty = mgr.snapshot(&snap.project_id).unwrap();
+        assert!(dirty.dirty, "applied-but-unacked edits must be visible");
+        assert_eq!(dirty.revision, 2);
+        assert_eq!(dirty.acked_revision, 1, "nothing was acked");
+
+        // A good file returns to disk; refresh adopts it: dirty clears and
+        // both revisions agree again.
+        fs::remove_dir(&file_path).unwrap();
+        save_project_with_meta(&pristine.project, &pristine.meta, &file_path).unwrap();
+        let refreshed = mgr.refresh(&snap.project_id).unwrap();
+        assert!(!refreshed.dirty);
+        assert_eq!(refreshed.revision, refreshed.acked_revision);
     }
 
     fn snap_of_create(mgr: &ProjectSessionManager, mod_root: &Path) -> ProjectId {
