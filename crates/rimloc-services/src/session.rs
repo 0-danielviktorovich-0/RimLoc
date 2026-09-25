@@ -97,17 +97,43 @@ impl ProjectSessionManager {
         &self.managed_root
     }
 
-    /// The managed file for a project id (containment by construction; the
-    /// guard check in `persist` keeps the contract honest).
-    pub fn managed_path(&self, project_id: &str) -> PathBuf {
-        self.managed_root
-            .join(format!("{project_id}.{MANAGED_EXT}"))
+    /// The managed file for a project id. FAIL-CLOSED: the id must match
+    /// the mint form (`proj-<a-z0-9->`) — client-supplied strings with `/`,
+    /// `..`, dots or absolute prefixes are rejected as a typed contract
+    /// violation BEFORE any filesystem access — and the resulting path must
+    /// stay within the managed root (defense in depth; `..` is impossible
+    /// after the form check, the containment check survives future edits).
+    pub fn managed_path(&self, project_id: &str) -> Result<PathBuf, ContractError> {
+        static PROJECT_ID_FORM: once_cell::sync::Lazy<regex::Regex> =
+            once_cell::sync::Lazy::new(|| regex::Regex::new(r"^proj-[a-z0-9-]+$").unwrap());
+        if !PROJECT_ID_FORM.is_match(project_id) {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                "malformed project id: expected the minted `proj-<id>` form".to_string(),
+            ));
+        }
+        let path = self
+            .managed_root
+            .join(format!("{project_id}.{MANAGED_EXT}"));
+        if !crate::util::is_within(&path, &self.managed_root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "managed project path escapes the managed root".to_string(),
+            ));
+        }
+        Ok(path)
     }
 
     fn mint_project_id(&self) -> ProjectId {
         loop {
             let id = generate_operation_id().replacen("op-", "proj-", 1);
-            if !self.managed_path(&id).exists() {
+            // Generated ids match the form by construction; only the
+            // on-disk collision needs a retry.
+            if !self
+                .managed_root
+                .join(format!("{id}.{MANAGED_EXT}"))
+                .exists()
+            {
                 return id;
             }
         }
@@ -137,7 +163,9 @@ impl ProjectSessionManager {
             .file_name()
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| project_id.clone());
-        let path = self.managed_path(&project_id);
+        let path = self
+            .managed_root
+            .join(format!("{project_id}.{MANAGED_EXT}"));
 
         // Persist-before-ack: the acked create is durably on disk.
         let revision: Revision = 1;
@@ -176,6 +204,7 @@ impl ProjectSessionManager {
     /// epoch. Recovers from disk when this manager instance has no live
     /// state for the id (restart / crash recovery).
     pub fn open(&self, project_id: &str) -> Result<ProjectSnapshot, ContractError> {
+        let path = self.managed_path(project_id)?;
         let arc = self
             .inner
             .lock()
@@ -189,7 +218,6 @@ impl ProjectSessionManager {
                 Ok(snapshot_of(project_id, &st))
             }
             None => {
-                let path = self.managed_path(project_id);
                 if !path.is_file() {
                     return Err(ContractError::project_not_found(project_id));
                 }
@@ -227,6 +255,8 @@ impl ProjectSessionManager {
 
     /// Read-only snapshot of the current state (no epoch bump).
     pub fn snapshot(&self, project_id: &str) -> Result<ProjectSnapshot, ContractError> {
+        let path = self.managed_path(project_id)?;
+        let _ = &path;
         let arc = self
             .inner
             .lock()
@@ -282,7 +312,7 @@ impl ProjectSessionManager {
     /// Recovery path: discard in-memory (possibly dirty) state and reload
     /// from disk; the session epoch bumps so stale sessions drop out.
     pub fn refresh(&self, project_id: &str) -> Result<ProjectSnapshot, ContractError> {
-        let path = self.managed_path(project_id);
+        let path = self.managed_path(project_id)?;
         if !path.is_file() {
             self.inner
                 .lock()
@@ -337,6 +367,7 @@ impl ProjectSessionManager {
     /// synchronous slice: set before `apply` → the batch is skipped whole;
     /// set after → no-op.
     pub fn cancel_next(&self, project_id: &str) -> Result<bool, ContractError> {
+        self.managed_path(project_id)?;
         let arc = self
             .inner
             .lock()
@@ -356,6 +387,7 @@ impl ProjectSessionManager {
     /// whole [`Project`].
     pub fn apply(&self, req: &ApplyIntentsRequest) -> Result<ApplyIntentsResponse, ContractError> {
         let job_id: JobId = generate_operation_id();
+        self.managed_path(&req.project_id)?;
         let arc = self
             .inner
             .lock()
@@ -703,7 +735,7 @@ mod tests {
         assert!(!res.job_id.is_empty());
 
         // Durable: the file carries the new revision + the translation.
-        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id)).unwrap();
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
         assert_eq!(loaded.meta.revision, Some(2));
         assert_eq!(
             loaded.meta.project_id.as_deref(),
@@ -760,7 +792,7 @@ mod tests {
             .unwrap();
         assert_eq!(res.applied, 2);
 
-        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id)).unwrap();
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
         let get = |dt: &str| {
             loaded
                 .project
@@ -791,7 +823,7 @@ mod tests {
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
 
         // Break the durable write: a DIRECTORY sits at the managed path.
-        let file_path = mgr.managed_path(&snap.project_id);
+        let file_path = mgr.managed_path(&snap.project_id).unwrap();
         fs::remove_file(&file_path).unwrap();
         fs::create_dir(&file_path).unwrap();
 
@@ -839,7 +871,7 @@ mod tests {
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
 
         // External writer (another process) bumps the file to revision 9.
-        let path = mgr.managed_path(&snap.project_id);
+        let path = mgr.managed_path(&snap.project_id).unwrap();
         let external = load_project_with_meta(&path).unwrap().project;
         let meta = ProjectEnvelopeMeta {
             project_id: Some(snap.project_id.clone()),
@@ -997,5 +1029,65 @@ mod tests {
     #[test]
     fn contract_version_reaches_sessions() {
         assert_eq!(UI_CONTRACT_VERSION, 1);
+    }
+    /// P1 security regression (L cross-review): client-supplied project ids
+    /// with traversal/absolute shapes are a typed rejection on EVERY entry
+    /// point — never an Ok, never a ProjectNotFound that depends on what
+    /// happens to exist at the escaped path.
+    #[test]
+    fn path_traversal_ids_are_rejected_on_every_entry_point() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let evil = [
+            "../../etc/passwd",
+            "/tmp/evil",
+            "proj-../../etc/x",
+            "proj-a/../../x",
+            "proj-a\\x",
+            "PROJ-UPPER",
+            "proj-a.",
+            ".",
+            "..",
+            "",
+        ];
+        for id in evil {
+            let open = mgr.open(id).unwrap_err();
+            assert_eq!(
+                open.code,
+                ContractErrorCode::ContractViolation,
+                "[{id}] {open}"
+            );
+            let snap = mgr.snapshot(id).unwrap_err();
+            assert_eq!(snap.code, ContractErrorCode::ContractViolation, "[{id}]");
+            let refresh = mgr.refresh(id).unwrap_err();
+            assert_eq!(refresh.code, ContractErrorCode::ContractViolation, "[{id}]");
+            let cancel = mgr.cancel_next(id).unwrap_err();
+            assert_eq!(cancel.code, ContractErrorCode::ContractViolation, "[{id}]");
+            let apply = mgr
+                .apply(&req(id, 1, 1, vec![set_text("Dup.label", "ThingDef", "x")]))
+                .unwrap_err();
+            assert_eq!(apply.code, ContractErrorCode::ContractViolation, "[{id}]");
+        }
+        // Nothing was written outside the managed root by any of the
+        // rejected calls (the form check fires BEFORE fs access).
+        let leaked = dir.path().join("etc");
+        assert!(!leaked.exists(), "no traversal side effects");
+        assert!(!std::env::temp_dir().join("evil.rimloc.json").exists());
+    }
+
+    /// A VALID minted id with no managed file still yields the honest
+    /// ProjectNotFound — the form guard never shadows real lookups.
+    #[test]
+    fn valid_form_without_file_is_project_not_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let id = format!("proj-{:x}", 1234567);
+        assert!(id.starts_with("proj-"));
+        let err = mgr.open(&id).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ProjectNotFound);
     }
 }
