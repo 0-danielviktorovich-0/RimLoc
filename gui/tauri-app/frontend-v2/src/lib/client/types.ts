@@ -86,8 +86,11 @@ export interface TranslationDto {
   text: string | null;
   completeness: string;
   review: string;
-  validation: string;
+  /** ValidationState on the wire (serde, externally tagged):
+   *  'unknown' | 'ok' | { issues: string[] }. */
+  validation: 'unknown' | 'ok' | { issues: string[] };
   lifecycle: string;
+  /** Origin on the wire (serde snake_case): 'unknown'|'human'|'tm'|'llm'|'imported'. */
   origin: string;
   notes?: string;
 }
