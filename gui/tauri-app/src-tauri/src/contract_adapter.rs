@@ -40,6 +40,11 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_apply_intents",
     "project_refresh",
     "project_cancel_next",
+    // Final night wave: validate/build/diagnostics over the contract
+    // (services landed in 47758cb; this registration is the transport).
+    "project_validate",
+    "project_export",
+    "project_diagnose",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -171,6 +176,58 @@ pub fn project_cancel_next(
     manager.cancel_next(&project_id)
 }
 
+/// `project_validate` — the EXISTING validator over the trusted session
+/// state; read-only, never mutates the project. `session_epoch` guards
+/// against stale callers; `locale` is an in-memory filter.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_validate(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    locale: Option<String>,
+) -> Result<rimloc_services::contract::ValidateProjectResponse, rimloc_services::contract::ContractError>
+{
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    manager.validate_project(&project_id, session_epoch, locale.as_deref())
+}
+
+/// `project_export` — isolated native output into a CALLER-SPECIFIED out
+/// directory; the services guard refuses source-tree/managed-root targets
+/// (guard_output_denied) and the result is reparse-verified before ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_export(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    out_dir: String,
+    locale: String,
+) -> Result<rimloc_services::contract::ExportProjectResponse, rimloc_services::contract::ContractError>
+{
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    manager.export_project(&project_id, session_epoch, std::path::Path::new(&out_dir), &locale)
+}
+
+/// `project_diagnose` — sanitized support bundle over the project's last
+/// failed operation; the collector enforces the out-of-source-tree guard.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_diagnose(
+    state: State<'_, ContractState>,
+    project_id: String,
+    out_dir: String,
+) -> Result<rimloc_services::contract::DiagnoseResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    manager.diagnose(&project_id, std::path::Path::new(&out_dir))
+}
+
 /// Manage the contract state on a builder. Returns the same builder type;
 /// runtime-generic so tests can use the mock runtime.
 pub fn attach_contract<C: tauri::Runtime>(
@@ -190,8 +247,21 @@ mod tests {
     fn handshake_reports_version_one_and_capabilities() {
         let hs = contract_handshake();
         assert_eq!(hs.ui_contract_version, ui_contract_version());
-        assert!(!hs.capabilities.supported.is_empty());
-        // honest slice boundary: validate/build/diagnostics are NOT here yet
+        // Final night wave: validate/build/diagnostics ARE supported now —
+        // asserted in the WIRE form (serde snake_case), not Debug.
+        let supported: Vec<String> = hs
+            .capabilities
+            .supported
+            .iter()
+            .map(|c| serde_json::to_value(c).unwrap().as_str().unwrap().to_string())
+            .collect();
+        for cap in ["project_validate", "project_build_export", "project_diagnostics_bundle"] {
+            assert!(
+                supported.iter().any(|s| s == cap),
+                "capability {cap} must be supported"
+            );
+        }
+        // …and the slice boundary stays honest about what is NOT here.
         assert!(!hs.capabilities.unsupported.is_empty());
     }
 

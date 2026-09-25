@@ -3003,6 +3003,10 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_apply_intents",
     "project_refresh",
     "project_cancel_next",
+    // final night wave: validate/build/diagnostics over the contract
+    "project_validate",
+    "project_export",
+    "project_diagnose",
     // safe read-only legacy extras
     "get_app_info",
     "scan_mod",
@@ -3083,6 +3087,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_apply_intents,
             rimloc_gui_lib::contract_adapter::project_refresh,
             rimloc_gui_lib::contract_adapter::project_cancel_next,
+            rimloc_gui_lib::contract_adapter::project_validate,
+            rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_diagnose,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3134,6 +3141,10 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_apply_intents,
             rimloc_gui_lib::contract_adapter::project_refresh,
             rimloc_gui_lib::contract_adapter::project_cancel_next,
+            // final night wave: validate/build/diagnostics over the contract
+            rimloc_gui_lib::contract_adapter::project_validate,
+            rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_diagnose,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,
