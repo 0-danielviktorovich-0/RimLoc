@@ -1,31 +1,39 @@
-# Deploy is allowed only in the upstream repo to avoid failures in forks.
-# Forks still run the build (MkDocs) so maintainers can verify docs compile.
-# Preview deploys are skipped for forked PRs (no Pages permissions on GITHUB_TOKEN).
+# Docs: MkDocs build как гейт PR в main; публикация — только вручную
+# (workflow_dispatch на main) или preview для PR из upstream-репозитория.
+# Fork-PR'ы только билдят: у их GITHUB_TOKEN нет Pages-прав.
+#
+# deploy-prod раньше висел на push в main; push-триггеры сняты (решение
+# владельца, b102f3e), поэтому публикация сейчас — явный ручной dispatch.
+# Правила пиннинга/permissions — docs/development/CI.md.
 name: docs
 
 on:
-  workflow_dispatch:
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
-concurrency: pages
+concurrency:
+  group: docs-${{ github.event_name }}-${{ github.ref }}
+  # Ручной deploy не отменяем на полпути; PR-прогоны заменяют друг друга.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
+    name: mkdocs build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7 (pinned 2026-09-27)
         with:
           python-version: '3.x'
 
       - name: Cache pip
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6 (pinned 2026-09-27)
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-docs.txt') }}
@@ -42,30 +50,46 @@ jobs:
           SITE_URL: https://0-danielviktorovich-0.github.io/RimLoc/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5 (pinned 2026-09-27)
         with:
           path: site
 
   deploy-prod:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == '0-danielviktorovich-0/RimLoc'
+    name: deploy (production Pages)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == '0-danielviktorovich-0/RimLoc'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    # Отдельная группа: одновременные Pages-деплои сериализуем (environment один),
+    # начавшийся deploy не отменяется.
+    concurrency:
+      group: docs-pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5 (pinned 2026-09-27)
 
   deploy-preview:
+    name: deploy (PR preview)
     if: github.event_name == 'pull_request' && github.repository == '0-danielviktorovich-0/RimLoc' && github.event.pull_request.head.repo.fork == false
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: docs-pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5 (pinned 2026-09-27)
         with:
           preview: true
