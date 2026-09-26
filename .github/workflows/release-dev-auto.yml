@@ -1,7 +1,7 @@
 name: Nightly Dev Pre-release
 
 on:
-  push:
+  workflow_dispatch:
     branches: [ develop ]
 
 permissions:

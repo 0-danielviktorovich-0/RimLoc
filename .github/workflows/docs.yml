@@ -4,8 +4,7 @@
 name: docs
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
   pull_request:
 
 permissions:
