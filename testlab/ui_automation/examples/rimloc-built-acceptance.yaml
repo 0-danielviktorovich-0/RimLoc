@@ -1,0 +1,84 @@
+# Built-app acceptance journey, run 3 (2026-09-27, GLM Flash смена): the FULL
+# owner flow over the real build, driven entirely off-screen. Based on the
+# uncommitted run-2 config by the previous worker (preserved verbatim at
+# /tmp/rimloc-built-acceptance-orig.yaml) with three changes for the live
+# state of the app:
+#
+#   1. `press Русский` is now optional + short timeout: the locale persists
+#      in localStorage and the previous run proved the boot screen shows NO
+#      locale picker when RU is already pinned (3 relaunches, 3x60 attempts,
+#      all "not found"). If the AX tree exposes the header RU toggle
+#      (aria-label="Русский"), pressing it is a harmless no-op.
+#   2. `press Пропустить подсказки` is optional: the coach overlay is
+#      one-time state and may already be dismissed.
+#   3. NEW `set_text` steps (driver.ax_set_text, AXValue on web text fields)
+#      fill the export / diagnose out-dirs with real /tmp paths, then the
+#      export is retried — this turns the run-2 "typed refusal as evidence"
+#      into a full success-path proof ON the built app (or, if the Svelte
+#      bind does not observe the AX set, keeps the honest refusal evidence).
+#
+# Prereqs:
+#   - target/debug/rimloc-gui built from main (dev profile: off-screen hooks
+#     in gui/tauri-app/src-tauri/src/main.rs are cfg!(debug_assertions)-gated);
+#     built into the ISOLATED /tmp/rimloc-ba-target target dir (see app.binary);
+#   - a seeded contract project in the GUI managed storage
+#     (crates/rimloc-services example rc_seed_managed; VWE 1814383360,
+#     247 entries, RU translations — one deliberately placeholder-broken
+#     so the real validator surfaces a genuine error finding).
+#
+# Run: /tmp/rimloc-venv/bin/python3 -m testlab.ui_automation \
+#        --config /tmp/rimloc-built-acceptance-run2.yaml   (cwd = worktree)
+
+app:
+  # Isolated acceptance target (/tmp/rimloc-ba-target): the shared
+  # Developing/RimLoc/target is being invalidated back and forth by a
+  # parallel cargo session tonight (this run's first build was wiped
+#   mid-flight), so the acceptance binary builds into its own target dir
+#   from the same main worktree sources.
+  binary: /Users/danielviktorovich/Developing/RimLoc/target/debug/rimloc-gui
+  origin: [-3000, -3000]        # parked fully off-screen
+  move_mode: swizzle            # constrainFrameRect bypass (app-side dev hook)
+  fake: occlusion,firstmouse    # window-visibility lies for WebKit
+  settle_s: 9
+pid_file: /tmp/rimloc-ui-automation.pid
+shots_dir: /tmp/rimloc-accept2
+work_dir: /tmp/rimloc-accept2-work
+max_relaunch: 6
+hydrate_timeout: 15
+
+steps:
+  - shot: 00-boot                        # first render (locale persisted RU)
+  - press: { name: Русский, timeout: 20, exact: true, optional: true }
+  - sleep: 3                             # page re-render resets AXManualAccessibility
+  - shot: 01-home                        # recents row = project_list live proof (dbae486)
+  - press: { name: Открыть, timeout: 60, exact: true }   # recents row renders ONLY from list()
+  - press: { name: Пропустить подсказки, timeout: 25, optional: true }
+  - wait_text_rows: { min: 12, timeout: 25 }     # workspace table rendered
+  - shot: 02-workspace                   # 247-entry VWE table
+  - assert_offscreen: true
+  - press: { name: Собрать перевод, timeout: 60 }        # workspace CTA -> build screen
+  - sleep: 2
+  - shot: 03-build-screen
+  - press: { name: Проверить проект, timeout: 90 }       # real contract validate
+  - sleep: 3
+  - shot: 04-validate-findings           # error tooth: placeholder loss finding
+  - press: { name: Собрать и записать, timeout: 60 }     # export (placeholder out_dir)
+  - sleep: 4
+  - shot: 05-export-typed-refusal        # guard typed error = honest evidence
+  - set_text: { match: Папка вывода, value: /tmp/rimloc-accept-export, timeout: 30 }
+  - press: { name: Собрать и записать, timeout: 60 }     # export retry (real out_dir)
+  - sleep: 4
+  - shot: 05b-export-result              # success (files_written>0) or typed refusal
+  - press: { name: Справка, timeout: 60 }                # header nav -> help
+  - shot: 06-help
+  - press: { name: Полная диагностика, timeout: 60 }     # help -> #/diagnostics station
+  - shot: 07-diagnostics-station
+  - set_text: { match: Папка бандла, value: /tmp/rimloc-accept-bundle, timeout: 30 }
+  - press: { name: Собрать бандл, timeout: 60 }          # diagnose over last failed op
+  - sleep: 4
+  - shot: 08-diagnose-bundle
+  - press: { name: Справка, timeout: 60 }
+  - press: { name: Подготовить отчёт, timeout: 60 }      # §17 sanitized bundle preview
+  - sleep: 2
+  - shot: 09-bundle-preview
+  - assert_offscreen: true

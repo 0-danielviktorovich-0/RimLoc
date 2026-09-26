@@ -3067,7 +3067,64 @@ fn legacy_commands_enabled() -> bool {
 
 
 
-/// DEV-ONLY: [NSApp accessibilityActivate] — starts the app's accessibility
+/// DEV-ONLY: claim user-initiated activity for the whole process lifetime so
+/// App Nap never suspends an off-screen automation instance. A suspended
+/// process stops answering AXWindows entirely, which kills AXPress-driven
+/// journeys ~10-30s after launch (measured 2026-09-27: AXWindows empties
+/// mid-journey and never revives). The activity token and its reason string
+/// are intentionally leaked: the claim lives as long as the process.
+#[cfg(debug_assertions)]
+#[cfg(target_os = "macos")]
+fn dev_disable_app_nap() {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        // One declaration for both call shapes: on arm64 the callee reads
+        // only the registers it needs, extra args in x2/x3 are ignored.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            options: u64,
+            reason: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+        fn CFStringCreateWithCString(
+            alloc: *mut std::ffi::c_void,
+            c_str: *const std::os::raw::c_char,
+            encoding: u32,
+        ) -> *mut std::ffi::c_void;
+    }
+    const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
+    // NSActivityUserInitiated = idleSystemSleepDisabled | userInitiated
+    const NS_ACTIVITY_USER_INITIATED: u64 = (1 << 20) | (1 << 15);
+    unsafe {
+        let cls = objc_getClass(b"NSProcessInfo\0".as_ptr() as *const _);
+        if cls.is_null() {
+            return;
+        }
+        let info = objc_msgSend(
+            cls,
+            sel_registerName(b"processInfo\0".as_ptr() as *const _),
+            0,
+            std::ptr::null_mut(),
+        );
+        if info.is_null() {
+            return;
+        }
+        let reason = CFStringCreateWithCString(
+            std::ptr::null_mut(),
+            b"rimloc off-screen UI automation\0".as_ptr() as *const _,
+            K_CF_STRING_ENCODING_UTF8,
+        );
+        let _activity = objc_msgSend(
+            info,
+            sel_registerName(b"beginActivityWithOptions:reason:\0".as_ptr() as *const _),
+            NS_ACTIVITY_USER_INITIATED,
+            reason,
+        );
+    }
+}
+
+/// DEV-ONLY: [NSApp accessibilityActivate] — starts the app's accessibility — starts the app's accessibility
 /// server deterministically. Off-screen the AX bridge is lazy and sometimes
 /// never hydrates from client queries alone, which would break AXPress
 /// automation.
@@ -3558,6 +3615,10 @@ fn main() {
                                 eprintln!(
                                     "rimloc-gui: RIMLOC_WINDOW_ORIGIN=({x},{y}) mode={mode} moved={moved}"
                                 );
+                                // App Nap opt-out FIRST: a napped
+                                // process stops answering AXWindows and
+                                // the AX tree dies mid-journey.
+                                dev_disable_app_nap();
                                 // Make the app's accessibility server
                                 // start deterministically: off-screen the
                                 // AX bridge is lazy and sometimes never
@@ -3569,13 +3630,31 @@ fn main() {
                                 // scroll-to-reveal) nudge the window frame
                                 // after the initial move.
                                 let park = window.clone();
-                                std::thread::spawn(move || loop {
-                                    std::thread::sleep(std::time::Duration::from_secs(3));
-                                    // keep re-asserting the AX registration:
-                                    // WebKit page loads can drop it, and an
-                                    // unhydrated AX bridge breaks automation
-                                    dev_accessibility_activate();
-                                    let _ = park.set_position(tauri::LogicalPosition::new(x, y));
+                                std::thread::spawn(move || {
+                                    // macOS 27 drops off-screen windows from
+                                    // the app's AXWindows report seconds after
+                                    // launch (measured 2026-09-27) and a
+                                    // same-position re-assert is a no-op that
+                                    // does NOT re-register. A REAL 2px frame
+                                    // change re-registers the window with AX,
+                                    // so park ticks alternate x by 2px and run
+                                    // every second — the driver's 1.5s poll
+                                    // then always finds a live AX window.
+                                    let mut tick: u32 = 0;
+                                    loop {
+                                        std::thread::sleep(
+                                            std::time::Duration::from_millis(1000),
+                                        );
+                                        tick += 1;
+                                        // keep re-asserting the AX registration:
+                                        // WebKit page loads can drop it, and an
+                                        // unhydrated AX bridge breaks automation
+                                        dev_accessibility_activate();
+                                        let px = if tick % 2 == 0 { x } else { x - 2.0 };
+                                        let _ = park.set_position(
+                                            tauri::LogicalPosition::new(px, y),
+                                        );
+                                    }
                                 });
                             }
                             None => {

@@ -276,6 +276,31 @@ def _ax_walk_set_manual(el, depth: int = 0) -> bool:
     return False
 
 
+def _ax_solicit(wins) -> None:
+    """Actively solicit the WKWebView accessibility tree.
+
+    The web tree hydrates lazily and per-instance unreliably off-screen
+    (2026-09-27: three fresh instances in a row never exposed an AXWebArea
+    with passive polling alone). Poking AXManualAccessibility on the window
+    and AXEnhancedUserInterface on the app element each poll — even where
+    the setters report kAXErrorAttributeUnsupported — coincides with the
+    tree appearing (verified by /tmp/rimloc-ax-diagnose*.py). Errors are
+    deliberately ignored: these are best-effort nudges, the real signal is
+    the walk below finding an AXWebArea.
+    """
+    if not wins:
+        return
+    AS.AXUIElementSetAttributeValue(wins[0], 'AXManualAccessibility',
+                                    Quartz.kCFBooleanTrue)
+    app_el = AS.AXUIElementCreateApplication(_solicit_pid)
+    AS.AXUIElementSetAttributeValue(app_el, 'AXEnhancedUserInterface',
+                                    Quartz.kCFBooleanTrue)
+
+
+# pid of the app under drive, set by ax_press/ax_button_names/ax_set_text
+_solicit_pid = 0
+
+
 def _ax_buttons(root):
     """Pressable web elements. HTML buttons carrying aria-pressed are mapped
     by WebKit to AXCheckBox (not AXButton), so collect the pressable roles."""
@@ -301,12 +326,15 @@ def ax_press(pid: int, wanted: str, timeout: float = 60.0,
 
     Robustness notes:
       - The app-side AX bridge is lazy right after launch: AXWindows may read
-        empty for a while. Re-create the app element each attempt and keep
-        polling until the tree hydrates.
+        empty for a while, and the web tree may never hydrate on passive
+        polling alone. Re-create the app element each attempt, actively
+        solicit the tree (_ax_solicit) and keep polling until hydration.
       - WebKit RESETS AXManualAccessibility whenever the page re-renders
         (locale switch, navigation), so re-set it on every attempt instead of
         caching the flag.
     """
+    global _solicit_pid
+    _solicit_pid = pid
     deadline = time.time() + timeout
     attempts = 0
     while time.time() < deadline:
@@ -314,6 +342,7 @@ def ax_press(pid: int, wanted: str, timeout: float = 60.0,
         app = AS.AXUIElementCreateApplication(pid)
         wins = _ax_attr(app, 'AXWindows') or []
         if wins:
+            _ax_solicit(wins)
             _ax_walk_set_manual(wins[0])  # idempotent; survives page reloads
             for el, name in _ax_buttons(wins[0]):
                 ok = name == wanted if exact else wanted.lower() in name.lower()
@@ -326,17 +355,83 @@ def ax_press(pid: int, wanted: str, timeout: float = 60.0,
 
 def ax_button_names(pid: int, timeout: float = 20.0) -> list[str]:
     """Best-effort snapshot of visible web-button names (diagnostics)."""
+    global _solicit_pid
+    _solicit_pid = pid
     deadline = time.time() + timeout
     while time.time() < deadline:
         app = AS.AXUIElementCreateApplication(pid)
         wins = _ax_attr(app, 'AXWindows') or []
         if wins:
+            _ax_solicit(wins)
             _ax_walk_set_manual(wins[0])  # re-set: page loads reset the flag
             names = [n for _, n in _ax_buttons(wins[0]) if n]
             if names:
                 return names
         time.sleep(1.5)
     return []
+
+
+_TEXT_ROLES = ('AXTextField', 'AXTextArea', 'AXComboBox')
+
+
+def _ax_text_fields(root):
+    """Editable web text fields with their naming attributes joined."""
+    found = []
+
+    def rec(el, depth=0):
+        if depth > 25:
+            return
+        if _ax_attr(el, 'AXRole') in _TEXT_ROLES:
+            name = ' '.join(
+                str(_ax_attr(el, attr) or '')
+                for attr in ('AXTitle', 'AXDescription', 'AXLabel',
+                             'AXPlaceholderValue', 'AXValue'))
+            found.append((el, name))
+        for k in (_ax_attr(el, 'AXChildren') or []):
+            rec(k, depth + 1)
+
+    rec(root)
+    return found
+
+
+def ax_set_text(pid: int, match: str, value: str, timeout: float = 30.0) -> str:
+    """Set AXValue on the first web text field whose label/description/value
+    contains `match`. WebKit's AX value-set replaces the DOM value; whether
+    the framework binding (Svelte bind:value) observes it is verified by the
+    caller through a subsequent UI consequence (e.g. the export result)."""
+    global _solicit_pid
+    _solicit_pid = pid
+    deadline = time.time() + timeout
+    attempts = 0
+    while time.time() < deadline:
+        attempts += 1
+        app = AS.AXUIElementCreateApplication(pid)
+        wins = _ax_attr(app, 'AXWindows') or []
+        if wins:
+            _ax_solicit(wins)
+            _ax_walk_set_manual(wins[0])
+            for el, name in _ax_text_fields(wins[0]):
+                if match.lower() in name.lower():
+                    # focus the field first: some web frameworks only commit
+                    # an AX value-set onto a focused input
+                    AS.AXUIElementSetAttributeValue(
+                        el, 'AXFocused', Quartz.kCFBooleanTrue)
+                    time.sleep(0.2)
+                    err = AS.AXUIElementSetAttributeValue(
+                        el, 'AXValue', value)
+                    if err != 0:
+                        return (f'set "{match}" failed err={err} '
+                                f'(attempts={attempts})')
+                    time.sleep(0.6)
+                    readback = _ax_attr(el, 'AXValue')
+                    note = (f'set "{match}" -> {value!r} '
+                            f'readback={readback!r} (attempts={attempts})')
+                    if readback != value:
+                        note += (' [REVERTED: framework binding overwrote '
+                                 'the AX value]')
+                    return note
+        time.sleep(1.5)
+    return f'text field "{match}" not found (attempts={attempts})'
 
 
 # ------------------------------------------------------- synthetic mouse

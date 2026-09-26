@@ -4,7 +4,13 @@ collect screenshots and a no-disturb report.
 Step types (YAML):
   - shot: <name>                    capture the window frame to shots_dir
   - press: <name>                   AXPress a web button by accessible name
-      {press: {name: X, timeout: 60, exact: false}}
+      {press: {name: X, timeout: 60, exact: false, optional: false}}
+      optional: true — a missing button is recorded and skipped, not a failure
+      (for UI state that may or may not be present, e.g. a locale toggle or a
+      first-run coach overlay that localStorage already dismissed).
+  - set_text:                       set AXValue on a web text field
+      {set_text: {match: <substring of label/desc/placeholder/value>,
+                  value: <text>, timeout: 30, optional: false}}
   - wait_text_rows: <min>           poll until the frame has >= min text rows
       {wait_text_rows: {min: 12, timeout: 20}}
   - sleep: <seconds>
@@ -68,6 +74,7 @@ def _run_steps(cfg: dict, pid: int, win: driver.Window,
                               f'nonblank={driver.nonblank_samples(img)}')
             elif 'press' in step:
                 spec = step['press']
+                optional = isinstance(spec, dict) and bool(spec.get('optional'))
                 if isinstance(spec, dict):
                     res = driver.ax_press(
                         pid, str(spec['name']),
@@ -76,6 +83,19 @@ def _run_steps(cfg: dict, pid: int, win: driver.Window,
                 else:
                     res = driver.ax_press(pid, str(spec))
                 ok = 'not found' not in res
+                if not ok and optional:
+                    ok = True
+                    res += ' [optional: absent, skipped]'
+                detail = res
+            elif 'set_text' in step:
+                spec = step['set_text']
+                res = driver.ax_set_text(
+                    pid, str(spec['match']), str(spec['value']),
+                    timeout=float(spec.get('timeout', 30)))
+                ok = 'not found' not in res and 'failed' not in res
+                if not ok and bool(spec.get('optional')):
+                    ok = True
+                    res += ' [optional: skipped]'
                 detail = res
             elif 'wait_text_rows' in step:
                 spec = step['wait_text_rows']
@@ -158,6 +178,26 @@ def run(config_path: str, log=print) -> JourneyReport:
                     win = driver.find_main_window(pid) or win
             driver.assert_offscreen(win)
             log(f'window {win.window_id} bounds={win.bounds}')
+
+            # Hydration gate (2026-09-27): the WKWebView web tree hydrates
+            # reliably only when the first AX solicitation lands within the
+            # first seconds of the instance's life; a late first poke (after
+            # the settle sleep) never hydrates (0/5 instances). Probe NOW,
+            # immediately after the window appears, and treat an empty result
+            # as a failed attempt — the relaunch lottery is ~15s a ticket.
+            probe = driver.ax_button_names(
+                pid, timeout=float(cfg.get('hydrate_timeout', 15)))
+            if not probe:
+                log(f'attempt {attempt}: AX web tree never hydrated '
+                    f'— relaunching a fresh instance')
+                if attempt < max_relaunch:
+                    inst.cleanup()
+                    inst = OwnedInstance(pid_file=inst.pid_file)
+                    inst.spawn([binary], env)
+                    pid = inst.pid
+                continue
+            log(f'AX web tree hydrated: {len(probe)} named controls')
+
             time.sleep(float(app.get('settle_s', 9)))
 
             watch = driver.DisturbWatch(work_dir)
