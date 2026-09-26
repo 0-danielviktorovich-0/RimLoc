@@ -97,13 +97,17 @@ fn phase_open(managed: &Path, project_id: &str) -> Result<(), ExitCode> {
         snap.project.translations.len()
     );
     let (_, snap_times) = timed("snapshot_inproc", SNAPSHOT_RUNS, || {
-        mgr.snapshot(&snap.project_id).map(|s| s.project.entries.len())
+        mgr.snapshot(&snap.project_id)
+            .map(|s| s.project.entries.len())
     });
     let _ = snap_times;
     Ok(())
 }
 
-fn intents_for(snap: &rimloc_services::contract::ProjectSnapshot, batch: usize) -> Vec<TranslationIntent> {
+fn intents_for(
+    snap: &rimloc_services::contract::ProjectSnapshot,
+    batch: usize,
+) -> Vec<TranslationIntent> {
     snap.project
         .entries
         .iter()
@@ -125,7 +129,10 @@ fn phase_full(mod_root: &Path, managed: &Path, batch: usize) -> Result<(), ExitC
     let snap = mgr
         .create(mod_root, None)
         .map_err(|e| fail(&format!("create: {e}")))?;
-    report("create_scan_persist", &[t0.elapsed().as_secs_f64() * 1000.0]);
+    report(
+        "create_scan_persist",
+        &[t0.elapsed().as_secs_f64() * 1000.0],
+    );
 
     // cold open from disk (fresh registry entry for the id is present, so
     // emulate the restart path by opening a NEW manager instance)
@@ -134,8 +141,9 @@ fn phase_full(mod_root: &Path, managed: &Path, batch: usize) -> Result<(), ExitC
     let snap = opened.map_err(|e| fail(&format!("open: {e}")))?;
 
     // in-memory snapshots — the GUI table refresh backend path
-    timed("snapshot_inproc", SNAPSHOT_RUNS, || {
-        mgr.snapshot(&snap.project_id).map(|s| s.project.entries.len())
+    let _ = timed("snapshot_inproc", SNAPSHOT_RUNS, || {
+        mgr.snapshot(&snap.project_id)
+            .map(|s| s.project.entries.len())
     });
 
     // apply batch (save) — realistic GUI batch edit of 100 Keyed entries
@@ -172,7 +180,11 @@ fn phase_full(mod_root: &Path, managed: &Path, batch: usize) -> Result<(), ExitC
         val_runs.push(t.elapsed().as_secs_f64() * 1000.0);
         val_summary = format!(
             "status={} errors={} warnings={} info={} findings={}",
-            rep.status, rep.error_count, rep.warning_count, rep.info_count, rep.findings.len()
+            rep.status,
+            rep.error_count,
+            rep.warning_count,
+            rep.info_count,
+            rep.findings.len()
         );
     }
     report("validate", &val_runs);
@@ -187,7 +199,9 @@ fn phase_full(mod_root: &Path, managed: &Path, batch: usize) -> Result<(), ExitC
     report("export_project", &[t.elapsed().as_secs_f64() * 1000.0]);
     println!(
         "PERF export files_written={} reparsed_keys={} skipped_unknown={}",
-        exp.files_written, exp.reparsed_keys, exp.skipped_unknown_type.len()
+        exp.files_written,
+        exp.reparsed_keys,
+        exp.skipped_unknown_type.len()
     );
     Ok(())
 }
@@ -196,7 +210,9 @@ fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let phase = match args.next() {
         Some(p) => p,
-        None => return fail("usage: perf_bench <create|open|full> --mod <root> --managed <dir> [--id <project_id>]"),
+        None => return fail(
+            "usage: perf_bench <create|open|full> --mod <root> --managed <dir> [--id <project_id>]",
+        ),
     };
     let mut mod_root: Option<PathBuf> = None;
     let mut managed: Option<PathBuf> = None;
@@ -207,7 +223,12 @@ fn main() -> ExitCode {
             "--mod" => mod_root = args.next().map(PathBuf::from),
             "--managed" => managed = args.next().map(PathBuf::from),
             "--id" => id = args.next(),
-            "--batch" => batch = args.next().and_then(|v| v.parse().ok()).unwrap_or(APPLY_BATCH),
+            "--batch" => {
+                batch = args
+                    .next()
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(APPLY_BATCH)
+            }
             other => return fail(&format!("unknown arg {other}")),
         }
     }
@@ -217,15 +238,21 @@ fn main() -> ExitCode {
     };
     let res = match phase.as_str() {
         "create" => {
-            let Some(m) = mod_root else { return fail("--mod required") };
+            let Some(m) = mod_root else {
+                return fail("--mod required");
+            };
             phase_create(&m, &managed).map(|id| println!("PERF_LAST_ID={id}"))
         }
         "open" => {
-            let Some(i) = id else { return fail("--id required") };
+            let Some(i) = id else {
+                return fail("--id required");
+            };
             phase_open(&managed, &i)
         }
         "full" => {
-            let Some(m) = mod_root else { return fail("--mod required") };
+            let Some(m) = mod_root else {
+                return fail("--mod required");
+            };
             phase_full(&m, &managed, batch)
         }
         other => return fail(&format!("unknown phase {other}")),
