@@ -3,7 +3,9 @@
 // 7fc196f (moved here without a `mod tests;` declaration) and its legacy
 // smoke bodies rotted against removed api_* functions — they are gone.
 #[cfg(test)]
-mod tests {
+// Named `shell` (not `tests`) to avoid a module named like its containing
+// file-module (clippy module_inception).
+mod shell {
     use crate::{LEGACY_PRIVILEGED_COMMANDS, LIVE_COMMANDS};
 
     /// The ORIGINAL registration (pre-binding-wave main.rs) — the partition

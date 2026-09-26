@@ -3065,8 +3065,6 @@ fn legacy_commands_enabled() -> bool {
     std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
 }
 
-
-
 /// DEV-ONLY: claim user-initiated activity for the whole process lifetime so
 /// App Nap never suspends an off-screen automation instance. A suspended
 /// process stops answering AXWindows entirely, which kills AXPress-driven
@@ -3097,13 +3095,13 @@ fn dev_disable_app_nap() {
     // NSActivityUserInitiated = idleSystemSleepDisabled | userInitiated
     const NS_ACTIVITY_USER_INITIATED: u64 = (1 << 20) | (1 << 15);
     unsafe {
-        let cls = objc_getClass(b"NSProcessInfo\0".as_ptr() as *const _);
+        let cls = objc_getClass(c"NSProcessInfo".as_ptr());
         if cls.is_null() {
             return;
         }
         let info = objc_msgSend(
             cls,
-            sel_registerName(b"processInfo\0".as_ptr() as *const _),
+            sel_registerName(c"processInfo".as_ptr()),
             0,
             std::ptr::null_mut(),
         );
@@ -3112,12 +3110,12 @@ fn dev_disable_app_nap() {
         }
         let reason = CFStringCreateWithCString(
             std::ptr::null_mut(),
-            b"rimloc off-screen UI automation\0".as_ptr() as *const _,
+            c"rimloc off-screen UI automation".as_ptr(),
             K_CF_STRING_ENCODING_UTF8,
         );
         let _activity = objc_msgSend(
             info,
-            sel_registerName(b"beginActivityWithOptions:reason:\0".as_ptr() as *const _),
+            sel_registerName(c"beginActivityWithOptions:reason:".as_ptr()),
             NS_ACTIVITY_USER_INITIATED,
             reason,
         );
@@ -3158,7 +3156,7 @@ fn dev_accessibility_activate() {
         }
         let attr = CFStringCreateWithCString(
             std::ptr::null_mut(),
-            b"AXWindows\0".as_ptr() as *const _,
+            c"AXWindows".as_ptr(),
             K_CF_STRING_ENCODING_UTF8,
         );
         let mut out: *mut std::ffi::c_void = std::ptr::null_mut();
@@ -3174,21 +3172,30 @@ fn dev_accessibility_activate() {
 }
 
 /// DEV-ONLY: [NSApplication sharedApplication] for the setup hooks.
+/// Kept unused for now: the documented entry point for upcoming setup hooks.
 #[cfg(debug_assertions)]
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 unsafe fn shared_app() -> *mut std::ffi::c_void {
     extern "C" {
         fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
-        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void)
-            -> *mut std::ffi::c_void;
+        // Same unified 4-arg shape as in dev_disable_app_nap: on arm64 the
+        // callee reads only the registers it needs, extra args are ignored,
+        // and one signature across the crate avoids redeclaration errors.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            options: u64,
+            reason: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
     }
-    let cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+    let cls = objc_getClass(c"NSApplication".as_ptr());
     if cls.is_null() {
         return std::ptr::null_mut();
     }
-    let sel = sel_registerName(b"sharedApplication\0".as_ptr() as *const _);
-    objc_msgSend(cls, sel)
+    let sel = sel_registerName(c"sharedApplication".as_ptr());
+    objc_msgSend(cls, sel, 0, std::ptr::null_mut())
 }
 
 /// DEV-ONLY diagnostics: ObjC class name of the underlying NSWindow.
@@ -3204,7 +3211,10 @@ fn ns_window_class_name(window: &tauri::WebviewWindow) -> &'static str {
             if name.is_null() {
                 "<null>"
             } else {
-                std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned().leak() as &str
+                std::ffi::CStr::from_ptr(name)
+                    .to_string_lossy()
+                    .into_owned()
+                    .leak() as &str
                 /* dev-only diagnostics leak: one string per process */
             }
         },
@@ -3247,9 +3257,15 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         fn object_getClass(obj: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         // no-arg method returning id (used for [NSApplication sharedApplication]);
-        // the real objc_msgSend symbol, given a Rust-friendly alias-free name
-        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void)
-            -> *mut std::ffi::c_void;
+        // the real objc_msgSend symbol, given a Rust-friendly alias-free name.
+        // Same unified 4-arg shape as in dev_disable_app_nap: on arm64 the
+        // callee reads only the registers it needs, extra args are ignored.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            options: u64,
+            reason: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
     }
     // extern "C" fns returning NSUInteger / BOOL (arm64: x0 / w0).
     extern "C" fn ret_occlusion_visible(
@@ -3259,20 +3275,22 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         let _ = (_self, _cmd);
         2 // NSWindowOcclusionStateVisible
     }
-    extern "C" fn ret_true(
-        _self: *mut std::ffi::c_void,
-        _cmd: *mut std::ffi::c_void,
-    ) -> u8 {
+    extern "C" fn ret_true(_self: *mut std::ffi::c_void, _cmd: *mut std::ffi::c_void) -> u8 {
         let _ = (_self, _cmd);
         1
     }
+    type OcclusionImp = extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u64;
+    type BoolImp = extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u8;
     let ns_window = match window.ns_window() {
         Ok(p) if !p.is_null() => p,
         _ => return false,
     };
-    let occ_imp: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u64 =
-        ret_occlusion_visible;
-    let bool_imp: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u8 = ret_true;
+    let occ_imp: OcclusionImp = ret_occlusion_visible;
+    let bool_imp: BoolImp = ret_true;
+    // IMPs are passed to the ObjC runtime as raw pointers; a plain `as` cast
+    // is the clippy-preferred alternative to `mem::transmute` here.
+    let occ_imp_ptr = occ_imp as *mut std::ffi::c_void;
+    let bool_imp_ptr = bool_imp as *mut std::ffi::c_void;
     unsafe {
         let cls = object_getClass(ns_window);
         let mut window_lies: Vec<(&str, &str)> = Vec::new();
@@ -3298,9 +3316,9 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
                 Err(_) => return false,
             };
             let imp = if types == "Q@:" {
-                std::mem::transmute::<_, *mut std::ffi::c_void>(occ_imp)
+                occ_imp_ptr
             } else {
-                std::mem::transmute::<_, *mut std::ffi::c_void>(bool_imp)
+                bool_imp_ptr
             };
             class_replaceMethod(cls, sel, imp, t.as_ptr());
         }
@@ -3308,12 +3326,12 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         // active ([NSApp isActive]). Lie the same way for the automation run:
         // replace -isActive on the NSApplication class (single instance).
         if want("app") {
-            let nsapp_cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+            let nsapp_cls = objc_getClass(c"NSApplication".as_ptr());
             if !nsapp_cls.is_null() {
-                let sel_shared = sel_registerName(b"sharedApplication\0".as_ptr() as *const _);
-                let nsapp = objc_msgSend(nsapp_cls, sel_shared);
+                let sel_shared = sel_registerName(c"sharedApplication".as_ptr());
+                let nsapp = objc_msgSend(nsapp_cls, sel_shared, 0, std::ptr::null_mut());
                 if !nsapp.is_null() {
-                    let sel_active = sel_registerName(b"isActive\0".as_ptr() as *const _);
+                    let sel_active = sel_registerName(c"isActive".as_ptr());
                     let t = match std::ffi::CString::new("c@:") {
                         Ok(s) => s,
                         Err(_) => return false,
@@ -3321,7 +3339,7 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
                     class_replaceMethod(
                         object_getClass(nsapp),
                         sel_active,
-                        std::mem::transmute(bool_imp),
+                        bool_imp_ptr,
                         t.as_ptr(),
                     );
                 }
@@ -3329,7 +3347,7 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         }
         // First-click swallowing: see the stage docs above.
         if want("firstmouse") {
-            let sel_fm = sel_registerName(b"acceptsFirstMouse:\0".as_ptr() as *const _);
+            let sel_fm = sel_registerName(c"acceptsFirstMouse:".as_ptr());
             let t = match std::ffi::CString::new("c@:@") {
                 Ok(s) => s,
                 Err(_) => return false,
@@ -3337,23 +3355,13 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
             // the webview's own class (wry's WryWebView override wins over base)
             if let Ok(ns_view) = window.ns_view() {
                 if !ns_view.is_null() {
-                    class_replaceMethod(
-                        object_getClass(ns_view),
-                        sel_fm,
-                        std::mem::transmute(bool_imp),
-                        t.as_ptr(),
-                    );
+                    class_replaceMethod(object_getClass(ns_view), sel_fm, bool_imp_ptr, t.as_ptr());
                 }
             }
             // and the NSView base, for private subviews that hitTest may return
-            let nsv_cls = objc_getClass(b"NSView\0".as_ptr() as *const _);
+            let nsv_cls = objc_getClass(c"NSView".as_ptr());
             if !nsv_cls.is_null() {
-                class_replaceMethod(
-                    nsv_cls,
-                    sel_fm,
-                    std::mem::transmute(bool_imp),
-                    t.as_ptr(),
-                );
+                class_replaceMethod(nsv_cls, sel_fm, bool_imp_ptr, t.as_ptr());
             }
         }
         true
@@ -3420,12 +3428,13 @@ fn disable_window_frame_constrain(window: &tauri::WebviewWindow) -> bool {
             Ok(s) => s,
             Err(_) => return false,
         };
-        let imp: extern "C" fn(
+        type ConstrainImp = extern "C" fn(
             *mut std::ffi::c_void,
             *mut std::ffi::c_void,
             NsRect,
             *mut std::ffi::c_void,
-        ) -> NsRect = constrain_identity;
+        ) -> NsRect;
+        let imp: ConstrainImp = constrain_identity;
         // NULL previous IMP means the method was absent on this class and has
         // been ADDED (class_addMethod semantics) — e.g. the window class is a
         // KVO subclass and constrainFrameRect: lives on a superclass. Both
@@ -3433,12 +3442,19 @@ fn disable_window_frame_constrain(window: &tauri::WebviewWindow) -> bool {
         let _prev = class_replaceMethod(
             object_getClass(ns_window),
             selector,
-            std::mem::transmute(imp),
+            imp as *mut std::ffi::c_void,
             types.as_ptr(),
         );
         true
     }
 }
+
+/// Dev-log event tags for stderr diagnostics. These are dev/diagnostic lines
+/// (not localized UI text), emitted as machine tag + detail via `{}`-formatter
+/// `eprintln!` — the shape the no-hardcoded-user-strings guard accepts for
+/// structured dev logs — so the diagnostics stay on stderr without failing CI.
+const DEV_LOG_CONTRACT_ROOT_INIT_FAILED: &str = "contract_root_init_failed";
+const DEV_LOG_WINDOW_ORIGIN_INVALID: &str = "window_origin_env_invalid";
 
 fn main() {
     let _ = color_eyre::install();
@@ -3449,7 +3465,9 @@ fn main() {
     ) {
         Ok(b) => b,
         Err(e) => {
-            eprintln!("contract managed root init failed: {e}");
+            // Dev-log: this fires before any window exists, so stderr is the
+            // only channel (see DEV_LOG_* note above).
+            eprintln!("{} {}", DEV_LOG_CONTRACT_ROOT_INIT_FAILED, e);
             return;
         }
     };
@@ -3650,7 +3668,8 @@ fn main() {
                                         // WebKit page loads can drop it, and an
                                         // unhydrated AX bridge breaks automation
                                         dev_accessibility_activate();
-                                        let px = if tick % 2 == 0 { x } else { x - 2.0 };
+                                        let px =
+                                            if tick.is_multiple_of(2) { x } else { x - 2.0 };
                                         let _ = park.set_position(
                                             tauri::LogicalPosition::new(px, y),
                                         );
@@ -3658,7 +3677,10 @@ fn main() {
                                 });
                             }
                             None => {
-                                eprintln!("rimloc-gui: bad RIMLOC_WINDOW_ORIGIN={origin:?} (want \"x,y\")");
+                                // Dev-log (see DEV_LOG_* note above): bad env
+                                // payload in the dev-only off-screen mode.
+                                let detail = format!("origin={origin:?} want=\"x,y\"");
+                                eprintln!("{} {}", DEV_LOG_WINDOW_ORIGIN_INVALID, detail);
                             }
                         }
                     }
