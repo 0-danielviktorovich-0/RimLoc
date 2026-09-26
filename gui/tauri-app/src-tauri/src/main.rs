@@ -3454,6 +3454,10 @@ fn disable_window_frame_constrain(window: &tauri::WebviewWindow) -> bool {
 /// `eprintln!` — the shape the no-hardcoded-user-strings guard accepts for
 /// structured dev logs — so the diagnostics stay on stderr without failing CI.
 const DEV_LOG_CONTRACT_ROOT_INIT_FAILED: &str = "contract_root_init_failed";
+// Used only inside the attribute-gated off-screen setup block below, so the
+// constant must live under the same gate (otherwise it is dead code in
+// release/non-macOS profiles).
+#[cfg(all(debug_assertions, target_os = "macos"))]
 const DEV_LOG_WINDOW_ORIGIN_INVALID: &str = "window_origin_env_invalid";
 
 fn main() {
@@ -3597,6 +3601,14 @@ fn main() {
                 //   "hide" — orderOut then tauri set_position (ordered-out
                 //     windows move freely, but WKWebView event routing to a
                 //     hidden window is not guaranteed).
+                //
+                // Attribute-gated (NOT cfg!()): cfg!() is a runtime check and
+                // its body compiles in every profile, while the hooks called
+                // inside are #[cfg]-removed from release/non-macOS builds —
+                // that combination once broke `cargo check --release` with
+                // six E0425s. The attribute removes the whole block where the
+                // hooks do not exist.
+                #[cfg(all(debug_assertions, target_os = "macos"))]
                 if cfg!(debug_assertions) {
                     if let Ok(origin) = std::env::var("RIMLOC_WINDOW_ORIGIN") {
                         let parsed = origin.split_once(',').and_then(|(a, b)| {
