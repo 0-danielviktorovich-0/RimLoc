@@ -13,6 +13,7 @@ export type ContractErrorCode =
   | 'project_changed_on_disk'
   | 'contract_violation'
   | 'guard_output_denied'
+  | 'invalid_output_path'
   | 'unsupported_capability'
   | 'project_not_found'
   | 'schema_version'

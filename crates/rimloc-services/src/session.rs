@@ -885,6 +885,12 @@ impl ProjectSessionManager {
         // a traversal-shaped locale must never reach the writer.
         ensure_locale_form(locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // Path-FORM guard: the writer builds directories under `out_dir`
+        // with the GUI process CWD as the implicit base, so a relative
+        // path silently lands wherever the app was launched from. Refuse
+        // the form BEFORE any guard, canonicalization or write — same
+        // fail-closed discipline as `ensure_locale_form` above.
+        ensure_out_dir_absolute(out_dir)?;
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_export");
         log.begin_stage("guard");
@@ -1094,6 +1100,10 @@ impl ProjectSessionManager {
         project_id: &str,
         out_dir: &Path,
     ) -> Result<crate::contract::DiagnoseResponse, ContractError> {
+        // Path-FORM guard FIRST (before `managed_path` canonicalizes): a
+        // relative bundle dir would silently land relative to the GUI
+        // process CWD — refuse the form before ANY filesystem access.
+        ensure_out_dir_absolute(out_dir)?;
         // Fail-closed id-form guard — the same entry discipline as every
         // other session operation.
         self.managed_path(project_id)?;
@@ -1168,6 +1178,23 @@ fn ensure_locale_form(locale: &str) -> Result<(), String> {
         Err(format!(
             "malformed locale `{locale}`: expected the language-folder form (letters, digits, `_`, `-`)"
         ))
+    }
+}
+
+/// Fail-closed path-FORM guard for every contract entry that takes a
+/// caller-specified out dir (`export_project`, `diagnose`): the writers
+/// create directories under this path with the GUI process CWD as the
+/// implicit base, so a relative path silently lands wherever the app was
+/// launched from (the built-app `…/RimLoc-Export/…` incident). `Path::
+/// is_absolute` is a pure form check — no filesystem access — so the
+/// refusal precedes any guard, canonicalization or write, typed as
+/// `invalid_output_path`. Never resolve on the caller's behalf: guessing
+/// a base directory is how the incident happened.
+fn ensure_out_dir_absolute(out_dir: &Path) -> Result<(), ContractError> {
+    if out_dir.is_absolute() {
+        Ok(())
+    } else {
+        Err(ContractError::invalid_output_path(out_dir))
     }
 }
 
@@ -2167,6 +2194,66 @@ mod tests {
             .export_project(&snap_of_create(&mgr, &mod_root), 1, &out_inside, "Russian")
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// Path-FORM guard (invalid_output_path): a RELATIVE out dir is a
+    /// typed refusal BEFORE any guard, canonicalization or write — the
+    /// built-app `…/RimLoc-Export/…` shape must never silently land
+    /// relative to the process CWD. Absolute targets keep the existing
+    /// semantics: an allowed absolute dir exports end-to-end, and an
+    /// absolute `..` traversal resolving into the source tree still hits
+    /// the containment guard_output_denied.
+    #[test]
+    fn relative_out_dirs_are_rejected_before_any_write() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+        let relative = [
+            "RimLoc-Export",
+            "…/RimLoc-Export/proj-x-Russian",
+            "out/../more",
+        ];
+        for out in relative {
+            let err = mgr
+                .export_project(&snap.project_id, 1, Path::new(out), "Russian")
+                .unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::InvalidOutputPath,
+                "[{out}] {err}"
+            );
+            // No filesystem side effects in the process CWD.
+            assert!(!cwd.join(out).exists(), "[{out}]");
+            // Same form refusal on the diagnose (bundle) entry.
+            let err = mgr.diagnose(&snap.project_id, Path::new(out)).unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::InvalidOutputPath,
+                "[diagnose {out}] {err}"
+            );
+        }
+
+        // An ABSOLUTE out dir outside the source/managed roots still
+        // exports end-to-end.
+        let out_abs = dir.path().join("export-out");
+        let res = mgr
+            .export_project(&snap.project_id, 1, &out_abs, "Russian")
+            .unwrap();
+        assert!(res.files_written >= 1);
+
+        // `..` INSIDE an absolute path keeps the containment semantics:
+        // `<source>/Sub/..` resolves back into (or fails to resolve away
+        // from) the read-only source root → the existing
+        // guard_output_denied still fires.
+        let out_traverse = mod_root.join("Sub").join("..");
+        let err = mgr
+            .export_project(&snap.project_id, 1, &out_traverse, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
     }
 
     /// P1-2 security regression: client locales are joined into

@@ -71,6 +71,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
  - [gui/tauri] Validate/Diff panels support extended inputs (`defs_dict`, `defs_type_schema`, extra fields); mirror CLI outputs and report saving (#PR)
 
 ### Fixed
+- [gui/services] Contract export and diagnostics refuse a RELATIVE output directory with a typed `invalid_output_path` error before anything is written (a relative path silently landed relative to the app's working directory); the GUI out-dir fields now start empty with an absolute-path hint instead of pre-filling a decorative `…/RimLoc-Export/…` literal, and the run buttons stay disabled until the path is absolute.
 - [cli] Language-folder flags (`init --lang-dir`, `import-po --lang-dir`, `build-mod --lang`, `merge-keyed`, `morph`) reject absolute paths and `..` values that would write outside the mod folder.
 - [scan] A mod's LoadFolders entries can no longer make RimLoc scan directories outside the mod root (absolute paths and `..` are refused).
 - [export] Control characters that XML 1.0 forbids are refused when applying or exporting, instead of producing files the game silently drops; a byte-level check guards every written `.xml`.

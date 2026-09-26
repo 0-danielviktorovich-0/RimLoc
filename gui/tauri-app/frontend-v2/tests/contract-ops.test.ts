@@ -3,14 +3,19 @@
 // Tauri bridge carries). Scenario teeth mirror the Rust semantics:
 //   - validate: findings DERIVED from stored state; the stored-issues entry
 //     is the error tooth; untranslated rows are warnings; never mutates;
-//   - export: strict language-folder form (P1-2) and source-tree guard are
-//     typed refusals; reparse parity; unknown def-type skip is surfaced;
+//   - export: strict language-folder form (P1-2), RELATIVE out-dir form
+//     (invalid_output_path) and source-tree guard are typed refusals;
+//     reparse parity; unknown def-type skip is surfaced;
 //   - diagnose: sanitized bundle over the project.
 import { beforeEach, describe, expect, it } from 'vitest';
+import { flushSync } from 'svelte';
 import { createRimLocClient, RimLocClient } from '../src/lib/client/client';
 import { createMockState, createMockTransport } from '../src/lib/client/mock';
 import { contractops } from '../src/lib/stores/contractops.svelte';
 import { project } from '../src/lib/stores/project.svelte';
+import ContractOps from '../src/lib/components/screens/ContractOps.svelte';
+import { looksAbsolutePath } from '../src/lib/paths';
+import { mountCmp, q } from './helpers';
 
 function mockClient() {
   const transport = createMockTransport(createMockState());
@@ -85,6 +90,25 @@ describe('mock contract flows (validate / export / diagnose)', () => {
     ).rejects.toMatchObject({ code: 'guard_output_denied' });
   });
 
+  it('export refuses a RELATIVE out dir (invalid_output_path form tooth)', async () => {
+    const { id, epoch } = await freshProject();
+    // The legacy decorative-ellipsis default and a plain relative name are
+    // BOTH refused before anything is written.
+    await expect(
+      client.exportProject(id, epoch, '…/RimLoc-Export/proj-x-Russian', 'Russian')
+    ).rejects.toMatchObject({ code: 'invalid_output_path' });
+    await expect(
+      client.exportProject(id, epoch, 'RimLoc-Export', 'Russian')
+    ).rejects.toMatchObject({ code: 'invalid_output_path' });
+  });
+
+  it('diagnose refuses a relative bundle dir (invalid_output_path)', async () => {
+    const { id } = await freshProject();
+    await expect(client.diagnoseProject(id, 'RimLoc-Bundles')).rejects.toMatchObject({
+      code: 'invalid_output_path'
+    });
+  });
+
   it('export refuses a locale that is not the strict folder form (P1-2 tooth)', async () => {
     const { id, epoch } = await freshProject();
     await expect(client.exportProject(id, epoch, '/tmp/rimloc-export', 'ru')).rejects.toMatchObject(
@@ -150,6 +174,13 @@ describe('contractops store wiring on a contract project', () => {
     expect(contractops.exportResult?.skipped_unknown_type).toContain('MeleeWeapon_LongSword.label');
   });
 
+  it('runExport surfaces the invalid_output_path refusal for relative dirs', async () => {
+    await project.createContractProject('/mods/Demo');
+    expect(await contractops.runExport('…/RimLoc-Export/proj-x-Russian')).toBe(false);
+    expect(contractops.error).toContain('invalid_output_path');
+    expect(contractops.exportResult).toBe(null);
+  });
+
   it('runDiagnose collects the bundle over the open project', async () => {
     await project.createContractProject('/mods/Demo');
     expect(await contractops.runDiagnose('/tmp/rimloc-bundles')).toBe(true);
@@ -161,5 +192,61 @@ describe('contractops store wiring on a contract project', () => {
     project.reset(); // fixture
     expect(await contractops.runValidate()).toBe(false);
     expect(contractops.error).toContain('no live contract project');
+  });
+});
+
+describe('looksAbsolutePath (client mirror of the invalid_output_path form guard)', () => {
+  it('accepts POSIX, drive-letter and UNC forms', () => {
+    expect(looksAbsolutePath('/Users/you/RimLoc-Export')).toBe(true);
+    expect(looksAbsolutePath('C:/Users/you/RimLoc-Export')).toBe(true);
+    expect(looksAbsolutePath('C:\\Users\\you')).toBe(true);
+    expect(looksAbsolutePath('\\\\server\\share')).toBe(true);
+  });
+
+  it('refuses relative shapes, including the legacy decorative ellipsis', () => {
+    expect(looksAbsolutePath('RimLoc-Export')).toBe(false);
+    expect(looksAbsolutePath('…/RimLoc-Export/proj-x-Russian')).toBe(false);
+    expect(looksAbsolutePath('out/../more')).toBe(false);
+    expect(looksAbsolutePath('.')).toBe(false);
+    expect(looksAbsolutePath('')).toBe(false);
+    expect(looksAbsolutePath('~/RimLoc-Export')).toBe(false); // unexpanded tilde
+  });
+});
+
+describe('ContractOps panel: honest out-dir field (no fake default)', () => {
+  beforeEach(() => {
+    project.reset();
+    contractops.reset();
+  });
+
+  it('the export field starts empty and the run button is gated on an absolute path', async () => {
+    await project.createContractProject('/mods/Demo');
+    mountCmp(ContractOps, { kind: 'build' });
+    const input = q('contractops.export.outdir') as HTMLInputElement;
+    const run = q('contractops.export.run') as HTMLButtonElement;
+    // Honest empty start: no `…/RimLoc-Export/…` literal is ever sent.
+    expect(input.value).toBe('');
+    expect(run.disabled).toBe(true); // empty is not absolute
+    input.value = 'RimLoc-Export';
+    input.dispatchEvent(new Event('input'));
+    flushSync();
+    expect(run.disabled).toBe(true); // relative form refused up front
+    input.value = '/tmp/rimloc-export';
+    input.dispatchEvent(new Event('input'));
+    flushSync();
+    expect(run.disabled).toBe(false); // absolute → runnable
+  });
+
+  it('the diagnose field follows the same absolute-path gate', async () => {
+    await project.createContractProject('/mods/Demo');
+    mountCmp(ContractOps, { kind: 'diagnostics' });
+    const input = q('contractops.diagnose.outdir') as HTMLInputElement;
+    const run = q('contractops.diagnose.run') as HTMLButtonElement;
+    expect(input.value).toBe('');
+    expect(run.disabled).toBe(true);
+    input.value = '\\\\server\\share\\rimloc-bundles';
+    input.dispatchEvent(new Event('input'));
+    flushSync();
+    expect(run.disabled).toBe(false); // UNC counts as absolute
   });
 });

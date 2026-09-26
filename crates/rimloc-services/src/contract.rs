@@ -56,6 +56,13 @@ pub enum ContractErrorCode {
     /// A write/open target refused by the source-tree containment guard
     /// (`is_within` / `canonical_view`).
     GuardOutputDenied,
+    /// A caller-specified output path is not absolute. Every contract
+    /// write refuses the FORM before any filesystem access: the writer
+    /// builds directories under this path with the process CWD as the
+    /// implicit base, so a relative path silently lands wherever the app
+    /// was launched from. (Wire rule: codes are never renamed, only
+    /// appended — this is an append.)
+    InvalidOutputPath,
     /// The operation exists in the mandate but is not part of this slice —
     /// reported honestly, never approximated.
     UnsupportedCapability,
@@ -79,6 +86,7 @@ impl ContractErrorCode {
             Self::ProjectChangedOnDisk => "project_changed_on_disk",
             Self::ContractViolation => "contract_violation",
             Self::GuardOutputDenied => "guard_output_denied",
+            Self::InvalidOutputPath => "invalid_output_path",
             Self::UnsupportedCapability => "unsupported_capability",
             Self::ProjectNotFound => "project_not_found",
             Self::SchemaVersion => "schema_version",
@@ -132,6 +140,19 @@ impl ContractError {
         Self::new(
             ContractErrorCode::ProjectNotFound,
             format!("no managed project with id `{project_id}`"),
+        )
+    }
+
+    /// A relative (or empty) output path — refused before any write. The
+    /// message tells the caller the required form instead of guessing a
+    /// base directory for them.
+    pub fn invalid_output_path(path: &std::path::Path) -> Self {
+        Self::new(
+            ContractErrorCode::InvalidOutputPath,
+            format!(
+                "output path `{}` is not absolute; specify an absolute output directory (e.g. `/Users/you/RimLoc-Export` or `C:/Users/you/RimLoc-Export`)",
+                path.display()
+            ),
         )
     }
 }
