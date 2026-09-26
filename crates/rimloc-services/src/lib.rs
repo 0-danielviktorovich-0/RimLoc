@@ -77,6 +77,7 @@ pub use util::canonical_view;
 pub use util::is_source_for_lang_dir;
 pub use util::is_under_languages_dir;
 pub use util::is_within;
+pub use util::lang_dir_form_ok;
 pub use util::normalize_lang_dir;
 pub use util::package_id_slug;
 pub use util::write_atomic;

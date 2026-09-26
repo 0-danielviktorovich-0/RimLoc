@@ -71,6 +71,8 @@ This changelog follows Keep a Changelog and Semantic Versioning.
  - [gui/tauri] Validate/Diff panels support extended inputs (`defs_dict`, `defs_type_schema`, extra fields); mirror CLI outputs and report saving (#PR)
 
 ### Fixed
+- [gui/tauri] LEGACY surface (`RIMLOC_LEGACY_COMMANDS=1`, operator opt-in) no longer writes to caller-RELATIVE paths that silently landed relative to the process working directory: `merge_keyed_gui`, `export_xliff_gui`, `import_xliff_gui`, `dump_schemas` and `learn_patches_cmd` now require absolute out paths with an explicit error instead (same form policy as the contract surface). Legacy `apply_translation` validates the language-folder form of `lang_dir` before joining it into the output path, so traversal or absolute values can no longer escape the mod tree.
+- [release] Workspace MSRV declaration corrected from `1.70` (false — it predated `is_multiple_of` 1.87 and dependency floors up to 1.89) to `1.89` in every crate manifest; tested toolchain is `1.96.0`.
 - [gui/services] Contract export and diagnostics refuse a RELATIVE output directory with a typed `invalid_output_path` error before anything is written (a relative path silently landed relative to the app's working directory); the GUI out-dir fields now start empty with an absolute-path hint instead of pre-filling a decorative `…/RimLoc-Export/…` literal, and the run buttons stay disabled until the path is absolute.
 - [cli] Language-folder flags (`init --lang-dir`, `import-po --lang-dir`, `build-mod --lang`, `merge-keyed`, `morph`) reject absolute paths and `..` values that would write outside the mod folder.
 - [scan] A mod's LoadFolders entries can no longer make RimLoc scan directories outside the mod root (absolute paths and `..` are refused).

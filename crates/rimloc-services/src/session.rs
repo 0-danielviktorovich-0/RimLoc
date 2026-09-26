@@ -2196,6 +2196,38 @@ mod tests {
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
     }
 
+    /// K4 closeout: the containment guard authorizes the DESTINATION, not
+    /// the path's surface form. An out dir that is itself a symlink ALIAS
+    /// into the read-only source tree must resolve through the link and
+    /// receive the same guard_output_denied verdict as the direct
+    /// inside-source path (deny-direction containment via the real
+    /// canonical view — `is_within`). Unix-only: needs real symlinks.
+    #[test]
+    #[cfg(unix)]
+    fn symlink_out_dir_into_source_tree_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let alias = dir.path().join("alias-out");
+        std::os::unix::fs::symlink(&mod_root, &alias).expect("symlink");
+        assert!(
+            alias.exists(),
+            "alias must resolve for the test to be meaningful"
+        );
+
+        let err = mgr
+            .export_project(&snap_of_create(&mgr, &mod_root), 1, &alias, "Russian")
+            .unwrap_err();
+        assert_eq!(
+            err.code,
+            ContractErrorCode::GuardOutputDenied,
+            "a symlink alias into the source tree must be denied, not just the direct absolute path"
+        );
+    }
+
     /// Path-FORM guard (invalid_output_path): a RELATIVE out dir is a
     /// typed refusal BEFORE any guard, canonicalization or write — the
     /// built-app `…/RimLoc-Export/…` shape must never silently land

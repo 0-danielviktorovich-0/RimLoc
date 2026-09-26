@@ -140,3 +140,42 @@ mod shell {
         );
     }
 }
+
+/// K4 closeout (2026-09-27): the legacy write surface now enforces the
+/// contract form policy on caller-chosen out paths — relative paths are a
+/// loud refusal, never a silent resolution against the process CWD.
+mod legacy_guards {
+    use std::path::Path;
+
+    #[test]
+    fn caller_relative_out_paths_are_refused_loudly() {
+        let err = crate::ensure_caller_path_absolute("out_dir", Path::new("RimLoc-Export"))
+            .expect_err("a relative caller path must be refused");
+        assert!(
+            err.message.contains("absolute"),
+            "error names the fix: {err}"
+        );
+        assert!(
+            err.message.contains("out_dir"),
+            "error names the field: {err}"
+        );
+
+        // Absolute stays the required, accepted form.
+        crate::ensure_caller_path_absolute("out_dir", Path::new("/tmp/rimloc-abs"))
+            .expect("an absolute caller path is the required form");
+    }
+
+    #[test]
+    fn relative_deep_and_traversal_shapes_are_all_refused() {
+        for shape in [
+            "out.xlf",
+            "./docs/assets/schemas",
+            "…/RimLoc-Export/proj-x-Russian",
+            "out/../more",
+        ] {
+            let err =
+                crate::ensure_caller_path_absolute("out_path", Path::new(shape)).expect_err(shape);
+            assert!(err.message.contains("absolute"), "[{shape}] {err}");
+        }
+    }
+}

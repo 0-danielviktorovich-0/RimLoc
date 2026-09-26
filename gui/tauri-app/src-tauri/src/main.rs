@@ -423,6 +423,9 @@ fn merge_keyed_gui(
         });
     }
     let out_dir = request.out_dir.as_deref().map(PathBuf::from);
+    if let Some(o) = &out_dir {
+        ensure_caller_path_absolute("out_dir", o)?;
+    }
     let stats = svc_merge_keyed(
         &root,
         &request.source_lang_dir,
@@ -519,6 +522,7 @@ fn export_xliff_gui(
     let src = request.source_lang_dir.as_deref().unwrap_or("English");
     units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, src));
     let out = PathBuf::from(&request.out_xlf);
+    ensure_caller_path_absolute("out_xlf", &out)?;
     if let Some(parent) = out.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -543,6 +547,7 @@ fn import_xliff_gui(
 ) -> Result<String, ApiError> {
     let xlf = PathBuf::from(&request.xlf);
     let out = PathBuf::from(&request.out_xml);
+    ensure_caller_path_absolute("out_xml", &out)?;
     if let Some(parent) = out.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -1398,6 +1403,26 @@ fn make_absolute(base: &Path, candidate: &Path) -> PathBuf {
         candidate.to_path_buf()
     } else {
         base.join(candidate)
+    }
+}
+
+/// LEGACY hardening (RC K4, 2026-09-27): the contract surface refuses
+/// CWD-relative caller paths as a typed `invalid_output_path` BEFORE any
+/// filesystem work — a relative path silently lands wherever the app was
+/// launched from, and resolving one on the caller's behalf is exactly how
+/// the built-app `…/RimLoc-Export/…` incident happened. Legacy write
+/// commands that take a caller-chosen out path now enforce the same form
+/// policy: absolute only, never resolved, never CWD-dependent.
+fn ensure_caller_path_absolute(field: &str, p: &Path) -> Result<(), ApiError> {
+    if p.is_absolute() {
+        Ok(())
+    } else {
+        Err(ApiError {
+            message: format!(
+                "{field} must be an absolute path (got `{}`); the legacy surface does not resolve relative paths against the process working directory",
+                p.display()
+            ),
+        })
     }
 }
 
@@ -2818,6 +2843,7 @@ fn learn_patches_cmd(
         .as_deref()
         .map(PathBuf::from)
         .unwrap_or_else(|| out_dir.join("patches_texts.json"));
+    ensure_caller_path_absolute("out_json", &out_json)?;
     if let Some(parent) = out_json.parent() {
         std::fs::create_dir_all(parent).ok();
     }
@@ -4257,6 +4283,7 @@ fn dump_schemas(
 ) -> Result<String, ApiError> {
     use std::fs;
     let out_dir = PathBuf::from(&req.out_dir);
+    ensure_caller_path_absolute("out_dir", &out_dir)?;
     fs::create_dir_all(&out_dir)?;
     macro_rules! dump {
         ($ty:ty, $name:literal) => {{
@@ -4531,6 +4558,19 @@ fn apply_translation(
                 .map(|c| rimloc_import_po::rimworld_lang_dir(c))
         })
         .unwrap_or_else(|| "Russian".to_string());
+    // LEGACY hardening (RC K4, P1-2 class): the lang dir is joined into the
+    // output path (`Languages/<dir>/Keyed/_Edited.xml`) — `Path::join` with
+    // an absolute string replaces the whole prefix and `..` escapes the
+    // mod. The strict folder form is the same predicate the services layer
+    // enforces on every other mod-tree write; enforce it here too, before
+    // any path is built.
+    if !rimloc_services::lang_dir_form_ok(&lang_dir) {
+        return Err(ApiError {
+            message: format!(
+                "lang_dir `{lang_dir}` is malformed: expected a plain language-folder name (letters, digits, `_`, `-`)"
+            ),
+        });
+    }
     let out_path = if let Some(f) = request.file.as_deref() {
         make_absolute(&root, Path::new(f))
     } else {
