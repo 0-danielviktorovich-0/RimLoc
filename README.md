@@ -6,13 +6,37 @@
 
 [English](README.md) | [Русский](docs/readme/ru/README.md)
 
-[![Build](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/build.yml) [![Crates.io](https://img.shields.io/badge/crates.io-rimloc--cli-blue?logo=rust&logoColor=white)](https://crates.io/crates/rimloc-cli) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](LICENSE) [![Sponsor](https://img.shields.io/badge/sponsor-support%20RimLoc-%23ea4aaa?logo=github-sponsors)](docs/en/community/support.md) [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich) [![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich) [![Discord](https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/g8w4fJ8b)
+[![CI](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml) [![Crates.io](https://img.shields.io/badge/crates.io-rimloc--cli-blue?logo=rust&logoColor=white)](https://crates.io/crates/rimloc-cli) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](LICENSE) [![Sponsor](https://img.shields.io/badge/sponsor-support%20RimLoc-%23ea4aaa?logo=github-sponsors)](docs/en/community/support.md) [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich) [![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich) [![Discord](https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/g8w4fJ8b)
 
 RimLoc is a Rust-based toolkit for RimWorld localization and mod translation management. It keeps translation sources, PO/CSV exports, and QA checks in one workflow on Linux, macOS, and Windows.
 
 Quick links for newcomers:
 - Start here (step‑by‑step): docs/en/getting-started.md
 - Configuration (rimloc.toml): docs/en/guide/configuration.md
+
+## Status
+
+| Area | State |
+|------|-------|
+| CLI (scan / validate / export-PO / import-PO / build-mod / diff) | ✅ Stable — validated against 8 real Workshop mods (incl. PatchOperations, C# assemblies, multi-version layouts) |
+| Desktop GUI (Tauri, macOS) | ✅ Working build — project lifecycle, validation, translation export, sanitized diagnostics. UI is in active development |
+| Windows / Linux GUI builds | 🚧 Source is cross-platform; binaries not yet verified |
+| Signed / notarized installers | 🚧 Not yet |
+
+**Note:** CI runs on demand (`workflow_dispatch`) while the project is being reworked; pull-request checks are enabled.
+
+## Screenshots
+
+The desktop app working against a real Workshop mod (Vanilla Weapons Expanded):
+
+<p align="center">
+  <img src="docs/screenshots/workspace.png" width="49%" alt="Workspace — live project entries" />
+  <img src="docs/screenshots/validate.png" width="49%" alt="Validation findings" />
+  <img src="docs/screenshots/export.png" width="49%" alt="Translation-only export" />
+  <img src="docs/screenshots/diagnostics.png" width="49%" alt="Sanitized diagnostics bundle" />
+</p>
+
+More views (home, editing, dark theme) in [docs/screenshots/](docs/screenshots/).
 
 ## Why RimLoc?
 
@@ -91,12 +115,29 @@ rimloc-cli validate --root ./Mods/MyMod --include-all-versions
 rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version v1.6
 ```
 
-<!-- Demo and screenshots will be added after the first public walkthrough is recorded. -->
+
+## Building the desktop GUI (Tauri)
+
+Requires Node.js 20+ and Rust (macOS proven; the code is cross-platform).
+
+```bash
+# frontend bundle
+cd gui/tauri-app/frontend-v2
+npm ci
+npm run build
+
+# app (dev build)
+cd ..
+cargo build -p rimloc-gui
+./../../target/debug/rimloc-gui   # or: cargo run -p rimloc-gui
+```
+
+The GUI speaks to the same Rust core as the CLI over a typed contract (project lifecycle, validation, translation-only export, sanitized diagnostics). Areas still in active development are reported honestly by the app's capability panel.
 
 ## Documentation & Support
 
 - Browse the full docs: [RimLoc Docs](https://0-danielviktorovich-0.github.io/RimLoc/)
-- Desktop GUI (Tauri) quick start: docs/en/guide/gui.md
+- Desktop GUI (Tauri): see **Building the desktop GUI** above; legacy guide: docs/en/guide/gui.md
 - Filing issues? See the short [Issue Guidelines](docs/en/community/issues.md) for what to include.
 - Learn the format: [PO Files 101](docs/en/guide/po_files.md)
 - Translate the CLI: [Localization Guide](docs/en/community/localization.md)
