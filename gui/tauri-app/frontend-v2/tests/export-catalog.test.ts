@@ -62,6 +62,18 @@ describe('catalog JSON bridge: exporter determinism', () => {
     const snapshot = () =>
       new Map<string, string>(files.map((f) => [f, readFileSync(join(GENERATED, f), 'utf8')]));
 
+    // The -dirty suffix on catalog_revision honestly reflects the tree state
+    // at export time; sibling test workers create scratch files concurrently,
+    // so the flag may legitimately flip between the two runs. Determinism is
+    // therefore asserted modulo the flag: the revision SHA and every other
+    // byte (catalog content, order, formatting) must match exactly.
+    const normalize = (file: string, content: string): string => {
+      if (file !== 'catalog.meta.json') return content;
+      const meta = JSON.parse(content) as { catalog_revision: string } & Record<string, unknown>;
+      meta.catalog_revision = meta.catalog_revision.replace(/-dirty$/, '');
+      return serialize(meta);
+    };
+
     // Compare the two exports against each other, NOT against the
     // pre-existing files: committed meta legitimately pins the commit that
     // generated it, while a fresh export stamps the current HEAD.
@@ -71,9 +83,8 @@ describe('catalog JSON bridge: exporter determinism', () => {
       const firstRun = snapshot();
       execFileSync(tsx, ['scripts/export-catalog.ts'], { cwd: ROOT });
       for (const f of files) {
-        expect(readFileSync(join(GENERATED, f), 'utf8'), `${f} differs between runs`).toBe(
-          firstRun.get(f),
-        );
+        const second = readFileSync(join(GENERATED, f), 'utf8');
+        expect(normalize(f, second), `${f} differs between runs`).toBe(normalize(f, firstRun.get(f) as string));
       }
     } finally {
       // Leave the checkout exactly as it was: a fresh export stamps the
