@@ -113,7 +113,8 @@ scripts/agent-commit.sh  # Mandatory finish step
 - When assigned a release task: perform the `Unreleased → [X.Y.Z]` move, update links, then request running the release workflow; tags use `vX.Y.Z`.
 
 ### MSRV and SemVer checks
-- MSRV: Rust `1.70` across the workspace (`rust-version` pinned in each crate). Increase MSRV only in a major release.
+- MSRV: Rust `1.89` across the workspace (`rust-version` in every crate manifest). The number is a derived declaration, not a tested floor: the highest language feature in first-party code is `is_multiple_of` (stable 1.87, `gui/tauri-app/src-tauri/src/main.rs`), and the resolved dependency graph declares floors up to `1.89` (e.g. `aes` via the GUI stack) — the workspace floor is the max of the two. **Tested toolchain: `1.96.0`** (all local gates green on it); builds between `1.89` and `1.96.0` are believed to work but are not verified per point. Raise MSRV only in a major release, and only with a fresh feature/dependency audit, not by guesswork.
+- Historical note: before 2026-09-27 the manifests claimed `1.70`, which was false — that value predated every modern feature now in the code. If a tool tells you `rust-version` is 1.70, it read stale metadata.
 - Libraries: CI runs `cargo-semver-checks` for published crates; breaking API changes require a `major` bump.
 - CLI: treat output (JSON/PO/CSV) as a contract. Adding fields is minor; removing/renaming is major. JSON outputs include `schema_version` per item; PO headers include `X-RimLoc-Schema`.
 
