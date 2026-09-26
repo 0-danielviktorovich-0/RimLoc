@@ -101,6 +101,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
  - [gui/frontend] Use backend `open_path` to avoid plugin-shell URL regex warnings; fix save-report wrappers (#PR)
 
 ### Docs
+- Release-candidate docs: RELEASE_READINESS_REPORT (gate matrix, honest limitations, owner gates), BETA_TEST_CHECKLIST for testers, REVIEW_SCREEN_MAP for GUI review.
 - README: honest project status, screenshots section and a GUI build guide; real GUI screenshots added.
 - AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
 - README: replace AGENTS.md link with CONTRIBUTING.md (#PR)
