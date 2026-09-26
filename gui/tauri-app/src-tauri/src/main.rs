@@ -3065,6 +3065,324 @@ fn legacy_commands_enabled() -> bool {
     std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
 }
 
+
+
+/// DEV-ONLY: [NSApp accessibilityActivate] — starts the app's accessibility
+/// server deterministically. Off-screen the AX bridge is lazy and sometimes
+/// never hydrates from client queries alone, which would break AXPress
+/// automation.
+#[cfg(debug_assertions)]
+#[cfg(target_os = "macos")]
+fn dev_accessibility_activate() {
+    // Plain-C AX client query aimed at our own pid: forces the ApplicationServices
+    // accessibility machinery to initialize without any ObjC exception risk
+    // (every call reports errors by code).
+    extern "C" {
+        fn getpid() -> i32;
+        fn AXUIElementCreateApplication(pid: i32) -> *mut std::ffi::c_void;
+        fn CFStringCreateWithCString(
+            alloc: *mut std::ffi::c_void,
+            c_str: *const std::os::raw::c_char,
+            encoding: u32,
+        ) -> *mut std::ffi::c_void;
+        fn AXUIElementCopyAttributeValue(
+            el: *mut std::ffi::c_void,
+            attr: *mut std::ffi::c_void,
+            out: *mut *mut std::ffi::c_void,
+        ) -> i32;
+        fn CFRelease(cf: *mut std::ffi::c_void);
+    }
+    const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
+    unsafe {
+        let pid = getpid();
+        let el = AXUIElementCreateApplication(pid);
+        if el.is_null() {
+            return;
+        }
+        let attr = CFStringCreateWithCString(
+            std::ptr::null_mut(),
+            b"AXWindows\0".as_ptr() as *const _,
+            K_CF_STRING_ENCODING_UTF8,
+        );
+        let mut out: *mut std::ffi::c_void = std::ptr::null_mut();
+        let _err = AXUIElementCopyAttributeValue(el, attr, &mut out);
+        if !out.is_null() {
+            CFRelease(out);
+        }
+        if !attr.is_null() {
+            CFRelease(attr);
+        }
+        CFRelease(el);
+    }
+}
+
+/// DEV-ONLY: [NSApplication sharedApplication] for the setup hooks.
+#[cfg(debug_assertions)]
+#[cfg(target_os = "macos")]
+unsafe fn shared_app() -> *mut std::ffi::c_void {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void)
+            -> *mut std::ffi::c_void;
+    }
+    let cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+    if cls.is_null() {
+        return std::ptr::null_mut();
+    }
+    let sel = sel_registerName(b"sharedApplication\0".as_ptr() as *const _);
+    objc_msgSend(cls, sel)
+}
+
+/// DEV-ONLY diagnostics: ObjC class name of the underlying NSWindow.
+#[cfg(debug_assertions)]
+#[cfg(target_os = "macos")]
+fn ns_window_class_name(window: &tauri::WebviewWindow) -> &'static str {
+    extern "C" {
+        fn object_getClassName(obj: *mut std::ffi::c_void) -> *const std::os::raw::c_char;
+    }
+    match window.ns_window() {
+        Ok(p) if !p.is_null() => unsafe {
+            let name = object_getClassName(p);
+            if name.is_null() {
+                "<null>"
+            } else {
+                std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned().leak() as &str
+                /* dev-only diagnostics leak: one string per process */
+            }
+        },
+        _ => "<no-ns-window>",
+    }
+}
+
+/// DEV-ONLY: make the off-screen window look "alive" to WebKit (macOS).
+/// An ordered window parked outside display geometry renders its first
+/// frames, but the first delivered mouse event makes WKWebView re-evaluate
+/// view visibility (occlusion / key-window activity state) and freeze the
+/// page: the layer goes black and no further frames are committed.
+/// Fix: override the window's visibility truth-tellers — occlusionState,
+/// isKeyWindow, isMainWindow, isVisible, canBecomeKeyWindow — to report a
+/// normal on-screen key window. Class-scoped (single window in-process),
+/// dev-only automation mode.
+#[cfg(debug_assertions)]
+#[cfg(target_os = "macos")]
+fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
+    // Staged via RIMLOC_FAKE (comma list) for experiment control:
+    //   occlusion  — -occlusionState always reports NSWindowOcclusionStateVisible
+    //   key        — isKeyWindow/isMainWindow/isVisible/canBecomeKeyWindow → YES
+    //   app        — [NSApp isActive] → YES
+    //   firstmouse — acceptsFirstMouse: → YES on the webview class and the
+    //                NSView base: for an inactive app NSWindow consumes the
+    //                first click as an "activation click" unless the hit view
+    //                accepts it (wry's accept_first_mouse default is NO), and
+    //                an off-screen window can never become active, so every
+    //                synthetic click would be swallowed without this.
+    let stage = std::env::var("RIMLOC_FAKE").unwrap_or_else(|_| "occlusion".to_string());
+    let want = |k: &str| stage.split(',').any(|s| s.trim() == k);
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn class_replaceMethod(
+            cls: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            imp: *mut std::ffi::c_void,
+            types: *const std::os::raw::c_char,
+        ) -> *mut std::ffi::c_void;
+        fn object_getClass(obj: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        // no-arg method returning id (used for [NSApplication sharedApplication]);
+        // the real objc_msgSend symbol, given a Rust-friendly alias-free name
+        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void)
+            -> *mut std::ffi::c_void;
+    }
+    // extern "C" fns returning NSUInteger / BOOL (arm64: x0 / w0).
+    extern "C" fn ret_occlusion_visible(
+        _self: *mut std::ffi::c_void,
+        _cmd: *mut std::ffi::c_void,
+    ) -> u64 {
+        let _ = (_self, _cmd);
+        2 // NSWindowOcclusionStateVisible
+    }
+    extern "C" fn ret_true(
+        _self: *mut std::ffi::c_void,
+        _cmd: *mut std::ffi::c_void,
+    ) -> u8 {
+        let _ = (_self, _cmd);
+        1
+    }
+    let ns_window = match window.ns_window() {
+        Ok(p) if !p.is_null() => p,
+        _ => return false,
+    };
+    let occ_imp: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u64 =
+        ret_occlusion_visible;
+    let bool_imp: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u8 = ret_true;
+    unsafe {
+        let cls = object_getClass(ns_window);
+        let mut window_lies: Vec<(&str, &str)> = Vec::new();
+        if want("occlusion") {
+            window_lies.push(("occlusionState", "Q@:"));
+        }
+        if want("key") {
+            window_lies.extend([
+                ("isKeyWindow", "c@:"),
+                ("isMainWindow", "c@:"),
+                ("isVisible", "c@:"),
+                ("canBecomeKeyWindow", "c@:"),
+            ]);
+        }
+        for (name, types) in window_lies {
+            let sel_name = match std::ffi::CString::new(name) {
+                Ok(s) => s,
+                Err(_) => return false,
+            };
+            let sel = sel_registerName(sel_name.as_ptr());
+            let t = match std::ffi::CString::new(types) {
+                Ok(s) => s,
+                Err(_) => return false,
+            };
+            let imp = if types == "Q@:" {
+                std::mem::transmute::<_, *mut std::ffi::c_void>(occ_imp)
+            } else {
+                std::mem::transmute::<_, *mut std::ffi::c_void>(bool_imp)
+            };
+            class_replaceMethod(cls, sel, imp, t.as_ptr());
+        }
+        // WebKit drops web mouse events while the owning application is not
+        // active ([NSApp isActive]). Lie the same way for the automation run:
+        // replace -isActive on the NSApplication class (single instance).
+        if want("app") {
+            let nsapp_cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+            if !nsapp_cls.is_null() {
+                let sel_shared = sel_registerName(b"sharedApplication\0".as_ptr() as *const _);
+                let nsapp = objc_msgSend(nsapp_cls, sel_shared);
+                if !nsapp.is_null() {
+                    let sel_active = sel_registerName(b"isActive\0".as_ptr() as *const _);
+                    let t = match std::ffi::CString::new("c@:") {
+                        Ok(s) => s,
+                        Err(_) => return false,
+                    };
+                    class_replaceMethod(
+                        object_getClass(nsapp),
+                        sel_active,
+                        std::mem::transmute(bool_imp),
+                        t.as_ptr(),
+                    );
+                }
+            }
+        }
+        // First-click swallowing: see the stage docs above.
+        if want("firstmouse") {
+            let sel_fm = sel_registerName(b"acceptsFirstMouse:\0".as_ptr() as *const _);
+            let t = match std::ffi::CString::new("c@:@") {
+                Ok(s) => s,
+                Err(_) => return false,
+            };
+            // the webview's own class (wry's WryWebView override wins over base)
+            if let Ok(ns_view) = window.ns_view() {
+                if !ns_view.is_null() {
+                    class_replaceMethod(
+                        object_getClass(ns_view),
+                        sel_fm,
+                        std::mem::transmute(bool_imp),
+                        t.as_ptr(),
+                    );
+                }
+            }
+            // and the NSView base, for private subviews that hitTest may return
+            let nsv_cls = objc_getClass(b"NSView\0".as_ptr() as *const _);
+            if !nsv_cls.is_null() {
+                class_replaceMethod(
+                    nsv_cls,
+                    sel_fm,
+                    std::mem::transmute(bool_imp),
+                    t.as_ptr(),
+                );
+            }
+        }
+        true
+    }
+}
+
+/// DEV-ONLY: make the window immune to AppKit constrainFrameRect: (macOS).
+/// Modern AppKit clamps ANY frame change of a visible (ordered) window back
+/// into the union of screens, including raw setFrameOrigin: and borderless
+/// windows — so the window can never be parked off-screen while clickable.
+/// Fix: replace constrainFrameRect:toScreen: on the window's own class with
+/// an identity trampoline. Class identity is untouched (object_setClass was
+/// tried and aborted AppKit's NSDynamicProperties assertion); the process
+/// has a single Tauri window, so the class-wide scope is acceptable for a
+/// dev-only automation mode.
+#[cfg(debug_assertions)]
+#[cfg(target_os = "macos")]
+fn disable_window_frame_constrain(window: &tauri::WebviewWindow) -> bool {
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct NsRect {
+        x: f64,
+        y: f64,
+        w: f64,
+        h: f64,
+    }
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn class_replaceMethod(
+            cls: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            imp: *mut std::ffi::c_void,
+            types: *const std::os::raw::c_char,
+        ) -> *mut std::ffi::c_void;
+        fn object_getClass(obj: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
+    }
+    // - (NSRect)constrainFrameRect:(NSRect)frame toScreen:(NSScreen *)screen
+    // Identity trampoline: NSRect HFA passes/returns via d0-d3 on arm64.
+    extern "C" fn constrain_identity(
+        _self: *mut std::ffi::c_void,
+        _cmd: *mut std::ffi::c_void,
+        frame: NsRect,
+        _screen: *mut std::ffi::c_void,
+    ) -> NsRect {
+        let _ = (_self, _cmd, _screen);
+        frame
+    }
+    let ns_window = match window.ns_window() {
+        Ok(p) if !p.is_null() => p,
+        _ => return false,
+    };
+    unsafe {
+        let sel = match std::ffi::CString::new("constrainFrameRect:toScreen:") {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        let selector = sel_registerName(sel.as_ptr());
+        if selector.is_null() {
+            return false;
+        }
+        let types = match std::ffi::CString::new(
+            "{NSRect={NSPoint=dd}{NSSize=dd}}@0:0{NSRect={NSPoint=dd}{NSSize=dd}}@:",
+        ) {
+            Ok(s) => s,
+            Err(_) => return false,
+        };
+        let imp: extern "C" fn(
+            *mut std::ffi::c_void,
+            *mut std::ffi::c_void,
+            NsRect,
+            *mut std::ffi::c_void,
+        ) -> NsRect = constrain_identity;
+        // NULL previous IMP means the method was absent on this class and has
+        // been ADDED (class_addMethod semantics) — e.g. the window class is a
+        // KVO subclass and constrainFrameRect: lives on a superclass. Both
+        // outcomes install the identity trampoline on this class.
+        let _prev = class_replaceMethod(
+            object_getClass(ns_window),
+            selector,
+            std::mem::transmute(imp),
+            types.as_ptr(),
+        );
+        true
+    }
+}
+
 fn main() {
     let _ = color_eyre::install();
     let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
@@ -3186,6 +3504,86 @@ fn main() {
             });
             let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
+                // DEV-ONLY background automation: RIMLOC_WINDOW_ORIGIN="x,y"
+                // relocates the window off-screen (e.g. "-3000,-3000") so an
+                // automation driver can click it without ever appearing on the
+                // owner's display. Guarded by cfg!(debug_assertions): release
+                // builds ignore the variable entirely.
+                //
+                // RIMLOC_WINDOW_MOVE selects the relocation method:
+                //   "borderless" — set_decorations(false) first: AppKit's
+                //     default constrainFrameRect: does not clamp borderless
+                //     windows, so the window stays ordered (WebContent keeps
+                //     rendering, synthetic events hit-test normally) while
+                //     fully off-screen. Title bar loss is dev-only cosmetics.
+                //   "tauri" — tauri set_position() → setFrameTopLeftPoint:,
+                //     which constrainFrameRect: clamps back on-screen (kept
+                //     only as the documented-clamped baseline).
+                //   "hide" — orderOut then tauri set_position (ordered-out
+                //     windows move freely, but WKWebView event routing to a
+                //     hidden window is not guaranteed).
+                if cfg!(debug_assertions) {
+                    if let Ok(origin) = std::env::var("RIMLOC_WINDOW_ORIGIN") {
+                        let parsed = origin.split_once(',').and_then(|(a, b)| {
+                            let x = a.trim().parse::<f64>().ok()?;
+                            let y = b.trim().parse::<f64>().ok()?;
+                            Some((x, y))
+                        });
+                        match parsed {
+                            Some((x, y)) => {
+                                let mode = std::env::var("RIMLOC_WINDOW_MOVE")
+                                    .unwrap_or_else(|_| "swizzle".to_string());
+                                let moved = match mode.as_str() {
+                                    "swizzle" => {
+                                        let swizzled = disable_window_frame_constrain(&window);
+                                        let faked = fake_window_visibility(&window);
+                                        let pos = window
+                                            .set_position(tauri::LogicalPosition::new(x, y))
+                                            .is_ok();
+                                        eprintln!(
+                                            "rimloc-gui: swizzle swizzled={swizzled} faked={faked} \
+                                             pos={pos} outer={:?} size={:?} class={}",
+                                            window.outer_position(),
+                                            window.outer_size(),
+                                            ns_window_class_name(&window),
+                                        );
+                                        swizzled && faked && pos
+                                    }
+                                    _ => false,
+                                };
+                                if !moved {
+                                    let _ = window
+                                        .set_position(tauri::LogicalPosition::new(x, y));
+                                }
+                                eprintln!(
+                                    "rimloc-gui: RIMLOC_WINDOW_ORIGIN=({x},{y}) mode={mode} moved={moved}"
+                                );
+                                // Make the app's accessibility server
+                                // start deterministically: off-screen the
+                                // AX bridge is lazy and sometimes never
+                                // hydrates on client queries alone, which
+                                // breaks AXPress-driven automation.
+                                dev_accessibility_activate();
+                                // Keep the window parked: some WebKit
+                                // interactions (AXPress navigation,
+                                // scroll-to-reveal) nudge the window frame
+                                // after the initial move.
+                                let park = window.clone();
+                                std::thread::spawn(move || loop {
+                                    std::thread::sleep(std::time::Duration::from_secs(3));
+                                    // keep re-asserting the AX registration:
+                                    // WebKit page loads can drop it, and an
+                                    // unhydrated AX bridge breaks automation
+                                    dev_accessibility_activate();
+                                    let _ = park.set_position(tauri::LogicalPosition::new(x, y));
+                                });
+                            }
+                            None => {
+                                eprintln!("rimloc-gui: bad RIMLOC_WINDOW_ORIGIN={origin:?} (want \"x,y\")");
+                            }
+                        }
+                    }
+                }
                 let _ = window.emit(
                     "app-info",
                     AppInfo {
