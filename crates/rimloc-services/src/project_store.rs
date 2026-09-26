@@ -144,6 +144,13 @@ pub struct ProjectEnvelopeMeta {
     /// refuses instead of silently disabling itself).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_root: Option<String>,
+    /// Fingerprint of the source content the inventory was built from (M3):
+    /// the resolved effective view (including the resolved game version)
+    /// plus hashes of the scanned trees. Recorded at create, re-asserted on
+    /// every save; `None` on legacy envelopes - drift detection stays
+    /// honestly unavailable for them (never reported as "in sync").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_fingerprint: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -1015,12 +1022,14 @@ mod tests {
         let bare = load_project(&path).unwrap();
         assert_eq!(bare.entries.len(), sample().entries.len());
 
-        // Meta save: id + revision + display name ride along.
+        // Meta save: id + revision + display name ride along. The M3
+        // source fingerprint rides the same envelope and round-trips.
         let meta = ProjectEnvelopeMeta {
             project_id: Some("proj-abc".into()),
             revision: Some(7),
             display_name: Some("My Mod".into()),
             source_root: None,
+            source_fingerprint: Some("a".repeat(64)),
         };
         save_project_with_meta(&sample(), &meta, &path).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
@@ -1032,6 +1041,10 @@ mod tests {
         assert_eq!(loaded.meta.project_id.as_deref(), Some("proj-abc"));
         assert_eq!(loaded.meta.revision, Some(7));
         assert_eq!(loaded.meta.display_name.as_deref(), Some("My Mod"));
+        assert_eq!(
+            loaded.meta.source_fingerprint.as_deref(),
+            Some("a".repeat(64).as_str())
+        );
 
         // Old-shaped bare v2 (no envelope fields) still loads with defaults.
         let bare_v2 = "{\"schema_version\": 2, \"context\": {\"view\": \"potential\"}, \"entries\": [], \"translations\": []}\n"

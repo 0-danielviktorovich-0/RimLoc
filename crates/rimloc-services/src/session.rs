@@ -75,6 +75,17 @@ struct SessionState {
     /// Identities affected by the last failed operation (sanitized
     /// upstream of the bundle writer).
     last_failed_affected: Vec<String>,
+    /// Source fingerprint RECORDED with the inventory (M3). `None` on
+    /// legacy envelopes — drift cannot be evaluated for them.
+    source_fingerprint: Option<String>,
+    /// Drift verdict evaluated at session (re)start (create / open from
+    /// disk / refresh) against the recorded fingerprint: `Some(false)` in
+    /// sync, `Some(true)` the source changed under the project, `None`
+    /// unknown (legacy envelope, or the source is unreadable at check
+    /// time). Never recomputed per snapshot call — the verdict reflects
+    /// the session's (re)start, which is exactly the restart cycle M3 is
+    /// about.
+    source_changed: Option<bool>,
 }
 
 /// The session manager. Clone-able (`Arc` inner); all methods take `&self`
@@ -168,6 +179,18 @@ impl ProjectSessionManager {
         }
         let project = build_project(mod_root, target_version)
             .map_err(|e| ContractError::new(ContractErrorCode::Internal, e.to_string()))?;
+        // M3: the fingerprint is recorded at create so later sessions can
+        // tell whether the source still matches the inventory. The view the
+        // scanner just resolved successfully, so a fingerprint failure here
+        // is an I/O race — a typed refusal, never a silently undetectable
+        // project.
+        let fingerprint =
+            crate::scan::source_fingerprint(mod_root, target_version).map_err(|e| {
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("source fingerprint failed: {e}"),
+                )
+            })?;
         let project_id = self.mint_project_id();
         let display_name = mod_root
             .file_name()
@@ -184,6 +207,7 @@ impl ProjectSessionManager {
             revision: Some(revision),
             display_name: Some(display_name.clone()),
             source_root: envelope_source_root(mod_root),
+            source_fingerprint: Some(fingerprint.clone()),
         };
         save_project_with_meta(&project, &meta, &path).map_err(|e| {
             ContractError::new(ContractErrorCode::SaveFailed, format!("create failed: {e}"))
@@ -204,6 +228,8 @@ impl ProjectSessionManager {
             cancel_requested: false,
             last_failed_operation: None,
             last_failed_affected: Vec::new(),
+            source_fingerprint: Some(fingerprint),
+            source_changed: Some(false),
         };
         let snapshot = snapshot_of(&project_id, &state);
         self.inner
@@ -253,6 +279,13 @@ impl ProjectSessionManager {
                     .clone()
                     .map(PathBuf::from)
                     .unwrap_or_default();
+                // M3: at (re)start the current source content is compared
+                // against the fingerprint recorded with the inventory —
+                // drift (content rewrite, LoadFolders/version rollback)
+                // becomes a visible verdict instead of an invisible trap.
+                let fingerprint = loaded.meta.source_fingerprint.clone();
+                let source_changed =
+                    drift_verdict(fingerprint.as_deref(), &mod_root, target_version.as_deref());
                 let state = SessionState {
                     path: path.clone(),
                     display_name,
@@ -267,6 +300,8 @@ impl ProjectSessionManager {
                     cancel_requested: false,
                     last_failed_operation: None,
                     last_failed_affected: Vec::new(),
+                    source_fingerprint: fingerprint,
+                    source_changed,
                 };
                 let snapshot = snapshot_of(project_id, &state);
                 self.inner
@@ -400,6 +435,8 @@ impl ProjectSessionManager {
                     cancel_requested: false,
                     last_failed_operation: None,
                     last_failed_affected: Vec::new(),
+                    source_fingerprint: None,
+                    source_changed: None,
                 }))
             })
             .clone();
@@ -422,7 +459,14 @@ impl ProjectSessionManager {
             if let Some(src) = &loaded.meta.source_root {
                 st.mod_root = PathBuf::from(src);
             }
-            st.target_version = target_version;
+            st.target_version = target_version.clone();
+            // M3: refresh is a session (re)start — re-evaluate drift.
+            st.source_fingerprint = loaded.meta.source_fingerprint.clone();
+            st.source_changed = drift_verdict(
+                st.source_fingerprint.as_deref(),
+                &st.mod_root,
+                target_version.as_deref(),
+            );
         }
         let st = arc.lock().expect("project session poisoned");
         Ok(snapshot_of(project_id, &st))
@@ -533,6 +577,10 @@ impl ProjectSessionManager {
             // The source root is durable state: every save re-asserts it so
             // a restart-recovered session keeps the export guard (H5).
             source_root: envelope_source_root(&st.mod_root),
+            // The recorded fingerprint rides along (M3) — the DRIFT
+            // verdict is computed at session (re)start, not rewritten by
+            // edits.
+            source_fingerprint: st.source_fingerprint.clone(),
         };
         // External-change check: the managed file must look exactly like the
         // last state this session saw on disk.
@@ -753,6 +801,24 @@ impl ProjectSessionManager {
                 message: format!(
                     "defNames `{name_a}` and `{name_b}` differ only in case: both would write into the same DefInjected file on Windows/macOS; rename one defName in the source mod"
                 ),
+            });
+        }
+
+        // M3 source-drift signal: the source content the inventory was
+        // built from changed since this session's (re)start (edit, added/
+        // removed file, LoadFolders version rollback). The project still
+        // validates against its OWN inventory, so this stays a warning —
+        // but the stale inventory must not pass silently.
+        if st.source_changed == Some(true) {
+            warning_count += 1;
+            findings.push(crate::contract::ValidationFinding {
+                id: None,
+                severity: "warning".into(),
+                kind: "source-drift".into(),
+                key: "source-drift".into(),
+                path: st.mod_root.to_string_lossy().into_owned(),
+                line: None,
+                message: "the source mod changed since this project was built (content edit or game-version rollback): the inventory is stale — rescan the source mod into a fresh project before building exports".into(),
             });
         }
 
@@ -1297,7 +1363,25 @@ fn snapshot_of(project_id: &str, st: &SessionState) -> ProjectSnapshot {
         dirty: st.dirty,
         acked_revision: st.acked_revision,
         project: st.project.clone(),
+        source_changed: st.source_changed,
     }
+}
+
+/// M3 drift verdict: `Some(cur != recorded)` when a recorded fingerprint
+/// can be compared against the readable source; `None` when there is
+/// nothing recorded (legacy envelope) or the source cannot be fingerprinted
+/// right now — unknown stays unknown, never a false "in sync".
+fn drift_verdict(
+    recorded: Option<&str>,
+    mod_root: &Path,
+    target_version: Option<&str>,
+) -> Option<bool> {
+    let recorded = recorded?;
+    if mod_root.as_os_str().is_empty() {
+        return None;
+    }
+    let current = crate::scan::source_fingerprint(mod_root, target_version).ok()?;
+    Some(current != recorded)
 }
 
 /// Apply ONE intent to the trusted canonical state. The service owns
@@ -1657,14 +1741,17 @@ mod tests {
 
         // External writer (another process) bumps the file to revision 9.
         let path = mgr.managed_path(&snap.project_id).unwrap();
-        let external = load_project_with_meta(&path).unwrap().project;
+        let external = load_project_with_meta(&path).unwrap();
         let meta = ProjectEnvelopeMeta {
             project_id: Some(snap.project_id.clone()),
             revision: Some(9),
             display_name: Some("external".into()),
             source_root: Some(mod_root.to_string_lossy().into_owned()),
+            // The recorded fingerprint is durable state an outside writer
+            // bumps only alongside the content it describes.
+            source_fingerprint: external.meta.source_fingerprint.clone(),
         };
-        save_project_with_meta(&external, &meta, &path).unwrap();
+        save_project_with_meta(&external.project, &meta, &path).unwrap();
 
         let err = mgr
             .apply(&req(
@@ -2160,6 +2247,7 @@ mod tests {
             revision: loaded.meta.revision,
             display_name: loaded.meta.display_name.clone(),
             source_root: None,
+            source_fingerprint: None,
         };
         save_project_with_meta(&loaded.project, &legacy, &path).unwrap();
 
@@ -2232,6 +2320,206 @@ mod tests {
             "Russian",
         )
         .unwrap();
+    }
+
+    // ------------------------------------------------------------------
+    // M3: source-drift detection (fingerprint recorded in the envelope,
+    // verdict evaluated at session (re)start, surfaced on snapshot and
+    // validate).
+    // ------------------------------------------------------------------
+
+    /// M3: the source the inventory was built from changed between
+    /// sessions (edit + added file, harness "sourcedrift") — a fresh
+    /// manager's open honestly marks the drift, and validate carries the
+    /// source-drift finding (a warning: the project still validates
+    /// against its own inventory).
+    #[test]
+    fn source_drift_detected_on_reopen_and_validate() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert_eq!(snap.source_changed, Some(false));
+
+        // Source rewrite: edit one Def's text, add another.
+        write(
+            &mod_root.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>CHANGED label</label></ThingDef></Defs>"#,
+        );
+        write(
+            &mod_root.join("Defs/C_New.xml"),
+            r#"<Defs><ThingDef><defName>NewThing</defName><label>new</label></ThingDef></Defs>"#,
+        );
+
+        // "App restart": a fresh manager reopens and re-evaluates.
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, Some(true));
+
+        let v = mgr2
+            .validate_project(&reopened.project_id, reopened.session_epoch, None)
+            .unwrap();
+        assert_eq!(v.status, "succeeded", "drift is a warning, not a failure");
+        assert!(v.findings.iter().any(|f| f.kind == "source-drift"), "{v:?}");
+        assert_eq!(v.warning_count, 1);
+    }
+
+    /// M3: unchanged source stays in sync across restart and refresh —
+    /// no drift finding on validate.
+    #[test]
+    fn no_drift_when_source_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "метка")],
+        ))
+        .unwrap();
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, Some(false));
+        let v = mgr2
+            .validate_project(&reopened.project_id, reopened.session_epoch, None)
+            .unwrap();
+        assert!(
+            !v.findings.iter().any(|f| f.kind == "source-drift"),
+            "{v:?}"
+        );
+
+        // refresh is a session (re)start too — still in sync.
+        let refreshed = mgr2.refresh(&reopened.project_id).unwrap();
+        assert_eq!(refreshed.source_changed, Some(false));
+    }
+
+    /// M3: refresh re-evaluates the verdict without a fresh manager — a
+    /// source edit then refresh flips it to drifted.
+    #[test]
+    fn refresh_reevaluates_drift() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert_eq!(snap.source_changed, Some(false));
+
+        write(
+            &mod_root.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>REWRITTEN</label></ThingDef></Defs>"#,
+        );
+        let refreshed = mgr.refresh(&snap.project_id).unwrap();
+        assert_eq!(refreshed.source_changed, Some(true));
+    }
+
+    /// M3: an applied edit does NOT rewrite the recorded fingerprint —
+    /// the envelope keeps describing the SOURCE, not the session.
+    #[test]
+    fn apply_keeps_recorded_fingerprint() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let recorded = load_project_with_meta(&path)
+            .unwrap()
+            .meta
+            .source_fingerprint;
+        assert!(recorded.is_some(), "create records the fingerprint");
+
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "метка")],
+        ))
+        .unwrap();
+        let after = load_project_with_meta(&path)
+            .unwrap()
+            .meta
+            .source_fingerprint;
+        assert_eq!(after, recorded);
+    }
+
+    /// M3: a legacy envelope (no recorded fingerprint) stays UNKNOWN —
+    /// `None`, never a false "in sync" — and validate carries no drift
+    /// finding for it.
+    #[test]
+    fn legacy_envelope_drift_is_unknown() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let loaded = load_project_with_meta(&path).unwrap();
+        let legacy = ProjectEnvelopeMeta {
+            project_id: loaded.meta.project_id.clone(),
+            revision: loaded.meta.revision,
+            display_name: loaded.meta.display_name.clone(),
+            source_root: Some(mod_root.to_string_lossy().into_owned()),
+            source_fingerprint: None,
+        };
+        save_project_with_meta(&loaded.project, &legacy, &path).unwrap();
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, None);
+        let v = mgr2
+            .validate_project(&reopened.project_id, reopened.session_epoch, None)
+            .unwrap();
+        assert!(
+            !v.findings.iter().any(|f| f.kind == "source-drift"),
+            "{v:?}"
+        );
+    }
+
+    /// M3: LoadFolders rollback (1.6 → 1.5-only manifest) between
+    /// sessions is visible drift at reopen (harness "cases" shape).
+    #[test]
+    fn loadfolders_rollback_is_drift_on_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        write(
+            &mod_root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>/</li><li>Common16</li></v1.6>\
+             <v1.5><li>/</li><li>Common15</li></v1.5></loadFolders>",
+        );
+        write(
+            &mod_root.join("Defs/A.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>label</label></ThingDef></Defs>"#,
+        );
+        write(
+            &mod_root.join("Common16/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>16</K1></LanguageData>",
+        );
+        write(
+            &mod_root.join("Common15/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>15</K1></LanguageData>",
+        );
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // Roll the manifest back to 1.5-only.
+        write(
+            &mod_root.join("LoadFolders.xml"),
+            "<loadFolders><v1.5><li>/</li><li>Common15</li></v1.5></loadFolders>",
+        );
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, Some(true));
     }
 
     /// The managed-projects root is a protected write target too: export

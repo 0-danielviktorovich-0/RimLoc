@@ -252,6 +252,15 @@ pub struct ProjectSnapshot {
     /// `stale_revision`. Additive v2 field.
     #[serde(default)]
     pub acked_revision: Revision,
+    /// Source-drift verdict (M3), evaluated when the session started
+    /// (create / open from disk / refresh): `Some(true)` the source
+    /// content the inventory was built from changed under the project —
+    /// a content edit, an added/removed file or a LoadFolders version
+    /// rollback; `Some(false)` in sync; `None` unknown — legacy envelopes
+    /// carry no recorded fingerprint, and an unreadable source at check
+    /// time is NEVER reported as "in sync". Additive v2 field.
+    #[serde(default)]
+    pub source_changed: Option<bool>,
     pub project: Project,
 }
 
