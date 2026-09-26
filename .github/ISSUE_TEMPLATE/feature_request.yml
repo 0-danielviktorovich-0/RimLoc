@@ -9,8 +9,6 @@ body:
       options:
         - label: I searched open and closed issues/PRs for duplicates
           required: true
-        - label: I searched Discussions for prior art
-          required: false
     validations:
       required: true
   - type: textarea
