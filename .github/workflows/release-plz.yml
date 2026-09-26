@@ -1,10 +1,8 @@
 name: Release-plz
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
   workflow_dispatch:
+  pull_request:
 
 jobs:
   release_pr:
