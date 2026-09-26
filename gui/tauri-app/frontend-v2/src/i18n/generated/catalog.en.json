@@ -1,0 +1,5984 @@
+{
+  "messages": [
+    {
+      "id": "common.appName",
+      "source_text": "RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "common.close",
+      "source_text": "Close",
+      "placeholders": []
+    },
+    {
+      "id": "common.retry",
+      "source_text": "Retry",
+      "placeholders": []
+    },
+    {
+      "id": "common.cancel",
+      "source_text": "Cancel",
+      "placeholders": []
+    },
+    {
+      "id": "common.back",
+      "source_text": "Back",
+      "placeholders": []
+    },
+    {
+      "id": "common.next",
+      "source_text": "Next",
+      "placeholders": []
+    },
+    {
+      "id": "common.errorTitle",
+      "source_text": "Something went wrong",
+      "placeholders": []
+    },
+    {
+      "id": "common.details",
+      "source_text": "Details",
+      "placeholders": []
+    },
+    {
+      "id": "common.reset",
+      "source_text": "Reset",
+      "placeholders": []
+    },
+    {
+      "id": "common.filters",
+      "source_text": "Filters",
+      "placeholders": []
+    },
+    {
+      "id": "common.startTranslation",
+      "source_text": "Start translation",
+      "placeholders": []
+    },
+    {
+      "id": "common.continue",
+      "source_text": "Continue",
+      "placeholders": []
+    },
+    {
+      "id": "common.pause",
+      "source_text": "Pause",
+      "placeholders": []
+    },
+    {
+      "id": "common.resume",
+      "source_text": "Resume",
+      "placeholders": []
+    },
+    {
+      "id": "common.apply",
+      "source_text": "Apply",
+      "placeholders": []
+    },
+    {
+      "id": "common.delete",
+      "source_text": "Delete",
+      "placeholders": []
+    },
+    {
+      "id": "common.done",
+      "source_text": "Done",
+      "placeholders": []
+    },
+    {
+      "id": "mockbadge.label",
+      "source_text": "Demo data (mock)",
+      "placeholders": []
+    },
+    {
+      "id": "mockbadge.title",
+      "source_text": "This scaffold runs on synthetic demo data with zero backend calls. The live mode arrives after the backend freeze through the RimLocClient transport boundary.",
+      "placeholders": []
+    },
+    {
+      "id": "capability.unsupported.title",
+      "source_text": "Not available yet: the operation waits for its contract slice. {reason}",
+      "placeholders": [
+        "reason"
+      ]
+    },
+    {
+      "id": "capability.unsupported.note",
+      "source_text": "Contract build is not wired yet (backend slice in progress). {reason}",
+      "placeholders": [
+        "reason"
+      ]
+    },
+    {
+      "id": "workspace.contract.reread",
+      "source_text": "Adopt the on-disk version",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.contract.rereadHint",
+      "source_text": "Re-read the project from disk. Your draft stays as a local draft; the disk version becomes the base for the retry.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.contract.rereading",
+      "source_text": "Re-reading…",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.running",
+      "source_text": "Running…",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.title",
+      "source_text": "Validation (contract)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.desc",
+      "source_text": "Read-only over the trusted session state; the project is never mutated. Errors fail the operation and become the diagnostics target.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.run",
+      "source_text": "Validate project",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.rerun",
+      "source_text": "Validate again",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.status.succeeded",
+      "source_text": "No errors found",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.status.failed",
+      "source_text": "Errors found",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.counts.errors",
+      "source_text": "Errors",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.counts.warnings",
+      "source_text": "Warnings",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.counts.info",
+      "source_text": "Info",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.findings.empty",
+      "source_text": "No findings.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.title",
+      "source_text": "Build translation (contract)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.desc",
+      "source_text": "Isolated output into a directory YOU choose (never the source tree — the backend guard refuses it). Language folder: {locale}.",
+      "placeholders": [
+        "locale"
+      ]
+    },
+    {
+      "id": "contractops.export.outdir",
+      "source_text": "Output directory",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.run",
+      "source_text": "Build and write",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.done",
+      "source_text": "Written and reparse-verified.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.files",
+      "source_text": "Files",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.reparsed",
+      "source_text": "Keys re-parsed",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.skipped",
+      "source_text": "Skipped unknown types ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "contractops.diagnose.title",
+      "source_text": "Diagnostics (contract)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.desc",
+      "source_text": "Sanitized bundle over the last failed operation: operation id, cause, affected entries. The folder stays outside the source tree.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.outdir",
+      "source_text": "Bundle directory",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.run",
+      "source_text": "Collect bundle",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.done",
+      "source_text": "Bundle collected.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.operation",
+      "source_text": "Operation",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.redacted",
+      "source_text": "Redacted",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.excluded",
+      "source_text": "Excluded",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_hint",
+      "source_text": "Absolute path only — a relative path is refused (invalid_output_path) before anything is written.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_example",
+      "source_text": "e.g. /Users/you/RimLoc-Export/MyMod-Russian",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_example_bundle",
+      "source_text": "e.g. /Users/you/RimLoc-Bundles/MyMod",
+      "placeholders": []
+    },
+    {
+      "id": "livebadge.label",
+      "source_text": "Live project (contract)",
+      "placeholders": []
+    },
+    {
+      "id": "livebadge.title",
+      "source_text": "A real project is open over the RimLocClient → Tauri contract: the data is not demo fixtures and edits persist into the managed project.",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.title",
+      "source_text": "RimLoc Demo",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.mark",
+      "source_text": "synthetic demo project",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.desc",
+      "source_text": "A bundled sample: Keyed, DefInjected, TKey, placeholders, a glossary conflict, a review queue and multiple targets. No game folders involved.",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.open",
+      "source_text": "Open demo project",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.again",
+      "source_text": "Reopen demo project",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.reset",
+      "source_text": "Reset demo to start",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.title",
+      "source_text": "No mods found",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.desc",
+      "source_text": "RimLoc could not see a mod to translate. You can start from the bundled demo, point at a folder, or configure the game installation.",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.demo",
+      "source_text": "Try demo project",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.folder",
+      "source_text": "Choose folder",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.note",
+      "source_text": "The folder picker is a mock in this build — no OS dialog exists yet. It arrives with the live backend after the freeze.",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.configure",
+      "source_text": "Configure installation",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.later",
+      "source_text": "Not now",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.laterDesc",
+      "source_text": "Go back to the regular Home screen.",
+      "placeholders": []
+    },
+    {
+      "id": "theme.label",
+      "source_text": "Theme",
+      "placeholders": []
+    },
+    {
+      "id": "theme.light",
+      "source_text": "Light",
+      "placeholders": []
+    },
+    {
+      "id": "theme.dark",
+      "source_text": "Dark",
+      "placeholders": []
+    },
+    {
+      "id": "theme.system",
+      "source_text": "System",
+      "placeholders": []
+    },
+    {
+      "id": "lang.label",
+      "source_text": "Interface language",
+      "placeholders": []
+    },
+    {
+      "id": "nav.home",
+      "source_text": "Home",
+      "placeholders": []
+    },
+    {
+      "id": "nav.settings",
+      "source_text": "Settings",
+      "placeholders": []
+    },
+    {
+      "id": "nav.help",
+      "source_text": "Help",
+      "placeholders": []
+    },
+    {
+      "id": "home.title",
+      "source_text": "RimLoc — RimWorld mod translations",
+      "placeholders": []
+    },
+    {
+      "id": "home.lead",
+      "source_text": "Translate RimWorld mods with translation memory, a glossary and placeholder checks.",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryNew.title",
+      "source_text": "Create translation",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryNew.description",
+      "source_text": "Mod, base game, DLC or language pack",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryExisting.title",
+      "source_text": "Open an existing translation",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryExisting.description",
+      "source_text": "Continue working on a translation project",
+      "placeholders": []
+    },
+    {
+      "id": "home.hint",
+      "source_text": "Not sure where to start? Pick “Create translation” — everything else fills in.",
+      "placeholders": []
+    },
+    {
+      "id": "home.secondaryBase",
+      "source_text": "Base game / DLC",
+      "placeholders": []
+    },
+    {
+      "id": "home.secondaryHelp",
+      "source_text": "Help",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.title",
+      "source_text": "Recent projects",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.progress",
+      "source_text": "Translation progress",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.modified",
+      "source_text": "Modified",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.sourceChanged",
+      "source_text": "source changed: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.recent.issues",
+      "source_text": "issues: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.state.loading",
+      "source_text": "Loading…",
+      "placeholders": []
+    },
+    {
+      "id": "home.state.error",
+      "source_text": "Could not load the project list. Check access and try again.",
+      "placeholders": []
+    },
+    {
+      "id": "header.project",
+      "source_text": "Project",
+      "placeholders": []
+    },
+    {
+      "id": "header.locale",
+      "source_text": "Locale",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.title",
+      "source_text": "Quick translate",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.stepOf",
+      "source_text": "Step {step} of {total}",
+      "placeholders": [
+        "step",
+        "total"
+      ]
+    },
+    {
+      "id": "wizard.w1.title",
+      "source_text": "What do you want to translate?",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.desc",
+      "source_text": "The usual path is a Workshop mod.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.mod",
+      "source_text": "RimWorld mod",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.modDesc",
+      "source_text": "Translate a mod folder from the game or the Workshop",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.base",
+      "source_text": "Base game",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.dlc",
+      "source_text": "DLC",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.pack",
+      "source_text": "Language pack",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.title",
+      "source_text": "Select content",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.mod",
+      "source_text": "Detected mods",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.base",
+      "source_text": "Detected installations",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.dlc",
+      "source_text": "Pick the game installation, then tick the DLC to translate",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.pack",
+      "source_text": "Detected language packs",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.folder",
+      "source_text": "Choose folder…",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.drop",
+      "source_text": "or drag a mod folder here",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.author",
+      "source_text": "by",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.defs",
+      "source_text": "entries",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.installation",
+      "source_text": "Installation",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.dlc.selected",
+      "source_text": "{count} selected",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "wizard.w2.dlc.needOne",
+      "source_text": "Tick at least one installed DLC",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.dlc.notInstalled",
+      "source_text": "not installed",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.mapping",
+      "source_text": "Language mapping",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.origin.official",
+      "source_text": "Official pack",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.origin.community",
+      "source_text": "Community pack",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.entries",
+      "source_text": "{count} entries",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "wizard.w2.pack.from",
+      "source_text": "From",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.to",
+      "source_text": "Deliver as",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.selected.summary",
+      "source_text": "Selected: {name}",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "wizard.w3.title",
+      "source_text": "Project languages",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.source",
+      "source_text": "Source",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.autoDetected",
+      "source_text": "auto-detected",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.target",
+      "source_text": "Translate to",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.note",
+      "source_text": "These are project languages, not the interface language.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.title",
+      "source_text": "Translation strategy",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.desc",
+      "source_text": "A strategy in two parts: what you already have — and how to translate the rest.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.title",
+      "source_text": "Use existing knowledge",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.translation",
+      "source_text": "Existing translation",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.translationDesc",
+      "source_text": "Ready text from a language pack or a previous version",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.tm",
+      "source_text": "Translation Memory",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.tmDesc",
+      "source_text": "Matches from the project translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.glossary",
+      "source_text": "Glossary",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.glossaryDesc",
+      "source_text": "Terms are injected and verified on the way out",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.title",
+      "source_text": "Translate the remainder",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.manual",
+      "source_text": "Manually",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.manualDesc",
+      "source_text": "You type in the editor; suggestions stay",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.ai",
+      "source_text": "Integrated AI",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.aiDesc",
+      "source_text": "Drafts via a connected provider, then review",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.chat",
+      "source_text": "Via an AI chat — no API",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.chatDesc",
+      "source_text": "Batches to ChatGPT/Claude/GLM: copy and import back",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.skip",
+      "source_text": "Leave untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.skipDesc",
+      "source_text": "Entries wait in the editor — come back later",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.editNote",
+      "source_text": "Any entry can be edited manually later.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.changeable",
+      "source_text": "The strategy can be changed after the project is created.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.chatNote",
+      "source_text": "RimLoc prepares the text and context; you send it to your chat and import the reply back — no API key.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality",
+      "source_text": "Quality mode",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.fast",
+      "source_text": "Fast draft",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.balanced",
+      "source_text": "Balanced",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.max",
+      "source_text": "Maximum quality",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.suggest",
+      "source_text": "Suggest only",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.cost",
+      "source_text": "An AI run costs tokens: you will see an estimate before it starts — nothing is charged without your approval.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.title",
+      "source_text": "Preflight",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.entries",
+      "source_text": "Translatable entries",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.reusable",
+      "source_text": "Reusable from TM",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.need",
+      "source_text": "Need translation",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.skipped",
+      "source_text": "Will stay untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.attention",
+      "source_text": "Need attention",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.note",
+      "source_text": "Anything that costs money or rewrites work shows up here — before the run.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.title",
+      "source_text": "Translating",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.scan",
+      "source_text": "Scanning files",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.tm",
+      "source_text": "Matching TM and glossary",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.ai",
+      "source_text": "Translating (AI)",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.validate",
+      "source_text": "Validating",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.processed",
+      "source_text": "Processed {done} of {total}",
+      "placeholders": [
+        "done",
+        "total"
+      ]
+    },
+    {
+      "id": "wizard.w6.paused",
+      "source_text": "Paused",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.title",
+      "source_text": "Translation complete",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.validated",
+      "source_text": "Validated",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.review",
+      "source_text": "Need review",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.errors",
+      "source_text": "Errors",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.reviewProblems",
+      "source_text": "Review problems",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.openEditor",
+      "source_text": "Open editor",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.openChat",
+      "source_text": "Open chat batches",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.build",
+      "source_text": "Build translation",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.note",
+      "source_text": "This is a draft result: every record keeps its origin and review status.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.title",
+      "source_text": "Translation editor",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.closeProject",
+      "source_text": "Close project",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.meta.version",
+      "source_text": "RimWorld 1.6",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.search.label",
+      "source_text": "Search source and translation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.search.placeholder",
+      "source_text": "Search source and translation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.status",
+      "source_text": "Status",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.source",
+      "source_text": "Source",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.target",
+      "source_text": "Translation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.changed",
+      "source_text": "Source changed",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.changed.yes",
+      "source_text": "Source changed since the last translation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.untranslated",
+      "source_text": "Untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.translated",
+      "source_text": "Translated",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.todo",
+      "source_text": "TODO",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.sourceChanged",
+      "source_text": "Source changed",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.pendingReview",
+      "source_text": "Pending review",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.pending_review",
+      "source_text": "Pending review",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.orphan",
+      "source_text": "Orphaned",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.label",
+      "source_text": "Filter",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.loading",
+      "source_text": "Loading entries…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.empty.title",
+      "source_text": "No mod selected",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.empty.desc",
+      "source_text": "Pick a category on the left to see entries.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.error",
+      "source_text": "Could not load project entries. Check the project file and retry.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.noResults.title",
+      "source_text": "Nothing found",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.noResults.desc",
+      "source_text": "No entries match the current filters and search.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.columnName",
+      "source_text": "Translation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.saving",
+      "source_text": "Saving…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.saved",
+      "source_text": "Saved",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.draft",
+      "source_text": "Draft",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.hint",
+      "source_text": "Enter — save · Esc — cancel · Tab — next untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.editor",
+      "source_text": "Editor",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.review",
+      "source_text": "Review",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.glossary",
+      "source_text": "Glossary",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.tm",
+      "source_text": "Translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.project",
+      "source_text": "Project",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tabs.label",
+      "source_text": "Project sections",
+      "placeholders": []
+    },
+    {
+      "id": "stage.label",
+      "source_text": "Stage: ",
+      "placeholders": []
+    },
+    {
+      "id": "stage.translate",
+      "source_text": "Translate",
+      "placeholders": []
+    },
+    {
+      "id": "stage.review",
+      "source_text": "Review",
+      "placeholders": []
+    },
+    {
+      "id": "stage.validate",
+      "source_text": "Validate",
+      "placeholders": []
+    },
+    {
+      "id": "stage.build",
+      "source_text": "Build",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.cta.reviewIssues",
+      "source_text": "Review issues ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "workspace.cta.build",
+      "source_text": "Build translation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.title",
+      "source_text": "Entries",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.all",
+      "source_text": "All entries",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.status",
+      "source_text": "Status",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.advanced",
+      "source_text": "Structure (advanced)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.title",
+      "source_text": "Filters",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.status",
+      "source_text": "Status",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.kind",
+      "source_text": "Record type",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin",
+      "source_text": "Origin",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.any",
+      "source_text": "Any",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.human",
+      "source_text": "Human",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.TM",
+      "source_text": "Translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.LLM",
+      "source_text": "Model",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.imported",
+      "source_text": "Imported",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.clear",
+      "source_text": "Clear filters",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.done",
+      "source_text": "Done",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.button",
+      "source_text": "All filters",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.label",
+      "source_text": "Target language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.source",
+      "source_text": "Source",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.search",
+      "source_text": "Search languages",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.add",
+      "source_text": "Add target language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.manage",
+      "source_text": "Manage languages",
+      "placeholders": []
+    },
+    {
+      "id": "languages.pinned.label",
+      "source_text": "Pinned target languages",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.title",
+      "source_text": "Project languages",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.targets",
+      "source_text": "Target languages",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.progress",
+      "source_text": "Progress",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.issues",
+      "source_text": "Issues",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.modified",
+      "source_text": "Modified",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addedVia",
+      "source_text": "Added",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.open",
+      "source_text": "Open",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.pin",
+      "source_text": "Pin",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.unpin",
+      "source_text": "Unpin",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.compare",
+      "source_text": "Compare",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.compareStub",
+      "source_text": "Side-by-side comparison is planned for the compare milestone (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.import",
+      "source_text": "Import",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.importDone",
+      "source_text": "Pack texts imported as drafts.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.export",
+      "source_text": "Export",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.exportStub",
+      "source_text": "Export arrives together with the build stage (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.sourceNote",
+      "source_text": "The source language is the project baseline — it cannot be removed.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detach",
+      "source_text": "Detach",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detachTitle",
+      "source_text": "Detach {name}?",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "languages.manager.detachDesc",
+      "source_text": "The {count} translated entries of this target are removed from the project. The source text stays untouched.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "languages.manager.detachLast",
+      "source_text": "The project needs at least one target language.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detachKeep",
+      "source_text": "Keep target",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detachConfirm",
+      "source_text": "Detach language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.deleteCustomTitle",
+      "source_text": "Delete language {name}?",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "languages.manager.deleteCustomDesc",
+      "source_text": "The language definition and all of its data are removed permanently. This cannot be undone.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.deleteCustomConfirm",
+      "source_text": "Delete permanently",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addTitle",
+      "source_text": "Add target language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addLanguage",
+      "source_text": "Language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addFlow",
+      "source_text": "Start from",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.empty",
+      "source_text": "Empty",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.emptyDesc",
+      "source_text": "No translations yet — the translator starts from zero",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.pack",
+      "source_text": "From language pack",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.packDesc",
+      "source_text": "Official or community pack texts as imported drafts",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.tm",
+      "source_text": "From translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.tmDesc",
+      "source_text": "TM matches where available",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.import",
+      "source_text": "Import existing translation",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.importDesc",
+      "source_text": "Files of an existing translation project",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addConfirm",
+      "source_text": "Add language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.alreadyTarget",
+      "source_text": "Already a target",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createTitle",
+      "source_text": "Create custom language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createOpen",
+      "source_text": "Create custom language…",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createName",
+      "source_text": "Display name",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createNative",
+      "source_text": "Native name",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createId",
+      "source_text": "Locale id",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createIdHint",
+      "source_text": "Letters and hyphens, e.g. tok, xh-ZA",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createAdvanced",
+      "source_text": "Advanced",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createFolder",
+      "source_text": "RimWorld folder",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createScript",
+      "source_text": "Script",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createDirection",
+      "source_text": "Text direction",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createSubmit",
+      "source_text": "Create language",
+      "placeholders": []
+    },
+    {
+      "id": "languages.create.error.invalidId",
+      "source_text": "Locale id: letters, digits and hyphens (e.g. tok, xh-ZA).",
+      "placeholders": []
+    },
+    {
+      "id": "languages.create.error.duplicate",
+      "source_text": "This locale already exists.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.create.error.badName",
+      "source_text": "Enter a display name.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.wizard",
+      "source_text": "Created with the project",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.import",
+      "source_text": "Imported",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.pack",
+      "source_text": "Language pack",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.tm",
+      "source_text": "Translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.empty",
+      "source_text": "Empty start",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.title",
+      "source_text": "Capabilities",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.wordinfo",
+      "source_text": "WordInfo",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.morphology",
+      "source_text": "Morphology",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.available",
+      "source_text": "available",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.unavailable",
+      "source_text": "not available",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.latin",
+      "source_text": "Latin",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.cyrillic",
+      "source_text": "Cyrillic",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.cjk",
+      "source_text": "CJK",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.unknown",
+      "source_text": "Other",
+      "placeholders": []
+    },
+    {
+      "id": "languages.direction.ltr",
+      "source_text": "Left to right",
+      "placeholders": []
+    },
+    {
+      "id": "languages.direction.rtl",
+      "source_text": "Right to left",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.switchTarget",
+      "source_text": "Switch target: {name}",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "workspace.detail.label",
+      "source_text": "Entry panel",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.context",
+      "source_text": "Context",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.suggestions",
+      "source_text": "Suggestions",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.validation",
+      "source_text": "Validation",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.history",
+      "source_text": "History",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.usages",
+      "source_text": "Where it appears",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.sourcePrev",
+      "source_text": "Previous source",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.advanced",
+      "source_text": "Technical details",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.file",
+      "source_text": "File",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.line",
+      "source_text": "Line",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy",
+      "source_text": "Strategy",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy.bare",
+      "source_text": "Text node",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy.slateRef",
+      "source_text": ".slateRef",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy.valueSlateRef",
+      "source_text": ".value.slateRef",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin",
+      "source_text": "Origin",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.human",
+      "source_text": "Human",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.TM",
+      "source_text": "Translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.LLM",
+      "source_text": "Model",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.imported",
+      "source_text": "Imported",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.edited",
+      "source_text": "Edited",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.note",
+      "source_text": "Translator note",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.notePlaceholder",
+      "source_text": "Note about a tricky spot…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.markTranslated",
+      "source_text": "Mark as translated",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.markReview",
+      "source_text": "Send to review",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.noSelection",
+      "source_text": "Select a row in the table to see its context.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.noContexts",
+      "source_text": "No additional contexts.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.nodes",
+      "source_text": "Multi-contexts",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.nodeSource",
+      "source_text": "Node",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.sibling",
+      "source_text": "Sibling",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.validation.pass",
+      "source_text": "Validation: no issues",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.validation.fail",
+      "source_text": "Validation: needs attention",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.validation.na",
+      "source_text": "Validation: not applicable",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.tm",
+      "source_text": "TM match",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.glossary",
+      "source_text": "Glossary",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.ai",
+      "source_text": "AI suggestion",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.similarity",
+      "source_text": "{n}% match",
+      "placeholders": [
+        "n"
+      ]
+    },
+    {
+      "id": "suggestion.term",
+      "source_text": "term",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.applied",
+      "source_text": "Applied",
+      "placeholders": []
+    },
+    {
+      "id": "validation.empty",
+      "source_text": "No issues",
+      "placeholders": []
+    },
+    {
+      "id": "validation.severity.error",
+      "source_text": "Error",
+      "placeholders": []
+    },
+    {
+      "id": "validation.severity.warning",
+      "source_text": "Warning",
+      "placeholders": []
+    },
+    {
+      "id": "issue.placeholder_mismatch",
+      "source_text": "Placeholder mismatch",
+      "placeholders": []
+    },
+    {
+      "id": "issue.glossary",
+      "source_text": "Glossary",
+      "placeholders": []
+    },
+    {
+      "id": "issue.untranslated_suspect",
+      "source_text": "Suspicious untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "issue.wordinfo",
+      "source_text": "WordInfo",
+      "placeholders": []
+    },
+    {
+      "id": "issue.ambiguity",
+      "source_text": "Ambiguous source",
+      "placeholders": []
+    },
+    {
+      "id": "issue.ai_concern",
+      "source_text": "AI review concern",
+      "placeholders": []
+    },
+    {
+      "id": "history.created",
+      "source_text": "Created",
+      "placeholders": []
+    },
+    {
+      "id": "history.edited",
+      "source_text": "Human edit",
+      "placeholders": []
+    },
+    {
+      "id": "history.tm_match",
+      "source_text": "From translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "history.ai_draft",
+      "source_text": "AI draft",
+      "placeholders": []
+    },
+    {
+      "id": "history.imported",
+      "source_text": "Imported",
+      "placeholders": []
+    },
+    {
+      "id": "history.source_changed",
+      "source_text": "Source changed",
+      "placeholders": []
+    },
+    {
+      "id": "history.marked_review",
+      "source_text": "Sent to review",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.title",
+      "source_text": "About this project",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.languages",
+      "source_text": "Languages",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.version",
+      "source_text": "RimWorld version",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.entries",
+      "source_text": "Total entries",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.progress",
+      "source_text": "Progress",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contentKind",
+      "source_text": "Mod (Steam Workshop)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.targets",
+      "source_text": "translation targets",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.active",
+      "source_text": "active",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceLocation",
+      "source_text": "Source (mod)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.outputLocation",
+      "source_text": "Translation output",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.health",
+      "source_text": "Translation health",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.health.progress",
+      "source_text": "Progress in {name}",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "workspace.project.health.issues",
+      "source_text": "Issues to review: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "workspace.project.sourceUpdate",
+      "source_text": "Source updates",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceUpdate.needsRescan",
+      "source_text": "The source may have changed — rescan recommended",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceUpdate.scanning",
+      "source_text": "Rescanning…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceUpdate.upToDate",
+      "source_text": "Source is up to date",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.rescan",
+      "source_text": "Rescan",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.reviewChanges",
+      "source_text": "Review changes ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "workspace.project.tools",
+      "source_text": "Specialized tools",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.danger",
+      "source_text": "Danger zone",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.dangerNote",
+      "source_text": "These actions change the whole project. Each one asks twice before it runs.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.reset",
+      "source_text": "Reset translation progress",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.resetDesc",
+      "source_text": "Returns every entry to its starting state.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.resetConfirm",
+      "source_text": "Reset ALL progress in this project?",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.resetYes",
+      "source_text": "Yes, reset everything",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archive",
+      "source_text": "Archive project",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archiveDesc",
+      "source_text": "Hides the project from lists; history stays intact.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archiveConfirm",
+      "source_text": "Archive this project?",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archiveYes",
+      "source_text": "Yes, archive",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archivedBanner",
+      "source_text": "Project is archived (mock). Nothing else in this build changes.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.restore",
+      "source_text": "Restore from archive",
+      "placeholders": []
+    },
+    {
+      "id": "review.title",
+      "source_text": "Review",
+      "placeholders": []
+    },
+    {
+      "id": "review.needsReview",
+      "source_text": "Needs review",
+      "placeholders": []
+    },
+    {
+      "id": "review.errors",
+      "source_text": "Errors",
+      "placeholders": []
+    },
+    {
+      "id": "review.sourceChanged",
+      "source_text": "Source changed",
+      "placeholders": []
+    },
+    {
+      "id": "review.glossaryConflicts",
+      "source_text": "Glossary conflicts",
+      "placeholders": []
+    },
+    {
+      "id": "review.categories",
+      "source_text": "Issue categories",
+      "placeholders": []
+    },
+    {
+      "id": "review.categories.all",
+      "source_text": "All issues",
+      "placeholders": []
+    },
+    {
+      "id": "review.scope",
+      "source_text": "Counters cover the whole project; the queue lists issues from the entries loaded in this session.",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue",
+      "source_text": "Issue queue",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue.empty.title",
+      "source_text": "Queue is clear",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue.empty.desc",
+      "source_text": "No issues left in this session. You can build the translation.",
+      "placeholders": []
+    },
+    {
+      "id": "review.resolvedNote",
+      "source_text": "{count} issues resolved in this session",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "review.context.label",
+      "source_text": "Entry context",
+      "placeholders": []
+    },
+    {
+      "id": "review.context.noDetails",
+      "source_text": "Review this entry before building.",
+      "placeholders": []
+    },
+    {
+      "id": "review.context.untranslated",
+      "source_text": "Not translated yet",
+      "placeholders": []
+    },
+    {
+      "id": "review.fix",
+      "source_text": "Fix",
+      "placeholders": []
+    },
+    {
+      "id": "review.fix.hint",
+      "source_text": "Corrected translation",
+      "placeholders": []
+    },
+    {
+      "id": "review.fix.save",
+      "source_text": "Save fix",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore",
+      "source_text": "Ignore with reason",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore.reason",
+      "source_text": "Why are you ignoring this?",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore.placeholder",
+      "source_text": "e.g. intentional here, the engine concatenates the name",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore.confirm",
+      "source_text": "Ignore",
+      "placeholders": []
+    },
+    {
+      "id": "review.markReviewed",
+      "source_text": "Mark reviewed",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.title",
+      "source_text": "Glossary",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.term",
+      "source_text": "Term",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.translation",
+      "source_text": "Translation",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.note",
+      "source_text": "Glossary editing and term checks arrive in GUI sprint phase 2.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.title",
+      "source_text": "Translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "tm.source",
+      "source_text": "Source",
+      "placeholders": []
+    },
+    {
+      "id": "tm.target",
+      "source_text": "Translation",
+      "placeholders": []
+    },
+    {
+      "id": "tm.from",
+      "source_text": "From",
+      "placeholders": []
+    },
+    {
+      "id": "tm.match",
+      "source_text": "Match",
+      "placeholders": []
+    },
+    {
+      "id": "tm.note",
+      "source_text": "Browsing and importing TM arrives in GUI sprint phase 2.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.subtitle",
+      "source_text": "Bound term → translation pairs: offered as suggestions and checked on output.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.search",
+      "source_text": "Search terms, translations and notes",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.add",
+      "source_text": "Add term",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.addTitle",
+      "source_text": "New term",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.editTitle",
+      "source_text": "Edit term",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.notes",
+      "source_text": "Note",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.notesPlaceholder",
+      "source_text": "When to apply, what to avoid…",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.pair",
+      "source_text": "Language pair",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope",
+      "source_text": "Scope",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope.all",
+      "source_text": "All",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope.project",
+      "source_text": "Project",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope.user",
+      "source_text": "Personal",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.variants",
+      "source_text": "Variants",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.variantsPlaceholder",
+      "source_text": "Alternative source spellings, comma-separated",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.caseSensitive",
+      "source_text": "Case-sensitive",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.import",
+      "source_text": "Import",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.export",
+      "source_text": "Export",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.importExportDone",
+      "source_text": "Done (mock): CSV format, nothing is written to disk.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.conflicts",
+      "source_text": "Conflicts: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "glossary.ed.conflictGroup",
+      "source_text": "“{term}” is claimed by several terms",
+      "placeholders": [
+        "term"
+      ]
+    },
+    {
+      "id": "glossary.ed.conflictNote",
+      "source_text": "Keep one option or split the scopes — the glossary check needs unambiguous terms.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.empty",
+      "source_text": "Nothing found. Adjust the search or add the first term.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.deleteConfirm",
+      "source_text": "Sure?",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.count",
+      "source_text": "Terms: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "tm.ed.subtitle",
+      "source_text": "Translation memory: ready pairs for prefill. Similarity shows how close a pair is to the source.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.search",
+      "source_text": "Search source, translation and project",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.origin",
+      "source_text": "Origin",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.duplicates",
+      "source_text": "Duplicates",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.duplicateTag",
+      "source_text": "duplicate",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.apply",
+      "source_text": "Apply",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.applied",
+      "source_text": "Applied",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.ioDone",
+      "source_text": "Done (mock): TMX format, nothing is written to disk.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.empty",
+      "source_text": "Translation memory is empty. Import a pack or translate the first entries.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.count",
+      "source_text": "Entries: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "tm.ed.editTitle",
+      "source_text": "Edit memory entry",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.virtualNote",
+      "source_text": "The mock holds 14 rows; real projects run to tens of thousands — the table will be virtualized, same as the editor table.",
+      "placeholders": []
+    },
+    {
+      "id": "kind.Keyed",
+      "source_text": "Keyed",
+      "placeholders": []
+    },
+    {
+      "id": "kind.DefInjected",
+      "source_text": "DefInjected",
+      "placeholders": []
+    },
+    {
+      "id": "kind.TKey",
+      "source_text": "TKey",
+      "placeholders": []
+    },
+    {
+      "id": "build.title",
+      "source_text": "Build translation",
+      "placeholders": []
+    },
+    {
+      "id": "build.coverage",
+      "source_text": "Translation coverage",
+      "placeholders": []
+    },
+    {
+      "id": "build.coverage.value",
+      "source_text": "{done} of {total} entries translated",
+      "placeholders": [
+        "done",
+        "total"
+      ]
+    },
+    {
+      "id": "build.validation",
+      "source_text": "Validation",
+      "placeholders": []
+    },
+    {
+      "id": "build.validation.value",
+      "source_text": "{count} entries need attention",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "build.dest",
+      "source_text": "Output destination",
+      "placeholders": []
+    },
+    {
+      "id": "build.button",
+      "source_text": "Build translation",
+      "placeholders": []
+    },
+    {
+      "id": "build.building",
+      "source_text": "Building…",
+      "placeholders": []
+    },
+    {
+      "id": "build.buildingNote",
+      "source_text": "Collecting entries, writing XML, validating the package…",
+      "placeholders": []
+    },
+    {
+      "id": "build.warnings",
+      "source_text": "Known warnings",
+      "placeholders": []
+    },
+    {
+      "id": "build.warnings.none",
+      "source_text": "No known warnings",
+      "placeholders": []
+    },
+    {
+      "id": "build.warnings.review",
+      "source_text": "Review problems",
+      "placeholders": []
+    },
+    {
+      "id": "build.success",
+      "source_text": "Translation built successfully",
+      "placeholders": []
+    },
+    {
+      "id": "build.output",
+      "source_text": "Output",
+      "placeholders": []
+    },
+    {
+      "id": "build.openFolder",
+      "source_text": "Open folder",
+      "placeholders": []
+    },
+    {
+      "id": "build.openedNote",
+      "source_text": "Folder opened: {path}",
+      "placeholders": [
+        "path"
+      ]
+    },
+    {
+      "id": "build.install",
+      "source_text": "Install translation",
+      "placeholders": []
+    },
+    {
+      "id": "build.installingNote",
+      "source_text": "Copying into the game Mods folder…",
+      "placeholders": []
+    },
+    {
+      "id": "build.installed",
+      "source_text": "Installed",
+      "placeholders": []
+    },
+    {
+      "id": "build.installedNote",
+      "source_text": "Copied into the game Mods folder — enable it in the mod list before the next run.",
+      "placeholders": []
+    },
+    {
+      "id": "build.retest",
+      "source_text": "Test / validate again",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced",
+      "source_text": "Advanced details",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.keys",
+      "source_text": "Entries written",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.files",
+      "source_text": "Files written",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.gameVersion",
+      "source_text": "RimWorld version",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.time",
+      "source_text": "Build time",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.pkg",
+      "source_text": "Package id",
+      "placeholders": []
+    },
+    {
+      "id": "build.note",
+      "source_text": "Nothing is written outside the output folder until you install the translation.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.title",
+      "source_text": "Open or update an existing translation",
+      "placeholders": []
+    },
+    {
+      "id": "existing.desc",
+      "source_text": "Pick the mod and the language pack you already have. RimLoc compares them with the current mod version.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.mod",
+      "source_text": "Source mod",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack",
+      "source_text": "Existing language pack",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack.none",
+      "source_text": "No language packs found next to this mod.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack.origin.community",
+      "source_text": "community",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack.origin.mod-author",
+      "source_text": "by mod author",
+      "placeholders": []
+    },
+    {
+      "id": "existing.analyze",
+      "source_text": "Analyze",
+      "placeholders": []
+    },
+    {
+      "id": "existing.analyzing",
+      "source_text": "Comparing the pack with the current mod version…",
+      "placeholders": []
+    },
+    {
+      "id": "existing.result.title",
+      "source_text": "What the pack already covers",
+      "placeholders": []
+    },
+    {
+      "id": "existing.reusable",
+      "source_text": "Reusable",
+      "placeholders": []
+    },
+    {
+      "id": "existing.sourceChanged",
+      "source_text": "Source changed",
+      "placeholders": []
+    },
+    {
+      "id": "existing.new",
+      "source_text": "New",
+      "placeholders": []
+    },
+    {
+      "id": "existing.obsolete",
+      "source_text": "Obsolete",
+      "placeholders": []
+    },
+    {
+      "id": "existing.invalid",
+      "source_text": "Invalid / orphan",
+      "placeholders": []
+    },
+    {
+      "id": "existing.ambiguous",
+      "source_text": "Ambiguous",
+      "placeholders": []
+    },
+    {
+      "id": "existing.safety",
+      "source_text": "Existing work is kept: obsolete and invalid entries are preserved until you review them — nothing is deleted automatically.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.reviewChanges",
+      "source_text": "Review changes",
+      "placeholders": []
+    },
+    {
+      "id": "existing.continueTranslation",
+      "source_text": "Continue translation",
+      "placeholders": []
+    },
+    {
+      "id": "existing.back",
+      "source_text": "Choose different content",
+      "placeholders": []
+    },
+    {
+      "id": "existing.note",
+      "source_text": "Mock flow: the analysis numbers demonstrate a real-scale project.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.title",
+      "source_text": "Settings",
+      "placeholders": []
+    },
+    {
+      "id": "settings.nav.label",
+      "source_text": "Settings sections",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.general",
+      "source_text": "General",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.rimworld",
+      "source_text": "RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.translation",
+      "source_text": "Translation",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.ai",
+      "source_text": "AI",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.editor",
+      "source_text": "Editor",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.appearance",
+      "source_text": "Appearance",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.advanced",
+      "source_text": "Advanced & diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.desc",
+      "source_text": "Interface language and application behaviour.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.language",
+      "source_text": "Interface language",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.startup",
+      "source_text": "On startup",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.startup.last",
+      "source_text": "Open the last project",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.startup.home",
+      "source_text": "Start at Home",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates",
+      "source_text": "Updates",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates.auto",
+      "source_text": "Check for updates automatically",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates.check",
+      "source_text": "Check now",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates.ok",
+      "source_text": "You are on the latest version (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.desc",
+      "source_text": "Where RimLoc looks for the game and mods.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.installs",
+      "source_text": "Game installations",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.primary",
+      "source_text": "primary",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.rescan",
+      "source_text": "Rescan",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.found",
+      "source_text": "Found: 2 installations · 143 mods (mock)",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.version",
+      "source_text": "Target RimWorld version",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.autodetect",
+      "source_text": "Detect installations automatically",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.workshop",
+      "source_text": "Workshop folder",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.rimsort",
+      "source_text": "RimSort integration",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.rimsortNote",
+      "source_text": "Planned: hand projects over to RimSort. Not in this build.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.desc",
+      "source_text": "Defaults for new projects and translation runs.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.pair",
+      "source_text": "Default project languages",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.source",
+      "source_text": "Source",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.target",
+      "source_text": "Target",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.pairNote",
+      "source_text": "These are project languages, not the interface language.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.autosave",
+      "source_text": "Autosave edits",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.tmFirst",
+      "source_text": "Fill from translation memory first",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.markAI",
+      "source_text": "Mark AI drafts for review",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.glossary",
+      "source_text": "Glossary terms",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.glossary.suggest",
+      "source_text": "Suggest",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.glossary.enforce",
+      "source_text": "Enforce in checks",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.desc",
+      "source_text": "Providers, quality and what AI costs you.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.summary",
+      "source_text": "{connected} connected · {unconfigured} not configured · {offline} offline",
+      "placeholders": [
+        "connected",
+        "offline",
+        "unconfigured"
+      ]
+    },
+    {
+      "id": "settings.ai.manage",
+      "source_text": "Open provider manager",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality",
+      "source_text": "Default quality mode",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.fast",
+      "source_text": "Fastest and cheapest; more entries flagged for review.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.balanced",
+      "source_text": "Good default: fewer review flags, moderate cost.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.max",
+      "source_text": "Slowest and most expensive; fewest review flags.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.suggest",
+      "source_text": "No automatic writes — AI only suggests in the editor.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.privacy",
+      "source_text": "Privacy: cloud providers receive the text being translated. Nothing is sent while no provider is configured.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.cost",
+      "source_text": "Cost: paid runs always show an estimate and wait for your approval before spending.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.desc",
+      "source_text": "How the editing table behaves.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.fontSize",
+      "source_text": "Editor font size",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.size.small",
+      "source_text": "Small",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.size.medium",
+      "source_text": "Medium",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.size.large",
+      "source_text": "Large",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.wrap",
+      "source_text": "Wrap long lines",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.density",
+      "source_text": "Row density",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.densityNote",
+      "source_text": "Also on the Appearance page.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.shortcuts",
+      "source_text": "Keyboard shortcuts",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.shortcutsMore",
+      "source_text": "All shortcuts live in Help.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.desc",
+      "source_text": "Theme, visual direction and feedback.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.theme",
+      "source_text": "Theme",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.style",
+      "source_text": "Visual direction",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.palette",
+      "source_text": "Accent palette",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.density",
+      "source_text": "Density",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion",
+      "source_text": "Motion",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion.system",
+      "source_text": "System",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion.full",
+      "source_text": "Full",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion.reduced",
+      "source_text": "Reduced",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.sounds",
+      "source_text": "Sounds",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.soundsNote",
+      "source_text": "Only for meaningful events: run finished, problems found, build ready. Off by default.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.sysnotify",
+      "source_text": "System notifications for long jobs",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.desc",
+      "source_text": "Diagnostics, logs and the developer surface. Experimental and internal options live only here.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.logs",
+      "source_text": "Logs",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.openLogs",
+      "source_text": "Open logs folder",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.logsDone",
+      "source_text": "Log folder ready (mock): ~/RimLoc/logs",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.diagnostics",
+      "source_text": "Diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.runDiag",
+      "source_text": "Run diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.rules",
+      "source_text": "Knowledge & rules",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.viewRules",
+      "source_text": "View rules",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.rulePlaceholders",
+      "source_text": "placeholders kept verbatim",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.ruleGlossary",
+      "source_text": "glossary terms preferred",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.ruleTone",
+      "source_text": "Tone register: neutral game UI",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.config",
+      "source_text": "Configuration",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.export",
+      "source_text": "Export config",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.exported",
+      "source_text": "Configuration exported (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.import",
+      "source_text": "Import config",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.imported",
+      "source_text": "Configuration imported (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.dev",
+      "source_text": "Developer options",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.mocks",
+      "source_text": "This build runs against mock adapters: zero backend calls (mandate §31).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.title",
+      "source_text": "AI provider manager",
+      "placeholders": []
+    },
+    {
+      "id": "providers.subtitle",
+      "source_text": "Connect a model for AI drafts — or work fully offline: without a provider, translation, TM, validation and builds all work.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.zai",
+      "source_text": "Z.AI / OpenAI-compatible",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.openai",
+      "source_text": "OpenAI-compatible",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.anthropic",
+      "source_text": "Anthropic",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.ollama",
+      "source_text": "Ollama / local",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.custom",
+      "source_text": "Custom OpenAI-compatible",
+      "placeholders": []
+    },
+    {
+      "id": "provider.zai.desc",
+      "source_text": "GLM models via the Z.AI API (OpenAI-compatible).",
+      "placeholders": []
+    },
+    {
+      "id": "provider.openai.desc",
+      "source_text": "Any OpenAI-compatible endpoint.",
+      "placeholders": []
+    },
+    {
+      "id": "provider.anthropic.desc",
+      "source_text": "Claude models via the Anthropic API.",
+      "placeholders": []
+    },
+    {
+      "id": "provider.ollama.desc",
+      "source_text": "Local models via Ollama on this machine.",
+      "placeholders": []
+    },
+    {
+      "id": "provider.custom.desc",
+      "source_text": "Your own endpoint with an OpenAI-compatible API.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.connected",
+      "source_text": "Connected",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.not_configured",
+      "source_text": "Not configured",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.offline",
+      "source_text": "Offline",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.testing",
+      "source_text": "Testing…",
+      "placeholders": []
+    },
+    {
+      "id": "providers.model",
+      "source_text": "Model",
+      "placeholders": []
+    },
+    {
+      "id": "providers.baseUrl",
+      "source_text": "Base URL",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.configure",
+      "source_text": "Configure",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.test",
+      "source_text": "Test connection",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.changeModel",
+      "source_text": "Change model",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.save",
+      "source_text": "Save",
+      "placeholders": []
+    },
+    {
+      "id": "providers.key.hint",
+      "source_text": "Key stored in the system keychain — never shown, only replaceable.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.key.replace",
+      "source_text": "Replace key",
+      "placeholders": []
+    },
+    {
+      "id": "providers.key.none",
+      "source_text": "No key yet",
+      "placeholders": []
+    },
+    {
+      "id": "providers.privacy.cloud",
+      "source_text": "Privacy: translation texts are sent to this provider’s servers.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.privacy.local",
+      "source_text": "Privacy: runs on this machine — nothing leaves your computer.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.cost.warn",
+      "source_text": "Cost: AI runs consume paid tokens. RimLoc shows an estimate and asks before any spend.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.offline.hint",
+      "source_text": "Service not reachable. Start Ollama or check the port.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.test.keySaved",
+      "source_text": "Key saved to the keychain (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.test.modelSet",
+      "source_text": "Model changed.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.test.ok",
+      "source_text": "Connection OK (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.zero",
+      "source_text": "Zero-API: AI is an enhancement, not a dependency.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.templates.title",
+      "source_text": "Provider templates",
+      "placeholders": []
+    },
+    {
+      "id": "providers.instances.title",
+      "source_text": "Configured providers",
+      "placeholders": []
+    },
+    {
+      "id": "providers.instances.empty",
+      "source_text": "No providers configured yet — pick a template below.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.add",
+      "source_text": "Add provider",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.copyOf",
+      "source_text": "{name} — copy",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "providers.inst.default",
+      "source_text": "default",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.makeDefault",
+      "source_text": "Make default",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.enabled",
+      "source_text": "Enabled",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.disabled",
+      "source_text": "Disabled",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.disabledHint",
+      "source_text": "Disabled: excluded from runs, settings kept.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.model",
+      "source_text": "Model",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.edit",
+      "source_text": "Edit",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.rename",
+      "source_text": "Rename",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.duplicate",
+      "source_text": "Duplicate",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.export",
+      "source_text": "Export",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.done",
+      "source_text": "Exported (mock): JSON without credentials — key fields are omitted entirely.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.cred.shared",
+      "source_text": "shared keychain reference",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.cred.sharedHint",
+      "source_text": "Resolves to the same keychain entry as the original — the secret itself was never copied.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.cred.missing",
+      "source_text": "needs credential",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.title",
+      "source_text": "Duplicate “{name}”",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "providers.duplicate.note",
+      "source_text": "Only non-secret configuration is copied (name, base URL, model, protocol). Decide what happens to the credential:",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.reuse",
+      "source_text": "Reuse keychain reference (shared)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.needs",
+      "source_text": "Without key (needs credential)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.reuseUnavailable",
+      "source_text": "The original has no keychain reference yet — save a key first.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.local",
+      "source_text": "Duplicate (local, no key)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.localNote",
+      "source_text": "Only non-secret configuration is copied. The service runs locally — no key is involved.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.localFlash",
+      "source_text": "Duplicated: local provider without a key (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.sharedFlash",
+      "source_text": "Duplicated: shares the original’s keychain reference (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.missingFlash",
+      "source_text": "Duplicated: needs its own credential (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.unavailable",
+      "source_text": "Clipboard unavailable in this context — copy the JSON below manually (mock export).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.denied",
+      "source_text": "Clipboard write was denied — copy the JSON below manually (mock export).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.fallbackNote",
+      "source_text": "Provider configuration (credentials excluded):",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.removeConfirm",
+      "source_text": "Remove?",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.removeWarn",
+      "source_text": "Click again to remove the provider. The keychain entry is untouched.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.key",
+      "source_text": "Key",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.addTitle",
+      "source_text": "New provider",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.editTitle",
+      "source_text": "Provider settings",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.name",
+      "source_text": "Name",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.family",
+      "source_text": "Protocol family",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth",
+      "source_text": "Auth method",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth.keychain",
+      "source_text": "Key in keychain",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth.none",
+      "source_text": "No key (local)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth.noneHint",
+      "source_text": "Local services need no key; cloud providers do.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.discovery",
+      "source_text": "Model discovery",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.discovery.auto",
+      "source_text": "List from server",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.discovery.manual",
+      "source_text": "Manual",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.modelPlaceholder",
+      "source_text": "e.g. my-model-7b",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.add",
+      "source_text": "Add",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.saved",
+      "source_text": "Changes saved (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "chat.title",
+      "source_text": "Chat batches",
+      "placeholders": []
+    },
+    {
+      "id": "chat.subtitle",
+      "source_text": "Translate via a web chat without an API key: copy a batch, paste it into your chat, import the reply back.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.project.pair",
+      "source_text": "{source} → {target}",
+      "placeholders": [
+        "source",
+        "target"
+      ]
+    },
+    {
+      "id": "chat.progress",
+      "source_text": "{done}/{total} accepted, {review} on review",
+      "placeholders": [
+        "done",
+        "review",
+        "total"
+      ]
+    },
+    {
+      "id": "chat.summary.label",
+      "source_text": "Before copying",
+      "placeholders": []
+    },
+    {
+      "id": "chat.summary.entries",
+      "source_text": "Entries: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.summary.tokens",
+      "source_text": "~{n}k tokens — estimate",
+      "placeholders": [
+        "n"
+      ]
+    },
+    {
+      "id": "chat.summary.recommended",
+      "source_text": "Recommended",
+      "placeholders": []
+    },
+    {
+      "id": "chat.copyNext",
+      "source_text": "Copy next batch",
+      "placeholders": []
+    },
+    {
+      "id": "chat.allCopied",
+      "source_text": "All batches copied. Wait for the replies and import them.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.list.label",
+      "source_text": "Batches",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.not_started",
+      "source_text": "Not started",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.exported",
+      "source_text": "Exported",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.waiting",
+      "source_text": "Waiting",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.imported",
+      "source_text": "Imported",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.partial",
+      "source_text": "Partial",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.needs_review",
+      "source_text": "Needs review",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.done",
+      "source_text": "Done",
+      "placeholders": []
+    },
+    {
+      "id": "chat.counts.accepted",
+      "source_text": "accepted: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.counts.problems",
+      "source_text": "with problems: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.counts.stale",
+      "source_text": "stale: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.counts.skipped",
+      "source_text": "skipped: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.copy",
+      "source_text": "Copy",
+      "placeholders": []
+    },
+    {
+      "id": "chat.copyAgain",
+      "source_text": "Copy again",
+      "placeholders": []
+    },
+    {
+      "id": "chat.copyRemainder",
+      "source_text": "Copy remaining ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.markWaiting",
+      "source_text": "Waiting for reply",
+      "placeholders": []
+    },
+    {
+      "id": "chat.import",
+      "source_text": "Import reply",
+      "placeholders": []
+    },
+    {
+      "id": "chat.preview.title",
+      "source_text": "Apply preview",
+      "placeholders": []
+    },
+    {
+      "id": "chat.preview.ready",
+      "source_text": "{count} ready",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.preview.problems",
+      "source_text": "{count} with problems",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.preview.stale",
+      "source_text": "{count} stale",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.preview.skipped",
+      "source_text": "{count} skipped",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.apply",
+      "source_text": "Apply {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.reviewN",
+      "source_text": "Review {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.split.action",
+      "source_text": "Split and retry",
+      "placeholders": []
+    },
+    {
+      "id": "chat.split.preserved",
+      "source_text": "{count} accepted entries preserved",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.sizing.title",
+      "source_text": "Batch size",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.auto",
+      "source_text": "Auto",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.autoHint",
+      "source_text": "RimLoc picks the size from entry volume and chat limits",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.small",
+      "source_text": "Small",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.medium",
+      "source_text": "Medium",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.large",
+      "source_text": "Large",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.advanced",
+      "source_text": "Advanced",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.entries",
+      "source_text": "Entries per batch",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.entriesHint",
+      "source_text": "Fewer entries are easier to check and retry on failure",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.tokenBudget",
+      "source_text": "Token budget",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.tokenBudgetHint",
+      "source_text": "If the estimate exceeds the budget, the batch splits in two",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.outputTokens",
+      "source_text": "Max reply tokens",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.outputTokensHint",
+      "source_text": "Chats cut off long replies — the limit keeps the reply whole",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.characters",
+      "source_text": "Max characters",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.charactersHint",
+      "source_text": "Upper bound on the text volume of one batch",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.title",
+      "source_text": "Chat profile",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.desc",
+      "source_text": "Behavior defaults for a specific chat. No keys or secrets live here.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.generic",
+      "source_text": "Generic",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.genericDesc",
+      "source_text": "Nothing special: a standard prompt and continuous numbering.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.chatgpt",
+      "source_text": "ChatGPT",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.chatgptDesc",
+      "source_text": "One code block per reply; a follow-up request continues the numbering.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.claude",
+      "source_text": "Claude",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.claudeDesc",
+      "source_text": "XML tags around entries; holds long context well.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.gemini",
+      "source_text": "Gemini",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.geminiDesc",
+      "source_text": "Works better with smaller batches — up to 40 entries.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.glm",
+      "source_text": "GLM",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.glmDesc",
+      "source_text": "Keeps glossary terminology more stable for Russian.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.custom",
+      "source_text": "Custom",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.customDesc",
+      "source_text": "Your own behavior rules — tuned to your chat.",
+      "placeholders": []
+    },
+    {
+      "id": "help.title",
+      "source_text": "Help",
+      "placeholders": []
+    },
+    {
+      "id": "help.subtitle",
+      "source_text": "Quick start, shortcuts and a diagnostics workflow whose output a human — or an AI — can act on.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.title",
+      "source_text": "Quick start",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s1",
+      "source_text": "Pick “Create translation” on Home.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s2",
+      "source_text": "The wizard finds your mods and sets languages.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s3",
+      "source_text": "Translate — TM fills what it can, AI drafts the rest.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s4",
+      "source_text": "Review flagged entries, then build the translation.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.title",
+      "source_text": "Getting around the editor",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.step",
+      "source_text": "Tip {step} of {total}",
+      "placeholders": [
+        "step",
+        "total"
+      ]
+    },
+    {
+      "id": "onboarding.skip",
+      "source_text": "Skip tips",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.next",
+      "source_text": "Next",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.finish",
+      "source_text": "Start translating",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s1.title",
+      "source_text": "Pick an entry",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s1.text",
+      "source_text": "Click any row in the table to open it in the panel on the right.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s2.title",
+      "source_text": "Edit or accept a suggestion",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s2.text",
+      "source_text": "Type your own translation, or take a TM or AI suggestion as-is.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s3.title",
+      "source_text": "Filter what needs work",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s3.text",
+      "source_text": "Statuses and search narrow the list down to what still needs you.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s4.title",
+      "source_text": "Validate, then build",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s4.text",
+      "source_text": "When the entries are done, validate and build the language files.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d1.title",
+      "source_text": "Open the demo project",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d1.text",
+      "source_text": "The bundled demo is synthetic RimLoc-owned data: Keyed, DefInjected, TKey, a review queue and several targets. No game folders involved.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d1.action",
+      "source_text": "Open demo project",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d2.title",
+      "source_text": "Pick a row",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d2.text",
+      "source_text": "Rows are entries of the mod. Take the highlighted TODO entry “ConfirmBanish” — it still needs a decision.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d2.action",
+      "source_text": "Select the row",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d3.title",
+      "source_text": "Edit and save a translation",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d3.text",
+      "source_text": "The entry panel is where the work happens. This action types a real translation — keeping the {PAWN_nameDef} placeholder — and saves it through the editor path.",
+      "placeholders": [
+        "PAWN_nameDef"
+      ]
+    },
+    {
+      "id": "tour.d3.action",
+      "source_text": "Type translation and save",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d4.title",
+      "source_text": "Context, suggestions, history",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d4.text",
+      "source_text": "The CONTEXT tab shows where the string appears in the game; next to it live suggestions, validation and provenance history.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d5.title",
+      "source_text": "One intentional error",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d5.text",
+      "source_text": "Entry keyed-06 carries the planted mistake: its translation lost the placeholders the source has. It is flagged as a placeholder mismatch.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d5.action",
+      "source_text": "Open review",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d6.title",
+      "source_text": "Fix the error for real",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d6.text",
+      "source_text": "This is the review inline fix: it restores both placeholders and saves through the shared project store, so the queue really shrinks.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d6.action",
+      "source_text": "Fix the placeholders",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d7.title",
+      "source_text": "Validate before building",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d7.text",
+      "source_text": "The header button follows the lifecycle: while the queue is not empty it offers review; only a clean queue unlocks build. The demo still has open issues, so the build here stays a synthetic demonstration.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d7.action",
+      "source_text": "Go to build (demo)",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d8.title",
+      "source_text": "Build the demo translation",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d8.text",
+      "source_text": "The demo build is synthetic and local — nothing is written to game folders. This action presses the real “Build translation” control.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d8.action",
+      "source_text": "Build the demo translation",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.title",
+      "source_text": "Your first translation is ready",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.text",
+      "source_text": "You edited an entry, fixed the intentional error and ran the synthetic demo build — that is the whole loop: source in, validated files out. Reset the demo from Home anytime.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.honest.title",
+      "source_text": "Tour complete — but the demo was not fully worked",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.honest.text",
+      "source_text": "No demo build result is claimed: these steps were skipped — {list}. Go Back to do them, or finish without the “translation ready” outcome.",
+      "placeholders": [
+        "list"
+      ]
+    },
+    {
+      "id": "tour.missing.d3",
+      "source_text": "entry edit was not saved",
+      "placeholders": []
+    },
+    {
+      "id": "tour.missing.d6",
+      "source_text": "the intentional error was not fixed",
+      "placeholders": []
+    },
+    {
+      "id": "tour.missing.d8",
+      "source_text": "the demo build was not run",
+      "placeholders": []
+    },
+    {
+      "id": "tour.honestNote",
+      "source_text": "Honest mode: this screen never claims success that did not happen.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.actionFailed",
+      "source_text": "Did not complete: the action is unavailable for the current state. Open the demo project (step 1) and try again.",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.title",
+      "source_text": "Replay onboarding",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.desc",
+      "source_text": "The 4-step editor coach overlay shown on first open of the workspace.",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.action",
+      "source_text": "Show tips in the editor",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.demoTour",
+      "source_text": "Guided demo tour",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.demoTourDesc",
+      "source_text": "Anchored walkthrough of the whole loop on the bundled demo project: open it, pick and edit a row, review the intentional error, validate and build (synthetic).",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.title",
+      "source_text": "Keyboard shortcuts",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.palette",
+      "source_text": "Command palette",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.save",
+      "source_text": "Save edit",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.cancel",
+      "source_text": "Cancel edit",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.next",
+      "source_text": "Next untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.title",
+      "source_text": "Documentation",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.desc",
+      "source_text": "Guides and references (mock links in this build).",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.guide",
+      "source_text": "User guide",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.cli",
+      "source_text": "CLI reference",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.repo",
+      "source_text": "Source repository",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.title",
+      "source_text": "Troubleshooting",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.q1",
+      "source_text": "Mods are not detected",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.a1",
+      "source_text": "Check the Workshop folder in Settings → RimWorld and rescan. A Steam library outside the default path needs a manual folder.",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.q2",
+      "source_text": "AI translation fails or stalls",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.a2",
+      "source_text": "Test the provider connection in Settings → AI. Cloud providers need a working key; Ollama must be running locally.",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.q3",
+      "source_text": "“Placeholder mismatch” — what is it?",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.a3",
+      "source_text": "The translation lost or renamed a {0}-style placeholder. Open the entry from Review and keep every placeholder from the source.",
+      "placeholders": [
+        "0"
+      ]
+    },
+    {
+      "id": "help.diagnose.title",
+      "source_text": "Diagnose problem",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.desc",
+      "source_text": "A structured check of the environment. The output is meant for a support human or an AI assistant.",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.run",
+      "source_text": "Run diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.again",
+      "source_text": "Run again",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.game",
+      "source_text": "Game installation",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.mods",
+      "source_text": "Workshop mods folder",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.config",
+      "source_text": "Configuration files",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.provider",
+      "source_text": "AI providers",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.ok",
+      "source_text": "OK",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.warn",
+      "source_text": "Warning",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.fail",
+      "source_text": "Failed",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.done",
+      "source_text": "Diagnostics complete: {warn} warning(s).",
+      "placeholders": [
+        "warn"
+      ]
+    },
+    {
+      "id": "help.diagnose.copy",
+      "source_text": "Copy diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.deep",
+      "source_text": "Full diagnostics…",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.deepNote",
+      "source_text": "Replay a known failure and inspect the structured cause.",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.title",
+      "source_text": "Prepare bug report / Copy for AI",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.desc",
+      "source_text": "Builds a sanitized bundle: secrets, auth data and game content are redacted automatically, the diagnostic context stays intact. You see exactly what leaves the machine.",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.prepare",
+      "source_text": "Prepare bug report",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.copyAI",
+      "source_text": "Copy for AI",
+      "placeholders": []
+    },
+    {
+      "id": "help.copied",
+      "source_text": "Copied to clipboard",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.title",
+      "source_text": "Diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.subtitle",
+      "source_text": "A guided demo of the diagnostics loop: a scripted sample failure, its structured cause, and a support bundle a human — or an AI — can act on without seeing your secrets.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.scenario.title",
+      "source_text": "Controlled sample failure",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.scenario.desc",
+      "source_text": "A demonstration, not a real failure: the draft translation for a keyed entry loses a placeholder from its source, the validator catches the loss, and the pipeline assembles the cause around that spot. Project data is not modified.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.scenario.knownFailure",
+      "source_text": "Demo failure: the draft for {key} loses its placeholder during validation.",
+      "placeholders": [
+        "key"
+      ]
+    },
+    {
+      "id": "diagnostics.run",
+      "source_text": "Run diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.runAgain",
+      "source_text": "Run again",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.step.inventory",
+      "source_text": "Read source inventory",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.step.validate",
+      "source_text": "Run structural validation",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.step.causal",
+      "source_text": "Assemble causal context",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.title",
+      "source_text": "Causal context",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.stage",
+      "source_text": "stage",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.expected",
+      "source_text": "Expected",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.actual",
+      "source_text": "Actual",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.affected",
+      "source_text": "Affected entries",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.providers",
+      "source_text": "Provider state",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.providersValue",
+      "source_text": "connected {connected} · not configured {notConfigured} · offline {offline}",
+      "placeholders": [
+        "connected",
+        "notConfigured",
+        "offline"
+      ]
+    },
+    {
+      "id": "diagnostics.causal.validator",
+      "source_text": "Validator",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.version",
+      "source_text": "Game version",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.locales",
+      "source_text": "Locales",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.timing",
+      "source_text": "Operation time",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.trace",
+      "source_text": "Relevant trace",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.traceNote",
+      "source_text": "Six events, not a log dump — enough to follow the failure end to end.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.prepare",
+      "source_text": "Prepare bug report",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.prepareHint",
+      "source_text": "Sanitizes the bundle before anything is copied or shared.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.title",
+      "source_text": "Support bundle (sanitized)",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.intro",
+      "source_text": "What the bundle contains. Redacted lines are marked with a reason; excluded lines were never assembled.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.included",
+      "source_text": "Included",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.redacted",
+      "source_text": "Redacted",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.excluded",
+      "source_text": "Excluded",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.copyAi",
+      "source_text": "Copy for AI",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.copyAiNote",
+      "source_text": "Copies a compact prompt plus the sanitized payload: an assistant can name the probable cause without your credentials, paths or game text.",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.appVersion",
+      "source_text": "App version",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.operation",
+      "source_text": "Operation",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.stage",
+      "source_text": "Stage",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.error",
+      "source_text": "Error",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.affected",
+      "source_text": "Affected entries",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.entrySource",
+      "source_text": "Entry source text",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.entryDraft",
+      "source_text": "Entry draft translation",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.rimworld",
+      "source_text": "RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.locales",
+      "source_text": "Locales",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.timing",
+      "source_text": "Timings",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.providers",
+      "source_text": "Providers",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.sourceLocation",
+      "source_text": "Source location",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.outputLocation",
+      "source_text": "Output location",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.apiKey",
+      "source_text": "Provider API key",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.authHeader",
+      "source_text": "Auth header",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.token",
+      "source_text": "License token",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.envSecret",
+      "source_text": "Env: provider key",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.envLocale",
+      "source_text": "Env: locale",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.keychain",
+      "source_text": "Keychain reference",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.signing",
+      "source_text": "Signing identity",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.fullLog",
+      "source_text": "Full application log",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.database",
+      "source_text": "Project database",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.screenshots",
+      "source_text": "Screenshots",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.apiKey",
+      "source_text": "API key",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.authHeader",
+      "source_text": "Auth header",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.token",
+      "source_text": "Token",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.envSecret",
+      "source_text": "Secret env value",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.keychain",
+      "source_text": "Keychain data",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.signing",
+      "source_text": "Signing identity",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.sensitiveField",
+      "source_text": "Sensitive field",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.thirdParty",
+      "source_text": "Third-party game content",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.homePath",
+      "source_text": "Home path normalized to ~",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.too-large",
+      "source_text": "Too large, not needed for this failure",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.bulk-user-content",
+      "source_text": "Bulk user content",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.third-party-visuals",
+      "source_text": "Third-party visuals",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.col.command",
+      "source_text": "Command",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.col.combo",
+      "source_text": "Combo",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.col.actions",
+      "source_text": "Actions",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.save",
+      "source_text": "Save edit",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.undo",
+      "source_text": "Undo edit",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.search",
+      "source_text": "Search entries",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.palette",
+      "source_text": "Command palette",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.cancel",
+      "source_text": "Cancel (Esc)",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.nextUntranslated",
+      "source_text": "Next untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.nextIssue",
+      "source_text": "Next issue",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.prevIssue",
+      "source_text": "Previous issue",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.markReviewed",
+      "source_text": "Mark reviewed",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.change",
+      "source_text": "Change",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.listening",
+      "source_text": "Press a combo…",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.issue.rimlocConflict",
+      "source_text": "RimLoc conflict",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.issue.systemReserved",
+      "source_text": "system-reserved combo",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.issue.convention",
+      "source_text": "shadows a common convention",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.blocked",
+      "source_text": "Not saved: another RimLoc command already uses this combo.",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.warnReserved",
+      "source_text": "{count} shortcut(s) use system-reserved combos — saved, but the OS may intercept them.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "shortcuts.infoConvention",
+      "source_text": "{count} shortcut(s) shadow common app conventions — saved as customized.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "shortcuts.platform.mac",
+      "source_text": "The modifier on macOS is ⌘ Cmd.",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.platform.other",
+      "source_text": "The modifier on Windows and Linux is Ctrl.",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.platform.hint",
+      "source_text": "The binding is picked up by the editor (mock).",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.resetAll",
+      "source_text": "Reset all to defaults",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.label",
+      "source_text": "Origin",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.user-created",
+      "source_text": "User-created",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.project-created",
+      "source_text": "Project-created",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.imported",
+      "source_text": "Imported",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.reference-read-only",
+      "source_text": "Reference (read-only)",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.readOnlyReason",
+      "source_text": "Reference corpora are read-only: the live binding must not destructively mutate reference material. Duplicate the record to edit it.",
+      "placeholders": []
+    },
+    {
+      "id": "about.title",
+      "source_text": "About",
+      "placeholders": []
+    },
+    {
+      "id": "about.tagline",
+      "source_text": "RimLoc is a RimWorld localization workstation: translation memory, glossary, placeholder checks and build. AI is an enhancement, not a black box.",
+      "placeholders": []
+    },
+    {
+      "id": "about.version",
+      "source_text": "Version",
+      "placeholders": []
+    },
+    {
+      "id": "about.maintainer",
+      "source_text": "Founder & lead",
+      "placeholders": []
+    },
+    {
+      "id": "about.maintainerRole",
+      "source_text": "founder · lead maintainer",
+      "placeholders": []
+    },
+    {
+      "id": "about.repo",
+      "source_text": "Repository",
+      "placeholders": []
+    },
+    {
+      "id": "about.license",
+      "source_text": "License",
+      "placeholders": []
+    },
+    {
+      "id": "about.notices",
+      "source_text": "Third-party components",
+      "placeholders": []
+    },
+    {
+      "id": "about.noticesNote",
+      "source_text": "Bundled fonts are distributed under the SIL Open Font License 1.1. The full list lives in the repository’s THIRD-PARTY-NOTICES file.",
+      "placeholders": []
+    },
+    {
+      "id": "palette.placeholder",
+      "source_text": "Type a command…",
+      "placeholders": []
+    },
+    {
+      "id": "palette.noResults",
+      "source_text": "No matching commands",
+      "placeholders": []
+    },
+    {
+      "id": "palette.hint",
+      "source_text": "↑↓ select · Enter run · Esc close",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.translateSelected",
+      "source_text": "Translate selected",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.validateProject",
+      "source_text": "Validate project",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.reviewErrors",
+      "source_text": "Review errors",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.buildTranslation",
+      "source_text": "Build translation",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openProject",
+      "source_text": "Open project",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.compareVersions",
+      "source_text": "Compare versions",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openSettings",
+      "source_text": "Open Settings",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.configureAI",
+      "source_text": "Configure AI",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openGlossary",
+      "source_text": "Open glossary",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openTM",
+      "source_text": "Open translation memory",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openAbout",
+      "source_text": "About RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.runDiagnostics",
+      "source_text": "Run diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.showShortcuts",
+      "source_text": "Show shortcuts",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.title",
+      "source_text": "Style Lab",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style",
+      "source_text": "Direction",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.precision",
+      "source_text": "Precision",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.aurora",
+      "source_text": "Aurora",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.workshop",
+      "source_text": "Workshop",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.editorial",
+      "source_text": "Editorial",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette",
+      "source_text": "Palette",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.indigo",
+      "source_text": "Indigo",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.blue",
+      "source_text": "Blue",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.emerald",
+      "source_text": "Emerald",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.amber",
+      "source_text": "Amber",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.density",
+      "source_text": "Density",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.density.comfortable",
+      "source_text": "Comfortable",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.density.compact",
+      "source_text": "Compact",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.theme",
+      "source_text": "Theme",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.remember",
+      "source_text": "Always show",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.hint",
+      "source_text": "Dev-only: ?stylelab=1 shows this panel.",
+      "placeholders": []
+    },
+    {
+      "id": "dev.title",
+      "source_text": "Dev panel (mocks)",
+      "placeholders": []
+    },
+    {
+      "id": "dev.route",
+      "source_text": "Route",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode",
+      "source_text": "Home view",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode.first-run",
+      "source_text": "First run",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode.returning",
+      "source_text": "Returning",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode.no-mods",
+      "source_text": "No mods",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState",
+      "source_text": "Home state",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState.ready",
+      "source_text": "Normal",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState.loading",
+      "source_text": "Loading",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState.error",
+      "source_text": "Error",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState",
+      "source_text": "Workspace state",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.ready",
+      "source_text": "Normal",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.loading",
+      "source_text": "Loading",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.empty",
+      "source_text": "Empty",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.error",
+      "source_text": "Error",
+      "placeholders": []
+    },
+    {
+      "id": "dev.reset",
+      "source_text": "Reset mock data",
+      "placeholders": []
+    },
+    {
+      "id": "dev.summary",
+      "source_text": "Zero backend calls: all data is local.",
+      "placeholders": []
+    },
+    {
+      "id": "dev.scenarios",
+      "source_text": "Scenario browser",
+      "placeholders": []
+    },
+    {
+      "id": "boot.configError.title",
+      "source_text": "No backend in this launch",
+      "placeholders": []
+    },
+    {
+      "id": "boot.configError.hint",
+      "source_text": "Start the RimLoc desktop app for the live backend, or enable the demo mode (?dev=1 in the address bar) to browse the synthetic demo.",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.title",
+      "source_text": "RimLoc — live project",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.desc",
+      "source_text": "Create a translation project from a real mod folder, or reopen a recent one. The project stays on this machine.",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.pathPlaceholder",
+      "source_text": "Path to the mod folder…",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.create",
+      "source_text": "Create project",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.open",
+      "source_text": "Open",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.fixtureDataset",
+      "source_text": "Demo dataset — edits are not saved",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.fixtureNote",
+      "source_text": "Sample dataset bundled with the app — explore freely; it never touches your mods.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.live",
+      "source_text": "live project",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.title",
+      "source_text": "Scenario browser",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.hint",
+      "source_text": "Dev-only. Every entry is a stable deep-link: the URL is reproducible in E2E and screenshots. Entries run real fixtures and real store actions.",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.home",
+      "source_text": "Home",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.wizard",
+      "source_text": "New translation wizard",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.workspace",
+      "source_text": "Workspace",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.review",
+      "source_text": "Review",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.build",
+      "source_text": "Build",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.settings",
+      "source_text": "Settings",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.onboarding",
+      "source_text": "Onboarding",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.diagnostics",
+      "source_text": "Diagnostics",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/first-run",
+      "source_text": "Home — first run",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/returning",
+      "source_text": "Home — returning user",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/no-mods",
+      "source_text": "Home — no mods found",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/demo",
+      "source_text": "Home — demo project open",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/mod",
+      "source_text": "Wizard — mod content",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/base-game",
+      "source_text": "Wizard — base game branch",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/dlc",
+      "source_text": "Wizard — DLC branch",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/language-pack",
+      "source_text": "Wizard — language pack branch",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.workspace/standard",
+      "source_text": "Workspace — standard editor",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.workspace/multi-target",
+      "source_text": "Workspace — multi-target (ja active)",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.workspace/demo-tour",
+      "source_text": "Workspace — demo tour running",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.review/issues",
+      "source_text": "Review — issue queue of the demo",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.build/demo",
+      "source_text": "Build — demo summary",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.settings/rimworld",
+      "source_text": "Settings — RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.settings/providers",
+      "source_text": "Settings — AI providers",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.onboarding/coach",
+      "source_text": "Onboarding — editor coach replay",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.onboarding/demo-tour",
+      "source_text": "Onboarding — guided demo tour replay",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.diagnostics/bundle-preview",
+      "source_text": "Diagnostics — sanitized bundle preview",
+      "placeholders": []
+    },
+    {
+      "id": "status.untranslated",
+      "source_text": "Untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "status.translated",
+      "source_text": "Translated",
+      "placeholders": []
+    },
+    {
+      "id": "status.todo",
+      "source_text": "TODO",
+      "placeholders": []
+    },
+    {
+      "id": "status.sourceChanged",
+      "source_text": "Source changed",
+      "placeholders": []
+    },
+    {
+      "id": "status.pending_review",
+      "source_text": "Pending review",
+      "placeholders": []
+    },
+    {
+      "id": "status.orphan",
+      "source_text": "Orphaned",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.source",
+      "source_text": "SOURCE",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.location",
+      "source_text": "Effective source",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.why",
+      "source_text": "Why this source?",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.otherUsages",
+      "source_text": "Other usages ({n})",
+      "placeholders": [
+        "n"
+      ]
+    },
+    {
+      "id": "source.tab.excerpt",
+      "source_text": "Context excerpt",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.line",
+      "source_text": "Line",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.column",
+      "source_text": "column",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.unknownHint",
+      "source_text": "Position not guaranteed by the backend — never faked",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.advanced",
+      "source_text": "Advanced: raw file references",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.file",
+      "source_text": "File",
+      "placeholders": []
+    },
+    {
+      "id": "source.badge.effective",
+      "source_text": "EFFECTIVE",
+      "placeholders": []
+    },
+    {
+      "id": "source.badge.shadowed",
+      "source_text": "SHADOWED",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.definition",
+      "source_text": "Definition",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.version-selected",
+      "source_text": "Version selected",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.loadfolders",
+      "source_text": "Load folders",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.first-file-wins",
+      "source_text": "First file wins",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.keyed-last-wins",
+      "source_text": "Keyed last wins",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.patch-applied",
+      "source_text": "Patch applied",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.view",
+      "source_text": "View",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.open",
+      "source_text": "Open source",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.reveal",
+      "source_text": "Reveal in Finder",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.editor",
+      "source_text": "Open in editor",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.copy",
+      "source_text": "Copy location",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.candidates",
+      "source_text": "Candidates",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.compare",
+      "source_text": "Compare",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.wouldReveal",
+      "source_text": "Demo: Finder would reveal \"{path}\"",
+      "placeholders": [
+        "path"
+      ]
+    },
+    {
+      "id": "source.action.wouldLaunch",
+      "source_text": "Demo: the editor would launch with this argv — nothing was started.",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.location",
+      "source_text": "Location",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.line",
+      "source_text": "Line",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.argv",
+      "source_text": "Editor argv",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.copied",
+      "source_text": "Copied to clipboard.",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.fallback",
+      "source_text": "Clipboard unavailable — copy manually below.",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.fallbackCard",
+      "source_text": "Clipboard write was denied — copy the text manually:",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.defName",
+      "source_text": "defName",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.field",
+      "source_text": "Field",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.sibling",
+      "source_text": "Sibling node",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.folder",
+      "source_text": "Folder",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.label",
+      "source_text": ".label",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.defType",
+      "source_text": "Def type",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.usages",
+      "source_text": "Usages",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.shadowed",
+      "source_text": "Shadowed twin",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.kind.effective",
+      "source_text": "effective file",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.kind.original",
+      "source_text": "original file",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.kind.generated",
+      "source_text": "generated output",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.linesNotGuaranteed",
+      "source_text": "line numbers not guaranteed",
+      "placeholders": []
+    },
+    {
+      "id": "source.scenario.label",
+      "source_text": "Demo scenario",
+      "placeholders": []
+    },
+    {
+      "id": "source.scenario.hint",
+      "source_text": "Demo fixtures only — real data arrives with live binding.",
+      "placeholders": []
+    },
+    {
+      "id": "source.empty.noData",
+      "source_text": "No source data for \"{id}\" in this demo scenario.",
+      "placeholders": [
+        "id"
+      ]
+    },
+    {
+      "id": "source.empty.covered",
+      "source_text": "Covered demo entries: {ids}",
+      "placeholders": [
+        "ids"
+      ]
+    },
+    {
+      "id": "source.palette.noSelection",
+      "source_text": "Select an entry in the Workspace first.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.title",
+      "source_text": "External editor",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.system",
+      "source_text": "System default",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.zed",
+      "source_text": "Zed",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.vscode",
+      "source_text": "VS Code",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.custom",
+      "source_text": "Custom…",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.detected",
+      "source_text": "detected (demo)",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.executable",
+      "source_text": "Executable",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.args",
+      "source_text": "Arguments template",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.argsHint",
+      "source_text": "Placeholders: {path} {line} {column}. Quotes group one argument; spaces and Unicode stay literal. No shell is involved.",
+      "placeholders": [
+        "column",
+        "line",
+        "path"
+      ]
+    },
+    {
+      "id": "source.editor.test",
+      "source_text": "Test (preview argv)",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.save",
+      "source_text": "Save",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.saved",
+      "source_text": "Saved",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preview.template",
+      "source_text": "Template:",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preview.substituted",
+      "source_text": "Would execute:",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.wouldLaunch",
+      "source_text": "Demo: the editor would launch with this argv — nothing was started.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noExecutable",
+      "source_text": "No executable configured.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noPath",
+      "source_text": "The record has no resolvable path.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noLine",
+      "source_text": "Line number is not guaranteed for this record.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noColumn",
+      "source_text": "Column number is not guaranteed for this record.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.unknownPlaceholder",
+      "source_text": "Unknown placeholder in the template.",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.title",
+      "source_text": "Source viewer",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.searchPlaceholder",
+      "source_text": "Search in file…",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.noMatches",
+      "source_text": "no matches",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.copyLine",
+      "source_text": "Copy line",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.copyPath",
+      "source_text": "Copy path",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.fold",
+      "source_text": "Fold / unfold block",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.gotoEntry",
+      "source_text": "Go to this entry",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.lineUnknown",
+      "source_text": "Line position is not guaranteed for this record — the body is shown without jump.",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.readOnly",
+      "source_text": "Read-only view. Edits happen in your editor; RimLoc output is written to its own locations.",
+      "placeholders": []
+    },
+    {
+      "id": "source.missing.title",
+      "source_text": "Recorded source file is missing",
+      "placeholders": []
+    },
+    {
+      "id": "source.missing.reason",
+      "source_text": "The file was moved, renamed or removed since the last scan. Rescan the mod to refresh locations.",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.title",
+      "source_text": "Source browser",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.versions",
+      "source_text": "Version",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.loadFolders",
+      "source_text": "Load folder",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.selectedTag",
+      "source_text": "selected",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.candidates",
+      "source_text": "Candidates",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.preview",
+      "source_text": "File preview",
+      "placeholders": []
+    },
+    {
+      "id": "source.candidate.reason.activeCommon",
+      "source_text": "Common root ships for every version — active for the selected version.",
+      "placeholders": []
+    },
+    {
+      "id": "source.candidate.reason.shadowedVersion",
+      "source_text": "Version-specific root is shadowed by Common for the selected version.",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.title",
+      "source_text": "Compare: source ↔ target ↔ generated",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.source",
+      "source_text": "Source (original)",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.target",
+      "source_text": "Canonical translation",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.generated",
+      "source_text": "Generated output",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.notTruth",
+      "source_text": "Generated output is a build artifact — never a second source of truth.",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.showFile",
+      "source_text": "Show generated file",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.hideFile",
+      "source_text": "Hide generated file",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.openViewer",
+      "source_text": "Open in viewer",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.summary",
+      "source_text": "Source changed externally after the last scan.",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.rescan",
+      "source_text": "Rescan",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.show",
+      "source_text": "Show changes",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.ignore",
+      "source_text": "Ignore",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.rescanDone",
+      "source_text": "Demo rescan complete — banner cleared (no files touched).",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.openEffective",
+      "source_text": "Open effective source",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.openOriginal",
+      "source_text": "Open original (shadowed)",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.reveal",
+      "source_text": "Reveal in Finder",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.editor",
+      "source_text": "Open in external editor",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.copyLocation",
+      "source_text": "Copy location",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.generated",
+      "source_text": "Open generated output",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.wouldOpenGenerated",
+      "source_text": "Demo: generated output would open in the viewer — nothing was started.",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.candidates",
+      "source_text": "Show candidates",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.compare",
+      "source_text": "Compare with output",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openSourceLocation",
+      "source_text": "Open source location",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openSourceBrowser",
+      "source_text": "Browse source files",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.sourceCompare",
+      "source_text": "Compare translation with output",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.unbound",
+      "source_text": "Not bound",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.sourceOpen",
+      "source_text": "Source: open location",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.sourceBrowser",
+      "source_text": "Source: browse files",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.sourceCompare",
+      "source_text": "Source: compare with output",
+      "placeholders": []
+    }
+  ]
+}
