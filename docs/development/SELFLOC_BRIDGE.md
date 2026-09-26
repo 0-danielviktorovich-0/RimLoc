@@ -199,16 +199,97 @@ side (data-only pack loading as an explicit UI preview) landed in wave B2
 (see "Language Pack Schema" above); promoting previews to shipped locales
 stays open.
 
-Reverse path (contribution → catalog), design only: an accepted language pack
-(or an in-repo contribution) is applied back onto the TS dictionaries by
-re-keying translations onto the catalog ids and writing `ru.ts` (or a new
-`<locale>.ts`) — the TS layer stays the authority, so application is a
-generated *source* file produced from reviewed data, in the same spirit as
-this bridge but in the opposite direction. Conflict handling keys off
-`catalog_revision`: a contribution built against revision N is applied only
-after a rebase against the current dictionary (changed source texts flagged
-per id, stale translations never silently dropped). Both directions are
-future work; nothing in this slice consumes or writes packs.
+Reverse path (contribution → catalog): the offline half is implemented — see
+"Contribution Bundle" below. An accepted bundle is applied back onto the TS
+dictionaries by re-keying translations onto the catalog ids and rewriting the
+locale file; the TS layer stays the authority, so application is a generated
+*source* edit produced from reviewed data, in the same spirit as this bridge
+but in the opposite direction. The runtime side (loading external packs into
+`DICTS`) and any online transport (GitHub, relay) remain future work.
+
+## Contribution Bundle (offline, schema v1)
+
+An offline, translation-only payload a contributor can hand to the maintainer
+without any infrastructure (owner mandate: language pack without executable
+code; no GitHub/relay in RC). Two scripts in `gui/tauri-app/frontend-v2`
+share the contract in `scripts/contribution-schema.ts`:
+
+| Script | npm | Direction |
+|---|---|---|
+| `scripts/build-contribution.ts` | `npm run build:contribution -- <changed.json>` | translator changes → bundle |
+| `scripts/apply-contribution.ts` | `npm run apply:contribution -- <bundle> [--dry-run] [--allow-stale]` | approved bundle → TS dictionary |
+
+### Schema
+
+```jsonc
+{
+  "schema_version": "1",
+  "kind": "rimloc-ui-translation",
+  "locale": "ru",                        // never "en" — the source is not contributable
+  "base_catalog_revision": "7a3cfb2…",   // resolveCatalogRevision() at build time
+  "changes": [
+    { "id": "common.close", "value": "Закрыть окно" } // exactly {id, value}
+  ],
+  "contributor": { "display_name": "…", "note": "…" }  // optional, both fields optional
+}
+```
+
+Translation data only: no executable code, no tool metadata, no file paths.
+`schema_version` follows the same additive/minor rule as the catalog files.
+
+### Building (validation gate before assembly)
+
+Input is `{ "locale": "…", "changes": [{ "id", "value" }] }`. The builder
+sanitizes first — foreign root/entry fields are dropped and reported, never
+carried into the bundle — then runs the §6 gate per change:
+
+- `id` exists in the en catalog (new keys are not contributable);
+- the value's `{name}` placeholder set equals the en source contract;
+- the value is a non-empty string ≤ 1000 chars, no control characters;
+- no credential-shaped content (`AKIA…`, `ghp_…`, `xox…`, `sk-…`,
+  `password=…`, private-key blocks) — a hit rejects the entry and the reason
+  names the pattern, never the matched text.
+
+Readiness statuses: **READY** (everything valid), **PARTIAL-BUT-VALID** (a
+structurally valid subset is bundled, rejections enumerated), **NEEDS-FIXES**
+(structural breakage or zero valid entries — no bundle file, exact blocker
+list, exit code 1). The stdout preview — counts of improvements vs identical
+values against the current dictionary, the id list, sanitization notes,
+`validation:` verdict, base revision — is the future "preview before send"
+surface; plain text, not UI. Default output:
+`dist/contribution/<locale>.translation-bundle.json` (gitignored via `dist/`).
+
+### Applying (deterministic return path)
+
+The applier refuses unless the bundle parses STRICTLY against the schema
+(any extra field anywhere is a refusal). It then:
+
+1. refuses the source locale (parse level) and a missing
+   `src/i18n/<locale>.ts` (creating dictionaries is out of contract);
+2. runs the stale-source gate: `base_catalog_revision` vs the current
+   `resolveCatalogRevision()`, modulo the `-dirty` suffix — a mismatch
+   refuses with rebase guidance, `--allow-stale` downgrades it to a warning;
+3. re-runs the same validation gate against the current en catalog and
+   requires every id to already exist in the locale dictionary
+   (key creation is refused) — application is all-or-nothing;
+4. rewrites the locale file by surgical line replacement of
+   `'key': '…',` — indentation and trailing-comma state preserved,
+   single quotes/backslashes/newlines/tabs escaped, non-ASCII kept as UTF-8;
+   `en.ts` is never opened for writing;
+5. prints the diff plan (`~` replacement / `=` no-op with quoted values);
+   `--dry-run` stops there and writes nothing.
+
+After a real apply: run `npm run export:catalog` and commit the locale file
+together with `src/i18n/generated/` — the drift-guard test enforces it.
+
+### Round-trip
+
+`tests/contribution-apply.test.ts` proves the full cycle in an isolated tmp
+copy of the dictionaries (own git fixture): build → apply → regenerate with
+the real exporter → every generated `translated` value equals the bundle
+value, the en catalog is byte-identical to the repository's, and a second
+export is byte-stable. Drift between the two sources is therefore excluded
+constructively, not by convention.
 
 ## Boundaries
 
