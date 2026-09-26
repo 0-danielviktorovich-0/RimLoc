@@ -1,0 +1,31 @@
+# English-language screenshot set for docs/screenshots (README assets).
+# Pins the UI to EN via the in-app language toggle (persisted in the GUI
+# profile), walks home -> workspace -> validate -> build -> diagnostics,
+# and restores the RU locale at the end.
+app:
+  binary: target/debug/rimloc-gui
+  origin: [-3000, -3000]
+  move_mode: swizzle
+  fake: occlusion,firstmouse
+  settle_s: 9
+pid_file: /tmp/rimloc-ui-automation.pid
+shots_dir: docs/screenshots
+
+steps:
+  - press: {name: English, timeout: 90, exact: true}
+  - sleep: 2
+  - shot: home
+  - press: {name: Open, timeout: 90}
+  - wait_text_rows: 12
+  - shot: workspace
+  - press: {name: Review, timeout: 30, exact: true}
+  - sleep: 1
+  - shot: validate
+  - press: {name: Build translation, timeout: 60}
+  - sleep: 2
+  - shot: export
+  - press: {name: Help, timeout: 30, exact: true}
+  - press: {name: diagnostics, timeout: 45}
+  - sleep: 1
+  - shot: diagnostics
+  - press: {name: Русский, timeout: 45, exact: true}
