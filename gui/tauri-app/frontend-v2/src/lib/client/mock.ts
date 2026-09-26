@@ -17,6 +17,7 @@ import type {
   ValidateProjectResponseDto
 } from './types';
 import type { ContractMethodMap, RimLocTransport } from './transport';
+import { looksAbsolutePath } from '../paths';
 
 export class MockContractError extends Error implements ContractErrorDto {
   readonly code: ContractErrorCode;
@@ -381,6 +382,15 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
               `locale \`${locale}\` is not the strict language-folder form (e.g. Russian)`
             );
           }
+          // Mirror of the path-FORM guard (invalid_output_path): a relative
+          // out dir would land wherever the app was launched from — refused
+          // BEFORE any containment check or write.
+          if (!looksAbsolutePath(out_dir)) {
+            throw new MockContractError(
+              'invalid_output_path',
+              `output path \`${out_dir}\` is not absolute; specify an absolute output directory`
+            );
+          }
           // Mirror of the source-tree guard: an out dir inside the project's
           // own mod root is a denied self-overwrite (guard_output_denied).
           if (p.mod_root && (out_dir === p.mod_root || out_dir.startsWith(p.mod_root + '/'))) {
@@ -408,6 +418,14 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         case 'project_diagnose': {
           const { project_id, out_dir } = params as { project_id: string; out_dir: string };
           const p = find(project_id);
+          // Mirror of the path-FORM guard (invalid_output_path), first on
+          // the entry exactly like the Rust diagnose.
+          if (!looksAbsolutePath(out_dir)) {
+            throw new MockContractError(
+              'invalid_output_path',
+              `output path \`${out_dir}\` is not absolute; specify an absolute output directory`
+            );
+          }
           return {
             job_id: `mock-diagnose-${p.revision}`,
             bundle_dir: { path: `${out_dir}/rimloc-bundle-${p.revision}` },

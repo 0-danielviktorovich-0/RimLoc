@@ -8,31 +8,28 @@
   // lists all three as supported); typed contract errors surface verbatim.
   import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
+  import { looksAbsolutePath } from '../../paths';
   import { project } from '../../stores/project.svelte';
   import { contractops, folderForm } from '../../stores/contractops.svelte';
 
   let { kind }: { kind: 'build' | 'diagnostics' } = $props();
 
-  // Explicit user-chosen output roots: honest defaults the user can edit —
-  // no silent destination, the services guard is the last line anyway.
-  const defaultExportDir = $derived(`…/RimLoc-Export/${project.projectName}-${folderForm(project.targetLocale)}`);
-  const defaultBundleDir = $derived(`…/RimLoc-Bundles/${project.projectName}`);
+  // Explicit user-chosen output roots: the field starts EMPTY and nothing
+  // fake is pre-filled or sent (the old `…/RimLoc-Export/…` literal with a
+  // decorative ellipsis landed RELATIVE to the app's CWD). A client-side
+  // absolute-form check keeps the run button honest until the path is
+  // absolute; the services guard (`invalid_output_path`) is the last line.
   let exportDir = $state('');
   let bundleDir = $state('');
 
   const ops = $derived(contractops);
+  const exportDirOk = $derived(looksAbsolutePath(exportDir));
+  const bundleDirOk = $derived(looksAbsolutePath(bundleDir));
   const severityIcon: Record<string, string> = {
     error: 'warning',
     warning: 'warning',
     info: 'info'
   };
-
-  $effect(() => {
-    if (!exportDir) exportDir = defaultExportDir;
-  });
-  $effect(() => {
-    if (!bundleDir) bundleDir = defaultBundleDir;
-  });
 
   function runExport() {
     void ops.runExport(exportDir);
@@ -109,16 +106,18 @@
           type="text"
           class="mono"
           bind:value={exportDir}
+          placeholder={t('contractops.abs_path_example')}
           data-testid="contractops.export.outdir"
           spellcheck="false"
         />
+        <span class="hint">{t('contractops.abs_path_hint')}</span>
       </label>
       <div class="row">
         <button
           type="button"
           class="btn btn-primary"
           data-testid="contractops.export.run"
-          disabled={ops.exporting}
+          disabled={ops.exporting || !exportDirOk}
           onclick={runExport}
         >
           <Icon name="package" size={14} />
@@ -156,16 +155,18 @@
           type="text"
           class="mono"
           bind:value={bundleDir}
+          placeholder={t('contractops.abs_path_example_bundle')}
           data-testid="contractops.diagnose.outdir"
           spellcheck="false"
         />
+        <span class="hint">{t('contractops.abs_path_hint')}</span>
       </label>
       <div class="row">
         <button
           type="button"
           class="btn btn-primary"
           data-testid="contractops.diagnose.run"
-          disabled={ops.diagnosing}
+          disabled={ops.diagnosing || !bundleDirOk}
           onclick={runDiagnose}
         >
           <Icon name="package" size={14} />

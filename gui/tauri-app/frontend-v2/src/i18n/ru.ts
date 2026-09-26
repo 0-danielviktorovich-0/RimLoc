@@ -66,6 +66,11 @@ export const ru: Record<string, string> = {
   'contractops.diagnose.operation': 'Операция',
   'contractops.diagnose.redacted': 'Санитизировано',
   'contractops.diagnose.excluded': 'Исключено',
+  // Подсказка абсолютного пути (invalid_output_path): поле стартует пустым —
+  // фиктивный дефолтный путь никогда не отправляется.
+  'contractops.abs_path_hint': 'Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.',
+  'contractops.abs_path_example': 'например /Users/you/RimLoc-Export/Мод-Russian',
+  'contractops.abs_path_example_bundle': 'например /Users/you/RimLoc-Bundles/Мод',
 
   // Честный live-вариант бейджа (аудит P1-4): на контракт-проекте глобальный
   // чип показывает живой режим вместо «демо-данные».

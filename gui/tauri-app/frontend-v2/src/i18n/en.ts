@@ -66,6 +66,11 @@ export const en: Record<string, string> = {
   'contractops.diagnose.operation': 'Operation',
   'contractops.diagnose.redacted': 'Redacted',
   'contractops.diagnose.excluded': 'Excluded',
+  // Absolute-path form hint (invalid_output_path): the field starts empty —
+  // no fake default path is ever sent.
+  'contractops.abs_path_hint': 'Absolute path only — a relative path is refused (invalid_output_path) before anything is written.',
+  'contractops.abs_path_example': 'e.g. /Users/you/RimLoc-Export/MyMod-Russian',
+  'contractops.abs_path_example_bundle': 'e.g. /Users/you/RimLoc-Bundles/MyMod',
 
   // Honest live counterpart of the mock badge (audit P1-4): on a contract
   // project the global chip shows the live mode instead of claiming demo data.
