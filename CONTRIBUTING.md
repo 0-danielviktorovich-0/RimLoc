@@ -8,7 +8,7 @@ Thanks for your interest in improving RimLoc. This guide explains how to set up 
 - Fork the repository and create a topic branch from `main`.
 - Install the latest stable Rust toolchain (via rustup) and ensure `cargo` is on your PATH.
 - Build and test everything locally with `cargo build --workspace` and `cargo test --workspace`.
-- Run `cargo fmt` and `cargo clippy --workspace --all-targets -- -D warnings` before every commit.
+- Run `cargo fmt` and `cargo clippy --workspace --all-targets --all-features -- -D warnings` before every commit (this mirrors CI).
 - Use Conventional Commits (`type(scope): summary`) following `.gitmessage.txt`.
 - Write commit subjects and bodies in English so reviewers share the same context.
 - Open a pull request with a clear description, validation steps, and screenshots or CLI output when behaviour changes.
@@ -16,19 +16,19 @@ Thanks for your interest in improving RimLoc. This guide explains how to set up 
 ## Development Environment
 - **Rust**: RimLoc targets stable Rust (Edition 2021). Install via [rustup](https://rustup.rs/) and keep it up to date (`rustup update`).
 - **Optional tooling**: `cargo install cargo-watch` helps with on-save rebuilds, and `just` or `make` are not required.
-- **GUI experiments**: The Tauri desktop shell lives under `gui/tauri-app`. Follow Tauri's platform prerequisites if you plan to work there.
+- **GUI (Tauri + Svelte)**: The desktop client lives under `gui/tauri-app` — Rust backend in `src-tauri/`, front end in `frontend-v2/` (Svelte + TypeScript + Vite; this is the UI that ships). Working on the front end requires a Node.js toolchain. Follow Tauri's platform prerequisites to build the shell locally. The old `frontend/` shell is legacy and kept for reference only — do not extend it.
 - **Python docs tooling**: Documentation lives in `docs/` and uses MkDocs. Create a virtualenv (`python -m venv .venv`), activate it, install `requirements-docs.txt`, then run `mkdocs serve` for local previews.
 
 ## Repository Layout
 - `crates/`: Cargo workspace members.
-  - `rimloc-core`: Core translation and validation logic.
-  - `rimloc-parsers-xml`: XML ingestion utilities.
-  - `rimloc-export-*` / `rimloc-import-*`: Exporters and importers for PO/CSV.
+  - `rimloc-domain`, `rimloc-core`, `rimloc-parsers-xml`: shared domain types, core translation logic, XML ingestion.
+  - `rimloc-export-csv|po|xliff`, `rimloc-import-po|xliff`: format adapters for export/import.
+  - `rimloc-validate`: validation rules; `rimloc-services`: orchestration shared by CLI and GUI; `rimloc-config`: configuration; `rimloc-llm`: LLM providers; `rimloc-plugin-api` / `rimloc-plugin-jsonftl`: plugin contracts and the built-in plugin.
   - `rimloc-cli`: Command-line interface entry point.
-  - `rimloc-validate`: Shared validation routines.
 - `test/`: Shared fixtures for integration tests and manual checks.
+- `testlab/`: Development lab — synthetic fixtures, off-screen UI automation journeys, adversarial cases and reports (dev-facing; not user documentation).
 - `docs/`: MkDocs sources for the documentation site.
-- `gui/tauri-app`: Experimental desktop client shell.
+- `gui/tauri-app`: Tauri desktop client: `src-tauri/` (Rust backend), `frontend-v2/` (Svelte front end — the one that ships), `frontend/` (legacy v1 shell, reference only).
 - `target/`: Build output (keep it out of commits).
 
 ## Building & Testing
@@ -38,18 +38,19 @@ Thanks for your interest in improving RimLoc. This guide explains how to set up 
 - Feature-specific tests: Use `cargo test --package <crate>` or `cargo test --features <feature>` when working behind feature flags.
 - When adding new behaviour, prefer unit tests near the code and add or update integration tests under `crates/rimloc-cli/tests` using helpers in `helpers.rs`.
 - Use `tempfile` for temporary directories in tests and add long-lived fixtures under `test/`.
+- GUI front end: in `gui/tauri-app/frontend-v2` run `npm install`, then `npm run check` (svelte-check), `npm test` (Vitest) and `npm run build` (Vite). Tauri loads `frontend-v2/dist`, so rebuild the front end before `cargo tauri dev` to see your changes.
 
 ## Coding Standards
 - Formatting: run `cargo fmt` before committing; do not hand-format code.
-- Linting: `cargo clippy --workspace --all-targets -- -D warnings` must pass (no warnings allowed).
+- Linting: `cargo clippy --workspace --all-targets --all-features -- -D warnings` must pass (no warnings allowed; same as CI).
 - Naming conventions: modules/files/functions in `snake_case`, structs/enums in `PascalCase`, constants in `SCREAMING_SNAKE_CASE`, CLI flags in kebab-case.
 - Logging/tracing: Prefer the existing `tracing` setup; avoid `println!` in library code.
 - Error handling: Use `anyhow` in binaries and `thiserror` in libraries for typed errors.
 
 ## Localization Workflow
 - English Fluent strings live in `crates/rimloc-cli/i18n/en/rimloc.ftl` and act as the source of truth.
-- Update the English file first, then mirror changes to other locales under the same directory structure.
-- Run `cargo test --package rimloc-cli -- tests_i18n` (or `cargo i18n` if available) to validate keys.
+- Update the English file first, then mirror changes to `ru` (the only other locale today). New locales go under `crates/rimloc-cli/i18n/<lang>/` and are discovered automatically by `build.rs`.
+- Run `cargo test --package rimloc-cli -- tests_i18n` to validate keys.
 - Keep keys lowercase with hyphens and document new strings in PR notes for translators.
 
 ## Documentation Changes
@@ -112,13 +113,13 @@ Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
 ## Reporting Issues & Feature Requests
 - Use GitHub Issues with clear steps, expected vs actual behaviour, and environment details. See the [Issue Guidelines](docs/en/community/issues.md) for the checklist and examples.
 - For translation or localisation issues, mention the locale and provide sample strings.
-- Security vulnerabilities should be reported privately to the maintainer (see repository contact info).
+- Security vulnerabilities are reported privately — see [SECURITY.md](SECURITY.md). Do not open a public issue with exploitation details.
 
 ## Need Help?
 If you get stuck:
 - Search existing issues and discussions.
 - Review `AGENTS.md` for automation-specific conventions.
 - Open a draft PR early to gather feedback.
-- Reach out on the project's preferred communication channel (GitHub Discussions or linked community spaces).
+- Open a GitHub issue — that is currently the only support channel (GitHub Discussions are not enabled).
 
 We appreciate your contributions—thank you for helping RimLoc grow!
