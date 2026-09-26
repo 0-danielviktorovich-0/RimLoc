@@ -2825,6 +2825,6 @@ mod tests {
         let export = mgr
             .export_project(&snap.project_id, 1, &out, "Russian")
             .unwrap();
-        assert_eq!(export.files_written >= 3, true);
+        assert!(export.files_written >= 3);
     }
 }
