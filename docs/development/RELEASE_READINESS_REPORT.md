@@ -10,77 +10,99 @@ related:
   - "[[BETA_TEST_CHECKLIST]]"
   - "[[REVIEW_SCREEN_MAP]]"
   - "[[VERSIONING]]"
+  - "[[SELFLOC_BRIDGE]]"
 ---
 
 # RELEASE READINESS REPORT — RimLoc Local Release Candidate
 
-**Дата:** 2026-09-27 · **Ревизия:** `main 2f8ff0e` (локально; origin/main на `9591f4f`, локальная дельта `9591f4f..2f8ff0e` не запушена — пуш только по явному ок владельца)
-**Вердикт: LOCAL RC READY.** Кодовая база прошла все локальные гейты приёмки, включая два независимых built-app acceptance-прогона. Публикация (push, тег, релиз) заблокирована до явного решения владельца — см. «Гейты владельца».
+**Дата:** 2026-09-27 (evidence closeout) · **Ревизии:** tested baseline `2f8ff0e` (два built-acceptance прогона) → **current `main 8056649`** (локально; origin/main на `9591f4f`; пуш только по явному ок владельца)
+**Дельта после tested baseline `2f8ff0e`:** документация (§36-документы, snapshot), i18n hygiene S1, K-гапы (MSRV-манифесты, legacy-гварды, clippy-дрейф), JSON-мост (generated-каталоги + тесты). **Все кодовые изменения после baseline покрыты полным гейт-набором на `8056649` (см. §1) и не меняют поведение переводческих сценариев; dev-acceptance `2f8ff0e` не наследуется вслепую — release-артефакт `8056649` прошёл собственный живой прогон (§2).**
+**Вердикт: LOCAL RC READY (macOS).** Публикация (push, тег, релиз, подпись) — за владельцем.
 
-## 1. Гейты приёмки (все зелёные, реальные прогоны 2026-09-27)
+## 1. Гейты приёмки на current `main 8056649` (реальные прогоны 27.09)
 
 | Гейт | Команда | Итог |
 |---|---|---|
 | Формат | `cargo fmt --all --check` | чисто |
-| Линтер | `cargo clippy --workspace --all-targets -- -D warnings` | чисто (впервые полностью: objc/dev-hook блок приведён в порядок) |
-| Тесты Rust | `cargo test --workspace --no-fail-fast` | **297 passed / 0 failed** (45 сьютов) |
+| Линтер | `cargo clippy --workspace --all-targets -- -D warnings` | чисто |
+| Тесты Rust | `cargo test --workspace --no-fail-fast` | **300 passed / 0 failed** (45 сьютов; +symlink-тест K4) |
 | Типы фронтенда | `npm run check` (svelte-check) | 0 ошибок, 0 предупреждений |
-| Тесты фронтенда | `npm test` (vitest) | **205/205** (15 файлов) |
-| **Release-компиляция GUI** | `cargo check --release -p rimloc-gui` | зелёный (гейт добавлен после находки ревьюера F1) |
-| Corpus | verify-source-hashes (1066 файлов) + 8 acceptance-кейсов | PASS (ночная кампания) |
-| Built-app acceptance | off-screen journey на собранном приложении, VWE 247 записей | **12/12 × 2 независимых прогона** (`/tmp/rimloc-built-acceptance-run2.md`, скриншоты `/tmp/rimloc-accept2/`) |
-| Независимый ревью дельты | `9591f4f..2f8ff0e` | outdir-guard APPROVE; gui-gates REQUEST_CHANGES (P1 release-компиляция) → **исправлен** `997210f`, влит `2f8ff0e` |
+| Тесты фронтенда | `npm test` (vitest) | **223/223** (17 файлов; +catalog hygiene 8, +bridge 10, −перекрытия) |
+| Release-компиляция GUI | `cargo check --release -p rimloc-gui` | зелёный (**это конфигурационный чек, не proof сборки** — сборка/запуск см. §2) |
+| **Release BUILD+PACKAGE+EXECUTION** | `cargo tauri build` → запуск .app без dev-сервера | **PASS** — см. §2 |
+| Corpus | verify-source-hashes (1066 файлов) + 8 acceptance-кейсов | PASS (ночная кампания; база та же, corpus не менялся) |
+| Независимый ревью дельты | `9591f4f..fd618c2` | outdir-guard APPROVE; gui-gates REQUEST_CHANGES → исправлено (`997210f`); последующие волны — гейт-набор выше |
 
-## 2. Что доказано на built-приложении (не на тестах, а на живом GUI)
+## 2. Release-артефакт: BUILD → PACKAGE → EXECUTION (27.09)
 
-- Home показывает реальные недавние проекты с contract-транспорта (проверка регрессии `dbae486`).
-- Полный цикл: открыть VWE (247 записей) → редактор → собрать перевод → проверить (честный error-finding «потерянные плейсхолдеры») → записать экспорт («Записано и перепроверено», файлы на диске, reparse 2/2) → полная диагностика → sanitized support bundle (causal chain по реальному упавшему validate) → превью bug-report (13 полей).
-- Recovery-баннер после внешнего изменения файла проекта: «Принять версию на диске» (Pass A P1-1), typed-ошибки workspace видны пользователю (Pass A P1-2).
-- Относительный out_dir теперь типизированно отклоняется (`invalid_output_path`) на export и diagnose **до любых fs-операций**; дефолт-строки с литеральной `…` убраны из UI.
+Уровни строго разделены: **check** (конфигурационный, выше) ≠ **build** ≠ **package** ≠ **execution**.
 
-## 3. Производительность (15 216 записей, dev-сборка — консервативно)
+- **BUILD/PACKAGE — PASS.** `cargo tauri build` (release-профиль, arm64). Артефакты:
+  - `RimLoc GUI.app` — sha256 `f396b0e2…1f2b105`, 21.6 MB, git `8056649`;
+  - `RimLoc GUI_0.1.0_aarch64.dmg` — 8.4 MB (подпись: adhoc/linker — **не подписанный дистрибутив**; notarization — блокер владельца).
+- **EXECUTION — PASS.** Релизный бинарь из `.app/Contents/MacOS/` без dev-сервера: фронт из вшитого dist, ноль internet-сокетов у процесса, `RIMLOC_*` env сняты (дев-хуки отсутствуют в release как задумано), badge — живой контракт-режим.
+- **Живой workflow на артефакте — 4/4 стадии** (stage-split; окна коротко на экране, terminate после каждой): home (recents из project_list) → открыть VWE 247 записей (**live-badge**) → validate (честная error-находка lost-placeholder) → export в абсолютный путь (2 файла, reparse 2/2) → diagnose (sanitized bundle с causal chain). Кадры: evidence `release-accept/`.
+- Находки: AX-ввод пути работает как замена (эффект out_dir-фикса); «AX-дроп macOS 27» на экранных окнах не воспроизвёлся (проблема специфична для off-screen).
 
-Полный отчёт: `/tmp/rimloc-performance-report.md`, харнесс — `crates/rimloc-services/examples/perf_bench.rs`.
+## 2b. Матрица acceptance по релиз-критичным сценариям (не всё = узкий VWE-джорни)
 
-| Операция | Медиана | Ориентир | Вердикт |
-|---|---|---|---|
-| scan | 1.52 s | < 10 s | PASS (6.6×) |
-| validate | 3.17 s | < 10 s | PASS |
-| export-po / build-mod | 0.22 / 0.18 s | — | PASS |
-| session open (cold) | 0.68 s | < 2 s | PASS |
-| session snapshot (таблица GUI) | 4.1 ms | < 2 s | PASS (~500×) |
-| **session apply (save, batch=100)** | **857 ms** | < 500 ms | **FAIL (1.7×)** |
+| Сценарий | Статус | Evidence |
+|---|---|---|
+| Новый перевод (scan → проект → перевод → validate → export → build-mod) | **TESTED** (CLI 8 corpus-кейсов + GUI-джорни + release-джорни) | corpus-волны, §1-2 |
+| Сопровождение существующего перевода (source-drift, rescan-совет, reusable) | **TESTED** (M3 + corpus) | perf-отчёт §4, corpus |
+| Multi-target изоляция | **TESTED** (unit/corpus) | волна multi-target |
+| No-API chat export/import, stale-response защита | **PARTIAL** — бэкенд-тесты PASS; живого GUI-джорни чата на built-артефакте не было | волны LLM |
+| Реальные Core/DLC | **PARTIAL** — синтетика+VWE+4 мода corpus; интерактивная игровая загрузка — за владельцем | corpus-волны |
+| Source inspection | **TESTED** (W7 + corpus) | W7-волна |
+| Diagnostics/bug-report | **TESTED** (§2, sanitized bundle) | release-accept |
+| Update/release pipeline | **BLOCKED** — updater спроектирован (`AUTO_UPDATE_DESIGN.md`), подпись/ключи — владелец | — |
+| Платформенные пакеты | **macOS: built+launched+workflow-tested (автоматически); Windows/Linux: NOT TESTED** человеком (сборка — CI dev-профиль, отключён push-триггер) | §2, §4 |
 
-`apply` — единственный FAIL: persist-before-ack перезаписывает весь envelope (8 MB на 15k) + двойной SHA-256. Стоимость плоская по батчу (интенты почти бесплатны). Варианты (дебаунс/инкрементальный журнал/фоновый persist) требуют анализа контракта persist-before-ack — **не трогались в RC**, задокументированы как известное ограничение (см. §4, K1).
+Намеренно сломанные входы (lost-placeholder, relative-path refusal) — негативные тесты; «чистый законченный перевод» и «игра загрузила перевод» — не покрыты этим и помечены выше.
 
-## 4. Известные ограничения (честно, без приукрашивания)
+## 3. Производительность (15 216 записей)
 
-**K1 — Save на больших модах:** ~0.85 s на 15k записей за каждый инкрементальный save (см. §3). Для типичных модов (<3k записей) малозаметно. Бэклог с вариантами.
+Полный отчёт: evidence `reports/rimloc-performance-report.md` + `rimloc-kgaps-report.md` (K1).
 
-**K2 — Версионный разрыв (I1 из release-аудита):** CHANGELOG заявляет `[0.1.0] - 2025-09-25`, но тега нет, CLI в `0.1.0-alpha.1`. Решение о бампе версии/теге — за владельцем (`docs/development/VERSIONING.md`, I1–I5).
+| Операция | dev | **release** | Ориентир | Вердикт |
+|---|---|---|---|---|
+| scan / validate / export-po / build-mod | 1.52 / 3.17 / 0.22 / 0.18 s | — | < 10 s | PASS |
+| session open (cold) | 0.68 s | — | < 2 s | PASS |
+| session snapshot | 4.1 ms | 2.4 ms | < 2 s | PASS |
+| **session apply (batch=100)** | 857 ms | **51 ms** (batch=1: 47.5 ms) | < 500 ms | **PASS в release (запас ~10×)** |
 
-**K3 — MSRV-декларация:** AGENTS.md репозитория заявляет MSRV 1.70, реальный минимум выше (например `is_multiple_of` требует 1.87+). Требуется ревизия деклараций отдельной задачей.
+Dev-профиль остаётся медленным (857 ms) — это накладные отладочной сборки, не продуктовая характеристика; persist-before-ack не менялся (замер, не оптимизация).
 
-**K4 — Legacy-поверхность:** при операторском opt-in `RIMLOC_LEGACY_COMMANDS=1` команда `merge_keyed_gui` по-прежнему принимает относительный out_dir (тихо подставляет базу). Обычные пользователи этой поверхности не видят.
+## 4. Известные ограничения / закрытые находки
 
-**K5 — Сканер-тест:** `no_hardcoded_user_strings_anywhere` построчный — многострочные `eprintln!` не флагуются (слепая зона, P3).
+**Закрыто в этом closeout:**
+- ~~K1 apply FAIL~~ → PASS в release (§3); dev-замер оставлен как факт.
+- ~~K3 MSRV~~ → политика «tested on 1.96.0, requires 1.89», `rust-version="1.89"` во всех 16 манифестах, AGENTS.md исправлен.
+- ~~K4 legacy write path~~ → аудит 17 write-команд: 6 брешей закрыто (CWD-relative отказы на merge_keyed_gui/export_xliff_gui/import_xliff_gui/dump_schemas/learn_patches_cmd; form-гард apply_translation); symlink-тест «авторизуется назначение, не форма»; абсолютность пути ≠ авторизация назначения — containment-гварды сохранены.
+- macOS 27 AX-дроп — не воспроизводится на экранных окнах (release-прогон), ограничение сужено до off-screen автоматизации.
 
-**K6 — Автоматизация, не продукт:** macOS 27 выбрасывает off-screen окно из AXWindows через 2–30 с (исследование ночи 27.09); на пользователей не влияет, канон acceptance — stage-split. AX-ввод текста работает как вставка в конец — ограничение автоматизации, не UI.
+**Остаются:**
+- **K2 — версия (владелец):** CHANGELOG заявляет `[0.1.0] - 2025-09-25`; реконсиляция показала — заявление внесено коммитом `00dc91e` 2025-09-25 через 13 минут после фиксации CLI `0.1.0-alpha.1` (противоречие с первого дня), тега нет ни локально, ни на origin. Решение о бампе/теге — владельцем (`VERSIONING.md` I1-I5). Имя DMG `0.1.0` отражает tauri.conf, не материализованный релиз.
+- **K5** — построчный сканер строк: многострочные eprintln вне поля зрения (P3).
+- **K6** — off-screen AX-дроп macOS 27 (только автоматизация); AX-ввод = вставка в конец в dev (в release-джорни ввод worked as replacement).
+- **K7 — платформы:** Windows/Linux NOT TESTED человеком.
+- **Бэкенд-сообщения GUI** (`ContractError.message`/`Finding.message`) приходят свободным английским; локализация по `code` на фронте — спроектирована (SELFLOC_BRIDGE.md), не реализована.
 
-**K7 — Платформы:** проверено на macOS (M4 Pro, macOS 27). Windows/Linux — компилируются в CI-джобах dev-профиля, человеческой верификации не было.
+## 5. CI и гейты владельца
 
-## 5. Гейты владельца (блокируют публикацию, не блокируют RC)
+**CI-матрица (честно):** 6 workflow Prepared: ci.yml (frontend/schema/actionlint/semver), semver.yml, release-plz (dispatch-only), publish.yml (recovery), docs.yml (ручной deploy), changelog-check. **Executed locally на `8056649`:** fmt, clippy, cargo test, svelte-check, vitest, actionlint-проверки CI-волны, mkdocs (release-аудит). **Not executed:** все GitHub-workflow прогоны (push-триггеры сняты — политика владельца сохранена; dispatch не запускался). Никакие «CI green» заявления не делаются.
 
-1. **Push** локальной дельты `9591f4f..2f8ff0e` в origin/main — только по явному ок.
-2. **Версия и тег**: решение по I1 (бамп до `0.1.0` или честный `0.1.0-alpha.x`), затем тег `vX.Y.Z` от main.
-3. **Подпись/notarization**: Apple Developer ID, Tauri updater keys — только владелец; ключи никогда не изобретаются.
-4. **Windows/Linux**: человеческая верификация сборок.
-5. **CI-политика**: push/schedule-триггеры сознательно сняты (решение владельца 26.09); возврат — его решение. Ожидают внимания: dependabot github-actions PRs, branch protection, coverage-baseline, судьба `publish.yml` (спроектировано в `docs/development/CI.md`).
-6. **Бенч тестеров**: `BETA_TEST_CHECKLIST.md`.
+**Гейты владельца (блокируют публикацию):**
+1. Push дельты `9591f4f..8056649`.
+2. Версия/тег (K2).
+3. Подпись/notarization (Apple Developer ID) — до этого артефакт adhoc-подписанный, «локальный тестовый», не дистрибутив.
+4. Windows/Linux человеком.
+5. Возврат push/schedule-триггеров CI — политика владельца.
+6. Бета-тестеры: `BETA_TEST_CHECKLIST.md` (переработан: обычный тестер vs разработчик).
 
 ## 6. Материалы
 
-- Кампанию-слепок: `CAMPAIGN_SNAPSHOT.md`; ночь 26/27: `NIGHT_HANDOFF_2026-09-26.md`
-- Acceptance-матрица ×2: `/tmp/rimloc-built-acceptance-run2.md` (+ скриншоты 00–19 в `/tmp/rimloc-accept2/`, коммитнутые EN-кадры — `docs/screenshots/`)
-- Ревью: Pass A (`/tmp/rimloc-pass-a-engineering.md`), Pass B (`/tmp/rimloc-pass-b-hostile.md`), вердикт дельты 27.09 (в логе `/tmp/rimloc-glm-handoff.md`)
-- Карта экранов для ревью: `REVIEW_SCREEN_MAP.md`
+- **Evidence-хранилище (долговечное, вне git):** `~/Developing/RimLoc-evidence/2026-09-27-rc/` — MANIFEST.md (sha256, санитизация), built-acceptance кадры/логи, release-accept кадры + диаг-бандл, все отчёты волн.
+- Кампании: `CAMPAIGN_SNAPSHOT.md`, `NIGHT_HANDOFF_2026-09-26.md`
+- Ревью: Pass A/B, вердикт дельты, K-отчёт, i18n-аудит — в evidence `reports/`.
+- Self-localization: `SELFLOC_BRIDGE.md` (мост), i18n-аудит (evidence `reports/`).
