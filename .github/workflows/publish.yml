@@ -1,45 +1,56 @@
-name: Publish crates
+# Ручной recovery-публикатор crates.io. ОСНОВНОЙ путь публикации — release-plz
+# (release-plz.yml: после мержа Release PR dispatch на main тегает и публикует).
+# Этот workflow — запасной инструмент: дозалить пачку крейсов руками, когда
+# автоматика споткнулась (например, crates.io 429). Полномочия разведены в
+# docs/development/CI.md §3.
+#
+# Секреты — только через repo secret CARGO_REGISTRY_TOKEN; передача токена
+# через workflow_dispatch input удалена (inputs видны в UI/логах прогона).
+name: Publish crates (manual recovery)
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry run (no publish)"
+        description: "Dry run (no publish); false = publish for real"
         required: false
         default: "true"
-      token:
-        description: "crates.io token (optional; use only for manual runs)"
-        required: false
-        default: ""
 
-permissions:
-  contents: read
-  packages: write
+permissions: {}
+
+# Публикацию не отменяем на полпути: частично опубликованная пачка хуже
+# отложенной. Новые dispatch'ы этой же очереди ждут.
+concurrency:
+  group: crates-publish
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
       - name: Publish in dependency order
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
         shell: bash
         run: |
           set -euo pipefail
-          # Allow passing token via workflow_dispatch inputs (fallback when repo secret is not configured)
-          if [[ -n "${{ github.event.inputs.token }}" ]]; then
-            export CARGO_REGISTRY_TOKEN='${{ github.event.inputs.token }}'
+          if [[ "$DRY_RUN" != "true" && -z "${CARGO_REGISTRY_TOKEN:-}" ]]; then
+            echo "Refusing to publish: secret CARGO_REGISTRY_TOKEN is not configured." >&2
+            echo "Set it in repo Settings > Secrets, or run with dry_run=true." >&2
+            exit 1
           fi
-          dry=${{ inputs.dry_run }}
           publish_with_retry() {
             local pkg="$1"
             local tries=0 max_tries=12
             local delay=60 # base delay secs between attempts
             while (( tries < max_tries )); do
               echo "::group::Publishing $pkg (attempt $((tries+1))/$max_tries)"
-              if [[ "$dry" == "true" ]]; then
+              if [[ "$DRY_RUN" == "true" ]]; then
                 if cargo publish -p "$pkg" --dry-run; then
                   echo "Dry-run OK: $pkg"; echo "::endgroup::"; return 0
                 fi
@@ -59,17 +70,20 @@ jobs:
             return 1
           }
 
-          # Publish in dependency order with spacing to avoid rate limits
+          # Publish in dependency order with spacing to avoid rate limits.
+          # Каждая позиция обязательна: падение любого крейса роняет job
+          # (раньше все, кроме rimloc-core, глотались `|| true` — пачка
+          # «зеленела» наполовину опубликованной).
           publish_with_retry rimloc-core
           sleep 30
-          publish_with_retry rimloc-parsers-xml || true
+          publish_with_retry rimloc-parsers-xml
           sleep 30
-          publish_with_retry rimloc-export-csv || true
+          publish_with_retry rimloc-export-csv
           sleep 30
-          publish_with_retry rimloc-export-po || true
+          publish_with_retry rimloc-export-po
           sleep 30
-          publish_with_retry rimloc-import-po || true
+          publish_with_retry rimloc-import-po
           sleep 60
-          publish_with_retry rimloc-validate || true
+          publish_with_retry rimloc-validate
           sleep 60
-          publish_with_retry rimloc-cli || true
+          publish_with_retry rimloc-cli
