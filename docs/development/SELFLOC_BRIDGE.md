@@ -96,6 +96,78 @@ removing fields requires a version bump and a note here.
 There is deliberately **no `generated_at` timestamp** — it would make runs
 non-deterministic; the git revision is the provenance.
 
+## Language Pack Schema (runtime preview, wave B2)
+
+A language pack is a **versioned, data-only JSON file** derived from the
+catalog bridge. Schema (`schema_version` starts at `"1"`; same versioning
+policy as the generated files above):
+
+```jsonc
+{
+  "schema_version": "1",
+  "locale": "ja",                       // BCP47-lite tag: "ru", "zh-Hans", "pt-BR", …
+  "base_catalog_revision": "7a3cfb2…",  // catalog.meta.json revision the pack was built against
+  "messages": [ { "id": "common.appName", "value": "RimLoc…" } ]  // subset or all ids
+}
+```
+
+Validation lives in `src/i18n/pack-schema.ts` (`parseAndValidatePack` /
+`validatePackObject`) and is **whole-pack**: ANY structural problem rejects
+the entire pack with a typed result (`{ ok: false, reason, details }`) —
+never a partial install. Checked, in order:
+
+1. root is a JSON object; raw text size ≤ 5 MB before parsing;
+2. `schema_version` is known (`"1"`);
+3. `locale` is a well-formed locale tag (BCP47-lite; unknown-but-well-formed
+   locales are the point of packs — the locale is data, not an enum);
+4. `base_catalog_revision` matches the catalog revision shape (git sha,
+   optional `-dirty`). Equality with the *live* catalog is deliberately NOT
+   checked: a pack built against an older revision is structurally valid;
+   revision-based rebase semantics belong to the contribution waves (B3/B4);
+5. `messages` is an array (≤ 5000 entries) of `{id, value}` with unique ids;
+6. every `id` exists in the base (en) catalog;
+7. every `value` is a non-empty string ≤ 4000 chars;
+8. every `value` interpolates **exactly the same `{placeholder}` set** as its
+   base text (sorted-set equality — the same contract the catalog and the
+   mod validator use).
+
+An **incomplete** pack (not every catalog id present) is valid: missing ids
+are a fallback case, not an error.
+
+### Runtime semantics (`store.svelte.ts`)
+
+- `i18n.previewPack(raw)` — explicit opt-in. Validates first; on rejection
+  the store is untouched. On success installs an in-memory overlay.
+- Resolution in `t()`: pack overlay → current locale → en → id (the final
+  id fallback is an honest diagnostic render, preserved from the original
+  chain — never an empty string; a pack can never introduce an empty render
+  because empty values are rejected at load).
+- `i18n.clearPreview()` — explicit reset back to built-in dictionaries.
+- **Previews never persist**: no localStorage writes, nothing survives a
+  reload. The active preview is marked in store state
+  (`i18n.preview` / `i18n.previewActive`) so the UI and tests can always
+  tell pack rendering from built-in rendering.
+- **Mandate §15 invariant**: the UI preview locale is independent of the
+  project's source/target locales. `previewPack` does not touch
+  `i18n.locale`, the persisted UI locale, or the multi-target language
+  store; covered by a regression test.
+- **Trust boundary**: packs are data only. Values render through Svelte
+  text interpolation (the codebase has no `{@html}` path for i18n strings),
+  so markup or event-handler text in a value can only ever appear as
+  literal text. Validation is about structural integrity, not content
+  filtering.
+
+### Dev UI
+
+Settings-side entry point is the dev panel (Developer options): a client-side
+file input, «Загрузить пак (превью)» with the load status (active
+locale + message count, or the machine reject reason), and «Сбросить
+превью». i18n keys: `dev.pack.*` (en + ru). No new dependencies.
+
+Path forward unchanged (contribution waves B3/B4): packs ⇄ catalog
+round-trip, revision-based rebase, and a product-surface (non-dev) locale
+picker once a pack is promoted from preview to shipped.
+
 ## Mapping to the Canonical Model
 
 The audit (§8) checked this against `crates/rimloc-domain/src/canonical.rs`;
@@ -123,8 +195,9 @@ small keyed project (plugin over the JSON, patterned after
 `crates/rimloc-plugin-jsonftl` — the existing non-XML-source precedent), a
 translator edits translations in the ordinary project/session flow, and the
 result is exported as a language pack the app runtime can load. The runtime
-side (loading external packs into `DICTS`, today compiled into the bundle)
-is out of scope for this slice.
+side (data-only pack loading as an explicit UI preview) landed in wave B2
+(see "Language Pack Schema" above); promoting previews to shipped locales
+stays open.
 
 Reverse path (contribution → catalog), design only: an accepted language pack
 (or an in-repo contribution) is applied back onto the TS dictionaries by
