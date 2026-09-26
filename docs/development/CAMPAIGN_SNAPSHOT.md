@@ -45,14 +45,19 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   `RELEASE_READINESS_REPORT.md`, тестеру — `BETA_TEST_CHECKLIST.md`,
   ревьюеру — `REVIEW_SCREEN_MAP.md`. **STOP перед push/тегом/релизом —
   только явное ок владельца.** → **проверь `git rev-parse HEAD`**.
-- Открытый мандат владельца (27.09, СТАРТ ТОЛЬКО ПОСЛЕ ЗАКРЫТИЯ ПУША-ВОПРОСА
-  RC): self-localization «RimLoc переводит RimLoc» — RimLocApplication как
-  канонический источник, аудит текущего i18n с evidence, стабильные message id,
-  entry point «Help translate», язык-пак без исполняемого кода, contribution
-  schema + preview + offline-bundle; GitHub-connected архитектура где дёшево;
-  relay-инфраструктуру и маркетплейс НЕ делать в RC. Детали — в мандате
-  владельца от 27.09 (три раздела: self-localization, contribution workflow,
-  one-click/accountless).
+- **Self-localization foundation ВЫПОЛНЕНА (27.09)**: main несёт S1 (каталог-гигиена),
+  JSON-мост (generated каталоги, ONE AUTHORITY, SELFLOC_BRIDGE.md), pack loader +
+  preview + fallback (data-only, доверенная граница), contribution bundle build/apply
+  (sanitization, stale-гейт, round-trip), first-party UI-catalog адаптер (сессия
+  открывает свой каталог как проект: 1175 записей, placeholder-валидация, M3
+  source-drift, без DefInjected-механики). Гейты: rust 308/0, vitest 270/270,
+  clippy/fmt/svelte-check чисто. → **проверь `git rev-parse HEAD`**.
+- Осталось по мандату self-localization (СЛЕД. волны): UI-точка «Help translate»,
+  EntryKind::Application (18 id с `/` непредставимы в Keyed XML — см. B4-отчёт),
+  строгая placeholder-валидация имён в Rust-валидаторе, перевод бэкенд-сообщений
+  по code, бета-UI contribution. GitHub/relay — вне скоупа, не начинались.
+- RC-статус: см. RELEASE_READINESS_REPORT.md (evidence-closeout от 27.09, main
+  несёт тестированную дельту). STOP: push/тег/релиз — только явное ок владельца.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
