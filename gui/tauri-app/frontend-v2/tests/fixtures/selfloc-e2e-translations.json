@@ -1,0 +1,10 @@
+{
+  "_comment": "Self-localization E2E slice (wave B4, owner mandate §12): the shared translation set for BOTH the Rust session test (crates/rimloc-services/src/ui_catalog.rs, selfloc_session_e2e) and the TS contribution-chain test (tests/selfloc-catalog-chain.test.ts). Every id exists in the real generated catalog; `changes` and `fixed` carry placeholder sets equal to the en source contract; `broken_first` deliberately DROPS the {count} placeholder so the session validator must flag lost-placeholder before the fix is applied.",
+  "locale": "ru",
+  "changes": [
+    { "id": "common.close", "value": "Закрыть (selfloc)" },
+    { "id": "contractops.export.desc", "value": "Вывод изолирован в выбранную вами папку. Язык папки: {locale}." }
+  ],
+  "broken_first": { "id": "contractops.export.skipped", "value": "Пропущено неизвестных типов" },
+  "fixed": { "id": "contractops.export.skipped", "value": "Пропущено неизвестных типов: {count}" }
+}
