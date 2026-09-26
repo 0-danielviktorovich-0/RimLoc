@@ -37,7 +37,22 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
-- Последний main-срез: `ee9967b` (+ built-gui: сторы на RimLocClient, frontendDist v2, intents с полным структурным id) → **проверь `git rev-parse HEAD`**.
+- **RC-конвергенция батча-2 ЗАВЕРШЕНА (27.09)**: main на документ-срезе `b1f80f1`
+  (перед ним `2f8ff0e` — merge P1-фикса release-компиляции, `fd618c2` — merge
+  out-dir-гарда). Все гейты зелёные: fmt, clippy `--workspace --all-targets
+  -D warnings`, test 297/0, svelte-check 0/0, vitest 205/205,
+  `check --release -p rimloc-gui` (новый гейт). Итоги —
+  `RELEASE_READINESS_REPORT.md`, тестеру — `BETA_TEST_CHECKLIST.md`,
+  ревьюеру — `REVIEW_SCREEN_MAP.md`. **STOP перед push/тегом/релизом —
+  только явное ок владельца.** → **проверь `git rev-parse HEAD`**.
+- Открытый мандат владельца (27.09, СТАРТ ТОЛЬКО ПОСЛЕ ЗАКРЫТИЯ ПУША-ВОПРОСА
+  RC): self-localization «RimLoc переводит RimLoc» — RimLocApplication как
+  канонический источник, аудит текущего i18n с evidence, стабильные message id,
+  entry point «Help translate», язык-пак без исполняемого кода, contribution
+  schema + preview + offline-bundle; GitHub-connected архитектура где дёшево;
+  relay-инфраструктуру и маркетплейс НЕ делать в RC. Детали — в мандате
+  владельца от 27.09 (три раздела: self-localization, contribution workflow,
+  one-click/accountless).
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
