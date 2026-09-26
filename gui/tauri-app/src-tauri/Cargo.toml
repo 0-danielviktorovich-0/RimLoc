@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 image = "0.25"
-ico = "0.3"
+ico = "0.4"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
