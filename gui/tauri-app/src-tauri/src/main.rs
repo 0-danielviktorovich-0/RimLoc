@@ -3067,9 +3067,11 @@ fn legacy_commands_enabled() -> bool {
 
 fn main() {
     let _ = color_eyre::install();
-    let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init());
-    let builder = match contract_adapter::attach_contract(builder, contract_adapter::default_managed_root()) {
+    let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+    let builder = match contract_adapter::attach_contract(
+        builder,
+        contract_adapter::default_managed_root(),
+    ) {
         Ok(b) => b,
         Err(e) => {
             eprintln!("contract managed root init failed: {e}");
