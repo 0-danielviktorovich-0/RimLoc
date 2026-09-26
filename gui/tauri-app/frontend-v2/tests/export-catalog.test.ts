@@ -12,7 +12,7 @@
 //   4. placeholder contract — placeholders equal the sorted {token} set of
 //      the message text (future validation contract for pack translations).
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
@@ -59,16 +59,26 @@ describe('catalog JSON bridge: exporter determinism', () => {
   it('two consecutive exports are byte-identical', () => {
     const tsx = join(ROOT, 'node_modules', '.bin', 'tsx');
     const files = ['catalog.en.json', 'catalog.ru.json', 'catalog.meta.json'];
-    const firstRun = new Map<string, string>(
-      files.map((f) => [f, readFileSync(join(GENERATED, f), 'utf8')]),
-    );
+    const snapshot = () =>
+      new Map<string, string>(files.map((f) => [f, readFileSync(join(GENERATED, f), 'utf8')]));
 
-    execFileSync(tsx, ['scripts/export-catalog.ts'], { cwd: ROOT });
-
-    for (const f of files) {
-      expect(readFileSync(join(GENERATED, f), 'utf8'), `${f} differs between runs`).toBe(
-        firstRun.get(f),
-      );
+    // Compare the two exports against each other, NOT against the
+    // pre-existing files: committed meta legitimately pins the commit that
+    // generated it, while a fresh export stamps the current HEAD.
+    const before = snapshot();
+    try {
+      execFileSync(tsx, ['scripts/export-catalog.ts'], { cwd: ROOT });
+      const firstRun = snapshot();
+      execFileSync(tsx, ['scripts/export-catalog.ts'], { cwd: ROOT });
+      for (const f of files) {
+        expect(readFileSync(join(GENERATED, f), 'utf8'), `${f} differs between runs`).toBe(
+          firstRun.get(f),
+        );
+      }
+    } finally {
+      // Leave the checkout exactly as it was: a fresh export stamps the
+      // current HEAD into meta, which would dirty a clean tree.
+      for (const [f, content] of before) writeFileSync(join(GENERATED, f), content);
     }
   });
 });
