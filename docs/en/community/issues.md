@@ -11,7 +11,7 @@ This page explains how to file actionable issues and which types we use. The rep
 - Bug report — Something is broken or behaves unexpectedly.
 - Feature request — A new capability or flag is desired.
 - Documentation — Docs corrections or additions.
-- Question — Clarifications about usage or behavior (consider Discussions).
+- Question — Clarifications about usage or behavior (open a regular issue; Discussions are not enabled).
 
 ## Bug report checklist
 

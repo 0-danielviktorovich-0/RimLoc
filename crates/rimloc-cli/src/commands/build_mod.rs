@@ -1,3 +1,7 @@
+// `ui_warn!` expands `is_terminal()` at the call site — the trait must be
+// in scope here.
+use std::io::IsTerminal as _;
+
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
 pub fn run_build_mod(
@@ -12,8 +16,9 @@ pub fn run_build_mod(
     lang_dir: Option<String>,
     dry_run: bool,
     dedupe: bool,
+    merge: bool,
 ) -> color_eyre::Result<()> {
-    tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run);
+    tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run, merge = merge);
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let cfg_build = cfg.build.unwrap_or_default();
     let lang_folder = lang_dir
@@ -44,6 +49,15 @@ pub fn run_build_mod(
     } else {
         from_game_version
     };
+
+    // M6: a build into an EXISTING non-empty out dir used to merge silently
+    // with the previous build — files the source no longer produces stayed
+    // behind and shipped dead keys. Refuse unless `--merge` makes the
+    // overwrite-with-keep semantics conscious. Dry-run writes nothing, so
+    // planning into an existing dir stays allowed.
+    if !dry_run {
+        ensure_out_target(&out_mod, merge)?;
+    }
 
     if let Some(root) = from_root {
         // Build from existing Languages/<lang> structure under `root`.
@@ -131,5 +145,28 @@ pub fn run_build_mod(
         )?;
         ui_ok!("build-done", out = out_mod.display().to_string());
     }
+    Ok(())
+}
+
+/// M6 out-target honesty: refuse a build into an existing NON-EMPTY
+/// directory unless the caller passed `--merge`; with `--merge` warn that
+/// stale files are kept (merge never cleans up).
+fn ensure_out_target(out_mod: &std::path::Path, merge: bool) -> color_eyre::Result<()> {
+    if !out_mod.is_dir() {
+        return Ok(());
+    }
+    let non_empty = std::fs::read_dir(out_mod)
+        .map(|mut entries| entries.next().is_some())
+        .unwrap_or(false);
+    if !non_empty {
+        return Ok(());
+    }
+    if !merge {
+        color_eyre::eyre::bail!(
+            "{}",
+            crate::tr!("build-out-not-empty", out = out_mod.display().to_string())
+        );
+    }
+    crate::ui_warn!("build-merge-warning", out = out_mod.display().to_string());
     Ok(())
 }

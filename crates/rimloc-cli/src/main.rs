@@ -1150,6 +1150,9 @@ enum Commands {
         /// Remove duplicate keys within a single XML file (last wins)
         #[arg(long, default_value_t = false)]
         dedupe: bool,
+        /// Allow building into an existing non-empty out dir (merge keeps stale files — no cleanup)
+        #[arg(long, default_value_t = false)]
+        merge: bool,
     },
 
     /// Environment diagnostics: RW install, version, mod dirs, provider
@@ -1712,6 +1715,7 @@ impl Runnable for Commands {
                 lang_dir,
                 dry_run,
                 dedupe,
+                merge,
             } => commands::build_mod::run_build_mod(
                 po,
                 out_mod,
@@ -1724,6 +1728,7 @@ impl Runnable for Commands {
                 lang_dir,
                 dry_run,
                 dedupe,
+                merge,
             ),
 
             Commands::XmlHealth {

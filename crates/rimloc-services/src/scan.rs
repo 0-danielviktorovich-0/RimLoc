@@ -893,6 +893,174 @@ pub fn scan_units_effective_view(
     })
 }
 
+/// Stable fingerprint of the source content a project inventory was built
+/// from (M3): the resolved effective view (including the RESOLVED game
+/// version - a LoadFolders rollback changes it) plus `(relative path,
+/// sha256)` of every file under the trees the scan pipeline reads
+/// (Languages, Defs, Patches). Deterministic across runs and platforms
+/// (sorted walk, `/`-normalized relative paths). A version rollback, a
+/// content edit or an added/removed file each change the value.
+///
+/// Cost note: one extra sequential read pass over the scanned trees, per
+/// project (re)start - bounded by the same trees the scanner itself walks.
+pub fn source_fingerprint(root: &Path, target_version: Option<&str>) -> Result<String> {
+    let view = crate::modview::effective_view(root, target_version)?;
+    let mut acc = String::new();
+    acc.push_str(&format!(
+        "version={}\n",
+        view.version.as_deref().unwrap_or("-")
+    ));
+    // The LoadFolders manifest itself defines the view - hash it too, so a
+    // rollback that only rewrites the manifest is still drift.
+    if let Ok(bytes) = std::fs::read(root.join("LoadFolders.xml")) {
+        acc.push_str("LoadFolders.xml\n");
+        acc.push_str(&crate::observability::sha256_hex(&bytes));
+        acc.push('\n');
+    }
+    let mut dirs: Vec<PathBuf> = Vec::new();
+    dirs.extend(view.languages_dirs());
+    dirs.extend(view.defs_roots());
+    for dir in view.content_dirs.iter().chain(view.conditional_dirs.iter()) {
+        dirs.push(dir.join("Patches"));
+    }
+    dirs.push(root.join("Patches"));
+    dirs.sort();
+    dirs.dedup();
+    for dir in dirs {
+        if !dir.is_dir() {
+            continue;
+        }
+        for entry in WalkDir::new(&dir).sort_by_file_name() {
+            let Ok(entry) = entry else { continue };
+            if !entry.file_type().is_file() {
+                continue;
+            }
+            let rel = entry
+                .path()
+                .strip_prefix(root)
+                .unwrap_or(entry.path())
+                .to_string_lossy()
+                .replace('\\', "/");
+            acc.push_str(&rel);
+            acc.push('\n');
+            let bytes = std::fs::read(entry.path())?;
+            acc.push_str(&crate::observability::sha256_hex(&bytes));
+            acc.push('\n');
+        }
+    }
+    Ok(crate::observability::sha256_hex(acc.as_bytes()))
+}
+
+#[cfg(test)]
+mod source_fingerprint_tests {
+    //! M3 regression: the fingerprint is stable for unchanged source and
+    //! moves on every change class M3 is about — content edit, added/
+    //! removed file, LoadFolders version rollback.
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write(path: &Path, body: &str) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, body).unwrap();
+    }
+
+    /// Versioned LoadFolders mod with per-version content trees.
+    fn loadfolders_mod(root: &Path) {
+        write(
+            &root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>/</li><li>Common16</li></v1.6>\
+             <v1.5><li>/</li><li>Common15</li></v1.5></loadFolders>",
+        );
+        write(
+            &root.join("Defs/A.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>v16 label</label></ThingDef></Defs>"#,
+        );
+        write(
+            &root.join("Common16/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>шестнадцать</K1></LanguageData>",
+        );
+        write(
+            &root.join("Common15/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>пятнадцать</K1></LanguageData>",
+        );
+    }
+
+    /// Same content + same requested version → same value, across calls.
+    #[test]
+    fn deterministic_for_unchanged_source() {
+        let dir = tempdir().unwrap();
+        loadfolders_mod(dir.path());
+        let a = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        let b = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        assert_eq!(a, b);
+    }
+
+    /// Edit / add / remove inside the scanned trees each move the value;
+    /// reverting restores it.
+    #[test]
+    fn content_and_file_set_changes_move_the_value() {
+        let dir = tempdir().unwrap();
+        loadfolders_mod(dir.path());
+        let base = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+
+        // Content edit.
+        write(
+            &dir.path().join("Common16/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>изменено</K1></LanguageData>",
+        );
+        let edited = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        assert_ne!(base, edited);
+
+        // Revert, then ADD a file (the harness "sourcedrift" T99 shape).
+        write(
+            &dir.path().join("Common16/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>шестнадцать</K1></LanguageData>",
+        );
+        write(
+            &dir.path()
+                .join("Common16/Languages/Russian/Keyed/Extra.xml"),
+            "<LanguageData><K2>добавлен</K2></LanguageData>",
+        );
+        let added = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        assert_ne!(base, added);
+        assert_ne!(edited, added);
+
+        // Remove it again → back in sync.
+        fs::remove_file(
+            dir.path()
+                .join("Common16/Languages/Russian/Keyed/Extra.xml"),
+        )
+        .unwrap();
+        let reverted = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        assert_eq!(reverted, base);
+    }
+
+    /// LoadFolders rollback (harness "cases"): 1.6 → 1.5-only manifest
+    /// changes BOTH the resolved version and the active trees; even a
+    /// manifest rewrite that keeps the view is drift (the manifest is
+    /// hashed too).
+    #[test]
+    fn version_rollback_moves_the_value() {
+        let dir = tempdir().unwrap();
+        loadfolders_mod(dir.path());
+        let v16 = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        // Unrequested version → the LATEST tag (1.6 here) — the same view
+        // as an explicit 1.6, hence the same value.
+        assert_eq!(v16, source_fingerprint(dir.path(), None).unwrap());
+        assert_ne!(v16, source_fingerprint(dir.path(), Some("1.5")).unwrap());
+
+        // Roll the manifest back to 1.5-only: a session fingerprinted at
+        // 1.6 now resolves 1.5 via the game fallback → drift.
+        write(
+            &dir.path().join("LoadFolders.xml"),
+            "<loadFolders><v1.5><li>/</li><li>Common15</li></v1.5></loadFolders>",
+        );
+        let rolled = source_fingerprint(dir.path(), Some("1.6")).unwrap();
+        assert_ne!(v16, rolled);
+    }
+}
+
 #[cfg(test)]
 mod loadfolders_ru_only_tests {
     //! Corpus G3b regression (real forms: 2927850179 / 2126925929). A
