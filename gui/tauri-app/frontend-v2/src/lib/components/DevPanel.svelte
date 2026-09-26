@@ -2,11 +2,35 @@
   // Dev-only panel: route switcher, mock state toggles per spec §3 (every
   // screen must expose loading / empty / error) + dataset reset. Not part of
   // the product UI.
-  import { t } from '../../i18n/store.svelte';
+  import { t, i18n } from '../../i18n/store.svelte';
   import { router, ROUTES, type RouteId } from '../router.svelte';
   import { ui, type HomeMode } from '../stores/ui.svelte';
   import { project } from '../stores/project.svelte';
   import { scenarioBrowser } from '../scenarios.svelte';
+
+  // Self-localization wave B2: explicit data-only language pack preview.
+  // The file is read fully client-side; its JSON text goes to the store's
+  // typed loader, which accepts the pack whole or rejects it whole with a
+  // machine reason (rendered as diagnostic data, not copy).
+  // The File object itself is deliberately NOT $state: Svelte would wrap it
+  // in a reactive proxy, and a proxied Blob fails the brand checks its
+  // .text() relies on. Only cheap flags are reactive.
+  let selectedPackFile: File | null = null;
+  let hasPackFile = $state(false);
+  let packRejectReason: string | null = $state(null);
+
+  function onPackFile(e: Event) {
+    selectedPackFile = (e.currentTarget as HTMLInputElement).files?.[0] ?? null;
+    hasPackFile = selectedPackFile !== null;
+    packRejectReason = null;
+  }
+
+  async function loadPack() {
+    if (!selectedPackFile) return;
+    const text = await selectedPackFile.text();
+    const result = i18n.previewPack(text);
+    packRejectReason = result.ok ? null : result.reason;
+  }
 </script>
 
 <details class="dev" data-testid="dev.panel">
@@ -74,6 +98,48 @@
     <button type="button" class="btn" data-testid="dev.reset" onclick={() => project.reset()}>
       {t('dev.reset')}
     </button>
+
+    <!-- Self-localization wave B2: language pack preview. Data-only pack,
+         explicit load + explicit reset; the preview never persists. -->
+    <label class="dev-row">
+      <span>{t('dev.pack.pick')}</span>
+      <input
+        type="file"
+        accept=".json,application/json"
+        data-testid="dev.pack.file"
+        onchange={onPackFile}
+      />
+    </label>
+
+    <button
+      type="button"
+      class="btn"
+      data-testid="dev.pack.load"
+      disabled={!hasPackFile}
+      onclick={loadPack}
+    >
+      {t('dev.pack.load')}
+    </button>
+
+    {#if i18n.previewActive}
+      <button
+        type="button"
+        class="btn"
+        data-testid="dev.pack.reset"
+        onclick={() => i18n.clearPreview()}
+      >
+        {t('dev.pack.reset')}
+      </button>
+      <p class="dev-note" data-testid="dev.pack.status">
+        {t('dev.pack.active', { locale: i18n.preview?.locale ?? '', count: i18n.preview?.count ?? 0 })}
+      </p>
+    {:else if packRejectReason}
+      <p class="dev-note" data-testid="dev.pack.status">
+        {t('dev.pack.rejected', { reason: packRejectReason })}
+      </p>
+    {:else}
+      <p class="dev-note" data-testid="dev.pack.status">{t('dev.pack.idle')}</p>
+    {/if}
 
     <!-- W6: dev scenario browser (dev-only tooling, mandate §11). -->
     <button type="button" class="btn" data-testid="dev.scenarios" onclick={() => scenarioBrowser.show()}>

@@ -1143,6 +1143,12 @@ export const en: Record<string, string> = {
   'dev.reset': 'Reset mock data',
   'dev.summary': 'Zero backend calls: all data is local.',
   'dev.scenarios': 'Scenario browser',
+  'dev.pack.pick': 'Pack file (JSON)',
+  'dev.pack.load': 'Load pack (preview)',
+  'dev.pack.reset': 'Reset preview',
+  'dev.pack.idle': 'No pack loaded.',
+  'dev.pack.active': 'Preview active: {locale} ({count} messages)',
+  'dev.pack.rejected': 'Pack rejected: {reason}',
 
   // W-built boot gate + contract Home
   'boot.configError.title': 'No backend in this launch',

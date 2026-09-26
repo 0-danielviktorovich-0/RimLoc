@@ -5159,6 +5159,41 @@
       "placeholders": []
     },
     {
+      "id": "dev.pack.pick",
+      "translated": "Файл пака (JSON)",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.load",
+      "translated": "Загрузить пак (превью)",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.reset",
+      "translated": "Сбросить превью",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.idle",
+      "translated": "Пак не загружен.",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.active",
+      "translated": "Превью активно: {locale} ({count} сообщений)",
+      "placeholders": [
+        "count",
+        "locale"
+      ]
+    },
+    {
+      "id": "dev.pack.rejected",
+      "translated": "Пак отвергнут: {reason}",
+      "placeholders": [
+        "reason"
+      ]
+    },
+    {
       "id": "boot.configError.title",
       "translated": "В этом запуске нет бэкенда",
       "placeholders": []

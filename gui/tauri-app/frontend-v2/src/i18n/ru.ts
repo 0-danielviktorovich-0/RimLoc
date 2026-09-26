@@ -1145,6 +1145,12 @@ export const ru: Record<string, string> = {
   'dev.reset': 'Сбросить мок-данные',
   'dev.summary': 'Ноль вызовов бэкенда: все данные локальные.',
   'dev.scenarios': 'Браузер сценариев',
+  'dev.pack.pick': 'Файл пака (JSON)',
+  'dev.pack.load': 'Загрузить пак (превью)',
+  'dev.pack.reset': 'Сбросить превью',
+  'dev.pack.idle': 'Пак не загружен.',
+  'dev.pack.active': 'Превью активно: {locale} ({count} сообщений)',
+  'dev.pack.rejected': 'Пак отвергнут: {reason}',
 
   // W-built гейт загрузки + контрактная Home
   'boot.configError.title': 'В этом запуске нет бэкенда',

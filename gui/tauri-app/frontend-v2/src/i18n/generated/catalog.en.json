@@ -5159,6 +5159,41 @@
       "placeholders": []
     },
     {
+      "id": "dev.pack.pick",
+      "source_text": "Pack file (JSON)",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.load",
+      "source_text": "Load pack (preview)",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.reset",
+      "source_text": "Reset preview",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.idle",
+      "source_text": "No pack loaded.",
+      "placeholders": []
+    },
+    {
+      "id": "dev.pack.active",
+      "source_text": "Preview active: {locale} ({count} messages)",
+      "placeholders": [
+        "count",
+        "locale"
+      ]
+    },
+    {
+      "id": "dev.pack.rejected",
+      "source_text": "Pack rejected: {reason}",
+      "placeholders": [
+        "reason"
+      ]
+    },
+    {
       "id": "boot.configError.title",
       "source_text": "No backend in this launch",
       "placeholders": []
