@@ -4264,7 +4264,7 @@ version = "0.1.0"
 dependencies = [
  "dirs 7.0.0",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
  "toml 0.8.2",
 ]
 
@@ -4278,7 +4278,7 @@ dependencies = [
  "regex",
  "schemars 1.2.2",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -4345,7 +4345,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
  "walkdir",
 ]
 
@@ -4380,7 +4380,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
 ]
 
 [[package]]

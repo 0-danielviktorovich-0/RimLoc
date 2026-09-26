@@ -9,7 +9,7 @@ description = "LLM translation subsystem for RimLoc: providers, batching, glossa
 rimloc-core = { path = "../rimloc-core" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-thiserror = "1"
+thiserror = "2"
 regex = "1"
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "json", "rustls", "query"], optional = true }
 keyring = { version = "3", optional = true }
