@@ -127,7 +127,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                 ),
             });
         }
-        if u.source.as_deref().map_or(true, |s| s.trim().is_empty()) {
+        if u.source.as_deref().is_none_or(|s| s.trim().is_empty()) {
             // Empty required translation → real failure.
             msgs.push(ValidationMessage {
                 kind: "empty".to_string(),

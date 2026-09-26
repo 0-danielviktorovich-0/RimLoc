@@ -82,7 +82,7 @@ pub fn scan_keyed_xml_with_options(
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
@@ -458,7 +458,7 @@ pub fn scan_defs_xml_under_with_fields(
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
@@ -509,7 +509,7 @@ pub fn scan_defs_xml_under_with_fields(
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
@@ -1244,7 +1244,7 @@ pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
@@ -1326,7 +1326,7 @@ pub fn scan_defs_with_dict_meta(
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
@@ -1453,7 +1453,7 @@ pub fn scan_defs_with_dict_meta(
             }
             if p.extension()
                 .and_then(|e| e.to_str())
-                .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+                .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
             {
                 continue;
             }
@@ -1814,7 +1814,7 @@ pub fn scan_defs_with_dict_meta(
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
@@ -2488,7 +2488,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
         }
         if p.extension()
             .and_then(|e| e.to_str())
-            .map_or(true, |ext| !ext.eq_ignore_ascii_case("xml"))
+            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
         {
             continue;
         }
