@@ -111,6 +111,9 @@ This changelog follows Keep a Changelog and Semantic Versioning.
  - [docs/schemas] Refresh generated JSON Schemas via `rimloc-cli schema`; document `out_dir` in configuration guide (#PR)
  - [docs/gui] Expand GUI guide with Morph and Tools (schemas) sections (#PR)
 
+### Internal
+- [gui/i18n] Build-time JSON bridge for the self-localization foundation: `npm run export:catalog` deterministically exports the UI catalog (`src/i18n/{en,ru}.ts`) into committed versioned JSON (`src/i18n/generated/catalog.{en,ru,meta}.json`, schema_version 1, git-revision provenance, `{name}` placeholder contract); drift-guard tests keep TS as the single hand-edited authority. See `docs/development/SELFLOC_BRIDGE.md`.
+
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added
 - rimloc-cli initial prerelease: scan, validate, export-po, import-po, build-mod
