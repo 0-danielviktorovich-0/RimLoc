@@ -51,6 +51,9 @@ diffxml-flags-applied = Применены флаги: fuzzy={ $fuzzy }, unused=
 build-dry-run-header = === DRY RUN: сборка мода перевода ===
 build-built-at = Мод перевода собран в { $path }
 build-done = Мод перевода собран в { $out }
+
+build-out-not-empty = Сборка в непустую папку { $out } отклонена: молчаливое слияние оставило бы устаревшие файлы прошлой сборки, и мёртвые ключи уехали бы в релиз. Удалите папку или передайте --merge, чтобы слить осознанно.
+build-merge-warning = Слияние в непустую папку { $out }: файлы, не созданные этой сборкой, остаются как есть — устаревшие ключи НЕ вычищаются.
 test-app-started = rimloc app_started маркер
 test-dry-run-marker = DRY-RUN
 validate-po-ok = ✔ Плейсхолдеры в порядке ({ $count } строк)

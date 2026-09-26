@@ -59,6 +59,9 @@ build-dry-run-header = === DRY RUN: building translation mod ===
 build-built-at = Translation mod built at { $path }
 build-done = Translation mod built at { $out }
 
+build-out-not-empty = Refusing to build into the non-empty directory { $out }: a silent merge would keep stale files from a previous build and ship dead keys. Remove the directory, or pass --merge to consciously merge into it.
+build-merge-warning = Merging into the non-empty directory { $out }: files not produced by this build are kept as-is — stale keys are NOT cleaned up.
+
 # === test-only markers (for integration tests) ===
 test-app-started = rimloc app_started marker
 test-dry-run-marker = DRY-RUN
