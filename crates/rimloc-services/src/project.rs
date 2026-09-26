@@ -25,6 +25,14 @@ use std::path::{Path, PathBuf};
 /// - winner reasons are per entry (stamped by the scan pipeline), so no
 ///   batch-level `selected_by` label is passed here.
 pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Project> {
+    // Self-localization (wave B4): a directory carrying the app's own
+    // generated UI catalog (`catalog.en.json`, schema "1") is its own SOURCE
+    // kind. The catalog adapter produces the inventory through this SAME
+    // canonical create-path contract (entries + M3 fingerprint) and NO
+    // RimWorld scanner runs on catalog data — see `crate::ui_catalog`.
+    if crate::ui_catalog::is_catalog_source(mod_root) {
+        return crate::ui_catalog::build_catalog_project(mod_root);
+    }
     let auto = crate::autodiscover_defs_context(mod_root)?;
     // ONE effective pipeline for every layout: the modview resolver decides
     // between flat, classic version dirs and LoadFolders, so a version-only

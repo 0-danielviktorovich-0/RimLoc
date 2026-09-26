@@ -137,6 +137,12 @@ pub mod winner_reason {
     pub const LOADFOLDERS: &str = "loadfolders";
     /// A version directory/tag selection chose this content root.
     pub const VERSION_SELECTED: &str = "version-selected";
+    /// First-party UI catalog (self-localization wave B4): the entry came
+    /// from the app's own generated `catalog.<locale>.json` bridge, scanned
+    /// by `rimloc-services::ui_catalog` — no mod scanner competed for it,
+    /// so the reason names the ORIGIN rather than a competition outcome
+    /// (there is only one possible producer of a catalog entry).
+    pub const UI_CATALOG: &str = "ui-catalog";
 }
 
 /// Typed TKey metadata (general form — never a growing special-case field):

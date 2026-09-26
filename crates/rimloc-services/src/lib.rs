@@ -27,6 +27,7 @@ pub mod project;
 pub mod project_store;
 pub mod scan;
 pub mod session;
+pub mod ui_catalog;
 mod util;
 pub mod validate;
 

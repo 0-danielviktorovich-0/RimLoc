@@ -904,6 +904,13 @@ pub fn scan_units_effective_view(
 /// Cost note: one extra sequential read pass over the scanned trees, per
 /// project (re)start - bounded by the same trees the scanner itself walks.
 pub fn source_fingerprint(root: &Path, target_version: Option<&str>) -> Result<String> {
+    // Catalog sources fingerprint by the SAME M3 contract over the generated
+    // bridge files themselves (`catalog.<locale>.json` + `catalog.meta.json`)
+    // — a source-message edit is drift under the existing semantics. See
+    // `crate::ui_catalog` (self-localization wave B4).
+    if crate::ui_catalog::is_catalog_source(root) {
+        return crate::ui_catalog::source_fingerprint(root);
+    }
     let view = crate::modview::effective_view(root, target_version)?;
     let mut acc = String::new();
     acc.push_str(&format!(
