@@ -686,6 +686,9 @@ export const en: Record<string, string> = {
   'settings.advanced.runDiag': 'Run diagnostics',
   'settings.advanced.rules': 'Knowledge & rules',
   'settings.advanced.viewRules': 'View rules',
+  'settings.advanced.rulePlaceholders': 'placeholders kept verbatim',
+  'settings.advanced.ruleGlossary': 'glossary terms preferred',
+  'settings.advanced.ruleTone': 'Tone register: neutral game UI',
   'settings.advanced.config': 'Configuration',
   'settings.advanced.export': 'Export config',
   'settings.advanced.exported': 'Configuration exported (mock).',
@@ -1150,6 +1153,7 @@ export const en: Record<string, string> = {
   'home.contract.create': 'Create project',
   'home.contract.open': 'Open',
   'workspace.project.fixtureDataset': 'Demo dataset — edits are not saved',
+  'workspace.project.fixtureNote': 'Sample dataset bundled with the app — explore freely; it never touches your mods.',
   'workspace.project.live': 'live project',
 
   // Scenario browser (W6, dev-only; MOCK_LIVE_ONBOARDING_MANDATE §11)

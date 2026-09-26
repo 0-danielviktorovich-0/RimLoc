@@ -555,9 +555,9 @@
             <details class="qa">
               <summary data-testid="settings.details.rules">{t('settings.advanced.viewRules')}</summary>
               <ul class="rules">
-                <li class="mono">placeholders kept verbatim</li>
-                <li class="mono">glossary terms preferred</li>
-                <li class="mono"> Tone register: neutral game UI</li>
+                <li class="mono">{t('settings.advanced.rulePlaceholders')}</li>
+                <li class="mono">{t('settings.advanced.ruleGlossary')}</li>
+                <li class="mono">{t('settings.advanced.ruleTone')}</li>
               </ul>
             </details>
           </div>

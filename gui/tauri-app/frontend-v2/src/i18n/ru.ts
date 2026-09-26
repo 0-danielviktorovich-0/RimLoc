@@ -689,6 +689,9 @@ export const ru: Record<string, string> = {
   'settings.advanced.runDiag': 'Запустить диагностику',
   'settings.advanced.rules': 'Знания и правила',
   'settings.advanced.viewRules': 'Посмотреть правила',
+  'settings.advanced.rulePlaceholders': 'плейсхолдеры сохраняются как есть',
+  'settings.advanced.ruleGlossary': 'приоритет терминам глоссария',
+  'settings.advanced.ruleTone': 'Тональность: нейтральный игровой UI',
   'settings.advanced.config': 'Конфигурация',
   'settings.advanced.export': 'Экспортировать конфиг',
   'settings.advanced.exported': 'Конфигурация экспортирована (мок).',
@@ -1152,6 +1155,7 @@ export const ru: Record<string, string> = {
   'home.contract.create': 'Создать проект',
   'home.contract.open': 'Открыть',
   'workspace.project.fixtureDataset': 'Демо-датасет — правки не сохраняются',
+  'workspace.project.fixtureNote': 'Демонстрационный набор, встроенный в приложение — исследуйте свободно; он не трогает ваши моды.',
   'workspace.project.live': 'живой контракт',
 
   // Браузер сценариев (W6, только dev; MOCK_LIVE_ONBOARDING_MANDATE §11)
