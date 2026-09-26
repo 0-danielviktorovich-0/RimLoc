@@ -76,8 +76,57 @@ fn main() -> ExitCode {
     let summaries = gui_mgr.list();
     println!("GUI_MANAGED_LIST={summaries:?}");
 
+    // README-screenshot seeding (2026-09-26): two Russian translations over
+    // real Keyed entries. One is a faithful translation; the other
+    // deliberately loses the source placeholders ({0}/{1}) so the GUI
+    // validate step surfaces genuine error findings — the intended demo
+    // problem the validator exists to catch.
+    let seed_texts: &[(&str, &str)] = &[
+        (
+            "VWE_WeaponDeteriorationInfo",
+            "Это оружие изнашивается после определённого числа выстрелов.",
+        ),
+        (
+            "VWE_WeaponDeterioratedMessage",
+            "Оружие носителя полностью износилось.",
+        ),
+    ];
+    let mut seed_intents = Vec::new();
+    for (key, ru) in seed_texts {
+        let Some(entry) = snap
+            .project
+            .entries
+            .iter()
+            .find(|e| e.id.kind == rimloc_domain::canonical::EntryKind::Keyed && e.id.key == *key)
+            .map(|e| e.id.clone())
+        else {
+            return fail(&format!("seed: Keyed entry {key} not found"));
+        };
+        seed_intents.push(rimloc_services::contract::TranslationIntent {
+            entry,
+            locale: "Russian".into(),
+            action: rimloc_services::contract::IntentAction::SetTranslation,
+            text: Some((*ru).into()),
+        });
+    }
+    let seed_req = rimloc_services::contract::ApplyIntentsRequest {
+        project_id: snap.project_id.clone(),
+        expected_revision: snap.revision,
+        session_epoch: snap.session_epoch,
+        intents: seed_intents,
+    };
+    match gui_mgr.apply(&seed_req) {
+        Ok(arsp) => println!(
+            "SEED_TRANSLATIONS applied={} skipped={} revision={}",
+            arsp.applied,
+            arsp.skipped.len(),
+            arsp.revision,
+        ),
+        Err(e) => return fail(&format!("seed apply: {e}")),
+    }
+
     // Read-only validate over the same session (never writes).
-    match gui_mgr.validate_project(&snap.project_id, snap.session_epoch, None) {
+    match gui_mgr.validate_project(&snap.project_id, snap.session_epoch, Some("Russian")) {
         Ok(rep) => {
             println!(
                 "VALIDATE status={} errors={} warnings={} info={} findings={} job={}",
