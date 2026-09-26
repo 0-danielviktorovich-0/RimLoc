@@ -1,0 +1,5984 @@
+{
+  "messages": [
+    {
+      "id": "common.appName",
+      "translated": "RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "common.close",
+      "translated": "Закрыть",
+      "placeholders": []
+    },
+    {
+      "id": "common.retry",
+      "translated": "Повторить",
+      "placeholders": []
+    },
+    {
+      "id": "common.cancel",
+      "translated": "Отмена",
+      "placeholders": []
+    },
+    {
+      "id": "common.back",
+      "translated": "Назад",
+      "placeholders": []
+    },
+    {
+      "id": "common.next",
+      "translated": "Далее",
+      "placeholders": []
+    },
+    {
+      "id": "common.errorTitle",
+      "translated": "Что-то сломалось",
+      "placeholders": []
+    },
+    {
+      "id": "common.details",
+      "translated": "Подробности",
+      "placeholders": []
+    },
+    {
+      "id": "common.reset",
+      "translated": "Сбросить",
+      "placeholders": []
+    },
+    {
+      "id": "common.filters",
+      "translated": "Фильтры",
+      "placeholders": []
+    },
+    {
+      "id": "common.startTranslation",
+      "translated": "Начать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "common.continue",
+      "translated": "Продолжить",
+      "placeholders": []
+    },
+    {
+      "id": "common.pause",
+      "translated": "Пауза",
+      "placeholders": []
+    },
+    {
+      "id": "common.resume",
+      "translated": "Продолжить",
+      "placeholders": []
+    },
+    {
+      "id": "common.apply",
+      "translated": "Применить",
+      "placeholders": []
+    },
+    {
+      "id": "common.delete",
+      "translated": "Удалить",
+      "placeholders": []
+    },
+    {
+      "id": "common.done",
+      "translated": "Готово",
+      "placeholders": []
+    },
+    {
+      "id": "mockbadge.label",
+      "translated": "Демо-данные (мок)",
+      "placeholders": []
+    },
+    {
+      "id": "mockbadge.title",
+      "translated": "Этот скаффолд работает на синтетических демо-данных, вызовов бэкенда нет. Живой режим придёт после фриза бэкенда через границу RimLocClient-транспорта.",
+      "placeholders": []
+    },
+    {
+      "id": "capability.unsupported.title",
+      "translated": "Пока недоступно: операция ждёт контракт-слайс. {reason}",
+      "placeholders": [
+        "reason"
+      ]
+    },
+    {
+      "id": "capability.unsupported.note",
+      "translated": "Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}",
+      "placeholders": [
+        "reason"
+      ]
+    },
+    {
+      "id": "workspace.contract.reread",
+      "translated": "Принять версию на диске",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.contract.rereadHint",
+      "translated": "Перечитать проект с диска. Черновик останется как локальный draft; версия диска станет основой для повторной записи.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.contract.rereading",
+      "translated": "Перечитываю…",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.running",
+      "translated": "Выполняется…",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.title",
+      "translated": "Валидация (контракт)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.desc",
+      "translated": "Чтение над доверенным состоянием проекта; проект не меняется. Ошибки делают операцию неуспешной и становятся целью диагностики.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.run",
+      "translated": "Проверить проект",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.rerun",
+      "translated": "Проверить снова",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.status.succeeded",
+      "translated": "Замечаний-ошибок нет",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.validate.status.failed",
+      "translated": "Есть ошибки",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.counts.errors",
+      "translated": "Ошибки",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.counts.warnings",
+      "translated": "Предупреждения",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.counts.info",
+      "translated": "Инфо",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.findings.empty",
+      "translated": "Замечаний нет.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.title",
+      "translated": "Сборка перевода (контракт)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.desc",
+      "translated": "Изолированный вывод в указанную вами папку (не в дерево исходников — guard бэкенда отклонит). Язык папки: {locale}.",
+      "placeholders": [
+        "locale"
+      ]
+    },
+    {
+      "id": "contractops.export.outdir",
+      "translated": "Папка вывода",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.run",
+      "translated": "Собрать и записать",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.done",
+      "translated": "Записано и перепроверено сканером.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.files",
+      "translated": "Файлов",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.reparsed",
+      "translated": "Ключей перепарсено",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.export.skipped",
+      "translated": "Пропущены неизвестные типы ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "contractops.diagnose.title",
+      "translated": "Диагностика (контракт)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.desc",
+      "translated": "Санитизированный бандл по последней неуспешной операции: id операции, причина, затронутые записи. Папка — вне дерева исходников.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.outdir",
+      "translated": "Папка бандла",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.run",
+      "translated": "Собрать бандл",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.done",
+      "translated": "Бандл собран.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.operation",
+      "translated": "Операция",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.redacted",
+      "translated": "Санитизировано",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.diagnose.excluded",
+      "translated": "Исключено",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_hint",
+      "translated": "Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_example",
+      "translated": "например /Users/you/RimLoc-Export/Мод-Russian",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_example_bundle",
+      "translated": "например /Users/you/RimLoc-Bundles/Мод",
+      "placeholders": []
+    },
+    {
+      "id": "livebadge.label",
+      "translated": "Живой проект (контракт)",
+      "placeholders": []
+    },
+    {
+      "id": "livebadge.title",
+      "translated": "Открыт реальный проект через контракт RimLocClient → Tauri: данные не демо-фикстуры, правки сохраняются в управляемый проект.",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.title",
+      "translated": "RimLoc Demo",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.mark",
+      "translated": "синтетический демо-проект",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.desc",
+      "translated": "Встроенный образец: Keyed, DefInjected, TKey, плейсхолдеры, конфликт глоссария, очередь проверки и несколько языков. Игровые папки не задействованы.",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.open",
+      "translated": "Открыть демо-проект",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.again",
+      "translated": "Открыть демо заново",
+      "placeholders": []
+    },
+    {
+      "id": "home.demo.reset",
+      "translated": "Сбросить демо к началу",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.title",
+      "translated": "Моды не найдены",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.desc",
+      "translated": "RimLoc не видит мода для перевода. Начните со встроенного демо, укажите папку или настройте установку игры.",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.demo",
+      "translated": "Попробовать демо-проект",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.folder",
+      "translated": "Выбрать папку",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.note",
+      "translated": "Выбор папки в этой сборке — мок: диалога ОС ещё нет. Он появится вместе с живым бэкендом после фриза.",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.configure",
+      "translated": "Настроить установку",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.later",
+      "translated": "Не сейчас",
+      "placeholders": []
+    },
+    {
+      "id": "home.nomods.laterDesc",
+      "translated": "Вернуться к обычному экрану Home.",
+      "placeholders": []
+    },
+    {
+      "id": "theme.label",
+      "translated": "Тема",
+      "placeholders": []
+    },
+    {
+      "id": "theme.light",
+      "translated": "Светлая",
+      "placeholders": []
+    },
+    {
+      "id": "theme.dark",
+      "translated": "Тёмная",
+      "placeholders": []
+    },
+    {
+      "id": "theme.system",
+      "translated": "Системная",
+      "placeholders": []
+    },
+    {
+      "id": "lang.label",
+      "translated": "Язык интерфейса",
+      "placeholders": []
+    },
+    {
+      "id": "nav.home",
+      "translated": "На главную",
+      "placeholders": []
+    },
+    {
+      "id": "nav.settings",
+      "translated": "Настройки",
+      "placeholders": []
+    },
+    {
+      "id": "nav.help",
+      "translated": "Справка",
+      "placeholders": []
+    },
+    {
+      "id": "home.title",
+      "translated": "RimLoc — переводы модов RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "home.lead",
+      "translated": "Переводите моды RimWorld с памятью переводов, глоссарием и проверкой плейсхолдеров.",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryNew.title",
+      "translated": "Новый перевод",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryNew.description",
+      "translated": "Мод, базовая игра, DLC или языковой пакет",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryExisting.title",
+      "translated": "Открыть существующий перевод",
+      "placeholders": []
+    },
+    {
+      "id": "home.entryExisting.description",
+      "translated": "Продолжите работу над проектом перевода",
+      "placeholders": []
+    },
+    {
+      "id": "home.hint",
+      "translated": "Не знаете, с чего начать? Начните с «Новый перевод» — остальное подставится само.",
+      "placeholders": []
+    },
+    {
+      "id": "home.secondaryBase",
+      "translated": "Базовая игра / DLC",
+      "placeholders": []
+    },
+    {
+      "id": "home.secondaryHelp",
+      "translated": "Справка",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.title",
+      "translated": "Недавние проекты",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.progress",
+      "translated": "Прогресс перевода",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.modified",
+      "translated": "Изменён",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.sourceChanged",
+      "translated": "источник изменился: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.recent.issues",
+      "translated": "проблем: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.state.loading",
+      "translated": "Загрузка…",
+      "placeholders": []
+    },
+    {
+      "id": "home.state.error",
+      "translated": "Не удалось открыть список проектов. Проверьте доступ и попробуйте ещё раз.",
+      "placeholders": []
+    },
+    {
+      "id": "header.project",
+      "translated": "Проект",
+      "placeholders": []
+    },
+    {
+      "id": "header.locale",
+      "translated": "Локаль",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.title",
+      "translated": "Быстрый перевод",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.stepOf",
+      "translated": "Шаг {step} из {total}",
+      "placeholders": [
+        "step",
+        "total"
+      ]
+    },
+    {
+      "id": "wizard.w1.title",
+      "translated": "Что хотите перевести?",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.desc",
+      "translated": "Обычный путь — мод из мастерской.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.mod",
+      "translated": "Мод RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.modDesc",
+      "translated": "Перевод папки мода из игры или мастерской",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.base",
+      "translated": "Базовая игра",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.dlc",
+      "translated": "DLC",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w1.pack",
+      "translated": "Языковой пакет",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.title",
+      "translated": "Выберите контент",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.mod",
+      "translated": "Найденные моды",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.base",
+      "translated": "Найденные установки игры",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.dlc",
+      "translated": "Выберите установку игры, затем отметьте DLC для перевода",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.subtitle.pack",
+      "translated": "Найденные языковые пакеты",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.folder",
+      "translated": "Выбрать папку…",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.drop",
+      "translated": "или перетащите папку мода сюда",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.author",
+      "translated": "автор",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.defs",
+      "translated": "записей",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.installation",
+      "translated": "Установка игры",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.dlc.selected",
+      "translated": "отмечено: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "wizard.w2.dlc.needOne",
+      "translated": "Отметьте хотя бы один установленный DLC",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.dlc.notInstalled",
+      "translated": "не установлен",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.mapping",
+      "translated": "Соответствие языков",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.origin.official",
+      "translated": "Официальный пакет",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.origin.community",
+      "translated": "Пакет сообщества",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.entries",
+      "translated": "{count} записей",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "wizard.w2.pack.from",
+      "translated": "Источник",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.pack.to",
+      "translated": "Переводить на",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.selected.summary",
+      "translated": "Выбрано: {name}",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "wizard.w3.title",
+      "translated": "Языки проекта",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.source",
+      "translated": "Источник",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.autoDetected",
+      "translated": "определён автоматически",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.target",
+      "translated": "Перевод на",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w3.note",
+      "translated": "Это языки проекта — не языка интерфейса.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.title",
+      "translated": "Стратегия перевода",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.desc",
+      "translated": "Стратегия из двух частей: что уже есть — и чем перевести остаток.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.title",
+      "translated": "Использовать существующие знания",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.translation",
+      "translated": "Существующий перевод",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.translationDesc",
+      "translated": "Готовые тексты из чужого пакета или прошлой версии",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.tm",
+      "translated": "Translation Memory",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.tmDesc",
+      "translated": "Совпадения из памяти переводов проекта",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.glossary",
+      "translated": "Глоссарий",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.existing.glossaryDesc",
+      "translated": "Термины подставляются и проверяются на выходе",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.title",
+      "translated": "Перевести оставшееся",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.manual",
+      "translated": "Вручную",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.manualDesc",
+      "translated": "Пишете сами в редакторе; подсказки остаются",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.ai",
+      "translated": "Integrated AI",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.aiDesc",
+      "translated": "Черновики через подключённого провайдера, затем проверка",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.chat",
+      "translated": "Через чат с ИИ — без API",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.chatDesc",
+      "translated": "Батчи в ChatGPT/Claude/GLM: скопировать и импортировать",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.skip",
+      "translated": "Оставить непереведённым",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.remaining.skipDesc",
+      "translated": "Записи ждут в редакторе — вернётесь позже",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.editNote",
+      "translated": "Любую запись можно отредактировать вручную позже.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.changeable",
+      "translated": "Стратегию можно изменить и после создания проекта.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.chatNote",
+      "translated": "RimLoc готовит текст и контекст; вы отправляете его в свой чат и возвращаете ответ — без API-ключа.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality",
+      "translated": "Режим качества",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.fast",
+      "translated": "Быстрый черновик",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.balanced",
+      "translated": "Сбалансированный",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.max",
+      "translated": "Максимальное качество",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.quality.suggest",
+      "translated": "Только подсказки",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w4.cost",
+      "translated": "AI-прогон стоит токены: оценка покажется перед запуском, без подтверждения списаний не будет.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.title",
+      "translated": "Проверка перед запуском",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.entries",
+      "translated": "Переводимых записей",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.reusable",
+      "translated": "Переиспользуется из TM",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.need",
+      "translated": "Нужно перевести",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.skipped",
+      "translated": "Останется непереведённым",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.attention",
+      "translated": "Требуют внимания",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w5.note",
+      "translated": "Всё, что может стоить денег или переписать работу, показано здесь — до запуска.",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.title",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.scan",
+      "translated": "Сканирование файлов",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.tm",
+      "translated": "Подбор из TM и глоссария",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.ai",
+      "translated": "Перевод (AI)",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.phase.validate",
+      "translated": "Валидация",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w6.processed",
+      "translated": "Обработано {done} из {total}",
+      "placeholders": [
+        "done",
+        "total"
+      ]
+    },
+    {
+      "id": "wizard.w6.paused",
+      "translated": "Пауза",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.title",
+      "translated": "Перевод завершён",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.validated",
+      "translated": "Проверено",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.review",
+      "translated": "На проверку",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.errors",
+      "translated": "Ошибки",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.reviewProblems",
+      "translated": "Проверить проблемы",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.openEditor",
+      "translated": "Открыть редактор",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.openChat",
+      "translated": "Открыть чат-батчи",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.build",
+      "translated": "Собрать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w7.note",
+      "translated": "Результат черновик: у каждой записи видно происхождение и статус проверки.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.title",
+      "translated": "Редактор перевода",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.closeProject",
+      "translated": "Закрыть проект",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.meta.version",
+      "translated": "RimWorld 1.6",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.search.label",
+      "translated": "Поиск по источнику и переводу",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.search.placeholder",
+      "translated": "Поиск по источнику и переводу",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.status",
+      "translated": "Статус",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.source",
+      "translated": "Источник",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.target",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.col.changed",
+      "translated": "Изменён источник",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.changed.yes",
+      "translated": "Источник изменился с последнего перевода",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.untranslated",
+      "translated": "Не переведено",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.translated",
+      "translated": "Переведено",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.todo",
+      "translated": "TODO",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.sourceChanged",
+      "translated": "Источник изменён",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.pendingReview",
+      "translated": "На проверке",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.pending_review",
+      "translated": "На проверке",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.orphan",
+      "translated": "Осиротевшие",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filter.label",
+      "translated": "Фильтр",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.loading",
+      "translated": "Загрузка записей…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.empty.title",
+      "translated": "Модуль не выбран",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.empty.desc",
+      "translated": "Выберите категорию слева, чтобы увидеть записи.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.state.error",
+      "translated": "Не удалось загрузить записи проекта. Проверьте файл проекта и попробуйте ещё раз.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.noResults.title",
+      "translated": "Ничего не найдено",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.noResults.desc",
+      "translated": "Под текущие фильтры и поиск не попала ни одна запись.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.columnName",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.saving",
+      "translated": "Сохраняется…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.saved",
+      "translated": "Сохранено",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.draft",
+      "translated": "Черновик",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.editor.hint",
+      "translated": "Enter — сохранить · Esc — отменить · Tab — к следующей непереведённой",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.editor",
+      "translated": "Редактор",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.review",
+      "translated": "Проверка",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.glossary",
+      "translated": "Глоссарий",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.tm",
+      "translated": "Память переводов",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tab.project",
+      "translated": "Проект",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.tabs.label",
+      "translated": "Разделы проекта",
+      "placeholders": []
+    },
+    {
+      "id": "stage.label",
+      "translated": "Этап: ",
+      "placeholders": []
+    },
+    {
+      "id": "stage.translate",
+      "translated": "Перевести",
+      "placeholders": []
+    },
+    {
+      "id": "stage.review",
+      "translated": "Проверить",
+      "placeholders": []
+    },
+    {
+      "id": "stage.validate",
+      "translated": "Валидация",
+      "placeholders": []
+    },
+    {
+      "id": "stage.build",
+      "translated": "Собрать",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.cta.reviewIssues",
+      "translated": "Проверить проблемы ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "workspace.cta.build",
+      "translated": "Собрать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.title",
+      "translated": "Записи",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.all",
+      "translated": "Все записи",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.status",
+      "translated": "Статус",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.navigator.advanced",
+      "translated": "Структура (advanced)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.title",
+      "translated": "Фильтры",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.status",
+      "translated": "Статус",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.kind",
+      "translated": "Тип записи",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin",
+      "translated": "Происхождение",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.any",
+      "translated": "Любое",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.human",
+      "translated": "Человек",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.TM",
+      "translated": "Память переводов",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.LLM",
+      "translated": "Модель",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.origin.imported",
+      "translated": "Импорт",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.clear",
+      "translated": "Сбросить фильтры",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.done",
+      "translated": "Готово",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.filters.button",
+      "translated": "Все фильтры",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.label",
+      "translated": "Язык перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.source",
+      "translated": "Источник",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.search",
+      "translated": "Поиск языков",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.add",
+      "translated": "Добавить язык перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.switcher.manage",
+      "translated": "Управление языками",
+      "placeholders": []
+    },
+    {
+      "id": "languages.pinned.label",
+      "translated": "Закреплённые языки перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.title",
+      "translated": "Языки проекта",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.targets",
+      "translated": "Языки перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.progress",
+      "translated": "Прогресс",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.issues",
+      "translated": "Проблемы",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.modified",
+      "translated": "Изменён",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addedVia",
+      "translated": "Добавлен",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.open",
+      "translated": "Открыть",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.pin",
+      "translated": "Закрепить",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.unpin",
+      "translated": "Открепить",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.compare",
+      "translated": "Сравнить",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.compareStub",
+      "translated": "Сравнение бок о бок появится на этапе compare (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.import",
+      "translated": "Импорт",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.importDone",
+      "translated": "Тексты пакета импортированы как черновики.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.export",
+      "translated": "Экспорт",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.exportStub",
+      "translated": "Экспорт появится вместе со сборкой перевода (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.sourceNote",
+      "translated": "Язык источника — база проекта, его нельзя убрать.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detach",
+      "translated": "Отсоединить",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detachTitle",
+      "translated": "Отсоединить «{name}»?",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "languages.manager.detachDesc",
+      "translated": "Из проекта будет удалён перевод на этот язык: {count} переведённых записей. Текст источника останется нетронутым.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "languages.manager.detachLast",
+      "translated": "У проекта должен остаться хотя бы один язык перевода.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detachKeep",
+      "translated": "Оставить",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.detachConfirm",
+      "translated": "Отсоединить",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.deleteCustomTitle",
+      "translated": "Удалить язык «{name}»?",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "languages.manager.deleteCustomDesc",
+      "translated": "Определение языка и все его данные будут удалены навсегда. Это нельзя отменить.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.deleteCustomConfirm",
+      "translated": "Удалить навсегда",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addTitle",
+      "translated": "Добавить язык перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addLanguage",
+      "translated": "Язык",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addFlow",
+      "translated": "Начать с",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.empty",
+      "translated": "Пустой",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.emptyDesc",
+      "translated": "Без готовых переводов — переводчик начинает с нуля",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.pack",
+      "translated": "Из языкового пакета",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.packDesc",
+      "translated": "Тексты официального пакета или сообщества как импортированные черновики",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.tm",
+      "translated": "Из памяти переводов",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.tmDesc",
+      "translated": "Совпадения из TM, где они есть",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.import",
+      "translated": "Импорт существующего перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.flow.importDesc",
+      "translated": "Файлы существующего проекта перевода",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addConfirm",
+      "translated": "Добавить язык",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.alreadyTarget",
+      "translated": "Уже добавлен",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createTitle",
+      "translated": "Создать свой язык",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createOpen",
+      "translated": "Создать свой язык…",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createName",
+      "translated": "Название (англ.)",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createNative",
+      "translated": "Нативное название",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createId",
+      "translated": "Код локали",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createIdHint",
+      "translated": "Буквы и дефисы, например tok, xh-ZA",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createAdvanced",
+      "translated": "Дополнительно",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createFolder",
+      "translated": "Папка RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createScript",
+      "translated": "Письмо",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createDirection",
+      "translated": "Направление текста",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.createSubmit",
+      "translated": "Создать язык",
+      "placeholders": []
+    },
+    {
+      "id": "languages.create.error.invalidId",
+      "translated": "Код локали: буквы, цифры и дефисы (например tok, xh-ZA).",
+      "placeholders": []
+    },
+    {
+      "id": "languages.create.error.duplicate",
+      "translated": "Такая локаль уже есть.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.create.error.badName",
+      "translated": "Введите название.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.wizard",
+      "translated": "Создан вместе с проектом",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.import",
+      "translated": "Импорт",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.pack",
+      "translated": "Языковой пакет",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.tm",
+      "translated": "Память переводов",
+      "placeholders": []
+    },
+    {
+      "id": "languages.via.empty",
+      "translated": "Пустой старт",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.title",
+      "translated": "Возможности",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.wordinfo",
+      "translated": "WordInfo",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.morphology",
+      "translated": "Морфология",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.available",
+      "translated": "есть",
+      "placeholders": []
+    },
+    {
+      "id": "languages.caps.unavailable",
+      "translated": "нет",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.latin",
+      "translated": "Латиница",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.cyrillic",
+      "translated": "Кириллица",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.cjk",
+      "translated": "CJK",
+      "placeholders": []
+    },
+    {
+      "id": "languages.script.unknown",
+      "translated": "Другое",
+      "placeholders": []
+    },
+    {
+      "id": "languages.direction.ltr",
+      "translated": "Слева направо",
+      "placeholders": []
+    },
+    {
+      "id": "languages.direction.rtl",
+      "translated": "Справа налево",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.switchTarget",
+      "translated": "Сменить язык перевода: {name}",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "workspace.detail.label",
+      "translated": "Панель записи",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.context",
+      "translated": "Контекст",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.suggestions",
+      "translated": "Подсказки",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.validation",
+      "translated": "Проверка",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.history",
+      "translated": "История",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.usages",
+      "translated": "Где встречается",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.sourcePrev",
+      "translated": "Прежний источник",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.advanced",
+      "translated": "Технические детали",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.file",
+      "translated": "Файл",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.line",
+      "translated": "Строка",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy",
+      "translated": "Стратегия",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy.bare",
+      "translated": "Текстовый узел",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy.slateRef",
+      "translated": ".slateRef",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.strategy.valueSlateRef",
+      "translated": ".value.slateRef",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin",
+      "translated": "Происхождение",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.human",
+      "translated": "Человек",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.TM",
+      "translated": "Память переводов",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.LLM",
+      "translated": "Модель",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.origin.imported",
+      "translated": "Импорт",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.edited",
+      "translated": "Изменено",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.note",
+      "translated": "Заметка переводчика",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.notePlaceholder",
+      "translated": "Заметка о спорном месте…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.markTranslated",
+      "translated": "Отметить как переведено",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.markReview",
+      "translated": "На проверку",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.noSelection",
+      "translated": "Выберите строку в таблице, чтобы увидеть контекст.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.noContexts",
+      "translated": "Дополнительных контекстов нет.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.nodes",
+      "translated": "Мульти-контексты",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.nodeSource",
+      "translated": "Узел",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.sibling",
+      "translated": "Рядом",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.validation.pass",
+      "translated": "Валидация: замечаний нет",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.validation.fail",
+      "translated": "Валидация: требует внимания",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.validation.na",
+      "translated": "Валидация: не применимо",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.tm",
+      "translated": "Совпадение TM",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.glossary",
+      "translated": "Глоссарий",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.ai",
+      "translated": "Подсказка модели",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.similarity",
+      "translated": "Совпадение {n}%",
+      "placeholders": [
+        "n"
+      ]
+    },
+    {
+      "id": "suggestion.term",
+      "translated": "термин",
+      "placeholders": []
+    },
+    {
+      "id": "suggestion.applied",
+      "translated": "Применено",
+      "placeholders": []
+    },
+    {
+      "id": "validation.empty",
+      "translated": "Замечаний нет",
+      "placeholders": []
+    },
+    {
+      "id": "validation.severity.error",
+      "translated": "Ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "validation.severity.warning",
+      "translated": "Предупреждение",
+      "placeholders": []
+    },
+    {
+      "id": "issue.placeholder_mismatch",
+      "translated": "Несовпадение плейсхолдеров",
+      "placeholders": []
+    },
+    {
+      "id": "issue.glossary",
+      "translated": "Глоссарий",
+      "placeholders": []
+    },
+    {
+      "id": "issue.untranslated_suspect",
+      "translated": "Подозрительный untranslated",
+      "placeholders": []
+    },
+    {
+      "id": "issue.wordinfo",
+      "translated": "WordInfo",
+      "placeholders": []
+    },
+    {
+      "id": "issue.ambiguity",
+      "translated": "Неоднозначный источник",
+      "placeholders": []
+    },
+    {
+      "id": "issue.ai_concern",
+      "translated": "Замечание AI-ревью",
+      "placeholders": []
+    },
+    {
+      "id": "history.created",
+      "translated": "Создано",
+      "placeholders": []
+    },
+    {
+      "id": "history.edited",
+      "translated": "Правка человеком",
+      "placeholders": []
+    },
+    {
+      "id": "history.tm_match",
+      "translated": "Из памяти переводов",
+      "placeholders": []
+    },
+    {
+      "id": "history.ai_draft",
+      "translated": "Черновик AI",
+      "placeholders": []
+    },
+    {
+      "id": "history.imported",
+      "translated": "Импорт",
+      "placeholders": []
+    },
+    {
+      "id": "history.source_changed",
+      "translated": "Изменён источник",
+      "placeholders": []
+    },
+    {
+      "id": "history.marked_review",
+      "translated": "Отправлено на проверку",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.title",
+      "translated": "О проекте",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.languages",
+      "translated": "Языки",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.version",
+      "translated": "Версия RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.entries",
+      "translated": "Записей всего",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.progress",
+      "translated": "Прогресс",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contentKind",
+      "translated": "Мод (Steam Workshop)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.targets",
+      "translated": "языки перевода",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.active",
+      "translated": "активный",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceLocation",
+      "translated": "Источник (мод)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.outputLocation",
+      "translated": "Сборка перевода",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.health",
+      "translated": "Состояние перевода",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.health.progress",
+      "translated": "Прогресс: {name}",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "workspace.project.health.issues",
+      "translated": "Проблем к разбору: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "workspace.project.sourceUpdate",
+      "translated": "Обновления источника",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceUpdate.needsRescan",
+      "translated": "Источник мог измениться — нужно пересканирование",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceUpdate.scanning",
+      "translated": "Пересканирование…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.sourceUpdate.upToDate",
+      "translated": "Источник актуален",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.rescan",
+      "translated": "Пересканировать",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.reviewChanges",
+      "translated": "Разобрать изменения ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "workspace.project.tools",
+      "translated": "Специальные инструменты",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.danger",
+      "translated": "Опасная зона",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.dangerNote",
+      "translated": "Эти действия меняют проект целиком. Каждое спрашивает подтверждение дважды.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.reset",
+      "translated": "Сбросить прогресс перевода",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.resetDesc",
+      "translated": "Возвращает каждую запись в исходное состояние.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.resetConfirm",
+      "translated": "Сбросить ВЕСЬ прогресс этого проекта?",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.resetYes",
+      "translated": "Да, сбросить всё",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archive",
+      "translated": "Архивировать проект",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archiveDesc",
+      "translated": "Скрывает проект из списков; история сохраняется.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archiveConfirm",
+      "translated": "Архивировать этот проект?",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archiveYes",
+      "translated": "Да, в архив",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.archivedBanner",
+      "translated": "Проект в архиве (мок). Больше в этой сборке ничего не меняется.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.restore",
+      "translated": "Вернуть из архива",
+      "placeholders": []
+    },
+    {
+      "id": "review.title",
+      "translated": "Проверка",
+      "placeholders": []
+    },
+    {
+      "id": "review.needsReview",
+      "translated": "На проверке",
+      "placeholders": []
+    },
+    {
+      "id": "review.errors",
+      "translated": "Ошибки",
+      "placeholders": []
+    },
+    {
+      "id": "review.sourceChanged",
+      "translated": "Изменён источник",
+      "placeholders": []
+    },
+    {
+      "id": "review.glossaryConflicts",
+      "translated": "Конфликты глоссария",
+      "placeholders": []
+    },
+    {
+      "id": "review.categories",
+      "translated": "Категории проблем",
+      "placeholders": []
+    },
+    {
+      "id": "review.categories.all",
+      "translated": "Все проблемы",
+      "placeholders": []
+    },
+    {
+      "id": "review.scope",
+      "translated": "Счётчики — по всему проекту; очередь показывает проблемы записей, загруженных в этой сессии.",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue",
+      "translated": "Очередь проблем",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue.empty.title",
+      "translated": "Очередь пуста",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue.empty.desc",
+      "translated": "В этой сессии проблем не осталось. Можно собирать перевод.",
+      "placeholders": []
+    },
+    {
+      "id": "review.resolvedNote",
+      "translated": "Решено в этой сессии: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "review.context.label",
+      "translated": "Контекст записи",
+      "placeholders": []
+    },
+    {
+      "id": "review.context.noDetails",
+      "translated": "Проверьте запись перед сборкой.",
+      "placeholders": []
+    },
+    {
+      "id": "review.context.untranslated",
+      "translated": "Ещё не переведено",
+      "placeholders": []
+    },
+    {
+      "id": "review.fix",
+      "translated": "Исправить",
+      "placeholders": []
+    },
+    {
+      "id": "review.fix.hint",
+      "translated": "Исправленный перевод",
+      "placeholders": []
+    },
+    {
+      "id": "review.fix.save",
+      "translated": "Сохранить исправление",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore",
+      "translated": "Игнорировать с причиной",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore.reason",
+      "translated": "Почему игнорируем?",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore.placeholder",
+      "translated": "например: здесь намеренно, движок сам склеивает имя",
+      "placeholders": []
+    },
+    {
+      "id": "review.ignore.confirm",
+      "translated": "Игнорировать",
+      "placeholders": []
+    },
+    {
+      "id": "review.markReviewed",
+      "translated": "Отметить проверенной",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.title",
+      "translated": "Глоссарий",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.term",
+      "translated": "Термин",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.translation",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.note",
+      "translated": "Редактор глоссария и проверка терминов — фаза 2 спринта G4.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.title",
+      "translated": "Память переводов",
+      "placeholders": []
+    },
+    {
+      "id": "tm.source",
+      "translated": "Источник",
+      "placeholders": []
+    },
+    {
+      "id": "tm.target",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "tm.from",
+      "translated": "Откуда",
+      "placeholders": []
+    },
+    {
+      "id": "tm.match",
+      "translated": "Совпадение",
+      "placeholders": []
+    },
+    {
+      "id": "tm.note",
+      "translated": "Просмотр и импорт памяти переводов — фаза 2 спринта G4.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.subtitle",
+      "translated": "Связки «термин → перевод»: подставляются в подсказки и проверяются на выходе.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.search",
+      "translated": "Поиск по термину, переводу и заметке",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.add",
+      "translated": "Добавить термин",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.addTitle",
+      "translated": "Новый термин",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.editTitle",
+      "translated": "Правка термина",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.notes",
+      "translated": "Заметка",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.notesPlaceholder",
+      "translated": "Когда применять, чего избегать…",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.pair",
+      "translated": "Языковая пара",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope",
+      "translated": "Область",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope.all",
+      "translated": "Все",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope.project",
+      "translated": "Проект",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.scope.user",
+      "translated": "Личная",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.variants",
+      "translated": "Варианты",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.variantsPlaceholder",
+      "translated": "Другие написания источника через запятую",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.caseSensitive",
+      "translated": "Учитывать регистр",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.import",
+      "translated": "Импорт",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.export",
+      "translated": "Экспорт",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.importExportDone",
+      "translated": "Готово (мок): формат CSV, ничего на диск не пишется.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.conflicts",
+      "translated": "Конфликты: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "glossary.ed.conflictGroup",
+      "translated": "«{term}» заявлен несколькими терминами",
+      "placeholders": [
+        "term"
+      ]
+    },
+    {
+      "id": "glossary.ed.conflictNote",
+      "translated": "Оставьте один вариант или разведите области — проверка глоссария требует однозначности.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.empty",
+      "translated": "Ничего не найдено. Измените поиск или добавьте первый термин.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.deleteConfirm",
+      "translated": "Точно?",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.ed.count",
+      "translated": "Терминов: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "tm.ed.subtitle",
+      "translated": "Память переводов: готовые пары для подстановки. Совпадения показывают, насколько пара близка источнику.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.search",
+      "translated": "Поиск по источнику, переводу и проекту",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.origin",
+      "translated": "Происхождение",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.duplicates",
+      "translated": "Дубликаты",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.duplicateTag",
+      "translated": "дубликат",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.apply",
+      "translated": "Применить",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.applied",
+      "translated": "Применено",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.ioDone",
+      "translated": "Готово (мок): формат TMX, ничего на диск не пишется.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.empty",
+      "translated": "В памяти переводов пусто. Импортируйте пакет или переведите первые записи.",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.count",
+      "translated": "Записей: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "tm.ed.editTitle",
+      "translated": "Правка записи памяти",
+      "placeholders": []
+    },
+    {
+      "id": "tm.ed.virtualNote",
+      "translated": "Мок содержит 14 строк; в реальном проекте записи идут на десятки тысяч — таблица будет виртуализованной, как таблица редактора.",
+      "placeholders": []
+    },
+    {
+      "id": "kind.Keyed",
+      "translated": "Keyed",
+      "placeholders": []
+    },
+    {
+      "id": "kind.DefInjected",
+      "translated": "DefInjected",
+      "placeholders": []
+    },
+    {
+      "id": "kind.TKey",
+      "translated": "TKey",
+      "placeholders": []
+    },
+    {
+      "id": "build.title",
+      "translated": "Сборка перевода",
+      "placeholders": []
+    },
+    {
+      "id": "build.coverage",
+      "translated": "Покрытие перевода",
+      "placeholders": []
+    },
+    {
+      "id": "build.coverage.value",
+      "translated": "{done} из {total} записей переведено",
+      "placeholders": [
+        "done",
+        "total"
+      ]
+    },
+    {
+      "id": "build.validation",
+      "translated": "Валидация",
+      "placeholders": []
+    },
+    {
+      "id": "build.validation.value",
+      "translated": "{count} записей требуют внимания",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "build.dest",
+      "translated": "Куда сохранить",
+      "placeholders": []
+    },
+    {
+      "id": "build.button",
+      "translated": "Собрать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "build.building",
+      "translated": "Собираем…",
+      "placeholders": []
+    },
+    {
+      "id": "build.buildingNote",
+      "translated": "Собираем записи, пишем XML, проверяем пакет…",
+      "placeholders": []
+    },
+    {
+      "id": "build.warnings",
+      "translated": "Известные предупреждения",
+      "placeholders": []
+    },
+    {
+      "id": "build.warnings.none",
+      "translated": "Известных предупреждений нет",
+      "placeholders": []
+    },
+    {
+      "id": "build.warnings.review",
+      "translated": "Проверить проблемы",
+      "placeholders": []
+    },
+    {
+      "id": "build.success",
+      "translated": "Перевод собран",
+      "placeholders": []
+    },
+    {
+      "id": "build.output",
+      "translated": "Результат",
+      "placeholders": []
+    },
+    {
+      "id": "build.openFolder",
+      "translated": "Открыть папку",
+      "placeholders": []
+    },
+    {
+      "id": "build.openedNote",
+      "translated": "Папка открыта: {path}",
+      "placeholders": [
+        "path"
+      ]
+    },
+    {
+      "id": "build.install",
+      "translated": "Установить перевод",
+      "placeholders": []
+    },
+    {
+      "id": "build.installingNote",
+      "translated": "Копируем в папку Mods игры…",
+      "placeholders": []
+    },
+    {
+      "id": "build.installed",
+      "translated": "Установлено",
+      "placeholders": []
+    },
+    {
+      "id": "build.installedNote",
+      "translated": "Скопировано в папку Mods игры — включите перевод в списке модов перед запуском.",
+      "placeholders": []
+    },
+    {
+      "id": "build.retest",
+      "translated": "Проверить ещё раз",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced",
+      "translated": "Подробности",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.keys",
+      "translated": "Записей записано",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.files",
+      "translated": "Файлов записано",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.gameVersion",
+      "translated": "Версия RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.time",
+      "translated": "Время сборки",
+      "placeholders": []
+    },
+    {
+      "id": "build.advanced.pkg",
+      "translated": "Идентификатор пакета",
+      "placeholders": []
+    },
+    {
+      "id": "build.note",
+      "translated": "Пока перевод не установлен, ничего не пишется за пределами папки вывода.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.title",
+      "translated": "Открыть или обновить существующий перевод",
+      "placeholders": []
+    },
+    {
+      "id": "existing.desc",
+      "translated": "Выберите мод и уже готовый языковой пакет. RimLoc сравнит его с текущей версией мода.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.mod",
+      "translated": "Мод-источник",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack",
+      "translated": "Существующий языковой пакет",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack.none",
+      "translated": "Рядом с этим модом языковых пакетов не найдено.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack.origin.community",
+      "translated": "сообщество",
+      "placeholders": []
+    },
+    {
+      "id": "existing.pack.origin.mod-author",
+      "translated": "от автора мода",
+      "placeholders": []
+    },
+    {
+      "id": "existing.analyze",
+      "translated": "Проанализировать",
+      "placeholders": []
+    },
+    {
+      "id": "existing.analyzing",
+      "translated": "Сравниваем пакет с текущей версией мода…",
+      "placeholders": []
+    },
+    {
+      "id": "existing.result.title",
+      "translated": "Что уже закрыто пакетом",
+      "placeholders": []
+    },
+    {
+      "id": "existing.reusable",
+      "translated": "Переиспользуется",
+      "placeholders": []
+    },
+    {
+      "id": "existing.sourceChanged",
+      "translated": "Источник изменился",
+      "placeholders": []
+    },
+    {
+      "id": "existing.new",
+      "translated": "Новые",
+      "placeholders": []
+    },
+    {
+      "id": "existing.obsolete",
+      "translated": "Устаревшие",
+      "placeholders": []
+    },
+    {
+      "id": "existing.invalid",
+      "translated": "Битые / осиротевшие",
+      "placeholders": []
+    },
+    {
+      "id": "existing.ambiguous",
+      "translated": "Неоднозначные",
+      "placeholders": []
+    },
+    {
+      "id": "existing.safety",
+      "translated": "Готовая работа сохраняется: устаревшие и битые записи остаются на месте, пока вы их не разберёте — автоматически ничего не удаляется.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.reviewChanges",
+      "translated": "Проверить изменения",
+      "placeholders": []
+    },
+    {
+      "id": "existing.continueTranslation",
+      "translated": "Продолжить перевод",
+      "placeholders": []
+    },
+    {
+      "id": "existing.back",
+      "translated": "Выбрать другое",
+      "placeholders": []
+    },
+    {
+      "id": "existing.note",
+      "translated": "Мок-поток: числа анализа демонстрируют проект реального масштаба.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.title",
+      "translated": "Настройки",
+      "placeholders": []
+    },
+    {
+      "id": "settings.nav.label",
+      "translated": "Разделы настроек",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.general",
+      "translated": "Общие",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.rimworld",
+      "translated": "RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.translation",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.ai",
+      "translated": "AI",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.editor",
+      "translated": "Редактор",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.appearance",
+      "translated": "Внешний вид",
+      "placeholders": []
+    },
+    {
+      "id": "settings.section.advanced",
+      "translated": "Дополнительно и диагностика",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.desc",
+      "translated": "Язык интерфейса и поведение приложения.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.language",
+      "translated": "Язык интерфейса",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.startup",
+      "translated": "При запуске",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.startup.last",
+      "translated": "Открывать последний проект",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.startup.home",
+      "translated": "Начинать с домашнего экрана",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates",
+      "translated": "Обновления",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates.auto",
+      "translated": "Проверять обновления автоматически",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates.check",
+      "translated": "Проверить сейчас",
+      "placeholders": []
+    },
+    {
+      "id": "settings.general.updates.ok",
+      "translated": "У вас последняя версия (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.desc",
+      "translated": "Где RimLoc ищет игру и моды.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.installs",
+      "translated": "Установки игры",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.primary",
+      "translated": "основная",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.rescan",
+      "translated": "Пересканировать",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.found",
+      "translated": "Найдено: 2 установки · 143 мода (мок)",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.version",
+      "translated": "Целевая версия RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.autodetect",
+      "translated": "Находить установки автоматически",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.workshop",
+      "translated": "Папка Workshop",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.rimsort",
+      "translated": "Интеграция с RimSort",
+      "placeholders": []
+    },
+    {
+      "id": "settings.rimworld.rimsortNote",
+      "translated": "Планируется: передача проектов в RimSort. В этой сборке недоступно.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.desc",
+      "translated": "Дефолты для новых проектов и прогонов перевода.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.pair",
+      "translated": "Языковая пара проекта по умолчанию",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.source",
+      "translated": "Источник",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.target",
+      "translated": "Цель",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.pairNote",
+      "translated": "Это языки проекта, а не интерфейса.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.autosave",
+      "translated": "Автосохранение правок",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.tmFirst",
+      "translated": "Сначала заполнять из памяти переводов",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.markAI",
+      "translated": "Помечать черновики AI на проверку",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.glossary",
+      "translated": "Термины глоссария",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.glossary.suggest",
+      "translated": "Предлагать",
+      "placeholders": []
+    },
+    {
+      "id": "settings.translation.glossary.enforce",
+      "translated": "Проверять жёстко",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.desc",
+      "translated": "Провайдеры, качество и цена AI.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.summary",
+      "translated": "{connected} подключён · {unconfigured} не настроен · {offline} офлайн",
+      "placeholders": [
+        "connected",
+        "offline",
+        "unconfigured"
+      ]
+    },
+    {
+      "id": "settings.ai.manage",
+      "translated": "Открыть менеджер провайдеров",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality",
+      "translated": "Режим качества по умолчанию",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.fast",
+      "translated": "Быстрее и дешевле; больше записей уйдёт на проверку.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.balanced",
+      "translated": "Разумный дефолт: меньше проверок, умеренная цена.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.max",
+      "translated": "Медленно и дорого; меньше всего проверок.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.quality.desc.suggest",
+      "translated": "Без автоправок — AI только предлагает в редакторе.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.privacy",
+      "translated": "Приватность: облачные провайдеры получают переводимый текст. Пока провайдер не настроен, ничего не отправляется.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.ai.cost",
+      "translated": "Стоимость: перед платным прогоном всегда показывается оценка, списание — только с вашего подтверждения.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.desc",
+      "translated": "Как ведёт себя таблица редактирования.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.fontSize",
+      "translated": "Размер шрифта редактора",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.size.small",
+      "translated": "Мелкий",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.size.medium",
+      "translated": "Средний",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.size.large",
+      "translated": "Крупный",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.wrap",
+      "translated": "Переносить длинные строки",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.density",
+      "translated": "Плотность строк",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.densityNote",
+      "translated": "Дублируется на странице «Внешний вид».",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.shortcuts",
+      "translated": "Горячие клавиши",
+      "placeholders": []
+    },
+    {
+      "id": "settings.editor.shortcutsMore",
+      "translated": "Полный список — в справке.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.desc",
+      "translated": "Тема, визуальное направление и отклик.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.theme",
+      "translated": "Тема",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.style",
+      "translated": "Визуальное направление",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.palette",
+      "translated": "Акцентная палитра",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.density",
+      "translated": "Плотность",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion",
+      "translated": "Анимация",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion.system",
+      "translated": "Как в системе",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion.full",
+      "translated": "Полная",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.motion.reduced",
+      "translated": "Уменьшенная",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.sounds",
+      "translated": "Звуки",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.soundsNote",
+      "translated": "Только значимые события: прогон завершён, найдены проблемы, сборка готова. По умолчанию выключено.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.appearance.sysnotify",
+      "translated": "Системные уведомления для долгих задач",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.desc",
+      "translated": "Диагностика, журналы и поверхность разработчика. Экспериментальное и внутреннее — только здесь.",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.logs",
+      "translated": "Журналы",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.openLogs",
+      "translated": "Открыть папку журналов",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.logsDone",
+      "translated": "Папка журналов готова (мок): ~/RimLoc/logs",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.diagnostics",
+      "translated": "Диагностика",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.runDiag",
+      "translated": "Запустить диагностику",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.rules",
+      "translated": "Знания и правила",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.viewRules",
+      "translated": "Посмотреть правила",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.rulePlaceholders",
+      "translated": "плейсхолдеры сохраняются как есть",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.ruleGlossary",
+      "translated": "приоритет терминам глоссария",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.ruleTone",
+      "translated": "Тональность: нейтральный игровой UI",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.config",
+      "translated": "Конфигурация",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.export",
+      "translated": "Экспортировать конфиг",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.exported",
+      "translated": "Конфигурация экспортирована (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.import",
+      "translated": "Импортировать конфиг",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.imported",
+      "translated": "Конфигурация импортирована (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.dev",
+      "translated": "Опции разработчика",
+      "placeholders": []
+    },
+    {
+      "id": "settings.advanced.mocks",
+      "translated": "Эта сборка работает на мок-адаптерах: ноль вызовов бэкенда (мандат §31).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.title",
+      "translated": "Менеджер AI-провайдеров",
+      "placeholders": []
+    },
+    {
+      "id": "providers.subtitle",
+      "translated": "Подключите модель для черновиков AI — или работайте полностью офлайн: без провайдера перевод, память, проверка и сборка работают как есть.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.zai",
+      "translated": "Z.AI / OpenAI-совместимый",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.openai",
+      "translated": "OpenAI-совместимый",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.anthropic",
+      "translated": "Anthropic",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.ollama",
+      "translated": "Ollama / локально",
+      "placeholders": []
+    },
+    {
+      "id": "providers.example.custom",
+      "translated": "Свой OpenAI-совместимый",
+      "placeholders": []
+    },
+    {
+      "id": "provider.zai.desc",
+      "translated": "Модели GLM через Z.AI API (OpenAI-совместимый).",
+      "placeholders": []
+    },
+    {
+      "id": "provider.openai.desc",
+      "translated": "Любой OpenAI-совместимый эндпоинт.",
+      "placeholders": []
+    },
+    {
+      "id": "provider.anthropic.desc",
+      "translated": "Модели Claude через Anthropic API.",
+      "placeholders": []
+    },
+    {
+      "id": "provider.ollama.desc",
+      "translated": "Локальные модели через Ollama на этой машине.",
+      "placeholders": []
+    },
+    {
+      "id": "provider.custom.desc",
+      "translated": "Свой эндпоинт с OpenAI-совместимым API.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.connected",
+      "translated": "Подключён",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.not_configured",
+      "translated": "Не настроен",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.offline",
+      "translated": "Офлайн",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.testing",
+      "translated": "Проверяем…",
+      "placeholders": []
+    },
+    {
+      "id": "providers.model",
+      "translated": "Модель",
+      "placeholders": []
+    },
+    {
+      "id": "providers.baseUrl",
+      "translated": "Base URL",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.configure",
+      "translated": "Настроить",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.test",
+      "translated": "Проверить связь",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.changeModel",
+      "translated": "Сменить модель",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.save",
+      "translated": "Сохранить",
+      "placeholders": []
+    },
+    {
+      "id": "providers.key.hint",
+      "translated": "Ключ хранится в системном keychain — никогда не показывается, только заменяется.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.key.replace",
+      "translated": "Заменить ключ",
+      "placeholders": []
+    },
+    {
+      "id": "providers.key.none",
+      "translated": "Ключа пока нет",
+      "placeholders": []
+    },
+    {
+      "id": "providers.privacy.cloud",
+      "translated": "Приватность: переводимый текст уходит на серверы провайдера.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.privacy.local",
+      "translated": "Приватность: всё считается на этой машине — наружу не уходит ничего.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.cost.warn",
+      "translated": "Стоимость: прогоны AI расходуют платные токены. RimLoc показывает оценку и спрашивает до любого списания.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.offline.hint",
+      "translated": "Сервис недоступен. Запустите Ollama или проверьте порт.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.test.keySaved",
+      "translated": "Ключ сохранён в keychain (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.test.modelSet",
+      "translated": "Модель изменена.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.test.ok",
+      "translated": "Связь есть (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.zero",
+      "translated": "Zero-API: AI — усиление, а не зависимость.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.templates.title",
+      "translated": "Шаблоны провайдеров",
+      "placeholders": []
+    },
+    {
+      "id": "providers.instances.title",
+      "translated": "Настроенные провайдеры",
+      "placeholders": []
+    },
+    {
+      "id": "providers.instances.empty",
+      "translated": "Пока ни одного настроенного провайдера — выберите шаблон ниже.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.add",
+      "translated": "Добавить провайдера",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.copyOf",
+      "translated": "{name} — копия",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "providers.inst.default",
+      "translated": "по умолчанию",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.makeDefault",
+      "translated": "Сделать основным",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.enabled",
+      "translated": "Включён",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.disabled",
+      "translated": "Выключен",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.disabledHint",
+      "translated": "Выключен: не участвует в прогонах, настройки сохранены.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.model",
+      "translated": "Модель",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.edit",
+      "translated": "Изменить",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.rename",
+      "translated": "Переименовать",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.duplicate",
+      "translated": "Дублировать",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.export",
+      "translated": "Экспортировать",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.done",
+      "translated": "Экспортировано (мок): JSON без секретов — поля ключа отсутствуют целиком.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.cred.shared",
+      "translated": "общая ссылка keychain",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.cred.sharedHint",
+      "translated": "Ссылается на тот же keychain-ключ, что и оригинал — сам секрет не копировался.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.cred.missing",
+      "translated": "нужен ключ",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.title",
+      "translated": "Дублировать «{name}»",
+      "placeholders": [
+        "name"
+      ]
+    },
+    {
+      "id": "providers.duplicate.note",
+      "translated": "Копируется только не-секретная конфигурация (имя, base URL, модель, протокол). Решите, что делать с ключом:",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.reuse",
+      "translated": "Переиспользовать ссылку keychain (общий)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.needs",
+      "translated": "Без ключа (нужен ключ)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.reuseUnavailable",
+      "translated": "У оригинала ещё нет ссылки keychain — сначала сохраните ключ.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.local",
+      "translated": "Дублировать (локальный, без ключа)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.localNote",
+      "translated": "Копируется только не-секретная конфигурация. Сервис локальный — ключ не участвует.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.localFlash",
+      "translated": "Скопировано: локальный провайдер без ключа (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.sharedFlash",
+      "translated": "Скопировано: используется общий keychain-ключ с оригиналом (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.duplicate.missingFlash",
+      "translated": "Скопировано: нужен свой ключ (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.unavailable",
+      "translated": "Буфер обмена недоступен в этом окружении — скопируйте JSON ниже вручную (мок-экспорт).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.denied",
+      "translated": "Запись в буфер обмена отклонена — скопируйте JSON ниже вручную (мок-экспорт).",
+      "placeholders": []
+    },
+    {
+      "id": "providers.export.fallbackNote",
+      "translated": "Конфигурация провайдера (без секретов):",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.removeConfirm",
+      "translated": "Удалить?",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.removeWarn",
+      "translated": "Повторное нажатие удаляет провайдера. Ключ в keychain не трогается.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.key",
+      "translated": "Ключ",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.addTitle",
+      "translated": "Новый провайдер",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.editTitle",
+      "translated": "Настройка провайдера",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.name",
+      "translated": "Название",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.family",
+      "translated": "Семейство протокола",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth",
+      "translated": "Метод доступа",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth.keychain",
+      "translated": "Ключ в keychain",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth.none",
+      "translated": "Без ключа (локальный)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.auth.noneHint",
+      "translated": "Локальные сервисы ключа не требуют; облачным нужен ключ.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.discovery",
+      "translated": "Обнаружение моделей",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.discovery.auto",
+      "translated": "Список с сервера",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.discovery.manual",
+      "translated": "Вручную",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.modelPlaceholder",
+      "translated": "Например my-model-7b",
+      "placeholders": []
+    },
+    {
+      "id": "providers.form.add",
+      "translated": "Добавить",
+      "placeholders": []
+    },
+    {
+      "id": "providers.action.saved",
+      "translated": "Изменения сохранены (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "chat.title",
+      "translated": "Чат-батчи",
+      "placeholders": []
+    },
+    {
+      "id": "chat.subtitle",
+      "translated": "Перевод через веб-чат без API-ключа: скопируйте батч, вставьте в свой чат, верните ответ обратно.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.project.pair",
+      "translated": "{source} → {target}",
+      "placeholders": [
+        "source",
+        "target"
+      ]
+    },
+    {
+      "id": "chat.progress",
+      "translated": "{done}/{total} принято, {review} на проверку",
+      "placeholders": [
+        "done",
+        "review",
+        "total"
+      ]
+    },
+    {
+      "id": "chat.summary.label",
+      "translated": "Перед копированием",
+      "placeholders": []
+    },
+    {
+      "id": "chat.summary.entries",
+      "translated": "Записей: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.summary.tokens",
+      "translated": "~{n}k токенов — оценка",
+      "placeholders": [
+        "n"
+      ]
+    },
+    {
+      "id": "chat.summary.recommended",
+      "translated": "Рекомендуется",
+      "placeholders": []
+    },
+    {
+      "id": "chat.copyNext",
+      "translated": "Скопировать следующий батч",
+      "placeholders": []
+    },
+    {
+      "id": "chat.allCopied",
+      "translated": "Все батчи скопированы. Дождитесь ответов и импортируйте их.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.list.label",
+      "translated": "Батчи",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.not_started",
+      "translated": "Не начат",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.exported",
+      "translated": "Скопирован",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.waiting",
+      "translated": "Ждёт ответа",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.imported",
+      "translated": "Ответ получен",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.partial",
+      "translated": "Частично",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.needs_review",
+      "translated": "На проверке",
+      "placeholders": []
+    },
+    {
+      "id": "chat.status.done",
+      "translated": "Готов",
+      "placeholders": []
+    },
+    {
+      "id": "chat.counts.accepted",
+      "translated": "принято: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.counts.problems",
+      "translated": "с проблемами: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.counts.stale",
+      "translated": "устарело: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.counts.skipped",
+      "translated": "пропущено: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.copy",
+      "translated": "Скопировать",
+      "placeholders": []
+    },
+    {
+      "id": "chat.copyAgain",
+      "translated": "Скопировать снова",
+      "placeholders": []
+    },
+    {
+      "id": "chat.copyRemainder",
+      "translated": "Скопировать остаток ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.markWaiting",
+      "translated": "Ждёт ответа",
+      "placeholders": []
+    },
+    {
+      "id": "chat.import",
+      "translated": "Импортировать ответ",
+      "placeholders": []
+    },
+    {
+      "id": "chat.preview.title",
+      "translated": "Превью применения",
+      "placeholders": []
+    },
+    {
+      "id": "chat.preview.ready",
+      "translated": "{count} готово",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.preview.problems",
+      "translated": "{count} с проблемами",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.preview.stale",
+      "translated": "{count} устарело",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.preview.skipped",
+      "translated": "{count} пропущено",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.apply",
+      "translated": "Применить {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.reviewN",
+      "translated": "Проверить {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.split.action",
+      "translated": "Разделить и повторить",
+      "placeholders": []
+    },
+    {
+      "id": "chat.split.preserved",
+      "translated": "{count} принятых сохранены",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "chat.sizing.title",
+      "translated": "Размер батча",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.auto",
+      "translated": "Авто",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.autoHint",
+      "translated": "RimLoc подбирает размер по объёму записей и лимитам чата",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.small",
+      "translated": "Малый",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.medium",
+      "translated": "Средний",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.large",
+      "translated": "Крупный",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.advanced",
+      "translated": "Дополнительно",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.entries",
+      "translated": "Записей в батче",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.entriesHint",
+      "translated": "Меньше записей — проще проверить и повторить при сбое",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.tokenBudget",
+      "translated": "Бюджет токенов",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.tokenBudgetHint",
+      "translated": "Если оценка выше бюджета, батч делится на два",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.outputTokens",
+      "translated": "Максимум токенов ответа",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.outputTokensHint",
+      "translated": "Чаты обрезают длинные ответы — лимит держит ответ целиком",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.characters",
+      "translated": "Максимум символов",
+      "placeholders": []
+    },
+    {
+      "id": "chat.sizing.charactersHint",
+      "translated": "Верхняя граница объёма текста одного батча",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.title",
+      "translated": "Чат-профиль",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.desc",
+      "translated": "Дефолты поведения для конкретного чата. Ключей и секретов здесь нет.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.generic",
+      "translated": "Универсальный",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.genericDesc",
+      "translated": "Без особенностей: стандартный промпт и сквозная нумерация.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.chatgpt",
+      "translated": "ChatGPT",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.chatgptDesc",
+      "translated": "Один блок кода на ответ; повторный запрос продолжает нумерацию.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.claude",
+      "translated": "Claude",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.claudeDesc",
+      "translated": "XML-теги вокруг записей; хорошо держит длинный контекст.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.gemini",
+      "translated": "Gemini",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.geminiDesc",
+      "translated": "Лучше работает с меньшими батчами — до 40 записей.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.glm",
+      "translated": "GLM",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.glmDesc",
+      "translated": "Для русского стабильнее держит терминологию глоссария.",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.custom",
+      "translated": "Свой",
+      "placeholders": []
+    },
+    {
+      "id": "chat.profile.customDesc",
+      "translated": "Свои правила поведения — настраиваются под ваш чат.",
+      "placeholders": []
+    },
+    {
+      "id": "help.title",
+      "translated": "Справка",
+      "placeholders": []
+    },
+    {
+      "id": "help.subtitle",
+      "translated": "Быстрый старт, горячие клавиши и диагностика, результат которой понятен и человеку, и AI.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.title",
+      "translated": "Быстрый старт",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s1",
+      "translated": "На домашнем экране выберите «Новый перевод».",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s2",
+      "translated": "Мастер найдёт моды и подставит языки.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s3",
+      "translated": "Переводите: память заполнит что может, AI подготовит черновики.",
+      "placeholders": []
+    },
+    {
+      "id": "help.quickstart.s4",
+      "translated": "Разберите помеченные записи и соберите перевод.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.title",
+      "translated": "Как устроен редактор",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.step",
+      "translated": "Подсказка {step} из {total}",
+      "placeholders": [
+        "step",
+        "total"
+      ]
+    },
+    {
+      "id": "onboarding.skip",
+      "translated": "Пропустить подсказки",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.next",
+      "translated": "Далее",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.finish",
+      "translated": "Начать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s1.title",
+      "translated": "Выберите запись",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s1.text",
+      "translated": "Нажмите на строку в таблице — она откроется в панели справа.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s2.title",
+      "translated": "Редактируйте или принимайте подсказку",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s2.text",
+      "translated": "Введите свой перевод или возьмите вариант из памяти переводов и от ИИ.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s3.title",
+      "translated": "Отфильтруйте, что требует работы",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s3.text",
+      "translated": "Статусы и поиск сужают список до того, что ещё ждёт вас.",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s4.title",
+      "translated": "Проверьте и соберите",
+      "placeholders": []
+    },
+    {
+      "id": "onboarding.s4.text",
+      "translated": "Когда записи готовы — прогоните проверку и соберите файлы перевода.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d1.title",
+      "translated": "Откройте демо-проект",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d1.text",
+      "translated": "Встроенное демо — синтетические данные RimLoc: Keyed, DefInjected, TKey, очередь проверки и несколько языков. Игровые папки не задействованы.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d1.action",
+      "translated": "Открыть демо-проект",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d2.title",
+      "translated": "Выберите строку",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d2.text",
+      "translated": "Строки — записи мода. Возьмите подсвеченную TODO-запись «ConfirmBanish» — она ещё ждёт решения.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d2.action",
+      "translated": "Выбрать строку",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d3.title",
+      "translated": "Впишите и сохраните перевод",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d3.text",
+      "translated": "Панель записи — рабочее место. Это действие вводит настоящий перевод — с сохранённым {PAWN_nameDef} — и сохраняет его через редакторский путь.",
+      "placeholders": [
+        "PAWN_nameDef"
+      ]
+    },
+    {
+      "id": "tour.d3.action",
+      "translated": "Вписать перевод и сохранить",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d4.title",
+      "translated": "Контекст, подсказки, история",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d4.text",
+      "translated": "Вкладка КОНТЕКСТ показывает, где строка живёт в игре; рядом — подсказки, проверка и история происхождения.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d5.title",
+      "translated": "Одна намеренная ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d5.text",
+      "translated": "Запись keyed-06 несёт подставленную ошибку: в переводе потеряны плейсхолдеры источника. Пометено как placeholder mismatch.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d5.action",
+      "translated": "Открыть проверку",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d6.title",
+      "translated": "Почините ошибку по-настоящему",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d6.text",
+      "translated": "Это инлайн-правка проверки: возвращает оба плейсхолдера и сохраняет через общий стор проекта — очередь реально сокращается.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d6.action",
+      "translated": "Починить плейсхолдеры",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d7.title",
+      "translated": "Проверка перед сборкой",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d7.text",
+      "translated": "Кнопка в шапке следует за жизненным циклом: пока очередь не пуста — предлагает разбор; чистую очередь открывает сборку. В демо остались открытые проблемы, поэтому сборка здесь — синтетическая демонстрация.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d7.action",
+      "translated": "К демо-сборке",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d8.title",
+      "translated": "Соберите демо-перевод",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d8.text",
+      "translated": "Демо-сборка синтетическая и локальная — в игровые папки ничего не пишется. Действие нажимает настоящую кнопку «Собрать перевод».",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d8.action",
+      "translated": "Собрать демо-перевод",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.title",
+      "translated": "Ваш первый перевод готов",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.text",
+      "translated": "Вы отредактировали запись, починили намеренную ошибку и запустили синтетическую демо-сборку — это весь цикл: источник на входе, проверенные файлы на выходе. Демо сбрасывается с Home.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.honest.title",
+      "translated": "Тур пройден — но не всё сделано",
+      "placeholders": []
+    },
+    {
+      "id": "tour.d9.honest.text",
+      "translated": "Результата демо-сборки не заявляем: пропущены шаги — {list}. Вернитесь назад и выполните их — или завершите тур без статуса «перевод готов».",
+      "placeholders": [
+        "list"
+      ]
+    },
+    {
+      "id": "tour.missing.d3",
+      "translated": "не сохранена правка записи",
+      "placeholders": []
+    },
+    {
+      "id": "tour.missing.d6",
+      "translated": "не починена намеренная ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "tour.missing.d8",
+      "translated": "не запущена демо-сборка",
+      "placeholders": []
+    },
+    {
+      "id": "tour.honestNote",
+      "translated": "Честный режим: этот экран не заявляет успех, которого не было.",
+      "placeholders": []
+    },
+    {
+      "id": "tour.actionFailed",
+      "translated": "Не получилось: действие недоступно для текущего состояния. Откройте демо-проект (шаг 1) и повторите.",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.title",
+      "translated": "Повторить подсказки",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.desc",
+      "translated": "Короткий коуч из 4 шагов, который показывается при первом входе в редактор.",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.action",
+      "translated": "Показать подсказки в редакторе",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.demoTour",
+      "translated": "Демо-тур с действиями",
+      "placeholders": []
+    },
+    {
+      "id": "help.replay.demoTourDesc",
+      "translated": "Проход по всему циклу со стрелкой-подсказкой на реальных контролах демо-проекта: открыть, выбрать и отредактировать строку, разобрать намеренную ошибку, проверить и собрать (синтетически).",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.title",
+      "translated": "Горячие клавиши",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.palette",
+      "translated": "Палитра команд",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.save",
+      "translated": "Сохранить правку",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.cancel",
+      "translated": "Отменить правку",
+      "placeholders": []
+    },
+    {
+      "id": "help.shortcuts.next",
+      "translated": "Следующая непереведённая",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.title",
+      "translated": "Документация",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.desc",
+      "translated": "Руководства и справочники (в этой сборке ссылки — мок).",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.guide",
+      "translated": "Руководство пользователя",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.cli",
+      "translated": "Справочник CLI",
+      "placeholders": []
+    },
+    {
+      "id": "help.docs.repo",
+      "translated": "Репозиторий",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.title",
+      "translated": "Устранение неполадок",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.q1",
+      "translated": "Моды не находятся",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.a1",
+      "translated": "Проверьте папку Workshop в Настройки → RimWorld и пересканируйте. Библиотека Steam вне пути по умолчанию требует ручной папки.",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.q2",
+      "translated": "Перевод AI падает или висит",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.a2",
+      "translated": "Проверьте связь с провайдером в Настройки → AI. Облаку нужен рабочий ключ; Ollama должна быть запущена локально.",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.q3",
+      "translated": "«Placeholder mismatch» — что это?",
+      "placeholders": []
+    },
+    {
+      "id": "help.trouble.a3",
+      "translated": "В переводе потерян или переименован плейсхолдер вида {0}. Откройте запись из Review и сохраните все плейсхолдеры источника.",
+      "placeholders": [
+        "0"
+      ]
+    },
+    {
+      "id": "help.diagnose.title",
+      "translated": "Диагностика проблемы",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.desc",
+      "translated": "Структурированная проверка окружения. Результат рассчитан на поддержку — человека или AI-ассистента.",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.run",
+      "translated": "Запустить диагностику",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.again",
+      "translated": "Запустить снова",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.game",
+      "translated": "Установка игры",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.mods",
+      "translated": "Папка модов Workshop",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.config",
+      "translated": "Файлы конфигурации",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.check.provider",
+      "translated": "AI-провайдеры",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.ok",
+      "translated": "OK",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.warn",
+      "translated": "Предупреждение",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.fail",
+      "translated": "Ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.done",
+      "translated": "Диагностика завершена: предупреждений — {warn}.",
+      "placeholders": [
+        "warn"
+      ]
+    },
+    {
+      "id": "help.diagnose.copy",
+      "translated": "Скопировать диагностику",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.deep",
+      "translated": "Полная диагностика…",
+      "placeholders": []
+    },
+    {
+      "id": "help.diagnose.deepNote",
+      "translated": "Повтор известного сбоя и структурированный разбор причины.",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.title",
+      "translated": "Подготовить отчёт / Скопировать для AI",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.desc",
+      "translated": "Собирает обезличенный бандл: секреты, авторизацию и игровой контент система вырезает сама, диагностический контекст остаётся. Видно ровно то, что уйдёт с машины.",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.prepare",
+      "translated": "Подготовить отчёт",
+      "placeholders": []
+    },
+    {
+      "id": "help.bugreport.copyAI",
+      "translated": "Скопировать для AI",
+      "placeholders": []
+    },
+    {
+      "id": "help.copied",
+      "translated": "Скопировано в буфер",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.title",
+      "translated": "Диагностика",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.subtitle",
+      "translated": "Учебный разбор диагностики: контролируемый демо-сбой, структурированная причина и бандл для поддержки, по которому человек — или AI — разберётся, не увидев ваших секретов.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.scenario.title",
+      "translated": "Контролируемый демо-сбой",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.scenario.desc",
+      "translated": "Демонстрация, а не реальный сбой: черновик перевода keyed-записи теряет плейсхолдер из источника, валидатор находит потерю, и конвейер собирает причину вокруг этого места. Данные проекта не изменяются.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.scenario.knownFailure",
+      "translated": "Демо-сбой: черновик для {key} теряет плейсхолдер при валидации.",
+      "placeholders": [
+        "key"
+      ]
+    },
+    {
+      "id": "diagnostics.run",
+      "translated": "Запустить диагностику",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.runAgain",
+      "translated": "Запустить снова",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.step.inventory",
+      "translated": "Чтение инвентаря источника",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.step.validate",
+      "translated": "Структурная валидация",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.step.causal",
+      "translated": "Сборка причинного контекста",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.title",
+      "translated": "Причинный контекст",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.stage",
+      "translated": "стадия",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.expected",
+      "translated": "Ожидалось",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.actual",
+      "translated": "Получено",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.affected",
+      "translated": "Затронутые записи",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.providers",
+      "translated": "Состояние провайдеров",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.providersValue",
+      "translated": "подключено {connected} · не настроено {notConfigured} · офлайн {offline}",
+      "placeholders": [
+        "connected",
+        "notConfigured",
+        "offline"
+      ]
+    },
+    {
+      "id": "diagnostics.causal.validator",
+      "translated": "Валидатор",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.version",
+      "translated": "Версия игры",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.locales",
+      "translated": "Языки",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.timing",
+      "translated": "Время операции",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.trace",
+      "translated": "Релевантный трейс",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.causal.traceNote",
+      "translated": "Шесть событий, не лог-флуд — достаточно, чтобы проследить сбой от начала до конца.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.prepare",
+      "translated": "Подготовить отчёт",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.prepareHint",
+      "translated": "Бандл обезличивается до того, как его скопируют или отправят.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.title",
+      "translated": "Бандл для поддержки (обезличен)",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.intro",
+      "translated": "Что содержит бандл. У удалённых строк стоит причина; исключённые в бандл не собирались вовсе.",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.included",
+      "translated": "Включено",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.redacted",
+      "translated": "Удалено",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.bundle.excluded",
+      "translated": "Исключено",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.copyAi",
+      "translated": "Скопировать для AI",
+      "placeholders": []
+    },
+    {
+      "id": "diagnostics.copyAiNote",
+      "translated": "Копирует компактный промпт и обезличенное содержимое: ассистент назовёт вероятную причину без ваших ключей, путей и игрового текста.",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.appVersion",
+      "translated": "Версия приложения",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.operation",
+      "translated": "Операция",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.stage",
+      "translated": "Стадия",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.error",
+      "translated": "Ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.affected",
+      "translated": "Затронутые записи",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.entrySource",
+      "translated": "Текст источника записи",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.entryDraft",
+      "translated": "Черновик перевода",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.rimworld",
+      "translated": "RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.locales",
+      "translated": "Языки",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.timing",
+      "translated": "Тайминги",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.providers",
+      "translated": "Провайдеры",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.sourceLocation",
+      "translated": "Расположение источника",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.outputLocation",
+      "translated": "Расположение сборки",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.apiKey",
+      "translated": "API-ключ провайдера",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.authHeader",
+      "translated": "Заголовок авторизации",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.token",
+      "translated": "Токен лицензии",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.envSecret",
+      "translated": "Env: ключ провайдера",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.envLocale",
+      "translated": "Env: язык",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.keychain",
+      "translated": "Ссылка Keychain",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.signing",
+      "translated": "Подпись сборки",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.fullLog",
+      "translated": "Полный лог приложения",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.database",
+      "translated": "База проекта",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.item.screenshots",
+      "translated": "Скриншоты",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.apiKey",
+      "translated": "API-ключ",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.authHeader",
+      "translated": "Заголовок авторизации",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.token",
+      "translated": "Токен",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.envSecret",
+      "translated": "Секрет в переменной окружения",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.keychain",
+      "translated": "Данные Keychain",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.signing",
+      "translated": "Подпись сборки",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.sensitiveField",
+      "translated": "Чувствительное поле",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.thirdParty",
+      "translated": "Чужой игровой контент",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.homePath",
+      "translated": "Домашний путь сокращён до ~",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.too-large",
+      "translated": "Слишком большой, для этого сбоя не нужен",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.bulk-user-content",
+      "translated": "Массовый пользовательский контент",
+      "placeholders": []
+    },
+    {
+      "id": "bundle.reason.third-party-visuals",
+      "translated": "Чужие визуальные материалы",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.col.command",
+      "translated": "Команда",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.col.combo",
+      "translated": "Сочетание",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.col.actions",
+      "translated": "Действия",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.save",
+      "translated": "Сохранить правку",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.undo",
+      "translated": "Отменить правку",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.search",
+      "translated": "Поиск по записям",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.palette",
+      "translated": "Палитра команд",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.cancel",
+      "translated": "Отменить (Esc)",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.nextUntranslated",
+      "translated": "Следующая непереведённая",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.nextIssue",
+      "translated": "Следующая проблема",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.prevIssue",
+      "translated": "Предыдущая проблема",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.markReviewed",
+      "translated": "Отметить проверенной",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.change",
+      "translated": "Изменить",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.listening",
+      "translated": "Нажмите сочетание…",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.issue.rimlocConflict",
+      "translated": "Конфликт команд RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.issue.systemReserved",
+      "translated": "системное сочетание",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.issue.convention",
+      "translated": "перекрывает общепринятое сочетание",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.blocked",
+      "translated": "Не сохранено: это сочетание уже занято другой командой RimLoc.",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.warnReserved",
+      "translated": "Сочетаний, зарезервированных системой: {count} — сохранены, но система может их перехватывать.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "shortcuts.infoConvention",
+      "translated": "Сочетаний, перекрывающих общепринятые: {count} — сохранены как кастомизация.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "shortcuts.platform.mac",
+      "translated": "Модификатор на macOS — ⌘ Cmd.",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.platform.other",
+      "translated": "Модификатор на Windows и Linux — Ctrl.",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.platform.hint",
+      "translated": "Назначенное сочетание подхватится в редакторе (мок).",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.resetAll",
+      "translated": "Вернуть все по умолчанию",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.label",
+      "translated": "Происхождение",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.user-created",
+      "translated": "Создано пользователем",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.project-created",
+      "translated": "Создано проектом",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.imported",
+      "translated": "Импортировано",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.reference-read-only",
+      "translated": "Справочник (только чтение)",
+      "placeholders": []
+    },
+    {
+      "id": "mutability.readOnlyReason",
+      "translated": "Справочные корпуса — только чтение: привязка не должна деструктивно менять справочный материал. Скопируйте запись, чтобы править.",
+      "placeholders": []
+    },
+    {
+      "id": "about.title",
+      "translated": "О программе",
+      "placeholders": []
+    },
+    {
+      "id": "about.tagline",
+      "translated": "RimLoc — рабочее место локализации RimWorld: память переводов, глоссарий, проверка плейсхолдеров и сборка. AI — усиление, а не чёрный ящик.",
+      "placeholders": []
+    },
+    {
+      "id": "about.version",
+      "translated": "Версия",
+      "placeholders": []
+    },
+    {
+      "id": "about.maintainer",
+      "translated": "Автор и ведущий",
+      "placeholders": []
+    },
+    {
+      "id": "about.maintainerRole",
+      "translated": "founder · lead maintainer",
+      "placeholders": []
+    },
+    {
+      "id": "about.repo",
+      "translated": "Репозиторий",
+      "placeholders": []
+    },
+    {
+      "id": "about.license",
+      "translated": "Лицензия",
+      "placeholders": []
+    },
+    {
+      "id": "about.notices",
+      "translated": "Сторонние компоненты",
+      "placeholders": []
+    },
+    {
+      "id": "about.noticesNote",
+      "translated": "Шрифты бандлятся в приложение и распространяются по SIL OFL 1.1. Полный список — в файле THIRD-PARTY-NOTICES репозитория.",
+      "placeholders": []
+    },
+    {
+      "id": "palette.placeholder",
+      "translated": "Введите команду…",
+      "placeholders": []
+    },
+    {
+      "id": "palette.noResults",
+      "translated": "Ничего не найдено",
+      "placeholders": []
+    },
+    {
+      "id": "palette.hint",
+      "translated": "↑↓ выбор · Enter выполнить · Esc закрыть",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.translateSelected",
+      "translated": "Перевести выбранное",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.validateProject",
+      "translated": "Проверить проект",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.reviewErrors",
+      "translated": "Разобрать ошибки",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.buildTranslation",
+      "translated": "Собрать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openProject",
+      "translated": "Открыть проект",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.compareVersions",
+      "translated": "Сравнить версии",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openSettings",
+      "translated": "Открыть настройки",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.configureAI",
+      "translated": "Настроить AI",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openGlossary",
+      "translated": "Открыть глоссарий",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openTM",
+      "translated": "Открыть память переводов",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openAbout",
+      "translated": "О программе",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.runDiagnostics",
+      "translated": "Запустить диагностику",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.showShortcuts",
+      "translated": "Показать горячие клавиши",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.title",
+      "translated": "Style Lab",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style",
+      "translated": "Направление",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.precision",
+      "translated": "Precision",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.aurora",
+      "translated": "Aurora",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.workshop",
+      "translated": "Workshop",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.style.editorial",
+      "translated": "Editorial",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette",
+      "translated": "Палитра",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.indigo",
+      "translated": "Индиго",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.blue",
+      "translated": "Синяя",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.emerald",
+      "translated": "Изумрудная",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.palette.amber",
+      "translated": "Янтарная",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.density",
+      "translated": "Плотность",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.density.comfortable",
+      "translated": "Свободная",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.density.compact",
+      "translated": "Компактная",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.theme",
+      "translated": "Тема",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.remember",
+      "translated": "Показывать всегда",
+      "placeholders": []
+    },
+    {
+      "id": "stylelab.hint",
+      "translated": "Только для разработки: ?stylelab=1 включает панель.",
+      "placeholders": []
+    },
+    {
+      "id": "dev.title",
+      "translated": "Dev-панель (моки)",
+      "placeholders": []
+    },
+    {
+      "id": "dev.route",
+      "translated": "Маршрут",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode",
+      "translated": "Вид Home",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode.first-run",
+      "translated": "Первый запуск",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode.returning",
+      "translated": "Возвращение",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeMode.no-mods",
+      "translated": "Без модов",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState",
+      "translated": "Состояние Home",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState.ready",
+      "translated": "Обычное",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState.loading",
+      "translated": "Загрузка",
+      "placeholders": []
+    },
+    {
+      "id": "dev.homeState.error",
+      "translated": "Ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState",
+      "translated": "Состояние Workspace",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.ready",
+      "translated": "Обычное",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.loading",
+      "translated": "Загрузка",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.empty",
+      "translated": "Пусто",
+      "placeholders": []
+    },
+    {
+      "id": "dev.wsState.error",
+      "translated": "Ошибка",
+      "placeholders": []
+    },
+    {
+      "id": "dev.reset",
+      "translated": "Сбросить мок-данные",
+      "placeholders": []
+    },
+    {
+      "id": "dev.summary",
+      "translated": "Ноль вызовов бэкенда: все данные локальные.",
+      "placeholders": []
+    },
+    {
+      "id": "dev.scenarios",
+      "translated": "Браузер сценариев",
+      "placeholders": []
+    },
+    {
+      "id": "boot.configError.title",
+      "translated": "В этом запуске нет бэкенда",
+      "placeholders": []
+    },
+    {
+      "id": "boot.configError.hint",
+      "translated": "Запустите настольное приложение RimLoc для живого бэкенда или включите демо-режим (?dev=1 в адресной строке), чтобы смотреть синтетическое демо.",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.title",
+      "translated": "RimLoc — живой проект",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.desc",
+      "translated": "Создайте проект перевода из реальной папки мода или откройте недавний. Проект остаётся на этой машине.",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.pathPlaceholder",
+      "translated": "Путь к папке мода…",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.create",
+      "translated": "Создать проект",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.open",
+      "translated": "Открыть",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.fixtureDataset",
+      "translated": "Демо-датасет — правки не сохраняются",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.fixtureNote",
+      "translated": "Демонстрационный набор, встроенный в приложение — исследуйте свободно; он не трогает ваши моды.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.live",
+      "translated": "живой контракт",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.title",
+      "translated": "Браузер сценариев",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.hint",
+      "translated": "Только для разработки. Каждый сценарий — стабильный deep-link: URL воспроизводим в E2E и скриншотах. Сценарии используют реальные фикстуры и реальные действия сторов.",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.home",
+      "translated": "Home",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.wizard",
+      "translated": "Мастер нового перевода",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.workspace",
+      "translated": "Редактор",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.review",
+      "translated": "Проверка",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.build",
+      "translated": "Сборка",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.settings",
+      "translated": "Настройки",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.onboarding",
+      "translated": "Онбординг",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.group.diagnostics",
+      "translated": "Диагностика",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/first-run",
+      "translated": "Home — первый запуск",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/returning",
+      "translated": "Home — возвращение",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/no-mods",
+      "translated": "Home — моды не найдены",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.home/demo",
+      "translated": "Home — открыт демо-проект",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/mod",
+      "translated": "Мастер — содержимое: мод",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/base-game",
+      "translated": "Мастер — ветка базовой игры",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/dlc",
+      "translated": "Мастер — ветка DLC",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.wizard/language-pack",
+      "translated": "Мастер — ветка языкового пакета",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.workspace/standard",
+      "translated": "Редактор — стандартный режим",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.workspace/multi-target",
+      "translated": "Редактор — несколько языков (активен ja)",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.workspace/demo-tour",
+      "translated": "Редактор — идёт демо-тур",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.review/issues",
+      "translated": "Проверка — очередь проблем демо",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.build/demo",
+      "translated": "Сборка — сводка демо",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.settings/rimworld",
+      "translated": "Настройки — RimWorld",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.settings/providers",
+      "translated": "Настройки — AI-провайдеры",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.onboarding/coach",
+      "translated": "Онбординг — повтор коуча редактора",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.onboarding/demo-tour",
+      "translated": "Онбординг — повтор демо-тура",
+      "placeholders": []
+    },
+    {
+      "id": "scenarios.s.diagnostics/bundle-preview",
+      "translated": "Диагностика — превью обезличенного бандла",
+      "placeholders": []
+    },
+    {
+      "id": "status.untranslated",
+      "translated": "Не переведено",
+      "placeholders": []
+    },
+    {
+      "id": "status.translated",
+      "translated": "Переведено",
+      "placeholders": []
+    },
+    {
+      "id": "status.todo",
+      "translated": "TODO",
+      "placeholders": []
+    },
+    {
+      "id": "status.sourceChanged",
+      "translated": "Источник изменён",
+      "placeholders": []
+    },
+    {
+      "id": "status.pending_review",
+      "translated": "На проверке",
+      "placeholders": []
+    },
+    {
+      "id": "status.orphan",
+      "translated": "Осиротевшая",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.detail.tab.source",
+      "translated": "ИСТОЧНИК",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.location",
+      "translated": "Действующий источник",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.why",
+      "translated": "Почему этот источник?",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.otherUsages",
+      "translated": "Другие вхождения ({n})",
+      "placeholders": [
+        "n"
+      ]
+    },
+    {
+      "id": "source.tab.excerpt",
+      "translated": "Контекст фрагмента",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.line",
+      "translated": "Строка",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.column",
+      "translated": "колонка",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.unknownHint",
+      "translated": "Позиция не гарантирована бэкендом — не выдумываем",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.advanced",
+      "translated": "Дополнительно: ссылки на файлы",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.file",
+      "translated": "Файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.badge.effective",
+      "translated": "ДЕЙСТВУЮЩИЙ",
+      "placeholders": []
+    },
+    {
+      "id": "source.badge.shadowed",
+      "translated": "ЗАТЕНЁН",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.definition",
+      "translated": "Определение",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.version-selected",
+      "translated": "Выбор версии",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.loadfolders",
+      "translated": "Load folders",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.first-file-wins",
+      "translated": "Побеждает первый файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.keyed-last-wins",
+      "translated": "Keyed: побеждает последний",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.patch-applied",
+      "translated": "Применён патч",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.view",
+      "translated": "Открыть",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.open",
+      "translated": "Открыть источник",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.reveal",
+      "translated": "Показать в Finder",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.editor",
+      "translated": "Открыть в редакторе",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.copy",
+      "translated": "Копировать локацию",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.candidates",
+      "translated": "Кандидаты",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.compare",
+      "translated": "Сравнить",
+      "placeholders": []
+    },
+    {
+      "id": "source.action.wouldReveal",
+      "translated": "Демо: Finder показал бы «{path}»",
+      "placeholders": [
+        "path"
+      ]
+    },
+    {
+      "id": "source.action.wouldLaunch",
+      "translated": "Демо: редактор запустился бы с этим argv — ничего не запускалось.",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.location",
+      "translated": "Локация",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.line",
+      "translated": "Строка",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.argv",
+      "translated": "argv редактора",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.copied",
+      "translated": "Скопировано в буфер обмена.",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.fallback",
+      "translated": "Буфер недоступен — скопируйте вручную ниже.",
+      "placeholders": []
+    },
+    {
+      "id": "source.copy.fallbackCard",
+      "translated": "Запись в буфер отклонена — скопируйте текст вручную:",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.defName",
+      "translated": "defName",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.field",
+      "translated": "Поле",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.sibling",
+      "translated": "Соседний узел",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.folder",
+      "translated": "Папка",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.label",
+      "translated": ".label",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.defType",
+      "translated": "Тип дефа",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.usages",
+      "translated": "Вхождения",
+      "placeholders": []
+    },
+    {
+      "id": "source.excerpt.shadowed",
+      "translated": "Затенённый двойник",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.kind.effective",
+      "translated": "действующий файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.kind.original",
+      "translated": "исходный файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.kind.generated",
+      "translated": "сгенерированный вывод",
+      "placeholders": []
+    },
+    {
+      "id": "source.file.linesNotGuaranteed",
+      "translated": "номера строк не гарантированы",
+      "placeholders": []
+    },
+    {
+      "id": "source.scenario.label",
+      "translated": "Демо-сценарий",
+      "placeholders": []
+    },
+    {
+      "id": "source.scenario.hint",
+      "translated": "Только демо-фикстуры — реальные данные придут с live-биндингом.",
+      "placeholders": []
+    },
+    {
+      "id": "source.empty.noData",
+      "translated": "В этом демо-сценарии нет данных источника для «{id}».",
+      "placeholders": [
+        "id"
+      ]
+    },
+    {
+      "id": "source.empty.covered",
+      "translated": "Покрытые демо-записи: {ids}",
+      "placeholders": [
+        "ids"
+      ]
+    },
+    {
+      "id": "source.palette.noSelection",
+      "translated": "Сначала выберите запись в Workspace.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.title",
+      "translated": "Внешний редактор",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.system",
+      "translated": "Системный по умолчанию",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.zed",
+      "translated": "Zed",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.vscode",
+      "translated": "VS Code",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preset.custom",
+      "translated": "Свой…",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.detected",
+      "translated": "найден (демо)",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.executable",
+      "translated": "Исполняемый файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.args",
+      "translated": "Шаблон аргументов",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.argsHint",
+      "translated": "Плейсхолдеры: {path} {line} {column}. Кавычки объединяют один аргумент; пробелы и Unicode остаются литеральными. Shell не участвует.",
+      "placeholders": [
+        "column",
+        "line",
+        "path"
+      ]
+    },
+    {
+      "id": "source.editor.test",
+      "translated": "Тест (превью argv)",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.save",
+      "translated": "Сохранить",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.saved",
+      "translated": "Сохранено",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preview.template",
+      "translated": "Шаблон:",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.preview.substituted",
+      "translated": "Выполнилось бы:",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.wouldLaunch",
+      "translated": "Демо: редактор запустился бы с этим argv — ничего не запускалось.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noExecutable",
+      "translated": "Исполняемый файл не задан.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noPath",
+      "translated": "У записи нет разрешимого пути.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noLine",
+      "translated": "Номер строки для этой записи не гарантирован.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.noColumn",
+      "translated": "Номер колонки для этой записи не гарантирован.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.error.unknownPlaceholder",
+      "translated": "Неизвестный плейсхолдер в шаблоне.",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.title",
+      "translated": "Просмотр источника",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.searchPlaceholder",
+      "translated": "Поиск по файлу…",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.noMatches",
+      "translated": "нет совпадений",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.copyLine",
+      "translated": "Копировать строку",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.copyPath",
+      "translated": "Копировать путь",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.fold",
+      "translated": "Свернуть / развернуть блок",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.gotoEntry",
+      "translated": "Перейти к этой записи",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.lineUnknown",
+      "translated": "Позиция строки не гарантирована — текст показан без перехода.",
+      "placeholders": []
+    },
+    {
+      "id": "source.viewer.readOnly",
+      "translated": "Просмотр только для чтения. Правки — в вашем редакторе; вывод RimLoc пишется в свои локации.",
+      "placeholders": []
+    },
+    {
+      "id": "source.missing.title",
+      "translated": "Записанный файл источника отсутствует",
+      "placeholders": []
+    },
+    {
+      "id": "source.missing.reason",
+      "translated": "Файл перемещён, переименован или удалён после последнего скана. Пересканируйте мод, чтобы обновить локации.",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.title",
+      "translated": "Браузер источников",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.versions",
+      "translated": "Версия",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.loadFolders",
+      "translated": "Load folder",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.selectedTag",
+      "translated": "выбрана",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.candidates",
+      "translated": "Кандидаты",
+      "placeholders": []
+    },
+    {
+      "id": "source.browser.preview",
+      "translated": "Превью файла",
+      "placeholders": []
+    },
+    {
+      "id": "source.candidate.reason.activeCommon",
+      "translated": "Корень Common поставляется для всех версий — активен для выбранной.",
+      "placeholders": []
+    },
+    {
+      "id": "source.candidate.reason.shadowedVersion",
+      "translated": "Версионный корень затенён Common для выбранной версии.",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.title",
+      "translated": "Сравнение: источник ↔ перевод ↔ вывод",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.source",
+      "translated": "Источник (оригинал)",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.target",
+      "translated": "Канонический перевод",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.generated",
+      "translated": "Сгенерированный вывод",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.notTruth",
+      "translated": "Сгенерированный вывод — артефакт сборки, никогда вторая истина.",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.showFile",
+      "translated": "Показать сгенерированный файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.hideFile",
+      "translated": "Скрыть сгенерированный файл",
+      "placeholders": []
+    },
+    {
+      "id": "source.compare.openViewer",
+      "translated": "Открыть в просмотре",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.summary",
+      "translated": "Источник изменён снаружи после последнего скана.",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.rescan",
+      "translated": "Пересканировать",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.show",
+      "translated": "Показать изменения",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.ignore",
+      "translated": "Игнорировать",
+      "placeholders": []
+    },
+    {
+      "id": "source.changed.rescanDone",
+      "translated": "Демо-пересканирование завершено — баннер скрыт (файлы не тронуты).",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.openEffective",
+      "translated": "Открыть действующий источник",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.openOriginal",
+      "translated": "Открыть оригинал (затенённый)",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.reveal",
+      "translated": "Показать в Finder",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.editor",
+      "translated": "Открыть во внешнем редакторе",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.copyLocation",
+      "translated": "Копировать локацию",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.generated",
+      "translated": "Открыть сгенерированный вывод",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.wouldOpenGenerated",
+      "translated": "Демо: вывод открылся бы в просмотре — ничего не запускалось.",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.candidates",
+      "translated": "Показать кандидатов",
+      "placeholders": []
+    },
+    {
+      "id": "source.menu.compare",
+      "translated": "Сравнить с выводом",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openSourceLocation",
+      "translated": "Открыть локацию источника",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.openSourceBrowser",
+      "translated": "Обзор файлов источника",
+      "placeholders": []
+    },
+    {
+      "id": "palette.action.sourceCompare",
+      "translated": "Сравнить перевод с выводом",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.unbound",
+      "translated": "Не назначено",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.sourceOpen",
+      "translated": "Источник: открыть локацию",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.sourceBrowser",
+      "translated": "Источник: обзор файлов",
+      "placeholders": []
+    },
+    {
+      "id": "shortcuts.def.sourceCompare",
+      "translated": "Источник: сравнить с выводом",
+      "placeholders": []
+    }
+  ]
+}
