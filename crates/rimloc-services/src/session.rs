@@ -34,7 +34,7 @@ use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
 use crate::project_store::{load_project_with_meta, save_project_with_meta, ProjectEnvelopeMeta};
 use rimloc_domain::canonical::{
-    Completeness, EntryKind, Origin, Project, SourceEntry, SourceEntryId, Translation,
+    Completeness, EntryKind, Lifecycle, Origin, Project, SourceEntry, SourceEntryId, Translation,
     ValidationState,
 };
 use rimloc_domain::eligibility::{Decision, Verdict};
@@ -737,6 +737,25 @@ impl ProjectSessionManager {
             }
         }
 
+        // M4 early signal: case-colliding defNames are a WARNING here (the
+        // project still validates against its own inventory) and a hard
+        // refusal at export — the early finding lets the user fix the
+        // source defName before building anything.
+        for (def_type, name_a, name_b) in case_collision_pairs(&st.project, locale) {
+            warning_count += 1;
+            findings.push(crate::contract::ValidationFinding {
+                id: None,
+                severity: "warning".into(),
+                kind: "case-collision".into(),
+                key: format!("{name_a} / {name_b}"),
+                path: format!("DefInjected/{def_type}"),
+                line: None,
+                message: format!(
+                    "defNames `{name_a}` and `{name_b}` differ only in case: both would write into the same DefInjected file on Windows/macOS; rename one defName in the source mod"
+                ),
+            });
+        }
+
         let status = if error_count > 0 {
             "failed"
         } else {
@@ -891,6 +910,30 @@ impl ProjectSessionManager {
                 format!(
                     "cannot export: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
                     bad as u32
+                ),
+            ));
+        }
+
+        // M4 pre-write content check: defNames differing only by case within
+        // one def type materialize into the SAME output file on a
+        // case-insensitive filesystem (macOS/Windows) — the reparse guard
+        // would only catch that on such filesystems, and on a case-sensitive
+        // one the collision would ship to players. Refuse deterministically,
+        // on every filesystem, with the colliding names.
+        let collisions = case_collision_pairs(&st.project, Some(locale));
+        if !collisions.is_empty() {
+            let shown: Vec<String> = collisions
+                .iter()
+                .take(5)
+                .map(|(dt, a, b)| format!("{dt}: {a} / {b}"))
+                .collect();
+            log.error_message("write", "case-colliding defNames in export content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: defNames that differ only in case would write into the same file on Windows/macOS — rename the defName in the source mod: {}",
+                    shown.join(", ")
                 ),
             ));
         }
@@ -1093,6 +1136,71 @@ fn synthesized_unit_path(entry: &SourceEntry, locale: &str) -> String {
         // PatchDerived): still validated, in a distinct stable bucket.
         _ => format!("Languages/{locale}/_other/{}.xml", entry.id.key),
     }
+}
+
+/// DefInjected defNames that collide case-insensitively within one def
+/// type (M4): the export writer materializes ONE file per defName
+/// (`{defName}.xml`), so `Dup` and `dup` are the same file on a
+/// case-insensitive filesystem (macOS/Windows) — one translation would
+/// silently overwrite the other. Detected per (locale, def type) —
+/// colliding names across different export locales never share a file.
+/// Returns `(def_type, name_a, name_b)` with the ORIGINAL spellings.
+fn case_collision_pairs(project: &Project, locale: Option<&str>) -> Vec<(String, String, String)> {
+    use std::collections::BTreeMap;
+    // (locale, def_type, lowercase defName) -> original defName.
+    let mut seen: BTreeMap<(String, String, String), String> = BTreeMap::new();
+    // (def_type, name_a) -> name_b (first collision wins, deterministic).
+    let mut collisions: BTreeMap<(String, String), String> = BTreeMap::new();
+    for t in &project.translations {
+        if let Some(filter) = locale {
+            if t.locale != filter {
+                continue;
+            }
+        }
+        if t.lifecycle == Lifecycle::Obsolete {
+            continue;
+        }
+        let Some(text) = t.text.as_deref().filter(|s| !s.trim().is_empty()) else {
+            continue;
+        };
+        let _ = text;
+        let Some(entry) = project.entries.iter().find(|e| e.id == t.source_id) else {
+            continue;
+        };
+        if !matches!(entry.id.kind, EntryKind::TKey | EntryKind::DefInjected) {
+            continue;
+        }
+        let Some(def_type) = entry
+            .id
+            .def_type
+            .clone()
+            .or_else(|| entry.tkey.as_ref().map(|m| m.def_type.clone()))
+            .or_else(|| crate::project::def_type_from_contexts(entry))
+        else {
+            continue;
+        };
+        let Some(def_name) = entry.id.key.split('.').next().filter(|s| !s.is_empty()) else {
+            continue;
+        };
+        let slot = seen.entry((t.locale.clone(), def_type.clone(), def_name.to_lowercase()));
+        match slot {
+            std::collections::btree_map::Entry::Vacant(v) => {
+                v.insert(def_name.to_string());
+            }
+            std::collections::btree_map::Entry::Occupied(o) => {
+                let first = o.get();
+                if *first != def_name {
+                    collisions
+                        .entry((def_type.clone(), first.clone()))
+                        .or_insert_with(|| def_name.to_string());
+                }
+            }
+        }
+    }
+    collisions
+        .into_iter()
+        .map(|((def_type, a), b)| (def_type, a, b))
+        .collect()
 }
 
 /// Placeholder tokens of a text ('%s'-style and {name}/{0}).
@@ -1322,6 +1430,20 @@ mod tests {
     fn write(path: &Path, body: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();
+    }
+
+    /// Two ThingDefs whose defNames differ ONLY in case (`Dup` / `dup`) —
+    /// from two source files (defName collisions live in XML content, so
+    /// the fixture works on every filesystem).
+    fn case_collision_mod(root: &Path) {
+        write(
+            &root.join("Defs/A1.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>thing A</label></ThingDef></Defs>"#,
+        );
+        write(
+            &root.join("Defs/B1.xml"),
+            r#"<Defs><ThingDef><defName>dup</defName><label>thing B</label></ThingDef></Defs>"#,
+        );
     }
 
     fn two_types_mod(root: &Path) {
@@ -2319,5 +2441,102 @@ mod tests {
         assert!(mgr2.list().is_empty());
         // ...and a raw bytes view remains possible: the file still exists.
         assert!(path.is_file());
+    }
+
+    /// M4: defNames differing only by case (`Dup`/`dup`, same def type)
+    /// collide into ONE DefInjected output file on case-insensitive
+    /// filesystems. Export refuses deterministically on EVERY filesystem
+    /// (the old reparse guard only caught this on such a filesystem, and on
+    /// a case-sensitive one the collision shipped to players); validate
+    /// surfaces the pair early as a warning finding.
+    #[test]
+    fn export_refuses_defname_case_collisions_and_validate_warns() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        case_collision_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let res = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![
+                    set_text("Dup.label", "ThingDef", "вещь А"),
+                    set_text("dup.label", "ThingDef", "вещь Б"),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 2, "both case-distinct identities must exist");
+
+        // Validate: honest early signal — warning, does not fail the run.
+        let resp = mgr.validate_project(&snap.project_id, 1, None).unwrap();
+        let hit = resp
+            .findings
+            .iter()
+            .find(|f| f.kind == "case-collision")
+            .expect("case-collision finding expected");
+        assert_eq!(hit.severity, "warning");
+        assert_eq!(hit.path, "DefInjected/ThingDef");
+        assert!(
+            hit.message.contains("Dup") && hit.message.contains("dup"),
+            "{}",
+            hit.message
+        );
+
+        // Export: typed refusal naming both spellings — never a silent
+        // one-file overwrite, never a shipped collision.
+        let out = dir.path().join("out");
+        let err = mgr
+            .export_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+        let msg = err.to_string();
+        assert!(msg.contains("case"), "{msg}");
+        assert!(msg.contains("Dup") && msg.contains("dup"), "{msg}");
+        assert!(
+            !out.join("Languages").exists(),
+            "nothing written on refusal"
+        );
+
+        // A cross-locale pair (same spelling pair, different locales) never
+        // shares one export file — no finding when the locales differ.
+    }
+
+    /// M4 negative: the SAME defName in DIFFERENT def types is legitimate
+    /// (separate output directories) — no collision, export proceeds.
+    #[test]
+    fn same_defname_across_def_types_is_not_a_collision() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let res = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![
+                    set_text("Dup.label", "ThingDef", "вещь"),
+                    set_text("Dup.label", "AbilityDef", "способность"),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 2);
+
+        let resp = mgr.validate_project(&snap.project_id, 1, None).unwrap();
+        assert!(
+            !resp.findings.iter().any(|f| f.kind == "case-collision"),
+            "cross-def-type same-case names are not collisions"
+        );
+
+        let out = dir.path().join("out");
+        let export = mgr
+            .export_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap();
+        assert_eq!(export.files_written >= 3, true);
     }
 }

@@ -392,7 +392,9 @@ pub fn write_rimworld_translation(
     })
 }
 
-fn def_type_from_contexts(entry: &rimloc_domain::canonical::SourceEntry) -> Option<String> {
+pub(crate) fn def_type_from_contexts(
+    entry: &rimloc_domain::canonical::SourceEntry,
+) -> Option<String> {
     for c in &entry.contexts {
         let s = c.file.replace('\\', "/");
         if let Some(i) = s.find("/DefInjected/") {
