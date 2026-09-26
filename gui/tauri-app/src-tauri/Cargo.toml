@@ -16,7 +16,7 @@ tauri = { version = "2", features = [] }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 tauri-plugin-dialog = "2"
 open = "5"
-thiserror = "1"
+thiserror = "2"
 rimloc-services = { path = "../../../crates/rimloc-services" }
 rimloc-domain = { path = "../../../crates/rimloc-domain" }
 rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
