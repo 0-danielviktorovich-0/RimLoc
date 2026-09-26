@@ -1,0 +1,26 @@
+# RimLoc GUI acceptance journey, driven entirely off-screen.
+# Run: python3 -m testlab.ui_automation --config testlab/ui_automation/examples/rimloc-acceptance.yaml
+#
+# Prereq: a managed project must exist in the GUI storage so the Home screen
+# shows a recents row (seed one via crates/rimloc-services examples or open a
+# project once by hand).
+
+app:
+  binary: target/debug/rimloc-gui
+  origin: [-3000, -3000]        # where the window is parked (AppKit points)
+  move_mode: swizzle            # constrainFrameRect bypass (see gui main.rs)
+  fake: occlusion,firstmouse    # window-visibility lies for WebKit
+  settle_s: 9                   # let web fonts/layout settle before detecting
+pid_file: /tmp/rimloc-ui-automation.pid
+shots_dir: /tmp/rimloc-ui-journey
+
+steps:
+  - press: {name: Русский, timeout: 90, exact: true}   # pin the locale (step labels below are RU)
+  - shot: 01-home
+  - press: Открыть              # recents row of the managed project
+  - wait_text_rows: 12          # workspace table rendered
+  - shot: 02-workspace
+  - assert_offscreen: true
+  - press: Собрать перевод      # workspace CTA -> build screen
+  - shot: 03-build
+  - assert_offscreen: true
