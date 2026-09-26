@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-RimLoc is organised as a Cargo workspace under `crates/`. Core translation logic lives in `rimloc-core`, XML ingestion in `rimloc-parsers-xml`, and exporters/importers each have their own crate. The CLI entry point is `crates/rimloc-cli/src/main.rs`, with integration fixtures stored under `test/`. `docs/` contains the MkDocs site sources, while `gui/tauri-app` hosts the experimental desktop shell. Keep generated output in `target/` and commit only curated assets in `docs/`.
+RimLoc is organised as a Cargo workspace under `crates/`. Core translation logic lives in `rimloc-core`, XML ingestion in `rimloc-parsers-xml`, and exporters/importers each have their own crate. The CLI entry point is `crates/rimloc-cli/src/main.rs`, with integration fixtures stored under `test/`. `docs/` contains the MkDocs site sources. `gui/tauri-app` hosts the Tauri desktop client: Rust backend in `src-tauri/`, Svelte front end in `frontend-v2/` (the UI that ships — `tauri.conf.json` loads `frontend-v2/dist`), legacy v1 shell in `frontend/` (reference only, do not extend). Keep generated output in `target/` and commit only curated assets in `docs/`.
 
 ### Architecture invariants (mandatory)
 - Preserve crate boundaries and responsibilities:
@@ -15,13 +15,14 @@ RimLoc is organised as a Cargo workspace under `crates/`. Core translation logic
 - New features land in the appropriate crate (prefer `rimloc-services` for orchestration) and are exposed via the CLI; do not place core logic in the CLI.
 - Keep outputs and contracts stable (CSV/JSON/PO). For breaking JSON changes, bump `OUTPUT_SCHEMA_VERSION`, regenerate schemas via `rimloc-cli schema`, and update docs.
 - Remain platform‑neutral in shared crates; guard OS‑specific code behind features and keep it out of core logic.
+- RimWorld installations and mod folders are **read‑only inputs**: the tool reads game/mod trees but writes only to user‑requested output paths (translation output, project saves, export files). Never add a code path that writes into game sources or mod directories.
 - Avoid adding heavy dependencies or cross‑cutting frameworks without prior discussion; prefer small, focused crates.
 
 ## Build, Test, and Development Commands
 - `cargo build --workspace` builds every crate and checks cross-crate interfaces.
 - `cargo run -p rimloc-cli -- scan --root test/TestMod` exercises the CLI end-to-end during manual checks.
 - `cargo test --workspace` runs unit and integration suites; append `-- --nocapture` to inspect stdout.
-- `cargo fmt && cargo clippy --workspace --all-targets -- -D warnings` ensures formatting and lint cleanliness before review.
+- `cargo fmt && cargo clippy --workspace --all-targets --all-features -- -D warnings` ensures formatting and lint cleanliness before review.
 - `mkdocs serve` (from the `.venv`) previews the documentation site locally.
 
 ## Coding Style & Naming Conventions
@@ -34,11 +35,12 @@ Prefer unit tests alongside the code they assert. Integration tests for the CLI 
 - After any change (code or docs), run local checks before committing:
   - `cargo build --workspace`
   - `cargo test --workspace` (append `-- --nocapture` when investigating)
-  - `cargo fmt && cargo clippy --workspace --all-targets -- -D warnings`
+  - `cargo fmt && cargo clippy --workspace --all-targets --all-features -- -D warnings`
   - Commit your changes using the auto-commit workflow below; do not end a task with uncommitted edits.
 - If you touch docs under `docs/`, preview or build the site:
   - `mkdocs serve` locally from a virtualenv, or
   - `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build` to validate links.
+- If you touch `gui/tauri-app/frontend-v2/`, run `npm install` once, then `npm run check` (svelte-check) and `npm test` (Vitest). Rebuild with `npm run build` before `cargo tauri dev` — Tauri serves `frontend-v2/dist`, not the dev server.
 - If you modify i18n keys, run `cargo test --package rimloc-cli -- tests_i18n` to verify key integrity across locales.
 - If you change CLI flags or behavior, update integration tests in `crates/rimloc-cli/tests` and rerun the whole test suite.
 - Automated agents must also execute these checks and report a short summary of results back to the user.
@@ -155,6 +157,7 @@ Pull requests need a concise summary, linked issues, and instructions for valida
 
 ### Commit scope policy (mandatory)
 - Commit only files that were intentionally edited as part of the change. Do not include unrelated files.
+- Stage with an explicit pathspec (`git add <files>`, `git commit -- <files>`); never `git add -A` or `git add .` — the worktree may hold unrelated changes from other sessions.
 - Avoid drive‑by refactors, renames, and mass formatting across the repository. Keep diffs minimal and focused.
 - Run `cargo fmt` but commit only the files you actually touched for the feature/fix. If a repository‑wide reformat is necessary, submit it as a dedicated, separate PR.
 - Do not bump versions, shuffle modules, or update generated artifacts unless explicitly part of the task.
@@ -175,7 +178,7 @@ Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at b
 
 ## PR Checklist
 - Build/tests pass: `cargo build --workspace` and `cargo test --workspace`.
-- Lints clean: `cargo fmt` and `cargo clippy --workspace --all-targets -- -D warnings`.
+- Lints clean: `cargo fmt` and `cargo clippy --workspace --all-targets --all-features -- -D warnings`.
 - `CHANGELOG.md` updated under `Unreleased` for user‑facing changes.
 - I18n: EN updated, other locales synced; `tests_i18n` green.
 - Docs: EN/RU updated and `SITE_URL=… mkdocs build` succeeds for changed pages.
@@ -184,9 +187,10 @@ Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at b
 When adding or changing features:
 
 - Keep CLI and GUI in lockstep: every new CLI command or flag must be exposed in the GUI with the same semantics. Avoid introducing functionality in one surface only.
-- No hardcoded UI strings. Prefer i18n keys (see `frontend/index.js` I18N map). If you must add a new label, introduce a key in both `en` and `ru` and use `data-i18n` in HTML or `tr(key)` in JS.
+- No hardcoded UI strings. Add keys to both `en` and `ru` in `gui/tauri-app/frontend-v2/src/i18n/` (`en.ts` / `ru.ts`) and call `t(key)` from the i18n store (`store.svelte.ts`); `ru` is the default locale, fallback chain locale → `en` → key.
 - For dynamic messages, prefer composing from i18n tokens or add a dedicated key; do not inline English text.
-- If a new backend command is added, register it in Tauri `invoke_handler`, permissions (`src-tauri/permissions/allow-commands.json`) and wire a GUI panel/control for it.
+- If a new backend command is added, register it in Tauri `invoke_handler`, permissions (`src-tauri/permissions/allow-commands.json`) and wire the GUI control for it.
+- Mock/demo data lives in `frontend-v2/src/lib/mock/` and powers the bundled demo project and onboarding tour. A screen that looks like a live feature must either talk to the real backend or be explicitly gated/labeled (capability report, "not wired yet"/demo notes). Never present mock states as live functionality.
 - Aim to keep APIs ergonomic for UI: when a CLI adds a structured option group (e.g., Defs dict/schema), expose a single request struct in Tauri mirroring CLI fields so the GUI can pass-through without transforms.
 
 Review checklist for contributors:
@@ -194,6 +198,7 @@ Review checklist for contributors:
 - [ ] CLI: command + args implemented and documented
 - [ ] Backend: Tauri command mirrors CLI types and fields
 - [ ] Permissions updated, capability model unchanged unless necessary
-- [ ] GUI: controls added with `data-i18n`/`tr()` and `localStorage` persistence
+- [ ] GUI: Svelte components updated with i18n keys in both `en` and `ru`
+- [ ] Mock-backed screens are capability-gated or clearly labeled as demo
 - [ ] Logs/progress events wired to the progress panel
-- [ ] Build and run `cargo tauri dev` clean
+- [ ] Frontend checks pass: `npm run check` and `npm test` in `gui/tauri-app/frontend-v2`; `npm run build` then `cargo tauri dev` clean
