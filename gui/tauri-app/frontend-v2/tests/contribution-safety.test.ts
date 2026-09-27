@@ -386,3 +386,79 @@ describe('SF-3: contributor metadata cannot carry secrets into a READY record', 
     if (!long.ok) expect(long.errors.join(' | ')).toContain('80');
   });
 });
+
+describe('SF-4: duplicate ids are decided explicitly, never last-write-wins', () => {
+  it('SF-4: duplicate ids in bundle changes are a duplicate_id refusal even with equal values', () => {
+    const equal = parseContributionBundle(
+      freshBundle({}, [
+        { id: 'common.close', value: 'Закрыть окно', base_value: ru['common.close'] },
+        { id: 'common.close', value: 'Закрыть окно', base_value: ru['common.close'] },
+      ]),
+    );
+    expect(equal.ok).toBe(false);
+    if (!equal.ok) expect(equal.errors.join(' | ')).toContain('duplicate_id');
+
+    const conflicting = parseContributionBundle(
+      freshBundle({}, [
+        { id: 'common.close', value: 'Вариант А', base_value: ru['common.close'] },
+        { id: 'common.close', value: 'Вариант Б', base_value: ru['common.close'] },
+      ]),
+    );
+    expect(conflicting.ok).toBe(false);
+    if (!conflicting.ok) expect(conflicting.errors.join(' | ')).toContain('duplicate_id');
+  });
+
+  it('SF-4: builder collapses equal duplicates with a warning and keeps READY', () => {
+    const result = buildContribution(
+      {
+        locale: 'ru',
+        changes: [
+          { id: 'common.close', value: 'Закрыть окно' },
+          { id: 'common.close', value: 'Закрыть окно' },
+        ],
+      },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('READY');
+    expect(result.bundle!.changes).toHaveLength(1);
+    expect(result.preview).toContain('warnings: 1');
+    expect(result.preview).toContain('common.close');
+    expect(result.preview).toContain('duplicate');
+  });
+
+  it('SF-4: builder refuses conflicting duplicates with NEEDS-FIXES (no silent dedup)', () => {
+    const result = buildContribution(
+      {
+        locale: 'ru',
+        changes: [
+          { id: 'common.close', value: 'Закрыть окно' },
+          { id: 'common.close', value: 'Закрыть (другое)' },
+        ],
+      },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('NEEDS-FIXES');
+    expect(result.bundle).toBeUndefined();
+    const joined = result.issues.map((i) => `${i.ref}: ${i.reason}`).join(' | ');
+    expect(joined).toContain('duplicate_id');
+    expect(joined).toContain('common.close');
+  });
+
+  it('SF-4: pack duplicate ids reject whole with duplicate_id, equal values included', () => {
+    const dup = {
+      schema_version: '1',
+      locale: 'ja',
+      base_catalog_revision: 'a709064',
+      messages: [
+        { id: 'common.appName', value: 'リムロック' },
+        { id: 'common.appName', value: 'リムロック' },
+      ],
+    };
+    const result = validatePackObject(dup, en);
+    expect(result).toMatchObject({ ok: false, reason: 'duplicate_id' });
+  });
+});

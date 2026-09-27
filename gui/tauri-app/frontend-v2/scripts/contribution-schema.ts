@@ -260,6 +260,9 @@ export function parseContributionBundle(raw: unknown): ParseResult<ContributionB
     if (raw.changes.length > CHANGES_MAX_COUNT) {
       errors.push(`changes exceeds ${CHANGES_MAX_COUNT} entries`);
     }
+    // SF-4: one entry per id — duplicates are a structural refusal even when
+    // the values are equal; deduplication is the translator's job.
+    const seenIds = new Set<string>();
     raw.changes.forEach((entry, i) => {
       if (!isPlainObject(entry)) {
         errors.push(`changes[${i}] must be an object`);
@@ -273,7 +276,15 @@ export function parseContributionBundle(raw: unknown): ParseResult<ContributionB
       }
       if (typeof entry.id !== 'string' || entry.id.length === 0) {
         errors.push(`changes[${i}].id must be a non-empty string`);
-      } else if (!isValidChangeId(entry.id)) {
+      } else {
+        if (seenIds.has(entry.id)) {
+          errors.push(
+            `changes[${i}]: duplicate_id ${JSON.stringify(entry.id)} — one entry per id, rebuild the change file`,
+          );
+        }
+        seenIds.add(entry.id);
+      }
+      if (typeof entry.id === 'string' && entry.id.length > 0 && !isValidChangeId(entry.id)) {
         errors.push(
           `changes[${i}].id ${JSON.stringify(entry.id)} violates the id contract (bad_id): must match ${CHANGE_ID_RE.source} with no leading/trailing dots`,
         );

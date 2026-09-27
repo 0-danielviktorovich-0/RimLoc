@@ -176,13 +176,22 @@ describe('contribution bundle: readiness statuses', () => {
     expect(enLocale.issues[0].reason).toContain('not contributable');
   });
 
-  it('duplicate ids in input: first occurrence kept, duplicate reported', () => {
-    const report = sanitizeInput({
+  it('duplicate ids (SF-4): equal values collapse with a warning, conflicting values break', () => {
+    const equal = sanitizeInput({
+      locale: 'ru',
+      changes: [validChange, { ...validChange }],
+    });
+    expect(equal.changes).toEqual([validChange]);
+    expect(equal.warnings).toHaveLength(1);
+    expect(equal.warnings[0]).toContain('duplicate id');
+    expect(equal.conflictingDuplicate).toBe(false);
+
+    const conflicting = sanitizeInput({
       locale: 'ru',
       changes: [validChange, { id: 'common.close', value: 'Другое' }],
     });
-    expect(report.changes).toEqual([validChange]);
-    expect(report.dropped[0].reason).toContain('duplicate id');
+    expect(conflicting.conflictingDuplicate).toBe(true);
+    expect(conflicting.dropped[0].reason).toContain('duplicate_id');
   });
 });
 

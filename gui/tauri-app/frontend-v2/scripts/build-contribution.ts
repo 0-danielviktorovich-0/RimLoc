@@ -63,6 +63,10 @@ export interface SanitizeReport {
   dropped: ValidationIssue[];
   foreignRootFields: string[];
   foreignEntryFields: string[];
+  /** SF-4: non-fatal notes for the preview (equal duplicates collapsed). */
+  warnings: string[];
+  /** SF-4: the same id carried two different values — structural breakage. */
+  conflictingDuplicate: boolean;
 }
 
 export interface BuildResult {
@@ -82,6 +86,8 @@ export function sanitizeInput(raw: unknown): SanitizeReport {
     dropped: [],
     foreignRootFields: [],
     foreignEntryFields: [],
+    warnings: [],
+    conflictingDuplicate: false,
   };
   if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
     report.dropped.push({
@@ -98,7 +104,7 @@ export function sanitizeInput(raw: unknown): SanitizeReport {
     report.dropped.push({ ref: '<root>', reason: 'changes must be an array' });
     return report;
   }
-  const seen = new Set<string>();
+  const seen = new Map<string, string>();
   root.changes.forEach((entry, i) => {
     const ref = `changes[${i}]`;
     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
@@ -127,11 +133,25 @@ export function sanitizeInput(raw: unknown): SanitizeReport {
       report.dropped.push({ ref: e.id, reason: 'value must be a string' });
       return;
     }
+    // SF-4: duplicates are decided explicitly — identical values collapse
+    // into the first occurrence with a preview warning; conflicting values
+    // are structural breakage (duplicate_id), never last-write-wins.
     if (seen.has(e.id)) {
-      report.dropped.push({ ref: e.id, reason: 'duplicate id in input (first occurrence kept)' });
+      if (seen.get(e.id) === e.value) {
+        report.warnings.push(
+          `duplicate id ${JSON.stringify(e.id)} collapsed: identical values, first occurrence kept`,
+        );
+      } else {
+        report.conflictingDuplicate = true;
+        report.dropped.push({
+          ref: e.id,
+          reason:
+            'duplicate_id: the same id carries conflicting values — rebuild the change file with one entry per id',
+        });
+      }
       return;
     }
-    seen.add(e.id);
+    seen.set(e.id, e.value);
     report.changes.push({ id: e.id, value: e.value });
   });
   return report;
@@ -271,6 +291,7 @@ export function buildPreview(
     issues: ValidationIssue[];
     foreignRootFields: string[];
     foreignEntryFields: string[];
+    warnings?: string[];
     currentDict?: Record<string, string>;
   },
   status: BundleStatus,
@@ -301,6 +322,10 @@ export function buildPreview(
     lines.push(
       `sanitization: dropped foreign entry field(s) ${JSON.stringify([...new Set(input.foreignEntryFields)])}`,
     );
+  }
+  if (input.warnings !== undefined && input.warnings.length > 0) {
+    lines.push(`warnings: ${input.warnings.length}`);
+    for (const warning of input.warnings) lines.push(`  WARNING ${warning}`);
   }
   lines.push(
     `validation: ${
@@ -372,7 +397,13 @@ export function buildContribution(
     }
   }
 
-  if (!localeOk || overLimit || contributorIssues.length > 0 || valid.length === 0) {
+  if (
+    !localeOk ||
+    overLimit ||
+    contributorIssues.length > 0 ||
+    sanitize.conflictingDuplicate ||
+    valid.length === 0
+  ) {
     const preview = buildPreview(
       {
         locale: typeof rootLocale === 'string' ? rootLocale : '(invalid)',
@@ -381,6 +412,7 @@ export function buildContribution(
         issues,
         foreignRootFields: sanitize.foreignRootFields,
         foreignEntryFields: sanitize.foreignEntryFields,
+        warnings: sanitize.warnings,
         currentDict,
       },
       'NEEDS-FIXES',
@@ -398,6 +430,7 @@ export function buildContribution(
       issues,
       foreignRootFields: sanitize.foreignRootFields,
       foreignEntryFields: sanitize.foreignEntryFields,
+      warnings: sanitize.warnings,
       currentDict,
     },
     status,
