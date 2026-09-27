@@ -204,4 +204,9 @@ export type ContractMethod =
   | 'project_cancel_next'
   | 'project_validate'
   | 'project_export'
-  | 'project_diagnose';
+  | 'project_diagnose'
+  // Window-level native folder dialog (main.rs pick_directory, NOT a
+  // contract_adapter op): exposed through the same typed surface so the UI
+  // fills absolute paths from the OS dialog instead of hand-typing them.
+  // The mock transport refuses it honestly — no OS dialog exists there.
+  | 'pick_directory';

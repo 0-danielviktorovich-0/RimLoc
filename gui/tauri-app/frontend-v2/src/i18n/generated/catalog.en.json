@@ -279,6 +279,11 @@
       "placeholders": []
     },
     {
+      "id": "contractops.pick",
+      "source_text": "Choose folder…",
+      "placeholders": []
+    },
+    {
       "id": "livebadge.label",
       "source_text": "Live project (contract)",
       "placeholders": []
@@ -5231,6 +5236,11 @@
     {
       "id": "home.contract.pathPlaceholder",
       "source_text": "Path to the mod folder…",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.pick",
+      "source_text": "Choose folder…",
       "placeholders": []
     },
     {

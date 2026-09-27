@@ -279,6 +279,11 @@
       "placeholders": []
     },
     {
+      "id": "contractops.pick",
+      "translated": "Выбрать папку…",
+      "placeholders": []
+    },
+    {
       "id": "livebadge.label",
       "translated": "Живой проект (контракт)",
       "placeholders": []
@@ -5231,6 +5236,11 @@
     {
       "id": "home.contract.pathPlaceholder",
       "translated": "Путь к папке мода…",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.pick",
+      "translated": "Выбрать папку…",
       "placeholders": []
     },
     {

@@ -435,6 +435,15 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             excluded_count: 1
           } as ContractMethodMap[M]['result'];
         }
+        case 'pick_directory': {
+          // Honest refusal (never a fake dialog): there is no OS folder
+          // dialog without the desktop bridge. The desktop app answers the
+          // REAL native picker (main.rs pick_directory → blocking_pick_folder).
+          throw new MockContractError(
+            'unsupported_capability',
+            'pick_directory: the native folder dialog is unavailable in mock — run the desktop app'
+          );
+        }
       }
     },
     forceExternalRevision(projectId: string, revision: number) {

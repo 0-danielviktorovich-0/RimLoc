@@ -39,6 +39,10 @@ export interface ContractMethodMap {
     params: { project_id: string; out_dir: string };
     result: DiagnoseResponseDto;
   };
+  // Native folder dialog (main.rs pick_directory). `initial` seeds the
+  // dialog's start directory; null result = the user cancelled. No OS
+  // dialog exists outside the desktop bridge — the mock refuses honestly.
+  pick_directory: { params: { initial?: string }; result: string | null };
 }
 
 export type TransportMode = 'tauri' | 'mock';

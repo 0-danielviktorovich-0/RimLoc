@@ -71,6 +71,8 @@ export const en: Record<string, string> = {
   'contractops.abs_path_hint': 'Absolute path only — a relative path is refused (invalid_output_path) before anything is written.',
   'contractops.abs_path_example': 'e.g. /Users/you/RimLoc-Export/MyMod-Russian',
   'contractops.abs_path_example_bundle': 'e.g. /Users/you/RimLoc-Bundles/MyMod',
+  // Native OS folder dialog under the output fields (same flow as Home).
+  'contractops.pick': 'Choose folder…',
 
   // Honest live counterpart of the mock badge (audit P1-4): on a contract
   // project the global chip shows the live mode instead of claiming demo data.
@@ -1159,6 +1161,8 @@ export const en: Record<string, string> = {
   'home.contract.title': 'RimLoc — live project',
   'home.contract.desc': 'Create a translation project from a real mod folder, or reopen a recent one. The project stays on this machine.',
   'home.contract.pathPlaceholder': 'Path to the mod folder…',
+  // Native OS folder dialog next to the path field (main.rs pick_directory).
+  'home.contract.pick': 'Choose folder…',
   'home.contract.create': 'Create project',
   'home.contract.open': 'Open',
   'workspace.project.fixtureDataset': 'Demo dataset — edits are not saved',

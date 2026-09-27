@@ -187,6 +187,15 @@ export class RimLocClient {
   async diagnoseProject(projectId: string, outDir: string): Promise<DiagnoseResponseDto> {
     return this.call('project_diagnose', { project_id: projectId, out_dir: outDir });
   }
+
+  /** Native OS folder dialog (main.rs pick_directory → blocking_pick_folder).
+   *  Resolves the picked ABSOLUTE path, or null when the user cancelled —
+   *  null is a normal outcome, never an error. In mock mode this rejects
+   *  with the honest `unsupported_capability` refusal: there is no OS dialog
+   *  without the desktop bridge, and the mock never fakes one. */
+  async pickDirectory(initial?: string): Promise<string | null> {
+    return this.call('pick_directory', initial ? { initial } : {});
+  }
 }
 
 /** Explicit client factory — the ONLY place a mode is chosen. Production
