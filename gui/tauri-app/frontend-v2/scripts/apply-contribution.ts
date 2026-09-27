@@ -15,6 +15,10 @@
  *   - stale-source safety (§20): when the current catalog revision differs
  *     from base_catalog_revision, apply refuses and asks for a rebase;
  *     --allow-stale downgrades that to a warning;
+ *   - value-conflict safety (SF-1): every change carries base_value (the
+ *     dictionary value the translator saw); when the live value differs the
+ *     run refuses with a conflict list — a manual edit is never silently
+ *     overwritten, and --allow-stale does NOT bypass this gate;
  *   - --dry-run prints the diff plan and writes nothing;
  *   - application is all-or-nothing: any entry error refuses the whole run.
  *
@@ -97,7 +101,21 @@ export function planApply(
       errors.push({ ref: change.id, reason: gate.reason });
       continue;
     }
-    if (!(change.id in localeDict)) {
+    // SF-1 value-conflict gate: the live dictionary value must still be what
+    // the translator saw. A manual edit (or deletion) after the snapshot is a
+    // conflict — the run refuses and nothing is written. --allow-stale only
+    // downgrades the §20 revision gate, never this one.
+    const current = Object.hasOwn(localeDict, change.id) ? localeDict[change.id] : '';
+    if (current !== change.base_value) {
+      errors.push({
+        ref: change.id,
+        reason: `value conflict (rebase_required): the dictionary changed since the translator saw it — current ${JSON.stringify(
+          current,
+        )} != base_value ${JSON.stringify(change.base_value)}; rebase the bundle (npm run build:contribution); --allow-stale does not bypass value conflicts`,
+      });
+      continue;
+    }
+    if (!Object.hasOwn(localeDict, change.id)) {
       errors.push({
         ref: change.id,
         reason:

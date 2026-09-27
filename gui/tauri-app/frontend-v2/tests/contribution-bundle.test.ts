@@ -52,14 +52,20 @@ describe('contribution bundle: schema purity', () => {
     expect(bundle.kind).toBe('rimloc-ui-translation');
     expect(bundle.base_catalog_revision).toBe(BASE_REVISION);
     for (const change of bundle.changes) {
-      expect(Object.keys(change).sort()).toEqual(['id', 'value']);
+      // SF-1: every emitted change records the value the translator saw.
+      expect(Object.keys(change).sort()).toEqual(['base_value', 'id', 'value']);
+      expect(change.base_value).toBe(ru[change.id]);
     }
     // canonical order: sorted by id, not input order
     expect(bundle.changes.map((c) => c.id)).toEqual([...bundle.changes.map((c) => c.id)].sort());
   });
 
   it('contributor omitted from the bundle when empty', () => {
-    const bundle = buildBundle('ru', [validChange], BASE_REVISION);
+    const bundle = buildBundle(
+      'ru',
+      [{ ...validChange, base_value: ru['common.close'] }],
+      BASE_REVISION,
+    );
     expect('contributor' in bundle).toBe(false);
   });
 });

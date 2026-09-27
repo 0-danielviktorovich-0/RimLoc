@@ -295,10 +295,15 @@ export function buildContribution(
 
   const valid: BundleChange[] = [];
   if (!overLimit) {
+    // SF-1: each change records the value the translator saw — the snapshot
+    // the applier later compares the live dictionary against. A key absent
+    // from the current dictionary (brand-new locale) snapshots ''.
+    const baseOf = (id: string): string =>
+      currentDict !== undefined && Object.hasOwn(currentDict, id) ? currentDict[id] : '';
     for (const change of sanitize.changes) {
       const issue = validateChange(change, enDict);
       if (issue) issues.push(issue);
-      else valid.push(change);
+      else valid.push({ id: change.id, value: change.value, base_value: baseOf(change.id) });
     }
   }
 

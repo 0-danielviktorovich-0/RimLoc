@@ -43,7 +43,9 @@ const freshBundle = (overrides: Record<string, unknown> = {}) => ({
   kind: 'rimloc-ui-translation',
   locale: 'ru',
   base_catalog_revision: BASE_REVISION,
-  changes: [{ id: 'common.close', value: 'Закрыть окно' }],
+  // base_value (SF-1) = the live ru value: the fixture matches the real
+  // dictionary, so only the intended gate fires in each scenario.
+  changes: [{ id: 'common.close', value: 'Закрыть окно', base_value: ru['common.close'] }],
   ...overrides,
 });
 
@@ -85,10 +87,12 @@ describe('apply: planning', () => {
     const bundle = parseContributionBundle(
       freshBundle({
         changes: [
-          { id: 'common.close', value: 'Закрыть окно' }, // replace
-          { id: 'common.cancel', value: 'Отмена' }, // identical -> noop
-          { id: 'ghost.key', value: 'нет в en' }, // unknown id
-          { id: 'common.details', value: 'Только в en, словарь ru не знает' }, // (ru knows it; see dedicated case below)
+          // base_value (SF-1) = what the translator saw: the live ru value
+          // for replace/noop rows; '' for rows whose key is absent here.
+          { id: 'common.close', value: 'Закрыть окно', base_value: ru['common.close'] }, // replace
+          { id: 'common.cancel', value: 'Отмена', base_value: ru['common.cancel'] }, // identical -> noop
+          { id: 'ghost.key', value: 'нет в en', base_value: '' }, // unknown id
+          { id: 'common.details', value: 'Только в en, словарь ru не знает', base_value: '' }, // (ru knows it; see dedicated case below)
         ],
       }),
     );
@@ -112,7 +116,9 @@ describe('apply: planning', () => {
 
   it('is a no-op planner against the real dictionaries when nothing differs', () => {
     const bundle = parseContributionBundle(
-      freshBundle({ changes: [{ id: 'common.appName', value: ru['common.appName'] }] }),
+      freshBundle({
+        changes: [{ id: 'common.appName', value: ru['common.appName'], base_value: ru['common.appName'] }],
+      }),
     );
     expect(bundle.ok).toBe(true);
     if (!bundle.ok) return;

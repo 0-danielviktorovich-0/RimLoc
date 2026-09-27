@@ -44,9 +44,16 @@ export const LOCALE_RE = /^[a-z]{2,3}(?:-[A-Za-z0-9]+)*$/;
 /** catalog_revision / base_catalog_revision shape: git sha (7-40 hex) with optional -dirty. */
 export const REVISION_RE = /^[0-9a-f]{7,40}(?:-dirty)?$/;
 
-/** One translation change. Exactly these two fields, nothing else. */
+/**
+ * One translation change. Exactly these three fields, nothing else.
+ * `base_value` (SF-1) records the dictionary value the translator saw when
+ * the change was made: the applier refuses to run when the live value has
+ * moved on (a stale bundle must never overwrite a manual edit), and a
+ * bundle without it is refused with `rebase_required`.
+ */
 export interface BundleChange {
   id: string;
+  base_value: string;
   value: string;
 }
 
@@ -204,7 +211,7 @@ export function parseContributionBundle(raw: unknown): ParseResult<ContributionB
     errors.push('base_catalog_revision must be a git sha (7-40 hex) with optional -dirty suffix');
   }
   if (!Array.isArray(raw.changes)) {
-    errors.push('changes must be an array of {id, value}');
+    errors.push('changes must be an array of {id, base_value, value}');
   } else {
     if (raw.changes.length === 0) errors.push('changes must not be empty');
     if (raw.changes.length > CHANGES_MAX_COUNT) {
@@ -215,7 +222,9 @@ export function parseContributionBundle(raw: unknown): ParseResult<ContributionB
         errors.push(`changes[${i}] must be an object`);
         return;
       }
-      const entryExtra = Object.keys(entry).filter((k) => k !== 'id' && k !== 'value');
+      const entryExtra = Object.keys(entry).filter(
+        (k) => k !== 'id' && k !== 'value' && k !== 'base_value',
+      );
       if (entryExtra.length > 0) {
         errors.push(`changes[${i}]: unexpected field(s) ${JSON.stringify(entryExtra)}`);
       }
@@ -224,6 +233,13 @@ export function parseContributionBundle(raw: unknown): ParseResult<ContributionB
       }
       if (typeof entry.value !== 'string') {
         errors.push(`changes[${i}].value must be a string`);
+      }
+      if (typeof entry.base_value !== 'string') {
+        // SF-1: without the snapshot the applier cannot detect that the live
+        // dictionary moved on — such a bundle must be rebuilt (rebased).
+        errors.push(
+          `changes[${i}].base_value must be a string (rebase_required): record the dictionary value the translator saw, or rebuild the bundle against the current catalog`,
+        );
       }
     });
   }
