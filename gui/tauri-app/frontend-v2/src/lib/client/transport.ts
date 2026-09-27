@@ -43,6 +43,10 @@ export interface ContractMethodMap {
   // dialog's start directory; null result = the user cancelled. No OS
   // dialog exists outside the desktop bridge — the mock refuses honestly.
   pick_directory: { params: { initial?: string }; result: string | null };
+  // Self-localization entry (mandate D): absolute path of the app-managed
+  // RimLoc UI catalog project dir (mod_root for project_create). Refused
+  // honestly in mock — there is no bundled catalog outside the desktop app.
+  selfloc_catalog_dir: { params: Record<string, never>; result: string };
 }
 
 export type TransportMode = 'tauri' | 'mock';

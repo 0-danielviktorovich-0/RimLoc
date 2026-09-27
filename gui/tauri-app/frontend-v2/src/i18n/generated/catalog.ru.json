@@ -5269,6 +5269,26 @@
       "placeholders": []
     },
     {
+      "id": "home.selfloc.title",
+      "translated": "Перевести RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "home.selfloc.desc",
+      "translated": "Откройте каталог интерфейса RimLoc как обычный проект перевода — английский источник, ваш перевод поедет вместе с приложением.",
+      "placeholders": []
+    },
+    {
+      "id": "home.selfloc.open",
+      "translated": "Перевести RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "home.selfloc.beta",
+      "translated": "бета",
+      "placeholders": []
+    },
+    {
       "id": "workspace.project.fixtureDataset",
       "translated": "Демо-датасет — правки не сохраняются",
       "placeholders": []

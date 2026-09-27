@@ -196,6 +196,16 @@ export class RimLocClient {
   async pickDirectory(initial?: string): Promise<string | null> {
     return this.call('pick_directory', initial ? { initial } : {});
   }
+
+  /** Self-localization entry (mandate D): absolute path of the app-bundled
+   *  RimLoc UI catalog, prepared as an ORDINARY project source directory —
+   *  feed it straight into createProject() and the existing ui_catalog
+   *  adapter routes it (no special-cased client flow). Failure is a typed
+   *  error, never a fabricated path; in mock mode this rejects with the
+   *  honest `unsupported_capability` refusal. */
+  async selflocCatalogDir(): Promise<string> {
+    return this.call('selfloc_catalog_dir', {});
+  }
 }
 
 /** Explicit client factory — the ONLY place a mode is chosen. Production

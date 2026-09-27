@@ -5269,6 +5269,26 @@
       "placeholders": []
     },
     {
+      "id": "home.selfloc.title",
+      "source_text": "Translate RimLoc itself",
+      "placeholders": []
+    },
+    {
+      "id": "home.selfloc.desc",
+      "source_text": "Open the RimLoc UI catalog as an ordinary translation project — English source, your translation ships with the app.",
+      "placeholders": []
+    },
+    {
+      "id": "home.selfloc.open",
+      "source_text": "Translate RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "home.selfloc.beta",
+      "source_text": "beta",
+      "placeholders": []
+    },
+    {
       "id": "workspace.project.fixtureDataset",
       "source_text": "Demo dataset — edits are not saved",
       "placeholders": []

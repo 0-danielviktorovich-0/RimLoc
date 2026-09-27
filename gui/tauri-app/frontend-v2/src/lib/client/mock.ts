@@ -173,7 +173,11 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
                 // (contract.rs) — validate/build/diagnostics are supported.
                 'project_validate',
                 'project_build_export',
-                'project_diagnostics_bundle'
+                'project_diagnostics_bundle',
+                // Selfloc entry (mandate D): mirrors contract.rs
+                // Capability::SelflocCatalog — the shell-level resolver IS a
+                // supported slice op, not an unsupported approximation.
+                'selfloc_catalog'
               ],
               unsupported: [
                 // Audit P2-1: names mirror the Rust capability_report
@@ -442,6 +446,16 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
           throw new MockContractError(
             'unsupported_capability',
             'pick_directory: the native folder dialog is unavailable in mock — run the desktop app'
+          );
+        }
+        case 'selfloc_catalog_dir': {
+          // Honest refusal (never a fabricated catalog dir): there is no
+          // bundled RimLoc UI catalog without the desktop bridge, and a fake
+          // path would dead-end project_create — the entry point must not
+          // pretend success in dev/demo mode.
+          throw new MockContractError(
+            'unsupported_capability',
+            'selfloc_catalog_dir: the bundled RimLoc UI catalog is unavailable in mock — run the desktop app'
           );
         }
       }

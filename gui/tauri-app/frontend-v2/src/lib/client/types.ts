@@ -209,4 +209,9 @@ export type ContractMethod =
   // contract_adapter op): exposed through the same typed surface so the UI
   // fills absolute paths from the OS dialog instead of hand-typing them.
   // The mock transport refuses it honestly — no OS dialog exists there.
-  | 'pick_directory';
+  | 'pick_directory'
+  // Self-localization entry (mandate D, shell-level like pick_directory):
+  // resolves the app-bundled RimLoc UI catalog as an ordinary project
+  // source dir (mod_root for the EXISTING contract create flow). The mock
+  // transport refuses it honestly — no bundled catalog exists there.
+  | 'selfloc_catalog_dir';

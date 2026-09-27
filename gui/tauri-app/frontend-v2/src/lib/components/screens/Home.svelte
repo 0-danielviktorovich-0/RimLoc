@@ -67,6 +67,31 @@
     else contractError = project.contractError;
   }
 
+  // Selfloc entry (mandate D): resolve the app-bundled RimLoc UI catalog and
+  // open it through the EXISTING contract create flow — the ui_catalog
+  // adapter inside the backend routes the directory; no special-cased client
+  // path. Every failure surfaces verbatim in the section alert; in mock mode
+  // the typed refusal IS the honest outcome (no fake catalog dir, no fake
+  // success, no dead-end create).
+  let selflocBusy = $state(false);
+  let selflocError = $state<string | null>(null);
+
+  async function openSelflocProject() {
+    if (contractBusy || selflocBusy) return;
+    selflocBusy = true;
+    selflocError = null;
+    try {
+      const dir = await clientInstance.getClient().selflocCatalogDir();
+      const ok = await project.createContractProject(dir);
+      if (ok) router.navigate('workspace');
+      else selflocError = project.contractError;
+    } catch (e) {
+      selflocError = e instanceof Error ? e.message : String(e);
+    } finally {
+      selflocBusy = false;
+    }
+  }
+
   $effect(() => {
     if (mode !== 'tauri') return;
     // Recent real projects for the returning-user view.
@@ -249,6 +274,34 @@
         {/if}
       </section>
     {/if}
+
+    <!-- Selfloc entry (mandate D, first wave): the app's own UI catalog as an
+         ordinary project. Visible in BOTH modes — in mock the click surfaces
+         the honest typed refusal instead of pretending a catalog exists. -->
+    <section class="demo selfloc" aria-labelledby="selfloc-heading" data-testid="home.selfloc">
+      <div class="demo-main">
+        <span class="demo-name">
+          {t('home.selfloc.title')}
+          <span class="demo-mark">{t('home.selfloc.beta')}</span>
+        </span>
+        <span class="demo-desc">{t('home.selfloc.desc')}</span>
+      </div>
+      <div class="demo-actions">
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="home.selfloc.open"
+          disabled={contractBusy || selflocBusy}
+          onclick={openSelflocProject}
+        >
+          <Icon name="languages" size={14} />
+          {t('home.selfloc.open')}
+        </button>
+      </div>
+      {#if selflocError}
+        <p class="nomods-note selfloc-error" role="alert" data-testid="home.selfloc.error">{selflocError}</p>
+      {/if}
+    </section>
 
     {#if mode !== 'tauri'}
     <!-- W6 demo project (mandate §6/§8): bundled, synthetic, RimLoc-owned and
@@ -575,6 +628,12 @@
     border: 1px dashed var(--color-warning);
     border-radius: var(--radius-sm);
     padding: var(--space-1) var(--space-2);
+  }
+
+  /* Selfloc entry: the error note takes the full section row (the .demo
+     section is a wrapping flex row of main + actions). */
+  .selfloc-error {
+    flex: 1 1 100%;
   }
 
   /* Recent projects (returning users) */
