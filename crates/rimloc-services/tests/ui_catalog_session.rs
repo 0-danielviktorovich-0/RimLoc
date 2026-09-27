@@ -8,6 +8,13 @@
 //! tmp copy and reads the shared translation fixture
 //! (`gui/tauri-app/frontend-v2/tests/fixtures/selfloc-e2e-translations.json`)
 //! that the TS chain test (`tests/selfloc-catalog-chain.test.ts`) uses too.
+//!
+//! The SECOND test here is the real junction between the session world and
+//! the TS contribution world (SF-5): the session's canonical export is
+//! written into a KNOWN deterministic directory and summarized into
+//! `chain.json` from a REPARSE OF THE WRITTEN FILES — the TS side consumes
+//! that artifact as-is instead of rebuilding the expected data from the
+//! fixture.
 
 use rimloc_core::winner_reason;
 use rimloc_domain::canonical::{EntryKind, SourceEntryId};
@@ -247,4 +254,164 @@ fn repository_generated_catalog_is_never_the_fixture() {
     let generated = repo_root().join(GENERATED_REL);
     let en = fs::read_to_string(generated.join("catalog.en.json")).unwrap();
     assert!(en.contains("\"source_text\": \"RimLoc\""));
+}
+
+// ---------------------------------------------------------------------------
+// SF-5: the real session-export -> TS junction.
+// ---------------------------------------------------------------------------
+
+/// Env override for the chain directory; BOTH halves must agree on the same
+/// default so a plain `cargo test ui_catalog` + `npm test` is the whole
+/// recipe.
+const CHAIN_DIR_ENV: &str = "RIMLOC_SELFLOC_CHAIN_DIR";
+const CHAIN_DIR_DEFAULT: &str = "/tmp/rimloc-selfloc-chain";
+
+fn chain_dir() -> PathBuf {
+    std::env::var_os(CHAIN_DIR_ENV)
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(CHAIN_DIR_DEFAULT))
+}
+
+/// Minimal serialization helper for the chain manifest. It exists ONLY in
+/// this test: `chain.json` is a test-to-test artifact, not a production
+/// contract, so production code stays untouched.
+fn write_chain_manifest(
+    chain_root: &std::path::Path,
+    locale: &str,
+    files: &serde_json::Value,
+    values: std::collections::BTreeMap<String, String>,
+) {
+    let manifest = serde_json::json!({
+        "exported_at_run": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs(),
+        "locale": locale,
+        "files": files,
+        "values": values,
+    });
+    fs::write(
+        chain_root.join("chain.json"),
+        serde_json::to_vec_pretty(&manifest).unwrap(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn chain_export_writes_real_artifacts_for_the_ts_side() {
+    let generated = repo_root().join(GENERATED_REL);
+    let fixture: SelflocFixture =
+        serde_json::from_str(&fs::read_to_string(repo_root().join(FIXTURE_REL)).unwrap())
+            .expect("shared selfloc fixture parses");
+
+    // Deterministic chain directory, cleaned at the start of every run so a
+    // stale artifact can never be mistaken for a fresh export.
+    let chain_root = chain_dir();
+    let export_dir = chain_root.join("export");
+    if chain_root.exists() {
+        fs::remove_dir_all(&chain_root).unwrap();
+    }
+    fs::create_dir_all(&export_dir).unwrap();
+
+    // Compact ordinary session on a tmp catalog copy: create -> apply
+    // (translations, one carrying a {placeholder}) -> validate clean.
+    let tmp = tempfile::tempdir().unwrap();
+    let catalog_dir = tmp.path().join("catalog");
+    fs::create_dir_all(&catalog_dir).unwrap();
+    for name in ["catalog.en.json", "catalog.ru.json", "catalog.meta.json"] {
+        fs::copy(generated.join(name), catalog_dir.join(name)).unwrap();
+    }
+    let mgr = ProjectSessionManager::new(tmp.path().join("managed")).unwrap();
+    let snap = mgr.create(&catalog_dir, None).unwrap();
+    let intents: Vec<TranslationIntent> = fixture
+        .changes
+        .iter()
+        .chain(std::iter::once(&fixture.fixed))
+        .map(|c| intent(&fixture.locale, &c.id, &c.value))
+        .collect();
+    let res = mgr
+        .apply(&apply_req(
+            &snap.project_id,
+            snap.session_epoch,
+            snap.revision,
+            intents,
+        ))
+        .unwrap();
+    assert_eq!(res.applied, 3);
+    let v = mgr
+        .validate_project(&snap.project_id, snap.session_epoch, Some(&fixture.locale))
+        .unwrap();
+    assert_eq!(v.status, "succeeded", "{v:?}");
+
+    // THE canonical service export — this is what physically flows onward.
+    let exp = mgr
+        .export_project(
+            &snap.project_id,
+            snap.session_epoch,
+            &export_dir,
+            &fixture.locale,
+        )
+        .unwrap();
+    assert!(exp.skipped_unknown_type.is_empty(), "{exp:?}");
+
+    // The written file exists and physically contains the session-applied
+    // text (Rust-side correctness; the TS side gets values from the reparse
+    // below, not from this fixture comparison).
+    let keyed_rel = std::path::Path::new("Languages")
+        .join(&fixture.locale)
+        .join("Keyed")
+        .join("Translation.xml");
+    let keyed_path = export_dir.join(&keyed_rel);
+    assert!(keyed_path.exists(), "Keyed output missing: {keyed_path:?}");
+    let keyed_xml = fs::read_to_string(&keyed_path).unwrap();
+    assert!(keyed_xml.contains(&fixture.fixed.value), "{keyed_xml}");
+
+    // chain.json values come from REPARSING THE WRITTEN FILES with the
+    // ordinary scanner — the same evidence `export_project` itself accepts
+    // on — never from the fixture.
+    let units = rimloc_parsers_xml::scan_keyed_xml(&export_dir).unwrap();
+    assert_eq!(units.len(), exp.reparsed_keys, "{exp:?}");
+    assert!(!units.is_empty());
+    let mut values = std::collections::BTreeMap::new();
+    for u in units {
+        let text = u.source.clone().unwrap_or_default();
+        assert!(
+            !text.trim().is_empty(),
+            "exported key {} has no text",
+            u.key
+        );
+        values.insert(u.key, text);
+    }
+    // What the session applied is what the disk now carries.
+    assert_eq!(
+        values.get(&fixture.fixed.id).map(String::as_str),
+        Some(fixture.fixed.value.as_str())
+    );
+
+    // At least one exported value carries a {placeholder}: the placeholder
+    // contract must survive the whole chain (validated here, asserted by the
+    // TS pack/bundle gates on the same bytes).
+    assert!(
+        values.values().any(|t| t.contains('{') && t.contains('}')),
+        "chain artifact must carry at least one placeholder-bearing value"
+    );
+
+    // The manifest path is relative to the CHAIN ROOT (not to the export
+    // mod) so chain.json + the files it lists form one self-contained
+    // artifact directory for the TS side.
+    let files = serde_json::json!([{
+        "path": std::path::Path::new("export")
+            .join(&keyed_rel)
+            .to_string_lossy()
+            .replace('\\', "/"),
+        "locale": fixture.locale,
+        "key_count": values.len(),
+    }]);
+    write_chain_manifest(&chain_root, &fixture.locale, &files, values);
+
+    // The manifest parses back (the TS side will read exactly this file).
+    serde_json::from_str::<serde_json::Value>(
+        &fs::read_to_string(chain_root.join("chain.json")).unwrap(),
+    )
+    .unwrap();
 }
