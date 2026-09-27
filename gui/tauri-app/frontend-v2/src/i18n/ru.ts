@@ -1174,6 +1174,12 @@ export const ru: Record<string, string> = {
   'home.contract.pick': 'Выбрать папку…',
   'home.contract.create': 'Создать проект',
   'home.contract.open': 'Открыть',
+  // Точка самоперевода (мандат D): собственный каталог интерфейса как
+  // обычный проект, через тот же контрактный create-поток.
+  'home.selfloc.title': 'Перевести RimLoc',
+  'home.selfloc.desc': 'Откройте каталог интерфейса RimLoc как обычный проект перевода — английский источник, ваш перевод поедет вместе с приложением.',
+  'home.selfloc.open': 'Перевести RimLoc',
+  'home.selfloc.beta': 'бета',
   'workspace.project.fixtureDataset': 'Демо-датасет — правки не сохраняются',
   'workspace.project.fixtureNote': 'Демонстрационный набор, встроенный в приложение — исследуйте свободно; он не трогает ваши моды.',
   'workspace.project.live': 'живой контракт',

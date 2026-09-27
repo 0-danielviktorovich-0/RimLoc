@@ -77,14 +77,25 @@ mod shell {
             let in_live = LIVE_COMMANDS.contains(name);
             let in_legacy = LEGACY_PRIVILEGED_COMMANDS.contains(name);
             assert!(
-        in_live ^ in_legacy,
-        "command `{name}` must live in exactly one registration set (live={in_live}, legacy={in_legacy})"
-      );
+            in_live ^ in_legacy,
+            "command `{name}` must live in exactly one registration set (live={in_live}, legacy={in_legacy})"
+        );
         }
+        // Post-original safe extras (selfloc entry, mandate D) are a
+        // deliberate ADDITION on top of the frozen partition base — declared
+        // in one constant so the arithmetic stays explicit, not implicit.
         assert_eq!(
             LIVE_COMMANDS.len() + LEGACY_PRIVILEGED_COMMANDS.len(),
-            ORIGINAL_REGISTERED.len() + rimloc_gui_lib::contract_adapter::CONTRACT_COMMANDS.len()
+            ORIGINAL_REGISTERED.len()
+                + rimloc_gui_lib::contract_adapter::CONTRACT_COMMANDS.len()
+                + rimloc_gui_lib::selfloc_catalog::POST_ORIGINAL_LIVE_EXTRAS.len()
         );
+        for name in rimloc_gui_lib::selfloc_catalog::POST_ORIGINAL_LIVE_EXTRAS {
+            assert!(
+                LIVE_COMMANDS.contains(name),
+                "post-original extra `{name}` must be live-registered"
+            );
+        }
     }
 
     #[test]

@@ -3044,6 +3044,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "diff_xml_cmd",
     "get_cli_i18n",
     "pick_directory",
+    // selfloc entry (mandate D): resolve the app-bundled UI catalog dir —
+    // read-only shell extra, same class as pick_directory.
+    "selfloc_catalog_dir",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3553,7 +3556,9 @@ fn main() {
             coverage_gui,
             export_xliff_gui,
             import_xliff_gui,
-            merge_keyed_gui
+            merge_keyed_gui,
+            // selfloc entry: safe read-only shell extra (live too)
+            selfloc_catalog_dir
         ])
     } else {
         builder.invoke_handler(tauri::generate_handler![
@@ -3580,7 +3585,10 @@ fn main() {
             coverage_gui,
             diff_xml_cmd,
             get_cli_i18n,
-            pick_directory
+            pick_directory,
+            // selfloc entry (mandate D): resolve the app-bundled UI catalog
+            // dir — read-only shell extra, same class as pick_directory.
+            selfloc_catalog_dir
         ])
     };
     builder
@@ -3760,6 +3768,25 @@ fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<Stri
         .blocking_pick_folder()
         .map(|p| p.simplified().to_string());
     Ok(picked)
+}
+
+/// Self-localization entry (mandate D): resolve the app-bundled RimLoc UI
+/// catalog as an ORDINARY project source directory. Thin shell over
+/// [`rimloc_gui_lib::selfloc_catalog::resolve_catalog_dir`] (resource
+/// candidates → idempotent app-data copy → project dir whose basename IS the
+/// project display name "RimLoc UI (en)"). Read-only extra: no dialog, no
+/// caller-chosen paths — total failure is a typed refusal, never a guess.
+#[tauri::command]
+fn selfloc_catalog_dir(app: tauri::AppHandle) -> Result<String, ApiError> {
+    use tauri::Manager;
+    let resource_dir = app.path().resource_dir().ok();
+    let app_data = app.path().app_data_dir().unwrap_or_else(|_| {
+        dirs::data_dir()
+            .map(|d| d.join("com.rimloc.gui"))
+            .unwrap_or_else(std::env::temp_dir)
+    });
+    rimloc_gui_lib::selfloc_catalog::resolve_catalog_dir(resource_dir, &app_data)
+        .map_err(|e| ApiError { message: e })
 }
 
 /// Save arbitrary text, but the destination is always confirmed by the user

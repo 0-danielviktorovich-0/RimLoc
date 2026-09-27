@@ -358,6 +358,13 @@ pub enum Capability {
     ProjectValidate,
     ProjectBuildExport,
     ProjectDiagnosticsBundle,
+    /// Self-localization entry (mandate D): the shell exposes the app-bundled
+    /// UI catalog as an ORDINARY project source. Transport lives at the shell
+    /// level (`selfloc_catalog_dir`, next to pick_directory) — this entry
+    /// makes the supported slice visible on the handshake instead of hiding
+    /// a shipped capability. Wire name appends (never renames) per the
+    /// contract rule.
+    SelflocCatalog,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -392,6 +399,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectValidate,
             Capability::ProjectBuildExport,
             Capability::ProjectDiagnosticsBundle,
+            Capability::SelflocCatalog,
         ],
         unsupported: vec![
             UnsupportedCapability {

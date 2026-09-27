@@ -1172,6 +1172,12 @@ export const en: Record<string, string> = {
   'home.contract.pick': 'Choose folder…',
   'home.contract.create': 'Create project',
   'home.contract.open': 'Open',
+  // Self-localization entry (mandate D): the app's own UI catalog as an
+  // ordinary project, reached through the same contract create flow.
+  'home.selfloc.title': 'Translate RimLoc itself',
+  'home.selfloc.desc': 'Open the RimLoc UI catalog as an ordinary translation project — English source, your translation ships with the app.',
+  'home.selfloc.open': 'Translate RimLoc',
+  'home.selfloc.beta': 'beta',
   'workspace.project.fixtureDataset': 'Demo dataset — edits are not saved',
   'workspace.project.fixtureNote': 'Sample dataset bundled with the app — explore freely; it never touches your mods.',
   'workspace.project.live': 'live project',

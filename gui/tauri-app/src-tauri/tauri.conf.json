@@ -38,7 +38,10 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Tauri desktop GUI for RimLoc",
-    "publisher": "RimLoc Team"
+    "publisher": "RimLoc Team",
+    "resources": {
+      "../frontend-v2/src/i18n/generated": "selfloc-catalog"
+    }
   },
   "plugins": {}
 }
