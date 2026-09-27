@@ -71,6 +71,8 @@ export const ru: Record<string, string> = {
   'contractops.abs_path_hint': 'Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.',
   'contractops.abs_path_example': 'например /Users/you/RimLoc-Export/Мод-Russian',
   'contractops.abs_path_example_bundle': 'например /Users/you/RimLoc-Bundles/Мод',
+  // Нативный диалог выбора папки под полями вывода (тот же поток, что на Home).
+  'contractops.pick': 'Выбрать папку…',
 
   // Честный live-вариант бейджа (аудит P1-4): на контракт-проекте глобальный
   // чип показывает живой режим вместо «демо-данные».
@@ -1161,6 +1163,8 @@ export const ru: Record<string, string> = {
   'home.contract.title': 'RimLoc — живой проект',
   'home.contract.desc': 'Создайте проект перевода из реальной папки мода или откройте недавний. Проект остаётся на этой машине.',
   'home.contract.pathPlaceholder': 'Путь к папке мода…',
+  // Нативный диалог выбора папки рядом с полем пути (main.rs pick_directory).
+  'home.contract.pick': 'Выбрать папку…',
   'home.contract.create': 'Создать проект',
   'home.contract.open': 'Открыть',
   'workspace.project.fixtureDataset': 'Демо-датасет — правки не сохраняются',
