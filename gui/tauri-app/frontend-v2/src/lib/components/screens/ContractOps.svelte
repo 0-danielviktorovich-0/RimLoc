@@ -11,6 +11,7 @@
   import { looksAbsolutePath } from '../../paths';
   import { project } from '../../stores/project.svelte';
   import { contractops, folderForm } from '../../stores/contractops.svelte';
+  import { clientInstance } from '../../client/instance.svelte';
 
   let { kind }: { kind: 'build' | 'diagnostics' } = $props();
 
@@ -21,6 +22,30 @@
   // absolute; the services guard (`invalid_output_path`) is the last line.
   let exportDir = $state('');
   let bundleDir = $state('');
+
+  // Native folder dialog for the output roots (same flow as the Home
+  // contract panel). Cancel = silent; a real failure surfaces verbatim.
+  let picking = $state(false);
+  let pickError = $state<string | null>(null);
+
+  async function pickInto(target: 'export' | 'bundle') {
+    if (picking) return;
+    picking = true;
+    pickError = null;
+    try {
+      const current = target === 'export' ? exportDir.trim() : bundleDir.trim();
+      const dir = await clientInstance.getClient().pickDirectory(current || undefined);
+      if (target === 'export') {
+        if (dir) exportDir = dir;
+      } else if (dir) {
+        bundleDir = dir;
+      }
+    } catch (e) {
+      pickError = e instanceof Error ? e.message : String(e);
+    } finally {
+      picking = false;
+    }
+  }
 
   const ops = $derived(contractops);
   const exportDirOk = $derived(looksAbsolutePath(exportDir));
@@ -44,6 +69,13 @@
     <p class="ops-error" role="alert" data-testid="contractops.error">
       <Icon name="warning" size={14} />
       {ops.error}
+    </p>
+  {/if}
+
+  {#if pickError}
+    <p class="ops-error" role="alert" data-testid="contractops.pick.error">
+      <Icon name="warning" size={14} />
+      {pickError}
     </p>
   {/if}
 
@@ -110,6 +142,16 @@
           data-testid="contractops.export.outdir"
           spellcheck="false"
         />
+        <button
+          type="button"
+          class="btn pick"
+          data-testid="contractops.export.pick"
+          disabled={picking}
+          onclick={() => void pickInto('export')}
+        >
+          <Icon name="folder-open" size={14} />
+          {t('contractops.pick')}
+        </button>
         <span class="hint">{t('contractops.abs_path_hint')}</span>
       </label>
       <div class="row">
@@ -159,6 +201,16 @@
           data-testid="contractops.diagnose.outdir"
           spellcheck="false"
         />
+        <button
+          type="button"
+          class="btn pick"
+          data-testid="contractops.diagnose.pick"
+          disabled={picking}
+          onclick={() => void pickInto('bundle')}
+        >
+          <Icon name="folder-open" size={14} />
+          {t('contractops.pick')}
+        </button>
         <span class="hint">{t('contractops.abs_path_hint')}</span>
       </label>
       <div class="row">
@@ -252,6 +304,11 @@
     background: var(--color-bg);
     color: var(--color-fg);
     padding: var(--space-1) var(--space-2);
+  }
+
+  /* Native-folder-dialog button under the path fields. */
+  .btn.pick {
+    align-self: flex-start;
   }
 
   .ops-error {
