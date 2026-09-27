@@ -2098,6 +2098,16 @@
       "placeholders": []
     },
     {
+      "id": "review.overview.unavailable",
+      "translated": "Не считается в этой сборке.",
+      "placeholders": []
+    },
+    {
+      "id": "review.overview.partial",
+      "translated": "Обзор частичный: отслеживание изменений источника и проверка глоссария в этой сборке не подключены — остальные счётчики посчитаны по снапшоту проекта.",
+      "placeholders": []
+    },
+    {
       "id": "review.queue",
       "translated": "Очередь проблем",
       "placeholders": []
@@ -2780,6 +2790,11 @@
       "placeholders": []
     },
     {
+      "id": "settings.rimworld.installsNote",
+      "translated": "Пример данных — обнаружение установок игры в этой сборке не подключено.",
+      "placeholders": []
+    },
+    {
       "id": "settings.rimworld.primary",
       "translated": "основная",
       "placeholders": []
@@ -2791,7 +2806,7 @@
     },
     {
       "id": "settings.rimworld.found",
-      "translated": "Сканирование установок в этой сборке не подключено (демо) — список выше — примерные данные.",
+      "translated": "Пересканирование в этой сборке не подключено (демо) — список не менялся.",
       "placeholders": []
     },
     {
@@ -3055,7 +3070,7 @@
     },
     {
       "id": "settings.advanced.logsDone",
-      "translated": "Открытие папки журналов в этой сборке не подключено (демо) — ожидаемое расположение: ~/RimLoc/logs.",
+      "translated": "Открытие папки журналов в этой сборке не подключено (демо) — ничего не открыто. Журнал лежит в папке данных приложения: ~/Library/Application Support/com.rimloc.gui/RimLoc/logs/gui.log (macOS); %APPDATA%\\com.rimloc.gui\\RimLoc\\logs (Windows); ~/.local/share/com.rimloc.gui/RimLoc/logs (Linux).",
       "placeholders": []
     },
     {

@@ -470,6 +470,9 @@ export const ru: Record<string, string> = {
   'review.categories': 'Категории проблем',
   'review.categories.all': 'Все проблемы',
   'review.scope': 'Счётчики — по всему проекту; очередь показывает проблемы записей, загруженных в этой сессии.',
+  'review.overview.unavailable': 'Не считается в этой сборке.',
+  'review.overview.partial':
+    'Обзор частичный: отслеживание изменений источника и проверка глоссария в этой сборке не подключены — остальные счётчики посчитаны по снапшоту проекта.',
   'review.queue': 'Очередь проблем',
   'review.queue.empty.title': 'Очередь пуста',
   'review.queue.empty.desc': 'В этой сессии проблем не осталось. Можно собирать перевод.',
@@ -625,9 +628,10 @@ export const ru: Record<string, string> = {
 
   'settings.rimworld.desc': 'Где RimLoc ищет игру и моды.',
   'settings.rimworld.installs': 'Установки игры',
+  'settings.rimworld.installsNote': 'Пример данных — обнаружение установок игры в этой сборке не подключено.',
   'settings.rimworld.primary': 'основная',
   'settings.rimworld.rescan': 'Пересканировать',
-  'settings.rimworld.found': 'Сканирование установок в этой сборке не подключено (демо) — список выше — примерные данные.',
+  'settings.rimworld.found': 'Пересканирование в этой сборке не подключено (демо) — список не менялся.',
   'settings.rimworld.version': 'Целевая версия RimWorld',
   'settings.rimworld.autodetect': 'Находить установки автоматически',
   'settings.rimworld.workshop': 'Папка Workshop',
@@ -689,7 +693,10 @@ export const ru: Record<string, string> = {
     'Диагностика, журналы и поверхность разработчика. Экспериментальное и внутреннее — только здесь.',
   'settings.advanced.logs': 'Журналы',
   'settings.advanced.openLogs': 'Открыть папку журналов',
-  'settings.advanced.logsDone': 'Открытие папки журналов в этой сборке не подключено (демо) — ожидаемое расположение: ~/RimLoc/logs.',
+  'settings.advanced.logsDone':
+    'Открытие папки журналов в этой сборке не подключено (демо) — ничего не открыто. Журнал лежит в папке данных приложения: ' +
+    '~/Library/Application Support/com.rimloc.gui/RimLoc/logs/gui.log (macOS); %APPDATA%\\com.rimloc.gui\\RimLoc\\logs (Windows); ' +
+    '~/.local/share/com.rimloc.gui/RimLoc/logs (Linux).',
   'settings.advanced.diagnostics': 'Диагностика',
   'settings.advanced.runDiag': 'Запустить диагностику',
   'settings.advanced.rules': 'Знания и правила',

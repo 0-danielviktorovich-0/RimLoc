@@ -467,6 +467,9 @@ export const en: Record<string, string> = {
   'review.categories': 'Issue categories',
   'review.categories.all': 'All issues',
   'review.scope': 'Counters cover the whole project; the queue lists issues from the entries loaded in this session.',
+  'review.overview.unavailable': 'Not computed in this build.',
+  'review.overview.partial':
+    'Partial overview: source-change tracking and the glossary check are not wired in this build — the other counters come from the project snapshot.',
   'review.queue': 'Issue queue',
   'review.queue.empty.title': 'Queue is clear',
   'review.queue.empty.desc': 'No issues left in this session. You can build the translation.',
@@ -622,9 +625,10 @@ export const en: Record<string, string> = {
 
   'settings.rimworld.desc': 'Where RimLoc looks for the game and mods.',
   'settings.rimworld.installs': 'Game installations',
+  'settings.rimworld.installsNote': 'Example data — game-install detection is not wired in this build.',
   'settings.rimworld.primary': 'primary',
   'settings.rimworld.rescan': 'Rescan',
-  'settings.rimworld.found': 'Install scan is not wired in this build (demo) — the list above is sample data.',
+  'settings.rimworld.found': 'Rescan is not wired in this build (demo) — the list was not changed.',
   'settings.rimworld.version': 'Target RimWorld version',
   'settings.rimworld.autodetect': 'Detect installations automatically',
   'settings.rimworld.workshop': 'Workshop folder',
@@ -686,7 +690,10 @@ export const en: Record<string, string> = {
     'Diagnostics, logs and the developer surface. Experimental and internal options live only here.',
   'settings.advanced.logs': 'Logs',
   'settings.advanced.openLogs': 'Open logs folder',
-  'settings.advanced.logsDone': 'Opening the log folder is not wired in this build (demo) — expected location: ~/RimLoc/logs.',
+  'settings.advanced.logsDone':
+    'Opening the log folder is not wired in this build (demo) — nothing was opened. The log file lives in the app data dir: ' +
+    '~/Library/Application Support/com.rimloc.gui/RimLoc/logs/gui.log (macOS); %APPDATA%\\com.rimloc.gui\\RimLoc\\logs (Windows); ' +
+    '~/.local/share/com.rimloc.gui/RimLoc/logs (Linux).',
   'settings.advanced.diagnostics': 'Diagnostics',
   'settings.advanced.runDiag': 'Run diagnostics',
   'settings.advanced.rules': 'Knowledge & rules',

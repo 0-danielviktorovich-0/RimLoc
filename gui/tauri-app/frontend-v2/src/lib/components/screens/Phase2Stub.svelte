@@ -30,6 +30,7 @@
     type GlossaryMode
   } from '../../stores/settings.svelte';
   import { providers } from '../../stores/providers.svelte';
+  import { project } from '../../stores/project.svelte';
   import ProviderManager from './ProviderManager.svelte';
   import HelpDiagnostics from './HelpDiagnostics.svelte';
   import ExternalEditorSettings from '../source/ExternalEditorSettings.svelte';
@@ -59,6 +60,9 @@
   ];
 
   // ---- mock data (no backend) --------------------------------------------
+  // Night audit §7 follow-up: the install list is STATIC EXAMPLE DATA (game
+  // detection is not wired in this build), so the example-data note is part
+  // of the block itself — always visible, not hidden behind the rescan click.
   const INSTALLS = [
     { id: 'steam', label: 'Steam · RimWorld', version: '1.6.4521', primary: true },
     { id: 'gog', label: 'GOG · RimWorld', version: '1.5.4409', primary: false }
@@ -250,6 +254,10 @@
                 </li>
               {/each}
             </ul>
+            <p class="note" data-testid="settings.rimworld.exampleNote">
+              <Icon name="info" size={13} />
+              {t('settings.rimworld.installsNote')}
+            </p>
             <div class="stack">
               <button
                 type="button"
@@ -582,7 +590,12 @@
 
           <details class="qa dev" data-testid="settings.details.dev">
             <summary>{t('settings.advanced.dev')}</summary>
-            <p class="note">{t('settings.advanced.mocks')}</p>
+            <!-- The "runs on mocks" claim is data-mode truth: on a real
+                 contract project it would be a lie, so it shows only in the
+                 fixture/demo mode (the header badge carries the same truth). -->
+            {#if project.source !== 'contract'}
+              <p class="note">{t('settings.advanced.mocks')}</p>
+            {/if}
           </details>
         </div>
       {/if}
