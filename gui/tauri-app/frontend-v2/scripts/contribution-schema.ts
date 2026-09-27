@@ -45,6 +45,21 @@ export const LOCALE_RE = /^[a-z]{2,3}(?:-[A-Za-z0-9]+)*$/;
 export const REVISION_RE = /^[0-9a-f]{7,40}(?:-dirty)?$/;
 
 /**
+ * Change/message id shape (SF-2): ASCII letters, digits, dot, dash, slash,
+ * underscore; 1-200 chars; no leading/trailing dots. The shape check exists
+ * so an id can never be a machinery string ('constructor', 'toString',
+ * '__proto__' are shape-valid but then fail the hasOwn existence gates) and
+ * can never smuggle whitespace, separators or control characters into the
+ * dictionary-line rewrite.
+ */
+export const CHANGE_ID_RE = /^[A-Za-z0-9_.\-\/]{1,200}$/;
+
+/** True when the id is safe to address as a dictionary key and to rewrite. */
+export function isValidChangeId(id: string): boolean {
+  return CHANGE_ID_RE.test(id) && !id.startsWith('.') && !id.endsWith('.');
+}
+
+/**
  * One translation change. Exactly these three fields, nothing else.
  * `base_value` (SF-1) records the dictionary value the translator saw when
  * the change was made: the applier refuses to run when the live value has
@@ -230,6 +245,10 @@ export function parseContributionBundle(raw: unknown): ParseResult<ContributionB
       }
       if (typeof entry.id !== 'string' || entry.id.length === 0) {
         errors.push(`changes[${i}].id must be a non-empty string`);
+      } else if (!isValidChangeId(entry.id)) {
+        errors.push(
+          `changes[${i}].id ${JSON.stringify(entry.id)} violates the id contract (bad_id): must match ${CHANGE_ID_RE.source} with no leading/trailing dots`,
+        );
       }
       if (typeof entry.value !== 'string') {
         errors.push(`changes[${i}].value must be a string`);

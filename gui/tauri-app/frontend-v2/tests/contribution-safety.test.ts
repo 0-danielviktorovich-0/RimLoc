@@ -16,9 +16,10 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
 import { ru } from '../src/i18n/ru';
-import { buildContribution } from '../scripts/build-contribution';
+import { validatePackObject } from '../src/i18n/pack-schema';
+import { buildContribution, validateChange } from '../scripts/build-contribution';
 import { planApply } from '../scripts/apply-contribution';
-import { parseContributionBundle } from '../scripts/contribution-schema';
+import { ContributionBundle, parseContributionBundle } from '../scripts/contribution-schema';
 
 const ROOT = join(__dirname, '..');
 const TSX = join(ROOT, 'node_modules', '.bin', 'tsx');
@@ -167,4 +168,114 @@ describe('SF-1: base_value rebase gate (a stale bundle must not overwrite a manu
     },
     60_000,
   );
+});
+
+describe('SF-2: inherited property names and prototype keys are machine refusals', () => {
+  it('SF-2: ids breaking the id shape are refused with bad_id at bundle parse', () => {
+    // '' is refused separately by the non-empty check — this list is about
+    // the shape contract proper.
+    const badIds = ['.leading', 'trailing.', 'with space', 'кириллица', 'a'.repeat(201), 'x\ny'];
+    for (const id of badIds) {
+      const parsed = parseContributionBundle(
+        freshBundle({}, [{ id, value: 'v', base_value: 'b' }]),
+      );
+      expect(parsed.ok, JSON.stringify(id)).toBe(false);
+      if (!parsed.ok) expect(parsed.errors.join(' | '), JSON.stringify(id)).toContain('bad_id');
+    }
+  });
+
+  it('SF-2: builder drops inherited-name ids with a typed reason instead of crashing', () => {
+    // Before the fix validateChange crashed here: 'constructor'/'toString'
+    // resolved through the prototype chain, and extractPlaceholders() was
+    // called on the inherited function.
+    const result = buildContribution(
+      {
+        locale: 'ru',
+        changes: [
+          { id: 'constructor', value: 'x' },
+          { id: 'toString', value: 'y' },
+        ],
+      },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('NEEDS-FIXES');
+    expect(result.bundle).toBeUndefined();
+    const reasons = result.issues.map((i) => `${i.ref}: ${i.reason}`).join(' | ');
+    expect(reasons).toContain('constructor');
+    expect(reasons).toContain('toString');
+    expect(reasons).toContain('does not exist in the en catalog');
+  });
+
+  it('SF-2: validateChange refuses inherited-name ids without touching the prototype', () => {
+    expect(validateChange({ id: 'constructor', value: 'x' }, en)?.reason).toContain(
+      'does not exist in the en catalog',
+    );
+    expect(validateChange({ id: 'hasOwnProperty', value: 'x' }, en)?.reason).toContain(
+      'does not exist in the en catalog',
+    );
+  });
+
+  it('SF-2: planApply is hasOwn-safe — inherited-name ids are typed errors, not crashes', () => {
+    const bundle = {
+      schema_version: '1',
+      kind: 'rimloc-ui-translation',
+      locale: 'ru',
+      base_catalog_revision: BASE_REVISION,
+      changes: [
+        { id: 'constructor', value: 'x', base_value: '' },
+        { id: 'toString', value: 'y', base_value: '' },
+      ],
+    } as unknown as ContributionBundle;
+    const plan = planApply(bundle, en, ru);
+    expect(plan.entries).toEqual([]);
+    expect(plan.errors.map((e) => e.ref)).toEqual(['constructor', 'toString']);
+  });
+
+  it('SF-2: a __proto__ key anywhere in a bundle is a structural refusal', () => {
+    const evilRoot = JSON.parse(
+      `{"schema_version":"1","kind":"rimloc-ui-translation","locale":"ru","base_catalog_revision":"${BASE_REVISION}","changes":[{"id":"common.close","value":"x","base_value":"y"}],"__proto__":{"polluted":true}}`,
+    );
+    const rootParsed = parseContributionBundle(evilRoot);
+    expect(rootParsed.ok).toBe(false);
+    if (!rootParsed.ok) expect(rootParsed.errors.join(' | ')).toContain('__proto__');
+
+    const evilEntry = JSON.parse(
+      `{"schema_version":"1","kind":"rimloc-ui-translation","locale":"ru","base_catalog_revision":"${BASE_REVISION}","changes":[{"id":"common.close","value":"x","base_value":"y","__proto__":{"deep":1}}]}`,
+    );
+    const entryParsed = parseContributionBundle(evilEntry);
+    expect(entryParsed.ok).toBe(false);
+    if (!entryParsed.ok) expect(entryParsed.errors.join(' | ')).toContain('__proto__');
+
+    const evilContributor = JSON.parse(
+      `{"schema_version":"1","kind":"rimloc-ui-translation","locale":"ru","base_catalog_revision":"${BASE_REVISION}","changes":[{"id":"common.close","value":"x","base_value":"y"}],"contributor":{"note":"n","__proto__":{}}}`,
+    );
+    const contributorParsed = parseContributionBundle(evilContributor);
+    expect(contributorParsed.ok).toBe(false);
+    if (!contributorParsed.ok) expect(contributorParsed.errors.join(' | ')).toContain('__proto__');
+  });
+
+  it('SF-2: pack ids like constructor / toString / __proto__ reject typed, without crashing', () => {
+    for (const id of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+      const pack = {
+        schema_version: '1',
+        locale: 'ja',
+        base_catalog_revision: 'a709064',
+        messages: [{ id, value: 'リムロック' }],
+      };
+      const result = validatePackObject(pack, en);
+      expect(result.ok, id).toBe(false);
+      if (!result.ok) expect(result.reason, id).toMatch(/bad_id|unknown_id/);
+    }
+  });
+
+  it('SF-2: a __proto__ key at the pack root is a structural refusal', () => {
+    const evilPack = JSON.parse(
+      `{"schema_version":"1","locale":"ja","base_catalog_revision":"a709064","messages":[{"id":"common.appName","value":"リムロック"}],"__proto__":{"x":1}}`,
+    );
+    const result = validatePackObject(evilPack, en);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.details).toContain('__proto__');
+  });
 });

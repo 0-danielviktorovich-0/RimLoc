@@ -35,8 +35,10 @@ import {
   CHANGES_MAX_COUNT,
   ContributionBundle,
   BundleChange,
+  CHANGE_ID_RE,
   VALUE_MAX_LEN,
   isContributableLocale,
+  isValidChangeId,
   scanSecrets,
   sortChangesById,
 } from './contribution-schema';
@@ -109,6 +111,17 @@ export function sanitizeInput(raw: unknown): SanitizeReport {
       report.dropped.push({ ref, reason: 'id must be a non-empty string' });
       return;
     }
+    // SF-2: refuse ids that can never be safely addressed as dictionary keys
+    // before any catalog lookup happens.
+    if (!isValidChangeId(e.id)) {
+      report.dropped.push({
+        ref,
+        reason: `id ${JSON.stringify(
+          e.id,
+        )} violates the id contract (bad_id): must match ${CHANGE_ID_RE.source} with no leading/trailing dots`,
+      });
+      return;
+    }
     if (typeof e.value !== 'string') {
       report.dropped.push({ ref: e.id, reason: 'value must be a string' });
       return;
@@ -132,7 +145,10 @@ export function validateChange(
   enDict: Record<string, string>,
 ): ValidationIssue | null {
   const { id, value } = change;
-  if (!(id in enDict)) {
+  // SF-2: hasOwn only — `id in dict` / truthy dict[id] resolve inherited
+  // names ('constructor', 'toString') and crash the placeholder check on a
+  // function instead of refusing the id.
+  if (!Object.hasOwn(enDict, id)) {
     return {
       ref: id,
       reason: 'id does not exist in the en catalog (new keys are not contributable)',

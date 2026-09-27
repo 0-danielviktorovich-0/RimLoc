@@ -34,6 +34,16 @@ const LOCALE_RE = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
  * structurally valid — revision-based rebase semantics are wave B3/B4. */
 const REVISION_RE = /^[0-9a-f]{7,40}(-dirty)?$/;
 
+/** Message id shape (SF-2): same contract as the contribution bundle's
+ * CHANGE_ID_RE in scripts/contribution-schema.ts (kept as a local copy —
+ * this module ships in the browser bundle and must not depend on the
+ * scripts layer). No leading/trailing dots on top of the regex. */
+const MESSAGE_ID_RE = /^[A-Za-z0-9_.\-\/]{1,200}$/;
+
+function isValidMessageId(id: string): boolean {
+  return MESSAGE_ID_RE.test(id) && !id.startsWith('.') && !id.endsWith('.');
+}
+
 /** {name} interpolation tokens, same syntax the i18n store replaces. */
 const PLACEHOLDER_RE = /\{(\w+)\}/g;
 
@@ -64,6 +74,7 @@ export type PackRejectReason =
   | 'too_large'
   | 'bad_messages'
   | 'bad_message_entry'
+  | 'bad_id'
   | 'duplicate_id'
   | 'unknown_id'
   | 'empty_value'
@@ -95,6 +106,12 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
  */
 export function validatePackObject(raw: unknown, baseCatalog: Record<string, string>): PackLoadResult {
   if (!isPlainObject(raw)) return reject('malformed', 'pack root must be a JSON object');
+
+  // SF-2: a JSON-parsed `{"__proto__": {...}}` is an own data property that
+  // must never be carried around or spread — refuse the pack structurally.
+  if (Object.hasOwn(raw, '__proto__')) {
+    return reject('malformed', 'pack root must not contain a __proto__ key (prototype-pollution guard)');
+  }
 
   if (raw.schema_version !== PACK_SCHEMA_VERSION) {
     return reject('unknown_schema_version', `expected schema_version "${PACK_SCHEMA_VERSION}"`);
@@ -128,11 +145,24 @@ export function validatePackObject(raw: unknown, baseCatalog: Record<string, str
     ) {
       return reject('bad_message_entry', `messages[${i}] must be {id: string, value: string}`);
     }
+    // SF-2: shape-check the id BEFORE any catalog addressing, so inherited
+    // property names can never reach baseCatalog[...].
+    if (!isValidMessageId(entry.id)) {
+      return reject(
+        'bad_id',
+        `messages[${i}] id ${JSON.stringify(entry.id)} violates the id contract (bad_id)`
+      );
+    }
     if (seen.has(entry.id)) return reject('duplicate_id', `id "${entry.id}" appears more than once`);
     seen.add(entry.id);
 
+    // SF-2: hasOwn only — baseCatalog[entry.id] on an inherited name
+    // ('constructor', '__proto__') resolves the prototype chain and crashes
+    // the placeholder comparison on a non-string.
+    if (!Object.hasOwn(baseCatalog, entry.id)) {
+      return reject('unknown_id', `id "${entry.id}" does not exist in the base catalog`);
+    }
     const base = baseCatalog[entry.id];
-    if (base === undefined) return reject('unknown_id', `id "${entry.id}" does not exist in the base catalog`);
     if (!entry.value.trim()) return reject('empty_value', `value for "${entry.id}" is empty`);
     if (entry.value.length > PACK_VALUE_MAX_LENGTH) {
       return reject('value_too_long', `value for "${entry.id}" exceeds ${PACK_VALUE_MAX_LENGTH} chars`);
