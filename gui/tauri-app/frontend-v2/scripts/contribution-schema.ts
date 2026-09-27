@@ -27,9 +27,12 @@ export const SOURCE_LOCALE = 'en';
 /** Hard cap on a single translated value (current catalog max is 230 chars). */
 export const VALUE_MAX_LEN = 1000;
 
-/** Hard cap on contributor display name / note length. */
-export const CONTRIBUTOR_NAME_MAX_LEN = 120;
+/** Hard cap on contributor display name / note length (SF-3). */
+export const CONTRIBUTOR_NAME_MAX_LEN = 80;
 export const CONTRIBUTOR_NOTE_MAX_LEN = 500;
+
+/** Control characters are never legitimate in values or contributor metadata. */
+export const CONTROL_CHARS_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/;
 
 /** Hard cap on changes per bundle (catalog is ~1.2k messages; generous headroom). */
 export const CHANGES_MAX_COUNT = 5000;
@@ -160,6 +163,30 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/**
+ * SF-3: contributor metadata is untrusted text that would ride into the
+ * bundle next to the translations. Secrets there block the record
+ * (`sensitive_contributor_meta`); control characters in the display name are
+ * a structural refusal (`bad_contributor_meta`). Reasons carry pattern
+ * NAMES only — the matched text itself is never echoed. Length is checked
+ * by the caller.
+ */
+function validateContributorMeta(
+  key: 'display_name' | 'note',
+  value: string,
+  errors: string[],
+): void {
+  if (key === 'display_name' && CONTROL_CHARS_RE.test(value)) {
+    errors.push(`contributor.display_name contains control characters (bad_contributor_meta)`);
+  }
+  const hits = scanSecrets(value);
+  if (hits.length > 0) {
+    errors.push(
+      `contributor.${key} matches secret pattern(s) ${JSON.stringify(hits)} (sensitive_contributor_meta) — credentials never enter a bundle, not even as metadata`,
+    );
+  }
+}
+
 function parseContributor(raw: unknown, errors: string[]): BundleContributor | undefined {
   if (raw === undefined) return undefined;
   if (!isPlainObject(raw)) {
@@ -184,6 +211,7 @@ function parseContributor(raw: unknown, errors: string[]): BundleContributor | u
       errors.push(`contributor.${key} exceeds ${max} characters`);
       continue;
     }
+    validateContributorMeta(key, v, errors);
     out[key] = v;
   }
   return Object.keys(out).length > 0 ? out : undefined;

@@ -36,6 +36,9 @@ import {
   ContributionBundle,
   BundleChange,
   CHANGE_ID_RE,
+  CONTROL_CHARS_RE,
+  CONTRIBUTOR_NAME_MAX_LEN,
+  CONTRIBUTOR_NOTE_MAX_LEN,
   VALUE_MAX_LEN,
   isContributableLocale,
   isValidChangeId,
@@ -68,8 +71,6 @@ export interface BuildResult {
   issues: ValidationIssue[];
   preview: string;
 }
-
-const CONTROL_CHARS_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/;
 
 /**
  * First sanitization pass: keep only well-shaped {id, value} string pairs,
@@ -216,6 +217,48 @@ function extractContributor(raw: unknown): { display_name?: string; note?: strin
 }
 
 /**
+ * SF-3 gate over contributor metadata: secrets there block the whole record
+ * (`sensitive_contributor_meta` — stricter of the two contract options: the
+ * note is never silently stripped, the translator rebuilds without it);
+ * control characters and an oversized name are `bad_contributor_meta`.
+ * Reasons carry pattern NAMES only, never the matched text.
+ */
+export function validateContributorMeta(
+  contributor: { display_name?: string; note?: string } | undefined,
+): ValidationIssue[] {
+  if (contributor === undefined) return [];
+  const issues: ValidationIssue[] = [];
+  for (const key of ['display_name', 'note'] as const) {
+    const value = contributor[key];
+    if (value === undefined) continue;
+    const max = key === 'display_name' ? CONTRIBUTOR_NAME_MAX_LEN : CONTRIBUTOR_NOTE_MAX_LEN;
+    if (key === 'display_name' && CONTROL_CHARS_RE.test(value)) {
+      issues.push({
+        ref: `contributor.${key}`,
+        reason: 'display_name contains control characters (bad_contributor_meta)',
+      });
+    }
+    if (value.length > max) {
+      issues.push({
+        ref: `contributor.${key}`,
+        reason: `exceeds the ${max}-character limit (bad_contributor_meta)`,
+      });
+      continue;
+    }
+    const hits = scanSecrets(value);
+    if (hits.length > 0) {
+      issues.push({
+        ref: `contributor.${key}`,
+        reason: `matches secret pattern(s) ${JSON.stringify(
+          hits,
+        )} (sensitive_contributor_meta) — credentials never enter a bundle, not even as metadata`,
+      });
+    }
+  }
+  return issues;
+}
+
+/**
  * Human-readable preview (§5 "preview before send", plain text): counts of
  * improvements vs identical values against the current locale dictionary,
  * the id list, sanitization notes, validation verdict, base revision.
@@ -309,6 +352,12 @@ export function buildContribution(
     issues.push({ ref: '<root>', reason: `changes exceeds ${CHANGES_MAX_COUNT} entries` });
   }
 
+  // SF-3: contributor metadata is part of the record — a secret (or a broken
+  // name) in it blocks READY entirely; nothing is emitted to strip it from.
+  const contributor = extractContributor(root?.contributor);
+  const contributorIssues = validateContributorMeta(contributor);
+  issues.push(...contributorIssues);
+
   const valid: BundleChange[] = [];
   if (!overLimit) {
     // SF-1: each change records the value the translator saw — the snapshot
@@ -323,7 +372,7 @@ export function buildContribution(
     }
   }
 
-  if (!localeOk || overLimit || valid.length === 0) {
+  if (!localeOk || overLimit || contributorIssues.length > 0 || valid.length === 0) {
     const preview = buildPreview(
       {
         locale: typeof rootLocale === 'string' ? rootLocale : '(invalid)',
@@ -339,12 +388,7 @@ export function buildContribution(
     return { status: 'NEEDS-FIXES', issues, preview };
   }
 
-  const bundle = buildBundle(
-    rootLocale as string,
-    valid,
-    baseCatalogRevision,
-    extractContributor(root?.contributor),
-  );
+  const bundle = buildBundle(rootLocale as string, valid, baseCatalogRevision, contributor);
   const status: BundleStatus = issues.length === 0 ? 'READY' : 'PARTIAL-BUT-VALID';
   const preview = buildPreview(
     {

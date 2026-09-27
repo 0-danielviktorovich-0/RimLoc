@@ -279,3 +279,110 @@ describe('SF-2: inherited property names and prototype keys are machine refusals
     if (!result.ok) expect(result.details).toContain('__proto__');
   });
 });
+
+describe('SF-3: contributor metadata cannot carry secrets into a READY record', () => {
+  const okChange = { id: 'common.close', value: 'Закрыть окно' };
+
+  it('SF-3: a secret in contributor.note blocks READY with sensitive_contributor_meta, no bundle', () => {
+    const result = buildContribution(
+      {
+        locale: 'ru',
+        contributor: { display_name: 'D', note: 'my token ghp_' + 'aB3dEf6gH9'.repeat(4) },
+        changes: [okChange],
+      },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('NEEDS-FIXES');
+    expect(result.bundle).toBeUndefined();
+    const joined = result.issues.map((i) => `${i.ref}: ${i.reason}`).join(' | ');
+    expect(joined).toContain('contributor.note');
+    expect(joined).toContain('sensitive_contributor_meta');
+    // the secret itself is never echoed into the preview
+    expect(joined).not.toContain('ghp_');
+    expect(result.preview).toContain('sensitive_contributor_meta');
+  });
+
+  it('SF-3: a secret in contributor.display_name is refused the same way', () => {
+    const result = buildContribution(
+      {
+        locale: 'ru',
+        contributor: { display_name: 'sk-proj-' + 'x'.repeat(30) },
+        changes: [okChange],
+      },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('NEEDS-FIXES');
+    expect(result.bundle).toBeUndefined();
+    const joined = result.issues.map((i) => `${i.ref}: ${i.reason}`).join(' | ');
+    expect(joined).toContain('contributor.display_name');
+    expect(joined).toContain('sensitive_contributor_meta');
+  });
+
+  it('SF-3: control characters in display_name are refused (bad_contributor_meta)', () => {
+    const result = buildContribution(
+      { locale: 'ru', contributor: { display_name: 'Даниэль\x07' }, changes: [okChange] },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('NEEDS-FIXES');
+    expect(result.bundle).toBeUndefined();
+    expect(result.issues.map((i) => i.reason).join(' | ')).toContain('bad_contributor_meta');
+  });
+
+  it('SF-3: display_name is capped at 80 characters', () => {
+    const over = buildContribution(
+      { locale: 'ru', contributor: { display_name: 'N'.repeat(81) }, changes: [okChange] },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(over.status).toBe('NEEDS-FIXES');
+    expect(over.bundle).toBeUndefined();
+    const ok = buildContribution(
+      { locale: 'ru', contributor: { display_name: 'N'.repeat(80) }, changes: [okChange] },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(ok.status).toBe('READY');
+    expect(ok.bundle!.contributor!.display_name).toHaveLength(80);
+  });
+
+  it('SF-3: clean contributor metadata keeps READY', () => {
+    const result = buildContribution(
+      {
+        locale: 'ru',
+        contributor: { display_name: 'Даниэль', note: 'поправил формулировку' },
+        changes: [okChange],
+      },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('READY');
+    expect(result.issues).toEqual([]);
+  });
+
+  it('SF-3: the applier refuses a bundle whose contributor note carries a secret', () => {
+    const parsed = parseContributionBundle(
+      freshBundle({ contributor: { note: 'password=SuperSecret99' } }),
+    );
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.errors.join(' | ')).toContain('sensitive_contributor_meta');
+  });
+
+  it('SF-3: the applier refuses control characters in display_name and oversized names', () => {
+    const ctrl = parseContributionBundle(freshBundle({ contributor: { display_name: 'A\x1b[31m' } }));
+    expect(ctrl.ok).toBe(false);
+    if (!ctrl.ok) expect(ctrl.errors.join(' | ')).toContain('bad_contributor_meta');
+
+    const long = parseContributionBundle(freshBundle({ contributor: { display_name: 'B'.repeat(81) } }));
+    expect(long.ok).toBe(false);
+    if (!long.ok) expect(long.errors.join(' | ')).toContain('80');
+  });
+});
