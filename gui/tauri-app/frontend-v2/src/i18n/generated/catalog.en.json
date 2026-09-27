@@ -2093,6 +2093,16 @@
       "placeholders": []
     },
     {
+      "id": "review.overview.unavailable",
+      "source_text": "Not computed in this build.",
+      "placeholders": []
+    },
+    {
+      "id": "review.overview.partial",
+      "source_text": "Partial overview: source-change tracking and the glossary check are not wired in this build — the other counters come from the project snapshot.",
+      "placeholders": []
+    },
+    {
       "id": "review.queue",
       "source_text": "Issue queue",
       "placeholders": []
@@ -2775,6 +2785,11 @@
       "placeholders": []
     },
     {
+      "id": "settings.rimworld.installsNote",
+      "source_text": "Example data — game-install detection is not wired in this build.",
+      "placeholders": []
+    },
+    {
       "id": "settings.rimworld.primary",
       "source_text": "primary",
       "placeholders": []
@@ -2786,7 +2801,7 @@
     },
     {
       "id": "settings.rimworld.found",
-      "source_text": "Install scan is not wired in this build (demo) — the list above is sample data.",
+      "source_text": "Rescan is not wired in this build (demo) — the list was not changed.",
       "placeholders": []
     },
     {
@@ -3050,7 +3065,7 @@
     },
     {
       "id": "settings.advanced.logsDone",
-      "source_text": "Opening the log folder is not wired in this build (demo) — expected location: ~/RimLoc/logs.",
+      "source_text": "Opening the log folder is not wired in this build (demo) — nothing was opened. The log file lives in the app data dir: ~/Library/Application Support/com.rimloc.gui/RimLoc/logs/gui.log (macOS); %APPDATA%\\com.rimloc.gui\\RimLoc\\logs (Windows); ~/.local/share/com.rimloc.gui/RimLoc/logs (Linux).",
       "placeholders": []
     },
     {

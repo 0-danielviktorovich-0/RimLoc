@@ -1,9 +1,16 @@
 <script lang="ts">
-  // Review tab (mandate §12): the full QA experience. Project-wide counters
-  // (173 / 36 / 24 / 11) sit on top; below, an interactive queue over the
-  // entries loaded in this session — select an issue to open its entry in
-  // context, then [Fix] / [Ignore with reason] / [Mark reviewed]. All actions
-  // are mocks over the local stores (review + project).
+  // Review tab (mandate §12): the full QA experience. Overview counters sit on
+  // top; below, an interactive queue over the entries loaded in this session —
+  // select an issue to open its entry in context, then [Fix] / [Ignore with
+  // reason] / [Mark reviewed].
+  //
+  // Honesty about the overview (night audit §7 follow-up): in fixture/demo mode
+  // the counters are the mandate example values and the header carries the
+  // demo badge. On a real contract project the numbers are computed from the
+  // loaded snapshot — pending-review count and validation issues are real;
+  // source-change tracking and the glossary check have no dimension in the v1
+  // snapshot and are shown as an explicit "—" with the reason instead of a
+  // plausible zero. No new contract commands are involved.
   import Icon from '../Icon.svelte';
   import { t, i18n } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
@@ -11,12 +18,41 @@
   import { router } from '../../router.svelte';
   import { mockReviewOverview, mockReviewCategories } from '../../mock/wizard';
 
-  const OVERVIEW = [
+  interface OverviewCard {
+    key: 'needsReview' | 'errors' | 'sourceChanged' | 'glossaryConflicts';
+    /** null = genuinely not computable in this build (never a faked zero). */
+    value: number | null;
+    icon: string;
+  }
+
+  const OVERVIEW_MOCK: OverviewCard[] = [
     { key: 'needsReview', value: mockReviewOverview.needsReview, icon: 'clipboard-check' },
     { key: 'errors', value: mockReviewOverview.errors, icon: 'warning' },
     { key: 'sourceChanged', value: mockReviewOverview.sourceChanged, icon: 'alert' },
     { key: 'glossaryConflicts', value: mockReviewOverview.glossaryConflicts, icon: 'book' }
-  ] as const;
+  ];
+
+  /** Contract mode: the counters the snapshot can actually express. Keys
+   *  absent here are exactly the ones shown as an honest "—". */
+  const liveOverview = $derived.by<Partial<Record<OverviewCard['key'], number>> | null>(() => {
+    if (project.source !== 'contract') return null;
+    const counts = project.statusCounts();
+    return {
+      needsReview: counts.pending_review,
+      errors: project.entries.filter((e) => e.validation === 'issues').length
+    };
+  });
+
+  const overview = $derived.by<OverviewCard[]>(() => {
+    const live = liveOverview;
+    if (!live) return OVERVIEW_MOCK;
+    return OVERVIEW_MOCK.map((c) =>
+      typeof live[c.key] === 'number' ? { ...c, value: live[c.key] as number } : { ...c, value: null }
+    );
+  });
+
+  /** True on a real project: the overview is partial — say so under the cards. */
+  const overviewIsPartial = $derived(liveOverview !== null);
 
   const KIND_ICONS: Record<string, string> = {
     placeholder_mismatch: 'warning',
@@ -70,16 +106,33 @@
   </div>
 
   <dl class="overview">
-    {#each OVERVIEW as o (o.key)}
+    {#each overview as o (o.key)}
       <div class="card" data-testid={`review.overview.${o.key}`}>
         <dt>
           <Icon name={o.icon} size={14} />
           {t(`review.${o.key}`)}
         </dt>
-        <dd class="mono">{fmt(o.value)}</dd>
+        {#if o.value === null}
+          <dd
+            class="mono unavailable"
+            title={t('review.overview.unavailable')}
+            data-testid={`review.overview.${o.key}.unavailable`}
+          >
+            —
+            <span class="visually-hidden">{t('review.overview.unavailable')}</span>
+          </dd>
+        {:else}
+          <dd class="mono">{fmt(o.value)}</dd>
+        {/if}
       </div>
     {/each}
   </dl>
+  {#if overviewIsPartial}
+    <p class="partial-note" data-testid="review.overview.partial">
+      <Icon name="info" size={13} />
+      {t('review.overview.partial')}
+    </p>
+  {/if}
 
   <div class="chips" role="group" aria-label={t('review.categories')} data-testid="review.categories">
     <button
@@ -372,6 +425,26 @@
     font-size: 22px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Not-computable counter (contract mode): explicit dash, never a faked zero. */
+  .card dd.unavailable {
+    color: var(--color-muted-fg);
+    font-weight: 400;
+  }
+
+  .partial-note {
+    margin: 0;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-1);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  .partial-note :global(svg) {
+    flex: none;
+    margin-top: 2px;
   }
 
   /* Category chips */
