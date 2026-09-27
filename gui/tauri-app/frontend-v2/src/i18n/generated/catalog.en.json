@@ -572,7 +572,12 @@
     },
     {
       "id": "wizard.w2.drop",
-      "source_text": "or drag a mod folder here",
+      "source_text": "or drag a mod folder here — drag is a demo placeholder in this build",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.folderStub",
+      "source_text": "The folder picker and drag-and-drop are not wired in this build (demo) — pick a branch from the demo list above.",
       "placeholders": []
     },
     {
@@ -1309,6 +1314,16 @@
     {
       "id": "languages.manager.importDone",
       "source_text": "Pack texts imported as drafts.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.importStub",
+      "source_text": "Importing from a file is not wired in this build (demo). Start a fresh target via Add language instead.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addedEmpty",
+      "source_text": "Target language added with an empty project — no texts were imported.",
       "placeholders": []
     },
     {
@@ -2474,7 +2489,7 @@
     },
     {
       "id": "build.success",
-      "source_text": "Translation built successfully",
+      "source_text": "Demo build complete — nothing was written to disk.",
       "placeholders": []
     },
     {
@@ -2489,7 +2504,7 @@
     },
     {
       "id": "build.openedNote",
-      "source_text": "Folder opened: {path}",
+      "source_text": "Demo: opening the folder is not wired in this build — output path: {path}.",
       "placeholders": [
         "path"
       ]
@@ -2511,7 +2526,7 @@
     },
     {
       "id": "build.installedNote",
-      "source_text": "Copied into the game Mods folder — enable it in the mod list before the next run.",
+      "source_text": "Demo: nothing was copied — installation arrives with the live build.",
       "placeholders": []
     },
     {
@@ -2746,7 +2761,7 @@
     },
     {
       "id": "settings.general.updates.ok",
-      "source_text": "You are on the latest version (mock).",
+      "source_text": "Update check is not wired in this build (demo) — no network request was made.",
       "placeholders": []
     },
     {
@@ -2771,7 +2786,7 @@
     },
     {
       "id": "settings.rimworld.found",
-      "source_text": "Found: 2 installations · 143 mods (mock)",
+      "source_text": "Install scan is not wired in this build (demo) — the list above is sample data.",
       "placeholders": []
     },
     {
@@ -3035,7 +3050,7 @@
     },
     {
       "id": "settings.advanced.logsDone",
-      "source_text": "Log folder ready (mock): ~/RimLoc/logs",
+      "source_text": "Opening the log folder is not wired in this build (demo) — expected location: ~/RimLoc/logs.",
       "placeholders": []
     },
     {
@@ -3085,7 +3100,7 @@
     },
     {
       "id": "settings.advanced.exported",
-      "source_text": "Configuration exported (mock).",
+      "source_text": "Configuration export is not wired in this build (demo) — nothing was written.",
       "placeholders": []
     },
     {
@@ -3095,7 +3110,7 @@
     },
     {
       "id": "settings.advanced.imported",
-      "source_text": "Configuration imported (mock).",
+      "source_text": "Configuration import is not wired in this build (demo) — nothing was read.",
       "placeholders": []
     },
     {
@@ -3170,7 +3185,7 @@
     },
     {
       "id": "providers.status.connected",
-      "source_text": "Connected",
+      "source_text": "Connected (mock)",
       "placeholders": []
     },
     {
@@ -3180,7 +3195,7 @@
     },
     {
       "id": "providers.status.offline",
-      "source_text": "Offline",
+      "source_text": "Offline (mock)",
       "placeholders": []
     },
     {

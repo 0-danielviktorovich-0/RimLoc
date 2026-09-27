@@ -572,7 +572,12 @@
     },
     {
       "id": "wizard.w2.drop",
-      "translated": "или перетащите папку мода сюда",
+      "translated": "или перетащите папку мода сюда — перетаскивание в этой сборке демонстрационное",
+      "placeholders": []
+    },
+    {
+      "id": "wizard.w2.folderStub",
+      "translated": "Выбор папки и перетаскивание в этой сборке не подключены (демо) — выберите ветку из демо-списка выше.",
       "placeholders": []
     },
     {
@@ -1309,6 +1314,16 @@
     {
       "id": "languages.manager.importDone",
       "translated": "Тексты пакета импортированы как черновики.",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.importStub",
+      "translated": "Импорт из файла в этой сборке не подключён (демо). Начните новый язык через «Добавить язык».",
+      "placeholders": []
+    },
+    {
+      "id": "languages.manager.addedEmpty",
+      "translated": "Язык перевода добавлен с пустым проектом — тексты не импортировались.",
       "placeholders": []
     },
     {
@@ -2474,7 +2489,7 @@
     },
     {
       "id": "build.success",
-      "translated": "Перевод собран",
+      "translated": "Демо-сборка завершена — на диск ничего не записано.",
       "placeholders": []
     },
     {
@@ -2489,7 +2504,7 @@
     },
     {
       "id": "build.openedNote",
-      "translated": "Папка открыта: {path}",
+      "translated": "Демо: открытие папки в этой сборке не подключено — путь вывода: {path}.",
       "placeholders": [
         "path"
       ]
@@ -2511,7 +2526,7 @@
     },
     {
       "id": "build.installedNote",
-      "translated": "Скопировано в папку Mods игры — включите перевод в списке модов перед запуском.",
+      "translated": "Демо: ничего не копировалось — установка появится в живой сборке.",
       "placeholders": []
     },
     {
@@ -2746,7 +2761,7 @@
     },
     {
       "id": "settings.general.updates.ok",
-      "translated": "У вас последняя версия (мок).",
+      "translated": "Проверка обновлений в этой сборке не подключена (демо) — сетевой запрос не выполнялся.",
       "placeholders": []
     },
     {
@@ -2771,7 +2786,7 @@
     },
     {
       "id": "settings.rimworld.found",
-      "translated": "Найдено: 2 установки · 143 мода (мок)",
+      "translated": "Сканирование установок в этой сборке не подключено (демо) — список выше — примерные данные.",
       "placeholders": []
     },
     {
@@ -3035,7 +3050,7 @@
     },
     {
       "id": "settings.advanced.logsDone",
-      "translated": "Папка журналов готова (мок): ~/RimLoc/logs",
+      "translated": "Открытие папки журналов в этой сборке не подключено (демо) — ожидаемое расположение: ~/RimLoc/logs.",
       "placeholders": []
     },
     {
@@ -3085,7 +3100,7 @@
     },
     {
       "id": "settings.advanced.exported",
-      "translated": "Конфигурация экспортирована (мок).",
+      "translated": "Экспорт конфигурации в этой сборке не подключён (демо) — ничего не записано.",
       "placeholders": []
     },
     {
@@ -3095,7 +3110,7 @@
     },
     {
       "id": "settings.advanced.imported",
-      "translated": "Конфигурация импортирована (мок).",
+      "translated": "Импорт конфигурации в этой сборке не подключён (демо) — ничего не прочитано.",
       "placeholders": []
     },
     {
@@ -3170,7 +3185,7 @@
     },
     {
       "id": "providers.status.connected",
-      "translated": "Подключён",
+      "translated": "Подключён (мок)",
       "placeholders": []
     },
     {
@@ -3180,7 +3195,7 @@
     },
     {
       "id": "providers.status.offline",
-      "translated": "Офлайн",
+      "translated": "Офлайн (мок)",
       "placeholders": []
     },
     {

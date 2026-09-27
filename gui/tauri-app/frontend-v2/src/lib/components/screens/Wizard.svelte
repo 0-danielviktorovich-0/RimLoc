@@ -70,6 +70,11 @@
 
   let targetLocale = $state('ru');
 
+  // §7 audit: honest-stub note for the folder/drop actions — no OS dialog and
+  // no drop handling exist in this build, so the click explains instead of
+  // pretending.
+  let folderStub = $state(false);
+
   // Strategy step state: existing-knowledge checkboxes default on; the
   // remainder choice defaults to manual — zero cost, nothing to confirm.
   let useTranslation = $state(true);
@@ -271,12 +276,25 @@
           {/each}
         </ul>
         <div class="dropzone">
-          <button type="button" class="btn" data-testid="wizard.choose-folder">
+          <!-- §7 audit: this build has no OS folder dialog and no drop
+               handling — the button used to be dead and the hint promised a
+               drag that never worked. Honest stub: click explains instead of
+               pretending (mirrors the Home no-mods folder note). -->
+          <button
+            type="button"
+            class="btn"
+            data-testid="wizard.choose-folder"
+            aria-expanded={folderStub}
+            onclick={() => (folderStub = true)}
+          >
             <Icon name="folder-open" size={14} />
             {t('wizard.w2.folder')}
           </button>
           <span class="drop-hint">{t('wizard.w2.drop')}</span>
         </div>
+        {#if folderStub}
+          <p class="note" role="note" data-testid="wizard.folder-stub">{t('wizard.w2.folderStub')}</p>
+        {/if}
       {:else if content === 'base'}
         <!-- BASE GAME branch: detected installations, Core + version. -->
         <ul class="mod-list" role="radiogroup" aria-label={t('wizard.w2.subtitle.base')}>

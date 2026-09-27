@@ -72,7 +72,14 @@
   function confirmAdd() {
     if (!addLocale) return;
     if (languages.addTarget(addLocale, addFlow)) {
-      notice = t('languages.manager.importDone');
+      // §7 audit: the notice must describe what ACTUALLY happened. The demo
+      // corpus seeds sample texts only for some flows/locales — an "empty"
+      // (or corpus-less) add must never claim an import that never ran.
+      const summary = languages.summaries().find((s) => s.locale === addLocale);
+      notice =
+        summary && summary.progress > 0
+          ? t('languages.manager.importDone')
+          : t('languages.manager.addedEmpty');
       dialog = { kind: 'main' };
     }
   }
@@ -280,7 +287,7 @@
                     type="button"
                     class="btn"
                     data-testid={`languages.manager.target.${s.locale}.import`}
-                    onclick={() => showStub(t('languages.manager.importDone'))}
+                    onclick={() => showStub(t('languages.manager.importStub'))}
                   >
                     {t('languages.manager.import')}
                   </button>
