@@ -28,6 +28,7 @@
   let contractError = $state<string | null>(null);
   let modPath = $state('');
   let contractRecents = $state<ProjectSummaryDto[]>([]);
+  let picking = $state(false);
 
   async function createFromPath() {
     if (contractBusy || !modPath.trim()) return;
@@ -37,6 +38,23 @@
     contractBusy = false;
     if (ok) router.navigate('workspace');
     else contractError = project.contractError;
+  }
+
+  // Native folder dialog (tauri mode only — the panel above is tauri-only).
+  // Cancellation (null) is silent: closing the dialog is a normal outcome,
+  // not a failure. A REAL failure surfaces verbatim in the shared alert.
+  async function pickModFolder() {
+    if (picking || contractBusy) return;
+    picking = true;
+    contractError = null;
+    try {
+      const dir = await clientInstance.getClient().pickDirectory(modPath.trim() || undefined);
+      if (dir) modPath = dir;
+    } catch (e) {
+      contractError = e instanceof Error ? e.message : String(e);
+    } finally {
+      picking = false;
+    }
   }
 
   async function openContract(id: string) {
@@ -199,6 +217,16 @@
             bind:value={modPath}
             disabled={contractBusy}
           />
+          <button
+            type="button"
+            class="btn"
+            data-testid="home.contract.pick"
+            disabled={contractBusy || picking}
+            onclick={pickModFolder}
+          >
+            <Icon name="folder-open" size={14} />
+            {t('home.contract.pick')}
+          </button>
           <button type="button" class="btn btn-primary" data-testid="home.contract.create" disabled={contractBusy || !modPath.trim()} onclick={createFromPath}>
             <Icon name="file-plus" size={14} />
             {t('home.contract.create')}
