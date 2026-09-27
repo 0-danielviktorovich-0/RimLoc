@@ -302,3 +302,20 @@ constructively, not by convention.
   dictionaries into the bundle; nothing reads `generated/` at runtime today.
 - Determinism is a hard requirement: no timestamps, no locale-dependent
   ordering, stable JSON formatting (`JSON.stringify(…, 2)` + newline).
+
+## Safety hardening (night 28.09, SF-1..4 — independent review confirmed)
+
+- `changes[].base_value` — обязательное поле каждой change: значение, которое
+  переводчик видел при сборке бандла. Apply сверяет его с живым словарём:
+  несовпадение → value conflict → отказ всего прогона (`rebase_required` для
+  бандлов без поля). `--allow-stale` обходит только гейт ревизии каталога,
+  НЕ конфликт значений — ручная правка словаря не может быть затёрта.
+- Форма id валидируется рано (`bad_id`): унаследованные имена свойств
+  (`constructor`, `__proto__`, `toString`) дают машинный отказ, а не TypeError;
+  проверки наличия — только `Object.hasOwn`; корневой `__proto__` в JSON —
+  структурный отказ (prototype pollution невозможен).
+- Метаданные контрибьютора под тем же санитайзером: секретоподобные паттерны
+  в `note`/`display_name` → `sensitive_contributor_meta` → NEEDS-FIXES, файл
+  бандла не выписывается; лимиты 80/500 символов.
+- Дубликат id внутри `changes` → отказ `duplicate_id` (никакого
+  last-write-wins); builder схлопывает только равные дубликаты с warning.
