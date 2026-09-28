@@ -78,6 +78,18 @@
     else contractError = project.contractError;
   }
 
+  // M-1 (UI audit 2026-09-29): look-alike recents ("RimLoc UI (en)" ×7 +
+  // a raw numeric name) become distinguishable — target version, revision
+  // and the short id suffix straight from the summary DTO, no new contract
+  // fields. Data notation (v/r/#) is locale-independent.
+  function recentMeta(rp: ProjectSummaryDto): string {
+    const parts: string[] = [];
+    if (rp.target_version) parts.push(`v${rp.target_version}`);
+    parts.push(`r${rp.revision}`);
+    parts.push(`#${rp.project_id.slice(-6)}`);
+    return parts.join(' · ');
+  }
+
   // Selfloc entry (mandate D): resolve the app-bundled RimLoc UI catalog and
   // open it through the EXISTING contract create flow — the ui_catalog
   // adapter inside the backend routes the directory; no special-cased client
@@ -296,7 +308,7 @@
                 <li class="contract-recent">
                   <span class="contract-main">
                     <span class="name">{rp.name}</span>
-                    <span class="rev mono">{t('home.contract.revision', { count: rp.revision })}</span>
+                    <span class="rev mono">{recentMeta(rp)}</span>
                   </span>
                   <button
                     type="button"
@@ -368,6 +380,21 @@
           {#if contractError}
             <p class="note-error" role="alert" data-testid="home.contract.error">{contractError}</p>
           {/if}
+          <!-- H-1 (UI audit 2026-09-29): the seven-step wizard is a real,
+               implemented screen that was unreachable on the live Home. This
+               secondary entry is honestly labeled a DEMO tour — the wizard
+               walks the bundled demo dataset; the live create flow above
+               stays the only way to make a real project. -->
+          <button
+            type="button"
+            class="btn tour-btn"
+            data-testid="home.contract.wizardTour"
+            onclick={() => router.navigate('wizard')}
+          >
+            <Icon name="play" size={14} />
+            {t('home.wizard.tour')}
+          </button>
+          <p class="helper tour-note">{t('home.wizard.tourNote')}</p>
         </section>
 
         <!-- Selfloc entry (mandate D, first wave): the app's own UI catalog
@@ -1302,6 +1329,17 @@
     margin-top: var(--space-3);
     min-height: 38px;
     font-weight: 600;
+  }
+
+  /* H-1: the demo-tour wizard entry — secondary under the live create CTA. */
+  .tour-btn {
+    width: 100%;
+    justify-content: center;
+    margin-top: var(--space-2);
+  }
+
+  .tour-note {
+    margin-top: var(--space-1);
   }
 
   /* ---------- contract recents (tauri) ------------------------------------ */

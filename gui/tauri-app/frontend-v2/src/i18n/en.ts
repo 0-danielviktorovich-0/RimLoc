@@ -87,6 +87,17 @@ export const en: Record<string, string> = {
   'livebadge.title':
     'A real project is open over the RimLocClient → Tauri contract: the data is not demo fixtures and edits persist into the managed project.',
 
+  // M-2 (UI audit 2026-09-29): with no project open the header chip states
+  // the TRANSPORT truth (Live/Mock by client mode) — the live project list
+  // below is not demo data. The «Demo data (mock)» label stays scoped to the
+  // bundled demo dataset (MockBadge, only while project.isDemo).
+  'transportbadge.live.label': 'Live transport',
+  'transportbadge.live.title':
+    'The real desktop backend is connected through the Tauri bridge. No project is open yet — the projects below are your real managed ones.',
+  'transportbadge.mock.label': 'Mock transport (demo mode)',
+  'transportbadge.mock.title':
+    'The client runs on the built-in mock transport (explicit dev/demo opt-in). Real projects are never touched.',
+
   // Bundled demo project (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
   'home.demo.mark': 'synthetic demo project',
@@ -1229,6 +1240,11 @@ export const en: Record<string, string> = {
   // W-built boot gate + contract Home
   'boot.configError.title': 'No backend in this launch',
   'boot.configError.hint': 'Start the RimLoc desktop app for the live backend, or enable the demo mode (?dev=1 in the address bar) to browse the synthetic demo.',
+  // H-1 (UI audit 2026-09-29): the implemented wizard was unreachable on the
+  // live Home. Secondary entry in the live create panel, honestly labeled a
+  // DEMO tour — it never poses as the live create flow.
+  'home.wizard.tour': 'Translation wizard (demo tour)',
+  'home.wizard.tourNote': 'A guided walkthrough on the bundled demo project — your mods are never touched. A real project is created with the button above.',
   'home.contract.title': 'RimLoc — live project',
   'home.contract.desc': 'Create a translation project from a real mod folder, or reopen a recent one. The project stays on this machine.',
   'home.contract.pathPlaceholder': 'Path to the mod folder…',
