@@ -15,8 +15,9 @@ related:
 
 # RELEASE READINESS REPORT — RimLoc Local Release Candidate
 
-**Дата:** 2026-09-28 (ночь: SF-фиксы + волна честности UI + selfloc entry) · **Ревизии:** tested baseline `2f8ff0e` → **current `main 9fe14e4`** · **Финальный артефакт ночи:** бинарь sha256 `72426289…8fdb836`, DMG `0552ce6f…` (git `9fe14e4`, evidence `artifact-final-night/`; контрольный `8056649` сохранён). Origin/main на `9591f4f`; пуш только по явному ок владельца.
+**Дата:** 2026-09-29 (ночь 2: existing-flow + REL-2 + UI-кампания) · **Ревизии:** tested baseline `2f8ff0e` → `9fe14e4` → **current `main 65d54af`** · **Артефакты:** контрольный `8056649` (`f396b0e2…`) · промежуточный `9fe14e4` (`72426289…`) · **актуальный `925858a`: бинарь `478268f3…`, DMG `a72cd38a…`** (evidence `artifact-rel2-night/`; все смоуки PASS). Дельта 925858a→65d54af — GUI-only (Home-редизайн), следующий артефакт пересоберёт. Origin/main на `9591f4f`; пуш только по явному ок владельца.
 **Дельты после baseline:** 27.09 — документация, i18n S1, K-гапы (MSRV/legacy/гварды), JSON-мост; ночь 28.09 — **SF-1..5 (независимый ревью: вклад安全性 contribution: base_value preconditions, prototype-id отказы, секреты в метаданных, дубликаты, настоящая цепочка export→pack→contribution — все подтверждены CONFIRMED-FIXED отдельным ревьюером)**, **волна честности UI (13 success-симуляций заменены на честные статусы)**, **нативный выбор папки (pick_directory) в создании проекта и build/diagnose**, **честный Review-обзор из реального снапшота**, **selfloc UI entry: «Перевести RimLoc (бета)» открывает собственный каталог как обычный проект (доказано на release-артефакте: 1187 записей, validate 0/0/0)**.
+**Ночь 29.09 добавила:** existing-translation flow (dry-run анализ + guarded apply через канонические интенты; Existing-экран живой; leaf↔locale гвард; analyze≡apply на TODO), полную сборку мод-пакета в GUI (`project_build_mod`, гварды export 1:1, ModMetaData About — доказано на release: мод-пакет на диске), дедуп selfloc-карточки (переоткрытие вместо дублирования — доказано: 0 новых managed-файлов), **UI-кампанию**: автономный AX-аудит 21 экрана → баг-лист 3 high/11 medium/12 low (`/tmp/rimloc-ui-bugs.md`) → 5 дизайн-вариантов по скилл-линзам → жюри (топ: ui-ux-pro-max) → Home-редизайн имплементирован + переснято.
 **Вердикт: LOCAL RC READY (macOS).** Публикация (push, тег, релиз, подпись) — за владельцем.
 
 ## 1. Гейты приёмки на current `main 8056649` (реальные прогоны 27.09)
@@ -25,9 +26,9 @@ related:
 |---|---|---|
 | Формат | `cargo fmt --all --check` | чисто |
 | Линтер | `cargo clippy --workspace --all-targets -- -D warnings` | чисто |
-| Тесты Rust | `cargo test --workspace --no-fail-fast` | **313 passed / 0 failed** (+SF chain, +selfloc seam) |
+| Тесты Rust | `cargo test --workspace --no-fail-fast` | **324 passed / 0 failed** (+SF chain, +selfloc seam, +existing-flow 7) |
 | Типы фронтенда | `npm run check` (svelte-check) | 0 ошибок, 0 предупреждений |
-| Тесты фронтенда | `npm test` (vitest) | **320/320** (24 файла; +сatalog hygiene, +bridge, +SF-safety 25, +волна 2 (пикер/честный Review) 15, +selfloc UI 8) |
+| Тесты фронтенда | `npm test` (vitest) | **345/345** (27 файлов; +сatalog hygiene, +bridge, +SF-safety, +picker/honesty, +selfloc UI, +existing-flow 15, +home-synthesis 4) |
 | Release-компиляция GUI | `cargo check --release -p rimloc-gui` | зелёный (**это конфигурационный чек, не proof сборки** — сборка/запуск см. §2) |
 | **Release BUILD+PACKAGE+EXECUTION** | `cargo tauri build` → запуск .app без dev-сервера | **PASS ×3** — 8056649 (контроль), 7795e54, **9fe14e4 (финальный)** — см. §2 |
 | Corpus | verify-source-hashes (1066 файлов) + 8 acceptance-кейсов | PASS (ночная кампания; база та же, corpus не менялся) |
