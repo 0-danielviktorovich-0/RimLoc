@@ -36,10 +36,12 @@ pub use build::{
     build_from_root_with_progress, BuildPlan,
 };
 pub use contract::{
-    capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse, Capability,
-    CapabilityReport, ContractError, ContractErrorCode, CreateProjectRequest, IntentAction, JobId,
-    PathBufDto, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch,
-    TranslationIntent, UnsupportedCapability, UI_CONTRACT_VERSION,
+    capability_report, ui_contract_version, ApplyExistingRequest, ApplyExistingResponse,
+    ApplyIntentsRequest, ApplyIntentsResponse, Capability, CapabilityReport, ContractError,
+    ContractErrorCode, CreateProjectRequest, ExistingAmbiguousItem, ExistingMatchItem,
+    ImportExistingRequest, ImportExistingResponse, IntentAction, JobId, PathBufDto, ProjectId,
+    ProjectSnapshot, ProjectSummary, Revision, SessionEpoch, TranslationIntent,
+    UnsupportedCapability, EXISTING_LIST_LIMIT, UI_CONTRACT_VERSION,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
 pub use export::export_po_with_tm;

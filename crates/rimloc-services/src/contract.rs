@@ -365,6 +365,16 @@ pub enum Capability {
     /// a shipped capability. Wire name appends (never renames) per the
     /// contract rule.
     SelflocCatalog,
+    /// Dry-run analysis of an existing translation pack against the open
+    /// project (`project_import_existing`): read-only classification into
+    /// reusable / conflicts / obsolete / ambiguous / invalid + the count of
+    /// inventory strings the pack does not cover. Wire name appends.
+    ProjectImportExisting,
+    /// Apply the reusable set of an analyzed existing pack into the open
+    /// project (`project_apply_existing`): the same resolution as the
+    /// analysis, persist-before-ack, existing translations never
+    /// overwritten, ambiguous lines never auto-applied. Wire name appends.
+    ProjectApplyExisting,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -400,6 +410,8 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectBuildExport,
             Capability::ProjectDiagnosticsBundle,
             Capability::SelflocCatalog,
+            Capability::ProjectImportExisting,
+            Capability::ProjectApplyExisting,
         ],
         unsupported: vec![
             UnsupportedCapability {
@@ -414,10 +426,10 @@ pub fn capability_report() -> CapabilityReport {
                 capability: "entry_create_delete".into(),
                 reason: "intents cover translation edits only; identities come from rescan".into(),
             },
-            UnsupportedCapability {
-                capability: "import_pack".into(),
-                reason: "existing-pack import is not exposed as a contract intent yet".into(),
-            },
+            // W2: `import_pack` moved from unsupported to the two live
+            // entries above (import = dry-run analysis, apply = separate
+            // guarded command). The unsupported entry is REMOVED — the
+            // report must never claim a shipped capability is missing.
         ],
     }
 }
@@ -484,6 +496,115 @@ pub struct DiagnoseResponse {
     pub excluded_count: usize,
 }
 
+// ---------------------------------------------------------------------------
+// Existing translation pack (W2): dry-run analysis + guarded application
+// ---------------------------------------------------------------------------
+
+/// Size cap for the per-category sample lists in
+/// [`ImportExistingResponse`]. Counts are always exact; the lists are
+/// capped samples so a huge pack can never flood the wire or the UI.
+pub const EXISTING_LIST_LIMIT: usize = 50;
+
+/// Request `project_import_existing`: dry-run analysis of an existing
+/// translation pack directory against the open project. READ-ONLY: nothing
+/// on disk or in the project is written, no revision bump.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ImportExistingRequest {
+    pub project_id: ProjectId,
+    /// Stale-session guard (the read-only ops carry it the same way
+    /// `project_validate` does).
+    pub session_epoch: SessionEpoch,
+    /// Absolute directory of the existing pack to scan (typically a
+    /// `Languages/<locale>` folder). Form guard: relative paths are
+    /// refused before any filesystem access.
+    pub existing_dir: PathBufDto,
+    /// Target locale the pack would feed (strict language-folder form).
+    pub locale: String,
+}
+
+/// One analyzed pack line in a capped sample list. `entry` carries the
+/// FULL structural identity the line addresses (reusable / conflicts).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExistingMatchItem {
+    /// The pack's serialization key.
+    pub key: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entry: Option<SourceEntryId>,
+}
+
+/// One ambiguous pack line: several candidate source identities — reported
+/// for review, NEVER auto-applied.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExistingAmbiguousItem {
+    pub key: String,
+    /// Candidate source keys (from the shared matcher).
+    pub candidates: Vec<String>,
+}
+
+/// Result of the dry-run `project_import_existing`. Categories mirror the
+/// services analyzer ([`crate::project::ExistingPackAnalysis`]):
+/// - `reusable` — matched an entry with an empty `<locale>` slot: exactly
+///   what `project_apply_existing` would apply;
+/// - `conflicts` — matched an entry that ALREADY has a `<locale>`
+///   translation: existing work wins, never overwritten;
+/// - `obsolete` — pack lines addressing nothing in the inventory;
+/// - `ambiguous` — several candidate identities, human decides;
+/// - `invalid` — empty/TODO pack lines;
+/// - `new_count` — inventory entries that stay untranslated after the
+///   merge (the pack does not cover them).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ImportExistingResponse {
+    pub job_id: JobId,
+    pub scanned_files: usize,
+    pub scanned_keys: usize,
+    pub reusable_count: usize,
+    pub conflict_count: usize,
+    pub obsolete_count: usize,
+    pub ambiguous_count: usize,
+    pub invalid_count: usize,
+    pub new_count: usize,
+    /// Capped sample lists (see [`EXISTING_LIST_LIMIT`]).
+    pub reusable: Vec<ExistingMatchItem>,
+    pub conflicts: Vec<ExistingMatchItem>,
+    pub obsolete: Vec<ExistingMatchItem>,
+    pub ambiguous: Vec<ExistingAmbiguousItem>,
+    pub invalid: Vec<ExistingMatchItem>,
+}
+
+/// Request `project_apply_existing`: apply the REUSABLE set of the pack
+/// into the open project, persist-before-ack. The full apply-intents guard
+/// set applies: stale epoch/revision refuse the whole operation, existing
+/// translations are never overwritten (conflicts stay conflicts), and
+/// ambiguous/obsolete/invalid lines are never applied.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ApplyExistingRequest {
+    pub project_id: ProjectId,
+    /// Lost-update guard: the revision the caller based the decision on
+    /// (same discipline as `project_apply_intents`).
+    pub expected_revision: Revision,
+    /// Stale-session guard.
+    pub session_epoch: SessionEpoch,
+    /// Absolute directory of the existing pack (same form guards).
+    pub existing_dir: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+/// Result of an acked `project_apply_existing`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ApplyExistingResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    /// Pack lines applied into previously empty slots (origin=Imported).
+    pub applied: usize,
+    /// Existing translations that were NOT overwritten.
+    pub conflicts: usize,
+    /// Pack lines addressing nothing in the inventory (not applied).
+    pub unmatched: usize,
+    /// Ambiguous pack lines (not applied — a human decides).
+    pub ambiguous: usize,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -538,12 +659,75 @@ mod tests {
         assert!(report
             .supported
             .contains(&Capability::ProjectDiagnosticsBundle));
+        // W2: existing-pack import/apply are live slice operations now.
+        assert!(report
+            .supported
+            .contains(&Capability::ProjectImportExisting));
+        assert!(report.supported.contains(&Capability::ProjectApplyExisting));
         assert!(report.unsupported.iter().all(|u| !u.reason.is_empty()));
         assert!(!report.unsupported.iter().any(|u| {
             u.capability == "validate_via_contract"
                 || u.capability == "build_export"
                 || u.capability == "diagnostics_bundle"
+                // W2: import_pack IS supported (via the two entries above)
+                // — the report must not claim it is missing.
+                || u.capability == "import_pack"
         }));
+    }
+
+    /// The existing-pack DTOs round-trip with capped list samples and
+    /// optional identity fields omitted when absent.
+    #[test]
+    fn existing_pack_dtos_round_trip() {
+        let resp = ImportExistingResponse {
+            job_id: "op-1".into(),
+            scanned_files: 2,
+            scanned_keys: 5,
+            reusable_count: 2,
+            conflict_count: 1,
+            obsolete_count: 1,
+            ambiguous_count: 1,
+            invalid_count: 0,
+            new_count: 0,
+            reusable: vec![ExistingMatchItem {
+                key: "Greeting".into(),
+                entry: Some(SourceEntryId {
+                    kind: rimloc_domain::canonical::EntryKind::Keyed,
+                    key: "Greeting".into(),
+                    def_type: None,
+                }),
+            }],
+            conflicts: vec![],
+            obsolete: vec![ExistingMatchItem {
+                key: "OldKey".into(),
+                entry: None,
+            }],
+            ambiguous: vec![ExistingAmbiguousItem {
+                key: "A.C".into(),
+                candidates: vec!["A.C".into(), "A.B".into()],
+            }],
+            invalid: vec![],
+        };
+        let v = serde_json::to_value(&resp).unwrap();
+        assert_eq!(v["reusable"][0]["entry"]["kind"], "keyed");
+        // Absent optional identity is omitted from the wire, not null.
+        assert!(v["obsolete"][0].get("entry").is_none());
+        let back: ImportExistingResponse = serde_json::from_value(v).unwrap();
+        assert_eq!(back, resp);
+
+        let req = ApplyExistingRequest {
+            project_id: "proj-x".into(),
+            expected_revision: 3,
+            session_epoch: 2,
+            existing_dir: PathBufDto::new("/mods/MyMod/Languages/Russian"),
+            locale: "Russian".into(),
+        };
+        let v = serde_json::to_value(&req).unwrap();
+        assert_eq!(v["expected_revision"], 3);
+        assert_eq!(v["session_epoch"], 2);
+        assert_eq!(v["existing_dir"]["path"], "/mods/MyMod/Languages/Russian");
+        let back: ApplyExistingRequest = serde_json::from_value(v).unwrap();
+        assert_eq!(back, req);
     }
 
     /// Intents round-trip with the full structural identity.

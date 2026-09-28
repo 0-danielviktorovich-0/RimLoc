@@ -45,6 +45,10 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_validate",
     "project_export",
     "project_diagnose",
+    // W2 (existing-pack flow): dry-run analysis + guarded application of an
+    // existing translation pack against the open project.
+    "project_import_existing",
+    "project_apply_existing",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -236,6 +240,42 @@ pub fn project_diagnose(
         .lock()
         .expect("contract session registry poisoned");
     manager.diagnose(&project_id, std::path::Path::new(&out_dir))
+}
+
+/// `project_import_existing` — DRY-RUN analysis of an existing translation
+/// pack against the open project; read-only (the services guard refuses
+/// relative paths, non-directories and managed-root targets).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_import_existing(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ImportExistingRequest,
+) -> Result<
+    rimloc_services::contract::ImportExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    manager.import_existing(&request)
+}
+
+/// `project_apply_existing` — apply the REUSABLE set of an analyzed pack
+/// into the open project; persist-before-ack, existing translations never
+/// overwritten, ambiguous lines never auto-applied.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_apply_existing(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ApplyExistingRequest,
+) -> Result<
+    rimloc_services::contract::ApplyExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    manager.apply_existing(&request)
 }
 
 /// Manage the contract state on a builder. Returns the same builder type;
