@@ -12,8 +12,18 @@
 
   let { counts }: { counts: StatusCounts } = $props();
 
-  // Quick filters (mandate §10: keep the useful ones visible).
-  const QUICK: EntryStatus[] = ['untranslated', 'pending_review', 'sourceChanged', 'translated', 'todo'];
+  // Quick filters (mandate §10: keep the useful ones visible). M-3 (UI audit
+  // 2026-09-29): the chips are the ONE filter surface — the left navigator
+  // mirrors this exact set, so every status is reachable from both and the
+  // sets can never diverge again ('orphan' used to be navigator-only).
+  const QUICK: EntryStatus[] = [
+    'untranslated',
+    'pending_review',
+    'sourceChanged',
+    'translated',
+    'todo',
+    'orphan'
+  ];
   const ALL_STATUSES: EntryStatus[] = [
     'untranslated',
     'translated',
