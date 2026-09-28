@@ -1998,6 +1998,11 @@
       "placeholders": []
     },
     {
+      "id": "workspace.project.tool.existing",
+      "translated": "Импортировать существующий перевод",
+      "placeholders": []
+    },
+    {
       "id": "workspace.project.danger",
       "translated": "Опасная зона",
       "placeholders": []
@@ -2687,6 +2692,81 @@
     {
       "id": "existing.note",
       "translated": "Мок-поток: числа анализа демонстрируют проект реального масштаба.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.dir",
+      "translated": "Папка существующего перевода",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.dirHint",
+      "translated": "/путь/к/моду/Languages/Russian",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.pick",
+      "translated": "Выбрать папку…",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.analyzeNote",
+      "translated": "Анализ — это dry run: RimLoc только сравнивает пак с открытым проектом — пока ничего не записывается.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.scanned",
+      "translated": "Просмотрено файлов: {files}, строк: {keys}.",
+      "placeholders": [
+        "files",
+        "keys"
+      ]
+    },
+    {
+      "id": "existing.live.list.reusable",
+      "translated": "Будет импортировано (пустые слоты)",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.list.conflicts",
+      "translated": "Останется как есть (в проекте уже есть перевод)",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.list.obsolete",
+      "translated": "Нет в этом проекте (останется в паке)",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.list.ambiguous",
+      "translated": "Неоднозначные — нужно ваше решение",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.applyNote",
+      "translated": "Применение импортирует только готовые строки. Существующие переводы не перезаписываются, неоднозначные остаются списком для вашего решения.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.apply",
+      "translated": "Импортировать готовые ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "existing.live.applied",
+      "translated": "Импортировано переводов: {count}. Не тронуто: существующих {conflicts}, устаревших {obsolete}, неоднозначных {ambiguous}.",
+      "placeholders": [
+        "ambiguous",
+        "conflicts",
+        "count",
+        "obsolete"
+      ]
+    },
+    {
+      "id": "existing.conflicts",
+      "translated": "Конфликты (сохранены)",
       "placeholders": []
     },
     {

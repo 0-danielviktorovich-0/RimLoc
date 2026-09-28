@@ -445,6 +445,7 @@ export const en: Record<string, string> = {
   'workspace.project.rescan': 'Rescan',
   'workspace.project.reviewChanges': 'Review changes ({count})',
   'workspace.project.tools': 'Specialized tools',
+  'workspace.project.tool.existing': 'Import existing translation',
   'workspace.project.danger': 'Danger zone',
   'workspace.project.dangerNote': 'These actions change the whole project. Each one asks twice before it runs.',
   'workspace.project.reset': 'Reset translation progress',
@@ -599,6 +600,24 @@ export const en: Record<string, string> = {
   'existing.continueTranslation': 'Continue translation',
   'existing.back': 'Choose different content',
   'existing.note': 'Mock flow: the analysis numbers demonstrate a real-scale project.',
+  // W2 — LIVE contract flow of the existing-pack scenario (dry-run analyze
+  // + guarded apply over an open project).
+  'existing.live.dir': 'Existing translation directory',
+  'existing.live.dirHint': '/path/to/mod/Languages/Russian',
+  'existing.live.pick': 'Choose folder…',
+  'existing.live.analyzeNote':
+    'Analyze is a dry run: RimLoc only compares the pack with the open project — nothing is written yet.',
+  'existing.live.scanned': 'Scanned {files} files, {keys} lines.',
+  'existing.live.list.reusable': 'Will be imported (empty slots)',
+  'existing.live.list.conflicts': 'Kept as is (the project already has a translation)',
+  'existing.live.list.obsolete': 'Not in this project (kept in the pack)',
+  'existing.live.list.ambiguous': 'Ambiguous — need your decision',
+  'existing.live.applyNote':
+    'Apply imports only the reusable lines. Existing translations are never overwritten, and ambiguous lines stay a list for you to decide.',
+  'existing.live.apply': 'Import reusable ({count})',
+  'existing.live.applied':
+    'Imported {count} translations. Kept untouched: {conflicts} existing, {obsolete} obsolete, {ambiguous} ambiguous.',
+  'existing.conflicts': 'Conflicts (kept)',
 
   // Settings screen (mandate §15, spec §17). Seven task-grouped sections;
   // CLI flags are deliberately not exposed 1:1 — experimental/internal live

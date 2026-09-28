@@ -1998,6 +1998,11 @@
       "placeholders": []
     },
     {
+      "id": "workspace.project.tool.existing",
+      "source_text": "Import existing translation",
+      "placeholders": []
+    },
+    {
       "id": "workspace.project.danger",
       "source_text": "Danger zone",
       "placeholders": []
@@ -2687,6 +2692,81 @@
     {
       "id": "existing.note",
       "source_text": "Mock flow: the analysis numbers demonstrate a real-scale project.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.dir",
+      "source_text": "Existing translation directory",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.dirHint",
+      "source_text": "/path/to/mod/Languages/Russian",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.pick",
+      "source_text": "Choose folder…",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.analyzeNote",
+      "source_text": "Analyze is a dry run: RimLoc only compares the pack with the open project — nothing is written yet.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.scanned",
+      "source_text": "Scanned {files} files, {keys} lines.",
+      "placeholders": [
+        "files",
+        "keys"
+      ]
+    },
+    {
+      "id": "existing.live.list.reusable",
+      "source_text": "Will be imported (empty slots)",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.list.conflicts",
+      "source_text": "Kept as is (the project already has a translation)",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.list.obsolete",
+      "source_text": "Not in this project (kept in the pack)",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.list.ambiguous",
+      "source_text": "Ambiguous — need your decision",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.applyNote",
+      "source_text": "Apply imports only the reusable lines. Existing translations are never overwritten, and ambiguous lines stay a list for you to decide.",
+      "placeholders": []
+    },
+    {
+      "id": "existing.live.apply",
+      "source_text": "Import reusable ({count})",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "existing.live.applied",
+      "source_text": "Imported {count} translations. Kept untouched: {conflicts} existing, {obsolete} obsolete, {ambiguous} ambiguous.",
+      "placeholders": [
+        "ambiguous",
+        "conflicts",
+        "count",
+        "obsolete"
+      ]
+    },
+    {
+      "id": "existing.conflicts",
+      "source_text": "Conflicts (kept)",
       "placeholders": []
     },
     {
