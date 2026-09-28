@@ -218,3 +218,82 @@ describe('Home (mock): the card present, the refusal honest', () => {
     expect(window.location.hash).not.toContain('workspace');
   });
 });
+
+// Dedup regression (rel3 acceptance found 7 duplicate catalog projects after
+// 7 card clicks): a second click REOPENS the existing "RimLoc UI (en)"
+// project instead of minting a new one. The name is the staging basename the
+// backend stamps (selfloc_catalog.rs) — the stable identity of the catalog
+// project on the recents list.
+describe('Home (tauri): the card dedups against an existing catalog project', () => {
+  beforeEach(() => {
+    resetClientSingleton();
+    devMode.disable();
+    project.reset();
+    onboarding.open = false;
+  });
+  afterEach(() => {
+    cleanupMounted();
+  });
+
+  function snapshotWithId(id: string) {
+    return {
+      project_id: id,
+      revision: 2,
+      session_epoch: 1,
+      project: {
+        context: { active_dlc: [], active_mods: [], load_order: [], view: 'exact' },
+        entries: [
+          { id: { kind: 'Keyed', key: 'common.appName' }, text: 'RimLoc', source_locale: 'en' }
+        ],
+        translations: []
+      }
+    };
+  }
+
+  function mountWithRecents(recents: Array<{ project_id: string; name: string; revision: number }>) {
+    const invoke = vi.fn(async (cmd: string, args?: Record<string, unknown>) => {
+      if (cmd === 'contract_handshake') return HANDSHAKE_OK;
+      if (cmd === 'project_list') return recents;
+      if (cmd === 'selfloc_catalog_dir') return CATALOG_DIR;
+      if (cmd === 'project_open') return snapshotWithId(String((args as { project_id?: string })?.project_id ?? ''));
+      if (cmd === 'project_create') return snapshotWithId('proj-fresh');
+      throw new Error(`unexpected command ${cmd}: ${JSON.stringify(args ?? {})}`);
+    });
+    (window as unknown as { __TAURI_INTERNALS__?: { invoke: unknown } }).__TAURI_INTERNALS__ = {
+      invoke
+    };
+    window.location.hash = '#/home';
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+    mountCmp(App);
+    flushSync();
+    return invoke;
+  }
+
+  it('reopens the existing RimLoc UI (en) project instead of creating a duplicate', async () => {
+    const invoke = mountWithRecents([
+      { project_id: 'proj-vwe', name: '1814383360', revision: 4 },
+      { project_id: 'proj-selfloc-1', name: 'RimLoc UI (en)', revision: 7 }
+    ]);
+    click('home.selfloc.open');
+    await vi.waitFor(() => {
+      expect(invoke.mock.calls.some(([cmd]) => cmd === 'project_open')).toBe(true);
+    });
+    const open = invoke.mock.calls.find(([cmd]) => cmd === 'project_open');
+    expect((open?.[1] as { project_id?: string })?.project_id).toBe('proj-selfloc-1');
+    expect(invoke.mock.calls.some(([cmd]) => cmd === 'project_create')).toBe(false);
+    await vi.waitFor(() => {
+      expect(window.location.hash).toContain('workspace');
+    });
+  });
+
+  it('unrelated recents do not block a fresh create', async () => {
+    const invoke = mountWithRecents([
+      { project_id: 'proj-vwe', name: '1814383360', revision: 4 }
+    ]);
+    click('home.selfloc.open');
+    await vi.waitFor(() => {
+      expect(invoke.mock.calls.some(([cmd]) => cmd === 'project_create')).toBe(true);
+    });
+    expect(invoke.mock.calls.some(([cmd]) => cmd === 'project_open')).toBe(false);
+  });
+});

@@ -76,13 +76,22 @@
   let selflocBusy = $state(false);
   let selflocError = $state<string | null>(null);
 
+  // The catalog project name is the staging dir basename stamped by the
+  // backend (selfloc_catalog.rs) — the stable identity of "the RimLoc UI
+  // project". A second click REOPENS that project instead of minting a
+  // duplicate (rel3 acceptance found 7 copies after 7 clicks).
   async function openSelflocProject() {
     if (contractBusy || selflocBusy) return;
     selflocBusy = true;
     selflocError = null;
     try {
       const dir = await clientInstance.getClient().selflocCatalogDir();
-      const ok = await project.createContractProject(dir);
+      const existing = (await project.listContractProjects()).find(
+        (p) => p.name === 'RimLoc UI (en)'
+      );
+      const ok = existing
+        ? await project.openContractProject(existing.project_id)
+        : await project.createContractProject(dir);
       if (ok) router.navigate('workspace');
       else selflocError = project.contractError;
     } catch (e) {
