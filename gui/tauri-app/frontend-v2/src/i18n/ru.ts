@@ -627,6 +627,8 @@ export const ru: Record<string, string> = {
   'existing.live.apply': 'Импортировать готовые ({count})',
   'existing.live.applied':
     'Импортировано переводов: {count}. Не тронуто: существующих {conflicts}, устаревших {obsolete}, неоднозначных {ambiguous}.',
+  'existing.live.dirChanged':
+    'Папка изменилась после анализа — запустите анализ заново, прежде чем применять.',
   'existing.conflicts': 'Конфликты (сохранены)',
 
   // Settings screen (mandate §15, spec §17). Семь секций, сгруппированных по

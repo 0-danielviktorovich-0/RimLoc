@@ -2802,6 +2802,11 @@
       ]
     },
     {
+      "id": "existing.live.dirChanged",
+      "translated": "Папка изменилась после анализа — запустите анализ заново, прежде чем применять.",
+      "placeholders": []
+    },
+    {
       "id": "existing.conflicts",
       "translated": "Конфликты (сохранены)",
       "placeholders": []

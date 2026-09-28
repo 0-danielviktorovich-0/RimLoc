@@ -2802,6 +2802,11 @@
       ]
     },
     {
+      "id": "existing.live.dirChanged",
+      "source_text": "The directory changed since the analysis — run Analyze again before applying.",
+      "placeholders": []
+    },
+    {
       "id": "existing.conflicts",
       "source_text": "Conflicts (kept)",
       "placeholders": []

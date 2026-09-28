@@ -38,8 +38,18 @@
   const packStore = $derived(existingPack);
   const dirOk = $derived(looksAbsolutePath(packStore.existingDir));
   const canAnalyze = $derived(dirOk && !packStore.analyzing && capability.state(CAP_IMPORT_EXISTING) !== false);
+  // Apply is bound to the ANALYZED directory: the numbers on screen must
+  // be the numbers applied. Editing the dir after analyze keeps the
+  // analysis visible but disables Apply until it is re-run.
+  const dirChanged = $derived(
+    Boolean(packStore.analysis) && packStore.analyzedDir !== packStore.existingDir.trim()
+  );
   const canApply = $derived(
-    Boolean(packStore.analysis) && !packStore.applied && !packStore.applying && capability.state(CAP_APPLY_EXISTING) !== false
+    Boolean(packStore.analysis) &&
+      !dirChanged &&
+      !packStore.applied &&
+      !packStore.applying &&
+      capability.state(CAP_APPLY_EXISTING) !== false
   );
 
   async function pickDir() {
@@ -75,14 +85,21 @@
     packStore.reset();
   }
 
-  const CATEGORIES = [
+  // Explicit row type (not `as const`): `positive` is optional styling, and
+  // `class:positive={c.positive}` must typecheck for EVERY member.
+  const CATEGORIES: {
+    key: string;
+    countKey: string;
+    icon: string;
+    positive?: boolean;
+  }[] = [
     { key: 'reusable', countKey: 'reusable_count', icon: 'check', positive: true },
     { key: 'conflicts', countKey: 'conflict_count', icon: 'git-compare' },
     { key: 'new', countKey: 'new_count', icon: 'file-plus' },
     { key: 'obsolete', countKey: 'obsolete_count', icon: 'clock' },
     { key: 'invalid', countKey: 'invalid_count', icon: 'warning' },
     { key: 'ambiguous', countKey: 'ambiguous_count', icon: 'info' }
-  ] as const;
+  ];
 
   function countOf(key: string): number {
     const a = packStore.analysis;
@@ -240,6 +257,12 @@
         <p class="scope mono" data-testid="existing.live.scope">
           {t('existing.live.scanned', { files: fmt(packStore.analysis.scanned_files), keys: fmt(packStore.analysis.scanned_keys) })}
         </p>
+        {#if dirChanged}
+          <p class="safety" role="status" data-testid="existing.live.dir-changed">
+            <Icon name="warning" size={14} />
+            {t('existing.live.dirChanged')}
+          </p>
+        {/if}
         <dl class="stats">
           {#each CATEGORIES as c (c.key)}
             <div class="stat" class:positive={c.positive} data-testid={`existing.live.cat.${c.key}`}>

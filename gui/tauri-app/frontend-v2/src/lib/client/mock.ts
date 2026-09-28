@@ -533,11 +533,25 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             );
           }
           // Mirror of the strict language-folder form guard (locale joins
-          // durable translation records on apply).
-          if (!/^[A-Z][A-Za-z]*$/.test(req.locale)) {
+          // durable translation records on apply) — same charset as the
+          // Rust util::lang_dir_form_ok: letters, digits, `_`, `-`.
+          if (!/^[A-Za-z0-9_-]+$/.test(req.locale)) {
             throw new MockContractError(
               'contract_violation',
-              `locale \`${req.locale}\` is not the strict language-folder form (e.g. Russian)`
+              `locale \`${req.locale}\` is not the strict language-folder form (letters, digits, \`_\`, \`-\`)`
+            );
+          }
+          // Mirror of the pack↔locale cross-check: the scan walks ANY
+          // */Languages/<Any> under the given root, so the chosen folder
+          // must BE the language folder (leaf == locale, case-insensitive)
+          // — otherwise another language's source text would classify as
+          // reusable.
+          const packLeaf =
+            req.existing_dir.path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? '';
+          if (packLeaf.toLowerCase() !== req.locale.toLowerCase()) {
+            throw new MockContractError(
+              'contract_violation',
+              `existing translation directory \`${req.existing_dir.path}\` does not match the locale \`${req.locale}\`: the pack folder must be the language folder itself (…/Languages/${req.locale})`
             );
           }
           // Deterministic synthetic pack derived from the corpus.

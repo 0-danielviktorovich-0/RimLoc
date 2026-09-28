@@ -624,6 +624,8 @@ export const en: Record<string, string> = {
   'existing.live.apply': 'Import reusable ({count})',
   'existing.live.applied':
     'Imported {count} translations. Kept untouched: {conflicts} existing, {obsolete} obsolete, {ambiguous} ambiguous.',
+  'existing.live.dirChanged':
+    'The directory changed since the analysis — run Analyze again before applying.',
   'existing.conflicts': 'Conflicts (kept)',
 
   // Settings screen (mandate §15, spec §17). Seven task-grouped sections;

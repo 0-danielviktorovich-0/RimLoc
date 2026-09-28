@@ -24,6 +24,11 @@ import { folderForm } from './contractops.svelte';
 class ExistingPackStore {
   /** Absolute pack dir chosen via the OS folder picker. */
   existingDir = $state('');
+  /** The pack dir the CURRENT analysis was made for (null until analyze
+   *  succeeds). Apply is BOUND to it: the analysis a decision is shown
+   *  must be the analysis applied — editing the dir after analyze keeps
+   *  the numbers visible but disables Apply until a re-analyze. */
+  analyzedDir = $state<string | null>(null);
   /** Dry-run analysis result (null until analyze succeeds). */
   analysis = $state<ImportExistingResponseDto | null>(null);
   /** Apply result (null until apply succeeds). */
@@ -52,6 +57,7 @@ class ExistingPackStore {
 
   reset(): void {
     this.existingDir = '';
+    this.analyzedDir = null;
     this.analysis = null;
     this.applied = null;
     this.analyzing = false;
@@ -97,6 +103,7 @@ class ExistingPackStore {
         existing_dir: { path: dir },
         locale: ctx.locale
       });
+      this.analyzedDir = dir;
       return true;
     } catch (e) {
       this.fail(e, 'analyze');

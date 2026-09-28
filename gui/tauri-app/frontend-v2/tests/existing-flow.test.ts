@@ -3,8 +3,8 @@
 //   dry-run analyze (project_import_existing) → categories →
 //   guarded apply (project_apply_existing) → negatives (§8 mandate).
 // Mock transport rules mirror the Rust session (epoch/revision/path-form/
-// locale-form guards), so the negatives are the same refusals the desktop
-// app would produce.
+// locale-form/pack↔locale guards), so the negatives are the same refusals
+// the desktop app would produce.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushSync } from 'svelte';
 import { createRimLocClient } from '../src/lib/client/client';
@@ -181,6 +181,36 @@ describe('W2 #4: path / session guards are typed (§8 negatives)', () => {
     ).rejects.toMatchObject({ code: 'contract_violation' });
   });
 
+  it('pack dir not named as the locale → contract_violation (pack↔locale cross-check)', async () => {
+    // The scanner walks ANY */Languages/<Any> under the given root: a mod
+    // root (or an English folder) chosen with locale `Russian` must be a
+    // typed refusal, never a scan that classifies English as reusable.
+    const base = await freshBase();
+    await expect(
+      client.importExisting({ ...base, existing_dir: { path: '/mods/Demo' } })
+    ).rejects.toMatchObject({ code: 'contract_violation' });
+    await expect(
+      client.importExisting({
+        ...base,
+        existing_dir: { path: '/mods/Demo/Languages/English' }
+      })
+    ).rejects.toMatchObject({ code: 'contract_violation' });
+  });
+
+  it('locale form mirrors the Rust charset: `pt-br` is accepted, not rejected', async () => {
+    // util::lang_dir_form_ok accepts letters/digits/_/-: the mock must not
+    // be stricter than the desktop transport it mirrors. The pack dir is
+    // the language folder itself (the cross-check compares leaves).
+    const base = await freshBase();
+    const resp = await client.importExisting({
+      ...base,
+      locale: 'pt-br',
+      existing_dir: { path: '/mods/Demo/Languages/pt-br' }
+    });
+    expect(resp.reusable_count).toBe(0); // no corpus lines for pt-br
+    expect(resp.scanned_keys).toBeGreaterThan(0);
+  });
+
   it('stale epoch refuses even the read-only dry-run', async () => {
     const base = await freshBase();
     await expect(
@@ -233,6 +263,38 @@ describe('W2 #5: the GUI flow (App) — analyze → table → apply', () => {
       expect(exists('existing.live.applied')).toBe(true);
     });
     expect(q('existing.live.applied').textContent).toContain('2');
+    cleanupMounted();
+  });
+
+  it('binds Apply to the ANALYZED directory: editing the dir disables Apply until re-analyze', async () => {
+    await capability.ensure();
+    const ok = await project.createContractProject('/mods/Demo');
+    expect(ok).toBe(true);
+
+    goto('#/existing');
+    mountCmp(App);
+    existingPack.existingDir = '/mods/Demo/Languages/Russian';
+    flushSync();
+    click('existing.live.analyze');
+    await vi.waitFor(() => {
+      expect(exists('existing.live.result')).toBe(true);
+    });
+    expect((q('existing.live.apply') as HTMLButtonElement).disabled).toBe(false);
+
+    // Point the input at a DIFFERENT directory: the analysis on screen no
+    // longer matches it — Apply is disabled and the hint is shown, the
+    // backend would refuse a non-analyzed pack anyway (leaf↔locale and
+    // revision guards).
+    existingPack.existingDir = '/mods/Other/Languages/Russian';
+    flushSync();
+    expect(exists('existing.live.dir-changed')).toBe(true);
+    expect((q('existing.live.apply') as HTMLButtonElement).disabled).toBe(true);
+
+    // Restoring the analyzed directory re-enables Apply without a re-run.
+    existingPack.existingDir = '/mods/Demo/Languages/Russian';
+    flushSync();
+    expect(exists('existing.live.dir-changed')).toBe(false);
+    expect((q('existing.live.apply') as HTMLButtonElement).disabled).toBe(false);
     cleanupMounted();
   });
 
