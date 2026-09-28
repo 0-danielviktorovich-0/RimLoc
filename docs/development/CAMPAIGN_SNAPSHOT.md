@@ -45,6 +45,15 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   `RELEASE_READINESS_REPORT.md`, тестеру — `BETA_TEST_CHECKLIST.md`,
   ревьюеру — `REVIEW_SCREEN_MAP.md`. **STOP перед push/тегом/релизом —
   только явное ок владельца.** → **проверь `git rev-parse HEAD`**.
+- **НОЧЬ 29.09 ЗАВЕРШЕНА (06:2x JST)**: main `1eb47a1` (→ проверь `git rev-parse HEAD`).
+  Влито: W2 existing-flow (dwfrun-5a8263ba Flash-конвейер: 6 дефектов поймано ревью до merge),
+  REL-2 артефакт 925858a (бинарь 478268f3, все смоуки PASS, evidence artifact-rel2-night/),
+  UI-кампания (dwfrun-571ccabf: аудит 21 экрана → 26 багов → 5 скилл-линз вариантов → жюри →
+  Home-редизайн 65d54af, гейты 324/0 rust + 345/345 фронт). СТАНДАРТ ЗАПУСКА (буккиперовский):
+  тест = прямой запуск бинаря из bundle / dev off-screen; НИКОГДА не ставить в /Applications
+  (нарушение REL-2-воркера исправлено, копия в .trash); target/ вне Spotlight; владельцу против
+  Gatekeeper-окна: xattr -dr com.apple.quarantine "/Applications/RimLoc GUI.app". Баг-бэклог
+  UI: /tmp/rimloc-ui-bugs.md (дублировать в evidence). Дизайн-варианты: /tmp/rimloc-design-variants/.
 - **НОЧЬ 28.09 ЗАВЕРШЕНА (утро/вечер 28.09, возобновлена 22:52)**: main `9fe14e4`
   (→ проверь `git rev-parse HEAD`). SF-1..5 (безопасность contribution: base_value,
   prototype-id, секреты, дубликаты, настоящая цепочка export→pack→contribution) —
