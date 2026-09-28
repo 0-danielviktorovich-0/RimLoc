@@ -331,6 +331,26 @@
       "placeholders": []
     },
     {
+      "id": "transportbadge.live.label",
+      "translated": "Живой транспорт",
+      "placeholders": []
+    },
+    {
+      "id": "transportbadge.live.title",
+      "translated": "Подключён настоящий бэкенд десктоп-приложения через мост Tauri. Проект пока не открыт — список ниже это ваши реальные управляемые проекты.",
+      "placeholders": []
+    },
+    {
+      "id": "transportbadge.mock.label",
+      "translated": "Мок-транспорт (демо-режим)",
+      "placeholders": []
+    },
+    {
+      "id": "transportbadge.mock.title",
+      "translated": "Клиент работает на встроенном мок-транспорте (явный демо-режим). Реальные проекты не затрагиваются.",
+      "placeholders": []
+    },
+    {
       "id": "home.demo.title",
       "translated": "RimLoc Demo",
       "placeholders": []
@@ -5538,6 +5558,16 @@
     {
       "id": "boot.configError.hint",
       "translated": "Запустите настольное приложение RimLoc для живого бэкенда или включите демо-режим (?dev=1 в адресной строке), чтобы смотреть синтетическое демо.",
+      "placeholders": []
+    },
+    {
+      "id": "home.wizard.tour",
+      "translated": "Мастер перевода (демо-тур)",
+      "placeholders": []
+    },
+    {
+      "id": "home.wizard.tourNote",
+      "translated": "Экскурсия по шагам на встроенном демо-проекте — ваши моды не затрагиваются. Реальный проект создаётся кнопкой выше.",
       "placeholders": []
     },
     {

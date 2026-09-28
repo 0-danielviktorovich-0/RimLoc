@@ -12,10 +12,16 @@
   import { project } from '../stores/project.svelte';
   import { languages } from '../languages/store.svelte';
   import { registry } from '../languages/registry';
+  import { clientInstance } from '../client/instance.svelte';
   import MockBadge from './MockBadge.svelte';
 
   const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
   const LOCALES: Locale[] = ['ru', 'en'];
+
+  // M-2 (UI audit 2026-09-29): with no project open the chip tells the
+  // TRANSPORT truth (Live/Mock by the resolved client mode). Mode 'none'
+  // never reaches this header — the boot gate replaces the whole shell.
+  const transportMode = clientInstance.resolveMode();
 
   const themeIcon: Record<ThemeMode, string> = {
     light: 'sun',
@@ -34,18 +40,37 @@
   <div class="brand">
     <span class="brand-name">{t('common.appName')}</span>
 
-    <!-- W6: global data-mode honesty chip — visible on every route and every
-         build. Audit P1-4: the chip now tells the DATA-MODE truth — on a real
-         contract project it becomes the live badge instead of claiming that
-         everything is demo data (mandate: the global badge depends on the
-         data mode). -->
+    <!-- W6: global honesty chip — visible on every route and every build.
+         Audit P1-4: on a real contract project it is the live badge.
+         Audit M-2 (2026-09-29): with no project open it states the
+         TRANSPORT (Live/Mock by client mode) — the live recents on Home are
+         no longer called demo data. The «Demo data (mock)» label stays
+         scoped to the bundled demo dataset opened in the workspace. -->
     {#if project.source === 'contract'}
       <span class="live-badge" data-testid="live-badge" title={t('livebadge.title')}>
         <Icon name="circle-check" size={12} />
         {t('livebadge.label')}
       </span>
-    {:else}
+    {:else if project.isDemo}
       <MockBadge />
+    {:else if transportMode === 'tauri'}
+      <span
+        class="live-badge"
+        data-testid="transport-live-badge"
+        title={t('transportbadge.live.title')}
+      >
+        <Icon name="circle-check" size={12} />
+        {t('transportbadge.live.label')}
+      </span>
+    {:else}
+      <span
+        class="mock-transport"
+        data-testid="transport-mock-badge"
+        title={t('transportbadge.mock.title')}
+      >
+        <Icon name="info" size={12} />
+        {t('transportbadge.mock.label')}
+      </span>
     {/if}
 
     <nav class="nav" aria-label={t('nav.home')}>
@@ -191,6 +216,21 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+    white-space: nowrap;
+    cursor: help;
+  }
+
+  /* Audit M-2: the mock-TRANSPORT counterpart — MockBadge's dashed warning
+     shape, since the client is on the explicit demo transport. */
+  .mock-transport {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border: 1px dashed var(--color-warning);
+    border-radius: var(--radius-sm);
+    color: var(--color-warning);
     font-size: var(--text-meta-size);
     white-space: nowrap;
     cursor: help;

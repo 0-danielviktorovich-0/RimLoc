@@ -23,6 +23,9 @@
   let exportDir = $state('');
   let modDir = $state('');
   let bundleDir = $state('');
+  // M-10: the last export refusal, mirrored into the export card so the
+  // failure is never silent (source of truth stays ops.error).
+  let exportError = $state<string | null>(null);
 
   // Native folder dialog for the output roots (same flow as the Home
   // contract panel). Cancel = silent; a real failure surfaces verbatim.
@@ -62,7 +65,13 @@
   };
 
   function runExport() {
-    void ops.runExport(exportDir);
+    // M-10 (UI audit 2026-09-29): a refusal that happens AFTER the request
+    // went out must be visible where the user clicked — inside the export
+    // card, not only in the section-level alert above the fold.
+    exportError = null;
+    void ops.runExport(exportDir).then((ok) => {
+      if (!ok && ops.error) exportError = ops.error;
+    });
   }
   function runBuildMod() {
     void ops.runBuildMod(modDir);
@@ -174,6 +183,15 @@
           {ops.exporting ? t('contractops.running') : t('contractops.export.run')}
         </button>
       </div>
+
+      <!-- M-10 (UI audit): the refusal surfaces IN the export card, next to
+           the button that sent the request — never as silence. -->
+      {#if exportError}
+        <p class="ops-error" role="alert" data-testid="contractops.export.error">
+          <Icon name="warning" size={14} />
+          {exportError}
+        </p>
+      {/if}
 
       {#if ops.exportResult}
         <div class="result" data-testid="contractops.export.result">

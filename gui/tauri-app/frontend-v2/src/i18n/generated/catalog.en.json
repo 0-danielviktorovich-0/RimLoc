@@ -331,6 +331,26 @@
       "placeholders": []
     },
     {
+      "id": "transportbadge.live.label",
+      "source_text": "Live transport",
+      "placeholders": []
+    },
+    {
+      "id": "transportbadge.live.title",
+      "source_text": "The real desktop backend is connected through the Tauri bridge. No project is open yet — the projects below are your real managed ones.",
+      "placeholders": []
+    },
+    {
+      "id": "transportbadge.mock.label",
+      "source_text": "Mock transport (demo mode)",
+      "placeholders": []
+    },
+    {
+      "id": "transportbadge.mock.title",
+      "source_text": "The client runs on the built-in mock transport (explicit dev/demo opt-in). Real projects are never touched.",
+      "placeholders": []
+    },
+    {
       "id": "home.demo.title",
       "source_text": "RimLoc Demo",
       "placeholders": []
@@ -5538,6 +5558,16 @@
     {
       "id": "boot.configError.hint",
       "source_text": "Start the RimLoc desktop app for the live backend, or enable the demo mode (?dev=1 in the address bar) to browse the synthetic demo.",
+      "placeholders": []
+    },
+    {
+      "id": "home.wizard.tour",
+      "source_text": "Translation wizard (demo tour)",
+      "placeholders": []
+    },
+    {
+      "id": "home.wizard.tourNote",
+      "source_text": "A guided walkthrough on the bundled demo project — your mods are never touched. A real project is created with the button above.",
       "placeholders": []
     },
     {
