@@ -1091,6 +1091,231 @@ impl ProjectSessionManager {
         })
     }
 
+    /// `project_build_mod` — the FULL drop-in mod package from the trusted
+    /// session state into a CALLER-SPECIFIED out directory: the
+    /// `Languages/<locale>` tree (same writer as `project_export`) plus
+    /// `About/About.xml` in the CLI build-mod `<ModMetaData>` shape, so the
+    /// folder can be moved straight into the game's Mods directory without
+    /// a terminal. Guard partition is IDENTICAL to `export_project` (copied,
+    /// not shared, so the export semantics stay frozen): stale-epoch,
+    /// locale form, absolute out-dir form, fail-closed source root,
+    /// source-tree and managed-root containment denies, then the H3/M4
+    /// pre-write content refusals, then reparse + strict-XML verification
+    /// BEFORE the ack.
+    pub fn build_mod_project(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        out_dir: &Path,
+        locale: &str,
+    ) -> Result<crate::contract::BuildModProjectResponse, ContractError> {
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        // P1-2 (copy of the export entry): the locale is joined into output
+        // paths (`Languages/<locale>/...`) — validate the strict folder form
+        // BEFORE any guard, path operation or write.
+        ensure_locale_form(locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // Path-FORM guard (copy): refuse a relative out dir before ANY
+        // filesystem access — the built-app `…/RimLoc-Export/…` incident.
+        ensure_out_dir_absolute(out_dir)?;
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_build_mod");
+        log.begin_stage("guard");
+
+        // Fail-closed source-root presence (copy of the export entry).
+        if st.mod_root.as_os_str().is_empty() {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
+            ));
+        }
+        // The out dir must not be inside/equal the read-only source root
+        // (fail-closed canonical view, deny-direction containment).
+        if crate::is_within(out_dir, &st.mod_root) {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "output directory `{}` is inside the read-only source tree `{}`",
+                    out_dir.display(),
+                    st.mod_root.display()
+                ),
+            ));
+        }
+        // Managed-root guard: artifacts never overwrite managed records.
+        if crate::is_within(out_dir, &self.managed_root) {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "output directory `{}` is inside the managed projects root `{}`",
+                    out_dir.display(),
+                    self.managed_root.display()
+                ),
+            ));
+        }
+        log.end_stage("guard");
+
+        // H3 pre-write content check (copy of the export entry): texts about
+        // to be written must be XML 1.0-clean — refuse BEFORE any write.
+        let mut poisoned: Vec<String> = Vec::new();
+        for t in &st.project.translations {
+            if t.locale != locale {
+                continue;
+            }
+            let Some(text) = t.text.as_deref() else {
+                continue;
+            };
+            let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) else {
+                continue;
+            };
+            let identity = st
+                .project
+                .entries
+                .iter()
+                .find(|e| e.id == t.source_id)
+                .map(|e| e.id.display_identity())
+                .unwrap_or_else(|| t.source_id.key.clone());
+            if poisoned.len() < 5 {
+                poisoned.push(format!("{identity} (U+{:04X})", bad as u32));
+            } else {
+                poisoned.push("…".to_string());
+                break;
+            }
+        }
+        if !poisoned.is_empty() {
+            log.error_message("write", "XML-invalid control characters in build content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot build the mod: translation text contains characters that are invalid in XML 1.0 — the game would drop the whole file. Fix the entries: {}",
+                    poisoned.join(", ")
+                ),
+            ));
+        }
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(&st.display_name) {
+            log.error_message("write", "XML-invalid control character in display name");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot build the mod: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
+                    bad as u32
+                ),
+            ));
+        }
+
+        // M4 pre-write content check (copy of the export entry): case-only
+        // defName collisions would collapse into one file on a
+        // case-insensitive filesystem — refuse deterministically.
+        let collisions = case_collision_pairs(&st.project, Some(locale));
+        if !collisions.is_empty() {
+            let shown: Vec<String> = collisions
+                .iter()
+                .take(5)
+                .map(|(dt, a, b)| format!("{dt}: {a} / {b}"))
+                .collect();
+            log.error_message("write", "case-colliding defNames in build content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot build the mod: defNames that differ only in case would write into the same file on Windows/macOS — rename the defName in the source mod: {}",
+                    shown.join(", ")
+                ),
+            ));
+        }
+
+        // Manifest fields follow the export discipline: version from the
+        // project target, name = display name, packageId = the restricted
+        // slug (H4 — a folder name is not a valid packageId).
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        log.begin_stage("write");
+        let report = crate::build::build_mod_from_project_execute(
+            &st.project,
+            out_dir,
+            locale,
+            &st.display_name,
+            &crate::util::package_id_slug(&st.display_name),
+            &rw_version,
+        )
+        .map_err(|e| {
+            log.error_message("write", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("mod package write failed: {e}"),
+            )
+        })?;
+        log.end_stage("write");
+
+        // Reparse check BEFORE the ack (same semantics as export): the
+        // written output must come back through the EXISTING scanner with
+        // exactly the keys the writer reports writing.
+        log.begin_stage("reparse");
+        let units = rimloc_parsers_xml::scan_keyed_xml(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("reparse of the written output failed: {e}"),
+            )
+        })?;
+        if units.len() != report.keys_written {
+            log.error_message(
+                "reparse",
+                &format!(
+                    "reparse count mismatch: wrote {}, reparsed {}",
+                    report.keys_written,
+                    units.len()
+                ),
+            );
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::Internal,
+                format!(
+                    "reparse count mismatch: wrote {} keys, reparsed {}",
+                    report.keys_written,
+                    units.len()
+                ),
+            ));
+        }
+        // H3 strict tripwire (copy of the export entry): every written file
+        // byte-verified against the XML 1.0 char set.
+        crate::util::verify_xml_char_validity(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("strict XML verification of the written output failed: {e}"),
+            )
+        })?;
+        log.counter("reparse", "keys", units.len() as u64);
+        log.end_stage("reparse");
+        log.finish();
+
+        let files_written = count_files(&report.out_mod);
+        Ok(crate::contract::BuildModProjectResponse {
+            job_id,
+            out_dir: crate::contract::PathBufDto::new(report.out_mod.display().to_string()),
+            files_written,
+            reparsed_keys: units.len(),
+            skipped_unknown_type: report.skipped_unknown_type,
+        })
+    }
+
     /// `project_diagnose` — sanitized support bundle over the project's
     /// LAST FAILED operation (validate errors, save failure). The out dir
     /// must stay outside the read-only source tree (the collector enforces
@@ -2177,6 +2402,116 @@ mod tests {
         assert!(out
             .join("Languages/Russian/DefInjected/ThingDef/Dup.xml")
             .exists());
+    }
+
+    /// Build-mod wave: the FULL drop-in package from the session state —
+    /// the Languages tree plus `About/About.xml` in the CLI build-mod
+    /// `<ModMetaData>` shape, reparse-verified with the same counters.
+    #[test]
+    fn build_mod_package_is_reparse_verified() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "вещь")],
+        ))
+        .unwrap();
+
+        let out = dir.path().join("mod-package");
+        let res = mgr
+            .build_mod_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap();
+        assert!(
+            res.files_written >= 2,
+            "About.xml + DefInjected file, {res:?}"
+        );
+        assert_eq!(res.reparsed_keys, 1, "one translated key reparsed");
+        assert!(res.skipped_unknown_type.is_empty());
+        assert!(out
+            .join("Languages/Russian/DefInjected/ThingDef/Dup.xml")
+            .exists());
+        // The manifest is the game-loadable build-mod shape, with the
+        // restricted-charset packageId slug and the project's target version.
+        let about = std::fs::read_to_string(out.join("About/About.xml")).unwrap();
+        assert!(about.contains("<ModMetaData>"), "{about}");
+        assert!(about.contains("rimloc."), "{about}");
+        assert!(about.contains("<li>1.6</li>"), "{about}");
+    }
+
+    /// Build-mod guard partition (copy of the export partition): an out dir
+    /// inside the read-only source tree is a typed guard_output_denied.
+    #[test]
+    fn build_mod_into_source_tree_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let out_inside = mod_root.join("Translation");
+        let err = mgr
+            .build_mod_project(&snap_of_create(&mgr, &mod_root), 1, &out_inside, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// Build-mod guard partition: a symlink ALIAS into the source tree
+    /// resolves through the link and gets the same verdict (K4,
+    /// deny-direction containment via the canonical view). Unix-only.
+    #[test]
+    #[cfg(unix)]
+    fn build_mod_symlink_alias_into_source_tree_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let alias = dir.path().join("alias-package");
+        std::os::unix::fs::symlink(&mod_root, &alias).expect("symlink");
+        let err = mgr
+            .build_mod_project(&snap_of_create(&mgr, &mod_root), 1, &alias, "Russian")
+            .unwrap_err();
+        assert_eq!(
+            err.code,
+            ContractErrorCode::GuardOutputDenied,
+            "a symlink alias into the source tree must be denied, not just the direct absolute path"
+        );
+    }
+
+    /// Build-mod guard partition: a RELATIVE out dir is a typed
+    /// invalid_output_path refusal BEFORE anything is written, and the
+    /// managed-root target is denied like on export.
+    #[test]
+    fn build_mod_relative_out_dir_is_rejected_before_any_write() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+        for out in ["RimLoc-Package", "out/../pkg"] {
+            let err = mgr
+                .build_mod_project(&snap.project_id, 1, Path::new(out), "Russian")
+                .unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::InvalidOutputPath,
+                "[{out}] {err}"
+            );
+            assert!(!cwd.join(out).exists(), "[{out}] no side effects in CWD");
+        }
+        let err = mgr
+            .build_mod_project(&snap.project_id, 1, &managed.join("pkg"), "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
     }
 
     /// Build wave guard: an out dir inside the read-only source tree is a

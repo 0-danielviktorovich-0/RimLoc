@@ -224,6 +224,38 @@
       ]
     },
     {
+      "id": "contractops.buildmod.title",
+      "source_text": "Build mod package (contract)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.desc",
+      "source_text": "The complete mod folder — About.xml + Languages ({locale}) — ready to move into the game’s Mods directory. The backend refuses source-tree targets.",
+      "placeholders": [
+        "locale"
+      ]
+    },
+    {
+      "id": "contractops.buildmod.outdir",
+      "source_text": "Mod package directory",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.run",
+      "source_text": "Build mod package",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.done",
+      "source_text": "Mod package written and reparse-verified.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.files",
+      "source_text": "Files",
+      "placeholders": []
+    },
+    {
       "id": "contractops.diagnose.title",
       "source_text": "Diagnostics (contract)",
       "placeholders": []
@@ -271,6 +303,11 @@
     {
       "id": "contractops.abs_path_example",
       "source_text": "e.g. /Users/you/RimLoc-Export/MyMod-Russian",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_example_mod",
+      "source_text": "e.g. /Users/you/RimWorld/Mods/MyMod-Russian",
       "placeholders": []
     },
     {

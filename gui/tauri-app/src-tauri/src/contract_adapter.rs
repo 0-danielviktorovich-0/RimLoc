@@ -44,6 +44,7 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // (services landed in 47758cb; this registration is the transport).
     "project_validate",
     "project_export",
+    "project_build_mod",
     "project_diagnose",
 ];
 
@@ -223,6 +224,34 @@ pub fn project_export(
     )
 }
 
+/// `project_build_mod` — the FULL drop-in mod package (`About/About.xml` in
+/// the game-loadable `<ModMetaData>` shape + `Languages/<locale>`) into a
+/// CALLER-SPECIFIED out directory; the guard partition is identical to
+/// `project_export` (source-tree/managed-root denies, absolute form) and
+/// the result is reparse-verified before the ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_build_mod(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    out_dir: String,
+    locale: String,
+) -> Result<
+    rimloc_services::contract::BuildModProjectResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    manager.build_mod_project(
+        &project_id,
+        session_epoch,
+        std::path::Path::new(&out_dir),
+        &locale,
+    )
+}
+
 /// `project_diagnose` — sanitized support bundle over the project's last
 /// failed operation; the collector enforces the out-of-source-tree guard.
 #[tauri::command(rename_all = "snake_case")]
@@ -274,6 +303,7 @@ mod tests {
         for cap in [
             "project_validate",
             "project_build_export",
+            "project_build_mod",
             "project_diagnostics_bundle",
         ] {
             assert!(
