@@ -170,8 +170,9 @@ describe('scenario browser dialog (dev panel entry)', () => {
     mountCmp(App);
     expect(exists('dev.panel')).toBe(false);
     expect(exists('dev.scenarios')).toBe(false);
-    // The MockBadge stays — data-mode honesty is unconditional.
-    expect(exists('mock-badge')).toBe(true);
+    // The honesty chip stays — audit M-2: it now names the transport
+    // (mock mode, no project open → mock-transport badge).
+    expect(exists('transport-mock-badge')).toBe(true);
   });
 
   it('opens from the dev panel, lists all scenarios, closes', () => {
