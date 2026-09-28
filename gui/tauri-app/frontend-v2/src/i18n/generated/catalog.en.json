@@ -496,20 +496,200 @@
       "placeholders": []
     },
     {
-      "id": "home.recent.modified",
-      "source_text": "Modified",
+      "id": "home.locals",
+      "source_text": "Everything runs locally: projects stay on this machine, mod files are never modified.",
       "placeholders": []
     },
     {
+      "id": "home.continue.kicker",
+      "source_text": "Continue where you left off",
+      "placeholders": []
+    },
+    {
+      "id": "home.continue.linesDone",
+      "source_text": "{done} of {total} lines translated",
+      "placeholders": [
+        "done",
+        "total"
+      ]
+    },
+    {
+      "id": "home.continue.linesLeft",
+      "source_text": "{count} left",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.continue.review",
+      "source_text": "Review",
+      "placeholders": []
+    },
+    {
+      "id": "home.continue.build",
+      "source_text": "Build translation",
+      "placeholders": []
+    },
+    {
+      "id": "home.status.working",
+      "source_text": "In progress",
+      "placeholders": []
+    },
+    {
+      "id": "home.status.ready",
+      "source_text": "Ready to build",
+      "placeholders": []
+    },
+    {
+      "id": "home.status.problems",
+      "source_text": "Validation problems",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.count",
+      "source_text": "{shown} of {total}",
+      "placeholders": [
+        "shown",
+        "total"
+      ]
+    },
+    {
+      "id": "home.recent.byDate",
+      "source_text": "by last modified",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colProject",
+      "source_text": "Project",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colUpdated",
+      "source_text": "Updated",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colProgress",
+      "source_text": "Progress",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colStatus",
+      "source_text": "Status",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colActions",
+      "source_text": "Actions",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.open",
+      "source_text": "Open",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.empty",
+      "source_text": "No recent projects yet.",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.modifiedWhen",
+      "source_text": "modified {when}",
+      "placeholders": [
+        "when"
+      ]
+    },
+    {
+      "id": "home.recent.when.today",
+      "source_text": "today at {time}",
+      "placeholders": [
+        "time"
+      ]
+    },
+    {
+      "id": "home.recent.when.yesterday",
+      "source_text": "yesterday at {time}",
+      "placeholders": [
+        "time"
+      ]
+    },
+    {
       "id": "home.recent.sourceChanged",
-      "source_text": "source changed: {count}",
+      "source_text": "Source updated: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.recent.sourceChangedTitle",
+      "source_text": "The source has {count} newer lines than your last edit.",
       "placeholders": [
         "count"
       ]
     },
     {
       "id": "home.recent.issues",
-      "source_text": "issues: {count}",
+      "source_text": "Issues: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.recent.issuesTitle",
+      "source_text": "{count} entries wait for review before the build.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.create.stepsTitle",
+      "source_text": "How it works",
+      "placeholders": []
+    },
+    {
+      "id": "home.create.step1",
+      "source_text": "RimLoc reads the mod’s XML strings and counts them.",
+      "placeholders": []
+    },
+    {
+      "id": "home.create.step2",
+      "source_text": "Translate in the table — with the glossary and translation memory.",
+      "placeholders": []
+    },
+    {
+      "id": "home.create.step3",
+      "source_text": "Build the translation into a separate folder in the mod.",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.pathLabel",
+      "source_text": "Mod folder",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperLead",
+      "source_text": "Pick a mod folder that contains",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperMid",
+      "source_text": "or",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperTail",
+      "source_text": "— for example,",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperExample",
+      "source_text": "~/Mods/MyMod",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.revision",
+      "source_text": "revision {count}",
       "placeholders": [
         "count"
       ]
