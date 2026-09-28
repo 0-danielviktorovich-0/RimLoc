@@ -496,20 +496,200 @@
       "placeholders": []
     },
     {
-      "id": "home.recent.modified",
-      "translated": "Изменён",
+      "id": "home.locals",
+      "translated": "Всё работает локально: проекты остаются на этой машине, файлы мода не изменяются.",
       "placeholders": []
     },
     {
+      "id": "home.continue.kicker",
+      "translated": "Продолжить работу",
+      "placeholders": []
+    },
+    {
+      "id": "home.continue.linesDone",
+      "translated": "{done} из {total} строк переведено",
+      "placeholders": [
+        "done",
+        "total"
+      ]
+    },
+    {
+      "id": "home.continue.linesLeft",
+      "translated": "осталось {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.continue.review",
+      "translated": "Проверка",
+      "placeholders": []
+    },
+    {
+      "id": "home.continue.build",
+      "translated": "Собрать перевод",
+      "placeholders": []
+    },
+    {
+      "id": "home.status.working",
+      "translated": "В работе",
+      "placeholders": []
+    },
+    {
+      "id": "home.status.ready",
+      "translated": "Готов к сборке",
+      "placeholders": []
+    },
+    {
+      "id": "home.status.problems",
+      "translated": "Ошибки валидации",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.count",
+      "translated": "{shown} из {total}",
+      "placeholders": [
+        "shown",
+        "total"
+      ]
+    },
+    {
+      "id": "home.recent.byDate",
+      "translated": "по дате изменения",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colProject",
+      "translated": "Проект",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colUpdated",
+      "translated": "Обновлён",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colProgress",
+      "translated": "Прогресс",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colStatus",
+      "translated": "Статус",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.colActions",
+      "translated": "Действия",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.open",
+      "translated": "Открыть",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.empty",
+      "translated": "Пока нет недавних проектов.",
+      "placeholders": []
+    },
+    {
+      "id": "home.recent.modifiedWhen",
+      "translated": "изменён {when}",
+      "placeholders": [
+        "when"
+      ]
+    },
+    {
+      "id": "home.recent.when.today",
+      "translated": "сегодня в {time}",
+      "placeholders": [
+        "time"
+      ]
+    },
+    {
+      "id": "home.recent.when.yesterday",
+      "translated": "вчера в {time}",
+      "placeholders": [
+        "time"
+      ]
+    },
+    {
       "id": "home.recent.sourceChanged",
-      "translated": "источник изменился: {count}",
+      "translated": "Источник обновился: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.recent.sourceChangedTitle",
+      "translated": "У источника {count} строк позже вашей последней правки.",
       "placeholders": [
         "count"
       ]
     },
     {
       "id": "home.recent.issues",
-      "translated": "проблем: {count}",
+      "translated": "Замечаний: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.recent.issuesTitle",
+      "translated": "{count} записей ждут проверки перед сборкой.",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
+      "id": "home.create.stepsTitle",
+      "translated": "Как это работает",
+      "placeholders": []
+    },
+    {
+      "id": "home.create.step1",
+      "translated": "RimLoc читает XML-строки мода и считает их.",
+      "placeholders": []
+    },
+    {
+      "id": "home.create.step2",
+      "translated": "Переводите в таблице — с глоссарием и памятью переводов.",
+      "placeholders": []
+    },
+    {
+      "id": "home.create.step3",
+      "translated": "Собираете перевод отдельной папкой в мод.",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.pathLabel",
+      "translated": "Папка мода",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperLead",
+      "translated": "Нужна папка мода с подпапкой",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperMid",
+      "translated": "или",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperTail",
+      "translated": "— например,",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.helperExample",
+      "translated": "~/Mods/MyMod",
+      "placeholders": []
+    },
+    {
+      "id": "home.contract.revision",
+      "translated": "ревизия {count}",
       "placeholders": [
         "count"
       ]
