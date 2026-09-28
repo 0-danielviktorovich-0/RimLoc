@@ -20,7 +20,8 @@ Quick links for newcomers:
 | Area | State |
 |------|-------|
 | CLI (scan / validate / export-PO / import-PO / build-mod / diff) | ✅ Stable — validated against 8 real Workshop mods (incl. PatchOperations, C# assemblies, multi-version layouts) |
-| Desktop GUI (Tauri, macOS) | ✅ Working build — project lifecycle, validation, translation export, sanitized diagnostics. UI is in active development |
+| Desktop GUI (Tauri, macOS) | ✅ Working build — project lifecycle, validation, translation export, full mod-package build, native folder pickers, sanitized diagnostics. UI is in active development |
+| Translate RimLoc (self-localization, beta) | 🧪 The app's own UI catalog opens as a normal project; offline contribution bundles for its translations (dev-level tooling) |
 | Windows / Linux GUI builds | 🚧 Source is cross-platform; binaries not yet verified |
 | Signed / notarized installers | 🚧 Not yet |
 
