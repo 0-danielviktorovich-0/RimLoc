@@ -46,6 +46,14 @@ const DEFAULT_PROJECT_NAME = 'TestMod';
 
 class ProjectStore {
   projectName = $state(DEFAULT_PROJECT_NAME);
+  /**
+   * M-5 (UI audit 2026-09-29): the HUMAN project name for headers — on a
+   * contract project the wire snapshot carries only the service id
+   * (`proj-…`), the display name rides `project_list` summaries
+   * (ProjectSummaryDto.name ← session display_name in session.rs). Resolved
+   * after every snapshot application; null = not (yet) known → the id shows.
+   */
+  projectDisplayName = $state<string | null>(null);
   targetLocale = $state('ru');
   /** True only while the workspace shows the bundled W6 demo project. */
   isDemo = $state(false);
@@ -115,6 +123,12 @@ class ProjectStore {
 
   get selected(): Entry | null {
     return this.selectedId ? (this.byId(this.selectedId) ?? null) : null;
+  }
+
+  /** M-5: display name for headers — the human name when resolved, the raw
+   * id otherwise (never an invented label). */
+  get displayName(): string {
+    return this.projectDisplayName ?? this.projectName;
   }
 
   statusCounts(): StatusCounts {
@@ -384,7 +398,25 @@ class ProjectStore {
     this.contractEpoch = snap.session_epoch;
     this.contractError = null;
     this.projectName = snap.project_id;
+    this.projectDisplayName = null;
     this.source = 'contract';
+    // M-5: the snapshot DTO carries no display name — resolve it from the
+    // project list summaries (best-effort; the id remains the fallback and a
+    // dead transport only costs the nicer label, never a failure).
+    void this.resolveDisplayName(snap.project_id);
+  }
+
+  /** Fire-and-forget display-name resolution (M-5). Guarded against a project
+   * switch mid-flight: only the CURRENT project's name may land. */
+  private async resolveDisplayName(projectId: string): Promise<void> {
+    try {
+      const list = await this.listContractProjects();
+      if (this.contractProjectId !== projectId) return;
+      const hit = list.find((p) => p.project_id === projectId);
+      if (hit?.name) this.projectDisplayName = hit.name;
+    } catch {
+      // Cosmetic resolution — the id fallback stays.
+    }
   }
 
   /** Pass A P1-1: adopt the DISK state after a typed failure
@@ -641,6 +673,7 @@ class ProjectStore {
     this.draftEpoch = {};
     this.entries = cloneInitial();
     this.projectName = DEFAULT_PROJECT_NAME;
+    this.projectDisplayName = null;
     this.drafts = {};
     this.saveStates = {};
     this.selectedId = null;
