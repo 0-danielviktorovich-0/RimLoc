@@ -267,6 +267,11 @@
       <button type="button" class="btn" data-testid="workspace.project.tool.build" onclick={() => router.navigate('build')}>
         <Icon name="package" size={13} /> {t('workspace.cta.build')}
       </button>
+      <!-- W2: the existing-pack matching flow makes sense INSIDE an open
+           project — it analyzes against THIS project's inventory. -->
+      <button type="button" class="btn" data-testid="workspace.project.tool.existing" onclick={() => router.navigate('existing')}>
+        <Icon name="folder-open" size={13} /> {t('workspace.project.tool.existing')}
+      </button>
     </div>
   </div>
 

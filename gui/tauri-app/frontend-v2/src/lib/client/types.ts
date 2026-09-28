@@ -175,6 +175,70 @@ export interface DiagnoseResponseDto {
   excluded_count: number;
 }
 
+// --- existing translation pack (W2; mirrors contract.rs Import/Apply
+// Existing DTOs). Analysis is DRY-RUN ONLY; application is a SEPARATE,
+// fully guarded command. ---
+export interface ExistingMatchItemDto {
+  /** The pack's serialization key. */
+  key: string;
+  /** FULL structural identity the line addresses (reusable / conflicts). */
+  entry?: SourceEntryIdDto;
+}
+
+export interface ExistingAmbiguousItemDto {
+  key: string;
+  /** Candidate source keys — reported for review, never auto-applied. */
+  candidates: string[];
+}
+
+export interface ImportExistingRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute pack directory (typically Languages/<locale>). */
+  existing_dir: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ImportExistingResponseDto {
+  job_id: string;
+  scanned_files: number;
+  scanned_keys: number;
+  reusable_count: number;
+  conflict_count: number;
+  obsolete_count: number;
+  ambiguous_count: number;
+  invalid_count: number;
+  /** Inventory strings that stay untranslated after the merge. */
+  new_count: number;
+  /** Capped sample lists (backend EXISTING_LIST_LIMIT). */
+  reusable: ExistingMatchItemDto[];
+  conflicts: ExistingMatchItemDto[];
+  obsolete: ExistingMatchItemDto[];
+  ambiguous: ExistingAmbiguousItemDto[];
+  invalid: ExistingMatchItemDto[];
+}
+
+export interface ApplyExistingRequestDto {
+  project_id: string;
+  expected_revision: number;
+  session_epoch: number;
+  existing_dir: { path: string };
+  locale: string;
+}
+
+export interface ApplyExistingResponseDto {
+  job_id: string;
+  revision: number;
+  applied: number;
+  /** Existing translations NOT overwritten. */
+  conflicts: number;
+  /** Pack lines addressing nothing in the inventory (not applied). */
+  unmatched: number;
+  /** Ambiguous lines (not applied). */
+  ambiguous: number;
+}
+
 // --- handshake / capabilities ---
 export interface UnsupportedCapabilityDto {
   capability: string;
@@ -214,4 +278,8 @@ export type ContractMethod =
   // resolves the app-bundled RimLoc UI catalog as an ordinary project
   // source dir (mod_root for the EXISTING contract create flow). The mock
   // transport refuses it honestly — no bundled catalog exists there.
-  | 'selfloc_catalog_dir';
+  | 'selfloc_catalog_dir'
+  // Existing translation pack (W2): dry-run analysis + separate guarded
+  // application against the open project.
+  | 'project_import_existing'
+  | 'project_apply_existing';

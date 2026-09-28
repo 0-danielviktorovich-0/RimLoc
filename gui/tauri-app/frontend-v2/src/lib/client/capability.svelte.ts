@@ -28,6 +28,10 @@ export const CAP_BUILD = 'project_build_export';
 export const CAP_SOURCE_ACTIONS = 'source_inspector_actions';
 export const CAP_DIAGNOSTICS = 'project_diagnostics_bundle';
 export const CAP_PROVIDERS = 'providers_settings';
+// W2 (existing-pack flow): dry-run analysis + guarded application of an
+// existing translation pack against the open project.
+export const CAP_IMPORT_EXISTING = 'project_import_existing';
+export const CAP_APPLY_EXISTING = 'project_apply_existing';
 
 class CapabilityStore {
   /** The last handshake report; null until ensure() resolves (or mode 'none'). */
