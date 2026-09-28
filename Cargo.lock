@@ -4265,7 +4265,7 @@ dependencies = [
  "dirs 7.0.0",
  "serde",
  "thiserror 1.0.69",
- "toml 0.8.2",
+ "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]
