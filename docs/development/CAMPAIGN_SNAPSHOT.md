@@ -54,6 +54,12 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   (нарушение REL-2-воркера исправлено, копия в .trash); target/ вне Spotlight; владельцу против
   Gatekeeper-окна: xattr -dr com.apple.quarantine "/Applications/RimLoc GUI.app". Баг-бэклог
   UI: /tmp/rimloc-ui-bugs.md (дублировать в evidence). Дизайн-варианты: /tmp/rimloc-design-variants/.
+- **Ночь 29.09 ФИНАЛ (07:1x)**: main `0afac4a` — +UI-багфиксы волны (H-1 демо-тур мастера
+  достижим, M-1 recents-мета `v·r·#id`, M-2 транспорт-чип, M-10 видимый отказ экспорта; ревью
+  approved, фронт 356/356) + REL-3 артефакт `d79eb21c…`/DMG `263ed1ca…` от 0afac4a
+  (evidence artifact-rel3-final/; check/build/package/процесс-exec PASS; живые UI-чеки NOT-RUN —
+  экран залочен 06:15, ПЕРЕГНАТЬ при разблокированном: wizard-тур кнопка, recents-мета,
+  транспорт-чип на release). Следующая утренняя задача: тот live-прогон.
 - **НОЧЬ 28.09 ЗАВЕРШЕНА (утро/вечер 28.09, возобновлена 22:52)**: main `9fe14e4`
   (→ проверь `git rev-parse HEAD`). SF-1..5 (безопасность contribution: base_value,
   prototype-id, секреты, дубликаты, настоящая цепочка export→pack→contribution) —
