@@ -40,7 +40,9 @@ export const ru: Record<string, string> = {
   // поверх RimLocClient. Сообщения находок — данные бэкенда (EN), чипы и
   // подписи локализованы.
   'contractops.running': 'Выполняется…',
-  'contractops.validate.title': 'Валидация (контракт)',
+  // L-10 (аудит UI 2026-09-29): «(контракт)» — внутренний термин, из заголовков
+  // карточек убран; режим сборки виден из бейджа транспорта в шапке.
+  'contractops.validate.title': 'Валидация',
   'contractops.validate.desc': 'Чтение над доверенным состоянием проекта; проект не меняется. Ошибки делают операцию неуспешной и становятся целью диагностики.',
   'contractops.validate.run': 'Проверить проект',
   'contractops.validate.rerun': 'Проверить снова',
@@ -50,7 +52,7 @@ export const ru: Record<string, string> = {
   'contractops.counts.warnings': 'Предупреждения',
   'contractops.counts.info': 'Инфо',
   'contractops.findings.empty': 'Замечаний нет.',
-  'contractops.export.title': 'Сборка перевода (контракт)',
+  'contractops.export.title': 'Сборка перевода',
   'contractops.export.desc': 'Изолированный вывод в указанную вами папку (не в дерево исходников — guard бэкенда отклонит). Язык папки: {locale}.',
   'contractops.export.outdir': 'Папка вывода',
   'contractops.export.run': 'Собрать и записать',
@@ -58,13 +60,13 @@ export const ru: Record<string, string> = {
   'contractops.export.files': 'Файлов',
   'contractops.export.reparsed': 'Ключей перепарсено',
   'contractops.export.skipped': 'Пропущены неизвестные типы ({count})',
-  'contractops.buildmod.title': 'Сборка мод-пакета (контракт)',
+  'contractops.buildmod.title': 'Сборка мод-пакета',
   'contractops.buildmod.desc': 'Готовая папка мода — About.xml + Languages ({locale}) — которую можно перенести в папку Mods игры. В дерево исходников бэкенд не пустит.',
   'contractops.buildmod.outdir': 'Папка мод-пакета',
   'contractops.buildmod.run': 'Собрать мод-пакет',
   'contractops.buildmod.done': 'Мод-пакет записан и перепроверен сканером.',
   'contractops.buildmod.files': 'Файлов',
-  'contractops.diagnose.title': 'Диагностика (контракт)',
+  'contractops.diagnose.title': 'Диагностика',
   'contractops.diagnose.desc': 'Санитизированный бандл по последней неуспешной операции: id операции, причина, затронутые записи. Папка — вне дерева исходников.',
   'contractops.diagnose.outdir': 'Папка бандла',
   'contractops.diagnose.run': 'Собрать бандл',
@@ -225,7 +227,8 @@ export const ru: Record<string, string> = {
   'wizard.w4.existing.title': 'Использовать существующие знания',
   'wizard.w4.existing.translation': 'Существующий перевод',
   'wizard.w4.existing.translationDesc': 'Готовые тексты из чужого пакета или прошлой версии',
-  'wizard.w4.existing.tm': 'Translation Memory',
+  // L-2 (аудит UI 2026-09-29): один концепт — одно имя, как во вкладке ниже.
+  'wizard.w4.existing.tm': 'Память переводов',
   'wizard.w4.existing.tmDesc': 'Совпадения из памяти переводов проекта',
   'wizard.w4.existing.glossary': 'Глоссарий',
   'wizard.w4.existing.glossaryDesc': 'Термины подставляются и проверяются на выходе',
@@ -327,7 +330,8 @@ export const ru: Record<string, string> = {
   'workspace.navigator.title': 'Записи',
   'workspace.navigator.all': 'Все записи',
   'workspace.navigator.status': 'Статус',
-  'workspace.navigator.advanced': 'Структура (advanced)',
+  // L-4 (аудит UI 2026-09-29): англицизм в скобках заменён на русский эквивалент.
+  'workspace.navigator.advanced': 'Структура (расширенная)',
 
   // Filter popover (mandate §10)
   'workspace.filters.title': 'Фильтры',
@@ -528,6 +532,12 @@ export const ru: Record<string, string> = {
   'review.overview.unavailable': 'Не считается в этой сборке.',
   'review.overview.partial':
     'Обзор частичный: отслеживание изменений источника и проверка глоссария в этой сборке не подключены — остальные счётчики посчитаны по снапшоту проекта.',
+  // M-6 (аудит UI 2026-09-29): видимая связь карточек обзора с очередью и
+  // обратно — пара «0 рядом с 45» — это два разных честных счёта, не сбой.
+  'review.overview.queueLink': 'См. очередь проблем ниже',
+  'review.overview.queueExplainer':
+    'Счётчики считают снапшот проекта, очередь — находки проверок этой сессии: числа не обязаны совпадать.',
+  'review.queue.overviewLink': '↑ К счётчикам обзора',
   'review.queue': 'Очередь проблем',
   'review.queue.empty.title': 'Очередь пуста',
   'review.queue.empty.desc': 'В этой сессии проблем не осталось. Можно собирать перевод.',
@@ -802,12 +812,19 @@ export const ru: Record<string, string> = {
   'provider.anthropic.desc': 'Модели Claude через Anthropic API.',
   'provider.ollama.desc': 'Локальные модели через Ollama на этой машине.',
   'provider.custom.desc': 'Свой эндпоинт с OpenAI-совместимым API.',
-  'providers.status.connected': 'Подключён (мок)',
+  // M-11 (аудит UI 2026-09-29): суффикс «(мок)» отделён от статуса и
+  // показывается только на мок-транспорте (providers.status.mockMark); на
+  // реальном транспорте настроенный провайдер честно показывает
+  // «настроен (не проверялся)» — сетевого прогона в этой сборке нет.
+  'providers.status.connected': 'Подключён',
   'providers.status.not_configured': 'Не настроен',
-  'providers.status.offline': 'Офлайн (мок)',
+  'providers.status.offline': 'Офлайн',
   'providers.status.testing': 'Проверяем…',
+  'providers.status.mockMark': '(мок)',
+  'providers.status.configured': 'Настроен (не проверялся)',
   'providers.model': 'Модель',
-  'providers.baseUrl': 'Base URL',
+  // L-12 (аудит UI 2026-09-29): EN-термин в RU-интерфейсе заменён.
+  'providers.baseUrl': 'Адрес сервера',
   'providers.action.configure': 'Настроить',
   'providers.action.test': 'Проверить связь',
   'providers.action.changeModel': 'Сменить модель',
@@ -860,6 +877,8 @@ export const ru: Record<string, string> = {
   'providers.export.fallbackNote': 'Конфигурация провайдера (без секретов):',
   'providers.inst.removeConfirm': 'Удалить?',
   'providers.inst.removeWarn': 'Повторное нажатие удаляет провайдера. Ключ в keychain не трогается.',
+  // L-12 (аудит UI 2026-09-29): «(keychain)» в строке ключа — по-русски.
+  'providers.inst.key.keychain': 'связка ключей',
   'providers.form.key': 'Ключ',
   'providers.form.addTitle': 'Новый провайдер',
   'providers.form.editTitle': 'Настройка провайдера',
@@ -870,7 +889,8 @@ export const ru: Record<string, string> = {
   'providers.form.auth.none': 'Без ключа (локальный)',
   'providers.form.auth.noneHint': 'Локальные сервисы ключа не требуют; облачным нужен ключ.',
   'providers.form.discovery': 'Обнаружение моделей',
-  'providers.form.discovery.auto': 'Список с сервера',
+  // L-12 (аудит UI 2026-09-29): естественная русская формулировка авто-режима.
+  'providers.form.discovery.auto': 'Запрашивать у сервера',
   'providers.form.discovery.manual': 'Вручную',
   'providers.form.modelPlaceholder': 'Например my-model-7b',
   'providers.form.add': 'Добавить',
