@@ -77,6 +77,13 @@ related:
 
 `RIMLOC_WINDOW_ORIGIN="x,y"` (+ `RIMLOC_WINDOW_MOVE=swizzle|borderless|tauri|hide`) — off-screen автоматизация: App Nap opt-out, AX-солиситация, 1 Hz park-поток. Блок атрибутно огорожен `#[cfg(all(debug_assertions, target_os = "macos"))]` — в release код отсутствует (гейт `cargo check --release -p rimloc-gui`). Пользователя не касается.
 
+## 11. Ночь 29.09: Existing-поток живой
+
+- **ProjectOverview → «Import existing translation»** (на live-проекте): путь через пикер или руками (абсолютный) → «Анализ» — dry-run `project_import_existing` (ничего не пишет): категории reusable/new/obsolete/ambiguous + конфликты, списки с лимитом.
+- **«Применить»** — `project_apply_existing`: только после анализа и только для проанализированной папки (смена пути → disabled + подсказка); переносит только пустые слоты (origin=Imported), ручные правки не затираются (конфликты остаются списком); persist-before-ack, stale-ревизия ловится.
+- Гварды: относительный путь → `invalid_output_path`; leaf ≠ локали → `contract_violation`; managed-root и symlink — deny fail-closed (симлинк на пачку внутри исходника читается легально).
+- Тесты: `existing_pack_path_guards_are_typed`, `existing_pack_symlink_resolves_through_real_path`, `apply_existing_dirty_retry_completes_the_persist`, `apply_existing_moves_reusable_never_overwrites_conflicts`; фронт — `existing-flow.test.ts` (15).
+
 ## 10. Ночь 28.09: новые точки ревью
 
 - **Home → «Выбрать папку…»** (create-панель): открывает настоящий NSOpenPanel (доказано на release-артефакте); отмена тихая, ошибки видимые.
