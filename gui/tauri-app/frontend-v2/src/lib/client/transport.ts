@@ -4,6 +4,8 @@
 // mode choice is EXPLICIT at client construction; the mock is never the
 // production default (MOCK_LIVE_ONBOARDING §2, lead decision 010).
 import type {
+  ApplyExistingRequestDto,
+  ApplyExistingResponseDto,
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
   BuildModProjectResponseDto,
@@ -12,6 +14,8 @@ import type {
   CreateProjectRequestDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
+  ImportExistingRequestDto,
+  ImportExistingResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
   ValidateProjectResponseDto
@@ -52,6 +56,16 @@ export interface ContractMethodMap {
   // RimLoc UI catalog project dir (mod_root for project_create). Refused
   // honestly in mock — there is no bundled catalog outside the desktop app.
   selfloc_catalog_dir: { params: Record<string, never>; result: string };
+  // Existing translation pack (W2): dry-run analysis + separate guarded
+  // application against the open project.
+  project_import_existing: {
+    params: { request: ImportExistingRequestDto };
+    result: ImportExistingResponseDto;
+  };
+  project_apply_existing: {
+    params: { request: ApplyExistingRequestDto };
+    result: ApplyExistingResponseDto;
+  };
 }
 
 export type TransportMode = 'tauri' | 'mock';

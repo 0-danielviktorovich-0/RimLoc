@@ -455,6 +455,7 @@ export const ru: Record<string, string> = {
   'workspace.project.rescan': 'Пересканировать',
   'workspace.project.reviewChanges': 'Разобрать изменения ({count})',
   'workspace.project.tools': 'Специальные инструменты',
+  'workspace.project.tool.existing': 'Импортировать существующий перевод',
   'workspace.project.danger': 'Опасная зона',
   'workspace.project.dangerNote': 'Эти действия меняют проект целиком. Каждое спрашивает подтверждение дважды.',
   'workspace.project.reset': 'Сбросить прогресс перевода',
@@ -609,6 +610,26 @@ export const ru: Record<string, string> = {
   'existing.continueTranslation': 'Продолжить перевод',
   'existing.back': 'Выбрать другое',
   'existing.note': 'Мок-поток: числа анализа демонстрируют проект реального масштаба.',
+  // W2 — живой контрактный поток сценария существующего перевода
+  // (dry-run анализ + охраняемое применение в открытом проекте).
+  'existing.live.dir': 'Папка существующего перевода',
+  'existing.live.dirHint': '/путь/к/моду/Languages/Russian',
+  'existing.live.pick': 'Выбрать папку…',
+  'existing.live.analyzeNote':
+    'Анализ — это dry run: RimLoc только сравнивает пак с открытым проектом — пока ничего не записывается.',
+  'existing.live.scanned': 'Просмотрено файлов: {files}, строк: {keys}.',
+  'existing.live.list.reusable': 'Будет импортировано (пустые слоты)',
+  'existing.live.list.conflicts': 'Останется как есть (в проекте уже есть перевод)',
+  'existing.live.list.obsolete': 'Нет в этом проекте (останется в паке)',
+  'existing.live.list.ambiguous': 'Неоднозначные — нужно ваше решение',
+  'existing.live.applyNote':
+    'Применение импортирует только готовые строки. Существующие переводы не перезаписываются, неоднозначные остаются списком для вашего решения.',
+  'existing.live.apply': 'Импортировать готовые ({count})',
+  'existing.live.applied':
+    'Импортировано переводов: {count}. Не тронуто: существующих {conflicts}, устаревших {obsolete}, неоднозначных {ambiguous}.',
+  'existing.live.dirChanged':
+    'Папка изменилась после анализа — запустите анализ заново, прежде чем применять.',
+  'existing.conflicts': 'Конфликты (сохранены)',
 
   // Settings screen (mandate §15, spec §17). Семь секций, сгруппированных по
   // задаче; CLI-флаги наружу 1:1 не выставляем — экспериментальное и

@@ -1388,6 +1388,261 @@ impl ProjectSessionManager {
             excluded_count: bundle.excluded.len(),
         })
     }
+
+    /// `project_import_existing` — DRY-RUN analysis of an existing
+    /// translation pack against the trusted session state. READ-ONLY on
+    /// both sides: the pack directory is only scanned, the project is never
+    /// mutated and nothing is persisted. The classification (reusable /
+    /// conflicts / obsolete / ambiguous / invalid + `new`) comes from the
+    /// SAME resolver `apply_existing` uses, so the reusable set is by
+    /// construction what application would apply.
+    pub fn import_existing(
+        &self,
+        req: &crate::contract::ImportExistingRequest,
+    ) -> Result<crate::contract::ImportExistingResponse, ContractError> {
+        // Fail-closed id-form guard — the same entry discipline as every
+        // other session operation.
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_import_existing");
+        log.begin_stage("analyze");
+        let analysis =
+            crate::project::analyze_existing_translation(&st.project, &existing_dir, &req.locale)
+                .map_err(|e| {
+                log.error_message("analyze", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("existing-pack analysis failed: {e}"),
+                )
+            })?;
+        log.counter("analyze", "keys", analysis.scanned_keys as u64);
+        log.end_stage("analyze");
+        log.finish();
+
+        Ok(crate::contract::ImportExistingResponse {
+            job_id,
+            scanned_files: analysis.scanned_files,
+            scanned_keys: analysis.scanned_keys,
+            reusable_count: analysis.reusable_count,
+            conflict_count: analysis.conflict_count,
+            obsolete_count: analysis.obsolete_count,
+            ambiguous_count: analysis.ambiguous_count,
+            invalid_count: analysis.invalid_count,
+            new_count: analysis.new_uncovered,
+            reusable: analysis
+                .reusable
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+            conflicts: analysis
+                .conflicts
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+            obsolete: analysis
+                .obsolete
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+            ambiguous: analysis
+                .ambiguous
+                .into_iter()
+                .map(|l| crate::contract::ExistingAmbiguousItem {
+                    key: l.key,
+                    candidates: l.candidates,
+                })
+                .collect(),
+            invalid: analysis
+                .invalid
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+        })
+    }
+
+    /// `project_apply_existing` — apply the REUSABLE set of an existing
+    /// translation pack into the trusted session state, persist-before-ack.
+    /// Guards: the full apply-intents discipline (stale epoch/revision
+    /// refuse the whole operation, external disk change refuses the save)
+    /// PLUS the merge safety rules: an existing translation is NEVER
+    /// overwritten (conflicts stay conflicts), ambiguous lines are never
+    /// auto-applied, and pack keys the inventory does not know are never
+    /// applied.
+    pub fn apply_existing(
+        &self,
+        req: &crate::contract::ApplyExistingRequest,
+    ) -> Result<crate::contract::ApplyExistingResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+
+        // Stale-session guard (same discipline as `apply`).
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        // Lost-update guard against the last ACKED revision (a dirty failed
+        // save never published its revision — same base rule as `apply`).
+        let base = if st.dirty {
+            st.acked_revision
+        } else {
+            st.revision
+        };
+        if req.expected_revision != base {
+            return Err(ContractError::stale_revision(req.expected_revision, base));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_apply_existing");
+        log.begin_stage("apply");
+        // Pre-apply analysis drives the response's safety accounting; the
+        // application itself is the SAME service call the corpus harness
+        // verifies (matched + empty slots only, origin=Imported).
+        let analysis =
+            crate::project::analyze_existing_translation(&st.project, &existing_dir, &req.locale)
+                .map_err(|e| {
+                log.error_message("apply", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("existing-pack analysis failed: {e}"),
+                )
+            })?;
+        let applied =
+            crate::project::apply_existing_translation(&mut st.project, &existing_dir, &req.locale)
+                .map_err(|e| {
+                    log.error_message("apply", &e.to_string());
+                    log.finish();
+                    ContractError::new(
+                        ContractErrorCode::Internal,
+                        format!("existing-pack application failed: {e}"),
+                    )
+                })?;
+        log.counter("apply", "applied", applied as u64);
+        log.end_stage("apply");
+
+        // A clean no-op: nothing was reusable AND the session holds no
+        // pending work from a previously failed save — no revision bump, no
+        // save, no dirty state.
+        if applied == 0 && !st.dirty {
+            log.finish();
+            return Ok(crate::contract::ApplyExistingResponse {
+                job_id,
+                revision: st.revision,
+                applied: 0,
+                conflicts: analysis.conflict_count,
+                unmatched: analysis.obsolete_count,
+                ambiguous: analysis.ambiguous_count,
+            });
+        }
+
+        // Revision bump + persist-before-ack (identical to `apply`).
+        //
+        // Dirty-retry completion: a failed save never PUBLISHED its
+        // revision (the bump lives only in memory, `dirty` keeps the acked
+        // base legal for a retry). On such a retry the pack's reusable
+        // lines are already in memory — this pass applies nothing new, but
+        // the pending revision from the failed save is COMPLETED: the same
+        // revision is persisted and acked now, so the caller never receives
+        // an `Ok` revision that is not on disk. (The intents path never
+        // hits this because re-applying intents re-applies; slot-filling is
+        // one-shot, so this is the first operation with a deterministic
+        // zero-new-lines retry.)
+        let new_revision = if applied == 0 {
+            st.revision
+        } else {
+            let bumped = st.revision + 1;
+            st.revision = bumped;
+            bumped
+        };
+        log.begin_stage("persist");
+        let meta = ProjectEnvelopeMeta {
+            project_id: Some(req.project_id.clone()),
+            revision: Some(new_revision),
+            display_name: Some(st.display_name.clone()),
+            source_root: envelope_source_root(&st.mod_root),
+            source_fingerprint: st.source_fingerprint.clone(),
+        };
+        if let Some(expected) = &st.disk_hash {
+            let current = disk_hash(&st.path);
+            if current.is_some_and(|c| &c != expected) {
+                st.dirty = true;
+                log.error_message(
+                    "persist",
+                    "managed file changed outside the session (content hash mismatch)",
+                );
+                log.finish();
+                return Err(ContractError::new(
+                    ContractErrorCode::ProjectChangedOnDisk,
+                    "the managed project file changed outside this session; refresh to adopt \
+                     the on-disk state (in-memory edits are kept until then)"
+                        .to_string(),
+                ));
+            }
+        }
+        match save_project_with_meta(&st.project, &meta, &st.path) {
+            Ok(()) => {
+                st.acked_revision = new_revision;
+                st.disk_hash = disk_hash(&st.path);
+                st.dirty = false;
+            }
+            Err(e) => {
+                st.dirty = true;
+                log.error_message("persist", &e.to_string());
+                log.finish();
+                return Err(ContractError::new(
+                    ContractErrorCode::SaveFailed,
+                    format!("persist failed: {e}"),
+                ));
+            }
+        }
+        log.end_stage("persist");
+        log.finish();
+        Ok(crate::contract::ApplyExistingResponse {
+            job_id,
+            revision: new_revision,
+            applied,
+            conflicts: analysis.conflict_count,
+            unmatched: analysis.obsolete_count,
+            ambiguous: analysis.ambiguous_count,
+        })
+    }
 }
 
 /// Strict language-folder form for client locale strings (P1-2). A locale
@@ -1421,6 +1676,77 @@ fn ensure_out_dir_absolute(out_dir: &Path) -> Result<(), ContractError> {
     } else {
         Err(ContractError::invalid_output_path(out_dir))
     }
+}
+
+/// Guards for a caller-specified EXISTING translation pack directory
+/// (input, read-only — `import_existing` / `apply_existing`):
+/// - path-FORM guard FIRST: a relative pack path would resolve against the
+///   GUI process CWD — refused before any filesystem access (typed
+///   `invalid_output_path`, the same form code as outputs; the message is
+///   neutral about direction);
+/// - it must be a directory;
+/// - managed-record containment: the pack is never read from inside the
+///   managed-projects root (typed `guard_output_denied`). Unlike a WRITE
+///   target, the pack MAY legitimately live inside the read-only source
+///   tree (`Languages/<locale>` of the mod itself) — reading it is the
+///   whole point, so no source-tree guard applies here;
+/// - pack↔locale cross-check: the chosen directory's folder name must be
+///   the requested locale (case-insensitive). The scanner walks ANY
+///   `*/Languages/<Any>/{Keyed,DefInjected}` under the given root, so
+///   picking the MOD ROOT (or `Languages/English`) with locale `Russian`
+///   would silently classify the ENGLISH source as reusable — the apply
+///   would import source text as "translations". RimLoc's own export
+///   layout is `Languages/<locale>`, so the folder the locale names is the
+///   only honest pack root (fail-closed: an unusually named pack folder is
+///   renamed or re-exported, never guessed).
+fn existing_pack_dir(
+    dir_dto: &crate::contract::PathBufDto,
+    managed_root: &Path,
+    locale: &str,
+) -> Result<PathBuf, ContractError> {
+    let dir = PathBuf::from(&dir_dto.path);
+    if !dir.is_absolute() {
+        return Err(ContractError::new(
+            ContractErrorCode::InvalidOutputPath,
+            format!(
+                "existing translation directory `{}` is not absolute; specify an absolute directory (e.g. `/Users/you/Mods/MyMod/Languages/{locale}`)",
+                dir.display()
+            ),
+        ));
+    }
+    if crate::is_within(&dir, managed_root) {
+        return Err(ContractError::new(
+            ContractErrorCode::GuardOutputDenied,
+            format!(
+                "existing translation directory `{}` is inside the managed projects root `{}`",
+                dir.display(),
+                managed_root.display()
+            ),
+        ));
+    }
+    if !dir.is_dir() {
+        return Err(ContractError::new(
+            ContractErrorCode::ContractViolation,
+            format!(
+                "existing translation directory `{}` is not a directory",
+                dir.display()
+            ),
+        ));
+    }
+    let leaf_ok = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|leaf| leaf.eq_ignore_ascii_case(locale));
+    if !leaf_ok {
+        return Err(ContractError::new(
+            ContractErrorCode::ContractViolation,
+            format!(
+                "existing translation directory `{}` does not match the locale `{locale}`: the pack folder must be the language folder itself (…/Languages/{locale}), otherwise the scan would pick up other languages' files",
+                dir.display()
+            ),
+        ));
+    }
+    Ok(dir)
 }
 
 /// Virtual validation path for one entry translation, mirroring the REAL
@@ -3280,5 +3606,440 @@ mod tests {
             .export_project(&snap.project_id, 1, &out, "Russian")
             .unwrap();
         assert!(export.files_written >= 3);
+    }
+
+    // --- W2: existing translation pack (dry-run analyze + guarded apply) ---
+
+    /// Synthetic mod + a PARTIALLY overlapping existing RU pack:
+    /// - Keyed `Greeting` — empty slot in the project  → reusable;
+    /// - DefInjected `Alpha.label` — empty slot        → reusable;
+    /// - DefInjected `Beta.label` — manually translated → conflict;
+    /// - Keyed `ObsoleteKey` — not in the inventory     → obsolete;
+    /// - Keyed `Farewell` — TODO marker in the pack    → invalid (BOTH the
+    ///   analyzer and the application refuse it: `Farewell` has an EMPTY
+    ///   slot in the project, so an apply without the TODO filter would
+    ///   write the literal "TODO" in as a fake translation).
+    fn mod_with_partial_pack(root: &Path) {
+        write(
+            &root.join("mod/Defs/Things.xml"),
+            r#"<Defs><ThingDef><defName>Alpha</defName><label>alpha thing</label></ThingDef><ThingDef><defName>Beta</defName><label>beta thing</label></ThingDef></Defs>"#,
+        );
+        write(
+            &root.join("mod/Languages/English/Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>hello</Greeting><Farewell>bye</Farewell></LanguageData>",
+        );
+        // The existing pack lives INSIDE the read-only source tree — the
+        // canonical location (Languages/<locale>), which the pack INPUT is
+        // allowed to read (only the managed root is refused).
+        let pack = root.join("mod/Languages/Russian");
+        write(
+            &pack.join("Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>привет</Greeting><Farewell>TODO</Farewell><ObsoleteKey>старое</ObsoleteKey></LanguageData>",
+        );
+        write(
+            &pack.join("DefInjected/ThingDef/Things.xml"),
+            "<LanguageData><Alpha.label>альфа</Alpha.label><Beta.label>бета</Beta.label></LanguageData>",
+        );
+    }
+
+    fn existing_req(
+        pid: &str,
+        epoch: SessionEpoch,
+        dir: &Path,
+    ) -> crate::contract::ImportExistingRequest {
+        crate::contract::ImportExistingRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            existing_dir: crate::contract::PathBufDto::new(dir.display().to_string()),
+            locale: "Russian".into(),
+        }
+    }
+
+    fn apply_existing_req(
+        pid: &str,
+        epoch: SessionEpoch,
+        rev: Revision,
+        dir: &Path,
+    ) -> crate::contract::ApplyExistingRequest {
+        crate::contract::ApplyExistingRequest {
+            project_id: pid.into(),
+            expected_revision: rev,
+            session_epoch: epoch,
+            existing_dir: crate::contract::PathBufDto::new(dir.display().to_string()),
+            locale: "Russian".into(),
+        }
+    }
+
+    /// Dry-run categories are correct, and the dry-run writes NOTHING:
+    /// the revision stays put and no translation appears.
+    #[test]
+    fn import_existing_dry_run_classifies_and_writes_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        assert_eq!(snap.revision, 1);
+
+        // Manual edit FIRST so the pack's Beta.label line is a conflict.
+        let res = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![set_text("Beta.label", "ThingDef", "бета вручную")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+
+        let resp = mgr
+            .import_existing(&existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &root.join("mod/Languages/Russian"),
+            ))
+            .unwrap();
+        assert_eq!(resp.reusable_count, 2, "{resp:?}");
+        assert_eq!(resp.conflict_count, 1);
+        assert_eq!(resp.obsolete_count, 1);
+        assert_eq!(resp.invalid_count, 1);
+        // After the merge only `Farewell` stays untranslated (Beta keeps its
+        // manual translation; Greeting + Alpha.label are covered by the pack).
+        assert_eq!(resp.new_count, 1);
+        let reusable_keys: Vec<&str> = resp.reusable.iter().map(|i| i.key.as_str()).collect();
+        assert!(reusable_keys.contains(&"Greeting"));
+        assert!(reusable_keys.contains(&"Alpha.label"));
+        let conflict = &resp.conflicts[0];
+        assert_eq!(conflict.key, "Beta.label");
+        assert_eq!(
+            conflict.entry.as_ref().unwrap().def_type.as_deref(),
+            Some("ThingDef")
+        );
+        assert_eq!(resp.obsolete[0].key, "ObsoleteKey");
+        assert!(resp.obsolete[0].entry.is_none());
+        // Structurally unreachable today (the resolver never feeds alias
+        // data — aliases are data, never shape heuristics), so zero, never
+        // guessed.
+        assert_eq!(resp.ambiguous_count, 0);
+
+        // Dry-run wrote NOTHING: same revision, no new translations.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        assert_eq!(after.revision, snap.revision + 1);
+        let farewell = after
+            .project
+            .translations
+            .iter()
+            .find(|t| t.source_id.key == "Farewell" && t.locale == "Russian");
+        assert!(farewell.is_none(), "dry-run must not apply anything");
+    }
+
+    /// Apply moves ONLY the reusable set: conflicts keep the manual text
+    /// (origin stays Human), obsolete/invalid are never applied, and the
+    /// result persists (reload from disk proves it).
+    #[test]
+    fn apply_existing_moves_reusable_never_overwrites_conflicts() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let manual = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![set_text("Beta.label", "ThingDef", "бета вручную")],
+            ))
+            .unwrap();
+        let manual_revision = manual.revision;
+
+        let resp = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                manual_revision,
+                &root.join("mod/Languages/Russian"),
+            ))
+            .unwrap();
+        assert_eq!(resp.applied, 2);
+        assert_eq!(resp.conflicts, 1);
+        assert_eq!(resp.unmatched, 1);
+        assert_eq!(resp.ambiguous, 0);
+        assert_eq!(resp.revision, manual_revision + 1);
+
+        // Durable proof: reload the managed file from disk.
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        let get = |key: &str, def_type: Option<&str>| {
+            loaded
+                .project
+                .translations
+                .iter()
+                .find(|t| {
+                    t.source_id.key == key
+                        && t.source_id.def_type.as_deref() == def_type
+                        && t.locale == "Russian"
+                })
+                .map(|t| (t.text.clone(), t.origin))
+        };
+        assert_eq!(
+            get("Greeting", None),
+            Some((Some("привет".into()), Origin::Imported))
+        );
+        assert_eq!(
+            get("Alpha.label", Some("ThingDef")),
+            Some((Some("альфа".into()), Origin::Imported))
+        );
+        // The manual translation WON — never overwritten by the pack.
+        assert_eq!(
+            get("Beta.label", Some("ThingDef")),
+            Some((Some("бета вручную".into()), Origin::Human))
+        );
+        // Obsolete / invalid pack lines were never applied.
+        assert!(get("ObsoleteKey", None).is_none());
+        assert!(get("Farewell", None).is_none());
+    }
+
+    /// Apply-intents guards on the existing-pack flow: a manual edit AFTER
+    /// the analysis changes the revision — the stale `expected_revision`
+    /// refuses the whole apply, the stale epoch refuses even the dry-run.
+    #[test]
+    fn apply_existing_refuses_stale_revision_and_epoch() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let pack = root.join("mod/Languages/Russian");
+
+        // Analyze first (the caller's decision basis, revision 1): at this
+        // point Beta.label is still an EMPTY slot, so it counts as reusable
+        // — Greeting, Alpha.label and Beta.label.
+        let analysis = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &pack))
+            .unwrap();
+        assert_eq!(analysis.reusable_count, 3);
+
+        // A manual edit lands AFTER the analysis (revision bump).
+        mgr.apply(&req(
+            &snap.project_id,
+            snap.session_epoch,
+            1,
+            vec![set_text("Beta.label", "ThingDef", "ручная правка")],
+        ))
+        .unwrap();
+
+        // The stale base refuses the whole apply — nothing is written.
+        let err = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1, // the analyzed-at revision is now stale
+                &pack,
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::StaleRevision);
+        assert_eq!(
+            mgr.snapshot(&snap.project_id).unwrap().revision,
+            snap.revision + 1
+        );
+
+        // Stale epoch refuses even the read-only dry-run.
+        let err = mgr
+            .import_existing(&existing_req(&snap.project_id, 99, &pack))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::StaleEpoch);
+    }
+
+    /// Path guards on the pack input: relative form, non-directory, and a
+    /// directory inside the managed root are each a typed refusal BEFORE
+    /// any scan.
+    #[test]
+    fn existing_pack_path_guards_are_typed() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // Relative form.
+        let mut r = existing_req(
+            &snap.project_id,
+            snap.session_epoch,
+            Path::new("relative/pack"),
+        );
+        r.existing_dir = crate::contract::PathBufDto::new("relative/pack".to_string());
+        let err = mgr.import_existing(&r).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::InvalidOutputPath);
+
+        // Not a directory.
+        let err = mgr
+            .import_existing(&existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &root.join("mod/Languages/English/Keyed/Greetings.xml"),
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+
+        // Inside the managed projects root.
+        let err = mgr
+            .import_existing(&existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &mgr.managed_root().join("proj-x.rimloc.json"),
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+
+        // Malformed locale form is refused before any scan (it would
+        // persist into the durable record on apply).
+        let mut r = existing_req(
+            &snap.project_id,
+            snap.session_epoch,
+            &root.join("mod/Languages/Russian"),
+        );
+        r.locale = "../evil".into();
+        let err = mgr.import_existing(&r).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+
+        // Pack↔locale cross-check: the scanner walks ANY
+        // */Languages/<Any> under the given root, so a mod root (or an
+        // English folder) chosen with locale `Russian` is a typed refusal —
+        // otherwise the English SOURCE text would be classified reusable
+        // and imported as fake "translations".
+        for wrong in ["mod", "mod/Languages", "mod/Languages/English"] {
+            let err = mgr
+                .import_existing(&existing_req(
+                    &snap.project_id,
+                    snap.session_epoch,
+                    &root.join(wrong),
+                ))
+                .unwrap_err();
+            assert_eq!(err.code, ContractErrorCode::ContractViolation, "{wrong}");
+        }
+
+        // Apply path guards: the same refusals, nothing written.
+        let mut ar = apply_existing_req(
+            &snap.project_id,
+            snap.session_epoch,
+            1,
+            Path::new("relative"),
+        );
+        ar.existing_dir = crate::contract::PathBufDto::new("relative".to_string());
+        let err = mgr.apply_existing(&ar).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::InvalidOutputPath);
+        assert_eq!(
+            mgr.snapshot(&snap.project_id).unwrap().revision,
+            snap.revision
+        );
+    }
+
+    /// Symlinks on the pack input are resolved through the real path view:
+    /// a link INTO the managed projects root is denied (deny orientation is
+    /// fail-closed), while a link to the source-tree pack reads fine — the
+    /// canonical pack location is inside the mod's own Languages folder.
+    #[test]
+    fn existing_pack_symlink_resolves_through_real_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // DENY: a symlink whose TARGET lives inside the managed root.
+        let real = mgr.managed_root().join("pack-real");
+        std::fs::create_dir_all(real.join("Keyed")).unwrap();
+        std::fs::write(
+            real.join("Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>привет</Greeting></LanguageData>",
+        )
+        .unwrap();
+        let denied_link = root.join("linkdir");
+        std::fs::create_dir_all(&denied_link).unwrap();
+        let link = denied_link.join("Russian");
+        std::os::unix::fs::symlink(&real, &link).expect("symlink");
+        let err = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &link))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+
+        // ALLOW: a symlink to the source-tree pack (the canonical pack
+        // location) resolves outside the managed root and classifies — the
+        // folder name must still be the locale. The link PATH itself keeps
+        // the `…/Languages/Russian` shape: the scanner matches the
+        // traversal string, and the resolver reads the pack file's scope
+        // from its (traversed) path.
+        let alias_base = root.join("alias/Languages");
+        std::fs::create_dir_all(&alias_base).unwrap();
+        let alias = alias_base.join("Russian");
+        std::os::unix::fs::symlink(root.join("mod/Languages/Russian"), &alias).expect("symlink");
+        let resp = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &alias))
+            .unwrap();
+        // No manual edit in THIS test: Greeting, Alpha.label AND Beta.label
+        // are all empty slots → reusable; ObsoleteKey obsolete, Farewell
+        // TODO-invalid.
+        assert_eq!(resp.reusable_count, 3, "{resp:?}");
+        assert_eq!(resp.conflict_count, 0);
+        assert_eq!(resp.invalid_count, 1);
+    }
+
+    /// Persist-before-ack survives a failed save: the first apply bumps the
+    /// revision in memory and fails to persist (dirty, acked base stays
+    /// legal); the retry applies nothing NEW (the slots are already filled
+    /// in memory) but COMPLETES the pending revision — the caller receives
+    /// an `Ok` revision that is actually on disk, never a phantom one.
+    #[test]
+    fn apply_existing_dirty_retry_completes_the_persist() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let pack = root.join("mod/Languages/Russian");
+
+        // Break the durable write: a DIRECTORY sits at the managed path.
+        let file_path = mgr.managed_path(&snap.project_id).unwrap();
+        std::fs::remove_file(&file_path).unwrap();
+        std::fs::create_dir(&file_path).unwrap();
+
+        let err = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1,
+                &pack,
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::SaveFailed);
+        // The in-memory state moved ahead of the disk (dirty, unacked).
+        assert_eq!(mgr.snapshot(&snap.project_id).unwrap().revision, 2);
+
+        // Clear the fs problem; the retry (same acked base 1) applies
+        // nothing new — the reusable slots are already filled in memory —
+        // and must complete the PENDING revision, not report it as done
+        // while it exists only in memory.
+        std::fs::remove_dir(&file_path).unwrap();
+        let res = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1,
+                &pack,
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 0, "{res:?}");
+        assert_eq!(res.revision, 2);
+        // Durable proof: the pending revision is on disk WITH the imported
+        // lines the failed first attempt applied in memory.
+        let loaded = load_project_with_meta(&file_path).unwrap();
+        assert_eq!(loaded.meta.revision, Some(2));
+        assert!(loaded.project.translations.iter().any(|t| {
+            t.source_id.key == "Greeting" && t.locale == "Russian" && t.origin == Origin::Imported
+        }));
+        // The session is clean again: acked == revision, further stale
+        // guards use the published base.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        assert_eq!(after.revision, 2);
     }
 }

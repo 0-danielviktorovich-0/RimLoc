@@ -4,6 +4,7 @@
 // errors, never fake successes. Session epoch/revision semantics mirror the
 // Rust session manager so client code cannot tell the transports apart.
 import type {
+  ApplyExistingRequestDto,
   ApplyIntentsRequestDto,
   CreateProjectRequestDto,
   ApplyIntentsResponseDto,
@@ -11,6 +12,9 @@ import type {
   ContractErrorCode,
   ContractHandshakeDto,
   ContractMethod,
+  ExistingAmbiguousItemDto,
+  ExistingMatchItemDto,
+  ImportExistingRequestDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
   TranslationIntentDto,
@@ -178,16 +182,20 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
                 // Selfloc entry (mandate D): mirrors contract.rs
                 // Capability::SelflocCatalog — the shell-level resolver IS a
                 // supported slice op, not an unsupported approximation.
-                'selfloc_catalog'
+                'selfloc_catalog',
+                // W2 (existing-pack flow): mirrors contract.rs
+                // Capability::ProjectImportExisting / ProjectApplyExisting.
+                'project_import_existing',
+                'project_apply_existing'
               ],
               unsupported: [
                 // Audit P2-1: names mirror the Rust capability_report
                 // (crates/rimloc-services/src/contract.rs) EXACTLY — the
-                // stale *_via_contract aliases are gone.
+                // stale *_via_contract aliases are gone, and `import_pack`
+                // moved to the two live W2 entries above.
                 { capability: 'source_inspector_actions', reason: 'next slice: identity-based source actions with size-limited reads' },
                 { capability: 'providers_settings', reason: 'later slice: provider/settings parity' },
-                { capability: 'entry_create_delete', reason: 'intents cover translation edits only; identities come from rescan' },
-                { capability: 'import_pack', reason: 'existing-pack import is not exposed as a contract intent yet' }
+                { capability: 'entry_create_delete', reason: 'intents cover translation edits only; identities come from rescan' }
               ]
             }
           };
@@ -488,6 +496,143 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             files: ['operation.json', 'affected.json', 'environment.json'],
             redacted_count: 3,
             excluded_count: 1
+          } as ContractMethodMap[M]['result'];
+        }
+        // --- W2: existing translation pack (analyze + apply) ---------------
+        // Mock rules: mock mode cannot read the user's filesystem, so the
+        // "pack" is a DETERMINISTIC synthetic line set derived from the
+        // corpus itself — untranslated entries are reusable, translated ones
+        // conflicts — plus fixed obsolete / invalid / ambiguous lines. The
+        // guards (epoch, revision, path form, locale form) mirror the Rust
+        // session so client code cannot tell the transports apart.
+        case 'project_import_existing':
+        case 'project_apply_existing': {
+          const isApply = method === 'project_apply_existing';
+          const req = (
+            params as {
+              request: ImportExistingRequestDto & Partial<ApplyExistingRequestDto>;
+            }
+          ).request;
+          const p = find(req.project_id);
+          if (p.session_epoch !== req.session_epoch) {
+            throw new MockContractError('stale_epoch', 'a newer session opened this project', {
+              expected: p.session_epoch
+            });
+          }
+          if (isApply && req.expected_revision !== undefined && req.expected_revision !== p.revision) {
+            throw new MockContractError('stale_revision', 'the project moved on since your edits', {
+              expected: p.revision
+            });
+          }
+          // Mirror of the path-FORM guard (invalid_output_path), first on
+          // the entry exactly like the Rust session.
+          if (!looksAbsolutePath(req.existing_dir.path)) {
+            throw new MockContractError(
+              'invalid_output_path',
+              `existing translation directory \`${req.existing_dir.path}\` is not absolute; specify an absolute directory`
+            );
+          }
+          // Mirror of the strict language-folder form guard (locale joins
+          // durable translation records on apply) — same charset as the
+          // Rust util::lang_dir_form_ok: letters, digits, `_`, `-`.
+          if (!/^[A-Za-z0-9_-]+$/.test(req.locale)) {
+            throw new MockContractError(
+              'contract_violation',
+              `locale \`${req.locale}\` is not the strict language-folder form (letters, digits, \`_\`, \`-\`)`
+            );
+          }
+          // Mirror of the pack↔locale cross-check: the scan walks ANY
+          // */Languages/<Any> under the given root, so the chosen folder
+          // must BE the language folder (leaf == locale, case-insensitive)
+          // — otherwise another language's source text would classify as
+          // reusable.
+          const packLeaf =
+            req.existing_dir.path.replace(/[\\/]+$/, '').split(/[\\/]/).pop() ?? '';
+          if (packLeaf.toLowerCase() !== req.locale.toLowerCase()) {
+            throw new MockContractError(
+              'contract_violation',
+              `existing translation directory \`${req.existing_dir.path}\` does not match the locale \`${req.locale}\`: the pack folder must be the language folder itself (…/Languages/${req.locale})`
+            );
+          }
+          // Deterministic synthetic pack derived from the corpus.
+          const reusable: ExistingMatchItemDto[] = [];
+          const conflicts: ExistingMatchItemDto[] = [];
+          for (const tr of p.translations) {
+            if ((tr.locale ?? '') !== req.locale) continue;
+            const item: ExistingMatchItemDto = {
+              key: tr.id.key,
+              entry: { kind: tr.id.kind, key: tr.id.key, ...(tr.id.def_type ? { def_type: tr.id.def_type } : {}) }
+            };
+            if (tr.text !== null && tr.text.trim() !== '') {
+              conflicts.push(item);
+            } else {
+              reusable.push(item);
+            }
+          }
+          const obsolete: ExistingMatchItemDto[] = [
+            { key: 'OldGearLabel' },
+            { key: 'RemovedLegacyTip' }
+          ];
+          const invalid: ExistingMatchItemDto[] = [{ key: 'EmptyLegacyLine' }];
+          const ambiguous: ExistingAmbiguousItemDto[] = [
+            { key: 'DualScopeKey', candidates: ['DualScopeKey', 'DualScopeKey.base'] }
+          ];
+
+          if (!isApply) {
+            return {
+              job_id: `mock-import-${p.revision}`,
+              scanned_files: 2,
+              scanned_keys: reusable.length + conflicts.length + obsolete.length + invalid.length + ambiguous.length,
+              reusable_count: reusable.length,
+              conflict_count: conflicts.length,
+              obsolete_count: obsolete.length,
+              ambiguous_count: ambiguous.length,
+              invalid_count: invalid.length,
+              // The synthetic pack covers the whole corpus — nothing stays
+              // uncovered (the Rust analyzer reports real gaps).
+              new_count: 0,
+              reusable,
+              conflicts,
+              obsolete,
+              ambiguous,
+              invalid
+            } as ContractMethodMap[M]['result'];
+          }
+
+          // Apply moves ONLY the reusable set; conflicts keep their text.
+          const applied = reusable.length;
+          if (applied === 0) {
+            return {
+              job_id: `mock-apply-${p.revision}`,
+              revision: p.revision,
+              applied: 0,
+              conflicts: conflicts.length,
+              unmatched: obsolete.length,
+              ambiguous: ambiguous.length
+            } as ContractMethodMap[M]['result'];
+          }
+          for (const item of reusable) {
+            const tr = p.translations.find(
+              (x) =>
+                x.id.kind === item.entry!.kind &&
+                x.id.key === item.entry!.key &&
+                x.locale === req.locale &&
+                (x.id.def_type ?? undefined) === item.entry!.def_type
+            );
+            if (!tr) continue;
+            tr.text = `импорт: ${tr.id.key}`;
+            tr.completeness = 'translated';
+            tr.origin = 'imported';
+            tr.validation = 'ok';
+          }
+          p.revision += 1;
+          return {
+            job_id: `mock-apply-${p.revision}`,
+            revision: p.revision,
+            applied,
+            conflicts: conflicts.length,
+            unmatched: obsolete.length,
+            ambiguous: ambiguous.length
           } as ContractMethodMap[M]['result'];
         }
         case 'pick_directory': {

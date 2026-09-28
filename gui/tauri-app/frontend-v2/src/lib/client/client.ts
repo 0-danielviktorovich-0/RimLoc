@@ -9,6 +9,8 @@
 // Store binding is a LATER step (post contract accept); nothing here
 // imports ../mock/* — the mock lives behind MockTransport only.
 import type {
+  ApplyExistingRequestDto,
+  ApplyExistingResponseDto,
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
   BuildModProjectResponseDto,
@@ -16,6 +18,8 @@ import type {
   ContractHandshakeDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
+  ImportExistingRequestDto,
+  ImportExistingResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
   TranslationIntentDto,
@@ -187,6 +191,20 @@ export class RimLocClient {
   /** Sanitized support bundle over the project's LAST FAILED operation. */
   async diagnoseProject(projectId: string, outDir: string): Promise<DiagnoseResponseDto> {
     return this.call('project_diagnose', { project_id: projectId, out_dir: outDir });
+  }
+
+  /** Dry-run analysis of an existing translation pack against the open
+   *  project (READ-ONLY: nothing is written, no revision bump). The
+   *  reusable set it reports is exactly what applyExisting applies. */
+  async importExisting(request: ImportExistingRequestDto): Promise<ImportExistingResponseDto> {
+    return this.call('project_import_existing', { request });
+  }
+
+  /** Apply the REUSABLE set of an analyzed pack into the open project
+   *  (persist-before-ack). Existing translations are never overwritten;
+   *  ambiguous lines are never auto-applied. */
+  async applyExisting(request: ApplyExistingRequestDto): Promise<ApplyExistingResponseDto> {
+    return this.call('project_apply_existing', { request });
   }
 
   /** FULL drop-in mod package (`About/About.xml` in the game-loadable

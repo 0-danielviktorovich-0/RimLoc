@@ -3034,6 +3034,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_export",
     "project_build_mod",
     "project_diagnose",
+    // W2 (existing-pack flow): dry-run analysis + guarded application.
+    "project_import_existing",
+    "project_apply_existing",
     // safe read-only legacy extras
     "get_app_info",
     "scan_mod",
@@ -3520,6 +3523,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_export,
             rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
+            // W2 (existing-pack flow): dry-run analysis + guarded application.
+            rimloc_gui_lib::contract_adapter::project_import_existing,
+            rimloc_gui_lib::contract_adapter::project_apply_existing,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3578,6 +3584,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_export,
             rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
+            // W2 (existing-pack flow): dry-run analysis + guarded application.
+            rimloc_gui_lib::contract_adapter::project_import_existing,
+            rimloc_gui_lib::contract_adapter::project_apply_existing,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,
