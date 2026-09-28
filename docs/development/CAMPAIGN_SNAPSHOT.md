@@ -45,6 +45,15 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   `RELEASE_READINESS_REPORT.md`, тестеру — `BETA_TEST_CHECKLIST.md`,
   ревьюеру — `REVIEW_SCREEN_MAP.md`. **STOP перед push/тегом/релизом —
   только явное ок владельца.** → **проверь `git rev-parse HEAD`**.
+- **НОЧЬ 28.09 ЗАВЕРШЕНА (утро/вечер 28.09, возобновлена 22:52)**: main `9fe14e4`
+  (→ проверь `git rev-parse HEAD`). SF-1..5 (безопасность contribution: base_value,
+  prototype-id, секреты, дубликаты, настоящая цепочка export→pack→contribution) —
+  все CONFIRMED-FIXED независимым ревью. Волна честности UI: 13 success-симуляций →
+  честные статусы. Нативный pick_directory в create/build/diagnose. Честный
+  Review-обзор из снапшота. Selfloc UI entry (бета): «Перевести RimLoc» открывает
+  каталог как проект — доказано на release-артефакте (1187 записей, validate 0/0/0).
+  Финальный артефакт: бинарь 72426289…, evidence artifact-final-night/. Гейты:
+  rust 313/0, vitest 320/320. Полная матрица полноты: /tmp/rimloc-night-completeness-matrix.md.
 - **Self-localization foundation ВЫПОЛНЕНА (27.09)**: main несёт S1 (каталог-гигиена),
   JSON-мост (generated каталоги, ONE AUTHORITY, SELFLOC_BRIDGE.md), pack loader +
   preview + fallback (data-only, доверенная граница), contribution bundle build/apply
