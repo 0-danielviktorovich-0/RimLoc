@@ -271,7 +271,16 @@ pub fn apply_existing_translation(
     let pack_units = rimloc_parsers_xml::scan_keyed_xml(pack_root)?;
     let mut applied = 0usize;
     for u in &pack_units {
-        let Some(text) = u.source.as_deref().map(str::trim).filter(|t| !t.is_empty()) else {
+        // THE SAME text rule the dry-run analyzer applies (empty / TODO
+        // placeholders are never reusable): analysis and application must
+        // agree line by line, so a "TODO" marker can never land in an empty
+        // slot as a fake "translation".
+        let Some(text) = u
+            .source
+            .as_deref()
+            .map(str::trim)
+            .filter(|t| !crate::matching::is_todo(t))
+        else {
             continue;
         };
         let Some(id) = resolver.resolve(&u.path, &u.key) else {
@@ -395,7 +404,10 @@ pub fn analyze_existing_translation(
                 .unwrap_or_else(|| u.path.clone()),
         );
         let text = u.source.as_deref().map(str::trim).unwrap_or_default();
-        if text.is_empty() || text.eq_ignore_ascii_case("TODO") {
+        // ONE text rule shared with `apply_existing_translation` (empty /
+        // TODO placeholders): the reusable set is EXACTLY what application
+        // applies, line by line.
+        if crate::matching::is_todo(text) {
             invalid.push(ExistingPackLine {
                 key: u.key.clone(),
                 target: None,
@@ -812,8 +824,11 @@ mod gate_i4_acceptance {
     ///
     /// A. native/no-PO:  source -> project -> apply existing RU -> write.
     /// B. PO interop:    project -> PO file -> import -> project -> write.
-    /// C. existing pack: covered by A's import step (preserve + TODO parity),
-    ///    plus reopen via the persistence store between workflows.
+    /// C. existing pack: covered by A's import step (preserve; the shared
+    ///    text rule refuses TODO placeholders on BOTH the analyzer and the
+    ///    application, so a TODO marker never lands in a slot as a fake
+    ///    translation), plus reopen via the persistence store between
+    ///    workflows.
     #[test]
     fn three_workflows_over_one_canonical_project() {
         let root = fixture_path();
@@ -846,9 +861,13 @@ mod gate_i4_acceptance {
             quest_a.contains("<SampleQuest.LetterTextParms.value.slateRef>Пармс-текст.<"),
             "{quest_a}"
         );
+        // The pack's TODO placeholder is refused by the shared text rule
+        // (analyze AND apply): the slot stays empty, so the entry is not
+        // written at all — it stays on the to-translate list instead of
+        // exporting a literal "TODO" as if it were a translation.
         assert!(
-            quest_a.contains("<SampleQuest.ExpiryTip.slateRef>TODO</"),
-            "{quest_a}"
+            !quest_a.contains("ExpiryTip"),
+            "TODO placeholder must not be imported as a translation: {quest_a}"
         );
         let tips_a = std::fs::read_to_string(
             out_a.join("Languages/Russian/DefInjected/TipSetDef/SampleTips.xml"),

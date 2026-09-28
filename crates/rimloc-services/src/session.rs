@@ -1416,7 +1416,7 @@ impl ProjectSessionManager {
         }
         ensure_locale_form(&req.locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
-        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root)?;
+        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
 
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_import_existing");
@@ -1526,7 +1526,7 @@ impl ProjectSessionManager {
         }
         ensure_locale_form(&req.locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
-        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root)?;
+        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
 
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_apply_existing");
@@ -1557,9 +1557,10 @@ impl ProjectSessionManager {
         log.counter("apply", "applied", applied as u64);
         log.end_stage("apply");
 
-        if applied == 0 {
-            // Nothing acked changes when nothing was reusable: no revision
-            // bump, no save, no dirty state.
+        // A clean no-op: nothing was reusable AND the session holds no
+        // pending work from a previously failed save — no revision bump, no
+        // save, no dirty state.
+        if applied == 0 && !st.dirty {
             log.finish();
             return Ok(crate::contract::ApplyExistingResponse {
                 job_id,
@@ -1572,8 +1573,24 @@ impl ProjectSessionManager {
         }
 
         // Revision bump + persist-before-ack (identical to `apply`).
-        let new_revision = st.revision + 1;
-        st.revision = new_revision;
+        //
+        // Dirty-retry completion: a failed save never PUBLISHED its
+        // revision (the bump lives only in memory, `dirty` keeps the acked
+        // base legal for a retry). On such a retry the pack's reusable
+        // lines are already in memory — this pass applies nothing new, but
+        // the pending revision from the failed save is COMPLETED: the same
+        // revision is persisted and acked now, so the caller never receives
+        // an `Ok` revision that is not on disk. (The intents path never
+        // hits this because re-applying intents re-applies; slot-filling is
+        // one-shot, so this is the first operation with a deterministic
+        // zero-new-lines retry.)
+        let new_revision = if applied == 0 {
+            st.revision
+        } else {
+            let bumped = st.revision + 1;
+            st.revision = bumped;
+            bumped
+        };
         log.begin_stage("persist");
         let meta = ProjectEnvelopeMeta {
             project_id: Some(req.project_id.clone()),
@@ -1672,17 +1689,27 @@ fn ensure_out_dir_absolute(out_dir: &Path) -> Result<(), ContractError> {
 ///   managed-projects root (typed `guard_output_denied`). Unlike a WRITE
 ///   target, the pack MAY legitimately live inside the read-only source
 ///   tree (`Languages/<locale>` of the mod itself) — reading it is the
-///   whole point, so no source-tree guard applies here.
+///   whole point, so no source-tree guard applies here;
+/// - pack↔locale cross-check: the chosen directory's folder name must be
+///   the requested locale (case-insensitive). The scanner walks ANY
+///   `*/Languages/<Any>/{Keyed,DefInjected}` under the given root, so
+///   picking the MOD ROOT (or `Languages/English`) with locale `Russian`
+///   would silently classify the ENGLISH source as reusable — the apply
+///   would import source text as "translations". RimLoc's own export
+///   layout is `Languages/<locale>`, so the folder the locale names is the
+///   only honest pack root (fail-closed: an unusually named pack folder is
+///   renamed or re-exported, never guessed).
 fn existing_pack_dir(
     dir_dto: &crate::contract::PathBufDto,
     managed_root: &Path,
+    locale: &str,
 ) -> Result<PathBuf, ContractError> {
     let dir = PathBuf::from(&dir_dto.path);
     if !dir.is_absolute() {
         return Err(ContractError::new(
             ContractErrorCode::InvalidOutputPath,
             format!(
-                "existing translation directory `{}` is not absolute; specify an absolute directory (e.g. `/Users/you/Mods/MyMod/Languages/Russian`)",
+                "existing translation directory `{}` is not absolute; specify an absolute directory (e.g. `/Users/you/Mods/MyMod/Languages/{locale}`)",
                 dir.display()
             ),
         ));
@@ -1702,6 +1729,19 @@ fn existing_pack_dir(
             ContractErrorCode::ContractViolation,
             format!(
                 "existing translation directory `{}` is not a directory",
+                dir.display()
+            ),
+        ));
+    }
+    let leaf_ok = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|leaf| leaf.eq_ignore_ascii_case(locale));
+    if !leaf_ok {
+        return Err(ContractError::new(
+            ContractErrorCode::ContractViolation,
+            format!(
+                "existing translation directory `{}` does not match the locale `{locale}`: the pack folder must be the language folder itself (…/Languages/{locale}), otherwise the scan would pick up other languages' files",
                 dir.display()
             ),
         ));
@@ -3575,7 +3615,10 @@ mod tests {
     /// - DefInjected `Alpha.label` — empty slot        → reusable;
     /// - DefInjected `Beta.label` — manually translated → conflict;
     /// - Keyed `ObsoleteKey` — not in the inventory     → obsolete;
-    /// - Keyed `Farewell` — empty text in the pack      → invalid.
+    /// - Keyed `Farewell` — TODO marker in the pack    → invalid (BOTH the
+    ///   analyzer and the application refuse it: `Farewell` has an EMPTY
+    ///   slot in the project, so an apply without the TODO filter would
+    ///   write the literal "TODO" in as a fake translation).
     fn mod_with_partial_pack(root: &Path) {
         write(
             &root.join("mod/Defs/Things.xml"),
@@ -3591,7 +3634,7 @@ mod tests {
         let pack = root.join("mod/Languages/Russian");
         write(
             &pack.join("Keyed/Greetings.xml"),
-            "<LanguageData><Greeting>привет</Greeting><Farewell></Farewell><ObsoleteKey>старое</ObsoleteKey></LanguageData>",
+            "<LanguageData><Greeting>привет</Greeting><Farewell>TODO</Farewell><ObsoleteKey>старое</ObsoleteKey></LanguageData>",
         );
         write(
             &pack.join("DefInjected/ThingDef/Things.xml"),
@@ -3859,6 +3902,22 @@ mod tests {
         let err = mgr.import_existing(&r).unwrap_err();
         assert_eq!(err.code, ContractErrorCode::ContractViolation);
 
+        // Pack↔locale cross-check: the scanner walks ANY
+        // */Languages/<Any> under the given root, so a mod root (or an
+        // English folder) chosen with locale `Russian` is a typed refusal —
+        // otherwise the English SOURCE text would be classified reusable
+        // and imported as fake "translations".
+        for wrong in ["mod", "mod/Languages", "mod/Languages/English"] {
+            let err = mgr
+                .import_existing(&existing_req(
+                    &snap.project_id,
+                    snap.session_epoch,
+                    &root.join(wrong),
+                ))
+                .unwrap_err();
+            assert_eq!(err.code, ContractErrorCode::ContractViolation, "{wrong}");
+        }
+
         // Apply path guards: the same refusals, nothing written.
         let mut ar = apply_existing_req(
             &snap.project_id,
@@ -3873,5 +3932,114 @@ mod tests {
             mgr.snapshot(&snap.project_id).unwrap().revision,
             snap.revision
         );
+    }
+
+    /// Symlinks on the pack input are resolved through the real path view:
+    /// a link INTO the managed projects root is denied (deny orientation is
+    /// fail-closed), while a link to the source-tree pack reads fine — the
+    /// canonical pack location is inside the mod's own Languages folder.
+    #[test]
+    fn existing_pack_symlink_resolves_through_real_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // DENY: a symlink whose TARGET lives inside the managed root.
+        let real = mgr.managed_root().join("pack-real");
+        std::fs::create_dir_all(real.join("Keyed")).unwrap();
+        std::fs::write(
+            real.join("Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>привет</Greeting></LanguageData>",
+        )
+        .unwrap();
+        let denied_link = root.join("linkdir");
+        std::fs::create_dir_all(&denied_link).unwrap();
+        let link = denied_link.join("Russian");
+        std::os::unix::fs::symlink(&real, &link).expect("symlink");
+        let err = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &link))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+
+        // ALLOW: a symlink to the source-tree pack (the canonical pack
+        // location) resolves outside the managed root and classifies — the
+        // folder name must still be the locale. The link PATH itself keeps
+        // the `…/Languages/Russian` shape: the scanner matches the
+        // traversal string, and the resolver reads the pack file's scope
+        // from its (traversed) path.
+        let alias_base = root.join("alias/Languages");
+        std::fs::create_dir_all(&alias_base).unwrap();
+        let alias = alias_base.join("Russian");
+        std::os::unix::fs::symlink(root.join("mod/Languages/Russian"), &alias).expect("symlink");
+        let resp = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &alias))
+            .unwrap();
+        // No manual edit in THIS test: Greeting, Alpha.label AND Beta.label
+        // are all empty slots → reusable; ObsoleteKey obsolete, Farewell
+        // TODO-invalid.
+        assert_eq!(resp.reusable_count, 3, "{resp:?}");
+        assert_eq!(resp.conflict_count, 0);
+        assert_eq!(resp.invalid_count, 1);
+    }
+
+    /// Persist-before-ack survives a failed save: the first apply bumps the
+    /// revision in memory and fails to persist (dirty, acked base stays
+    /// legal); the retry applies nothing NEW (the slots are already filled
+    /// in memory) but COMPLETES the pending revision — the caller receives
+    /// an `Ok` revision that is actually on disk, never a phantom one.
+    #[test]
+    fn apply_existing_dirty_retry_completes_the_persist() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let pack = root.join("mod/Languages/Russian");
+
+        // Break the durable write: a DIRECTORY sits at the managed path.
+        let file_path = mgr.managed_path(&snap.project_id).unwrap();
+        std::fs::remove_file(&file_path).unwrap();
+        std::fs::create_dir(&file_path).unwrap();
+
+        let err = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1,
+                &pack,
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::SaveFailed);
+        // The in-memory state moved ahead of the disk (dirty, unacked).
+        assert_eq!(mgr.snapshot(&snap.project_id).unwrap().revision, 2);
+
+        // Clear the fs problem; the retry (same acked base 1) applies
+        // nothing new — the reusable slots are already filled in memory —
+        // and must complete the PENDING revision, not report it as done
+        // while it exists only in memory.
+        std::fs::remove_dir(&file_path).unwrap();
+        let res = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1,
+                &pack,
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 0, "{res:?}");
+        assert_eq!(res.revision, 2);
+        // Durable proof: the pending revision is on disk WITH the imported
+        // lines the failed first attempt applied in memory.
+        let loaded = load_project_with_meta(&file_path).unwrap();
+        assert_eq!(loaded.meta.revision, Some(2));
+        assert!(loaded.project.translations.iter().any(|t| {
+            t.source_id.key == "Greeting" && t.locale == "Russian" && t.origin == Origin::Imported
+        }));
+        // The session is clean again: acked == revision, further stale
+        // guards use the published base.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        assert_eq!(after.revision, 2);
     }
 }
