@@ -58,6 +58,12 @@ export const ru: Record<string, string> = {
   'contractops.export.files': 'Файлов',
   'contractops.export.reparsed': 'Ключей перепарсено',
   'contractops.export.skipped': 'Пропущены неизвестные типы ({count})',
+  'contractops.buildmod.title': 'Сборка мод-пакета (контракт)',
+  'contractops.buildmod.desc': 'Готовая папка мода — About.xml + Languages ({locale}) — которую можно перенести в папку Mods игры. В дерево исходников бэкенд не пустит.',
+  'contractops.buildmod.outdir': 'Папка мод-пакета',
+  'contractops.buildmod.run': 'Собрать мод-пакет',
+  'contractops.buildmod.done': 'Мод-пакет записан и перепроверен сканером.',
+  'contractops.buildmod.files': 'Файлов',
   'contractops.diagnose.title': 'Диагностика (контракт)',
   'contractops.diagnose.desc': 'Санитизированный бандл по последней неуспешной операции: id операции, причина, затронутые записи. Папка — вне дерева исходников.',
   'contractops.diagnose.outdir': 'Папка бандла',
@@ -70,6 +76,7 @@ export const ru: Record<string, string> = {
   // фиктивный дефолтный путь никогда не отправляется.
   'contractops.abs_path_hint': 'Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.',
   'contractops.abs_path_example': 'например /Users/you/RimLoc-Export/Мод-Russian',
+  'contractops.abs_path_example_mod': 'например /Users/you/RimWorld/Mods/Мод-Russian',
   'contractops.abs_path_example_bundle': 'например /Users/you/RimLoc-Bundles/Мод',
   // Нативный диалог выбора папки под полями вывода (тот же поток, что на Home).
   'contractops.pick': 'Выбрать папку…',

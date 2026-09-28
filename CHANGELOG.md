@@ -6,6 +6,13 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- [gui] Native folder picker on the create panel and on every output-path field (build/export/diagnostics): paths are chosen through the OS dialog instead of being typed by hand; cancelling is silent, errors are visible.
+- [gui] Full mod-package build from the GUI (`project_build_mod`): a drop-in `ModMetaData` About plus Languages, the same guards as export (absolute-path refusal, source-tree containment, symlink aliasing, case-collision and control-char checks) — the result folder can be dropped into RimWorld Mods without the CLI.
+- [gui] "Translate RimLoc" beta card: opens the app's own UI catalog (~1.2k messages) as an ORDINARY translation project through the standard create flow; a repeat click reopens the existing catalog project instead of duplicating it.
+- [gui] Language pack preview (dev panel): data-only packs load through a strict schema (unknown ids, duplicate ids, placeholder mismatches and oversized values are refused whole), preview is in-memory and reversible, missing messages fall back to the built-in locale.
+- [i18n] Deterministic build-time JSON bridge for the UI catalog (one authority: TS dictionaries are hand-edited, JSON is generated and drift-guarded by tests).
+- [scripts] Offline contribution bundle: `build:contribution` (READY / PARTIAL-BUT-VALID / NEEDS-FIXES gate, sanitizer, secret scan) and `apply:contribution` (surgical apply onto the authoritative dictionaries with dry-run, stale-catalog gate and base-value conflict protection — a manual dictionary edit can never be silently overwritten).
+- [services] First-party UI-catalog source adapter: a directory containing `catalog.en.json` opens as a normal project (Keyed-kind entries with `ui-catalog` provenance); the catalog participates in M3 source-drift; DefInjected machinery never touches application messages.
 - [gui] Live Validate, Export and Diagnostics panels: translations can be validated, written into the mod tree and diagnosed directly from the GUI, through the same guarded pipeline as the CLI; problems appear as error/warning badges on the affected entries.
 - [gui] Guided onboarding: a first-run tour over the real workspace plus a built-in demo project to explore without touching your mods.
 - [gui] The app now shows which live backend features the current project actually supports and gates the rest, instead of offering buttons that dead-end.
@@ -71,6 +78,10 @@ This changelog follows Keep a Changelog and Semantic Versioning.
  - [gui/tauri] Validate/Diff panels support extended inputs (`defs_dict`, `defs_type_schema`, extra fields); mirror CLI outputs and report saving (#PR)
 
 ### Fixed
+- [contribution] Safety hardening confirmed by an independent review: stale bundles can no longer overwrite fresh manual edits (mandatory `base_value` with value-conflict refusal); prototype-property ids (`constructor`, `__proto__`) are machine-refused instead of crashing; secret-like contributor metadata blocks the bundle; duplicate ids are refused instead of last-write-wins.
+- [gui] Honesty wave: fake-success statuses replaced with honest "not wired in this build" notices (update check, rescan, log/config buttons, provider connectivity, demo build actions); the review overview in live mode now computes from the real snapshot and marks non-computable dimensions as dashes instead of plausible zeros; the logs hint shows the real per-OS path.
+- [gui/legacy] Legacy write commands refuse CWD-relative output paths (previously wrote silently relative to the app's working directory); `apply_translation` gained the locale form guard.
+
 - [gui/tauri] LEGACY surface (`RIMLOC_LEGACY_COMMANDS=1`, operator opt-in) no longer writes to caller-RELATIVE paths that silently landed relative to the process working directory: `merge_keyed_gui`, `export_xliff_gui`, `import_xliff_gui`, `dump_schemas` and `learn_patches_cmd` now require absolute out paths with an explicit error instead (same form policy as the contract surface). Legacy `apply_translation` validates the language-folder form of `lang_dir` before joining it into the output path, so traversal or absolute values can no longer escape the mod tree.
 - [release] Workspace MSRV declaration corrected from `1.70` (false — it predated `is_multiple_of` 1.87 and dependency floors up to 1.89) to `1.89` in every crate manifest; tested toolchain is `1.96.0`.
 - [gui/services] Contract export and diagnostics refuse a RELATIVE output directory with a typed `invalid_output_path` error before anything is written (a relative path silently landed relative to the app's working directory); the GUI out-dir fields now start empty with an absolute-path hint instead of pre-filling a decorative `…/RimLoc-Export/…` literal, and the run buttons stay disabled until the path is absolute.

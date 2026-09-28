@@ -177,6 +177,7 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
                 // (contract.rs) — validate/build/diagnostics are supported.
                 'project_validate',
                 'project_build_export',
+                'project_build_mod',
                 'project_diagnostics_bundle',
                 // Selfloc entry (mandate D): mirrors contract.rs
                 // Capability::SelflocCatalog — the shell-level resolver IS a
@@ -423,6 +424,56 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             job_id: `mock-export-${p.revision}`,
             out_dir: { path: out_dir },
             files_written: written.length,
+            reparsed_keys: written.length, // reparse parity before ack
+            skipped_unknown_type
+          } as ContractMethodMap[M]['result'];
+        }
+        case 'project_build_mod': {
+          const { project_id, session_epoch, out_dir, locale } = params as {
+            project_id: string;
+            session_epoch: number;
+            out_dir: string;
+            locale: string;
+          };
+          const p = find(project_id);
+          // Guard partition MIRRORS the Rust build_mod_project (a copy of
+          // the export partition): stale epoch → locale form → absolute
+          // form → source-tree deny. Same typed codes, same order.
+          if (p.session_epoch !== session_epoch) {
+            throw new MockContractError('stale_epoch', 'a newer session opened this project', {
+              expected: p.session_epoch
+            });
+          }
+          if (!/^[A-Z][A-Za-z]*$/.test(locale)) {
+            throw new MockContractError(
+              'contract_violation',
+              `locale \`${locale}\` is not the strict language-folder form (e.g. Russian)`
+            );
+          }
+          if (!looksAbsolutePath(out_dir)) {
+            throw new MockContractError(
+              'invalid_output_path',
+              `output path \`${out_dir}\` is not absolute; specify an absolute output directory`
+            );
+          }
+          if (p.mod_root && (out_dir === p.mod_root || out_dir.startsWith(p.mod_root + '/'))) {
+            throw new MockContractError(
+              'guard_output_denied',
+              'the output directory sits inside the read-only source tree'
+            );
+          }
+          // Same acceptance accounting as the export: the translated rows
+          // are the keys; the About/About.xml (<ModMetaData>) rides on top.
+          const written = p.translations.filter(
+            (t) => t.text !== null && t.text !== '' && (t.locale ?? '').toLowerCase().startsWith('ru')
+          );
+          const skipped_unknown_type = p.entries
+            .filter((e) => e.id.kind === 'DefInjected' && !e.id.def_type)
+            .map((e) => e.id.key);
+          return {
+            job_id: `mock-buildmod-${p.revision}`,
+            out_dir: { path: out_dir },
+            files_written: written.length + 1, // + About/About.xml
             reparsed_keys: written.length, // reparse parity before ack
             skipped_unknown_type
           } as ContractMethodMap[M]['result'];

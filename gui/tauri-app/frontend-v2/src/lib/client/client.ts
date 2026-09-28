@@ -13,6 +13,7 @@ import type {
   ApplyExistingResponseDto,
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
+  BuildModProjectResponseDto,
   ContractErrorCode,
   ContractHandshakeDto,
   DiagnoseResponseDto,
@@ -204,6 +205,25 @@ export class RimLocClient {
    *  ambiguous lines are never auto-applied. */
   async applyExisting(request: ApplyExistingRequestDto): Promise<ApplyExistingResponseDto> {
     return this.call('project_apply_existing', { request });
+  }
+
+  /** FULL drop-in mod package (`About/About.xml` in the game-loadable
+   *  `<ModMetaData>` shape + `Languages/<locale>`) into a CALLER-SPECIFIED
+   *  out directory — the folder can move straight into the game's Mods
+   *  directory. The services guard partition is identical to exportProject
+   *  and the result is reparse-verified before the ack. */
+  async buildModProject(
+    projectId: string,
+    sessionEpoch: number,
+    outDir: string,
+    locale: string
+  ): Promise<BuildModProjectResponseDto> {
+    return this.call('project_build_mod', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      out_dir: outDir,
+      locale
+    });
   }
 
   /** Native OS folder dialog (main.rs pick_directory → blocking_pick_folder).

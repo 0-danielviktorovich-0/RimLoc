@@ -21,6 +21,7 @@
   // absolute-form check keeps the run button honest until the path is
   // absolute; the services guard (`invalid_output_path`) is the last line.
   let exportDir = $state('');
+  let modDir = $state('');
   let bundleDir = $state('');
 
   // Native folder dialog for the output roots (same flow as the Home
@@ -28,15 +29,18 @@
   let picking = $state(false);
   let pickError = $state<string | null>(null);
 
-  async function pickInto(target: 'export' | 'bundle') {
+  async function pickInto(target: 'export' | 'mod' | 'bundle') {
     if (picking) return;
     picking = true;
     pickError = null;
     try {
-      const current = target === 'export' ? exportDir.trim() : bundleDir.trim();
+      const current =
+        target === 'export' ? exportDir.trim() : target === 'mod' ? modDir.trim() : bundleDir.trim();
       const dir = await clientInstance.getClient().pickDirectory(current || undefined);
       if (target === 'export') {
         if (dir) exportDir = dir;
+      } else if (target === 'mod') {
+        if (dir) modDir = dir;
       } else if (dir) {
         bundleDir = dir;
       }
@@ -49,6 +53,7 @@
 
   const ops = $derived(contractops);
   const exportDirOk = $derived(looksAbsolutePath(exportDir));
+  const modDirOk = $derived(looksAbsolutePath(modDir));
   const bundleDirOk = $derived(looksAbsolutePath(bundleDir));
   const severityIcon: Record<string, string> = {
     error: 'warning',
@@ -58,6 +63,9 @@
 
   function runExport() {
     void ops.runExport(exportDir);
+  }
+  function runBuildMod() {
+    void ops.runBuildMod(modDir);
   }
   function runDiagnose() {
     void ops.runDiagnose(bundleDir);
@@ -179,6 +187,66 @@
             <p class="hint" data-testid="contractops.export.skipped">
               {t('contractops.export.skipped', { count: ops.exportResult.skipped_unknown_type.length })}:
               {#each ops.exportResult.skipped_unknown_type as key (key)}
+                <span class="mono key">{key}</span>
+              {/each}
+            </p>
+          {/if}
+        </div>
+      {/if}
+    </div>
+
+    <!-- 3. BUILD MOD: the FULL drop-in package (About `<ModMetaData>` +
+         Languages) into an explicit user-chosen directory — no terminal. -->
+    <div class="card" data-testid="contractops.buildmod">
+      <h2 class="card-title"><Icon name="package" size={16} /> {t('contractops.buildmod.title')}</h2>
+      <p class="hint">{t('contractops.buildmod.desc', { locale: folderForm(project.targetLocale) })}</p>
+      <label class="field">
+        <span>{t('contractops.buildmod.outdir')}</span>
+        <input
+          type="text"
+          class="mono"
+          bind:value={modDir}
+          placeholder={t('contractops.abs_path_example_mod')}
+          data-testid="contractops.buildmod.outdir"
+          spellcheck="false"
+        />
+        <button
+          type="button"
+          class="btn pick"
+          data-testid="contractops.buildmod.pick"
+          disabled={picking}
+          onclick={() => void pickInto('mod')}
+        >
+          <Icon name="folder-open" size={14} />
+          {t('contractops.pick')}
+        </button>
+        <span class="hint">{t('contractops.abs_path_hint')}</span>
+      </label>
+      <div class="row">
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="contractops.buildmod.run"
+          disabled={ops.buildingMod || !modDirOk}
+          onclick={runBuildMod}
+        >
+          <Icon name="package" size={14} />
+          {ops.buildingMod ? t('contractops.running') : t('contractops.buildmod.run')}
+        </button>
+      </div>
+
+      {#if ops.buildModResult}
+        <div class="result" data-testid="contractops.buildmod.result">
+          <p class="hint ok"><Icon name="circle-check" size={14} /> {t('contractops.buildmod.done')}</p>
+          <dl class="counts">
+            <div><dt>{t('contractops.buildmod.files')}</dt><dd class="mono">{ops.buildModResult.files_written}</dd></div>
+            <div><dt>{t('contractops.export.reparsed')}</dt><dd class="mono">{ops.buildModResult.reparsed_keys}</dd></div>
+          </dl>
+          <p class="mono dest">{ops.buildModResult.out_dir.path}</p>
+          {#if ops.buildModResult.skipped_unknown_type.length > 0}
+            <p class="hint" data-testid="contractops.buildmod.skipped">
+              {t('contractops.export.skipped', { count: ops.buildModResult.skipped_unknown_type.length })}:
+              {#each ops.buildModResult.skipped_unknown_type as key (key)}
                 <span class="mono key">{key}</span>
               {/each}
             </p>

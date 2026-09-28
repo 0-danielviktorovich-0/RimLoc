@@ -165,6 +165,18 @@ export interface ExportProjectResponseDto {
   skipped_unknown_type: string[];
 }
 
+/** `project_build_mod`: the FULL drop-in mod package (`About/About.xml` in
+ *  the game-loadable `<ModMetaData>` shape + `Languages/<locale>`) — same
+ *  DTO pattern as the export; the differences live in the output, not the
+ *  report. */
+export interface BuildModProjectResponseDto {
+  job_id: string;
+  out_dir: { path: string };
+  files_written: number;
+  reparsed_keys: number;
+  skipped_unknown_type: string[];
+}
+
 export interface DiagnoseResponseDto {
   job_id: string;
   /** Sanitized bundle directory (outside the read-only source tree). */
@@ -268,6 +280,7 @@ export type ContractMethod =
   | 'project_cancel_next'
   | 'project_validate'
   | 'project_export'
+  | 'project_build_mod'
   | 'project_diagnose'
   // Window-level native folder dialog (main.rs pick_directory, NOT a
   // contract_adapter op): exposed through the same typed surface so the UI

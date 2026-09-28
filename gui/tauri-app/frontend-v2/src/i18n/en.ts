@@ -58,6 +58,12 @@ export const en: Record<string, string> = {
   'contractops.export.files': 'Files',
   'contractops.export.reparsed': 'Keys re-parsed',
   'contractops.export.skipped': 'Skipped unknown types ({count})',
+  'contractops.buildmod.title': 'Build mod package (contract)',
+  'contractops.buildmod.desc': 'The complete mod folder — About.xml + Languages ({locale}) — ready to move into the game’s Mods directory. The backend refuses source-tree targets.',
+  'contractops.buildmod.outdir': 'Mod package directory',
+  'contractops.buildmod.run': 'Build mod package',
+  'contractops.buildmod.done': 'Mod package written and reparse-verified.',
+  'contractops.buildmod.files': 'Files',
   'contractops.diagnose.title': 'Diagnostics (contract)',
   'contractops.diagnose.desc': 'Sanitized bundle over the last failed operation: operation id, cause, affected entries. The folder stays outside the source tree.',
   'contractops.diagnose.outdir': 'Bundle directory',
@@ -70,6 +76,7 @@ export const en: Record<string, string> = {
   // no fake default path is ever sent.
   'contractops.abs_path_hint': 'Absolute path only — a relative path is refused (invalid_output_path) before anything is written.',
   'contractops.abs_path_example': 'e.g. /Users/you/RimLoc-Export/MyMod-Russian',
+  'contractops.abs_path_example_mod': 'e.g. /Users/you/RimWorld/Mods/MyMod-Russian',
   'contractops.abs_path_example_bundle': 'e.g. /Users/you/RimLoc-Bundles/MyMod',
   // Native OS folder dialog under the output fields (same flow as Home).
   'contractops.pick': 'Choose folder…',

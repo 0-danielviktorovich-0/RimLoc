@@ -136,6 +136,31 @@ describe('mock contract flows (validate / export / diagnose)', () => {
     expect(res.files.length).toBeGreaterThan(0);
     expect(res.redacted_count).toBeGreaterThan(0);
   });
+
+  // Build-mod wave (project_build_mod): the FULL drop-in package shares the
+  // export guard partition and the same DTO pattern.
+  it('build mod refuses a stale epoch, a relative dir and a source-tree target', async () => {
+    const { id, epoch } = await freshProject();
+    await expect(client.buildModProject(id, epoch + 3, '/tmp/pkg', 'Russian')).rejects.toMatchObject(
+      { code: 'stale_epoch' }
+    );
+    await expect(client.buildModProject(id, epoch, 'RimLoc-Package', 'Russian')).rejects.toMatchObject(
+      { code: 'invalid_output_path' }
+    );
+    await expect(
+      client.buildModProject(id, epoch, '/mods/Demo/Translation', 'Russian')
+    ).rejects.toMatchObject({ code: 'guard_output_denied' });
+  });
+
+  it('build mod returns the package shape with reparse parity and skipped types', async () => {
+    const { id, epoch } = await freshProject();
+    const res = await client.buildModProject(id, epoch, '/tmp/rimloc-package', 'Russian');
+    expect(res.out_dir.path).toBe('/tmp/rimloc-package');
+    // Two translated rows + About/About.xml; the scanner re-parses the keys.
+    expect(res.files_written).toBe(3);
+    expect(res.reparsed_keys).toBe(2);
+    expect(res.skipped_unknown_type).toContain('MeleeWeapon_LongSword.label');
+  });
 });
 
 describe('contractops store wiring on a contract project', () => {
@@ -186,6 +211,22 @@ describe('contractops store wiring on a contract project', () => {
     expect(await contractops.runDiagnose('/tmp/rimloc-bundles')).toBe(true);
     expect(contractops.diagnoseResult?.operation_id).toMatch(/^mock-op-\d+$/);
     expect(contractops.diagnoseResult?.files).toContain('operation.json');
+  });
+
+  it('runBuildMod surfaces typed refusals and returns the package over the open project', async () => {
+    await project.createContractProject('/mods/Demo');
+    // Inside the source tree → typed refusal, no result.
+    expect(await contractops.runBuildMod('/mods/Demo/Mods')).toBe(false);
+    expect(contractops.error).toContain('guard_output_denied');
+    expect(contractops.buildModResult).toBe(null);
+
+    // Relative form → invalid_output_path, still no result.
+    expect(await contractops.runBuildMod('RimLoc-Package')).toBe(false);
+    expect(contractops.error).toContain('invalid_output_path');
+
+    expect(await contractops.runBuildMod('/tmp/rimloc-package')).toBe(true);
+    expect(contractops.buildModResult?.files_written).toBe(3);
+    expect(contractops.buildModResult?.reparsed_keys).toBe(2);
   });
 
   it('refuses to run without a live contract project', async () => {
@@ -248,5 +289,24 @@ describe('ContractOps panel: honest out-dir field (no fake default)', () => {
     input.dispatchEvent(new Event('input'));
     flushSync();
     expect(run.disabled).toBe(false); // UNC counts as absolute
+  });
+
+  it('the build-mod field follows the same absolute-path gate next to the export card', async () => {
+    await project.createContractProject('/mods/Demo');
+    mountCmp(ContractOps, { kind: 'build' });
+    // The build-mod card sits BESIDE the export card on the build screen.
+    q('contractops.export.outdir');
+    const input = q('contractops.buildmod.outdir') as HTMLInputElement;
+    const run = q('contractops.buildmod.run') as HTMLButtonElement;
+    expect(input.value).toBe('');
+    expect(run.disabled).toBe(true); // empty is not absolute
+    input.value = '…/RimWorld/Mods/pkg';
+    input.dispatchEvent(new Event('input'));
+    flushSync();
+    expect(run.disabled).toBe(true); // decorative-ellipsis shape refused
+    input.value = '/tmp/rimloc-package';
+    input.dispatchEvent(new Event('input'));
+    flushSync();
+    expect(run.disabled).toBe(false); // absolute → runnable
   });
 });

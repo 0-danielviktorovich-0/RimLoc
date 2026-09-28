@@ -3032,6 +3032,7 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // final night wave: validate/build/diagnostics over the contract
     "project_validate",
     "project_export",
+    "project_build_mod",
     "project_diagnose",
     // W2 (existing-pack flow): dry-run analysis + guarded application.
     "project_import_existing",
@@ -3520,6 +3521,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_cancel_next,
             rimloc_gui_lib::contract_adapter::project_validate,
             rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
@@ -3580,6 +3582,7 @@ fn main() {
             // final night wave: validate/build/diagnostics over the contract
             rimloc_gui_lib::contract_adapter::project_validate,
             rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,

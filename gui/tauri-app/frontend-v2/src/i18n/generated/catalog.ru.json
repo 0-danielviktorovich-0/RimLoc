@@ -224,6 +224,38 @@
       ]
     },
     {
+      "id": "contractops.buildmod.title",
+      "translated": "Сборка мод-пакета (контракт)",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.desc",
+      "translated": "Готовая папка мода — About.xml + Languages ({locale}) — которую можно перенести в папку Mods игры. В дерево исходников бэкенд не пустит.",
+      "placeholders": [
+        "locale"
+      ]
+    },
+    {
+      "id": "contractops.buildmod.outdir",
+      "translated": "Папка мод-пакета",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.run",
+      "translated": "Собрать мод-пакет",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.done",
+      "translated": "Мод-пакет записан и перепроверен сканером.",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.buildmod.files",
+      "translated": "Файлов",
+      "placeholders": []
+    },
+    {
       "id": "contractops.diagnose.title",
       "translated": "Диагностика (контракт)",
       "placeholders": []
@@ -271,6 +303,11 @@
     {
       "id": "contractops.abs_path_example",
       "translated": "например /Users/you/RimLoc-Export/Мод-Russian",
+      "placeholders": []
+    },
+    {
+      "id": "contractops.abs_path_example_mod",
+      "translated": "например /Users/you/RimWorld/Mods/Мод-Russian",
       "placeholders": []
     },
     {

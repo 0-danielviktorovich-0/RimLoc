@@ -357,6 +357,12 @@ pub enum Capability {
     JobCancel,
     ProjectValidate,
     ProjectBuildExport,
+    /// Full drop-in mod package from the session state (`project_build_mod`):
+    /// `About/About.xml` in the game-loadable `<ModMetaData>` shape (what the
+    /// CLI build-mod writer emits) plus the `Languages/<locale>` tree — the
+    /// folder a player can move straight into the game's Mods directory.
+    /// Wire name appends (never renames) per the contract rule.
+    ProjectBuildMod,
     ProjectDiagnosticsBundle,
     /// Self-localization entry (mandate D): the shell exposes the app-bundled
     /// UI catalog as an ORDINARY project source. Transport lives at the shell
@@ -408,6 +414,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::JobCancel,
             Capability::ProjectValidate,
             Capability::ProjectBuildExport,
+            Capability::ProjectBuildMod,
             Capability::ProjectDiagnosticsBundle,
             Capability::SelflocCatalog,
             Capability::ProjectImportExisting,
@@ -480,6 +487,26 @@ pub struct ExportProjectResponse {
     pub reparsed_keys: usize,
     /// Unknown-def-type entries skipped by the writer (surfaced for
     /// review/rescan — delta risk #5).
+    pub skipped_unknown_type: Vec<String>,
+}
+
+/// Result of `project_build_mod`: the FULL drop-in mod package written from
+/// the trusted session state, reparse-verified BEFORE the ack. Same DTO
+/// pattern as [`ExportProjectResponse`] — the differences live in the
+/// output, not the report: `About/About.xml` lands in the game-loadable
+/// `<ModMetaData>` shape (CLI build-mod writer) instead of the export's
+/// internal `<RimWorldManifest>`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct BuildModProjectResponse {
+    pub job_id: JobId,
+    /// The out dir AS THE WRITER used it (the mod package root: `About/` +
+    /// `Languages/` live directly inside).
+    pub out_dir: PathBufDto,
+    pub files_written: usize,
+    /// Keys the EXISTING scanner re-parsed from the written output.
+    pub reparsed_keys: usize,
+    /// Unknown-def-type entries skipped by the writer (surfaced for
+    /// review/rescan — same accounting as `project_export`).
     pub skipped_unknown_type: Vec<String>,
 }
 
@@ -656,6 +683,7 @@ mod tests {
         assert!(report.supported.contains(&Capability::ProjectApplyIntents));
         assert!(report.supported.contains(&Capability::ProjectValidate));
         assert!(report.supported.contains(&Capability::ProjectBuildExport));
+        assert!(report.supported.contains(&Capability::ProjectBuildMod));
         assert!(report
             .supported
             .contains(&Capability::ProjectDiagnosticsBundle));
