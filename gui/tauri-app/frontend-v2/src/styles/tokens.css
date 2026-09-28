@@ -124,6 +124,25 @@
   --color-origin-tm: #0f766e;
   --color-origin-llm: #6d28d9;
 
+  /* Home status chips — soft fg/bg/border triples per status (design-system
+     synthesis 2026-09-29). fg on bg verified ≥ 4.5:1 (WCAG 2.1, script run
+     in-session): light 8.61/6.13/5.74/6.41/6.74 · dark 7.98/8.88/8.40/8.42/7.02. */
+  --color-chip-work-fg: #3730a3;
+  --color-chip-work-bg: #eceefc;
+  --color-chip-work-bd: #d9def7;
+  --color-chip-warn-fg: #8a4b00;
+  --color-chip-warn-bg: #fcf2e2;
+  --color-chip-warn-bd: #f0dfc2;
+  --color-chip-bad-fg: #b3261e;
+  --color-chip-bad-bg: #fbeded;
+  --color-chip-bad-bd: #f3cfce;
+  --color-chip-ok-fg: #166534;
+  --color-chip-ok-bg: #eaf6ec;
+  --color-chip-ok-bd: #cde8d4;
+  --color-chip-neut-fg: #475569;
+  --color-chip-neut-bg: #eef2f6;
+  --color-chip-neut-bd: #dbe2ea;
+
   /* dimmed SOURCE column (editorial dims it; others keep full strength) */
   --color-source-text: var(--color-fg);
 }
@@ -160,6 +179,23 @@
   --color-origin-human: var(--p-slate-400);
   --color-origin-tm: #2dd4bf;
   --color-origin-llm: #c4b5fd;
+
+  /* Home status chips — dark-theme tonal variants (see light block above). */
+  --color-chip-work-fg: #b6bcf9;
+  --color-chip-work-bg: #23264a;
+  --color-chip-work-bd: #383d6b;
+  --color-chip-warn-fg: #f0be60;
+  --color-chip-warn-bg: #2e2413;
+  --color-chip-warn-bd: #45361b;
+  --color-chip-bad-fg: #fca5a0;
+  --color-chip-bad-bg: #331b1a;
+  --color-chip-bad-bd: #4a2725;
+  --color-chip-ok-fg: #7ddb9a;
+  --color-chip-ok-bg: #143026;
+  --color-chip-ok-bd: #1e4232;
+  --color-chip-neut-fg: #a9b7c6;
+  --color-chip-neut-bg: #202b38;
+  --color-chip-neut-bd: #31414f;
 }
 
 /* ---------------------------------------------------------------- *

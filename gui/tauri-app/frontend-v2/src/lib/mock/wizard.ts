@@ -148,6 +148,14 @@ export interface RecentProject {
   sourceChanged: number;
   issues: number;
   modified: string;
+  /** Mod folder shown under the project name (design synthesis 2026-09-29).
+   *  Optional: real contract summaries carry no path, and Home hides the
+   *  line rather than inventing one. */
+  path?: string;
+  /** Line counters for the status note ("1086 of 1248 lines"). Optional for
+   *  the same reason; when present they agree with `progress`. */
+  linesDone?: number;
+  linesTotal?: number;
 }
 
 /** Home returning-user list (mandate §3). */
@@ -160,7 +168,10 @@ export const mockProjects: RecentProject[] = [
     progress: 87,
     sourceChanged: 12,
     issues: 4,
-    modified: '2026-09-22T18:40:00Z'
+    modified: '2026-09-22T18:40:00Z',
+    path: '…/workshop/content/294100/2870121001',
+    linesDone: 1086,
+    linesTotal: 1248
   },
   {
     id: 'p2',
@@ -170,7 +181,10 @@ export const mockProjects: RecentProject[] = [
     progress: 64,
     sourceChanged: 3,
     issues: 0,
-    modified: '2026-09-19T09:12:00Z'
+    modified: '2026-09-19T09:12:00Z',
+    path: '…/workshop/content/294100/2558933011',
+    linesDone: 774,
+    linesTotal: 1209
   },
   {
     id: 'p3',
@@ -180,7 +194,10 @@ export const mockProjects: RecentProject[] = [
     progress: 41,
     sourceChanged: 0,
     issues: 9,
-    modified: '2026-09-11T21:05:00Z'
+    modified: '2026-09-11T21:05:00Z',
+    path: '~/Mods/Hospitality',
+    linesDone: 512,
+    linesTotal: 1249
   }
 ];
 
