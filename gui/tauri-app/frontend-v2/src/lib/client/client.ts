@@ -11,6 +11,7 @@
 import type {
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
+  BuildModProjectResponseDto,
   ContractErrorCode,
   ContractHandshakeDto,
   DiagnoseResponseDto,
@@ -186,6 +187,25 @@ export class RimLocClient {
   /** Sanitized support bundle over the project's LAST FAILED operation. */
   async diagnoseProject(projectId: string, outDir: string): Promise<DiagnoseResponseDto> {
     return this.call('project_diagnose', { project_id: projectId, out_dir: outDir });
+  }
+
+  /** FULL drop-in mod package (`About/About.xml` in the game-loadable
+   *  `<ModMetaData>` shape + `Languages/<locale>`) into a CALLER-SPECIFIED
+   *  out directory — the folder can move straight into the game's Mods
+   *  directory. The services guard partition is identical to exportProject
+   *  and the result is reparse-verified before the ack. */
+  async buildModProject(
+    projectId: string,
+    sessionEpoch: number,
+    outDir: string,
+    locale: string
+  ): Promise<BuildModProjectResponseDto> {
+    return this.call('project_build_mod', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      out_dir: outDir,
+      locale
+    });
   }
 
   /** Native OS folder dialog (main.rs pick_directory → blocking_pick_folder).

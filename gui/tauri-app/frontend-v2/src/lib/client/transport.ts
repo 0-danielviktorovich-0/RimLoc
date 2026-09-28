@@ -6,6 +6,7 @@
 import type {
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
+  BuildModProjectResponseDto,
   ContractHandshakeDto,
   ContractMethod,
   CreateProjectRequestDto,
@@ -34,6 +35,10 @@ export interface ContractMethodMap {
   project_export: {
     params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
     result: ExportProjectResponseDto;
+  };
+  project_build_mod: {
+    params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
+    result: BuildModProjectResponseDto;
   };
   project_diagnose: {
     params: { project_id: string; out_dir: string };
