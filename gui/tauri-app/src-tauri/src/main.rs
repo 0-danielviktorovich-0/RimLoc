@@ -3208,23 +3208,101 @@ fn automation_accessibility_activate() {
 
 /// Agent automation entry (release-capable, owner mandate 2026-09-29: the
 /// agent must be able to fully drive the app itself). RIMLOC_AUTOMATION=1
-/// starts the accessibility server deterministically and opts out of App
-/// Nap, so an external System Events driver can read and press real UI
-/// controls of the WKWebView content — the same mechanics the dev-only
-/// off-screen mode uses, available on a normally displayed window in any
-/// build profile. Without the env there is no behavior change.
+/// exposes the WKWebView web content to the macOS accessibility tree
+/// (AXManualAccessibility — the documented WKWebView switch for external
+/// AX drivers), then re-activates the app AX server from a background
+/// thread: activating from inside setup BEFORE the window exists wedges the
+/// process's own AX server (measured: AXWindows goes empty forever), so the
+/// hook must run after the window is live. Also opts out of App Nap.
 #[cfg(target_os = "macos")]
-fn automation_env_setup() {
-    if std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1") {
-        automation_disable_app_nap();
-        automation_accessibility_activate();
+fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
+    if std::env::var("RIMLOC_AUTOMATION").as_deref() != Ok("1") {
+        return;
     }
+    automation_disable_app_nap();
+    if automation_webview_accessibility(window) {
+        eprintln!("rimloc-gui: automation webview accessibility enabled");
+    } else {
+        eprintln!("rimloc-gui: automation webview accessibility FAILED");
+    }
+    // Late AX server activation: the window is up by now, so the self-query
+    // hydrates the bridge instead of wedging it. Repeated — WebKit page
+    // loads can drop the web AX tree (same lesson as the dev park thread).
+    std::thread::spawn(|| {
+        for _ in 0..10 {
+            std::thread::sleep(std::time::Duration::from_millis(1500));
+            automation_accessibility_activate();
+        }
+    });
 }
 
 /// Non-macOS twin: agent automation hooks are macOS AX machinery, nothing
 /// to do elsewhere.
 #[cfg(not(target_os = "macos"))]
-fn automation_env_setup() {}
+fn automation_env_setup(_window: &tauri::WebviewWindow<tauri::Wry>) {}
+
+/// WKWebView exposes web content to accessibility only when
+/// AXManualAccessibility is YES — set it through the wry inner view.
+#[cfg(target_os = "macos")]
+fn automation_webview_accessibility(window: &tauri::WebviewWindow<tauri::Wry>) -> bool {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        // Unified 4-arg shape (see automation_disable_app_nap): on arm64 the
+        // callee reads only the registers it needs.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            arg0: u64,
+            arg1: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+        fn CFStringCreateWithCString(
+            alloc: *mut std::ffi::c_void,
+            c_str: *const std::os::raw::c_char,
+            encoding: u32,
+        ) -> *mut std::ffi::c_void;
+    }
+    const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
+    // 'static closure required by with_webview: report success through an
+    // atomic instead of a captured local.
+    static AX_SET: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    AX_SET.store(false, std::sync::atomic::Ordering::Relaxed);
+    let res = window.with_webview(|webview| unsafe {
+        let wv = webview.inner() as *mut std::ffi::c_void;
+        if wv.is_null() {
+            return;
+        }
+        let cls = objc_getClass(c"NSNumber".as_ptr());
+        if cls.is_null() {
+            return;
+        }
+        let yes = objc_msgSend(
+            cls,
+            sel_registerName(c"numberWithBool:".as_ptr()),
+            1,
+            std::ptr::null_mut(),
+        );
+        if yes.is_null() {
+            return;
+        }
+        let key = CFStringCreateWithCString(
+            std::ptr::null_mut(),
+            c"AXManualAccessibility".as_ptr(),
+            K_CF_STRING_ENCODING_UTF8,
+        );
+        if key.is_null() {
+            return;
+        }
+        objc_msgSend(
+            wv,
+            sel_registerName(c"setValue:forKey:".as_ptr()),
+            yes as u64,
+            key,
+        );
+        AX_SET.store(true, std::sync::atomic::Ordering::Relaxed);
+    });
+    res.is_ok() && AX_SET.load(std::sync::atomic::Ordering::Relaxed)
+}
 
 /// DEV-ONLY: [NSApplication sharedApplication] for the setup hooks.
 /// Kept unused for now: the documented entry point for upcoming setup hooks.
@@ -3650,11 +3728,13 @@ fn main() {
                 path: log_path.clone(),
             });
             let main_window = app.get_webview_window("main");
-            // Agent automation (RIMLOC_AUTOMATION=1): deterministic AX server
-            // start + App Nap opt-out BEFORE the web content loads, so the
-            // web AX tree hydrates from the first client query.
-            automation_env_setup();
             if let Some(window) = main_window {
+                // Agent automation (RIMLOC_AUTOMATION=1): AXManualAccessibility
+                // on the live webview + late AX server activation, so an
+                // external System Events driver can read and press real UI
+                // controls. Must run with the window already live.
+                automation_env_setup(&window);
+
                 // DEV-ONLY background automation: RIMLOC_WINDOW_ORIGIN="x,y"
                 // relocates the window off-screen (e.g. "-3000,-3000") so an
                 // automation driver can click it without ever appearing on the
