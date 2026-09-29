@@ -37,6 +37,13 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **ВОЛНА 3 + REL-6 (ночь 30.09, ~00:4x)**: main `d03f1cd` (→ проверь `git rev-parse HEAD`).
+  Багфикс-волна 3 (dwfrun-a9b2d66f, Flash воркер+ревьюер APPROVED): L-3 маркер «Нет перевода»,
+  L-5 скроллбар, L-6 «:0», L-7 англицизмы, L-8 дубль CTA, регистр «Источник» — merge `9c26d89`.
+  **Баг-лист UI закрыт полностью: 3 high + 11 medium + 12 low.** Гейты merged main: fmt/clippy
+  чисто, rust 326/0, svelte-check 0/0, vitest 381/381. Финальный RC-артефакт **REL-6 `ff0fd61a…`**
+  (evidence artifact-rel6-final/; live-smoke: маркер/скроллбар/без-:0 подтверждены кадрами
+  live-accept-rel5/rel6-*.png; selfloc-дедуп 8→8 по-прежнему). Установлен auto_install.py.
 - **ВЕЧЕР 29.09 ЗАВЕРШЕН (~23:3x)**: main `bad4a69` (→ проверь `git rev-parse HEAD`).
   Багфикс-волна 2 влита (`6a3dddd`, M-3..M-11 + L-пакет, гейты 324 Rust / 381 фронт).
   REL-4 пересобран от 6a3dddd (`62f3af14…`, побайтово-воспроизводим, evidence
