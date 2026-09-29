@@ -1394,6 +1394,17 @@ export const ru: Record<string, string> = {
   'source.why.first-file-wins': 'Побеждает первый файл',
   'source.why.keyed-last-wins': 'Keyed: побеждает последний',
   'source.why.patch-applied': 'Применён патч',
+  // winner_reason-словарь, которого нет в фикстурах (live-мост, волна 12)
+  'source.why.keyed-first-in-file': 'Keyed: побеждает первое вхождение в файле',
+  'source.why.tkey-last-assignment': 'TKey: побеждает последнее присваивание',
+  'source.why.definjected-setoradd': 'DefInjected: перезапись последним вхождением',
+  'source.why.ui-catalog': 'Собственный каталог интерфейса RimLoc',
+  // live-режим вкладки ИСТОЧНИК (волна 12): снапшот-проекция source_ref
+  'source.tab.live.relativePath': 'Путь относительно корня проекта.',
+  'source.tab.lineUnknown': 'строка неизвестна — сканер её не записал',
+  'source.tab.live.usagesUnavailable': 'Вхождения и сравнение недоступны для этого проекта.',
+  'source.empty.live': 'Источник для этой записи недоступен в живом проекте.',
+  'source.editor.wouldLaunchLive': 'Живой проект: это превью argv — ничего не запускалось.',
   'source.action.view': 'Открыть',
   'source.action.open': 'Открыть источник',
   'source.action.reveal': 'Показать в Finder',

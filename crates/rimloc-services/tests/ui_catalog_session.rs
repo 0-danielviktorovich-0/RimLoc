@@ -153,6 +153,18 @@ fn catalog_project_end_to_end_through_ordinary_sessions() {
     assert!(app.contexts[0]
         .file
         .ends_with(ui_catalog::CATALOG_SOURCE_FILE));
+    // Live Source Inspector bridge (wave 12): the snapshot projects the
+    // entry's `source_ref` — for a ui-catalog project the file is exactly
+    // the catalog-root-relative source (catalog.en.json), the line stays
+    // None (the catalog carries no line numbers), the winner reason names
+    // the catalog origin.
+    let sr = app
+        .source_ref
+        .as_ref()
+        .expect("catalog_entry_projects_source_ref");
+    assert_eq!(sr.file, ui_catalog::CATALOG_SOURCE_FILE, "{sr:?}");
+    assert_eq!(sr.line, None, "catalog_carries_no_line_numbers");
+    assert_eq!(sr.selected_by, winner_reason::UI_CATALOG);
     // Ids are stable across two creates (the catalog order is the dict order).
     let snap2 = mgr.create(&catalog_dir, None).unwrap();
     assert_eq!(ids(&snap), ids(&snap2));
@@ -449,9 +461,33 @@ fn chain_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(CHAIN_DIR_DEFAULT))
 }
 
+/// Git-sha of the working copy that built the junction (wave 12, junction
+/// race fix): the TS chain test compares this marker against ITS checkout
+/// and SKIPS honestly on a mismatch instead of failing against foreign
+/// bytes (a cargo run of ANOTHER worktree/version overwrites the shared
+/// chain dir). `git rev-parse HEAD` identifies the checkout; std Command
+/// is acceptable in tests.
+fn builder_marker() -> String {
+    let out = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .current_dir(repo_root())
+        .output();
+    match out {
+        Ok(o) if o.status.success() => String::from_utf8_lossy(&o.stdout).trim().to_string(),
+        _ => "unknown_builder".to_string(),
+    }
+}
+
 /// Minimal serialization helper for the chain manifest. It exists ONLY in
 /// this test: `chain.json` is a test-to-test artifact, not a production
 /// contract, so production code stays untouched.
+///
+/// Wave 12 (junction race): the manifest carries the `builder` git-sha and
+/// is written ATOMICALLY — sibling temp file + rename in the SAME directory.
+/// The caller writes it strictly AFTER every export file is on disk, so the
+/// TS side can never observe (or race on) a half-written manifest: rename
+/// is atomic within a directory, and until it lands the previous complete
+/// manifest — if any — stays visible as a whole.
 fn write_chain_manifest(
     chain_root: &std::path::Path,
     locale: &str,
@@ -459,6 +495,7 @@ fn write_chain_manifest(
     values: std::collections::BTreeMap<String, String>,
 ) {
     let manifest = serde_json::json!({
+        "builder": builder_marker(),
         "exported_at_run": std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -467,11 +504,9 @@ fn write_chain_manifest(
         "files": files,
         "values": values,
     });
-    fs::write(
-        chain_root.join("chain.json"),
-        serde_json::to_vec_pretty(&manifest).unwrap(),
-    )
-    .unwrap();
+    let tmp_path = chain_root.join("chain.json.tmp");
+    fs::write(&tmp_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
+    fs::rename(&tmp_path, chain_root.join("chain.json")).unwrap();
 }
 
 #[test]
@@ -586,9 +621,17 @@ fn chain_export_writes_real_artifacts_for_the_ts_side() {
     }]);
     write_chain_manifest(&chain_root, &fixture.locale, &files, values);
 
-    // The manifest parses back (the TS side will read exactly this file).
-    serde_json::from_str::<serde_json::Value>(
-        &fs::read_to_string(chain_root.join("chain.json")).unwrap(),
-    )
-    .unwrap();
+    // The manifest parses back (the TS side will read exactly this file)
+    // and carries the builder marker the TS side matches its checkout
+    // against (non-empty: a real sha, or the honest unknown fallback).
+    let back: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(chain_root.join("chain.json")).unwrap()).unwrap();
+    assert!(
+        !back["builder"]
+            .as_str()
+            .unwrap_or_default()
+            .trim()
+            .is_empty(),
+        "chain_manifest_carries_builder_marker"
+    );
 }

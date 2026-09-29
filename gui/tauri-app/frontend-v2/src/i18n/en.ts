@@ -1387,6 +1387,17 @@ export const en: Record<string, string> = {
   'source.why.first-file-wins': 'First file wins',
   'source.why.keyed-last-wins': 'Keyed last wins',
   'source.why.patch-applied': 'Patch applied',
+  // winner_reason vocabulary missing from the fixtures (live bridge, wave 12)
+  'source.why.keyed-first-in-file': 'Keyed: first occurrence in the file wins',
+  'source.why.tkey-last-assignment': 'TKey: the last assignment wins',
+  'source.why.definjected-setoradd': 'DefInjected: overwritten by the last occurrence',
+  'source.why.ui-catalog': "RimLoc's own UI catalog",
+  // live SOURCE tab mode (wave 12): the snapshot source_ref projection
+  'source.tab.live.relativePath': 'Path relative to the project root.',
+  'source.tab.lineUnknown': 'line unknown — the scanner recorded none',
+  'source.tab.live.usagesUnavailable': 'Usages and compare are not available for this project.',
+  'source.empty.live': 'Source data for this entry is unavailable in the live project.',
+  'source.editor.wouldLaunchLive': 'Live project: this is an argv preview — nothing was launched.',
   'source.action.view': 'View',
   'source.action.open': 'Open source',
   'source.action.reveal': 'Reveal in Finder',

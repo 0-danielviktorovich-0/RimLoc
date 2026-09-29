@@ -1,13 +1,19 @@
 <script lang="ts">
   // SOURCE tab of the entry detail panel (SOURCE_INSPECTOR_MANDATE §1-§4,
-  // §14). All facts come from the typed fixture seam (source/): effective
-  // file, logical key, node location with HONEST nullable line/column, the
-  // "Why this source?" list rendered straight from provenance data (no GUI
-  // precedence logic), primary + other usages for shared TKey identities and
-  // a structured excerpt. One-click actions feed the viewer / browser /
-  // compare overlays; OS actions are demo-honest ("would open").
+  // §14). Two modes, never mixed (wave 12 live bridge):
+  //  - LIVE (contract transport): the snapshot projected the entry's real
+  //    source as `source_ref` (backend-projected effective file relative to
+  //    the project root + parser-guaranteed line + winner reason). The tab
+  //    renders THAT as data — fixture usages/excerpts/browser are never
+  //    shown here, unavailable blocks say so honestly.
+  //  - FIXTURE (mock): typed fixture seam (source/): effective file, logical
+  //    key, node location with HONEST nullable line/column, the "Why this
+  //    source?" list rendered straight from provenance data (no GUI
+  //    precedence logic), primary + other usages for shared TKey identities
+  //    and a structured excerpt. One-click actions feed the viewer / browser
+  //    / compare overlays; OS actions are demo-honest ("would open").
   import Icon from '../Icon.svelte';
-  import { t } from '../../../i18n/store.svelte';
+  import { t, i18n } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
   import {
     isMissingFile,
@@ -27,12 +33,20 @@
       id: string;
       kind: string;
       key: string;
+      /** Live projection (contract snapshots); null/absent in mock. */
+      sourceRef?: { file: string; line: number | null; selected_by: string } | null;
     };
   }
 
   let { entry }: Props = $props();
 
-  const data = $derived(source.contextFor(entry.id));
+  // Live = the contract transport owns the open project. The per-entry
+  // projection rides the snapshot; a contract entry without one renders the
+  // honest live-empty state, never fixture data.
+  const live = $derived(project.source === 'contract');
+  const liveRef = $derived(entry.sourceRef ?? null);
+
+  const data = $derived(live ? null : source.contextFor(entry.id));
   const primary = $derived(data?.usages.find((u) => u.role === 'primary') ?? data?.usages[0] ?? null);
   const others = $derived(data?.usages.filter((u) => u !== primary) ?? []);
 
@@ -41,25 +55,38 @@
   let copyState = $state<'idle' | 'copied' | 'fallback'>('idle');
   let editorState = $state<{ ok: boolean; text: string; errorKey?: string } | null>(null);
 
+  /** Human formulation of a live winner reason. The winner_reason
+   *  vocabulary is mirrored in i18n; an unknown FUTURE reason falls back to
+   *  the raw machine token — honest, never a guessed phrase. */
+  function whyLabel(selectedBy: string): string {
+    const key = `source.why.${selectedBy}`;
+    return i18n.has(key) ? t(key) : selectedBy;
+  }
+
   async function copyLocation() {
-    if (!primary) return;
-    const loc = `${primary.location.displayPath}:${primary.location.line ?? '?'}`;
     copyState = 'idle';
+    const loc = live
+      ? `${liveRef?.file ?? ''}:${liveRef?.line ?? '?'}`
+      : `${primary?.location.displayPath ?? ''}:${primary?.location.line ?? '?'}`;
     const result = await source.copyText(`${entry.id}-location`, 'source.copy.location', loc);
     copyState = result === 'copied' ? 'copied' : 'fallback';
   }
 
   /** Mock launch: build + validate the structured argv, then say honestly
-   *  what WOULD run. No process is started (mock/pre-freeze). */
+   *  what WOULD run. No process is started — in either mode the editor
+   *  protocol only PLANS; live mode labels the preview as live. */
   function openInEditor() {
-    if (!primary) return;
-    const plan = source.planEditorLaunch(loadEditorChoice(), primary.location);
+    const loc = live
+      ? { displayPath: liveRef?.file ?? '', line: liveRef?.line ?? null, column: null }
+      : primary?.location;
+    if (!loc) return;
+    const plan = source.planEditorLaunch(loadEditorChoice(), loc);
     if (!plan.ok) {
       editorState = { ok: false, text: '', errorKey: plan.reasonKey };
       return;
     }
     editorState = { ok: true, text: JSON.stringify(plan.argv) };
-    source.noteMockAction('source.action.wouldLaunch');
+    source.noteMockAction(live ? 'source.editor.wouldLaunchLive' : 'source.action.wouldLaunch');
   }
 
   function reveal() {
@@ -69,7 +96,90 @@
   }
 </script>
 
-{#if data && primary}
+{#if live}
+  {#if liveRef}
+    <div class="source-tab" data-testid="source.tab.live">
+      <!-- effective location, backend-projected -->
+      <section>
+        <h4 class="sec-title">
+          <Icon name="file-code" size={13} />
+          {t('source.tab.location')}
+          <span class="badge active">{t('source.badge.effective')}</span>
+        </h4>
+        <p class="loc-path mono" data-testid="source.tab.live.path">{liveRef.file}</p>
+        <p class="hint">{t('source.tab.live.relativePath')}</p>
+        <p class="loc-line" data-testid="source.tab.live.line">
+          {t('source.tab.line')}:
+          {#if liveRef.line !== null}
+            <span class="mono">{liveRef.line}</span>
+          {:else}
+            <span class="unknown" title={t('source.tab.unknownHint')}>—</span>
+            <span class="unknown-note">{t('source.tab.lineUnknown')}</span>
+          {/if}
+        </p>
+      </section>
+
+      <!-- why this source: the winner reason, human-formulated -->
+      <section>
+        <h4 class="sec-title">{t('source.tab.why')}</h4>
+        <ul class="why" data-testid="source.tab.live.why">
+          <li>
+            <span class="why-kind">{whyLabel(liveRef.selected_by)}</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- usages/compare are fixture-only capabilities: honest unavailability,
+           never fixture data standing in for a live project -->
+      <section>
+        <p class="unavailable" data-testid="source.tab.live.usagesUnavailable">
+          <Icon name="info" size={13} />
+          {t('source.tab.live.usagesUnavailable')}
+        </p>
+      </section>
+
+      <!-- actions: only what a live project can honestly do -->
+      <div class="actions" data-testid="source.tab.live.actions">
+        <button type="button" class="btn" data-testid="source.tab.live.copy" onclick={copyLocation}>
+          <Icon name="copy" size={13} />
+          {t('source.action.copy')}
+        </button>
+        <button
+          type="button"
+          class="btn"
+          data-testid="source.tab.live.editor"
+          onclick={openInEditor}
+        >
+          <Icon name="edit" size={13} />
+          {t('source.action.editor')}
+        </button>
+      </div>
+      {#if copyState === 'copied'}
+        <p class="note ok" role="status">{t('source.copy.copied')}</p>
+      {:else if copyState === 'fallback'}
+        <p class="note warn" role="status">{t('source.copy.fallback')}</p>
+      {/if}
+      {#if editorState}
+        {#if editorState.ok}
+          <p class="note mono" role="status" data-testid="source.tab.live.editorPreview">
+            {editorState.text}
+          </p>
+          <p class="note">{t('source.editor.wouldLaunchLive')}</p>
+        {:else}
+          <p class="note warn" role="alert">{t(editorState.errorKey ?? 'source.editor.error.noExecutable')}</p>
+        {/if}
+      {/if}
+    </div>
+  {:else}
+    <!-- honest live empty state: the backend could not project this entry -->
+    <div class="source-tab empty" data-testid="source.tab.live.empty">
+      <p>
+        <Icon name="info" size={14} />
+        {t('source.empty.live')}
+      </p>
+    </div>
+  {/if}
+{:else if data && primary}
   <div class="source-tab" data-testid="source.tab">
     <!-- effective location -->
     <section>
@@ -308,6 +418,22 @@
   }
   .unknown {
     opacity: 0.7;
+  }
+  .unknown-note {
+    margin-left: 6px;
+    font-size: var(--font-xs, 10px);
+    opacity: 0.7;
+  }
+  .unavailable {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 4px 6px;
+    border: 1px dashed var(--border, #ccc2);
+    border-radius: 6px;
+    font-size: var(--font-xs, 11px);
+    color: var(--text-2, inherit);
   }
   .badge {
     display: inline-flex;

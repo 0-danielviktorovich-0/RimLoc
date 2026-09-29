@@ -515,6 +515,7 @@ mod tests {
                     contexts: 1,
                     locations: Vec::new(),
                 }),
+                source_ref: None,
             }],
             translations: vec![Translation {
                 source_id: SourceEntryId {
@@ -708,6 +709,7 @@ mod tests {
             contexts: Vec::new(),
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         });
         let path = dir.path().join("dup.rimloc.json");
         let err = save_project(&p, &path).unwrap_err();
@@ -793,6 +795,7 @@ mod tests {
                 contexts: vec![],
                 provenance: SourceProvenance::default(),
                 tkey: None,
+                source_ref: None,
             });
             p.update_translation(id.clone(), "ru", Some(format!("{text} ru")), Origin::Human);
         }

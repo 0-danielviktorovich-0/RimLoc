@@ -173,6 +173,10 @@ pub fn source_entries(
                                 .or_else(|| selected_by.map(String::from)),
                         },
                         tkey: u.tkey.clone(),
+                        // The session layer projects `source_ref` at snapshot
+                        // assembly (it owns the project root for the
+                        // relative path); the bridge stays projection-free.
+                        source_ref: None,
                     },
                 );
             }

@@ -315,6 +315,9 @@ pub fn build_catalog_project(root: &Path) -> Result<Project> {
                 selected_by: Some(winner_reason::UI_CATALOG.into()),
             },
             tkey: None,
+            // Projected by the session at snapshot assembly (relative to the
+            // catalog root -> `catalog.en.json`).
+            source_ref: None,
         });
     }
     let mut project = Project {

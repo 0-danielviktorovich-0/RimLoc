@@ -24,9 +24,14 @@
 //      the bundle gate accept it on those same bytes.
 //
 // Without the artifact the chain tests SKIP with an honest marker — no
-// fixture silently substitutes for the missing real data. The negative gate
-// evidence (a broken placeholder refused) stays fixture-driven: it tests the
-// TS gate itself, not the chain.
+// fixture silently substitutes for the missing real data. The same skip
+// applies when the artifact was built by a DIFFERENT checkout (the shared
+// chain dir is overwritten by any other worktree's cargo run): chain.json
+// carries the builder's git-sha, and a mismatch skips with
+// "junction built by <sha>, rebuild via cargo test ui_catalog_session"
+// instead of failing against foreign bytes (wave 12 junction race fix).
+// The negative gate evidence (a broken placeholder refused) stays
+// fixture-driven: it tests the TS gate itself, not the chain.
 import { execFileSync, execSync } from 'node:child_process';
 import {
   copyFileSync,
@@ -69,11 +74,48 @@ interface ChainManifest {
   locale: string;
   files: ChainFileEntry[];
   values: Record<string, string>;
+  /** Wave 12 junction race fix: git-sha of the checkout that BUILT the
+   *  artifact. A cargo run of ANOTHER worktree/version overwrites the
+   *  shared chain dir; a mismatching (or missing) marker makes this suite
+   *  SKIP honestly instead of failing against foreign bytes. */
+  builder?: string;
 }
 const hasArtifact = existsSync(CHAIN_JSON);
 const chain: ChainManifest | null = hasArtifact
   ? (JSON.parse(readFileSync(CHAIN_JSON, 'utf8')) as ChainManifest)
   : null;
+
+/** Git-sha of THIS checkout (the same `git rev-parse HEAD` the Rust side
+ *  records as `builder`). null when it cannot be resolved — then any
+ *  artifact is treated as foreign (honest skip, never a false match). */
+function localBuilderMarker(): string | null {
+  try {
+    return execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
+  } catch {
+    return null;
+  }
+}
+const LOCAL_BUILDER = localBuilderMarker();
+
+/** The honest mismatch note: WHO built it, and how to rebuild for THIS
+ *  checkout. The artifact itself is not wrong — it is just not ours. */
+function builderSkipNote(c: ChainManifest): string {
+  return `junction built by ${c.builder ?? 'unknown builder'}, rebuild via cargo test ui_catalog_session`;
+}
+
+/** Guard narrowing `chain` to non-null AND builder-matched, skipping
+ *  honestly when the artifact is missing or was built by another checkout. */
+function requireChain(ctx: { skip: (condition: boolean, note?: string) => void }): ChainManifest {
+  if (chain === null) {
+    ctx.skip(true, CHAIN_SKIP_NOTE);
+    return null as unknown as ChainManifest;
+  }
+  if (chain.builder === undefined || chain.builder !== LOCAL_BUILDER) {
+    ctx.skip(true, builderSkipNote(chain));
+    return null as unknown as ChainManifest;
+  }
+  return chain;
+}
 
 /** The negative-gate input is deliberately bad and never enters a chain. */
 interface FixtureChange {
@@ -119,14 +161,6 @@ function makeIsolatedDictCopy(): string {
     { cwd: tmp },
   );
   return tmp;
-}
-
-/** Guard narrowing `chain` to non-null, skipping honestly when absent. */
-function requireChain(ctx: { skip: (condition: boolean, note?: string) => void }): ChainManifest {
-  if (chain === null) {
-    ctx.skip(true, CHAIN_SKIP_NOTE);
-  }
-  return chain as ChainManifest;
 }
 
 beforeEach(() => {
