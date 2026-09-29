@@ -30,7 +30,7 @@ GAP (нет покрытия) · BLOCKED (внешний блокер) · N/A
 | Existing-flow (dry-run → apply) | ✅ | ✅ | GAP | — | — | TEST |
 | Selfloc: карточка/Help-вход/дедуп | ✅ | ✅+ | GAP | LIVE (кадры r9c/w7) | ✅ | LIVE |
 | Selfloc: вклад (бандл из GUI, волна 7) | ✅ | ✅ | GAP | частично (рендер блока LIVE, клик — GAP канала) | — | TEST+ |
-| Selfloc: contribution build/apply CLI | ✅ | ✅ | — | — | — | TEST |
+| Selfloc: contribution build/apply CLI (SF-07/11/06 закрыты волной 8, 416 тестов) | ✅ | ✅ | — | — | — | TEST |
 | Wizard-тур (9 шагов) | ✅ | ✅ | GAP | LIVE (шаг 1, кадр) | ✅ | LIVE |
 | Review-экран счётчики | ✅ | ✅ | GAP | LIVE (кадр r1) | ✅ | LIVE |
 | Геометрия: no-giant-blank-tail | — | GAP | инвариант не подключён | — | — | **GAP (owner-наблюдение!)** |
