@@ -3241,30 +3241,24 @@ fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
 #[cfg(not(target_os = "macos"))]
 fn automation_env_setup(_window: &tauri::WebviewWindow<tauri::Wry>) {}
 
-/// WKWebView exposes web content to accessibility only when
-/// AXManualAccessibility is YES — set it through the wry inner view.
+/// Ask the WKWebView to expose web content to accessibility via the
+/// AXManualAccessibility setter — BUT only when the view actually responds
+/// to that selector: a blind KVC setValue:forKey: on macOS throws
+/// NSUndefinedKeyException inside the C closure boundary, which aborts the
+/// whole process (measured 2026-09-29). On macOS the setter usually does
+/// not exist (it is the iOS WKWebView switch); the late AX activation in
+/// [`automation_env_setup`] is the macOS path.
 #[cfg(target_os = "macos")]
 fn automation_webview_accessibility(window: &tauri::WebviewWindow<tauri::Wry>) -> bool {
     extern "C" {
         fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
-        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
-        // Unified 4-arg shape (see automation_disable_app_nap): on arm64 the
-        // callee reads only the registers it needs.
         fn objc_msgSend(
             receiver: *mut std::ffi::c_void,
             sel: *mut std::ffi::c_void,
             arg0: u64,
             arg1: *mut std::ffi::c_void,
         ) -> *mut std::ffi::c_void;
-        fn CFStringCreateWithCString(
-            alloc: *mut std::ffi::c_void,
-            c_str: *const std::os::raw::c_char,
-            encoding: u32,
-        ) -> *mut std::ffi::c_void;
     }
-    const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
-    // 'static closure required by with_webview: report success through an
-    // atomic instead of a captured local.
     static AX_SET: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     AX_SET.store(false, std::sync::atomic::Ordering::Relaxed);
     let res = window.with_webview(|webview| unsafe {
@@ -3272,33 +3266,15 @@ fn automation_webview_accessibility(window: &tauri::WebviewWindow<tauri::Wry>) -
         if wv.is_null() {
             return;
         }
-        let cls = objc_getClass(c"NSNumber".as_ptr());
-        if cls.is_null() {
+        let setter = sel_registerName(c"setAXManualAccessibility:".as_ptr());
+        let responds: i8 = objc_msgSend(wv, sel_registerName(c"respondsToSelector:".as_ptr()), setter as u64, std::ptr::null_mut()) as i8;
+        if responds == 0 {
+            // macOS view without the iOS-only setter: not an error, the AX
+            // activation path below is the real mechanism there.
+            AX_SET.store(true, std::sync::atomic::Ordering::Relaxed);
             return;
         }
-        let yes = objc_msgSend(
-            cls,
-            sel_registerName(c"numberWithBool:".as_ptr()),
-            1,
-            std::ptr::null_mut(),
-        );
-        if yes.is_null() {
-            return;
-        }
-        let key = CFStringCreateWithCString(
-            std::ptr::null_mut(),
-            c"AXManualAccessibility".as_ptr(),
-            K_CF_STRING_ENCODING_UTF8,
-        );
-        if key.is_null() {
-            return;
-        }
-        objc_msgSend(
-            wv,
-            sel_registerName(c"setValue:forKey:".as_ptr()),
-            yes as u64,
-            key,
-        );
+        objc_msgSend(wv, setter, 1, std::ptr::null_mut());
         AX_SET.store(true, std::sync::atomic::Ordering::Relaxed);
     });
     res.is_ok() && AX_SET.load(std::sync::atomic::Ordering::Relaxed)
