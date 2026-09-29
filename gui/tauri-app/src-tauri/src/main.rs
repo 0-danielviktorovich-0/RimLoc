@@ -3094,6 +3094,14 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
     "load_tm",
 ];
 
+/// Automation dev-log markers (see the DEV_LOG_* note above: stderr strings
+/// live in consts so the workspace i18n guard sees pure formatter calls).
+const DEV_LOG_AUTOMATION_AX_ENABLED: &str =
+    "rimloc-gui: automation webview accessibility enabled";
+const DEV_LOG_AUTOMATION_AX_FAILED: &str =
+    "rimloc-gui: automation webview accessibility FAILED";
+const DEV_LOG_AUTOMATION_NSAPP_SET: &str = "rimloc-gui: NSApp accessibilitySupportEnabled set";
+
 fn legacy_commands_enabled() -> bool {
     std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
 }
@@ -3221,9 +3229,16 @@ fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
     }
     automation_disable_app_nap();
     if automation_webview_accessibility(window) {
-        eprintln!("rimloc-gui: automation webview accessibility enabled");
+        eprintln!("{}", DEV_LOG_AUTOMATION_AX_ENABLED);
     } else {
-        eprintln!("rimloc-gui: automation webview accessibility FAILED");
+        eprintln!("{}", DEV_LOG_AUTOMATION_AX_FAILED);
+    }
+    // NSApp accessibilitySupportEnabled (the Electron macOS switch): tells
+    // AppKit an assistive client is present, which is what makes WebKit
+    // publish the web accessibility tree. Guarded by respondsToSelector —
+    // the selector is not a public API contract.
+    if automation_nsapp_accessibility_support() {
+        eprintln!("{}", DEV_LOG_AUTOMATION_NSAPP_SET);
     }
     // Late AX server activation: the window is up by now, so the self-query
     // hydrates the bridge instead of wedging it. Repeated — WebKit page
@@ -3262,12 +3277,17 @@ fn automation_webview_accessibility(window: &tauri::WebviewWindow<tauri::Wry>) -
     static AX_SET: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
     AX_SET.store(false, std::sync::atomic::Ordering::Relaxed);
     let res = window.with_webview(|webview| unsafe {
-        let wv = webview.inner() as *mut std::ffi::c_void;
+        let wv: *mut std::ffi::c_void = webview.inner();
         if wv.is_null() {
             return;
         }
         let setter = sel_registerName(c"setAXManualAccessibility:".as_ptr());
-        let responds: i8 = objc_msgSend(wv, sel_registerName(c"respondsToSelector:".as_ptr()), setter as u64, std::ptr::null_mut()) as i8;
+        let responds: i8 = objc_msgSend(
+            wv,
+            sel_registerName(c"respondsToSelector:".as_ptr()),
+            setter as u64,
+            std::ptr::null_mut(),
+        ) as i8;
         if responds == 0 {
             // macOS view without the iOS-only setter: not an error, the AX
             // activation path below is the real mechanism there.
@@ -3278,6 +3298,51 @@ fn automation_webview_accessibility(window: &tauri::WebviewWindow<tauri::Wry>) -
         AX_SET.store(true, std::sync::atomic::Ordering::Relaxed);
     });
     res.is_ok() && AX_SET.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// [NSApp setAccessibilitySupportEnabled:2] — the native equivalent of
+/// Electron's accessibilitySupportEnabled: announces an assistive client so
+/// WebKit exposes the web AX tree. Guarded: private-ish selector, absence
+/// is not an error.
+#[cfg(target_os = "macos")]
+fn automation_nsapp_accessibility_support() -> bool {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            arg0: u64,
+            arg1: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+    }
+    unsafe {
+        let cls = objc_getClass(c"NSApplication".as_ptr());
+        if cls.is_null() {
+            return false;
+        }
+        let app = objc_msgSend(
+            cls,
+            sel_registerName(c"sharedApplication".as_ptr()),
+            0,
+            std::ptr::null_mut(),
+        );
+        if app.is_null() {
+            return false;
+        }
+        let setter = sel_registerName(c"setAccessibilitySupportEnabled:".as_ptr());
+        let responds: i8 = objc_msgSend(
+            app,
+            sel_registerName(c"respondsToSelector:".as_ptr()),
+            setter as u64,
+            std::ptr::null_mut(),
+        ) as i8;
+        if responds == 0 {
+            return false;
+        }
+        objc_msgSend(app, setter, 2, std::ptr::null_mut());
+        true
+    }
 }
 
 /// DEV-ONLY: [NSApplication sharedApplication] for the setup hooks.
