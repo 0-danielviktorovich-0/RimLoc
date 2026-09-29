@@ -16,6 +16,9 @@
   import { router } from '../../router.svelte';
   import { RW_VERSION } from '../../mock/diagnostics';
   import { SOURCE_LOCATION, OUTPUT_LOCATION } from '../../stores/diagnostics.svelte';
+  import { clientInstance } from '../../client/instance.svelte';
+  import { SELFLOC_PROJECT_NAME } from '../../selfloc';
+  import type { SelflocBuildContributionResponseDto } from '../../client/types';
 
   // ------------------------------------------------------------ lifecycle CTA
   const counts = $derived(project.statusCounts());
@@ -73,6 +76,46 @@
       return new Date(iso).toLocaleDateString();
     } catch {
       return iso;
+    }
+  }
+
+  // ------------------------------------------------------- contribution (beta)
+  // Wave 7: the offline contribution bundle builder — ONLY on the RimLoc UI
+  // catalog project (identity via the store's resolved display name, the
+  // same name the selfloc entry stamps at create). The flow is the standard
+  // pick_directory → command chain: the OS dialog resolves the absolute out
+  // dir, cancel is silent, the typed result carries the readiness status,
+  // the accepted count and the enumerated refusals verbatim.
+  const isSelflocProject = $derived(
+    project.source === 'contract' && project.displayName === SELFLOC_PROJECT_NAME
+  );
+  let contributionBusy = $state(false);
+  let contributionResult = $state<SelflocBuildContributionResponseDto | null>(null);
+  let contributionError = $state<string | null>(null);
+  let showRejections = $state(false);
+
+  async function buildContribution() {
+    if (contributionBusy) return;
+    const projectId = project.contractProjectId;
+    if (!projectId) return;
+    contributionBusy = true;
+    contributionResult = null;
+    contributionError = null;
+    showRejections = false;
+    try {
+      const client = clientInstance.getClient();
+      const dir = await client.pickDirectory(languages.activeLocale || undefined);
+      if (!dir) return; // cancel — a normal outcome, nothing to report
+      contributionResult = await client.selflocBuildContribution(
+        projectId,
+        project.contractEpoch,
+        dir,
+        languages.activeLocale
+      );
+    } catch (e) {
+      contributionError = e instanceof Error ? e.message : String(e);
+    } finally {
+      contributionBusy = false;
     }
   }
 </script>
@@ -250,6 +293,70 @@
       </button>
     </div>
   </div>
+
+  <!-- Wave 7 (beta): the offline contribution bundle — ONLY on the RimLoc
+       UI catalog project; nothing is sent anywhere, the bundle file lands
+       in the folder the user picks. -->
+  {#if isSelflocProject}
+    <div class="block" data-testid="workspace.project.contribution">
+      <h3 class="block-title">{t('workspace.project.contribution.title')}</h3>
+      <p class="muted-text">{t('workspace.project.contribution.note')}</p>
+      <div>
+        <button
+          type="button"
+          class="btn"
+          data-testid="workspace.project.contribution.build"
+          onclick={buildContribution}
+          disabled={contributionBusy}
+        >
+          <Icon name="package" size={13} />
+          {contributionBusy
+            ? t('workspace.project.contribution.building')
+            : t('workspace.project.contribution.build')}
+        </button>
+      </div>
+      {#if contributionError}
+        <p class="state warn" data-testid="workspace.project.contribution.error">{contributionError}</p>
+      {/if}
+      {#if contributionResult}
+        <div class="contribution-result" data-testid="workspace.project.contribution.result" data-status={contributionResult.status}>
+          <span
+            class="state"
+            class:ok={contributionResult.status === 'READY'}
+            class:warn={contributionResult.status !== 'READY'}
+            data-testid="workspace.project.contribution.status"
+          >
+            {t('workspace.project.contribution.status', {
+              status: contributionResult.status,
+              accepted: contributionResult.accepted_count
+            })}
+          </span>
+          {#if contributionResult.bundle_path}
+            <p class="mono muted contribution-path" data-testid="workspace.project.contribution.path">
+              {t('workspace.project.contribution.path', { path: contributionResult.bundle_path })}
+            </p>
+          {/if}
+          {#if contributionResult.rejected.length > 0}
+            <button
+              type="button"
+              class="btn"
+              data-testid="workspace.project.contribution.rejected"
+              onclick={() => (showRejections = !showRejections)}
+            >
+              {t('workspace.project.contribution.rejected', { count: contributionResult.rejected.length })}
+            </button>
+            {#if showRejections}
+              <ul class="rejections" data-testid="workspace.project.contribution.rejections">
+                {#each contributionResult.rejected as rejection (rejection.id + rejection.reason)}
+                  <li class="mono"><span class="rejection-id">{rejection.id}</span> — {rejection.reason}</li>
+                {/each}
+              </ul>
+            {/if}
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   <!-- Danger zone: separated, confirmed, explained. -->
   <div class="danger" data-testid="workspace.project.danger">
@@ -548,6 +655,35 @@
   .update-actions {
     display: flex;
     gap: var(--space-2);
+  }
+
+  .contribution-result {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    font-size: var(--text-dense-size);
+  }
+
+  .contribution-path {
+    margin: 0;
+    word-break: break-all;
+  }
+
+  .rejections {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-muted);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: var(--text-meta-size);
+  }
+
+  .rejection-id {
+    font-weight: 600;
   }
 
   .tool-grid {

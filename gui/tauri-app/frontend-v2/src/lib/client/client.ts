@@ -22,6 +22,7 @@ import type {
   ImportExistingResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
+  SelflocBuildContributionResponseDto,
   TranslationIntentDto,
   ValidateProjectResponseDto
 } from './types';
@@ -236,13 +237,32 @@ export class RimLocClient {
   }
 
   /** Self-localization entry (mandate D): absolute path of the app-bundled
-   *  RimLoc UI catalog, prepared as an ORDINARY project source directory —
-   *  feed it straight into createProject() and the existing ui_catalog
-   *  adapter routes it (no special-cased client flow). Failure is a typed
-   *  error, never a fabricated path; in mock mode this rejects with the
-   *  honest `unsupported_capability` refusal. */
+   * RimLoc UI catalog, prepared as an ORDINARY project source directory —
+   * feed it straight into createProject() and the existing ui_catalog
+   * adapter routes it (no special-cased client flow). Failure is a typed
+   * error, never a fabricated path; in mock mode this rejects with the
+   * honest `unsupported_capability` refusal. */
   async selflocCatalogDir(): Promise<string> {
     return this.call('selfloc_catalog_dir', {});
+  }
+
+  /** Self-localization contribution (beta): build the offline translation
+   * bundle from the OPEN session (the RimLoc UI catalog project) into the
+   * CALLER-SPECIFIED out directory. The services guard refuses relative
+   * paths and source-tree/managed-root targets; NEEDS-FIXES writes nothing
+   * and carries the enumerated refusals. */
+  async selflocBuildContribution(
+    projectId: string,
+    sessionEpoch: number,
+    outDir: string,
+    locale: string
+  ): Promise<SelflocBuildContributionResponseDto> {
+    return this.call('selfloc_build_contribution', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      out_dir: outDir,
+      locale
+    });
   }
 }
 

@@ -2381,6 +2381,48 @@
       "placeholders": []
     },
     {
+      "id": "workspace.project.contribution.title",
+      "source_text": "Contribute to the RimLoc translation (beta)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.note",
+      "source_text": "Collects the translations of this project into an offline bundle file you can hand to the RimLoc maintainer. Nothing is sent anywhere.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.build",
+      "source_text": "Collect contribution…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.building",
+      "source_text": "Collecting…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.status",
+      "source_text": "{status}: {accepted} change(s) accepted",
+      "placeholders": [
+        "accepted",
+        "status"
+      ]
+    },
+    {
+      "id": "workspace.project.contribution.path",
+      "source_text": "Bundle: {path}",
+      "placeholders": [
+        "path"
+      ]
+    },
+    {
+      "id": "workspace.project.contribution.rejected",
+      "source_text": "Rejected: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
       "id": "workspace.project.danger",
       "source_text": "Danger zone",
       "placeholders": []

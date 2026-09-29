@@ -654,6 +654,16 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             'selfloc_catalog_dir: the bundled RimLoc UI catalog is unavailable in mock — run the desktop app'
           );
         }
+        case 'selfloc_build_contribution': {
+          // Honest refusal (never a fake bundle): building the contribution
+          // runs the §6 gate over a REAL backend session and WRITES a file —
+          // neither exists in mock, and a fabricated READY result would lie
+          // about a bundle that was never produced.
+          throw new MockContractError(
+            'unsupported_capability',
+            'selfloc_build_contribution: the contribution builder is unavailable in mock — run the desktop app'
+          );
+        }
       }
     },
     forceExternalRevision(projectId: string, revision: number) {

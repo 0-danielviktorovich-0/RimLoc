@@ -74,6 +74,19 @@ impl ContractState {
         })
     }
 
+    /// Run one operation against the session manager (the ONE state seam;
+    /// the manager serializes per project internally). Used by the shell
+    /// commands outside `contract_adapter` that need session services —
+    /// business logic stays in `rimloc-services`, the adapter owns state
+    /// and wire-shape only.
+    pub fn with_manager<R>(&self, f: impl FnOnce(&ProjectSessionManager) -> R) -> R {
+        let manager = self
+            .manager
+            .lock()
+            .expect("contract session registry poisoned");
+        f(&manager)
+    }
+
     #[cfg(test)]
     fn with_root_for_tests(root: &std::path::Path) -> std::io::Result<Self> {
         Self::new(root.to_path_buf())
