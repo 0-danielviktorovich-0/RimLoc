@@ -5,8 +5,8 @@
   "identifier": "com.rimloc.gui",
   "build": {
     "frontendDist": "../frontend-v2/dist",
-    "beforeBuildCommand": "npm run build",
-    "beforeDevCommand": "npm run dev"
+    "beforeBuildCommand": "cd ../frontend-v2 && npm run build",
+    "beforeDevCommand": "cd ../frontend-v2 && npm run dev"
   },
   "app": {
     "security": {
