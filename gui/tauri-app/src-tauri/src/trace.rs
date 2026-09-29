@@ -21,7 +21,12 @@ fn trace_path() -> Option<PathBuf> {
     static PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
     PATH.get_or_init(|| {
         let base = dirs::data_dir()?;
-        Some(base.join("com.rimloc.gui").join("RimLoc").join("logs").join("trace.jsonl"))
+        Some(
+            base.join("com.rimloc.gui")
+                .join("RimLoc")
+                .join("logs")
+                .join("trace.jsonl"),
+        )
     })
     .clone()
 }
@@ -49,7 +54,11 @@ pub fn trace_cmd(cmd: &str, ok: bool, ms: u128, detail: &str) {
         detail = serde_json::to_string(detail).unwrap_or_else(|_| "\"?\"".into()),
     );
     let _ = std::fs::create_dir_all(path.parent().unwrap_or(Path::new(".")));
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+    if let Ok(mut f) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
         let _ = f.write_all(line.as_bytes());
     }
 }
@@ -57,10 +66,19 @@ pub fn trace_cmd(cmd: &str, ok: bool, ms: u128, detail: &str) {
 /// Wrap a contract command body: stamps duration and outcome into the trace.
 /// The closure returns `(Result payload, detail)` where detail already
 /// carries the short summary for both branches.
-pub fn traced<T, E>(cmd: &str, body: impl FnOnce() -> Result<T, E>, detail_of: impl FnOnce(&Result<T, E>) -> String) -> Result<T, E> {
+pub fn traced<T, E>(
+    cmd: &str,
+    body: impl FnOnce() -> Result<T, E>,
+    detail_of: impl FnOnce(&Result<T, E>) -> String,
+) -> Result<T, E> {
     let started = std::time::Instant::now();
     let out = body();
-    trace_cmd(cmd, out.is_ok(), started.elapsed().as_millis(), &detail_of(&out));
+    trace_cmd(
+        cmd,
+        out.is_ok(),
+        started.elapsed().as_millis(),
+        &detail_of(&out),
+    );
     out
 }
 

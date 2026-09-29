@@ -83,7 +83,9 @@ impl ContractState {
 /// Agent trace (RIMLOC_TRACE=1): command name + duration + ok/error —
 /// payload details deliberately stay out of the log.
 fn traced_simple<T, E>(cmd: &'static str, body: impl FnOnce() -> Result<T, E>) -> Result<T, E> {
-    crate::trace::traced(cmd, body, |r| if r.is_ok() { "ok" } else { "error" }.to_string())
+    crate::trace::traced(cmd, body, |r| {
+        if r.is_ok() { "ok" } else { "error" }.to_string()
+    })
 }
 
 /// ui_contract_version + honest capability report (supported vs unsupported
@@ -300,7 +302,9 @@ pub fn project_import_existing(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("project_import_existing", || manager.import_existing(&request))
+    traced_simple("project_import_existing", || {
+        manager.import_existing(&request)
+    })
 }
 
 /// `project_apply_existing` — apply the REUSABLE set of an analyzed pack
@@ -318,7 +322,9 @@ pub fn project_apply_existing(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("project_apply_existing", || manager.apply_existing(&request))
+    traced_simple("project_apply_existing", || {
+        manager.apply_existing(&request)
+    })
 }
 
 /// Manage the contract state on a builder. Returns the same builder type;
