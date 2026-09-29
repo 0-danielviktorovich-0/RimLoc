@@ -321,6 +321,142 @@
       "placeholders": []
     },
     {
+      "id": "contract.error.stale_epoch",
+      "source_text": "Your editing session was superseded by a newer open/refresh — reopen the project to continue. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.stale_revision",
+      "source_text": "The project moved on while you were editing (your base revision is outdated) — retry the edit on the fresh state. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.save_failed",
+      "source_text": "The durable write failed; your edits stay in memory as a draft and nothing was lost. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.project_changed_on_disk",
+      "source_text": "The project file changed on disk outside this session — adopt the disk version to continue; your draft is kept. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.contract_violation",
+      "source_text": "This action is not permitted for the current project state (unknown identity or a non-permitted action). Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.guard_output_denied",
+      "source_text": "The chosen output location was refused by the write guard — output never goes into the source tree or another protected root. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.invalid_output_path",
+      "source_text": "The output path must be an absolute directory. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.unsupported_capability",
+      "source_text": "This operation is not part of the current build yet — it is reported honestly instead of being approximated. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.project_not_found",
+      "source_text": "No managed project with this id exists (it may have been unloaded). Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.schema_version",
+      "source_text": "The project file was written by another contract version and is not supported by this build. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.validation_failed",
+      "source_text": "The operation produced validation errors — fix them and retry. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.internal",
+      "source_text": "An unexpected backend error occurred. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.empty",
+      "source_text": "This translation is empty — the game will render nothing.",
+      "placeholders": []
+    },
+    {
+      "id": "finding.invisible-char",
+      "source_text": "Suspicious invisible/bi-di control characters in the text. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.placeholder-check",
+      "source_text": "Placeholder problem in the translation. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.duplicate",
+      "source_text": "Duplicate key in the same file — the game keeps only the first copy.",
+      "placeholders": []
+    },
+    {
+      "id": "finding.duplicate-global",
+      "source_text": "The same key appears in several files of one language scope. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.lost-placeholder",
+      "source_text": "The translation dropped placeholder(s) present in the source — they would render unfilled. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.case-collision",
+      "source_text": "Two defNames differ only in letter case and would collide in one DefInjected file. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.source-drift",
+      "source_text": "The source changed since this project was built — the inventory is stale; rescan before building exports. Detail: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
       "id": "livebadge.label",
       "source_text": "Live project (contract)",
       "placeholders": []

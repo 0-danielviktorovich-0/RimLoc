@@ -12,6 +12,7 @@
   import { project } from '../../stores/project.svelte';
   import { contractops, folderForm } from '../../stores/contractops.svelte';
   import { clientInstance } from '../../client/instance.svelte';
+  import { findingText } from '../../client/messages';
 
   let { kind }: { kind: 'build' | 'diagnostics' } = $props();
 
@@ -135,7 +136,7 @@
               <li class="finding finding-{f.severity}" data-testid={`contractops.finding.${i}`}>
                 <span class="sev"><Icon name={severityIcon[f.severity] ?? 'info'} size={13} /> {f.severity}</span>
                 <span class="mono key">{f.key}{f.line !== undefined ? `:${f.line}` : ''}</span>
-                <span class="msg">{f.message}</span>
+                <span class="msg">{findingText(f.kind, f.message)}</span>
               </li>
             {/each}
           </ul>

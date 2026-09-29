@@ -60,6 +60,19 @@ class I18nStore {
     return text;
   }
 
+  /** Whether the key resolves in the pack overlay, the current locale or en
+   *  — the honest existence check behind backend-message localization
+   *  (audit §4/§7): a caller maps a stable backend id onto an i18n key and
+   *  falls back to the raw server message when this returns false, so an
+   *  unknown future id can never render as its own key. */
+  has(key: string): boolean {
+    return (
+      this.packMessages?.[key] !== undefined ||
+      DICTS[this.locale][key] !== undefined ||
+      DICTS.en[key] !== undefined
+    );
+  }
+
   setLocale(locale: Locale) {
     this.locale = locale;
     try {
