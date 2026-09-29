@@ -37,8 +37,12 @@ export const en: Record<string, string> = {
   'workspace.contract.rereading': 'Re-reading…',
 
   // Live contract operations (final night wave): validate/export/diagnose
-  // over the RimLocClient. Finding messages are backend data (EN); chips
-  // and labels are localized.
+  // over the RimLocClient. Backend messages localize by their STABLE machine
+  // ids (audit §4/§7): `contract.error.<code>` below covers every
+  // ContractErrorCode variant, `finding.<kind>` every finding kind
+  // project_validate can emit. The free-form EN server message rides inside
+  // the localized sentence via {message}; a kind without a key falls back
+  // to the raw message (mock data stays backend EN data).
   'contractops.running': 'Running…',
   // L-10 (UI audit 2026-09-29): the internal "(contract)" qualifier is gone
   // from the card titles; the build mode is visible from the header badge.
@@ -82,6 +86,37 @@ export const en: Record<string, string> = {
   'contractops.abs_path_example_bundle': 'e.g. /Users/you/RimLoc-Bundles/MyMod',
   // Native OS folder dialog under the output fields (same flow as Home).
   'contractops.pick': 'Choose folder…',
+
+  // --- Backend message localization (audit §4/§7) -----------------------
+  // `contract.error.<code>` — one key per ContractErrorCode variant (the
+  // append-only wire enum in rimloc-services contract.rs). The snake_case
+  // code is prefixed by the formatter, {message} carries the raw server
+  // detail. Keys here are the UI's translations, NOT backend data.
+  'contract.error.stale_epoch': 'Your editing session was superseded by a newer open/refresh — reopen the project to continue. Detail: {message}',
+  'contract.error.stale_revision': 'The project moved on while you were editing (your base revision is outdated) — retry the edit on the fresh state. Detail: {message}',
+  'contract.error.save_failed': 'The durable write failed; your edits stay in memory as a draft and nothing was lost. Detail: {message}',
+  'contract.error.project_changed_on_disk': 'The project file changed on disk outside this session — adopt the disk version to continue; your draft is kept. Detail: {message}',
+  'contract.error.contract_violation': 'This action is not permitted for the current project state (unknown identity or a non-permitted action). Detail: {message}',
+  'contract.error.guard_output_denied': 'The chosen output location was refused by the write guard — output never goes into the source tree or another protected root. Detail: {message}',
+  'contract.error.invalid_output_path': 'The output path must be an absolute directory. Detail: {message}',
+  'contract.error.unsupported_capability': 'This operation is not part of the current build yet — it is reported honestly instead of being approximated. Detail: {message}',
+  'contract.error.project_not_found': 'No managed project with this id exists (it may have been unloaded). Detail: {message}',
+  'contract.error.schema_version': 'The project file was written by another contract version and is not supported by this build. Detail: {message}',
+  'contract.error.validation_failed': 'The operation produced validation errors — fix them and retry. Detail: {message}',
+  'contract.error.internal': 'An unexpected backend error occurred. Detail: {message}',
+
+  // `finding.<kind>` — one key per finding kind project_validate emits:
+  // the five rimloc-validate kinds (empty, invisible-char, placeholder-check,
+  // duplicate, duplicate-global) plus the session-level ones (lost-placeholder,
+  // case-collision, source-drift).
+  'finding.empty': 'This translation is empty — the game will render nothing.',
+  'finding.invisible-char': 'Suspicious invisible/bi-di control characters in the text. Detail: {message}',
+  'finding.placeholder-check': 'Placeholder problem in the translation. Detail: {message}',
+  'finding.duplicate': 'Duplicate key in the same file — the game keeps only the first copy.',
+  'finding.duplicate-global': 'The same key appears in several files of one language scope. Detail: {message}',
+  'finding.lost-placeholder': 'The translation dropped placeholder(s) present in the source — they would render unfilled. Detail: {message}',
+  'finding.case-collision': 'Two defNames differ only in letter case and would collide in one DefInjected file. Detail: {message}',
+  'finding.source-drift': 'The source changed since this project was built — the inventory is stale; rescan before building exports. Detail: {message}',
 
   // Honest live counterpart of the mock badge (audit P1-4): on a contract
   // project the global chip shows the live mode instead of claiming demo data.

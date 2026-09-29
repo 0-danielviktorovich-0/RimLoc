@@ -12,6 +12,7 @@ import { buildState } from '../mock/buildState.svelte';
 // demo/dev mock (devMode) and is never a silent production default.
 import { clientInstance } from '../client/instance.svelte';
 import { ContractClientError, type RimLocClient } from '../client/client';
+import { contractErrorText } from '../client/messages';
 import type { ProjectSnapshotDto, ProjectSummaryDto, SourceEntryIdDto } from '../client/types';
 
 export type StatusCounts = Record<EntryStatus, number>;
@@ -435,7 +436,8 @@ class ProjectStore {
       this.contractError = null;
       return true;
     } catch (e) {
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     } finally {
       this.refreshing = false;
@@ -452,7 +454,8 @@ class ProjectStore {
       this.applyContractSnapshot(snap);
       return true;
     } catch (e) {
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     }
   }
@@ -464,7 +467,8 @@ class ProjectStore {
       this.applyContractSnapshot(snap);
       return true;
     } catch (e) {
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     }
   }
@@ -542,14 +546,15 @@ class ProjectStore {
         // the typed refusal where the user works.
         const sk = resp.skipped[0];
         this.contractError = sk
-          ? `${sk.code}: ${sk.message}`
+          ? contractErrorText(sk.code, sk.message)
           : 'contract_violation: the intent was skipped by the backend';
       }
       return resp.applied > 0;
     } catch (e) {
       // persist-before-ack: the draft stays staged for retry; the typed
       // error is surfaced without ever clearing the caller's text.
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       this.saveStates[id] = 'dirty';
       return false;
     }
@@ -612,13 +617,14 @@ class ProjectStore {
         // Pass A 2.2: a refused intent is DATA — surface the typed refusal.
         const sk = resp.skipped[0];
         this.contractError = sk
-          ? `${sk.code}: ${sk.message}`
+          ? contractErrorText(sk.code, sk.message)
           : 'contract_violation: the intent was skipped by the backend';
       }
       return resp.applied > 0;
     } catch (e) {
       rollback?.();
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     }
   }

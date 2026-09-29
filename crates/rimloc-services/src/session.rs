@@ -785,6 +785,56 @@ impl ProjectSessionManager {
             }
         }
 
+        // Self-localization audit §5: for UI-CATALOG entries the `{name}`
+        // placeholder set IS the runtime contract — the i18n store replaces
+        // `{name}` verbatim, so a lost slot renders unfilled and a renamed
+        // one stays in the text as literal `{nmae}` (no per-string check
+        // sees that shape). STRICT set comparison against the base message:
+        // loss, addition or rename is an Error — the same category and
+        // severity the mod placeholder mismatch carries (`placeholder-check`,
+        // 026 error). The generic lost-placeholder pass above stays the
+        // catch-all for the TOTAL-loss case of every origin, so this pass
+        // skips translations carrying no well-formed token at all (already
+        // reported there — one finding per defect, never two).
+        for tr in &st.project.translations {
+            if let Some(filter) = locale {
+                if tr.locale != filter {
+                    continue;
+                }
+            }
+            let Some(text) = tr.text.as_deref().filter(|t| !t.trim().is_empty()) else {
+                continue;
+            };
+            if placeholder_tokens(text).is_empty() {
+                continue;
+            }
+            let Some(entry) = st.project.entries.iter().find(|e| e.id == tr.source_id) else {
+                continue;
+            };
+            if entry.provenance.selected_by.as_deref()
+                != Some(rimloc_core::winner_reason::UI_CATALOG)
+            {
+                continue;
+            }
+            if let Some(message) = rimloc_validate::placeholder_set_mismatch(&entry.text, text) {
+                error_count += 1;
+                affected.push(entry.id.display_identity());
+                findings.push(crate::contract::ValidationFinding {
+                    id: Some(entry.id.clone()),
+                    severity: "error".into(),
+                    kind: "placeholder-check".into(),
+                    key: entry.id.key.clone(),
+                    path: entry
+                        .contexts
+                        .first()
+                        .map(|c| c.file.clone())
+                        .unwrap_or_default(),
+                    line: None,
+                    message,
+                });
+            }
+        }
+
         // M4 early signal: case-colliding defNames are a WARNING here (the
         // project still validates against its own inventory) and a hard
         // refusal at export — the early finding lets the user fix the

@@ -14,6 +14,7 @@
 //   by expected_revision — the whole apply is refused, nothing is half-done.
 import { ContractClientError } from '../client/client';
 import { clientInstance } from '../client/instance.svelte';
+import { contractErrorText } from '../client/messages';
 import type {
   ApplyExistingResponseDto,
   ImportExistingResponseDto
@@ -75,7 +76,8 @@ class ExistingPackStore {
   }
 
   private fail(e: unknown, step: 'analyze' | 'apply'): void {
-    this.error = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+    this.error =
+      e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
     this.failedStep = step;
   }
 

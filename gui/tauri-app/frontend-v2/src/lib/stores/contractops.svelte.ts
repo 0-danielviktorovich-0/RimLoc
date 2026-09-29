@@ -6,6 +6,7 @@
 // project.source and keep their marked demo flows.
 import { ContractClientError } from '../client/client';
 import { clientInstance } from '../client/instance.svelte';
+import { contractErrorText, findingText } from '../client/messages';
 import type {
   BuildModProjectResponseDto,
   DiagnoseResponseDto,
@@ -67,7 +68,7 @@ class ContractOpsStore {
 
   private fail(e: unknown): void {
     this.error =
-      e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
   }
 
   /** Read-only validate over the trusted session state. On success the
@@ -112,7 +113,8 @@ class ContractOpsStore {
       );
       if (!entry) continue;
       entry.validation = 'issues';
-      entry.validationIssues = [f.message];
+      // Localized by the stable finding kind (audit §7), raw message inside.
+      entry.validationIssues = [findingText(f.kind, f.message)];
     }
   }
 

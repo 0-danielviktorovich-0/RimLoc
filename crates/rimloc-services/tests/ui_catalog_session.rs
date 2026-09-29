@@ -256,6 +256,109 @@ fn repository_generated_catalog_is_never_the_fixture() {
     assert!(en.contains("\"source_text\": \"RimLoc\""));
 }
 
+/// Self-localization audit §5: a catalog translation that RENAMES a
+/// `{name}` placeholder is an ERROR finding from `project_validate` — the
+/// strict set comparison against the base message. The generic
+/// lost-placeholder pass cannot see this shape (the translation still
+/// carries A placeholder), which is exactly the audit's hole: the i18n
+/// runtime would render the typo'd `{…}` as literal text.
+#[test]
+fn validate_flags_a_renamed_catalog_placeholder_as_set_mismatch() {
+    let generated = repo_root().join(GENERATED_REL);
+    let fixture: SelflocFixture =
+        serde_json::from_str(&fs::read_to_string(repo_root().join(FIXTURE_REL)).unwrap())
+            .expect("shared selfloc fixture parses");
+
+    // REAL generated catalog, copied — the repository files stay intact.
+    let tmp = tempfile::tempdir().unwrap();
+    let catalog_dir = tmp.path().join("catalog");
+    fs::create_dir_all(&catalog_dir).unwrap();
+    for name in ["catalog.en.json", "catalog.ru.json", "catalog.meta.json"] {
+        fs::copy(generated.join(name), catalog_dir.join(name)).unwrap();
+    }
+
+    // A REAL catalog message that carries the placeholder contract.
+    let en: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(catalog_dir.join("catalog.en.json")).unwrap())
+            .unwrap();
+    let (id, source_text, placeholders) = en["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|m| {
+            let ph = m["placeholders"].as_array()?;
+            if ph.is_empty() {
+                return None;
+            }
+            let names: Vec<String> = ph
+                .iter()
+                .filter_map(|p| p.as_str().map(str::to_string))
+                .collect();
+            Some((
+                m["id"].as_str()?.to_string(),
+                m["source_text"].as_str()?.to_string(),
+                names,
+            ))
+        })
+        .next()
+        .expect("the real catalog has placeholder-bearing messages");
+
+    // RENAME every {name} → {typo_name}: still well-formed braces, wrong set.
+    let mut broken = source_text.clone();
+    for p in &placeholders {
+        broken = broken.replace(&format!("{{{p}}}"), &format!("{{typo_{p}}}"));
+    }
+    assert_ne!(broken, source_text);
+
+    let mgr = ProjectSessionManager::new(tmp.path().join("managed")).unwrap();
+    let snap = mgr.create(&catalog_dir, None).unwrap();
+    let res = mgr
+        .apply(&apply_req(
+            &snap.project_id,
+            snap.session_epoch,
+            snap.revision,
+            vec![intent(&fixture.locale, &id, &broken)],
+        ))
+        .unwrap();
+    assert_eq!(res.applied, 1);
+
+    let v = mgr
+        .validate_project(&snap.project_id, snap.session_epoch, Some(&fixture.locale))
+        .unwrap();
+    assert_eq!(v.status, "failed", "{v:?}");
+    let hit = v
+        .findings
+        .iter()
+        .find(|f| f.key == id && f.kind == "placeholder-check" && f.severity == "error")
+        .expect("error-severity placeholder-check finding for the renamed placeholder");
+    assert_eq!(hit.severity, "error");
+    assert!(
+        hit.message.contains("missing") && hit.message.contains("unexpected"),
+        "{:?}",
+        hit.message
+    );
+    for p in &placeholders {
+        assert!(
+            hit.message.contains(&format!("{{{p}}}")),
+            "message must name the lost {{{p}}}: {:?}",
+            hit.message
+        );
+        assert!(
+            hit.message.contains(&format!("{{typo_{p}}}")),
+            "message must name the invented {{typo_{p}}}: {:?}",
+            hit.message
+        );
+    }
+    // The rename shape is invisible to the generic lost-placeholder pass
+    // (the translation still carries a token): no duplicate finding.
+    assert!(
+        !v.findings
+            .iter()
+            .any(|f| f.key == id && f.kind == "lost-placeholder"),
+        "{v:?}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // SF-5: the real session-export -> TS junction.
 // ---------------------------------------------------------------------------

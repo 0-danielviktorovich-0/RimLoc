@@ -321,6 +321,142 @@
       "placeholders": []
     },
     {
+      "id": "contract.error.stale_epoch",
+      "translated": "Вашу сессию редактирования сменила более новая (проект открыли или обновили заново) — откройте проект, чтобы продолжить. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.stale_revision",
+      "translated": "Пока вы правили, проект изменился (ваша базовая ревизия устарела) — повторите правку на свежем состоянии. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.save_failed",
+      "translated": "Запись на диск не удалась; правки остались в памяти как черновик и не потеряны. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.project_changed_on_disk",
+      "translated": "Файл проекта изменился на диске вне этой сессии — примите версию с диска, чтобы продолжить; черновик сохранён. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.contract_violation",
+      "translated": "Действие запрещено для текущего состояния проекта (неизвестная запись или недопустимое действие). Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.guard_output_denied",
+      "translated": "Выбранное место вывода отклонено гардом записи — вывод не может идти в дерево исходников или другую защищённую зону. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.invalid_output_path",
+      "translated": "Путь вывода должен быть абсолютной папкой. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.unsupported_capability",
+      "translated": "Этой операции в текущей сборке ещё нет — она честно сообщается, а не имитируется. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.project_not_found",
+      "translated": "Управляемого проекта с таким id нет (возможно, он выгружен). Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.schema_version",
+      "translated": "Файл проекта записан другой версией контракта и не поддерживается этой сборкой. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.validation_failed",
+      "translated": "Операция дала ошибки валидации — исправьте их и повторите. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "contract.error.internal",
+      "translated": "Неожиданная ошибка бэкенда. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.empty",
+      "translated": "Перевод пуст — игра не отрисует ничего.",
+      "placeholders": []
+    },
+    {
+      "id": "finding.invisible-char",
+      "translated": "В тексте подозрительные невидимые/двунаправленные управляющие символы. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.placeholder-check",
+      "translated": "Проблема с плейсхолдерами в переводе. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.duplicate",
+      "translated": "Дубликат ключа в одном файле — игра оставит только первую копию.",
+      "placeholders": []
+    },
+    {
+      "id": "finding.duplicate-global",
+      "translated": "Ключ встречается в нескольких файлах одной языковой зоны. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.lost-placeholder",
+      "translated": "Перевод потерял плейсхолдер(ы), которые есть в исходнике, — они отрисуются незаполненными. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.case-collision",
+      "translated": "Два defName различаются только регистром и столкнутся в одном DefInjected-файле. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
+      "id": "finding.source-drift",
+      "translated": "Исходник изменился после сборки проекта — инвентарь устарел; пересканируйте перед сборкой экспорта. Детали: {message}",
+      "placeholders": [
+        "message"
+      ]
+    },
+    {
       "id": "livebadge.label",
       "translated": "Живой проект (контракт)",
       "placeholders": []
