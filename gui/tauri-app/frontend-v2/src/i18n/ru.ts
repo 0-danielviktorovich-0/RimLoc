@@ -27,8 +27,10 @@ export const ru: Record<string, string> = {
 
   // Honest capability degradation (audit P1-5): CTA/buttons gated by the
   // handshake capability report while the J backend slices are pending.
-  'capability.unsupported.title': 'Пока недоступно: операция ждёт контракт-слайс. {reason}',
-  'capability.unsupported.note': 'Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}',
+  // Волна 9 (мандат §14): «контракт-слайс» — внутренний термин; пользователю
+  // говорим человечески про подключение к бэкенду.
+  'capability.unsupported.title': 'Пока недоступно: функция ещё подключается к бэкенду. {reason}',
+  'capability.unsupported.note': 'Сборка перевода ещё не подключена к бэкенду — работа идёт. {reason}',
 
   // Recovery после typed-отказа (Pass A P1-1/P1-2): refresh принимает диск
   // (backend-dirty отбрасывается) — всегда явным действием пользователя.
@@ -100,7 +102,7 @@ export const ru: Record<string, string> = {
   'contract.error.invalid_output_path': 'Путь вывода должен быть абсолютной папкой. Детали: {message}',
   'contract.error.unsupported_capability': 'Этой операции в текущей сборке ещё нет — она честно сообщается, а не имитируется. Детали: {message}',
   'contract.error.project_not_found': 'Управляемого проекта с таким id нет (возможно, он выгружен). Детали: {message}',
-  'contract.error.schema_version': 'Файл проекта записан другой версией контракта и не поддерживается этой сборкой. Детали: {message}',
+  'contract.error.schema_version': 'Файл проекта записан другой версией формата и не поддерживается этой сборкой. Детали: {message}',
   'contract.error.validation_failed': 'Операция дала ошибки валидации — исправьте их и повторите. Детали: {message}',
   'contract.error.internal': 'Неожиданная ошибка бэкенда. Детали: {message}',
 
@@ -119,9 +121,10 @@ export const ru: Record<string, string> = {
 
   // Честный live-вариант бейджа (аудит P1-4): на контракт-проекте глобальный
   // чип показывает живой режим вместо «демо-данные».
-  'livebadge.label': 'Живой проект (контракт)',
-  'livebadge.title':
-    'Открыт реальный проект через контракт RimLocClient → Tauri: данные не демо-фикстуры, правки сохраняются в управляемый проект.',
+  // Волна 9 (мандат §14): без «(контракт)» — внутренний термин; подсказка
+  // отвечает человечески, без имён внутренних мостов.
+  'livebadge.label': 'Живой проект',
+  'livebadge.title': 'Открыт настоящий проект: это не демо-данные, правки сохраняются.',
 
   // M-2 (аудит UI 2026-09-29): пока проект не открыт, чип в шапке говорит
   // правду о ТРАНСПОРТЕ (Live/Mock по режиму клиента) — живой список
@@ -1331,7 +1334,7 @@ export const ru: Record<string, string> = {
   'home.selfloc.beta': 'бета',
   'workspace.project.fixtureDataset': 'Демо-датасет — правки не сохраняются',
   'workspace.project.fixtureNote': 'Демонстрационный набор, встроенный в приложение — исследуйте свободно; он не трогает ваши моды.',
-  'workspace.project.live': 'живой контракт',
+  'workspace.project.live': 'живой проект',
 
   // Браузер сценариев (W6, только dev; MOCK_LIVE_ONBOARDING_MANDATE §11)
   'scenarios.title': 'Браузер сценариев',

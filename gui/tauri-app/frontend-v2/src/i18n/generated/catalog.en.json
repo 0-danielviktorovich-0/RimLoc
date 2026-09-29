@@ -97,14 +97,14 @@
     },
     {
       "id": "capability.unsupported.title",
-      "source_text": "Not available yet: the operation waits for its contract slice. {reason}",
+      "source_text": "Not available yet: this feature is still being connected to the backend. {reason}",
       "placeholders": [
         "reason"
       ]
     },
     {
       "id": "capability.unsupported.note",
-      "source_text": "Contract build is not wired yet (backend slice in progress). {reason}",
+      "source_text": "Translation build is not connected to the backend yet — work in progress. {reason}",
       "placeholders": [
         "reason"
       ]
@@ -385,7 +385,7 @@
     },
     {
       "id": "contract.error.schema_version",
-      "source_text": "The project file was written by another contract version and is not supported by this build. Detail: {message}",
+      "source_text": "The project file was written in another file format version and is not supported by this build. Detail: {message}",
       "placeholders": [
         "message"
       ]
@@ -458,12 +458,12 @@
     },
     {
       "id": "livebadge.label",
-      "source_text": "Live project (contract)",
+      "source_text": "Live project",
       "placeholders": []
     },
     {
       "id": "livebadge.title",
-      "source_text": "A real project is open over the RimLocClient → Tauri contract: the data is not demo fixtures and edits persist into the managed project.",
+      "source_text": "A real project is open: this is not demo data and your edits persist.",
       "placeholders": []
     },
     {

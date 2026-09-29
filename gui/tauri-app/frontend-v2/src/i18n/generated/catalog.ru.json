@@ -97,14 +97,14 @@
     },
     {
       "id": "capability.unsupported.title",
-      "translated": "Пока недоступно: операция ждёт контракт-слайс. {reason}",
+      "translated": "Пока недоступно: функция ещё подключается к бэкенду. {reason}",
       "placeholders": [
         "reason"
       ]
     },
     {
       "id": "capability.unsupported.note",
-      "translated": "Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}",
+      "translated": "Сборка перевода ещё не подключена к бэкенду — работа идёт. {reason}",
       "placeholders": [
         "reason"
       ]
@@ -385,7 +385,7 @@
     },
     {
       "id": "contract.error.schema_version",
-      "translated": "Файл проекта записан другой версией контракта и не поддерживается этой сборкой. Детали: {message}",
+      "translated": "Файл проекта записан другой версией формата и не поддерживается этой сборкой. Детали: {message}",
       "placeholders": [
         "message"
       ]
@@ -458,12 +458,12 @@
     },
     {
       "id": "livebadge.label",
-      "translated": "Живой проект (контракт)",
+      "translated": "Живой проект",
       "placeholders": []
     },
     {
       "id": "livebadge.title",
-      "translated": "Открыт реальный проект через контракт RimLocClient → Tauri: данные не демо-фикстуры, правки сохраняются в управляемый проект.",
+      "translated": "Открыт настоящий проект: это не демо-данные, правки сохраняются.",
       "placeholders": []
     },
     {
@@ -5860,7 +5860,7 @@
     },
     {
       "id": "workspace.project.live",
-      "translated": "живой контракт",
+      "translated": "живой проект",
       "placeholders": []
     },
     {
