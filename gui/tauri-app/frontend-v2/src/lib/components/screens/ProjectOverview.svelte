@@ -92,7 +92,11 @@
 
   <!-- Identity: content/mod + RimWorld version. -->
   <div class="identity">
-    <span class="name mono" data-testid="workspace.project.name">{project.projectName}</span>
+    <!-- M-5 parity with the Workspace toolbar-meta: the human name when
+         resolved, the raw service id as title (and fallback). -->
+    <span class="name mono" data-testid="workspace.project.name" title={project.projectName}>
+      {project.displayName}
+    </span>
     <span class="chip">{t('workspace.project.contentKind')}</span>
     <span class="chip mono" data-testid="workspace.project.rwversion">{RW_VERSION}</span>
     {#if project.source === 'contract'}

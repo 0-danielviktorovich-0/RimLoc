@@ -221,6 +221,7 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px; /* 5×4px step — coach card padding, chat batch rows */
   --space-6: 24px;
   --space-8: 32px;
 
