@@ -37,6 +37,19 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **ХЭНДОФФ-ЦИКЛ 30.09, ~05:0x**: main несёт волны 8-11 (проверь `git rev-parse HEAD`):
+  волна 8 `d9f0c7f` SF-07/11/06 (интерполяция/атомарная запись/лимиты, контрпримеры в сьюте);
+  волна 9 `0dce5ab` owner-классы (blank-tail Review/Glossary/TM/Project — flex-цепочка,
+  термины: 0 «контракт» в строках, фокус-инвариант); волна 10 `9dbfee6` T2a Playwright
+  (17 семантических инвариантов, headless, 16 passed + 1 fixme фокус-бюджет 16 — виновник
+  DevPanel-кнопка хедера); волна 11 SF-08/09/10 (CatalogStatus typed, fingerprint
+  source-only, ru-импорт в сессию E2E>1000, preview lang/dir). Гейты: rust 354/0,
+  svelte 0/0, vitest 424/424, e2e 16+1fixme. **Пересборка REL-12 ОТЛОЖЕНА: диск 15 GiB <
+  guardian-политики 25 — первая операция при свободном диске.** Junction-гонка
+  /tmp/rimloc-selfloc-chain между параллельными worktree известна (chain-тест падает
+  при чужом cargo-прогоне) — фикс-кандидат: per-run junction-путь.
+  Очередь: Source Inspector live → MOCK→live волны → дизайн-пасс (DESIGN_SKILL_MATRIX)
+  → T6 RimWorld → owner pack. Архитектура приёмки: docs/development/testing/.
 - **ФИНАЛ НОЧИ 30.09 (~01:1x)**: main `765b7e1` (→ проверь `git rev-parse HEAD`).
   Микро-волна 4 влита (`e0e7acc`, ревью APPROVED): --space-5 токен + displayName.
   Гейты merged main: fmt 0, clippy чисто, rust 326/0, svelte 0/0, vitest 381/381.
