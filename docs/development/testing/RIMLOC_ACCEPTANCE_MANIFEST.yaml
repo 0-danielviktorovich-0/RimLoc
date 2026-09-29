@@ -1,0 +1,63 @@
+# RIMLOC ACCEPTANCE MANIFEST — declarative gate config (persist mandate 04)
+# Source of truth: docs/development/testing/AUTONOMOUS_ACCEPTANCE_ARCHITECTURE.md
+version: 1
+updated: 2026-09-30
+
+defaults:
+  same_host: true
+  vm: false
+  physical_pointer: false
+  steal_focus: false
+  vision_primary: false
+  sources_read_only: true
+  record:
+    - frontend_log        # gui.log
+    - backend_trace       # RIMLOC_TRACE=1 trace.jsonl
+    - filesystem_delta
+    - operation_ids       # run_id/scenario_id/step
+
+tiers:
+  T0_domain:
+    run: cargo test --workspace
+    required_for: [every_wave]
+  T1_headless_frontend:
+    run: |
+      cd gui/tauri-app/frontend-v2
+      npx svelte-check --output summary
+      npm run test
+    required_for: [frontend_wave]
+  T2_tauri_semantic_e2e:
+    driver: "@wdio/tauri-service"   # TODO wave: wiring
+    controls: [aria_role, accessible_name, testid, dom_state]
+    required_for: [release_gate, new_live_workflow]
+    invariants:
+      - geometry.no_giant_blank_tail      # >40% viewport пусто при непустых данных → fail
+      - geometry.no_unintended_hscroll
+      - geometry.cta_visible_nonzero
+      - geometry.sticky_header_no_cover
+      - scroll.ownership_explicit          # app/list/detail/modal — задокументированы
+      - scroll.no_nested_trap
+      - focus.tablist_roving               # Tab входит once, стрелки двигают, Enter активирует
+      - focus.max_budget                   # крит-задача ≤ N интеракций (см. matrix)
+      - overlays.inside_viewport
+      - overlays.not_covering_target
+      - honesty.no_mock_action_in_prod     # actionable control требует LIVE-контракт
+      - effects.backend_truth             # success ⇒ files/revision/reparse подтверждены
+  T3_native:
+    run: testlab/auto_install.py install+launch+smoke
+    required_for: [release_gate]
+  T4_package:
+    run: cargo tauri build (beforeBuildCommand обязателен — инцидент stale-dist 30.09)
+    required_for: [release_gate]
+  T5_visual:
+    scenes: [Home, Workspace, Review, Settings, Language, Onboarding, Source, Build, Diagnostics]
+    axes: [light, dark, ru, en, long_text, cjk, narrow, wide]
+    method: deterministic screenshot diff + независимый дизайн-ревью финалистов
+    required_for: [owner_review_pack]
+  T6_game:
+    method: изолированный RimWorld-профиль, read-only исходники, game logs — primary evidence
+    required_for: [public_release_decision]
+
+non_interference_contract:
+  assert_before_after: [pointer_idle, frontmost_app, active_space, clipboard]
+  exceptions: [native_file_dialogs]   # classified foreground/native acceptance
