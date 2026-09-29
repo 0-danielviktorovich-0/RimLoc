@@ -112,7 +112,7 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   строгое множество {name} base-vs-перевод для ui-catalog, error-findings, 6 юнит +
   интеграционный тест), ~~перевод бэкенд-сообщений по code~~ (ЗАКРЫТО волной 6:
   contract.error.<code>/finding.<kind> с fallback, 24+24 ключа, тесты backend-messages),
-  бета-UI contribution (READY, волна 7: локальная сборка бандла; отправка GitHub — вне скоупа),
+  ~~бета-UI contribution~~ (ЗАКРЫТО волной 7, `8c3ba1f`: Rust-порт контракта v1 + UI-блок на selfloc-проекте; живой рендер подтверждён, клик-джорни ограничен каналом; отправка GitHub — вне скоупа),
   EntryKind::Application (18 id с «/» — OWNER-решение: дизайн представления в Keyed XML). GitHub/relay — вне скоупа, не начинались.
 - RC-статус: см. RELEASE_READINESS_REPORT.md (evidence-closeout от 27.09, main
   несёт тестированную дельту). STOP: push/тег/релиз — только явное ок владельца.
