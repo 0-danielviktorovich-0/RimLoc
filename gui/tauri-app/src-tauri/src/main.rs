@@ -3096,10 +3096,8 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
 
 /// Automation dev-log markers (see the DEV_LOG_* note above: stderr strings
 /// live in consts so the workspace i18n guard sees pure formatter calls).
-const DEV_LOG_AUTOMATION_AX_ENABLED: &str =
-    "rimloc-gui: automation webview accessibility enabled";
-const DEV_LOG_AUTOMATION_AX_FAILED: &str =
-    "rimloc-gui: automation webview accessibility FAILED";
+const DEV_LOG_AUTOMATION_AX_ENABLED: &str = "rimloc-gui: automation webview accessibility enabled";
+const DEV_LOG_AUTOMATION_AX_FAILED: &str = "rimloc-gui: automation webview accessibility FAILED";
 const DEV_LOG_AUTOMATION_NSAPP_SET: &str = "rimloc-gui: NSApp accessibilitySupportEnabled set";
 
 fn legacy_commands_enabled() -> bool {
