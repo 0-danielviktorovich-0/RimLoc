@@ -106,7 +106,7 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   открывает свой каталог как проект: 1175 записей, placeholder-валидация, M3
   source-drift, без DefInjected-механики). Гейты: rust 308/0, vitest 270/270,
   clippy/fmt/svelte-check чисто. → **проверь `git rev-parse HEAD`**.
-- Осталось по мандату self-localization (СЛЕД. волны): UI-точка «Help translate»,
+- Осталось по мандату self-localization (СЛЕД. волны): ~~UI-точка «Help translate»~~ (ЗАКРЫТО волной 5, `22edca9`: общий selfloc.ts для Home+Help, живая приёмка managed 8→8 через Help-вход),
   EntryKind::Application (18 id с `/` непредставимы в Keyed XML — см. B4-отчёт),
   строгая placeholder-валидация имён в Rust-валидаторе, перевод бэкенд-сообщений
   по code, бета-UI contribution. GitHub/relay — вне скоупа, не начинались.
