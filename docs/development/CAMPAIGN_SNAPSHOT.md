@@ -37,6 +37,16 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **ФИНАЛ НОЧИ 30.09 (~01:1x)**: main `765b7e1` (→ проверь `git rev-parse HEAD`).
+  Микро-волна 4 влита (`e0e7acc`, ревью APPROVED): --space-5 токен + displayName.
+  Гейты merged main: fmt 0, clippy чисто, rust 326/0, svelte 0/0, vitest 381/381.
+  **Инцидент stale-dist**: tauri.conf без beforeBuildCommand — REL-4/5/6 несли stale фронт
+  (REL-6 БЕЗ волны 3); smoke REL-6 по маркеру был ведущим вопросом — перечёркнут.
+  Фикс: beforeBuildCommand `cd frontend-v2 && npm run build` (cwd = gui/tauri-app, пробой pwd).
+  **ФИНАЛЬНЫЙ RC-артефакт: `d710b26b…`** (evidence artifact-rel7-final/, = REL-7/REL-8),
+  установлен auto_install.py; живое подтверждение маркера нейтральным вопросом —
+  кадр live-accept-rel5/rel8-table.png. Очередь дальше — только owner-решения
+  (пуш 9591f4f..HEAD, тег K2, подпись, чистка selfloc-дублей) и контрактные волны за ними.
 - **ВОЛНА 3 + REL-6 (ночь 30.09, ~00:4x)**: main `d03f1cd` (→ проверь `git rev-parse HEAD`).
   Багфикс-волна 3 (dwfrun-a9b2d66f, Flash воркер+ревьюер APPROVED): L-3 маркер «Нет перевода»,
   L-5 скроллбар, L-6 «:0», L-7 англицизмы, L-8 дубль CTA, регистр «Источник» — merge `9c26d89`.
