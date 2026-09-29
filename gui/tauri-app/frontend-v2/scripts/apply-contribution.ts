@@ -19,7 +19,17 @@
  *     dictionary value the translator saw); when the live value differs the
  *     run refuses with a conflict list — a manual edit is never silently
  *     overwritten, and --allow-stale does NOT bypass this gate;
- *   - --dry-run prints the diff plan and writes nothing;
+ *   - --dry-run prints the diff plan and writes nothing, but builds the
+ *     SAME final content as the real run (SF-11): a formatting error the
+ *     apply would hit — a dictionary line the surgical rewrite cannot find —
+ *     refuses the dry-run too, not only the real write;
+ *   - the authoritative write is content-preconditioned and crash-atomic
+ *     (SF-11): the file is re-read immediately before the write and a
+ *     concurrent manual edit aborts the run WITHOUT writing; the new content
+ *     is written to a temp file in the SAME directory and renamed over the
+ *     target (POSIX-atomic), the temp removed on any failure — after every
+ *     run, clean or refused, the dictionary is either the old or the new
+ *     content, never a half-written file and never a temp leftover;
  *   - application is all-or-nothing: any entry error refuses the whole run.
  *
  * The edit itself is a surgical line replacement of `'key': 'value',` in
@@ -28,8 +38,8 @@
  * <locale>.ts committed together with src/i18n/generated/ — the drift-guard
  * test enforces exactly that.
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { en } from '../src/i18n/en';
@@ -172,6 +182,54 @@ export function isStale(bundleBase: string, currentRevision: string): boolean {
   return normalizeRevision(bundleBase) !== normalizeRevision(currentRevision);
 }
 
+/**
+ * Typed refusal of the SF-11 content precondition: the authoritative file
+ * changed between planning (the read applyToSource patched) and the write.
+ * The run aborts WITHOUT writing — a concurrent manual edit is never
+ * silently overwritten, the same contract as the SF-1 value-conflict gate.
+ */
+export class ContentPreconditionError extends Error {
+  constructor(path: string) {
+    super(
+      `content precondition failed: ${path} changed since the plan was built (concurrent manual edit) — nothing written`,
+    );
+    this.name = 'ContentPreconditionError';
+  }
+}
+
+/**
+ * SF-11 authoritative write: precondition + crash-atomic replace.
+ *
+ * 1. Precondition — re-read the file IMMEDIATELY before writing and compare
+ *    with the content the final patch was built from; a mismatch throws
+ *    ContentPreconditionError before anything is touched.
+ * 2. Atomicity — write the new content to a temp file in the SAME directory
+ *    as the target (rename is POSIX-atomic only within one filesystem) and
+ *    rename it over the target. On any failure the temp file is removed.
+ *    A crash can leave the old or the new content on disk — never a
+ *    half-written dictionary and never a temp leftover.
+ */
+export function writeAtomicWithPrecondition(
+  path: string,
+  expected: string,
+  updated: string,
+): void {
+  const current = readFileSync(path, 'utf8');
+  if (current !== expected) throw new ContentPreconditionError(path);
+  const tmp = join(dirname(path), `.${basename(path)}.apply-${process.pid}-${Date.now()}.tmp`);
+  try {
+    writeFileSync(tmp, updated, 'utf8');
+    renameSync(tmp, path);
+  } catch (err) {
+    try {
+      unlinkSync(tmp);
+    } catch {
+      /* temp already gone — nothing to clean */
+    }
+    throw err;
+  }
+}
+
 /** Load src/i18n/<locale>.ts as a dictionary (repository-owned path only). */
 async function loadDict(locale: string): Promise<Record<string, string>> {
   const mod = (await import(pathToFileURL(join(I18N_DIR, `${locale}.ts`)).href)) as Record<
@@ -267,12 +325,10 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  console.log(formatPlan(bundle, plan, dryRun));
-  if (dryRun) {
-    console.log(`\ndry-run complete — no files changed. Re-run without --dry-run to apply, then npm run export:catalog.`);
-    return 0;
-  }
-
+  // SF-11: build the FINAL content in both modes — the dry-run must hit the
+  // same formatting errors (a dictionary line the surgical rewrite cannot
+  // find, a malformed dictionary) as the real write would, or it would bless
+  // bundles the real apply then refuses.
   const source = readFileSync(localeFile, 'utf8');
   let updated: string;
   try {
@@ -281,7 +337,24 @@ async function main(): Promise<number> {
     console.error(`refused: ${(err as Error).message} — nothing written`);
     return 1;
   }
-  writeFileSync(localeFile, updated, 'utf8');
+
+  console.log(formatPlan(bundle, plan, dryRun));
+  if (dryRun) {
+    console.log(`\ndry-run complete — no files changed. Re-run without --dry-run to apply, then npm run export:catalog.`);
+    return 0;
+  }
+
+  try {
+    writeAtomicWithPrecondition(localeFile, source, updated);
+  } catch (err) {
+    if (err instanceof ContentPreconditionError) {
+      console.error(`refused: ${(err as Error).message}`);
+      console.error('The dictionary moved on between planning and writing — inspect the manual edit and rebase the bundle.');
+      return 1;
+    }
+    console.error(`refused: writing ${localeFile} failed: ${(err as Error).message} — the dictionary is unchanged`);
+    return 1;
+  }
 
   const replaces = plan.entries.filter((e) => e.action === 'replace').length;
   console.log(`\napplied: ${replaces} replacement(s) -> ${localeFile}`);
