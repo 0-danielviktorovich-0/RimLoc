@@ -1,7 +1,7 @@
 // i18n store: locale state + t() lookup. Svelte 5 runes in a .svelte.ts module.
 import { ru } from './ru';
 import { en } from './en';
-import { parseAndValidatePack, validatePackObject, type PackLoadResult } from './pack-schema';
+import { PLACEHOLDER_RE, parseAndValidatePack, validatePackObject, type PackLoadResult } from './pack-schema';
 
 export type Locale = 'ru' | 'en';
 
@@ -51,13 +51,18 @@ class I18nStore {
    * shows its id), never an empty string; pack values can never introduce an
    * empty render because pack validation rejects empty values outright. */
   t(key: string, params?: TParams): string {
-    let text = this.packMessages?.[key] ?? DICTS[this.locale][key] ?? DICTS.en[key] ?? key;
-    if (params) {
-      for (const [name, value] of Object.entries(params)) {
-        text = text.replaceAll(`{${name}}`, String(value));
-      }
-    }
-    return text;
+    const text = this.packMessages?.[key] ?? DICTS[this.locale][key] ?? DICTS.en[key] ?? key;
+    if (!params) return text;
+    // SF-07: ONE pass over the ORIGINAL message with a FUNCTION replacement.
+    // The substituted value is joined in as a literal: it is never re-scanned
+    // for {tokens} (a value "{b}" must not pull in b's value) and `$`
+    // sequences in it are never interpreted (a STRING replacement would treat
+    // $&, $`, $' and $$ as replacement patterns). A parameter name without an
+    // entry in params keeps its literal {name} token — the honest diagnostic
+    // render this store promises.
+    return text.replace(PLACEHOLDER_RE, (token, name: string) =>
+      Object.hasOwn(params, name) ? String(params[name]) : token,
+    );
   }
 
   /** Whether the key resolves in the pack overlay, the current locale or en

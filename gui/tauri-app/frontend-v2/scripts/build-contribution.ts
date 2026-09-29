@@ -178,6 +178,19 @@ export function validateChange(
   if (value.length === 0) {
     return { ref: id, reason: 'value is empty (omit the change instead)' };
   }
+  // SF-6: whitespace-only values are as good as empty — they render as
+  // nothing visible, and the pack layer already rejects them (`empty_value`,
+  // src/i18n/pack-schema.ts). The builder refuses them under the SAME reason
+  // code so a READY bundle can never contradict the pack gate downstream.
+  // Semantics: a value that is empty after trimming surrounding whitespace
+  // (spaces, tabs, newlines) is "whitespace-only"; a value with any visible
+  // character inside is fine.
+  if (value.trim().length === 0) {
+    return {
+      ref: id,
+      reason: 'value is whitespace-only (empty_value): it renders as nothing and the pack layer rejects it — omit the change instead',
+    };
+  }
   if (value.length > VALUE_MAX_LEN) {
     return { ref: id, reason: `value exceeds the ${VALUE_MAX_LEN}-character limit` };
   }

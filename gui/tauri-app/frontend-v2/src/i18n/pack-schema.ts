@@ -21,8 +21,21 @@ export const PACK_SCHEMA_VERSION = '1' as const;
 export const PACK_VALUE_MAX_LENGTH = 4000;
 /** Hard cap on message count: the full catalog is ~1.2k entries. */
 export const PACK_MAX_MESSAGES = 5000;
-/** Raw serialized pack size guard applied before JSON.parse. */
+/** Raw serialized pack size guard applied before JSON.parse. The unit is
+ * UTF-8 BYTES (SF-6): string .length counts UTF-16 code units, so a
+ * Cyrillic/CJK-heavy pack is up to ~3x larger on the wire than its .length
+ * and would slip past a character-count check. */
 export const PACK_RAW_MAX_BYTES = 5_000_000;
+
+/** UTF-8 byte length of a string — the unit PACK_RAW_MAX_BYTES speaks.
+ * Semantically Buffer.byteLength(text, 'utf8'); TextEncoder is the standard
+ * web API for exactly that measure and needs no Node dependency in this
+ * browser-bundled module. */
+const TEXT_ENCODER = new TextEncoder();
+
+function utf8ByteLength(text: string): number {
+  return TEXT_ENCODER.encode(text).length;
+}
 
 /** Locale form: BCP47-lite — language tag plus optional subtags (zh-Hans,
  * pt-BR). Case-insensitive on purpose; a pack locale is data, not an enum:
@@ -44,8 +57,13 @@ function isValidMessageId(id: string): boolean {
   return MESSAGE_ID_RE.test(id) && !id.startsWith('.') && !id.endsWith('.');
 }
 
-/** {name} interpolation tokens, same syntax the i18n store replaces. */
-const PLACEHOLDER_RE = /\{(\w+)\}/g;
+/** {name} interpolation tokens — THE one placeholder contract. The pack
+ * schema validates against it and the i18n store interpolates with it
+ * (SF-07: single-pass function replacement over the original message).
+ * scripts/export-catalog.ts keeps a literal copy of the same pattern for the
+ * build-time placeholder derivation; this module ships in the browser bundle
+ * and must not depend on the scripts layer. */
+export const PLACEHOLDER_RE = /\{(\w+)\}/g;
 
 /** Sorted, deduplicated placeholder names referenced by a message text. */
 export function extractPlaceholders(text: string): string[] {
@@ -187,8 +205,13 @@ export function validatePackObject(raw: unknown, baseCatalog: Record<string, str
  * rejection semantics.
  */
 export function parseAndValidatePack(text: string, baseCatalog: Record<string, string>): PackLoadResult {
-  if (text.length > PACK_RAW_MAX_BYTES) {
-    return reject('too_large', `serialized pack exceeds ${PACK_RAW_MAX_BYTES} bytes`);
+  // SF-6: the raw-size guard measures UTF-8 BYTES, matching the declared
+  // limit's unit — .length would count UTF-16 units and admit packs ~3x the
+  // byte budget (found by review: 5 100 171 bytes accepted at a 5 000 000
+  // "bytes" limit because .length said 1 700 165).
+  const bytes = utf8ByteLength(text);
+  if (bytes > PACK_RAW_MAX_BYTES) {
+    return reject('too_large', `serialized pack exceeds ${PACK_RAW_MAX_BYTES} bytes (UTF-8), got ${bytes}`);
   }
   let parsed: unknown;
   try {

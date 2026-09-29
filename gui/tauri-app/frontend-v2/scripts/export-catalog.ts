@@ -114,21 +114,24 @@ export function serialize(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-/** Regenerate src/i18n/generated/ from the live dictionaries. */
-export function main(): void {
+/** Regenerate the generated catalog JSON from the live dictionaries.
+ * `outDir` defaults to src/i18n/generated/; tests pass a TEMP copy so the
+ * determinism check never mutates the shared checkout (SF-11: parallel test
+ * workers read those files concurrently). */
+export function main(outDir: string = OUT_DIR): void {
   const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {
     name: string;
     version: string;
   };
   const revision = resolveCatalogRevision();
 
-  mkdirSync(OUT_DIR, { recursive: true });
-  writeFileSync(join(OUT_DIR, 'catalog.en.json'), serialize(buildCatalogEn(en)));
-  writeFileSync(join(OUT_DIR, 'catalog.ru.json'), serialize(buildCatalogRu(ru)));
-  writeFileSync(join(OUT_DIR, 'catalog.meta.json'), serialize(buildMeta(pkg, revision)));
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'catalog.en.json'), serialize(buildCatalogEn(en)));
+  writeFileSync(join(outDir, 'catalog.ru.json'), serialize(buildCatalogRu(ru)));
+  writeFileSync(join(outDir, 'catalog.meta.json'), serialize(buildMeta(pkg, revision)));
 
   console.log(
-    `exported catalog: ${Object.keys(en).length} en / ${Object.keys(ru).length} ru messages -> ${OUT_DIR} (revision ${revision})`,
+    `exported catalog: ${Object.keys(en).length} en / ${Object.keys(ru).length} ru messages -> ${outDir} (revision ${revision})`,
   );
 }
 

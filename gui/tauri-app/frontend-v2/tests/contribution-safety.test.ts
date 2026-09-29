@@ -16,7 +16,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
 import { ru } from '../src/i18n/ru';
-import { validatePackObject } from '../src/i18n/pack-schema';
+import {
+  PACK_RAW_MAX_BYTES,
+  parseAndValidatePack,
+  validatePackObject,
+} from '../src/i18n/pack-schema';
 import { buildContribution, validateChange } from '../scripts/build-contribution';
 import { planApply } from '../scripts/apply-contribution';
 import { ContributionBundle, parseContributionBundle } from '../scripts/contribution-schema';
@@ -461,4 +465,121 @@ describe('SF-4: duplicate ids are decided explicitly, never last-write-wins', ()
     const result = validatePackObject(dup, en);
     expect(result).toMatchObject({ ok: false, reason: 'duplicate_id' });
   });
+});
+
+describe('SF-6: layer limits agree — builder never blesses what the pack layer refuses', () => {
+  const okChange = { id: 'common.close', value: 'Закрыть окно' };
+
+  it('SF-6: a contributor note of 501 characters is NEEDS-FIXES at the builder (parser limit 500)', () => {
+    const over = buildContribution(
+      { locale: 'ru', contributor: { note: 'N'.repeat(501) }, changes: [okChange] },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(over.status).toBe('NEEDS-FIXES');
+    expect(over.bundle).toBeUndefined();
+    expect(over.issues.map((i) => i.reason).join(' | ')).toContain('500');
+
+    // boundary: exactly 500 stays READY
+    const ok = buildContribution(
+      { locale: 'ru', contributor: { note: 'N'.repeat(500) }, changes: [okChange] },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(ok.status).toBe('READY');
+    expect(ok.bundle!.contributor!.note).toHaveLength(500);
+  });
+
+  it('SF-6: a whitespace-only value is refused by the builder with the pack reason code empty_value', () => {
+    // review counterexample: value "   " used to leave the builder READY
+    // while the pack loader rejected the same value with empty_value.
+    for (const value of ['   ', '\t\n ']) {
+      const issue = validateChange({ id: 'common.close', value }, en);
+      expect(issue, JSON.stringify(value)).not.toBeNull();
+      expect(issue!.reason, JSON.stringify(value)).toContain('empty_value');
+
+      const result = buildContribution(
+        { locale: 'ru', changes: [{ id: 'common.close', value }] },
+        en,
+        BASE_REVISION,
+        ru,
+      );
+      expect(result.status, JSON.stringify(value)).toBe('NEEDS-FIXES');
+      expect(result.bundle).toBeUndefined();
+    }
+    // and the pack layer indeed uses the same code for the same input — the
+    // reason code is the shared contract, not a coincidence.
+    const packSame = validatePackObject(
+      {
+        schema_version: '1',
+        locale: 'ja',
+        base_catalog_revision: 'a709064',
+        messages: [{ id: 'common.close', value: '   ' }],
+      },
+      en,
+    );
+    expect(packSame).toMatchObject({ ok: false, reason: 'empty_value' });
+  });
+
+  it('SF-6: a value with visible characters around whitespace stays valid', () => {
+    const result = buildContribution(
+      { locale: 'ru', changes: [{ id: 'common.close', value: ' Закрыть\n' }] },
+      en,
+      BASE_REVISION,
+      ru,
+    );
+    expect(result.status).toBe('READY');
+  });
+
+  it(
+    'SF-6: the pack raw-size gate measures UTF-8 BYTES — a pack under 5M UTF-16 units but over 5M bytes is too_large',
+    () => {
+      // 900 catalog ids whose base texts carry no placeholders, each with a
+      // 3000-char Cyrillic value: 3000 < PACK_VALUE_MAX_LENGTH, so the only
+      // gate this pack can trip is the raw serialized-size guard.
+      const ids = Object.entries(en)
+        .filter(([, text]) => !text.includes('{'))
+        .slice(0, 900)
+        .map(([id]) => id);
+      const messages = ids.map((id) => ({ id, value: 'Ж'.repeat(3000) }));
+      const text = JSON.stringify({
+        schema_version: '1',
+        locale: 'ja',
+        base_catalog_revision: 'a709064',
+        messages,
+      });
+      // precondition of the counterexample: .length (UTF-16 units) is under
+      // the limit the old gate actually compared against, bytes are over it.
+      const bytes = new TextEncoder().encode(text).length;
+      expect(text.length).toBeLessThan(PACK_RAW_MAX_BYTES);
+      expect(bytes).toBeGreaterThan(PACK_RAW_MAX_BYTES);
+
+      const result = parseAndValidatePack(text, en);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toBe('too_large');
+        // the error names the unit (ask: единица лимита — байты)
+        expect(result.details).toContain('bytes');
+      }
+    },
+    30_000,
+  );
+
+  it('SF-6: a serialized pack just under the byte limit still loads (no over-rejection)', () => {
+    const ids = Object.entries(en)
+      .filter(([, text]) => !text.includes('{'))
+      .slice(0, 800)
+      .map(([id]) => id);
+    const text = JSON.stringify({
+      schema_version: '1',
+      locale: 'ja',
+      base_catalog_revision: 'a709064',
+      messages: ids.map((id) => ({ id, value: 'Ж'.repeat(3000) })),
+    });
+    const bytes = new TextEncoder().encode(text).length;
+    expect(bytes).toBeLessThan(PACK_RAW_MAX_BYTES);
+    expect(parseAndValidatePack(text, en).ok).toBe(true);
+  }, 30_000);
 });

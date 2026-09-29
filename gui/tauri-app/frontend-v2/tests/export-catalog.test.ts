@@ -11,8 +11,8 @@
 //      fields only, meta carries schema_version and a git revision;
 //   4. placeholder contract — placeholders equal the sorted {token} set of
 //      the message text (future validation contract for pack translations).
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
@@ -21,6 +21,7 @@ import {
   buildCatalogEn,
   buildCatalogRu,
   extractPlaceholders,
+  main as exportCatalog,
   serialize,
 } from '../scripts/export-catalog';
 
@@ -57,10 +58,10 @@ describe('catalog JSON bridge: drift guard (ONE AUTHORITY)', () => {
 
 describe('catalog JSON bridge: exporter determinism', () => {
   it('two consecutive exports are byte-identical', () => {
-    const tsx = join(ROOT, 'node_modules', '.bin', 'tsx');
+    // SF-11 test isolation: both runs write into a TEMP copy, never into the
+    // shared src/i18n/generated/ — parallel vitest workers read those files,
+    // and the old mutate-then-restore approach raced against them.
     const files = ['catalog.en.json', 'catalog.ru.json', 'catalog.meta.json'];
-    const snapshot = () =>
-      new Map<string, string>(files.map((f) => [f, readFileSync(join(GENERATED, f), 'utf8')]));
 
     // The -dirty suffix on catalog_revision honestly reflects the tree state
     // at export time; sibling test workers create scratch files concurrently,
@@ -74,22 +75,19 @@ describe('catalog JSON bridge: exporter determinism', () => {
       return serialize(meta);
     };
 
-    // Compare the two exports against each other, NOT against the
-    // pre-existing files: committed meta legitimately pins the commit that
-    // generated it, while a fresh export stamps the current HEAD.
-    const before = snapshot();
+    const firstDir = mkdtempSync(join(tmpdir(), 'rimloc-export-det-'));
+    const secondDir = mkdtempSync(join(tmpdir(), 'rimloc-export-det-'));
     try {
-      execFileSync(tsx, ['scripts/export-catalog.ts'], { cwd: ROOT });
-      const firstRun = snapshot();
-      execFileSync(tsx, ['scripts/export-catalog.ts'], { cwd: ROOT });
+      exportCatalog(firstDir);
+      exportCatalog(secondDir);
       for (const f of files) {
-        const second = readFileSync(join(GENERATED, f), 'utf8');
-        expect(normalize(f, second), `${f} differs between runs`).toBe(normalize(f, firstRun.get(f) as string));
+        const first = readFileSync(join(firstDir, f), 'utf8');
+        const second = readFileSync(join(secondDir, f), 'utf8');
+        expect(normalize(f, second), `${f} differs between runs`).toBe(normalize(f, first));
       }
     } finally {
-      // Leave the checkout exactly as it was: a fresh export stamps the
-      // current HEAD into meta, which would dirty a clean tree.
-      for (const [f, content] of before) writeFileSync(join(GENERATED, f), content);
+      rmSync(firstDir, { recursive: true, force: true });
+      rmSync(secondDir, { recursive: true, force: true });
     }
   });
 });

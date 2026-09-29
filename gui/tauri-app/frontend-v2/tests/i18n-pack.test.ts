@@ -270,6 +270,54 @@ describe('pack UI: explicit load + explicit reset in the dev panel', () => {
   });
 });
 
+describe('SF-07: interpolation keeps parameter values literal', () => {
+  // The store reads the pack overlay FIRST, so a preview pack over a
+  // placeholder-bearing catalog id is the precise harness: the value passes
+  // the placeholder-set contract (same tokens as the base) and t() renders it.
+  function overlayWithValue(id: string, value: string) {
+    const result = i18n.previewPack({
+      schema_version: '1',
+      locale: 'ja',
+      base_catalog_revision: 'a709064',
+      messages: [{ id, value }]
+    });
+    expect(result.ok, `${id}: ${JSON.stringify(result)}`).toBe(true);
+  }
+
+  // `wizard.w2.selected.summary` = "Selected: {name}" in en — the {name}
+  // token the $-family probes hang on.
+  it.each(['$&', '$`', '$\'', '$$'])('a %s sequence in the VALUE stays literal', (value) => {
+    overlayWithValue('wizard.w2.selected.summary', 'Hello {name}!');
+    expect(i18n.t('wizard.w2.selected.summary', { name: value })).toBe(`Hello ${value}!`);
+  });
+
+  it('a value that looks like a token is NOT re-interpolated (single pass)', () => {
+    // review counterexample: A={a}; B={b} with a="{b}", b="B_VALUE" used to
+    // render "A=B_VALUE; B=B_VALUE" — the second pass re-ran on the inserted
+    // text. The value must surface verbatim.
+    overlayWithValue('wizard.stepOf', 'A={step}; B={total}');
+    expect(i18n.t('wizard.stepOf', { step: '{total}', total: 'TOTAL_VALUE' })).toBe(
+      'A={total}; B=TOTAL_VALUE'
+    );
+  });
+
+  it('Unicode parameter values pass through unchanged', () => {
+    overlayWithValue('wizard.w2.selected.summary', 'Selected: {name}');
+    expect(i18n.t('wizard.w2.selected.summary', { name: 'Привет 🌍' })).toBe('Selected: Привет 🌍');
+  });
+
+  it('a key without tokens is untouched even when params are given', () => {
+    expect(i18n.t('common.appName', { name: '$&', x: '{y}' })).toBe('RimLoc');
+  });
+
+  it('a parameter name absent from params keeps its literal token', () => {
+    overlayWithValue('wizard.stepOf', 'Step {step} of {total}');
+    const rendered = i18n.t('wizard.stepOf', { step: 1 });
+    expect(rendered).toContain('{total}');
+    expect(rendered).toBe('Step 1 of {total}');
+  });
+});
+
 describe('pack trust boundary: values render as text, never as markup', () => {
   it('<script> and onerror= in pack values appear literally, no executable DOM', () => {
     const evil = {
