@@ -20,6 +20,23 @@ function readInitial(): Locale {
 
 export type TParams = Record<string, string | number>;
 
+/** Primary language subtags whose script reads right-to-left. The preview
+ * locale tag is a BCP47-lite tag ("he", "ar-EG", "fa"), so the PRIMARY
+ * subtag decides; everything else renders left-to-right. */
+const RTL_PRIMARY_LANGS = new Set(['ar', 'he', 'fa', 'ur', 'ps', 'sd', 'ug', 'yi', 'dv', 'ckb']);
+
+function dirForLocale(tag: string): 'rtl' | 'ltr' {
+  const primary = tag.split('-')[0]?.toLowerCase() ?? '';
+  return RTL_PRIMARY_LANGS.has(primary) ? 'rtl' : 'ltr';
+}
+
+/** Pre-preview document metadata, kept so clearPreview() can restore EXACTLY
+ * what the page had (lang may be absent; dir may carry a host value). */
+interface DocumentLangSnapshot {
+  lang: string | null;
+  dir: string | null;
+}
+
 /** State marker of an active pack preview (wave B2). Explicitly surfaced so
  * the UI (and tests) can always tell built-in rendering from pack rendering.
  * Previews are intentionally NOT persisted: they live in memory only and die
@@ -40,6 +57,8 @@ class I18nStore {
   preview = $state<PackPreviewState | null>(null);
   /** Overlay messages of the active preview (id -> value). */
   private packMessages = $state<Record<string, string> | null>(null);
+  /** What the document carried before the FIRST preview override (SF-08). */
+  private docLangSnapshot: DocumentLangSnapshot | null = null;
 
   constructor() {
     this.applyLang();
@@ -85,6 +104,11 @@ class I18nStore {
     } catch {
       /* storage unavailable */
     }
+    // SF-08: a preference change MID-PREVIEW updates what "restore" means
+    // for lang — the latest user decision wins over the pre-preview value.
+    // (dir keeps its pre-preview restore target: the preference does not
+    // speak about direction, the rendered locale does.)
+    if (this.preview && this.docLangSnapshot) this.docLangSnapshot.lang = locale;
     this.applyLang();
   }
 
@@ -103,26 +127,63 @@ class I18nStore {
     if (!result.ok) return result;
     const messages: Record<string, string> = {};
     for (const m of result.pack.messages) messages[m.id] = m.value;
+    // SF-08: the document metadata must reflect the language ACTUALLY
+    // RENDERED. The first override snapshots what the page had (nested
+    // previewPack calls must not overwrite the original snapshot); a
+    // rejected pack above never reached this line, so the document is only
+    // touched after the whole pack validated.
+    if (!this.preview) {
+      this.docLangSnapshot = {
+        lang: document.documentElement.getAttribute('lang'),
+        dir: document.documentElement.getAttribute('dir')
+      };
+    }
     this.packMessages = messages;
     this.preview = {
       locale: result.pack.locale,
       revision: result.pack.base_catalog_revision,
       count: result.pack.messages.length
     };
+    this.applyLang();
     return result;
   }
 
-  /** Explicitly drop the active preview; rendering returns to built-in. */
+  /** Explicitly drop the active preview; rendering — and the document
+   * lang/dir metadata — return to the pre-preview state. */
   clearPreview() {
     this.packMessages = null;
     this.preview = null;
+    this.applyLang();
   }
 
   get previewActive(): boolean {
     return this.preview !== null;
   }
 
+  /**
+   * SF-08: single sync point for the document `<html lang>` / `<dir>`
+   * metadata. With an active pack preview the EFFECTIVE rendered language
+   * is the preview locale — the metadata must say so (a Japanese preview
+   * under `html lang="ru"` is wrong metadata, and a RTL preview needs
+   * `dir="rtl"` to render honestly) — regardless of which UI locale the
+   * user prefers. Without a preview the UI locale applies and the exact
+   * pre-preview metadata is restored.
+   */
   private applyLang() {
+    if (this.preview) {
+      document.documentElement.lang = this.preview.locale;
+      document.documentElement.dir = dirForLocale(this.preview.locale);
+      return;
+    }
+    const snap = this.docLangSnapshot;
+    this.docLangSnapshot = null;
+    if (snap) {
+      if (snap.lang === null) document.documentElement.removeAttribute('lang');
+      else document.documentElement.lang = snap.lang;
+      if (snap.dir === null) document.documentElement.removeAttribute('dir');
+      else document.documentElement.dir = snap.dir;
+      return;
+    }
     document.documentElement.lang = this.locale;
   }
 }

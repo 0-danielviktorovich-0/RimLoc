@@ -207,7 +207,6 @@ describe('pack runtime: preview overlay + safe fallback', () => {
 
     i18n.setLocale('en');
     const storageBefore = window.localStorage.getItem('rimloc.locale');
-    const langBefore = document.documentElement.lang;
 
     const result = i18n.previewPack(fullPack('ja'));
     expect(result.ok).toBe(true);
@@ -215,11 +214,63 @@ describe('pack runtime: preview overlay + safe fallback', () => {
     // UI locale setting untouched...
     expect(i18n.locale).toBe('en');
     expect(window.localStorage.getItem('rimloc.locale')).toBe(storageBefore);
-    expect(document.documentElement.lang).toBe(langBefore);
     // ...and the project target-locale dataset untouched.
     expect(languages.activeLocale).toBe('ru');
     expect(JSON.stringify(languages.targets)).toBe(targetsBefore);
     expect(JSON.stringify(languages.pinned)).toBe(pinnedBefore);
+  });
+
+  // SF-08 (preview metadata): the document lang/dir must reflect the
+  // language ACTUALLY RENDERED. The earlier version of the §15 test pinned
+  // the opposite (lang left stale) — that stale-metadata behavior is
+  // exactly what the review flagged: a Japanese preview under
+  // `html lang="ru"` lies about the shown language, and an RTL preview
+  // without `dir="rtl"` renders mirrored. The §15 INVARIANT itself (UI
+  // locale preference, storage, project targets untouched) is asserted
+  // above and stays intact.
+  describe('SF-08: preview document lang/dir metadata', () => {
+    it('preview ja sets html lang=ja; clearPreview restores the previous lang', () => {
+      const langBefore = document.documentElement.lang;
+      i18n.previewPack(fullPack('ja'));
+      expect(i18n.previewActive).toBe(true);
+      expect(document.documentElement.lang).toBe('ja');
+      i18n.clearPreview();
+      expect(document.documentElement.lang).toBe(langBefore);
+      expect(document.documentElement.hasAttribute('dir')).toBe(false);
+    });
+
+    it('an RTL preview locale (he) sets dir=rtl; clearPreview restores it', () => {
+      expect(document.documentElement.getAttribute('dir')).toBeNull();
+      i18n.previewPack(fullPack('he'));
+      expect(document.documentElement.dir).toBe('rtl');
+      expect(document.documentElement.lang).toBe('he');
+      i18n.clearPreview();
+      expect(document.documentElement.getAttribute('dir')).toBeNull();
+    });
+
+    it('a nested preview does not overwrite the original snapshot', () => {
+      const langBefore = document.documentElement.lang;
+      i18n.previewPack(fullPack('ja'));
+      i18n.previewPack(fullPack('ar-EG')); // second load without clearing
+      expect(document.documentElement.lang).toBe('ar-EG');
+      expect(document.documentElement.dir).toBe('rtl');
+      i18n.clearPreview();
+      expect(document.documentElement.lang).toBe(langBefore);
+      expect(document.documentElement.getAttribute('dir')).toBeNull();
+    });
+
+    it('switching the UI locale during a preview keeps the preview metadata', () => {
+      i18n.previewPack(fullPack('ja'));
+      i18n.setLocale('en');
+      // The rendered language is still the preview's — the preference
+      // change must not lie in the document metadata.
+      expect(i18n.locale).toBe('en');
+      expect(document.documentElement.lang).toBe('ja');
+      i18n.clearPreview();
+      // ...and the restore goes to the CURRENT preference, not the
+      // snapshotted one, because the user changed it mid-preview.
+      expect(document.documentElement.lang).toBe('en');
+    });
   });
 });
 

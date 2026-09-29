@@ -724,8 +724,29 @@ impl ProjectSessionManager {
             let id = identity_by_unit
                 .get(&(m.key.clone(), m.path.clone()))
                 .cloned();
-            let severity = m.severity.as_str().to_string();
-            match m.severity {
+            // UI-catalog boundary (SF-10 import made this reachable): the
+            // printf-% heuristic is a RimWorld-XML contract — a stray `%`
+            // breaks the GAME's formatter. The app catalog interpolates
+            // `{name}` tokens only and renders `%` as literal text (its own
+            // en source carries `{n}% match` and `%APPDATA%\...`), so for a
+            // UI_CATALOG entry this finding is informational, never a
+            // validation failure. Mod-scope entries keep the error.
+            let is_catalog_entry = id.as_ref().is_some_and(|eid| {
+                st.project.entries.iter().any(|e| {
+                    &e.id == eid
+                        && e.provenance.selected_by.as_deref()
+                            == Some(rimloc_core::winner_reason::UI_CATALOG)
+                })
+            });
+            let demoted = is_catalog_entry
+                && m.kind == "placeholder-check"
+                && m.message.starts_with("Suspicious % placeholder");
+            let severity = if demoted {
+                rimloc_validate::ValidationSeverity::Info
+            } else {
+                m.severity
+            };
+            match severity {
                 rimloc_validate::ValidationSeverity::Error => {
                     error_count += 1;
                     if let Some(id) = &id {
@@ -737,7 +758,7 @@ impl ProjectSessionManager {
             }
             findings.push(crate::contract::ValidationFinding {
                 id,
-                severity,
+                severity: severity.as_str().to_string(),
                 kind: m.kind,
                 key: m.key,
                 path: m.path,
