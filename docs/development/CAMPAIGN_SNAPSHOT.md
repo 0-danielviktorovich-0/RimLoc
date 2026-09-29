@@ -108,8 +108,12 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
   clippy/fmt/svelte-check чисто. → **проверь `git rev-parse HEAD`**.
 - Осталось по мандату self-localization (СЛЕД. волны): ~~UI-точка «Help translate»~~ (ЗАКРЫТО волной 5, `22edca9`: общий selfloc.ts для Home+Help, живая приёмка managed 8→8 через Help-вход),
   EntryKind::Application (18 id с `/` непредставимы в Keyed XML — см. B4-отчёт),
-  строгая placeholder-валидация имён в Rust-валидаторе, перевод бэкенд-сообщений
-  по code, бета-UI contribution. GitHub/relay — вне скоупа, не начинались.
+  ~~строгая placeholder-валидация имён в Rust-валидаторе~~ (ЗАКРЫТО волной 6, `35a3fd6`:
+  строгое множество {name} base-vs-перевод для ui-catalog, error-findings, 6 юнит +
+  интеграционный тест), ~~перевод бэкенд-сообщений по code~~ (ЗАКРЫТО волной 6:
+  contract.error.<code>/finding.<kind> с fallback, 24+24 ключа, тесты backend-messages),
+  бета-UI contribution (READY, волна 7: локальная сборка бандла; отправка GitHub — вне скоупа),
+  EntryKind::Application (18 id с «/» — OWNER-решение: дизайн представления в Keyed XML). GitHub/relay — вне скоупа, не начинались.
 - RC-статус: см. RELEASE_READINESS_REPORT.md (evidence-closeout от 27.09, main
   несёт тестированную дельту). STOP: push/тег/релиз — только явное ок владельца.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
