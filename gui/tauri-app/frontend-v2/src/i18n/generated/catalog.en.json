@@ -131,7 +131,7 @@
     },
     {
       "id": "contractops.validate.title",
-      "source_text": "Validation (contract)",
+      "source_text": "Validation",
       "placeholders": []
     },
     {
@@ -181,7 +181,7 @@
     },
     {
       "id": "contractops.export.title",
-      "source_text": "Build translation (contract)",
+      "source_text": "Build translation",
       "placeholders": []
     },
     {
@@ -225,7 +225,7 @@
     },
     {
       "id": "contractops.buildmod.title",
-      "source_text": "Build mod package (contract)",
+      "source_text": "Build mod package",
       "placeholders": []
     },
     {
@@ -257,7 +257,7 @@
     },
     {
       "id": "contractops.diagnose.title",
-      "source_text": "Diagnostics (contract)",
+      "source_text": "Diagnostics",
       "placeholders": []
     },
     {
@@ -2350,6 +2350,21 @@
       "placeholders": []
     },
     {
+      "id": "review.overview.queueLink",
+      "source_text": "See the issue queue below",
+      "placeholders": []
+    },
+    {
+      "id": "review.overview.queueExplainer",
+      "source_text": "The counters cover the project snapshot; the queue lists this session’s validation findings — the numbers need not match.",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue.overviewLink",
+      "source_text": "↑ Back to the overview counters",
+      "placeholders": []
+    },
+    {
       "id": "review.queue",
       "source_text": "Issue queue",
       "placeholders": []
@@ -3527,7 +3542,7 @@
     },
     {
       "id": "providers.status.connected",
-      "source_text": "Connected (mock)",
+      "source_text": "Connected",
       "placeholders": []
     },
     {
@@ -3537,12 +3552,22 @@
     },
     {
       "id": "providers.status.offline",
-      "source_text": "Offline (mock)",
+      "source_text": "Offline",
       "placeholders": []
     },
     {
       "id": "providers.status.testing",
       "source_text": "Testing…",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.mockMark",
+      "source_text": "(mock)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.configured",
+      "source_text": "Configured (not verified)",
       "placeholders": []
     },
     {
@@ -3802,6 +3827,11 @@
     {
       "id": "providers.inst.removeWarn",
       "source_text": "Click again to remove the provider. The keychain entry is untouched.",
+      "placeholders": []
+    },
+    {
+      "id": "providers.inst.key.keychain",
+      "source_text": "keychain",
       "placeholders": []
     },
     {

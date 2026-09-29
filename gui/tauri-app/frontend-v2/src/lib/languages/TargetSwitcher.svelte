@@ -16,7 +16,13 @@
   const summaries = $derived(languages.summaries());
   const active = $derived(registry.resolve(languages.activeLocale));
   const activeSummary = $derived(summaries.find((s) => s.locale === languages.activeLocale));
-  const pinnedSummaries = $derived(summaries.filter((s) => languages.isPinned(s.locale)));
+  // M-4 (UI audit 2026-09-29): the selector is the single source for the
+  // ACTIVE target — a pinned chip duplicating it right next to the selector
+  // read as a second, possibly different control. Quick tabs stay only for
+  // the OTHER pinned targets.
+  const pinnedSummaries = $derived(
+    summaries.filter((s) => languages.isPinned(s.locale) && s.locale !== languages.activeLocale)
+  );
 
   const filtered = $derived.by(() => {
     const needle = query.trim().toLowerCase();

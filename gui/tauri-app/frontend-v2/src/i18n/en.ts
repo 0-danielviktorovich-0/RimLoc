@@ -40,7 +40,9 @@ export const en: Record<string, string> = {
   // over the RimLocClient. Finding messages are backend data (EN); chips
   // and labels are localized.
   'contractops.running': 'Running…',
-  'contractops.validate.title': 'Validation (contract)',
+  // L-10 (UI audit 2026-09-29): the internal "(contract)" qualifier is gone
+  // from the card titles; the build mode is visible from the header badge.
+  'contractops.validate.title': 'Validation',
   'contractops.validate.desc': 'Read-only over the trusted session state; the project is never mutated. Errors fail the operation and become the diagnostics target.',
   'contractops.validate.run': 'Validate project',
   'contractops.validate.rerun': 'Validate again',
@@ -50,7 +52,7 @@ export const en: Record<string, string> = {
   'contractops.counts.warnings': 'Warnings',
   'contractops.counts.info': 'Info',
   'contractops.findings.empty': 'No findings.',
-  'contractops.export.title': 'Build translation (contract)',
+  'contractops.export.title': 'Build translation',
   'contractops.export.desc': 'Isolated output into a directory YOU choose (never the source tree — the backend guard refuses it). Language folder: {locale}.',
   'contractops.export.outdir': 'Output directory',
   'contractops.export.run': 'Build and write',
@@ -58,13 +60,13 @@ export const en: Record<string, string> = {
   'contractops.export.files': 'Files',
   'contractops.export.reparsed': 'Keys re-parsed',
   'contractops.export.skipped': 'Skipped unknown types ({count})',
-  'contractops.buildmod.title': 'Build mod package (contract)',
+  'contractops.buildmod.title': 'Build mod package',
   'contractops.buildmod.desc': 'The complete mod folder — About.xml + Languages ({locale}) — ready to move into the game’s Mods directory. The backend refuses source-tree targets.',
   'contractops.buildmod.outdir': 'Mod package directory',
   'contractops.buildmod.run': 'Build mod package',
   'contractops.buildmod.done': 'Mod package written and reparse-verified.',
   'contractops.buildmod.files': 'Files',
-  'contractops.diagnose.title': 'Diagnostics (contract)',
+  'contractops.diagnose.title': 'Diagnostics',
   'contractops.diagnose.desc': 'Sanitized bundle over the last failed operation: operation id, cause, affected entries. The folder stays outside the source tree.',
   'contractops.diagnose.outdir': 'Bundle directory',
   'contractops.diagnose.run': 'Collect bundle',
@@ -525,6 +527,12 @@ export const en: Record<string, string> = {
   'review.overview.unavailable': 'Not computed in this build.',
   'review.overview.partial':
     'Partial overview: source-change tracking and the glossary check are not wired in this build — the other counters come from the project snapshot.',
+  // M-6 (UI audit 2026-09-29): a visible bridge between the overview cards
+  // and the session queue both ways — "0 next to 45" is two honest counts.
+  'review.overview.queueLink': 'See the issue queue below',
+  'review.overview.queueExplainer':
+    'The counters cover the project snapshot; the queue lists this session’s validation findings — the numbers need not match.',
+  'review.queue.overviewLink': '↑ Back to the overview counters',
   'review.queue': 'Issue queue',
   'review.queue.empty.title': 'Queue is clear',
   'review.queue.empty.desc': 'No issues left in this session. You can build the translation.',
@@ -799,10 +807,16 @@ export const en: Record<string, string> = {
   'provider.anthropic.desc': 'Claude models via the Anthropic API.',
   'provider.ollama.desc': 'Local models via Ollama on this machine.',
   'provider.custom.desc': 'Your own endpoint with an OpenAI-compatible API.',
-  'providers.status.connected': 'Connected (mock)',
+  // M-11 (UI audit 2026-09-29): the "(mock)" suffix is a separate quiet span
+  // (providers.status.mockMark) shown only on the mock transport; on the real
+  // transport a configured provider honestly reads "configured (not
+  // verified)" — there is no network probe in this build.
+  'providers.status.connected': 'Connected',
   'providers.status.not_configured': 'Not configured',
-  'providers.status.offline': 'Offline (mock)',
+  'providers.status.offline': 'Offline',
   'providers.status.testing': 'Testing…',
+  'providers.status.mockMark': '(mock)',
+  'providers.status.configured': 'Configured (not verified)',
   'providers.model': 'Model',
   'providers.baseUrl': 'Base URL',
   'providers.action.configure': 'Configure',
@@ -857,6 +871,9 @@ export const en: Record<string, string> = {
   'providers.export.fallbackNote': 'Provider configuration (credentials excluded):',
   'providers.inst.removeConfirm': 'Remove?',
   'providers.inst.removeWarn': 'Click again to remove the provider. The keychain entry is untouched.',
+  // L-12 (UI audit 2026-09-29): the key-row marker is a dictionary value now,
+  // not a hardcoded literal (ru renders «связка ключей»).
+  'providers.inst.key.keychain': 'keychain',
   'providers.form.key': 'Key',
   'providers.form.addTitle': 'New provider',
   'providers.form.editTitle': 'Provider settings',

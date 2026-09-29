@@ -12,11 +12,19 @@
   import { project } from '../stores/project.svelte';
   import { languages } from '../languages/store.svelte';
   import { registry } from '../languages/registry';
+  import type { LanguageDefinition } from '../languages/registry';
   import { clientInstance } from '../client/instance.svelte';
   import MockBadge from './MockBadge.svelte';
 
   const THEME_MODES: ThemeMode[] = ['light', 'dark', 'system'];
   const LOCALES: Locale[] = ['ru', 'en'];
+
+  /** M-5: header-safe language code — the full locale id uppercased
+   * ('en' → 'EN', 'zh-Hans' → 'ZH-HANS'); the complete names stay in the
+   * title tooltip of the pair. */
+  function langCode(def: LanguageDefinition): string {
+    return def.localeId.toUpperCase();
+  }
 
   // M-2 (UI audit 2026-09-29): with no project open the chip tells the
   // TRANSPORT truth (Live/Mock by the resolved client mode). Mode 'none'
@@ -91,12 +99,18 @@
 
     {#if router.isProjectRoute()}
       <span class="brand-meta" aria-hidden="true">·</span>
-      <span class="brand-project">
-        {t('header.project')}: <span class="mono">{project.projectName}</span> ·
+      <span class="brand-project" data-testid="header.project">
+        {t('header.project')}: <span class="mono">{project.displayName}</span> ·
         <!-- Multi-target (W2): the pair follows the ACTIVE target locale, not a
              fixed one; it stays independent of the interface language below. -->
-        <span class="mono">
-          {registry.resolve(languages.sourceLocale).nativeName} → {languages.activeDefinition.nativeName}
+        <!-- M-5 (UI audit 2026-09-29): compact CODES so the header stops
+             truncating («English → Ру…»), full names ride the title hint. -->
+        <span
+          class="mono"
+          data-testid="header.langpair"
+          title="{registry.resolve(languages.sourceLocale).nativeName} → {languages.activeDefinition.nativeName}"
+        >
+          {langCode(registry.resolve(languages.sourceLocale))} → {langCode(languages.activeDefinition)}
         </span> ·
         {t('workspace.meta.version')}
       </span>

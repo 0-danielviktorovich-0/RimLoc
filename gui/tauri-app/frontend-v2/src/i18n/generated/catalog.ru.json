@@ -131,7 +131,7 @@
     },
     {
       "id": "contractops.validate.title",
-      "translated": "Валидация (контракт)",
+      "translated": "Валидация",
       "placeholders": []
     },
     {
@@ -181,7 +181,7 @@
     },
     {
       "id": "contractops.export.title",
-      "translated": "Сборка перевода (контракт)",
+      "translated": "Сборка перевода",
       "placeholders": []
     },
     {
@@ -225,7 +225,7 @@
     },
     {
       "id": "contractops.buildmod.title",
-      "translated": "Сборка мод-пакета (контракт)",
+      "translated": "Сборка мод-пакета",
       "placeholders": []
     },
     {
@@ -257,7 +257,7 @@
     },
     {
       "id": "contractops.diagnose.title",
-      "translated": "Диагностика (контракт)",
+      "translated": "Диагностика",
       "placeholders": []
     },
     {
@@ -945,7 +945,7 @@
     },
     {
       "id": "wizard.w4.existing.tm",
-      "translated": "Translation Memory",
+      "translated": "Память переводов",
       "placeholders": []
     },
     {
@@ -1400,7 +1400,7 @@
     },
     {
       "id": "workspace.navigator.advanced",
-      "translated": "Структура (advanced)",
+      "translated": "Структура (расширенная)",
       "placeholders": []
     },
     {
@@ -2347,6 +2347,21 @@
     {
       "id": "review.overview.partial",
       "translated": "Обзор частичный: отслеживание изменений источника и проверка глоссария в этой сборке не подключены — остальные счётчики посчитаны по снапшоту проекта.",
+      "placeholders": []
+    },
+    {
+      "id": "review.overview.queueLink",
+      "translated": "См. очередь проблем ниже",
+      "placeholders": []
+    },
+    {
+      "id": "review.overview.queueExplainer",
+      "translated": "Счётчики считают снапшот проекта, очередь — находки проверок этой сессии: числа не обязаны совпадать.",
+      "placeholders": []
+    },
+    {
+      "id": "review.queue.overviewLink",
+      "translated": "↑ К счётчикам обзора",
       "placeholders": []
     },
     {
@@ -3527,7 +3542,7 @@
     },
     {
       "id": "providers.status.connected",
-      "translated": "Подключён (мок)",
+      "translated": "Подключён",
       "placeholders": []
     },
     {
@@ -3537,12 +3552,22 @@
     },
     {
       "id": "providers.status.offline",
-      "translated": "Офлайн (мок)",
+      "translated": "Офлайн",
       "placeholders": []
     },
     {
       "id": "providers.status.testing",
       "translated": "Проверяем…",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.mockMark",
+      "translated": "(мок)",
+      "placeholders": []
+    },
+    {
+      "id": "providers.status.configured",
+      "translated": "Настроен (не проверялся)",
       "placeholders": []
     },
     {
@@ -3552,7 +3577,7 @@
     },
     {
       "id": "providers.baseUrl",
-      "translated": "Base URL",
+      "translated": "Адрес сервера",
       "placeholders": []
     },
     {
@@ -3805,6 +3830,11 @@
       "placeholders": []
     },
     {
+      "id": "providers.inst.key.keychain",
+      "translated": "связка ключей",
+      "placeholders": []
+    },
+    {
       "id": "providers.form.key",
       "translated": "Ключ",
       "placeholders": []
@@ -3856,7 +3886,7 @@
     },
     {
       "id": "providers.form.discovery.auto",
-      "translated": "Список с сервера",
+      "translated": "Запрашивать у сервера",
       "placeholders": []
     },
     {

@@ -421,15 +421,26 @@
     color: var(--color-destructive);
   }
 
+  /* M-9 (UI audit 2026-09-29): the counters row used to reference an
+     UNDEFINED spacing token (--space-5 is not in tokens.css), so the gap
+     collapsed to 0 and the labels fused into «ОшибкиПредупрежденияИнфо».
+     Real tokens now, plus a divider between the number+label pairs so each
+     number visibly owns its label. */
   .counts {
     display: flex;
-    gap: var(--space-5);
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
     margin: 0;
   }
 
   .counts div {
     display: flex;
     flex-direction: column;
+  }
+
+  .counts div + div {
+    border-left: 1px solid var(--color-border);
+    padding-left: var(--space-4);
   }
 
   .counts dt {

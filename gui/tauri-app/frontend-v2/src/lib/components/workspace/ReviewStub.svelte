@@ -89,6 +89,20 @@
     router.navigate('build');
   }
 
+  // M-6 (UI audit 2026-09-29): the overview counters and the session queue
+  // are two different truths — a "0 / 45" pair on one screen read as a
+  // glitch. Each side now carries a visible link to the other; scrolling
+  // honors prefers-reduced-motion.
+  function reducedMotion(): boolean {
+    return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  }
+  function scrollToQueue() {
+    document.getElementById('review-queue')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  }
+  function scrollToOverview() {
+    document.getElementById('review-overview')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  }
+
   function onWindowKeydown(event: KeyboardEvent) {
     if (event.key !== 'Escape' || !selected) return;
     if (review.editingId) review.cancelFix();
@@ -105,7 +119,7 @@
     <p class="scope">{t('review.scope')}</p>
   </div>
 
-  <dl class="overview">
+  <dl class="overview" id="review-overview">
     {#each overview as o (o.key)}
       <div class="card" data-testid={`review.overview.${o.key}`}>
         <dt>
@@ -133,6 +147,14 @@
       {t('review.overview.partial')}
     </p>
   {/if}
+  <!-- M-6: the visible bridge between the cards and the queue — the "0 next
+       to 45" pair is two different counts, not a malfunction. -->
+  <p class="queue-link" data-testid="review.overview.queuelink-note">
+    <button type="button" class="linklike" data-testid="review.overview.queueLink" onclick={scrollToQueue}>
+      {t('review.overview.queueLink')}
+    </button>
+    <span>{t('review.overview.queueExplainer')}</span>
+  </p>
 
   <div class="chips" role="group" aria-label={t('review.categories')} data-testid="review.categories">
     <button
@@ -162,7 +184,7 @@
   </div>
 
   <div class="layout">
-    <div class="queue-pane">
+    <div class="queue-pane" id="review-queue">
       {#if review.active.length === 0}
         <div class="clear-card" data-testid="review.queue-empty">
           <p class="clear-title">
@@ -176,6 +198,12 @@
           </button>
         </div>
       {:else}
+        <p class="overview-link">
+          <!-- M-6: the queue answers back to the overview counters. -->
+          <button type="button" class="linklike" data-testid="review.queue.overviewLink" onclick={scrollToOverview}>
+            {t('review.queue.overviewLink')}
+          </button>
+        </p>
         <ul class="queue" aria-label={t('review.queue')}>
           {#each review.active as issue (issue.id)}
             {@const entry = project.byId(issue.entryId)}
@@ -445,6 +473,38 @@
   .partial-note :global(svg) {
     flex: none;
     margin-top: 2px;
+  }
+
+  /* M-6: the overview→queue bridge line (link + the 0-vs-N explainer). */
+  .queue-link {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  /* M-6: quiet text-link button used for both scroll bridges. */
+  .linklike {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--color-primary-text);
+    font-size: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .linklike:hover {
+    color: var(--color-fg);
+  }
+
+  .overview-link {
+    margin: 0;
+    font-size: var(--text-meta-size);
   }
 
   /* Category chips */

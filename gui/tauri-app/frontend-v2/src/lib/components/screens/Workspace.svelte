@@ -153,8 +153,8 @@
   {/if}
   <div class="toolbar">
     <h1 class="toolbar-title">{t('workspace.title')}</h1>
-    <span class="toolbar-meta mono" data-testid="workspace.meta">
-      {project.projectName} · {t('workspace.meta.version')}
+    <span class="toolbar-meta mono" data-testid="workspace.meta" title={project.projectName}>
+      {project.displayName} · {t('workspace.meta.version')}
     </span>
     <!-- Multi-target header (W2): English → [Русский ▾] [+] + pinned tabs.
          Project language pair, independent of the interface language. -->
