@@ -1217,6 +1217,11 @@
       "placeholders": []
     },
     {
+      "id": "workspace.col.noTranslation",
+      "source_text": "No translation",
+      "placeholders": []
+    },
+    {
       "id": "workspace.changed.yes",
       "source_text": "Source changed since the last translation",
       "placeholders": []

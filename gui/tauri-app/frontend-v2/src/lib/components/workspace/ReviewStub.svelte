@@ -85,6 +85,15 @@
     return KIND_ICONS[issue.kind] ?? 'info';
   }
 
+  // L-6 (UI audit 2026-09-29): "file.js:0" garbage in every queue card —
+  // the ":line" suffix appears only for a real (positive) line number.
+  function rowLoc(entryId: string): string {
+    const entry = project.byId(entryId);
+    if (!entry) return '';
+    const file = entry.file.split('/').pop() ?? '';
+    return entry.line ? `${file}:${entry.line}` : file;
+  }
+
   function gotoBuild() {
     router.navigate('build');
   }
@@ -225,7 +234,7 @@
                   <span class="row-key mono">{entry?.key}</span>
                   <span class="row-snippet">{snippet(issue.message ?? entry?.source ?? '')}</span>
                 </span>
-                <span class="row-loc mono">{entry?.file.split('/').pop()}:{entry?.line}</span>
+                <span class="row-loc mono">{rowLoc(issue.entryId)}</span>
                 <Icon name="chevron-right" size={14} />
               </button>
             </li>

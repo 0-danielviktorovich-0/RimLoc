@@ -164,7 +164,13 @@
               onkeydown={(e) => onEditorKeydown(e, entry)}
             />
           {:else}
-            <span class="target-text" class:draft={isDraft(entry)}>{display(entry)}</span>
+            {#if display(entry)}
+              <span class="target-text" class:draft={isDraft(entry)}>{display(entry)}</span>
+            {:else}
+              <!-- L-3 (UI audit 2026-09-29): an empty TARGET cell is a state,
+                   not a glitch — a quiet explicit marker instead of blank. -->
+              <span class="target-empty">{t('workspace.col.noTranslation')}</span>
+            {/if}
             {#if badge(entry) === 'saving'}
               <span class="badge saving">{t('workspace.editor.saving')}</span>
             {:else if badge(entry) === 'saved'}
@@ -200,6 +206,11 @@
     overflow-y: auto;
     font-size: var(--row-font-size);
     line-height: var(--row-lh);
+    /* L-5 (UI audit 2026-09-29): the overlay scrollbar rides on the right
+       edge of this scroll container and covered the sticky TARGET header.
+       Reserving the strip as padding keeps rows/header clear of it (the
+       header stays sticky above them, but nothing sits under the bar). */
+    padding-right: 14px;
   }
 
   /* Rows change state instantly — lists and tables are never animated
@@ -274,6 +285,13 @@
   .target-text.draft {
     font-style: italic;
     color: var(--color-muted-fg);
+  }
+
+  /* Empty-translation marker: same muted-italic convention as the review
+     context's empty text block. */
+  .target-empty {
+    color: var(--color-muted-fg);
+    font-style: italic;
   }
 
   .target:has(.editor) {

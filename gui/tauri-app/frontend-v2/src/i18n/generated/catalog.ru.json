@@ -1217,6 +1217,11 @@
       "placeholders": []
     },
     {
+      "id": "workspace.col.noTranslation",
+      "translated": "Нет перевода",
+      "placeholders": []
+    },
+    {
       "id": "workspace.changed.yes",
       "translated": "Источник изменился с последнего перевода",
       "placeholders": []
@@ -2075,12 +2080,12 @@
     },
     {
       "id": "issue.untranslated_suspect",
-      "translated": "Подозрительный untranslated",
+      "translated": "Похоже, не переведено",
       "placeholders": []
     },
     {
       "id": "issue.wordinfo",
-      "translated": "WordInfo",
+      "translated": "Словарные слова (WordInfo)",
       "placeholders": []
     },
     {
@@ -2090,7 +2095,7 @@
     },
     {
       "id": "issue.ai_concern",
-      "translated": "Замечание AI-ревью",
+      "translated": "Замечание ИИ-проверки",
       "placeholders": []
     },
     {
@@ -5837,7 +5842,7 @@
     },
     {
       "id": "workspace.detail.tab.source",
-      "translated": "ИСТОЧНИК",
+      "translated": "Источник",
       "placeholders": []
     },
     {
