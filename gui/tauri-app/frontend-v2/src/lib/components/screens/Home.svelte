@@ -472,7 +472,7 @@
           class="btn"
           data-testid="home.selfloc.open"
           disabled={contractBusy || selflocBusy}
-          onclick={openSelflocProject}
+          onclick={openSelfloc}
         >
           <Icon name="book" size={14} />
           {t('home.selfloc.open')}
