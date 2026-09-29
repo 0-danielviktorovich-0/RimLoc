@@ -619,7 +619,7 @@ mod tests {
             .unwrap();
             match recognize_catalog(dir.path()) {
                 Invalid(reason) => assert!(reason.contains(field), "{reason}"),
-                _ => panic!("{field}_mismatch_must_be_invalid"),
+                _ => panic!("meta_field_mismatch_must_be_invalid"),
             }
         }
     }
