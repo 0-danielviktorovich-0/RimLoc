@@ -16,22 +16,14 @@
   import { router } from '../../router.svelte';
   import { RW_VERSION } from '../../mock/diagnostics';
   import { SOURCE_LOCATION, OUTPUT_LOCATION } from '../../stores/diagnostics.svelte';
-  import { capability, CAP_BUILD } from '../../client/capability.svelte';
 
   // ------------------------------------------------------------ lifecycle CTA
   const counts = $derived(project.statusCounts());
   const problems = $derived(counts.pending_review + counts.sourceChanged);
   const activeSummary = $derived(languages.summary(languages.activeLocale));
-  // Audit P1-5: honest degradation on a REAL contract project while the
-  // build slice has not landed (see Workspace for the same gate).
-  const buildBlocked = $derived(
-    project.source === 'contract' && capability.state(CAP_BUILD) === false
-  );
-  const buildBlockedTitle = $derived(
-    buildBlocked
-      ? t('capability.unsupported.title', { reason: capability.reason(CAP_BUILD) ?? '' })
-      : undefined
-  );
+  // L-8 (UI audit 2026-09-29): the overview no longer duplicates the toolbar
+  // build CTA right under the heading — the single CTA lives in the
+  // Workspace toolbar; the Health block below still routes into review.
 
   // ------------------------------------------------------------ source update
   // Mock state machine for "the game/mod changed under the project":
@@ -112,28 +104,8 @@
     {/if}
   </div>
 
-  <!-- Lifecycle CTA (§15/§21): what remains → what next. -->
-  <div class="cta-row">
-    {#if problems > 0}
-      <button type="button" class="btn btn-primary" data-testid="workspace.project.cta" onclick={() => router.navigate('review')}>
-        <Icon name="clipboard-check" size={14} />
-        {t('workspace.cta.reviewIssues', { count: problems })}
-      </button>
-    {:else}
-      <button
-        type="button"
-        class="btn btn-primary"
-        data-testid="workspace.project.cta"
-        disabled={buildBlocked}
-        title={buildBlockedTitle}
-        aria-disabled={buildBlocked}
-        onclick={() => router.navigate('build')}
-      >
-        <Icon name="package" size={14} />
-        {t('workspace.cta.build')}
-      </button>
-    {/if}
-  </div>
+  <!-- L-8: the lifecycle CTA was removed — it duplicated the Workspace
+       toolbar CTA verbatim (same label, same route) right under the heading. -->
 
   <!-- Languages: one source → N targets, active highlighted (multi-target). -->
   <div class="block" data-testid="workspace.project.languages-block">
@@ -378,10 +350,6 @@
     background: var(--color-muted);
     font-size: var(--text-meta-size);
     color: var(--color-muted-fg);
-  }
-
-  .cta-row {
-    display: flex;
   }
 
   .fixture-chip,

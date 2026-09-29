@@ -285,6 +285,8 @@ export const ru: Record<string, string> = {
   'workspace.col.source': 'Источник',
   'workspace.col.target': 'Перевод',
   'workspace.col.changed': 'Изменён источник',
+  // L-3 (аудит UI 2026-09-29): мягкий маркер в пустой ячейке «Перевод».
+  'workspace.col.noTranslation': 'Нет перевода',
   'workspace.changed.yes': 'Источник изменился с последнего перевода',
   'workspace.filter.untranslated': 'Не переведено',
   'workspace.filter.translated': 'Переведено',
@@ -472,10 +474,10 @@ export const ru: Record<string, string> = {
   'validation.severity.warning': 'Предупреждение',
   'issue.placeholder_mismatch': 'Несовпадение плейсхолдеров',
   'issue.glossary': 'Глоссарий',
-  'issue.untranslated_suspect': 'Подозрительный untranslated',
-  'issue.wordinfo': 'WordInfo',
+  'issue.untranslated_suspect': 'Похоже, не переведено',
+  'issue.wordinfo': 'Словарные слова (WordInfo)',
   'issue.ambiguity': 'Неоднозначный источник',
-  'issue.ai_concern': 'Замечание AI-ревью',
+  'issue.ai_concern': 'Замечание ИИ-проверки',
   'history.created': 'Создано',
   'history.edited': 'Правка человеком',
   'history.tm_match': 'Из памяти переводов',
@@ -1322,7 +1324,9 @@ export const ru: Record<string, string> = {
   'status.orphan': 'Осиротевшая'
 ,
 // ---- W7 source inspector (SOURCE_INSPECTOR_MANDATE) ----
-  'workspace.detail.tab.source': 'ИСТОЧНИК',
+  // L-пакет (аудит UI 2026-09-29): регистр вкладки панели записи приведён
+  // к общему виду остальных вкладок (Контекст/Подсказки/Проверка/История).
+  'workspace.detail.tab.source': 'Источник',
   'source.tab.location': 'Действующий источник',
   'source.tab.why': 'Почему этот источник?',
   'source.tab.otherUsages': 'Другие вхождения ({n})',

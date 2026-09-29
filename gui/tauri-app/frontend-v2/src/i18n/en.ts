@@ -282,6 +282,8 @@ export const en: Record<string, string> = {
   'workspace.col.source': 'Source',
   'workspace.col.target': 'Translation',
   'workspace.col.changed': 'Source changed',
+  // L-3 (UI audit 2026-09-29): quiet marker in an empty TARGET cell.
+  'workspace.col.noTranslation': 'No translation',
   'workspace.changed.yes': 'Source changed since the last translation',
   'workspace.filter.untranslated': 'Untranslated',
   'workspace.filter.translated': 'Translated',
