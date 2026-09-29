@@ -69,6 +69,23 @@ Off-screen окно (RIMLOC_WINDOW_ORIGIN, dev) и `screencapture -l <windowid>`
 допустимые неинтерферентные сенсоры. Нативные диалоги выбора папки, требующие
 физического клика, классифицируются foreground/native acceptance и не входят в routine.
 
+## Платформенное ограничение macOS (research 30.09, v2.tauri.app + lib.rs)
+
+Apple НЕ предоставляет WebDriver-реализацию для WKWebView → официальный
+`tauri-driver` на macOS НЕ работает (Windows/Edge и Linux/WebKitWebDriver только).
+Поэтому T2 расщеплен:
+- **T2a — browser-mode semantic E2E (headless Chromium + Playwright)**: реальный
+  фронт RimLoc (та же кодовая база) в mock-транспорте; семантические локаторы
+  (role/name/testid), геометрия (boundingBox), скролл/фокус/оверлей-инварианты.
+  Same-host, неинтерферентно (headless), быстрые. ПОКРЫВАЕТ все фронт-классы
+  owner-дефектов (blank-tail, фокус-бюджет, overlay-коллизии, hscroll).
+- **T2b — real Tauri IPC**: на этой машине — AX/keystroke-канал (T3-класс) или
+  спайк tauri-webdriver-automation (крейт-обходчик; зрелость проверить);
+  живые backend-эффекты дополнительно доказываются T0+T3 (auto_install + live).
+Отклонение от «@wdio/tauri-service как первичный» зафиксировано осознанно:
+мандат сам предписывает browser mode для frontend-only сценариев, а физический
+драйвер на macOS недоступен.
+
 ## Известные ограничения среды (2026-09-30)
 
 - web AX-дерево WKWebView release-сборки недоступно внешнему System Events-драйверу
