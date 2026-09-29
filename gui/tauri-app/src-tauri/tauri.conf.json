@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.rimloc.gui",
   "build": {
-    "frontendDist": "../frontend-v2/dist"
+    "frontendDist": "../frontend-v2/dist",
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev"
   },
   "app": {
     "security": {
