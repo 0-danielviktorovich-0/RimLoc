@@ -9,3 +9,6 @@ pub mod contract_adapter;
 /// as an ordinary project source. Pure logic lives here; the thin
 /// `#[tauri::command]` wrapper lives in the binary next to pick_directory.
 pub mod selfloc_catalog;
+/// Agent action-trace (RIMLOC_TRACE=1): JSONL command trace for the
+/// agent-driven QA journeys — see `trace` docs.
+pub mod trace;

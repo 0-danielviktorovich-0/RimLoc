@@ -3098,15 +3098,16 @@ fn legacy_commands_enabled() -> bool {
     std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
 }
 
-/// DEV-ONLY: claim user-initiated activity for the whole process lifetime so
-/// App Nap never suspends an off-screen automation instance. A suspended
+/// macOS automation hook: claim user-initiated activity for the whole process
+/// lifetime so App Nap never suspends an automation instance. A suspended
 /// process stops answering AXWindows entirely, which kills AXPress-driven
 /// journeys ~10-30s after launch (measured 2026-09-27: AXWindows empties
-/// mid-journey and never revives). The activity token and its reason string
-/// are intentionally leaked: the claim lives as long as the process.
-#[cfg(debug_assertions)]
+/// mid-journey and never revives). Used by the dev off-screen mode AND by
+/// RIMLOC_AUTOMATION=1 (release-capable agent automation). The activity
+/// token and its reason string are intentionally leaked: the claim lives as
+/// long as the process.
 #[cfg(target_os = "macos")]
-fn dev_disable_app_nap() {
+fn automation_disable_app_nap() {
     extern "C" {
         fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
@@ -3155,13 +3156,14 @@ fn dev_disable_app_nap() {
     }
 }
 
-/// DEV-ONLY: [NSApp accessibilityActivate] — starts the app's accessibility — starts the app's accessibility
-/// server deterministically. Off-screen the AX bridge is lazy and sometimes
-/// never hydrates from client queries alone, which would break AXPress
-/// automation.
-#[cfg(debug_assertions)]
+/// macOS automation hook: plain-C AX self-query that deterministically starts
+/// the app's accessibility server. Off-screen the AX bridge is lazy and
+/// sometimes never hydrates from client queries alone, which would break
+/// AXPress automation; the same laziness hits release builds on a normal
+/// display when nobody activated AX yet. Used by the dev off-screen mode AND
+/// by RIMLOC_AUTOMATION=1.
 #[cfg(target_os = "macos")]
-fn dev_accessibility_activate() {
+fn automation_accessibility_activate() {
     // Plain-C AX client query aimed at our own pid: forces the ApplicationServices
     // accessibility machinery to initialize without any ObjC exception risk
     // (every call reports errors by code).
@@ -3204,6 +3206,26 @@ fn dev_accessibility_activate() {
     }
 }
 
+/// Agent automation entry (release-capable, owner mandate 2026-09-29: the
+/// agent must be able to fully drive the app itself). RIMLOC_AUTOMATION=1
+/// starts the accessibility server deterministically and opts out of App
+/// Nap, so an external System Events driver can read and press real UI
+/// controls of the WKWebView content — the same mechanics the dev-only
+/// off-screen mode uses, available on a normally displayed window in any
+/// build profile. Without the env there is no behavior change.
+#[cfg(target_os = "macos")]
+fn automation_env_setup() {
+    if std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1") {
+        automation_disable_app_nap();
+        automation_accessibility_activate();
+    }
+}
+
+/// Non-macOS twin: agent automation hooks are macOS AX machinery, nothing
+/// to do elsewhere.
+#[cfg(not(target_os = "macos"))]
+fn automation_env_setup() {}
+
 /// DEV-ONLY: [NSApplication sharedApplication] for the setup hooks.
 /// Kept unused for now: the documented entry point for upcoming setup hooks.
 #[cfg(debug_assertions)]
@@ -3213,7 +3235,7 @@ unsafe fn shared_app() -> *mut std::ffi::c_void {
     extern "C" {
         fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
-        // Same unified 4-arg shape as in dev_disable_app_nap: on arm64 the
+        // Same unified 4-arg shape as in automation_disable_app_nap: on arm64 the
         // callee reads only the registers it needs, extra args are ignored,
         // and one signature across the crate avoids redeclaration errors.
         fn objc_msgSend(
@@ -3291,7 +3313,7 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         // no-arg method returning id (used for [NSApplication sharedApplication]);
         // the real objc_msgSend symbol, given a Rust-friendly alias-free name.
-        // Same unified 4-arg shape as in dev_disable_app_nap: on arm64 the
+        // Same unified 4-arg shape as in automation_disable_app_nap: on arm64 the
         // callee reads only the registers it needs, extra args are ignored.
         fn objc_msgSend(
             receiver: *mut std::ffi::c_void,
@@ -3628,6 +3650,10 @@ fn main() {
                 path: log_path.clone(),
             });
             let main_window = app.get_webview_window("main");
+            // Agent automation (RIMLOC_AUTOMATION=1): deterministic AX server
+            // start + App Nap opt-out BEFORE the web content loads, so the
+            // web AX tree hydrates from the first client query.
+            automation_env_setup();
             if let Some(window) = main_window {
                 // DEV-ONLY background automation: RIMLOC_WINDOW_ORIGIN="x,y"
                 // relocates the window off-screen (e.g. "-3000,-3000") so an
@@ -3694,13 +3720,13 @@ fn main() {
                                 // App Nap opt-out FIRST: a napped
                                 // process stops answering AXWindows and
                                 // the AX tree dies mid-journey.
-                                dev_disable_app_nap();
+                                automation_disable_app_nap();
                                 // Make the app's accessibility server
                                 // start deterministically: off-screen the
                                 // AX bridge is lazy and sometimes never
                                 // hydrates on client queries alone, which
                                 // breaks AXPress-driven automation.
-                                dev_accessibility_activate();
+                                automation_accessibility_activate();
                                 // Keep the window parked: some WebKit
                                 // interactions (AXPress navigation,
                                 // scroll-to-reveal) nudge the window frame
@@ -3725,7 +3751,7 @@ fn main() {
                                         // keep re-asserting the AX registration:
                                         // WebKit page loads can drop it, and an
                                         // unhydrated AX bridge breaks automation
-                                        dev_accessibility_activate();
+                                        automation_accessibility_activate();
                                         let px =
                                             if tick.is_multiple_of(2) { x } else { x - 2.0 };
                                         let _ = park.set_position(

@@ -80,6 +80,12 @@ impl ContractState {
     }
 }
 
+/// Agent trace (RIMLOC_TRACE=1): command name + duration + ok/error —
+/// payload details deliberately stay out of the log.
+fn traced_simple<T, E>(cmd: &'static str, body: impl FnOnce() -> Result<T, E>) -> Result<T, E> {
+    crate::trace::traced(cmd, body, |r| if r.is_ok() { "ok" } else { "error" }.to_string())
+}
+
 /// ui_contract_version + honest capability report (supported vs unsupported
 /// slice operations). The client compares the version on handshake and
 /// raises a typed mismatch error when it differs.
@@ -107,10 +113,12 @@ pub fn project_create(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.create(
-        std::path::Path::new(&request.mod_root.path),
-        request.target_version.as_deref(),
-    )
+    traced_simple("project_create", || {
+        manager.create(
+            std::path::Path::new(&request.mod_root.path),
+            request.target_version.as_deref(),
+        )
+    })
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -122,7 +130,7 @@ pub fn project_open(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.open(&project_id)
+    traced_simple("project_open", || manager.open(&project_id))
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -199,7 +207,9 @@ pub fn project_validate(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.validate_project(&project_id, session_epoch, locale.as_deref())
+    traced_simple("project_validate", || {
+        manager.validate_project(&project_id, session_epoch, locale.as_deref())
+    })
 }
 
 /// `project_export` — isolated native output into a CALLER-SPECIFIED out
@@ -220,12 +230,14 @@ pub fn project_export(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.export_project(
-        &project_id,
-        session_epoch,
-        std::path::Path::new(&out_dir),
-        &locale,
-    )
+    traced_simple("project_export", || {
+        manager.export_project(
+            &project_id,
+            session_epoch,
+            std::path::Path::new(&out_dir),
+            &locale,
+        )
+    })
 }
 
 /// `project_build_mod` — the FULL drop-in mod package (`About/About.xml` in
@@ -248,12 +260,14 @@ pub fn project_build_mod(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.build_mod_project(
-        &project_id,
-        session_epoch,
-        std::path::Path::new(&out_dir),
-        &locale,
-    )
+    traced_simple("project_build_mod", || {
+        manager.build_mod_project(
+            &project_id,
+            session_epoch,
+            std::path::Path::new(&out_dir),
+            &locale,
+        )
+    })
 }
 
 /// `project_diagnose` — sanitized support bundle over the project's last
@@ -286,7 +300,7 @@ pub fn project_import_existing(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.import_existing(&request)
+    traced_simple("project_import_existing", || manager.import_existing(&request))
 }
 
 /// `project_apply_existing` — apply the REUSABLE set of an analyzed pack
@@ -304,7 +318,7 @@ pub fn project_apply_existing(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.apply_existing(&request)
+    traced_simple("project_apply_existing", || manager.apply_existing(&request))
 }
 
 /// Manage the contract state on a builder. Returns the same builder type;
