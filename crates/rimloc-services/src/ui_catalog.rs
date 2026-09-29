@@ -269,7 +269,7 @@ pub fn build_catalog_project(root: &Path) -> Result<Project> {
                     CATALOG_SOURCE_FILE
                 ),
                 CatalogStatus::Invalid(reason) => reason,
-                CatalogStatus::Valid(_) => unreachable!("matched above"),
+                CatalogStatus::Valid(_) => unreachable!("matched_above"),
             };
             return Err(color_eyre::eyre::eyre!(
                 "`{}` is not a usable UI catalog (schema `{}` in `{}`): {reason}",
@@ -578,7 +578,7 @@ mod tests {
         .unwrap();
         match recognize_catalog(dir.path()) {
             Invalid(reason) => assert!(reason.contains("schema"), "{reason}"),
-            _ => panic!("schema mismatch must be Invalid"),
+            _ => panic!("schema_mismatch_must_be_invalid"),
         }
 
         // Missing meta while en is present (the ask's named boundary).
@@ -586,7 +586,7 @@ mod tests {
         fs::remove_file(dir.path().join(CATALOG_META_FILE)).unwrap();
         match recognize_catalog(dir.path()) {
             Invalid(reason) => assert!(reason.contains(CATALOG_META_FILE), "{reason}"),
-            _ => panic!("orphaned message list must be Invalid"),
+            _ => panic!("orphaned_message_list_must_be_invalid"),
         }
 
         // Empty message id: the offender is named.
@@ -598,7 +598,7 @@ mod tests {
         );
         match recognize_catalog(dir.path()) {
             Invalid(reason) => assert!(reason.contains("#1"), "{reason}"),
-            _ => panic!("empty id must be Invalid"),
+            _ => panic!("empty_id_must_be_invalid"),
         }
 
         // Meta identity checks: OPTIONAL fields may be absent (older meta);
@@ -619,7 +619,7 @@ mod tests {
             .unwrap();
             match recognize_catalog(dir.path()) {
                 Invalid(reason) => assert!(reason.contains(field), "{reason}"),
-                _ => panic!("{field} mismatch must be Invalid"),
+                _ => panic!("{field}_mismatch_must_be_invalid"),
             }
         }
     }
