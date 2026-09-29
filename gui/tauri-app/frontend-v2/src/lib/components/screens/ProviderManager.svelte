@@ -621,6 +621,21 @@
     if (!inst.enabled || inst.status === 'not_configured') return t('providers.status.not_configured');
     return t('providers.status.configured');
   }
+
+  // Wave-5 companion to M-11 («мок-вспышка» residue): the honest verdict
+  // must drive the pill's ICON and COLOR too, not only the label. On the
+  // real transport the internal mock status — the fixture's 'connected' /
+  // 'offline' at open, a simulated probe outcome — never earns the green
+  // connected look this build cannot verify: a green circle-check next to
+  // «настроен (не проверялся)» would still claim a connection. Both honest
+  // real-transport verdicts share the muted not_configured look; only the
+  // transient probe keeps the testing look. On the mock transport the
+  // displayed status IS the (marked) mock status — unchanged.
+  function statusLook(inst: Instance): { icon: string; cls: string } {
+    if (mockTransport) return { icon: STATUS_ICON[inst.status], cls: `st-${inst.status}` };
+    if (inst.status === 'testing') return { icon: STATUS_ICON.testing, cls: 'st-testing' };
+    return { icon: STATUS_ICON.not_configured, cls: 'st-not_configured' };
+  }
 </script>
 
 <section class="providers" aria-labelledby="providers-heading">
@@ -646,6 +661,7 @@
     <div class="cards">
       {#each instances as inst (inst.id)}
         {@const meta = familyMeta(inst.family)}
+        {@const look = statusLook(inst)}
         <article
           class="card"
           class:disabled={!inst.enabled}
@@ -693,8 +709,8 @@
               />
               <span class="switch-label">{t(inst.enabled ? 'providers.inst.enabled' : 'providers.inst.disabled')}</span>
             </label>
-            <span class={`status st-${inst.status}`} data-testid={`providers.inst.status.${inst.id}`}>
-              <Icon name={STATUS_ICON[inst.status]} size={14} />
+            <span class={`status ${look.cls}`} data-testid={`providers.inst.status.${inst.id}`}>
+              <Icon name={look.icon} size={14} />
               {statusLabel(inst)}
               {#if mockTransport}
                 <span class="mock-mark">{t('providers.status.mockMark')}</span>

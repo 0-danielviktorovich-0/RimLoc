@@ -12,6 +12,7 @@
   import { providers } from '../../stores/providers.svelte';
   import { onboarding } from '../../stores/onboarding.svelte';
   import { diagnostics } from '../../stores/diagnostics.svelte';
+  import { openSelflocProject } from '../../selfloc';
   import ShortcutsEditor from '../ShortcutsEditor.svelte';
   import About from './About.svelte';
   import BundlePreview from './BundlePreview.svelte';
@@ -95,6 +96,22 @@
     router.navigate('diagnostics');
   }
 
+  // Wave 5 (CAMPAIGN_SNAPSHOT): the Help-side entry into the SAME selfloc
+  // flow as the Home card — the shared lib/selfloc.ts with the dedup by
+  // 'RimLoc UI (en)'. Help owns only busy/error UI state; in mock mode the
+  // typed refusal surfaces verbatim in the card, never a fake success.
+  let selflocBusy = $state(false);
+  let selflocError = $state<string | null>(null);
+
+  async function openSelfloc() {
+    if (selflocBusy) return;
+    selflocBusy = true;
+    selflocError = null;
+    const res = await openSelflocProject();
+    selflocBusy = false;
+    if (!res.ok) selflocError = res.error;
+  }
+
   // §17 redaction preview: prepare builds the sanitized bundle (Included /
   // Redacted / Excluded) from the last causal context; Copy for AI produces
   // the compact reviewer prompt instead of a raw settings dump.
@@ -160,6 +177,24 @@
       </button>
     </div>
     <p class="text">{t('help.replay.demoTourDesc')}</p>
+  </article>
+
+  <!-- Selfloc entry (CAMPAIGN_SNAPSHOT, wave 5): the RimLoc UI catalog as an
+       ordinary translation project — the SAME flow as the Home card via the
+       shared lib/selfloc.ts, dedup by 'RimLoc UI (en)' included. Visible in
+       BOTH modes: in mock the click surfaces the honest typed refusal. -->
+  <article class="card" data-testid="help.selfloc">
+    <h2 class="card-title"><Icon name="languages" size={16} /> {t('help.selfloc.title')}</h2>
+    <p class="text">{t('help.selfloc.desc')}</p>
+    <div class="row">
+      <button type="button" class="btn" data-testid="help.selfloc.open" disabled={selflocBusy} onclick={openSelfloc}>
+        <Icon name="book" size={14} />
+        {t('help.selfloc.open')}
+      </button>
+    </div>
+    {#if selflocError}
+      <p class="error" role="alert" data-testid="help.selfloc.error">{selflocError}</p>
+    {/if}
   </article>
 
   <!-- Shortcuts (mandate §14): full remappable table with conflict detection;
@@ -419,6 +454,16 @@
   .copied {
     color: var(--color-success);
     font-size: var(--text-meta-size);
+  }
+
+  /* Selfloc card failure: verbatim typed refusal, Home's note-error look. */
+  .error {
+    margin: 0;
+    color: var(--color-error);
+    font-size: var(--text-meta-size);
+    border: 1px dashed var(--color-error);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
   }
 
   .deep-note {

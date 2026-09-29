@@ -6,6 +6,7 @@
 // deliberately) a settled provider reads the honest «настроен (не
 // проверялся)», never a faked connection verdict.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushSync } from 'svelte';
 import ProviderManager from '../src/lib/components/screens/ProviderManager.svelte';
 import { clientInstance } from '../src/lib/client/instance.svelte';
 import { devMode } from '../src/lib/stores/devmode.svelte';
@@ -67,5 +68,40 @@ describe('M-11: the (мок) suffix follows the real transport', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // Wave-5 companion to M-11 («мок-вспышка» residue): the pill's ICON and
+  // COLOR must follow the same honest verdict as the label — the internal
+  // mock status (fixture 'connected' at open, a simulated probe outcome)
+  // never paints the green connected look on the real transport.
+  it('real transport: the pill icon/color never claim the mock connected verdict', async () => {
+    vi.useFakeTimers();
+    try {
+      (window as unknown as { __TAURI_INTERNALS__?: { invoke: unknown } }).__TAURI_INTERNALS__ = {
+        invoke: vi.fn()
+      };
+      setMode('tauri');
+      mountCmp(ProviderManager);
+      // At open: the fixture's 'connected' internal status stays muted.
+      expect(q('providers.inst.status.inst-1').className).toContain('st-not_configured');
+      expect(q('providers.inst.status.inst-1').className).not.toContain('st-connected');
+      expect(q('providers.inst.status.inst-2').className).not.toContain('st-offline');
+      // During the simulated probe the transient look is the honest one…
+      q('providers.inst.test.inst-1').click();
+      flushSync();
+      expect(q('providers.inst.status.inst-1').className).toContain('st-testing');
+      // …and after it the mock verdict stays visually unclaimed.
+      await vi.runAllTimersAsync();
+      expect(q('providers.inst.status.inst-1').className).toContain('st-not_configured');
+      expect(q('providers.inst.status.inst-1').className).not.toContain('st-connected');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('mock transport: the pill keeps the per-status look, unchanged', () => {
+    mountCmp(ProviderManager);
+    expect(q('providers.inst.status.inst-1').className).toContain('st-connected');
+    expect(q('providers.inst.status.inst-2').className).toContain('st-offline');
   });
 });

@@ -1024,6 +1024,12 @@ export const en: Record<string, string> = {
   'help.replay.demoTour': 'Guided demo tour',
   'help.replay.demoTourDesc':
     'Anchored walkthrough of the whole loop on the bundled demo project: open it, pick and edit a row, review the intentional error, validate and build (synthetic).',
+  // Selfloc entry on the Help screen (wave 5): the SAME flow as the Home
+  // card (lib/selfloc.ts), the dedup by 'RimLoc UI (en)' preserved.
+  'help.selfloc.title': 'Help translate RimLoc',
+  'help.selfloc.desc':
+    'The RimLoc interface is an ordinary translation project (~1.2k messages): your contribution ships with the app and your mods are never touched.',
+  'help.selfloc.open': 'Translate RimLoc',
   'help.shortcuts.title': 'Keyboard shortcuts',
   'help.shortcuts.palette': 'Command palette',
   'help.shortcuts.save': 'Save edit',
