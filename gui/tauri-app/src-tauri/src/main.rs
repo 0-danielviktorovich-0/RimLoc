@@ -3051,6 +3051,10 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // selfloc entry (mandate D): resolve the app-bundled UI catalog dir —
     // read-only shell extra, same class as pick_directory.
     "selfloc_catalog_dir",
+    // selfloc contribution (beta, wave 7): build the offline bundle from the
+    // open UI-catalog session into a caller-chosen dir — the services layer
+    // owns the §6 gate and the export_project guard partition.
+    "selfloc_build_contribution",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3705,7 +3709,10 @@ fn main() {
             import_xliff_gui,
             merge_keyed_gui,
             // selfloc entry: safe read-only shell extra (live too)
-            selfloc_catalog_dir
+            selfloc_catalog_dir,
+            // selfloc contribution (beta, wave 7): build the offline bundle
+            // from the open UI-catalog session — services-guarded write.
+            selfloc_build_contribution
         ])
     } else {
         builder.invoke_handler(tauri::generate_handler![
@@ -3739,7 +3746,10 @@ fn main() {
             pick_directory,
             // selfloc entry (mandate D): resolve the app-bundled UI catalog
             // dir — read-only shell extra, same class as pick_directory.
-            selfloc_catalog_dir
+            selfloc_catalog_dir,
+            // selfloc contribution (beta, wave 7): build the offline bundle
+            // from the open UI-catalog session — services-guarded write.
+            selfloc_build_contribution
         ])
     };
     builder
@@ -3944,6 +3954,37 @@ fn selfloc_catalog_dir(app: tauri::AppHandle) -> Result<String, ApiError> {
     });
     rimloc_gui_lib::selfloc_catalog::resolve_catalog_dir(resource_dir, &app_data)
         .map_err(|e| ApiError { message: e })
+}
+
+/// Self-localization contribution (beta, wave 7): build the offline
+/// contribution bundle from the OPEN session (the RimLoc UI catalog project)
+/// into a CALLER-SPECIFIED out directory. Thin shell over
+/// [`rimloc_services::contribution::build_contribution`] — the §6 gate, the
+/// READY / PARTIAL-BUT-VALID / NEEDS-FIXES statuses, the schema-v1 wire
+/// fields and the export_project guard partition (absolute out dir, no
+/// source-tree/managed-root writes) all live in the services layer; the
+/// adapter owns state + wire-shape only. NEEDS-FIXES writes nothing and
+/// returns the enumerated refusals.
+#[tauri::command(rename_all = "snake_case")]
+fn selfloc_build_contribution(
+    state: State<'_, rimloc_gui_lib::contract_adapter::ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    out_dir: String,
+    locale: String,
+) -> Result<
+    rimloc_services::contribution::BuildContributionResponse,
+    rimloc_services::contract::ContractError,
+> {
+    state.with_manager(|manager| {
+        rimloc_services::contribution::build_contribution(
+            manager,
+            &project_id,
+            session_epoch,
+            std::path::Path::new(&out_dir),
+            &locale,
+        )
+    })
 }
 
 /// Save arbitrary text, but the destination is always confirmed by the user

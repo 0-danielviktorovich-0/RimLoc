@@ -18,6 +18,7 @@ import type {
   ImportExistingResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
+  SelflocBuildContributionResponseDto,
   ValidateProjectResponseDto
 } from './types';
 
@@ -56,6 +57,14 @@ export interface ContractMethodMap {
   // RimLoc UI catalog project dir (mod_root for project_create). Refused
   // honestly in mock — there is no bundled catalog outside the desktop app.
   selfloc_catalog_dir: { params: Record<string, never>; result: string };
+  // Self-localization contribution (beta, wave 7): build the offline
+  // translation bundle from the OPEN session into a caller-chosen
+  // directory. The services layer owns the §6 gate and the readiness
+  // statuses; refused honestly in mock (no backend session there).
+  selfloc_build_contribution: {
+    params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
+    result: SelflocBuildContributionResponseDto;
+  };
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   project_import_existing: {

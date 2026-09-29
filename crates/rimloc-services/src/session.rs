@@ -905,6 +905,77 @@ impl ProjectSessionManager {
         Ok(response)
     }
 
+    /// Gathered view of the OPEN session for the contribution builder
+    /// ([`crate::contribution`]): the UI-catalog EN canon (entries whose
+    /// provenance is `selected_by = ui_catalog`, id → source text), the
+    /// requested locale's candidate changes (catalog key → non-empty
+    /// translation text), and the read-only source root (the revision source
+    /// AND the write-guard's denied tree). Read-only — no revision bump, no
+    /// persisted change.
+    ///
+    /// Locale matching mirrors the frontend's own active-target slice rule
+    /// (`project.svelte.ts`: case-insensitive, folder-name lowercase form
+    /// starting with the tag) — the session stores folder-contract locales
+    /// ("Russian") while the bundle tag is the TS tag ("ru"). Translations
+    /// carrying the literal TODO placeholder are NOT changes: the domain
+    /// itself counts Todo as missing, and a placeholder must never ride into
+    /// a contribution bundle as a translation.
+    pub fn contribution_source(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        locale: &str,
+    ) -> Result<crate::contribution::ContributionSource, ContractError> {
+        // Fail-closed id-form guard, same entry discipline as every other
+        // session operation (never probe the registry with a traversal id).
+        self.managed_path(project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+
+        let mut catalog_en = BTreeMap::new();
+        for e in &st.project.entries {
+            if e.provenance.selected_by.as_deref() != Some(rimloc_core::winner_reason::UI_CATALOG) {
+                continue;
+            }
+            catalog_en.insert(e.id.key.clone(), e.text.clone());
+        }
+
+        let tag = locale.trim().to_lowercase();
+        let mut changes: Vec<(String, String)> = Vec::new();
+        for tr in &st.project.translations {
+            let tl = tr.locale.trim().to_lowercase();
+            let matches = tl == tag || tl.starts_with(&tag);
+            if !matches {
+                continue;
+            }
+            if tr.completeness == Completeness::Todo {
+                continue;
+            }
+            let Some(text) = tr.text.as_deref().map(str::trim).filter(|t| !t.is_empty()) else {
+                continue;
+            };
+            if !catalog_en.contains_key(&tr.source_id.key) {
+                continue;
+            }
+            changes.push((tr.source_id.key.clone(), text.to_string()));
+        }
+
+        Ok(crate::contribution::ContributionSource {
+            catalog_en,
+            changes,
+            mod_root: st.mod_root.clone(),
+        })
+    }
+
     /// `project_export` — build the native RimWorld translation output from
     /// the trusted session state into a CALLER-SPECIFIED out directory
     /// (isolated artifact, like the corpus harness). Guards: the out dir

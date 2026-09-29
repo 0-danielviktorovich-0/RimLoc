@@ -47,8 +47,11 @@ pub const RESOURCE_SUBDIR: &str = "selfloc-catalog";
 pub const PROJECT_DIR_NAME: &str = "RimLoc UI (en)";
 /// Live-entry safe extras registered after the ORIGINAL registration
 /// (src/tests.rs partition arithmetic): the selfloc entry joins pick_directory
-/// in the read-only safe class.
-pub const POST_ORIGINAL_LIVE_EXTRAS: &[&str] = &["selfloc_catalog_dir"];
+/// in the read-only safe class; the contribution builder (wave 7) writes ONLY
+/// through the services guard partition (absolute out dir, source-tree /
+/// managed-root denies) — the same class as the contract `project_export`.
+pub const POST_ORIGINAL_LIVE_EXTRAS: &[&str] =
+    &["selfloc_catalog_dir", "selfloc_build_contribution"];
 
 /// The meta field the idempotency decision reads (SELFLOC_BRIDGE.md:
 /// `catalog.meta.json.catalog_revision` — a git sha, optional `-dirty`).

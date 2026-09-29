@@ -2381,6 +2381,48 @@
       "placeholders": []
     },
     {
+      "id": "workspace.project.contribution.title",
+      "translated": "Вклад в перевод RimLoc (бета)",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.note",
+      "translated": "Собирает переводы этого проекта в офлайн-файл-бандл, который можно передать мейнтейнеру RimLoc. Никуда не отправляется.",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.build",
+      "translated": "Собрать вклад…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.building",
+      "translated": "Собираю…",
+      "placeholders": []
+    },
+    {
+      "id": "workspace.project.contribution.status",
+      "translated": "{status}: принято изменений — {accepted}",
+      "placeholders": [
+        "accepted",
+        "status"
+      ]
+    },
+    {
+      "id": "workspace.project.contribution.path",
+      "translated": "Бандл: {path}",
+      "placeholders": [
+        "path"
+      ]
+    },
+    {
+      "id": "workspace.project.contribution.rejected",
+      "translated": "Отклонено: {count}",
+      "placeholders": [
+        "count"
+      ]
+    },
+    {
       "id": "workspace.project.danger",
       "translated": "Опасная зона",
       "placeholders": []

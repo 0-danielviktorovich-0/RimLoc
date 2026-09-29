@@ -292,7 +292,35 @@ export type ContractMethod =
   // source dir (mod_root for the EXISTING contract create flow). The mock
   // transport refuses it honestly — no bundled catalog exists there.
   | 'selfloc_catalog_dir'
+  // Self-localization contribution (beta, wave 7): build the offline
+  // translation bundle from the OPEN RimLoc UI catalog session into a
+  // caller-chosen directory. The mock transport refuses it honestly —
+  // no backend session exists there.
+  | 'selfloc_build_contribution'
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   | 'project_import_existing'
   | 'project_apply_existing';
+
+/** Readiness status of the contribution bundle build (services
+ * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
+ * PARTIAL-BUT-VALID (valid subset bundled, refusals enumerated) /
+ * NEEDS-FIXES (nothing written, exact blocker list). */
+export type ContributionBuildStatus = 'READY' | 'PARTIAL-BUT-VALID' | 'NEEDS-FIXES';
+
+/** One §6-gate refusal of the contribution build — a change id (or
+ * `<root>` for structural blockers) plus a translator-actionable reason.
+ * Secret hits name the PATTERN, never the matched text. */
+export interface ContributionRejectionDto {
+  id: string;
+  reason: string;
+}
+
+/** Response of selfloc_build_contribution. `bundle_path` is null exactly
+ * when the status is NEEDS-FIXES (no file is written). */
+export interface SelflocBuildContributionResponseDto {
+  status: ContributionBuildStatus;
+  bundle_path: string | null;
+  accepted_count: number;
+  rejected: ContributionRejectionDto[];
+}

@@ -8,6 +8,7 @@ pub use rimloc_validate::ValidationMessage;
 pub mod build;
 pub mod canonical_bridge;
 pub mod contract;
+pub mod contribution;
 pub mod eligibility_engine;
 pub mod export;
 pub mod extras;
