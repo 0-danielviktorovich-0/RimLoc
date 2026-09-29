@@ -79,6 +79,18 @@ export interface SourceEntryDto {
   text: string;
   source_locale: string;
   tkey?: unknown;
+  /** Additive (contract, wave 12): live Source Inspector projection — the
+   *  EFFECTIVE context's file RELATIVE to the project root, the
+   *  parser-guaranteed line (absent = unknown, never faked) and the winner
+   *  reason (rimloc winner_reason vocabulary). Absent on legacy snapshots
+   *  and whenever the backend cannot honestly project it. */
+  source_ref?: EntrySourceRefDto;
+}
+
+export interface EntrySourceRefDto {
+  file: string;
+  line?: number;
+  selected_by: string;
 }
 
 export interface TranslationDto {

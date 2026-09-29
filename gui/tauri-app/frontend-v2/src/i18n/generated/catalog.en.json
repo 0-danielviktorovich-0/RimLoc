@@ -6126,6 +6126,51 @@
       "placeholders": []
     },
     {
+      "id": "source.why.keyed-first-in-file",
+      "source_text": "Keyed: first occurrence in the file wins",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.tkey-last-assignment",
+      "source_text": "TKey: the last assignment wins",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.definjected-setoradd",
+      "source_text": "DefInjected: overwritten by the last occurrence",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.ui-catalog",
+      "source_text": "RimLoc's own UI catalog",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.live.relativePath",
+      "source_text": "Path relative to the project root.",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.lineUnknown",
+      "source_text": "line unknown — the scanner recorded none",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.live.usagesUnavailable",
+      "source_text": "Usages and compare are not available for this project.",
+      "placeholders": []
+    },
+    {
+      "id": "source.empty.live",
+      "source_text": "Source data for this entry is unavailable in the live project.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.wouldLaunchLive",
+      "source_text": "Live project: this is an argv preview — nothing was launched.",
+      "placeholders": []
+    },
+    {
       "id": "source.action.view",
       "source_text": "View",
       "placeholders": []

@@ -737,6 +737,7 @@ mod gate_i_tests {
                 contexts: vec![],
                 provenance: SourceProvenance::default(),
                 tkey,
+                source_ref: None,
             }],
             translations: vec![Translation {
                 source_id: id,
@@ -799,6 +800,7 @@ mod gate_i_tests {
             contexts: vec![],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         });
         let report = write_rimworld_translation(&p, &out, "Russian", "T", "t.test", "1.6").unwrap();
         let out = report.out_mod;
@@ -1293,6 +1295,7 @@ mod identity_regression {
             }],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         });
         p.update_translation(
             unknown.clone(),
@@ -1995,6 +1998,7 @@ mod gate_k_tests {
             contexts: vec![],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         }
     }
 

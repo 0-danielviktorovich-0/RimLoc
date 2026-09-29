@@ -34,8 +34,8 @@ use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
 use crate::project_store::{load_project_with_meta, save_project_with_meta, ProjectEnvelopeMeta};
 use rimloc_domain::canonical::{
-    Completeness, EntryKind, Lifecycle, Origin, Project, SourceEntry, SourceEntryId, Translation,
-    ValidationState,
+    Completeness, ContextRole, EntryKind, EntrySourceRef, Lifecycle, Origin, Project, SourceEntry,
+    SourceEntryId, Translation, ValidationState,
 };
 use rimloc_domain::eligibility::{Decision, Verdict};
 use std::collections::{BTreeMap, HashMap};
@@ -2076,15 +2076,71 @@ fn schema_or_internal(err: &color_eyre::Report, project_id: &str) -> ContractErr
 }
 
 fn snapshot_of(project_id: &str, st: &SessionState) -> ProjectSnapshot {
+    // Live Source Inspector bridge (wave 12): the snapshot DECORATES the
+    // trusted state with the per-entry `source_ref` projection; the trusted
+    // state itself stays projection-free, so persisted bytes never grow a
+    // denormalized copy of contexts/provenance that could drift.
+    let mut project = st.project.clone();
+    for entry in &mut project.entries {
+        entry.source_ref = live_source_ref(entry, &st.mod_root);
+    }
     ProjectSnapshot {
         project_id: project_id.to_string(),
         revision: st.revision,
         session_epoch: st.epoch,
         dirty: st.dirty,
         acked_revision: st.acked_revision,
-        project: st.project.clone(),
+        project,
         source_changed: st.source_changed,
     }
+}
+
+/// The per-entry `source_ref` projection (append-only contract field):
+/// the EFFECTIVE context's file relative to the project root + the
+/// parser-guaranteed line + the winner reason. Honest-by-default rules:
+/// `None` when the winner reason was never recorded (legacy inventories)
+/// or the entry carries no context at all; a line the parser did not
+/// record stays `None` (never fabricated); a path outside the project
+/// root stays ABSOLUTE rather than being guessed into a wrong relative
+/// form. `mod_root` doubles as the catalog dir for ui-catalog projects,
+/// so the same rule yields `catalog.en.json` there.
+fn live_source_ref(entry: &SourceEntry, root: &Path) -> Option<EntrySourceRef> {
+    let selected_by = entry.provenance.selected_by.as_deref()?;
+    let ctx = entry
+        .contexts
+        .iter()
+        .find(|c| c.role == ContextRole::Effective)
+        .or_else(|| entry.contexts.first())?;
+    Some(EntrySourceRef {
+        file: relativize_source_file(&ctx.file, root),
+        line: ctx.line,
+        selected_by: selected_by.to_string(),
+    })
+}
+
+/// Project-root-relative form of a recorded source file for the UI:
+/// path-prefix strip first, then a separator-normalized string fallback;
+/// when neither matches (path outside the root, empty root, legacy
+/// envelope) the recorded form stays AS IS — truthful, just not relative.
+fn relativize_source_file(file: &str, root: &Path) -> String {
+    if root.as_os_str().is_empty() {
+        return file.to_string();
+    }
+    if let Ok(rel) = Path::new(file).strip_prefix(root) {
+        let s = rel.to_string_lossy().replace('\\', "/");
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    let root_norm = root.to_string_lossy().replace('\\', "/");
+    let file_norm = file.replace('\\', "/");
+    if let Some(stripped) = file_norm.strip_prefix(&root_norm) {
+        let stripped = stripped.trim_start_matches('/');
+        if !stripped.is_empty() {
+            return stripped.to_string();
+        }
+    }
+    file.to_string()
 }
 
 /// M3 drift verdict: `Some(cur != recorded)` when a recorded fingerprint
@@ -2228,12 +2284,110 @@ fn apply_intent(
 mod tests {
     use super::*;
     use crate::contract::{ApplyIntentsRequest, ContractErrorCode, UI_CONTRACT_VERSION};
-    use rimloc_domain::canonical::{EntryKind, SourceEntryId};
+    use rimloc_domain::canonical::{EntryKind, SourceEntryId, SourceProvenance};
     use std::fs;
 
     fn write(path: &Path, body: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();
+    }
+
+    /// Live Source Inspector bridge (wave 12): the projection rules of
+    /// `live_source_ref` — effective context + recorded winner reason,
+    /// project-root-relative file, honest absence everywhere else.
+    #[test]
+    fn live_source_ref_projection_rules() {
+        use rimloc_domain::canonical::{ContextRole, SourceContext};
+
+        let mk_entry = |contexts: Vec<SourceContext>, selected_by: Option<&str>| -> SourceEntry {
+            SourceEntry {
+                id: SourceEntryId {
+                    kind: EntryKind::Keyed,
+                    key: "K".into(),
+                    def_type: None,
+                },
+                text: "v".into(),
+                source_locale: "en".into(),
+                contexts,
+                provenance: SourceProvenance {
+                    selected_by: selected_by.map(str::to_string),
+                    ..Default::default()
+                },
+                tkey: None,
+                source_ref: None,
+            }
+        };
+        let ctx = |file: &str, line: Option<usize>, role: ContextRole| SourceContext {
+            file: file.into(),
+            line,
+            def_type: None,
+            role,
+        };
+        let root = Path::new("/mods/MyMod");
+
+        // Full triple: effective context wins, file goes root-relative.
+        let e = mk_entry(
+            vec![
+                ctx(
+                    "/mods/MyMod/Languages/English/Keyed/K.xml",
+                    Some(7),
+                    ContextRole::Effective,
+                ),
+                ctx(
+                    "/mods/MyMod/Languages/English/Keyed/Z.xml",
+                    Some(3),
+                    ContextRole::Overridden,
+                ),
+            ],
+            Some("keyed-last-wins"),
+        );
+        let sr = live_source_ref(&e, root).expect("projected_when_reason_recorded");
+        assert_eq!(sr.file, "Languages/English/Keyed/K.xml", "{sr:?}");
+        assert_eq!(sr.line, Some(7));
+        assert_eq!(sr.selected_by, "keyed-last-wins");
+
+        // No recorded winner reason (legacy inventory) -> NO projection.
+        let e = mk_entry(
+            vec![ctx(
+                "/mods/MyMod/Languages/English/Keyed/K.xml",
+                Some(7),
+                ContextRole::Effective,
+            )],
+            None,
+        );
+        assert!(
+            live_source_ref(&e, root).is_none(),
+            "absent_reason_no_projection"
+        );
+
+        // No context at all -> NO projection.
+        let e = mk_entry(vec![], Some("keyed-last-wins"));
+        assert!(
+            live_source_ref(&e, root).is_none(),
+            "absent_context_no_projection"
+        );
+
+        // A path outside the root stays ABSOLUTE (truthful, never guessed).
+        let e = mk_entry(
+            vec![ctx("/elsewhere/K.xml", None, ContextRole::Effective)],
+            Some("patch-applied"),
+        );
+        let sr = live_source_ref(&e, root).expect("outside_root_still_projected");
+        assert_eq!(sr.file, "/elsewhere/K.xml", "{sr:?}");
+        assert_eq!(sr.line, None, "unrecorded_line_stays_none");
+
+        // Separator-normalized fallback: a Windows backslash display form
+        // relativizes against the same root.
+        let e = mk_entry(
+            vec![ctx(
+                "C:\\mods\\MyMod\\Languages\\English\\Keyed\\K.xml",
+                Some(2),
+                ContextRole::Effective,
+            )],
+            Some("keyed-first-in-file"),
+        );
+        let sr = live_source_ref(&e, Path::new("C:\\mods\\MyMod")).expect("windows_form_projected");
+        assert_eq!(sr.file, "Languages/English/Keyed/K.xml", "{sr:?}");
     }
 
     /// Two ThingDefs whose defNames differ ONLY in case (`Dup` / `dup`) —

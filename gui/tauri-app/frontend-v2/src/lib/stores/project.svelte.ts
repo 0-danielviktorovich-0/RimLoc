@@ -339,7 +339,13 @@ class ProjectStore {
         target: '',
         status: 'untranslated',
         file: '',
-        line: 0
+        line: 0,
+        // Live Source Inspector projection (wave 12): present on contract
+        // snapshots that can honestly project it; the SOURCE tab renders it
+        // verbatim and never fixture data in this mode.
+        sourceRef: e.source_ref
+          ? { file: e.source_ref.file, line: e.source_ref.line ?? null, selected_by: e.source_ref.selected_by }
+          : null
       };
       mapped.push(entry);
       byId.set(id, entry);

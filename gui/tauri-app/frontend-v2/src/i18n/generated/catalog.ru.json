@@ -6126,6 +6126,51 @@
       "placeholders": []
     },
     {
+      "id": "source.why.keyed-first-in-file",
+      "translated": "Keyed: побеждает первое вхождение в файле",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.tkey-last-assignment",
+      "translated": "TKey: побеждает последнее присваивание",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.definjected-setoradd",
+      "translated": "DefInjected: перезапись последним вхождением",
+      "placeholders": []
+    },
+    {
+      "id": "source.why.ui-catalog",
+      "translated": "Собственный каталог интерфейса RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.live.relativePath",
+      "translated": "Путь относительно корня проекта.",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.lineUnknown",
+      "translated": "строка неизвестна — сканер её не записал",
+      "placeholders": []
+    },
+    {
+      "id": "source.tab.live.usagesUnavailable",
+      "translated": "Вхождения и сравнение недоступны для этого проекта.",
+      "placeholders": []
+    },
+    {
+      "id": "source.empty.live",
+      "translated": "Источник для этой записи недоступен в живом проекте.",
+      "placeholders": []
+    },
+    {
+      "id": "source.editor.wouldLaunchLive",
+      "translated": "Живой проект: это превью argv — ничего не запускалось.",
+      "placeholders": []
+    },
+    {
       "id": "source.action.view",
       "translated": "Открыть",
       "placeholders": []
