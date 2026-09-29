@@ -4567,6 +4567,21 @@
       "placeholders": []
     },
     {
+      "id": "help.selfloc.title",
+      "source_text": "Help translate RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "help.selfloc.desc",
+      "source_text": "The RimLoc interface is an ordinary translation project (~1.2k messages): your contribution ships with the app and your mods are never touched.",
+      "placeholders": []
+    },
+    {
+      "id": "help.selfloc.open",
+      "source_text": "Translate RimLoc",
+      "placeholders": []
+    },
+    {
       "id": "help.shortcuts.title",
       "source_text": "Keyboard shortcuts",
       "placeholders": []

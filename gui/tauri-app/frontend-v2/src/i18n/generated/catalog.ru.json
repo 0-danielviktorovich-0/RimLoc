@@ -4567,6 +4567,21 @@
       "placeholders": []
     },
     {
+      "id": "help.selfloc.title",
+      "translated": "Помочь с переводом RimLoc",
+      "placeholders": []
+    },
+    {
+      "id": "help.selfloc.desc",
+      "translated": "Интерфейс RimLoc — обычный проект перевода (~1,2 тыс. сообщений): вклад уезжает вместе с приложением, ваши моды не затрагиваются.",
+      "placeholders": []
+    },
+    {
+      "id": "help.selfloc.open",
+      "translated": "Перевести RimLoc",
+      "placeholders": []
+    },
+    {
       "id": "help.shortcuts.title",
       "translated": "Горячие клавиши",
       "placeholders": []

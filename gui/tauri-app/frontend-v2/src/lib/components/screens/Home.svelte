@@ -26,6 +26,7 @@
   import { project } from '../../stores/project.svelte';
   import { clientInstance, type ResolvedClientMode } from '../../client/instance.svelte';
   import type { ProjectSummaryDto } from '../../client/types';
+  import { openSelflocProject } from '../../selfloc';
 
   // NB: renamed to homeState — a prop named `state` makes the compiler parse
   // `$state(...)` as a legacy store subscription of that prop.
@@ -90,38 +91,22 @@
     return parts.join(' · ');
   }
 
-  // Selfloc entry (mandate D): resolve the app-bundled RimLoc UI catalog and
-  // open it through the EXISTING contract create flow — the ui_catalog
-  // adapter inside the backend routes the directory; no special-cased client
-  // path. Every failure surfaces verbatim in the section alert; in mock mode
-  // the typed refusal IS the honest outcome (no fake catalog dir, no fake
+  // Selfloc entry (mandate D): the flow itself lives in lib/selfloc.ts —
+  // shared with the Help screen card (wave 5), one implementation, the dedup
+  // by 'RimLoc UI (en)' included. Home owns only the busy/error UI state;
+  // every failure surfaces verbatim in the section alert; in mock mode the
+  // typed refusal IS the honest outcome (no fake catalog dir, no fake
   // success, no dead-end create).
   let selflocBusy = $state(false);
   let selflocError = $state<string | null>(null);
 
-  // The catalog project name is the staging dir basename stamped by the
-  // backend (selfloc_catalog.rs) — the stable identity of "the RimLoc UI
-  // project". A second click REOPENS that project instead of minting a
-  // duplicate (rel3 acceptance found 7 copies after 7 clicks).
-  async function openSelflocProject() {
+  async function openSelfloc() {
     if (contractBusy || selflocBusy) return;
     selflocBusy = true;
     selflocError = null;
-    try {
-      const dir = await clientInstance.getClient().selflocCatalogDir();
-      const existing = (await project.listContractProjects()).find(
-        (p) => p.name === 'RimLoc UI (en)'
-      );
-      const ok = existing
-        ? await project.openContractProject(existing.project_id)
-        : await project.createContractProject(dir);
-      if (ok) router.navigate('workspace');
-      else selflocError = project.contractError;
-    } catch (e) {
-      selflocError = e instanceof Error ? e.message : String(e);
-    } finally {
-      selflocBusy = false;
-    }
+    const res = await openSelflocProject();
+    selflocBusy = false;
+    if (!res.ok) selflocError = res.error;
   }
 
   $effect(() => {
@@ -414,7 +399,7 @@
               class="btn"
               data-testid="home.selfloc.open"
               disabled={contractBusy || selflocBusy}
-              onclick={openSelflocProject}
+              onclick={openSelfloc}
             >
               <Icon name="book" size={14} />
               {t('home.selfloc.open')}
@@ -487,7 +472,7 @@
           class="btn"
           data-testid="home.selfloc.open"
           disabled={contractBusy || selflocBusy}
-          onclick={openSelflocProject}
+          onclick={openSelfloc}
         >
           <Icon name="book" size={14} />
           {t('home.selfloc.open')}
@@ -725,7 +710,7 @@
               class="btn"
               data-testid="home.selfloc.open"
               disabled={contractBusy || selflocBusy}
-              onclick={openSelflocProject}
+              onclick={openSelfloc}
             >
               <Icon name="book" size={14} />
               {t('home.selfloc.open')}
