@@ -26,6 +26,8 @@ related:
 
 **Волна 5 (30.09, ночь):** merge `22edca9` — UI-точка «Помочь с переводом RimLoc» на экране справки (мандат self-loc): общий модуль `selfloc.ts` для Home и Help, дедуп-инвариант `'RimLoc UI (en)'` сохранён; разбор «мок-вспышек» закрыт вердиктом воркера с правками по пилюлям провайдеров (e7beef9); ревью REQUEST_CHANGES (first-run карточка на сырой функции — отказ глотался) исправлен (`fda3624`). Гейты: rust 326/0, svelte 0/0, vitest **383/383** (+2 теста selfloc-модуля). **Артефакт REL-9 `3c2df848…`** (evidence `artifact-rel9-final/`; первый, собранный с автосборкой фронта through beforeBuildCommand). Живая приёмка: экран справки → карточка → Enter по «Перевести RimLoc» → workspace, **managed 8→8 через Help-вход** (кадры `live-accept-rel5/r9c-*.png`).
 
+**Волна 6 (30.09):** merge `35a3fd6` — строгая placeholder-валидация selfloc-строк (аудит §5: множество `{name}` base-vs-перевод для ui-catalog записей; потеря/добавление/переименование = error-finding `placeholder-check`; 6 юнит-тестов + интеграционный на реальном каталоге >1000 записей, без дублей с lost-placeholder) и перевод бэкенд-сообщений по code (аудит §4/§7: `contract.error.<code>` / `finding.<kind>` с fallback на серверный текст, код-префикс сохраняется, 24+24 ключа ru/en, тесты backend-messages). Ревью APPROVED (независимый контекст: совпадение форм токенов с фронтенд-рантаймом, отсутствие ложных срабатываний подтверждено E2E). Гейты: **Rust 333/0** (+7), svelte 0/0, **vitest 389/389** (+6). **Артефакт REL-10 `9c334a72…`** (evidence `artifact-rel10-final/`, дым-кадр `live-accept-rel5/rel10-home.png`).
+
 **Вердикт: LOCAL RC READY (macOS).** Публикация (push, тег, релиз, подпись) — за владельцем.
 
 ## 1. Гейты приёмки на current `main 8056649` (реальные прогоны 27.09)
