@@ -409,6 +409,10 @@
 </section>
 
 <style>
+  /* Wave 9 (owner blank-tail class): the section is the tab's fill-and-scroll
+     region — flex: 1 keeps it owning the tab column instead of clamping to
+     content height and leaving a dead tail below (inert when mounted outside
+     a flex column, e.g. a summary context). */
   .overview {
     padding: var(--space-4) var(--space-6);
     overflow-y: auto;
@@ -416,6 +420,8 @@
     flex-direction: column;
     gap: var(--space-4);
     max-width: 640px;
+    flex: 1;
+    min-height: 0;
   }
 
   .title {

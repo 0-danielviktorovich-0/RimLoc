@@ -27,8 +27,10 @@ export const en: Record<string, string> = {
 
   // Honest capability degradation (audit P1-5): CTA/buttons gated by the
   // handshake capability report while the J backend slices are pending.
-  'capability.unsupported.title': 'Not available yet: the operation waits for its contract slice. {reason}',
-  'capability.unsupported.note': 'Contract build is not wired yet (backend slice in progress). {reason}',
+  // Wave 9 (mandate §14): "contract slice" is an internal term; the user
+  // gets plain words about the backend connection instead.
+  'capability.unsupported.title': 'Not available yet: this feature is still being connected to the backend. {reason}',
+  'capability.unsupported.note': 'Translation build is not connected to the backend yet — work in progress. {reason}',
 
   // Recovery after a typed failure (Pass A P1-1/P1-2): refresh adopts the
   // disk (backend-dirty discarded) — always an explicit user action.
@@ -101,7 +103,7 @@ export const en: Record<string, string> = {
   'contract.error.invalid_output_path': 'The output path must be an absolute directory. Detail: {message}',
   'contract.error.unsupported_capability': 'This operation is not part of the current build yet — it is reported honestly instead of being approximated. Detail: {message}',
   'contract.error.project_not_found': 'No managed project with this id exists (it may have been unloaded). Detail: {message}',
-  'contract.error.schema_version': 'The project file was written by another contract version and is not supported by this build. Detail: {message}',
+  'contract.error.schema_version': 'The project file was written in another file format version and is not supported by this build. Detail: {message}',
   'contract.error.validation_failed': 'The operation produced validation errors — fix them and retry. Detail: {message}',
   'contract.error.internal': 'An unexpected backend error occurred. Detail: {message}',
 
@@ -120,9 +122,10 @@ export const en: Record<string, string> = {
 
   // Honest live counterpart of the mock badge (audit P1-4): on a contract
   // project the global chip shows the live mode instead of claiming demo data.
-  'livebadge.label': 'Live project (contract)',
-  'livebadge.title':
-    'A real project is open over the RimLocClient → Tauri contract: the data is not demo fixtures and edits persist into the managed project.',
+  // Wave 9 (mandate §14): drop "(contract)" — an internal term; the tooltip
+  // answers in plain words, no internal bridge names.
+  'livebadge.label': 'Live project',
+  'livebadge.title': 'A real project is open: this is not demo data and your edits persist.',
 
   // M-2 (UI audit 2026-09-29): with no project open the header chip states
   // the TRANSPORT truth (Live/Mock by client mode) — the live project list

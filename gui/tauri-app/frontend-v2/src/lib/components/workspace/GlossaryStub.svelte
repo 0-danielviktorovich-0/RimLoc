@@ -6,26 +6,32 @@
 
 <section class="glossary" aria-labelledby="glossary-heading" data-testid="workspace.glossary-stub">
   <h2 id="glossary-heading" class="title">{t('glossary.title')}</h2>
-  <table class="terms">
-    <thead>
-      <tr>
-        <th scope="col">{t('glossary.term')}</th>
-        <th scope="col">{t('glossary.translation')}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each mockGlossary as term (term.en)}
+  <!-- Wave 9 (owner blank-tail class): the term table is the stretching scroll
+       container, the stub note anchors the bottom — no dead tail below. -->
+  <div class="scroll">
+    <table class="terms">
+      <thead>
         <tr>
-          <td class="mono">{term.en}</td>
-          <td>{term.ru}</td>
+          <th scope="col">{t('glossary.term')}</th>
+          <th scope="col">{t('glossary.translation')}</th>
         </tr>
-      {/each}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {#each mockGlossary as term (term.en)}
+          <tr>
+            <td class="mono">{term.en}</td>
+            <td>{term.ru}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
   <p class="note">{t('glossary.note')}</p>
 </section>
 
 <style>
+  /* Wave 9 (owner blank-tail class): the section fills the tab column instead
+     of clamping to content height; the table area is the scroll container. */
   .glossary {
     padding: var(--space-4) var(--space-6);
     overflow-y: auto;
@@ -33,6 +39,14 @@
     flex-direction: column;
     gap: var(--space-3);
     max-width: 560px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .title {

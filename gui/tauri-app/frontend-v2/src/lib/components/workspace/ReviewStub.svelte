@@ -396,12 +396,18 @@
 </section>
 
 <style>
+  /* Wave 9 (owner blank-tail class, кадр 01.37.06): the section fills the
+     workspace column (flex: 1) instead of clamping to content height and
+     leaving a dead dark tail below; the queue list itself is the scroll
+     container. */
   .review {
     padding: var(--space-4) var(--space-6);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    flex: 1;
+    min-height: 0;
   }
 
   .head {
@@ -555,12 +561,17 @@
     color: var(--color-fg);
   }
 
-  /* Two-pane layout: queue + context */
+  /* Two-pane layout: queue + context. Wave 9 (blank-tail class): the layout
+     takes the remaining section height; the queue pane stretches with it so
+     the list owns the free space, while the context pane keeps its content
+     height (align-items: start). */
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 380px;
     gap: var(--space-4);
     align-items: start;
+    flex: 1;
+    min-height: 0;
   }
 
   @media (max-width: 1100px) {
@@ -574,8 +585,13 @@
     flex-direction: column;
     gap: var(--space-2);
     min-width: 0;
+    align-self: stretch;
+    min-height: 0;
   }
 
+  /* Wave 9 (blank-tail class): the queue is the stretching scroll container —
+     a long queue scrolls inside the pane, a short one leaves no screen-wide
+     dead zone below the section. */
   .queue {
     list-style: none;
     margin: 0;
@@ -583,6 +599,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .row {
@@ -660,7 +679,9 @@
     color: var(--color-muted-fg);
   }
 
-  /* Queue empty state */
+  /* Queue empty state. Wave 9 (blank-tail class): with no issues the card
+     grows into the pane and centers its content — a meaningful empty state
+     instead of a giant void. */
   .clear-card {
     border: 1px dashed var(--color-border-strong);
     border-radius: var(--radius-lg);
@@ -668,7 +689,9 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    justify-content: center;
     gap: var(--space-2);
+    flex: 1;
   }
 
   .clear-title {
