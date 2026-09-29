@@ -904,12 +904,23 @@ pub fn scan_units_effective_view(
 /// Cost note: one extra sequential read pass over the scanned trees, per
 /// project (re)start - bounded by the same trees the scanner itself walks.
 pub fn source_fingerprint(root: &Path, target_version: Option<&str>) -> Result<String> {
-    // Catalog sources fingerprint by the SAME M3 contract over the generated
-    // bridge files themselves (`catalog.<locale>.json` + `catalog.meta.json`)
-    // — a source-message edit is drift under the existing semantics. See
+    // Catalog sources fingerprint by the SEMANTIC SOURCE contract
+    // (`catalog.en.json` + `catalog.meta.json` only — SF-09: target
+    // catalogs are exports, not source; drift = the source changed). A
+    // catalog whose marker is present but broken is a typed refusal: the
+    // session renders that as "drift unknown", never a false in-sync. See
     // `crate::ui_catalog` (self-localization wave B4).
-    if crate::ui_catalog::is_catalog_source(root) {
-        return crate::ui_catalog::source_fingerprint(root);
+    match crate::ui_catalog::recognize_catalog(root) {
+        crate::ui_catalog::CatalogStatus::NotCatalog => {} // ordinary mod tree
+        crate::ui_catalog::CatalogStatus::Valid(_) => {
+            return crate::ui_catalog::source_fingerprint(root);
+        }
+        crate::ui_catalog::CatalogStatus::Invalid(reason) => {
+            return Err(color_eyre::eyre::eyre!(
+                "UI catalog source at `{}` is invalid: {reason}",
+                root.display()
+            ));
+        }
     }
     let view = crate::modview::effective_view(root, target_version)?;
     let mut acc = String::new();

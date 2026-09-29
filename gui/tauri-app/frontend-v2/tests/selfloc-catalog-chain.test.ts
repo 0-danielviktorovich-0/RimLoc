@@ -157,10 +157,22 @@ describe('selfloc E2E: the real session export feeds the TS chain (SF-5)', () =>
         // Every exported value is physically present in the written file,
         // escaped exactly the way the canonical writer escapes it. THIS is
         // the byte-level proof that chain.json describes the real export.
+        // SF-10 scaled the chain to the FULL catalog (1284 values, was 3),
+        // and the real dictionary carries edge whitespace (e.g.
+        // `stage.label: "Этап: "`): the writer preserves the value
+        // verbatim, while chain.json values come from a REPARSE and the
+        // Keyed scanner trims edge whitespace by contract. The comparison
+        // therefore extracts the exact element and normalizes ONLY the
+        // edges on both sides — every interior byte stays exact.
         for (const [id, value] of Object.entries(c.values)) {
-          expect(xml, `${f.path} must contain <${id}>`).toContain(
-            `<${id}>${escapeXmlText(value)}</${id}>`,
-          );
+          const open = `<${id}>`;
+          const close = `</${id}>`;
+          const start = xml.indexOf(open);
+          expect(start, `${f.path} must contain <${id}>`).toBeGreaterThanOrEqual(0);
+          const end = xml.indexOf(close, start);
+          expect(end, `${f.path} must close <${id}>`).toBeGreaterThan(start);
+          const inner = xml.slice(start + open.length, end);
+          expect(inner.trim(), `${f.path} <${id}> value`).toBe(escapeXmlText(value).trim());
         }
       }
 

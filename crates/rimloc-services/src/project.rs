@@ -30,8 +30,21 @@ pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Pr
     // kind. The catalog adapter produces the inventory through this SAME
     // canonical create-path contract (entries + M3 fingerprint) and NO
     // RimWorld scanner runs on catalog data — see `crate::ui_catalog`.
-    if crate::ui_catalog::is_catalog_source(mod_root) {
-        return crate::ui_catalog::build_catalog_project(mod_root);
+    // SF-09: recognition is TYPED — a broken catalog (marker present, source
+    // unreadable/unparseable/foreign) is a refusal carrying the reason, NOT
+    // a silent fall-through into the mod scan: a corrupted source must never
+    // look like a legitimately empty mod.
+    match crate::ui_catalog::recognize_catalog(mod_root) {
+        crate::ui_catalog::CatalogStatus::NotCatalog => {} // ordinary mod pipeline
+        crate::ui_catalog::CatalogStatus::Valid(_) => {
+            return crate::ui_catalog::build_catalog_project(mod_root);
+        }
+        crate::ui_catalog::CatalogStatus::Invalid(reason) => {
+            return Err(color_eyre::eyre::eyre!(
+                "UI catalog source at `{}` is invalid and was not scanned: {reason}",
+                mod_root.display()
+            ));
+        }
     }
     let auto = crate::autodiscover_defs_context(mod_root)?;
     // ONE effective pipeline for every layout: the modview resolver decides

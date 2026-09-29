@@ -17,7 +17,7 @@
 //! fixture.
 
 use rimloc_core::winner_reason;
-use rimloc_domain::canonical::{EntryKind, SourceEntryId};
+use rimloc_domain::canonical::{EntryKind, Origin, SourceEntryId};
 use rimloc_services::contract::{
     ApplyIntentsRequest, IntentAction, ProjectSnapshot, Revision, SessionEpoch, TranslationIntent,
 };
@@ -116,6 +116,26 @@ fn catalog_project_end_to_end_through_ordinary_sessions() {
         snap.project.entries.len()
     );
     assert_eq!(snap.project.entries.len(), en_count);
+    // SF-10: the create imported the existing ru catalog as ORDINARY data —
+    // the translator opens the project with their previous work in place,
+    // not 1284 empty slots. The import rides the same create flow; the
+    // snapshot carries it (persist round-trip asserted after the restart
+    // at the bottom of this test).
+    let ru_count = count_nonempty_translated(&catalog_dir);
+    assert!(
+        snap.project.translations.len() > 1000,
+        "the existing ru catalog must be imported, got {} translations",
+        snap.project.translations.len()
+    );
+    assert_eq!(snap.project.translations.len(), ru_count);
+    let imported = snap
+        .project
+        .translations
+        .iter()
+        .find(|t| t.source_id.key == "common.appName")
+        .expect("imported ru record for common.appName");
+    assert_eq!(imported.locale, "ru");
+    assert_eq!(imported.origin, Origin::Imported);
     // M3 invariant: a fresh create is honestly in sync, never legacy None.
     assert_eq!(snap.source_changed, Some(false));
     // Identity + origin evidence on real data.
@@ -195,11 +215,18 @@ fn catalog_project_end_to_end_through_ordinary_sessions() {
 
     // 5. export into tmp — ordinary Keyed-family output; DefInjected
     //    mechanics must NOT apply to application messages (mandate §8).
+    //    SF-10: the export now round-trips the WHOLE imported ru set (the
+    //    three session-applied intents overwrite their imported records in
+    //    place — the count stays the ru file's), so the reparse guard is
+    //    checked against the full catalog, not just the touched slice.
     let out = tmp.path().join("out");
     let exp = mgr
         .export_project(&snap.project_id, snap.session_epoch, &out, &fixture.locale)
         .unwrap();
-    assert_eq!(exp.reparsed_keys, 3, "{exp:?}");
+    assert_eq!(
+        exp.reparsed_keys, ru_count,
+        "the export must round-trip every imported+applied ru translation: {exp:?}"
+    );
     assert!(exp.skipped_unknown_type.is_empty());
     let definj = out
         .join("Languages")
@@ -218,10 +245,15 @@ fn catalog_project_end_to_end_through_ordinary_sessions() {
     .unwrap();
     assert!(keyed_xml.contains(&fixture.fixed.value), "{keyed_xml}");
 
-    // 6. sourceChanged: edit a source message in the TMP catalog copy.
-    let mut en: serde_json::Value =
-        serde_json::from_str(&fs::read_to_string(catalog_dir.join("catalog.en.json")).unwrap())
-            .unwrap();
+    // 6. sourceChanged — SEMANTIC SOURCE ONLY (SF-09 contract change):
+    //    the fingerprint covers catalog.en.json + catalog.meta.json;
+    //    target catalogs (catalog.ru.json) are EXPORTS of the source, so a
+    //    translator finishing a locale must NEVER surface as source-drift
+    //    (the old fingerprint accumulated every catalog.<locale>.json and
+    //    flagged finished translations for review on a pure target change).
+    //    6a. an en SOURCE edit is drift.
+    let original_en = fs::read_to_string(catalog_dir.join("catalog.en.json")).unwrap();
+    let mut en: serde_json::Value = serde_json::from_str(&original_en).unwrap();
     en["messages"][0]["source_text"] = serde_json::json!("RimLoc (edited)");
     fs::write(
         catalog_dir.join("catalog.en.json"),
@@ -240,10 +272,52 @@ fn catalog_project_end_to_end_through_ordinary_sessions() {
         .unwrap();
     assert_eq!(v.status, "succeeded", "drift is a WARNING (M3 invariant)");
     assert!(v.findings.iter().any(|f| f.kind == "source-drift"), "{v:?}");
-    // A restart-recovered session sees the same drift (fresh manager).
+    // 6b. the en edit reverted + the ru TARGET edited: no drift. The same
+    //     edit moved the fingerprint under the old contract — here it is
+    //     honestly "in sync": only the source counts.
+    fs::write(catalog_dir.join("catalog.en.json"), &original_en).unwrap();
+    let mut ru: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(catalog_dir.join("catalog.ru.json")).unwrap())
+            .unwrap();
+    ru["messages"][0]["translated"] = serde_json::json!("РимЛок (переведено)");
+    fs::write(
+        catalog_dir.join("catalog.ru.json"),
+        serde_json::to_string_pretty(&ru).unwrap(),
+    )
+    .unwrap();
+    let refreshed = mgr.refresh(&snap.project_id).unwrap();
+    assert_eq!(
+        refreshed.source_changed,
+        Some(false),
+        "a target-catalog edit is not source drift (SF-09 boundary)"
+    );
+    // A restart-recovered session sees the same verdicts (fresh manager).
     let mgr2 = ProjectSessionManager::new(tmp.path().join("managed")).unwrap();
     let reopened = mgr2.open(&refreshed.project_id).unwrap();
-    assert_eq!(reopened.source_changed, Some(true));
+    assert_eq!(reopened.source_changed, Some(false));
+    // ...and the SF-10 import survives the restart as ordinary data.
+    assert_eq!(reopened.project.translations.len(), ru_count);
+}
+
+/// Count the importable records of the copied ru target catalog (SF-10):
+/// non-empty `translated` values, every id of which resolves to an en
+/// entry for the real generated files.
+fn count_nonempty_translated(catalog_dir: &std::path::Path) -> usize {
+    serde_json::from_str::<serde_json::Value>(
+        &fs::read_to_string(catalog_dir.join("catalog.ru.json")).unwrap(),
+    )
+    .unwrap()["messages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|m| {
+            !m["translated"]
+                .as_str()
+                .unwrap_or_default()
+                .trim()
+                .is_empty()
+        })
+        .count()
 }
 
 /// The repository's generated catalog stays byte-intact after the E2E run:
