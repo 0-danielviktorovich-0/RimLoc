@@ -6,6 +6,9 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- [gui] Agent automation layer (owner mandate): `RIMLOC_AUTOMATION=1` opts the app out of App Nap and deterministically activates the macOS accessibility server in any build profile, so an external System Events driver can drive the app; `RIMLOC_TRACE=1` appends a JSONL action trace of contract commands (name, duration, ok/error) to the app-data logs. Both default to off with zero behavior change.
+- [testlab] `auto_install.py`: agent-grade install/run/stop of the app into /Applications without DMG or Finder dialogs (atomic staging swap, one updated copy, quarantine stripped, trash-safe uninstall).
+- [gui] Home redesign (designer-system variant from the five-lens skill jury), recents meta `v/r/#id`, live-transport chip, and a wizard-tour entry button; UI bugfix waves 1-2 (3 high, 11 medium, low-pack) from the autonomous 21-screen AX audit.
 - [gui] Native folder picker on the create panel and on every output-path field (build/export/diagnostics): paths are chosen through the OS dialog instead of being typed by hand; cancelling is silent, errors are visible.
 - [gui] Full mod-package build from the GUI (`project_build_mod`): a drop-in `ModMetaData` About plus Languages, the same guards as export (absolute-path refusal, source-tree containment, symlink aliasing, case-collision and control-char checks) — the result folder can be dropped into RimWorld Mods without the CLI.
 - [gui] "Translate RimLoc" beta card: opens the app's own UI catalog (~1.2k messages) as an ORDINARY translation project through the standard create flow; a repeat click reopens the existing catalog project instead of duplicating it.

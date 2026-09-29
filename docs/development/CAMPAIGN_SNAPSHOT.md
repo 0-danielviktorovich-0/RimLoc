@@ -37,6 +37,19 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **ВЕЧЕР 29.09 ЗАВЕРШЕН (~23:3x)**: main `bad4a69` (→ проверь `git rev-parse HEAD`).
+  Багфикс-волна 2 влита (`6a3dddd`, M-3..M-11 + L-пакет, гейты 324 Rust / 381 фронт).
+  REL-4 пересобран от 6a3dddd (`62f3af14…`, побайтово-воспроизводим, evidence
+  artifact-rel4-final/). **Агентский слой автоматизации** (мандат «полный автоматизм +
+  FOCP-дебаг»): `RIMLOC_AUTOMATION=1` (AX-хуки release-capable; web-AX WKWebView на
+  видимом окне недоступен внешне — рабочий канал Tab+Enter), `RIMLOC_TRACE=1` (JSONL
+  трейс контракных команд), `testlab/auto_install.py` (установка/запуск/стоп в
+  /Applications без DMG; СТАНДАРТ ИЗМЕНЁН владельцем 29.09: автоустановка теперь
+  РАЗРЕШЕНА и обязательна, одна версия, атомарная замена). **Живая UI-приёмка ЗАКРЫТА**
+  на release-бинаре `8dbe6503…` (evidence live-accept-rel5/): тур-кнопка+чип+recents-меты
+  рендер, мастер-тур открывается (шаг 1), selfloc-дедуп живьём (managed 8→8), workspace
+  шапка displayName+EN→RU, экран проверки с раздельными счётчиками. Финальный артефакт:
+  `artifact-rel5-auto/` от bad4a69. Открыто: пуш `9591f4f..bad4a69` — ок владельца.
 - **RC-конвергенция батча-2 ЗАВЕРШЕНА (27.09)**: main на документ-срезе `b1f80f1`
   (перед ним `2f8ff0e` — merge P1-фикса release-компиляции, `fd618c2` — merge
   out-dir-гарда). Все гейты зелёные: fmt, clippy `--workspace --all-targets
