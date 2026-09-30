@@ -68,8 +68,14 @@ clang -framework ApplicationServices axpress.c -o axpress # фоновое на�
 ## Ограничения / открытые вопросы
 
 - Единственная активация на прогон пока обязательна (материализация
-  web-дерева). Нулевой вариант не найден — вопрос фронтир-модели,
-  см. `docs/development/FRONTIER_QUERY_FOCUS_FREE_MACOS_AUTOMATION.md`.
+  web-дерева). Нулевой вариант ФАЛЬСИФИЦИРОВАН вверх по стеку: wry 0.55.1
+  безусловно NSApplication.activate() при создании webview (focus:false,
+  open -g не помогают; deactivate/yieldActivationAsNeeded не возвращают).
+  Путь к нулю — патч wry/upstream. Спайк embedded WDIO (второй канал) —
+  `docs/development/testing/WDIO_EMBEDDED_SPIKE.md`: прямой tauri-driver
+  мёртв на macOS, но @wdio/tauri-service embedded (tauri-plugin-wdio-
+  webdriver ВНУТРИ приложения) работает — «Tauri WebDriver недоступен на
+  маке» было неверным обобщением.
 - Ввод текста в поля фоном — не проверен; кандидат `AXSetValue` +
   проверка значения, вместо keystroke.
 - Scroll фоном — не проверен; кандидат AXPress на стрелках полосы

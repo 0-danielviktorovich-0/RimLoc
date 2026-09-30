@@ -3216,6 +3216,55 @@ fn automation_accessibility_activate() {
     }
 }
 
+/// macOS automation hook: wry unconditionally NSApplication::activate()s at
+/// webview creation (wry 0.55.1, wkwebview/mod.rs "make sure the window is
+/// always on top" block) — the `focused: false` window flag, `open -g` and
+/// background spawns are all overridden by it (measured 2026-09-30: every
+/// launch path made rimloc-gui frontmost). For automation instances we
+/// immediately deactivate: macOS hands focus back to the owner's previous
+/// app, so the launch flicker collapses to a sub-second activate→deactivate
+/// pair instead of stealing focus for the whole session.
+#[cfg(target_os = "macos")]
+fn automation_yield_focus() {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
+    }
+    unsafe {
+        let cls = objc_getClass(c"NSApplication".as_ptr());
+        if cls.is_null() {
+            return;
+        }
+        let app = {
+            let send: extern "C" fn(
+                *mut std::ffi::c_void,
+                *mut std::ffi::c_void,
+            ) -> *mut std::ffi::c_void = std::mem::transmute(objc_msgSend as *const ());
+            send(cls, sel_registerName(c"sharedApplication".as_ptr()))
+        };
+        if app.is_null() {
+            return;
+        }
+        let send_void: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) =
+            std::mem::transmute(objc_msgSend as *const ());
+        // macOS 14+ NSApplication.yieldActivationAsNeeded: hands activation
+        // back to the app that would be active without us; plain deactivate()
+        // measured not to return focus (30.09).
+        let yield_sel = sel_registerName(c"yieldActivationAsNeeded".as_ptr());
+        let responds: extern "C" fn(
+            *mut std::ffi::c_void,
+            *mut std::ffi::c_void,
+            *mut std::ffi::c_void,
+        ) -> i8 = std::mem::transmute(objc_msgSend as *const ());
+        if responds(app, sel_registerName(c"respondsToSelector:".as_ptr()), yield_sel) != 0 {
+            send_void(app, yield_sel);
+        } else {
+            send_void(app, sel_registerName(c"deactivate".as_ptr()));
+        }
+    }
+}
+
 /// Agent automation entry (release-capable, owner mandate 2026-09-29: the
 /// agent must be able to fully drive the app itself). RIMLOC_AUTOMATION=1
 /// exposes the WKWebView web content to the macOS accessibility tree
@@ -3230,6 +3279,7 @@ fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
         return;
     }
     automation_disable_app_nap();
+    automation_yield_focus();
     if automation_webview_accessibility(window) {
         eprintln!("{}", DEV_LOG_AUTOMATION_AX_ENABLED);
     } else {
@@ -3639,6 +3689,19 @@ const DEV_LOG_WINDOW_ORIGIN_INVALID: &str = "window_origin_env_invalid";
 fn main() {
     let _ = color_eyre::install();
     let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+    // Agent automation (RIMLOC_AUTOMATION=1): embedded WebDriver server —
+    // @wdio/tauri-service embedded provider via tauri-plugin-wdio-webdriver
+    // (server) + tauri-plugin-wdio (execute API/mocks/log forwarding).
+    // Runtime-gated: plugins ship compiled but dormant unless the agent
+    // env is set. Security boundary review pending before any public
+    // artifact carries it (frontier directive 30.09, §10).
+    let builder = if std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1") {
+        builder
+            .plugin(tauri_plugin_wdio_webdriver::init())
+            .plugin(tauri_plugin_wdio::init())
+    } else {
+        builder
+    };
     let builder = match contract_adapter::attach_contract(
         builder,
         contract_adapter::default_managed_root(),

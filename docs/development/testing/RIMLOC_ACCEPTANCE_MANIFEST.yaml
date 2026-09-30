@@ -27,7 +27,7 @@ tiers:
       npm run test
     required_for: [frontend_wave]
   T2_tauri_semantic_e2e:
-    driver: "@wdio/tauri-service"   # TODO wave: wiring
+    driver: "@wdio/tauri-service"   # spike PROVEN 30.09: WDIO_EMBEDDED_SPIKE.md (мост-шим — follow-up)
     controls: [aria_role, accessible_name, testid, dom_state]
     required_for: [release_gate, new_live_workflow]
     invariants:
