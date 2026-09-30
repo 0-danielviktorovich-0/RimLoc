@@ -59,6 +59,11 @@ tiers:
     method: изолированный RimWorld-профиль, read-only исходники, game logs — primary evidence
     required_for: [public_release_decision]
 
+semantic_snapshot:
+  tool: "npm run snapshot:semantic (e2e/scenes/semantic-snapshot.mjs)"
+  ready: "9 маршрутов — фокус/диалоги/контролы/scroll-состояние в JSON (RimLoc-evidence/semantic-snapshots); AI-читаемое наблюдение без скриншотов (мандат 03 §7)"
+  facts_20260930: "overflowX=0 на всех 9 маршрутах; scroll-контейнеры: workspace/review/help/providers/home"
+
 non_interference_contract:
   assert_before_after: [pointer_idle, frontmost_app, active_space, clipboard]
   exceptions: [native_file_dialogs]   # classified foreground/native acceptance
