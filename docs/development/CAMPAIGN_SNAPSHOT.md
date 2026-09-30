@@ -233,6 +233,15 @@ project data не в фронтенд-форматах.
 revision/epoch, защищённый source/output, реальная диагностика, закрытие unsafe legacy
 Tauri routes и обязательная приёмка нового GUI; это требования, не статус реализации.
 
+## REL-13 — текущий release-артефакт (01.10)
+HEAD a105529: M-7 + M-10 фиксы, P0-форки нулевой активации (нулевая
+кража фокуса: запуск/WDIO-сессия не активируют приложение), runtime-
+gated WDIO-плагины (спят), window-state (обычные сессии). Живая
+верификация фоном 2/2 PASS; §12-acceptance PASS (12м20с, 0 активаций).
+Ограничения: adhoc-подпись, плагины до security-ревью, волна 13 (глоссарий/
+TM live) — после квоты 06.10. Процессы автоматизации: только background-
+only (RIMLOC_AUTOMATION_POLICY), foreground = exclusive + владелец.
+
 ## ⏸ Pending owner decisions
 1. Визуальное направление (Precision/Aurora/Workshop/Editorial + палитра + гибрид) —
    пакет ПОСЛЕ W3-W5 на представительных экранах (скриншоты: testlab/artifacts/
