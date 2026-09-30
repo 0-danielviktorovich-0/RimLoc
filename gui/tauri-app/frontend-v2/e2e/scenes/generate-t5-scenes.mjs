@@ -12,6 +12,9 @@ const BASE = process.env.T5_BASE_URL ?? 'http://localhost:5199';
 const OUT = join(homedir(), 'Developing', 'RimLoc-evidence', 't5-scenes');
 const THEMES = ['dark', 'light'];
 const LOCALES = ['ru', 'en'];
+// Viewport axes (T5: narrow/wide). long_text/cjk need mock-data seeds —
+// deliberately deferred until a seeded locale fixture exists.
+const VIEWPORTS = { normal: { width: 1280, height: 800 }, narrow: { width: 900, height: 800 }, wide: { width: 1760, height: 900 } };
 // screen -> hash route of the app shell (mock mode renders every route).
 // Glossary/TM/Project are workspace TABS (no dedicated route) — covered by
 // the workspace scene; add dedicated scenes when a route appears.
@@ -35,8 +38,12 @@ const failures = [];
 try {
   for (const theme of THEMES) {
     for (const locale of LOCALES) {
+     for (const [vpName, vp] of Object.entries(VIEWPORTS)) {
+      // Viewport axis runs on the reference combo only (dark/ru) to keep the
+      // scene count bounded; the theme×locale matrix stays at normal size.
+      if (vpName !== 'normal' && !(theme === 'dark' && locale === 'ru')) continue;
       const ctx = await browser.newContext({
-        viewport: { width: 1280, height: 800 },
+        viewport: vp,
         colorScheme: theme === 'light' ? 'light' : 'dark',
       });
       // Seed prefs before app scripts run.
@@ -46,7 +53,8 @@ try {
       }, [theme, locale]);
       const page = await ctx.newPage();
       for (const [name, hash] of Object.entries(SCREENS)) {
-        const file = join(OUT, `${theme}-${locale}-${name}.png`);
+        const vpSuffix = vpName === 'normal' ? '' : `-${vpName}`;
+        const file = join(OUT, `${theme}-${locale}-${name}${vpSuffix}.png`);
         try {
           await page.goto(`${BASE}/${hash}`, { waitUntil: 'networkidle' });
           await page.waitForTimeout(250);
@@ -57,6 +65,7 @@ try {
         }
       }
       await ctx.close();
+     }
     }
   }
 } finally {
