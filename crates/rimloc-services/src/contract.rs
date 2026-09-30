@@ -282,6 +282,13 @@ pub struct ProjectSnapshot {
     /// time is NEVER reported as "in sync". Additive v2 field.
     #[serde(default)]
     pub source_changed: Option<bool>,
+    /// Read-only source mod root the project was built from, as the session
+    /// holds it (persisted envelope H5). `None` on legacy envelopes — the
+    /// UI must show an honest unknown instead of a template placeholder
+    /// (finding M-7: the Project tab rendered mock location constants on
+    /// live contract projects).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_root: Option<PathBufDto>,
     pub project: Project,
 }
 

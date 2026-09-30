@@ -132,6 +132,10 @@ export interface ProjectSnapshotDto {
   /** Additive v2 (contract.rs): the last durably ACKED revision — the
    *  correct `expected_revision` base for apply while dirty. */
   acked_revision?: number;
+  /** Additive (M-7): read-only source mod root the session holds; absent
+   *  on legacy envelopes — UI must show an honest unknown, never a
+   *  template placeholder. */
+  source_root?: { path: string };
   project: CanonicalProjectDto;
 }
 

@@ -7,15 +7,17 @@
   // links into the specialized tools · a clearly separated danger zone with
   // confirmed reset/archive. Deliberately NOT a clone of Settings: it reports
   // project state and routes into tools, it does not re-edit configuration.
-  // Mock paths and states, zero backend.
+  // M-7 (live audit 2026-09-30): locations are LIVE-first — a contract
+  // project shows its real source root from the wire snapshot (honest «—»
+  // on legacy envelopes); the mock constants only describe the demo/dev
+  // fixture, never a live project.
   import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
   import { languages, type TargetSummary } from '../../languages/store.svelte';
   import { registry } from '../../languages/registry';
   import { router } from '../../router.svelte';
-  import { RW_VERSION } from '../../mock/diagnostics';
-  import { SOURCE_LOCATION, OUTPUT_LOCATION } from '../../stores/diagnostics.svelte';
+  import { RW_VERSION, DEMO_SOURCE_ROOT } from '../../mock/diagnostics';
   import { clientInstance } from '../../client/instance.svelte';
   import { SELFLOC_PROJECT_NAME } from '../../selfloc';
   import type { SelflocBuildContributionResponseDto } from '../../client/types';
@@ -24,6 +26,25 @@
   const counts = $derived(project.statusCounts());
   const problems = $derived(counts.pending_review + counts.sourceChanged);
   const activeSummary = $derived(languages.summary(languages.activeLocale));
+
+  // ------------------------------------------------------------ M-7 locations
+  // Contract project → real paths from the session (source root rides the
+  // snapshot; output dir is chosen at export time — honest «—», not a
+  // template). Anything else is the demo/dev fixture the mock constants
+  // legitimately describe.
+  const isContractProject = $derived(project.source === 'contract');
+  function tildeDisplay(p: string): string {
+    return p.replace(/^\/Users\/[^/]+/, '~');
+  }
+  const sourceLocationValue = $derived(
+    isContractProject
+      ? project.contractSourceRoot
+        ? tildeDisplay(project.contractSourceRoot)
+        : '—'
+      : DEMO_SOURCE_ROOT,
+  );
+  // Output dir выбирается в момент экспорта — честный «—» в обоих режимах.
+  const outputLocationValue = $derived('—');
   // L-8 (UI audit 2026-09-29): the overview no longer duplicates the toolbar
   // build CTA right under the heading — the single CTA lives in the
   // Workspace toolbar; the Health block below still routes into review.
@@ -200,11 +221,11 @@
   <dl class="locations" data-testid="workspace.project.locations">
     <div class="loc-row">
       <dt>{t('workspace.project.sourceLocation')}</dt>
-      <dd class="mono">{SOURCE_LOCATION}</dd>
+      <dd class="mono" data-testid="workspace.project.sourceLocation.value">{sourceLocationValue}</dd>
     </div>
     <div class="loc-row">
       <dt>{t('workspace.project.outputLocation')}</dt>
-      <dd class="mono">{OUTPUT_LOCATION}</dd>
+      <dd class="mono" data-testid="workspace.project.outputLocation.value">{outputLocationValue}</dd>
     </div>
     <div class="loc-row">
       <dt>{t('workspace.project.entries')}</dt>

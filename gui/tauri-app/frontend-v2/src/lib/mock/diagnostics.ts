@@ -276,6 +276,14 @@ const REDACTED_PLACEHOLDER = '[REDACTED]';
  */
 export const MOCK_HOME_PREFIX = '/Users/<user>';
 
+/**
+ * M-7: the DEMO workspace project renders a PATH-SHAPED fixture — never the
+ * angle-bracket template constants (those stay internal to the diagnostics
+ * bundle, where they describe wire normalization). A path that looks fake
+ * for demo but real for live is exactly how finding M-7 went unnoticed.
+ */
+export const DEMO_SOURCE_ROOT = '/tmp/rimloc-demo/TestMod';
+
 /** Normalize an absolute home path (`/Users/<user>/...` → `~/...`) for display. */
 export function normalizeHomePath(value: string, homePrefix: string = MOCK_HOME_PREFIX): string {
   return value.startsWith(homePrefix) ? `~${value.slice(homePrefix.length)}` : value;

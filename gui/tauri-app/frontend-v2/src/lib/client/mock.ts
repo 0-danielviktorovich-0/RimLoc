@@ -46,6 +46,7 @@ interface MockTranslation {
 
 interface MockProject {
   project_id: string;
+  source_root: string;
   name: string;
   revision: number;
   session_epoch: number;
@@ -74,10 +75,11 @@ function validationFor(text: string | null): 'unknown' | 'ok' | { issues: string
     : 'ok';
 }
 
-function mkProject(id: string, name: string): MockProject {
+function mkProject(id: string, name: string, sourceRoot: string): MockProject {
   return {
     project_id: id,
     name,
+    source_root: sourceRoot,
     revision: 1,
     session_epoch: 1,
     entries: [
@@ -105,8 +107,10 @@ function mkProject(id: string, name: string): MockProject {
 /** Deterministic corpus (UI_SDK representative slice). */
 export function createMockState() {
   const projects: MockProject[] = [
-    mkProject('mock-demo-0001', 'Demo TestMod'),
-    mkProject('mock-normal-0002', 'My Mod')
+    // M-7: the mock snapshot carries its FIXTURE source root (a plain
+    // synthetic path — never the template constants from diagnostics).
+    mkProject('mock-demo-0001', 'Demo TestMod', '/tmp/rimloc-mock-src/DemoTestMod'),
+    mkProject('mock-normal-0002', 'My Mod', '/tmp/rimloc-mock-src/MyMod')
   ];
   return { projects };
 }
@@ -123,6 +127,8 @@ function snapshotOf(p: MockProject): ProjectSnapshotDto {
     // refresh adopts the disk (Rust: applied-but-unacked semantics).
     dirty: p.disk_dirty === true,
     acked_revision: p.revision,
+    // M-7: real-shaped fixture path (same field the Rust session emits).
+    source_root: { path: p.source_root },
     project: {
       context: { active_dlc: [], active_mods: [], load_order: [], view: 'potential' },
       entries: p.entries.map((e) => ({ id: e.id, text: e.text, source_locale: 'en' })),
@@ -204,7 +210,10 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
         case 'project_create': {
           const req = (params as { request: CreateProjectRequestDto }).request;
           const id = `mock-${String(state.projects.length + 1).padStart(4, '0')}`;
-          const p = mkProject(id, req.mod_root.path.split('/').pop() ?? id);
+          // One field, two roles: the REAL create path IS the source root
+          // (Rust SessionState.mod_root) and the export-guard tooth reads
+          // the same value.
+          const p = mkProject(id, req.mod_root.path.split('/').pop() ?? id, req.mod_root.path);
           p.mod_root = req.mod_root.path; // export-guard tooth
           state.projects.push(p);
           const snap: ProjectSnapshotDto = snapshotOf(p);

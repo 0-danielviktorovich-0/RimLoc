@@ -58,6 +58,13 @@ class ProjectStore {
   targetLocale = $state('ru');
   /** True only while the workspace shows the bundled W6 demo project. */
   isDemo = $state(false);
+  /**
+   * M-7 (live audit 2026-09-30): read-only source mod root of the OPEN
+   * contract project, from the wire snapshot (session.rs → envelope H5).
+   * null = not known (legacy envelope / not a contract project) — the UI
+   * shows an honest unknown, NEVER a template placeholder.
+   */
+  contractSourceRoot = $state<string | null>(null);
 
   entries = $state<Entry[]>(cloneInitial());
 
@@ -406,6 +413,8 @@ class ProjectStore {
     this.contractError = null;
     this.projectName = snap.project_id;
     this.projectDisplayName = null;
+    // M-7: real source root rides the snapshot; absent (legacy) → honest null.
+    this.contractSourceRoot = snap.source_root?.path ?? null;
     this.source = 'contract';
     // M-5: the snapshot DTO carries no display name — resolve it from the
     // project list summaries (best-effort; the id remains the fallback and a
@@ -699,6 +708,7 @@ class ProjectStore {
     this.contractRevision = 0;
     this.contractAckedRevision = 0;
     this.contractEpoch = 0;
+    this.contractSourceRoot = null;
     this.contractError = null;
     this.refreshing = false;
   }

@@ -27,8 +27,8 @@
 
 use crate::contract::{
     ApplyIntentsRequest, ApplyIntentsResponse, ContractError, ContractErrorCode, IntentAction,
-    JobId, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch, SkippedIntent,
-    TranslationIntent, UI_CONTRACT_VERSION,
+    JobId, PathBufDto, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch,
+    SkippedIntent, TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
@@ -2092,6 +2092,11 @@ fn snapshot_of(project_id: &str, st: &SessionState) -> ProjectSnapshot {
         acked_revision: st.acked_revision,
         project,
         source_changed: st.source_changed,
+        source_root: if st.mod_root.as_os_str().is_empty() {
+            None
+        } else {
+            Some(PathBufDto::new(st.mod_root.display().to_string()))
+        },
     }
 }
 
@@ -3612,6 +3617,52 @@ mod tests {
             .export_project(&snap.project_id, 1, &managed.join("out"), "Russian")
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// M-7 (live audit 2026-09-30): the snapshot carries the read-only
+    /// source root so the Project tab renders the REAL mod location on a
+    /// live project — never a template placeholder. An empty session root
+    /// (bare/legacy) must surface as None (honest unknown).
+    #[test]
+    fn snapshot_exposes_source_root() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert_eq!(
+            snap.source_root.as_ref().map(|p| p.path.as_str()),
+            Some(mod_root.to_str().unwrap())
+        );
+
+        // Reopen restores the same root from the durable envelope (H5).
+        let reopened = mgr.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_root, snap.source_root);
+    }
+
+    /// An empty mod_root (legacy/bare session) never fabricates a path:
+    /// `None` is the honest unknown the UI renders as «—».
+    #[test]
+    fn snapshot_source_root_none_on_empty_root() {
+        let st = SessionState {
+            path: PathBuf::from("/nonexistent/managed/mock.json"),
+            display_name: "legacy".into(),
+            mod_root: PathBuf::new(), // bare root: honest-unknown case
+            target_version: None,
+            epoch: 1,
+            revision: 1,
+            acked_revision: 1,
+            project: Project::default(),
+            disk_hash: None,
+            dirty: false,
+            cancel_requested: false,
+            last_failed_operation: None,
+            last_failed_affected: Vec::new(),
+            source_fingerprint: None,
+            source_changed: None,
+        };
+        let snap = snapshot_of("legacy-0001", &st);
+        assert!(snap.source_root.is_none());
     }
 
     /// P2-4 (backend half): the snapshot exposes the dirty flag and the

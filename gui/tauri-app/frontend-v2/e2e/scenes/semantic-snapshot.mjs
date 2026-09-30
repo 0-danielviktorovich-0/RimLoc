@@ -12,6 +12,11 @@ import { homedir } from 'node:os';
 
 const BASE = process.env.T5_BASE_URL ?? 'http://localhost:5199';
 const OUT = join(homedir(), 'Developing', 'RimLoc-evidence', 'semantic-snapshots');
+// M-7 gate: маршруты могут требовать пре-действие — например, вкладку
+// «Проект» внутри workspace (контент не смонтирован, пока её не открыть).
+const ROUTES_WITH_PRE = {
+  'project-tab': { hash: '#/workspace', clickAria: 'Проект' },
+};
 const ROUTES = {
   home: '',
   workspace: '#/workspace',
@@ -49,6 +54,19 @@ function observe() {
       expanded: el.getAttribute('aria-expanded'),
     });
   }
+  // M-7 gate tooth: bounded text observation of value-carrying elements
+  // (anything the app marks with data-testid). Without this the snapshot
+  // could not see a template placeholder rendered as a VALUE — exactly how
+  // finding M-7 slipped past every sensor (2026-09-30).
+  const testidTexts = [];
+  for (const el of document.querySelectorAll('[data-testid]')) {
+    if (testidTexts.length >= 300) break;
+    const t = (el.textContent ?? '').trim();
+    if (!t) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    testidTexts.push({ testid: el.getAttribute('data-testid'), text: t.slice(0, 160) });
+  }
   const scrollContainers = [];
   for (const el of document.querySelectorAll('*')) {
     if (scrollContainers.length >= 30) break;
@@ -78,6 +96,7 @@ function observe() {
     dialogs,
     controlsCount: controls.length,
     controls,
+    testidTexts,
     scrollContainers,
     documentOverflowX: document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth,
   };
@@ -86,15 +105,30 @@ function observe() {
 const browser = await chromium.launch({ headless: true });
 const index = {};
 try {
-  for (const [name, hash] of Object.entries(ROUTES)) {
+  for (const [name, entry] of Object.entries({ ...ROUTES, ...Object.fromEntries(Object.entries(ROUTES_WITH_PRE).map(([k, v]) => [k, v.hash])) })) {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: 'dark' });
     await ctx.addInitScript(() => {
       localStorage.setItem('rimloc.theme', 'dark');
       localStorage.setItem('rimloc.locale', 'ru');
     });
     const page = await ctx.newPage();
-    await page.goto(`${BASE}/${hash}`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/${entry}`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(200);
+    // M-7 gate: пре-клик (например вкладка «Проект») ДО наблюдения —
+    // иначе контент вкладки не смонтирован и снимок его не видит.
+    const pre = ROUTES_WITH_PRE[name];
+    if (pre?.clickAria) {
+      // Табы приложения: BUTTON role=tab с текстом (без aria-label) —
+      // матчится и aria, и текст.
+      const tab = page
+        .locator(`button[aria-label="${pre.clickAria}"], [role="tab"]:has-text("${pre.clickAria}")`)
+        .first();
+      if (await tab.count()) {
+        // Playwright-клик перехватывается оверлеем — таб жмём DOM-ом.
+        await tab.evaluate((el) => el.click());
+        await page.waitForTimeout(400);
+      }
+    }
     const snap = await page.evaluate(observe);
     writeFileSync(join(OUT, `${name}.json`), JSON.stringify(snap, null, 1));
     index[name] = { controls: snap.controlsCount, dialogs: snap.dialogs.length, scrollContainers: snap.scrollContainers.length, overflowX: snap.documentOverflowX };
