@@ -4,7 +4,7 @@ status: current
 tags:
   - project/rimloc
   - kind/release-doc
-last-reviewed: 2026-09-27
+last-reviewed: 2026-09-30
 related:
   - "[[RELEASE_READINESS_REPORT]]"
   - "[[BETA_TEST_CHECKLIST]]"
@@ -83,6 +83,16 @@ related:
 - **«Применить»** — `project_apply_existing`: только после анализа и только для проанализированной папки (смена пути → disabled + подсказка); переносит только пустые слоты (origin=Imported), ручные правки не затираются (конфликты остаются списком); persist-before-ack, stale-ревизия ловится.
 - Гварды: относительный путь → `invalid_output_path`; leaf ≠ локали → `contract_violation`; managed-root и symlink — deny fail-closed (симлинк на пачку внутри исходника читается легально).
 - Тесты: `existing_pack_path_guards_are_typed`, `existing_pack_symlink_resolves_through_real_path`, `apply_existing_dirty_retry_completes_the_persist`, `apply_existing_moves_reusable_never_overwrites_conflicts`; фронт — `existing-flow.test.ts` (15).
+
+## 12. Волны 29–30.09: новые точки ревью (owner-пакет)
+
+- **Справка → «Помочь с переводом RimLoc»** (волна 5): карточка рядом с replay; кнопка ведёт тот же selfloc-флоу с дедупом (managed не растёт). Живой вход подтверждён кадрами live-accept-rel5/r9c-*.
+- **Workspace → вкладка «Проект» на selfloc-проекте**: блок «Вклад в перевод RimLoc (бета)» (волна 7) — «Собрать вклад…» → нативный выбор папки → статус READY/PARTIAL-BUT-VALID/NEEDS-FIXES, счётчики, путь бандла, сворачиваемый список отказов. На обычных проектах блока нет.
+- **Таблица записей**: пустые переводы — мягкий курсив «Нет перевода» (волна 3), не пустота; колонки не перекрыты скроллбаром; у карточек очереди нет мусорного «:0».
+- **Вкладки Review/Glossary/TM/Project**: контент растягивается по высоте (blank-tail вылечен, волна 9); на Review при 0 проблем — осмысленная панель-сводка.
+- **Вкладка ИСТОЧНИК на live-проекте** (волна 12): реальные файл/строка/«почему этот источник»; фикстурные usages скрыты честной пометкой. В mock — прежние демо-фикстуры с бейджем.
+- **Пользовательские строки**: без внутренних терминов («контракт», транспорт) — вычищены (волна 9); ошибки контракта — по коду на языке интерфейса (волна 6), код виден префиксом.
+- **Автоматизация**: npm run test:e2e — 17 семантических инвариантов headless (геометрия/фокус/honesty); see docs/development/testing/.
 
 ## 10. Ночь 28.09: новые точки ревью
 
