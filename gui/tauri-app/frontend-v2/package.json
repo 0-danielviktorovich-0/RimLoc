@@ -13,7 +13,8 @@
     "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "export:catalog": "tsx scripts/export-catalog.ts",
     "build:contribution": "tsx scripts/build-contribution.ts",
-    "apply:contribution": "tsx scripts/apply-contribution.ts"
+    "apply:contribution": "tsx scripts/apply-contribution.ts",
+    "scenes:t5": "node e2e/scenes/generate-t5-scenes.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
