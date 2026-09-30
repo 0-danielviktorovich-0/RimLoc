@@ -123,7 +123,14 @@
   }
 </script>
 
-{#if onboarding.open}
+{#if onboarding.open && (!step.route || router.route === step.route)}
+  <!-- D-2 (design pass 2026-10-01): a route-scoped step must not render on
+       a foreign route. The entry effect navigates ONCE (never yanking the
+       user back mid-step), but the card itself used to stay on screen with
+       workspace copy over Settings/Providers/Build/Help — covering content
+       with a hint about a table that is not there. While the user is away
+       from the step's route the coach pauses (no card, no spotlight); it
+       resumes on return. -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="tour" data-testid="onboarding.overlay" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
     {#if box}
