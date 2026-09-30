@@ -64,6 +64,12 @@ tiers:
     required_for: [owner_review_pack]
   T6_game:
     method: изолированный RimWorld-профиль, read-only исходники, game logs — primary evidence
+    phase1_structural: "DONE 01.10 (background-only): реальные export+build-mod
+      через REL-13, build-mod валиден (<ModMetaData>/Languages/Keyed);
+      находка T6-a (export-vs-buildmod UX) исправлена подсказкой"
+    phase2_in_game: "EXCLUSIVE — запуск RimWorld = foreground-активация;
+      рунбук готов (evidence artifact-rel13-final/t6-phase1-structural.md),
+      требует явного «ок» владельца (P0-политика §4)"
     required_for: [public_release_decision]
 
 semantic_snapshot:
