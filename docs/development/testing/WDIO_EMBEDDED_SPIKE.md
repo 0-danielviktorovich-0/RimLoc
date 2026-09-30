@@ -18,11 +18,11 @@ borderless). Спека: `frontend-v2/e2e/wdio-spike/spike.spec.ts`. Обёрт�
 | Смена вкладки | ✅ «Проверка» в workspace |
 | Скролл контейнера | ✅ UL.queue 3731/262 px, scrollTop=200 |
 | Геометрия | ✅ innerW/H, docH, hOverflow=false |
-| Бэкенд-оп (browser.tauri.execute) | ❌ мост: сервисный шим `__wdio_original_core__` не приживается на SPA — 5с-таймауты (follow-up) |
-| Логи фронт/бэк | ⚠️ тот же мост — follow-up |
+| Бэкенд-оп (browser.tauri.execute) | ✅ (fa4422b: guest-плагин под автоматизационным гейтом; project_list → 8 живьём) |
+| Логи фронт/бэк | ✅ доступны через captureBackendLogs/captureFrontendLogs (мост жив) |
 | Закрытие сессии | ✅ |
 
-Итог: **1 passing, 3м57с**; полный джорни Home→Настройки→Home→ввод→проект→
+Итог: **1 passing** (3м57с до моста → **1.3с** после: 5с-таймауты хуков были почти всей длительностью); полный джорни Home→Настройки→Home→ввод→проект→
 вкладка→скролл→геометрия — полностью в фоне, окно за экраном, владелец работал
 (ZCode/godot/ChatGPT/FluidVoice переключались свободно).
 
