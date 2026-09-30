@@ -808,6 +808,12 @@
   .col-main,
   .col-side {
     display: grid;
+    /* D-1 (design pass 2026-10-01): min-width:0 on the COLUMN is not
+       enough — the child cards are grid items with min-width:auto and
+       were sized by the recents table's min-content, overflowing the
+       track UNDER the side column (overlap on every width). Constrain
+       the implicit track itself. */
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
     min-width: 0;
   }
