@@ -10,7 +10,11 @@
 # Использование: spawn-wrapper.sh <путь-к-бинарю>
 set -u
 BIN="${1:-/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/target/debug/rimloc-gui}"
-RIMLOC_AUTOMATION=1 RIMLOC_TRACE=1 "$BIN" &
+# Эфемерный фрейм прогона: правый-низ visible frame (вне зоны кликов
+# владельца), вычисляется из реального дисплея — не off-screen (директива
+# про окна §2/§3), не персистится (window-state off в auto-сессиях).
+FRAME=$(/tmp/place-win 2>/dev/null || echo "348,70,980x640")
+RIMLOC_AUTOMATION=1 RIMLOC_TRACE=1 RIMLOC_WINDOW_FRAME="$FRAME" "$BIN" &
 APP=$!
 cleanup() { kill "$APP" 2>/dev/null; }
 trap cleanup EXIT INT TERM

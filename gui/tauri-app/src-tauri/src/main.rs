@@ -3878,6 +3878,35 @@ fn main() {
                 // controls. Must run with the window already live.
                 automation_env_setup(&window);
 
+                // AUTOMATION EPHEMERAL FRAME (window correction §5/§6,
+                // 2026-10-01): RIMLOC_WINDOW_FRAME="x,y,WxH" places the
+                // automation window at a DERIVED safe spot (right-bottom of
+                // the actual visible frame, away from the owner's click
+                // zone) — normal decorations, never persisted (window-state
+                // plugin is OFF in automation sessions). Not off-screen
+                // parking: fully on-display, inspectable, draggable.
+                #[cfg(target_os = "macos")]
+                if let Ok(frame) = std::env::var("RIMLOC_WINDOW_FRAME") {
+                    let parsed: Option<(f64, f64, f64, f64)> = (|| {
+                        let parts: Vec<f64> = frame
+                            .split(|c| c == ',' || c == 'x')
+                            .filter_map(|t| t.trim().parse().ok())
+                            .collect();
+                        match parts.as_slice() {
+                            [x, y, w, h] => Some((*x, *y, *w, *h)),
+                            _ => None,
+                        }
+                    })();
+                    if let Some((x, y, w, h)) = parsed {
+                        let _ = window.set_size(tauri::LogicalSize::new(w, h));
+                        let _ = window.set_position(tauri::LogicalPosition::new(x, y));
+                        eprintln!(
+                            "{} {x},{y},{w}x{h}",
+                            "rimloc-gui: automation frame applied"
+                        );
+                    }
+                }
+
                 // DEPRECATED (window correction 2026-09-30, owner
                 // directive §2/§12): off-screen parking and the borderless
                 // move mode are DEBUG-ONLY relics — the canonical semantic
