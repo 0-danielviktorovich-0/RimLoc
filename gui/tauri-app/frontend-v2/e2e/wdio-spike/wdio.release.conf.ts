@@ -25,7 +25,7 @@ export const config: Options.Testrunner = {
       '@wdio/tauri-service',
       {
         driverProvider: 'embedded',
-        embeddedPort: 4445,
+        embeddedPort: 4457,
       },
     ],
   ],

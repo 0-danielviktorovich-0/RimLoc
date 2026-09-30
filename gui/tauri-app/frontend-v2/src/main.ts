@@ -17,24 +17,29 @@ import { theme } from './lib/stores/theme.svelte';
   if (forcedTheme === 'light' || forcedTheme === 'dark') theme.set(forcedTheme);
 }
 
-// Agent automation bridge (RIMLOC_AUTOMATION=1, frontier §10): the WDIO
-// guest plugin loads ONLY in automation sessions — the Rust setup hook sets
-// window.__RIMLOC_WDIO__ and dispatches 'rimloc:wdio' after the page is
-// live (with retries), so both orders (flag first or listener first) work.
-// User sessions never import the bridge at all.
+// Agent automation bridge — COMPILE-TIME gate (owner §B, 2026-10-01):
+// the WDIO guest plugin chunk is emitted ONLY when the frontend is built
+// with VITE_RIMLOC_AUTOMATION=1 (automation artifact). In a production
+// build this whole path is dead code: no chunk ships, nothing to load,
+// and no runtime env can conjure it. The Rust side pairs this with the
+// cargo feature `automation-bridge` (no listener in production either).
 declare global {
   interface Window {
     __RIMLOC_WDIO__?: boolean;
   }
 }
+const AUTOMATION_BUILD = import.meta.env.VITE_RIMLOC_AUTOMATION === '1';
 function maybeLoadWdioBridge(): boolean {
+  if (!AUTOMATION_BUILD) return false;
   if (window.__RIMLOC_WDIO__) {
     void import('@wdio/tauri-plugin');
     return true;
   }
   return false;
 }
-if (!maybeLoadWdioBridge()) {
+if (!AUTOMATION_BUILD) {
+  // production: no listener at all
+} else if (!maybeLoadWdioBridge()) {
   window.addEventListener('rimloc:wdio', maybeLoadWdioBridge, { once: true });
 }
 

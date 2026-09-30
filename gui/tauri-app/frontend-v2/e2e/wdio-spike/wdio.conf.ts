@@ -25,7 +25,7 @@ export const config: Options.Testrunner = {
       '@wdio/tauri-service',
       {
         driverProvider: 'embedded',
-        embeddedPort: 4445,
+        embeddedPort: 4457,  // 4445 занят BookKeeper hub на этой машине
       },
     ],
   ],

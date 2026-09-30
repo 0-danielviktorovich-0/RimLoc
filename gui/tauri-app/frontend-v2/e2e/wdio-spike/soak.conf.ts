@@ -14,7 +14,7 @@ export const config: Options.Testrunner = {
       browserName: 'tauri',
       'tauri:options': {
         application:
-          '/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/testlab/ui_automation/wdio/spawn-wrapper.sh',
+          '/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/testlab/ui_automation/wdio/spawn-wrapper-release.sh',
       },
     },
   ],
@@ -25,7 +25,9 @@ export const config: Options.Testrunner = {
       '@wdio/tauri-service',
       {
         driverProvider: 'embedded',
-        embeddedPort: 4445,
+        embeddedPort: 4457,
+        captureBackendLogs: true,
+        captureFrontendLogs: true,
       },
     ],
   ],

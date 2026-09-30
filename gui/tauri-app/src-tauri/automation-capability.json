@@ -1,0 +1,16 @@
+{
+  "$schema": "https://schema.tauri.app/capability.json",
+  "identifier": "automation-bridge",
+  "description": "CANONICAL SOURCE — build scripts copy this into capabilities/automation.json for the automation build and REMOVE it for production builds (Tauri resolves every file in capabilities/, so its presence would fail the production build on unknown permissions). AUTOMATION ARTIFACT ONLY: embedded WDIO bridge permissions. Applied exclusively by tauri.automation.conf.json (build with --features automation-bridge). Production builds select only the default capability; this file must never leak into a distributable (testlab/release-guard.sh verifies).",
+  "windows": ["main", "*"],
+  "permissions": [
+    "wdio-webdriver:default",
+    "wdio:default",
+    "wdio:allow-execute",
+    "wdio:allow-log-frontend",
+    "wdio:allow-debug-plugin",
+    "wdio:allow-get-active-window-label",
+    "wdio:allow-get-window-states",
+    "wdio:allow-list-windows"
+  ]
+}

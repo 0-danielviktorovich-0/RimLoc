@@ -17,7 +17,10 @@ describe('embedded WDIO soak', () => {
         await fn()
         stats.latencies.push(Date.now() - t0)
       } catch (e) {
-        stats.errors.push(`c${stats.cycles} ${name}: ${String(e).slice(0, 140)}`)
+        const line = `c${stats.cycles} ${name}: ${String(e).slice(0, 200)}`
+        // первая ошибка каждого шага — сразу в лог (атрибуция без вскрытия)
+        if (!stats.errors.some((x) => x.includes(name))) console.log('[soak-err]', line)
+        stats.errors.push(line)
       }
     }
 

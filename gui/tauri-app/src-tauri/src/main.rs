@@ -3701,20 +3701,30 @@ const DEV_LOG_WINDOW_ORIGIN_INVALID: &str = "window_origin_env_invalid";
 fn main() {
     let _ = color_eyre::install();
     let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
-    // Agent automation (RIMLOC_AUTOMATION=1): embedded WebDriver server —
-    // @wdio/tauri-service embedded provider via tauri-plugin-wdio-webdriver
-    // (server) + tauri-plugin-wdio (execute API/mocks/log forwarding).
-    // Runtime-gated: plugins ship compiled but dormant unless the agent
-    // env is set. Security boundary review pending before any public
-    // artifact carries it (frontier directive 30.09, §10).
-    // Window correction §5 (owner directive 2026-09-30): automation
-    // sessions are EPHEMERAL — they skip the window-state plugin so a
-    // run frame can never overwrite the persisted USER frame.
+    // Automation bridge (owner §B, 2026-10-01): COMPILE-TIME exclusion —
+    // the embedded WDIO server (tauri-plugin-wdio-webdriver) and the
+    // execute/mock/log plugin (tauri-plugin-wdio) are linked ONLY when the
+    // `automation-bridge` cargo feature is on (automation artifact builds).
+    // A production build carries no bridge code at all: RIMLOC_AUTOMATION=1
+    // cannot conjure a listener that was never linked. The runtime env stays
+    // as defense in depth on automation builds (§4 layering), and gates the
+    // AX hooks, which ship in every build (no listener, no IPC).
+    // Window correction §5: automation sessions are EPHEMERAL — they skip
+    // the window-state plugin so a run frame never overwrites the persisted
+    // USER frame.
+    #[cfg(feature = "automation-bridge")]
     let automation = std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1");
+    #[cfg(not(feature = "automation-bridge"))]
+    let automation = false;
     let builder = if automation {
+        #[cfg(feature = "automation-bridge")]
+        {
+            builder
+                .plugin(tauri_plugin_wdio_webdriver::init())
+                .plugin(tauri_plugin_wdio::init())
+        }
+        #[cfg(not(feature = "automation-bridge"))]
         builder
-            .plugin(tauri_plugin_wdio_webdriver::init())
-            .plugin(tauri_plugin_wdio::init())
     } else {
         // User sessions persist and restore their window frame normally.
         // P0 zero-focus-stealing: VISIBLE excluded from restore flags —
@@ -3885,7 +3895,8 @@ fn main() {
                 // zone) — normal decorations, never persisted (window-state
                 // plugin is OFF in automation sessions). Not off-screen
                 // parking: fully on-display, inspectable, draggable.
-                #[cfg(target_os = "macos")]
+                // §B compile-time gate: production builds ignore the env.
+                #[cfg(all(feature = "automation-bridge", target_os = "macos"))]
                 if let Ok(frame) = std::env::var("RIMLOC_WINDOW_FRAME") {
                     let parsed: Option<(f64, f64, f64, f64)> = (|| {
                         let parts: Vec<f64> = frame
