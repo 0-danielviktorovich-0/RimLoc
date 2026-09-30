@@ -152,6 +152,13 @@ Workshop-моды, сейвы, прод-профиль — READ-ONLY (hash-гв�
 Commits (feat|fix|docs|chore|refactor|test|ci|build|perf|revert), body с «- » буллетами,
 subject ≤72 символов. Факты (диск/порты/процессы) проверять в момент отчёта — урок
 verify-facts-before-reporting.
+**Не-интерференция с владельцем (мандат 30.09)**: живые прогоны не крадут фокус —
+keystroke/activate-навигация запрещена; единственный канал — фоновый AX
+(testlab/ui_automation/ax/: запуск бинарем с RIMLOC_AUTOMATION=1 → одна активация
+1.5с на материализацию web-дерева → возврат фокуса → AXPress + screencapture -x -l).
+Доказано на REL-12 30.09: два фоновых AXPress, frontmost владельца нетронут.
+Остаточные вопросы (нулевая активация, remote inspector) —
+docs/development/FRONTIER_QUERY_FOCUS_FREE_MACOS_AUTOMATION.md.
 
 ## Закрытые гейты (не переоткрывать без новых доказательств)
 **BACKEND FREEZE (25.09, координатор по evidence; интегрированный HEAD `4b4d8c3`)**:

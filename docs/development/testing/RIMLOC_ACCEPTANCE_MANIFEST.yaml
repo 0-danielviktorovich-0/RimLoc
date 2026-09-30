@@ -1,7 +1,7 @@
 # RIMLOC ACCEPTANCE MANIFEST — declarative gate config (persist mandate 04)
 # Source of truth: docs/development/testing/AUTONOMOUS_ACCEPTANCE_ARCHITECTURE.md
 version: 1
-updated: 2026-09-30
+updated: 2026-09-30   # +T3 ax_background (фокус-фри канал, мандат владельца)
 
 defaults:
   same_host: true
@@ -46,6 +46,12 @@ tiers:
   T3_native:
     run: testlab/auto_install.py install+launch+smoke
     required_for: [release_gate]
+    channel: ax_background
+    # Мандат владельца 2026-09-30: keystroke крадёт фокус — запрещён.
+    # Протокол testlab/ui_automation/ax/README.md: запуск бинарем с
+    # RIMLOC_AUTOMATION=1 → одна активация 1.5с (материализация web-AX) →
+    # возврат фокуса → далее только AXPress/AXSetValue + screencapture -x -l.
+    # Доказано на REL-12: AXPress err=0, кадры меняются, frontmodest нетронут.
   T4_package:
     run: cargo tauri build (beforeBuildCommand обязателен — инцидент stale-dist 30.09)
     required_for: [release_gate]
