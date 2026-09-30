@@ -37,6 +37,15 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **СТОП-КОНВЕЙЕРА 30.09 ~06:0x: квота Z.ai 1310 (Weekly/Monthly исчерпана, reset
+  2026-10-06 00:00 JST).** Flash-воркеры недоступны до reset — волны механики
+  ПРИОСТАНОВЛЕНЫ. Workflow волны 13 (глоссарий live) остановлен на первом шаге,
+  worktree чист и удалён; БРИФ ГОТОВ: .zcode/workflow-drafts/RimLoc-волна-13-глоссарий.dwf.ts
+  (в AI-OS) — перезапуск после reset. Main: `87261ae` — волны 8-12 влиты и зелёные
+  (rust 357/0, vitest 433/433, e2e 16+1fixme). ПЕРВАЯ операция при восстановлении
+  ресурсов: (1) пересборка REL-12 (диск 19 GiB — ещё ниже порога 25; ждём), затем
+  живой прогон blank-tail/live-Source; (2) волна 13 глоссарий; (3) TM live; далее по
+  матрице. Все брифы конвейера — в .zcode/workflow-drafts/ (AI-OS).
 - **ХЭНДОФФ-ЦИКЛ 30.09, ~05:0x**: main несёт волны 8-11 (проверь `git rev-parse HEAD`):
   волна 8 `d9f0c7f` SF-07/11/06 (интерполяция/атомарная запись/лимиты, контрпримеры в сьюте);
   волна 9 `0dce5ab` owner-классы (blank-tail Review/Glossary/TM/Project — flex-цепочка,
