@@ -3707,12 +3707,31 @@ fn main() {
     // Runtime-gated: plugins ship compiled but dormant unless the agent
     // env is set. Security boundary review pending before any public
     // artifact carries it (frontier directive 30.09, §10).
-    let builder = if std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1") {
+    // Window correction §5 (owner directive 2026-09-30): automation
+    // sessions are EPHEMERAL — they skip the window-state plugin so a
+    // run frame can never overwrite the persisted USER frame.
+    let automation = std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1");
+    let builder = if automation {
         builder
             .plugin(tauri_plugin_wdio_webdriver::init())
             .plugin(tauri_plugin_wdio::init())
     } else {
-        builder
+        // User sessions persist and restore their window frame normally.
+        // P0 zero-focus-stealing: VISIBLE excluded from restore flags —
+        // the plugin's visible-restore path calls set_focus() (activates
+        // the app on every relaunch). The window is already created
+        // visible by config; only geometry is restored.
+        builder.plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
+                        | tauri_plugin_window_state::StateFlags::DECORATIONS
+                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+                )
+                .build(),
+        )
     };
     let builder = match contract_adapter::attach_contract(
         builder,
@@ -3859,11 +3878,19 @@ fn main() {
                 // controls. Must run with the window already live.
                 automation_env_setup(&window);
 
-                // DEV-ONLY background automation: RIMLOC_WINDOW_ORIGIN="x,y"
-                // relocates the window off-screen (e.g. "-3000,-3000") so an
-                // automation driver can click it without ever appearing on the
-                // owner's display. Guarded by cfg!(debug_assertions): release
-                // builds ignore the variable entirely.
+                // DEPRECATED (window correction 2026-09-30, owner
+                // directive §2/§12): off-screen parking and the borderless
+                // move mode are DEBUG-ONLY relics — the canonical semantic
+                // acceptance path now runs a NORMAL VISIBLE background
+                // window (embedded WDIO / background AX; no positioning).
+                // A borderless window is owner-hostile: it cannot be
+                // dragged normally (the very defect the correction bans).
+                // Keep ONLY for bounded visual-regression scenarios until
+                // replacement acceptance is proven, then REMOVE.
+                //
+                // RIMLOC_WINDOW_ORIGIN="x,y" relocates the window
+                // (e.g. "-3000,-3000" off-screen). Guarded by
+                // cfg!(debug_assertions): release builds ignore it.
                 //
                 // RIMLOC_WINDOW_MOVE selects the relocation method:
                 //   "borderless" — set_decorations(false) first: AppKit's
