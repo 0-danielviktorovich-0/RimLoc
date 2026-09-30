@@ -91,6 +91,27 @@ Automation-бинарь (окно за экраном), 650 циклов: ре-�
   follow-up: печатать сразу + трассировать switchWindow.
 - Evidence: soak-55min.log, soak-noninterference.jsonl (2743 сэмпла).
 
+## P0 zero-activation — RE-SOLVED (2026-10-01, владелец)
+
+Инцидент: спавн без restore украл фокус → владелец отменил терпимость
+к «одному морганию»: НОЛЬ активаций в background-only. Расследование
+(WindowServer-лог + bisect) нашло **четыре активатора в стеке**:
+
+1. wry wkwebview/mod.rs — NSApplication::activate() при создании webview;
+2. tao app_state.rs window_activation_hack — makeKeyAndOrderFront видимого
+   окна на event loop;
+3. tao window.rs focused-ветка — makeKeyAndOrderFront при создании;
+4. tao async set_focus — makeKey + activateIgnoringOtherApps:YES (сильнейший,
+   пробивал все флаги) + launch-активация в app delegate.
+
+Все зашиты в vendor-форках ([patch.crates-io]; window-status: orderFront
+без key/activate). Замер: 10/10 запусков без единой кражи (было 10/10
+краж). §12 acceptance: 12м20с, 135 циклов, 0 ошибок, 0 программных
+активаций, 0 manual-reveals (watchdog 852 сэмпла, evidence
+RimLoc-evidence/p0-incident-20261001/). Политика
+RIMLOC_AUTOMATION_POLICY=background-only|exclusive — в манифесте;
+превышение глушится watchdog'ом мгновенно.
+
 ## Открытые follow-up
 
 1. ~~Мост~~ — ЗАКРЫТ (fa4422b): guest-плагин под автоматизационным гейтом.
