@@ -16,7 +16,8 @@
     "apply:contribution": "tsx scripts/apply-contribution.ts",
     "scenes:t5": "node e2e/scenes/generate-t5-scenes.mjs",
     "snapshot:semantic": "node e2e/scenes/semantic-snapshot.mjs",
-    "check:honesty": "node e2e/scenes/check-template-honesty.mjs"
+    "check:honesty": "node e2e/scenes/check-template-honesty.mjs",
+    "check:layout": "node e2e/scenes/layout-audit.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
