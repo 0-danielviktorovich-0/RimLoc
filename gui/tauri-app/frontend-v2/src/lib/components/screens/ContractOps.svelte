@@ -150,6 +150,10 @@
     <div class="card" data-testid="contractops.export">
       <h2 class="card-title"><Icon name="package" size={16} /> {t('contractops.export.title')}</h2>
       <p class="hint">{t('contractops.export.desc', { locale: folderForm(project.targetLocale) })}</p>
+      <!-- T6 (2026-10-01): the export output is the isolated/native shape
+           (internal manifest) — the GAME-loadable package is build-mod
+           below. Say so where the paths are typed. -->
+      <p class="hint">{t('contractops.export.notGameMod')}</p>
       <label class="field">
         <span>{t('contractops.export.outdir')}</span>
         <input

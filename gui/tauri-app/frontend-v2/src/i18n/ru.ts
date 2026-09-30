@@ -82,6 +82,7 @@ export const ru: Record<string, string> = {
   'contractops.diagnose.excluded': 'Исключено',
   // Подсказка абсолютного пути (invalid_output_path): поле стартует пустым —
   // фиктивный дефолтный путь никогда не отправляется.
+  'contractops.export.notGameMod': 'Это изолированный вывод перевода. Для мода, который игра увидит в списке, — «Сборка мод-пакета» ниже: у неё игровой About.xml.',
   'contractops.export.outdirInvalid': 'Путь должен быть абсолютным — начинаться с «/». Относительный путь отклоняется до любой записи.',
   'contractops.abs_path_hint': 'Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.',
   'contractops.abs_path_example': 'например /Users/you/RimLoc-Export/Мод-Russian',

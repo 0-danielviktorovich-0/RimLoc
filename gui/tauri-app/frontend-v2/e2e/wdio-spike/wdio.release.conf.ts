@@ -7,7 +7,7 @@ import type { Options } from '@wdio/types'
 // browser.tauri.execute needs the second plugin — deferred until rebuild).
 export const config: Options.Testrunner = {
   runner: 'local',
-  specs: ['./rel13-verify.spec.ts'],
+  specs: ['./t6-export-structural.spec.ts'],
   maxInstances: 1,
   capabilities: [
     {

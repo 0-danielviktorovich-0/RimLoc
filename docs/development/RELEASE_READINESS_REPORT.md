@@ -42,6 +42,14 @@ M-10 PASS (видимый отказ экспорта) — evidence
 RimLoc-evidence/artifact-rel13-final/. Подпись adhoc (локальный
 тестовый); WDIO-плагины спят до security-ревью.
 
+**T6 RimWorld acceptance — фаза 1 выполнена (01.10, background-only):**
+реальные export + build-mod потоки на живом проекте через REL-13 в
+изолированные /tmp-выводы; build-mod = валидный drop-in пакет
+(<ModMetaData>, Languages/Russian/Keyed, LanguageData). Находка T6-a:
+UX-подсказка export-vs-buildmod добавлена. **Фаза 2 (запуск игры) —
+EXCLUSIVE, ждёт явного «ок» владельца** (рунбук в evidence
+artifact-rel13-final/t6-phase1-structural.md).
+
 ## 1a. Гейты приёмки на `main 8056649` (реальные прогоны 27.09, REL-12 эра)
 
 | Гейт | Команда | Итог |

@@ -296,6 +296,11 @@
       "placeholders": []
     },
     {
+      "id": "contractops.export.notGameMod",
+      "source_text": "This is the isolated translation output. For a mod the game lists, use \"Build mod package\" below — it writes the game-loadable About.xml.",
+      "placeholders": []
+    },
+    {
       "id": "contractops.export.outdirInvalid",
       "source_text": "The path must be absolute — starting with \"/\". A relative path is refused before any write.",
       "placeholders": []
