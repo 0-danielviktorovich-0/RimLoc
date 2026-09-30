@@ -74,5 +74,15 @@ semantic_snapshot:
 sensor_gaps:
   post_action_states: "счётчики/результаты рендерятся только ПОСЛЕ действий (validate/export) — пассивный снимок их не видит (M-9-класс); кандидат: снапшот-маршруты с пре-действиями по образцу project-tab; follow-up"
 non_interference_contract:
+  policy: "RIMLOC_AUTOMATION_POLICY=background-only (P0, владелец 2026-10-01):
+    НОЛЬ активаций — ни NSApp.activate, ни System Events activate/keystroke,
+    ни CGEvent-глобального ввода; фолбэк к foreground недостижим из фонового
+    режима. Сценарии, требующие переднего плана (реальный NSOpenPanel, IME,
+    fullscreen/Spaces), — RIMLOC_AUTOMATION_POLICY=exclusive, только с явным
+    одобрением владельца на прогон, никогда автоматически."
+  enforcement: "watchdog: сэмплы frontmost/pointer/clipboard каждые 0.5с;
+    rimloc-gui frontmost в background-only ⇒ HOST_INTERFERENCE_FOREGROUND_
+    ACTIVATION, драйвер глушится немедленно; правки указателя/клипборда
+    фоном ⇒ HOST_INTERFERENCE (клипборд — только fingerprint, без контента)"
   assert_before_after: [pointer_idle, frontmost_app, active_space, clipboard]
-  exceptions: [native_file_dialogs]   # classified foreground/native acceptance
+  exceptions: [native_file_dialogs]   # EXCLUSIVE mode only
