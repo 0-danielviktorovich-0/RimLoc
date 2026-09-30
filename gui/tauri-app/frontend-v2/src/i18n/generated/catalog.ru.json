@@ -296,6 +296,11 @@
       "placeholders": []
     },
     {
+      "id": "contractops.export.outdirInvalid",
+      "translated": "Путь должен быть абсолютным — начинаться с «/». Относительный путь отклоняется до любой записи.",
+      "placeholders": []
+    },
+    {
       "id": "contractops.abs_path_hint",
       "translated": "Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.",
       "placeholders": []

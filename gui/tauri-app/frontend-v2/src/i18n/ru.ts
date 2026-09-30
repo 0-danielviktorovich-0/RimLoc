@@ -82,6 +82,7 @@ export const ru: Record<string, string> = {
   'contractops.diagnose.excluded': 'Исключено',
   // Подсказка абсолютного пути (invalid_output_path): поле стартует пустым —
   // фиктивный дефолтный путь никогда не отправляется.
+  'contractops.export.outdirInvalid': 'Путь должен быть абсолютным — начинаться с «/». Относительный путь отклоняется до любой записи.',
   'contractops.abs_path_hint': 'Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.',
   'contractops.abs_path_example': 'например /Users/you/RimLoc-Export/Мод-Russian',
   'contractops.abs_path_example_mod': 'например /Users/you/RimWorld/Mods/Мод-Russian',

@@ -296,6 +296,11 @@
       "placeholders": []
     },
     {
+      "id": "contractops.export.outdirInvalid",
+      "source_text": "The path must be absolute — starting with \"/\". A relative path is refused before any write.",
+      "placeholders": []
+    },
+    {
       "id": "contractops.abs_path_hint",
       "source_text": "Absolute path only — a relative path is refused (invalid_output_path) before anything is written.",
       "placeholders": []

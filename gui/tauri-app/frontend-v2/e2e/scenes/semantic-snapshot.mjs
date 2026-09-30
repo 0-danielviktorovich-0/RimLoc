@@ -12,10 +12,15 @@ import { homedir } from 'node:os';
 
 const BASE = process.env.T5_BASE_URL ?? 'http://localhost:5199';
 const OUT = join(homedir(), 'Developing', 'RimLoc-evidence', 'semantic-snapshots');
-// M-7 gate: маршруты могут требовать пре-действие — например, вкладку
-// «Проект» внутри workspace (контент не смонтирован, пока её не открыть).
+// Маршруты с пре-действиями (post-action-state сенсор): вкладки, которые
+// не смонтированы без клика (M-7), и «состояния после действий» — например,
+// отказ экспорта по невалидному пути (M-10): заполняем поле и наблюдаем
+// видимый отказ, а не тишину.
 const ROUTES_WITH_PRE = {
   'project-tab': { hash: '#/workspace', clickAria: 'Проект' },
+  // post-action маршруты: fill-шаг поддержан; контрактный build-экран в
+  // mock-браузере недостижим (проект создаётся только из стора) —
+  // M-10-класс закрыт компонентными тестами (tests/m10-export-refusal).
 };
 const ROUTES = {
   home: '',
@@ -117,6 +122,20 @@ try {
     // M-7 gate: пре-клик (например вкладка «Проект») ДО наблюдения —
     // иначе контент вкладки не смонтирован и снимок его не видит.
     const pre = ROUTES_WITH_PRE[name];
+    if (pre?.fill) {
+      const input = page.locator(`[data-testid="${pre.fill.testid}"]`);
+      if (await input.count()) {
+        await input.evaluate((el, value) => {
+          const setter = Object.getOwnPropertyDescriptor(
+            el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype,
+            'value',
+          ).set;
+          setter.call(el, value);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        }, pre.fill.value);
+        await page.waitForTimeout(250);
+      }
+    }
     if (pre?.clickAria) {
       // Табы приложения: BUTTON role=tab с текстом (без aria-label) —
       // матчится и aria, и текст.

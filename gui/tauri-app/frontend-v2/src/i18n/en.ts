@@ -82,6 +82,7 @@ export const en: Record<string, string> = {
   'contractops.diagnose.excluded': 'Excluded',
   // Absolute-path form hint (invalid_output_path): the field starts empty —
   // no fake default path is ever sent.
+  'contractops.export.outdirInvalid': 'The path must be absolute — starting with "/". A relative path is refused before any write.',
   'contractops.abs_path_hint': 'Absolute path only — a relative path is refused (invalid_output_path) before anything is written.',
   'contractops.abs_path_example': 'e.g. /Users/you/RimLoc-Export/MyMod-Russian',
   'contractops.abs_path_example_mod': 'e.g. /Users/you/RimWorld/Mods/MyMod-Russian',

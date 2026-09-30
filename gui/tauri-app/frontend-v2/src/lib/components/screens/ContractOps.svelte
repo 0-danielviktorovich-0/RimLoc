@@ -171,6 +171,19 @@
           {t('contractops.pick')}
         </button>
         <span class="hint">{t('contractops.abs_path_hint')}</span>
+        <!-- M-10: a disabled button must EXPLAIN itself — a non-empty
+             non-absolute path shows the concrete reason inline, the
+             refusal is never silence. -->
+        {#if exportDir && !exportDirOk}
+          <span
+            class="hint invalid"
+            role="status"
+            data-testid="contractops.export.outdir.invalid"
+          >
+            <Icon name="warning" size={13} />
+            {t('contractops.export.outdirInvalid')}
+          </span>
+        {/if}
       </label>
       <div class="row">
         <button
@@ -396,6 +409,10 @@
   /* Native-folder-dialog button under the path fields. */
   .btn.pick {
     align-self: flex-start;
+  }
+
+  .hint.invalid {
+    color: var(--color-destructive);
   }
 
   .ops-error {
