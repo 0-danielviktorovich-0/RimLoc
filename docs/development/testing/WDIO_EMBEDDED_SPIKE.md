@@ -91,6 +91,33 @@ Automation-бинарь (окно за экраном), 650 циклов: ре-�
   follow-up: печатать сразу + трассировать switchWindow.
 - Evidence: soak-55min.log, soak-noninterference.jsonl (2743 сэмпла).
 
+## §A/§B кластер владельца (01.10) — итоги
+
+**SOAK**: первый 55-мин PASS подтверждён первичными данными; «смерть
+609s» — прогон №2, окно загрязнено интерактивными kill/pgrep самого
+харнесса (самоиндуцированный кандидат №1; unified log пуст, первичные
+логи перезаписаны — задокументировано). Харнесс переписан: soak-runner
+v2 (без двойного спавна, уникальные каталоги, pid-файл, монитор
+app_discovered/app_process_death/port, hands-off правило). **Финальный
+bounded soak: PASS — 15м13с, 225 циклов, 0 ошибок, 0 смертей, p50 8мс**
+(evidence p0-incident-20261001/soak-final-clean/).
+
+**Известный лимит**: /wdio/eval (callAsyncJavaScript) не возвращает
+результат в никогда-не-фокусированном окне (macOS 27 WebKit defer;
+upstream #540 класс) → browser.tauri.execute в фоновом режиме
+неработоспособен; backend-op через browser.execute +
+__TAURI_INTERNALS__ — W3C-путь в том же окне стабилен (принято в soak
+v2). Окно remains fully background.
+
+**§B SECURITY**: compile-time exclusion (cargo feature
+automation-bridge, default OFF) + capability-файл вне capabilities/
+(Tauri резолвит все файлы — presence валит production, проверено) +
+VITE compile-time гейт guest JS. release-guard.sh (строки бинаря,
+ресурсы, runtime-негатив с пид-скоупом порта — 4445 занят BookKeeper
+hub). Production guard PASSED, automation positive PASSED. Два класса
+артефактов раздельно: production 03e4613289cd914d (некоммерч.
+adhoc), automation b12b45b960919713→e56055b0a1fdf72a.
+
 ## P0 zero-activation — RE-SOLVED (2026-10-01, владелец)
 
 Инцидент: спавн без restore украл фокус → владелец отменил терпимость
