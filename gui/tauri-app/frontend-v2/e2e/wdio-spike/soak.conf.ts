@@ -13,8 +13,7 @@ export const config: Options.Testrunner = {
     {
       browserName: 'tauri',
       'tauri:options': {
-        application:
-          '/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/testlab/ui_automation/wdio/spawn-wrapper-release.sh',
+        application: '/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/testlab/ui_automation/wdio/spawn-wrapper-release.sh',
       },
     },
   ],

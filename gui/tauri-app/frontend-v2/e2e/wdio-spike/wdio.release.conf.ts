@@ -7,14 +7,13 @@ import type { Options } from '@wdio/types'
 // browser.tauri.execute needs the second plugin — deferred until rebuild).
 export const config: Options.Testrunner = {
   runner: 'local',
-  specs: ['./t6-export-structural.spec.ts'],
+  specs: ['./bisect.spec.ts'],
   maxInstances: 1,
   capabilities: [
     {
       browserName: 'tauri',
       'tauri:options': {
-        application:
-          '/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/testlab/ui_automation/wdio/spawn-wrapper-release.sh',
+        application: '/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main/testlab/ui_automation/wdio/spawn-wrapper-release.sh',
       },
     },
   ],

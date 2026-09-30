@@ -62,9 +62,9 @@ DRRC=$?
 touch "$DIR/stop"; kill "$MON" 2>/dev/null
 
 # 4) counters
-APP_DEATHS=$(grep -c "app_process_death" "$DIR/monitor.jsonl" 2>/dev/null || echo 0)
+APP_DEATHS=$(grep -c "app_process_death" "$DIR/monitor.jsonl" 2>/dev/null || true)
 PORT_LOSS=$(grep -c "port_4457_closed" "$DIR/monitor.jsonl" 2>/dev/null || echo 0)
-DRV_EXIT=$(grep -c "driver_exit" "$DIR/monitor.jsonl" 2>/dev/null || echo 0)
+DRV_EXIT=$(grep -c "driver_exit" "$DIR/monitor.jsonl" 2>/dev/null || true)
 STEP_ERRS=$(grep -oE "errors=[0-9]+" "$DIR/drive.log" | tail -1 | cut -d= -f2)
 CYCLES=$(grep -oE "cycles=[0-9]+" "$DIR/drive.log" | tail -1 | cut -d= -f2)
 
@@ -85,6 +85,5 @@ cat > "$DIR/counters.json" <<JSON
 }
 JSON
 cat "$DIR/counters.json"
-# забрать логи приложения в набор артефактов
-kill "$APP" 2>/dev/null
+pkill -f "RimLoc GUI.app/Contents/MacOS/rimloc-gui" 2>/dev/null
 echo "artifacts in $DIR"

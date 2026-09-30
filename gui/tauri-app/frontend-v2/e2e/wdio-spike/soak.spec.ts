@@ -44,8 +44,18 @@ describe('embedded WDIO soak', () => {
         if (await b.isExisting()) await b.click()
       })
       await step('backend-op', async () => {
-        const r = await browser.tauri.execute((tauri) => tauri.core.invoke('project_list'))
-        if (!Array.isArray(r)) throw new Error('project_list not an array')
+        // browser.tauri.execute hangs on this artifact: the plugin's
+        // /wdio/eval uses callAsyncJavaScript, which macOS 27 WebKit
+        // defers in a never-focused window (upstream issue #540 class).
+        // The W3C execute path works in the same window — drive the live
+        // backend through __TAURI_INTERNALS__ instead.
+        const r = await browser.execute(async () => {
+          const inv = window.__TAURI_INTERNALS__?.invoke
+          if (!inv) throw new Error('__TAURI_INTERNALS__.invoke unavailable')
+          const list = await inv('project_list')
+          return Array.isArray(list) ? list.length : -1
+        })
+        if (r !== 8) throw new Error(`project_list count ${r} != 8`)
       })
       if (stats.cycles % 5 === 0) {
         await step('scroll-probe', async () => {
