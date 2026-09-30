@@ -3295,12 +3295,24 @@ fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
     // Late AX server activation: the window is up by now, so the self-query
     // hydrates the bridge instead of wedging it. Repeated — WebKit page
     // loads can drop the web AX tree (same lesson as the dev park thread).
-    std::thread::spawn(|| {
-        for _ in 0..10 {
-            std::thread::sleep(std::time::Duration::from_millis(1500));
-            automation_accessibility_activate();
-        }
-    });
+    // The same park loop flags the WDIO guest bridge into the page
+    // (frontier §10: the bridge imports ONLY in automation sessions —
+    // user sessions never load it).
+    {
+        let window = window.clone();
+        std::thread::spawn(move || {
+            for _ in 0..10 {
+                std::thread::sleep(std::time::Duration::from_millis(1500));
+                automation_accessibility_activate();
+                // Idempotent flag+event: whichever side initializes first
+                // (main.ts listener or this eval) completes the handshake.
+                let _ = window.eval(
+                    "window.__RIMLOC_WDIO__ = true; \
+                     window.dispatchEvent(new Event('rimloc:wdio'));",
+                );
+            }
+        });
+    }
 }
 
 /// Non-macOS twin: agent automation hooks are macOS AX machinery, nothing
