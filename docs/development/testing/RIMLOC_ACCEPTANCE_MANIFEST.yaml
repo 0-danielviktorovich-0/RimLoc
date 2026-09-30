@@ -42,6 +42,7 @@ tiers:
       - overlays.inside_viewport
       - overlays.not_covering_target
       - honesty.no_mock_action_in_prod     # actionable control требует LIVE-контракт
+      - honesty.no_template_placeholders   # живой вид без маркеров /Users/<user>, <mod>, <publishedfileid> (M-7, живьём на REL-12)
       - effects.backend_truth             # success ⇒ files/revision/reparse подтверждены
   T3_native:
     run: testlab/auto_install.py install+launch+smoke
