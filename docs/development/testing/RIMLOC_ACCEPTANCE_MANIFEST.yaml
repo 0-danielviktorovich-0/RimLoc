@@ -50,6 +50,7 @@ tiers:
     run: cargo tauri build (beforeBuildCommand обязателен — инцидент stale-dist 30.09)
     required_for: [release_gate]
   T5_visual:
+    ready_base: "36 сцен (dark/light × ru/en × 9 маршрутов) — npm run scenes:t5, e2e/scenes/generate-t5-scenes.mjs, вывод RimLoc-evidence/t5-scenes; smoke light-review: тема/заполнение ОК; оси long_text/cjk/narrow/wide — следующая волна"
     scenes: [Home, Workspace, Review, Settings, Language, Onboarding, Source, Build, Diagnostics]
     axes: [light, dark, ru, en, long_text, cjk, narrow, wide]
     method: deterministic screenshot diff + независимый дизайн-ревью финалистов
