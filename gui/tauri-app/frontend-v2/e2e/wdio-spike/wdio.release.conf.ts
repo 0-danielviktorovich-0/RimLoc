@@ -7,7 +7,7 @@ import type { Options } from '@wdio/types'
 // browser.tauri.execute needs the second plugin — deferred until rebuild).
 export const config: Options.Testrunner = {
   runner: 'local',
-  specs: ['./bisect.spec.ts'],
+  specs: ['./t6-research-marker.spec.ts'],
   maxInstances: 1,
   capabilities: [
     {

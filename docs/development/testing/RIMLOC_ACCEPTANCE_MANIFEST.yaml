@@ -67,9 +67,16 @@ tiers:
     phase1_structural: "DONE 01.10 (background-only): реальные export+build-mod
       через REL-13, build-mod валиден (<ModMetaData>/Languages/Keyed);
       находка T6-a (export-vs-buildmod UX) исправлена подсказкой"
-    phase2_in_game: "EXCLUSIVE — запуск RimWorld = foreground-активация;
-      рунбук готов (evidence artifact-rel13-final/t6-phase1-structural.md),
-      требует явного «ок» владельца (P0-политика §4)"
+    phase2_in_game: "EXECUTED 02.10 (owner-authorized EXCLUSIVE run, изолированный
+      клон .app + -savedatafolder песочница; отчёт и вердикты §9 —
+      evidence artifact-rel14-production/T6_PHASE2_REPORT.md).
+      Вердикт: RIMWORLD LAUNCH/MOD LOAD/LOG HEALTH/SOURCE INTEGRITY/CLEANUP = PASS;
+      TRANSLATION DISCOVERY = PARTIAL (язык применился после LanguageInfo-фикса,
+      выбор через Prefs pre-write ненадёжен); IN-GAME MARKER = PARTIAL (research
+      экран+VE-вкладка достигнуты, кадр маркера не снят — фокус-гонки с активной
+      владельческой сессией; второй прогон кооперативно). T6 REAL GAME = PARTIAL.
+      Найден дефект T6-b: build-mod не пишет LanguageInfo.xml — язык без него
+      не регистрируется игрой (обход тест-сайдом, фикс в бэклоге)."
     required_for: [public_release_decision]
 
 semantic_snapshot:
@@ -92,3 +99,11 @@ non_interference_contract:
     фоном ⇒ HOST_INTERFERENCE (клипборд — только fingerprint, без контента)"
   assert_before_after: [pointer_idle, frontmost_app, active_space, clipboard]
   exceptions: [native_file_dialogs]   # EXCLUSIVE mode only
+
+release_requirements:
+  pre_public_soak: "один чистый (0 необъяснённых смертей процесса) background
+    automation soak >= 60 минут перед любым публичным шагом; не блокирует волну 13"
+  rimworld_adapter: "T6-сценарий (изоляция: клон .app + -savedatafolder; маркеры;
+    лог-маркеры; хэши источников) —persist как переиспользуемый адаптер-тест;
+    RimWorld-специфика (launch/log/translation assertions) держится за
+    RimWorld-адаптером, не за общим фреймворком (владелец §10)"
