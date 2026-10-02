@@ -54,7 +54,18 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
 
 /// Default managed-projects root: `<app-data>/managed`
 /// (identifier `com.rimloc.gui` from tauri.conf).
+///
+/// Test isolation (owner directive §4, 2026-10-01): automation instances
+/// launched with RIMLOC_DATA_DIR=<disposable root> get a fully separate
+/// projects universe — owner managed projects/recents are absent from the
+/// instance's discovery root entirely. Production never sets the variable;
+/// the write fence in the T6 harness (§3) is the second layer.
 pub fn default_managed_root() -> PathBuf {
+    if let Ok(dir) = std::env::var("RIMLOC_DATA_DIR") {
+        if !dir.is_empty() {
+            return PathBuf::from(dir).join("managed");
+        }
+    }
     dirs::data_dir()
         .unwrap_or_else(std::env::temp_dir)
         .join("com.rimloc.gui")

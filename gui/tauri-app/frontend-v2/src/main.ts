@@ -37,10 +37,17 @@ function maybeLoadWdioBridge(): boolean {
   }
   return false;
 }
-if (!AUTOMATION_BUILD) {
-  // production: no listener at all
-} else if (!maybeLoadWdioBridge()) {
-  window.addEventListener('rimloc:wdio', maybeLoadWdioBridge, { once: true });
+if (AUTOMATION_BUILD) {
+  // Rust park loop evals the flag every 1.5s for only ~15s from SETUP —
+  // on a cold packaged start the page can finish loading AFTER all 10
+  // dispatches (observed: bridge never initialized under the wdio service
+  // while manual spawns worked). Poll makes the handshake order-proof.
+  if (!maybeLoadWdioBridge()) {
+    window.addEventListener('rimloc:wdio', maybeLoadWdioBridge, { once: true });
+    const handshake = setInterval(() => {
+      if (maybeLoadWdioBridge()) clearInterval(handshake);
+    }, 500);
+  }
 }
 
 const app = mount(App, {
