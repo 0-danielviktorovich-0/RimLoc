@@ -32,7 +32,26 @@ related:
 
 **Вердикт: LOCAL RC READY (macOS).** Публикация (push, тег, релиз, подпись) — за владельцем.
 
-## 1. Гейты приёмки на current `main` (REL-13, 01.10)
+## 1. Гейты приёмки на current `main` (REL-14, 02.10)
+
+**Два класса артефактов (§C коррекции владельца):**
+- **REL-14 production** (sha бинаря 03e4613289cd914d, DMG): БЕЗ automation-моста
+  (compile-time exclusion, release-guard PASSED: строки/ресурсы/runtime-негатив);
+  M-7+M-10 фиксы внутри; установлен в /Applications. Это единственный класс,
+  называемый release-candidate.
+- **automation artifact** (sha b12b45b9→e7d5f083…): feature automation-bridge +
+  capability overlay + guest-JS чанк; НЕ shippable; для deep E2E/soak.
+- Изоляция инстансов: RIMLOC_DATA_DIR (verified: пустой managed, прод 8
+  проектов нетронуты).
+
+**T6-2 (EXCLUSIVE, 02.10)**: игра 4× запущена в изолированном клоне, VWE+зависимости+
+пакет загружены, русский UI применился (язык регистрируют установленные RU-паки —
+LanguageInfo для контрибьютора не нужен, A/B доказано), research-экран достигнут;
+IN-GAME MARKER кадр — ждёт кооперативного окна (§9 lease). Инцидент изоляции
+(маркер в прод-проект) — аудит PASS, откат верифицирован (см. §1a ниже и
+RimLoc-evidence/p0-incident-20261001/).
+
+## 1a. Гейты приёмки на `main 8056649` (реальные прогоны 27.09, REL-12 эра)
 
 **Release-артефакт REL-13** (HEAD `a105529`): бинарь sha b9bf5ddc…, DMG
 215de9a4…; собран с M-7/M-10 фиксами, P0-форками нулевой активации,
