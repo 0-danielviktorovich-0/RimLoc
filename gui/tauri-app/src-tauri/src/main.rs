@@ -3301,7 +3301,7 @@ fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
     {
         let window = window.clone();
         std::thread::spawn(move || {
-            for _ in 0..10 {
+            for _ in 0..60 {
                 std::thread::sleep(std::time::Duration::from_millis(1500));
                 automation_accessibility_activate();
                 // Idempotent flag+event: whichever side initializes first
