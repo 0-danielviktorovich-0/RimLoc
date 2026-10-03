@@ -60,7 +60,13 @@ describe('embedded WDIO soak', () => {
       if (!id || typeof id.source_commit !== 'string') {
         throw new Error(`preflight: app reported no build_identity (${JSON.stringify(id)})`)
       }
-      if (expected && id.source_commit !== expected) {
+      // The commit is compared WITHOUT the declared "-dirty" suffix: the
+      // automation capability overlay (capabilities/automation.json) is a
+      // deliberate build-time input the artifact-class scripts manage, so a
+      // dirty flag alone never masks a WRONG commit — but any commit
+      // mismatch still aborts before cycle 1.
+      const actualCommit = id.source_commit.replace(/-dirty$/, '')
+      if (expected && actualCommit !== expected) {
         throw new Error(
           `preflight: ARTIFACT MISMATCH — app source_commit ${id.source_commit}, expected ${expected}; soak never starts`,
         )
