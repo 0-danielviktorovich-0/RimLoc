@@ -658,6 +658,15 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             'pick_directory: the native folder dialog is unavailable in mock — run the desktop app'
           );
         }
+        case 'build_identity': {
+          // Honest refusal: there is no running app binary in mock — the
+          // identity gate is meaningless without a real artifact, and a
+          // fabricated commit would defeat the whole preflight purpose.
+          throw new MockContractError(
+            'unsupported_capability',
+            'build_identity: no running binary in mock — run the desktop app'
+          );
+        }
         case 'project_glossary':
         case 'project_glossary_upsert':
         case 'project_glossary_delete': {

@@ -27,6 +27,26 @@ echo "run_id=$RUN_ID dir=$DIR"
 # 1) app: спавнит САМ wdio-сервис (application в конфиге). Runner раньше
 #    спавнил второй инстанс — двойной спавн путал сессии (дефект прогонa
 #    071213: сессия и монитор смотрели на разные процессы).
+# 1b) pre-flight ARTIFACT IDENTITY GATE (owner soak-hardening §1/§2):
+# class by automation surface (never trust path naming), sha256 against the
+# expected artifact in gate mode, expected source commit exported for the
+# spec's runtime identity check. Fail-closed BEFORE any cycle.
+REPO=~/Developing/_rimloc-worktrees/ba-main
+EXPECT_SHA="${SOAK_EXPECT_SHA256:-}"
+COMMIT=$(git -C "$REPO" rev-parse HEAD)
+PREFLIGHT_ARGS=(--bin "$BIN" --class automation --out "$DIR/preflight.json")
+[ -n "$EXPECT_SHA" ] && PREFLIGHT_ARGS+=(--expect-sha256 "$EXPECT_SHA")
+if [ "${SOAK_GATE:-0}" = "1" ]; then
+  PREFLIGHT_ARGS+=(--gate)
+  [ -n "$EXPECT_SHA" ] || { echo "SOAK_GATE=1 requires SOAK_EXPECT_SHA256" >&2; exit 2; }
+fi
+if ! bash "$REPO/testlab/ui_automation/wdio/soak-preflight.sh" "${PREFLIGHT_ARGS[@]}"; then
+  echo "PREFLIGHT FAILED — soak never starts (fail-closed)" >&2
+  exit 1
+fi
+export SOAK_EXPECT_COMMIT="$COMMIT"
+echo "preflight ok; expected source commit: $COMMIT"
+
 echo "waiting for wdio-spawned app..." > "$DIR/app.log"
 
 # 2) external monitor: app liveness + port + driver, 1s samples

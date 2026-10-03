@@ -320,7 +320,11 @@ export type ContractMethod =
   // Project glossary (wave 13): generic project state, persist-before-ack.
   | 'project_glossary'
   | 'project_glossary_upsert'
-  | 'project_glossary_delete';
+  | 'project_glossary_delete'
+  // Build identity of the RUNNING binary (soak-hardening §1): long-running
+  // acceptance runs verify the artifact they drive independently of any
+  // wrapper path. Refused honestly in mock — no running binary there.
+  | 'build_identity';
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
@@ -380,4 +384,13 @@ export interface ProjectGlossaryDeleteResponseDto {
   job_id: string;
   revision: number;
   removed_id: string;
+}
+
+/// Identity of the running binary, reported by the app itself
+/// (build.rs RIMLOC_* env, never derived from wrapper paths).
+export interface BuildIdentityDto {
+  source_commit: string;
+  build_profile: string;
+  build_features: string;
+  app_version: string;
 }

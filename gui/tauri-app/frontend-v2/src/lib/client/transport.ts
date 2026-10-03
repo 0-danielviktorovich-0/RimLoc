@@ -7,6 +7,7 @@ import type {
   ApplyExistingRequestDto,
   ApplyExistingResponseDto,
   ApplyIntentsRequestDto,
+  BuildIdentityDto,
   ApplyIntentsResponseDto,
   BuildModProjectResponseDto,
   ContractHandshakeDto,
@@ -93,6 +94,7 @@ export interface ContractMethodMap {
     params: { request: ProjectGlossaryDeleteRequestDto };
     result: ProjectGlossaryDeleteResponseDto;
   };
+  build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }
 
 export type TransportMode = 'tauri' | 'mock';

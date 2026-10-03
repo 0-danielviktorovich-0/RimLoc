@@ -8,6 +8,12 @@ set -u
 # artifact than the runner announced (lesson of the 03.10 run: BIN env on
 # the runner did not reach the wrapper, the soak drove rel14 by default).
 BIN="${1:-${BIN:-$HOME/Developing/RimLoc-evidence/artifact-rel14-automation/RimLoc GUI.app/Contents/MacOS/rimloc-gui}}"
+# Test seam: print the resolved binary and exit — precedence (arg1 > $BIN >
+# default) is verified by testlab/ui_automation/wdio/soak-preflight.sh --selftest.
+if [ "${WRAP_PRINT_ONLY:-}" = "1" ]; then
+  echo "$BIN"
+  exit 0
+fi
 # AUTOMATION artifact only: production (installed in /Applications) carries
 # no bridge — soak/E2E must never target it (owner §C artifact classes).
 FRAME=$(/tmp/place-win 2>/dev/null || echo "348,70,980x640")

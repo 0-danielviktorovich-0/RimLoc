@@ -995,6 +995,29 @@ fn get_app_info() -> Result<AppInfo, ApiError> {
     })
 }
 
+/// Build identity of the RUNNING binary (owner soak-hardening §1): a
+/// long-running acceptance run must verify the artifact it drives
+/// independently of any wrapper path — the app reports its own source
+/// truth. Shell-level read-only info, same class as get_app_info.
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct BuildIdentity {
+    source_commit: String,
+    build_profile: String,
+    build_features: String,
+    app_version: String,
+}
+
+#[tauri::command]
+fn build_identity() -> Result<BuildIdentity, ApiError> {
+    Ok(BuildIdentity {
+        source_commit: env!("RIMLOC_SOURCE_COMMIT").to_string(),
+        build_profile: env!("RIMLOC_BUILD_PROFILE").to_string(),
+        build_features: env!("RIMLOC_BUILD_FEATURES").to_string(),
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
+    })
+}
+
 #[derive(Debug, Deserialize)]
 struct DebugOptions {
     #[serde(default)]
@@ -3043,6 +3066,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_glossary_delete",
     // safe read-only legacy extras
     "get_app_info",
+    // build identity of the running binary (soak-hardening §1) — read-only
+    // shell info, registered via POST_ORIGINAL_LIVE_EXTRAS arithmetic.
+    "build_identity",
     "scan_mod",
     "scan_strings_gui",
     "validate_mod",
@@ -3822,6 +3848,7 @@ fn main() {
             merge_keyed_gui,
             // selfloc entry: safe read-only shell extra (live too)
             selfloc_catalog_dir,
+            build_identity,
             // selfloc contribution (beta, wave 7): build the offline bundle
             // from the open UI-catalog session — services-guarded write.
             selfloc_build_contribution
@@ -3863,6 +3890,7 @@ fn main() {
             // selfloc entry (mandate D): resolve the app-bundled UI catalog
             // dir — read-only shell extra, same class as pick_directory.
             selfloc_catalog_dir,
+            build_identity,
             // selfloc contribution (beta, wave 7): build the offline bundle
             // from the open UI-catalog session — services-guarded write.
             selfloc_build_contribution

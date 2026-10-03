@@ -11,6 +11,7 @@
 import type {
   ApplyExistingRequestDto,
   ApplyExistingResponseDto,
+  BuildIdentityDto,
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
   BuildModProjectResponseDto,
@@ -231,6 +232,13 @@ export class RimLocClient {
     request: ProjectGlossaryDeleteRequestDto
   ): Promise<ProjectGlossaryDeleteResponseDto> {
     return this.call('project_glossary_delete', { request });
+  }
+
+  /** Identity of the RUNNING binary (soak-hardening §1): acceptance
+   * preflight compares this against the expected source commit BEFORE any
+   * cycles — a wrong artifact aborts, never soaks silently. */
+  async buildIdentity(): Promise<BuildIdentityDto> {
+    return this.call('build_identity', {});
   }
 
   /** FULL drop-in mod package (`About/About.xml` in the game-loadable
