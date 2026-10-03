@@ -129,9 +129,15 @@ describe('embedded WDIO soak', () => {
         )
         return
       }
+      // Existence condition, NOT display: WDIO element.waitFor polls
+      // isDisplayed, and an OCCLUDED background WebKit window reports
+      // displayed=false forever (live lesson of the first v3 launch —
+      // 20/20 phantom render timeouts while the hash route reached 100%).
       const landmarkOk = await browser
-        .$(landmarkSel)
-        .waitFor({ timeout: NAV_TIMEOUT_MS, interval: 50 })
+        .waitUntil(async () => (await browser.$(landmarkSel)).isExisting(), {
+          timeout: NAV_TIMEOUT_MS,
+          interval: 50,
+        })
         .then(() => true)
         .catch(() => false)
       const t4 = Date.now()
