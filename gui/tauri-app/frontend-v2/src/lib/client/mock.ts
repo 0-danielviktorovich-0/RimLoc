@@ -192,7 +192,12 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
                 // W2 (existing-pack flow): mirrors contract.rs
                 // Capability::ProjectImportExisting / ProjectApplyExisting.
                 'project_import_existing',
-                'project_apply_existing'
+                'project_apply_existing',
+                // Wave 13: mirrors contract.rs Capability::ProjectGlossary
+                // (the ops themselves refuse honestly in mock — durable
+                // project state cannot be faked — but the handshake reports
+                // the shipped backend capability truthfully).
+                'project_glossary'
               ],
               unsupported: [
                 // Audit P2-1: names mirror the Rust capability_report

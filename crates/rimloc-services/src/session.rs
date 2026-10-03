@@ -701,7 +701,7 @@ impl ProjectSessionManager {
                 slot.translation = translation;
                 slot.note = note;
                 let entry = slot.clone();
-                let revision = self.persist_glossary(&mut st, &req.project_id, &job_id)?;
+                let revision = self.persist_glossary(&mut st, &req.project_id)?;
                 Ok(ProjectGlossaryUpsertResponse {
                     job_id,
                     revision,
@@ -716,7 +716,7 @@ impl ProjectSessionManager {
                     note,
                 };
                 st.project.glossary.push(entry.clone());
-                let revision = self.persist_glossary(&mut st, &req.project_id, &job_id)?;
+                let revision = self.persist_glossary(&mut st, &req.project_id)?;
                 Ok(ProjectGlossaryUpsertResponse {
                     job_id,
                     revision,
@@ -765,7 +765,7 @@ impl ProjectSessionManager {
                 )
             })?;
         let removed = st.project.glossary.remove(pos);
-        let revision = self.persist_glossary(&mut st, &req.project_id, &job_id)?;
+        let revision = self.persist_glossary(&mut st, &req.project_id)?;
         Ok(ProjectGlossaryDeleteResponse {
             job_id,
             revision,
@@ -780,9 +780,7 @@ impl ProjectSessionManager {
         &self,
         st: &mut SessionState,
         project_id: &str,
-        job_id: &str,
     ) -> Result<Revision, ContractError> {
-        let _ = job_id;
         let new_revision = st.revision + 1;
         st.revision = new_revision;
         let meta = ProjectEnvelopeMeta {

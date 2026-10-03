@@ -388,6 +388,12 @@ pub enum Capability {
     /// analysis, persist-before-ack, existing translations never
     /// overwritten, ambiguous lines never auto-applied. Wire name appends.
     ProjectApplyExisting,
+    /// Project glossary (wave 13): read the terms (`project_glossary`),
+    /// create/update by case-insensitive term (`project_glossary_upsert`),
+    /// delete (`project_glossary_delete`) — generic project state,
+    /// persist-before-ack. Wire name appends (never renames) per the
+    /// contract rule.
+    ProjectGlossary,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -426,6 +432,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::SelflocCatalog,
             Capability::ProjectImportExisting,
             Capability::ProjectApplyExisting,
+            Capability::ProjectGlossary,
         ],
         unsupported: vec![
             UnsupportedCapability {
@@ -699,6 +706,7 @@ mod tests {
             .supported
             .contains(&Capability::ProjectImportExisting));
         assert!(report.supported.contains(&Capability::ProjectApplyExisting));
+        assert!(report.supported.contains(&Capability::ProjectGlossary));
         assert!(report.unsupported.iter().all(|u| !u.reason.is_empty()));
         assert!(!report.unsupported.iter().any(|u| {
             u.capability == "validate_via_contract"
