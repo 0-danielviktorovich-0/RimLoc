@@ -3,7 +3,11 @@
 # Тот же протокол, что spawn-wrapper.sh: обычное видимое окно, эфемерный
 # фрейм, ноль активаций (форки wry/tao).
 set -u
-BIN="${1:-$HOME/Developing/RimLoc-evidence/artifact-rel14-automation/RimLoc GUI.app/Contents/MacOS/rimloc-gui}"
+# Arg-1 wins, then $BIN (soak-runner passes the artifact under test), then
+# the rel14 default — the wrapper must never silently soak a different
+# artifact than the runner announced (lesson of the 03.10 run: BIN env on
+# the runner did not reach the wrapper, the soak drove rel14 by default).
+BIN="${1:-${BIN:-$HOME/Developing/RimLoc-evidence/artifact-rel14-automation/RimLoc GUI.app/Contents/MacOS/rimloc-gui}}"
 # AUTOMATION artifact only: production (installed in /Applications) carries
 # no bridge — soak/E2E must never target it (owner §C artifact classes).
 FRAME=$(/tmp/place-win 2>/dev/null || echo "348,70,980x640")
