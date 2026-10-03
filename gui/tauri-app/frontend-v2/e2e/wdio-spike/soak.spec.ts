@@ -251,4 +251,4 @@ describe('embedded WDIO soak', () => {
       )
     }
   })
-}
+})

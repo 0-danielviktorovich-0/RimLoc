@@ -95,7 +95,7 @@ cat > "$DIR/counters.json" <<JSON
   "cycles": ${CYCLES:-0},
   "app_process_deaths": $APP_DEATHS,
   "webview_process_deaths": "not_instrumented",
-  "driver_disconnects": "$DRIVE-channel errors recorded in drive.log",
+  "driver_disconnects": "see drive.log driver errors (spec v3 counts them separately)",
   "relaunches": 0,
   "session_reconnects": 0,
   "recovered_failures": "see drive.log error ledger",
