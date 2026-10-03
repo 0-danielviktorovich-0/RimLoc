@@ -101,3 +101,25 @@ Apple НЕ предоставляет WebDriver-реализацию для WKWe
 (operation_id = run_id + scenario_id + шаг) + фронт/бэкенд логи (RIMLOC_TRACE=1,
 gui.log) + filesystem delta + environment + summary. Секреты и личные пути — санитизация.
 Скриншоты опциональны (визуальные тесты/фейлы/финальный дизайн-ревью).
+
+## Long-run lessons (owner soak-hardening, 03.10) — generic для RimLoc/BookKeeper/FreeWorld
+
+1. **LONG-RUN TESTS MUST VERIFY TARGET ARTIFACT IDENTITY BEFORE EXECUTION.**
+   Источник: 60-мин soak 03.10 молча ехал на rel14 (дефолт враплера), BIN-override
+   раннера не доходил до спавна. Канон: перед циклом 1 — identity-гейт (файл sha256,
+   класс поверхности, expected source commit) + приложение САМО сообщает
+   `build_identity` (build.rs → RIMLOC_SOURCE_COMMIT, команда / build_identity).
+   Mismatch = ABORT до цикла 1, никогда не warning. Регрессия: soak-preflight.sh
+   --selftest (fail-closed + три пути враппера).
+2. **STATEFUL UI ACTIONS REQUIRE SEMANTIC COMPLETION CONDITIONS, NOT IMMEDIATE
+   POST-ACTION SNAPSHOTS.** Источник: «клик → немедленный isExisting» гонил
+   ~20% ложных отказов под нагрузкой (macOS 27 WebKit откладывает диспетчеризацию
+   в нефокусированном окне — upstream #540 класс). Канон: один семантический клик →
+   waitUntil(route hash) → waitFor(landmark); route truth = hash + landmark
+   (заголовок один никогда не PASS); латентность route/render — раздельные метрики
+   (p50/p95/p99/max в отчёте); ретраев нет; таймаут = FAIL цикла с сохранённым
+   evidence; счётчики раздельные (functional / route_timeouts / render_timeouts /
+   driver_errors) — никогда не сваливать в один «error».
+3. **0 failures при 4.9-секундной навигации ≠ 0 failures при 20мс.** Латентность
+   навигации — метрика отчёта: деградация производительности не прячется за
+   retry/wait-логикой.
