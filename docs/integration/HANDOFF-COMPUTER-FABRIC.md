@@ -77,6 +77,16 @@ Fabric-уровневая версия того же сценария: discover 
 state → localization lookup → semantic navigation → background capture →
 structured evidence → close — БЕЗ foreground/pointer/keyboard/Spaces.
 
+## §10 inventory vs CuaDriver
+
+Полная таблица: RimLoc repo `testlab/runtime_bridge/CUA-DRIVER-COMPARISON.md`.
+Кратко: мост сильнее в семантике приложения (DefDatabase/Translator/UI-API, ноль
+ввода, frame-freshness); CuaDriver сильнее в generic-покрытии, фоновом вводе,
+таргетинге pid+window+element_token, браузерных табах, trajectory. Релизная
+сборка RimLoc моста НЕ несёт — fallback-уровень для прод-приёмки = generic.
+Snapshot-инвариант CuaDriver (токены умирают со снапшотом) и наш state_revision —
+один принцип: «наблюдение → действие» с честным устареванием.
+
 ## Граница владения (§28/§30/§37)
 
 Generic Fabric/CuaDriver/broker — ваш. RimWorld Adapter/Runtime Bridge/RimLoc
