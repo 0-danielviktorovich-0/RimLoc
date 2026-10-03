@@ -67,7 +67,12 @@ tiers:
     phase1_structural: "DONE 01.10 (background-only): реальные export+build-mod
       через REL-13, build-mod валиден (<ModMetaData>/Languages/Keyed);
       находка T6-a (export-vs-buildmod UX) исправлена подсказкой"
-    phase2_in_game: "COMPLETE 03.10 (EXCLUSIVE lease, изолированный клон .app +
+    phase2_in_game: "PASS 03.10 — полная цепочка: RimLoc-пакет (Keyed + DefInjected маркеры,
+      языковая папка 'Russian (Русский)' = активной) → RimWorld 1.6 загрузил →
+      живой runtime разрешил маркеры → Research UI отрисовал → in-process
+      скриншот зафиксировал (t6-background-acceptance/ACCEPTANCE.md).
+      Runtime Bridge v0.3.0 (file channel, StaticConstructorOnStartup, READY 10/10).
+      Языковая семантика: folder = identity, LanguageInfo не нужен (A/B).
       -savedatafolder песочница; полное решение — RIMWORLD_BACKGROUND_QA_DECISION.md).
       ФИНАЛЬНАЯ ЦЕПОЧКА ДОКАЗАНА: RimLoc-пакет (Keyed+DefInjected маркеры,
       языковая папка 'Russian (Русский)' = активной) → игра загрузила и
