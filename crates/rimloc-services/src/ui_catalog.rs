@@ -45,6 +45,8 @@ use rimloc_core::winner_reason;
 use rimloc_domain::canonical::{
     ContextRole, EntryKind, InventoryContext, Origin, PatchStage, Project, SourceContext,
     SourceEntry, SourceEntryId, SourceProvenance, ViewLabel,
+    AdapterIdentity,
+    adapter_ids,
 };
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
@@ -321,6 +323,13 @@ pub fn build_catalog_project(root: &Path) -> Result<Project> {
         });
     }
     let mut project = Project {
+        // §F6 dogfooding: the self-localization project is a FIRST-CLASS
+        // second adapter on the same canonical core.
+        adapter: AdapterIdentity {
+            adapter_id: adapter_ids::RIMLOC_APPLICATION.to_string(),
+            adapter_api_version: "1".to_string(),
+            adapter_project_schema_version: "1".to_string(),
+        },
         context: InventoryContext {
             target_version: None,
             view: ViewLabel::Exact,
@@ -759,7 +768,18 @@ mod tests {
     /// the catalog inventory (the ordinary mod pipeline would yield ZERO
     /// entries for a dir without Languages/Defs — a zero result here would
     /// mean the hook did not fire).
+    /// §F9/§F14 conformance: the selfloc project carries the SECOND adapter
+    /// identity on the same canonical core (dogfooding the adapter boundary).
     #[test]
+    fn selfloc_project_carries_rimloc_application_adapter_identity() {
+        let dir = tempfile::tempdir().unwrap();
+        write_catalog(dir.path(), &small_catalog());
+        let p = crate::project::build_project(dir.path(), None).unwrap();
+        assert_eq!(p.adapter.adapter_id, "rimloc-application");
+        assert_eq!(p.adapter.adapter_api_version, "1");
+        assert_eq!(p.adapter.adapter_project_schema_version, "1");
+    }
+
     fn build_project_routes_catalog_sources_through_the_adapter() {
         let dir = tempfile::tempdir().unwrap();
         write_catalog(dir.path(), &small_catalog());

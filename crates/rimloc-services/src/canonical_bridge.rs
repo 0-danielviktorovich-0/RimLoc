@@ -197,6 +197,9 @@ pub fn project_from_inventory(
     context: rimloc_domain::canonical::InventoryContext,
 ) -> Project {
     let mut p = Project {
+        // RimWorld adapter boundary: this builder turns a scanned RimWorld
+        // mod into a canonical project (adapter identity default = rimworld).
+        adapter: rimloc_domain::canonical::AdapterIdentity::default(),
         context,
         entries: source_entries(units, patch_stage, version, selected_by),
         translations: Vec::new(),

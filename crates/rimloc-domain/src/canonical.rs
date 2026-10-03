@@ -256,9 +256,53 @@ pub enum ViewLabel {
     Potential,
 }
 
+/// Which localization adapter owns this project's source semantics (§F9,
+/// docs/architecture/LOCALIZATION_ADAPTERS.md): stable platform identity
+/// plus the contract versions the project was written against. ONE canonical
+/// core hosts MANY adapters (RimWorld, RimLoc application self-localization,
+/// ... future targets); a project created by an unavailable/incompatible
+/// adapter must fail to load with useful diagnostics, never open corrupt.
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema,
+)]
+pub struct AdapterIdentity {
+    /// Stable adapter id (see [`adapter_ids`]); selects the semantics of
+    /// every adapter-specific field in the project (EntryKind families,
+    /// context fields, provenance vocabulary).
+    pub adapter_id: String,
+    /// Adapter contract version the project was WRITTEN against.
+    pub adapter_api_version: String,
+    /// Adapter's own project-schema version (its additive/breaking policy).
+    pub adapter_project_schema_version: String,
+}
+
+impl Default for AdapterIdentity {
+    // Legacy projects predate the field — they are RimWorld mod projects;
+    // the default keeps those envelopes loadable unchanged.
+    fn default() -> Self {
+        Self {
+            adapter_id: adapter_ids::RIMWORLD.to_string(),
+            adapter_api_version: "1".to_string(),
+            adapter_project_schema_version: "1".to_string(),
+        }
+    }
+}
+
+/// Built-in first-party adapter ids. Anything else fails the load with an
+/// `unknown adapter` diagnostic naming the owning application.
+pub mod adapter_ids {
+    pub const RIMWORLD: &str = "rimworld";
+    pub const RIMLOC_APPLICATION: &str = "rimloc-application";
+}
+
 /// The canonical project: one source inventory + per-locale translations.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Project {
+    /// Owning localization adapter (§F9). RimWorld-specific knowledge lives
+    /// behind this identity — the generic editor/TM/review core never
+    /// assumes it.
+    #[serde(default)]
+    pub adapter: AdapterIdentity,
     pub context: InventoryContext,
     pub entries: Vec<SourceEntry>,
     pub translations: Vec<Translation>,
