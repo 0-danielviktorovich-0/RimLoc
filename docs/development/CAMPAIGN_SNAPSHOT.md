@@ -37,6 +37,13 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **АРТЕФАКТ REL-15 PRODUCTION СОБРАН 03.10 (волна 13 включена):** main 02e7ae1
+  → RimLoc-evidence/artifact-rel15-production (sha256 91869f39…, source-commit.txt).
+  release-guard static+runtime = PASS (порт 4457 закрыт при RIMLOC_AUTOMATION=1,
+  маркеров wdio нет); boot-check изоляцией RIMLOC_DATA_DIR = PASS (12с жив,
+  frontmost владельца не тронут). DMG-стадия упала (bundle_dmg на NFS-target —
+  дистрибуция перед публичным шагом собирать на внутреннем томе). Сборка шла с
+  явным CARGO_TARGET_DIR на SSD (хук-контракт ADR-002: путь в тексте команды).
 - **ВОЛНА 13 ЗАВЕРШЕНА ЦЕЛИКОМ 03.10 (012ca20):** ЗАДАЧА A (бэкенд:
   GlossaryTerm + Project.glossary + контракт CRUD + persist-before-ack),
   ЗАДАЧА B (фронт: живая таблица глоссария на контрактном проекте, честный
