@@ -1,7 +1,25 @@
 # RIMLOC ACCEPTANCE MANIFEST — declarative gate config (persist mandate 04)
 # Source of truth: docs/development/testing/AUTONOMOUS_ACCEPTANCE_ARCHITECTURE.md
-version: 1
-updated: 2026-09-30   # +T3 ax_background (фокус-фри канал, мандат владельца)
+version: 2
+updated: 2026-10-03   # +runtime-bridge v1 hardening (директива POST-PASS HARDENING §1-12)
+
+# §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
+# и в RimLoc-evidence):
+matrix_20261003:
+  T6_PRODUCT_REAL_GAME: "PASS (03.10, golden, не перезапускался)"
+  T6_BACKGROUND_AUTONOMOUS: "PASS (03.10, golden, не перезапускался)"
+  RUNTIME_BRIDGE: "PASS / v1.0.0 — JSON-конверт протокол, семантические ошибки,
+    frame freshness, capability-манифест; конформанс 30/30 live (35с, фон)"
+  LANGUAGE_CORE_SEMANTICS: "PASS — folder = identity; display (native/english) =
+    отдельные поля; LanguageInfo.xml для contributor = NOT REQUIRED (A/B)"
+  INACTIVE_LANGUAGE_PACK_REGISTRATION_CLAIM: "UNCONFIRMED — нужен контролируемый
+    A/B или пруф по коду загрузчика; экспортёр от claim НЕ зависит"
+  FRAME_FRESHNESS_HARDENING: "PASS (live: frame_at_request/at_present/advanced/
+    stale + state_revision; capture-запрос = наименее инвазивный рендер-пинок)"
+  PROTOCOL_V1_HARDENING: "PASS (live: envelope, run_id-гейт, карантин,
+    EVIDENCE_ROOT_ESCAPE fence, RUN_ID_MISMATCH/BAD_REQUEST проверены живьём)"
+  LOCALIZATION_ADAPTER_SEAM: "PASS — AdapterIdentity в каноне; rimworld +
+    rimloc-application сосуществуют; unknown adapter = чистый отказ; 211/211"
 
 defaults:
   same_host: true
@@ -79,6 +97,10 @@ tiers:
       ОТРИСОВАЛА перевод в research-экране: 'RIMLOC-T6 MARKER definjected
       research' (кадр t6-final/marker-in-game-full.png). LanguageInfo: НЕ нужен
       для контрибьютора (язык регистрируют RU-паки; A/B). См. §14 статусы."
+    runtime_bridge_v1: "03.10: мост хардненён до v1.0.0 (JSON envelope, семантические
+      ошибки, freshness, capabilities, evidence-fence) — конформанс 30/30 live,
+      golden-сценарий и маркеры НЕ мутированы; исходник канонизирован в
+      testlab/runtime_bridge/ (test-only, never ship)"
     required_for: [public_release_decision]
 
 semantic_snapshot:
