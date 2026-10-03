@@ -37,6 +37,17 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **60-MIN POST-FIX RELEASE SOAK = PASS 03.10 (soak #3, официальный гейт):**
+  840 циклов/60мс-15мс-p50; functional=0, routeTO=0, renderTO=0, driverErr=0,
+  deaths=0, relaunches=0, reconnects=0; identity верифицирована до цикла 1
+  (артефакт rel15-automation sha bdbb128c…, app-reported dcf5b28-dirty =
+  записи сборки). Латентности: settings-nav p50=32мс/p95=134мс (route 18мс +
+  render 9мс — продуктовых проблем нет), два одиночных выброса записаны
+  честно. Evidence: RimLoc-evidence/soak-60-main-v3-official-20261003.
+  Инфраструктура: build_identity в бинаре, soak-preflight gate (fail-closed),
+  спека v3 (hash+landmark, латентности, раздельные счётчики) — коммиты
+  421584c…4493dc3. soak#1 (rel14, 20% интермитент) и soak#2 (baseline, 21%)
+  — диагностические, сохранили evidence.
 - **АРТЕФАКТ REL-15 PRODUCTION СОБРАН 03.10 (волна 13 включена):** main 02e7ae1
   → RimLoc-evidence/artifact-rel15-production (sha256 91869f39…, source-commit.txt).
   release-guard static+runtime = PASS (порт 4457 закрыт при RIMLOC_AUTOMATION=1,
