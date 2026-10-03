@@ -18,8 +18,13 @@ import type {
   ContractHandshakeDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
+  GlossaryTermDto,
   ImportExistingRequestDto,
   ImportExistingResponseDto,
+  ProjectGlossaryDeleteRequestDto,
+  ProjectGlossaryDeleteResponseDto,
+  ProjectGlossaryUpsertRequestDto,
+  ProjectGlossaryUpsertResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
   SelflocBuildContributionResponseDto,
@@ -206,6 +211,26 @@ export class RimLocClient {
    *  ambiguous lines are never auto-applied. */
   async applyExisting(request: ApplyExistingRequestDto): Promise<ApplyExistingResponseDto> {
     return this.call('project_apply_existing', { request });
+  }
+
+  /** Project glossary: the project's terms (wave 13, read-only). */
+  async glossaryList(projectId: string, sessionEpoch: number): Promise<GlossaryTermDto[]> {
+    return this.call('project_glossary', { project_id: projectId, session_epoch: sessionEpoch });
+  }
+
+  /** Create/update one glossary term (case-insensitive `term` match;
+   *  persist-before-ack — the returned revision is durable). */
+  async glossaryUpsert(
+    request: ProjectGlossaryUpsertRequestDto
+  ): Promise<ProjectGlossaryUpsertResponseDto> {
+    return this.call('project_glossary_upsert', { request });
+  }
+
+  /** Remove one glossary term; an unknown term is a typed refusal. */
+  async glossaryDelete(
+    request: ProjectGlossaryDeleteRequestDto
+  ): Promise<ProjectGlossaryDeleteResponseDto> {
+    return this.call('project_glossary_delete', { request });
   }
 
   /** FULL drop-in mod package (`About/About.xml` in the game-loadable

@@ -2655,6 +2655,81 @@
       "placeholders": []
     },
     {
+      "id": "glossary.live.badge",
+      "source_text": "Live",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.demoBadge",
+      "source_text": "Demo data",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.loading",
+      "source_text": "Loading terms…",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.note",
+      "source_text": "Note",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.actions",
+      "source_text": "Actions",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.edit",
+      "source_text": "Edit",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.save",
+      "source_text": "Save",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.cancel",
+      "source_text": "Cancel",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.delete",
+      "source_text": "Delete",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.confirmDelete",
+      "source_text": "Delete this term?",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.add",
+      "source_text": "Add term",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.empty",
+      "source_text": "No terms yet — add the first one below.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.placeholderTerm",
+      "source_text": "Term",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.placeholderTranslation",
+      "source_text": "Translation",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.placeholderNote",
+      "source_text": "Note (optional)",
+      "placeholders": []
+    },
+    {
       "id": "tm.title",
       "source_text": "Translation memory",
       "placeholders": []

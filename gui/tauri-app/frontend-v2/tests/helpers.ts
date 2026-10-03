@@ -47,6 +47,15 @@ export function click(testid: string): void {
   flushSync();
 }
 
+/** Set an input value the way real typing does (value + input event), then
+ *  flush — the canonical contract-ops idiom, factored for reuse. */
+export function typeInInput(testid: string, value: string): void {
+  const input = q(testid) as HTMLInputElement;
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+  flushSync();
+}
+
 /** Click a checkbox testid by dispatching change (real input element). */
 export function check(testid: string): void {
   const input = q(testid) as HTMLInputElement;

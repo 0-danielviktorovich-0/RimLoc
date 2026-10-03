@@ -2655,6 +2655,81 @@
       "placeholders": []
     },
     {
+      "id": "glossary.live.badge",
+      "translated": "Живые данные",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.demoBadge",
+      "translated": "Демо-данные",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.loading",
+      "translated": "Загружаю термины…",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.note",
+      "translated": "Заметка",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.actions",
+      "translated": "Действия",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.edit",
+      "translated": "Правка",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.save",
+      "translated": "Сохранить",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.cancel",
+      "translated": "Отмена",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.delete",
+      "translated": "Удалить",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.confirmDelete",
+      "translated": "Удалить этот термин?",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.add",
+      "translated": "Добавить термин",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.empty",
+      "translated": "Терминов пока нет — добавьте первый ниже.",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.placeholderTerm",
+      "translated": "Термин",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.placeholderTranslation",
+      "translated": "Перевод",
+      "placeholders": []
+    },
+    {
+      "id": "glossary.live.placeholderNote",
+      "translated": "Заметка (необязательно)",
+      "placeholders": []
+    },
+    {
       "id": "tm.title",
       "translated": "Память переводов",
       "placeholders": []

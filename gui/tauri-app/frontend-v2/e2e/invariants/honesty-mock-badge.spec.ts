@@ -65,6 +65,27 @@ test('honesty: бейдж мока виден на каждом экране moc
   expect(seen).toHaveLength(ALL_ROUTES.length);
 });
 
+test('honesty: глоссарий в mock — живой таблицы нет, бейдж честности виден (wave 13)', async ({ page }) => {
+  // Wave 13 (glossary MOCK→LIVE): on a CONTRACT project the workspace
+  // glossary tab renders the live table over project_glossary; in mock mode
+  // it MUST stay the honest stub — durable project state cannot be faked,
+  // so no term table with add/edit/delete controls may appear.
+  await gotoScreen(page, 'home');
+  await page.getByTestId('home.demo.open').click();
+  await dismissCoachIfOpen(page);
+  await page.getByTestId('tabs.glossary').click();
+  await expect(
+    page.getByTestId('workspace.glossary-stub'),
+    'в mock-режиме глоссарий обязан оставаться честным стабом'
+  ).toBeVisible();
+  await expect(
+    page.getByTestId('workspace.glossary.demo-badge'),
+    'стаб глоссария без бейджа Demo data претендует на живые данные'
+  ).toBeVisible();
+  await expect(page.getByTestId('workspace.glossary-live')).toHaveCount(0);
+  await expect(page.getByTestId('workspace.glossary.add-form')).toHaveCount(0);
+});
+
 test('honesty: демо-проект помечен бейджем Demo data (mock) в шапке', async ({ page }) => {
   await gotoScreen(page, 'home');
   // Open the bundled demo project: the workspace must carry the DEMO badge
