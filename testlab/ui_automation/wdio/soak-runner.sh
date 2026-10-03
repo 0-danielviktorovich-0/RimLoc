@@ -33,7 +33,13 @@ echo "run_id=$RUN_ID dir=$DIR"
 # spec's runtime identity check. Fail-closed BEFORE any cycle.
 REPO=~/Developing/_rimloc-worktrees/ba-main
 EXPECT_SHA="${SOAK_EXPECT_SHA256:-}"
-COMMIT=$(git -C "$REPO" rev-parse HEAD)
+# Expected source commit: the ARTIFACT's OWN build record first
+# (<artifact dir>/source-commit.txt, written at build time) — live HEAD
+# moves with harness commits and must never be the identity reference
+# (lesson of the 03.10 soak #3 false start).
+COMMIT=$(cat "$(dirname "$BIN")/../../../source-commit.txt" 2>/dev/null || true)
+COMMIT=$(echo "$COMMIT" | sed 's/-dirty$//')
+[ -n "$COMMIT" ] || COMMIT=$(git -C "$REPO" rev-parse HEAD)
 PREFLIGHT_ARGS=(--bin "$BIN" --class automation --out "$DIR/preflight.json")
 [ -n "$EXPECT_SHA" ] && PREFLIGHT_ARGS+=(--expect-sha256 "$EXPECT_SHA")
 if [ "${SOAK_GATE:-0}" = "1" ]; then
