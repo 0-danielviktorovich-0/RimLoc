@@ -55,9 +55,9 @@ describe('embedded WDIO soak', () => {
         const inv = window.__TAURI_INTERNALS__?.invoke
         if (!inv) throw new Error('__TAURI_INTERNALS__.invoke unavailable')
         return await inv('build_identity')
-      })) as { source_commit?: string }
+      })) as { sourceCommit?: string }
       const expected = process.env.SOAK_EXPECT_COMMIT
-      if (!id || typeof id.source_commit !== 'string') {
+      if (!id || typeof id.sourceCommit !== 'string') {
         throw new Error(`preflight: app reported no build_identity (${JSON.stringify(id)})`)
       }
       // The commit is compared WITHOUT the declared "-dirty" suffix: the
@@ -65,13 +65,13 @@ describe('embedded WDIO soak', () => {
       // deliberate build-time input the artifact-class scripts manage, so a
       // dirty flag alone never masks a WRONG commit — but any commit
       // mismatch still aborts before cycle 1.
-      const actualCommit = id.source_commit.replace(/-dirty$/, '')
+      const actualCommit = id.sourceCommit.replace(/-dirty$/, '')
       if (expected && actualCommit !== expected) {
         throw new Error(
-          `preflight: ARTIFACT MISMATCH — app source_commit ${id.source_commit}, expected ${expected}; soak never starts`,
+          `preflight: ARTIFACT MISMATCH — app sourceCommit ${id.sourceCommit}, expected ${expected}; soak never starts`,
         )
       }
-      identity = id.source_commit
+      identity = id.sourceCommit
       console.log(`[soak] preflight: identity verified (${identity}, ${Date.now() - t0}ms)`)
     }
 

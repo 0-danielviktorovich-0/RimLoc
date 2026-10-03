@@ -387,10 +387,11 @@ export interface ProjectGlossaryDeleteResponseDto {
 }
 
 /// Identity of the running binary, reported by the app itself
-/// (build.rs RIMLOC_* env, never derived from wrapper paths).
+/// (build.rs RIMLOC_* env, never derived from wrapper paths). Wire shape
+/// follows the shell-info precedent (AppInfo): camelCase.
 export interface BuildIdentityDto {
-  source_commit: string;
-  build_profile: string;
-  build_features: string;
-  app_version: string;
+  sourceCommit: string;
+  buildProfile: string;
+  buildFeatures: string;
+  appVersion: string;
 }
