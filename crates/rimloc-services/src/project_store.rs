@@ -586,7 +586,6 @@ mod tests {
         assert_eq!(loaded, original);
     }
 
-    #[test]
     // ---------- Adapter identity conformance (§F9/§F14, LOCALIZATION_ADAPTERS) ----------
 
     #[test]
