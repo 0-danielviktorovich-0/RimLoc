@@ -3037,6 +3037,10 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // W2 (existing-pack flow): dry-run analysis + guarded application.
     "project_import_existing",
     "project_apply_existing",
+    // Wave 13: project glossary (generic project state, persist-before-ack).
+    "project_glossary",
+    "project_glossary_upsert",
+    "project_glossary_delete",
     // safe read-only legacy extras
     "get_app_info",
     "scan_mod",
@@ -3773,6 +3777,10 @@ fn main() {
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
             rimloc_gui_lib::contract_adapter::project_apply_existing,
+            // Wave 13: project glossary.
+            rimloc_gui_lib::contract_adapter::project_glossary,
+            rimloc_gui_lib::contract_adapter::project_glossary_upsert,
+            rimloc_gui_lib::contract_adapter::project_glossary_delete,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3837,6 +3845,10 @@ fn main() {
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
             rimloc_gui_lib::contract_adapter::project_apply_existing,
+            // Wave 13: project glossary.
+            rimloc_gui_lib::contract_adapter::project_glossary,
+            rimloc_gui_lib::contract_adapter::project_glossary_upsert,
+            rimloc_gui_lib::contract_adapter::project_glossary_delete,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,

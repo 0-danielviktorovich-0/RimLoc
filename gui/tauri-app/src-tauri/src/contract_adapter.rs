@@ -22,7 +22,9 @@
 
 use rimloc_services::contract::{
     capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse,
-    CapabilityReport, CreateProjectRequest, ProjectSnapshot, ProjectSummary,
+    CapabilityReport, CreateProjectRequest, ProjectGlossaryDeleteRequest,
+    ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse,
+    ProjectSnapshot, ProjectSummary,
 };
 use rimloc_services::session::ProjectSessionManager;
 use serde::Serialize;
@@ -50,6 +52,10 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // existing translation pack against the open project.
     "project_import_existing",
     "project_apply_existing",
+    // Wave 13: project glossary — generic project state, persist-before-ack.
+    "project_glossary",
+    "project_glossary_upsert",
+    "project_glossary_delete",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -202,6 +208,53 @@ pub fn project_refresh(
         .lock()
         .expect("contract session registry poisoned");
     manager.refresh(&project_id)
+}
+
+/// `project_glossary` — the project's terms (wave 13, read-only).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_glossary(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+) -> Result<
+    Vec<rimloc_domain::glossary::GlossaryTerm>,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_glossary", || {
+        manager.glossary_list(&project_id, session_epoch)
+    })
+}
+
+/// `project_glossary_upsert` — create/update one term (case-insensitive
+/// `term` match); persist-before-ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_glossary_upsert(
+    state: State<'_, ContractState>,
+    request: ProjectGlossaryUpsertRequest,
+) -> Result<ProjectGlossaryUpsertResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_glossary_upsert", || manager.glossary_upsert(&request))
+}
+
+/// `project_glossary_delete` — remove one term; unknown term is a typed
+/// refusal, never silent success.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_glossary_delete(
+    state: State<'_, ContractState>,
+    request: ProjectGlossaryDeleteRequest,
+) -> Result<ProjectGlossaryDeleteResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_glossary_delete", || manager.glossary_delete(&request))
 }
 
 #[tauri::command(rename_all = "snake_case")]

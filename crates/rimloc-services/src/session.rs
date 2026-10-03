@@ -27,8 +27,9 @@
 
 use crate::contract::{
     ApplyIntentsRequest, ApplyIntentsResponse, ContractError, ContractErrorCode, IntentAction,
-    JobId, PathBufDto, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch,
-    SkippedIntent, TranslationIntent, UI_CONTRACT_VERSION,
+    JobId, PathBufDto, ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse,
+    ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse, ProjectId, ProjectSnapshot,
+    ProjectSummary, Revision, SessionEpoch, SkippedIntent, TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
@@ -631,6 +632,194 @@ impl ProjectSessionManager {
             cancelled,
         })
     }
+    // ---------- Glossary (wave 13): generic project state, persist-before-ack ----------
+
+    /// `project_glossary` — the project's terms, trusted session state,
+    /// read-only. Epoch guard identical to every other session operation.
+    pub fn glossary_list(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+    ) -> Result<Vec<rimloc_domain::glossary::GlossaryTerm>, ContractError> {
+        self.managed_path(project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        Ok(st.project.glossary.clone())
+    }
+
+    /// `project_glossary_upsert` — create or update one term by
+    /// case-insensitive `term` match. Persist-before-ack: the revision the
+    /// response carries is durable; a failed save keeps the edit DIRTY in
+    /// memory and never acks (same discipline as `apply`).
+    pub fn glossary_upsert(
+        &self,
+        req: &ProjectGlossaryUpsertRequest,
+    ) -> Result<ProjectGlossaryUpsertResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        // Form validation BEFORE any state mutation: a refused write never
+        // bumps the revision and never touches the disk.
+        let (term, translation, note) = rimloc_domain::glossary::validate_input(
+            &req.term,
+            &req.translation,
+            req.note.as_deref(),
+        )
+        .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+
+        let job_id: JobId = generate_operation_id();
+        let needle = term.to_lowercase();
+        let existing = st
+            .project
+            .glossary
+            .iter_mut()
+            .find(|t| t.term.to_lowercase() == needle);
+        match existing {
+            Some(slot) => {
+                // Case-insensitive duplicate = UPDATE in place: the stable
+                // id survives; the canonical spelling is refreshed.
+                slot.term = term;
+                slot.translation = translation;
+                slot.note = note;
+                let entry = slot.clone();
+                let revision = self.persist_glossary(&mut st, &req.project_id, &job_id)?;
+                Ok(ProjectGlossaryUpsertResponse {
+                    job_id,
+                    revision,
+                    entry,
+                })
+            }
+            None => {
+                let entry = rimloc_domain::glossary::GlossaryTerm {
+                    id: generate_operation_id(),
+                    term,
+                    translation,
+                    note,
+                };
+                st.project.glossary.push(entry.clone());
+                let revision = self.persist_glossary(&mut st, &req.project_id, &job_id)?;
+                Ok(ProjectGlossaryUpsertResponse {
+                    job_id,
+                    revision,
+                    entry,
+                })
+            }
+        }
+    }
+
+    /// `project_glossary_delete` — remove one term by case-insensitive
+    /// match; an unknown term is a typed refusal, never silent success.
+    pub fn glossary_delete(
+        &self,
+        req: &ProjectGlossaryDeleteRequest,
+    ) -> Result<ProjectGlossaryDeleteResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let needle = req.term.trim().to_lowercase();
+        if needle.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                "glossary term to delete must not be empty",
+            ));
+        }
+        let pos = st
+            .project
+            .glossary
+            .iter()
+            .position(|t| t.term.to_lowercase() == needle)
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::ContractViolation,
+                    format!("unknown glossary term: {}", req.term.trim()),
+                )
+            })?;
+        let removed = st.project.glossary.remove(pos);
+        let revision = self.persist_glossary(&mut st, &req.project_id, &job_id)?;
+        Ok(ProjectGlossaryDeleteResponse {
+            job_id,
+            revision,
+            removed_id: removed.id,
+        })
+    }
+
+    /// Shared persist step for glossary mutations: revision bump +
+    /// external-change check + save-before-ack (the `apply` discipline,
+    /// factored — glossary edits follow the exact same rules).
+    fn persist_glossary(
+        &self,
+        st: &mut SessionState,
+        project_id: &str,
+        job_id: &str,
+    ) -> Result<Revision, ContractError> {
+        let _ = job_id;
+        let new_revision = st.revision + 1;
+        st.revision = new_revision;
+        let meta = ProjectEnvelopeMeta {
+            project_id: Some(project_id.to_string()),
+            revision: Some(new_revision),
+            display_name: Some(st.display_name.clone()),
+            source_root: envelope_source_root(&st.mod_root),
+            source_fingerprint: st.source_fingerprint.clone(),
+        };
+        if let Some(expected) = &st.disk_hash {
+            let current = disk_hash(&st.path);
+            if current.is_some_and(|c| &c != expected) {
+                st.dirty = true;
+                return Err(ContractError::new(
+                    ContractErrorCode::ProjectChangedOnDisk,
+                    "the managed project file changed outside this session; refresh to adopt                      the on-disk state (in-memory edits are kept until then)"
+                        .to_string(),
+                ));
+            }
+        }
+        match save_project_with_meta(&st.project, &meta, &st.path) {
+            Ok(()) => {
+                st.acked_revision = new_revision;
+                st.disk_hash = disk_hash(&st.path);
+                st.dirty = false;
+                Ok(new_revision)
+            }
+            Err(e) => {
+                st.dirty = true;
+                Err(ContractError::new(
+                    ContractErrorCode::SaveFailed,
+                    format!("persist failed: {e}"),
+                ))
+            }
+        }
+    }
+
     /// `project_validate` — run the EXISTING validator (026 severity) over
     /// the trusted session state. NEVER mutates the project: this is a
     /// read-only operation over the canonical inventory and its
@@ -2494,6 +2683,205 @@ mod tests {
         let reopened = mgr.open(&snap.project_id).unwrap();
         assert_eq!(reopened.session_epoch, 2);
         assert_eq!(reopened.revision, 2);
+    }
+
+    // ---------- Glossary (wave 13) ----------
+
+    fn upsert_req(
+        pid: &str,
+        epoch: u64,
+        term: &str,
+        tr: &str,
+        note: Option<&str>,
+    ) -> crate::contract::ProjectGlossaryUpsertRequest {
+        crate::contract::ProjectGlossaryUpsertRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            term: term.into(),
+            translation: tr.into(),
+            note: note.map(|n| n.into()),
+        }
+    }
+
+    fn delete_req(
+        pid: &str,
+        epoch: u64,
+        term: &str,
+    ) -> crate::contract::ProjectGlossaryDeleteRequest {
+        crate::contract::ProjectGlossaryDeleteRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            term: term.into(),
+        }
+    }
+
+    #[test]
+    fn glossary_crud_cycle_case_insensitive_upsert_updates() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = snap.project_id.clone();
+        let epoch = snap.session_epoch;
+
+        // Create.
+        let r1 = mgr
+            .glossary_upsert(&upsert_req(
+                &pid,
+                epoch,
+                "scorched earth",
+                "выжженная земля",
+                Some("GW"),
+            ))
+            .unwrap();
+        assert_eq!(r1.revision, 2);
+        assert_eq!(r1.entry.term, "scorched earth");
+        assert!(!r1.entry.id.is_empty());
+
+        // Case-insensitive duplicate = UPDATE (stable id survives).
+        let r2 = mgr
+            .glossary_upsert(&upsert_req(
+                &pid,
+                epoch,
+                "  Scorched Earth  ",
+                "выжженные земли",
+                None,
+            ))
+            .unwrap();
+        assert_eq!(r2.entry.id, r1.entry.id);
+        assert_eq!(r2.entry.translation, "выжженные земли");
+        assert_eq!(r2.entry.note, None);
+        assert_eq!(r2.revision, 3);
+
+        let list = mgr.glossary_list(&pid, epoch).unwrap();
+        assert_eq!(list.len(), 1, "no duplicate entry");
+
+        // Delete by different casing.
+        let d = mgr
+            .glossary_delete(&delete_req(&pid, epoch, "SCORCHED EARTH"))
+            .unwrap();
+        assert_eq!(d.removed_id, r1.entry.id);
+        assert_eq!(d.revision, 4);
+        assert!(mgr.glossary_list(&pid, epoch).unwrap().is_empty());
+    }
+
+    #[test]
+    fn glossary_persists_across_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.glossary_upsert(&upsert_req(
+            &snap.project_id,
+            snap.session_epoch,
+            "term",
+            "перевод",
+            None,
+        ))
+        .unwrap();
+
+        // Durable: the envelope carries the glossary.
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        assert_eq!(loaded.project.glossary.len(), 1);
+        assert_eq!(loaded.project.glossary[0].term, "term");
+
+        let reopened = mgr.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.session_epoch, 2);
+        let list = mgr
+            .glossary_list(&snap.project_id, reopened.session_epoch)
+            .unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].translation, "перевод");
+    }
+
+    #[test]
+    fn glossary_epoch_guard_refuses_all_three_ops() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let stale = snap.session_epoch + 100;
+
+        assert!(matches!(
+            mgr.glossary_list(&snap.project_id, stale).unwrap_err().code,
+            crate::contract::ContractErrorCode::StaleEpoch
+        ));
+        assert!(matches!(
+            mgr.glossary_upsert(&upsert_req(&snap.project_id, stale, "a", "b", None))
+                .unwrap_err()
+                .code,
+            crate::contract::ContractErrorCode::StaleEpoch
+        ));
+        assert!(matches!(
+            mgr.glossary_delete(&delete_req(&snap.project_id, stale, "a"))
+                .unwrap_err()
+                .code,
+            crate::contract::ContractErrorCode::StaleEpoch
+        ));
+    }
+
+    #[test]
+    fn glossary_validation_refusals_never_bump_revision() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = snap.project_id.as_str();
+        let epoch = snap.session_epoch;
+
+        for bad in [
+            upsert_req(pid, epoch, "  ", "x", None),
+            upsert_req(pid, epoch, "x", " ", None),
+            upsert_req(pid, epoch, &"x".repeat(201), "y", None),
+            upsert_req(pid, epoch, "x", &"y".repeat(2001), None),
+            upsert_req(
+                pid,
+                epoch,
+                &"x".repeat(200),
+                &"y".repeat(2000),
+                Some(&"n".repeat(501)),
+            ),
+            upsert_req(pid, epoch, "a\nb", "y", None),
+            upsert_req(pid, epoch, "a\tb", "y", None),
+            upsert_req(pid, epoch, "x", "y", Some("n\u{7f}")),
+        ] {
+            let err = mgr.glossary_upsert(&bad).unwrap_err();
+            assert!(
+                matches!(
+                    err.code,
+                    crate::contract::ContractErrorCode::ContractViolation
+                ),
+                "{err}"
+            );
+        }
+        // Nothing changed: revision intact, list empty.
+        assert_eq!(mgr.glossary_list(pid, epoch).unwrap().len(), 0);
+        assert_eq!(mgr.snapshot(pid).unwrap().revision, 1);
+    }
+
+    #[test]
+    fn glossary_delete_unknown_term_is_typed_refusal() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let err = mgr
+            .glossary_delete(&delete_req(
+                &snap.project_id,
+                snap.session_epoch,
+                "no-such-term",
+            ))
+            .unwrap_err();
+        assert!(matches!(
+            err.code,
+            crate::contract::ContractErrorCode::ContractViolation
+        ));
+        assert!(err.message.contains("no-such-term"));
     }
 
     /// Stale epoch and stale revision are distinct typed errors, and a

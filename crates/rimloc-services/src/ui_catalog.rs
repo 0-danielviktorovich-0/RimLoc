@@ -43,10 +43,8 @@
 use crate::{Result, TransUnit};
 use rimloc_core::winner_reason;
 use rimloc_domain::canonical::{
-    ContextRole, EntryKind, InventoryContext, Origin, PatchStage, Project, SourceContext,
-    SourceEntry, SourceEntryId, SourceProvenance, ViewLabel,
-    AdapterIdentity,
-    adapter_ids,
+    adapter_ids, AdapterIdentity, ContextRole, EntryKind, InventoryContext, Origin, PatchStage,
+    Project, SourceContext, SourceEntry, SourceEntryId, SourceProvenance, ViewLabel,
 };
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
@@ -337,6 +335,7 @@ pub fn build_catalog_project(root: &Path) -> Result<Project> {
         },
         entries,
         translations: Vec::new(),
+        glossary: Vec::new(),
     };
     // SF-10: import every existing target catalog as ordinary data (the
     // single `update_translation` write path; origin Imported marks the
@@ -780,6 +779,7 @@ mod tests {
         assert_eq!(p.adapter.adapter_project_schema_version, "1");
     }
 
+    #[test]
     fn build_project_routes_catalog_sources_through_the_adapter() {
         let dir = tempfile::tempdir().unwrap();
         write_catalog(dir.path(), &small_catalog());
