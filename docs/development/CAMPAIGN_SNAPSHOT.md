@@ -37,6 +37,16 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **ВОЛНА 13 ЗАДАЧА A ВЛИТА В MAIN 03.10 (7326ada):** глоссарий как состояние
+  проекта — домен GlossaryTerm, Project.glossary (serde default), контракт
+  project_glossary/upsert/delete c persist-before-ack и epoch-гвардом,
+  регистрация в live-входе (оба handler-ветки); 8 тестов; services+domain
+  231/0, clippy 0. Исполнено в главной нити (детерминированная часть брифа —
+  разрешена до снятия квоты). ЗАДАЧИ B/C (фронт live + e2e) — по брифу
+  (.zcode/workflow-drafts/RimLoc-волна-13-глоссарий.dwf.ts) после reset 06.10.
+  УРОК: общий NFS-target рвёт rlib-слоты между воркспейсами (ba-main перезаписал
+  домен ветки — поля «adapter, context…» без glossary); лечение — форс-ребилд
+  touch + вливание деревьев (сошлись на 7326ada), для будущих волн — serial.
 - **СТОП-КОНВЕЙЕРА 30.09 ~06:0x: квота Z.ai 1310 (Weekly/Monthly исчерпана, reset
   2026-10-06 00:00 JST).** Flash-воркеры недоступны до reset — волны механики
   ПРИОСТАНОВЛЕНЫ. Workflow волны 13 (глоссарий live) остановлен на первом шаге,
