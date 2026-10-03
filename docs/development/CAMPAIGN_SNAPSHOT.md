@@ -37,6 +37,19 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
+- **ВОЛНА 13 ЗАВЕРШЕНА ЦЕЛИКОМ 03.10 (012ca20):** ЗАДАЧА A (бэкенд:
+  GlossaryTerm + Project.glossary + контракт CRUD + persist-before-ack),
+  ЗАДАЧА B (фронт: живая таблица глоссария на контрактном проекте, честный
+  стаб с бейджем на demo), ЗАДАЧА C (honesty-e2e), независимое ревью
+  (APPROVE, 2 minor исправлены: Capability::ProjectGlossary в handshake,
+  мёртвый job_id). Гейты: rust 231/0, vitest 450/450, e2e 17+1skipped,
+  svelte-check 0/0, clippy 0. Исполнено в главной нити (квота воркфлоу до
+  06.10); независимое ревью — read-only субагент.
+  **Следующая очередь — TM live: БРИФА НЕТ.** Открытый дизайн-вопрос перед
+  исполнением: что значит live для TM — авто-пополнение из принятых
+  переводов проекта, импорт legacy load_tm, ручной CRUD или комбинация;
+  мокает mock/wizard mockTm только читаемые строки. Нужен мандат владельца
+  или бриф по образцу волны 13.
 - **ВОЛНА 13 ЗАДАЧА A ВЛИТА В MAIN 03.10 (7326ada):** глоссарий как состояние
   проекта — домен GlossaryTerm, Project.glossary (serde default), контракт
   project_glossary/upsert/delete c persist-before-ack и epoch-гвардом,
