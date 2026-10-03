@@ -262,9 +262,7 @@ pub enum ViewLabel {
 /// core hosts MANY adapters (RimWorld, RimLoc application self-localization,
 /// ... future targets); a project created by an unavailable/incompatible
 /// adapter must fail to load with useful diagnostics, never open corrupt.
-#[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct AdapterIdentity {
     /// Stable adapter id (see [`adapter_ids`]); selects the semantics of
     /// every adapter-specific field in the project (EntryKind families,
@@ -306,6 +304,10 @@ pub struct Project {
     pub context: InventoryContext,
     pub entries: Vec<SourceEntry>,
     pub translations: Vec<Translation>,
+    /// Project glossary (wave 13) — GENERIC core state (adapter-independent;
+    /// see rimloc_domain::glossary). `default` keeps legacy files loadable.
+    #[serde(default)]
+    pub glossary: Vec<crate::glossary::GlossaryTerm>,
 }
 
 impl Project {

@@ -785,3 +785,40 @@ mod tests {
         assert_eq!(back, intent);
     }
 }
+
+/// `project_glossary_upsert` request (wave 13): create/update one term by
+/// case-insensitive `term` match. Nothing whole-project rides the wire.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ProjectGlossaryUpsertRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    pub term: String,
+    pub translation: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+/// Upsert ack: the durable revision plus the stored entry (id minted once).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ProjectGlossaryUpsertResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub entry: rimloc_domain::glossary::GlossaryTerm,
+}
+
+/// `project_glossary_delete` request: remove by case-insensitive `term`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ProjectGlossaryDeleteRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    pub term: String,
+}
+
+/// Delete ack.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ProjectGlossaryDeleteResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    /// Stable id of the removed entry.
+    pub removed_id: String,
+}

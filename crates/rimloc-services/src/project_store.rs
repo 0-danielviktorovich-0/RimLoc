@@ -606,8 +606,8 @@ mod tests {
         p.adapter.adapter_id = "rimloc-application".to_string();
         p.adapter.adapter_api_version = "1".to_string();
         p.adapter.adapter_project_schema_version = "3".to_string();
-        let loaded = load_project_str(&String::from_utf8(serialize_project(&p).unwrap()).unwrap())
-            .unwrap();
+        let loaded =
+            load_project_str(&String::from_utf8(serialize_project(&p).unwrap()).unwrap()).unwrap();
         assert_eq!(loaded.adapter.adapter_id, "rimloc-application");
         assert_eq!(loaded.adapter.adapter_project_schema_version, "3");
     }
@@ -615,9 +615,10 @@ mod tests {
     #[test]
     fn unknown_adapter_fails_cleanly_with_diagnostic() {
         let bytes = serialize_project(&sample()).unwrap();
-        let s = String::from_utf8(bytes)
-            .unwrap()
-            .replace("\"adapter_id\": \"rimworld\"", "\"adapter_id\": \"minecraft\"");
+        let s = String::from_utf8(bytes).unwrap().replace(
+            "\"adapter_id\": \"rimworld\"",
+            "\"adapter_id\": \"minecraft\"",
+        );
         assert!(s.contains("minecraft"), "tamper must apply");
         let err = load_project_str(&s).unwrap_err();
         let msg = err.to_string();
@@ -631,8 +632,9 @@ mod tests {
         let rimworld = sample();
         let mut selfloc = sample();
         selfloc.adapter.adapter_id = "rimloc-application".to_string();
-        let a = load_project_str(&String::from_utf8(serialize_project(&rimworld).unwrap()).unwrap())
-            .unwrap();
+        let a =
+            load_project_str(&String::from_utf8(serialize_project(&rimworld).unwrap()).unwrap())
+                .unwrap();
         let b = load_project_str(&String::from_utf8(serialize_project(&selfloc).unwrap()).unwrap())
             .unwrap();
         assert_eq!(a.adapter.adapter_id, "rimworld");
