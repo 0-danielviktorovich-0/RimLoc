@@ -780,6 +780,7 @@ mod tests {
         assert_eq!(p.adapter.adapter_project_schema_version, "1");
     }
 
+    #[test]
     fn build_project_routes_catalog_sources_through_the_adapter() {
         let dir = tempfile::tempdir().unwrap();
         write_catalog(dir.path(), &small_catalog());
