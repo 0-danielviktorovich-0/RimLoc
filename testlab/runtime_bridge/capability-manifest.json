@@ -1,0 +1,89 @@
+{
+  "adapter": {
+    "id": "rimworld-runtime-bridge",
+    "version": "1.0.0",
+    "fabric_path": "AI-OS App Control Fabric → RimWorld Adapter → RimWorld Runtime Bridge",
+    "target": "RimWorld 1.6 (Unity Mono player)",
+    "transport": "file channel: savedata/QA commands→results",
+    "deployment": "test-only, isolated clone profile",
+    "golden_acceptance": "T6 REAL GAME + T6 BACKGROUND AUTONOMOUS = PASS 2026-10-03"
+  },
+  "protocol": {
+    "version": 1,
+    "discovery_op": "capabilities",
+    "legacy_line_format": "accepted, deprecated"
+  },
+  "capabilities": [
+    {
+      "name": "runtime.ready",
+      "class": "observe",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    },
+    {
+      "name": "runtime.state",
+      "class": "observe",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    },
+    {
+      "name": "localization.keyed",
+      "class": "observe",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    },
+    {
+      "name": "localization.def_injected",
+      "class": "observe",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    },
+    {
+      "name": "ui.research_navigation",
+      "class": "app",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    },
+    {
+      "name": "capture.game_frame",
+      "class": "recording",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    },
+    {
+      "name": "capture.frame_freshness",
+      "class": "recording",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03) + v1 conformance run"
+    },
+    {
+      "name": "lifecycle.quit",
+      "class": "app",
+      "proven": true,
+      "evidence": "RimLoc-evidence/p0-incident-20261001/t6-background-acceptance/ACCEPTANCE.md (2026-10-03)"
+    }
+  ],
+  "constraints": {
+    "accessibility.semantic_ui": "limited",
+    "global_input.required": false,
+    "foreground_required": false
+  },
+  "language_model": {
+    "identity": "language folder name",
+    "display": [
+      "friendlyNameNative",
+      "friendlyNameEnglish"
+    ],
+    "claim_inactive_pack_registration": "UNCONFIRMED"
+  },
+  "ops": [
+    "capabilities",
+    "state",
+    "select_language",
+    "research_tab",
+    "read_def",
+    "keyed",
+    "screenshot",
+    "quit"
+  ]
+}
