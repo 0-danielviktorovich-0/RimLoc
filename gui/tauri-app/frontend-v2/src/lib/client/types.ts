@@ -316,7 +316,11 @@ export type ContractMethod =
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   | 'project_import_existing'
-  | 'project_apply_existing';
+  | 'project_apply_existing'
+  // Project glossary (wave 13): generic project state, persist-before-ack.
+  | 'project_glossary'
+  | 'project_glossary_upsert'
+  | 'project_glossary_delete';
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
@@ -339,4 +343,41 @@ export interface SelflocBuildContributionResponseDto {
   bundle_path: string | null;
   accepted_count: number;
   rejected: ContributionRejectionDto[];
+}
+
+// --- project glossary (wave 13; mirrors contract.rs ProjectGlossary* DTOs).
+// The glossary is GENERIC project state (adapter-independent): term is
+// unique per project CASE-INSENSITIVE — an upsert with different casing
+// updates the existing entry in place (stable id survives). ---
+export interface GlossaryTermDto {
+  id: string;
+  term: string;
+  translation: string;
+  note?: string;
+}
+
+export interface ProjectGlossaryUpsertRequestDto {
+  project_id: string;
+  session_epoch: number;
+  term: string;
+  translation: string;
+  note?: string;
+}
+
+export interface ProjectGlossaryUpsertResponseDto {
+  job_id: string;
+  revision: number;
+  entry: GlossaryTermDto;
+}
+
+export interface ProjectGlossaryDeleteRequestDto {
+  project_id: string;
+  session_epoch: number;
+  term: string;
+}
+
+export interface ProjectGlossaryDeleteResponseDto {
+  job_id: string;
+  revision: number;
+  removed_id: string;
 }

@@ -14,8 +14,13 @@ import type {
   CreateProjectRequestDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
+  GlossaryTermDto,
   ImportExistingRequestDto,
   ImportExistingResponseDto,
+  ProjectGlossaryDeleteRequestDto,
+  ProjectGlossaryDeleteResponseDto,
+  ProjectGlossaryUpsertRequestDto,
+  ProjectGlossaryUpsertResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
   SelflocBuildContributionResponseDto,
@@ -74,6 +79,19 @@ export interface ContractMethodMap {
   project_apply_existing: {
     params: { request: ApplyExistingRequestDto };
     result: ApplyExistingResponseDto;
+  };
+  // Project glossary (wave 13): generic project state, persist-before-ack.
+  project_glossary: {
+    params: { project_id: string; session_epoch: number };
+    result: GlossaryTermDto[];
+  };
+  project_glossary_upsert: {
+    params: { request: ProjectGlossaryUpsertRequestDto };
+    result: ProjectGlossaryUpsertResponseDto;
+  };
+  project_glossary_delete: {
+    params: { request: ProjectGlossaryDeleteRequestDto };
+    result: ProjectGlossaryDeleteResponseDto;
   };
 }
 

@@ -653,6 +653,18 @@ export function createMockTransport(state = createMockState()): RimLocTransport 
             'pick_directory: the native folder dialog is unavailable in mock — run the desktop app'
           );
         }
+        case 'project_glossary':
+        case 'project_glossary_upsert':
+        case 'project_glossary_delete': {
+          // Honest refusal (never a fake glossary): the glossary is durable
+          // PROJECT state — the mock has no backend session to persist into,
+          // and a fabricated list would lie about data that was never
+          // stored. Run the desktop app.
+          throw new MockContractError(
+            'unsupported_capability',
+            'project_glossary: the project glossary is unavailable in mock — run the desktop app'
+          );
+        }
         case 'selfloc_catalog_dir': {
           // Honest refusal (never a fabricated catalog dir): there is no
           // bundled RimLoc UI catalog without the desktop bridge, and a fake
