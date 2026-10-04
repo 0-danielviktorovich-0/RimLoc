@@ -9,7 +9,7 @@ import { ArrowDown, ArrowUp, Check, RotateCcw, Save, Search, ListFilter, FileCod
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { clientInstance } from '../lib/client/instance'
-import { t } from '../lib/i18n'
+import { t, tEnum } from '../lib/i18n'
 
 const ROW_HEIGHT = 63
 
@@ -248,7 +248,7 @@ function EntryEditor(props: {
           </div>
         )}
         <div className="detail-actions">
-          <button disabled={props.busy || !dirty} data-testid="ws.editor-save-next" onClick={() => props.onCommit(true)}>
+          <button className="btn-primary" disabled={props.busy || !dirty} data-testid="ws.editor-save-next" onClick={() => props.onCommit(true)}>
             <Check /> {t('ws.saveAndNext')}
           </button>
           <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} onClick={() => props.onCommit(false)}>
@@ -277,7 +277,7 @@ function EntryEditor(props: {
           </div>
           <div>
             <span>{t('ws.whyThisSource')}</span>
-            <strong>{props.selectedBy ?? '—'}</strong>
+            <strong>{tEnum('ws.why', props.selectedBy)}</strong>
           </div>
         </div>
         {copied[0] && <span hidden />}

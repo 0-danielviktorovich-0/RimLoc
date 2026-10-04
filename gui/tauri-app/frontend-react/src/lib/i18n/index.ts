@@ -17,6 +17,8 @@ const ru: Record<string, string> = {
   'shell.noProject': 'Проект не открыт',
   'shell.localProject': 'Локальный проект',
   'shell.newProject': 'Новый проект',
+  'shell.projectOpen': 'Проект открыт',
+  'shell.project': 'Проект',
   'shell.safetyNote': 'Только переводы. Оригинальный мод в безопасности.',
   'shell.placeholderTitle': 'React-лайна R1 живёт',
   'shell.placeholderBody':
@@ -66,6 +68,15 @@ const ru: Record<string, string> = {
   'ws.whyThisSource': 'Почему этот исходник',
   'ws.dirty': 'есть неподтверждённые правки',
   'ws.resize': 'Изменить ширину панелей',
+  'ws.headingTitle': 'Слова становятся миром.',
+  'ws.headingSubtitle': 'Перевод, который чувствуется как оригинал.',
+  'ws.gameVersion': 'Версия RimWorld',
+  'ws.why.first-file-wins': 'Победило первое вхождение в файлах',
+  'ws.why.keyed-last-wins': 'Победило последнее вхождение Keyed',
+  'ws.why.keyed-first-in-file': 'Победило первое вхождение в файле',
+  'ws.why.tkey-last-assignment': 'Победило последнее присваивание TKey',
+  'ws.why.definjected-setoradd': 'SetOrAdd DefInjected',
+  'ws.why.patch-applied': 'Применён патч',
 }
 
 const en: Record<string, string> = {
@@ -80,6 +91,8 @@ const en: Record<string, string> = {
   'shell.noProject': 'No project open',
   'shell.localProject': 'Local project',
   'shell.newProject': 'New project',
+  'shell.projectOpen': 'Project open',
+  'shell.project': 'Project',
   'shell.safetyNote': 'Translations only. The original mod stays safe.',
   'shell.placeholderTitle': 'The React R1 lane is alive',
   'shell.placeholderBody':
@@ -129,6 +142,15 @@ const en: Record<string, string> = {
   'ws.whyThisSource': 'Why this source',
   'ws.dirty': 'unacked edits present',
   'ws.resize': 'Resize panes',
+  'ws.headingTitle': 'Words become a world.',
+  'ws.headingSubtitle': 'Translation that feels like the original.',
+  'ws.gameVersion': 'RimWorld version',
+  'ws.why.first-file-wins': 'First occurrence across files wins',
+  'ws.why.keyed-last-wins': 'Last Keyed occurrence wins',
+  'ws.why.keyed-first-in-file': 'First in-file occurrence wins',
+  'ws.why.tkey-last-assignment': 'Last TKey assignment wins',
+  'ws.why.definjected-setoradd': 'DefInjected SetOrAdd',
+  'ws.why.patch-applied': 'Patch applied',
 }
 
 let locale: Locale = 'ru'
@@ -140,6 +162,15 @@ export function setLocale(l: Locale): void {
 export function getLocale(): Locale {
   return locale
 }
+/** Localized vocabulary for backend enums (winner_reason etc.) — raw wire
+ *  tokens never render as user text (finding of the first visual critique). */
+export function tEnum(prefix: string, value: string | undefined): string {
+  if (!value) return '—'
+  const key = `${prefix}.${value}`
+  const localized = dicts[locale][key] ?? dicts.en[key]
+  return localized ?? value
+}
+
 export function t(key: string, params?: Record<string, string | number>): string {
   const raw = dicts[locale][key] ?? dicts.en[key] ?? key
   if (!params) return raw

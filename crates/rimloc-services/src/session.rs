@@ -361,11 +361,30 @@ impl ProjectSessionManager {
                 };
                 match load_project_with_meta(&path) {
                     Ok(loaded) => {
+                        // Display-name backfill (UI R1 §21: raw managed ids
+                        // never surface as primary labels): legacy envelopes
+                        // may lack display_name — the source mod folder name
+                        // is the honest human hint, the id stays the last
+                        // resort.
+                        let name = loaded
+                            .meta
+                            .display_name
+                            .clone()
+                            .or_else(|| {
+                                loaded
+                                    .meta
+                                    .source_root
+                                    .as_deref()
+                                    .map(std::path::Path::new)
+                                    .and_then(|p| p.file_name())
+                                    .map(|n| n.to_string_lossy().to_string())
+                            })
+                            .unwrap_or_else(|| id.clone());
                         out.insert(
                             id.clone(),
                             ProjectSummary {
                                 project_id: id.clone(),
-                                name: loaded.meta.display_name.unwrap_or_else(|| id.clone()),
+                                name,
                                 revision: loaded.meta.revision.unwrap_or(1),
                                 target_version: loaded.project.context.target_version.clone(),
                             },

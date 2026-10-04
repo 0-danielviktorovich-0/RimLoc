@@ -33,3 +33,58 @@ button:disabled { opacity: 0.5; cursor: default; }
 .route-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .page-content { overflow-y: auto; }
 .entries-pane .entry-list { border: 0; }
+
+/* Nav anchors: the Lovable shell rendered nav items as shadcn Buttons
+ * (inline-flex rows); the React lane uses real <a> elements. */
+.primary-nav a,
+.sidebar-bottom a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 39px;
+  padding: 0 12px;
+  gap: 11px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  border-radius: 5px;
+  text-decoration: none;
+}
+.primary-nav a { font-size: 11px; padding: 0 8px; }
+.primary-nav a:hover, .sidebar-bottom a:hover { background: var(--accent); color: var(--primary); }
+.primary-nav a.active, .sidebar-bottom a.active { background: var(--accent); color: var(--primary); font-weight: 500; }
+.sidebar-bottom a { margin: 0 12px 10px; }
+
+/* App frame: the workspace fills the viewport; topbar stays fixed at the
+ * top of app-main (the first capture let the page scroll it away). */
+html, body { height: 100%; }
+.rim-app { height: 100vh; }
+.app-main { margin-left: 222px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.route-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.app-footer { flex-shrink: 0; }
+
+/* Entry rows: workstation density (63px, line-clamp-2 per canon). */
+.entry-row { min-height: 63px; height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; align-content: center; padding: 10px 13px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
+.entry-row:hover:not(:disabled) { background: var(--secondary); color: var(--foreground); }
+.entry-row.selected { background: var(--accent); color: var(--primary); box-shadow: inset 2px 0 0 var(--primary); }
+.row-source { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row-source span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.row-source code { font-size: 9px; color: var(--muted-foreground); font-family: var(--font-mono); }
+.row-target { font-size: 12px; color: var(--foreground); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.row-target.untranslated { color: var(--muted-foreground); font-style: italic; }
+
+/* Workspace heading zone (canon): eyebrow + display h1 + controls. */
+.workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 28px 18px; border-bottom: 1px solid var(--border); }
+.workspace-heading .heading-eyebrow { font-size: 8px; font-weight: 500; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; }
+.workspace-heading h1 { font-family: var(--font-display); font-size: 30px; font-weight: 400; }
+.workspace-heading p { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; }
+.heading-controls { display: flex; align-items: center; gap: 10px; }
+.heading-controls .version-select { font-size: 10px; color: var(--muted-foreground); display: inline-flex; gap: 6px; align-items: center; }
+
+/* Inspector: long paths truncate, never blow the pane. */
+.context-content code { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
+/* Sidebar progress block (canon): live percent of translated strings. */
+.sidebar-progress { margin: auto 20px 0; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
+.sidebar-progress strong { font-size: 20px; font-family: var(--font-display); }

@@ -6,6 +6,13 @@ import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { t } from '../lib/i18n'
 
+/** Raw managed-project ids are opaque (`proj-<hash>-<n>`) — the card label
+ *  is a trimmed human hint, never the raw id (mandate §21). */
+function shortId(id: string): string {
+  const m = /-(\d+)\.rimloc\.json$/.exec(id) ?? /^proj-([0-9a-f]{6})/.exec(id)
+  return m ? `Проект ${m[1]}` : id.slice(0, 12)
+}
+
 export function Home({ onOpen }: { onOpen: (projectId: string) => void }) {
   const st = useProjectState()
 
@@ -39,7 +46,7 @@ export function Home({ onOpen }: { onOpen: (projectId: string) => void }) {
           >
             <div>
               <span className="project-meta">{p.target_version ? `RIMWORLD ${p.target_version}` : 'PROJECT'} · EN → RU</span>
-              <h3>{p.name || p.project_id}</h3>
+              <h3>{p.name?.trim() ? p.name : shortId(p.project_id)}</h3>
               <p>
                 {t('home.revision')} {p.revision}
               </p>

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
+import { useProjectState } from './lib/state/useProjectState'
 import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
 import { t } from './lib/i18n'
@@ -36,11 +37,21 @@ function currentRoute(): Route {
 }
 
 export function App() {
+  const st = useProjectState()
   const [route, setRoute] = useState<Route>(currentRoute)
   const [dark, setDark] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
   const [clientError, setClientError] = useState<string | null>(null)
 
+  /** Human project label: display name → trimmed id hint. Raw managed ids
+   *  never render as user-facing labels (visual critique round 1/2). */
+  const projectLabel = (): string => {
+    if (route !== 'workspace' || !st.snapshot) return t('shell.noProject')
+    const named = st.summaries.find((x) => x.project_id === st.snapshot!.project_id)?.name?.trim()
+    if (named) return named
+    const m = /(?:^|-)(\d{4,})$/.exec(st.snapshot.project_id)
+    return m ? `${t('shell.project')} #${m[1]}` : st.snapshot.project_id.slice(0, 14)
+  }
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
   }, [dark])
@@ -74,16 +85,16 @@ export function App() {
         </a>
         <div className="sidebar-project">
           <div>
-            <strong>{t('shell.noProject')}</strong>
+            <strong>{projectLabel()}</strong>
             <span>
-              {t('shell.localProject')} <span className="dot success" />
+              {st.snapshot ? t('shell.projectOpen') : t('shell.localProject')} <span className="dot success" />
             </span>
           </div>
           <ChevronDown size={14} />
         </div>
         <nav className="primary-nav">
           {NAV.map(({ to, label, icon: Icon }) => (
-            <a key={to} href={`#/${to}`} className={route === to ? 'active' : ''} onClick={() => setNavOpen(false)}>
+            <a key={to} href={`#/${to}`} className={(route === to || (to === 'home' && route === 'workspace')) ? 'active' : ''} onClick={() => setNavOpen(false)}>
               <Icon />
               <span>{label}</span>
             </a>
@@ -111,9 +122,9 @@ export function App() {
           </button>
           <div className="breadcrumb">
             <FolderOpen size={15} />
-            <span>{t('shell.noProject')}</span>
+            <span>{projectLabel()}</span>
             <ChevronRight size={13} />
-            <strong>{NAV.find((n) => n.to === route)?.label ?? t('nav.settings')}</strong>
+            <strong>{route === 'workspace' ? t('nav.entries') : NAV.find((n) => n.to === route)?.label ?? t('nav.settings')}</strong>
           </div>
           <div className="topbar-actions">
             <button className="icon-btn" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => setDark(!dark)}>
@@ -135,8 +146,30 @@ export function App() {
               </div>
             </div>
           ) : route === 'workspace' ? (
-            <Workspace onBack={() => { window.location.hash = '#/home' }} />
+            <div className="ws-page">
+              <div className="workspace-heading">
+                <div>
+                  <div className="heading-eyebrow">
+                    <span className="dot primary" /> ENGLISH <span>→</span> РУССКИЙ
+                  </div>
+                  <h1>{t('ws.headingTitle')}</h1>
+                  <p>{t('ws.headingSubtitle')}</p>
+                </div>
+                <div className="heading-controls">
+                  <label className="version-select">
+                    <span>RimWorld</span>
+                    <select aria-label={t('ws.gameVersion')} defaultValue="1.6">
+                      <option>1.6</option>
+                      <option>1.5</option>
+                      <option>1.4</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <Workspace onBack={() => { window.location.hash = '#/home' }} />
+            </div>
           ) : route === 'home' || route === 'projects' ? (
+          // Home falls through to the shared layout below
             <Home
               onOpen={(projectId) => {
                 void projectStore.open(projectId).then((ok) => {
