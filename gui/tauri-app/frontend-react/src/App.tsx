@@ -4,6 +4,9 @@
 import { useEffect, useState } from 'react'
 import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
+import { projectStore } from './lib/state/project'
+import { Home } from './components/Home'
+import { Workspace } from './components/Workspace'
 import { t } from './lib/i18n'
 
 type Route =
@@ -15,6 +18,7 @@ type Route =
   | 'export'
   | 'tools'
   | 'settings'
+  | 'workspace'
 
 const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'projects', label: t('nav.projects'), icon: FolderOpen },
@@ -27,7 +31,7 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
 
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings']
+  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings', 'workspace']
   return (known.find((r) => r === h) ?? 'home') as Route
 }
 
@@ -130,6 +134,16 @@ export function App() {
                 <span>{clientError}</span>
               </div>
             </div>
+          ) : route === 'workspace' ? (
+            <Workspace onBack={() => { window.location.hash = '#/home' }} />
+          ) : route === 'home' || route === 'projects' ? (
+            <Home
+              onOpen={(projectId) => {
+                void projectStore.open(projectId).then((ok) => {
+                  if (ok) window.location.hash = '#/workspace'
+                })
+              }}
+            />
           ) : (
             <div className="page-content narrow-page">
               <div className="section-heading">

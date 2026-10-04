@@ -20,3 +20,16 @@ button:disabled { opacity: 0.5; cursor: default; }
 .icon-btn:hover { color: var(--primary); background: var(--accent); }
 .btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
 .btn-primary:hover { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.1); }
+
+/* Workspace three-pane layout (R1): resizable center/inspector. */
+.ws-root { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.ws-panes { flex: 1; min-height: 0; display: flex; }
+.ws-panes [data-panel] { display: flex; min-width: 0; min-height: 0; }
+.ws-panes [data-panel] > .entries-pane, .ws-panes [data-panel] > .detail-pane { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+.ws-handle { width: 5px; cursor: col-resize; background: transparent; border-left: 1px solid var(--border); margin: 0 2px; border-radius: 0; padding: 0; min-height: 100%; }
+.ws-handle:hover { background: var(--accent); }
+.ws-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 28px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
+.ws-error { padding: 8px 28px; color: var(--destructive); }
+.route-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.page-content { overflow-y: auto; }
+.entries-pane .entry-list { border: 0; }
