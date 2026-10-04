@@ -1,8 +1,23 @@
 # UI R1 CAMPAIGN CHECKPOINT (durable, обновлять по ходу)
 
-Обновлён: 2026-10-05 ~05:35 JST. Ветка: `glm/ui-r1-react`, HEAD `970a309`
+Обновлён: 2026-10-05 ~06:50 JST. Ветка: `glm/ui-r1-react`, HEAD `0ec8e30`
 (worktree `wt-ui-r1`). Основной main: `d0506fb`+ (Phase A docs; R1-лайна
 мержится после representative-acceptance).
+
+## Ночь 05/06.10 (автономное окно): завершено
+
+- Representative Workspace: 3 панели (file-tree из реального инвентаря +
+  виртуализированный список + редактор/инспектор), смоук-джорни live.
+- Живые маршруты: Home (project_list + wizard J1 + open) · Workspace ·
+  Checks (project_validate) · Glossary (project_glossary CRUD) ·
+  Existing (import/apply_existing, J2) · Build/Export (J6, gate валидации).
+- Смоук 5/5: wizard→create→инвентарь фикстуры · редактор-коммит→ревизия ·
+  живая валидация · glossary CRUD · existing dry-run→apply.
+- Визуальные раунды критики 1-3 (§80): фикс Literata/13px/топбар/
+  heading/63px-строки/wine-выделение/dark/табы/CTA — подтверждено
+  критиком; кадры в RimLoc-evidence/ui-r1/.
+- Skill product-ui-design (лайна I): 8 файлов на диске в AI-OS,
+  check-skills 0/0 — коммит ожидает сессию владельца (Layer7-атрибуция).
 
 ## Выполнено (PROVEN, живые прогоны)
 
