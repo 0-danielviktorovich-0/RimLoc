@@ -1,3 +1,26 @@
+Обновлён: 2026-10-05 ~08:15 JST. Ветка: `glm/ui-r1-react`, HEAD `58765ec`
+(worktree `wt-ui-r1`). Основной main: `d0506fb` (Phase A docs; R1-лайна
+мержится после owner-test). Лайна содержит весь main.
+
+## Раунд 6 критики (08:08): dark-фикс применён
+
+- var(--accent) в виртуализированных строках этого WebKit резолвил
+  LIGHT-значения несмотря на html.dark (осколочный каскад/кеш);
+  литеральные oklch + html.dark + !important — не могут проиграть;
+- кадры 08:08: selected = тёмный wine-тинт + винная полоска + читаемый
+  текст; топбар-кнопка wine с светлым текстом — dark-консистентно;
+- смоук 5/5 зелёный.
+
+## READY-очередь для следующей сессии
+
+1. Providers/LLM экран — порт клиентского стора (138 строк runes,
+  localStorage-персист, шаблоны zai/openai/anthropic/ollama);
+2. Command palette (Cmd+K);
+3. Language Manager (CRUD пользовательских языков);
+4. Human a11y/visual review (§52/§56);
+5. Perf-сравнение с Svelte baseline (§55);
+6. Selfloc contribution-экран (build_contribution);
+7. Wizard polish: «Открыть пример» кнопка, multilingual стрессы.
 # UI R1 CAMPAIGN CHECKPOINT (durable, обновлять по ходу)
 
 Обновлён: 2026-10-05 ~07:45 JST. Ветка: `glm/ui-r1-react`, HEAD `1083d13`
