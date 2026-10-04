@@ -271,3 +271,6 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 
 /* Editor action bar: always fully visible inside the pane. */
 .detail-actions { flex-shrink: 0; padding-bottom: 6px; }
+
+/* Providers: status colors reuse the canon dot/token vocabulary. */
+.text-info { color: var(--info); }

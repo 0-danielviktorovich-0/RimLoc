@@ -16,6 +16,7 @@ import { Existing } from './components/Existing'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
 import { Settings } from './components/Settings'
+import { ProvidersScreen } from './components/ProvidersScreen'
 import { t } from './lib/i18n'
 
 type Route =
@@ -31,6 +32,7 @@ type Route =
   | 'existing'
   | 'selfloc'
   | 'diagnostics'
+  | 'providers'
 
 const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'projects', label: t('nav.projects'), icon: FolderOpen },
@@ -44,7 +46,7 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
 
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics']
+  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics', 'providers']
   return (known.find((r) => r === h) ?? 'home') as Route
 }
 
@@ -231,6 +233,8 @@ export function App() {
             <Diagnostics />
           ) : route === 'settings' ? (
             <Settings />
+          ) : route === 'providers' ? (
+            <ProvidersScreen />
           ) : route === 'checks' ? (
             <Checks />
           ) : route === 'glossary' ? (
