@@ -208,3 +208,33 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 
 /* (6) Nav: keep 39px rhythm — two-line labels truncate. */
 .primary-nav a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Round-5 critic fixes (final acceptance). */
+
+/* D1: topbar primary anchor — inline-flex (anchors are inline by default,
+ * height never applied), explicit size that fits the 66px topbar. */
+.topbar-actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* D2: dark selected row — explicit dark wine tint + foreground text (the
+ * var-based rule resolved light values in this WebKit for the virtualized
+ * rows; literal oklch cannot be affected by any scoping quirk). */
+.dark .entry-row.selected {
+  background: oklch(.35 .04 15);
+  color: var(--foreground);
+}
+.dark .entry-row.selected .row-source > span {
+  color: var(--primary);
+}
+.dark .entry-row.selected .row-target {
+  color: var(--muted-foreground);
+}
+
+/* D4: glossary table bottom padding — last row clears the status strip. */
+.glossary-table { padding-bottom: 28px; }
