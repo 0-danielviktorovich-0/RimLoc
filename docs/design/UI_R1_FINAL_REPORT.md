@@ -70,7 +70,7 @@ frontend-v2 не изменялся React-лайной (кроме аддити�
 | TM-предложения у редактора | NOT RUN (домен TM live не собран — ждёт брифа) |
 | AI/no-API chat batches в React | NOT RUN (Svelte-стор существует; перенос — Phase E) |
 | Providers/LLM-ключи в React | PARTIAL — UI экран с 5 шаблонами + статусы PASS (06c61cf); LLM-вызовы/ключи — Phase E (клиентский стор Svelte-мира) |
-| Command palette в React | NOT RUN |
+| Command palette в React (Cmd+K) | LIVE (ea45339) — навигация + Escape + query filter |
 | Language Manager (пользовательские языки) | NOT RUN (реестр 9 builtin скопирован; CRUD пользовательских — Phase E) |
 
 Правило §42 соблюдено: ни один MOCK не выглядит как LIVE; в React-лайне
