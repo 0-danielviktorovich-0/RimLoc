@@ -55,6 +55,8 @@ export function App() {
   const [route, setRoute] = useState<Route>(currentRoute)
   const [dark, setDark] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [paletteQuery, setPaletteQuery] = useState('')
   const [clientError, setClientError] = useState<string | null>(null)
 
   /** Human project label: display name → trimmed id hint. Raw managed ids
@@ -77,6 +79,14 @@ export function App() {
     document.documentElement.classList.toggle('dark', dark)
   }, [dark])
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent): void => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setPaletteOpen((v) => !v) }
+      if (e.key === 'Escape') setPaletteOpen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
   useEffect(() => {
     const onHash = () => setRoute(currentRoute())
     window.addEventListener('hashchange', onHash)
@@ -276,6 +286,40 @@ export function App() {
             <span className="dot success" /> {t('shell.safetyNote')}
           </span>
         </footer>
+
+      {paletteOpen && (
+        <div className="palette-overlay" onClick={() => setPaletteOpen(false)}>
+          <div className="palette-box" onClick={(e) => e.stopPropagation()}>
+            <input
+              className="palette-input"
+              placeholder="Поиск…"
+              value={paletteQuery}
+              onChange={(e) => setPaletteQuery(e.target.value)}
+              autoFocus
+              data-testid="palette.input"
+            />
+            <div className="palette-list">
+              {[
+                { label: 'Строки перевода', hash: '#/home' },
+                { label: 'Проекты', hash: '#/projects' },
+                { label: 'Проверки', hash: '#/checks' },
+                { label: 'Глоссарий', hash: '#/glossary' },
+                { label: 'Сборка и экспорт', hash: '#/export' },
+                { label: 'Настройки', hash: '#/settings' },
+              ].filter((c) => c.label.toLowerCase().includes(paletteQuery.toLowerCase())).map((c) => (
+                <button key={c.hash} className="palette-item" onClick={() => { window.location.hash = c.hash; setPaletteOpen(false) }}>
+                  {c.label}
+                </button>
+              ))}
+              {paletteQuery && ![
+                'Строки перевода', 'Проекты', 'Проверки', 'Глоссарий', 'Сборка и экспорт', 'Настройки',
+              ].some(l => l.toLowerCase().includes(paletteQuery.toLowerCase())) && (
+                <p className="palette-empty">Ничего не найдено</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )

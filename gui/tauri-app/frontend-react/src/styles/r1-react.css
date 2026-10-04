@@ -274,3 +274,13 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 
 /* Providers: status colors reuse the canon dot/token vocabulary. */
 .text-info { color: var(--info); }
+
+/* Command palette (Cmd+K). */
+.palette-overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: start center; padding-top: 80px; z-index: 100; }
+.palette-box { width: 420px; max-width: calc(100vw - 40px); background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); padding: 8px; }
+.palette-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--background); color: var(--foreground); font: inherit; outline: none; }
+.palette-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--accent); }
+.palette-list { margin-top: 6px; max-height: 280px; overflow-y: auto; }
+.palette-item { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 0; background: transparent; color: var(--foreground); font: inherit; cursor: pointer; border-radius: 5px; }
+.palette-item:hover { background: var(--accent); color: var(--primary); }
+.palette-empty { padding: 12px; color: var(--muted-foreground); font-size: 11px; }
