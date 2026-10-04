@@ -1,8 +1,19 @@
 # UI R1 CAMPAIGN CHECKPOINT (durable, обновлять по ходу)
 
-Обновлён: 2026-10-05 ~06:50 JST. Ветка: `glm/ui-r1-react`, HEAD `0ec8e30`
+Обновлён: 2026-10-05 ~07:45 JST. Ветка: `glm/ui-r1-react`, HEAD `1083d13`
 (worktree `wt-ui-r1`). Основной main: `d0506fb`+ (Phase A docs; R1-лайна
 мержится после representative-acceptance).
+
+## Раунд 4 критики + финал ночи (1083d13)
+
+- dark-selection (цвет текста от foreground), компакт entry-строк,
+  file-tree 176px зафиксирован, editor body scroll, nav ellipsis;
+- кадры 05:5x в evidence — тёмная тема канона подтверждена кадром:
+  Literata-h1, eyebrow, дерево def_injected/ThingDef с count, selected
+  wine-тинт, sidebar-progress 25%, multi-target селектор;
+- остающиеся полировки: кнопка «Новый проект» в dark (цвет-пара),
+  высота карточек Home, human a11y/visual review, perf-сравнение с
+  Svelte, providers/LLM экран.
 
 ## Ночь 05/06.10 (автономное окно): завершено
 
