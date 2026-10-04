@@ -10,6 +10,7 @@ import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
 import { Checks } from './components/Checks'
 import { Glossary } from './components/Glossary'
+import { BuildExport } from './components/BuildExport'
 import { t } from './lib/i18n'
 
 type Route =
@@ -196,6 +197,8 @@ export function App() {
               </div>
               <Workspace onBack={() => { window.location.hash = '#/home' }} />
             </div>
+          ) : route === 'export' ? (
+            <BuildExport />
           ) : route === 'checks' ? (
             <Checks />
           ) : route === 'glossary' ? (

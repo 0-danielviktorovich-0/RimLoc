@@ -130,3 +130,13 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 
 /* Sidebar progress block: live percent (canon bottom block). */
 .sidebar-progress progress { margin: 0; }
+
+/* Build/Export (canon shapes). */
+.build-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+.out-dir-row { display: flex; gap: 8px; }
+.out-dir-row input { flex: 1; min-width: 0; }
+.build-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.build-preview { border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+.preview-heading { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--muted-foreground); margin-bottom: 10px; }
+.safe-label { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--success); }
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 11px; color: var(--muted-foreground); }
