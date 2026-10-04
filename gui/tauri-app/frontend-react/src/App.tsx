@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
+import { BUILTIN_LANGUAGES as LANGUAGES } from './lib/languages/registry'
 import { useProjectState } from './lib/state/useProjectState'
 import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
@@ -194,6 +195,21 @@ export function App() {
                       <option>1.6</option>
                       <option>1.5</option>
                       <option>1.4</option>
+                    </select>
+                  </label>
+                  <label className="version-select">
+                    <span>→</span>
+                    <select
+                      aria-label={t('ws.targetLang')}
+                      data-testid="ws.target-locale"
+                      value={st.targetLocale}
+                      onChange={(e) => projectStore.setTargetLocale(e.target.value)}
+                    >
+                      {LANGUAGES.map((l) => (
+                        <option key={l.localeId} value={l.localeId}>
+                          {l.nativeName}
+                        </option>
+                      ))}
                     </select>
                   </label>
                 </div>

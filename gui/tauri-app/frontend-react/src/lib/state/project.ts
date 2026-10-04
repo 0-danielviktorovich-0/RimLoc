@@ -34,6 +34,9 @@ export type LoadState =
   | { kind: 'error'; message: string }
 
 export interface ProjectState {
+  /** Target locale the workspace edits (multi-target §32): picks which
+   *  Project.translations slice the editor shows; switching re-maps. */
+  targetLocale: string
   summaries: ProjectSummaryDto[]
   snapshot: ProjectSnapshotDto | null
   entries: WorkspaceEntry[]
@@ -45,6 +48,7 @@ export interface ProjectState {
 }
 
 let state: ProjectState = {
+  targetLocale: 'ru',
   summaries: [],
   snapshot: null,
   entries: [],
@@ -109,7 +113,7 @@ export const projectStore = {
       const snap = await clientInstance.getClient().createProject(modRoot, targetVersion)
       set({
         snapshot: snap,
-        entries: mapSnapshot(snap, 'ru'),
+        entries: mapSnapshot(snap, state.targetLocale),
         selectedKey: null,
         drafts: {},
         busy: false,
@@ -143,7 +147,7 @@ export const projectStore = {
       const snap = await clientInstance.getClient().openProject(projectId)
       set({
         snapshot: snap,
-        entries: mapSnapshot(snap, 'ru'),
+        entries: mapSnapshot(snap, state.targetLocale),
         selectedKey: null,
         drafts: {},
         busy: false,
@@ -159,6 +163,13 @@ export const projectStore = {
     set({ selectedKey: key })
   },
 
+  /** Multi-target (§32): switch the edited target locale — translations
+   *  re-map from the SAME snapshot (per-locale slices live side by side). */
+  setTargetLocale(locale: string): void {
+    if (!state.snapshot || state.targetLocale === locale) return
+    set({ targetLocale: locale, entries: mapSnapshot(state.snapshot, locale), drafts: {} })
+  },
+
   setDraft(key: string, text: string): void {
     set({ drafts: { ...state.drafts, [key]: text } })
   },
@@ -171,7 +182,7 @@ export const projectStore = {
     if (!snap || !entry || draft === undefined) return false
     const intent: TranslationIntentDto = {
       entry: entry.identity,
-      locale: 'ru',
+      locale: state.targetLocale,
       action: 'set_translation',
       text: draft,
     }
