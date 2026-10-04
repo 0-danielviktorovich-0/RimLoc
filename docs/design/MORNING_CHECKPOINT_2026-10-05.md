@@ -81,8 +81,14 @@
    (OKLCH-математика; найден и исправлен реальный дефект канона
    4.43→≥4.5 WCAG AA — токен-девиация задокументирована)/фокус/label.
    Human a11y-review — остаётся в очереди.
-2. Multi-target UX + Language Registry (§32) в wizard/workspace.
-2. Multi-target UX + Language Registry (§32) в wizard/workspace.
+2. ~~Multi-target §32~~ **PASS** (7b19b49): registry-driven переключатель
+   цели в workspace (9 builtin языков), setTargetLocale ре-мапит из того
+   же снапшота; проба независимости ru↔uk PASS (selectByAttribute не
+   триггерит React onChange в WebKit — execute+dispatch change).
+2. ~~Multi-target §32~~ **PASS** (7b19b49): registry-driven переключатель
+   цели в workspace (9 builtin языков), setTargetLocale ре-мапит из того
+   же снапшота; проба независимости ru↔uk PASS (selectByAttribute не
+   триггерит React onChange в WebKit — execute+dispatch change).
 3. Multi-target UX + Language Registry (§32) в wizard/workspace.
 4. Settings/providers/diagnostics/selfloc экраны (Phase E).
 5. Performance-сравнение с Svelte baseline (§55).
