@@ -1,0 +1,160 @@
+// RimLoc React lane — application root (UI R1).
+// Hash router + the R1 visual shell (mandate §9/§47: Lovable R1 is the
+// visual contract; the shell composition is ADOPT, data is LIVE-only).
+import { useEffect, useState } from 'react'
+import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight } from 'lucide-react'
+import { clientInstance } from './lib/client/instance'
+import { t } from './lib/i18n'
+
+type Route =
+  | 'home'
+  | 'projects'
+  | 'checks'
+  | 'compare'
+  | 'glossary'
+  | 'export'
+  | 'tools'
+  | 'settings'
+
+const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
+  { to: 'projects', label: t('nav.projects'), icon: FolderOpen },
+  { to: 'home', label: t('nav.entries'), icon: Languages },
+  { to: 'checks', label: t('nav.checks'), icon: ShieldCheck },
+  { to: 'compare', label: t('nav.compare'), icon: GitCompareArrows },
+  { to: 'glossary', label: t('nav.glossary'), icon: Package },
+  { to: 'export', label: t('nav.export'), icon: Wrench },
+]
+
+function currentRoute(): Route {
+  const h = window.location.hash.replace(/^#\/?/, '')
+  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings']
+  return (known.find((r) => r === h) ?? 'home') as Route
+}
+
+export function App() {
+  const [route, setRoute] = useState<Route>(currentRoute)
+  const [dark, setDark] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const [clientError, setClientError] = useState<string | null>(null)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+  }, [dark])
+
+  useEffect(() => {
+    const onHash = () => setRoute(currentRoute())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  // Honest client resolution (mirrors the frozen Svelte instance store):
+  // tauri bridge → live; otherwise a configuration error, never a mock.
+  let client: ReturnType<typeof clientInstance.getClient> | null = null
+  try {
+    client = clientInstance.getClient()
+  } catch (e) {
+    if (!clientError) setClientError(e instanceof Error ? e.message : String(e))
+  }
+
+  return (
+    <div className={`rim-app ${navOpen ? 'mobile-nav-open' : ''}`}>
+      <aside className="app-sidebar">
+        <a href="#/home" className="brand">
+          <div className="brand-mark">
+            <Languages size={21} />
+          </div>
+          <span>
+            RimLoc<span className="brand-period">.</span>
+          </span>
+          <small>R1</small>
+        </a>
+        <div className="sidebar-project">
+          <div>
+            <strong>{t('shell.noProject')}</strong>
+            <span>
+              {t('shell.localProject')} <span className="dot success" />
+            </span>
+          </div>
+          <ChevronDown size={14} />
+        </div>
+        <nav className="primary-nav">
+          {NAV.map(({ to, label, icon: Icon }) => (
+            <a key={to} href={`#/${to}`} className={route === to ? 'active' : ''} onClick={() => setNavOpen(false)}>
+              <Icon />
+              <span>{label}</span>
+            </a>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <a href="#/settings" className={route === 'settings' ? 'active' : ''}>
+            <Settings2 /> {t('nav.settings')}
+          </a>
+          <div className="sidebar-foot">
+            <span>RimLoc · React R1</span>
+            <span className="dot success" />
+          </div>
+        </div>
+      </aside>
+
+      <div className="app-main">
+        <header className="app-topbar">
+          <button
+            className="icon-btn mobile-menu"
+            aria-label={navOpen ? t('a11y.closeNav') : t('a11y.openNav')}
+            onClick={() => setNavOpen(!navOpen)}
+          >
+            {navOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
+          </button>
+          <div className="breadcrumb">
+            <FolderOpen size={15} />
+            <span>{t('shell.noProject')}</span>
+            <ChevronRight size={13} />
+            <strong>{NAV.find((n) => n.to === route)?.label ?? t('nav.settings')}</strong>
+          </div>
+          <div className="topbar-actions">
+            <button className="icon-btn" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => setDark(!dark)}>
+              {dark ? <Sun /> : <Moon />}
+            </button>
+            <div className="topbar-divider" />
+            <a className="btn-primary" href="#/projects">
+              <Plus /> {t('shell.newProject')}
+            </a>
+          </div>
+        </header>
+
+        <main className="route-content">
+          {clientError ? (
+            <div className="page-content narrow-page">
+              <div className="inline-warning">
+                <X size={15} />
+                <span>{clientError}</span>
+              </div>
+            </div>
+          ) : (
+            <div className="page-content narrow-page">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    <span className="dot primary" /> REACT R1 · REPRESENTATIVE LANE
+                  </span>
+                  <h2>{t('shell.placeholderTitle')}</h2>
+                  <p>{t('shell.placeholderBody')}</p>
+                </div>
+              </div>
+              <p className="page-note">
+                <Check size={15} /> client: {client ? 'resolved' : 'pending'} · contract surface ready
+                <ArrowUpRight size={12} />
+              </p>
+            </div>
+          )}
+        </main>
+
+        <footer className="app-footer">
+          <span>
+            <span className="dot success" /> {t('shell.safetyNote')}
+          </span>
+        </footer>
+      </div>
+    </div>
+  )
+}

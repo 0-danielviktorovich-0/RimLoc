@@ -1,0 +1,22 @@
+/* React-lane bridge styles: the R1 system targets the Lovable DOM (shadcn
+ * Button/Link). These few classes bridge React elements onto the same
+ * tokens — additive only, never edits to r1.css (mandate: fidelity first). */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 5px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--accent); color: var(--primary); }
+button:disabled { opacity: 0.5; cursor: default; }
+.icon-btn { padding: 6px; border: 0; background: transparent; color: var(--muted-foreground); }
+.icon-btn:hover { color: var(--primary); background: var(--accent); }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.1); }
