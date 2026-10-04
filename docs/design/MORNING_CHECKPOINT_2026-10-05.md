@@ -90,7 +90,10 @@
    же снапшота; проба независимости ru↔uk PASS (selectByAttribute не
    триггерит React onChange в WebKit — execute+dispatch change).
 3. Multi-target UX + Language Registry (§32) в wizard/workspace.
-4. Settings/providers/diagnostics/selfloc экраны (Phase E).
+4. ~~Diagnostics~~ **PASS** (dc2d95b): project_diagnose → safe bundle
+   (operation_id/redacted/excluded). ~~Selfloc J8~~ **PASS** (dc2d95b):
+   каталог открывается как обычный проект; contribution — на Build.
+   Settings/providers — остаётся (клиентские настройки Svelte-мира).
 5. Performance-сравнение с Svelte baseline (§55).
 6. Визуальный критик раунд 4 после полировки.
 
