@@ -66,6 +66,19 @@
 | Multi-target UI | NOT RUN (одна цель ru; Language Registry — следующая лайна) |
 | Settings/providers/diagnostics/selfloc в React | NOT RUN |
 
+## Phase G — owner test packet (готово)
+
+- Артефакт React UI: `RimLoc-evidence/artifact-rel16-react-r1/`
+  (sha256 `aac8c26f…`, release-guard static+runtime PASS, source 3401b43+).
+- OWNER_TEST_PACKET.md: 11 пунктов теста (Home → Wizard → Workspace →
+  Checks → Glossary → Existing → BuildExport → Multi-target → Selfloc →
+  Diagnostics → Settings → Dark theme).
+- Известные ограничения: providers/LLM-ключи (клиентский стор Svelte,
+  перенос Phase E), palette хелпер (mount в App — Phase E), топбар-кнопка
+  в dark (цвет-пара уточняется), human a11y/visual review.
+- Тест-инструкции: запустить .app → следовать OWNER_TEST_PACKET.md.
+- Svelte fallback: не тронут, откат = запуск frontend-v2 артефакта.
+
 ## Блокеры / владельческие
 
 - **Skill product-ui-design коммит** — файлы в
