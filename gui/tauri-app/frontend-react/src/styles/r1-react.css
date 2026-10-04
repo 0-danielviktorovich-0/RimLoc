@@ -238,3 +238,36 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 
 /* D4: glossary table bottom padding — last row clears the status strip. */
 .glossary-table { padding-bottom: 28px; }
+
+/* Round-6: NUCLEAR dark fixes — literal colors, html.scoped, !important.
+ * Root cause of the light-leak: var() resolution inside the virtualized
+ * list rendered LIGHT values in this WebKit build despite html.dark. The
+ * literal oklch/hex values cannot be affected by any scoping or cascade
+ * quirk. Revisit if tokens.css ever redefines these roles. */
+html.dark .entry-row.selected,
+html.dark .entry-row.selected:hover:not(:disabled) {
+  background: oklch(.35 .045 15) !important;
+  color: oklch(.93 .012 60) !important;
+}
+html.dark .entry-row.selected .row-source > span {
+  color: oklch(.93 .012 60) !important;
+  font-weight: 500 !important;
+}
+html.dark .entry-row.selected .row-target {
+  color: oklch(.80 .05 40) !important;
+}
+html.dark .entry-row.selected code {
+  color: oklch(.72 .02 40) !important;
+}
+html.dark .topbar-actions .btn-primary {
+  background: oklch(.50 .11 15) !important;
+  color: oklch(.96 .012 40) !important;
+  border-color: oklch(.50 .11 15) !important;
+}
+html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
+  background: oklch(.56 .12 15) !important;
+  color: oklch(.96 .012 40) !important;
+}
+
+/* Editor action bar: always fully visible inside the pane. */
+.detail-actions { flex-shrink: 0; padding-bottom: 6px; }
