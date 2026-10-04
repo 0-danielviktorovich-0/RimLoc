@@ -156,3 +156,10 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 .wizard-summary h3 { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
 .wizard-summary code { font-family: var(--font-mono); font-size: 9px; color: var(--muted-foreground); display: block; margin: 8px 0; word-break: break-all; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* WCAG AA token deviation (STANDARD REQUIREMENT, §56/§17): the Lovable
+ * canon muted-foreground oklch(.565 .018 40) measures 4.43:1 on background
+ * and 4.21:1 on sidebar — below 4.5:1 for 13px text. Darkened to .52:
+ * ≥4.5 in both themes. Deliberate, recorded in the adaptation doc. */
+:root { --muted-foreground: oklch(.52 .018 40); }
+.dark { --muted-foreground: oklch(.72 .014 60); }
