@@ -11,6 +11,7 @@ import { Workspace } from './components/Workspace'
 import { Checks } from './components/Checks'
 import { Glossary } from './components/Glossary'
 import { BuildExport } from './components/BuildExport'
+import { Existing } from './components/Existing'
 import { t } from './lib/i18n'
 
 type Route =
@@ -23,11 +24,13 @@ type Route =
   | 'tools'
   | 'settings'
   | 'workspace'
+  | 'existing'
 
 const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'projects', label: t('nav.projects'), icon: FolderOpen },
   { to: 'home', label: t('nav.entries'), icon: Languages },
   { to: 'checks', label: t('nav.checks'), icon: ShieldCheck },
+  { to: 'existing', label: t('nav.existing'), icon: GitCompareArrows },
   { to: 'compare', label: t('nav.compare'), icon: GitCompareArrows },
   { to: 'glossary', label: t('nav.glossary'), icon: Package },
   { to: 'export', label: t('nav.export'), icon: Wrench },
@@ -35,7 +38,7 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
 
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings', 'workspace']
+  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings', 'workspace', 'existing']
   return (known.find((r) => r === h) ?? 'home') as Route
 }
 
@@ -197,6 +200,8 @@ export function App() {
               </div>
               <Workspace onBack={() => { window.location.hash = '#/home' }} />
             </div>
+          ) : route === 'existing' ? (
+            <Existing />
           ) : route === 'export' ? (
             <BuildExport />
           ) : route === 'checks' ? (

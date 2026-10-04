@@ -213,6 +213,19 @@ export const projectStore = {
     }
   },
 
+  /** Re-adopt the durable snapshot after a contract mutation that did not
+   *  flow through commit() (e.g. apply_existing on the Existing screen). */
+  async adoptExternal(): Promise<void> {
+    const snap = state.snapshot
+    if (!snap) return
+    try {
+      const fresh = await clientInstance.getClient().snapshot(snap.project_id)
+      set({ snapshot: fresh, entries: mapSnapshot(fresh, 'ru'), drafts: {} })
+    } catch {
+      /* refresh failures surface via the next contract call */
+    }
+  },
+
   reset(): void {
     set({
       summaries: [],
