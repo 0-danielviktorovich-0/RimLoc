@@ -48,7 +48,7 @@ export function App() {
   /** Human project label: display name → trimmed id hint. Raw managed ids
    *  never render as user-facing labels (visual critique round 1/2). */
   const projectLabel = (): string => {
-    if (route !== 'workspace' || !st.snapshot) return t('shell.noProject')
+    if (!st.snapshot) return t('shell.noProject')
     const named = st.summaries.find((x) => x.project_id === st.snapshot!.project_id)?.name?.trim()
     if (named) return named
     const m = /(?:^|-)(\d{4,})$/.exec(st.snapshot.project_id)
