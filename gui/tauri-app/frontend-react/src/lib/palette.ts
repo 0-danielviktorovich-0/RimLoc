@@ -10,10 +10,7 @@ export interface PaletteCommand {
   action: () => void
 }
 
-export function useCommandPalette(
-  commands: PaletteCommand[],
-  deps: unknown[] = [],
-): { open: boolean; setOpen: (v: boolean) => void; query: string; setQuery: (v: string) => void; filtered: PaletteCommand[] } {
+export function useCommandPalette(commands: PaletteCommand[]): { open: boolean; setOpen: (v: boolean) => void; query: string; setQuery: (v: string) => void; filtered: PaletteCommand[] } {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
@@ -33,7 +30,6 @@ export function useCommandPalette(
     const q = query.trim().toLowerCase()
     if (!q) return commands
     return commands.filter((c) => c.label.toLowerCase().includes(q))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [commands, query])
 
   return { open, setOpen, query, setQuery, filtered }

@@ -209,6 +209,7 @@ function EntryList({
                 width: '100%',
                 height: ROW_HEIGHT,
                 transform: `translateY(${vi.start}px)`,
+                ...(selectedKey === e.key ? { backgroundColor: 'var(--accent)' } : {}),
               }}
               onClick={() => onSelect(e.key)}
               data-testid={`ws.entry.${vi.index}`}
