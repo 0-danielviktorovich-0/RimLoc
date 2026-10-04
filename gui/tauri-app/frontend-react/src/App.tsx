@@ -136,7 +136,7 @@ export function App() {
             <strong>{route === 'workspace' ? t('nav.entries') : NAV.find((n) => n.to === route)?.label ?? t('nav.settings')}</strong>
           </div>
           <div className="topbar-actions">
-            <button className="icon-btn" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => setDark(!dark)}>
+            <button className="icon-btn" data-testid="theme-toggle" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => setDark(!dark)}>
               {dark ? <Sun /> : <Moon />}
             </button>
             <div className="topbar-divider" />
