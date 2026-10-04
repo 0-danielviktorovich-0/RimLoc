@@ -69,7 +69,7 @@ frontend-v2 не изменялся React-лайной (кроме аддити�
 | Capability-таблица из handshake | LIVE |
 | TM-предложения у редактора | NOT RUN (домен TM live не собран — ждёт брифа) |
 | AI/no-API chat batches в React | NOT RUN (Svelte-стор существует; перенос — Phase E) |
-| Providers/LLM-ключи в React | NOT RUN (клиентский стор Svelte-мира; перенос — Phase E) |
+| Providers/LLM-ключи в React | PARTIAL — UI экран с 5 шаблонами + статусы PASS (06c61cf); LLM-вызовы/ключи — Phase E (клиентский стор Svelte-мира) |
 | Command palette в React | NOT RUN |
 | Language Manager (пользовательские языки) | NOT RUN (реестр 9 builtin скопирован; CRUD пользовательских — Phase E) |
 
