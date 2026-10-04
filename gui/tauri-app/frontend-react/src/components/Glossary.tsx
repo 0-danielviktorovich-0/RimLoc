@@ -181,7 +181,7 @@ export function Glossary() {
           disabled={busy}
           data-testid="gl.add-translation"
         />
-        <button type="submit" disabled={busy} data-testid="gl.add-submit">
+        <button type="submit" className="btn-primary" disabled={busy} data-testid="gl.add-submit">
           <Plus /> {t('gl.add')}
         </button>
       </form>

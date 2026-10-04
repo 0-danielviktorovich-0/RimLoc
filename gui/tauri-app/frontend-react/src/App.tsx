@@ -47,6 +47,13 @@ export function App() {
 
   /** Human project label: display name → trimmed id hint. Raw managed ids
    *  never render as user-facing labels (visual critique round 1/2). */
+  const progressTranslated = (): number =>
+    st.entries.filter((e) => e.target.trim() !== '' && e.completeness !== 'todo').length
+  const progressTotal = (): number => st.entries.filter((e) => e.lifecycle !== 'orphan').length
+  const progressPercent = (): number => {
+    const total = progressTotal()
+    return total === 0 ? 0 : Math.round((progressTranslated() / total) * 100)
+  }
   const projectLabel = (): string => {
     if (!st.snapshot) return t('shell.noProject')
     const named = st.summaries.find((x) => x.project_id === st.snapshot!.project_id)?.name?.trim()
@@ -109,6 +116,18 @@ export function App() {
             </a>
           ))}
         </nav>
+        {st.snapshot && (
+          <div className="sidebar-progress">
+            <div>
+              <span>{t('shell.yourTranslation')}</span>
+              <strong>{progressPercent()}%</strong>
+            </div>
+            <progress value={progressTranslated()} max={progressTotal() || 1} />
+            <p>
+              {progressTranslated()} {t('ws.of')} {progressTotal() || 0} {t('ws.rows')}
+            </p>
+          </div>
+        )}
         <div className="sidebar-bottom">
           <a href="#/settings" className={route === 'settings' ? 'active' : ''}>
             <Settings2 /> {t('nav.settings')}

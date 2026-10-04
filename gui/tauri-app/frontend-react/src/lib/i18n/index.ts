@@ -19,6 +19,7 @@ const ru: Record<string, string> = {
   'shell.newProject': 'Новый проект',
   'shell.projectOpen': 'Проект открыт',
   'shell.project': 'Проект',
+  'shell.yourTranslation': 'Ваш перевод',
   'shell.safetyNote': 'Только переводы. Оригинальный мод в безопасности.',
   'shell.placeholderTitle': 'React-лайна R1 живёт',
   'shell.placeholderBody':
@@ -94,7 +95,7 @@ const ru: Record<string, string> = {
   'checks.fixHint': 'Находки открываются в редакторе — правки возвращаются в валидацию.',
   'gl.eyebrow': 'ОДИН МИР. ОДИН ЯЗЫК.',
   'gl.title': 'Глоссарий проекта',
-  'gl.subtitle': 'Термины живут в управляемом проекте (persist-before-ack).',
+  'gl.subtitle': 'Термины проекта — единообразие перевода от строки к строке.',
   'gl.term': 'Термин',
   'gl.translation': 'Перевод',
   'gl.add': 'Добавить',
@@ -129,6 +130,7 @@ const en: Record<string, string> = {
   'shell.newProject': 'New project',
   'shell.projectOpen': 'Project open',
   'shell.project': 'Project',
+  'shell.yourTranslation': 'Your translation',
   'shell.safetyNote': 'Translations only. The original mod stays safe.',
   'shell.placeholderTitle': 'The React R1 lane is alive',
   'shell.placeholderBody':
@@ -204,7 +206,7 @@ const en: Record<string, string> = {
   'checks.fixHint': 'Findings open in the editor — edits flow back into validation.',
   'gl.eyebrow': 'ONE WORLD. ONE LANGUAGE.',
   'gl.title': 'Project glossary',
-  'gl.subtitle': 'Terms live in the managed project (persist-before-ack).',
+  'gl.subtitle': 'Project terms — consistent translation string after string.',
   'gl.term': 'Term',
   'gl.translation': 'Translation',
   'gl.add': 'Add',

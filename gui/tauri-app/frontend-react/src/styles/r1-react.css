@@ -109,3 +109,24 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 .file-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .tree-bottom { margin-top: auto; padding: 12px 6px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 10px; }
 .tree-bottom code { font-family: var(--font-mono); font-size: 9px; }
+
+/* Topbar primary action: compact, never clips the corner (round 3). */
+.topbar-actions { padding-right: 4px; }
+.topbar-actions .btn-primary { height: 34px; padding: 0 14px; font-size: 12px; white-space: nowrap; }
+
+/* Checks: unify tabs to the underline pattern (one language per row). */
+.section-tabs button { border: 0; background: transparent; color: var(--muted-foreground); border-radius: 0; padding: 6px 2px; margin-right: 14px; border-bottom: 2px solid transparent; }
+.section-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+.section-tabs button:hover:not(:disabled) { background: transparent; color: var(--primary); }
+
+/* Finding row: aligned baselines. */
+.finding-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; }
+.finding-row p { grid-column: 2; }
+.finding-row div { display: flex; gap: 10px; align-items: baseline; }
+
+/* Glossary: primary CTA + honest copy already in i18n. */
+.add-term button[type="submit"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.add-term button[type="submit"]:hover:not(:disabled) { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.1); }
+
+/* Sidebar progress block: live percent (canon bottom block). */
+.sidebar-progress progress { margin: 0; }
