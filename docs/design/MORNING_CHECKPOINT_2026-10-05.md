@@ -60,7 +60,7 @@
 | Checks/Glossary/Existing/Build экраны | PASS (live-контракты) |
 | 10k стресс | PASS (бейслайн; канал-WDIO оговорка) |
 | Визуальный канон ≥ Lovable R1 | PARTIAL — критик раунда 3: «база крепкая»; до полного паритета: полировка density в деталях, focus-visible проход, пустые состояния |
-| Deterministic geometry-пробы §50 | NOT RUN (порт на React — следующая лайна) |
+| Deterministic geometry-пробы §50 | **PASS** — 25/25 (faa7da6): root-scroll/overflow/blank-tail/controls/panels/dark на 5 маршрутах |
 | A11y-проход §56 | NOT RUN |
 | Performance-сравнение с Svelte §55 | NOT RUN (есть базовые латентности) |
 | Multi-target UI | NOT RUN (одна цель ru; Language Registry — следующая лайна) |
@@ -77,8 +77,8 @@
 
 ## Дальнейшая READY-очередь (по приоритету §75)
 
-1. Geometry-пробы §50 на React (порт существующих invariant-спек).
-2. A11y §56 (focus-visible/контраст/reduced-motion) + independent review.
+1. A11y §56 (focus-visible/контраст/reduced-motion) + independent review.
+2. Multi-target UX + Language Registry (§32) в wizard/workspace.
 3. Multi-target UX + Language Registry (§32) в wizard/workspace.
 4. Settings/providers/diagnostics/selfloc экраны (Phase E).
 5. Performance-сравнение с Svelte baseline (§55).
