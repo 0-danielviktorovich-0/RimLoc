@@ -68,8 +68,9 @@
 
 ## Phase G — owner test packet (готово)
 
-- Артефакт React UI: `RimLoc-evidence/artifact-rel16-react-r1/`
-  (sha256 `aac8c26f…`, release-guard static+runtime PASS, source 3401b43+).
+- Артефакт React UI v2: `RimLoc-evidence/artifact-rel16-react-r1/`
+  (sha256 `b15112ba…`, source ed033e9 — вся R1-лайна + inline-bg fix,
+  release-guard static+runtime PASS).
 - OWNER_TEST_PACKET.md: 11 пунктов теста (Home → Wizard → Workspace →
   Checks → Glossary → Existing → BuildExport → Multi-target → Selfloc →
   Diagnostics → Settings → Dark theme).
