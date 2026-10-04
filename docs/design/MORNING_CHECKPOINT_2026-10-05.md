@@ -93,7 +93,9 @@
 4. ~~Diagnostics~~ **PASS** (dc2d95b): project_diagnose → safe bundle
    (operation_id/redacted/excluded). ~~Selfloc J8~~ **PASS** (dc2d95b):
    каталог открывается как обычный проект; contribution — на Build.
-   Settings/providers — остаётся (клиентские настройки Svelte-мира).
+   ~~Settings~~ **PASS** (1a0883e): тема/язык UI, проектные дефолты из
+   Language Registry, capability-таблица из handshake.
+   Providers (LLM-ключи) — остаётся (клиентский стор Svelte-мира).
 5. Performance-сравнение с Svelte baseline (§55).
 6. Визуальный критик раунд 4 после полировки.
 
