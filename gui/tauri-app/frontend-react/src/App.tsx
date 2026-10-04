@@ -207,7 +207,11 @@ export function App() {
           // Home falls through to the shared layout below
             <Home
               onOpen={(projectId) => {
-                void projectStore.open(projectId).then((ok) => {
+                const after =
+                  projectId === '__created__'
+                    ? Promise.resolve(true)
+                    : projectStore.open(projectId)
+                void after.then((ok) => {
                   if (ok) window.location.hash = '#/workspace'
                 })
               }}

@@ -102,6 +102,31 @@ function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[]
 }
 
 export const projectStore = {
+  /** J1: real create (the Rust scan IS the preview) → adopted snapshot. */
+  async createContractProject(modRoot: string, targetVersion?: string): Promise<boolean> {
+    set({ busy: true, lastError: null })
+    try {
+      const snap = await clientInstance.getClient().createProject(modRoot, targetVersion)
+      set({
+        snapshot: snap,
+        entries: mapSnapshot(snap, 'ru'),
+        selectedKey: null,
+        drafts: {},
+        busy: false,
+      })
+      return true
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      set({ busy: false, lastError: message })
+      state.lastError = message
+      return false
+    }
+  },
+
+  get lastErrorText(): string | null {
+    return state.lastError
+  },
+
   async listProjects(): Promise<void> {
     set({ load: { kind: 'loading' }, lastError: null })
     try {

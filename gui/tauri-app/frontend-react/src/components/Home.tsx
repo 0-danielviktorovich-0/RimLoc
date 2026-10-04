@@ -1,7 +1,8 @@
 // Home (R1): New translation · Open/update existing · Recent projects.
 // Data lives or states honestly — no fake cards (mandate §21/§42).
 import { useEffect } from 'react'
-import { Plus, FolderOpen, ArrowRight, HardDrive } from 'lucide-react'
+import { FolderOpen, ArrowRight, HardDrive } from 'lucide-react'
+import { NewProjectWizard } from './NewProjectWizard'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { t } from '../lib/i18n'
@@ -56,11 +57,11 @@ export function Home({ onOpen }: { onOpen: (projectId: string) => void }) {
             </div>
           </button>
         ))}
-        <button className="new-project-card" data-testid="home.new-project">
-          <Plus size={28} />
-          <strong>{t('home.newTranslation')}</strong>
-          <span>{t('home.newTranslationHint')}</span>
-        </button>
+        <NewProjectWizard
+          onCreated={() => {
+            onOpen('__created__')
+          }}
+        />
       </div>
 
       {st.summaries.length === 0 && st.load.kind !== 'loading' && (

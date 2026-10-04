@@ -98,3 +98,35 @@ describe('React R1 lane smoke — checks & glossary (live contract)', () => {
       })
   })
 })
+
+describe('React R1 lane smoke — wizard J1 (real create)', () => {
+  it('wizard: путь → версия → create → workspace с живым инвентарём', async () => {
+    // Fresh data dir per the whole run: the wizard smoke runs LAST, after
+    // the workspace/checks/glossary sections opened another project. Open
+    // Home first.
+    await browser.$('a[href="#/home"]').click()
+    await waitExisting('[data-testid="wizard.open"]')
+    await browser.$('[data-testid="wizard.open"]').click()
+    await waitExisting('[data-testid="wizard.path-input"]')
+    await browser.$('[data-testid="wizard.path-input"]').setValue('/tmp/rimloc-wizard-mod')
+    await browser.$('[data-testid="wizard.next"]').click()
+    await waitExisting('[data-testid="wizard.version"]')
+    await browser.$('[data-testid="wizard.version"]').selectByVisibleText('1.6')
+    await browser.$('[data-testid="wizard.next"]').click()
+    await browser.$('[data-testid="wizard.next"]').click()
+    // The create runs the real Rust scan → the workspace shows the inventory.
+    await browser.waitUntil(
+      async () => (await browser.$('[data-testid="ws.root"]')).isExisting(),
+      { timeout: 60000, interval: 250 },
+    )
+    await browser.waitUntil(
+      async () => {
+        const rows = await browser.$$('[data-testid^="ws.entry."]')
+        return rows.length >= 1
+      },
+      { timeout: 60000, interval: 250 },
+    )
+    const body = await browser.$('[data-testid="ws.root"]').getText()
+    if (!body.includes('R1 smoke rifle')) throw new Error('wizard-created inventory lacks the fixture strings')
+  })
+})

@@ -140,3 +140,19 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 .preview-heading { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--muted-foreground); margin-bottom: 10px; }
 .safe-label { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--success); }
 .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 11px; color: var(--muted-foreground); }
+
+/* Wizard overlay (canon dialog shapes). */
+.wizard-overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; z-index: 50; }
+.rim-dialog { width: 530px; max-width: calc(100vw - 40px); background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); padding: 30px; }
+.dialog-header h2 { font-family: var(--font-display); font-size: 24px; font-weight: 400; margin: 6px 0; }
+.dialog-header p { font-size: 11px; color: var(--muted-foreground); }
+.wizard-dots { display: flex; gap: 4px; margin: 14px 0 18px; }
+.wizard-dots div { height: 3px; flex: 1; background: var(--border); border-radius: 2px; }
+.wizard-dots div.done { background: var(--primary); }
+.file-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px; border: 1px dashed var(--border); border-radius: 6px; margin-bottom: 12px; color: var(--muted-foreground); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wizard-summary { text-align: center; padding: 10px 0; }
+.success-emblem { width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--primary); display: grid; place-items: center; margin: 0 auto 10px; }
+.wizard-summary h3 { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
+.wizard-summary code { font-family: var(--font-mono); font-size: 9px; color: var(--muted-foreground); display: block; margin: 8px 0; word-break: break-all; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
