@@ -163,3 +163,8 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
  * ≥4.5 in both themes. Deliberate, recorded in the adaptation doc. */
 :root { --muted-foreground: oklch(.52 .018 40); }
 .dark { --muted-foreground: oklch(.72 .014 60); }
+
+/* Settings sections (canon shapes). */
+.settings-section { margin-bottom: 22px; padding-bottom: 6px; }
+.settings-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.capability-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }

@@ -15,6 +15,7 @@ import { BuildExport } from './components/BuildExport'
 import { Existing } from './components/Existing'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
+import { Settings } from './components/Settings'
 import { t } from './lib/i18n'
 
 type Route =
@@ -228,6 +229,8 @@ export function App() {
             <Selfloc onOpen={() => { window.location.hash = '#/workspace' }} />
           ) : route === 'diagnostics' ? (
             <Diagnostics />
+          ) : route === 'settings' ? (
+            <Settings />
           ) : route === 'checks' ? (
             <Checks />
           ) : route === 'glossary' ? (
