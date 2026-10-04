@@ -77,7 +77,11 @@
 
 ## Дальнейшая READY-очередь (по приоритету §75)
 
-1. A11y §56 (focus-visible/контраст/reduced-motion) + independent review.
+1. ~~A11y §56~~ **PASS 8/8** (fdaa8a4): имена/табindex/контраст
+   (OKLCH-математика; найден и исправлен реальный дефект канона
+   4.43→≥4.5 WCAG AA — токен-девиация задокументирована)/фокус/label.
+   Human a11y-review — остаётся в очереди.
+2. Multi-target UX + Language Registry (§32) в wizard/workspace.
 2. Multi-target UX + Language Registry (§32) в wizard/workspace.
 3. Multi-target UX + Language Registry (§32) в wizard/workspace.
 4. Settings/providers/diagnostics/selfloc экраны (Phase E).
