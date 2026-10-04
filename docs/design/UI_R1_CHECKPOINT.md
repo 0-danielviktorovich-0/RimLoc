@@ -6,6 +6,11 @@
 
 ## Ночь 05/06.10 (автономное окно): завершено
 
+- Стресс §27: синтетический мод 10k defs → 20k строк через живой
+  wizard-create; create→first-paint 11.9с; селекция p50=222мс;
+  прыжки/поиск — канал WDIO доминирует (честная оговорка). Бейслайн
+  commit 58d3942, лог в RimLoc-evidence/ui-r1/react-stress-baseline.log.
+
 - Representative Workspace: 3 панели (file-tree из реального инвентаря +
   виртуализированный список + редактор/инспектор), смоук-джорни live.
 - Живые маршруты: Home (project_list + wizard J1 + open) · Workspace ·
