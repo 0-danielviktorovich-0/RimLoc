@@ -3,6 +3,15 @@
 // project, verify the representative workspace on live entries, commit an
 // edit through the REAL save&next path, verify the durable revision moved.
 // Semantic controls only; background-only; zero global input.
+/** wdio v9 removed element.waitFor — the ONLY sanctioned wait in this spec
+ *  is a bounded existence condition (see soak v3 lesson). */
+async function waitExisting(sel: string, timeout = 30000): Promise<void> {
+  await browser.waitUntil(async () => (await browser.$(sel)).isExisting(), {
+    timeout,
+    interval: 100,
+  })
+}
+
 describe('React R1 lane smoke (real backend, isolated data)', () => {
   it('boots → lists live projects → opens one → edits → commits → revision bumps', async () => {
     // 1) The R1 shell rendered (React mounted, sidebar visible).
@@ -56,5 +65,36 @@ describe('React R1 lane smoke (real backend, isolated data)', () => {
       },
       { timeout: 15000, interval: 250 },
     )
+  })
+})
+
+describe('React R1 lane smoke — checks & glossary (live contract)', () => {
+  it('checks: живой валидатор отдаёт отчёт по открытому проекту', async () => {
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    await browser.$('a[href="#/checks"]').click()
+    await waitExisting('[data-testid="checks.findings"]', 30000)
+    await browser.waitUntil(
+      async () => (await browser.$('[data-testid="checks.findings"]').getText()).length > 0 || (await browser.$('.passed-state').isExisting()),
+      { timeout: 30000, interval: 250 },
+    )
+    const metrics = await browser.$('.metrics-band').getText()
+    if (!/0|1|2|3|4|5|6|7|8|9/.test(metrics)) throw new Error('metrics band empty')
+  })
+
+  it('glossary: добавление термина через живой CRUD (persist-before-ack)', async () => {
+    await browser.$('a[href="#/glossary"]').click()
+    await waitExisting('[data-testid="gl.add-term"]', 30000)
+    const stamp = `r1-${Date.now()}`
+    await browser.$('[data-testid="gl.add-term"]').setValue(stamp)
+    await browser.$('[data-testid="gl.add-translation"]').setValue('проверка')
+    await browser.$('[data-testid="gl.add-submit"]').click()
+    await browser
+      .waitUntil(async () => (await browser.$(`[data-testid="gl.row.${stamp}"]`)).isExisting(), {
+        timeout: 30000,
+        interval: 250,
+      })
+      .catch(() => {
+        throw new Error('glossary row did not appear after live upsert')
+      })
   })
 })

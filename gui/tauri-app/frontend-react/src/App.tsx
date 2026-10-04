@@ -8,6 +8,8 @@ import { projectStore } from './lib/state/project'
 import { useProjectState } from './lib/state/useProjectState'
 import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
+import { Checks } from './components/Checks'
+import { Glossary } from './components/Glossary'
 import { t } from './lib/i18n'
 
 type Route =
@@ -59,7 +61,14 @@ export function App() {
   useEffect(() => {
     const onHash = () => setRoute(currentRoute())
     window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
+    // Background WebKit windows may DEFER hashchange dispatch (same macOS 27
+    // event-deferral class as browser.tauri.execute) — a light poll keeps
+    // route state deterministic without focus (live lesson of the smoke).
+    const poll = window.setInterval(() => setRoute(currentRoute()), 400)
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      window.clearInterval(poll)
+    }
   }, [])
 
   // Honest client resolution (mirrors the frozen Svelte instance store):
@@ -168,6 +177,10 @@ export function App() {
               </div>
               <Workspace onBack={() => { window.location.hash = '#/home' }} />
             </div>
+          ) : route === 'checks' ? (
+            <Checks />
+          ) : route === 'glossary' ? (
+            <Glossary />
           ) : route === 'home' || route === 'projects' ? (
           // Home falls through to the shared layout below
             <Home

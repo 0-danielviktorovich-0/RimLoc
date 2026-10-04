@@ -88,3 +88,13 @@ html, body { height: 100%; }
 /* Sidebar progress block (canon): live percent of translated strings. */
 .sidebar-progress { margin: auto 20px 0; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
 .sidebar-progress strong { font-size: 20px; font-family: var(--font-display); }
+
+/* Glossary table + confirm row (canon shapes). */
+.glossary-table > div { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); align-items: center; }
+.glossary-head { font-size: 7px; color: var(--muted-foreground); text-transform: uppercase; }
+.confirm-row { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted-foreground); }
+button.danger { color: var(--destructive); border-color: var(--destructive); }
+.ml-auto { margin-left: auto; }
+.text-destructive { color: var(--destructive); }
+.text-warning { color: var(--warning); }
+.text-success { color: var(--success); }
