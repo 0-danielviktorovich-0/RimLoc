@@ -5,7 +5,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, Check, RotateCcw, Save, Search, ListFilter, FileCode2, Copy, Braces } from 'lucide-react'
+import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, FileCode2, FolderOpen, ListFilter, RotateCcw, Save, Search } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { clientInstance } from '../lib/client/instance'
@@ -17,16 +17,31 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const st = useProjectState()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'empty' | 'issues'>('all')
+  const [kindFilter, setKindFilter] = useState<string>('all')
+  const [treeOpen, setTreeOpen] = useState(true)
+
+  const kindGroups = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of st.entries) {
+      const k = e.identity.def_type ? `${e.identity.kind}/${e.identity.def_type}` : e.identity.kind
+      m.set(k, (m.get(k) ?? 0) + 1)
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [st.entries])
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
     return st.entries.filter((e) => {
+      if (kindFilter !== 'all') {
+        const k = e.identity.def_type ? `${e.identity.kind}/${e.identity.def_type}` : e.identity.kind
+        if (k !== kindFilter) return false
+      }
       if (q && !`${e.key} ${e.source} ${e.target}`.toLowerCase().includes(q)) return false
       if (filter === 'empty') return !e.target.trim()
       if (filter === 'issues') return e.completeness === 'todo' || e.target.includes('{') === false && e.source.includes('{')
       return true
     })
-  }, [st.entries, search, filter])
+  }, [st.entries, search, filter, kindFilter])
 
   const selectedKey = st.selectedKey ?? visible[0]?.key ?? null
   const selected = st.entries.find((e) => e.key === selectedKey) ?? null
@@ -51,6 +66,36 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       <div className="ws-panes">
         <PanelGroup direction="horizontal" autoSaveId="rimloc-ws-panes">
         <Panel minSize={30} defaultSize={66}>
+        <div className="ws-center">
+        <aside className="file-tree" data-testid="ws.tree">
+          <div className="pane-title">
+            <span>{t('ws.treeTitle')}</span>
+            <button className="icon-btn" aria-label={t('ws.toggleTree')} onClick={() => setTreeOpen(!treeOpen)}>
+              <ChevronDown />
+            </button>
+          </div>
+          <button className={`tree-root ${kindFilter === 'all' ? 'active' : ''}`} onClick={() => setKindFilter('all')}>
+            <FolderOpen /> {t('ws.allStrings')} <span>{st.entries.length}</span>
+          </button>
+          {treeOpen &&
+            kindGroups.map(([k, n]) => (
+              <button
+                key={k}
+                className={`file-item ${kindFilter === k ? 'active' : ''}`}
+                onClick={() => setKindFilter(kindFilter === k ? 'all' : k)}
+                data-testid={`ws.tree.${k}`}
+              >
+                <FileCode2 />
+                <span>{k}</span>
+                <small>{n}</small>
+              </button>
+            ))}
+          <div className="tree-bottom">
+            <span className="eyebrow">{t('ws.translationFolder')}</span>
+            <code>Languages/Russian</code>
+            <span className="text-success">{t('ws.sourcesSafe')}</span>
+          </div>
+        </aside>
         {/* CENTER — inventory */}
         <section className="entries-pane" data-testid="ws.entries">
           <div className="entry-toolbar">
@@ -92,11 +137,11 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             </span>
           </div>
         </section>
-
-        {/* RIGHT — editor */}
+        </div>
         </Panel>
         <PanelResizeHandle className="ws-handle" aria-label={t('ws.resize')} />
         <Panel minSize={22} defaultSize={34}>
+        {/* RIGHT — editor */}
         {selected && (
           <EntryEditor
             key={selected.key}

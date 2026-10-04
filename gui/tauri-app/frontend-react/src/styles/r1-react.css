@@ -98,3 +98,14 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
 .text-destructive { color: var(--destructive); }
 .text-warning { color: var(--warning); }
 .text-success { color: var(--success); }
+
+/* LEFT tree (canon shapes; data = real inventory kind groups). */
+.ws-center { display: flex; flex: 1; min-width: 0; min-height: 0; }
+.file-tree { width: 176px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 8px; overflow-y: auto; }
+.file-tree .pane-title { height: 49px; display: flex; align-items: center; justify-content: space-between; font-size: 8px; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0.04em; }
+.tree-root, .file-item { justify-content: flex-start; width: 100%; height: 31px; padding: 0 8px; font-size: 11px; gap: 8px; color: var(--muted-foreground); border: 0; background: transparent; }
+.tree-root.active, .file-item.active { background: var(--accent); color: var(--primary); }
+.tree-root span, .file-item small { margin-left: auto; font-family: var(--font-mono); font-size: 9px; color: var(--muted-foreground); }
+.file-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tree-bottom { margin-top: auto; padding: 12px 6px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 10px; }
+.tree-bottom code { font-family: var(--font-mono); font-size: 9px; }
