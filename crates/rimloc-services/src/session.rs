@@ -6014,6 +6014,7 @@ mod tests {
     /// fail-closed), while a link to the source-tree pack reads fine — the
     /// canonical pack location is inside the mod's own Languages folder.
     #[test]
+    #[cfg(unix)] // std::os::unix::fs::symlink; windows-эквивалент покрытия — в guard-тестах util.rs
     fn existing_pack_symlink_resolves_through_real_path() {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path();
