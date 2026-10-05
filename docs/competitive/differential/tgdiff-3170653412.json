@@ -1,0 +1,3399 @@
+{
+ "modid": "3170653412",
+ "counts": {
+  "both": 161,
+  "rimloc_only": 0,
+  "competitor_only": 230,
+  "semantic": 1,
+  "li_fold_pairs": 0,
+  "tg_identities": 392,
+  "rl_identities": 162
+ },
+ "by_kind": {
+  "both": {
+   "def": 161
+  },
+  "competitor_only": {
+   "BackstoryDef": 230
+  },
+  "rimloc_only": {},
+  "semantic": {
+   "BackstoryDef": 1
+  }
+ },
+ "both": [
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AbandonedOrphan61.description",
+   "text": "Abandoned at birth, young [PAWN_nameDef] started [PAWN_possessive] life in an orphanage. A rascal and a scoundrel, [PAWN_pronoun] became a clever troublemaker.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AbandonedOrphan61.title",
+   "text": "abandoned orphan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AbandonedOrphan61.titleShort",
+   "text": "orphan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Abductee43.description",
+   "text": "[PAWN_nameDef] was abducted at a young age and forced to do menial labor on a pirate ship.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Abductee43.title",
+   "text": "abductee",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Abductee43.titleShort",
+   "text": "abductee",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AdventurousYouth70.description",
+   "text": "[PAWN_nameDef] explored all around [PAWN_possessive] family's large estate, uncovering little natural wonders hidden in nearby catacombs, rivers, and caves. During [PAWN_possessive] teenage years, [PAWN_nameDef] made numerous enemies",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AdventurousYouth70.title",
+   "text": "adventurous youth",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AdventurousYouth70.titleShort",
+   "text": "adventurer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ArmyCook0.description",
+   "text": "[PAWN_nameDef] joined the army as a worker and spent most of [PAWN_possessive] time cooking and repairing. While [PAWN_pronoun] was stationed on a conflictuous frontier, [PAWN_pronoun] underwent basic combat and survival training.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ArmyCook0.title",
+   "text": "army cook",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ArmyCook0.titleShort",
+   "text": "cook",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Aromatherapist80.description",
+   "text": "[PAWN_nameDef] practiced aromatherapy, using essences extracted from home-grown plants.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Aromatherapist80.title",
+   "text": "aromatherapist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Aromatherapist80.titleShort",
+   "text": "therapist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Artilleryman28.description",
+   "text": "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Artilleryman28.title",
+   "text": "artilleryman",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Artilleryman28.titleFemale",
+   "text": "artillerywoman",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Artilleryman28.titleShort",
+   "text": "artilleer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BeastSlayer67.description",
+   "text": "[PAWN_nameDef] traveled between settlements, following news of animal attacks. [PAWN_pronoun] would camp out in the wild for weeks, learning about [PAWN_possessive] prey before striking. \\n\\nPreferring to work alone, [PAWN_nameDef] enjoyed the thrill of the hunt, and the meat from the kill.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BeastSlayer67.title",
+   "text": "beast slayer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BeastSlayer67.titleShort",
+   "text": "slayer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Blacksmith72.description",
+   "text": "As a smith, [PAWN_nameDef] gained a reputation for the high quality of [PAWN_possessive] work. [PAWN_pronoun] wasn't bad at using the swords [PAWN_pronoun] forged either.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Blacksmith72.title",
+   "text": "blacksmith",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Blacksmith72.titleShort",
+   "text": "blacksmith",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BountyHunter17.description",
+   "text": "[PAWN_nameDef] was a self-employed bounty hunter. [PAWN_pronoun] spent [PAWN_possessive] days hunting outlaws and collecting cash bounties.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BountyHunter17.title",
+   "text": "bounty hunter",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BountyHunter17.titleShort",
+   "text": "hunter",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CaravanTraveler6.description",
+   "text": "Born to a family of traveling merchants, [PAWN_nameDef] was mentored by [PAWN_possessive] father in the ways of being a trader. [PAWN_pronoun] was often tasked with caring for the pack animals. Due to [PAWN_possessive] nomadic lifestyle, [PAWN_pronoun] hunted and bartered for [PAWN_possessive] food.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CaravanTraveler6.title",
+   "text": "caravan traveler",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CaravanTraveler6.titleShort",
+   "text": "traveler",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Caravaneer53.description",
+   "text": "[PAWN_nameDef] was the leader of a caravan. [PAWN_pronoun] was responsible for the safety of [PAWN_possessive] caravan and was the head negotiator in countless trade deals.\\n\\n[PAWN_pronoun] and [PAWN_possessive] people prospered, but their wealth made them a target for brigands. They often had to take up arms to fend off bandits and highwaymen.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Caravaneer53.title",
+   "text": "caravaneer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Caravaneer53.titleShort",
+   "text": "caravaneer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CommonerLord45.description",
+   "text": "After years of training in martial arts and diplomacy, [PAWN_nameDef] was eventually given land and subjects of [PAWN_possessive] own to rule.\\n\\nBecause of [PAWN_nameDef]'s commoner heritage, the other lords disapproved. They framed [PAWN_objective] for a heinous crime, and the emperor had no choice but to exile [PAWN_objective].",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CommonerLord45.title",
+   "text": "commoner lord",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CommonerLord45.titleShort",
+   "text": "lord",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CriminalSurgeon99.description",
+   "text": "Being near many injured fellow criminals, [PAWN_nameDef] took it upon [PAWN_objective]self to work on them. Although many people died, [PAWN_pronoun] did get better at using knives.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CriminalSurgeon99.title",
+   "text": "criminal surgeon",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CriminalSurgeon99.titleShort",
+   "text": "surgeon",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Delinquent13.description",
+   "text": "[PAWN_nameDef] spent most of [PAWN_possessive] childhood behind bars. Following an unsuccessful escape attempt, [PAWN_pronoun] was pressed into the army.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Delinquent13.title",
+   "text": "delinquent",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Delinquent13.titleShort",
+   "text": "delinquent",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExiledResearcher44.description",
+   "text": "[PAWN_nameDef]'s intellectual pursuits was not appreciated in [PAWN_possessive] instituition. [PAWN_possessive] superiors expelled [PAWN_objective], and [PAWN_pronoun] was never allowed to return.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExiledResearcher44.title",
+   "text": "exiled researcher",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExiledResearcher44.titleShort",
+   "text": "exile",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExoticChef96.description",
+   "text": "[PAWN_nameDef] has always gone overboard when it comes to food. [PAWN_pronoun] is always seeking new and exotic ingredients.\\n\\n[PAWN_possessive] quest for ingredients has brought [PAWN_objective] into some close calls with local flora and fauna.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExoticChef96.title",
+   "text": "exotic chef",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExoticChef96.titleShort",
+   "text": "chef",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExplorerWriter10.description",
+   "text": "[PAWN_nameDef] traveled far and wide, gathering samples, stories, and research.\\n\\n[PAWN_possessive] goal was to bring together enough knowledge to make a survival guide for future generations.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExplorerWriter10.title",
+   "text": "explorer-writer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExplorerWriter10.titleShort",
+   "text": "explorer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_FurnitureBuilder83.description",
+   "text": "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_FurnitureBuilder83.title",
+   "text": "furniture builder",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_FurnitureBuilder83.titleShort",
+   "text": "builder",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_HiredAssassin37.description",
+   "text": "[PAWN_nameDef] was a master thief, working mostly for organized crime. Over time, [PAWN_pronoun] made a name for [PAWN_objective]self and shifted [PAWN_possessive] business into the paid \"removal\" of human threats.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_HiredAssassin37.title",
+   "text": "hired assassin",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_HiredAssassin37.titleShort",
+   "text": "assassin",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Hunter73.description",
+   "text": "[PAWN_nameDef] was a master hunter.\\n\\n[PAWN_pronoun] learned to track and trap any animal in the most dangerous of places, and had deep knowledge of many ingenious methods for taking down specific large animals.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Hunter73.title",
+   "text": "skilled hunter",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Hunter73.titleShort",
+   "text": "hunter",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_IdealisticCadet64.description",
+   "text": "Raised in the military traditions of [PAWN_possessive] forefathers, [PAWN_nameDef] was taught from a young age that [PAWN_pronoun] would be a great leader and the hero of [PAWN_possessive] family. [PAWN_pronoun] excelled at [PAWN_possessive] studies and graduated from the academy with honors.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_IdealisticCadet64.title",
+   "text": "idealistic cadet",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_IdealisticCadet64.titleShort",
+   "text": "cadet",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_InfantryEngineer46.description",
+   "text": "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_InfantryEngineer46.title",
+   "text": "siege engineer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_InfantryEngineer46.titleShort",
+   "text": "engineer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_LineInfanteer20.description",
+   "text": "[PAWN_nameDef] was an ordinary infanteer in an imperial battalion. \\nConscripted at a young age to add bodies the army, [PAWN_nameDef] learned the methods of fighting well enough to satisfy [PAWN_possessive] superiors. However, [PAWN_pronoun] never quite understood what was going on around [PAWN_objective] enough to really believe in it.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_LineInfanteer20.title",
+   "text": "line infanteer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_LineInfanteer20.titleShort",
+   "text": "infanteer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MasterTrader65.description",
+   "text": "[PAWN_nameDef] was a master at trading. [PAWN_pronoun] earned [PAWN_possessive] reputation by helping a village through a trying time.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MasterTrader65.title",
+   "text": "master trader",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MasterTrader65.titleShort",
+   "text": "trader",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Mathematician6.description",
+   "text": "[PAWN_nameDef] did studies in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Mathematician6.title",
+   "text": "academic",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Mathematician6.titleShort",
+   "text": "professor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalKnight26.description",
+   "text": "[PAWN_nameDef] fought for king and country on the battlefield, where [PAWN_pronoun] further honed [PAWN_possessive] skill as a swordfighter. [PAWN_possessive] greatest glory was leading a charge into an enemy courtroom and capturing the king at sword point.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalKnight26.title",
+   "text": "medieval knight",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalKnight26.titleShort",
+   "text": "knight",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalMinstrel95.baseDesc",
+   "text": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalMinstrel95.title",
+   "text": "wandering bard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalMinstrel95.titleShort",
+   "text": "bard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalNomad12.description",
+   "text": "Born to a nomadic family, [PAWN_nameDef] was instructed in the arts of speechcraft, sleight of hand, horse riding. [PAWN_pronoun] was always running around the camp doing odd jobs to help [PAWN_possessive] extended family.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalNomad12.title",
+   "text": "nomad",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalNomad12.titleShort",
+   "text": "nomad",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalSquire5.description",
+   "text": "[PAWN_nameDef] grew up as a knight in training. [PAWN_pronoun] trained directly under the king's war adviser for most of [PAWN_possessive] youth, and learned to fight with many martial weapons.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalSquire5.title",
+   "text": "squire",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalSquire5.titleShort",
+   "text": "squire",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalThief74.description",
+   "text": "[PAWN_nameDef] grew up poor and hungry on a big city, learning to fend for [PAWN_objective]self. At first, [PAWN_pronoun] only took what [PAWN_pronoun] needed. Then [PAWN_pronoun] learned to take what [PAWN_pronoun] wanted.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalThief74.title",
+   "text": "urchin thief",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalThief74.titleShort",
+   "text": "thief",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCadet46.description",
+   "text": "[PAWN_nameDef] was levied from [PAWN_possessive] family at a young age to join a local army. [PAWN_pronoun] lived in barracks with other kids, learning about duty, weapons, pain, and victory. \\nThe trainers sometimes let the kids escape the base to enjoy the wider world. They wanted fighters who can think independently.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCadet46.title",
+   "text": "army cadet",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCadet46.titleShort",
+   "text": "cadet",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCook18.description",
+   "text": "They say an army marches on its stomach. [PAWN_nameDef]'s job was to prepared chow to keep [PAWN_possessive] unit marching, no matter the conditions. \\nThe job required [PAWN_objective] to pay attention to both the nutritional and psychological needs of the troops.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCook18.title",
+   "text": "army cook",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCook18.titleShort",
+   "text": "army cook",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Minister88.description",
+   "text": "[PAWN_nameDef] managed to secure an important position in the court of a minor noble house. [PAWN_pronoun] got used to the opulence, while attempting to keep [PAWN_possessive] citizens content. [PAWN_pronoun] had ample time for pleasure and indulgence – though [PAWN_pronoun] never forgot how to do hard work.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Minister88.title",
+   "text": "minister",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Minister88.titleShort",
+   "text": "minister",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Missionary99.description",
+   "text": "[PAWN_nameDef] decided to devote [PAWN_possessive] life to religious service. [PAWN_pronoun] made a vow of peace and spent several years preaching and helping those who needed the most.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Missionary99.title",
+   "text": "missionary",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Missionary99.titleShort",
+   "text": "missionary",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PiousSoldier67.description",
+   "text": "When not training or combat, [PAWN_nameDef] was often at the chaplain's side. [PAWN_pronoun] dedicated [PAWN_possessive] life to serving both [PAWN_possessive] lord and [PAWN_possessive] religion.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PiousSoldier67.title",
+   "text": "pious fighter",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PiousSoldier67.titleShort",
+   "text": "pious fighter",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PoisonGardener29.description",
+   "text": "[PAWN_nameDef] spent almost all [PAWN_possessive] time tending to a poison garden and became withdrawn from society.\\n\\nIn that time [PAWN_pronoun] learnt a few safe culinary and medicinal uses for the otherwise deadly plants.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PoisonGardener29.title",
+   "text": "poison gardener",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PoisonGardener29.titleShort",
+   "text": "botanist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PrivateDetective66.description",
+   "text": "As a private eye, sharp wits and a silver tongue were [PAWN_nameDef]'s greatest tools. [PAWN_pronoun] often spent [PAWN_possessive] nights working cases that ranged from uncovering affairs and learning trade secrets to solving murder cases and infiltrating criminal organizations. There wasn't a case [PAWN_pronoun] wouldn't accept for the right price.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PrivateDetective66.title",
+   "text": "private detective",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PrivateDetective66.titleShort",
+   "text": "detective",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Ranger6.description",
+   "text": "[PAWN_nameDef] lived alone, deep in a forest. [PAWN_pronoun] protected the wildlife against poachers, and learned to satisfy [PAWN_possessive] own material needs without outside help.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Ranger6.title",
+   "text": "ranger",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Ranger6.titleShort",
+   "text": "ranger",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RangerChild57.description",
+   "text": "[PAWN_nameDef] was raised in a forest. [PAWN_pronoun] was taught how hunt and live off the land, so that [PAWN_pronoun] could live without the need of others. Accustomed to manual labor and with an intuitive mind, [PAWN_nameDef] could survive weeks alone.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RangerChild57.title",
+   "text": "ranger child",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RangerChild57.titleShort",
+   "text": "ranger kid",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RoyalGuard51.description",
+   "text": "[PAWN_nameDef] guarded the personal palace of a powerful lord. \\nWhile violence was rare, palace intrigue was constant. [PAWN_nameDef]'s work taught [PAWN_pronoun] to handle both words and weapons.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RoyalGuard51.title",
+   "text": "royal guard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RoyalGuard51.titleShort",
+   "text": "guard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ShipBoy89.description",
+   "text": "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ShipBoy89.title",
+   "text": "ship boy",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ShipBoy89.titleFemale",
+   "text": "ship girl",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ShipBoy89.titleShort",
+   "text": "ship boy",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpacePirate55.description",
+   "text": "[PAWN_nameDef] was part of the piracy tradition, extorting and smashing peaceful trade ships for profit in faraway seas.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpacePirate55.title",
+   "text": "pirate",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpacePirate55.titleShort",
+   "text": "pirate",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceRaider71.description",
+   "text": "[PAWN_nameDef] was the leader of a raider crew. Always on the run, [PAWN_pronoun] became the feared enemy of many settlements.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceRaider71.title",
+   "text": "bandit chief",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceRaider71.titleShort",
+   "text": "bandit",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceSmuggler6.description",
+   "text": "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceSmuggler6.title",
+   "text": "smuggler kid",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceSmuggler6.titleShort",
+   "text": "smuggler",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_StewardsAssisant28.description",
+   "text": "A steward on a merchant ship, [PAWN_nameDef] was well-traveled on [PAWN_possessive] homeland by [PAWN_possessive] early teens. The constant orders from [PAWN_possessive] captain, however, fostered a defiant streak, as well as a general disaste for anything [PAWN_pronoun] considered to be busywork.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_StewardsAssisant28.title",
+   "text": "Steward's assisant",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_StewardsAssisant28.titleShort",
+   "text": "Steward",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taster16.description",
+   "text": "As the food taster for a king, [PAWN_nameDef] sampled any dish served at the royal table. [PAWN_pronoun] lived a decadent lifestyle at court, growing fat and doing very little real work.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taster16.title",
+   "text": "taster",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taster16.titleShort",
+   "text": "taster",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taxonomist0.description",
+   "text": "[PAWN_nameDef] traveled through the wilderness, studying and classifying the plant and animal life [PAWN_pronoun] found in the hopes of creating a complete catalogue.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taxonomist0.title",
+   "text": "taxonomist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taxonomist0.titleShort",
+   "text": "taxonomist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Tinkerer11.description",
+   "text": "[PAWN_nameDef] spent [PAWN_possessive] spare time creating things from [PAWN_possessive] imagination out of scrap metal and discarded machinery. [PAWN_pronoun] created simple doodads and small tools, for both for fun and for utility.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Tinkerer11.title",
+   "text": "tinkerer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Tinkerer11.titleShort",
+   "text": "tinkerer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_TraineeAlchemist64.description",
+   "text": "[PAWN_nameDef] learned the basics of alchemy and medicine in one the few monastic schools on [PAWN_possessive] homeland.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_TraineeAlchemist64.title",
+   "text": "trainee alchemist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_TraineeAlchemist64.titleShort",
+   "text": "alchemist",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WanderingBard.baseDesc",
+   "text": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WanderingBard.title",
+   "text": "wandering bard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WanderingBard.titleShort",
+   "text": "Bard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmaster54.description",
+   "text": "[PAWN_nameDef] was warmaster to a mid-level royal house. [PAWN_pronoun] oversaw martial aspects of the family's strategy. \\nOn the rare occasion a battle occurred, [PAWN_nameDef] directed the commanders.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmaster54.title",
+   "text": "warmaster",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmaster54.titleShort",
+   "text": "warmaster",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmonger35.description",
+   "text": "[PAWN_nameDef] revelled in bloodshed. Those who served with [PAWN_objective] were terrified of [PAWN_possessive] ferocity. They rarely socialized with [PAWN_nameDef], and [PAWN_pronoun] did not mind the isolation.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmonger35.title",
+   "text": "warmonger",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmonger35.titleShort",
+   "text": "warmonger",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WreckageExplorer93.description",
+   "text": "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WreckageExplorer93.title",
+   "text": "ruins explorer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WreckageExplorer93.titleShort",
+   "text": "explorer",
+   "tg_mult": 1,
+   "rl_mult": 1
+  }
+ ],
+ "both_li_fold": [],
+ "rimloc_only": [],
+ "competitor_only": [
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ApprenticeSmith37.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] grew up helping in [PAWN_possessive] father's smithy. They were some of the last smiths on the region that to use traditional smithing methods. They even collect some materials themselves. Sometimes, after work, [PAWN_nameDef] would practice using the swords [PAWN_pronoun] forged.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ApprenticeSmith37.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] grew up helping in [PAWN_possessive] father's smithy. They were some of the last smiths on the region that to use traditional smithing methods. They even collect some materials themselves. Sometimes, after work, [PAWN_nameDef] would practice using the swords [PAWN_pronoun] forged.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Artilleryman28.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Artilleryman28.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_BelovedQueen.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "[PAWN_nameDef] was the ruler of the realm. [PAWN_pronoun] did [PAWN_possessive] best to be a wise and just ruler and was widely loved by [PAWN_possessive] subjects.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_BelovedQueen.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "[PAWN_nameDef] was the ruler of the realm. [PAWN_pronoun] did [PAWN_possessive] best to be a wise and just ruler and was widely loved by [PAWN_possessive] subjects.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_BelovedQueen.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "beloved ruler",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_BelovedQueen.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "beloved ruler",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_BelovedQueen.titleShort",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "king",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_BelovedQueen.titleShortFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "Queen",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_CharitableNun.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "charitable monk",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_CharitableNun.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "charitable monk",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_CharitableNun.titleShort",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "monk",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_CharitableNun.titleShortFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "monk",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_MadQueen.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "[PAWN_nameDef] was the ruler of the realm. The absolute power [PAWN_pronoun] had drove [PAWN_objective] insane and [PAWN_pronoun] was widely considered to be a dangerous tyrant. [PAWN_pronoun] remained unchecked due to the machinations of those who benefitted from [PAWN_possessive] madness. [PAWN_nameDef] was incredibly paranoid, and frequently ordered the execution of innocent people for imagined assassination plots.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_MadQueen.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "[PAWN_nameDef] was the ruler of the realm. The absolute power [PAWN_pronoun] had drove [PAWN_objective] insane and [PAWN_pronoun] was widely considered to be a dangerous tyrant. [PAWN_pronoun] remained unchecked due to the machinations of those who benefitted from [PAWN_possessive] madness. [PAWN_nameDef] was incredibly paranoid, and frequently ordered the execution of innocent people for imagined assassination plots.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_MadQueen.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "mad ruler",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_MadQueen.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "mad ruler",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_MadQueen.titleShort",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "king",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_MadQueen.titleShortFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "Queen",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_OrphanGirl.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "orphan",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_OrphanGirl.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "orphan",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_OrphanGirl.titleShort",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "orphan",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_OrphanGirl.titleShortFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "orphan",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_Seamstress.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "tailor",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_Seamstress.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "tailor",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_Seamstress.titleShort",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "tailor",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "AssassinsBro_Medieval_Seamstress.titleShortFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/BackstoriesDef0.xml",
+   "text": "Seamstress",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Bartender62.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] worked as a bartender in a seedy tavern. The job was one part drink-serving, one part diplomacy, and one part head-bashing.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Bartender62.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] worked as a bartender in a seedy tavern. The job was one part drink-serving, one part diplomacy, and one part head-bashing.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ColiseumCleaner54.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "During the wars, [PAWN_possessive] parents were captured and [PAWN_pronoun] was born into a life of slavery. Forced to clean coliseums after bloody battles for money. Watching, waiting, and learning. Coliseums were the only thing [PAWN_pronoun] ever knew. One night while cleaning the coliseum, [PAWN_possessive] family was murdered.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ColiseumCleaner54.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "During the wars, [PAWN_possessive] parents were captured and [PAWN_pronoun] was born into a life of slavery. Forced to clean coliseums after bloody battles for money. Watching, waiting, and learning. Coliseums were the only thing [PAWN_pronoun] ever knew. One night while cleaning the coliseum, [PAWN_possessive] family was murdered.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ColonySettler53.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was a settler on a new continent.\\n\\nSuch a life requires a jack-of-all trades at basic hands-on tasks.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ColonySettler53.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was a settler on a new continent.\\n\\nSuch a life requires a jack-of-all trades at basic hands-on tasks.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ContractMiner86.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "miner",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ContractMiner86.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "miner",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Drifter67.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] never figured out what to do with [PAWN_possessive] life. [PAWN_pronoun] traveled often, taking up casual work wherever [PAWN_pronoun] found it.\\n\\n[PAWN_pronoun] also occasionally worked on a novel that [PAWN_pronoun] knew would be very popular - just as soon as [PAWN_pronoun] could find a patron who was interested in funding it.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Drifter67.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] never figured out what to do with [PAWN_possessive] life. [PAWN_pronoun] traveled often, taking up casual work wherever [PAWN_pronoun] found it.\\n\\n[PAWN_pronoun] also occasionally worked on a novel that [PAWN_pronoun] knew would be very popular - just as soon as [PAWN_pronoun] could find a patron who was interested in funding it.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "FurnitureBuilder83.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "FurnitureBuilder83.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AbandonedOrphan61.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "abandoned orphan",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AbandonedOrphan61.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "orphan",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Abductee43.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "abductee",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Abductee43.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "abductee",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AdventurousYouth70.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "adventurous youth",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_AdventurousYouth70.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "adventurer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ArmyCook0.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "army cook",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ArmyCook0.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "cook",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Aromatherapist80.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "aromatherapist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Aromatherapist80.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "therapist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Artilleryman28.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "artilleer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BeastSlayer67.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "beast slayer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BeastSlayer67.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "slayer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Blacksmith72.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "blacksmith",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Blacksmith72.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "blacksmith",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BountyHunter17.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "bounty hunter",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_BountyHunter17.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "hunter",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CaravanTraveler6.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "caravan traveler",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CaravanTraveler6.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "traveler",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Caravaneer53.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "caravaneer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Caravaneer53.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "caravaneer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CommonerLord45.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "commoner lord",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CommonerLord45.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "lord",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CriminalSurgeon99.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "criminal surgeon",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_CriminalSurgeon99.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "surgeon",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Delinquent13.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "delinquent",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Delinquent13.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "delinquent",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExiledResearcher44.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "exiled researcher",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExiledResearcher44.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "exile",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExoticChef96.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "exotic chef",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExoticChef96.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "chef",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExplorerWriter10.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "explorer-writer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ExplorerWriter10.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "explorer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_FurnitureBuilder83.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "furniture builder",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_FurnitureBuilder83.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "builder",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_HiredAssassin37.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "hired assassin",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_HiredAssassin37.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "assassin",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Hunter73.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "skilled hunter",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Hunter73.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "hunter",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_IdealisticCadet64.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "idealistic cadet",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_IdealisticCadet64.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "cadet",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_InfantryEngineer46.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "siege engineer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_InfantryEngineer46.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "engineer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_LineInfanteer20.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "line infanteer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_LineInfanteer20.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "infanteer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MasterTrader65.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "master trader",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MasterTrader65.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "trader",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Mathematician6.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "academic",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Mathematician6.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "professor",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalKnight26.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "medieval knight",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalKnight26.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "knight",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalMinstrel95.description",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalMinstrel95.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "wandering bard",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalMinstrel95.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "bard",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalNomad12.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "nomad",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalNomad12.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "nomad",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalSquire5.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "squire",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalSquire5.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "squire",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalSquire5.workDisables",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "Cooking, PlantWork",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalThief74.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "urchin thief",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MedievalThief74.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "thief",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCadet46.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "army cadet",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCadet46.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "cadet",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCook18.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "army cook",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_MilitaryCook18.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "army cook",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Minister88.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "minister",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Minister88.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "minister",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Missionary99.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "missionary",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Missionary99.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "missionary",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PiousSoldier67.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "pious fighter",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PiousSoldier67.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "pious fighter",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PoisonGardener29.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "poison gardener",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PoisonGardener29.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "botanist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PrivateDetective66.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "private detective",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PrivateDetective66.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "detective",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_PrivateDetective66.workDisables",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "PlantWork, Mining",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Ranger6.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "ranger",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Ranger6.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "ranger",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RangerChild57.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "ranger child",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RangerChild57.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "ranger kid",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RoyalGuard51.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "royal guard",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_RoyalGuard51.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "guard",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpacePirate55.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "pirate",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpacePirate55.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "pirate",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceRaider71.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "bandit chief",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceRaider71.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "bandit",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceSmuggler6.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "smuggler kid",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_SpaceSmuggler6.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "smuggler",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_StewardsAssisant28.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "Steward's assisant",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_StewardsAssisant28.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "Steward",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taster16.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "taster",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taster16.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "taster",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taxonomist0.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "taxonomist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Taxonomist0.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "taxonomist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Tinkerer11.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "tinkerer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Tinkerer11.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "tinkerer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_TraineeAlchemist64.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "trainee alchemist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_TraineeAlchemist64.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "text": "alchemist",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WanderingBard.description",
+   "file_tg": "3170653412/1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+   "text": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WanderingBard.titleFemale",
+   "file_tg": "3170653412/1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+   "text": "wandering bard",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WanderingBard.titleShortFemale",
+   "file_tg": "3170653412/1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+   "text": "Bard",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmaster54.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "warmaster",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmaster54.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "warmaster",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmonger35.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "warmonger",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_Warmonger35.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "text": "warmonger",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WreckageExplorer93.titleFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "ruins explorer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_WreckageExplorer93.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "text": "explorer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Geologist66.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] worked with miners and cave-diggers, identifying rock types and natural formations. During [PAWN_possessive] years underground [PAWN_pronoun] also gained experience repairing mining tools and equipments.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Geologist66.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] worked with miners and cave-diggers, identifying rock types and natural formations. During [PAWN_possessive] years underground [PAWN_pronoun] also gained experience repairing mining tools and equipments.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Gigolo30.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was used for [PAWN_possessive] body by hundreds of customers in brothels on several cities. [PAWN_pronoun] gained some mental marks and a special kind of street smarts.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Gigolo30.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was used for [PAWN_possessive] body by hundreds of customers in brothels on several cities. [PAWN_pronoun] gained some mental marks and a special kind of street smarts.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Gigolo30.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "courtesean",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Gigolo30.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "courtesean",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "InfantryEngineer46.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "InfantryEngineer46.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "InfantryEngineer46.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "siege engineer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "InfantryEngineer46.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "siege engineer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Inventor6.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "On [PAWN_possessive] homeland, [PAWN_nameDef] worked as a moderately successful inventor. [PAWN_pronoun] developed several apparatus.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Inventor6.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "On [PAWN_possessive] homeland, [PAWN_nameDef] worked as a moderately successful inventor. [PAWN_pronoun] developed several apparatus.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "LowWageWorker7.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "grunt",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "LowWageWorker7.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "grunt",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MachineCollector55.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was obsessed with old trinkets and arcane artifacts. [PAWN_pronoun] obtained them wherever [PAWN_pronoun] could, and loved trying to understand how they worked.\\n\\n[PAWN_pronoun] had a habit of talking about [PAWN_possessive] collection long after people around [PAWN_objective] had stopped listening.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MachineCollector55.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was obsessed with old trinkets and arcane artifacts. [PAWN_pronoun] obtained them wherever [PAWN_pronoun] could, and loved trying to understand how they worked.\\n\\n[PAWN_pronoun] had a habit of talking about [PAWN_possessive] collection long after people around [PAWN_objective] had stopped listening.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MachineCollector55.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "trinket collector",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MachineCollector55.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "trinket collector",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MafiaBoss17.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was a high-ranking member of a crime syndicate.\\n\\n[PAWN_pronoun] bribed officials, maintained the loyalty of [PAWN_possessive] subordinates, and extracted overdue payments - by any means necessary.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MafiaBoss17.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was a high-ranking member of a crime syndicate.\\n\\n[PAWN_pronoun] bribed officials, maintained the loyalty of [PAWN_possessive] subordinates, and extracted overdue payments - by any means necessary.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Mathematician6.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] did research in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Mathematician6.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] did research in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Mathematician6.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "academic",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Mathematician6.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "academic",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Mathematician6.titleShort",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "professor",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Mathematician6.titleShortFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "professor",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MercenaryRecruit18.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "Born to a long line of mercenaries, [PAWN_nameDef] grew up in a busy trading hub. At a young age, [PAWN_pronoun] was recruited into one of the mercenary bands.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "MercenaryRecruit18.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "Born to a long line of mercenaries, [PAWN_nameDef] grew up in a busy trading hub. At a young age, [PAWN_pronoun] was recruited into one of the mercenary bands.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "PlagueChild44.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "Born on a kingdom wracked by plague, both of [PAWN_nameDef]'s parents were doctors. [PAWN_pronoun] experienced little social interaction. However, [PAWN_pronoun] gained a lot of medical experience assisting in treatments.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "PlagueChild44.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "Born on a kingdom wracked by plague, both of [PAWN_nameDef]'s parents were doctors. [PAWN_pronoun] experienced little social interaction. However, [PAWN_pronoun] gained a lot of medical experience assisting in treatments.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "PlagueDoctor31.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] provided medical care on multiple plague-wracked villages, always working under the Hippocratic oath. [PAWN_pronoun] improved conditions for those under quarantine while administering complex medical treatments and developing medicines. [PAWN_pronoun] never had time to enjoy a normal life outside of work.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "PlagueDoctor31.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] provided medical care on multiple plague-wracked villages, always working under the Hippocratic oath. [PAWN_pronoun] improved conditions for those under quarantine while administering complex medical treatments and developing medicines. [PAWN_pronoun] never had time to enjoy a normal life outside of work.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "RebelliousStudent74.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] had a shot at an education, but [PAWN_pronoun] rebelled against the injustices [PAWN_pronoun] saw and was expelled from three schools. This left [PAWN_objective] with a sense of integrity, but a lack of social skills. [PAWN_nameDef] sought self-actualization. [PAWN_pronoun] spent [PAWN_possessive] days meditating and practicing sword and staff fighting techniques.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "RebelliousStudent74.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] had a shot at an education, but [PAWN_pronoun] rebelled against the injustices [PAWN_pronoun] saw and was expelled from three schools. This left [PAWN_objective] with a sense of integrity, but a lack of social skills. [PAWN_nameDef] sought self-actualization. [PAWN_pronoun] spent [PAWN_possessive] days meditating and practicing sword and staff fighting techniques.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Recruiter14.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was part of a revered order of martial artists, infamous both for their skill in combat and for their practice of refusing to treat their wounded.\\n\\n[PAWN_pronoun] traveled the land, judging the young people [PAWN_pronoun] met to determine if they might be suitable for training.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Recruiter14.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was part of a revered order of martial artists, infamous both for their skill in combat and for their practice of refusing to treat their wounded.\\n\\n[PAWN_pronoun] traveled the land, judging the young people [PAWN_pronoun] met to determine if they might be suitable for training.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SH_MED_LandlessKnight.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Shavius3.xml",
+   "text": "[PAWN_nameDef] lost [PAWN_possessive] family and friends during a war, and inherited nothing but an hourable knightly title. [PAWN_nameDef] devoted [PAWN_objective]self into [PAWN_possessive] duty, trying to regain what [PAWN_pronoun] has lost.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SH_MED_LandlessKnight.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Shavius3.xml",
+   "text": "[PAWN_nameDef] lost [PAWN_possessive] family and friends during a war, and inherited nothing but an hourable knightly title. [PAWN_nameDef] devoted [PAWN_objective]self into [PAWN_possessive] duty, trying to regain what [PAWN_pronoun] has lost.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ShipBoy89.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "ShipBoy89.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Ludeon_Rimworld_Royalty/Backstories_Royalty8.xml",
+   "text": "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Slaughterer58.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "butcher",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Slaughterer58.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "butcher",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Smuggler23.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "As a peddler, [PAWN_nameDef] had a knack for stealing goods and trafficking contraband without getting caught.\\n\\n[PAWN_pronoun] eventually saved up enough to buy [PAWN_possessive] own transport, and used it to travel around dealing [PAWN_possessive] goods.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Smuggler23.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "As a peddler, [PAWN_nameDef] had a knack for stealing goods and trafficking contraband without getting caught.\\n\\n[PAWN_pronoun] eventually saved up enough to buy [PAWN_possessive] own transport, and used it to travel around dealing [PAWN_possessive] goods.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpacePirate55.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "Piracy appears everywhere that governments are weak and society spread thin. [PAWN_nameDef] was part of this tradition, extorting and smashing peaceful trade ships for profit.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpacePirate55.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "Piracy appears everywhere that governments are weak and society spread thin. [PAWN_nameDef] was part of this tradition, extorting and smashing peaceful trade ships for profit.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpacePirate55.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "pirate",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpacePirate55.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "pirate",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceSmuggler6.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceSmuggler6.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceSmuggler6.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "smuggler Kid",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceSmuggler6.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "smuggler Kid",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceTactician28.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] joined the army in an unstable region, fraught with large-scale wars. [PAWN_pronoun] turned out to have a sharp mind for battle, and became adept at commanding warbands to great effect.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceTactician28.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] joined the army in an unstable region, fraught with large-scale wars. [PAWN_pronoun] turned out to have a sharp mind for battle, and became adept at commanding warbands to great effect.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceTactician28.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "war tactician",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "SpaceTactician28.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "war tactician",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Spy58.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was trained by [PAWN_possessive] guild in infiltration and espionage. [PAWN_pronoun] learned to keep a cool head and to talk [PAWN_possessive] way out of tight situations. When talking didn't work, [PAWN_pronoun] was capable of more violent direct action.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Spy58.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was trained by [PAWN_possessive] guild in infiltration and espionage. [PAWN_pronoun] learned to keep a cool head and to talk [PAWN_possessive] way out of tight situations. When talking didn't work, [PAWN_pronoun] was capable of more violent direct action.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "StoryWriter67.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "As a child, [PAWN_nameDef] was addicted to reading. [PAWN_pronoun] would spend all day in a library with [PAWN_possessive] nose in a book. When the library was burned down in an accident, [PAWN_nameDef] was distraught. [PAWN_pronoun] decided to fill the gap by writing [PAWN_possessive] own stories instead.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "StoryWriter67.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "As a child, [PAWN_nameDef] was addicted to reading. [PAWN_pronoun] would spend all day in a library with [PAWN_possessive] nose in a book. When the library was burned down in an accident, [PAWN_nameDef] was distraught. [PAWN_pronoun] decided to fill the gap by writing [PAWN_possessive] own stories instead.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Teacher20.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was educated in the liberal arts and taught at a local school. [PAWN_pronoun] was widely knowledgeable and well-liked by [PAWN_possessive] students.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "Teacher20.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was educated in the liberal arts and taught at a local school. [PAWN_pronoun] was widely knowledgeable and well-liked by [PAWN_possessive] students.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VA_MED_Archer.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Shavius3.xml",
+   "text": "[PAWN_nameDef] fought for [PAWN_possessive] kingdom. [PAWN_pronoun] specialized in the use of longbows, crossbows, and other ranged weapons",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VA_MED_Archer.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Shavius3.xml",
+   "text": "[PAWN_nameDef] fought for [PAWN_possessive] kingdom. [PAWN_pronoun] specialized in the use of longbows, crossbows, and other ranged weapons",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_DesertSurvivor.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef]'s sworn enemies left [PAWN_objective] to die on a desolated desert. Despite all the odds, [PAWN_pronoun] survived in such an environment and adapted to it. Due to spending a lot of time living in the wastelands, [PAWN_nameDef] has no knowledge about plants.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_DesertSurvivor.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef]'s sworn enemies left [PAWN_objective] to die on a desolated desert. Despite all the odds, [PAWN_pronoun] survived in such an environment and adapted to it. Due to spending a lot of time living in the wastelands, [PAWN_nameDef] has no knowledge about plants.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_GalleyChef.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE6.xml",
+   "text": "[PAWN_nameDef] ran the galley on a mid-sized sea-faring ship, providing hearty and nutritious meals for the crew. Cooking amidst the waves presented unique challenges, yet [PAWN_pronoun] mastered the art. However, [PAWN_pronoun] never took well to the intricacies of the ship, preferring pans over knots and sails.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_GalleyChef.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE6.xml",
+   "text": "[PAWN_nameDef] ran the galley on a mid-sized sea-faring ship, providing hearty and nutritious meals for the crew. Cooking amidst the waves presented unique challenges, yet [PAWN_pronoun] mastered the art. However, [PAWN_pronoun] never took well to the intricacies of the ship, preferring pans over knots and sails.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_Marauder.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef] spent most of [PAWN_possessive] life as a fighter in a pirate ship until it dissolved from mutiny. [PAWN_pronoun] saw many battles, but never even went close to any books.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_Marauder.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef] spent most of [PAWN_possessive] life as a fighter in a pirate ship until it dissolved from mutiny. [PAWN_pronoun] saw many battles, but never even went close to any books.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_OrphanThief.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "When [PAWN_pronoun] was young, [PAWN_nameDef]'s parents were imprisoned for speaking out against the kingdom rulers. [PAWN_pronoun] was forced to steal food in order to survive, and soon became a capable thief. The experience left [PAWN_objective] unwilling to rely much on others. As a hobby, [PAWN_nameDef] began collecting helmets stolen from guards.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_OrphanThief.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "When [PAWN_pronoun] was young, [PAWN_nameDef]'s parents were imprisoned for speaking out against the kingdom rulers. [PAWN_pronoun] was forced to steal food in order to survive, and soon became a capable thief. The experience left [PAWN_objective] unwilling to rely much on others. As a hobby, [PAWN_nameDef] began collecting helmets stolen from guards.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_PirateKid.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef] was kidnapped by pirates at a young age. [PAWN_possessive] small size allowed [PAWN_objective] to sneak into boarded ships to steal valuables. Coincidentally, [PAWN_pronoun] also became quite adept at treating scurvy.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_PirateKid.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef] was kidnapped by pirates at a young age. [PAWN_possessive] small size allowed [PAWN_objective] to sneak into boarded ships to steal valuables. Coincidentally, [PAWN_pronoun] also became quite adept at treating scurvy.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_StarvingArtist.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef] was an relatively well-off artist, but the lack of interested patrons forced [PAWN_objective] onto the streets to sell [PAWN_possessive] paintings for a living. [PAWN_pronoun] didn't make much, and what surplus [PAWN_pronoun] had went into more materials and food for some friendly and loyal stray dogs.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VBE_StarvingArtist.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_VBE2.xml",
+   "text": "[PAWN_nameDef] was an relatively well-off artist, but the lack of interested patrons forced [PAWN_objective] onto the streets to sell [PAWN_possessive] paintings for a living. [PAWN_pronoun] didn't make much, and what surplus [PAWN_pronoun] had went into more materials and food for some friendly and loyal stray dogs.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VengefulNomad67.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "After refusing the wild demands of a tyrannical king, [PAWN_nameDef]'s nomad band was marked as an outlaw group and systematically hunted.\\n\\n[PAWN_nameDef]'s family was eventually captured. Those who weren't killed were taken as slaves. Sold to the owner of a smithy, [PAWN_nameDef] swore that one day [PAWN_pronoun] would have [PAWN_possessive] revenge.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "VengefulNomad67.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "After refusing the wild demands of a tyrannical king, [PAWN_nameDef]'s nomad band was marked as an outlaw group and systematically hunted.\\n\\n[PAWN_nameDef]'s family was eventually captured. Those who weren't killed were taken as slaves. Sold to the owner of a smithy, [PAWN_nameDef] swore that one day [PAWN_pronoun] would have [PAWN_possessive] revenge.",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "WanderingHealer52.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core5.xml",
+   "text": "[PAWN_nameDef] studied to be a doctor, but was dissatisfied with [PAWN_possessive] practice on an otherwise peaceful home town.\\n\\nInstead, [PAWN_pronoun] chose to pull up roots and travel to faraway lands in order to care for people who needed [PAWN_objective] most.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "WreckageExplorer93.baseDesc",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "WreckageExplorer93.description",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "WreckageExplorer93.title",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "ruins explorer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "WreckageExplorer93.titleFemale",
+   "file_tg": "3170653412/_Translation/Grabbed_Defs_from_patches/Backstories_Core1.xml",
+   "text": "ruins explorer",
+   "kind_tg": "def",
+   "tg_mult": 1
+  }
+ ],
+ "semantic": [
+  {
+   "kind": "def",
+   "deftype": "BackstoryDef",
+   "key": "GTF_ShipBoy89.titleShortFemale",
+   "file_tg": "3170653412/1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "file_rl": "3170653412/Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+   "text_tg": "ship boy",
+   "text_rl": "ship girl"
+  }
+ ]
+}

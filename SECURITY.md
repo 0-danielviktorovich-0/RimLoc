@@ -1,45 +1,92 @@
-# Security Policy
+# Политика безопасности RimLoc
 
-## Supported versions
+Обновлено: 2026-10-05.
 
-RimLoc is a single-maintainer project without a backport policy. Security fixes land
-on `main` and ship with the next release of `rimloc-cli` on crates.io. Older releases
-and tags are not patched — please upgrade before reporting.
+RimLoc — проект до версии 1.0 (крейты сейчас в статусе 0.1.x), его развозит один
+мейнтейнер. Эта политика описывает, какие версии поддерживаются, как приватно
+сообщить об уязвимости и что попадает в периметр безопасности.
 
-| Scope | Supported |
+## Поддерживаемые версии
+
+Backport-политики нет: исправления безопасности попадают в текущую разработку и
+уезжают с ближайшим релизом `rimloc-cli`. Старые теги и релизы не патчатся —
+перед репортом обновитесь.
+
+| Версия | Поддержка |
 | --- | --- |
-| Latest published release (`rimloc-cli --version` on crates.io) | yes |
-| Current `main` branch | yes |
-| Older releases / tags | no — upgrade first |
+| Текущая разработка: ветки `main` и актуальные feature-ветки | да |
+| Свежий pre-release (0.1.0-alpha.x, сборки «dev») | да |
+| Предыдущие релизы и теги | нет — сначала обновитесь |
 
-## Reporting a vulnerability
+## Как сообщить об уязвимости
 
-Please do **not** open a public issue with exploitation details (anything that can
-overwrite data outside requested output paths, execute code, or leak local data).
+**Не открывайте публичный issue с деталями эксплуатации** — то есть всего, что
+может писать за пределами запрошенных выходных путей, исполнять код или
+вытаскивать локальные данные.
 
-Preferred channel — GitHub private vulnerability reporting:
+Приватный канал — **GitHub Private Vulnerability Reporting**, у репозитория он
+включён:
 
-1. Open <https://github.com/0-danielviktorovich-0/RimLoc/security/advisories/new>
-   ("Report a vulnerability").
-2. Include: `rimloc-cli --version`, OS, exact commands or GUI steps, a minimal
-   reproduction, and relevant logs (`RIMLOC_LOG_DIR`, `RUST_LOG=debug`).
+1. Откройте <https://github.com/0-danielviktorovich-0/RimLoc/security/advisories/new>
+   (кнопка «Report a vulnerability»).
+2. Приложите:
+   - версию: `rimloc-cli --version` (или источник сборки — коммит/ветка);
+   - ОС и способ запуска (CLI или десктоп-GUI);
+   - точные команды либо шаги в GUI;
+   - минимальную репродукцию (маленький мод-фикстура лучше скриншотов);
+   - релевантные логи (каталог логов печатается при запуске; подробнее —
+     переменная `RUST_LOG=debug`).
 
-If the "Report a vulnerability" form is unavailable (the feature may not be enabled
-yet), open a minimal public issue saying you have a security report and asking for a
-private contact channel — without technical details.
+Если форма «Report a vulnerability» вдруг недоступна — откройте минимальный
+публичный вопрос без технических деталей с просьбой дать приватный канал.
 
-What to expect: the project is maintained by one person in spare time, so there is no
-guaranteed response window. Accepted reports are handled in a private advisory and
-disclosed publicly with a patched release. Reports judged not to be vulnerabilities
-may be redirected to the public issue tracker with your consent.
+## Чего ждать
 
-## Scope notes
+- Первичный ответ — best effort в течение **7 дней** (проект ведёт один человек
+  в свободное время; если тише — напомните в том же приватном треде).
+- Принятые репорты обрабатываются в приватном advisory; публичный дисклоужер и
+  патч выходят одновременно. Вы можете (но не обязаны) быть указаны как
+  первооткрыватель.
+- Репорты, которые по нашему разбору не являются уязвимостями, по вашему
+  согласию переезжают в публичный трекер как обычные issues.
 
-- RimLoc reads RimWorld installations and mod folders as **input only** and writes
-  translation output to the paths you give it (`--out-*` flags, project saves, the
-  GUI). Writing to explicitly requested output paths is intended behavior, not a
-  vulnerability. Reports are interesting when the tool writes outside the requested
-  output paths or sends local data anywhere beyond this machine.
-- Vulnerabilities in RimWorld itself, third-party mods, or the toolchain (Rust, npm,
-  Tauri) belong to their respective upstream projects. Dependency advisories are
-  tracked in CI via `cargo deny`.
+## Периметр (in scope)
+
+- **Rust CLI** (`rimloc-cli`) и библиотечные крейты workspace: парсинг,
+  валидация, экспорт/импорт, сборка модов.
+- **Десктоп-GUI на Tauri 2**: IPC-контракт между фронтендом и Rust-бэкендом,
+  командный слой и права window/capabilities.
+- **Парсинг недоверенного XML модов**: RimLoc читает произвольные деревья
+  модов (включая чужие из Workshop) — падения, чтение за пределами ожидаемого,
+  path traversal во входных путях.
+- **Хранилище ключей провайдеров**: ключи LLM/морфологических провайдеров
+  хранятся в системном keychain (сервис `rimloc-llm`); утечка или запись
+  секрета в файлы/логи — уязвимость.
+- **Безопасность путей вывода**: RimLoc пишет только в явно запрошенные
+  выходные пути (флаги `--out-*`, сохранения проекта в GUI). Запись за их
+  пределами — уязвимость; запись по запрошенному пути — нет.
+
+## Вне периметра (out of scope)
+
+- **Эксплойты через контент модов против самой игры**: вредоносный XML/C# внутри
+  мода, эксплуатирующий RimWorld, — это вопрос к игре, не к RimLoc.
+- **Сама игра RimWorld** и её официальные инструменты.
+- **LLM- и MT-провайдеры** и их API (безопасность их стороны).
+- **Тулчейн** (Rust, npm, Tauri, WebKit): их advisory отслеживаются в CI через
+  `cargo-deny`, репорты — апстрим-проектам.
+
+## Текущее состояние безопасности
+
+- Источники (игра и папки модов) читаются **только для чтения**; запись — лишь в
+  пользовательские выходные пути. Инвариант закреплён в правилах разработки.
+- Перед бета-периодом проведён внутренний аудит (2026-10-05): 0 Critical/High;
+  1 Medium (containment выходных путей пяти legacy-команд — фикс в работе),
+  5 Low, 4 Info. Зависимости проверяются `cargo-deny` (advisories/licenses/bans)
+  в CI.
+
+## Responsible disclosure
+
+Мы просим стандартную практику: не публиковать детали до выхода патча, дать
+мейнтейнеру срок на исправление (см. «Чего ждать»), а после релиза —
+публиковать описание свободно. Мы со своей стороны отмечаем вклад
+исследователя в changelog и advisory, если он того хочет.

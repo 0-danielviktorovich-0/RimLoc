@@ -1,0 +1,346 @@
+{
+ "modid": "3242000764",
+ "counts": {
+  "both": 40,
+  "rimloc_only": 0,
+  "competitor_only": 0,
+  "semantic": 0,
+  "li_fold_pairs": 0,
+  "tg_identities": 40,
+  "rl_identities": 40
+ },
+ "by_kind": {
+  "both": {
+   "keyed": 40
+  },
+  "competitor_only": {},
+  "rimloc_only": {},
+  "semantic": {}
+ },
+ "both": [
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Age",
+   "text": "Age",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_AtmosphericHeaterFactor",
+   "text": "Disable \"Need warm clothes\" alert with atmospheric heater",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_AvoidDreadLeather",
+   "text": "Pawns avoid dread leather apparel if they don't like it",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_BioferriteHarvesterMultipleSelection",
+   "text": "Show total bioferrite contained with multiple harvesters selected",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_BugFix",
+   "text": "Bug fix",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_CharacterHighlighting",
+   "text": "Show silhouettes even in unnatural darkness",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_CreepJoinerLove",
+   "text": "Allow creepjoiners to romance non-creepjoiners and vice versa",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_CreepjoinerBodyTypeFix",
+   "text": "Female creepjoiners erroneously have male body type",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DangerousActivityLevels",
+   "text": "Show highest obelisk activity level in multiple alert",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DeadGhoulsInColonistBar",
+   "text": "Show ghouls in colonist bar even while dead or in a caravan",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DeathPallResurrectionSound",
+   "text": "Death pall resurrection messages are silent",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DevourerWaterAssaultFix",
+   "text": "Void provocation can silently fail on devourer water assault",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DisableDisturbingVision",
+   "text": "Disable disturbing vision letter",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DontBlockDoors",
+   "text": "Don't perform work in a containment cell doorway",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DontBlockPrisonDoors",
+   "text": "Also don't perform work in a prison doorway",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_DontHideStats",
+   "text": "Don't hide entity stats",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Entities",
+   "text": "Dark entities",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_ExtractBioferriteByDefault",
+   "text": "Enable manual bioferrite extraction on entities by default when no bioferrite extractor exists",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_FoodPriority",
+   "text": "Prioritize twisted meat for caravaning ghouls and animals",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_ForbidMonolithCorpses",
+   "text": "Automatically forbid corpses spawned around monolith",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_GhoulHunting",
+   "text": "Allow ghouls to hunt prey on their own",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_HoldingPlatformAlert",
+   "text": "Disable holding platforms needed alert",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_HorrorMusic",
+   "text": "Pit gates don't cause horror/combat music to play unless you're in them",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Incidents",
+   "text": "Anomaly incidents",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_InhumanPregnancyAttitude",
+   "text": "Inhumanized pawns don't care when their pregnancy is terminated",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_LabyrinthClosing",
+   "text": "Forbid items from the labyrinth outside the home area",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Misc",
+   "text": "Miscellaneous",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_NoProjectNoStudy",
+   "text": "Don't do dark study without an anomaly research project active",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_NoResearchSelected",
+   "text": "No Anomaly research project active",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_PsychicRitualZoning",
+   "text": "Adhere to zone restrictions while preparing for psychic rituals",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_RestartRequired",
+   "text": "(requires restart)",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Reverse",
+   "text": "Reverse",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_RitualDialogSorting",
+   "text": "Sort pawns by psychic sensitivity in psychic ritual dialog",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_RitualTargetsDontNeedRescue",
+   "text": "Suppress \"Colonist needs rescue\" alert for psychic ritual targets",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Rituals",
+   "text": "Psychic rituals",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_SortBy",
+   "text": "Sort by:",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_StopSuppression",
+   "text": "Allow pawns to stop suppressing obelisk activity before target level reached",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_Study",
+   "text": "Study, suppression, and containment",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_StudyAndSuppressByDefault",
+   "text": "Enable study and suppression of entities by default",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AnomalyPatch_UnnaturalDarknessMapFix",
+   "text": "Certain Anomaly incidents can generate using threat points from one map but spawn on another",
+   "tg_mult": 2,
+   "rl_mult": 1
+  }
+ ],
+ "both_li_fold": [],
+ "rimloc_only": [],
+ "competitor_only": [],
+ "semantic": []
+}
