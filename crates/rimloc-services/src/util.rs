@@ -421,16 +421,15 @@ pub fn ensure_writable_output_path(
             kind: PathGuardErrorKind::OutsideAllowRoots,
             path: path.to_path_buf(),
             resolved: Some(resolved),
-            message: "no writable roots configured for this surface; refusing the write".to_string(),
+            message: "no writable roots configured for this surface; refusing the write"
+                .to_string(),
         });
     }
     // Lexical pre-check on the RAW spelling (components normalized, `..`
     // applied, symlinks NOT followed) only to classify the refusal: a path
     // that spells "inside a root" but resolves elsewhere escaped through a
     // symlink, and the error should say so.
-    let lexically_inside = allow_roots
-        .iter()
-        .any(|root| lexically_within(path, root));
+    let lexically_inside = allow_roots.iter().any(|root| lexically_within(path, root));
     for root in allow_roots {
         // ALLOW orientation: containment must be PROVEN on the real view.
         if is_within_allow(&resolved, root) {
@@ -535,7 +534,10 @@ fn resolve_for_write(path: &std::path::Path) -> Result<PathBuf, PathGuardError> 
         kind: PathGuardErrorKind::Unresolvable,
         path: path.to_path_buf(),
         resolved: None,
-        message: format!("`{}` could not be resolved to a real location: {e}", path.display()),
+        message: format!(
+            "`{}` could not be resolved to a real location: {e}",
+            path.display()
+        ),
     })
 }
 
@@ -949,10 +951,7 @@ mod tests {
         let escape = root.join("sub/../../outside/evil.json");
         let err = ensure_writable_output_path(&escape, &[&root]).expect_err("traversal refused");
         assert_eq!(err.kind, PathGuardErrorKind::OutsideAllowRoots);
-        assert!(
-            err.message.contains("outside every writable root"),
-            "{err}"
-        );
+        assert!(err.message.contains("outside every writable root"), "{err}");
         // No side effects: the refused path was never created.
         assert!(!outside.exists(), "refused path must not be created");
 

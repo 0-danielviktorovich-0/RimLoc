@@ -2932,7 +2932,8 @@ fn learn_patches_cmd(
         // Same canonical guard as the JSON output above; the canonical
         // `sug` parent replaces the raw `out_dir` for mkdir, so staging
         // happens next to the real destination.
-        let sug = ensure_legacy_out_path("suggested_xml", &out_dir.join("_SuggestedFromPatches.xml"))?;
+        let sug =
+            ensure_legacy_out_path("suggested_xml", &out_dir.join("_SuggestedFromPatches.xml"))?;
         if let Some(parent) = sug.parent() {
             std::fs::create_dir_all(parent).ok();
         }
