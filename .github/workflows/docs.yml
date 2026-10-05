@@ -1,10 +1,8 @@
-# Docs: MkDocs build как гейт PR в main; публикация — только вручную
-# (workflow_dispatch на main) или preview для PR из upstream-репозитория.
-# Fork-PR'ы только билдят: у их GITHUB_TOKEN нет Pages-прав.
-#
-# deploy-prod раньше висел на push в main; push-триггеры сняты (решение
-# владельца, b102f3e), поэтому публикация сейчас — явный ручной dispatch.
-# Правила пиннинга/permissions — docs/development/CI.md.
+# Docs: strict MkDocs build for documentation PRs.
+# Production GitHub Pages deploys automatically after docs land on main;
+# workflow_dispatch remains available for a controlled manual redeploy.
+# Fork PRs only build: they do not receive Pages write permissions.
+# Rules/pinning rationale: docs/development/CI.md.
 name: docs
 
 on:
@@ -45,6 +43,7 @@ jobs:
   build:
     name: mkdocs build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -84,6 +83,7 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && github.repository == '0-danielviktorovich-0/RimLoc'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
@@ -107,6 +107,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.repository == '0-danielviktorovich-0/RimLoc' && github.event.pull_request.head.repo.fork == false && vars.PAGES_PREVIEW_ENABLED == 'true'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
