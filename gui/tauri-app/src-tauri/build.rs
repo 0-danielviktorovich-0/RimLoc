@@ -59,7 +59,11 @@ fn emit_build_identity() {
     let dirty = git(repo, &["status", "--porcelain"])
         .map(|o| !o.trim().is_empty())
         .unwrap_or(false);
-    let commit = if dirty { format!("{commit}-dirty") } else { commit };
+    let commit = if dirty {
+        format!("{commit}-dirty")
+    } else {
+        commit
+    };
     let profile = std::env::var("PROFILE").unwrap_or_else(|_| "unknown".into());
     println!("cargo:rustc-env=RIMLOC_SOURCE_COMMIT={commit}");
     println!("cargo:rustc-env=RIMLOC_BUILD_PROFILE={profile}");

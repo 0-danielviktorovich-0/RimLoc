@@ -216,10 +216,7 @@ pub fn project_glossary(
     state: State<'_, ContractState>,
     project_id: String,
     session_epoch: u64,
-) -> Result<
-    Vec<rimloc_domain::glossary::GlossaryTerm>,
-    rimloc_services::contract::ContractError,
-> {
+) -> Result<Vec<rimloc_domain::glossary::GlossaryTerm>, rimloc_services::contract::ContractError> {
     let manager = state
         .manager
         .lock()
@@ -240,7 +237,9 @@ pub fn project_glossary_upsert(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("project_glossary_upsert", || manager.glossary_upsert(&request))
+    traced_simple("project_glossary_upsert", || {
+        manager.glossary_upsert(&request)
+    })
 }
 
 /// `project_glossary_delete` — remove one term; unknown term is a typed
@@ -254,7 +253,9 @@ pub fn project_glossary_delete(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("project_glossary_delete", || manager.glossary_delete(&request))
+    traced_simple("project_glossary_delete", || {
+        manager.glossary_delete(&request)
+    })
 }
 
 #[tauri::command(rename_all = "snake_case")]

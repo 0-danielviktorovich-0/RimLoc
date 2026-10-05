@@ -795,6 +795,7 @@ fn scan_strings_gui(
     }
     items.sort_by_key(|a| (a.path.clone(), a.line));
     let saved_json = if let Some(path) = request.out_json.as_ref() {
+        ensure_caller_path_absolute("out_json", Path::new(path))?;
         let path = make_absolute(&scan_root, Path::new(path));
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -1363,6 +1364,7 @@ fn run_scan(
     }
 
     let saved_json = if let Some(path) = request.out_json.as_ref() {
+        ensure_caller_path_absolute("out_json", Path::new(path))?;
         let path = make_absolute(scan_root, Path::new(path));
         write_scan_json(&path, &units)?;
         Some(path.display().to_string())
@@ -1371,6 +1373,7 @@ fn run_scan(
     };
 
     let saved_csv = if let Some(path) = request.out_csv.as_ref() {
+        ensure_caller_path_absolute("out_csv", Path::new(path))?;
         let path = make_absolute(scan_root, Path::new(path));
         write_scan_csv(&path, &units, request.lang.as_deref())?;
         Some(path.display().to_string())
@@ -2024,6 +2027,7 @@ fn validate_mod(
         Some(100),
     );
     if let Some(out) = request.out_json.as_deref() {
+        ensure_caller_path_absolute("out_json", Path::new(out))?;
         let path = make_absolute(&scan_root, Path::new(out));
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -2128,6 +2132,7 @@ fn xml_health(
         issues: report.issues,
     };
     if let Some(path_str) = request.out_json.as_deref() {
+        ensure_caller_path_absolute("out_json", Path::new(path_str))?;
         let p = make_absolute(&scan_root, Path::new(path_str));
         if let Some(parent) = p.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -3259,6 +3264,10 @@ fn automation_yield_focus() {
     extern "C" {
         fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        // objc_msgSend is variadic by ABI; objc2 declares it with a different
+        // fixed signature elsewhere in the crate graph, which trips
+        // clashing_extern_declarations. Both declarations link the same symbol.
+        #[allow(clashing_extern_declarations)]
         fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
     }
     unsafe {
@@ -3287,7 +3296,12 @@ fn automation_yield_focus() {
             *mut std::ffi::c_void,
             *mut std::ffi::c_void,
         ) -> i8 = std::mem::transmute(objc_msgSend as *const ());
-        if responds(app, sel_registerName(c"respondsToSelector:".as_ptr()), yield_sel) != 0 {
+        if responds(
+            app,
+            sel_registerName(c"respondsToSelector:".as_ptr()),
+            yield_sel,
+        ) != 0
+        {
             send_void(app, yield_sel);
         } else {
             send_void(app, sel_registerName(c"deactivate".as_ptr()));
@@ -3938,23 +3952,18 @@ fn main() {
                 // §B compile-time gate: production builds ignore the env.
                 #[cfg(all(feature = "automation-bridge", target_os = "macos"))]
                 if let Ok(frame) = std::env::var("RIMLOC_WINDOW_FRAME") {
-                    let parsed: Option<(f64, f64, f64, f64)> = (|| {
-                        let parts: Vec<f64> = frame
-                            .split(|c| c == ',' || c == 'x')
-                            .filter_map(|t| t.trim().parse().ok())
-                            .collect();
-                        match parts.as_slice() {
-                            [x, y, w, h] => Some((*x, *y, *w, *h)),
-                            _ => None,
-                        }
-                    })();
+                    let parts: Vec<f64> = frame
+                        .split([',', 'x'])
+                        .filter_map(|t| t.trim().parse().ok())
+                        .collect();
+                    let parsed: Option<(f64, f64, f64, f64)> = match parts.as_slice() {
+                        [x, y, w, h] => Some((*x, *y, *w, *h)),
+                        _ => None,
+                    };
                     if let Some((x, y, w, h)) = parsed {
                         let _ = window.set_size(tauri::LogicalSize::new(w, h));
                         let _ = window.set_position(tauri::LogicalPosition::new(x, y));
-                        eprintln!(
-                            "{} {x},{y},{w}x{h}",
-                            "rimloc-gui: automation frame applied"
-                        );
+                        eprintln!("rimloc-gui: automation frame applied {x},{y},{w}x{h}");
                     }
                 }
 
@@ -4318,6 +4327,7 @@ fn diff_xml_cmd(
         changed: out.changed,
     };
     if let Some(p) = request.out_json.as_deref() {
+        ensure_caller_path_absolute("out_json", Path::new(p))?;
         let path = make_absolute(&scan_root, Path::new(p));
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
