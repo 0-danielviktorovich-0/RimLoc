@@ -28,6 +28,15 @@ export interface WorkspaceEntry {
   selectedBy?: string
 }
 
+export interface PerfMarks {
+  T0_openRequested?: number
+  T1_serviceReady?: number
+  T2_ipcComplete?: number
+  T3_stateReceived?: number
+  T4_entriesMapped?: number
+  T5_firstRowRendered?: number
+}
+
 export type LoadState =
   | { kind: 'idle' }
   | { kind: 'loading' }
@@ -45,6 +54,7 @@ export interface ProjectState {
   busy: boolean
   load: LoadState
   lastError: string | null
+  perfMarks: PerfMarks
 }
 
 let state: ProjectState = {
@@ -57,6 +67,7 @@ let state: ProjectState = {
   busy: false,
   load: { kind: 'idle' },
   lastError: null,
+  perfMarks: {},
 }
 
 const listeners = new Set<() => void>()
@@ -73,6 +84,10 @@ export function subscribe(listener: () => void): () => void {
 
 export function getState(): ProjectState {
   return state
+}
+
+export function getPerfMarks(): PerfMarks {
+  return state.perfMarks
 }
 
 function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[] {
@@ -117,6 +132,7 @@ export const projectStore = {
         selectedKey: null,
         drafts: {},
         busy: false,
+        perfMarks: { ...state.perfMarks, T3_stateReceived: performance.now(), T4_entriesMapped: performance.now() },
       })
       return true
     } catch (e) {
@@ -142,12 +158,17 @@ export const projectStore = {
   },
 
   async open(projectId: string): Promise<boolean> {
-    set({ busy: true, lastError: null })
+    const T0 = performance.now()
+    set({ busy: true, lastError: null, perfMarks: { T0_openRequested: T0 } })
     try {
       const snap = await clientInstance.getClient().openProject(projectId)
+      const T2 = performance.now()
+      const mapped = mapSnapshot(snap, state.targetLocale)
+      const T4 = performance.now()
       set({
+        perfMarks: { ...state.perfMarks, T2_ipcComplete: T2, T3_stateReceived: T2, T4_entriesMapped: T4 },
         snapshot: snap,
-        entries: mapSnapshot(snap, state.targetLocale),
+        entries: mapped,
         selectedKey: null,
         drafts: {},
         busy: false,
