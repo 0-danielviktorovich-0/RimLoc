@@ -155,3 +155,44 @@ When changing codecov.yml:
 5. update this document if the policy changes.
 
 When the policy becomes blocking, consider locking Codecov YAML to the protected/default branch so an ordinary PR cannot weaken the coverage gate inside the same change.
+
+
+## Bundle Analysis (after React stabilizes)
+
+Codecov also supports Vite bundle analysis, including GitHub OIDC authentication.
+
+This is useful for RimLoc's React/Tauri UI because bundle regressions affect startup,
+memory and packaged-app size. Do **not** add the Codecov Vite plugin while the
+frontend implementation lane is actively changing its Vite/package configuration.
+
+After React R1 is accepted:
+
+1. add the Codecov Vite plugin as a dev dependency;
+2. enable bundle analysis only in CI/production-build context;
+3. use GitHub OIDC rather than a long-lived token;
+4. disable optional plugin telemetry if we do not need it;
+5. baseline the bundle before introducing any blocking size gate;
+6. track bundle size trends separately from source-line coverage.
+
+Bundle Analysis is a performance signal, not a replacement for the existing
+20k-row/runtime performance instrumentation.
+
+## Test Analytics (deferred until it has a clean contract)
+
+Codecov Test Analytics currently expects JUnit XML. It can report failures,
+durations and flaky tests.
+
+RimLoc should add this only when the relevant test runner already produces a
+stable JUnit report. Do not introduce a second test framework just to populate a
+dashboard.
+
+The current Codecov Test Analytics setup documentation still describes an upload
+token requirement. Coverage uploads use OIDC today, so test-results integration
+should be reviewed separately before adding any new secret.
+
+Good future candidates:
+
+- React/Vitest unit/component JUnit, once those tests exist;
+- WDIO JUnit if the acceptance harness adopts a stable reporter;
+- Rust test analytics only if the Rust runner gains a maintained JUnit output
+  without distorting the normal cargo test workflow.
