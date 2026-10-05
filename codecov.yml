@@ -4,6 +4,10 @@ codecov:
   # need to wait for every unrelated CI job before processing a report.
   require_ci_to_pass: false
   max_report_age: "24h"
+  # Two independent uploads (generic Rust + desktop Rust) make up one commit.
+  # Wait for both before emitting final Codecov notifications/comments.
+  notify:
+    after_n_builds: 2
 
 coverage:
   precision: 2
