@@ -67,8 +67,12 @@ Those require their own evidence.
 
 ### Phase 1 — regression protection
 
-After the baseline is stable:
+After this integration is merged into the GitHub default branch and Codecov has a
+real `main` baseline:
 
+- add `codecov.strict_yaml_branch: main` so a normal PR cannot weaken its own
+  required coverage policy inside the same change;
+- add the README Codecov badge against the default branch;
 - make project coverage blocking with target=auto;
 - allow a small threshold (around 0.5–1 percentage point) to avoid noise;
 - keep patch coverage visible;
