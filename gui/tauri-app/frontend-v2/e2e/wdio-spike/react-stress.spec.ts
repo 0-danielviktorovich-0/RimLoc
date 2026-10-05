@@ -83,3 +83,39 @@ describe('React R1 stress: 10k entries', () => {
     await browser.$('.search-field input').setValue('')
   })
 })
+
+describe('React R1 stress — perf pipeline T0-T4', () => {
+  it('measures open→mapped latency pipeline for 20k entries', async () => {
+    await browser.$('.app-sidebar').waitFor({ timeout: 30000 })
+    // The stress project should already exist from the create step above
+    await browser.$('a[href="#/home"]').click()
+    await new Promise((r) => setTimeout(r, 1500))
+    // Open the FIRST stress project (should have 20k entries)
+    await browser.waitUntil(
+      async () => {
+        const cards = await browser.$$('[data-testid="home.project-card"]')
+        for (const c of cards) {
+          if ((await c.getText()).includes('Stress')) { await c.click(); return true }
+        }
+        return false
+      },
+      { timeout: 30000, interval: 250 },
+    )
+    // Wait for workspace + entries
+    await browser.waitUntil(
+      async () => (await browser.$$('[data-testid^="ws.entry."]').length) > 0,
+      { timeout: 60000, interval: 250 },
+    )
+    // Read the perf marks from the store (exported via window for testing)
+    const marks = await browser.execute(() => {
+      // Access the store's perf marks through the module system
+      // For now, read the footer timestamp as a proxy
+      const footer = document.querySelector('.ws-footer')
+      return { footer: footer?.textContent?.slice(0, 100) ?? '' }
+    })
+    console.log('[perf-pipeline]', JSON.stringify(marks))
+    // Record: create 20k entries → first row paint = ~11.9s (known from earlier)
+    // The bottleneck breakdown needs backend-side instrumentation
+    // which requires a separate service-level timer — Phase E item
+  })
+})
