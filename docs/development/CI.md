@@ -42,12 +42,13 @@
 | `semver.yml` | PR→main, dispatch | `semver` (cargo-semver-checks, гейт), `public-api` (информационный диф) | стабильность API |
 | `changelog-check.yml` | PR→main | `verify` | CHANGELOG сопровождает пользовательские изменения (лейбл `internal-only` выключает) |
 | `workflow-lint.yml` | workflow-file PR→main/convergence + dispatch | `actionlint` | быстрый синтаксис/semantics-гейт GitHub Actions отдельно от тяжёлого CI |
+| `dependency-review.yml` | dependency-file PR→main/convergence | `review` | блокирует новые High/Critical runtime dependency vulnerabilities; показывает OpenSSF Scorecard/patch info |
 | `docs.yml` | docs PR→main + docs push→main + dispatch | `build`, `deploy-prod`, optional `deploy-preview` | strict MkDocs + Pages; docs-only PR не гоняет тяжёлый Rust matrix |
 | `coverage.yml` | relevant code PR→main/convergence + push→main + dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov + Codecov OIDC, два coverage-family report; Components делят один отчёт по подсистемам |
 | `publish.yml` | dispatch | `publish` | recovery-публикация crates.io |
 | `release-plz.yml` | dispatch | `release_pr`, `release` | версионирование и релизы |
 
-Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; React typecheck/build — `ci.frontend-react`; frozen Svelte regression — `ci.frontend`; dependency/security audit — `ci.deny`; coverage — отдельный `coverage.yml` (Rust workspace + Tauri Rust, Codecov Components/Flags, OIDC); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория с path-конфигом; mkdocs — strict `docs.build`.
+Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; React typecheck/build — `ci.frontend-react`; frozen Svelte regression — `ci.frontend`; dependency/security audit — `ci.deny` + PR-diff `dependency-review.yml`; coverage — отдельный `coverage.yml` (Rust workspace + Tauri Rust, Codecov Components/Flags, OIDC); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория с path-конфигом; mkdocs — strict `docs.build`.
 
 ## 5. Правила безопасности, общие для всех workflow
 
