@@ -13,6 +13,7 @@ rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
 rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
 rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
 rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
+rimloc-llm = { version = "0.1.0", path = "../rimloc-llm", default-features = false }
 rimloc-plugin-api = { version = "0.1.0", path = "../rimloc-plugin-api" }
 rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
 regex = "1"
@@ -31,6 +32,13 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 zip = { workspace = true }
 libloading = { version = "0.9" }
 serde_yaml = "0.9"
+
+[features]
+default = []
+# OS-keychain persistence for provider API keys (keyring v3 via rimloc-llm).
+# Opt-in: CLI/library builds without it refuse secret-bearing provider
+# upserts honestly (unsupported_capability) instead of storing plaintext.
+keychain = ["rimloc-llm/keychain"]
 
 [dev-dependencies]
 tempfile = { workspace = true }

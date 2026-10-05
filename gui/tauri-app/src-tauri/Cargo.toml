@@ -38,8 +38,13 @@ tauri-plugin-wdio = { optional = true, version = "1.4.0" }
 tauri-plugin-window-state = "=2.0.0"
 
 [features]
-default = ["custom-protocol"]
+default = ["custom-protocol", "keychain"]
 custom-protocol = ["tauri/custom-protocol"]
+# Provider-instance secret persistence (provider/settings parity): the
+# shell attaches the OS-keychain sink to the session manager. Building with
+# --no-default-features drops it — the services layer then refuses
+# secret-bearing provider upserts honestly instead of storing plaintext.
+keychain = ["rimloc-services/keychain"]
 # P0 security boundary (owner 2026-10-01, §B): the embedded WDIO bridge is
 # a compile-time opt-in. Production builds never link it; the automation
 # artifact builds with --features automation-bridge. The runtime env

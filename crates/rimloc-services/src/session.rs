@@ -29,14 +29,17 @@ use crate::contract::{
     ApplyIntentsRequest, ApplyIntentsResponse, ContractError, ContractErrorCode, IntentAction,
     JobId, PathBufDto, ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse,
     ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse, ProjectId, ProjectSnapshot,
-    ProjectSummary, Revision, SessionEpoch, SkippedIntent, TmDeleteRequest, TmDeleteResponse,
-    TmImportFormat, TmImportRequest, TmImportResponse, TmListRequest, TmListResponse,
-    TmLookupRequest, TmLookupResponse, TmMatch, TmUpsertRequest, TmUpsertResponse,
-    TranslationIntent, UI_CONTRACT_VERSION,
+    ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
+    ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
+    ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, Revision, SessionEpoch,
+    SkippedIntent, TmDeleteRequest, TmDeleteResponse, TmImportFormat, TmImportRequest,
+    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse,
+    TmMatch, TmUpsertRequest, TmUpsertResponse, TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
 use crate::project_store::{load_project_with_meta, save_project_with_meta, ProjectEnvelopeMeta};
+use crate::providers::{ProviderOps, ProviderSecretSink, ProviderSettingsState};
 use rimloc_domain::canonical::{
     Completeness, ContextRole, EntryKind, EntrySourceRef, Lifecycle, Origin, Project, SourceEntry,
     SourceEntryId, Translation, ValidationState,
@@ -98,6 +101,12 @@ struct SessionState {
 pub struct ProjectSessionManager {
     managed_root: PathBuf,
     inner: Arc<Mutex<HashMap<ProjectId, Arc<Mutex<SessionState>>>>>,
+    /// Provider-instance settings (app-global, not per-project): the
+    /// metadata store plus the OS-keychain seam. `None` sink = a build
+    /// without the `keychain` feature — secret-bearing upserts are refused
+    /// honestly instead of landing somewhere insecure.
+    providers: Arc<Mutex<ProviderSettingsState>>,
+    secret_sink: Option<Arc<dyn ProviderSecretSink>>,
 }
 
 impl ProjectSessionManager {
@@ -105,12 +114,31 @@ impl ProjectSessionManager {
     /// demand). The directory is canonicalized once so every later guard
     /// check compares canonical views.
     pub fn new(managed_root: impl Into<PathBuf>) -> std::io::Result<Self> {
-        let root = managed_root.into();
+        Self::build(managed_root.into(), None)
+    }
+
+    /// Same as [`new`] with an attached secret sink (production: the OS
+    /// keychain; tests: an in-memory sink) — the provider-instance
+    /// operations become secret-capable.
+    pub fn new_with_secret_sink(
+        managed_root: impl Into<PathBuf>,
+        sink: std::sync::Arc<dyn ProviderSecretSink>,
+    ) -> std::io::Result<Self> {
+        Self::build(managed_root.into(), Some(sink))
+    }
+
+    fn build(
+        root: PathBuf,
+        secret_sink: Option<Arc<dyn ProviderSecretSink>>,
+    ) -> std::io::Result<Self> {
         std::fs::create_dir_all(&root)?;
         let managed_root = std::fs::canonicalize(&root)?;
+        let providers = ProviderSettingsState::load(&managed_root)?;
         Ok(Self {
             managed_root,
             inner: Arc::new(Mutex::new(HashMap::new())),
+            providers: Arc::new(Mutex::new(providers)),
+            secret_sink,
         })
     }
 
@@ -1178,6 +1206,78 @@ impl ProjectSessionManager {
             req.limit.unwrap_or(5).clamp(1, 50),
         );
         Ok(TmLookupResponse { job_id, matches })
+    }
+
+    // -----------------------------------------------------------------------
+    // Provider instances (provider/settings parity). App-GLOBAL settings:
+    // no project id, no session epoch (there is no open project session
+    // behind them — the lost-update guard rides the durable settings
+    // revision instead). Everything delegates to `crate::providers`; the
+    // secret NEVER passes through any of these responses.
+    // -----------------------------------------------------------------------
+
+    /// `provider_instance_list` — redacted summaries (`has_key` boolean, no
+    /// secret field exists on the wire type).
+    pub fn provider_instance_list(
+        &self,
+    ) -> Result<ProviderInstanceListResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .list(job_id)
+    }
+
+    /// `provider_instance_upsert` — create/edit one instance; persist-
+    /// before-ack; the key goes to the OS keychain, the metadata to the
+    /// settings file.
+    pub fn provider_instance_upsert(
+        &self,
+        req: &ProviderInstanceUpsertRequest,
+    ) -> Result<ProviderInstanceUpsertResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .upsert(
+            req,
+            || generate_operation_id().replacen("op-", "prov-", 1),
+            job_id,
+        )
+    }
+
+    /// `provider_instance_delete` — keychain key deleted FIRST, then the
+    /// metadata; unknown id is a typed refusal.
+    pub fn provider_instance_delete(
+        &self,
+        req: &ProviderInstanceDeleteRequest,
+    ) -> Result<ProviderInstanceDeleteResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .delete(req, job_id)
+    }
+
+    /// `provider_instance_validate` — typed FORM validation (invalid_config
+    /// problems) WITHOUT network and WITHOUT keychain access.
+    pub fn provider_instance_validate(
+        &self,
+        req: &ProviderInstanceValidateRequest,
+    ) -> Result<ProviderInstanceValidateResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .validate(req, job_id)
     }
 
     /// `project_validate` — run the EXISTING validator (026 severity) over

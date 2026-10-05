@@ -35,7 +35,14 @@ import type {
   TmLookupResponseDto,
   TmUpsertRequestDto,
   TmUpsertResponseDto,
-  ValidateProjectResponseDto
+  ValidateProjectResponseDto,
+  ProviderInstanceDeleteRequestDto,
+  ProviderInstanceDeleteResponseDto,
+  ProviderInstanceListResponseDto,
+  ProviderInstanceUpsertRequestDto,
+  ProviderInstanceUpsertResponseDto,
+  ProviderInstanceValidateRequestDto,
+  ProviderInstanceValidateResponseDto
 } from './types';
 
 /** Method params/result map — the whole wire surface, statically. */
@@ -125,6 +132,24 @@ export interface ContractMethodMap {
   project_tm_lookup: {
     params: { request: TmLookupRequestDto };
     result: TmLookupResponseDto;
+  };
+  // Provider instances (provider/settings parity): app-global CRUD; the
+  // API key never persists outside the OS keychain.
+  contract_provider_instance_list: {
+    params: Record<string, never>;
+    result: ProviderInstanceListResponseDto;
+  };
+  contract_provider_instance_upsert: {
+    params: { request: ProviderInstanceUpsertRequestDto };
+    result: ProviderInstanceUpsertResponseDto;
+  };
+  contract_provider_instance_delete: {
+    params: { request: ProviderInstanceDeleteRequestDto };
+    result: ProviderInstanceDeleteResponseDto;
+  };
+  contract_provider_instance_validate: {
+    params: { request: ProviderInstanceValidateRequestDto };
+    result: ProviderInstanceValidateResponseDto;
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }

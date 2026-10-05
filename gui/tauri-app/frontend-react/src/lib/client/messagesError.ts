@@ -11,6 +11,7 @@ const KNOWN = new Set([
   'contract_violation',
   'guard_output_denied',
   'invalid_output_path',
+  'invalid_config',
   'unsupported_capability',
   'project_not_found',
   'schema_version',

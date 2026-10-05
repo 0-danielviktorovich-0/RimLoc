@@ -14,6 +14,7 @@ export type ContractErrorCode =
   | 'contract_violation'
   | 'guard_output_denied'
   | 'invalid_output_path'
+  | 'invalid_config'
   | 'unsupported_capability'
   | 'project_not_found'
   | 'schema_version'
@@ -328,6 +329,12 @@ export type ContractMethod =
   | 'project_tm_delete'
   | 'project_tm_import'
   | 'project_tm_lookup'
+  // Provider instances (provider/settings parity): app-global CRUD; the API
+  // key never persists outside the OS keychain.
+  | 'contract_provider_instance_list'
+  | 'contract_provider_instance_upsert'
+  | 'contract_provider_instance_delete'
+  | 'contract_provider_instance_validate'
   // Build identity of the RUNNING binary (soak-hardening §1): long-running
   // acceptance runs verify the artifact they drive independently of any
   // wrapper path. Refused honestly in mock — no running binary there.
@@ -511,4 +518,74 @@ export interface BuildIdentityDto {
   buildProfile: string;
   buildFeatures: string;
   appVersion: string;
+}
+
+// --- provider instances (provider/settings parity) — the API key NEVER
+// rides this surface: the secret goes straight to the OS keychain and the
+// summary carries only the has_key boolean (redaction by construction). ---
+export type ProviderPresetId = 'anthropic' | 'openai' | 'zai' | 'ollama' | 'custom';
+
+/** REDACTED summary: no field can carry a secret. */
+export interface ProviderInstanceSummaryDto {
+  id: string;
+  preset: string;
+  label: string;
+  model: string;
+  base_url?: string;
+  local: boolean;
+  has_key: boolean;
+  created_at_ms: number;
+  updated_at_ms: number;
+}
+
+export interface ProviderInstanceUpsertRequestDto {
+  instance_id?: string;
+  preset: string;
+  label?: string;
+  model: string;
+  base_url?: string;
+  /** Transported ONCE on this call into the OS keychain; never echoed. */
+  secret?: string;
+  local?: boolean;
+  expected_revision?: number;
+}
+
+export interface ProviderInstanceUpsertResponseDto {
+  job_id: string;
+  revision: number;
+  instance: ProviderInstanceSummaryDto;
+}
+
+export interface ProviderInstanceListResponseDto {
+  job_id: string;
+  revision: number;
+  total: number;
+  instances: ProviderInstanceSummaryDto[];
+}
+
+export interface ProviderInstanceDeleteRequestDto {
+  instance_id: string;
+  expected_revision?: number;
+}
+
+export interface ProviderInstanceDeleteResponseDto {
+  job_id: string;
+  revision: number;
+  removed_id: string;
+  key_removed: boolean;
+}
+
+/** Form validation WITHOUT network and WITHOUT keychain access. */
+export interface ProviderInstanceValidateRequestDto {
+  preset: string;
+  model: string;
+  base_url?: string;
+  local?: boolean;
+  has_key: boolean;
+}
+
+export interface ProviderInstanceValidateResponseDto {
+  job_id: string;
+  ok: boolean;
+  problems: string[];
 }
