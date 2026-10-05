@@ -1,50 +1,52 @@
 ---
-title: Update Translations
+title: Update Existing Translation
 ---
 
-# ♻️ Update Translations (when the mod updates)
+# Update an existing translation after a mod update
 
-Find what changed and update your `.po` safely.
+The important rule is: **preserve human work while re-evaluating the source**.
 
-## 1) Refresh and validate
+## Desktop workflow
 
-```bash
-rimloc-cli scan --root ./Mods/MyMod --format json > scan_after.json
-rimloc-cli validate --root ./Mods/MyMod --format text
-```
+Use **Open/update existing** rather than starting over.
 
-## 2) See what changed
+The update workflow should distinguish, where the current adapter supports it:
 
-```bash
+- unchanged;
+- source-changed;
+- new;
+- obsolete/orphan;
+- ambiguous/moved entries.
+
+Review the changed/new set, keep trusted translations, validate, then build/export a fresh translation mod.
+
+## CLI diagnostics
+
+For lower-level inspection:
+
+~~~bash
+rimloc-cli scan --root ./Mods/MyMod --format json > scan-after.json
+rimloc-cli validate --root ./Mods/MyMod
 rimloc-cli diff-xml --root ./Mods/MyMod --format text
-```
+~~~
 
-## 3) Export a fresh `.po`
+If your team uses PO, export/import remains available as an interoperability path, not the canonical update model.
 
-```bash
-rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru
-```
+## Rebuild from translated XML
 
-Translate newly added strings in the `.po`.
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-## 4) Validate `.po`
+## Review checklist
 
-```bash
-rimloc-cli validate-po --po ./MyMod.ru.po --strict
-```
-
-## 5) Import with a report
-
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run
-```
-
-If the plan looks good, rerun without `--dry-run`.
-
-## 6) (Optional) Rebuild the translation‑only mod
-
-```bash
-rimloc-cli build-mod --from-root ./Mods/MyMod --out-mod ./MyMod_RU --lang ru --dry-run
-rimloc-cli build-mod --from-root ./Mods/MyMod --out-mod ./MyMod_RU --lang ru
-```
-
+- human edits preserved;
+- source-changed strings explicitly reviewed;
+- deleted/obsolete entries not silently shipped;
+- target locales remain isolated;
+- placeholders/tags valid;
+- output tested in game.
