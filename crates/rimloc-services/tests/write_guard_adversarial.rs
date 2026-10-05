@@ -22,11 +22,10 @@
 //!    source byte-identical before/after.
 
 use rimloc_services::contract::ContractErrorCode;
-use rimloc_services::{
-    ensure_free_output_path, ensure_writable_output_path, PathGuardErrorKind,
-    ProjectSessionManager,
-};
 use rimloc_services::observability::collect_support_bundle_in;
+use rimloc_services::{
+    ensure_free_output_path, ensure_writable_output_path, PathGuardErrorKind, ProjectSessionManager,
+};
 use std::path::{Path, PathBuf};
 
 // ---------------------------------------------------------------------------
@@ -145,12 +144,7 @@ fn managed_path_refuses_traversal_project_ids_and_writes_nothing() {
     // refused too (project_not_found there — the registry lookup precedes
     // path building — and equally write-free).
     let err = mgr
-        .export_project(
-            "proj-../../evil",
-            0,
-            &tmp.path().join("out"),
-            "Russian",
-        )
+        .export_project("proj-../../evil", 0, &tmp.path().join("out"), "Russian")
         .expect_err("hostile id refused at command level");
     assert_eq!(err.code, ContractErrorCode::ProjectNotFound, "{err}");
     assert!(
@@ -178,7 +172,12 @@ fn export_refuses_relative_and_traversing_out_dirs_and_writes_nothing() {
 
     // Relative caller path — the RC K4 shape.
     let err = mgr
-        .export_project(&snap.project_id, snap.session_epoch, Path::new("out.json"), "Russian")
+        .export_project(
+            &snap.project_id,
+            snap.session_epoch,
+            Path::new("out.json"),
+            "Russian",
+        )
         .expect_err("relative out dir refused");
     assert_eq!(err.code, ContractErrorCode::InvalidOutputPath, "{err}");
     assert!(
@@ -205,7 +204,12 @@ fn export_refuses_relative_and_traversing_out_dirs_and_writes_nothing() {
         .path()
         .join("managed/../managed-inner/../managed/evil-out");
     let err = mgr
-        .export_project(&snap.project_id, snap.session_epoch, &managed_traversal, "Russian")
+        .export_project(
+            &snap.project_id,
+            snap.session_epoch,
+            &managed_traversal,
+            "Russian",
+        )
         .expect_err("traversal into managed root refused");
     assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
     assert!(
@@ -233,7 +237,10 @@ fn export_refuses_relative_and_traversing_out_dirs_and_writes_nothing() {
         tmp.path().join("managed/evil-out"),
         tmp.path().join("out"),
     ] {
-        assert!(!absent.exists(), "refused attempt must not create {absent:?}");
+        assert!(
+            !absent.exists(),
+            "refused attempt must not create {absent:?}"
+        );
     }
     // And the source mod is untouched.
     assert!(mod_root.join("Defs/A_Thing.xml").exists());
@@ -307,10 +314,12 @@ fn symlink_escape_from_temp_root_is_refused_and_target_untouched() {
         .expect("symlink");
 
     let via_link = root.join("jump-tmp/evil.json");
-    let err = ensure_writable_output_path(&via_link, &[&root])
-        .expect_err("symlink escape refused");
+    let err = ensure_writable_output_path(&via_link, &[&root]).expect_err("symlink escape refused");
     assert_eq!(err.kind, PathGuardErrorKind::SymlinkEscape, "{err}");
-    assert!(err.message.contains("symlink"), "verdict names the mechanism: {err}");
+    assert!(
+        err.message.contains("symlink"),
+        "verdict names the mechanism: {err}"
+    );
     // The escape target was never written.
     assert!(!sibling.join("evil.json").exists());
 
@@ -357,15 +366,24 @@ fn free_mode_refuses_destinations_inside_the_scanned_source() {
     let nested = scan_root.join("Languages/Russian/bundle");
     let err = collect_support_bundle_in(&nested, &scan_root, &observability_meta())
         .expect_err("bundle into the source tree refused");
-    assert!(format!("{err}").contains("inside the read-only source tree"), "{err}");
+    assert!(
+        format!("{err}").contains("inside the read-only source tree"),
+        "{err}"
+    );
 
     // (c) parent-traversing spelling that RESOLVES into the source; the
     // intermediate dir does not exist and must not be created.
     let traversing = tmp.path().join("x/y/../../source-mod/bundle");
     let err = collect_support_bundle_in(&traversing, &scan_root, &observability_meta())
         .expect_err("traversal into source refused");
-    assert!(format!("{err}").contains("inside the read-only source tree"), "{err}");
-    assert!(!tmp.path().join("x").exists(), "no intermediate dirs created");
+    assert!(
+        format!("{err}").contains("inside the read-only source tree"),
+        "{err}"
+    );
+    assert!(
+        !tmp.path().join("x").exists(),
+        "no intermediate dirs created"
+    );
 
     // (d) symlink ALIAS of the source: writing "through" the alias lands
     // in the source on the canonical view — refused too.
@@ -394,9 +412,15 @@ fn free_mode_refuses_destinations_inside_the_scanned_source() {
     let legit = tmp.path().join("support-out");
     let bundle =
         collect_support_bundle_in(&legit, &scan_root, &observability_meta()).expect("bundle ok");
-    assert!(bundle.dir.starts_with(rimloc_services::canonical_view(&legit).unwrap()));
+    assert!(bundle
+        .dir
+        .starts_with(rimloc_services::canonical_view(&legit).unwrap()));
     assert!(!bundle.files.is_empty());
-    assert_eq!(tree_fingerprint(&scan_root), before, "source still unchanged");
+    assert_eq!(
+        tree_fingerprint(&scan_root),
+        before,
+        "source still unchanged"
+    );
 }
 
 /// DOCUMENTED SEMANTICS (conscious trade-off, NOT a vulnerability claim):
@@ -424,7 +448,9 @@ fn free_mode_guard_protects_only_roots_it_was_given() {
         .expect("empty protected list protects nothing");
     assert_eq!(
         allowed,
-        rimloc_services::canonical_view(&scan_root).unwrap().join("out.json"),
+        rimloc_services::canonical_view(&scan_root)
+            .unwrap()
+            .join("out.json"),
         "the caller receives the canonical path and owns the choice"
     );
     // The guard itself still writes nothing either way.
@@ -467,13 +493,18 @@ fn export_into_source_mod_dir_refused_and_source_unchanged() {
     let before = tree_fingerprint(&mod_root);
 
     for hostile_out in [
-        mod_root.clone(),                            // the mod root itself
-        mod_root.join("Languages"),                  // a shipped subtree
-        mod_root.join("Defs"),                       // the scanned Defs
-        mod_root.join("sub/../Defs2"),               // traversal resolving beside Defs
+        mod_root.clone(),              // the mod root itself
+        mod_root.join("Languages"),    // a shipped subtree
+        mod_root.join("Defs"),         // the scanned Defs
+        mod_root.join("sub/../Defs2"), // traversal resolving beside Defs
     ] {
         let err = mgr
-            .export_project(&snap.project_id, snap.session_epoch, &hostile_out, "Russian")
+            .export_project(
+                &snap.project_id,
+                snap.session_epoch,
+                &hostile_out,
+                "Russian",
+            )
             .expect_err(&format!("export into {:?} refused", hostile_out));
         assert_eq!(
             err.code,
@@ -496,7 +527,10 @@ fn export_into_source_mod_dir_refused_and_source_unchanged() {
 
     // The source is byte-identical; nothing new appeared anywhere in it.
     assert_eq!(tree_fingerprint(&mod_root), before, "source unchanged");
-    assert!(!mod_root.join("Languages").exists(), "no Languages tree created");
+    assert!(
+        !mod_root.join("Languages").exists(),
+        "no Languages tree created"
+    );
 
     // Sanity: the SAME session exports fine into an isolated dir — the
     // refusals above are the guard, not project corruption.
@@ -506,7 +540,11 @@ fn export_into_source_mod_dir_refused_and_source_unchanged() {
         .expect("legitimate export works");
     assert!(res.files_written >= 1);
     assert!(legit.join("Languages/Russian").exists());
-    assert_eq!(tree_fingerprint(&mod_root), before, "source still unchanged");
+    assert_eq!(
+        tree_fingerprint(&mod_root),
+        before,
+        "source still unchanged"
+    );
 }
 
 // ---------------------------------------------------------------------------

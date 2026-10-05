@@ -2336,17 +2336,35 @@ fn scan_honors_game_version_under_numeric_workshop_id_root() {
          </ModMetaData>",
     )
     .unwrap();
-    fs::create_dir_all(root.join("1.5").join("Languages").join("English").join("Keyed"))
-        .unwrap();
+    fs::create_dir_all(
+        root.join("1.5")
+            .join("Languages")
+            .join("English")
+            .join("Keyed"),
+    )
+    .unwrap();
     fs::write(
-        root.join("1.5").join("Languages").join("English").join("Keyed").join("A.xml"),
+        root.join("1.5")
+            .join("Languages")
+            .join("English")
+            .join("Keyed")
+            .join("A.xml"),
         "<LanguageData><From15>old</From15></LanguageData>",
     )
     .unwrap();
-    fs::create_dir_all(root.join("1.6").join("Languages").join("English").join("Keyed"))
-        .unwrap();
+    fs::create_dir_all(
+        root.join("1.6")
+            .join("Languages")
+            .join("English")
+            .join("Keyed"),
+    )
+    .unwrap();
     fs::write(
-        root.join("1.6").join("Languages").join("English").join("Keyed").join("B.xml"),
+        root.join("1.6")
+            .join("Languages")
+            .join("English")
+            .join("Keyed")
+            .join("B.xml"),
         "<LanguageData><From16>new</From16></LanguageData>",
     )
     .unwrap();
@@ -2359,7 +2377,10 @@ fn scan_honors_game_version_under_numeric_workshop_id_root() {
         .unwrap();
     assert!(output.status.success(), "scan must succeed");
     let out = String::from_utf8_lossy(&output.stdout);
-    assert!(out.contains("From15"), "1.5 content must be scanned, got: {out}");
+    assert!(
+        out.contains("From15"),
+        "1.5 content must be scanned, got: {out}"
+    );
     assert!(
         !out.contains("From16"),
         "1.6 content must not leak into a --game-version 1.5 scan, got: {out}"

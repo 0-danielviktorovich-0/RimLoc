@@ -286,6 +286,9 @@ mod legacy_out_containment {
                 .expect("canonical view"),
             "the caller receives the canonical path to write to"
         );
-        assert!(!tmp.path().join("report.json").exists(), "guard writes nothing");
+        assert!(
+            !tmp.path().join("report.json").exists(),
+            "guard writes nothing"
+        );
     }
 }
