@@ -26,6 +26,7 @@ pub mod plugins_xml_ext;
 pub mod plugins_yaml;
 pub mod project;
 pub mod project_store;
+pub mod providers;
 pub mod scan;
 pub mod session;
 pub mod ui_catalog;

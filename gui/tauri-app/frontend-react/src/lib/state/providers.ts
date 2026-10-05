@@ -1,88 +1,113 @@
-// Providers store (React lane) — honest mock mirroring the frozen Svelte
-// store semantics: purely client-side provider templates + statuses, never
-// a backend. API keys are NEVER stored here — only a hasKey flag; the real
-// credential lives in the OS keychain. The production connection flow is
-// Phase E (LLM lane); this store powers the honest Providers UI.
+// Providers store (React lane, provider/settings parity) — LIVE contract
+// state: provider_instance_list / upsert / delete / validate through
+// RimLocClient (the Glossary/TM pattern, persist-before-ack on mutations).
+// The API key NEVER lives in this store: an upsert transports it once into
+// the OS keychain; everything this store holds is the REDACTED summary
+// (has_key boolean, no secret field exists on the wire type).
 
-export type ProviderId = 'zai' | 'openai' | 'anthropic' | 'ollama' | 'custom'
-export type ProviderStatus = 'connected' | 'not_configured' | 'offline' | 'testing'
+import type {
+  ProviderInstanceSummaryDto,
+  ProviderInstanceUpsertRequestDto,
+  ProviderInstanceValidateRequestDto,
+  ProviderInstanceValidateResponseDto,
+} from '../client/types'
+import { clientInstance } from '../client/instance'
 
-export interface ProviderData {
-  id: ProviderId
-  nameKey: string
-  descKey: string
-  status: ProviderStatus
-  models: string[]
-  model: string
-  baseUrl: string
-  /** Flag only — a real key lives in the system keychain and is never displayed. */
-  hasKey: boolean
-  privacy: 'cloud' | 'local'
+export type ProviderConnection = 'ready' | 'not_configured'
+
+export interface ProvidersState {
+  instances: ProviderInstanceSummaryDto[]
+  revision: number
+  loaded: boolean
+  /** Honest transport failure (no Tauri bridge, backend error) — rendered, never hidden. */
+  error: string | null
 }
 
-const INITIAL: ProviderData[] = [
-  { id: 'zai', nameKey: 'providers.example.zai', descKey: 'provider.zai.desc', status: 'connected', models: ['glm-4.6', 'glm-4.5-air'], model: 'glm-4.6', baseUrl: 'https://api.z.ai/api/anthropic', hasKey: true, privacy: 'cloud' },
-  { id: 'openai', nameKey: 'providers.example.openai', descKey: 'provider.openai.desc', status: 'not_configured', models: ['gpt-4o', 'gpt-4o-mini'], model: 'gpt-4o-mini', baseUrl: 'https://api.openai.com/v1', hasKey: false, privacy: 'cloud' },
-  { id: 'anthropic', nameKey: 'providers.example.anthropic', descKey: 'provider.anthropic.desc', status: 'not_configured', models: ['claude-sonnet-4', 'claude-haiku-4'], model: 'claude-sonnet-4', baseUrl: 'https://api.anthropic.com', hasKey: false, privacy: 'cloud' },
-  { id: 'ollama', nameKey: 'providers.example.ollama', descKey: 'provider.ollama.desc', status: 'offline', models: ['llama3.1:8b', 'qwen2.5:7b'], model: 'llama3.1:8b', baseUrl: 'http://localhost:11434', hasKey: false, privacy: 'local' },
-  { id: 'custom', nameKey: 'providers.example.custom', descKey: 'provider.custom.desc', status: 'not_configured', models: ['custom-model'], model: 'custom-model', baseUrl: 'https://your-endpoint.example/v1', hasKey: false, privacy: 'cloud' },
+type Listener = () => void
+
+/** Frontend-side template knowledge for the NEW-provider form (the backend
+ *  validates the real thing; these are just the starting values). */
+export const PROVIDER_TEMPLATES: {
+  preset: string
+  models: string[]
+  baseUrl: string
+  local: boolean
+}[] = [
+  { preset: 'zai', models: ['glm-4.6', 'glm-4.5-air'], baseUrl: 'https://api.z.ai/api/anthropic', local: false },
+  { preset: 'openai', models: ['gpt-4o', 'gpt-4o-mini'], baseUrl: 'https://api.openai.com/v1', local: false },
+  { preset: 'anthropic', models: ['claude-sonnet-4', 'claude-haiku-4'], baseUrl: 'https://api.anthropic.com', local: false },
+  { preset: 'ollama', models: ['llama3.1:8b', 'qwen2.5:7b'], baseUrl: 'http://localhost:11434/v1', local: true },
+  { preset: 'custom', models: ['custom-model'], baseUrl: 'https://your-endpoint.example/v1', local: false },
 ]
 
-const TEST_LATENCY_MS = 800
+class ProviderInstancesStore {
+  private state: ProvidersState = {
+    instances: [],
+    revision: 0,
+    loaded: false,
+    error: null,
+  }
+  private listeners = new Set<Listener>()
 
-class ProviderStore {
-  list: ProviderData[] = structuredClone(INITIAL)
-  private listeners = new Set<() => void>()
-
-  subscribe(listener: () => void): () => void {
+  subscribe(listener: Listener): () => void {
     this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
   }
 
-  getSnapshot(): ProviderData[] {
-    return this.list
+  getSnapshot(): ProvidersState {
+    return this.state
   }
 
-  private notify(): void {
+  private set(patch: Partial<ProvidersState>): void {
+    this.state = { ...this.state, ...patch }
     this.listeners.forEach((l) => l())
   }
 
-  byId(id: ProviderId): ProviderData {
-    const p = this.list.find((x) => x.id === id)
-    if (!p) throw new Error(`unknown provider: ${id}`)
-    return p
+  /** Redacted list from the live contract (has_key only, never the key). */
+  async reload(): Promise<void> {
+    try {
+      const res = await clientInstance.getClient().providerInstanceList()
+      this.set({
+        instances: res.instances,
+        revision: res.revision,
+        loaded: true,
+        error: null,
+      })
+    } catch (e) {
+      this.set({ loaded: true, error: errorText(e) })
+    }
   }
 
-  setStatus(id: ProviderId, status: ProviderStatus): void {
-    this.byId(id).status = status
-    this.notify()
+  /** Create/edit; `secret` (when present) goes once into the OS keychain. */
+  async upsert(req: ProviderInstanceUpsertRequestDto): Promise<void> {
+    await clientInstance.getClient().providerInstanceUpsert(req)
+    await this.reload()
   }
 
-  setModel(id: ProviderId, model: string): void {
-    this.byId(id).model = model
-    this.notify()
+  /** Remove the instance AND its keychain key (backend deletes key first). */
+  async remove(instanceId: string): Promise<void> {
+    await clientInstance
+      .getClient()
+      .providerInstanceDelete({ instance_id: instanceId })
+    await this.reload()
   }
 
-  setBaseUrl(id: ProviderId, baseUrl: string): void {
-    this.byId(id).baseUrl = baseUrl
-    this.notify()
-  }
-
-  setHasKey(id: ProviderId, hasKey: boolean): void {
-    this.byId(id).hasKey = hasKey
-    this.notify()
-  }
-
-  test(id: ProviderId): void {
-    const p = this.byId(id)
-    p.status = 'testing'
-    this.notify()
-    window.setTimeout(() => {
-      if (p.privacy === 'local') p.status = 'offline'
-      else p.status = p.hasKey ? 'connected' : 'not_configured'
-      this.notify()
-    }, TEST_LATENCY_MS)
+  /** Typed form validation — no network, no keychain access. */
+  validate(
+    req: ProviderInstanceValidateRequestDto,
+  ): Promise<ProviderInstanceValidateResponseDto> {
+    return clientInstance.getClient().providerInstanceValidate(req)
   }
 }
 
-export const providers = new ProviderStore()
+export function errorText(e: unknown): string {
+  const dto = e as { code?: string; message?: string }
+  if (dto && typeof dto.message === 'string') {
+    return dto.code ? `${dto.code}: ${dto.message}` : dto.message
+  }
+  return e instanceof Error ? e.message : String(e)
+}
+
+export const providers = new ProviderInstancesStore()

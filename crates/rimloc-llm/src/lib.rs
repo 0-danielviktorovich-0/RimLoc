@@ -17,6 +17,8 @@ pub mod validator;
 pub mod anthropic;
 #[cfg(feature = "http")]
 pub mod openai_compat;
+#[cfg(feature = "keychain")]
+pub mod secrets;
 
 pub use checkpoint::{CheckpointEntry, CheckpointStore};
 pub use engine::{EngineOptions, EngineSummary, TranslationEngine, UnitOutcome};
@@ -42,6 +44,9 @@ pub enum LlmError {
     InvalidResponse(String),
     #[error("checkpoint io: {0}")]
     CheckpointIo(String),
+    #[error("keychain: {0}")]
+    #[cfg(feature = "keychain")]
+    Keychain(String),
     #[error("http client: {0}")]
     #[cfg(feature = "http")]
     Http(#[from] reqwest::Error),

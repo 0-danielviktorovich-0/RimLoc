@@ -3114,6 +3114,12 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_tm_delete",
     "project_tm_import",
     "project_tm_lookup",
+    // Provider instances (provider/settings parity): app-global CRUD; the
+    // API key lives in the OS keychain, never in a file.
+    "contract_provider_instance_list",
+    "contract_provider_instance_upsert",
+    "contract_provider_instance_delete",
+    "contract_provider_instance_validate",
     // safe read-only legacy extras
     "get_app_info",
     // build identity of the running binary (soak-hardening §1) — read-only
@@ -3878,6 +3884,11 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_tm_delete,
             rimloc_gui_lib::contract_adapter::project_tm_import,
             rimloc_gui_lib::contract_adapter::project_tm_lookup,
+            // Provider instances (provider/settings parity).
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3953,6 +3964,11 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_tm_delete,
             rimloc_gui_lib::contract_adapter::project_tm_import,
             rimloc_gui_lib::contract_adapter::project_tm_lookup,
+            // Provider instances (provider/settings parity).
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,

@@ -24,9 +24,11 @@ use rimloc_services::contract::{
     capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse,
     CapabilityReport, CreateProjectRequest, ProjectGlossaryDeleteRequest,
     ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse,
-    ProjectSnapshot, ProjectSummary, TmDeleteRequest, TmDeleteResponse, TmImportRequest,
-    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse,
-    TmUpsertRequest, TmUpsertResponse,
+    ProjectSnapshot, ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
+    ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
+    ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, TmDeleteRequest,
+    TmDeleteResponse, TmImportRequest, TmImportResponse, TmListRequest, TmListResponse,
+    TmLookupRequest, TmLookupResponse, TmUpsertRequest, TmUpsertResponse,
 };
 use rimloc_services::session::ProjectSessionManager;
 use serde::Serialize;
@@ -65,6 +67,12 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_tm_delete",
     "project_tm_import",
     "project_tm_lookup",
+    // Provider instances (provider/settings parity): app-global CRUD; the
+    // API key NEVER crosses into a file — it goes to the OS keychain.
+    "contract_provider_instance_list",
+    "contract_provider_instance_upsert",
+    "contract_provider_instance_delete",
+    "contract_provider_instance_validate",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -93,10 +101,28 @@ pub struct ContractState {
     manager: Mutex<ProjectSessionManager>,
 }
 
+/// Session manager construction for the shell: with the `keychain` feature
+/// the manager gets the OS-keychain secret sink (provider API keys), without
+/// it the manager stays sink-less and secret-bearing provider upserts are
+/// refused honestly by the services layer.
+fn build_session_manager(managed_root: PathBuf) -> std::io::Result<ProjectSessionManager> {
+    #[cfg(feature = "keychain")]
+    {
+        let sink = std::sync::Arc::new(
+            rimloc_services::providers::KeychainSecretSink::with_default_service(),
+        );
+        ProjectSessionManager::new_with_secret_sink(managed_root, sink)
+    }
+    #[cfg(not(feature = "keychain"))]
+    {
+        ProjectSessionManager::new(managed_root)
+    }
+}
+
 impl ContractState {
     pub fn new(managed_root: PathBuf) -> std::io::Result<Self> {
         Ok(Self {
-            manager: Mutex::new(ProjectSessionManager::new(managed_root)?),
+            manager: Mutex::new(build_session_manager(managed_root)?),
         })
     }
 
@@ -336,6 +362,71 @@ pub fn project_tm_lookup(
         .lock()
         .expect("contract session registry poisoned");
     traced_simple("project_tm_lookup", || manager.tm_lookup(&request))
+}
+
+// Provider instances (provider/settings parity): the TM chain again —
+// pass-through into the session manager, typed errors, trace. The adapter
+// never sees the secret value (it rides inside the request DTO once and is
+// manual-Debug-masked); `traced_simple` logs only the command + ok/error.
+
+/// `provider_instance_list` — redacted summaries (`has_key`, no secret).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_list(
+    state: State<'_, ContractState>,
+) -> Result<ProviderInstanceListResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_list", || {
+        manager.provider_instance_list()
+    })
+}
+
+/// `provider_instance_upsert` — create/edit; the key goes to the OS
+/// keychain, the metadata to the settings file (persist-before-ack).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_upsert(
+    state: State<'_, ContractState>,
+    request: ProviderInstanceUpsertRequest,
+) -> Result<ProviderInstanceUpsertResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_upsert", || {
+        manager.provider_instance_upsert(&request)
+    })
+}
+
+/// `provider_instance_delete` — keychain key first, then metadata.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_delete(
+    state: State<'_, ContractState>,
+    request: ProviderInstanceDeleteRequest,
+) -> Result<ProviderInstanceDeleteResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_delete", || {
+        manager.provider_instance_delete(&request)
+    })
+}
+
+/// `provider_instance_validate` — typed form validation, no network.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_validate(
+    state: State<'_, ContractState>,
+    request: ProviderInstanceValidateRequest,
+) -> Result<ProviderInstanceValidateResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_validate", || {
+        manager.provider_instance_validate(&request)
+    })
 }
 
 #[tauri::command(rename_all = "snake_case")]
