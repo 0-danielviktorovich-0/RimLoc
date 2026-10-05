@@ -10,7 +10,7 @@ RimLoc uses focused branches and PRs so code, documentation, security and UI evi
 
 1. Branch from the current integration/main line used by the task.
 2. Keep the change scoped.
-3. Read [CONTRIBUTING](../../../CONTRIBUTING.md) and [AGENTS](../../../AGENTS.md) when using coding agents.
+3. Read [CONTRIBUTING](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/CONTRIBUTING.md) and [AGENTS](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/AGENTS.md) when using coding agents.
 4. Run the checks relevant to the files you changed.
 5. Update user-facing EN/RU docs when behavior changed.
 
