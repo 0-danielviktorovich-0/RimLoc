@@ -2,60 +2,50 @@
 title: Issue Guidelines
 ---
 
-# Issue Guidelines
+# Issue guidelines
 
-This page explains how to file actionable issues and which types we use. The repository includes GitHub forms that mirror these sections.
+Use GitHub Issues for reproducible bugs, product requests and documentation problems.
 
-## Types
+## Bug reports
 
-- Bug report — Something is broken or behaves unexpectedly.
-- Feature request — A new capability or flag is desired.
-- Documentation — Docs corrections or additions.
-- Question — Clarifications about usage or behavior (open a regular issue; Discussions are not enabled).
+Use the repository bug form. The most useful reports include:
 
-## Bug report checklist
+- exact version / commit / artifact identity;
+- area: React desktop, fallback, CLI, adapter, validation, build/export, TM/glossary, docs;
+- OS;
+- exact UI steps or CLI command;
+- expected vs actual behavior;
+- small sanitized reproduction;
+- screenshots where relevant;
+- sanitized diagnostics/logs.
 
-Please include:
+For desktop issues, saying only “latest app” is not enough during pre-beta — include the build identity.
 
-- Full command: the exact invocation you ran.
-  - Prefer `--quiet` for JSON output and cleaner logs.
-  - Example: `rimloc-cli --quiet validate --root ./Mods/MyMod --format json --ui-lang en`
-- Version and environment:
-  - `rimloc-cli --version`, OS/shell
-  - Env vars: `RUST_LOG`, `RIMLOC_LOG_DIR`, `NO_COLOR`, `NO_ICONS`, `RIMLOC_LOG_FORMAT`
-- Expected vs actual behavior (1–2 sentences each)
-- Attachments:
-  - Console output (stdout/stderr). For JSON, paste the JSON. For text, set `NO_COLOR=1`.
-  - File logs (`RIMLOC_LOG_DIR`), ideally with `RUST_LOG=debug`.
-  - Minimal reproducible example: a tiny mod snippet (2–3 XML files) or a short `.po`.
+## Security
 
-## Feature request checklist
+Do **not** put exploit details, secrets or sensitive local data into a public issue. Follow [SECURITY.md](../../../SECURITY.md).
 
-- Problem statement — What problem does this solve?
-- Proposal — The desired behavior (flags, options, examples)
-- Alternatives — Other approaches considered
-- Acceptance criteria — How we’ll validate the feature (commands, output)
-- Documentation impact — Which pages need changes
+## Feature requests
 
-## Documentation changes
+Describe the workflow/problem first.
 
-- Page(s) that need updates, links to sections
-- Proposed text or examples (optional but helpful)
-- Screenshots of issues in the rendered site (if any)
+If requesting a new game/application adapter, include:
 
-## Tips for good issues
+- game/application;
+- source formats;
+- existing translation format;
+- version/dependency semantics;
+- build/export target;
+- a small real example if possible.
 
-- For JSON pipelines, always use `--quiet` to keep stdout machine‑readable.
-- Use `RUST_LOG=debug` and attach `logs/rimloc.log` to capture rich traces.
-- For placeholders, include `validate --format json` or `validate-po --format json` output.
+This makes it much easier to decide whether the request belongs in a simple adapter, built-in complex adapter, or future plugin protocol.
 
-## Avoiding duplicates
+## Documentation reports
 
-Before filing a new issue:
+Include the exact page/link and what is stale or misleading.
 
-- Search open and closed issues for similar reports (use keywords from errors or command names).
-- If you find a match:
-  - Add a thumbs‑up reaction to the original to show interest (avoid “+1” comments).
-  - Add a comment only if you bring new details (exact command, logs, versions, minimal repro).
-  - If the issue is closed but the problem has resurfaced, explain what changed (version, OS, steps) and ask to reopen.
-- If you’re unsure whether it’s a duplicate, open a new issue but link related ones under “Related issues” and explain why yours is different.
+The canonical public documentation source is <code>docs/</code> → MkDocs. GitHub Wiki is not maintained as a second technical truth.
+
+## Before filing
+
+Search open/closed issues. If an existing report matches, add new reproduction/evidence there rather than creating a duplicate.
