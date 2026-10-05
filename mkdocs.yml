@@ -98,6 +98,7 @@ nav:
 
 exclude_docs: |
   readme/**
+  development/COMMUNITY_TESTING_HANDOFF.md
 
 extra:
   edit_uri: edit/main/docs/
