@@ -298,6 +298,11 @@ pub fn run_validate(
             }),
             ..Default::default()
         };
+        // Canonical write guard: the CLI resolves a relative --bundle-out
+        // against the CWD explicitly; the collector itself then proves the
+        // real (symlink-resolved) location stays outside the scanned
+        // source tree before any write.
+        let bundle_out = &rimloc_services::resolve_cli_out_path(bundle_out)?;
         let bundle = rimloc_services::collect_support_bundle_for(
             &rimloc_services::SupportBundleInputs {
                 scan_root: scan_root.clone(),

@@ -57,6 +57,14 @@ impl From<std::io::Error> for ApiError {
     }
 }
 
+impl From<rimloc_services::PathGuardError> for ApiError {
+    fn from(err: rimloc_services::PathGuardError) -> Self {
+        ApiError {
+            message: err.to_string(),
+        }
+    }
+}
+
 impl From<serde_json::Error> for ApiError {
     fn from(err: serde_json::Error) -> Self {
         ApiError {
@@ -795,8 +803,9 @@ fn scan_strings_gui(
     }
     items.sort_by_key(|a| (a.path.clone(), a.line));
     let saved_json = if let Some(path) = request.out_json.as_ref() {
-        ensure_caller_path_absolute("out_json", Path::new(path))?;
-        let path = make_absolute(&scan_root, Path::new(path));
+        // Canonical guard: absolute form + real-location resolution +
+        // managed-store fence; write goes to the returned canonical path.
+        let path = ensure_legacy_out_path("out_json", Path::new(path))?;
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -1364,8 +1373,9 @@ fn run_scan(
     }
 
     let saved_json = if let Some(path) = request.out_json.as_ref() {
-        ensure_caller_path_absolute("out_json", Path::new(path))?;
-        let path = make_absolute(scan_root, Path::new(path));
+        // Canonical guard (repeated inside the writer helpers); the
+        // response reports the canonical path actually written to.
+        let path = ensure_legacy_out_path("out_json", Path::new(path))?;
         write_scan_json(&path, &units)?;
         Some(path.display().to_string())
     } else {
@@ -1373,8 +1383,7 @@ fn run_scan(
     };
 
     let saved_csv = if let Some(path) = request.out_csv.as_ref() {
-        ensure_caller_path_absolute("out_csv", Path::new(path))?;
-        let path = make_absolute(scan_root, Path::new(path));
+        let path = ensure_legacy_out_path("out_csv", Path::new(path))?;
         write_scan_csv(&path, &units, request.lang.as_deref())?;
         Some(path.display().to_string())
     } else {
@@ -1395,6 +1404,10 @@ fn run_scan(
 }
 
 fn write_scan_json(path: &Path, units: &[rimloc_services::TransUnit]) -> Result<(), ApiError> {
+    // Canonical guard at the helper boundary: both IPC callers (and any
+    // future one) get absolute-form + real-location + managed-store checks
+    // before the sink, and write to the vetted canonical path.
+    let path = &ensure_legacy_out_path("out_json", path)?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -1417,6 +1430,8 @@ fn write_scan_csv(
     units: &[rimloc_services::TransUnit],
     lang: Option<&str>,
 ) -> Result<(), ApiError> {
+    // Same canonical guard as `write_scan_json`.
+    let path = &ensure_legacy_out_path("out_csv", path)?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -1450,6 +1465,20 @@ fn ensure_caller_path_absolute(field: &str, p: &Path) -> Result<(), ApiError> {
             ),
         })
     }
+}
+
+/// THE canonical write guard for the legacy GUI out-paths (F-1, the
+/// containment half that `ensure_caller_path_absolute` never had): after
+/// the absolute-FORM refusal, the destination is resolved to its real
+/// (symlink-resolved) location via `rimloc_services::ensure_free_output_path`
+/// and must not land inside the RimLoc-managed projects store. The caller
+/// writes to the RETURNED canonical path, never to the raw spelling.
+/// Everything the operator picks in a dialog or types as an absolute path
+/// keeps working — only RimLoc-owned ground is fenced off.
+fn ensure_legacy_out_path(field: &str, p: &Path) -> Result<PathBuf, ApiError> {
+    ensure_caller_path_absolute(field, p)?;
+    let managed = contract_adapter::default_managed_root();
+    Ok(rimloc_services::ensure_free_output_path(p, &[&managed])?)
 }
 
 fn classify_unit(path: &Path) -> ScanKind {
@@ -2027,8 +2056,9 @@ fn validate_mod(
         Some(100),
     );
     if let Some(out) = request.out_json.as_deref() {
-        ensure_caller_path_absolute("out_json", Path::new(out))?;
-        let path = make_absolute(&scan_root, Path::new(out));
+        // Canonical guard: absolute form + real location + managed-store
+        // fence; the write goes to the returned canonical path.
+        let path = ensure_legacy_out_path("out_json", Path::new(out))?;
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -2132,8 +2162,9 @@ fn xml_health(
         issues: report.issues,
     };
     if let Some(path_str) = request.out_json.as_deref() {
-        ensure_caller_path_absolute("out_json", Path::new(path_str))?;
-        let p = make_absolute(&scan_root, Path::new(path_str));
+        // Canonical guard: absolute form + real location + managed-store
+        // fence; the write goes to the returned canonical path.
+        let p = ensure_legacy_out_path("out_json", Path::new(path_str))?;
         if let Some(parent) = p.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -2871,7 +2902,9 @@ fn learn_patches_cmd(
         .as_deref()
         .map(PathBuf::from)
         .unwrap_or_else(|| out_dir.join("patches_texts.json"));
-    ensure_caller_path_absolute("out_json", &out_json)?;
+    // Canonical guard: absolute form + real location + managed-store
+    // fence (the learn_out default inside the mod tree stays legitimate).
+    let out_json = ensure_legacy_out_path("out_json", &out_json)?;
     if let Some(parent) = out_json.parent() {
         std::fs::create_dir_all(parent).ok();
     }
@@ -2896,8 +2929,13 @@ fn learn_patches_cmd(
     });
     let mut suggested: Option<PathBuf> = None;
     if !inferred.is_empty() {
-        std::fs::create_dir_all(&out_dir).ok();
-        let sug = out_dir.join("_SuggestedFromPatches.xml");
+        // Same canonical guard as the JSON output above; the canonical
+        // `sug` parent replaces the raw `out_dir` for mkdir, so staging
+        // happens next to the real destination.
+        let sug = ensure_legacy_out_path("suggested_xml", &out_dir.join("_SuggestedFromPatches.xml"))?;
+        if let Some(parent) = sug.parent() {
+            std::fs::create_dir_all(parent).ok();
+        }
         let mut f = std::fs::File::create(&sug)?;
         use std::io::Write;
         writeln!(f, "<LanguageData>")?;
@@ -3138,6 +3176,7 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
 const DEV_LOG_AUTOMATION_AX_ENABLED: &str = "rimloc-gui: automation webview accessibility enabled";
 const DEV_LOG_AUTOMATION_AX_FAILED: &str = "rimloc-gui: automation webview accessibility FAILED";
 const DEV_LOG_AUTOMATION_NSAPP_SET: &str = "rimloc-gui: NSApp accessibilitySupportEnabled set";
+const DEV_LOG_AUTOMATION_FRAME_APPLIED: &str = "rimloc-gui: automation frame applied";
 
 fn legacy_commands_enabled() -> bool {
     std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
@@ -3963,7 +4002,14 @@ fn main() {
                     if let Some((x, y, w, h)) = parsed {
                         let _ = window.set_size(tauri::LogicalSize::new(w, h));
                         let _ = window.set_position(tauri::LogicalPosition::new(x, y));
-                        eprintln!("rimloc-gui: automation frame applied {x},{y},{w}x{h}");
+                        // DEV_LOG_* convention: the text lives in a const,
+                        // the call site stays a pure formatter (workspace
+                        // i18n guard scans source lines regardless of
+                        // cfg-gating).
+                        eprintln!(
+                            "{} {x},{y},{w}x{h}",
+                            DEV_LOG_AUTOMATION_FRAME_APPLIED
+                        );
                     }
                 }
 

@@ -105,6 +105,12 @@ static TMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 ///
 /// Shared by every RimLoc writer (bundle artifacts, reports, exports); keep
 /// it symlink-safe when touching.
+///
+/// This function is pure write MECHANICS: the boundary policy (where a
+/// destination may resolve) belongs to the canonical guard
+/// [`ensure_writable_output_path`] / [`ensure_free_output_path`], which
+/// every tainted-path caller runs BEFORE calling this — and writes to the
+/// path the guard returns.
 pub fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
     use std::fs;
     use std::io::Write;
@@ -321,6 +327,243 @@ pub fn is_within_allow(candidate: &std::path::Path, root: &std::path::Path) -> b
         // Allow orientation: containment must be PROVEN.
         _ => false,
     }
+}
+
+// ---------------------------------------------------------------------------
+// THE canonical write-path guard
+// ---------------------------------------------------------------------------
+// Every flagged `rust/path-injection` write site funnels through this one
+// guard before touching the filesystem: the taint-relevant decision
+// (absolute form, real-location resolution, containment) is made HERE, on
+// canonical views, and the caller writes to the RETURNED path — never to
+// the raw input. Two public faces over one core pipeline, because the two
+// site classes answer different questions:
+//
+// - [`ensure_writable_output_path`] — the destination has a defined
+//   writable root (app-managed caches, embedded exports): containment
+//   inside one of `allow_roots` must be PROVEN on the symlink-resolved
+//   view;
+// - [`ensure_free_output_path`] — a caller-chosen destination (user picks
+//   a path in a dialog / CLI argument): any location is legitimate, so the
+//   guard only refuses RimLoc-owned `protected` roots (managed project
+//   store, read-only source trees) — checked on the canonical view, so a
+//   symlink alias into a protected root is caught too.
+
+/// Why [`ensure_writable_output_path`] / [`ensure_free_output_path`]
+/// refused a path. Kept machine-comparable so IPC/CLI layers can map the
+/// verdict onto their own typed errors (the session layer does exactly
+/// that: `NotAbsolute` → `invalid_output_path`, `ProtectedRoot` →
+/// `guard_output_denied`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PathGuardErrorKind {
+    /// Relative input. The guard never resolves silently: pass an absolute
+    /// path, or join an explicit base first (`resolve_cli_out_path` is the
+    /// documented CLI flavor — the GUI surface refuses relative instead,
+    /// per the RC K4 `RimLoc-Export` incident).
+    NotAbsolute,
+    /// Real-location resolution failed with a non-NotFound IO error
+    /// (permission, not-a-directory, symlink loop). Fail-closed by design.
+    Unresolvable,
+    /// The resolved location is inside NONE of the allow roots.
+    OutsideAllowRoots,
+    /// The raw path spelled a location inside an allow root, but the
+    /// symlink-resolved real location landed outside every root.
+    SymlinkEscape,
+    /// Free-form mode: the resolved location is inside a protected
+    /// (RimLoc-owned or read-only) root.
+    ProtectedRoot,
+}
+
+/// Typed rejection of the canonical write guard. Public fields let IPC/CLI
+/// render a precise answer without re-parsing the message string.
+#[derive(Debug, Clone)]
+pub struct PathGuardError {
+    pub kind: PathGuardErrorKind,
+    /// The path exactly as supplied.
+    pub path: PathBuf,
+    /// Canonical (symlink-resolved) view, when it could be computed.
+    pub resolved: Option<PathBuf>,
+    /// Human-readable reason, ready for an IPC/CLI response.
+    pub message: String,
+}
+
+impl std::fmt::Display for PathGuardError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for PathGuardError {}
+
+/// THE canonical write guard (allow-direction): `path` must be absolute and
+/// its REAL (symlink-resolved) location must sit inside at least one of
+/// `allow_roots`. Returns the canonical path to write to.
+///
+/// Pipeline, in order:
+/// 1. absolute form required — relative input is [`PathGuardErrorKind::NotAbsolute`],
+///    never silently resolved against an ambient CWD;
+/// 2. canonical resolution via [`canonical_view`] — the longest existing
+///    prefix is `std::fs::canonicalize`d, the non-existing tail is resolved
+///    component-wise with symlink following; any non-NotFound IO error is
+///    [`PathGuardErrorKind::Unresolvable`] (fail-closed);
+/// 3. containment is proven on the canonical view (`starts_with` over
+///    components, so sibling-prefix tricks like `/a/bc` vs `/a/b` cannot
+///    pass); a path lexically inside a root that resolves outside every
+///    root is the distinct [`PathGuardErrorKind::SymlinkEscape`] verdict;
+/// 4. the returned canonical path is the ONLY blessed write target.
+pub fn ensure_writable_output_path(
+    path: &std::path::Path,
+    allow_roots: &[&std::path::Path],
+) -> Result<PathBuf, PathGuardError> {
+    let resolved = resolve_for_write(path)?;
+    if allow_roots.is_empty() {
+        return Err(PathGuardError {
+            kind: PathGuardErrorKind::OutsideAllowRoots,
+            path: path.to_path_buf(),
+            resolved: Some(resolved),
+            message: "no writable roots configured for this surface; refusing the write".to_string(),
+        });
+    }
+    // Lexical pre-check on the RAW spelling (components normalized, `..`
+    // applied, symlinks NOT followed) only to classify the refusal: a path
+    // that spells "inside a root" but resolves elsewhere escaped through a
+    // symlink, and the error should say so.
+    let lexically_inside = allow_roots
+        .iter()
+        .any(|root| lexically_within(path, root));
+    for root in allow_roots {
+        // ALLOW orientation: containment must be PROVEN on the real view.
+        if is_within_allow(&resolved, root) {
+            return Ok(resolved);
+        }
+    }
+    if lexically_inside {
+        let message = format!(
+            "`{}` resolves (through a symlink) to `{}`, which is outside every writable root",
+            path.display(),
+            resolved.display()
+        );
+        return Err(PathGuardError {
+            kind: PathGuardErrorKind::SymlinkEscape,
+            path: path.to_path_buf(),
+            resolved: Some(resolved),
+            message,
+        });
+    }
+    let message = format!(
+        "`{}` resolves to `{}`, which is outside every writable root ({})",
+        path.display(),
+        resolved.display(),
+        allow_roots
+            .iter()
+            .map(|r| format!("`{}`", r.display()))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    Err(PathGuardError {
+        kind: PathGuardErrorKind::OutsideAllowRoots,
+        path: path.to_path_buf(),
+        resolved: Some(resolved),
+        message,
+    })
+}
+
+/// Free-form flavor of the canonical write guard for caller-chosen
+/// destinations (CLI arguments, GUI dialog/IPC paths): ANY location the
+/// operator picks is legitimate — including next to or inside the scanned
+/// mod tree — so there are no allow roots; the guard refuses only the
+/// RimLoc-owned/protected roots passed in `protected` (managed project
+/// store, read-only source trees). The deny check runs on the canonical
+/// view, so a symlink alias pointing into a protected root is caught as
+/// well. Returns the canonical path to write to.
+pub fn ensure_free_output_path(
+    path: &std::path::Path,
+    protected: &[&std::path::Path],
+) -> Result<PathBuf, PathGuardError> {
+    let resolved = resolve_for_write(path)?;
+    for root in protected {
+        // DENY orientation: an unresolvable protected root is treated as
+        // containing the candidate → the write is refused, never guessed.
+        if is_within(&resolved, root) {
+            let message = format!(
+                "`{}` resolves to `{}`, which is inside the protected root `{}`",
+                path.display(),
+                resolved.display(),
+                root.display()
+            );
+            return Err(PathGuardError {
+                kind: PathGuardErrorKind::ProtectedRoot,
+                path: path.to_path_buf(),
+                resolved: Some(resolved),
+                message,
+            });
+        }
+    }
+    Ok(resolved)
+}
+
+/// Explicit CLI resolution policy for caller-supplied output arguments:
+/// a relative path is joined against the process CWD HERE — visibly, once,
+/// at the CLI boundary — instead of being resolved implicitly by the OS at
+/// every fs call. The result then goes through [`ensure_free_output_path`].
+/// The GUI surface must NOT use this: it refuses relative paths outright
+/// (RC K4 — a silently CWD-resolved GUI path is how the built-app
+/// `…/RimLoc-Export/…` incident happened).
+pub fn resolve_cli_out_path(path: &std::path::Path) -> std::io::Result<PathBuf> {
+    if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        Ok(std::env::current_dir()?.join(path))
+    }
+}
+
+/// Shared pipeline head of both guard flavors: absolute-form check +
+/// canonical real-location resolution (fail-closed).
+fn resolve_for_write(path: &std::path::Path) -> Result<PathBuf, PathGuardError> {
+    if !path.is_absolute() {
+        return Err(PathGuardError {
+            kind: PathGuardErrorKind::NotAbsolute,
+            path: path.to_path_buf(),
+            resolved: None,
+            message: format!(
+                "`{}` is not an absolute path; pass an absolute path (the GUI surface refuses relative paths; the CLI resolves them against the working directory explicitly)",
+                path.display()
+            ),
+        });
+    }
+    canonical_view(path).map_err(|e| PathGuardError {
+        kind: PathGuardErrorKind::Unresolvable,
+        path: path.to_path_buf(),
+        resolved: None,
+        message: format!("`{}` could not be resolved to a real location: {e}", path.display()),
+    })
+}
+
+/// Component-wise lexical containment of `path` inside `root` WITHOUT
+/// symlink resolution: `.` dropped, `..` applied to the accumulated
+/// prefix. Used solely to distinguish `SymlinkEscape` from
+/// `OutsideAllowRoots` in the guard's verdict; the grant itself always
+/// rests on the canonical view.
+fn lexically_within(path: &std::path::Path, root: &std::path::Path) -> bool {
+    fn normalize(p: &std::path::Path) -> Vec<std::ffi::OsString> {
+        let mut out: Vec<std::ffi::OsString> = Vec::new();
+        for c in p.components() {
+            match c {
+                Component::CurDir => {}
+                Component::ParentDir => {
+                    out.pop();
+                }
+                Component::Normal(n) => out.push(n.to_os_string()),
+                Component::RootDir | Component::Prefix(_) => out.push(c.as_os_str().to_os_string()),
+            }
+        }
+        out
+    }
+    if root.as_os_str().is_empty() {
+        return false;
+    }
+    let (p, r) = (normalize(path), normalize(root));
+    p.len() >= r.len() && p[..r.len()] == r[..]
 }
 
 /// Strict language-folder form for WRITE paths (H1 — the CLI sibling of
@@ -689,5 +932,167 @@ mod tests {
                 .is_match(&slug),
             "{slug}"
         );
+    }
+
+    // --- the canonical write-path guard ------------------------------------
+
+    /// Guard: a `../`-traversal that lexically leaves the allow root is
+    /// refused as OutsideAllowRoots; the returned path for a LEGIT nested
+    /// destination is the canonical view.
+    #[test]
+    fn guard_rejects_parent_traversal_out_of_root() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let root = tmp.path().join("writable");
+        std::fs::create_dir_all(&root).expect("dirs");
+        let outside = tmp.path().join("outside");
+
+        let escape = root.join("sub/../../outside/evil.json");
+        let err = ensure_writable_output_path(&escape, &[&root]).expect_err("traversal refused");
+        assert_eq!(err.kind, PathGuardErrorKind::OutsideAllowRoots);
+        assert!(
+            err.message.contains("outside every writable root"),
+            "{err}"
+        );
+        // No side effects: the refused path was never created.
+        assert!(!outside.exists(), "refused path must not be created");
+
+        // The same shape that stays INSIDE the root is fine.
+        let ok = root.join("sub/../out.json");
+        let got = ensure_writable_output_path(&ok, &[&root]).expect("inside ok");
+        assert_eq!(got, canonical_view(&root).unwrap().join("out.json"));
+    }
+
+    /// Guard: an absolute destination outside every allow root is refused
+    /// even though it is perfectly well-formed.
+    #[test]
+    fn guard_rejects_absolute_outside_allow_roots() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let root = tmp.path().join("writable");
+        std::fs::create_dir_all(&root).expect("dirs");
+        let sibling = tmp.path().join("sibling");
+        std::fs::create_dir_all(&sibling).expect("dirs");
+
+        let err = ensure_writable_output_path(&sibling.join("x.json"), &[&root])
+            .expect_err("sibling root refused");
+        assert_eq!(err.kind, PathGuardErrorKind::OutsideAllowRoots);
+        // The resolved parent is the CANONICAL sibling (macOS /var→/private
+        // style aliases included), not the raw spelling.
+        assert_eq!(
+            err.resolved.as_deref().map(Path::parent),
+            Some(Some(canonical_view(&sibling).unwrap().as_path()))
+        );
+
+        // Equal to the root itself counts as contained.
+        let got = ensure_writable_output_path(&root, &[&root]).expect("root itself contained");
+        assert_eq!(got, canonical_view(&root).unwrap());
+    }
+
+    /// Guard: a symlink INSIDE the allow root pointing OUT of it must be
+    /// refused (SymlinkEscape) when the raw spelling looks contained —
+    /// writing through the link would land outside every root. Unix-only:
+    /// needs real symlinks.
+    #[test]
+    #[cfg(unix)]
+    fn guard_rejects_symlink_escape_from_root() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let root = tmp.path().join("writable");
+        let outside = tmp.path().join("outside");
+        std::fs::create_dir_all(&root).expect("dirs");
+        std::fs::create_dir_all(&outside).expect("dirs");
+        std::os::unix::fs::symlink(&outside, root.join("jump")).expect("symlink out");
+
+        let via_link = root.join("jump/evil.json");
+        let err =
+            ensure_writable_output_path(&via_link, &[&root]).expect_err("symlink escape refused");
+        assert_eq!(err.kind, PathGuardErrorKind::SymlinkEscape, "{err}");
+        assert!(
+            err.message.contains("symlink"),
+            "verdict must name the mechanism: {err}"
+        );
+        // The escape target stayed untouched.
+        assert!(!outside.join("evil.json").exists());
+    }
+
+    /// Guard: a symlink ALIAS OF THE ROOT ITSELF (the link resolves to the
+    /// root, not away from it) stays legitimate — containment is judged on
+    /// the real location, not the spelling.
+    #[test]
+    #[cfg(unix)]
+    fn guard_allows_symlink_alias_into_root() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let root = tmp.path().join("writable");
+        std::fs::create_dir_all(&root).expect("dirs");
+        let alias = tmp.path().join("alias-to-root");
+        std::os::unix::fs::symlink(&root, &alias).expect("symlink alias");
+
+        let got = ensure_writable_output_path(&alias.join("out.json"), &[&root])
+            .expect("alias into root is contained");
+        assert_eq!(got, canonical_view(&root).unwrap().join("out.json"));
+    }
+
+    /// Guard: a non-existing TAIL inside an existing root is fine — the
+    /// guard resolves the longest existing prefix and proves containment of
+    /// the would-be location; parents are NOT created by the guard itself
+    /// (that stays the writer's job).
+    #[test]
+    fn guard_accepts_missing_tail_inside_existing_root() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let root = tmp.path().join("writable");
+        std::fs::create_dir_all(&root).expect("dirs");
+
+        let fresh = root.join("a/b/report.json");
+        let got = ensure_writable_output_path(&fresh, &[&root]).expect("missing tail ok");
+        assert_eq!(got, canonical_view(&root).unwrap().join("a/b/report.json"));
+        assert!(!fresh.exists(), "the guard never creates anything");
+    }
+
+    /// Guard: relative input is a typed NotAbsolute refusal in both
+    /// flavors — never a silent CWD resolution (RC K4). The CLI flavor
+    /// resolves explicitly via `resolve_cli_out_path` first.
+    #[test]
+    fn guard_refuses_relative_input_and_cli_resolver_makes_it_explicit() {
+        let err = ensure_free_output_path(Path::new("reports/out.json"), &[])
+            .expect_err("relative refused");
+        assert_eq!(err.kind, PathGuardErrorKind::NotAbsolute);
+        let err = ensure_writable_output_path(Path::new("reports/out.json"), &[Path::new("/")])
+            .expect_err("relative refused in allow flavor too");
+        assert_eq!(err.kind, PathGuardErrorKind::NotAbsolute);
+
+        // The explicit CLI resolver joins the CWD, after which the guard
+        // accepts: the CWD dependence is one visible step, not an OS
+        // accident at every fs call.
+        let resolved = resolve_cli_out_path(Path::new("reports/out.json")).expect("cwd join");
+        assert!(resolved.is_absolute(), "{resolved:?}");
+    }
+
+    /// Free-form flavor: a destination that resolves INTO a protected root
+    /// is refused — including through a symlink alias planted inside an
+    /// innocent-looking directory. An empty protected list is legal (pure
+    /// form+resolution check).
+    #[test]
+    #[cfg(unix)]
+    fn free_guard_refuses_protected_root_including_via_symlink() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let managed = tmp.path().join("managed");
+        let user = tmp.path().join("user");
+        std::fs::create_dir_all(&managed).expect("dirs");
+        std::fs::create_dir_all(user.join("link")).expect("dirs");
+        std::os::unix::fs::symlink(&managed, user.join("link/managed")).expect("symlink");
+
+        // Plain containment in the protected root.
+        let err = ensure_free_output_path(&managed.join("x.json"), &[&managed])
+            .expect_err("protected root refused");
+        assert_eq!(err.kind, PathGuardErrorKind::ProtectedRoot, "{err}");
+
+        // The same destination reached through a symlink alias.
+        let via_link = user.join("link/managed/x.json");
+        let err = ensure_free_output_path(&via_link, &[&managed])
+            .expect_err("symlink alias into protected root refused");
+        assert_eq!(err.kind, PathGuardErrorKind::ProtectedRoot, "{err}");
+
+        // A sibling of the protected root stays legitimate.
+        let got =
+            ensure_free_output_path(&user.join("out.json"), &[&managed]).expect("free path ok");
+        assert_eq!(got, canonical_view(&user).unwrap().join("out.json"));
     }
 }

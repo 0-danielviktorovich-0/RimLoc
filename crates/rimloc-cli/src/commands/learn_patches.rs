@@ -15,6 +15,13 @@ pub fn run_learn_patches(
     let cands = rimloc_services::learn::patches::scan_patches_texts(&scan_root, min_len)?;
     let out_dir = scan_root.join("learn_out");
     let out = out_json.unwrap_or_else(|| out_dir.join("patches_texts.json"));
+    // Canonical write guard (rust/path-injection chokepoint): the CLI
+    // resolves a relative argument against the CWD EXPLICITLY, then the
+    // guard proves the real (symlink-resolved) location and the write goes
+    // to the returned path. No protected roots here BY DESIGN: `learn_out`
+    // inside the scanned mod tree is this command's product.
+    let out = rimloc_services::resolve_cli_out_path(&out)?;
+    let out = rimloc_services::ensure_free_output_path(&out, &[])?;
     if let Some(parent) = out.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -53,8 +60,16 @@ pub fn run_learn_patches(
             ))
     });
     if !inferred.is_empty() {
+        // Same guard as the JSON output above; the canonical `sug` parent
+        // replaces the raw `out_dir` for mkdir, so staging happens next to
+        // the real destination, not next to a symlinked spelling of it.
+        let sug = rimloc_services::resolve_cli_out_path(&out_dir.join("_SuggestedFromPatches.xml"))?;
+        let sug = rimloc_services::ensure_free_output_path(&sug, &[])?;
+        let out_dir = sug
+            .parent()
+            .map(std::path::Path::to_path_buf)
+            .unwrap_or(out_dir);
         std::fs::create_dir_all(&out_dir)?;
-        let sug = out_dir.join("_SuggestedFromPatches.xml");
         let mut f = std::fs::File::create(&sug)?;
         writeln!(f, "<LanguageData>")?;
         // We emit flat keys <DefName.path></DefName.path>

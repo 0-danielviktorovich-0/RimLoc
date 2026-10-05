@@ -1100,17 +1100,29 @@ pub fn collect_support_bundle_for(
     inputs: &SupportBundleInputs,
     out_dir: &Path,
 ) -> Result<SupportBundle> {
-    // Read-only invariant, enforced BEFORE any mkdir/write: the bundle must
-    // never be written into the scanned source tree (equal or nested,
-    // including symlink aliases and parent-traversing not-yet-existing
-    // paths — both are caught by the canonical containment view).
-    if crate::is_within(out_dir, &inputs.scan_root) {
-        color_eyre::eyre::bail!(
-            "support bundle output directory `{}` is inside the read-only source tree `{}`; choose a directory outside the scanned source",
-            out_dir.display(),
-            inputs.scan_root.display()
-        );
-    }
+    // THE canonical write guard, free-form flavor (rust/path-injection
+    // chokepoint): absolute form required, the destination is resolved to
+    // its real (symlink-resolved) location, and the read-only invariant is
+    // enforced BEFORE any mkdir/write — the bundle must never land inside
+    // the scanned source tree (equal, nested, symlink alias, or
+    // parent-traversing not-yet-existing path: all are caught by the
+    // canonical deny check below). Callers that accept relative paths
+    // resolve them explicitly via `resolve_cli_out_path` first.
+    let out_dir_canonical =
+        crate::ensure_free_output_path(out_dir, &[&inputs.scan_root]).map_err(|e| {
+            if e.kind == crate::util::PathGuardErrorKind::ProtectedRoot {
+                color_eyre::eyre::eyre!(
+                    "support bundle output directory `{}` is inside the read-only source tree `{}`; choose a directory outside the scanned source",
+                    out_dir.display(),
+                    inputs.scan_root.display()
+                )
+            } else {
+                color_eyre::eyre::eyre!("support bundle output directory refused: {e}")
+            }
+        })?;
+    // Every write below (and the returned `SupportBundle.dir`) goes to the
+    // canonical path the guard vetted — never to the raw spelling.
+    let out_dir: &Path = &out_dir_canonical;
 
     let san = Sanitizer::new();
     let mut op = OperationLog::new("support_bundle");
