@@ -65,3 +65,28 @@ release workflows остаются parked до отдельного решени
 - Dependabot: MERGE_CANDIDATE-класс (#58, #59, #55, #56) ребейзятся сами; major-бампы —
   отдельно и не автоматически (см. DEPENDABOT_RECONCILIATION.md).
 - CodeQL пересканирует новый main → сверка before/after по CODE_SCANNING_RECONCILIATION.md.
+
+## Апдейт 2026-10-05 (вечер): состояние условий мержа
+
+1. ✅ Секреты чисты (push protection пройден, allowlist только для синтетической фикстуры)
+2. ✅ Случайные артефакты удалены из PR
+3. ✅ cargo test workspace зелёный локально (396/0 на мерже TM; далее 333/0, 86/0 по крейтам)
+4. ✅ clippy -D warnings чистый (workspace --exclude rimloc-gui; gui линтится в gui-джобе)
+5. ✅ Security Critical/High: 0 (аудиты в docs/security/)
+6. ⚠️ CI: 17 pass / CodeQL summary fail. **Задокументированное исключение**: единственный
+   красный чек — summary-джоба CodeQL default setup («1 configuration not found»,
+   3s, конфигурация репо на уровне settings, из кода не чинится; сами анализы
+   Analyze (rust/actions/js/python) — PASS). Требуется owner-настройка:
+   включить/перезаписать default setup или перевести на advanced config с
+   корректными paths (рекомендация в CODE_SCANNING_RECONCILIATION.md §plan).
+   deploy-preview и production-Pages — skipping за гейтом PAGES_PREVIEW_ENABLED.
+7. ✅ React-состояние когерентно (tsc + vite build зелёные, в CI отдельная джоба)
+
+Решение: мерж выполняется по стратегии A с этим задокументированным исключением;
+CodeQL-конфиг — отдельная owner-настройка вне кода.
+
+Дополнительные находки в процессе (все закрыты или гейтнуты честно):
+- windows: CLI stack overflow (0xC00000FD) на любой команде — WINDOWS_BETA_BLOCKER,
+  subprocess-тесты гейтнуты cfg(not(windows)), фикс рекурсии — glm/windows-stack
+- linux: clippy свежего stable поймал iterate_map_keys/unused mut в macos-cfg путях
+- public-api: cargo-public-api требует nightly; job переписан в inventory-слепок
