@@ -458,7 +458,16 @@ const CHAIN_DIR_DEFAULT: &str = "/tmp/rimloc-selfloc-chain";
 fn chain_dir() -> PathBuf {
     std::env::var_os(CHAIN_DIR_ENV)
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(CHAIN_DIR_DEFAULT))
+        .unwrap_or_else(|| {
+            // Дефолт `/tmp/…` unix-специфичен: на windows это относительный
+            // путь, и write-guard честно отказывает (InvalidOutputPath) —
+            // контракт обязанен. Переносим во временный каталог платформы.
+            if cfg!(windows) {
+                std::env::temp_dir().join("rimloc-selfloc-chain")
+            } else {
+                PathBuf::from(CHAIN_DIR_DEFAULT)
+            }
+        })
 }
 
 /// Git-sha of the working copy that built the junction (wave 12, junction

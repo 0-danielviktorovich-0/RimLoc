@@ -132,8 +132,11 @@ mod tests {
 
     /// PROOF (keychain roundtrip): set → get returns the exact value →
     /// has = true → delete → get = None → has = false. Real OS keychain,
-    /// TEST namespace only.
+    /// TEST namespace only. На linux CI нет Secret Service/dbus — keyring
+    /// остаётся моком (решение по linux-упаковке отдельное, см. blockers
+    /// keychain-лейна), поэтому доказательство живёт на macOS/windows.
     #[test]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     fn keychain_roundtrip_write_read_delete() {
         let account = unique_account("roundtrip");
         let _guard = Cleanup {
