@@ -2,16 +2,31 @@
 
 ## Where to get help
 
-- **GitHub Issues** — the primary (and currently only) support channel: <https://github.com/0-danielviktorovich-0/RimLoc/issues>
-  - Bug report → use the **Bug Report** template; include the full command, expected vs actual behavior, and logs (`RIMLOC_LOG_DIR`, `RUST_LOG=debug`).
-  - Ideas → use the **Feature Request** template.
-  - First time? Check [existing issues](https://github.com/0-danielviktorovich-0/RimLoc/issues?q=) and the [documentation](https://0-danielviktorovich-0.github.io/RimLoc/) — most CLI workflows and flags are documented with examples.
-- **Security vulnerabilities** — please do **not** open a public issue. Report privately via [SECURITY.md](SECURITY.md) (GitHub private vulnerability reporting).
+- **GitHub Issues** — primary support channel: <https://github.com/0-danielviktorovich-0/RimLoc/issues>
+  - bugs: include build/commit identity, OS, exact steps, logs and a small reproducible mod/project if possible;
+  - UI issues: include the frontend/build identity (React candidate vs legacy fallback) and a screenshot;
+  - feature requests: explain the workflow/problem first, not only the desired button.
+- **Documentation** — <https://0-danielviktorovich-0.github.io/RimLoc/>
+- **Security** — do not publish exploit details; use the process in [SECURITY.md](SECURITY.md).
 
-## What to expect
+RimLoc is maintained by a small project, so response times are best-effort. Reproducible reports are dramatically easier to fix.
 
-RimLoc is maintained by one person, so there is no guaranteed response time. Issues with a minimal reproduction and logs are the fastest to resolve. GitHub Discussions are not enabled; if you have a question rather than a bug or feature request, open an issue and label it as a question.
+## Before filing a bug
 
-## Donations
+Please check:
 
-If RimLoc saves you time, you can support development — see the “Support RimLoc” section in the [docs](https://0-danielviktorovich-0.github.io/RimLoc/community/support/).
+1. whether you are testing the current build/branch;
+2. whether the issue reproduces on a small input;
+3. whether the source mod/game files stayed untouched;
+4. whether diagnostics can be attached after reviewing/redacting private data.
+
+## Support development
+
+If RimLoc saves you time, you can support development here:
+
+- GitHub Sponsors: <https://github.com/sponsors/0-danielviktorovich-0>
+- Buy Me a Coffee: <https://buymeacoffee.com/danielviktorovich>
+- Ko-fi: <https://ko-fi.com/danielviktorovich>
+- full support page (including optional crypto addresses): <https://0-danielviktorovich-0.github.io/RimLoc/community/support/>
+
+Stars, useful bug reports, translations, docs and real-world test fixtures are equally valuable.
