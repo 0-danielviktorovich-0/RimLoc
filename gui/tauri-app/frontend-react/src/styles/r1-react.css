@@ -284,3 +284,18 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .palette-item { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 0; background: transparent; color: var(--foreground); font: inherit; cursor: pointer; border-radius: 5px; }
 .palette-item:hover { background: var(--accent); color: var(--primary); }
 .palette-empty { padding: 12px; color: var(--muted-foreground); font-size: 11px; }
+
+/* Translation memory (TM live, owner decision A+B+C): the glossary table
+   pattern extended to the record shape (source / target / locale / status /
+   provenance / actions). Reuses .glossary-table chrome; only the grid and
+   the filter/import affordances are TM-specific. */
+.tm-table > div { grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) 96px 104px 76px 32px; }
+.tm-table > div > select { max-width: 104px; font-size: 10px; height: 26px; }
+.tm-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+.tm-filters select, .tm-filters input { height: 33px; font-size: 10px; }
+.tm-filters .lookup-field { flex: 1; min-width: 220px; }
+.tm-import-area textarea { width: 100%; min-height: 110px; font-size: 11px; font-family: var(--font-mono); margin-top: 10px; }
+.tm-import-area .import-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.tm-import-area .import-actions button { font-size: 10px; height: 33px; }
+.tm-import-result { font-size: 10px; color: var(--muted-foreground); }
+.tm-count { font-size: 9px; color: var(--muted-foreground); margin-bottom: 12px; }

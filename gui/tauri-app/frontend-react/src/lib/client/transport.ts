@@ -25,6 +25,16 @@ import type {
   ProjectSnapshotDto,
   ProjectSummaryDto,
   SelflocBuildContributionResponseDto,
+  TmDeleteRequestDto,
+  TmDeleteResponseDto,
+  TmImportRequestDto,
+  TmImportResponseDto,
+  TmListRequestDto,
+  TmListResponseDto,
+  TmLookupRequestDto,
+  TmLookupResponseDto,
+  TmUpsertRequestDto,
+  TmUpsertResponseDto,
   ValidateProjectResponseDto
 } from './types';
 
@@ -93,6 +103,28 @@ export interface ContractMethodMap {
   project_glossary_delete: {
     params: { request: ProjectGlossaryDeleteRequestDto };
     result: ProjectGlossaryDeleteResponseDto;
+  };
+  // Translation memory (TM live, owner decision A+B+C): the glossary
+  // pattern again — generic project state, persist-before-ack.
+  project_tm_list: {
+    params: { request: TmListRequestDto };
+    result: TmListResponseDto;
+  };
+  project_tm_upsert: {
+    params: { request: TmUpsertRequestDto };
+    result: TmUpsertResponseDto;
+  };
+  project_tm_delete: {
+    params: { request: TmDeleteRequestDto };
+    result: TmDeleteResponseDto;
+  };
+  project_tm_import: {
+    params: { request: TmImportRequestDto };
+    result: TmImportResponseDto;
+  };
+  project_tm_lookup: {
+    params: { request: TmLookupRequestDto };
+    result: TmLookupResponseDto;
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }

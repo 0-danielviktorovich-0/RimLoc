@@ -11,6 +11,7 @@ import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
 import { Checks } from './components/Checks'
 import { Glossary } from './components/Glossary'
+import { Tm } from './components/Tm'
 import { BuildExport } from './components/BuildExport'
 import { Existing } from './components/Existing'
 import { Selfloc } from './components/Selfloc'
@@ -26,6 +27,7 @@ type Route =
   | 'checks'
   | 'compare'
   | 'glossary'
+  | 'tm'
   | 'export'
   | 'tools'
   | 'settings'
@@ -43,12 +45,13 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'existing', label: t('nav.existing'), icon: GitCompareArrows },
   { to: 'compare', label: t('nav.compare'), icon: GitCompareArrows },
   { to: 'glossary', label: t('nav.glossary'), icon: Package },
+  { to: 'tm', label: t('nav.tm'), icon: Package },
   { to: 'export', label: t('nav.export'), icon: Wrench },
 ]
 
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics', 'providers', 'lm']
+  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'tm', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics', 'providers', 'lm']
   return (known.find((r) => r === h) ?? 'home') as Route
 }
 
@@ -253,6 +256,8 @@ export function App() {
             <Checks />
           ) : route === 'glossary' ? (
             <Glossary />
+          ) : route === 'tm' ? (
+            <Tm />
           ) : route === 'home' || route === 'projects' ? (
           // Home falls through to the shared layout below
             <Home
@@ -308,6 +313,7 @@ export function App() {
                 { label: 'Проекты', hash: '#/projects' },
                 { label: 'Проверки', hash: '#/checks' },
                 { label: 'Глоссарий', hash: '#/glossary' },
+                { label: 'Память переводов', hash: '#/tm' },
                 { label: 'Сборка и экспорт', hash: '#/export' },
                 { label: 'Настройки', hash: '#/settings' },
               ].filter((c) => c.label.toLowerCase().includes(paletteQuery.toLowerCase())).map((c) => (
@@ -316,7 +322,7 @@ export function App() {
                 </button>
               ))}
               {paletteQuery && ![
-                'Строки перевода', 'Проекты', 'Проверки', 'Глоссарий', 'Сборка и экспорт', 'Настройки',
+                'Строки перевода', 'Проекты', 'Проверки', 'Глоссарий', 'Память переводов', 'Сборка и экспорт', 'Настройки',
               ].some(l => l.toLowerCase().includes(paletteQuery.toLowerCase())) && (
                 <p className="palette-empty">Ничего не найдено</p>
               )}

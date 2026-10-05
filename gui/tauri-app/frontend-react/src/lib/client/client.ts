@@ -34,6 +34,16 @@ import type {
   ProjectSnapshotDto,
   ProjectSummaryDto,
   SelflocBuildContributionResponseDto,
+  TmDeleteRequestDto,
+  TmDeleteResponseDto,
+  TmImportRequestDto,
+  TmImportResponseDto,
+  TmListRequestDto,
+  TmListResponseDto,
+  TmLookupRequestDto,
+  TmLookupResponseDto,
+  TmUpsertRequestDto,
+  TmUpsertResponseDto,
   TranslationIntentDto,
   ValidateProjectResponseDto
 } from './types';
@@ -243,6 +253,40 @@ export class RimLocClient {
     request: ProjectGlossaryDeleteRequestDto
   ): Promise<ProjectGlossaryDeleteResponseDto> {
     return this.call('project_glossary_delete', { request });
+  }
+
+  // --- translation memory (TM live, owner decision A+B+C) — the glossary
+  // chain repeated: typed requests, persist-before-ack on every mutation. ---
+
+  /** TM records with optional locale/status/query filters (read-only).
+   *  `total` is the UNFILTERED count. */
+  async tmList(request: TmListRequestDto): Promise<TmListResponseDto> {
+    return this.call('project_tm_list', { request });
+  }
+
+  /** Manual CRUD write (C): create/update by (source_text, target_locale).
+   *  Provenance is set by the service (MANUAL); omitted status → ACCEPTED.
+   *  Persist-before-ack — the returned revision is durable. */
+  async tmUpsert(request: TmUpsertRequestDto): Promise<TmUpsertResponseDto> {
+    return this.call('project_tm_upsert', { request });
+  }
+
+  /** Remove one TM record by stable id; unknown id is a typed refusal. */
+  async tmDelete(request: TmDeleteRequestDto): Promise<TmDeleteResponseDto> {
+    return this.call('project_tm_delete', { request });
+  }
+
+  /** Bulk import (B): JSON array or CSV lines; DRAFT by default, an
+   *  explicit row status IS honored. Never weakens a stronger record.
+   *  Per-row form refusals are counted in `rejected`, never fatal. */
+  async tmImport(request: TmImportRequestDto): Promise<TmImportResponseDto> {
+    return this.call('project_tm_import', { request });
+  }
+
+  /** Ranked candidates within ONE target locale (isolation is mandatory):
+   *  exact → normalized → bounded fuzzy, best-first. */
+  async tmLookup(request: TmLookupRequestDto): Promise<TmLookupResponseDto> {
+    return this.call('project_tm_lookup', { request });
   }
 
   /** Identity of the RUNNING binary (soak-hardening §1): acceptance
