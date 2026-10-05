@@ -110,6 +110,7 @@ Release publication is currently controlled/manual during pre-beta. Do not creat
 ## More developer docs
 
 - [Adapter authoring](adapters.md)
+- [Coverage & Codecov](coverage.md)
 - [Legacy scan plugins](plugins.md)
 - [Testing](../testing.md)
 - [Docs style](docs_style.md)
