@@ -2,7 +2,7 @@ name: coverage
 
 on:
   push:
-    branches: [main, feature/ui-r1-convergence]
+    branches: [main]
     paths-ignore:
       - "docs/**"
       - "**/*.md"
@@ -41,7 +41,7 @@ jobs:
         run: |
           curl --fail-with-body --silent --show-error \
             --data-binary @codecov.yml \
-            https://codecov.io/validate
+            https://api.codecov.io/validate
 
   rust:
     name: Rust workspace coverage
@@ -86,7 +86,10 @@ jobs:
           cleanup: true
           flags: rust
           name: rust-workspace
-          fail_ci_if_error: true
+          # Fork PRs cannot rely on upstream OIDC permissions. Let Codecov try
+          # its public-repository tokenless path, but never fail an external
+          # contributor PR only because coverage upload authentication is unavailable.
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
   gui-rust:
     name: Desktop Rust / Tauri coverage
@@ -157,4 +160,7 @@ jobs:
           cleanup: true
           flags: gui-rust
           name: desktop-rust
-          fail_ci_if_error: true
+          # Fork PRs cannot rely on upstream OIDC permissions. Let Codecov try
+          # its public-repository tokenless path, but never fail an external
+          # contributor PR only because coverage upload authentication is unavailable.
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
