@@ -1,5 +1,5 @@
 codecov:
-  require_ci_to_pass: true
+  require_ci_to_pass: false
   max_report_age: "12h"
 
 coverage:
@@ -22,18 +22,6 @@ coverage:
 # Components give useful per-subsystem visibility from the same uploaded report
 # without re-running the full Rust suite for every crate.
 component_management:
-  default_rules:
-    statuses:
-      - type: project
-        target: auto
-        threshold: 1%
-        informational: true
-        only_pulls: true
-      - type: patch
-        target: auto
-        threshold: 0%
-        informational: true
-        only_pulls: true
   individual_components:
     - component_id: domain_core
       name: Domain & Core
