@@ -66,6 +66,29 @@
 | Multi-target UI | NOT RUN (одна цель ru; Language Registry — следующая лайна) |
 | Settings/providers/diagnostics/selfloc в React | NOT RUN |
 
+## Phase G — owner test packet (готово, ОБНОВЛЕНО после palette/providers/LM)
+
+Обновлено: artifact-rel16-react-r1 v3 (sha 0e1077af, automation React UI).
+Production artifact-rel16-react-r1 v2 (sha d780e275, React без automation, guard PASS).
+Обе сборки из HEAD main (вся R1-лайна влита).
+
+### Пайплайн сборки (важно!)
+Production и automation пишут в ОДИН bundle path. Последняя сборка
+перезаписывает предыдущую. Для параллельного использования:
+копировать .app в evidence СРАЗУ после каждой сборки.
+
+### Command palette (Cmd+K) — PASS
+Cmd+K toggle, Escape close, query filter по секциям — в App.tsx.
+Стили palette-overlay/box/input/list/item поверх канона R1.
+
+### Providers экран — PASS
+5 шаблонов AI-провайдеров (zai/openai/anthropic/ollama/custom),
+статусы, detail-pane, честный mockNote.
+
+### Language Manager — PASS
+CRUD пользовательских языков из registry. localStorage персист.
+Builtin read-only инвариант.
+
 ## Phase G — owner test packet (готово)
 
 - Артефакт React UI v2: `RimLoc-evidence/artifact-rel16-react-r1/`
