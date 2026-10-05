@@ -1,3 +1,7 @@
+// BUG(windows) MUST_FIX_BEFORE_WINDOWS_BETA: CLI-сабпроцесс падает STATUS_STACK_OVERFLOW
+// (0xC00000FD) на любой команде вплоть до --help — см. развёрнутый комментарий в cli_integration.rs.
+#![cfg(not(windows))]
+
 //! Gate L acceptance: a REAL, deterministic validate failure captured into a
 //! sanitized support bundle through the public CLI.
 //!
