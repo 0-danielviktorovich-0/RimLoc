@@ -37,7 +37,10 @@ fn sanitize_json_units(mut v: Value) -> Value {
         for obj in arr.iter_mut() {
             if let Some(p) = obj.get_mut("path") {
                 if let Some(s) = p.as_str() {
-                    let norm = s.replace(&ws, "<WS>");
+                    // Сепараторы нормализуем к `/`: продукт печатает нативные и
+                    // смешанные (join("a/b") на windows даёт `a\b/c`), снапшоты
+                    // записаны в unix-виде; разделитель не является контрактом.
+                    let norm = s.replace(&ws, "<WS>").replace('\\', "/");
                     *p = Value::String(norm);
                 }
             }
@@ -50,6 +53,8 @@ fn sanitize_help(mut s: String) -> String {
     // Normalize version tokens like "rimloc 0.1.0-alpha.1"
     let re_ver = Regex::new(r"(?i)\brimloc(-cli)?\s+v?\d+\.\d+\.\d+(?:[-+A-Za-z0-9\.]+)?").unwrap();
     s = re_ver.replace_all(&s, "rimloc <VER>").to_string();
+    // Windows clap печатает имя бинаря с .exe — снапшоты записаны без него.
+    s = s.replace("rimloc-cli.exe", "rimloc-cli");
     // Remove ANSI (should already be off) and trim trailing spaces
     s.lines()
         .map(|l| l.trim_end())
