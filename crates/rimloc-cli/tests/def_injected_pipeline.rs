@@ -72,7 +72,7 @@ fn scan_detects_defs_without_english_definj() {
         paths
             .iter()
             .any(|p| p.contains("Languages/English/DefInjected/ThingDef/Food.xml")),
-        "scan should surface DefInjected target path for learned defs",
+        "scan should surface DefInjected target path for learned defs; paths={paths:?} keys={keys:?}",
     );
 }
 
@@ -110,9 +110,13 @@ fn scan_reports_both_keyed_and_defs() {
         has_def,
         "Weapon_Bow.description from Defs should be present"
     );
+    let all_paths: Vec<&str> = arr
+        .iter()
+        .filter_map(|item| item.get("path").and_then(|p| p.as_str()))
+        .collect();
     assert!(
         has_definj_path,
-        "DefInjected entries should point to the canonical English path"
+        "DefInjected entries should point to the canonical English path; paths={all_paths:?}"
     );
 }
 
@@ -130,11 +134,15 @@ fn export_po_emits_definj_entries_and_hint() {
     let stderr = stderr.replace('\\', "/"); // нативные сепараторы windows-консоли
     assert!(
         stderr.contains("_learn/suggested.xml"),
-        "should hint about suggested.xml"
+        "should hint about suggested.xml; stderr={stderr}"
     );
     let po = fs::read_to_string(&out_po).expect("po written");
     assert!(po.contains("Meal_Fine.description"));
-    assert!(po.contains("Languages/English/DefInjected/ThingDef/Food.xml"));
+    assert!(
+        po.contains("Languages/English/DefInjected/ThingDef/Food.xml"),
+        "po should carry the canonical DefInjected path; po head: {}",
+        &po.chars().take(800).collect::<String>()
+    );
 }
 
 #[test]
