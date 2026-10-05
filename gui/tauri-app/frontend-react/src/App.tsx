@@ -20,6 +20,20 @@ import { Settings } from './components/Settings'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
 import { t } from './lib/i18n'
+import { useCommandPalette, type PaletteCommand } from './lib/palette'
+
+// Palette commands are pure hash navigations — a module constant keeps a
+// stable identity across renders (the hook's filter memo depends on it).
+// Each command navigates; the hook closes the palette around the action.
+const PALETTE_COMMANDS: PaletteCommand[] = [
+  { id: 'entries', label: 'Строки перевода', action: () => { window.location.hash = '#/home' } },
+  { id: 'projects', label: 'Проекты', action: () => { window.location.hash = '#/projects' } },
+  { id: 'checks', label: 'Проверки', action: () => { window.location.hash = '#/checks' } },
+  { id: 'glossary', label: 'Глоссарий', action: () => { window.location.hash = '#/glossary' } },
+  { id: 'tm', label: 'Память переводов', action: () => { window.location.hash = '#/tm' } },
+  { id: 'export', label: 'Сборка и экспорт', action: () => { window.location.hash = '#/export' } },
+  { id: 'settings', label: 'Настройки', action: () => { window.location.hash = '#/settings' } },
+]
 
 type Route =
   | 'home'
@@ -60,9 +74,26 @@ export function App() {
   const [route, setRoute] = useState<Route>(currentRoute)
   const [dark, setDark] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
-  const [paletteOpen, setPaletteOpen] = useState(false)
-  const [paletteQuery, setPaletteQuery] = useState('')
+  // Palette state (open/query/activeIndex) lives in the hook — one source of
+  // truth for the window keydown contract (Cmd+K, Escape, arrows, Enter).
+  const {
+    open: paletteOpen,
+    setOpen: setPaletteOpen,
+    query: paletteQuery,
+    setQuery: setPaletteQuery,
+    filtered: paletteFiltered,
+    activeIndex,
+    setActiveIndex,
+    runCommand,
+  } = useCommandPalette(PALETTE_COMMANDS)
   const [clientError, setClientError] = useState<string | null>(null)
+
+  // Keep the active option visible while navigating with arrows/End/Home
+  // (Svelte canon: scrollIntoView block:'nearest' on the active option id).
+  useEffect(() => {
+    if (!paletteOpen) return
+    document.getElementById(`palette-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
+  }, [paletteOpen, activeIndex])
 
   /** Human project label: display name → trimmed id hint. Raw managed ids
    *  never render as user-facing labels (visual critique round 1/2). */
@@ -84,14 +115,9 @@ export function App() {
     document.documentElement.classList.toggle('dark', dark)
   }, [dark])
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent): void => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setPaletteOpen((v) => !v) }
-      if (e.key === 'Escape') setPaletteOpen(false)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [])
+  // Cmd+K / Escape / arrows / Enter are handled by useCommandPalette (window
+  // keydown) — App no longer adds its own listener (a second one would
+  // double-toggle Cmd+K).
   useEffect(() => {
     const onHash = () => setRoute(currentRoute())
     window.addEventListener('hashchange', onHash)
@@ -301,29 +327,34 @@ export function App() {
           <div className="palette-box" onClick={(e) => e.stopPropagation()}>
             <input
               className="palette-input"
+              role="combobox"
+              aria-expanded={paletteFiltered.length > 0}
+              aria-controls="palette-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={paletteFiltered[activeIndex] ? `palette-opt-${activeIndex}` : undefined}
               placeholder="Поиск…"
               value={paletteQuery}
               onChange={(e) => setPaletteQuery(e.target.value)}
               autoFocus
               data-testid="palette.input"
             />
-            <div className="palette-list">
-              {[
-                { label: 'Строки перевода', hash: '#/home' },
-                { label: 'Проекты', hash: '#/projects' },
-                { label: 'Проверки', hash: '#/checks' },
-                { label: 'Глоссарий', hash: '#/glossary' },
-                { label: 'Память переводов', hash: '#/tm' },
-                { label: 'Сборка и экспорт', hash: '#/export' },
-                { label: 'Настройки', hash: '#/settings' },
-              ].filter((c) => c.label.toLowerCase().includes(paletteQuery.toLowerCase())).map((c) => (
-                <button key={c.hash} className="palette-item" onClick={() => { window.location.hash = c.hash; setPaletteOpen(false) }}>
+            <div className="palette-list" id="palette-listbox" role="listbox" aria-label="Команды">
+              {paletteFiltered.map((c, i) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  id={`palette-opt-${i}`}
+                  role="option"
+                  aria-selected={i === activeIndex}
+                  className={i === activeIndex ? 'palette-item palette-item-active' : 'palette-item'}
+                  tabIndex={-1}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onClick={() => runCommand(c)}
+                >
                   {c.label}
                 </button>
               ))}
-              {paletteQuery && ![
-                'Строки перевода', 'Проекты', 'Проверки', 'Глоссарий', 'Память переводов', 'Сборка и экспорт', 'Настройки',
-              ].some(l => l.toLowerCase().includes(paletteQuery.toLowerCase())) && (
+              {paletteQuery.trim() !== '' && paletteFiltered.length === 0 && (
                 <p className="palette-empty">Ничего не найдено</p>
               )}
             </div>

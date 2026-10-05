@@ -283,6 +283,9 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .palette-list { margin-top: 6px; max-height: 280px; overflow-y: auto; }
 .palette-item { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 0; background: transparent; color: var(--foreground); font: inherit; cursor: pointer; border-radius: 5px; }
 .palette-item:hover { background: var(--accent); color: var(--primary); }
+/* Keyboard-active option (activeIndex; same visual language as hover, cf.
+   Svelte canon .opt.active in CommandPalette.svelte). */
+.palette-item.palette-item-active, .palette-item.palette-item-active:hover { background: var(--accent); color: var(--primary); }
 .palette-empty { padding: 12px; color: var(--muted-foreground); font-size: 11px; }
 
 /* Translation memory (TM live, owner decision A+B+C): the glossary table
