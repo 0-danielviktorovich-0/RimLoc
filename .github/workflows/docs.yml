@@ -9,7 +9,7 @@ name: docs
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/ui-r1-convergence]
     paths:
       - "docs/**"
       - "README.md"
