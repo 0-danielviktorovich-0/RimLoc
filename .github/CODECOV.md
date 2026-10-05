@@ -18,13 +18,18 @@ This file documents how RimLoc uses coverage. It is an engineering signal, not a
 
 ## Components
 
-- Domain & Core
-- Services
-- RimWorld parsers & validation
-- Import / Export formats
+The current component map is intentionally fine-grained without rerunning tests per crate:
+
+- Domain model
+- Core localization logic
+- Services / orchestration
+- RimWorld XML parsing
+- Validation
 - CLI
-- Providers & Config
-- Plugin compatibility layer
+- Import / export formats
+- LLM / provider layer
+- Configuration
+- Legacy scan-plugin compatibility
 - Desktop Rust / Tauri
 
 A future React component should only be activated after the React frontend has a real unit/component coverage runner. Do not report a fake 0% frontend simply because no coverage-producing test runner exists yet.
@@ -100,6 +105,11 @@ When the React lane has stable unit/component tests, add a deterministic script 
 
 gui/tauri-app/frontend-react/coverage/lcov.info
 
+Today, much of the React end-to-end/acceptance automation lives under the
+legacy frontend test harness (WDIO specs that drive the React app). That proves
+workflows, but it does not provide trustworthy React source-line coverage.
+Do not confuse E2E evidence with unit/component line coverage.
+
 Suggested script contract:
 
 npm run test:coverage
@@ -123,10 +133,12 @@ RimLoc is public, so standard GitHub-hosted runner minutes are not charged again
 Current principles:
 
 - Linux-only instrumentation unless OS-specific coverage is genuinely needed;
-- docs-only PRs skip coverage;
+- docs-only and unrelated frontend-only changes skip the Rust coverage workflow;
+- pushes to the long-running feature branch do not duplicate the PR-triggered run;
 - use Components instead of rerunning tests per crate;
 - no stored LCOV artifact unless troubleshooting requires it;
-- cancel stale coverage runs for the same PR/ref.
+- cancel stale coverage runs for the same PR/ref;
+- same-repository uploads fail loudly on Codecov errors, while public fork uploads are best-effort so an external contributor is not blocked only by OIDC/token availability.
 
 ## Maintenance
 
