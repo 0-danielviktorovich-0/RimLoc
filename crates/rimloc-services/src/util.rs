@@ -59,7 +59,7 @@ pub fn is_source_for_lang_dir(path: &Path, lang_dir: &str) -> bool {
     if lang_dir.eq_ignore_ascii_case("English") {
         // Any XML under Defs/* counts as English source
         let s = path.to_string_lossy();
-        return s.contains("/Defs/") || s.contains("\\Defs\\");
+        return rimloc_core::path_text::has_path_marker(&s, "Defs");
     }
     false
 }

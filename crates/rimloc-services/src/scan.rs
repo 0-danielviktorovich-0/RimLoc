@@ -348,10 +348,10 @@ pub fn override_keyed_units_from_comments(
     let mut cache: HashMap<PathBuf, BTreeMap<String, String>> = HashMap::new();
     for u in units.iter_mut() {
         let path_str = u.path.to_string_lossy();
-        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&path_str, "Languages")) {
             continue;
         }
-        if !(path_str.contains("/Keyed/") || path_str.contains("\\Keyed\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&path_str, "Keyed")) {
             continue;
         }
         if !crate::util::is_under_languages_dir(&u.path, lang_dir) {
@@ -545,11 +545,10 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
             ))
     });
     let is_keyed = |p: &std::path::Path| {
-        p.to_string_lossy().contains("/Keyed/") || p.to_string_lossy().contains("\\Keyed\\")
+        rimloc_core::path_text::has_path_marker(&p.to_string_lossy(), "Keyed")
     };
     let is_definj = |p: &std::path::Path| {
-        p.to_string_lossy().contains("/DefInjected/")
-            || p.to_string_lossy().contains("\\DefInjected\\")
+        rimloc_core::path_text::has_path_marker(&p.to_string_lossy(), "DefInjected")
     };
     // DefInjected identities live per DEF TYPE: two def types may share the
     // same `{defName}.{field}` key, and those are different Defs — never
@@ -664,7 +663,7 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
 pub fn retain_source_language_units(units: &mut Vec<TransUnit>) {
     let in_any_languages = |p: &std::path::Path| {
         let s = p.to_string_lossy();
-        s.contains("/Languages/") || s.contains("\\Languages\\")
+        rimloc_core::path_text::has_path_marker(&s, "Languages")
     };
     units.retain(|u| {
         if !in_any_languages(&u.path) {

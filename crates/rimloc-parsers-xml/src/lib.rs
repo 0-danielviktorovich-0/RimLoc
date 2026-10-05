@@ -3,6 +3,7 @@ pub use rimloc_core::parse_simple_po as parse_po_string;
 use quick_xml::events::BytesRef;
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use rimloc_core::path_text::has_path_marker;
 use rimloc_core::{Result as CoreResult, TransUnit};
 
 pub mod patches_extract;
@@ -165,12 +166,16 @@ pub fn scan_keyed_xml_with_options(
         }
         // filter to .../Languages/<Locale>/{Keyed,DefInjected}/....xml
         let p_str = p.to_string_lossy();
-        let in_languages = p_str.contains("/Languages/") || p_str.contains("\\Languages\\");
+        // Separator-agnostic markers: a Windows path may mix `/` and `\`
+        // in one spelling (e.g. `--tm-root D:\mod\Languages/Russian`) —
+        // same-separator contains() used to silently collect NOTHING for
+        // such roots, emptying the TM merge on export (windows CI).
+        let in_languages = has_path_marker(&p_str, "Languages");
         if !in_languages {
             continue;
         }
-        let has_keyed = p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\");
-        let has_definj = p_str.contains("/DefInjected/") || p_str.contains("\\DefInjected\\");
+        let has_keyed = has_path_marker(&p_str, "Keyed");
+        let has_definj = has_path_marker(&p_str, "DefInjected");
         if !(has_keyed || has_definj) {
             continue;
         }
@@ -567,7 +572,7 @@ pub fn scan_defs_xml_under_with_fields(
         let in_scope = if let Some(base) = defs_root {
             p.starts_with(base)
         } else {
-            p_str.contains("/Defs/") || p_str.contains("\\Defs\\")
+            has_path_marker(&p_str, "Defs")
         };
         if !in_scope {
             continue;
@@ -619,7 +624,7 @@ pub fn scan_defs_xml_under_with_fields(
         let in_scope = if let Some(base) = defs_root {
             p.starts_with(base)
         } else {
-            p_str.contains("/Defs/") || p_str.contains("\\Defs\\")
+            has_path_marker(&p_str, "Defs")
         };
         if !in_scope {
             continue;
@@ -1376,7 +1381,7 @@ pub fn scan_defs_fuzzy(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<
             p.starts_with(base)
         } else {
             let s = p.to_string_lossy();
-            s.contains("/Defs/") || s.contains("\\Defs\\")
+            has_path_marker(&s, "Defs")
         };
         if !in_scope {
             continue;
@@ -1458,7 +1463,7 @@ pub fn scan_defs_with_dict_meta(
             p.starts_with(base)
         } else {
             let s = p.to_string_lossy();
-            s.contains("/Defs/") || s.contains("\\Defs\\")
+            has_path_marker(&s, "Defs")
         };
         if !in_scope {
             continue;
@@ -1585,7 +1590,7 @@ pub fn scan_defs_with_dict_meta(
                 p.starts_with(base)
             } else {
                 let s = p.to_string_lossy();
-                s.contains("/Defs/") || s.contains("\\Defs\\")
+                has_path_marker(&s, "Defs")
             };
             if !in_scope {
                 continue;
@@ -1946,7 +1951,7 @@ pub fn scan_defs_with_dict_meta(
             p.starts_with(base)
         } else {
             let s = p.to_string_lossy();
-            s.contains("/Defs/") || s.contains("\\Defs\\")
+            has_path_marker(&s, "Defs")
         };
         if !in_scope {
             continue;
@@ -2245,6 +2250,59 @@ mod tests {
     use super::*;
     use std::fs;
     use tempfile::tempdir;
+
+    /// Windows mixed-separator regression: `root.join("Languages/Russian")`
+    /// spells the TM root as `D:\mod\Languages/Russian` there, and walkdir
+    /// yields paths mixing `/` and `\` in ONE spelling. The collector's
+    /// same-separator `contains("/Languages/") || contains("\\Languages\\")`
+    /// matched NEITHER, silently collected zero files, and the export TM
+    /// merge shipped an all-empty PO (windows CI: every DefInjected element
+    /// empty). The unix simulation spells the mixed shape literally as a
+    /// `Languages\\Russian` directory name; on Windows that same name is a
+    /// nested native tree — the scan must collect on both.
+    #[test]
+    fn scan_keyed_xml_collects_mixed_separator_language_paths() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let keyed_dir = dir.path().join("Mod/Languages\\Russian/Keyed");
+        fs::create_dir_all(&keyed_dir)?;
+        fs::write(
+            keyed_dir.join("A.xml"),
+            "<LanguageData><Greeting>привет</Greeting></LanguageData>",
+        )?;
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert!(
+            units
+                .iter()
+                .any(|u| u.key == "Greeting" && u.source.as_deref() == Some("привет")),
+            "mixed-separator Languages path must be collected, got {:?}",
+            units
+        );
+        Ok(())
+    }
+
+    /// CRLF insurance: a checkout with CRLF line endings (no .gitattributes,
+    /// Windows autocrlf) must parse identically — values never empty.
+    #[test]
+    fn scan_keyed_xml_handles_crlf_files() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let keyed_dir = dir.path().join("Mods/TestMod/Languages/Russian/Keyed");
+        fs::create_dir_all(&keyed_dir)?;
+        fs::write(
+            keyed_dir.join("Crlf.xml"),
+            "<LanguageData>\r\n  <Greeting>Привет\r\n  мир</Greeting>\r\n</LanguageData>\r\n",
+        )?;
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert!(
+            units
+                .iter()
+                .any(|u| u.key == "Greeting" && u.source.as_deref() == Some("Привет\n  мир")),
+            "CRLF value must survive: {:?}",
+            units
+        );
+        Ok(())
+    }
 
     #[test]
     fn scan_keyed_xml_handles_self_closing_keys() -> CoreResult<()> {
@@ -2618,7 +2676,7 @@ pub fn scan_defs_tkey(root: &Path, defs_root: Option<&Path>) -> CoreResult<Vec<T
         }
         if defs_root.is_none() {
             let s = p.to_string_lossy();
-            if !(s.contains("/Defs/") || s.contains("\\Defs\\")) {
+            if !(has_path_marker(&s, "Defs")) {
                 continue;
             }
         }

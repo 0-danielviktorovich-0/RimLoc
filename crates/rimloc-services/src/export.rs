@@ -3,6 +3,7 @@ use crate::{
     util::{def_injected_target_path, is_under_languages_dir},
     ExportPoStats, Result,
 };
+use rimloc_core::path_text::has_path_marker;
 use rimloc_parsers_xml::DefsMetaUnit;
 use std::collections::HashMap;
 use std::path::Path;
@@ -62,9 +63,7 @@ pub fn export_po_with_tm(
         {
             entry.source = source.clone();
         }
-        if !entry.path.to_string_lossy().contains("/DefInjected/")
-            && !entry.path.to_string_lossy().contains("\\DefInjected\\")
-        {
+        if !has_path_marker(&entry.path.to_string_lossy(), "DefInjected") {
             entry.path = target_path;
             entry.line = None;
         }

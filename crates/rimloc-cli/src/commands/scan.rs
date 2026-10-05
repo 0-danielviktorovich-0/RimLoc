@@ -255,7 +255,7 @@ pub fn run_scan(
         // English also includes Defs/*
         if lang_dir.eq_ignore_ascii_case("English") {
             let s = path.to_string_lossy();
-            if s.contains("/Defs/") || s.contains("\\Defs\\") {
+            if rimloc_core::path_text::has_path_marker(&s, "Defs") {
                 return true;
             }
         }
