@@ -168,17 +168,23 @@ async function activeElementInfo(): Promise<string> {
   })
 }
 
-// The ARTIFACT palette (commit 53bd1aa) had 6 commands — the TM screen and
-// its palette entry landed AFTER the artifact was cut (893ed9c). HEAD (and
-// any build of the palette-nav lane) carries 7: the composition test below
-// expects exactly this list; anything else is a failure.
+// The ARTIFACT palette (commit 53bd1aa) had 6 commands; the palette-nav lane
+// brought 7; the palette/LM MUST-FIX lane (this spec) brings the FULL route
+// coverage (14) — the composition test below expects exactly this list.
 const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Строки перевода', hash: '#/home', marker: '[data-testid="wizard.open"]' },
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
   { label: 'Проверки', hash: '#/checks', marker: '[data-testid="checks.findings"], [data-testid="checks.rerun"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Импорт существующего перевода', hash: '#/existing', marker: '[data-testid="ex.dir"], [data-testid="ex.error"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Сравнение версий', hash: '#/compare', marker: '.narrow-page .btn-primary[href="#/home"]' },
   { label: 'Глоссарий', hash: '#/glossary', marker: '[data-testid="gl.table"], [data-testid="gl.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Память переводов', hash: '#/tm', marker: '[data-testid="tm.count"], [data-testid="tm.filter-query"], [data-testid="tm.filter-status"], [data-testid="tm.error"]' },
   { label: 'Сборка и экспорт', hash: '#/export', marker: '[data-testid="be.outdir"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Самоперевод RimLoc', hash: '#/selfloc', marker: '[data-testid="selfloc.open"], [data-testid="selfloc.error"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Диагностика', hash: '#/diagnostics', marker: '[data-testid="diag.outdir"], [data-testid="diag.error"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'AI-провайдеры', hash: '#/providers', marker: '[data-testid="prov.catalog"], [data-testid="prov.error"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Языки', hash: '#/lm', marker: '[data-testid="lm.table"]' },
+  { label: 'Инструменты', hash: '#/tools', marker: '.narrow-page .btn-primary[href="#/home"]' },
   { label: 'Настройки', hash: '#/settings', marker: '[data-testid="settings.theme"]' },
 ]
 
@@ -263,7 +269,7 @@ describe('Palette §9: открытие и закрытие', () => {
 })
 
 describe('Palette §9: состав команд и поиск', () => {
-  it('состав: ровно 7 команд HEAD (6 артефакта + «Память переводов»)', async () => {
+  it('состав: ровно 14 команд (полное покрытие маршрутов, MUST-FIX #5)', async () => {
     await openPalette('list')
     const items = await paletteItems()
     console.log(`[palette-acc] ITEMS=${JSON.stringify(items)}`)
@@ -277,25 +283,25 @@ describe('Palette §9: состав команд и поиск', () => {
     await shot('palette-full-list')
   })
 
-  it('поиск по названию фильтрует список («перев» → 2 в HEAD: Строки перевода + Память переводов)', async () => {
+  it('поиск по названию фильтрует список («перев» → 2: Строки перевода + Память переводов)', async () => {
     await openPalette('filter')
     await browser.$('[data-testid="palette.input"]').setValue('перев')
     await pause(400)
     const items = await paletteItems()
     console.log(`[palette-acc] FILTER перьев=${JSON.stringify(items)}`)
-    // В артефакте «перев» давал 1 команду; с TM-командой в HEAD их 2.
     if (items.length !== 2 || !items[0]!.includes('Строки перевода') || !items.some((i) => i.includes('Память переводов'))) {
       throw new Error(`фильтр «перев» дал ${JSON.stringify(items)}`)
     }
     await shot('palette-filter-perev')
   })
 
-  it('запрос СОХРАНЯЕТСЯ между открытиями (не сбрасывается) — БАГ, фиксируется', async () => {
+  it('запрос СБРАСЫВАЕТСЯ при закрытии (MUST-FIX закрыт: палитра не открывается предотфильтрованной)', async () => {
     await ensureClosed('reopen-query-pre')
     await openPalette('reopen-query')
     await browser.$('[data-testid="palette.input"]').setValue('глосс')
     await pause(300)
     const q1 = await inputValue()
+    if (q1 !== 'глосс') throw new Error(`сеттинг query не дошёл: ${JSON.stringify(q1)}`)
     await pressCombo('Escape', false)
     await pause(800)
     if ((await overlayCount()) > 0) throw new Error('Escape не закрыл — нечего проверять')
@@ -303,15 +309,12 @@ describe('Palette §9: состав команд и поиск', () => {
     await pause(800)
     const q2 = await inputValue()
     const items = await paletteItems()
-    console.log(`[palette-acc] QUERY_PERSIST q1=${JSON.stringify(q1)} q2=${JSON.stringify(q2)} items=${items.length}`)
-    if (q2 === q1 && q2 !== '') {
-      // Баг документируется находкой, а не падением: App.tsx держит
-      // paletteQuery на уровне App и не сбрасывает его при открытии.
-      console.log(`[palette-acc] BUG-CONFIRMED: запрос ${JSON.stringify(q2)} пережил закрытие/открытие — палитра открылась предотфильтрованной (${items.length} вместо 6); повторный прогон команды вслепую рискует запустить не ту команду`)
-      await shot('BUG-palette-query-persists')
-      return
+    console.log(`[palette-acc] QUERY_RESET q1=${JSON.stringify(q1)} q2=${JSON.stringify(q2)} items=${items.length}`)
+    if (q2 !== '') throw new Error(`запрос пережил закрытие: ${JSON.stringify(q2)} — MUST-FIX не закрыт`)
+    if (items.length !== COMMANDS.length) {
+      throw new Error(`палитра открылась предотфильтрованной: ${items.length} вместо ${COMMANDS.length}`)
     }
-    throw new Error('ожидание изменилось: запрос сбрасывается — убери пометку бага')
+    await shot('palette-query-reset')
   })
 
   it('без результатов — «Ничего не найдено»', async () => {
@@ -324,12 +327,19 @@ describe('Palette §9: состав команд и поиск', () => {
     await shot('palette-empty-results')
   })
 
-  it('МАНДАТ: команд переключения target/языков в палитре НЕТ', async () => {
+  it('МАНДАТ закрыт: команда «Языки» в палитре есть и ведёт на #/lm', async () => {
+    await openPalette('lm-cmd')
+    await browser.$('[data-testid="palette.input"]').setValue('Языки')
+    await pause(400)
     const items = await paletteItems()
-    const langCmds = items.filter((i) => /язык|переключ|target/i.test(i))
-    if (langCmds.length > 0) throw new Error(`появились команды языков: ${JSON.stringify(langCmds)}`)
-    console.log('[palette-acc] MUST-FIX: в палитре нет команд переключения target/языков')
-    await shot('palette-no-language-commands')
+    if (!items.some((i) => i.includes('Языки'))) {
+      throw new Error(`команда «Языки» не найдена: ${JSON.stringify(items)}`)
+    }
+    await pressCombo('Enter', false)
+    await pause(1000)
+    const hash = await browser.execute(() => window.location.hash)
+    if (String(hash) !== '#/lm') throw new Error(`Enter по «Языки» дал ${String(hash)}, ждали #/lm`)
+    await shot('palette-lm-command')
   })
 })
 

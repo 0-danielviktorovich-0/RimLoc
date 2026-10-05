@@ -228,7 +228,10 @@ export const projectStore = {
       delete drafts[key]
       set({
         snapshot: fresh,
-        entries: mapSnapshot(fresh, 'ru'),
+        // Перерисовка в АКТИВНУЮ цель (acceptance MUST-FIX: после коммита в uk
+        // список на миг показывал ru — `mapSnapshot(fresh, 'ru')` игнорировал
+        // targetLocale; данные не терялись, но фаза была видна живьём).
+        entries: mapSnapshot(fresh, state.targetLocale),
         drafts,
         busy: false,
       })

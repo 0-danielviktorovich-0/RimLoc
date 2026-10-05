@@ -2,7 +2,7 @@
 // Builtin languages are read-only; user languages persist to localStorage.
 // Generic-fallback invariant preserved: unknown locales never reject.
 import { useState, useCallback, useMemo } from 'react'
-import { BUILTIN_LANGUAGES, genericDisplayName } from './registry'
+import { BUILTIN_LANGUAGES, genericDisplayName, isValidLocaleId } from './registry'
 
 export interface UserLanguage {
   localeId: string
@@ -34,6 +34,9 @@ export function useLanguageManager() {
   const addUser = useCallback((localeId: string, displayName: string, nativeName: string): string | null => {
     const trimmed = localeId.trim()
     if (!trimmed) return 'localeId must not be empty'
+    // Acceptance MUST-FIX: «1пробел плохой код!» принимался — валидатор формы
+    // в React-лейне не вызывался (порт из Svelte registry.ts:246).
+    if (!isValidLocaleId(trimmed)) return 'invalid locale id format'
     if (BUILTIN_LANGUAGES.some((l) => l.localeId === trimmed)) return 'localeId conflicts with builtin'
     if (user.some((l) => l.localeId === trimmed)) return 'localeId already exists'
     const entry: UserLanguage = {

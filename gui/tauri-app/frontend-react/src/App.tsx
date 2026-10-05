@@ -2,10 +2,11 @@
 // Hash router + the R1 visual shell (mandate §9/§47: Lovable R1 is the
 // visual contract; the shell composition is ADOPT, data is LIVE-only).
 import { useEffect, useState } from 'react'
-import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight } from 'lucide-react'
+import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight, Globe } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
 import { BUILTIN_LANGUAGES as LANGUAGES } from './lib/languages/registry'
+import { loadUserLanguages, type UserLanguage } from './lib/languages/manager'
 import { useProjectState } from './lib/state/useProjectState'
 import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
@@ -25,13 +26,22 @@ import { useCommandPalette, type PaletteCommand } from './lib/palette'
 // Palette commands are pure hash navigations — a module constant keeps a
 // stable identity across renders (the hook's filter memo depends on it).
 // Each command navigates; the hook closes the palette around the action.
+// Acceptance §3 MUST-FIX #5: маршруты existing/compare/selfloc/diagnostics/
+// providers/lm/tools не были покрыты командами — теперь полный набор.
 const PALETTE_COMMANDS: PaletteCommand[] = [
   { id: 'entries', label: 'Строки перевода', action: () => { window.location.hash = '#/home' } },
   { id: 'projects', label: 'Проекты', action: () => { window.location.hash = '#/projects' } },
   { id: 'checks', label: 'Проверки', action: () => { window.location.hash = '#/checks' } },
+  { id: 'existing', label: 'Импорт существующего перевода', action: () => { window.location.hash = '#/existing' } },
+  { id: 'compare', label: 'Сравнение версий', action: () => { window.location.hash = '#/compare' } },
   { id: 'glossary', label: 'Глоссарий', action: () => { window.location.hash = '#/glossary' } },
   { id: 'tm', label: 'Память переводов', action: () => { window.location.hash = '#/tm' } },
   { id: 'export', label: 'Сборка и экспорт', action: () => { window.location.hash = '#/export' } },
+  { id: 'selfloc', label: 'Самоперевод RimLoc', action: () => { window.location.hash = '#/selfloc' } },
+  { id: 'diagnostics', label: 'Диагностика', action: () => { window.location.hash = '#/diagnostics' } },
+  { id: 'providers', label: 'AI-провайдеры', action: () => { window.location.hash = '#/providers' } },
+  { id: 'lm', label: 'Языки', action: () => { window.location.hash = '#/lm' } },
+  { id: 'tools', label: 'Инструменты', action: () => { window.location.hash = '#/tools' } },
   { id: 'settings', label: 'Настройки', action: () => { window.location.hash = '#/settings' } },
 ]
 
@@ -61,6 +71,8 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'glossary', label: t('nav.glossary'), icon: Package },
   { to: 'tm', label: t('nav.tm'), icon: Package },
   { to: 'export', label: t('nav.export'), icon: Wrench },
+  // Acceptance MUST-FIX #1: LM был недостижим из UI (только ручной #/lm).
+  { to: 'lm', label: t('nav.lm'), icon: Globe },
 ]
 
 function currentRoute(): Route {
@@ -94,6 +106,18 @@ export function App() {
     if (!paletteOpen) return
     document.getElementById(`palette-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
   }, [paletteOpen, activeIndex])
+
+  // Acceptance MUST-FIX #2 (LM↔target): пользовательские языки жили только в
+  // localStorage LM-экрана и не попадали в переключатель цели воркспейса.
+  // Перечитываем при входе на маршрут — LM на своём маршруте мог их изменить.
+  const [userLangs, setUserLangs] = useState<UserLanguage[]>(() => loadUserLanguages())
+  useEffect(() => {
+    setUserLangs(loadUserLanguages())
+  }, [route])
+  const targetLangs = [
+    ...LANGUAGES.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
+    ...userLangs.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
+  ]
 
   /** Human project label: display name → trimmed id hint. Raw managed ids
    *  never render as user-facing labels (visual critique round 1/2). */
@@ -253,7 +277,7 @@ export function App() {
                       value={st.targetLocale}
                       onChange={(e) => projectStore.setTargetLocale(e.target.value)}
                     >
-                      {LANGUAGES.map((l) => (
+                      {targetLangs.map((l) => (
                         <option key={l.localeId} value={l.localeId}>
                           {l.nativeName}
                         </option>
