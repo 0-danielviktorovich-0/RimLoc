@@ -53,6 +53,11 @@ pub enum ContractErrorCode {
     /// action (e.g. editing a deterministic NoTranslate entry), malformed
     /// intent.
     ContractViolation,
+    /// A provider configuration is semantically wrong: a malformed
+    /// base_url, an empty model, or a cloud provider with no API key
+    /// available. Appended (never renamed) with the provider-instances
+    /// slice; the message names the exact problem, never the secret.
+    InvalidConfig,
     /// A write/open target refused by the source-tree containment guard
     /// (`is_within` / `canonical_view`).
     GuardOutputDenied,
@@ -85,6 +90,7 @@ impl ContractErrorCode {
             Self::SaveFailed => "save_failed",
             Self::ProjectChangedOnDisk => "project_changed_on_disk",
             Self::ContractViolation => "contract_violation",
+            Self::InvalidConfig => "invalid_config",
             Self::GuardOutputDenied => "guard_output_denied",
             Self::InvalidOutputPath => "invalid_output_path",
             Self::UnsupportedCapability => "unsupported_capability",
@@ -402,6 +408,15 @@ pub enum Capability {
     /// auto-accumulation rides the apply ack (A). Wire name appends (never
     /// renames) per the contract rule.
     TranslationMemory,
+    /// Provider instances (provider/settings parity slice): app-global CRUD
+    /// over AI provider configurations (`provider_instance_list`,
+    /// `provider_instance_upsert`, `provider_instance_delete`,
+    /// `provider_instance_validate`). Instance metadata persists in the
+    /// settings file next to the managed projects; the API key NEVER does —
+    /// it lives in the OS keychain and the contract surface only ever
+    /// reports the `has_key` boolean. Wire name appends (never renames)
+    /// per the contract rule.
+    ProviderInstances,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -442,15 +457,12 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectApplyExisting,
             Capability::ProjectGlossary,
             Capability::TranslationMemory,
+            Capability::ProviderInstances,
         ],
         unsupported: vec![
             UnsupportedCapability {
                 capability: "source_inspector_actions".into(),
                 reason: "next slice: identity-based source actions with size-limited reads".into(),
-            },
-            UnsupportedCapability {
-                capability: "providers_settings".into(),
-                reason: "later slice: provider/settings parity".into(),
             },
             UnsupportedCapability {
                 capability: "entry_create_delete".into(),
@@ -674,6 +686,7 @@ mod tests {
             ContractErrorCode::ContractViolation.as_str(),
             "contract_violation"
         );
+        assert_eq!(ContractErrorCode::InvalidConfig.as_str(), "invalid_config");
         assert_eq!(
             ContractErrorCode::GuardOutputDenied.as_str(),
             "guard_output_denied"
@@ -718,6 +731,14 @@ mod tests {
         assert!(report.supported.contains(&Capability::ProjectGlossary));
         // TM live (A+B+C): the capability is reported, never hidden.
         assert!(report.supported.contains(&Capability::TranslationMemory));
+        // Provider-instances slice: shipped — the capability is reported and
+        // the stale `providers_settings` unsupported entry is GONE (the
+        // report must never claim a shipped capability is missing).
+        assert!(report.supported.contains(&Capability::ProviderInstances));
+        assert!(!report
+            .unsupported
+            .iter()
+            .any(|u| u.capability == "providers_settings"));
         assert!(report.unsupported.iter().all(|u| !u.reason.is_empty()));
         assert!(!report.unsupported.iter().any(|u| {
             u.capability == "validate_via_contract"
@@ -855,6 +876,65 @@ mod tests {
         let v = serde_json::to_value(&resp).unwrap();
         let back: TmImportResponse = serde_json::from_value(v).unwrap();
         assert_eq!(back, resp);
+    }
+
+    /// Provider instances (redaction slice): the summary DTO has NO secret
+    /// field on the wire, the upsert request Debug output masks the secret,
+    /// and the summary round-trips with optional fields omitted when absent.
+    #[test]
+    fn provider_dtos_redact_secret_and_round_trip() {
+        const SECRET: &str = "sk-provider-secret-must-never-echo";
+
+        let summary = ProviderInstanceSummary {
+            id: "prov-abc123".into(),
+            preset: "openai".into(),
+            label: "OpenAI".into(),
+            model: "gpt-5".into(),
+            base_url: Some("https://api.openai.com/v1".into()),
+            local: false,
+            has_key: true,
+            created_at_ms: 1_759_680_000_000,
+            updated_at_ms: 1_759_680_000_000,
+        };
+        let wire = serde_json::to_string(&summary).unwrap();
+        assert!(
+            !wire.contains(SECRET),
+            "summary wire form must never contain the secret"
+        );
+        // The secret field simply does not exist on the wire type.
+        let v: serde_json::Value = serde_json::from_str(&wire).unwrap();
+        assert!(v.get("secret").is_none());
+        assert_eq!(v["has_key"], true);
+        let back: ProviderInstanceSummary = serde_json::from_value(v).unwrap();
+        assert_eq!(back, summary);
+
+        // Absent optional base_url is omitted, not null.
+        let mut no_url = summary.clone();
+        no_url.base_url = None;
+        let v = serde_json::to_value(&no_url).unwrap();
+        assert!(v.get("base_url").is_none());
+
+        // The upsert request transports the secret once but NEVER through
+        // Debug — logs showing `{:?}` of a request stay clean.
+        let req = ProviderInstanceUpsertRequest {
+            instance_id: None,
+            preset: "openai".into(),
+            label: "OpenAI".into(),
+            model: "gpt-5".into(),
+            base_url: Some("https://api.openai.com/v1".into()),
+            secret: Some(SECRET.into()),
+            local: None,
+            expected_revision: None,
+        };
+        let debug = format!("{req:?}");
+        assert!(
+            !debug.contains(SECRET),
+            "Debug of an upsert request must mask the secret: {debug}"
+        );
+        assert!(debug.contains("<redacted>"));
+        // Serde still carries it on the wire (the one legitimate transport).
+        let wire = serde_json::to_string(&req).unwrap();
+        assert!(wire.contains(SECRET));
     }
 }
 
@@ -1042,4 +1122,148 @@ pub struct TmMatch {
 pub struct TmLookupResponse {
     pub job_id: JobId,
     pub matches: Vec<TmMatch>,
+}
+
+// ---------------------------------------------------------------------------
+// Provider instances (provider/settings parity). App-GLOBAL settings (no
+// project_id, no session epoch — there is no open project session behind
+// them); the settings file lives next to the managed projects and the API
+// key NEVER does: the secret goes straight into the OS keychain and this
+// wire surface carries only the `has_key` boolean.
+//
+// Redaction is BY CONSTRUCTION: [`ProviderInstanceSummary`] has no field
+// that could hold a secret, and the upsert request's `secret` field has a
+// manual `Debug` impl that prints `<redacted>` — a request can be logged
+// without leaking.
+// ---------------------------------------------------------------------------
+
+/// One provider instance in list/ack responses — REDACTED by construction:
+/// no secret field exists on this type.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceSummary {
+    /// Minted opaque id (`prov-<hex>`); also the keychain account.
+    pub id: String,
+    /// Builtin preset id (`anthropic` | `openai` | `zai` | `ollama`) or
+    /// `custom`.
+    pub preset: String,
+    pub label: String,
+    pub model: String,
+    /// Resolved base URL (explicit override or the preset default);
+    /// `None` = native Anthropic endpoint.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base_url: Option<String>,
+    /// Local providers (ollama-class) need no API key.
+    pub local: bool,
+    /// Presence marker only — the key itself lives in the OS keychain.
+    pub has_key: bool,
+    pub created_at_ms: u64,
+    pub updated_at_ms: u64,
+}
+
+/// `provider_instance_upsert` request: create (`instance_id = None`) or
+/// edit (`Some`). `secret = Some` stores a NEW key into the OS keychain
+/// (empty/whitespace treated as absent — "keep the existing key");
+/// `secret = None` never touches the stored key. `local` is derived from
+/// the preset (ollama) and only OVERRIDABLE for `custom`.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceUpsertRequest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub instance_id: Option<String>,
+    pub preset: String,
+    #[serde(default)]
+    pub label: String,
+    pub model: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base_url: Option<String>,
+    /// The API key for the OS keychain — transported once on this call and
+    /// NEVER persisted to a file, echoed back, or logged (`Debug` masks it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secret: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local: Option<bool>,
+    /// Lost-update guard over the settings revision (durable, bumps on every
+    /// acked settings change). `None` = last write wins.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_revision: Option<Revision>,
+}
+
+impl std::fmt::Debug for ProviderInstanceUpsertRequest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProviderInstanceUpsertRequest")
+            .field("instance_id", &self.instance_id)
+            .field("preset", &self.preset)
+            .field("label", &self.label)
+            .field("model", &self.model)
+            .field("base_url", &self.base_url)
+            .field(
+                "secret",
+                &self.secret.as_ref().map(|_| "<redacted>"),
+            )
+            .field("local", &self.local)
+            .field("expected_revision", &self.expected_revision)
+            .finish()
+    }
+}
+
+/// Upsert ack: the durable settings revision plus the REDACTED summary.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceUpsertResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub instance: ProviderInstanceSummary,
+}
+
+/// The redacted list ack — the summary type carries no secret field.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceListResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub total: usize,
+    pub instances: Vec<ProviderInstanceSummary>,
+}
+
+/// `provider_instance_delete` request: remove the instance AND its keychain
+/// key (the key is deleted FIRST — a failed keychain delete refuses the
+/// whole operation and the metadata stays, so no orphaned secret remains).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceDeleteRequest {
+    pub instance_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_revision: Option<Revision>,
+}
+
+/// Delete ack.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceDeleteResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub removed_id: String,
+    /// True when a keychain key existed and was removed.
+    pub key_removed: bool,
+}
+
+/// `provider_instance_validate` request: FORM validation of a provider
+/// configuration WITHOUT a network call and WITHOUT touching the keychain.
+/// `has_key` is the caller's claim (the UI knows it from the list ack);
+/// the cloud-without-key problem is reported against this claim.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceValidateRequest {
+    pub preset: String,
+    pub model: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub base_url: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub local: Option<bool>,
+    #[serde(default)]
+    pub has_key: bool,
+}
+
+/// Validate ack: `ok` mirrors `problems.is_empty()`; every problem names the
+/// exact form defect. This is a CONFIGURATION check — reachability/auth
+/// probes would need network and are NOT part of this slice.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ProviderInstanceValidateResponse {
+    pub job_id: JobId,
+    pub ok: bool,
+    pub problems: Vec<String>,
 }
