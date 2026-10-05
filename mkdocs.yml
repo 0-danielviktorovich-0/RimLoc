@@ -88,6 +88,7 @@ nav:
   - Developers:
       - Overview: dev/index.md
       - Adapter Authoring: dev/adapters.md
+      - Coverage & Codecov: dev/coverage.md
       - Legacy Scan Plugins: dev/plugins.md
       - Docs Style Guide: dev/docs_style.md
       - Testing: testing.md
