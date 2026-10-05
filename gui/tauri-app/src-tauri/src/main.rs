@@ -3180,9 +3180,14 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
 
 /// Automation dev-log markers (see the DEV_LOG_* note above: stderr strings
 /// live in consts so the workspace i18n guard sees pure formatter calls).
+/// Используются только из macOS-automation путей — на других ОС мертвы.
+#[cfg(target_os = "macos")]
 const DEV_LOG_AUTOMATION_AX_ENABLED: &str = "rimloc-gui: automation webview accessibility enabled";
+#[cfg(target_os = "macos")]
 const DEV_LOG_AUTOMATION_AX_FAILED: &str = "rimloc-gui: automation webview accessibility FAILED";
+#[cfg(target_os = "macos")]
 const DEV_LOG_AUTOMATION_NSAPP_SET: &str = "rimloc-gui: NSApp accessibilitySupportEnabled set";
+#[cfg(target_os = "macos")]
 const DEV_LOG_AUTOMATION_FRAME_APPLIED: &str = "rimloc-gui: automation frame applied";
 
 fn legacy_commands_enabled() -> bool {
@@ -4443,6 +4448,9 @@ fn lang_update_cmd(
         ),
     );
     // Expecting game root (folder containing Data/)
+    // mut нужен только macOS-ветке ниже (resolving .app bundle) — на других ОС
+    // переприсвоений нет, и clippy -D warnings роняет unused_mut (лог PR #60).
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
     let mut scan_root = PathBuf::from(&request.root);
     // macOS: allow selecting the .app bundle; resolve to Contents/Resources if needed
     #[cfg(target_os = "macos")]
