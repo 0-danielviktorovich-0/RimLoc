@@ -24,12 +24,11 @@ use rimloc_services::contract::{
     capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse,
     CapabilityReport, CreateProjectRequest, ProjectGlossaryDeleteRequest,
     ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse,
-    ProjectSnapshot, ProjectSummary, ProviderInstanceDeleteRequest,
-    ProviderInstanceDeleteResponse, ProviderInstanceListResponse, ProviderInstanceUpsertRequest,
-    ProviderInstanceUpsertResponse, ProviderInstanceValidateRequest,
-    ProviderInstanceValidateResponse, TmDeleteRequest, TmDeleteResponse, TmImportRequest,
-    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse,
-    TmUpsertRequest, TmUpsertResponse,
+    ProjectSnapshot, ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
+    ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
+    ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, TmDeleteRequest,
+    TmDeleteResponse, TmImportRequest, TmImportResponse, TmListRequest, TmListResponse,
+    TmLookupRequest, TmLookupResponse, TmUpsertRequest, TmUpsertResponse,
 };
 use rimloc_services::session::ProjectSessionManager;
 use serde::Serialize;
@@ -379,7 +378,9 @@ pub fn contract_provider_instance_list(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("contract_provider_instance_list", || manager.provider_instance_list())
+    traced_simple("contract_provider_instance_list", || {
+        manager.provider_instance_list()
+    })
 }
 
 /// `provider_instance_upsert` — create/edit; the key goes to the OS

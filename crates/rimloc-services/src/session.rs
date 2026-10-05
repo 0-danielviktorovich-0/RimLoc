@@ -33,8 +33,8 @@ use crate::contract::{
     ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
     ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, Revision, SessionEpoch,
     SkippedIntent, TmDeleteRequest, TmDeleteResponse, TmImportFormat, TmImportRequest,
-    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse,
-    TmMatch, TmUpsertRequest, TmUpsertResponse, TranslationIntent, UI_CONTRACT_VERSION,
+    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse, TmMatch,
+    TmUpsertRequest, TmUpsertResponse, TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
@@ -1218,9 +1218,7 @@ impl ProjectSessionManager {
 
     /// `provider_instance_list` — redacted summaries (`has_key` boolean, no
     /// secret field exists on the wire type).
-    pub fn provider_instance_list(
-        &self,
-    ) -> Result<ProviderInstanceListResponse, ContractError> {
+    pub fn provider_instance_list(&self) -> Result<ProviderInstanceListResponse, ContractError> {
         let job_id: JobId = generate_operation_id();
         let mut st = self.providers.lock().expect("provider settings poisoned");
         ProviderOps {

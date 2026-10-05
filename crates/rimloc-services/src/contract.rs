@@ -1195,10 +1195,7 @@ impl std::fmt::Debug for ProviderInstanceUpsertRequest {
             .field("label", &self.label)
             .field("model", &self.model)
             .field("base_url", &self.base_url)
-            .field(
-                "secret",
-                &self.secret.as_ref().map(|_| "<redacted>"),
-            )
+            .field("secret", &self.secret.as_ref().map(|_| "<redacted>"))
             .field("local", &self.local)
             .field("expected_revision", &self.expected_revision)
             .finish()

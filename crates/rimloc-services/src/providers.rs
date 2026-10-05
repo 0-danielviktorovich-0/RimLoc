@@ -13,9 +13,7 @@
 //! - form validation (`invalid_config`) refuses bad URLs, empty models and
 //!   keyless cloud instances BEFORE any state change.
 
-use crate::contract::{
-    ContractError, ContractErrorCode, ProviderInstanceSummary,
-};
+use crate::contract::{ContractError, ContractErrorCode, ProviderInstanceSummary};
 use rimloc_llm::provider::builtin_presets;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -68,7 +66,8 @@ impl KeychainSecretSink {
 #[cfg(feature = "keychain")]
 impl ProviderSecretSink for KeychainSecretSink {
     fn set(&self, account: &str, secret: &str) -> Result<(), String> {
-        rimloc_llm::secrets::set_secret_in(&self.service, account, secret).map_err(|e| e.to_string())
+        rimloc_llm::secrets::set_secret_in(&self.service, account, secret)
+            .map_err(|e| e.to_string())
     }
     fn get(&self, account: &str) -> Result<Option<String>, String> {
         rimloc_llm::secrets::get_secret_in(&self.service, account).map_err(|e| e.to_string())
@@ -201,9 +200,7 @@ impl ProviderSettingsState {
             Ok(bytes) => {
                 state.loaded_hash = Some(crate::observability::sha256_hex(&bytes));
                 match serde_json::from_slice::<ProviderSettingsFile>(&bytes) {
-                    Ok(file)
-                        if file.kind == SETTINGS_KIND && file.version == SETTINGS_VERSION =>
-                    {
+                    Ok(file) if file.kind == SETTINGS_KIND && file.version == SETTINGS_VERSION => {
                         state.file = file;
                     }
                     Ok(file) => {
@@ -253,14 +250,14 @@ impl ProviderSettingsState {
             .map_err(|e| ContractError::new(ContractErrorCode::SaveFailed, e.to_string()))?;
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| {
-                ContractError::new(
-                    ContractErrorCode::SaveFailed,
-                    format!("settings dir: {e}"),
-                )
+                ContractError::new(ContractErrorCode::SaveFailed, format!("settings dir: {e}"))
             })?;
         }
         crate::write_atomic(&self.path, &bytes).map_err(|e| {
-            ContractError::new(ContractErrorCode::SaveFailed, format!("settings persist: {e}"))
+            ContractError::new(
+                ContractErrorCode::SaveFailed,
+                format!("settings persist: {e}"),
+            )
         })?;
         self.loaded_hash = Some(crate::observability::sha256_hex(&bytes));
         Ok(self.file.revision)
@@ -328,7 +325,9 @@ pub(crate) fn known_preset(preset: &str) -> bool {
 }
 
 pub(crate) fn preset_default_base_url(preset: &str) -> Option<String> {
-    builtin_presets().get(preset).and_then(|p| p.base_url.clone())
+    builtin_presets()
+        .get(preset)
+        .and_then(|p| p.base_url.clone())
 }
 
 pub(crate) fn preset_is_local(preset: &str) -> bool {
@@ -364,7 +363,10 @@ impl ProviderOps<'_> {
 
     /// Read-only redacted list. Corruption of the settings file is a typed
     /// failure, never an empty list.
-    pub fn list(&self, job_id: String) -> Result<crate::contract::ProviderInstanceListResponse, ContractError> {
+    pub fn list(
+        &self,
+        job_id: String,
+    ) -> Result<crate::contract::ProviderInstanceListResponse, ContractError> {
         self.state.check_unreadable()?;
         let mut instances = Vec::with_capacity(self.state.file.instances.len());
         for record in &self.state.file.instances {
@@ -431,7 +433,11 @@ impl ProviderOps<'_> {
                 "model must not be empty",
             ));
         }
-        let explicit_base_url = req.base_url.as_deref().map(str::trim).filter(|s| !s.is_empty());
+        let explicit_base_url = req
+            .base_url
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
         let base_url = match explicit_base_url {
             Some(url) => Some(url.to_string()),
             None if is_custom => {
@@ -582,10 +588,7 @@ impl ProviderOps<'_> {
         } else {
             false
         };
-        self.state
-            .file
-            .instances
-            .retain(|r| r.id != record.id);
+        self.state.file.instances.retain(|r| r.id != record.id);
         self.state.file.revision += 1;
         let revision = self.state.persist()?;
         Ok(crate::contract::ProviderInstanceDeleteResponse {
@@ -618,7 +621,11 @@ impl ProviderOps<'_> {
         if req.model.trim().is_empty() {
             problems.push("model must not be empty".to_string());
         }
-        let explicit = req.base_url.as_deref().map(str::trim).filter(|s| !s.is_empty());
+        let explicit = req
+            .base_url
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
         let base_url = match explicit {
             Some(url) => Some(url.to_string()),
             None if is_custom => None,
@@ -653,9 +660,7 @@ impl ProviderOps<'_> {
 }
 
 pub(crate) fn now_ms() -> u64 {
-    chrono::Utc::now()
-        .timestamp_millis()
-        .max(0) as u64
+    chrono::Utc::now().timestamp_millis().max(0) as u64
 }
 
 #[cfg(test)]
@@ -678,8 +683,8 @@ mod tests {
     fn fixture() -> Fixture {
         let dir = tempfile::tempdir().unwrap();
         let sink = Arc::new(MemorySecretSink::default());
-        let manager = ProjectSessionManager::new_with_secret_sink(dir.path(), sink.clone())
-            .unwrap();
+        let manager =
+            ProjectSessionManager::new_with_secret_sink(dir.path(), sink.clone()).unwrap();
         Fixture {
             _dir: dir,
             sink,
@@ -687,7 +692,11 @@ mod tests {
         }
     }
 
-    fn upsert_req(preset: &str, model: &str, base_url: Option<&str>) -> ProviderInstanceUpsertRequest {
+    fn upsert_req(
+        preset: &str,
+        model: &str,
+        base_url: Option<&str>,
+    ) -> ProviderInstanceUpsertRequest {
         ProviderInstanceUpsertRequest {
             instance_id: None,
             preset: preset.into(),
@@ -701,7 +710,10 @@ mod tests {
     }
 
     fn settings_path(manager: &ProjectSessionManager) -> PathBuf {
-        manager.managed_root().join("settings").join("providers.json")
+        manager
+            .managed_root()
+            .join("settings")
+            .join("providers.json")
     }
 
     /// PROOF (live-contract CRUD): create → list shows the redacted summary
@@ -808,10 +820,7 @@ mod tests {
                 }
             }
         }
-        assert!(
-            checked >= 1,
-            "settings file must exist after an upsert"
-        );
+        assert!(checked >= 1, "settings file must exist after an upsert");
         let settings = std::fs::read_to_string(settings_path(&fx.manager)).unwrap();
         assert!(settings.contains(&id), "metadata is in the settings file");
         assert!(settings.contains("\"has_key_cache\": true"));
@@ -962,11 +971,8 @@ mod tests {
 
         // Fresh manager, SAME root and sink — the "restart" (in-process
         // mirror; the OS-level restart proof lives in the keychain lane).
-        let manager = ProjectSessionManager::new_with_secret_sink(
-            fx._dir.path(),
-            fx.sink.clone(),
-        )
-        .unwrap();
+        let manager =
+            ProjectSessionManager::new_with_secret_sink(fx._dir.path(), fx.sink.clone()).unwrap();
         let list = manager.provider_instance_list().unwrap();
         assert_eq!(list.total, 1);
         let instance = &list.instances[0];
@@ -1039,11 +1045,7 @@ mod tests {
             revision: 42,
             ..serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap()
         };
-        std::fs::write(
-            &path,
-            serde_json::to_vec_pretty(&external).unwrap(),
-        )
-        .unwrap();
+        std::fs::write(&path, serde_json::to_vec_pretty(&external).unwrap()).unwrap();
 
         let mut second = upsert_req("ollama", "qwen2.5:7b", None);
         second.local = Some(true);
@@ -1083,12 +1085,11 @@ mod tests {
 
         // Restart: a fresh manager + fresh sink over the same root sees the
         // key presence from the OS keychain.
-        let manager2 =
-            ProjectSessionManager::new_with_secret_sink(
-                dir.path(),
-                Arc::new(KeychainSecretSink::with_service(service)),
-            )
-            .unwrap();
+        let manager2 = ProjectSessionManager::new_with_secret_sink(
+            dir.path(),
+            Arc::new(KeychainSecretSink::with_service(service)),
+        )
+        .unwrap();
         let list = manager2.provider_instance_list().unwrap();
         assert!(list.instances[0].has_key);
         let wire = serde_json::to_string(&list).unwrap();
@@ -1102,7 +1103,10 @@ mod tests {
             })
             .unwrap();
         assert!(del.key_removed);
-        assert_eq!(rimloc_llm::secrets::get_secret_in(service, &id).unwrap(), None);
+        assert_eq!(
+            rimloc_llm::secrets::get_secret_in(service, &id).unwrap(),
+            None
+        );
     }
 
     // -- helpers ------------------------------------------------------------

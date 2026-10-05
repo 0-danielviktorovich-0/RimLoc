@@ -92,7 +92,7 @@ pub fn set_secret(account: &str, secret: &str) -> Result<(), LlmError> {
 }
 
 pub fn get_secret(account: &str) -> Result<Option<String>, LlmError> {
-    get_secret_in(&effective_service(), account, )
+    get_secret_in(&effective_service(), account)
 }
 
 pub fn delete_secret(account: &str) -> Result<bool, LlmError> {

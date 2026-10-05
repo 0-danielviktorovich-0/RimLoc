@@ -78,7 +78,8 @@ pub use scan::{
 };
 pub use session::ProjectSessionManager;
 pub use util::canonical_match_key;
-pub use util::canonical_view;pub use util::ensure_free_output_path;
+pub use util::canonical_view;
+pub use util::ensure_free_output_path;
 pub use util::ensure_writable_output_path;
 pub use util::is_source_for_lang_dir;
 pub use util::is_under_languages_dir;

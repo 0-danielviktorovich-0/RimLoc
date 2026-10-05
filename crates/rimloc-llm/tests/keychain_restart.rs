@@ -36,7 +36,10 @@ fn lane_phase1_write() {
     let e = entry();
     e.set_password(SECRET).expect("keychain write");
     // Immediate readback on the SAME process (sanity, not the proof).
-    assert_eq!(e.get_password().expect("keychain readback").as_str(), SECRET);
+    assert_eq!(
+        e.get_password().expect("keychain readback").as_str(),
+        SECRET
+    );
     // The item is LEFT in the keychain for phase 2.
 }
 
