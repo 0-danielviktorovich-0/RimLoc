@@ -76,7 +76,10 @@ jobs:
 
   deploy-preview:
     name: deploy (PR preview)
-    if: github.event_name == 'pull_request' && github.repository == '0-danielviktorovich-0/RimLoc' && github.event.pull_request.head.repo.fork == false
+    # Pages preview падал 404 BlobNotFound за 1-2с (лог PR #60, rerun подтверждает):
+    # GitHub Pages для репо не настроен. Джоба включается переменной репо
+    # PAGES_PREVIEW_ENABLED=true ПОСЛЕ настройки Pages; до тех пор — skip, а не fail.
+    if: github.event_name == 'pull_request' && github.repository == '0-danielviktorovich-0/RimLoc' && github.event.pull_request.head.repo.fork == false && vars.PAGES_PREVIEW_ENABLED == 'true'
     needs: build
     runs-on: ubuntu-latest
     permissions:
