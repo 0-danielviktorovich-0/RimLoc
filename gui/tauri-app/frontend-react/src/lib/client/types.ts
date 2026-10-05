@@ -321,6 +321,13 @@ export type ContractMethod =
   | 'project_glossary'
   | 'project_glossary_upsert'
   | 'project_glossary_delete'
+  // Translation memory (TM live, owner decision A+B+C): the glossary
+  // pattern again — generic project state, persist-before-ack.
+  | 'project_tm_list'
+  | 'project_tm_upsert'
+  | 'project_tm_delete'
+  | 'project_tm_import'
+  | 'project_tm_lookup'
   // Build identity of the RUNNING binary (soak-hardening §1): long-running
   // acceptance runs verify the artifact they drive independently of any
   // wrapper path. Refused honestly in mock — no running binary there.
@@ -384,6 +391,116 @@ export interface ProjectGlossaryDeleteResponseDto {
   job_id: string;
   revision: number;
   removed_id: string;
+}
+
+// --- translation memory (TM live, owner decision A+B+C; mirrors contract.rs
+// Tm* DTOs). Records live in `Project.tm` (the glossary pattern): key =
+// (source_text, target_locale), target locales are ISOLATED, trust status
+// DRAFT < ACCEPTED < REVIEWED, provenance AUTO | IMPORT | MANUAL. A =
+// auto-accumulation on the acked accept; B = import (DRAFT by default);
+// C = manual CRUD. ---
+export type TmStatusDto = 'draft' | 'accepted' | 'reviewed';
+
+export type TmProvenanceDto = 'auto' | 'import' | 'manual';
+
+export interface TranslationMemoryEntryDto {
+  id: string;
+  source_text: string;
+  target_text: string;
+  /** Target locale (folder contract, e.g. "Russian") — the ISOLATION key. */
+  target_locale: string;
+  status: TmStatusDto;
+  provenance: TmProvenanceDto;
+}
+
+export interface TmListRequestDto {
+  project_id: string;
+  session_epoch: number;
+  locale?: string;
+  status?: TmStatusDto;
+  /** Case-insensitive substring over source/target. */
+  query?: string;
+}
+
+export interface TmListResponseDto {
+  job_id: string;
+  entries: TranslationMemoryEntryDto[];
+  /** UNFILTERED total — the UI renders an honest "N of M". */
+  total: number;
+}
+
+export interface TmUpsertRequestDto {
+  project_id: string;
+  session_epoch: number;
+  source_text: string;
+  target_text: string;
+  target_locale: string;
+  /** User's choice; omitted → ACCEPTED. Provenance is set by the service. */
+  status?: TmStatusDto;
+}
+
+export interface TmUpsertResponseDto {
+  job_id: string;
+  revision: number;
+  entry: TranslationMemoryEntryDto;
+}
+
+export interface TmDeleteRequestDto {
+  project_id: string;
+  session_epoch: number;
+  id: string;
+}
+
+export interface TmDeleteResponseDto {
+  job_id: string;
+  revision: number;
+  removed_id: string;
+}
+
+export type TmImportFormatDto = 'json' | 'csv';
+
+export interface TmImportRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Raw payload (JSON array or CSV text); the format auto-detects unless
+   *  forced. A payload that parses as NEITHER is a typed contract_violation. */
+  payload: string;
+  format?: TmImportFormatDto;
+}
+
+export interface TmImportResponseDto {
+  job_id: string;
+  revision: number;
+  /** Fresh keys. */
+  imported: number;
+  /** Existing weaker (DRAFT) records refreshed. */
+  updated: number;
+  /** Existing stronger records kept untouched (never weakened). */
+  skipped: number;
+  /** Per-row form refusals (counted, never fatal). */
+  rejected: number;
+}
+
+export interface TmLookupRequestDto {
+  project_id: string;
+  session_epoch: number;
+  source_text: string;
+  target_locale: string;
+  /** Max matches (default 5, clamped 1..=50). */
+  limit?: number;
+}
+
+/** One ranked match: `match_kind` names the tier that found it. */
+export interface TmMatchDto {
+  entry: TranslationMemoryEntryDto;
+  match_kind: 'exact' | 'normalized' | 'fuzzy';
+  /** Levenshtein distance of the NORMALIZED forms; only on the fuzzy tier. */
+  distance?: number;
+}
+
+export interface TmLookupResponseDto {
+  job_id: string;
+  matches: TmMatchDto[];
 }
 
 /// Identity of the running binary, reported by the app itself

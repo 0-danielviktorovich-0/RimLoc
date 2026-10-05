@@ -394,6 +394,14 @@ pub enum Capability {
     /// persist-before-ack. Wire name appends (never renames) per the
     /// contract rule.
     ProjectGlossary,
+    /// Translation memory (TM live, owner decision A+B+C): list/filter
+    /// (`project_tm_list`), manual CRUD (`project_tm_upsert`,
+    /// `project_tm_delete`), bulk import JSON/CSV (`project_tm_import`),
+    /// ranked lookup exact→normalized→fuzzy (`project_tm_lookup`). Records
+    /// live in the project envelope (`Project.tm`), persist-before-ack;
+    /// auto-accumulation rides the apply ack (A). Wire name appends (never
+    /// renames) per the contract rule.
+    TranslationMemory,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -433,6 +441,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectImportExisting,
             Capability::ProjectApplyExisting,
             Capability::ProjectGlossary,
+            Capability::TranslationMemory,
         ],
         unsupported: vec![
             UnsupportedCapability {
@@ -707,6 +716,8 @@ mod tests {
             .contains(&Capability::ProjectImportExisting));
         assert!(report.supported.contains(&Capability::ProjectApplyExisting));
         assert!(report.supported.contains(&Capability::ProjectGlossary));
+        // TM live (A+B+C): the capability is reported, never hidden.
+        assert!(report.supported.contains(&Capability::TranslationMemory));
         assert!(report.unsupported.iter().all(|u| !u.reason.is_empty()));
         assert!(!report.unsupported.iter().any(|u| {
             u.capability == "validate_via_contract"
@@ -792,6 +803,60 @@ mod tests {
         let back: TranslationIntent = serde_json::from_value(v).unwrap();
         assert_eq!(back, intent);
     }
+
+    /// TM live (A+B+C): request/response DTOs round-trip with the domain
+    /// entry embedded; the status/provenance wire values are snake_case.
+    #[test]
+    fn tm_dtos_round_trip_wire_shapes() {
+        let entry = rimloc_domain::tm::TranslationMemoryEntry {
+            id: "op-1".into(),
+            source_text: "Save game".into(),
+            target_text: "Сохранить игру".into(),
+            target_locale: "Russian".into(),
+            status: rimloc_domain::tm::TmStatus::Draft,
+            provenance: rimloc_domain::tm::TmProvenance::Import,
+        };
+        let v = serde_json::to_value(&entry).unwrap();
+        assert_eq!(v["status"], "draft");
+        assert_eq!(v["provenance"], "import");
+        let back: rimloc_domain::tm::TranslationMemoryEntry =
+            serde_json::from_value(v).unwrap();
+        assert_eq!(back, entry);
+
+        let req = TmLookupRequest {
+            project_id: "proj-x".into(),
+            session_epoch: 2,
+            source_text: "Save game".into(),
+            target_locale: "Russian".into(),
+            limit: Some(5),
+        };
+        let v = serde_json::to_value(&req).unwrap();
+        assert_eq!(v["target_locale"], "Russian");
+        assert_eq!(v["limit"], 5);
+        let back: TmLookupRequest = serde_json::from_value(v).unwrap();
+        assert_eq!(back, req);
+
+        // Optional filters/limit deserialize from a bare wire object.
+        let bare: TmListRequest = serde_json::from_value(serde_json::json!({
+            "project_id": "proj-x", "session_epoch": 1
+        }))
+        .unwrap();
+        assert_eq!(bare.locale, None);
+        assert_eq!(bare.status, None);
+        assert_eq!(bare.query, None);
+
+        let resp = TmImportResponse {
+            job_id: "op-2".into(),
+            revision: 7,
+            imported: 3,
+            updated: 1,
+            skipped: 2,
+            rejected: 1,
+        };
+        let v = serde_json::to_value(&resp).unwrap();
+        let back: TmImportResponse = serde_json::from_value(v).unwrap();
+        assert_eq!(back, resp);
+    }
 }
 
 /// `project_glossary_upsert` request (wave 13): create/update one term by
@@ -829,4 +894,153 @@ pub struct ProjectGlossaryDeleteResponse {
     pub revision: Revision,
     /// Stable id of the removed entry.
     pub removed_id: String,
+}
+
+// ---------------------------------------------------------------------------
+// Translation memory (TM live, owner decision A+B+C). Records live in
+// `Project.tm` (the glossary pattern); every mutating op is
+// persist-before-ack. Domain types (`rimloc_domain::tm`) ride the wire as-is
+// like the glossary entries do.
+// ---------------------------------------------------------------------------
+
+/// `project_tm_list` request: the project's TM records with OPTIONAL
+/// in-memory filters (locale exact, status exact, query substring
+/// case-insensitive over source/target). Filters never touch the
+/// filesystem, so they need no form guard.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmListRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub locale: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<rimloc_domain::tm::TmStatus>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub query: Option<String>,
+}
+
+/// `project_tm_list` ack: the filtered records plus the UNFILTERED total
+/// (the UI can render an honest "N of M" without a second call).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmListResponse {
+    pub job_id: JobId,
+    pub entries: Vec<rimloc_domain::tm::TranslationMemoryEntry>,
+    pub total: usize,
+}
+
+/// `project_tm_upsert` request (C = manual CRUD): create or update one
+/// record by the (source_text, target_locale) key. Provenance is set by
+/// the SERVICE (Manual — the client never forges it); the status is the
+/// user's choice, `None` → ACCEPTED.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmUpsertRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    pub source_text: String,
+    pub target_text: String,
+    pub target_locale: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub status: Option<rimloc_domain::tm::TmStatus>,
+}
+
+/// Upsert ack: the durable revision plus the stored entry (id minted once,
+/// survives updates).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmUpsertResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub entry: rimloc_domain::tm::TranslationMemoryEntry,
+}
+
+/// `project_tm_delete` request: remove by stable id; an unknown id is a
+/// typed refusal, never silent success.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmDeleteRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    pub id: String,
+}
+
+/// Delete ack.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmDeleteResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub removed_id: String,
+}
+
+/// `project_tm_import` request (B): a bulk payload, JSON array of
+/// `{source, target[, locale][, status]}` objects OR CSV lines
+/// `source,target[,locale][,status]` (optional header, RFC-4180-lite
+/// quoting). The format is auto-detected; `format` forces it. Records land
+/// with provenance=IMPORT and status=DRAFT unless the row carries an
+/// EXPLICIT status — an import is never trusted blindly.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmImportRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Raw payload (file contents pasted or read client-side; the contract
+    /// carries text, never a server-side path).
+    pub payload: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<TmImportFormat>,
+}
+
+/// Import payload format. Auto-detect: a payload whose first byte is `[`
+/// or `{` parses as JSON (so broken JSON is a typed refusal, never a
+/// garbage CSV row), else as CSV.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TmImportFormat {
+    Json,
+    Csv,
+}
+
+/// Import ack. `imported` = fresh keys, `updated` = existing weaker
+/// (DRAFT) records refreshed by the import, `skipped` = existing
+/// stronger-or-equal records kept untouched, `rejected` = per-row form
+/// refusals (reason per row). A payload that parses as NEITHER JSON nor
+/// CSV is a whole-operation `contract_violation`, never a partial apply.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmImportResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    pub imported: usize,
+    pub updated: usize,
+    pub skipped: usize,
+    pub rejected: usize,
+}
+
+/// `project_tm_lookup` request: candidates for one source text within ONE
+/// target locale (isolation is mandatory — the locale is required).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmLookupRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    pub source_text: String,
+    pub target_locale: String,
+    /// Max matches (default 5, clamped 1..=50).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<usize>,
+}
+
+/// One ranked match. `match_kind` names the tier that found it (exact →
+/// normalized → fuzzy); `distance` is the Levenshtein distance of the
+/// NORMALIZED forms (0 for exact, `None` for exact per contract
+/// simplicity — present only for the fuzzy tier).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmMatch {
+    pub entry: rimloc_domain::tm::TranslationMemoryEntry,
+    /// "exact" | "normalized" | "fuzzy".
+    pub match_kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub distance: Option<usize>,
+}
+
+/// Lookup ack: ranked best-first (tier, then distance, then trust rank,
+/// then stable insertion order).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct TmLookupResponse {
+    pub job_id: JobId,
+    pub matches: Vec<TmMatch>,
 }

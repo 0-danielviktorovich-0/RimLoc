@@ -3107,6 +3107,12 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_glossary",
     "project_glossary_upsert",
     "project_glossary_delete",
+    // TM live (A+B+C): translation memory — the glossary pattern again.
+    "project_tm_list",
+    "project_tm_upsert",
+    "project_tm_delete",
+    "project_tm_import",
+    "project_tm_lookup",
     // safe read-only legacy extras
     "get_app_info",
     // build identity of the running binary (soak-hardening §1) — read-only
@@ -3860,6 +3866,12 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
             rimloc_gui_lib::contract_adapter::project_glossary_delete,
+            // TM live (A+B+C): translation memory.
+            rimloc_gui_lib::contract_adapter::project_tm_list,
+            rimloc_gui_lib::contract_adapter::project_tm_upsert,
+            rimloc_gui_lib::contract_adapter::project_tm_delete,
+            rimloc_gui_lib::contract_adapter::project_tm_import,
+            rimloc_gui_lib::contract_adapter::project_tm_lookup,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3929,6 +3941,12 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
             rimloc_gui_lib::contract_adapter::project_glossary_delete,
+            // TM live (A+B+C): translation memory.
+            rimloc_gui_lib::contract_adapter::project_tm_list,
+            rimloc_gui_lib::contract_adapter::project_tm_upsert,
+            rimloc_gui_lib::contract_adapter::project_tm_delete,
+            rimloc_gui_lib::contract_adapter::project_tm_import,
+            rimloc_gui_lib::contract_adapter::project_tm_lookup,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,

@@ -204,6 +204,7 @@ pub fn project_from_inventory(
         entries: source_entries(units, patch_stage, version, selected_by),
         translations: Vec::new(),
         glossary: Vec::new(),
+        tm: Vec::new(),
     };
     if p.context.view == ViewLabel::Potential && p.context.target_version.is_none() {
         // Without a known version the view can never be Exact.

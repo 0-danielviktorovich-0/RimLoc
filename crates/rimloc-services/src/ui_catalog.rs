@@ -336,6 +336,7 @@ pub fn build_catalog_project(root: &Path) -> Result<Project> {
         entries,
         translations: Vec::new(),
         glossary: Vec::new(),
+        tm: Vec::new(),
     };
     // SF-10: import every existing target catalog as ordinary data (the
     // single `update_translation` write path; origin Imported marks the

@@ -24,7 +24,9 @@ use rimloc_services::contract::{
     capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse,
     CapabilityReport, CreateProjectRequest, ProjectGlossaryDeleteRequest,
     ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse,
-    ProjectSnapshot, ProjectSummary,
+    ProjectSnapshot, ProjectSummary, TmDeleteRequest, TmDeleteResponse, TmImportRequest,
+    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse,
+    TmUpsertRequest, TmUpsertResponse,
 };
 use rimloc_services::session::ProjectSessionManager;
 use serde::Serialize;
@@ -56,6 +58,13 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_glossary",
     "project_glossary_upsert",
     "project_glossary_delete",
+    // TM live (owner decision A+B+C): translation memory — the glossary
+    // pattern again (Project.tm, persist-before-ack).
+    "project_tm_list",
+    "project_tm_upsert",
+    "project_tm_delete",
+    "project_tm_import",
+    "project_tm_lookup",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -256,6 +265,77 @@ pub fn project_glossary_delete(
     traced_simple("project_glossary_delete", || {
         manager.glossary_delete(&request)
     })
+}
+
+// TM live (owner decision A+B+C): the glossary command chain, repeated
+// literally — pass-through into the session manager, typed errors, trace.
+
+/// `project_tm_list` — TM records with optional locale/status/query
+/// filters (read-only).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_list(
+    state: State<'_, ContractState>,
+    request: TmListRequest,
+) -> Result<TmListResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_list", || manager.tm_list(&request))
+}
+
+/// `project_tm_upsert` — manual CRUD write (C); persist-before-ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_upsert(
+    state: State<'_, ContractState>,
+    request: TmUpsertRequest,
+) -> Result<TmUpsertResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_upsert", || manager.tm_upsert(&request))
+}
+
+/// `project_tm_delete` — remove by stable id; unknown id is a typed
+/// refusal, never silent success.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_delete(
+    state: State<'_, ContractState>,
+    request: TmDeleteRequest,
+) -> Result<TmDeleteResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_delete", || manager.tm_delete(&request))
+}
+
+/// `project_tm_import` — bulk import (B), JSON or CSV; persist-before-ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_import(
+    state: State<'_, ContractState>,
+    request: TmImportRequest,
+) -> Result<TmImportResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_import", || manager.tm_import(&request))
+}
+
+/// `project_tm_lookup` — ranked candidates within one target locale
+/// (read-only).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_lookup(
+    state: State<'_, ContractState>,
+    request: TmLookupRequest,
+) -> Result<TmLookupResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_lookup", || manager.tm_lookup(&request))
 }
 
 #[tauri::command(rename_all = "snake_case")]
