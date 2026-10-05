@@ -209,3 +209,27 @@ LM CRUD/персистентность/рестарт 14/14+1/1. docs/design/PAL
 **WINDOWS_BETA_BLOCKER**: CLI на windows падает STATUS_STACK_OVERFLOW на любой
 команде (вплоть до --help; 43/49 тестов). Subprocess-тесты гейтнуты
 cfg(not(windows)); чинить стартовую рекурсию (config/i18n?).
+
+### §88. PR #60 СМЕРЖЕН — main снова актуален (2026-10-06)
+
+**origin/main = 4249ba8** (merge PR #60; 279+ коммитов кампании). Локальный ba-main
+переключён на main. Feature-ветка feature/ui-r1-convergence удалена (заменяет старый
+§87-контекст «PR открыт»).
+
+Финальный CI мержа: 18 pass / 1 fail (CodeQL summary — settings-настройка, задокументированное
+исключение) / 2 skip (pages-гейты за PAGES_PREVIEW_ENABLED). **Windows cargo test ЗЕЛЁНЫЙ** —
+впервые: clap-flatten снял stack overflow, гейты убраны, юниты+интеграция прошли все 3 ОС.
+
+Волна 2 интегрирована полностью: keychain РЕАЛЬНЫЙ бэкенд (keyring без платформенных
+backend'ов молча писал в мок — включены apple/windows-native, restart-proof двумя
+процессами), FRONTEND_PERFORMANCE_EVIDENCE (React≈Svelte на бытовых операциях; 222ms =
+driver-канал), rel18 artifact+identity (72259e0b), palette/LM acceptance (8 багов
+зафиксированы, MUST-FIX список в PALETTE_LM_ACCEPTANCE.md), adversarial 13 проб.
+
+Dependabot: #58 tauri-build, #55 markdown, #56→rebase pymdown, #59→rebase dialog — 3 влито,
+2 на ребейзе (@dependabot rebase отправлен). Parallel-session PRы #61 (docs-refresh) и #62
+(Codecov) — НЕ мои, ждают своей сессии/ревью.
+
+Дальше: rel19 артефакт от 4249ba8+ (identity + palette WDIO приёмка стрелок) →
+OWNER_TEST_PACKET v2. Backlog: PO-optional (docs/development/BACKLOG_PO_OPTIONAL_ARCHITECTURE.md),
+7 feasible конкурентов, palette MUST-FIX хвосты.
