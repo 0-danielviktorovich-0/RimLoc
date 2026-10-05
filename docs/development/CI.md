@@ -41,6 +41,7 @@
 | `ci.yml` | PR→main, dispatch | `lint` (fmt+clippy), `test` (ubuntu/macos/windows), `gui` (Tauri build), `frontend` (svelte-check + vitest), `deny` (cargo-deny), `schema` (drift), `workflows-lint` (actionlint) | единый quality gate |
 | `semver.yml` | PR→main, dispatch | `semver` (cargo-semver-checks, гейт), `public-api` (информационный диф) | стабильность API |
 | `changelog-check.yml` | PR→main | `verify` | CHANGELOG сопровождает пользовательские изменения (лейбл `internal-only` выключает) |
+| `workflow-lint.yml` | workflow-file PR→main/convergence + dispatch | `actionlint` | быстрый синтаксис/semantics-гейт GitHub Actions отдельно от тяжёлого CI |
 | `docs.yml` | docs PR→main + docs push→main + dispatch | `build`, `deploy-prod`, optional `deploy-preview` | strict MkDocs + Pages; docs-only PR не гоняет тяжёлый Rust matrix |
 | `coverage.yml` | relevant code PR→main/convergence + push→main + dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov + Codecov OIDC, два coverage-family report; Components делят один отчёт по подсистемам |
 | `publish.yml` | dispatch | `publish` | recovery-публикация crates.io |
@@ -94,7 +95,7 @@
 
 ## 8. Локальная валидация
 
-`actionlint` (1.7.12) прогоняется и локально, и в CI (`ci.workflows-lint` ставит его через `go install ...@v1.7.12` — верификация модуля через sum.golang.org, без сторонних actions). Локально:
+`actionlint` (1.7.12) прогоняется и локально, и в отдельном `workflow-lint.yml` (устанавливается через `go install ...@v1.7.12` — верификация модуля через sum.golang.org, без стороннего action). Локально:
 
 ```bash
 brew install actionlint   # или go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
