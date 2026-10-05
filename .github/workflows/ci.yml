@@ -135,5 +135,10 @@ jobs:
       # go install верифицирует модуль через checksum-БД sum.golang.org —
       # пин по версии модуля, без сторонних actions и curl|bash.
       - name: Install actionlint (pinned module version)
-        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+        run: |
+          # go install кладёт бинарник в $(go env GOPATH)/bin (~/go/bin),
+          # которого нет в PATH раннера — без этого следующий шаг падает
+          # с «actionlint: command not found» (exit 127, лог PR #60).
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
       - run: actionlint -color
