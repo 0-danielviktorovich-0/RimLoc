@@ -2,354 +2,115 @@
 title: Developer Guide
 ---
 
-# Developer Guide
+# Developer guide
 
-Everything you need to build, test, and debug RimLoc locally.
+RimLoc is a Rust localization core/services stack with a Tauri 2 desktop application.
 
-## Supported OS and toolchain
+## Current architecture
 
-- Recommended: Linux or macOS (Rust stable).
-- Windows: works with MSVC toolchain; WSL2 (Ubuntu) is recommended for a smoother UNIX‑like workflow.
-- Install Rust via rustup:
+~~~text
+source
+  ↓
+LocalizationAdapter
+  ↓
+canonical project / SourceEntry inventory
+  ↓
+translations · revisions · TM · glossary · validation
+  ↓
+rimloc-services
+  ↓
+RimLocClient / CLI
+  ↓
+React desktop / automation / future integrations
+~~~
 
-```bash
-# Linux/macOS
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+Key directories:
 
-# Windows (PowerShell): download rustup-init.exe from https://rustup.rs
-```
+- <code>crates/</code> — Rust domain/core/services/adapters/import/export/CLI;
+- <code>gui/tauri-app/frontend-react/</code> — intended production React frontend;
+- <code>gui/tauri-app/frontend-v2/</code> — frozen Svelte fallback;
+- <code>gui/tauri-app/src-tauri/</code> — Tauri bridge/config;
+- <code>docs/</code> — canonical MkDocs sources;
+- <code>test/</code>, <code>testlab/</code> — fixtures and acceptance infrastructure.
 
-Verify:
+Read [AGENTS.md](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/AGENTS.md) before agent-driven repository changes.
 
-```bash
-rustc -V
-cargo -V
-```
+## Rust checks
 
-Optional tools:
-
-- VS Code + rust‑analyzer
-- `cargo install cargo-watch`
-- Python 3 + `pip` (for docs)
-
-## Build & test
-
-```bash
+~~~bash
 cargo build --workspace
 cargo test --workspace
-cargo fmt && cargo clippy --workspace --all-targets -- -D warnings
-```
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+~~~
 
-Run the CLI against a sample mod:
+Some desktop/Linux builds need Tauri/WebKit/GTK system packages; CI keeps GUI-specific dependencies in the GUI job.
 
-```bash
-cargo run -q -p rimloc-cli -- --quiet scan --root ./test/TestMod --format json | jq '.[0]'
-```
+## React frontend
 
-## Environment for debugging
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npx tsc --noEmit
+npm run build
+~~~
 
-- Logging:
-  - `RUST_LOG=debug` (console to stderr)
-  - `RIMLOC_LOG_DIR=./logs` (file log; daily rotation)
-  - `RIMLOC_LOG_FORMAT=json` for structured file logs
-  - `NO_COLOR=1`, `NO_ICONS=1` for plain text
-  - `--quiet` keeps stdout clean for JSON output
+Run Tauri with the React config:
 
-Examples:
+~~~bash
+cd ../src-tauri
+cargo tauri dev --config tauri.react.conf.json
+~~~
 
-```bash
-RUST_LOG=debug RIMLOC_LOG_DIR=./logs cargo run -q -p rimloc-cli -- --quiet validate --root ./test/TestMod --format json | jq .
-```
+The Svelte fallback is intentionally frozen during convergence; do not modify it casually.
 
-Backtraces and rich errors:
+## CLI
 
-```bash
-RUST_BACKTRACE=1 cargo run -p rimloc-cli -- validate --root ./test/TestMod
-```
+~~~bash
+cargo run -p rimloc-cli -- --help
+cargo run -p rimloc-cli -- scan --root ./test/TestMod --format json
+cargo run -p rimloc-cli -- validate --root ./test/TestMod
+~~~
 
-## Debugging with LLDB/GDB (optional)
+PO commands are interchange adapters, not the canonical project architecture.
 
-```bash
-# lldb
-rusr-lldb target/debug/rimloc-cli -- --quiet scan --root ./test/TestMod
+## Adding a localization adapter
 
-# gdb
-rust-gdb target/debug/rimloc-cli --args --quiet scan --root ./test/TestMod
-```
+Start with [Localization Adapters](adapters.md) and the deeper [architecture document](../../architecture/LOCALIZATION_ADAPTERS.md).
 
-## Running docs locally
+The important rule: environment/game semantics stay in the adapter. Generic project/TM/glossary/editor behavior stays generic.
 
-```bash
-python -m venv .venv && source .venv/bin/activate
+## Documentation
+
+~~~bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements-docs.txt
-mkdocs serve
-```
+mkdocs build --strict
+~~~
 
-## i18n (localization)
+The documentation site is the canonical public documentation source. GitHub Wiki is intentionally not used as a second technical source of truth.
 
-- CLI strings live in `crates/rimloc-cli/i18n/en/rimloc.ftl` and mirrors per locale.
-- See Community → Localization and Translate RimLoc for adding a new language.
-- Placeholders: keep `{name}`, `{0}`, `%s` intact — see Guides → Placeholders.
+## Security-sensitive changes
 
-## Typical workflows
+Changes involving filesystem writes, Tauri permissions/IPC, network/provider credentials, shell execution, parsing untrusted input, or automation bridges need explicit security review and adversarial tests.
 
-### Export → translate → import
+See:
 
-```bash
-# export PO
-rimloc-cli --quiet export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --lang ru
-# validate placeholders
-rimloc-cli --quiet validate-po --po ./out/MyMod.po --strict
-# import back (single file or full structure)
-rimloc-cli --quiet import-po --po ./out/MyMod.po --out-xml ./out/MyMod.ru.xml
-```
+- [SECURITY.md](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/SECURITY.md)
+- <code>docs/security/</code>
+- <code>deny.toml</code>
 
-### Build a translation‑only mod
+## CI / releases
 
-```bash
-rimloc-cli --quiet build-mod --po ./out/MyMod.po --out-mod ./dist/MyMod-ru --lang ru --dedupe
-```
+CI is intended to validate current Rust + React code while avoiding unnecessary runner use for docs-only changes.
 
-## VS Code / VSCodium setup
+Release publication is currently controlled/manual during pre-beta. Do not create tags, publish crates, sign/notarize, or create a GitHub Release unless the owner explicitly requests a release operation.
 
-VS Code and VSCodium (telemetry‑free build of VS Code) work equally well for Rust. Recommended extensions:
+## More developer docs
 
-- rust‑analyzer (official Rust language support)
-- CodeLLDB (debugger)
-- Even Better TOML (Cargo.toml)
-- Fluent (FTL) syntax highlight (e.g., "Fluent Support")
-
-Place these files under `.vscode/` (VSCodium also reads them).
-
-Ready‑made examples are included in the repo:
-
-- `.vscode/tasks.example.json`
-- `.vscode/launch.example.json`
-
-Copy them to `.vscode/tasks.json` and `.vscode/launch.json` to enable.
-
-Example `tasks.json`:
-
-```json
-{
-  "version": "2.0.0",
-  "tasks": [
-    { "label": "cargo build", "type": "shell", "command": "cargo build --workspace" },
-    { "label": "cargo test",  "type": "shell", "command": "cargo test --workspace" },
-    { "label": "cargo clippy", "type": "shell", "command": "cargo clippy --workspace --all-targets -- -D warnings" },
-    { "label": "cargo fmt",    "type": "shell", "command": "cargo fmt" },
-    { "label": "mkdocs serve", "type": "shell", "command": "python -m venv .venv && . .venv/bin/activate && pip install -r requirements-docs.txt && mkdocs serve" }
-  ]
-}
-```
-
-Example `launch.json` (debug `rimloc-cli`):
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug rimloc-cli (scan)",
-      "type": "lldb",
-      "request": "launch",
-      "program": "${workspaceFolder}/target/debug/rimloc-cli",
-      "args": ["--quiet", "scan", "--root", "${workspaceFolder}/test/TestMod", "--format", "json"],
-      "cwd": "${workspaceFolder}",
-      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
-      "preLaunchTask": "cargo build"
-    },
-    {
-      "name": "Debug rimloc-cli (validate)",
-      "type": "lldb",
-      "request": "launch",
-      "program": "${workspaceFolder}/target/debug/rimloc-cli",
-      "args": ["--quiet", "validate", "--root", "${workspaceFolder}/test/TestMod", "--format", "text"],
-      "cwd": "${workspaceFolder}",
-      "env": { "RUST_LOG": "debug", "RIMLOC_LOG_DIR": "${workspaceFolder}/logs" },
-      "preLaunchTask": "cargo build"
-    }
-  ]
-}
-```
-
-Tips:
-
-- Add a "cargo test" compound task or a test launch with `program`: `${workspaceFolder}/target/debug/rimloc-cli-<hash>` if you debug test binaries.
-- VSCodium users can reuse the same `.vscode/` folder.
-
-OS note: Linux and macOS generally provide a smoother Rust developer experience (tooling parity, perf). On Windows, WSL2 is recommended if you prefer a UNIX‑like environment.
-
-## Profiling tips
-
-For quick CPU flamegraphs:
-
-```bash
-cargo install flamegraph
-# Linux needs `perf` (sudo apt install linux-tools-...)
-# macOS needs dtrace (run as root) or use Instruments
-
-cargo flamegraph -p rimloc-cli -- --quiet scan --root ./test/TestMod --format json
-```
-
-General tips:
-
-- Profile release builds: `cargo build --release`.
-- Narrow down workloads to a single subcommand (e.g., `scan` on a bigger mod).
-- Use `tracing` spans (already enabled) + `RUST_LOG=debug` to correlate hot paths with logs.
-
-## Publishing a dev pre‑release (GitHub Actions)
-
-There are two ways to ship multi‑arch dev builds:
-
-1) Manual (Release — dev pre‑release):
-   - Go to GitHub → Actions → “Release (dev pre-release)” → “Run workflow”.
-   - The workflow computes a tag from Cargo version + short SHA (e.g., `v0.0.1-dev.ab12c34`).
-   - Assets are uploaded for Linux/macOS/Windows (x86_64 + aarch64; Linux also has x86_64‑musl).
-2) Automatic (Nightly Dev Pre-release):
-   - Push to the `develop` branch.
-   - CI creates/updates a pre‑release with the same tag scheme.
-
-The release body includes the commit SHA and the list of targets. You can edit the description after CI finishes if needed.
-
-Coming soon: screenshots/GIFs of the “Run workflow” flow (we’ll embed them when available).
-
-### Verifying signatures (cosign keyless)
-
-Each archive is signed with Sigstore/cosign using GitHub OIDC (keyless). You’ll find `.sig` and `.pem` next to the asset.
-
-Basic verification:
-
-```bash
-cosign verify-blob \
-  --certificate dist/<ASSET>.pem \
-  --signature   dist/<ASSET>.sig \
-  dist/<ASSET>
-```
-
-Strict verification (checks GitHub identity of the workflow):
-
-```bash
-cosign verify-blob \
-  --certificate-identity-regexp "https://github.com/.+/.+/.github/workflows/(release-dev|release-dev-auto).yml@.*" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
-  --certificate dist/<ASSET>.pem \
-  --signature   dist/<ASSET>.sig \
-  dist/<ASSET>
-```
-
-### SBOM
-
-An SPDX JSON SBOM (`.spdx.json`) is generated with Syft for each asset. You can review dependencies/licenses or scan with tools like `grype`/`trivy`.
-
-### Checksums
-
-For each artifact we publish a SHA256 checksum (`.sha256`). Verify:
-
-```bash
-# Linux
-sha256sum -c dist/<ASSET>.sha256
-
-# macOS
-shasum -a 256 -c dist/<ASSET>.sha256
-
-# Windows (PowerShell)
-Get-Content dist\<ASSET>.sha256
-Get-FileHash dist\<ASSET> -Algorithm SHA256
-```
-
-## Changelog & versioning (plain English)
-
-A clear changelog saves time for users and reviewers.
-
-- One changelog: keep `CHANGELOG.md` in the repo root, written by humans.
-- Format: “Keep a Changelog” + SemVer. Use sections: Added, Changed, Fixed, Docs, Internal.
-- When to update: every user‑facing change gets a bullet under “Unreleased”. Infra‑only PRs can add the `internal-only` label to skip the CI check.
-- How to write bullets: `- [scope] short description (#PR)` — scope is one of `cli`, `core`, `parsers-xml`, `export-po`, `export-csv`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
-- Don’t rewrite history: only add new bullets or move them during a release.
-
-Versioning rules (SemVer):
-
-- Patch: bug fixes that don’t change behavior or formats.
-- Minor: backward‑compatible features (new CLI flags, new exporter options).
-- Major: breaking changes (CLI behavior/flags, JSON/CSV/PO formats, public APIs).
-- CLI may use pre‑releases: `-alpha.N`, `-beta.N`.
-- Workspace crates are versioned independently; bump only crates that changed for users.
-
-Release process in short:
-
-1) Make sure “Unreleased” is up to date and tests/lints/docs are green.
-2) Create a new version section: `## [X.Y.Z] - YYYY‑MM‑DD` and move the bullets.
-3) Update compare links at the bottom of `CHANGELOG.md`.
-4) Tag as `vX.Y.Z` and use the release workflow (`release‑plz`/`cargo‑release`) — don’t edit versions by hand.
-
-SemVer cheat sheet (what bump to use):
-
-- New CLI flag or compatible JSON/CSV/PO additions → Minor
-- Behavior change with backward compatibility (e.g., defaults unchanged) → Minor
-- Remove/rename CLI flag, change default, remove/rename JSON/CSV fields → Major
-- Bug fix or internal refactor with no user‑visible change → Patch
-- Docs only (no behavior change) → Patch or Internal
-
-### Windows profiling (WPA/ETW)
-
-Windows does not support `perf`/`dtrace` natively, but you can record ETW traces and analyze them:
-
-- Install Windows Performance Toolkit (WPT) via the Windows 10/11 SDK installer (select “Windows Performance Toolkit”).
-
-Record from a terminal:
-
-```powershell
-# Start a lightweight CPU profile
-wpr -start CPU -filemode
-
-# Run the workload in another terminal
-runscript: cargo run -q -p rimloc-cli -- --quiet scan --root .\test\TestMod --format json > $null
-
-# Stop recording and write the trace
-wpr -stop rimloc.etl
-```
-
-Open `rimloc.etl` in Windows Performance Analyzer (WPA), inspect CPU Usage (Sampled) and call stacks.
-
-Alternative: PerfView (https://github.com/microsoft/perfview)
-
-```powershell
-PerfView.exe run /NoGui /AcceptEULA -- cargo run -p rimloc-cli -- --quiet validate --root .\test\TestMod --format text
-```
-
-WSL2 option: run Linux tools (`perf`, `cargo flamegraph`) inside WSL2 and point to the same repo path.
-
-## Debugging test binaries in VS Code/VSCodium
-
-CodeLLDB can launch tests directly via Cargo. Example `launch.json` config to debug a specific test:
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug test: cli_integration::validate_json_emits_structured_issues",
-      "type": "lldb",
-      "request": "launch",
-      "cargo": {
-        "args": ["test", "--no-run", "--package", "rimloc-cli", "--test", "cli_integration"],
-        "filter": { "name": "cli_integration", "kind": "test" }
-      },
-      "args": ["--nocapture", "validate_json_emits_structured_issues"],
-      "cwd": "${workspaceFolder}",
-      "env": { "RUST_LOG": "debug" },
-      "console": "integratedTerminal"
-    }
-  ]
-}
-```
-
-If your CodeLLDB version does not support the `cargo` launcher, build tests first and point `program` to the test binary under `target/debug/deps/` (hash suffix changes per build):
-
-```bash
-cargo test -p rimloc-cli --test cli_integration --no-run
-ls target/debug/deps/cli_integration-*
-```
-
-Then set `program` to that path and use `args`: `["--nocapture", "validate_json_emits_structured_issues"]`.
+- [Adapter authoring](adapters.md)
+- [Legacy scan plugins](plugins.md)
+- [Testing](../testing.md)
+- [Docs style](docs_style.md)
+- [Frontend boundary](../../architecture/FRONTEND_UI_BOUNDARY.md)
