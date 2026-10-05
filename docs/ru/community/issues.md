@@ -23,7 +23,7 @@ GitHub Issues используются для воспроизводимых б�
 
 ## Security
 
-Не публикуйте exploit details, secrets и чувствительные local data. Следуйте [SECURITY.md](../../../SECURITY.md).
+Не публикуйте exploit details, secrets и чувствительные local data. Следуйте [SECURITY.md](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/SECURITY.md).
 
 ## Feature request
 
