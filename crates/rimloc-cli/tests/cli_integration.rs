@@ -1,9 +1,7 @@
-// BUG(windows) MUST_FIX_BEFORE_WINDOWS_BETA: CLI-сабпроцесс падает
-// STATUS_STACK_OVERFLOW (0xC00000FD) на ЛЮБОЙ команде, включая `--help`
-// (43/49 тестов, лог PR #60) — дефолтный 1MB main-thread стек windows против
-// 8MB на unix; вероятна глубокая рекурсия на старте (поиск конфига/i18n).
-// Тесты спрятаны под cfg до починки рекурсии; на unix покрытие полное.
-#![cfg(not(windows))]
+// Раньше файл скрывался под cfg(not(windows)): CLI падал STATUS_STACK_OVERFLOW на
+// любой команде (1MB main-thread стек windows, гигантский derive-кадр augment_subcommands
+// на 25 вариантах Commands). Фикс: Commands разбит на 6 flatten-групп — см. lib.rs и
+// tests/startup_stack.rs (детерминированный 1MB-репро).
 
 use assert_cmd::prelude::*;
 use predicates::prelude::*;
