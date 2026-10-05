@@ -53,6 +53,9 @@ fn scan_detects_defs_without_english_definj() {
     cmd.args(["--format", "json", "--source-lang-dir", "English"]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    // Windows CLI печатает нативные backslash-пути — нормализуем для подстрочных
+    // ассертов (продукт вправе отдавать native separators).
+    let stdout = stdout.replace('\\', "/");
     let json: Value = serde_json::from_str(&stdout).expect("valid json");
     let arr = json.as_array().expect("array");
     let paths: Vec<&str> = arr
@@ -81,6 +84,7 @@ fn scan_reports_both_keyed_and_defs() {
     cmd.args(["--format", "json", "--source-lang-dir", "English"]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    let stdout = stdout.replace('\\', "/"); // см. комментарий в первом тесте файла
     let json: Value = serde_json::from_str(&stdout).expect("valid json");
     let arr = json.as_array().expect("array");
     let mut has_keyed = false;
@@ -123,6 +127,7 @@ fn export_po_emits_definj_entries_and_hint() {
     cmd.args(["--lang", "ru", "--source-lang-dir", "English"]);
     let assert = cmd.assert().success();
     let stderr = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
+    let stderr = stderr.replace('\\', "/"); // нативные сепараторы windows-консоли
     assert!(
         stderr.contains("_learn/suggested.xml"),
         "should hint about suggested.xml"
