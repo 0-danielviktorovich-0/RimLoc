@@ -40,7 +40,7 @@ pub fn scan_keyed_from_defs_special(root: &Path) -> Result<Vec<(String, String, 
             continue;
         }
         let s = p.to_string_lossy();
-        if !(s.contains("/Defs/") || s.contains("\\Defs\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&s, "Defs")) {
             continue;
         }
         let content = match std::fs::read_to_string(p) {
@@ -130,7 +130,7 @@ pub fn scan_keyed_source(
             continue;
         }
         let s = p.to_string_lossy();
-        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&s, "Languages")) {
             continue;
         }
         if !(s.contains(&format!("/Languages/{}/Keyed/", source_lang_dir))
@@ -171,7 +171,7 @@ pub fn collect_existing_keyed(
             continue;
         }
         let s = p.to_string_lossy();
-        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&s, "Languages")) {
             continue;
         }
         if !(s.contains(&format!("/Languages/{}/Keyed/", lang_dir))

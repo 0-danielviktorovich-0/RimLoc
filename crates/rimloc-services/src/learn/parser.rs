@@ -38,7 +38,7 @@ pub fn scan_candidates(
             }
         } else {
             let s = p.to_string_lossy();
-            if !(s.contains("/Defs/") || s.contains("\\Defs\\")) {
+            if !(rimloc_core::path_text::has_path_marker(&s, "Defs")) {
                 continue;
             }
         }
@@ -366,7 +366,7 @@ pub fn collect_existing_definj_keys(
             continue;
         }
         let s = p.to_string_lossy();
-        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&s, "Languages")) {
             continue;
         }
         if !(s.contains(&format!("/Languages/{lang_dir}/DefInjected/"))

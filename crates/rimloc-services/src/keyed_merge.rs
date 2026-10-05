@@ -117,10 +117,10 @@ pub fn merge_keyed(
             continue;
         }
         let s = p.to_string_lossy();
-        if !(s.contains("/Languages/") || s.contains("\\Languages\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&s, "Languages")) {
             continue;
         }
-        if !(s.contains("/Keyed/") || s.contains("\\Keyed\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&s, "Keyed")) {
             continue;
         }
         if !(s.contains(&format!("/Languages/{}/", source_lang_dir))

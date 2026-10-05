@@ -1,4 +1,5 @@
 use crate::Result;
+use rimloc_core::path_text::has_path_marker;
 use std::path::{Path, PathBuf};
 
 /// Build translation mod from an existing Languages/<lang> tree under `from_root`.
@@ -22,21 +23,20 @@ pub fn build_from_root(
     let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
     for u in units {
         let path_str = u.path.to_string_lossy();
-        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+        if !rimloc_core::path_text::has_path_marker(&path_str, "Languages") {
             continue;
         }
-        if !(path_str.contains(&format!("/Languages/{}/", lang_folder))
-            || path_str.contains(&format!("\\Languages\\{}\\", lang_folder)))
+        let lang_marker_slash = format!("Languages/{lang_folder}");
+        let lang_marker_back = format!("Languages\\{lang_folder}");
+        if !(has_path_marker(&path_str, &lang_marker_slash)
+            || has_path_marker(&path_str, &lang_marker_back))
         {
             continue;
         }
         if let Some(vers) = versions {
             let mut matched = false;
             for ver in vers {
-                if path_str.contains(&format!("/{}/", ver))
-                    || path_str.contains(&format!("\\{}\\", ver))
-                    || path_str.contains(&format!("/v{}/", ver))
-                    || path_str.contains(&format!("\\v{}\\", ver))
+                if has_path_marker(&path_str, ver) || has_path_marker(&path_str, &format!("v{ver}"))
                 {
                     matched = true;
                     break;
@@ -108,21 +108,20 @@ pub fn build_from_root_with_progress(
     let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
     for u in units {
         let path_str = u.path.to_string_lossy();
-        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+        if !rimloc_core::path_text::has_path_marker(&path_str, "Languages") {
             continue;
         }
-        if !(path_str.contains(&format!("/Languages/{}/", lang_folder))
-            || path_str.contains(&format!("\\Languages\\{}\\", lang_folder)))
+        let lang_marker_slash = format!("Languages/{lang_folder}");
+        let lang_marker_back = format!("Languages\\{lang_folder}");
+        if !(has_path_marker(&path_str, &lang_marker_slash)
+            || has_path_marker(&path_str, &lang_marker_back))
         {
             continue;
         }
         if let Some(vers) = versions {
             let mut matched = false;
             for ver in vers {
-                if path_str.contains(&format!("/{}/", ver))
-                    || path_str.contains(&format!("\\{}\\", ver))
-                    || path_str.contains(&format!("/v{}/", ver))
-                    || path_str.contains(&format!("\\v{}\\", ver))
+                if has_path_marker(&path_str, ver) || has_path_marker(&path_str, &format!("v{ver}"))
                 {
                     matched = true;
                     break;
