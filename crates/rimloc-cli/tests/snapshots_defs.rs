@@ -1,3 +1,8 @@
+// Раньше файл скрывался под cfg(not(windows)): CLI падал STATUS_STACK_OVERFLOW на
+// любой команде (1MB main-thread стек windows, гигантский derive-кадр augment_subcommands
+// на 25 вариантах Commands). Фикс: Commands разбит на 6 flatten-групп — см. lib.rs и
+// tests/startup_stack.rs (детерминированный 1MB-репро).
+
 use assert_cmd::prelude::*;
 use serde_json::Value;
 use std::path::PathBuf;
@@ -29,7 +34,9 @@ fn sanitize_json_units(mut v: Value) -> Value {
         for obj in arr.iter_mut() {
             if let Some(p) = obj.get_mut("path") {
                 if let Some(s) = p.as_str() {
-                    let norm = s.replace(&ws, "<WS>");
+                    // Сепараторы → `/`: продукт печатает нативные/смешанные пути,
+                    // снапшоты записаны в unix-виде; разделитель не контракт.
+                    let norm = s.replace(&ws, "<WS>").replace('\\', "/");
                     *p = Value::String(norm);
                 }
             }

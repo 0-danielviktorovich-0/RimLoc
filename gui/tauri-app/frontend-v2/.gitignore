@@ -2,3 +2,7 @@ node_modules/
 dist/
 *.local
 .DS_Store
+
+# Playwright e2e (T2a): generated artifacts and html report
+/test-results/
+/playwright-report/

@@ -1,0 +1,15 @@
+@import "tailwindcss" source(none);
+
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root{--background:oklch(.988 .003 70);--foreground:oklch(.255 .015 25);--card:oklch(1 0 0);--primary:oklch(.407 .123 15);--primary-foreground:oklch(.995 0 0);--secondary:oklch(.963 .006 70);--muted:oklch(.956 .006 70);--muted-foreground:oklch(.565 .018 40);--accent:oklch(.949 .017 17);--border:oklch(.909 .007 65);--success:oklch(.501 .08 159);--warning:oklch(.608 .114 72);--destructive:oklch(.552 .179 26);--info:oklch(.538 .085 247);--sidebar:oklch(.97 .006 70);--source:oklch(.973 .004 70);--terminal:oklch(.25 .009 40);--terminal-foreground:oklch(.92 .012 100);--overlay:oklch(.15 0 0 / .45);--shadow:0 12px 45px oklch(.2 .01 30 / .12);--radius:6px}
+
+.dark{--background:oklch(.225 .007 30);--foreground:oklch(.928 .009 70);--card:oklch(.247 .009 30);--primary:oklch(.749 .095 14);--primary-foreground:oklch(.205 .01 20);--secondary:oklch(.295 .009 30);--muted:oklch(.287 .009 30);--muted-foreground:oklch(.671 .014 60);--accent:oklch(.31 .03 15);--border:oklch(.341 .009 30);--success:oklch(.738 .089 159);--warning:oklch(.755 .12 77);--destructive:oklch(.716 .148 26);--info:oklch(.736 .08 247);--sidebar:oklch(.205 .007 30);--source:oklch(.276 .007 30);--terminal:oklch(.18 .009 40);--terminal-foreground:oklch(.92 .012 100);--overlay:oklch(.1 0 0 / .65);--shadow:0 12px 45px oklch(.1 0 0 / .4)}
+
+@theme inline {
+ --font-sans:'Golos Text',sans-serif; --font-mono:'IBM Plex Mono',monospace; --font-display:'Literata',serif;
+ --color-background:var(--background);--color-foreground:var(--foreground);--color-primary:var(--primary);--color-primary-foreground:var(--primary-foreground);--color-secondary:var(--secondary);--color-secondary-foreground:var(--foreground);--color-muted:var(--muted);--color-muted-foreground:var(--muted-foreground);--color-accent:var(--accent);--color-accent-foreground:var(--primary);--color-card:var(--card);--color-card-foreground:var(--foreground);--color-popover:var(--card);--color-popover-foreground:var(--foreground);--color-border:var(--border);--color-input:var(--border);--color-ring:var(--primary);--color-destructive:var(--destructive);--color-destructive-foreground:var(--primary-foreground);--color-success:var(--success);--color-warning:var(--warning);--color-info:var(--info);--radius-sm:4px;--radius-md:6px;--radius-lg:8px;--radius-xl:8px;
+}
+:root{--font-sans:'Golos Text',sans-serif;--font-mono:'IBM Plex Mono',monospace;--font-display:'Literata',serif}

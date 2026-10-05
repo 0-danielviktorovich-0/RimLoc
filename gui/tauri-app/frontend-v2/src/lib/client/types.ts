@@ -13,6 +13,7 @@ export type ContractErrorCode =
   | 'project_changed_on_disk'
   | 'contract_violation'
   | 'guard_output_denied'
+  | 'invalid_output_path'
   | 'unsupported_capability'
   | 'project_not_found'
   | 'schema_version'
@@ -78,6 +79,18 @@ export interface SourceEntryDto {
   text: string;
   source_locale: string;
   tkey?: unknown;
+  /** Additive (contract, wave 12): live Source Inspector projection — the
+   *  EFFECTIVE context's file RELATIVE to the project root, the
+   *  parser-guaranteed line (absent = unknown, never faked) and the winner
+   *  reason (rimloc winner_reason vocabulary). Absent on legacy snapshots
+   *  and whenever the backend cannot honestly project it. */
+  source_ref?: EntrySourceRefDto;
+}
+
+export interface EntrySourceRefDto {
+  file: string;
+  line?: number;
+  selected_by: string;
 }
 
 export interface TranslationDto {
@@ -119,6 +132,10 @@ export interface ProjectSnapshotDto {
   /** Additive v2 (contract.rs): the last durably ACKED revision — the
    *  correct `expected_revision` base for apply while dirty. */
   acked_revision?: number;
+  /** Additive (M-7): read-only source mod root the session holds; absent
+   *  on legacy envelopes — UI must show an honest unknown, never a
+   *  template placeholder. */
+  source_root?: { path: string };
   project: CanonicalProjectDto;
 }
 
@@ -164,6 +181,18 @@ export interface ExportProjectResponseDto {
   skipped_unknown_type: string[];
 }
 
+/** `project_build_mod`: the FULL drop-in mod package (`About/About.xml` in
+ *  the game-loadable `<ModMetaData>` shape + `Languages/<locale>`) — same
+ *  DTO pattern as the export; the differences live in the output, not the
+ *  report. */
+export interface BuildModProjectResponseDto {
+  job_id: string;
+  out_dir: { path: string };
+  files_written: number;
+  reparsed_keys: number;
+  skipped_unknown_type: string[];
+}
+
 export interface DiagnoseResponseDto {
   job_id: string;
   /** Sanitized bundle directory (outside the read-only source tree). */
@@ -172,6 +201,70 @@ export interface DiagnoseResponseDto {
   files: string[];
   redacted_count: number;
   excluded_count: number;
+}
+
+// --- existing translation pack (W2; mirrors contract.rs Import/Apply
+// Existing DTOs). Analysis is DRY-RUN ONLY; application is a SEPARATE,
+// fully guarded command. ---
+export interface ExistingMatchItemDto {
+  /** The pack's serialization key. */
+  key: string;
+  /** FULL structural identity the line addresses (reusable / conflicts). */
+  entry?: SourceEntryIdDto;
+}
+
+export interface ExistingAmbiguousItemDto {
+  key: string;
+  /** Candidate source keys — reported for review, never auto-applied. */
+  candidates: string[];
+}
+
+export interface ImportExistingRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute pack directory (typically Languages/<locale>). */
+  existing_dir: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ImportExistingResponseDto {
+  job_id: string;
+  scanned_files: number;
+  scanned_keys: number;
+  reusable_count: number;
+  conflict_count: number;
+  obsolete_count: number;
+  ambiguous_count: number;
+  invalid_count: number;
+  /** Inventory strings that stay untranslated after the merge. */
+  new_count: number;
+  /** Capped sample lists (backend EXISTING_LIST_LIMIT). */
+  reusable: ExistingMatchItemDto[];
+  conflicts: ExistingMatchItemDto[];
+  obsolete: ExistingMatchItemDto[];
+  ambiguous: ExistingAmbiguousItemDto[];
+  invalid: ExistingMatchItemDto[];
+}
+
+export interface ApplyExistingRequestDto {
+  project_id: string;
+  expected_revision: number;
+  session_epoch: number;
+  existing_dir: { path: string };
+  locale: string;
+}
+
+export interface ApplyExistingResponseDto {
+  job_id: string;
+  revision: number;
+  applied: number;
+  /** Existing translations NOT overwritten. */
+  conflicts: number;
+  /** Pack lines addressing nothing in the inventory (not applied). */
+  unmatched: number;
+  /** Ambiguous lines (not applied). */
+  ambiguous: number;
 }
 
 // --- handshake / capabilities ---
@@ -203,4 +296,102 @@ export type ContractMethod =
   | 'project_cancel_next'
   | 'project_validate'
   | 'project_export'
-  | 'project_diagnose';
+  | 'project_build_mod'
+  | 'project_diagnose'
+  // Window-level native folder dialog (main.rs pick_directory, NOT a
+  // contract_adapter op): exposed through the same typed surface so the UI
+  // fills absolute paths from the OS dialog instead of hand-typing them.
+  // The mock transport refuses it honestly — no OS dialog exists there.
+  | 'pick_directory'
+  // Self-localization entry (mandate D, shell-level like pick_directory):
+  // resolves the app-bundled RimLoc UI catalog as an ordinary project
+  // source dir (mod_root for the EXISTING contract create flow). The mock
+  // transport refuses it honestly — no bundled catalog exists there.
+  | 'selfloc_catalog_dir'
+  // Self-localization contribution (beta, wave 7): build the offline
+  // translation bundle from the OPEN RimLoc UI catalog session into a
+  // caller-chosen directory. The mock transport refuses it honestly —
+  // no backend session exists there.
+  | 'selfloc_build_contribution'
+  // Existing translation pack (W2): dry-run analysis + separate guarded
+  // application against the open project.
+  | 'project_import_existing'
+  | 'project_apply_existing'
+  // Project glossary (wave 13): generic project state, persist-before-ack.
+  | 'project_glossary'
+  | 'project_glossary_upsert'
+  | 'project_glossary_delete'
+  // Build identity of the RUNNING binary (soak-hardening §1): long-running
+  // acceptance runs verify the artifact they drive independently of any
+  // wrapper path. Refused honestly in mock — no running binary there.
+  | 'build_identity';
+
+/** Readiness status of the contribution bundle build (services
+ * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
+ * PARTIAL-BUT-VALID (valid subset bundled, refusals enumerated) /
+ * NEEDS-FIXES (nothing written, exact blocker list). */
+export type ContributionBuildStatus = 'READY' | 'PARTIAL-BUT-VALID' | 'NEEDS-FIXES';
+
+/** One §6-gate refusal of the contribution build — a change id (or
+ * `<root>` for structural blockers) plus a translator-actionable reason.
+ * Secret hits name the PATTERN, never the matched text. */
+export interface ContributionRejectionDto {
+  id: string;
+  reason: string;
+}
+
+/** Response of selfloc_build_contribution. `bundle_path` is null exactly
+ * when the status is NEEDS-FIXES (no file is written). */
+export interface SelflocBuildContributionResponseDto {
+  status: ContributionBuildStatus;
+  bundle_path: string | null;
+  accepted_count: number;
+  rejected: ContributionRejectionDto[];
+}
+
+// --- project glossary (wave 13; mirrors contract.rs ProjectGlossary* DTOs).
+// The glossary is GENERIC project state (adapter-independent): term is
+// unique per project CASE-INSENSITIVE — an upsert with different casing
+// updates the existing entry in place (stable id survives). ---
+export interface GlossaryTermDto {
+  id: string;
+  term: string;
+  translation: string;
+  note?: string;
+}
+
+export interface ProjectGlossaryUpsertRequestDto {
+  project_id: string;
+  session_epoch: number;
+  term: string;
+  translation: string;
+  note?: string;
+}
+
+export interface ProjectGlossaryUpsertResponseDto {
+  job_id: string;
+  revision: number;
+  entry: GlossaryTermDto;
+}
+
+export interface ProjectGlossaryDeleteRequestDto {
+  project_id: string;
+  session_epoch: number;
+  term: string;
+}
+
+export interface ProjectGlossaryDeleteResponseDto {
+  job_id: string;
+  revision: number;
+  removed_id: string;
+}
+
+/// Identity of the running binary, reported by the app itself
+/// (build.rs RIMLOC_* env, never derived from wrapper paths). Wire shape
+/// follows the shell-info precedent (AppInfo): camelCase.
+export interface BuildIdentityDto {
+  sourceCommit: string;
+  buildProfile: string;
+  buildFeatures: string;
+  appVersion: string;
+}

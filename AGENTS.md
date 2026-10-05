@@ -1,97 +1,196 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-RimLoc is organised as a Cargo workspace under `crates/`. Core translation logic lives in `rimloc-core`, XML ingestion in `rimloc-parsers-xml`, and exporters/importers each have their own crate. The CLI entry point is `crates/rimloc-cli/src/main.rs`, with integration fixtures stored under `test/`. `docs/` contains the MkDocs site sources, while `gui/tauri-app` hosts the experimental desktop shell. Keep generated output in `target/` and commit only curated assets in `docs/`.
+Переписан аудитом документации 2026-10-05 под фактическое состояние ветки
+`feature/ui-r1-convergence` (см. `docs/development/REPOSITORY_STATE_2026-10.md`,
+`docs/competitive/RIMLOC_CAPABILITIES_BASELINE.md` — якорь возможностей).
 
-### Architecture invariants (mandatory)
-- Preserve crate boundaries and responsibilities:
-  - `rimloc-domain` — shared types/JSON schemas; no IO.
-  - `rimloc-core` — core logic; no UI/CLI specifics.
-  - `rimloc-parsers-xml` — XML reading/parsing only.
-  - `rimloc-export-*` / `rimloc-import-*` — format adapters and IO for export/import.
-  - `rimloc-validate` — validation rules and checks.
-  - `rimloc-services` — orchestration/helpers reusable by CLI/GUI; file IO allowed.
-  - `rimloc-cli` — thin command layer only; no business logic.
-- New features land in the appropriate crate (prefer `rimloc-services` for orchestration) and are exposed via the CLI; do not place core logic in the CLI.
-- Keep outputs and contracts stable (CSV/JSON/PO). For breaking JSON changes, bump `OUTPUT_SCHEMA_VERSION`, regenerate schemas via `rimloc-cli schema`, and update docs.
-- Remain platform‑neutral in shared crates; guard OS‑specific code behind features and keep it out of core logic.
-- Avoid adding heavy dependencies or cross‑cutting frameworks without prior discussion; prefer small, focused crates.
+## Project Structure & Module Organization
+
+RimLoc — кроссплатформенный инструмент перевода модов RimWorld (и других игр, через
+адаптеры): Rust workspace + Tauri 2 desktop GUI + MkDocs-сайт в `docs/`.
+
+### Rust workspace (`Cargo.toml`, 15 крейтов + GUI)
+
+| Крейт | Ответственность | Инвариант |
+|---|---|---|
+| `rimloc-domain` | общие типы и JSON-схемы (`RimLocApplication` в canonical.rs) | никакого IO |
+| `rimloc-core` | ядро логики перевода | без UI/CLI-специфики |
+| `rimloc-parsers-xml` | чтение/парсинг XML RimWorld | только XML |
+| `rimloc-export-po` / `export-csv` / `export-xliff` | экспорт форматов | адаптеры форматов + IO |
+| `rimloc-import-po` / `import-xliff` | импорт форматов | адаптеры форматов + IO |
+| `rimloc-validate` | правила валидации | чистые проверки |
+| `rimloc-services` | оркестрация: scan/validate/import/build, project_store v2, ui_catalog, contract, observability | переиспользуется CLI и GUI, файловый IO разрешён |
+| `rimloc-config` | конфигурация (`rimloc.toml`) | — |
+| `rimloc-llm` | провайдер-шаблоны (UI существует, LLM-вызовы не подключены) | не вызывать платные API без явного разрешения владельца |
+| `rimloc-plugin-api` / `rimloc-plugin-jsonftl` | плагины сканирования | — |
+| `rimloc-cli` | тонкий командный слой (`src/main.rs`) | никакой бизнес-логики |
+
+Новая логика — в соответствующем крейте (оркестрация — в `rimloc-services`), наружу —
+через CLI; не класть ядро в CLI. Контракты вывода (CSV/JSON/PO/XLIFF) стабильны:
+ломкое изменение JSON = bump `OUTPUT_SCHEMA_VERSION` + `rimloc-cli schema` + правка docs.
+Общие крейты платформо-нейтральны; ОС-специфика — за фичами и вне ядра.
+
+Установки RimWorld и папки модов — **read-only входы**: инструмент читает дерево игры/модов
+и пишет только в явно запрошенные пользователем выходные пути (перевод, сохранения проекта,
+экспорт). Никогда не добавлять ветку кода, пишущую в исходники игры или модов.
+
+### GUI: Tauri 2 + три фронтенда (`gui/tauri-app/`)
+
+- **`frontend-react/` — продакшен-фронт**: React 19 + Vite 7 + TS strict + Tailwind 4,
+  OKLCH-токены Lovable R1. Единый hash-роутер (`src/App.tsx`, маршруты home/projects/checks/
+  compare/glossary/export/tools/settings/workspace/existing/selfloc/diagnostics/providers/lm).
+- **`frontend-v2/` — замороженный fallback (Svelte 5)**: НЕ удаляется и НЕ редизайнится
+  (мандат владельца, `docs/design/CURRENT_SVELTE_BASELINE.md` — «FROZEN LEGACY / FALLBACK /
+  REGRESSION ORACLE»). Критические фиксы — только для operability fallback'а; его vitest/svelte-check
+  остаются regression-гейтом (`npm run check`, `npm test`), а не дорожкой новых фич.
+- **`frontend/` — legacy v1 shell (vanilla JS)**: reference only, не расширять.
+- **`src-tauri/` — Rust-бэкенд Tauri** (`rimloc-gui`): тонкий слой над `rimloc-services`.
+
+**Framework-neutral `RimLocClient`** — единственная клиентская поверхность над binding-контрактом
+(`gui/tauri-app/frontend-react/src/lib/client/client.ts`; скопирован из замороженного Svelte-клиента,
+wire-DTO идентичны): handshake с `ui_contract_version`, мутации с `expectedRevision + sessionEpoch`,
+типизированные `stale_revision`/`save_failed` (draft не затирается). UI-фреймворк можно сменить,
+не трогая domain/services/backend — канон границы: `docs/architecture/FRONTEND_UI_BOUNDARY.md`.
+
+**Dual-config сборки Tauri** (identity артефактов: automation-сборка ≠ owner-артефакт):
+- `tauri.conf.json` — дефолт (Svelte fallback, `frontend-v2/dist`);
+- `tauri.react.conf.json` — прод-лайн React (`frontend-react/dist`);
+- `tauri.automation.conf.json` — automation-поверхность (+capability `automation-bridge`,
+  Runtime Bridge); прод-сборка от неё свободна, `release-guard` сканирует артефакт.
+  Cargo-фича `automation-bridge` — optional.
+
+### Адаптеры локализации (мультиигровая граница)
+
+Канон: `docs/architecture/LOCALIZATION_ADAPTERS.md`. Модель адаптера — seam (design +
+`RimLocApplication`); **RimWorld — первичная живая реализация**; **Selfloc — вторая живая**
+(«RimLoc переводит RimLoc»: каталог приложения как обычный инвентарь, `selfloc_catalog.rs`,
+`docs/development/SELFLOC_BRIDGE.md`). Спекулятивные адаптеры (Minecraft/Terraria/Paradox/Unity)
+**не реализуются** — документ проверяет лишь, что граница не потребует их знания сегодня;
+будущие адаптеры — capability-driven, добавляются решением владельца.
 
 ## Build, Test, and Development Commands
-- `cargo build --workspace` builds every crate and checks cross-crate interfaces.
-- `cargo run -p rimloc-cli -- scan --root test/TestMod` exercises the CLI end-to-end during manual checks.
-- `cargo test --workspace` runs unit and integration suites; append `-- --nocapture` to inspect stdout.
-- `cargo fmt && cargo clippy --workspace --all-targets -- -D warnings` ensures formatting and lint cleanliness before review.
-- `mkdocs serve` (from the `.venv`) previews the documentation site locally.
+
+Дисковое ограничение рабочей машины владельца: внутренний диск мал, **любые `cargo build/test/check/clippy`
+запускать с `CARGO_TARGET_DIR=/Volumes/Portable-SSD/caches/targets/rimloc` в строке команды**.
+На btrfs-SSD — дополнительно `CARGO_INCREMENTAL=0` (локи не поддерживаются).
+
+- `CARGO_TARGET_DIR=… cargo build --workspace` — все крейты и межкрейтные интерфейсы.
+- `CARGO_TARGET_DIR=… cargo run -p rimloc-cli -- scan --root test/TestMod` — сквозная проверка CLI.
+- `CARGO_TARGET_DIR=… cargo test --workspace` — юнит- и интеграционные сьюты (`-- --nocapture` для stdout).
+  Известный подводный камень: workspace включает `rimloc-gui`, чей `generate_context!` требует
+  существования `frontendDist` (см. диагноз CI в `docs/development/DOCUMENTATION_AUDIT_2026-10.md`).
+- `cargo fmt --all --check` и `CARGO_TARGET_DIR=… cargo clippy --workspace --all-targets --all-features -- -D warnings` — перед ревью.
+- `mkdocs serve` (из venv, `requirements-docs.txt`) — превью сайта; строгий гейт:
+  `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build --strict`.
+- React-лайн: `cd gui/tauri-app/frontend-react && npm ci && npm run build` (tsc strict + Vite).
 
 ## Coding Style & Naming Conventions
-Rust code uses the default 4-space rustfmt profile; rely on `cargo fmt` instead of hand-formatting. Modules, files, and functions stay in `snake_case`; structs/enums use `PascalCase`; constants are `SCREAMING_SNAKE_CASE`. CLI arguments follow long-form kebab-case to match existing subcommands. When editing Fluent localisation files under `crates/rimloc-cli/i18n`, keep keys lowercase with hyphens and update English (`en`) first.
+
+Rust — дефолтный rustfmt (4 пробела); модули/функции `snake_case`, типы `PascalCase`,
+константы `SCREAMING_SNAKE_CASE`; CLI-флаги kebab-case. FTL-ключи в `crates/rimloc-cli/i18n` —
+строчные с дефисами, EN первым. TypeScript — strict; компоненты React-функции; стиль — OKLCH-токены,
+никаких сырых хексов цвета в новых экранах.
 
 ## Testing Guidelines
-Prefer unit tests alongside the code they assert. Integration tests for the CLI live in `crates/rimloc-cli/tests`; group scenarios in descriptive modules and reuse helpers from `helpers.rs`. Add sample XML or PO fixtures to `test/` and clean up temporary files via `tempfile`. Run `cargo test --features <feature>` if you introduce gated functionality, and cover new subcommands or exporters.
+
+Юнит-тесты — рядом с кодом; интеграционные CLI — `crates/rimloc-cli/tests` (хелперы `helpers.rs`);
+фикстуры XML/PO — в `test/`; временные файлы — через `tempfile`. Гейт-функциональность —
+`cargo test --features <feature>`. Новый флаг/подкоманда → интеграционный тест + docs.
 
 ### Testing policy (mandatory)
-- After any change (code or docs), run local checks before committing:
-  - `cargo build --workspace`
-  - `cargo test --workspace` (append `-- --nocapture` when investigating)
-  - `cargo fmt && cargo clippy --workspace --all-targets -- -D warnings`
-  - Commit your changes using the auto-commit workflow below; do not end a task with uncommitted edits.
-- If you touch docs under `docs/`, preview or build the site:
-  - `mkdocs serve` locally from a virtualenv, or
-  - `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build` to validate links.
-- If you modify i18n keys, run `cargo test --package rimloc-cli -- tests_i18n` to verify key integrity across locales.
-- If you change CLI flags or behavior, update integration tests in `crates/rimloc-cli/tests` and rerun the whole test suite.
-- Automated agents must also execute these checks and report a short summary of results back to the user.
+- После любого изменения (код или docs) — локальные проверки перед коммитом:
+  build, test, fmt, clippy (см. команды выше); отчёт о результатах — в итоговом ответе.
+- Тронут `docs/` — `mkdocs build --strict` (с `SITE_URL=…`) локально.
+- Тронут `gui/tauri-app/frontend-v2/` — `npm run check` (svelte-check) + `npm test` (Vitest) в нём;
+  пересборка `npm run build` перед `cargo tauri dev` (Tauri обслуживает `dist`, не dev-сервер).
+- Тронут `gui/tauri-app/frontend-react/` — `npm run build` зелёный; изменения wire-контракта
+  согласованы с `RimLocClient` и `frontend-v2`-оракулом (или осознанно разошлись с пометкой).
+- Изменил i18n-ключи CLI — `cargo test --package rimloc-cli -- tests_i18n`.
+- Изменил CLI-флаги/поведение — обнови интеграционные тесты и прогони всю сьюту.
 
 ## Documentation Workflow
-- Run `mkdocs serve` from the repo root while editing; it mirrors `docs/en/` and `docs/ru/` with live reload.
-- Keep English and Russian pages structurally aligned—add the same sections to both locales in the same commit.
-- Build production docs locally with `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build` when you need to verify absolute links.
-- Exclude experimental drafts by placing them outside `docs/` or listing them under `exclude_docs` in `mkdocs.yml`.
+
+- Сайт: `docs/en/` (канон) + `docs/ru/` — структурно парные; EN/RU правки — одним коммитом.
+- Внутренние рабочие документы (мандаты, кампан-логи, аудиты) живут в `docs/development`,
+  `docs/design`, `docs/competitive`, `docs/campaign`, `docs/security`, `docs/architecture` —
+  они НЕ в MkDocs-навигации; датированные логи не переписывают, новое состояние — новым файлом
+  с датой (см. `STATE_CORRECTION_2026-10-05.md` как образец).
+- Драфты вне навигации — `exclude_docs` в `mkdocs.yml` либо вне `docs/`.
+- Якоря на кириллические заголовки не работают (дефолтный slugify их выпиливает) —
+  в ссылках на RU-страницы использовать заголовки без кириллицы или без якоря.
 
 ## Release Workflow
-- Do not bump versions by hand; use configured tooling (`release-plz`/`cargo-release`) and GitHub Actions (see `release.toml`, `release-plz.toml`).
-- Before tagging: update `CHANGELOG.md` under `Unreleased`, run build/tests/lints, and ensure docs are in sync (EN/RU).
-- Tag and push via the release workflow; artifacts/signatures and SBOMs are handled by CI (see docs in `docs/en/dev/index.md`).
+
+- Версии руками не бампать; тулза — `release-plz`/`cargo-release` + GitHub Actions
+  (`release.toml`, `release-plz.toml`). Workflows публикации — **parked по решению владельца**
+  (origin/main `9591f4f`); новые теги/релизы — только по явному одобрению владельца.
+- Перед тегом: `CHANGELOG.md` (`Unreleased`), build/test/lint зелёные, docs EN/RU синхронны.
+- Артефакты/подписи/SBOM — в CI (`docs/en/dev/index.md`).
 
 ## Automation Rules (agents)
-- Keep diffs minimal and scoped to the task; no drive‑by refactors or large renames.
-- Never rewrite history or revert without approval; follow the no‑revert policy below.
-- Always run and report: `cargo build/test`, `fmt`, and `clippy` after changes.
-- Language preference: if the user writes in Russian, respond and continue the conversation in Russian.
-- Ask before destructive actions (deletes/moves/format‑sweeps). Scope of this file is repository‑wide.
-- Mandatory: always finish by committing via `scripts/agent-commit.sh`. If committing is not possible in the harness, include the exact commit message and file list in the final reply and ask the user to run the command.
+
+- Минимальные диффы строго в скоупе задачи; никаких drive-by рефакторов и массовых переименований.
+- Историю не переписывать; no-revert policy ниже. Push/теги/релизы — никогда без явного разрешения.
+- Всегда прогонять и отчётить build/test/fmt/clippy после изменений.
+- Язык: если владелец пишет по-русски — отвечать по-русски.
+- Деструктивные действия (удаления/переносы/формат-свипы) — только спросив.
+- Финальный шаг — коммит через `scripts/agent-commit.sh`; если харнесс не даёт коммитить —
+  точное сообщение и список файлов в финальном ответе, владелец коммитит сам.
+
+### Agent workflow (безопасный конвейер, 2026-10)
+
+Проверенная практика кампаний UI R1 / TM live / competitive audit — держать её в этом виде:
+
+- **Субагенты и worktrees.** Параллельные лейны — по git-worktree на лейн
+  (`ba-main` — интеграция, `wt-ui-r1`, `wt-tm-live`; полный список — `git worktree list`).
+  Субагент получает узкий мандат и возвращает артефакт+отчёт; главный контекст не засоряется.
+- **Durable checkpoints.** Состояние сессии фиксируется на диске по ходу работы
+  (`docs/design/UI_R1_CHECKPOINT.md`, `MORNING_CHECKPOINT_*`, `docs/campaign/STATE_CORRECTION_*`):
+  HEAD, ветка, что сделано, что дальше — чтобы любой свежий контекст поднялся с чекпоинта.
+- **Context compaction.** При заполнении контекста — чекпоинт-документ ДО компакции;
+  в новые контексты грузить чекпоинт, а не всю историю (датированные логи читать по требованию).
+- **Запрет STOP при готовой безопасной работе.** Если задача выполняется локально, безопасно
+  и мандат выдан — не останавливаться на полупути «спросить разрешения» на следующий
+  безопасный шаг; эскалация — только для деструктивного, публичного или противоречий в инструкциях.
+- **Semantic/background UI-автоматизация.** GUI-верификация — семантическая (accessibility tree,
+  WDIO embedded spike — `docs/development/testing/WDIO_EMBEDDED_SPIKE.md`, T2A Playwright), а не
+  пиксельная; запуски — фоновые, без кражи фокуса (`docs/development/FRONTIER_QUERY_FOCUS_FREE_MACOS_AUTOMATION.md`).
+- **Правило владельца «не кради фокус».** Окно/приложение, с которым работает владелец, —
+  неприкосновенно: UI-автоматизация не должна перехватывать фокус (vendored wry без
+  NSApplication::activate, `focus: false` в окне, background-запуски). Нарушение = красный флаг кампании.
+- **Identity артефактов: automation ≠ owner artifact.** Артефакты, собранные автоматизацией,
+  помечены identity (source SHA, flavor, automation flag) и не выдаются за owner-сборку;
+  прод-сборка без automation-поверхности (`release-guard` сканирует артефакт).
+- **Изоляция тест-профилей.** UI-автоматизация и soak-прогоны — в отдельных профилях/песочницах
+  (`testlab/`), никогда в рабочем профиле владельца и никогда в прод-установке RimWorld.
+- **Read-only исходники модов.** Повтор канона: игра/моды — только чтение; запись — только
+  в выходные пути проекта.
 
 ### Secrets & External Services (GH_TOKEN)
-- Allowed: when the user explicitly provides `GH_TOKEN`/`GITHUB_TOKEN` and asks to use it, agents may perform the requested GitHub operations (e.g., API calls, cloning private repos, fetching releases).
-- How to pass: use an environment variable only (example: `export GH_TOKEN=…`); never hardcode tokens or write them to files under version control.
-- Safety: do not print tokens in logs or command output; avoid echoing env vars. If output may include headers, redact them.
-- Scope: use the token strictly for the requested operation. Do not publish, tag, or modify GitHub state (releases, labels, settings) unless the user explicitly asks.
-- Cleanup: avoid persisting tokens in scripts/commits; unset after use if appropriate (`unset GH_TOKEN`).
+- Разрешено: когда владелец явно передал `GH_TOKEN`/`GITHUB_TOKEN` и попросил — GitHub-операции
+  (API, приватные клоны, fetching releases). Передача — только через переменную окружения
+  (`export GH_TOKEN=…`); не хардкодить, не писать в файлы под git, не печатать в логи, не эхать env.
+- Скоуп: токен строго на запрошенную операцию; не публиковать, не тегать, не менять состояние
+  GitHub (releases, labels, settings) без явной просьбы. После — `unset GH_TOKEN`.
+- Платные API (LLM-провайдеры) не вызывать без явного разрешения владельца; `rimloc-llm`
+  остаётся шаблонным слоем.
 
 ### GUI Dependencies (exception for gui/)
-- To deliver a high‑quality long‑term Tauri GUI, dependencies in `gui/` may be added as needed (frontend libs, Tauri plugins, ZIP/HTTP, etc.).
-- This exception does not apply to core crates under `crates/` — keep them lean and focused.
-- Prefer using `rimloc-services` for business logic to avoid duplication.
+- Для качественного долгосрочного Tauri GUI зависимости в `gui/` можно добавлять по необходимости
+  (фронт-либы, Tauri-плагины, ZIP/HTTP). Исключение НЕ распространяется на крейты `crates/` — там держим
+  компактно. Бизнес-логику — в `rimloc-services`, чтобы не дублировать.
 
 ### Auto-commit workflow (mandatory for agents)
-- Start a session tied to the current chat/task: `scripts/agent-begin.sh --session <chat-id> [--type chore --scope cli --subject "short summary" -b "bullet"]`.
-- While working, record context as you go:
-  - Add files you intentionally touched: `scripts/agent-context.sh --session <chat-id> --add-file <path>` (repeatable).
-  - Refine message: `scripts/agent-context.sh --session <chat-id> --subject "…" -b "…"`.
-- For precise hunks in shared files, wrap edits:
-  - Before editing a file: `scripts/agent-mark-change.sh --session <chat-id> begin --file <path>`
-  - After saving your change: `scripts/agent-mark-change.sh --session <chat-id> end --file <path>`
-  This records an exact per-chat patch. On commit, we apply only those hunks — чужие правки в том же файле не попадут.
-- Finish and commit (mandatory step): `scripts/agent-commit.sh --session <chat-id>` — stages only files changed since baseline and, if a file allowlist exists, intersects with it to avoid accidental pickups.
-- Hunk-aware staging: if a session snapshot exists for a file (created automatically on `--add-file`), only the hunks changed in this chat are staged. Independent edits from other chats in the same file stay unstaged. On overlapping edits, the script stops with a clear message.
-- Without `--session`, the scripts fall back to a single global baseline (`.git/agent-baseline.txt`). Prefer sessions to avoid confusion between chats.
-- Use `--dry-run` to preview the file set and the composed message. The script will auto-detect scope from paths and generate safe bullets if none are provided.
-- Ensure hooks are active: run `scripts/setup-git-hooks.sh` once per clone.
-
-- Final guard: run `scripts/agent-ensure-commit.sh` to verify the working tree is clean. Use `--session <chat-id> --auto` to auto-commit pending changes via the session if needed.
-
-Tip: export a default session once per chat
+- Открыть сессию задачи: `scripts/agent-begin.sh --session <chat-id> [--type chore --scope cli --subject "…" -b "…"]`.
+- По ходу: `scripts/agent-context.sh --session <chat-id> --add-file <path>` (повторяемо);
+  уточнение сообщения — `--subject "…" -b "…"`.
+- Точные ханки в общих файлах: `scripts/agent-mark-change.sh --session <chat-id> begin|end --file <path>`
+  — на коммит уйдут только эти ханки, чужие правки в том же файле не попадут.
+- Финиш (обязательный шаг): `scripts/agent-commit.sh --session <chat-id>` — stage только файлов
+  сессии, пересечение с allowlist, без случайных захватов. `--dry-run` — превью.
+- Без `--session` — один глобальный baseline (`.git/agent-baseline.txt`); предпочтительны сессии.
+- Хуки включены: `scripts/setup-git-hooks.sh` один раз на клон.
+- Финальный гард: `scripts/agent-ensure-commit.sh` (с `--session <id> --auto` при необходимости).
 
 ```
 export AGENT_SESSION=<chat-id>
@@ -101,99 +200,80 @@ scripts/agent-commit.sh  # Mandatory finish step
 ```
 
 ## For agents: Changelog & Versioning
-- Changelog: keep a single curated `CHANGELOG.md` (Keep a Changelog + SemVer). Update `Unreleased` for every user‑facing change; use sections `Added/Changed/Fixed/Docs/Internal`.
-- Entry format: `- [scope] short description (#PR)`, no trailing period. Scopes: `cli`, `core`, `parsers-xml`, `export-po`, `export-csv`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
-- Internal‑only changes: add PR label `internal-only` to skip the changelog CI check.
-- Do not rewrite past entries. On release: move `Unreleased` into a new version `## [X.Y.Z] - YYYY-MM-DD` and update compare links at the bottom.
-- Versioning: SemVer. Libraries follow strict SemVer; CLI may use pre‑releases (`-alpha.N`, `-beta.N`).
-- Workspace versions are independent; bump only crates with user‑visible changes (see `release.toml`).
-- Agents must not bump versions, create tags, or publish unless explicitly asked. Default: only update changelog.
-- When assigned a release task: perform the `Unreleased → [X.Y.Z]` move, update links, then request running the release workflow; tags use `vX.Y.Z`.
+- Один кураторский `CHANGELOG.md` (Keep a Changelog + SemVer). Пользовательские изменения —
+  под `Unreleased`, секции `Added/Changed/Fixed/Docs/Internal`; формат `- [scope] short (#PR)`,
+  без точки в конце. Прошлые записи не переписывать. Релиз = перенос `Unreleased` в `## [X.Y.Z] - YYYY-MM-DD`
+  + compare-ссылки внизу.
+- Внутренние-only изменения — лейбл PR `internal-only` (обходит changelog-CI).
+- SemVer: библиотеки строго; CLI — возможны pre-releases (`-alpha.N`, `-beta.N`). Версии крейтов
+  независимы. Агенты не бампают версии, не тегают и не публикуют без явной просьбы.
+- Политика коммит-скоупа: рекомендованные scope — `repo, cli, core, parsers-xml, export-csv,
+  export-po, import-po, validate, docs, ci, release, tests`.
 
 ### MSRV and SemVer checks
-- MSRV: Rust `1.70` across the workspace (`rust-version` pinned in each crate). Increase MSRV only in a major release.
-- Libraries: CI runs `cargo-semver-checks` for published crates; breaking API changes require a `major` bump.
-- CLI: treat output (JSON/PO/CSV) as a contract. Adding fields is minor; removing/renaming is major. JSON outputs include `schema_version` per item; PO headers include `X-RimLoc-Schema`.
+- MSRV: Rust `1.89` по workspace (`rust-version` в манифестах); **тестированный тулчейн — `1.96.0`**.
+  MSRV поднимать только в мажоре и после свежего аудита фич/зависимостей. Если инструмент
+  показывает `1.70` — он читал устаревшие метаданные (до 2026-09-27 так было, это ложь).
+- Библиотеки: CI гоняет `cargo-semver-checks` для опубликованных крейтов; ломкое API — `major`.
+- CLI-вывод — контракт: добавление поля minor; удаление/переименование major. JSON несёт
+  `schema_version`; PO-заголовок — `X-RimLoc-Schema`.
 
 ## CLI Conventions
-- Subcommands/flags use kebab‑case; help texts live in FTL and must be localized.
-- No user strings inline: use `tr!`/FTL; logs via `tracing` only.
-- JSON output must remain stable; update integration tests when schemas or flags change.
-
-## Commit & Pull Request Guidelines
-Follow the Conventional Commit template captured in `.gitmessage.txt`: `type(scope): summary` within 72 characters, using types such as `feat`, `fix`, `docs`, or `chore`. Commit messages must be written in English; a Russian reference lives at `docs/readme/ru/gitmessage.txt`.
-
-- Always include a body for non-trivial changes and format it as bullet points starting with `- `. Explain what changed, why, and any user/dev impact.
-- Avoid bare, context-free subjects such as `tests: update snapshot`. Instead, use a scoped subject and bullets, for example: `tests(cli): update scan snapshot for DefInjected` plus bullets describing exactly what changed in the snapshot and why.
-- Keep the subject ≤ 72 chars. Use present tense and be specific.
-- Release commits use a detailed body and must include the publish order line below.
-
-Release commit example:
-
-```
-chore(release): prep crates for crates.io (0.1.0-dev.0)
-
-- Bump all RimLoc crates to 0.1.0-dev.0
-- Add versioned deps for path crates; add metadata (license, repo, docs)
-- Exclude logs from CLI package
-- Normalize Ko-fi badge to ASCII hyphen to avoid % encoding issues
-
-Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
-```
-
-Pull requests need a concise summary, linked issues, and instructions for validation; attach CLI output or screenshots when behaviour changes. Ensure CI passes and that formatting, lint, and test checks are green before requesting review.
-
-### Git hooks
-- Enable local commit checks: run `scripts/setup-git-hooks.sh` once per clone (sets `core.hooksPath` to `.githooks`).
-- The `commit-msg` hook enforces the subject pattern, a blank line, and at least one `- ` bullet in the body. Release commits must include the publish order line.
-
-### Changelog policy (mandatory)
-- Keep `CHANGELOG.md` up to date for every user‑facing change.
-- Use Keep a Changelog format: add entries under `Unreleased` with `Added/Changed/Fixed/Docs` as appropriate and reference PR/issue IDs.
-- On release, move `Unreleased` entries under the new version with a date; never rewrite past entries.
-- CI enforces this for PRs that touch `crates/*`, `docs/*` or `README.md` (see `.github/workflows/changelog-check.yml`).
-
-### Commit scope policy (mandatory)
-- Commit only files that were intentionally edited as part of the change. Do not include unrelated files.
-- Avoid drive‑by refactors, renames, and mass formatting across the repository. Keep diffs minimal and focused.
-- Run `cargo fmt` but commit only the files you actually touched for the feature/fix. If a repository‑wide reformat is necessary, submit it as a dedicated, separate PR.
-- Do not bump versions, shuffle modules, or update generated artifacts unless explicitly part of the task.
-- This rule applies to humans and to automated agents working in this repo — agents must obey it as well.
-- Recommended scopes: `repo`, `cli`, `core`, `parsers-xml`, `export-csv`, `export-po`, `import-po`, `validate`, `docs`, `ci`, `release`, `tests`.
-
-### No‑revert policy (mandatory)
-- Do not revert or discard changes without explicit consent from the maintainer/author.
-- Exceptions: only when strictly required to fix broken builds/tests, or when the revert is necessary to complete the current fix/feature. State the rationale clearly in the commit body.
-- If you encounter unrelated, uncommitted local changes, ask whether to keep, commit, or drop them. Do not silently undo them.
-- When a revert is required, use a dedicated commit that references the original commit/PR (e.g., `revert: <hash> <subject>`). Avoid mixing reverts with functional changes.
+- Подкоманды/флаги kebab-case; хелпы в FTL, локализованы.
+- Никаких inline пользовательских строк: `tr!`/FTL; логи — только `tracing`.
+- JSON-вывод стабилен; при изменении схем/флагов обновляй интеграционные тесты.
 
 ## Localization Workflow Notes
-Translations for the CLI ship via `i18n/<lang>/rimloc.ftl` and are embedded at build time. Update the English source, mirror changes to other locales, and run `cargo i18n` (if available) or `cargo test --package rimloc-cli -- tests_i18n` to confirm key integrity.
- - EN is the source of truth; other locales mirror keys and structure.
- - Adding a new locale: create `crates/rimloc-cli/i18n/<lang>/` with FTL files — `build.rs` auto‑discovers locales.
- - No hardcoded user‑facing strings in code; integration tests enforce this.
+- Переводы CLI — `i18n/<lang>/rimloc.ftl`, встроены на этапе сборки. EN — источник правды;
+  остальные локали зеркалируют ключи; проверка — `cargo test --package rimloc-cli -- tests_i18n`.
+- Новая локаль: `crates/rimloc-cli/i18n/<lang>/` — `build.rs` находит автоматически.
 
-## PR Checklist
-- Build/tests pass: `cargo build --workspace` and `cargo test --workspace`.
-- Lints clean: `cargo fmt` and `cargo clippy --workspace --all-targets -- -D warnings`.
-- `CHANGELOG.md` updated under `Unreleased` for user‑facing changes.
-- I18n: EN updated, other locales synced; `tests_i18n` green.
-- Docs: EN/RU updated and `SITE_URL=… mkdocs build` succeeds for changed pages.
+## Commit & Pull Request Guidelines
+Шаблон — `.gitmessage.txt`: `type(scope): summary` ≤72 символов (`feat`, `fix`, `docs`, `chore`, …).
+Для нетривиальных изменений — тело буллетами `- ` (что/почему/влияние). Без голых subjects вида
+`tests: update snapshot`. Коммит-сообщения на английском; русский референс —
+`docs/readme/ru/gitmessage.txt`. PR: краткое summary, скоуп, linked issues, инструкция проверки,
+CLI-вывод/скриншоты при изменении поведения; CI зелёный до ревью.
+
+### Git hooks
+- `scripts/setup-git-hooks.sh` раз на клон (ставит `core.hooksPath` = `.githooks`).
+- `commit-msg` проверяет паттерн subject, пустую строку, минимум один `- ` буллет в теле.
+
+### Commit scope policy (mandatory)
+- Коммитить только файлы, правленные сознательно в рамках задачи; никаких `git add -A`/`git add .` —
+  в рабочем дереве живут правки других сессий.
+- Без drive-by рефакторов/ренеймов/массового форматирования; `cargo fmt` гонять, но коммитить
+  только свои файлы. Репо-вайд ретабуляция — отдельный PR.
+- Не бампать версии, не двигать модули, не трогать генераты вне задачи. Правило — и для людей,
+  и для агентов.
+
+### No-revert policy (mandatory)
+- Не ревертить и не отбрасывать изменения без явного согласия мейнтейнера/автора.
+- Исключения: спасение сломанной сборки/теста либо необходимость для текущего фикса — с
+  обоснованием в теле коммита.
+- Чужие незакоммиченные правки: спросить (keep/commit/drop), молча не трогать.
+- Нужен реверт — отдельный коммит со ссылкой на оригинал (`revert: <hash> <subject>`), без смешивания.
+
 ## GUI/CLI Parity and i18n
 
-When adding or changing features:
-
-- Keep CLI and GUI in lockstep: every new CLI command or flag must be exposed in the GUI with the same semantics. Avoid introducing functionality in one surface only.
-- No hardcoded UI strings. Prefer i18n keys (see `frontend/index.js` I18N map). If you must add a new label, introduce a key in both `en` and `ru` and use `data-i18n` in HTML or `tr(key)` in JS.
-- For dynamic messages, prefer composing from i18n tokens or add a dedicated key; do not inline English text.
-- If a new backend command is added, register it in Tauri `invoke_handler`, permissions (`src-tauri/permissions/allow-commands.json`) and wire a GUI panel/control for it.
-- Aim to keep APIs ergonomic for UI: when a CLI adds a structured option group (e.g., Defs dict/schema), expose a single request struct in Tauri mirroring CLI fields so the GUI can pass-through without transforms.
+- CLI и GUI в локстепе: каждая CLI-команда/флаг экспонируется в GUI с той же семантикой.
+- Никаких хардкод-строк UI: ключи в `frontend-react/src/lib/i18n/` (EN+RU), RU — дефолтная локаль,
+  fallback locale → `en` → key. Для Svelte-fallback — свой `frontend-v2/src/i18n/` (заморожен,
+  меняем только при operability-фиксах).
+- Новый бэкенд-команд — регистрация в Tauri `invoke_handler`, permissions
+  (`src-tauri/permissions/allow-commands.json`), проводка контрола в GUI.
+- Mock/demo данные (`frontend-react` mock-транспорт / `frontend-v2/src/lib/mock/`) питают demo-проект
+  и onboarding: экран, выглядящий как живой, либо говорит с реальным бэкендом, либо явно помечен
+  (capability report, «not wired yet»/demo). Никогда не выдавать mock за живую функциональность.
+- API проектируется эргономично для UI: структурная группа опций CLI — один request-struct в Tauri,
+  GUI пробрасывает без трансформаций.
 
 Review checklist for contributors:
 
-- [ ] CLI: command + args implemented and documented
-- [ ] Backend: Tauri command mirrors CLI types and fields
-- [ ] Permissions updated, capability model unchanged unless necessary
-- [ ] GUI: controls added with `data-i18n`/`tr()` and `localStorage` persistence
-- [ ] Logs/progress events wired to the progress panel
-- [ ] Build and run `cargo tauri dev` clean
+- [ ] CLI: команда + аргументы реализованы и задокументированы
+- [ ] Backend: Tauri-команда зеркалит CLI-типы и поля
+- [ ] Permissions обновлены; capability-модель не тронута без необходимости
+- [ ] GUI: компоненты обновлены, i18n-ключи EN+RU
+- [ ] Mock-экраны capability-gated или явно помечены как demo
+- [ ] Логи/прогресс-события подключены к progress panel
+- [ ] Frontend-проверки: React — `npm run build`; при трогании fallback — `npm run check` + `npm test` в `frontend-v2`; затем `npm run build` + `cargo tauri dev` чисто

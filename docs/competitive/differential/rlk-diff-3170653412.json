@@ -1,0 +1,2584 @@
+{
+ "both": [
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_HiredAssassin37.description",
+    "text": "[PAWN_nameDef] was a master thief, working mostly for organized crime. Over time, [PAWN_pronoun] made a name for [PAWN_objective]self and shifted [PAWN_possessive] business into the paid \"removal\" of human threats.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_HiredAssassin37.description",
+    "text": "[PAWN_nameDef] was a master thief, working mostly for organized crime. Over time, [PAWN_pronoun] made a name for [PAWN_objective]self and shifted [PAWN_possessive] business into the paid \"removal\" of human threats.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExoticChef96.titleShort",
+    "text": "chef",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExoticChef96.titleShort",
+    "text": "chef",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_AdventurousYouth70.title",
+    "text": "adventurous youth",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 162,
+    "key": "GTF_AdventurousYouth70.title",
+    "text": "adventurous youth",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_PiousSoldier67.titleShort",
+    "text": "pious fighter",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 183,
+    "key": "GTF_PiousSoldier67.titleShort",
+    "text": "pious fighter",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_RoyalGuard51.description",
+    "text": "[PAWN_nameDef] guarded the personal palace of a powerful lord. \\nWhile violence was rare, palace intrigue was constant. [PAWN_nameDef]'s work taught [PAWN_pronoun] to handle both words and weapons.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_RoyalGuard51.description",
+    "text": "[PAWN_nameDef] guarded the personal palace of a powerful lord. \\nWhile violence was rare, palace intrigue was constant. [PAWN_nameDef]'s work taught [PAWN_pronoun] to handle both words and weapons.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Warmaster54.description",
+    "text": "[PAWN_nameDef] was warmaster to a mid-level royal house. [PAWN_pronoun] oversaw martial aspects of the family's strategy. \\nOn the rare occasion a battle occurred, [PAWN_nameDef] directed the commanders.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Warmaster54.description",
+    "text": "[PAWN_nameDef] was warmaster to a mid-level royal house. [PAWN_pronoun] oversaw martial aspects of the family's strategy. \\nOn the rare occasion a battle occurred, [PAWN_nameDef] directed the commanders.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_TraineeAlchemist64.title",
+    "text": "trainee alchemist",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 265,
+    "key": "GTF_TraineeAlchemist64.title",
+    "text": "trainee alchemist",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Blacksmith72.description",
+    "text": "As a smith, [PAWN_nameDef] gained a reputation for the high quality of [PAWN_possessive] work. [PAWN_pronoun] wasn't bad at using the swords [PAWN_pronoun] forged either.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Blacksmith72.description",
+    "text": "As a smith, [PAWN_nameDef] gained a reputation for the high quality of [PAWN_possessive] work. [PAWN_pronoun] wasn't bad at using the swords [PAWN_pronoun] forged either.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalSquire5.description",
+    "text": "[PAWN_nameDef] grew up as a knight in training. [PAWN_pronoun] trained directly under the king's war adviser for most of [PAWN_possessive] youth, and learned to fight with many martial weapons.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalSquire5.description",
+    "text": "[PAWN_nameDef] grew up as a knight in training. [PAWN_pronoun] trained directly under the king's war adviser for most of [PAWN_possessive] youth, and learned to fight with many martial weapons.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_PiousSoldier67.title",
+    "text": "pious fighter",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 182,
+    "key": "GTF_PiousSoldier67.title",
+    "text": "pious fighter",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_ShipBoy89.title",
+    "text": "ship boy",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 24,
+    "key": "GTF_ShipBoy89.title",
+    "text": "ship boy",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Minister88.description",
+    "text": "[PAWN_nameDef] managed to secure an important position in the court of a minor noble house. [PAWN_pronoun] got used to the opulence, while attempting to keep [PAWN_possessive] citizens content. [PAWN_pronoun] had ample time for pleasure and indulgence – though [PAWN_pronoun] never forgot how to do hard work.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Minister88.description",
+    "text": "[PAWN_nameDef] managed to secure an important position in the court of a minor noble house. [PAWN_pronoun] got used to the opulence, while attempting to keep [PAWN_possessive] citizens content. [PAWN_pronoun] had ample time for pleasure and indulgence – though [PAWN_pronoun] never forgot how to do hard work.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Taster16.title",
+    "text": "taster",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Taster16.title",
+    "text": "taster",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Warmaster54.title",
+    "text": "warmaster",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Warmaster54.title",
+    "text": "warmaster",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_Abductee43.title",
+    "text": "abductee",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_Abductee43.title",
+    "text": "abductee",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Taxonomist0.titleShort",
+    "text": "taxonomist",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Taxonomist0.titleShort",
+    "text": "taxonomist",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_SpaceSmuggler6.title",
+    "text": "smuggler kid",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 34,
+    "key": "GTF_SpaceSmuggler6.title",
+    "text": "smuggler kid",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_TraineeAlchemist64.titleShort",
+    "text": "alchemist",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_TraineeAlchemist64.titleShort",
+    "text": "alchemist",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Missionary99.description",
+    "text": "[PAWN_nameDef] decided to devote [PAWN_possessive] life to religious service. [PAWN_pronoun] made a vow of peace and spent several years preaching and helping those who needed the most.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Missionary99.description",
+    "text": "[PAWN_nameDef] decided to devote [PAWN_possessive] life to religious service. [PAWN_pronoun] made a vow of peace and spent several years preaching and helping those who needed the most.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_MilitaryCook18.description",
+    "text": "They say an army marches on its stomach. [PAWN_nameDef]'s job was to prepared chow to keep [PAWN_possessive] unit marching, no matter the conditions. \\nThe job required [PAWN_objective] to pay attention to both the nutritional and psychological needs of the troops.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_MilitaryCook18.description",
+    "text": "They say an army marches on its stomach. [PAWN_nameDef]'s job was to prepared chow to keep [PAWN_possessive] unit marching, no matter the conditions. \\nThe job required [PAWN_objective] to pay attention to both the nutritional and psychological needs of the troops.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_AbandonedOrphan61.title",
+    "text": "abandoned orphan",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 136,
+    "key": "GTF_AbandonedOrphan61.title",
+    "text": "abandoned orphan",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_AbandonedOrphan61.titleShort",
+    "text": "orphan",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_AbandonedOrphan61.titleShort",
+    "text": "orphan",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_AdventurousYouth70.description",
+    "text": "[PAWN_nameDef] explored all around [PAWN_possessive] family's large estate, uncovering little natural wonders hidden in nearby catacombs, rivers, and caves. During [PAWN_possessive] teenage years, [PAWN_nameDef] made numerous enemies",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_AdventurousYouth70.description",
+    "text": "[PAWN_nameDef] explored all around [PAWN_possessive] family's large estate, uncovering little natural wonders hidden in nearby catacombs, rivers, and caves. During [PAWN_possessive] teenage years, [PAWN_nameDef] made numerous enemies",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MedievalMinstrel95.titleShort",
+    "text": "bard",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_MedievalMinstrel95.titleShort",
+    "text": "bard",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_SpacePirate55.title",
+    "text": "pirate",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_SpacePirate55.title",
+    "text": "pirate",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Taster16.description",
+    "text": "As the food taster for a king, [PAWN_nameDef] sampled any dish served at the royal table. [PAWN_pronoun] lived a decadent lifestyle at court, growing fat and doing very little real work.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Taster16.description",
+    "text": "As the food taster for a king, [PAWN_nameDef] sampled any dish served at the royal table. [PAWN_pronoun] lived a decadent lifestyle at court, growing fat and doing very little real work.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_LineInfanteer20.titleShort",
+    "text": "infanteer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_LineInfanteer20.titleShort",
+    "text": "infanteer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_PoisonGardener29.titleShort",
+    "text": "botanist",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_PoisonGardener29.titleShort",
+    "text": "botanist",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_Tinkerer11.title",
+    "text": "tinkerer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_Tinkerer11.title",
+    "text": "tinkerer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_IdealisticCadet64.description",
+    "text": "Raised in the military traditions of [PAWN_possessive] forefathers, [PAWN_nameDef] was taught from a young age that [PAWN_pronoun] would be a great leader and the hero of [PAWN_possessive] family. [PAWN_pronoun] excelled at [PAWN_possessive] studies and graduated from the academy with honors.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_IdealisticCadet64.description",
+    "text": "Raised in the military traditions of [PAWN_possessive] forefathers, [PAWN_nameDef] was taught from a young age that [PAWN_pronoun] would be a great leader and the hero of [PAWN_possessive] family. [PAWN_pronoun] excelled at [PAWN_possessive] studies and graduated from the academy with honors.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_Tinkerer11.titleShort",
+    "text": "tinkerer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_Tinkerer11.titleShort",
+    "text": "tinkerer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExplorerWriter10.title",
+    "text": "explorer-writer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExplorerWriter10.title",
+    "text": "explorer-writer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExplorerWriter10.titleShort",
+    "text": "explorer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExplorerWriter10.titleShort",
+    "text": "explorer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_HiredAssassin37.titleShort",
+    "text": "assassin",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_HiredAssassin37.titleShort",
+    "text": "assassin",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Taxonomist0.description",
+    "text": "[PAWN_nameDef] traveled through the wilderness, studying and classifying the plant and animal life [PAWN_pronoun] found in the hopes of creating a complete catalogue.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Taxonomist0.description",
+    "text": "[PAWN_nameDef] traveled through the wilderness, studying and classifying the plant and animal life [PAWN_pronoun] found in the hopes of creating a complete catalogue.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalThief74.title",
+    "text": "urchin thief",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 9,
+    "key": "GTF_MedievalThief74.title",
+    "text": "urchin thief",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_RangerChild57.description",
+    "text": "[PAWN_nameDef] was raised in a forest. [PAWN_pronoun] was taught how hunt and live off the land, so that [PAWN_pronoun] could live without the need of others. Accustomed to manual labor and with an intuitive mind, [PAWN_nameDef] could survive weeks alone.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_RangerChild57.description",
+    "text": "[PAWN_nameDef] was raised in a forest. [PAWN_pronoun] was taught how hunt and live off the land, so that [PAWN_pronoun] could live without the need of others. Accustomed to manual labor and with an intuitive mind, [PAWN_nameDef] could survive weeks alone.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MasterTrader65.title",
+    "text": "master trader",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 439,
+    "key": "GTF_MasterTrader65.title",
+    "text": "master trader",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_PrivateDetective66.titleShort",
+    "text": "detective",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_PrivateDetective66.titleShort",
+    "text": "detective",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_BeastSlayer67.description",
+    "text": "[PAWN_nameDef] traveled between settlements, following news of animal attacks. [PAWN_pronoun] would camp out in the wild for weeks, learning about [PAWN_possessive] prey before striking. \\n\\nPreferring to work alone, [PAWN_nameDef] enjoyed the thrill of the hunt, and the meat from the kill.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_BeastSlayer67.description",
+    "text": "[PAWN_nameDef] traveled between settlements, following news of animal attacks. [PAWN_pronoun] would camp out in the wild for weeks, learning about [PAWN_possessive] prey before striking. \\n\\nPreferring to work alone, [PAWN_nameDef] enjoyed the thrill of the hunt, and the meat from the kill.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Caravaneer53.description",
+    "text": "[PAWN_nameDef] was the leader of a caravan. [PAWN_pronoun] was responsible for the safety of [PAWN_possessive] caravan and was the head negotiator in countless trade deals.\\n\\n[PAWN_pronoun] and [PAWN_possessive] people prospered, but their wealth made them a target for brigands. They often had to take up arms to fend off bandits and highwaymen.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Caravaneer53.description",
+    "text": "[PAWN_nameDef] was the leader of a caravan. [PAWN_pronoun] was responsible for the safety of [PAWN_possessive] caravan and was the head negotiator in countless trade deals.\\n\\n[PAWN_pronoun] and [PAWN_possessive] people prospered, but their wealth made them a target for brigands. They often had to take up arms to fend off bandits and highwaymen.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExoticChef96.title",
+    "text": "exotic chef",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 354,
+    "key": "GTF_ExoticChef96.title",
+    "text": "exotic chef",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_WreckageExplorer93.description",
+    "text": "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_WreckageExplorer93.description",
+    "text": "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_BountyHunter17.title",
+    "text": "bounty hunter",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 493,
+    "key": "GTF_BountyHunter17.title",
+    "text": "bounty hunter",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalThief74.description",
+    "text": "[PAWN_nameDef] grew up poor and hungry on a big city, learning to fend for [PAWN_objective]self. At first, [PAWN_pronoun] only took what [PAWN_pronoun] needed. Then [PAWN_pronoun] learned to take what [PAWN_pronoun] wanted.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalThief74.description",
+    "text": "[PAWN_nameDef] grew up poor and hungry on a big city, learning to fend for [PAWN_objective]self. At first, [PAWN_pronoun] only took what [PAWN_pronoun] needed. Then [PAWN_pronoun] learned to take what [PAWN_pronoun] wanted.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_MilitaryCadet46.title",
+    "text": "army cadet",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 143,
+    "key": "GTF_MilitaryCadet46.title",
+    "text": "army cadet",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MasterTrader65.description",
+    "text": "[PAWN_nameDef] was a master at trading. [PAWN_pronoun] earned [PAWN_possessive] reputation by helping a village through a trying time.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_MasterTrader65.description",
+    "text": "[PAWN_nameDef] was a master at trading. [PAWN_pronoun] earned [PAWN_possessive] reputation by helping a village through a trying time.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_Abductee43.titleShort",
+    "text": "abductee",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_Abductee43.titleShort",
+    "text": "abductee",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalNomad12.titleShort",
+    "text": "nomad",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalNomad12.titleShort",
+    "text": "nomad",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MedievalMinstrel95.title",
+    "text": "wandering bard",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 5,
+    "key": "GTF_MedievalMinstrel95.title",
+    "text": "wandering bard",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ArmyCook0.titleShort",
+    "text": "cook",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ArmyCook0.titleShort",
+    "text": "cook",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_MilitaryCook18.title",
+    "text": "army cook",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 62,
+    "key": "GTF_MilitaryCook18.title",
+    "text": "army cook",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_CriminalSurgeon99.titleShort",
+    "text": "surgeon",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_CriminalSurgeon99.titleShort",
+    "text": "surgeon",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_PrivateDetective66.description",
+    "text": "As a private eye, sharp wits and a silver tongue were [PAWN_nameDef]'s greatest tools. [PAWN_pronoun] often spent [PAWN_possessive] nights working cases that ranged from uncovering affairs and learning trade secrets to solving murder cases and infiltrating criminal organizations. There wasn't a case [PAWN_pronoun] wouldn't accept for the right price.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_PrivateDetective66.description",
+    "text": "As a private eye, sharp wits and a silver tongue were [PAWN_nameDef]'s greatest tools. [PAWN_pronoun] often spent [PAWN_possessive] nights working cases that ranged from uncovering affairs and learning trade secrets to solving murder cases and infiltrating criminal organizations. There wasn't a case [PAWN_pronoun] wouldn't accept for the right price.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_ShipBoy89.description",
+    "text": "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_ShipBoy89.description",
+    "text": "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ArmyCook0.title",
+    "text": "army cook",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 604,
+    "key": "GTF_ArmyCook0.title",
+    "text": "army cook",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MedievalKnight26.title",
+    "text": "medieval knight",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 660,
+    "key": "GTF_MedievalKnight26.title",
+    "text": "medieval knight",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_SpacePirate55.titleShort",
+    "text": "pirate",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_SpacePirate55.titleShort",
+    "text": "pirate",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_SpaceRaider71.description",
+    "text": "[PAWN_nameDef] was the leader of a raider crew. Always on the run, [PAWN_pronoun] became the feared enemy of many settlements.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_SpaceRaider71.description",
+    "text": "[PAWN_nameDef] was the leader of a raider crew. Always on the run, [PAWN_pronoun] became the feared enemy of many settlements.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Taster16.titleShort",
+    "text": "taster",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Taster16.titleShort",
+    "text": "taster",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Artilleryman28.description",
+    "text": "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Artilleryman28.description",
+    "text": "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_RoyalGuard51.title",
+    "text": "royal guard",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 161,
+    "key": "GTF_RoyalGuard51.title",
+    "text": "royal guard",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_MilitaryCadet46.titleShort",
+    "text": "cadet",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_MilitaryCadet46.titleShort",
+    "text": "cadet",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_TraineeAlchemist64.description",
+    "text": "[PAWN_nameDef] learned the basics of alchemy and medicine in one the few monastic schools on [PAWN_possessive] homeland.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_TraineeAlchemist64.description",
+    "text": "[PAWN_nameDef] learned the basics of alchemy and medicine in one the few monastic schools on [PAWN_possessive] homeland.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Aromatherapist80.titleShort",
+    "text": "therapist",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Aromatherapist80.titleShort",
+    "text": "therapist",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Warmonger35.title",
+    "text": "warmonger",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Warmonger35.title",
+    "text": "warmonger",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Missionary99.title",
+    "text": "missionary",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Missionary99.title",
+    "text": "missionary",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalNomad12.description",
+    "text": "Born to a nomadic family, [PAWN_nameDef] was instructed in the arts of speechcraft, sleight of hand, horse riding. [PAWN_pronoun] was always running around the camp doing odd jobs to help [PAWN_possessive] extended family.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalNomad12.description",
+    "text": "Born to a nomadic family, [PAWN_nameDef] was instructed in the arts of speechcraft, sleight of hand, horse riding. [PAWN_pronoun] was always running around the camp doing odd jobs to help [PAWN_possessive] extended family.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Ranger6.title",
+    "text": "ranger",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Ranger6.title",
+    "text": "ranger",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_SpaceRaider71.titleShort",
+    "text": "bandit",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_SpaceRaider71.titleShort",
+    "text": "bandit",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_WreckageExplorer93.titleShort",
+    "text": "explorer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_WreckageExplorer93.titleShort",
+    "text": "explorer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_LineInfanteer20.description",
+    "text": "[PAWN_nameDef] was an ordinary infanteer in an imperial battalion. \\nConscripted at a young age to add bodies the army, [PAWN_nameDef] learned the methods of fighting well enough to satisfy [PAWN_possessive] superiors. However, [PAWN_pronoun] never quite understood what was going on around [PAWN_objective] enough to really believe in it.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_LineInfanteer20.description",
+    "text": "[PAWN_nameDef] was an ordinary infanteer in an imperial battalion. \\nConscripted at a young age to add bodies the army, [PAWN_nameDef] learned the methods of fighting well enough to satisfy [PAWN_possessive] superiors. However, [PAWN_pronoun] never quite understood what was going on around [PAWN_objective] enough to really believe in it.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Warmonger35.description",
+    "text": "[PAWN_nameDef] revelled in bloodshed. Those who served with [PAWN_objective] were terrified of [PAWN_possessive] ferocity. They rarely socialized with [PAWN_nameDef], and [PAWN_pronoun] did not mind the isolation.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Warmonger35.description",
+    "text": "[PAWN_nameDef] revelled in bloodshed. Those who served with [PAWN_objective] were terrified of [PAWN_possessive] ferocity. They rarely socialized with [PAWN_nameDef], and [PAWN_pronoun] did not mind the isolation.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_StewardsAssisant28.titleShort",
+    "text": "Steward",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_StewardsAssisant28.titleShort",
+    "text": "Steward",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_IdealisticCadet64.title",
+    "text": "idealistic cadet",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 62,
+    "key": "GTF_IdealisticCadet64.title",
+    "text": "idealistic cadet",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_IdealisticCadet64.titleShort",
+    "text": "cadet",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_IdealisticCadet64.titleShort",
+    "text": "cadet",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_WreckageExplorer93.title",
+    "text": "ruins explorer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 30,
+    "key": "GTF_WreckageExplorer93.title",
+    "text": "ruins explorer",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Mathematician6.titleShort",
+    "text": "professor",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Mathematician6.titleShort",
+    "text": "professor",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_RoyalGuard51.titleShort",
+    "text": "guard",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_RoyalGuard51.titleShort",
+    "text": "guard",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExiledResearcher44.titleShort",
+    "text": "exile",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExiledResearcher44.titleShort",
+    "text": "exile",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_FurnitureBuilder83.title",
+    "text": "furniture builder",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 97,
+    "key": "GTF_FurnitureBuilder83.title",
+    "text": "furniture builder",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExiledResearcher44.title",
+    "text": "exiled researcher",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 147,
+    "key": "GTF_ExiledResearcher44.title",
+    "text": "exiled researcher",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Delinquent13.title",
+    "text": "delinquent",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Delinquent13.title",
+    "text": "delinquent",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Delinquent13.titleShort",
+    "text": "delinquent",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Delinquent13.titleShort",
+    "text": "delinquent",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalSquire5.title",
+    "text": "squire",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalSquire5.title",
+    "text": "squire",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_Tinkerer11.description",
+    "text": "[PAWN_nameDef] spent [PAWN_possessive] spare time creating things from [PAWN_possessive] imagination out of scrap metal and discarded machinery. [PAWN_pronoun] created simple doodads and small tools, for both for fun and for utility.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_Tinkerer11.description",
+    "text": "[PAWN_nameDef] spent [PAWN_possessive] spare time creating things from [PAWN_possessive] imagination out of scrap metal and discarded machinery. [PAWN_pronoun] created simple doodads and small tools, for both for fun and for utility.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_CriminalSurgeon99.description",
+    "text": "Being near many injured fellow criminals, [PAWN_nameDef] took it upon [PAWN_objective]self to work on them. Although many people died, [PAWN_pronoun] did get better at using knives.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_CriminalSurgeon99.description",
+    "text": "Being near many injured fellow criminals, [PAWN_nameDef] took it upon [PAWN_objective]self to work on them. Although many people died, [PAWN_pronoun] did get better at using knives.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+    "key": "GTF_WanderingBard.titleShort",
+    "text": "Bard",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adulthood.xml",
+    "line": null,
+    "key": "GTF_WanderingBard.titleShort",
+    "text": "Bard",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Missionary99.titleShort",
+    "text": "missionary",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Missionary99.titleShort",
+    "text": "missionary",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Artilleryman28.title",
+    "text": "artilleryman",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Artilleryman28.title",
+    "text": "artilleryman",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_AbandonedOrphan61.description",
+    "text": "Abandoned at birth, young [PAWN_nameDef] started [PAWN_possessive] life in an orphanage. A rascal and a scoundrel, [PAWN_pronoun] became a clever troublemaker.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_AbandonedOrphan61.description",
+    "text": "Abandoned at birth, young [PAWN_nameDef] started [PAWN_possessive] life in an orphanage. A rascal and a scoundrel, [PAWN_pronoun] became a clever troublemaker.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_RangerChild57.title",
+    "text": "ranger child",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 188,
+    "key": "GTF_RangerChild57.title",
+    "text": "ranger child",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Ranger6.description",
+    "text": "[PAWN_nameDef] lived alone, deep in a forest. [PAWN_pronoun] protected the wildlife against poachers, and learned to satisfy [PAWN_possessive] own material needs without outside help.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Ranger6.description",
+    "text": "[PAWN_nameDef] lived alone, deep in a forest. [PAWN_pronoun] protected the wildlife against poachers, and learned to satisfy [PAWN_possessive] own material needs without outside help.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Caravaneer53.titleShort",
+    "text": "caravaneer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Caravaneer53.titleShort",
+    "text": "caravaneer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_CriminalSurgeon99.title",
+    "text": "criminal surgeon",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 465,
+    "key": "GTF_CriminalSurgeon99.title",
+    "text": "criminal surgeon",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Mathematician6.title",
+    "text": "academic",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Mathematician6.title",
+    "text": "academic",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_HiredAssassin37.title",
+    "text": "hired assassin",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 550,
+    "key": "GTF_HiredAssassin37.title",
+    "text": "hired assassin",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Blacksmith72.title",
+    "text": "blacksmith",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Blacksmith72.title",
+    "text": "blacksmith",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MasterTrader65.titleShort",
+    "text": "trader",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_MasterTrader65.titleShort",
+    "text": "trader",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_Abductee43.description",
+    "text": "[PAWN_nameDef] was abducted at a young age and forced to do menial labor on a pirate ship.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_Abductee43.description",
+    "text": "[PAWN_nameDef] was abducted at a young age and forced to do menial labor on a pirate ship.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_MilitaryCook18.titleShort",
+    "text": "army cook",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 63,
+    "key": "GTF_MilitaryCook18.titleShort",
+    "text": "army cook",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Caravaneer53.title",
+    "text": "caravaneer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Caravaneer53.title",
+    "text": "caravaneer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Warmaster54.titleShort",
+    "text": "warmaster",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Warmaster54.titleShort",
+    "text": "warmaster",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_StewardsAssisant28.title",
+    "text": "Steward's assisant",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 87,
+    "key": "GTF_StewardsAssisant28.title",
+    "text": "Steward's assisant",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_ShipBoy89.titleShort",
+    "text": "ship boy",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 26,
+    "key": "GTF_ShipBoy89.titleShort",
+    "text": "ship boy",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_BountyHunter17.description",
+    "text": "[PAWN_nameDef] was a self-employed bounty hunter. [PAWN_pronoun] spent [PAWN_possessive] days hunting outlaws and collecting cash bounties.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_BountyHunter17.description",
+    "text": "[PAWN_nameDef] was a self-employed bounty hunter. [PAWN_pronoun] spent [PAWN_possessive] days hunting outlaws and collecting cash bounties.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_AdventurousYouth70.titleShort",
+    "text": "adventurer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_AdventurousYouth70.titleShort",
+    "text": "adventurer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExoticChef96.description",
+    "text": "[PAWN_nameDef] has always gone overboard when it comes to food. [PAWN_pronoun] is always seeking new and exotic ingredients.\\n\\n[PAWN_possessive] quest for ingredients has brought [PAWN_objective] into some close calls with local flora and fauna.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExoticChef96.description",
+    "text": "[PAWN_nameDef] has always gone overboard when it comes to food. [PAWN_pronoun] is always seeking new and exotic ingredients.\\n\\n[PAWN_possessive] quest for ingredients has brought [PAWN_objective] into some close calls with local flora and fauna.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_StewardsAssisant28.description",
+    "text": "A steward on a merchant ship, [PAWN_nameDef] was well-traveled on [PAWN_possessive] homeland by [PAWN_possessive] early teens. The constant orders from [PAWN_possessive] captain, however, fostered a defiant streak, as well as a general disaste for anything [PAWN_pronoun] considered to be busywork.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_StewardsAssisant28.description",
+    "text": "A steward on a merchant ship, [PAWN_nameDef] was well-traveled on [PAWN_possessive] homeland by [PAWN_possessive] early teens. The constant orders from [PAWN_possessive] captain, however, fostered a defiant streak, as well as a general disaste for anything [PAWN_pronoun] considered to be busywork.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_MilitaryCadet46.description",
+    "text": "[PAWN_nameDef] was levied from [PAWN_possessive] family at a young age to join a local army. [PAWN_pronoun] lived in barracks with other kids, learning about duty, weapons, pain, and victory. \\nThe trainers sometimes let the kids escape the base to enjoy the wider world. They wanted fighters who can think independently.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_MilitaryCadet46.description",
+    "text": "[PAWN_nameDef] was levied from [PAWN_possessive] family at a young age to join a local army. [PAWN_pronoun] lived in barracks with other kids, learning about duty, weapons, pain, and victory. \\nThe trainers sometimes let the kids escape the base to enjoy the wider world. They wanted fighters who can think independently.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Ranger6.titleShort",
+    "text": "ranger",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Ranger6.titleShort",
+    "text": "ranger",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Warmonger35.titleShort",
+    "text": "warmonger",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Warmonger35.titleShort",
+    "text": "warmonger",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExplorerWriter10.description",
+    "text": "[PAWN_nameDef] traveled far and wide, gathering samples, stories, and research.\\n\\n[PAWN_possessive] goal was to bring together enough knowledge to make a survival guide for future generations.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExplorerWriter10.description",
+    "text": "[PAWN_nameDef] traveled far and wide, gathering samples, stories, and research.\\n\\n[PAWN_possessive] goal was to bring together enough knowledge to make a survival guide for future generations.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Taxonomist0.title",
+    "text": "taxonomist",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Taxonomist0.title",
+    "text": "taxonomist",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MedievalKnight26.description",
+    "text": "[PAWN_nameDef] fought for king and country on the battlefield, where [PAWN_pronoun] further honed [PAWN_possessive] skill as a swordfighter. [PAWN_possessive] greatest glory was leading a charge into an enemy courtroom and capturing the king at sword point.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_MedievalKnight26.description",
+    "text": "[PAWN_nameDef] fought for king and country on the battlefield, where [PAWN_pronoun] further honed [PAWN_possessive] skill as a swordfighter. [PAWN_possessive] greatest glory was leading a charge into an enemy courtroom and capturing the king at sword point.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Blacksmith72.titleShort",
+    "text": "blacksmith",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Blacksmith72.titleShort",
+    "text": "blacksmith",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_FurnitureBuilder83.description",
+    "text": "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_FurnitureBuilder83.description",
+    "text": "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+    "key": "GTF_WanderingBard.title",
+    "text": "wandering bard",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+    "line": 5,
+    "key": "GTF_WanderingBard.title",
+    "text": "wandering bard",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_RangerChild57.titleShort",
+    "text": "ranger kid",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 189,
+    "key": "GTF_RangerChild57.titleShort",
+    "text": "ranger kid",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ExiledResearcher44.description",
+    "text": "[PAWN_nameDef]'s intellectual pursuits was not appreciated in [PAWN_possessive] instituition. [PAWN_possessive] superiors expelled [PAWN_objective], and [PAWN_pronoun] was never allowed to return.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ExiledResearcher44.description",
+    "text": "[PAWN_nameDef]'s intellectual pursuits was not appreciated in [PAWN_possessive] instituition. [PAWN_possessive] superiors expelled [PAWN_objective], and [PAWN_pronoun] was never allowed to return.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Hunter73.title",
+    "text": "skilled hunter",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 382,
+    "key": "GTF_Hunter73.title",
+    "text": "skilled hunter",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_CaravanTraveler6.titleShort",
+    "text": "traveler",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_CaravanTraveler6.titleShort",
+    "text": "traveler",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalThief74.titleShort",
+    "text": "thief",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalThief74.titleShort",
+    "text": "thief",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Mathematician6.description",
+    "text": "[PAWN_nameDef] did studies in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Mathematician6.description",
+    "text": "[PAWN_nameDef] did studies in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalSquire5.titleShort",
+    "text": "squire",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalSquire5.titleShort",
+    "text": "squire",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Minister88.titleShort",
+    "text": "minister",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Minister88.titleShort",
+    "text": "minister",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_MedievalNomad12.title",
+    "text": "nomad",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_MedievalNomad12.title",
+    "text": "nomad",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_CaravanTraveler6.description",
+    "text": "Born to a family of traveling merchants, [PAWN_nameDef] was mentored by [PAWN_possessive] father in the ways of being a trader. [PAWN_pronoun] was often tasked with caring for the pack animals. Due to [PAWN_possessive] nomadic lifestyle, [PAWN_pronoun] hunted and bartered for [PAWN_possessive] food.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_CaravanTraveler6.description",
+    "text": "Born to a family of traveling merchants, [PAWN_nameDef] was mentored by [PAWN_possessive] father in the ways of being a trader. [PAWN_pronoun] was often tasked with caring for the pack animals. Due to [PAWN_possessive] nomadic lifestyle, [PAWN_pronoun] hunted and bartered for [PAWN_possessive] food.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_PiousSoldier67.description",
+    "text": "When not training or combat, [PAWN_nameDef] was often at the chaplain's side. [PAWN_pronoun] dedicated [PAWN_possessive] life to serving both [PAWN_possessive] lord and [PAWN_possessive] religion.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_PiousSoldier67.description",
+    "text": "When not training or combat, [PAWN_nameDef] was often at the chaplain's side. [PAWN_pronoun] dedicated [PAWN_possessive] life to serving both [PAWN_possessive] lord and [PAWN_possessive] religion.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Aromatherapist80.description",
+    "text": "[PAWN_nameDef] practiced aromatherapy, using essences extracted from home-grown plants.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Aromatherapist80.description",
+    "text": "[PAWN_nameDef] practiced aromatherapy, using essences extracted from home-grown plants.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_SpaceRaider71.title",
+    "text": "bandit chief",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 122,
+    "key": "GTF_SpaceRaider71.title",
+    "text": "bandit chief",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_PoisonGardener29.title",
+    "text": "poison gardener",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 174,
+    "key": "GTF_PoisonGardener29.title",
+    "text": "poison gardener",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_MedievalKnight26.titleShort",
+    "text": "knight",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_MedievalKnight26.titleShort",
+    "text": "knight",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_PrivateDetective66.title",
+    "text": "private detective",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 283,
+    "key": "GTF_PrivateDetective66.title",
+    "text": "private detective",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_CaravanTraveler6.title",
+    "text": "caravan traveler",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "line": 215,
+    "key": "GTF_CaravanTraveler6.title",
+    "text": "caravan traveler",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_CommonerLord45.description",
+    "text": "After years of training in martial arts and diplomacy, [PAWN_nameDef] was eventually given land and subjects of [PAWN_possessive] own to rule.\\n\\nBecause of [PAWN_nameDef]'s commoner heritage, the other lords disapproved. They framed [PAWN_objective] for a heinous crime, and the emperor had no choice but to exile [PAWN_objective].",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_CommonerLord45.description",
+    "text": "After years of training in martial arts and diplomacy, [PAWN_nameDef] was eventually given land and subjects of [PAWN_possessive] own to rule.\\n\\nBecause of [PAWN_nameDef]'s commoner heritage, the other lords disapproved. They framed [PAWN_objective] for a heinous crime, and the emperor had no choice but to exile [PAWN_objective].",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_SpaceSmuggler6.titleShort",
+    "text": "smuggler",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_SpaceSmuggler6.titleShort",
+    "text": "smuggler",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_SpacePirate55.description",
+    "text": "[PAWN_nameDef] was part of the piracy tradition, extorting and smashing peaceful trade ships for profit in faraway seas.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_SpacePirate55.description",
+    "text": "[PAWN_nameDef] was part of the piracy tradition, extorting and smashing peaceful trade ships for profit in faraway seas.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_CommonerLord45.titleShort",
+    "text": "lord",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_CommonerLord45.titleShort",
+    "text": "lord",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Delinquent13.description",
+    "text": "[PAWN_nameDef] spent most of [PAWN_possessive] childhood behind bars. Following an unsuccessful escape attempt, [PAWN_pronoun] was pressed into the army.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Delinquent13.description",
+    "text": "[PAWN_nameDef] spent most of [PAWN_possessive] childhood behind bars. Following an unsuccessful escape attempt, [PAWN_pronoun] was pressed into the army.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_ArmyCook0.description",
+    "text": "[PAWN_nameDef] joined the army as a worker and spent most of [PAWN_possessive] time cooking and repairing. While [PAWN_pronoun] was stationed on a conflictuous frontier, [PAWN_pronoun] underwent basic combat and survival training.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_ArmyCook0.description",
+    "text": "[PAWN_nameDef] joined the army as a worker and spent most of [PAWN_possessive] time cooking and repairing. While [PAWN_pronoun] was stationed on a conflictuous frontier, [PAWN_pronoun] underwent basic combat and survival training.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+    "key": "GTF_SpaceSmuggler6.description",
+    "text": "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Child.xml",
+    "line": null,
+    "key": "GTF_SpaceSmuggler6.description",
+    "text": "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_Artilleryman28.titleShort",
+    "text": "artilleer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_Artilleryman28.titleShort",
+    "text": "artilleer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_LineInfanteer20.title",
+    "text": "line infanteer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 84,
+    "key": "GTF_LineInfanteer20.title",
+    "text": "line infanteer",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_InfantryEngineer46.description",
+    "text": "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_InfantryEngineer46.description",
+    "text": "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_InfantryEngineer46.titleShort",
+    "text": "engineer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+    "line": null,
+    "key": "GTF_InfantryEngineer46.titleShort",
+    "text": "engineer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_PoisonGardener29.description",
+    "text": "[PAWN_nameDef] spent almost all [PAWN_possessive] time tending to a poison garden and became withdrawn from society.\\n\\nIn that time [PAWN_pronoun] learnt a few safe culinary and medicinal uses for the otherwise deadly plants.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_PoisonGardener29.description",
+    "text": "[PAWN_nameDef] spent almost all [PAWN_possessive] time tending to a poison garden and became withdrawn from society.\\n\\nIn that time [PAWN_pronoun] learnt a few safe culinary and medicinal uses for the otherwise deadly plants.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_BeastSlayer67.titleShort",
+    "text": "slayer",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_BeastSlayer67.titleShort",
+    "text": "slayer",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Hunter73.titleShort",
+    "text": "hunter",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Hunter73.titleShort",
+    "text": "hunter",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_BountyHunter17.titleShort",
+    "text": "hunter",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_BountyHunter17.titleShort",
+    "text": "hunter",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_CommonerLord45.title",
+    "text": "commoner lord",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 633,
+    "key": "GTF_CommonerLord45.title",
+    "text": "commoner lord",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_BeastSlayer67.title",
+    "text": "beast slayer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "line": 328,
+    "key": "GTF_BeastSlayer67.title",
+    "text": "beast slayer",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Aromatherapist80.title",
+    "text": "aromatherapist",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Aromatherapist80.title",
+    "text": "aromatherapist",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Hunter73.description",
+    "text": "[PAWN_nameDef] was a master hunter.\\n\\n[PAWN_pronoun] learned to track and trap any animal in the most dangerous of places, and had deep knowledge of many ingenious methods for taking down specific large animals.",
+    "tag": "description",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Hunter73.description",
+    "text": "[PAWN_nameDef] was a master hunter.\\n\\n[PAWN_pronoun] learned to track and trap any animal in the most dangerous of places, and had deep knowledge of many ingenious methods for taking down specific large animals.",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_FurnitureBuilder83.titleShort",
+    "text": "builder",
+    "tag": "titleShort",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_FurnitureBuilder83.titleShort",
+    "text": "builder",
+    "kind": "existing_translation"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "key": "GTF_InfantryEngineer46.title",
+    "text": "siege engineer",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+    "line": 128,
+    "key": "GTF_InfantryEngineer46.title",
+    "text": "siege engineer",
+    "kind": "raw_defs"
+   }
+  },
+  {
+   "rimlangkit": {
+    "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+    "key": "GTF_Minister88.title",
+    "text": "minister",
+    "tag": "title",
+    "def_type": "BackstoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories_Adult.xml",
+    "line": null,
+    "key": "GTF_Minister88.title",
+    "text": "minister",
+    "kind": "existing_translation"
+   }
+  }
+ ],
+ "rimloc_only": [
+  {
+   "file": "Languages/English/DefInjected/BackstoryDef/GTF_Backstories.xml",
+   "line": null,
+   "key": "GTF_Artilleryman28.titleFemale",
+   "text": "artillerywoman",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "line": 8,
+   "key": "GTF_MedievalMinstrel95.baseDesc",
+   "text": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road.",
+   "kind": "raw_defs"
+  },
+  {
+   "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Child.xml",
+   "line": 323,
+   "key": "GTF_MedievalSquire5.workDisables",
+   "text": "Cooking, PlantWork",
+   "kind": "raw_defs"
+  },
+  {
+   "file": "1.5_1.6/Defs/BackstoryDefs/GTF_Backstories_Adult.xml",
+   "line": 290,
+   "key": "GTF_PrivateDetective66.workDisables",
+   "text": "PlantWork, Mining",
+   "kind": "raw_defs"
+  },
+  {
+   "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "line": 25,
+   "key": "GTF_ShipBoy89.titleFemale",
+   "text": "ship girl",
+   "kind": "raw_defs"
+  },
+  {
+   "file": "1.5_1.6/Mods/Royalty/Defs/BackstoryDefs/GTF_Backstories.xml",
+   "line": 27,
+   "key": "GTF_ShipBoy89.titleShortFemale",
+   "text": "ship girl",
+   "kind": "raw_defs"
+  },
+  {
+   "file": "1.4/Defs/BackstoryDefs/GTF_Backstories_Adulthood.xml",
+   "line": 8,
+   "key": "GTF_WanderingBard.baseDesc",
+   "text": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road.",
+   "kind": "raw_defs"
+  }
+ ],
+ "rimlangkit_only": [],
+ "semantic_difference": [],
+ "both_file_diff_count": 119,
+ "rimloc_only_kind_breakdown": {
+  "raw_defs": 6,
+  "existing_translation": 1
+ },
+ "totals": {
+  "rimlangkit_unique": 157,
+  "rimloc_unique": 164,
+  "both": 157,
+  "rimloc_only": 7,
+  "rimlangkit_only": 0,
+  "semantic_keys": 0,
+  "files_scanned_by_rlk": 54,
+  "files_matched_by_rlk": 4
+ }
+}

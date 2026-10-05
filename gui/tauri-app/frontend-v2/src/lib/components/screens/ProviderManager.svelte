@@ -36,6 +36,7 @@
   import { t } from '../../../i18n/store.svelte';
   import { router } from '../../router.svelte';
   import { providers, type ProviderId, type ProviderStatus } from '../../stores/providers.svelte';
+  import { clientInstance } from '../../client/instance.svelte';
 
   type Family = ProviderId;
   type Discovery = 'auto' | 'manual';
@@ -605,6 +606,36 @@
     offline: 'warning',
     testing: 'clock'
   };
+
+  // M-11 (UI audit 2026-09-29): the «(мок)» suffix is honest ONLY on the
+  // mock transport — a real configured account showing «Подключён (мок)»
+  // mixes truths on one screen. On the real transport this build has NO
+  // network probe (deliberately, no fake ping), so a settled connection
+  // verdict is not claimable: configured providers show the honest
+  // «настроен (не проверялся)», never a faked «Подключён»/«Офлайн».
+  const mockTransport = clientInstance.resolveMode() !== 'tauri';
+
+  function statusLabel(inst: Instance): string {
+    if (mockTransport) return t(`providers.status.${inst.status}`);
+    if (inst.status === 'testing') return t('providers.status.testing');
+    if (!inst.enabled || inst.status === 'not_configured') return t('providers.status.not_configured');
+    return t('providers.status.configured');
+  }
+
+  // Wave-5 companion to M-11 («мок-вспышка» residue): the honest verdict
+  // must drive the pill's ICON and COLOR too, not only the label. On the
+  // real transport the internal mock status — the fixture's 'connected' /
+  // 'offline' at open, a simulated probe outcome — never earns the green
+  // connected look this build cannot verify: a green circle-check next to
+  // «настроен (не проверялся)» would still claim a connection. Both honest
+  // real-transport verdicts share the muted not_configured look; only the
+  // transient probe keeps the testing look. On the mock transport the
+  // displayed status IS the (marked) mock status — unchanged.
+  function statusLook(inst: Instance): { icon: string; cls: string } {
+    if (mockTransport) return { icon: STATUS_ICON[inst.status], cls: `st-${inst.status}` };
+    if (inst.status === 'testing') return { icon: STATUS_ICON.testing, cls: 'st-testing' };
+    return { icon: STATUS_ICON.not_configured, cls: 'st-not_configured' };
+  }
 </script>
 
 <section class="providers" aria-labelledby="providers-heading">
@@ -630,6 +661,7 @@
     <div class="cards">
       {#each instances as inst (inst.id)}
         {@const meta = familyMeta(inst.family)}
+        {@const look = statusLook(inst)}
         <article
           class="card"
           class:disabled={!inst.enabled}
@@ -677,9 +709,12 @@
               />
               <span class="switch-label">{t(inst.enabled ? 'providers.inst.enabled' : 'providers.inst.disabled')}</span>
             </label>
-            <span class={`status st-${inst.status}`} data-testid={`providers.inst.status.${inst.id}`}>
-              <Icon name={STATUS_ICON[inst.status]} size={14} />
-              {t(`providers.status.${inst.status}`)}
+            <span class={`status ${look.cls}`} data-testid={`providers.inst.status.${inst.id}`}>
+              <Icon name={look.icon} size={14} />
+              {statusLabel(inst)}
+              {#if mockTransport}
+                <span class="mock-mark">{t('providers.status.mockMark')}</span>
+              {/if}
             </span>
           </header>
 
@@ -699,7 +734,7 @@
                   {inst.hasKey
                     ? inst.credential === 'shared-ref'
                       ? `•••• •••• (${t('providers.inst.cred.shared')})`
-                      : '•••• •••• (keychain)'
+                      : `•••• •••• (${t('providers.inst.key.keychain')})`
                     : t('providers.key.none')}
                 </span>
                 {#if inst.credential === 'shared-ref'}
@@ -1250,6 +1285,12 @@
   .st-testing {
     color: var(--color-warning);
     border-color: var(--color-warning);
+  }
+
+  /* M-11: the mock suffix rides its own quiet span — it never merges into
+     the status word itself. */
+  .mock-mark {
+    color: var(--color-muted-fg);
   }
 
   .meta {

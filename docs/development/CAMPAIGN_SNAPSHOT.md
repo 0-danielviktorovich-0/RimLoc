@@ -37,7 +37,148 @@ CARGO_INCREMENTAL=0), без самодельных локов/вторых та
 критерий завершения кампании — evidence-backed local RC/live acceptance.
 
 ## Verify at session start (изменчивое)
-- Последний main-срез: `ee9967b` (+ built-gui: сторы на RimLocClient, frontendDist v2, intents с полным структурным id) → **проверь `git rev-parse HEAD`**.
+- **60-MIN POST-FIX RELEASE SOAK = PASS 03.10 (soak #3, официальный гейт):**
+  840 циклов/60мс-15мс-p50; functional=0, routeTO=0, renderTO=0, driverErr=0,
+  deaths=0, relaunches=0, reconnects=0; identity верифицирована до цикла 1
+  (артефакт rel15-automation sha bdbb128c…, app-reported dcf5b28-dirty =
+  записи сборки). Латентности: settings-nav p50=32мс/p95=134мс (route 18мс +
+  render 9мс — продуктовых проблем нет), два одиночных выброса записаны
+  честно. Evidence: RimLoc-evidence/soak-60-main-v3-official-20261003.
+  Инфраструктура: build_identity в бинаре, soak-preflight gate (fail-closed),
+  спека v3 (hash+landmark, латентности, раздельные счётчики) — коммиты
+  421584c…4493dc3. soak#1 (rel14, 20% интермитент) и soak#2 (baseline, 21%)
+  — диагностические, сохранили evidence.
+- **АРТЕФАКТ REL-15 PRODUCTION СОБРАН 03.10 (волна 13 включена):** main 02e7ae1
+  → RimLoc-evidence/artifact-rel15-production (sha256 91869f39…, source-commit.txt).
+  release-guard static+runtime = PASS (порт 4457 закрыт при RIMLOC_AUTOMATION=1,
+  маркеров wdio нет); boot-check изоляцией RIMLOC_DATA_DIR = PASS (12с жив,
+  frontmost владельца не тронут). DMG-стадия упала (bundle_dmg на NFS-target —
+  дистрибуция перед публичным шагом собирать на внутреннем томе). Сборка шла с
+  явным CARGO_TARGET_DIR на SSD (хук-контракт ADR-002: путь в тексте команды).
+- **ВОЛНА 13 ЗАВЕРШЕНА ЦЕЛИКОМ 03.10 (012ca20):** ЗАДАЧА A (бэкенд:
+  GlossaryTerm + Project.glossary + контракт CRUD + persist-before-ack),
+  ЗАДАЧА B (фронт: живая таблица глоссария на контрактном проекте, честный
+  стаб с бейджем на demo), ЗАДАЧА C (honesty-e2e), независимое ревью
+  (APPROVE, 2 minor исправлены: Capability::ProjectGlossary в handshake,
+  мёртвый job_id). Гейты: rust 231/0, vitest 450/450, e2e 17+1skipped,
+  svelte-check 0/0, clippy 0. Исполнено в главной нити (квота воркфлоу до
+  06.10); независимое ревью — read-only субагент.
+  **Следующая очередь — TM live: БРИФА НЕТ.** Открытый дизайн-вопрос перед
+  исполнением: что значит live для TM — авто-пополнение из принятых
+  переводов проекта, импорт legacy load_tm, ручной CRUD или комбинация;
+  мокает mock/wizard mockTm только читаемые строки. Нужен мандат владельца
+  или бриф по образцу волны 13.
+- **ВОЛНА 13 ЗАДАЧА A ВЛИТА В MAIN 03.10 (7326ada):** глоссарий как состояние
+  проекта — домен GlossaryTerm, Project.glossary (serde default), контракт
+  project_glossary/upsert/delete c persist-before-ack и epoch-гвардом,
+  регистрация в live-входе (оба handler-ветки); 8 тестов; services+domain
+  231/0, clippy 0. Исполнено в главной нити (детерминированная часть брифа —
+  разрешена до снятия квоты). ЗАДАЧИ B/C (фронт live + e2e) — по брифу
+  (.zcode/workflow-drafts/RimLoc-волна-13-глоссарий.dwf.ts) после reset 06.10.
+  УРОК: общий NFS-target рвёт rlib-слоты между воркспейсами (ba-main перезаписал
+  домен ветки — поля «adapter, context…» без glossary); лечение — форс-ребилд
+  touch + вливание деревьев (сошлись на 7326ada), для будущих волн — serial.
+- **СТОП-КОНВЕЙЕРА 30.09 ~06:0x: квота Z.ai 1310 (Weekly/Monthly исчерпана, reset
+  2026-10-06 00:00 JST).** Flash-воркеры недоступны до reset — волны механики
+  ПРИОСТАНОВЛЕНЫ. Workflow волны 13 (глоссарий live) остановлен на первом шаге,
+  worktree чист и удалён; БРИФ ГОТОВ: .zcode/workflow-drafts/RimLoc-волна-13-глоссарий.dwf.ts
+  (в AI-OS) — перезапуск после reset. Main: `87261ae` — волны 8-12 влиты и зелёные
+  (rust 357/0, vitest 433/433, e2e 16+1fixme). ПЕРВАЯ операция при восстановлении
+  ресурсов: (1) пересборка REL-12 (диск 19 GiB — ещё ниже порога 25; ждём), затем
+  живой прогон blank-tail/live-Source; (2) волна 13 глоссарий; (3) TM live; далее по
+  матрице. Все брифы конвейера — в .zcode/workflow-drafts/ (AI-OS).
+- **ХЭНДОФФ-ЦИКЛ 30.09, ~05:0x**: main несёт волны 8-11 (проверь `git rev-parse HEAD`):
+  волна 8 `d9f0c7f` SF-07/11/06 (интерполяция/атомарная запись/лимиты, контрпримеры в сьюте);
+  волна 9 `0dce5ab` owner-классы (blank-tail Review/Glossary/TM/Project — flex-цепочка,
+  термины: 0 «контракт» в строках, фокус-инвариант); волна 10 `9dbfee6` T2a Playwright
+  (17 семантических инвариантов, headless, 16 passed + 1 fixme фокус-бюджет 16 — виновник
+  DevPanel-кнопка хедера); волна 11 SF-08/09/10 (CatalogStatus typed, fingerprint
+  source-only, ru-импорт в сессию E2E>1000, preview lang/dir). Гейты: rust 354/0,
+  svelte 0/0, vitest 424/424, e2e 16+1fixme. **Пересборка REL-12 ОТЛОЖЕНА: диск 15 GiB <
+  guardian-политики 25 — первая операция при свободном диске.** Junction-гонка
+  /tmp/rimloc-selfloc-chain между параллельными worktree известна (chain-тест падает
+  при чужом cargo-прогоне) — фикс-кандидат: per-run junction-путь.
+  Очередь: Source Inspector live → MOCK→live волны → дизайн-пасс (DESIGN_SKILL_MATRIX)
+  → T6 RimWorld → owner pack. Архитектура приёмки: docs/development/testing/.
+- **ФИНАЛ НОЧИ 30.09 (~01:1x)**: main `765b7e1` (→ проверь `git rev-parse HEAD`).
+  Микро-волна 4 влита (`e0e7acc`, ревью APPROVED): --space-5 токен + displayName.
+  Гейты merged main: fmt 0, clippy чисто, rust 326/0, svelte 0/0, vitest 381/381.
+  **Инцидент stale-dist**: tauri.conf без beforeBuildCommand — REL-4/5/6 несли stale фронт
+  (REL-6 БЕЗ волны 3); smoke REL-6 по маркеру был ведущим вопросом — перечёркнут.
+  Фикс: beforeBuildCommand `cd frontend-v2 && npm run build` (cwd = gui/tauri-app, пробой pwd).
+  **ФИНАЛЬНЫЙ RC-артефакт: `d710b26b…`** (evidence artifact-rel7-final/, = REL-7/REL-8),
+  установлен auto_install.py; живое подтверждение маркера нейтральным вопросом —
+  кадр live-accept-rel5/rel8-table.png. Очередь дальше — только owner-решения
+  (пуш 9591f4f..HEAD, тег K2, подпись, чистка selfloc-дублей) и контрактные волны за ними.
+- **ВОЛНА 3 + REL-6 (ночь 30.09, ~00:4x)**: main `d03f1cd` (→ проверь `git rev-parse HEAD`).
+  Багфикс-волна 3 (dwfrun-a9b2d66f, Flash воркер+ревьюер APPROVED): L-3 маркер «Нет перевода»,
+  L-5 скроллбар, L-6 «:0», L-7 англицизмы, L-8 дубль CTA, регистр «Источник» — merge `9c26d89`.
+  **Баг-лист UI закрыт полностью: 3 high + 11 medium + 12 low.** Гейты merged main: fmt/clippy
+  чисто, rust 326/0, svelte-check 0/0, vitest 381/381. Финальный RC-артефакт **REL-6 `ff0fd61a…`**
+  (evidence artifact-rel6-final/; live-smoke: маркер/скроллбар/без-:0 подтверждены кадрами
+  live-accept-rel5/rel6-*.png; selfloc-дедуп 8→8 по-прежнему). Установлен auto_install.py.
+- **ВЕЧЕР 29.09 ЗАВЕРШЕН (~23:3x)**: main `bad4a69` (→ проверь `git rev-parse HEAD`).
+  Багфикс-волна 2 влита (`6a3dddd`, M-3..M-11 + L-пакет, гейты 324 Rust / 381 фронт).
+  REL-4 пересобран от 6a3dddd (`62f3af14…`, побайтово-воспроизводим, evidence
+  artifact-rel4-final/). **Агентский слой автоматизации** (мандат «полный автоматизм +
+  FOCP-дебаг»): `RIMLOC_AUTOMATION=1` (AX-хуки release-capable; web-AX WKWebView на
+  видимом окне недоступен внешне — рабочий канал Tab+Enter), `RIMLOC_TRACE=1` (JSONL
+  трейс контракных команд), `testlab/auto_install.py` (установка/запуск/стоп в
+  /Applications без DMG; СТАНДАРТ ИЗМЕНЁН владельцем 29.09: автоустановка теперь
+  РАЗРЕШЕНА и обязательна, одна версия, атомарная замена). **Живая UI-приёмка ЗАКРЫТА**
+  на release-бинаре `8dbe6503…` (evidence live-accept-rel5/): тур-кнопка+чип+recents-меты
+  рендер, мастер-тур открывается (шаг 1), selfloc-дедуп живьём (managed 8→8), workspace
+  шапка displayName+EN→RU, экран проверки с раздельными счётчиками. Финальный артефакт:
+  `artifact-rel5-auto/` от bad4a69. Открыто: пуш `9591f4f..bad4a69` — ок владельца.
+- **RC-конвергенция батча-2 ЗАВЕРШЕНА (27.09)**: main на документ-срезе `b1f80f1`
+  (перед ним `2f8ff0e` — merge P1-фикса release-компиляции, `fd618c2` — merge
+  out-dir-гарда). Все гейты зелёные: fmt, clippy `--workspace --all-targets
+  -D warnings`, test 297/0, svelte-check 0/0, vitest 205/205,
+  `check --release -p rimloc-gui` (новый гейт). Итоги —
+  `RELEASE_READINESS_REPORT.md`, тестеру — `BETA_TEST_CHECKLIST.md`,
+  ревьюеру — `REVIEW_SCREEN_MAP.md`. **STOP перед push/тегом/релизом —
+  только явное ок владельца.** → **проверь `git rev-parse HEAD`**.
+- **НОЧЬ 29.09 ЗАВЕРШЕНА (06:2x JST)**: main `1eb47a1` (→ проверь `git rev-parse HEAD`).
+  Влито: W2 existing-flow (dwfrun-5a8263ba Flash-конвейер: 6 дефектов поймано ревью до merge),
+  REL-2 артефакт 925858a (бинарь 478268f3, все смоуки PASS, evidence artifact-rel2-night/),
+  UI-кампания (dwfrun-571ccabf: аудит 21 экрана → 26 багов → 5 скилл-линз вариантов → жюри →
+  Home-редизайн 65d54af, гейты 324/0 rust + 345/345 фронт). СТАНДАРТ ЗАПУСКА (буккиперовский):
+  тест = прямой запуск бинаря из bundle / dev off-screen; НИКОГДА не ставить в /Applications
+  (нарушение REL-2-воркера исправлено, копия в .trash); target/ вне Spotlight; владельцу против
+  Gatekeeper-окна: xattr -dr com.apple.quarantine "/Applications/RimLoc GUI.app". Баг-бэклог
+  UI: /tmp/rimloc-ui-bugs.md (дублировать в evidence). Дизайн-варианты: /tmp/rimloc-design-variants/.
+- **Ночь 29.09 ФИНАЛ (07:1x)**: main `0afac4a` — +UI-багфиксы волны (H-1 демо-тур мастера
+  достижим, M-1 recents-мета `v·r·#id`, M-2 транспорт-чип, M-10 видимый отказ экспорта; ревью
+  approved, фронт 356/356) + REL-3 артефакт `d79eb21c…`/DMG `263ed1ca…` от 0afac4a
+  (evidence artifact-rel3-final/; check/build/package/процесс-exec PASS; живые UI-чеки NOT-RUN —
+  экран залочен 06:15, ПЕРЕГНАТЬ при разблокированном: wizard-тур кнопка, recents-мета,
+  транспорт-чип на release). Следующая утренняя задача: тот live-прогон.
+- **НОЧЬ 28.09 ЗАВЕРШЕНА (утро/вечер 28.09, возобновлена 22:52)**: main `9fe14e4`
+  (→ проверь `git rev-parse HEAD`). SF-1..5 (безопасность contribution: base_value,
+  prototype-id, секреты, дубликаты, настоящая цепочка export→pack→contribution) —
+  все CONFIRMED-FIXED независимым ревью. Волна честности UI: 13 success-симуляций →
+  честные статусы. Нативный pick_directory в create/build/diagnose. Честный
+  Review-обзор из снапшота. Selfloc UI entry (бета): «Перевести RimLoc» открывает
+  каталог как проект — доказано на release-артефакте (1187 записей, validate 0/0/0).
+  Финальный артефакт: бинарь 72426289…, evidence artifact-final-night/. Гейты:
+  rust 313/0, vitest 320/320. Полная матрица полноты: /tmp/rimloc-night-completeness-matrix.md.
+- **Self-localization foundation ВЫПОЛНЕНА (27.09)**: main несёт S1 (каталог-гигиена),
+  JSON-мост (generated каталоги, ONE AUTHORITY, SELFLOC_BRIDGE.md), pack loader +
+  preview + fallback (data-only, доверенная граница), contribution bundle build/apply
+  (sanitization, stale-гейт, round-trip), first-party UI-catalog адаптер (сессия
+  открывает свой каталог как проект: 1175 записей, placeholder-валидация, M3
+  source-drift, без DefInjected-механики). Гейты: rust 308/0, vitest 270/270,
+  clippy/fmt/svelte-check чисто. → **проверь `git rev-parse HEAD`**.
+- Осталось по мандату self-localization (СЛЕД. волны): ~~UI-точка «Help translate»~~ (ЗАКРЫТО волной 5, `22edca9`: общий selfloc.ts для Home+Help, живая приёмка managed 8→8 через Help-вход),
+  EntryKind::Application (18 id с `/` непредставимы в Keyed XML — см. B4-отчёт),
+  ~~строгая placeholder-валидация имён в Rust-валидаторе~~ (ЗАКРЫТО волной 6, `35a3fd6`:
+  строгое множество {name} base-vs-перевод для ui-catalog, error-findings, 6 юнит +
+  интеграционный тест), ~~перевод бэкенд-сообщений по code~~ (ЗАКРЫТО волной 6:
+  contract.error.<code>/finding.<kind> с fallback, 24+24 ключа, тесты backend-messages),
+  ~~бета-UI contribution~~ (ЗАКРЫТО волной 7, `8c3ba1f`: Rust-порт контракта v1 + UI-блок на selfloc-проекте; живой рендер подтверждён, клик-джорни ограничен каналом; отправка GitHub — вне скоупа),
+  EntryKind::Application (18 id с «/» — OWNER-решение: дизайн представления в Keyed XML). GitHub/relay — вне скоупа, не начинались.
+- RC-статус: см. RELEASE_READINESS_REPORT.md (evidence-closeout от 27.09, main
+  несёт тестированную дельту). STOP: push/тег/релиз — только явное ок владельца.
 - Рабочее дерево: возможен незакоммиченный L-WIP в main; provenance и W4.5 —
   в отдельных worktrees. Владение и статус перепроверять; чужие изменения сохранять.
 - Диск: свободное место разделяется с другими активными проектами; **проверяй df перед
@@ -52,6 +193,13 @@ Workshop-моды, сейвы, прод-профиль — READ-ONLY (hash-гв�
 Commits (feat|fix|docs|chore|refactor|test|ci|build|perf|revert), body с «- » буллетами,
 subject ≤72 символов. Факты (диск/порты/процессы) проверять в момент отчёта — урок
 verify-facts-before-reporting.
+**Не-интерференция с владельцем (мандат 30.09)**: живые прогоны не крадут фокус —
+keystroke/activate-навигация запрещена; единственный канал — фоновый AX
+(testlab/ui_automation/ax/: запуск бинарем с RIMLOC_AUTOMATION=1 → одна активация
+1.5с на материализацию web-дерева → возврат фокуса → AXPress + screencapture -x -l).
+Доказано на REL-12 30.09: два фоновых AXPress, frontmost владельца нетронут.
+Остаточные вопросы (нулевая активация, remote inspector) —
+docs/development/FRONTIER_QUERY_FOCUS_FREE_MACOS_AUTOMATION.md.
 
 ## Закрытые гейты (не переоткрывать без новых доказательств)
 **BACKEND FREEZE (25.09, координатор по evidence; интегрированный HEAD `4b4d8c3`)**:
@@ -125,6 +273,15 @@ project data не в фронтенд-форматах.
 Решения post-freeze binding сохранены в UI_SDK_MANDATE.md: persist-before-ack,
 revision/epoch, защищённый source/output, реальная диагностика, закрытие unsafe legacy
 Tauri routes и обязательная приёмка нового GUI; это требования, не статус реализации.
+
+## REL-13 — текущий release-артефакт (01.10)
+HEAD a105529: M-7 + M-10 фиксы, P0-форки нулевой активации (нулевая
+кража фокуса: запуск/WDIO-сессия не активируют приложение), runtime-
+gated WDIO-плагины (спят), window-state (обычные сессии). Живая
+верификация фоном 2/2 PASS; §12-acceptance PASS (12м20с, 0 активаций).
+Ограничения: adhoc-подпись, плагины до security-ревью, волна 13 (глоссарий/
+TM live) — после квоты 06.10. Процессы автоматизации: только background-
+only (RIMLOC_AUTOMATION_POLICY), foreground = exclusive + владелец.
 
 ## ⏸ Pending owner decisions
 1. Визуальное направление (Precision/Aurora/Workshop/Editorial + палитра + гибрид) —

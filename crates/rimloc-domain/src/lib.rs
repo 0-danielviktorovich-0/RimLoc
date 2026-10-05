@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod canonical;
 pub mod eligibility;
+pub mod glossary;
+pub mod tm;
 
 pub const SCHEMA_VERSION: u32 = 1;
 

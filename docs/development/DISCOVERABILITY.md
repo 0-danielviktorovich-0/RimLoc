@@ -27,7 +27,7 @@ related: [COMPETITOR_MATRIX.md, MULTILINGUAL_ARCHITECTURE.md]
 6. [Release notes как поисковая поверхность](#6-release-notes)
 7. [Post-release measurement](#7-post-release-measurement)
 8. [Policy — чего SEO не ломает](#8-policy)
-9. [Чеклист внедрения (docs hardening)](#9-чеклист-внедрения)
+<!-- Пункт 9 «Чеклист внедрения» удалён из оглавления аудитом 2026-10-05: раздела #9-чеклист-внедрения в документе нет (см. DOCUMENTATION_AUDIT_2026-10.md). -->
 
 ---
 

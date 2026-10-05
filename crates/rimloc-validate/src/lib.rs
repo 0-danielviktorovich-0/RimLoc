@@ -127,7 +127,7 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
                 ),
             });
         }
-        if u.source.as_deref().map_or(true, |s| s.trim().is_empty()) {
+        if u.source.as_deref().is_none_or(|s| s.trim().is_empty()) {
             // Empty required translation → real failure.
             msgs.push(ValidationMessage {
                 kind: "empty".to_string(),
@@ -302,6 +302,61 @@ pub fn validate(units: &[TransUnit]) -> CoreResult<Vec<ValidationMessage>> {
     Ok(msgs)
 }
 
+/// Named `{name}` placeholders of a text: the set of balanced `{INNER}`
+/// tokens whose trimmed inner matches the SAME token shape the per-string
+/// brace check accepts (`{$var}`, `{VAR}`, `{0}`, `{name_1}`). Unbalanced
+/// or malformed braces yield NO token here — they are the per-string
+/// `placeholder-check` error's domain; the set comparison judges only
+/// well-formed named tokens.
+pub fn named_placeholders(text: &str) -> std::collections::BTreeSet<String> {
+    static RE_INNER: OnceLock<Regex> = OnceLock::new();
+    static RE_TOKEN: OnceLock<Regex> = OnceLock::new();
+    let re_inner = RE_INNER.get_or_init(|| Regex::new(r"\{([^{}]*)\}").unwrap());
+    let re_token = RE_TOKEN.get_or_init(|| Regex::new(r"^\$?[A-Za-z0-9_]+$").unwrap());
+    re_inner
+        .captures_iter(text)
+        .filter_map(|c| c.get(1))
+        .map(|m| m.as_str().trim())
+        .filter(|inner| re_token.is_match(inner))
+        .map(str::to_string)
+        .collect()
+}
+
+/// Strict set comparison of the NAMED `{name}` placeholders between a
+/// source text and its translation: the translation must carry exactly the
+/// same set of names — a lost one leaves its slot unfilled, an invented or
+/// renamed one stays in the rendered text verbatim (self-localization
+/// audit §5: `replaceAll` keeps a typo'd `{nmae}` as literal text, and no
+/// per-string check sees it). Returns the English canon message when the
+/// sets differ, `None` when they match.
+pub fn placeholder_set_mismatch(source: &str, translation: &str) -> Option<String> {
+    let src = named_placeholders(source);
+    let tgt = named_placeholders(translation);
+    if src == tgt {
+        return None;
+    }
+    let fmt = |names: Vec<&String>| -> String {
+        names
+            .iter()
+            .map(|n| format!("{{{n}}}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let missing = fmt(src.difference(&tgt).collect());
+    let unexpected = fmt(tgt.difference(&src).collect());
+    let mut parts: Vec<String> = Vec::new();
+    if !missing.is_empty() {
+        parts.push(format!("missing {missing}"));
+    }
+    if !unexpected.is_empty() {
+        parts.push(format!("unexpected {unexpected}"));
+    }
+    Some(format!(
+        "Placeholder mismatch vs source: {} — Hint: keep exactly the same {{name}} placeholders as the source text.",
+        parts.join("; ")
+    ))
+}
+
 /// Duplicate-detection scope of a path: its Languages/<dir> folder name, or an
 /// empty scope for paths outside Languages (Defs and other source files).
 fn lang_scope_of(path: &str) -> String {
@@ -395,5 +450,63 @@ mod tests {
             }),
             "{msgs:?}"
         );
+    }
+
+    // --- self-localization audit §5: strict {name}-SET comparison -------
+
+    /// Matching sets (same names, different prose) are CLEAN.
+    #[test]
+    fn placeholder_set_match_is_clean() {
+        assert_eq!(
+            placeholder_set_mismatch(
+                "Hi {name}, you have {count} items",
+                "Привет {name}, у вас {count} штук"
+            ),
+            None
+        );
+    }
+
+    /// A LOST placeholder is a finding naming what went missing.
+    #[test]
+    fn placeholder_set_loss_is_a_finding() {
+        let msg = placeholder_set_mismatch("{count} new messages", "новых сообщений")
+            .expect("loss must be a finding");
+        assert!(msg.contains("missing {count}"), "{msg}");
+        assert!(!msg.contains("unexpected"), "{msg}");
+    }
+
+    /// An INVENTED placeholder is a finding naming the extra token.
+    #[test]
+    fn placeholder_set_addition_is_a_finding() {
+        let msg = placeholder_set_mismatch("Hello!", "Привет, {name}!")
+            .expect("addition must be a finding");
+        assert!(msg.contains("unexpected {name}"), "{msg}");
+        assert!(!msg.contains("missing"), "{msg}");
+    }
+
+    /// No placeholders on EITHER side is clean (the common literal case).
+    #[test]
+    fn placeholder_sets_both_empty_are_clean() {
+        assert_eq!(placeholder_set_mismatch("Hello!", "Привет!"), None);
+    }
+
+    /// Placeholders only in the base = the loss case: a finding, and the
+    /// remaining (matched) name is not reported as unexpected.
+    #[test]
+    fn placeholders_only_in_base_are_a_finding() {
+        let msg = placeholder_set_mismatch("{a} and {b}", "{a} и всё")
+            .expect("only-in-base must be a finding");
+        assert!(msg.contains("missing {b}"), "{msg}");
+        assert!(!msg.contains("unexpected"), "{msg}");
+    }
+
+    /// A RENAME is the audit's exact hole (`replaceAll` keeps `{nmae}`
+    /// verbatim): the finding names BOTH the lost and the extra token.
+    #[test]
+    fn placeholder_rename_is_lost_plus_unexpected() {
+        let msg = placeholder_set_mismatch("{count} items", "{kaunt} штук")
+            .expect("rename must be a finding");
+        assert!(msg.contains("missing {count}"), "{msg}");
+        assert!(msg.contains("unexpected {kaunt}"), "{msg}");
     }
 }

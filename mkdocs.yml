@@ -5,7 +5,7 @@ repo_url: https://github.com/0-danielviktorovich-0/RimLoc
 repo_name: 0-danielviktorovich-0/RimLoc
 edit_uri: edit/main/docs/
 
-copyright: "© 2025 RimLoc Project"
+copyright: "© 2025–2026 RimLoc Project"
 
 use_directory_urls: true
 
@@ -78,8 +78,7 @@ nav:
       - Lang Update: cli/lang_update.md
   - GUI:
       - Overview: guide/gui.md
-      - Preview & Edit (EN): guide/gui-preview.md
-      - Предпросмотр и редактор (RU): ru/guide/gui-preview.md
+      - Preview & Edit: guide/gui-preview.md
   - Formats & Concepts:
       - Configuration: guide/configuration.md
       - Placeholders: guide/placeholders.md
@@ -98,6 +97,7 @@ nav:
 
 exclude_docs: |
   readme/**
+  development/COMMUNITY_TESTING_HANDOFF.md
 
 extra:
   edit_uri: edit/main/docs/
@@ -119,5 +119,6 @@ markdown_extensions:
   - toc:
       permalink: true
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      # Логика эмодзи переехала в mkdocs-material (materialx.* deprecated).
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg

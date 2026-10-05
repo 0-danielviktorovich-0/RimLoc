@@ -1,9 +1,16 @@
 <script lang="ts">
-  // Review tab (mandate §12): the full QA experience. Project-wide counters
-  // (173 / 36 / 24 / 11) sit on top; below, an interactive queue over the
-  // entries loaded in this session — select an issue to open its entry in
-  // context, then [Fix] / [Ignore with reason] / [Mark reviewed]. All actions
-  // are mocks over the local stores (review + project).
+  // Review tab (mandate §12): the full QA experience. Overview counters sit on
+  // top; below, an interactive queue over the entries loaded in this session —
+  // select an issue to open its entry in context, then [Fix] / [Ignore with
+  // reason] / [Mark reviewed].
+  //
+  // Honesty about the overview (night audit §7 follow-up): in fixture/demo mode
+  // the counters are the mandate example values and the header carries the
+  // demo badge. On a real contract project the numbers are computed from the
+  // loaded snapshot — pending-review count and validation issues are real;
+  // source-change tracking and the glossary check have no dimension in the v1
+  // snapshot and are shown as an explicit "—" with the reason instead of a
+  // plausible zero. No new contract commands are involved.
   import Icon from '../Icon.svelte';
   import { t, i18n } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
@@ -11,12 +18,41 @@
   import { router } from '../../router.svelte';
   import { mockReviewOverview, mockReviewCategories } from '../../mock/wizard';
 
-  const OVERVIEW = [
+  interface OverviewCard {
+    key: 'needsReview' | 'errors' | 'sourceChanged' | 'glossaryConflicts';
+    /** null = genuinely not computable in this build (never a faked zero). */
+    value: number | null;
+    icon: string;
+  }
+
+  const OVERVIEW_MOCK: OverviewCard[] = [
     { key: 'needsReview', value: mockReviewOverview.needsReview, icon: 'clipboard-check' },
     { key: 'errors', value: mockReviewOverview.errors, icon: 'warning' },
     { key: 'sourceChanged', value: mockReviewOverview.sourceChanged, icon: 'alert' },
     { key: 'glossaryConflicts', value: mockReviewOverview.glossaryConflicts, icon: 'book' }
-  ] as const;
+  ];
+
+  /** Contract mode: the counters the snapshot can actually express. Keys
+   *  absent here are exactly the ones shown as an honest "—". */
+  const liveOverview = $derived.by<Partial<Record<OverviewCard['key'], number>> | null>(() => {
+    if (project.source !== 'contract') return null;
+    const counts = project.statusCounts();
+    return {
+      needsReview: counts.pending_review,
+      errors: project.entries.filter((e) => e.validation === 'issues').length
+    };
+  });
+
+  const overview = $derived.by<OverviewCard[]>(() => {
+    const live = liveOverview;
+    if (!live) return OVERVIEW_MOCK;
+    return OVERVIEW_MOCK.map((c) =>
+      typeof live[c.key] === 'number' ? { ...c, value: live[c.key] as number } : { ...c, value: null }
+    );
+  });
+
+  /** True on a real project: the overview is partial — say so under the cards. */
+  const overviewIsPartial = $derived(liveOverview !== null);
 
   const KIND_ICONS: Record<string, string> = {
     placeholder_mismatch: 'warning',
@@ -49,8 +85,31 @@
     return KIND_ICONS[issue.kind] ?? 'info';
   }
 
+  // L-6 (UI audit 2026-09-29): "file.js:0" garbage in every queue card —
+  // the ":line" suffix appears only for a real (positive) line number.
+  function rowLoc(entryId: string): string {
+    const entry = project.byId(entryId);
+    if (!entry) return '';
+    const file = entry.file.split('/').pop() ?? '';
+    return entry.line ? `${file}:${entry.line}` : file;
+  }
+
   function gotoBuild() {
     router.navigate('build');
+  }
+
+  // M-6 (UI audit 2026-09-29): the overview counters and the session queue
+  // are two different truths — a "0 / 45" pair on one screen read as a
+  // glitch. Each side now carries a visible link to the other; scrolling
+  // honors prefers-reduced-motion.
+  function reducedMotion(): boolean {
+    return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  }
+  function scrollToQueue() {
+    document.getElementById('review-queue')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  }
+  function scrollToOverview() {
+    document.getElementById('review-overview')?.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
   }
 
   function onWindowKeydown(event: KeyboardEvent) {
@@ -69,17 +128,42 @@
     <p class="scope">{t('review.scope')}</p>
   </div>
 
-  <dl class="overview">
-    {#each OVERVIEW as o (o.key)}
+  <dl class="overview" id="review-overview">
+    {#each overview as o (o.key)}
       <div class="card" data-testid={`review.overview.${o.key}`}>
         <dt>
           <Icon name={o.icon} size={14} />
           {t(`review.${o.key}`)}
         </dt>
-        <dd class="mono">{fmt(o.value)}</dd>
+        {#if o.value === null}
+          <dd
+            class="mono unavailable"
+            title={t('review.overview.unavailable')}
+            data-testid={`review.overview.${o.key}.unavailable`}
+          >
+            —
+            <span class="visually-hidden">{t('review.overview.unavailable')}</span>
+          </dd>
+        {:else}
+          <dd class="mono">{fmt(o.value)}</dd>
+        {/if}
       </div>
     {/each}
   </dl>
+  {#if overviewIsPartial}
+    <p class="partial-note" data-testid="review.overview.partial">
+      <Icon name="info" size={13} />
+      {t('review.overview.partial')}
+    </p>
+  {/if}
+  <!-- M-6: the visible bridge between the cards and the queue — the "0 next
+       to 45" pair is two different counts, not a malfunction. -->
+  <p class="queue-link" data-testid="review.overview.queuelink-note">
+    <button type="button" class="linklike" data-testid="review.overview.queueLink" onclick={scrollToQueue}>
+      {t('review.overview.queueLink')}
+    </button>
+    <span>{t('review.overview.queueExplainer')}</span>
+  </p>
 
   <div class="chips" role="group" aria-label={t('review.categories')} data-testid="review.categories">
     <button
@@ -109,7 +193,7 @@
   </div>
 
   <div class="layout">
-    <div class="queue-pane">
+    <div class="queue-pane" id="review-queue">
       {#if review.active.length === 0}
         <div class="clear-card" data-testid="review.queue-empty">
           <p class="clear-title">
@@ -123,6 +207,12 @@
           </button>
         </div>
       {:else}
+        <p class="overview-link">
+          <!-- M-6: the queue answers back to the overview counters. -->
+          <button type="button" class="linklike" data-testid="review.queue.overviewLink" onclick={scrollToOverview}>
+            {t('review.queue.overviewLink')}
+          </button>
+        </p>
         <ul class="queue" aria-label={t('review.queue')}>
           {#each review.active as issue (issue.id)}
             {@const entry = project.byId(issue.entryId)}
@@ -144,7 +234,7 @@
                   <span class="row-key mono">{entry?.key}</span>
                   <span class="row-snippet">{snippet(issue.message ?? entry?.source ?? '')}</span>
                 </span>
-                <span class="row-loc mono">{entry?.file.split('/').pop()}:{entry?.line}</span>
+                <span class="row-loc mono">{rowLoc(issue.entryId)}</span>
                 <Icon name="chevron-right" size={14} />
               </button>
             </li>
@@ -306,12 +396,18 @@
 </section>
 
 <style>
+  /* Wave 9 (owner blank-tail class, кадр 01.37.06): the section fills the
+     workspace column (flex: 1) instead of clamping to content height and
+     leaving a dead dark tail below; the queue list itself is the scroll
+     container. */
   .review {
     padding: var(--space-4) var(--space-6);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    flex: 1;
+    min-height: 0;
   }
 
   .head {
@@ -374,6 +470,58 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* Not-computable counter (contract mode): explicit dash, never a faked zero. */
+  .card dd.unavailable {
+    color: var(--color-muted-fg);
+    font-weight: 400;
+  }
+
+  .partial-note {
+    margin: 0;
+    display: inline-flex;
+    align-items: flex-start;
+    gap: var(--space-1);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  .partial-note :global(svg) {
+    flex: none;
+    margin-top: 2px;
+  }
+
+  /* M-6: the overview→queue bridge line (link + the 0-vs-N explainer). */
+  .queue-link {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-2);
+    color: var(--color-muted-fg);
+    font-size: var(--text-meta-size);
+  }
+
+  /* M-6: quiet text-link button used for both scroll bridges. */
+  .linklike {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--color-primary-text);
+    font-size: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .linklike:hover {
+    color: var(--color-fg);
+  }
+
+  .overview-link {
+    margin: 0;
+    font-size: var(--text-meta-size);
+  }
+
   /* Category chips */
   .chips {
     display: flex;
@@ -413,12 +561,17 @@
     color: var(--color-fg);
   }
 
-  /* Two-pane layout: queue + context */
+  /* Two-pane layout: queue + context. Wave 9 (blank-tail class): the layout
+     takes the remaining section height; the queue pane stretches with it so
+     the list owns the free space, while the context pane keeps its content
+     height (align-items: start). */
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 380px;
     gap: var(--space-4);
     align-items: start;
+    flex: 1;
+    min-height: 0;
   }
 
   @media (max-width: 1100px) {
@@ -432,8 +585,13 @@
     flex-direction: column;
     gap: var(--space-2);
     min-width: 0;
+    align-self: stretch;
+    min-height: 0;
   }
 
+  /* Wave 9 (blank-tail class): the queue is the stretching scroll container —
+     a long queue scrolls inside the pane, a short one leaves no screen-wide
+     dead zone below the section. */
   .queue {
     list-style: none;
     margin: 0;
@@ -441,6 +599,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .row {
@@ -518,7 +679,9 @@
     color: var(--color-muted-fg);
   }
 
-  /* Queue empty state */
+  /* Queue empty state. Wave 9 (blank-tail class): with no issues the card
+     grows into the pane and centers its content — a meaningful empty state
+     instead of a giant void. */
   .clear-card {
     border: 1px dashed var(--color-border-strong);
     border-radius: var(--radius-lg);
@@ -526,7 +689,9 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    justify-content: center;
     gap: var(--space-2);
+    flex: 1;
   }
 
   .clear-title {

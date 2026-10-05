@@ -1,0 +1,208 @@
+{
+ "meta": {
+  "date": "2026-10-05",
+  "rimloc_reference": {
+   "binary": "/Volumes/Portable-SSD/caches/targets/rimloc-tgbench/release/rimloc-cli",
+   "binary_version": "0.1.0-alpha.1",
+   "ask_stated_build_head": "da2fc77",
+   "worktree_head_at_run": "72259e0b98c78ca0f34057d86a5ad32f7deb24dd",
+   "worktree": "/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main",
+   "note": "ask: сборка da2fc77, scan-поведение идентично текущему; worktree HEAD на момент прогона 72259e0b"
+  },
+  "corpus": [
+   "3170653412",
+   "818773962",
+   "2023507013",
+   "3242000764"
+  ],
+  "rimloc_baseline": {
+   "scan_units_all_langs": {
+    "3170653412": 159,
+    "818773962": 815,
+    "2023507013": 764,
+    "3242000764": 40
+   },
+   "export_po_english_msgid": {
+    "3170653412": 163,
+    "818773962": 76,
+    "2023507013": 765,
+    "3242000764": 41
+   },
+   "learn_patches_3170653412": {
+    "1.5_1.6": 0,
+    "1.4": 0
+   },
+   "learn_defs_VE_2023507013": {
+    "all_versions_raw": 985,
+    "all_versions_dedup": 228,
+    "ver16_dedup": 196
+   },
+   "scan_with_patches_vs_plain": "identical on all 4 mods"
+  },
+  "competitors": {
+   "RimTranslate": {
+    "sha": "ad1a8f71997f988681bbac188dc1c37b16dff0ab",
+    "license": "GPL-3.0",
+    "last_commit": "2024-04-27"
+   },
+   "Translation-Forge": {
+    "sha": "5a21f9d12debbb952f739af71b2ec4bf4bca923e",
+    "license": "MIT",
+    "last_commit": "2026-10-05"
+   },
+   "RimWorldModTranslator": {
+    "sha": "ccb1df508cc93dce4f7e3fd35e78b74990f6d1f5",
+    "license": "Apache-2.0",
+    "last_commit": "2026-07-22"
+   },
+   "rimworld-mod-translator": {
+    "sha": "8dc978d982aab2d3373ee8bb0f9b8810d0df37a5",
+    "license": "MIT",
+    "last_commit": "2026-08-13"
+   }
+  }
+ },
+ "RimTranslate": {
+  "status": "PRACTICALLY_RUN",
+  "extracted_po_entries": {
+   "3170653412": 0,
+   "818773962": 85,
+   "2023507013": 323,
+   "3242000764": 0
+  },
+  "per_mod": {
+   "3170653412": {
+    "both": 0,
+    "rimloc_only": "163 (Languages/English/DefInjected — не сканируется конкурентом)",
+    "competitor_only": "42 из Defs (версия 1.5_1.6, ручной запуск в подпапку)",
+    "semantic": "только 42 из Defs против 163 DefInjected"
+   },
+   "818773962": {
+    "both": 71,
+    "rimloc_only": 0,
+    "competitor_only": 7,
+    "semantic": 4
+   },
+   "2023507013": {
+    "both": "~0 (разные слои)",
+    "rimloc_only": "765 (Languages Keyed+DefInjected)",
+    "competitor_only": "323 (Defs 1.6)",
+    "semantic": "взаимодополнение слоёв"
+   },
+   "3242000764": {
+    "both": 0,
+    "rimloc_only": 41,
+    "competitor_only": 0,
+    "semantic": "quit() на отсутствии Defs/ до стадии Keyed"
+   }
+  },
+  "hugslib_4keys_semantic": {
+   "reason": "RimLoc вырезает <b>...</b> разметку из msgid, RimTranslate хранит сырой текст",
+   "example_key": "HugsLib_loadOrderWarning_text",
+   "rimloc_msgid": "bThe HugsLib mod/bshould always be loaded afterbCore/bto avoid issues.",
+   "rimtranslate_msgid": "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues."
+  },
+  "roundtrip": "PO -> DefInjected XML проверен (ТЕСТ-ПЕРЕВОД записан, statistics 81/0/1/82)"
+ },
+ "Translation-Forge": {
+  "status": "PRACTICALLY_RUN",
+  "check_pending": {
+   "3170653412": 156,
+   "818773962": 7,
+   "2023507013": 202,
+   "3242000764": "err.defs_not_found (exit 1)"
+  },
+  "loadfolders": "корректно: 3170653412 -> 1.5_1.6/Defs + 1.5_1.6/Mods/Royalty/Defs",
+  "defs_diff_vs_rimloc_learn_defs_VE16": {
+   "forge": 202,
+   "rimloc16_dedup": 196,
+   "intersection": 196,
+   "forge_only": 6,
+   "rimloc_only": 0,
+   "forge_only_samples": [
+    "Mote_Firetrail.label",
+    "Mote_GreenSmoketrail.label",
+    "VEF_AcidBurn.labelNoun",
+    "Mote_Smoketrail.label",
+    "Mote_FTSmoketrail.label"
+   ]
+  },
+  "scope_excluded_author_documented": [
+   "Keyed",
+   "Patches",
+   "rulesStrings/stringList/tips (индексные)",
+   "comp-пути"
+  ]
+ },
+ "RimWorldModTranslator": {
+  "status": "PRACTICALLY_RUN",
+  "scan_totals": {
+   "3170653412": 313,
+   "818773962": 82,
+   "2023507013": 1113,
+   "3242000764": 40
+  },
+  "scan_3170653412_composition": {
+   "defs_fallback_GTF": 213,
+   "patch_derived": 98,
+   "patch_derived_pawnkinds": 2
+  },
+  "focused_patch_diff_3170653412_1_5_1_6": {
+   "competitor_patch_refs": 100,
+   "player_visible": {
+    "count": 54,
+    "fields": {
+     "description": 26,
+     "title": 11,
+     "baseDesc": 6,
+     "titleShort": 5,
+     "titleShortFemale": 4,
+     "titleFemale": 2
+    }
+   },
+   "noise_not_player_visible": {
+    "count": 46,
+    "fields": {
+     "bodyTypeMale": 15,
+     "bodyTypeFemale": 15,
+     "requiredWorkTags.0/1/2": 11,
+     "spawnCategories.0": 3,
+     "backstoryFiltersOverride.0.categories.0": 2
+    },
+    "risk": "перевод spawnCategories/requiredWorkTags/bodyType ломает матчинг идентификаторов (спавн-категории, work tags, ссылки на BodyTypeDef)"
+   },
+   "rimloc_learn_patches": 0,
+   "rimloc_scan_with_patches_delta": 0,
+   "intersection_keys_rimloc": 0,
+   "verdict": "54 COMPETITOR_ONLY игроку-видимых находки; RimLoc патч-слой на этом моде пуст"
+  },
+  "patch_files": {
+   "1.4": {
+    "files": 22,
+    "extracted": 95
+   },
+   "1.5_1.6": {
+    "files": 25,
+    "extracted": 100
+   },
+   "3242000764_1.5": 0,
+   "3242000764_1.6": 0
+  }
+ },
+ "rimworld-mod-translator_laskinss27": {
+  "status": "PRACTICALLY_RUN (extract+build); Sheets-перевод — BLOCKED_DEPENDENCY по условию ask",
+  "extract_rows": {
+   "3170653412": 181,
+   "818773962": 83,
+   "2023507013": 1701,
+   "3242000764": 72
+  },
+  "notes": {
+   "version_mixing": "все версии в один CSV: 2023507013 -> 321+248+205+181+145+4+4 по 1.0-1.6; 3242000764 -> 32(1.5)+40(1.6); 3170653412 -> 3(1.4)+178(1.5_1.6)",
+   "languages_definjected_skipped": "in_languages and not in_english_keyed -> continue: DefInjected-источники не читаются (163 у 3170653412 мимо)",
+   "patches_skipped": "skip={...,'patches',...} в find_xml_files",
+   "about_noise": "About/ModSync.xml дал 1 строку на HugsLib",
+   "build_stage": "build_translation_package: 3 тестовых перевода -> Languages/Russian/Keyed/AnomalyPatch_Keys.xml + About.xml + report"
+  }
+ }
+}

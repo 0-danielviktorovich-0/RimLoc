@@ -137,6 +137,12 @@ pub mod winner_reason {
     pub const LOADFOLDERS: &str = "loadfolders";
     /// A version directory/tag selection chose this content root.
     pub const VERSION_SELECTED: &str = "version-selected";
+    /// First-party UI catalog (self-localization wave B4): the entry came
+    /// from the app's own generated `catalog.<locale>.json` bridge, scanned
+    /// by `rimloc-services::ui_catalog` — no mod scanner competed for it,
+    /// so the reason names the ORIGIN rather than a competition outcome
+    /// (there is only one possible producer of a catalog entry).
+    pub const UI_CATALOG: &str = "ui-catalog";
 }
 
 /// Typed TKey metadata (general form — never a growing special-case field):
@@ -282,4 +288,79 @@ pub fn parse_simple_po(input: &str) -> Result<Vec<PoEntry>> {
     }
 
     Ok(entries)
+}
+
+pub mod path_text {
+    //! Separator-agnostic path TEXT checks. Windows accepts MIXED `/` and
+    //! `\` separators in one path (`D:\mod\Languages/Russian\Keyed\x.xml`
+    //! is a legal real path — e.g. produced by `root.join("Languages/Russian")`
+    //! on Windows), so marker checks of the shape
+    //! `s.contains("/Languages/") || s.contains("\\Languages\\")` silently
+    //! miss such paths: each arm demands the SAME separator on both sides.
+    //! [`has_path_marker`] matches the marker with ANY separator mix around
+    //! it — the single contract every such check must go through.
+
+    /// True when `s` contains `marker` flanked by a path separator
+    /// (`/` or `\`) on BOTH sides, in any combination. Both flanks are
+    /// required, matching the historical `contains("/X/")` semantics —
+    /// a marker at the very start/end of the string is not a segment.
+    pub fn has_path_marker(s: &str, marker: &str) -> bool {
+        let bytes = s.as_bytes();
+        let m = marker.as_bytes();
+        if m.is_empty() || bytes.len() < m.len() + 2 {
+            return false;
+        }
+        let mut from = 0usize;
+        while let Some(rel) = s[from..].find(marker) {
+            let b = from + rel;
+            let before_ok = b > 0 && (bytes[b - 1] == b'/' || bytes[b - 1] == b'\\');
+            let after = b + m.len();
+            let after_ok = bytes[after] == b'/' || bytes[after] == b'\\';
+            if before_ok && after_ok {
+                return true;
+            }
+            from = b + 1;
+        }
+        false
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::has_path_marker;
+
+        #[test]
+        fn matches_any_separator_mix() {
+            assert!(has_path_marker(
+                r"D:\mod\Languages\Russian\Keyed\A.xml",
+                "Languages"
+            ));
+            assert!(has_path_marker(
+                "/srv/mod/Languages/Russian/Keyed/A.xml",
+                "Languages"
+            ));
+            // The Windows mixed-separator shape that pure contains() missed.
+            assert!(has_path_marker(
+                r"D:\mod\Languages/Russian\Keyed\A.xml",
+                "Languages"
+            ));
+            assert!(has_path_marker(
+                r"D:\mod/Languages\Russian/Keyed\A.xml",
+                "Keyed"
+            ));
+            assert!(has_path_marker(
+                "/p/DefInjected/ThingDef/A.xml",
+                "DefInjected"
+            ));
+        }
+
+        #[test]
+        fn requires_both_flanks_and_respects_boundaries() {
+            assert!(!has_path_marker("Languages/Russian", "Languages"));
+            assert!(!has_path_marker("/srv/mylanguages/ru/A.xml", "Languages"));
+            // Not corrupted by a longer neighbour ("/Users/x" vs "/User").
+            assert!(!has_path_marker("/Users/x", "User"));
+            assert!(has_path_marker("/Users/x", "Users"));
+            assert!(!has_path_marker("", "Languages"));
+        }
+    }
 }

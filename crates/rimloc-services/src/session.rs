@@ -27,15 +27,22 @@
 
 use crate::contract::{
     ApplyIntentsRequest, ApplyIntentsResponse, ContractError, ContractErrorCode, IntentAction,
-    JobId, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch, SkippedIntent,
-    TranslationIntent, UI_CONTRACT_VERSION,
+    JobId, PathBufDto, ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse,
+    ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse, ProjectId, ProjectSnapshot,
+    ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
+    ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
+    ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, Revision, SessionEpoch,
+    SkippedIntent, TmDeleteRequest, TmDeleteResponse, TmImportFormat, TmImportRequest,
+    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse, TmMatch,
+    TmUpsertRequest, TmUpsertResponse, TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
 use crate::project_store::{load_project_with_meta, save_project_with_meta, ProjectEnvelopeMeta};
+use crate::providers::{ProviderOps, ProviderSecretSink, ProviderSettingsState};
 use rimloc_domain::canonical::{
-    Completeness, EntryKind, Origin, Project, SourceEntry, SourceEntryId, Translation,
-    ValidationState,
+    Completeness, ContextRole, EntryKind, EntrySourceRef, Lifecycle, Origin, Project, SourceEntry,
+    SourceEntryId, Translation, ValidationState,
 };
 use rimloc_domain::eligibility::{Decision, Verdict};
 use std::collections::{BTreeMap, HashMap};
@@ -75,6 +82,17 @@ struct SessionState {
     /// Identities affected by the last failed operation (sanitized
     /// upstream of the bundle writer).
     last_failed_affected: Vec<String>,
+    /// Source fingerprint RECORDED with the inventory (M3). `None` on
+    /// legacy envelopes — drift cannot be evaluated for them.
+    source_fingerprint: Option<String>,
+    /// Drift verdict evaluated at session (re)start (create / open from
+    /// disk / refresh) against the recorded fingerprint: `Some(false)` in
+    /// sync, `Some(true)` the source changed under the project, `None`
+    /// unknown (legacy envelope, or the source is unreadable at check
+    /// time). Never recomputed per snapshot call — the verdict reflects
+    /// the session's (re)start, which is exactly the restart cycle M3 is
+    /// about.
+    source_changed: Option<bool>,
 }
 
 /// The session manager. Clone-able (`Arc` inner); all methods take `&self`
@@ -83,6 +101,12 @@ struct SessionState {
 pub struct ProjectSessionManager {
     managed_root: PathBuf,
     inner: Arc<Mutex<HashMap<ProjectId, Arc<Mutex<SessionState>>>>>,
+    /// Provider-instance settings (app-global, not per-project): the
+    /// metadata store plus the OS-keychain seam. `None` sink = a build
+    /// without the `keychain` feature — secret-bearing upserts are refused
+    /// honestly instead of landing somewhere insecure.
+    providers: Arc<Mutex<ProviderSettingsState>>,
+    secret_sink: Option<Arc<dyn ProviderSecretSink>>,
 }
 
 impl ProjectSessionManager {
@@ -90,12 +114,31 @@ impl ProjectSessionManager {
     /// demand). The directory is canonicalized once so every later guard
     /// check compares canonical views.
     pub fn new(managed_root: impl Into<PathBuf>) -> std::io::Result<Self> {
-        let root = managed_root.into();
+        Self::build(managed_root.into(), None)
+    }
+
+    /// Same as [`new`] with an attached secret sink (production: the OS
+    /// keychain; tests: an in-memory sink) — the provider-instance
+    /// operations become secret-capable.
+    pub fn new_with_secret_sink(
+        managed_root: impl Into<PathBuf>,
+        sink: std::sync::Arc<dyn ProviderSecretSink>,
+    ) -> std::io::Result<Self> {
+        Self::build(managed_root.into(), Some(sink))
+    }
+
+    fn build(
+        root: PathBuf,
+        secret_sink: Option<Arc<dyn ProviderSecretSink>>,
+    ) -> std::io::Result<Self> {
         std::fs::create_dir_all(&root)?;
         let managed_root = std::fs::canonicalize(&root)?;
+        let providers = ProviderSettingsState::load(&managed_root)?;
         Ok(Self {
             managed_root,
             inner: Arc::new(Mutex::new(HashMap::new())),
+            providers: Arc::new(Mutex::new(providers)),
+            secret_sink,
         })
     }
 
@@ -168,6 +211,18 @@ impl ProjectSessionManager {
         }
         let project = build_project(mod_root, target_version)
             .map_err(|e| ContractError::new(ContractErrorCode::Internal, e.to_string()))?;
+        // M3: the fingerprint is recorded at create so later sessions can
+        // tell whether the source still matches the inventory. The view the
+        // scanner just resolved successfully, so a fingerprint failure here
+        // is an I/O race — a typed refusal, never a silently undetectable
+        // project.
+        let fingerprint =
+            crate::scan::source_fingerprint(mod_root, target_version).map_err(|e| {
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("source fingerprint failed: {e}"),
+                )
+            })?;
         let project_id = self.mint_project_id();
         let display_name = mod_root
             .file_name()
@@ -184,6 +239,7 @@ impl ProjectSessionManager {
             revision: Some(revision),
             display_name: Some(display_name.clone()),
             source_root: envelope_source_root(mod_root),
+            source_fingerprint: Some(fingerprint.clone()),
         };
         save_project_with_meta(&project, &meta, &path).map_err(|e| {
             ContractError::new(ContractErrorCode::SaveFailed, format!("create failed: {e}"))
@@ -204,6 +260,8 @@ impl ProjectSessionManager {
             cancel_requested: false,
             last_failed_operation: None,
             last_failed_affected: Vec::new(),
+            source_fingerprint: Some(fingerprint),
+            source_changed: Some(false),
         };
         let snapshot = snapshot_of(&project_id, &state);
         self.inner
@@ -253,6 +311,13 @@ impl ProjectSessionManager {
                     .clone()
                     .map(PathBuf::from)
                     .unwrap_or_default();
+                // M3: at (re)start the current source content is compared
+                // against the fingerprint recorded with the inventory —
+                // drift (content rewrite, LoadFolders/version rollback)
+                // becomes a visible verdict instead of an invisible trap.
+                let fingerprint = loaded.meta.source_fingerprint.clone();
+                let source_changed =
+                    drift_verdict(fingerprint.as_deref(), &mod_root, target_version.as_deref());
                 let state = SessionState {
                     path: path.clone(),
                     display_name,
@@ -267,6 +332,8 @@ impl ProjectSessionManager {
                     cancel_requested: false,
                     last_failed_operation: None,
                     last_failed_affected: Vec::new(),
+                    source_fingerprint: fingerprint,
+                    source_changed,
                 };
                 let snapshot = snapshot_of(project_id, &state);
                 self.inner
@@ -325,11 +392,30 @@ impl ProjectSessionManager {
                 };
                 match load_project_with_meta(&path) {
                     Ok(loaded) => {
+                        // Display-name backfill (UI R1 §21: raw managed ids
+                        // never surface as primary labels): legacy envelopes
+                        // may lack display_name — the source mod folder name
+                        // is the honest human hint, the id stays the last
+                        // resort.
+                        let name = loaded
+                            .meta
+                            .display_name
+                            .clone()
+                            .or_else(|| {
+                                loaded
+                                    .meta
+                                    .source_root
+                                    .as_deref()
+                                    .map(std::path::Path::new)
+                                    .and_then(|p| p.file_name())
+                                    .map(|n| n.to_string_lossy().to_string())
+                            })
+                            .unwrap_or_else(|| id.clone());
                         out.insert(
                             id.clone(),
                             ProjectSummary {
                                 project_id: id.clone(),
-                                name: loaded.meta.display_name.unwrap_or_else(|| id.clone()),
+                                name,
                                 revision: loaded.meta.revision.unwrap_or(1),
                                 target_version: loaded.project.context.target_version.clone(),
                             },
@@ -400,6 +486,8 @@ impl ProjectSessionManager {
                     cancel_requested: false,
                     last_failed_operation: None,
                     last_failed_affected: Vec::new(),
+                    source_fingerprint: None,
+                    source_changed: None,
                 }))
             })
             .clone();
@@ -422,7 +510,14 @@ impl ProjectSessionManager {
             if let Some(src) = &loaded.meta.source_root {
                 st.mod_root = PathBuf::from(src);
             }
-            st.target_version = target_version;
+            st.target_version = target_version.clone();
+            // M3: refresh is a session (re)start — re-evaluate drift.
+            st.source_fingerprint = loaded.meta.source_fingerprint.clone();
+            st.source_changed = drift_verdict(
+                st.source_fingerprint.as_deref(),
+                &st.mod_root,
+                target_version.as_deref(),
+            );
         }
         let st = arc.lock().expect("project session poisoned");
         Ok(snapshot_of(project_id, &st))
@@ -486,6 +581,13 @@ impl ProjectSessionManager {
         let cancelled = st.cancel_requested;
         st.cancel_requested = false;
         let engine = crate::eligibility_engine::EligibilityEngine::new();
+        // TM live (A): accepted set_translation intents, resolved to
+        // (source, target, locale) triples. Accumulation lands ONLY here —
+        // after an acked apply, never on a draft/save failure (the triples
+        // below feed the TM only when the persist succeeds, because the
+        // accumulate call sits between the early `applied == 0` return and
+        // the persist step).
+        let mut accepted_tm: Vec<(String, String, String)> = Vec::new();
 
         for (index, intent) in req.intents.iter().enumerate() {
             if cancelled {
@@ -496,6 +598,7 @@ impl ProjectSessionManager {
                 });
                 continue;
             }
+            let before = applied;
             match apply_intent(&mut st.project, &engine, intent) {
                 Ok(()) => applied += 1,
                 Err((code, message)) => skipped.push(SkippedIntent {
@@ -503,6 +606,21 @@ impl ProjectSessionManager {
                     code,
                     message,
                 }),
+            }
+            if applied > before {
+                if let (IntentAction::SetTranslation, Some(text)) =
+                    (&intent.action, intent.text.as_deref())
+                {
+                    // The source text is trusted inventory state (never
+                    // mutated by apply_intent).
+                    if let Some(entry) = st.project.entries.iter().find(|e| e.id == intent.entry) {
+                        accepted_tm.push((
+                            entry.text.clone(),
+                            text.trim().to_string(),
+                            intent.locale.clone(),
+                        ));
+                    }
+                }
             }
         }
         log.end_stage("intents");
@@ -522,6 +640,16 @@ impl ProjectSessionManager {
             });
         }
 
+        // TM live (A): fold the accepted translations into the memory
+        // BEFORE the persist so the same durable write carries them (a
+        // save failure keeps the TM growth dirty in memory together with
+        // the rest of the applied state — one recovery path, no split
+        // brain).
+        let tm_added = tm_auto_accumulate(&mut st.project.tm, &accepted_tm);
+        if tm_added > 0 {
+            log.counter("tm", "accumulated", tm_added as u64);
+        }
+
         // Revision bump + persist-before-ack.
         let new_revision = st.revision + 1;
         st.revision = new_revision;
@@ -533,6 +661,10 @@ impl ProjectSessionManager {
             // The source root is durable state: every save re-asserts it so
             // a restart-recovered session keeps the export guard (H5).
             source_root: envelope_source_root(&st.mod_root),
+            // The recorded fingerprint rides along (M3) — the DRIFT
+            // verdict is computed at session (re)start, not rewritten by
+            // edits.
+            source_fingerprint: st.source_fingerprint.clone(),
         };
         // External-change check: the managed file must look exactly like the
         // last state this session saw on disk.
@@ -583,6 +715,569 @@ impl ProjectSessionManager {
             cancelled,
         })
     }
+    // ---------- Glossary (wave 13): generic project state, persist-before-ack ----------
+
+    /// `project_glossary` — the project's terms, trusted session state,
+    /// read-only. Epoch guard identical to every other session operation.
+    pub fn glossary_list(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+    ) -> Result<Vec<rimloc_domain::glossary::GlossaryTerm>, ContractError> {
+        self.managed_path(project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        Ok(st.project.glossary.clone())
+    }
+
+    /// `project_glossary_upsert` — create or update one term by
+    /// case-insensitive `term` match. Persist-before-ack: the revision the
+    /// response carries is durable; a failed save keeps the edit DIRTY in
+    /// memory and never acks (same discipline as `apply`).
+    pub fn glossary_upsert(
+        &self,
+        req: &ProjectGlossaryUpsertRequest,
+    ) -> Result<ProjectGlossaryUpsertResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        // Form validation BEFORE any state mutation: a refused write never
+        // bumps the revision and never touches the disk.
+        let (term, translation, note) = rimloc_domain::glossary::validate_input(
+            &req.term,
+            &req.translation,
+            req.note.as_deref(),
+        )
+        .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+
+        let job_id: JobId = generate_operation_id();
+        let needle = term.to_lowercase();
+        let existing = st
+            .project
+            .glossary
+            .iter_mut()
+            .find(|t| t.term.to_lowercase() == needle);
+        match existing {
+            Some(slot) => {
+                // Case-insensitive duplicate = UPDATE in place: the stable
+                // id survives; the canonical spelling is refreshed.
+                slot.term = term;
+                slot.translation = translation;
+                slot.note = note;
+                let entry = slot.clone();
+                let revision = self.persist_glossary(&mut st, &req.project_id)?;
+                Ok(ProjectGlossaryUpsertResponse {
+                    job_id,
+                    revision,
+                    entry,
+                })
+            }
+            None => {
+                let entry = rimloc_domain::glossary::GlossaryTerm {
+                    id: generate_operation_id(),
+                    term,
+                    translation,
+                    note,
+                };
+                st.project.glossary.push(entry.clone());
+                let revision = self.persist_glossary(&mut st, &req.project_id)?;
+                Ok(ProjectGlossaryUpsertResponse {
+                    job_id,
+                    revision,
+                    entry,
+                })
+            }
+        }
+    }
+
+    /// `project_glossary_delete` — remove one term by case-insensitive
+    /// match; an unknown term is a typed refusal, never silent success.
+    pub fn glossary_delete(
+        &self,
+        req: &ProjectGlossaryDeleteRequest,
+    ) -> Result<ProjectGlossaryDeleteResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let needle = req.term.trim().to_lowercase();
+        if needle.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                "glossary term to delete must not be empty",
+            ));
+        }
+        let pos = st
+            .project
+            .glossary
+            .iter()
+            .position(|t| t.term.to_lowercase() == needle)
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::ContractViolation,
+                    format!("unknown glossary term: {}", req.term.trim()),
+                )
+            })?;
+        let removed = st.project.glossary.remove(pos);
+        let revision = self.persist_glossary(&mut st, &req.project_id)?;
+        Ok(ProjectGlossaryDeleteResponse {
+            job_id,
+            revision,
+            removed_id: removed.id,
+        })
+    }
+
+    /// Shared persist step for glossary mutations: revision bump +
+    /// external-change check + save-before-ack (the `apply` discipline,
+    /// factored — glossary edits follow the exact same rules).
+    fn persist_glossary(
+        &self,
+        st: &mut SessionState,
+        project_id: &str,
+    ) -> Result<Revision, ContractError> {
+        Self::persist_project_state(st, project_id)
+    }
+
+    /// Shared persist step for TM mutations — the SAME discipline as the
+    /// glossary persist (revision bump + external-change check +
+    /// save-before-ack); both delegate to [`Self::persist_project_state`].
+    fn persist_tm(
+        &self,
+        st: &mut SessionState,
+        project_id: &str,
+    ) -> Result<Revision, ContractError> {
+        Self::persist_project_state(st, project_id)
+    }
+
+    /// The ONE persist step every non-apply mutation shares (glossary, TM):
+    /// revision bump, external-change check, save-before-ack. A failed save
+    /// keeps the edit DIRTY in memory and never acks.
+    fn persist_project_state(
+        st: &mut SessionState,
+        project_id: &str,
+    ) -> Result<Revision, ContractError> {
+        let new_revision = st.revision + 1;
+        st.revision = new_revision;
+        let meta = ProjectEnvelopeMeta {
+            project_id: Some(project_id.to_string()),
+            revision: Some(new_revision),
+            display_name: Some(st.display_name.clone()),
+            source_root: envelope_source_root(&st.mod_root),
+            source_fingerprint: st.source_fingerprint.clone(),
+        };
+        if let Some(expected) = &st.disk_hash {
+            let current = disk_hash(&st.path);
+            if current.is_some_and(|c| &c != expected) {
+                st.dirty = true;
+                return Err(ContractError::new(
+                    ContractErrorCode::ProjectChangedOnDisk,
+                    "the managed project file changed outside this session; refresh to adopt                      the on-disk state (in-memory edits are kept until then)"
+                        .to_string(),
+                ));
+            }
+        }
+        match save_project_with_meta(&st.project, &meta, &st.path) {
+            Ok(()) => {
+                st.acked_revision = new_revision;
+                st.disk_hash = disk_hash(&st.path);
+                st.dirty = false;
+                Ok(new_revision)
+            }
+            Err(e) => {
+                st.dirty = true;
+                Err(ContractError::new(
+                    ContractErrorCode::SaveFailed,
+                    format!("persist failed: {e}"),
+                ))
+            }
+        }
+    }
+
+    // ---------- Translation memory (TM live, owner decision A+B+C):
+    // generic project state in `Project.tm`, persist-before-ack. Record
+    // key = (source_text, target_locale); target locales are ISOLATED —
+    // every read/write is scoped to one locale. ----------
+
+    /// `project_tm_list` — the project's TM records with OPTIONAL in-memory
+    /// filters (locale exact, status exact, case-insensitive substring over
+    /// source/target). Read-only; filters never touch the filesystem, so
+    /// they need no form guard (the `project_validate` precedent).
+    pub fn tm_list(&self, req: &TmListRequest) -> Result<TmListResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        let job_id: JobId = generate_operation_id();
+        let query = req
+            .query
+            .as_deref()
+            .map(str::trim)
+            .filter(|q| !q.is_empty())
+            .map(str::to_lowercase);
+        let entries: Vec<rimloc_domain::tm::TranslationMemoryEntry> = st
+            .project
+            .tm
+            .iter()
+            .filter(|e| req.locale.as_deref().is_none_or(|l| e.target_locale == l))
+            .filter(|e| req.status.is_none_or(|s| e.status == s))
+            .filter(|e| {
+                query.as_deref().is_none_or(|q| {
+                    e.source_text.to_lowercase().contains(q)
+                        || e.target_text.to_lowercase().contains(q)
+                })
+            })
+            .cloned()
+            .collect();
+        let total = st.project.tm.len();
+        Ok(TmListResponse {
+            job_id,
+            entries,
+            total,
+        })
+    }
+
+    /// `project_tm_upsert` (C = manual CRUD) — create or update one record
+    /// by the (source_text, target_locale) key. The service sets
+    /// provenance=Manual itself (the client never forges provenance);
+    /// status is the user's choice, `None` → ACCEPTED. Manual CRUD is
+    /// explicit user intent: it may upgrade AND downgrade an existing
+    /// record (the human decides).
+    pub fn tm_upsert(&self, req: &TmUpsertRequest) -> Result<TmUpsertResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        // Form validation BEFORE any state mutation: a refused write never
+        // bumps the revision and never touches the disk.
+        let (source_text, target_text, target_locale) = rimloc_domain::tm::validate_input(
+            &req.source_text,
+            &req.target_text,
+            &req.target_locale,
+        )
+        .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+
+        let job_id: JobId = generate_operation_id();
+        let status = req.status.unwrap_or(rimloc_domain::tm::TmStatus::Accepted);
+        let existing = st
+            .project
+            .tm
+            .iter_mut()
+            .find(|e| e.target_locale == target_locale && e.source_text == source_text);
+        let entry = match existing {
+            Some(slot) => {
+                // Same key = UPDATE in place: the stable id survives; the
+                // manual edit owns the record's content and status.
+                slot.target_text = target_text;
+                slot.status = status;
+                slot.provenance = rimloc_domain::tm::TmProvenance::Manual;
+                slot.clone()
+            }
+            None => {
+                let entry = rimloc_domain::tm::TranslationMemoryEntry {
+                    id: generate_operation_id(),
+                    source_text,
+                    target_text,
+                    target_locale,
+                    status,
+                    provenance: rimloc_domain::tm::TmProvenance::Manual,
+                };
+                st.project.tm.push(entry.clone());
+                entry
+            }
+        };
+        let revision = self.persist_tm(&mut st, &req.project_id)?;
+        Ok(TmUpsertResponse {
+            job_id,
+            revision,
+            entry,
+        })
+    }
+
+    /// `project_tm_delete` — remove one record by stable id; an unknown id
+    /// is a typed refusal, never silent success.
+    pub fn tm_delete(&self, req: &TmDeleteRequest) -> Result<TmDeleteResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let id = req.id.trim();
+        if id.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                "tm record id to delete must not be empty",
+            ));
+        }
+        let pos = st
+            .project
+            .tm
+            .iter()
+            .position(|e| e.id == id)
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::ContractViolation,
+                    format!("unknown tm record id: {id}"),
+                )
+            })?;
+        let removed = st.project.tm.remove(pos);
+        let revision = self.persist_tm(&mut st, &req.project_id)?;
+        Ok(TmDeleteResponse {
+            job_id,
+            revision,
+            removed_id: removed.id,
+        })
+    }
+
+    /// `project_tm_import` (B) — bulk import from a JSON array of
+    /// `{source, target[, locale][, status]}` objects or CSV lines
+    /// `source,target[,locale][,status]`. Records land with
+    /// provenance=IMPORT and status=DRAFT unless the row carries an
+    /// EXPLICIT status — an import is never trusted blindly. Collision
+    /// policy: a stronger existing record (higher [`TmStatus::rank`]) is
+    /// KEPT (skipped); an equal-or-weaker one is refreshed (updated).
+    /// Row-level form refusals are counted in `rejected`, never fatal; a
+    /// payload that parses as NEITHER JSON nor CSV is a whole-operation
+    /// typed refusal.
+    pub fn tm_import(&self, req: &TmImportRequest) -> Result<TmImportResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let rows = parse_tm_rows(&req.payload, req.format)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+
+        let mut imported = 0usize;
+        let mut updated = 0usize;
+        let mut skipped = 0usize;
+        let mut rejected = 0usize;
+        for row in rows {
+            // Per-row gate: a bad row is rejected and counted, the rest of
+            // the batch proceeds (one poisoned line must not sink a 10k
+            // import; the count makes the loss visible).
+            let Some((source, target, locale, status)) = resolve_tm_row(&row) else {
+                rejected += 1;
+                continue;
+            };
+            let new_rank = status.rank();
+            match st
+                .project
+                .tm
+                .iter_mut()
+                .find(|e| e.target_locale == locale && e.source_text == source)
+            {
+                Some(slot) if slot.status.rank() > new_rank => {
+                    // Never weaken: a stronger record stays untouched.
+                    skipped += 1;
+                }
+                Some(slot) => {
+                    // Equal-or-weaker: the import refreshes the record.
+                    slot.target_text = target;
+                    slot.status = status;
+                    slot.provenance = rimloc_domain::tm::TmProvenance::Import;
+                    updated += 1;
+                }
+                None => {
+                    st.project
+                        .tm
+                        .push(rimloc_domain::tm::TranslationMemoryEntry {
+                            id: generate_operation_id(),
+                            source_text: source,
+                            target_text: target,
+                            target_locale: locale,
+                            status,
+                            provenance: rimloc_domain::tm::TmProvenance::Import,
+                        });
+                    imported += 1;
+                }
+            }
+        }
+        // Nothing changed when the payload was empty or fully rejected:
+        // no revision bump, no save (the apply discipline).
+        if imported + updated == 0 {
+            return Ok(TmImportResponse {
+                job_id,
+                revision: st.revision,
+                imported,
+                updated,
+                skipped,
+                rejected,
+            });
+        }
+        let revision = self.persist_tm(&mut st, &req.project_id)?;
+        Ok(TmImportResponse {
+            job_id,
+            revision,
+            imported,
+            updated,
+            skipped,
+            rejected,
+        })
+    }
+
+    /// `project_tm_lookup` — ranked candidates for one source text within
+    /// ONE target locale (isolation is mandatory). Tiers: exact →
+    /// normalized (trim/case/whitespace collapse) → bounded fuzzy
+    /// Levenshtein (threshold `max(2, len/10)` over the normalized query);
+    /// best-first by tier, then distance, then trust rank, then stable
+    /// insertion order.
+    pub fn tm_lookup(&self, req: &TmLookupRequest) -> Result<TmLookupResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        let job_id: JobId = generate_operation_id();
+        let matches = tm_ranked_matches(
+            &st.project.tm,
+            &req.source_text,
+            &req.target_locale,
+            req.limit.unwrap_or(5).clamp(1, 50),
+        );
+        Ok(TmLookupResponse { job_id, matches })
+    }
+
+    // -----------------------------------------------------------------------
+    // Provider instances (provider/settings parity). App-GLOBAL settings:
+    // no project id, no session epoch (there is no open project session
+    // behind them — the lost-update guard rides the durable settings
+    // revision instead). Everything delegates to `crate::providers`; the
+    // secret NEVER passes through any of these responses.
+    // -----------------------------------------------------------------------
+
+    /// `provider_instance_list` — redacted summaries (`has_key` boolean, no
+    /// secret field exists on the wire type).
+    pub fn provider_instance_list(&self) -> Result<ProviderInstanceListResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .list(job_id)
+    }
+
+    /// `provider_instance_upsert` — create/edit one instance; persist-
+    /// before-ack; the key goes to the OS keychain, the metadata to the
+    /// settings file.
+    pub fn provider_instance_upsert(
+        &self,
+        req: &ProviderInstanceUpsertRequest,
+    ) -> Result<ProviderInstanceUpsertResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .upsert(
+            req,
+            || generate_operation_id().replacen("op-", "prov-", 1),
+            job_id,
+        )
+    }
+
+    /// `provider_instance_delete` — keychain key deleted FIRST, then the
+    /// metadata; unknown id is a typed refusal.
+    pub fn provider_instance_delete(
+        &self,
+        req: &ProviderInstanceDeleteRequest,
+    ) -> Result<ProviderInstanceDeleteResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .delete(req, job_id)
+    }
+
+    /// `provider_instance_validate` — typed FORM validation (invalid_config
+    /// problems) WITHOUT network and WITHOUT keychain access.
+    pub fn provider_instance_validate(
+        &self,
+        req: &ProviderInstanceValidateRequest,
+    ) -> Result<ProviderInstanceValidateResponse, ContractError> {
+        let job_id: JobId = generate_operation_id();
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        ProviderOps {
+            state: &mut st,
+            sink: self.secret_sink.as_ref(),
+        }
+        .validate(req, job_id)
+    }
+
     /// `project_validate` — run the EXISTING validator (026 severity) over
     /// the trusted session state. NEVER mutates the project: this is a
     /// read-only operation over the canonical inventory and its
@@ -676,8 +1371,29 @@ impl ProjectSessionManager {
             let id = identity_by_unit
                 .get(&(m.key.clone(), m.path.clone()))
                 .cloned();
-            let severity = m.severity.as_str().to_string();
-            match m.severity {
+            // UI-catalog boundary (SF-10 import made this reachable): the
+            // printf-% heuristic is a RimWorld-XML contract — a stray `%`
+            // breaks the GAME's formatter. The app catalog interpolates
+            // `{name}` tokens only and renders `%` as literal text (its own
+            // en source carries `{n}% match` and `%APPDATA%\...`), so for a
+            // UI_CATALOG entry this finding is informational, never a
+            // validation failure. Mod-scope entries keep the error.
+            let is_catalog_entry = id.as_ref().is_some_and(|eid| {
+                st.project.entries.iter().any(|e| {
+                    &e.id == eid
+                        && e.provenance.selected_by.as_deref()
+                            == Some(rimloc_core::winner_reason::UI_CATALOG)
+                })
+            });
+            let demoted = is_catalog_entry
+                && m.kind == "placeholder-check"
+                && m.message.starts_with("Suspicious % placeholder");
+            let severity = if demoted {
+                rimloc_validate::ValidationSeverity::Info
+            } else {
+                m.severity
+            };
+            match severity {
                 rimloc_validate::ValidationSeverity::Error => {
                     error_count += 1;
                     if let Some(id) = &id {
@@ -689,7 +1405,7 @@ impl ProjectSessionManager {
             }
             findings.push(crate::contract::ValidationFinding {
                 id,
-                severity,
+                severity: severity.as_str().to_string(),
                 kind: m.kind,
                 key: m.key,
                 path: m.path,
@@ -737,6 +1453,93 @@ impl ProjectSessionManager {
             }
         }
 
+        // Self-localization audit §5: for UI-CATALOG entries the `{name}`
+        // placeholder set IS the runtime contract — the i18n store replaces
+        // `{name}` verbatim, so a lost slot renders unfilled and a renamed
+        // one stays in the text as literal `{nmae}` (no per-string check
+        // sees that shape). STRICT set comparison against the base message:
+        // loss, addition or rename is an Error — the same category and
+        // severity the mod placeholder mismatch carries (`placeholder-check`,
+        // 026 error). The generic lost-placeholder pass above stays the
+        // catch-all for the TOTAL-loss case of every origin, so this pass
+        // skips translations carrying no well-formed token at all (already
+        // reported there — one finding per defect, never two).
+        for tr in &st.project.translations {
+            if let Some(filter) = locale {
+                if tr.locale != filter {
+                    continue;
+                }
+            }
+            let Some(text) = tr.text.as_deref().filter(|t| !t.trim().is_empty()) else {
+                continue;
+            };
+            if placeholder_tokens(text).is_empty() {
+                continue;
+            }
+            let Some(entry) = st.project.entries.iter().find(|e| e.id == tr.source_id) else {
+                continue;
+            };
+            if entry.provenance.selected_by.as_deref()
+                != Some(rimloc_core::winner_reason::UI_CATALOG)
+            {
+                continue;
+            }
+            if let Some(message) = rimloc_validate::placeholder_set_mismatch(&entry.text, text) {
+                error_count += 1;
+                affected.push(entry.id.display_identity());
+                findings.push(crate::contract::ValidationFinding {
+                    id: Some(entry.id.clone()),
+                    severity: "error".into(),
+                    kind: "placeholder-check".into(),
+                    key: entry.id.key.clone(),
+                    path: entry
+                        .contexts
+                        .first()
+                        .map(|c| c.file.clone())
+                        .unwrap_or_default(),
+                    line: None,
+                    message,
+                });
+            }
+        }
+
+        // M4 early signal: case-colliding defNames are a WARNING here (the
+        // project still validates against its own inventory) and a hard
+        // refusal at export — the early finding lets the user fix the
+        // source defName before building anything.
+        for (def_type, name_a, name_b) in case_collision_pairs(&st.project, locale) {
+            warning_count += 1;
+            findings.push(crate::contract::ValidationFinding {
+                id: None,
+                severity: "warning".into(),
+                kind: "case-collision".into(),
+                key: format!("{name_a} / {name_b}"),
+                path: format!("DefInjected/{def_type}"),
+                line: None,
+                message: format!(
+                    "defNames `{name_a}` and `{name_b}` differ only in case: both would write into the same DefInjected file on Windows/macOS; rename one defName in the source mod"
+                ),
+            });
+        }
+
+        // M3 source-drift signal: the source content the inventory was
+        // built from changed since this session's (re)start (edit, added/
+        // removed file, LoadFolders version rollback). The project still
+        // validates against its OWN inventory, so this stays a warning —
+        // but the stale inventory must not pass silently.
+        if st.source_changed == Some(true) {
+            warning_count += 1;
+            findings.push(crate::contract::ValidationFinding {
+                id: None,
+                severity: "warning".into(),
+                kind: "source-drift".into(),
+                key: "source-drift".into(),
+                path: st.mod_root.to_string_lossy().into_owned(),
+                line: None,
+                message: "the source mod changed since this project was built (content edit or game-version rollback): the inventory is stale — rescan the source mod into a fresh project before building exports".into(),
+            });
+        }
+
         let status = if error_count > 0 {
             "failed"
         } else {
@@ -770,6 +1573,77 @@ impl ProjectSessionManager {
         Ok(response)
     }
 
+    /// Gathered view of the OPEN session for the contribution builder
+    /// ([`crate::contribution`]): the UI-catalog EN canon (entries whose
+    /// provenance is `selected_by = ui_catalog`, id → source text), the
+    /// requested locale's candidate changes (catalog key → non-empty
+    /// translation text), and the read-only source root (the revision source
+    /// AND the write-guard's denied tree). Read-only — no revision bump, no
+    /// persisted change.
+    ///
+    /// Locale matching mirrors the frontend's own active-target slice rule
+    /// (`project.svelte.ts`: case-insensitive, folder-name lowercase form
+    /// starting with the tag) — the session stores folder-contract locales
+    /// ("Russian") while the bundle tag is the TS tag ("ru"). Translations
+    /// carrying the literal TODO placeholder are NOT changes: the domain
+    /// itself counts Todo as missing, and a placeholder must never ride into
+    /// a contribution bundle as a translation.
+    pub fn contribution_source(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        locale: &str,
+    ) -> Result<crate::contribution::ContributionSource, ContractError> {
+        // Fail-closed id-form guard, same entry discipline as every other
+        // session operation (never probe the registry with a traversal id).
+        self.managed_path(project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+
+        let mut catalog_en = BTreeMap::new();
+        for e in &st.project.entries {
+            if e.provenance.selected_by.as_deref() != Some(rimloc_core::winner_reason::UI_CATALOG) {
+                continue;
+            }
+            catalog_en.insert(e.id.key.clone(), e.text.clone());
+        }
+
+        let tag = locale.trim().to_lowercase();
+        let mut changes: Vec<(String, String)> = Vec::new();
+        for tr in &st.project.translations {
+            let tl = tr.locale.trim().to_lowercase();
+            let matches = tl == tag || tl.starts_with(&tag);
+            if !matches {
+                continue;
+            }
+            if tr.completeness == Completeness::Todo {
+                continue;
+            }
+            let Some(text) = tr.text.as_deref().map(str::trim).filter(|t| !t.is_empty()) else {
+                continue;
+            };
+            if !catalog_en.contains_key(&tr.source_id.key) {
+                continue;
+            }
+            changes.push((tr.source_id.key.clone(), text.to_string()));
+        }
+
+        Ok(crate::contribution::ContributionSource {
+            catalog_en,
+            changes,
+            mod_root: st.mod_root.clone(),
+        })
+    }
+
     /// `project_export` — build the native RimWorld translation output from
     /// the trusted session state into a CALLER-SPECIFIED out directory
     /// (isolated artifact, like the corpus harness). Guards: the out dir
@@ -800,6 +1674,12 @@ impl ProjectSessionManager {
         // a traversal-shaped locale must never reach the writer.
         ensure_locale_form(locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // Path-FORM guard: the writer builds directories under `out_dir`
+        // with the GUI process CWD as the implicit base, so a relative
+        // path silently lands wherever the app was launched from. Refuse
+        // the form BEFORE any guard, canonicalization or write — same
+        // fail-closed discipline as `ensure_locale_form` above.
+        ensure_out_dir_absolute(out_dir)?;
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_export");
         log.begin_stage("guard");
@@ -895,6 +1775,30 @@ impl ProjectSessionManager {
             ));
         }
 
+        // M4 pre-write content check: defNames differing only by case within
+        // one def type materialize into the SAME output file on a
+        // case-insensitive filesystem (macOS/Windows) — the reparse guard
+        // would only catch that on such filesystems, and on a case-sensitive
+        // one the collision would ship to players. Refuse deterministically,
+        // on every filesystem, with the colliding names.
+        let collisions = case_collision_pairs(&st.project, Some(locale));
+        if !collisions.is_empty() {
+            let shown: Vec<String> = collisions
+                .iter()
+                .take(5)
+                .map(|(dt, a, b)| format!("{dt}: {a} / {b}"))
+                .collect();
+            log.error_message("write", "case-colliding defNames in export content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: defNames that differ only in case would write into the same file on Windows/macOS — rename the defName in the source mod: {}",
+                    shown.join(", ")
+                ),
+            ));
+        }
+
         let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
         log.begin_stage("write");
         let report = crate::project::write_rimworld_translation(
@@ -976,6 +1880,231 @@ impl ProjectSessionManager {
         })
     }
 
+    /// `project_build_mod` — the FULL drop-in mod package from the trusted
+    /// session state into a CALLER-SPECIFIED out directory: the
+    /// `Languages/<locale>` tree (same writer as `project_export`) plus
+    /// `About/About.xml` in the CLI build-mod `<ModMetaData>` shape, so the
+    /// folder can be moved straight into the game's Mods directory without
+    /// a terminal. Guard partition is IDENTICAL to `export_project` (copied,
+    /// not shared, so the export semantics stay frozen): stale-epoch,
+    /// locale form, absolute out-dir form, fail-closed source root,
+    /// source-tree and managed-root containment denies, then the H3/M4
+    /// pre-write content refusals, then reparse + strict-XML verification
+    /// BEFORE the ack.
+    pub fn build_mod_project(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        out_dir: &Path,
+        locale: &str,
+    ) -> Result<crate::contract::BuildModProjectResponse, ContractError> {
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        // P1-2 (copy of the export entry): the locale is joined into output
+        // paths (`Languages/<locale>/...`) — validate the strict folder form
+        // BEFORE any guard, path operation or write.
+        ensure_locale_form(locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // Path-FORM guard (copy): refuse a relative out dir before ANY
+        // filesystem access — the built-app `…/RimLoc-Export/…` incident.
+        ensure_out_dir_absolute(out_dir)?;
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_build_mod");
+        log.begin_stage("guard");
+
+        // Fail-closed source-root presence (copy of the export entry).
+        if st.mod_root.as_os_str().is_empty() {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
+            ));
+        }
+        // The out dir must not be inside/equal the read-only source root
+        // (fail-closed canonical view, deny-direction containment).
+        if crate::is_within(out_dir, &st.mod_root) {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "output directory `{}` is inside the read-only source tree `{}`",
+                    out_dir.display(),
+                    st.mod_root.display()
+                ),
+            ));
+        }
+        // Managed-root guard: artifacts never overwrite managed records.
+        if crate::is_within(out_dir, &self.managed_root) {
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "output directory `{}` is inside the managed projects root `{}`",
+                    out_dir.display(),
+                    self.managed_root.display()
+                ),
+            ));
+        }
+        log.end_stage("guard");
+
+        // H3 pre-write content check (copy of the export entry): texts about
+        // to be written must be XML 1.0-clean — refuse BEFORE any write.
+        let mut poisoned: Vec<String> = Vec::new();
+        for t in &st.project.translations {
+            if t.locale != locale {
+                continue;
+            }
+            let Some(text) = t.text.as_deref() else {
+                continue;
+            };
+            let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) else {
+                continue;
+            };
+            let identity = st
+                .project
+                .entries
+                .iter()
+                .find(|e| e.id == t.source_id)
+                .map(|e| e.id.display_identity())
+                .unwrap_or_else(|| t.source_id.key.clone());
+            if poisoned.len() < 5 {
+                poisoned.push(format!("{identity} (U+{:04X})", bad as u32));
+            } else {
+                poisoned.push("…".to_string());
+                break;
+            }
+        }
+        if !poisoned.is_empty() {
+            log.error_message("write", "XML-invalid control characters in build content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot build the mod: translation text contains characters that are invalid in XML 1.0 — the game would drop the whole file. Fix the entries: {}",
+                    poisoned.join(", ")
+                ),
+            ));
+        }
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(&st.display_name) {
+            log.error_message("write", "XML-invalid control character in display name");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot build the mod: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
+                    bad as u32
+                ),
+            ));
+        }
+
+        // M4 pre-write content check (copy of the export entry): case-only
+        // defName collisions would collapse into one file on a
+        // case-insensitive filesystem — refuse deterministically.
+        let collisions = case_collision_pairs(&st.project, Some(locale));
+        if !collisions.is_empty() {
+            let shown: Vec<String> = collisions
+                .iter()
+                .take(5)
+                .map(|(dt, a, b)| format!("{dt}: {a} / {b}"))
+                .collect();
+            log.error_message("write", "case-colliding defNames in build content");
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot build the mod: defNames that differ only in case would write into the same file on Windows/macOS — rename the defName in the source mod: {}",
+                    shown.join(", ")
+                ),
+            ));
+        }
+
+        // Manifest fields follow the export discipline: version from the
+        // project target, name = display name, packageId = the restricted
+        // slug (H4 — a folder name is not a valid packageId).
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        log.begin_stage("write");
+        let report = crate::build::build_mod_from_project_execute(
+            &st.project,
+            out_dir,
+            locale,
+            &st.display_name,
+            &crate::util::package_id_slug(&st.display_name),
+            &rw_version,
+        )
+        .map_err(|e| {
+            log.error_message("write", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("mod package write failed: {e}"),
+            )
+        })?;
+        log.end_stage("write");
+
+        // Reparse check BEFORE the ack (same semantics as export): the
+        // written output must come back through the EXISTING scanner with
+        // exactly the keys the writer reports writing.
+        log.begin_stage("reparse");
+        let units = rimloc_parsers_xml::scan_keyed_xml(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("reparse of the written output failed: {e}"),
+            )
+        })?;
+        if units.len() != report.keys_written {
+            log.error_message(
+                "reparse",
+                &format!(
+                    "reparse count mismatch: wrote {}, reparsed {}",
+                    report.keys_written,
+                    units.len()
+                ),
+            );
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::Internal,
+                format!(
+                    "reparse count mismatch: wrote {} keys, reparsed {}",
+                    report.keys_written,
+                    units.len()
+                ),
+            ));
+        }
+        // H3 strict tripwire (copy of the export entry): every written file
+        // byte-verified against the XML 1.0 char set.
+        crate::util::verify_xml_char_validity(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("strict XML verification of the written output failed: {e}"),
+            )
+        })?;
+        log.counter("reparse", "keys", units.len() as u64);
+        log.end_stage("reparse");
+        log.finish();
+
+        let files_written = count_files(&report.out_mod);
+        Ok(crate::contract::BuildModProjectResponse {
+            job_id,
+            out_dir: crate::contract::PathBufDto::new(report.out_mod.display().to_string()),
+            files_written,
+            reparsed_keys: units.len(),
+            skipped_unknown_type: report.skipped_unknown_type,
+        })
+    }
+
     /// `project_diagnose` — sanitized support bundle over the project's
     /// LAST FAILED operation (validate errors, save failure). The out dir
     /// must stay outside the read-only source tree (the collector enforces
@@ -985,6 +2114,10 @@ impl ProjectSessionManager {
         project_id: &str,
         out_dir: &Path,
     ) -> Result<crate::contract::DiagnoseResponse, ContractError> {
+        // Path-FORM guard FIRST (before `managed_path` canonicalizes): a
+        // relative bundle dir would silently land relative to the GUI
+        // process CWD — refuse the form before ANY filesystem access.
+        ensure_out_dir_absolute(out_dir)?;
         // Fail-closed id-form guard — the same entry discipline as every
         // other session operation.
         self.managed_path(project_id)?;
@@ -1044,6 +2177,571 @@ impl ProjectSessionManager {
             excluded_count: bundle.excluded.len(),
         })
     }
+
+    /// `project_import_existing` — DRY-RUN analysis of an existing
+    /// translation pack against the trusted session state. READ-ONLY on
+    /// both sides: the pack directory is only scanned, the project is never
+    /// mutated and nothing is persisted. The classification (reusable /
+    /// conflicts / obsolete / ambiguous / invalid + `new`) comes from the
+    /// SAME resolver `apply_existing` uses, so the reusable set is by
+    /// construction what application would apply.
+    pub fn import_existing(
+        &self,
+        req: &crate::contract::ImportExistingRequest,
+    ) -> Result<crate::contract::ImportExistingResponse, ContractError> {
+        // Fail-closed id-form guard — the same entry discipline as every
+        // other session operation.
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_import_existing");
+        log.begin_stage("analyze");
+        let analysis =
+            crate::project::analyze_existing_translation(&st.project, &existing_dir, &req.locale)
+                .map_err(|e| {
+                log.error_message("analyze", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("existing-pack analysis failed: {e}"),
+                )
+            })?;
+        log.counter("analyze", "keys", analysis.scanned_keys as u64);
+        log.end_stage("analyze");
+        log.finish();
+
+        Ok(crate::contract::ImportExistingResponse {
+            job_id,
+            scanned_files: analysis.scanned_files,
+            scanned_keys: analysis.scanned_keys,
+            reusable_count: analysis.reusable_count,
+            conflict_count: analysis.conflict_count,
+            obsolete_count: analysis.obsolete_count,
+            ambiguous_count: analysis.ambiguous_count,
+            invalid_count: analysis.invalid_count,
+            new_count: analysis.new_uncovered,
+            reusable: analysis
+                .reusable
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+            conflicts: analysis
+                .conflicts
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+            obsolete: analysis
+                .obsolete
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+            ambiguous: analysis
+                .ambiguous
+                .into_iter()
+                .map(|l| crate::contract::ExistingAmbiguousItem {
+                    key: l.key,
+                    candidates: l.candidates,
+                })
+                .collect(),
+            invalid: analysis
+                .invalid
+                .into_iter()
+                .map(|l| crate::contract::ExistingMatchItem {
+                    key: l.key,
+                    entry: l.target,
+                })
+                .collect(),
+        })
+    }
+
+    /// `project_apply_existing` — apply the REUSABLE set of an existing
+    /// translation pack into the trusted session state, persist-before-ack.
+    /// Guards: the full apply-intents discipline (stale epoch/revision
+    /// refuse the whole operation, external disk change refuses the save)
+    /// PLUS the merge safety rules: an existing translation is NEVER
+    /// overwritten (conflicts stay conflicts), ambiguous lines are never
+    /// auto-applied, and pack keys the inventory does not know are never
+    /// applied.
+    pub fn apply_existing(
+        &self,
+        req: &crate::contract::ApplyExistingRequest,
+    ) -> Result<crate::contract::ApplyExistingResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+
+        // Stale-session guard (same discipline as `apply`).
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        // Lost-update guard against the last ACKED revision (a dirty failed
+        // save never published its revision — same base rule as `apply`).
+        let base = if st.dirty {
+            st.acked_revision
+        } else {
+            st.revision
+        };
+        if req.expected_revision != base {
+            return Err(ContractError::stale_revision(req.expected_revision, base));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_apply_existing");
+        log.begin_stage("apply");
+        // Pre-apply analysis drives the response's safety accounting; the
+        // application itself is the SAME service call the corpus harness
+        // verifies (matched + empty slots only, origin=Imported).
+        let analysis =
+            crate::project::analyze_existing_translation(&st.project, &existing_dir, &req.locale)
+                .map_err(|e| {
+                log.error_message("apply", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("existing-pack analysis failed: {e}"),
+                )
+            })?;
+        let applied =
+            crate::project::apply_existing_translation(&mut st.project, &existing_dir, &req.locale)
+                .map_err(|e| {
+                    log.error_message("apply", &e.to_string());
+                    log.finish();
+                    ContractError::new(
+                        ContractErrorCode::Internal,
+                        format!("existing-pack application failed: {e}"),
+                    )
+                })?;
+        log.counter("apply", "applied", applied as u64);
+        log.end_stage("apply");
+
+        // A clean no-op: nothing was reusable AND the session holds no
+        // pending work from a previously failed save — no revision bump, no
+        // save, no dirty state.
+        if applied == 0 && !st.dirty {
+            log.finish();
+            return Ok(crate::contract::ApplyExistingResponse {
+                job_id,
+                revision: st.revision,
+                applied: 0,
+                conflicts: analysis.conflict_count,
+                unmatched: analysis.obsolete_count,
+                ambiguous: analysis.ambiguous_count,
+            });
+        }
+
+        // Revision bump + persist-before-ack (identical to `apply`).
+        //
+        // Dirty-retry completion: a failed save never PUBLISHED its
+        // revision (the bump lives only in memory, `dirty` keeps the acked
+        // base legal for a retry). On such a retry the pack's reusable
+        // lines are already in memory — this pass applies nothing new, but
+        // the pending revision from the failed save is COMPLETED: the same
+        // revision is persisted and acked now, so the caller never receives
+        // an `Ok` revision that is not on disk. (The intents path never
+        // hits this because re-applying intents re-applies; slot-filling is
+        // one-shot, so this is the first operation with a deterministic
+        // zero-new-lines retry.)
+        let new_revision = if applied == 0 {
+            st.revision
+        } else {
+            let bumped = st.revision + 1;
+            st.revision = bumped;
+            bumped
+        };
+        log.begin_stage("persist");
+        let meta = ProjectEnvelopeMeta {
+            project_id: Some(req.project_id.clone()),
+            revision: Some(new_revision),
+            display_name: Some(st.display_name.clone()),
+            source_root: envelope_source_root(&st.mod_root),
+            source_fingerprint: st.source_fingerprint.clone(),
+        };
+        if let Some(expected) = &st.disk_hash {
+            let current = disk_hash(&st.path);
+            if current.is_some_and(|c| &c != expected) {
+                st.dirty = true;
+                log.error_message(
+                    "persist",
+                    "managed file changed outside the session (content hash mismatch)",
+                );
+                log.finish();
+                return Err(ContractError::new(
+                    ContractErrorCode::ProjectChangedOnDisk,
+                    "the managed project file changed outside this session; refresh to adopt \
+                     the on-disk state (in-memory edits are kept until then)"
+                        .to_string(),
+                ));
+            }
+        }
+        match save_project_with_meta(&st.project, &meta, &st.path) {
+            Ok(()) => {
+                st.acked_revision = new_revision;
+                st.disk_hash = disk_hash(&st.path);
+                st.dirty = false;
+            }
+            Err(e) => {
+                st.dirty = true;
+                log.error_message("persist", &e.to_string());
+                log.finish();
+                return Err(ContractError::new(
+                    ContractErrorCode::SaveFailed,
+                    format!("persist failed: {e}"),
+                ));
+            }
+        }
+        log.end_stage("persist");
+        log.finish();
+        Ok(crate::contract::ApplyExistingResponse {
+            job_id,
+            revision: new_revision,
+            applied,
+            conflicts: analysis.conflict_count,
+            unmatched: analysis.obsolete_count,
+            ambiguous: analysis.ambiguous_count,
+        })
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Translation memory (TM live A+B+C) — pure helpers over `Project.tm`.
+// Kept free (no `&self`) so the domain rules are unit-testable without a
+// session fixture.
+// ---------------------------------------------------------------------------
+
+/// One import row in resolved (still raw-text) form.
+struct TmImportRow {
+    source: String,
+    target: String,
+    locale: Option<String>,
+    status: Option<String>,
+}
+
+/// Parse an import payload into rows. JSON (array of objects) and CSV
+/// (lines `source,target[,locale][,status]`) are supported; the format
+/// auto-detects on the first byte (`[` or `{` → JSON) unless forced. A
+/// payload that parses as NEITHER is a whole-operation refusal with an
+/// exact message — never a silent partial apply.
+fn parse_tm_rows(
+    payload: &str,
+    format: Option<TmImportFormat>,
+) -> Result<Vec<TmImportRow>, String> {
+    let payload = payload.trim();
+    if payload.is_empty() {
+        return Err("tm import payload is empty".into());
+    }
+    let as_json = match format {
+        Some(TmImportFormat::Json) => true,
+        Some(TmImportFormat::Csv) => false,
+        // Auto-detect on the first byte: JSON text always opens with `[`
+        // (array) or `{` (object). Routing `{` into the JSON parser is what
+        // makes "JSON of the wrong shape" and "not JSON at all after a
+        // typo" TYPED refusals — falling back to CSV would silently read
+        // broken JSON as one garbage row.
+        None => payload.starts_with('[') || payload.starts_with('{'),
+    };
+    if as_json {
+        parse_tm_json_rows(payload)
+    } else {
+        Ok(parse_tm_csv_rows(payload))
+    }
+}
+
+/// JSON array of `{source, target[, locale][, status]}` objects. Field
+/// aliases `source_text`/`target_text`/`target_locale` are accepted (the
+/// domain wording) alongside the short CSV-mirrored names.
+fn parse_tm_json_rows(payload: &str) -> Result<Vec<TmImportRow>, String> {
+    let value: serde_json::Value = serde_json::from_str(payload)
+        .map_err(|e| format!("tm import: payload is not valid JSON: {e}"))?;
+    let items = value
+        .as_array()
+        .ok_or_else(|| "tm import: JSON payload must be an ARRAY of objects".to_string())?;
+    let mut rows = Vec::with_capacity(items.len());
+    for (i, item) in items.iter().enumerate() {
+        let obj = match item.as_object() {
+            Some(o) => o,
+            None => {
+                return Err(format!(
+                    "tm import: JSON row #{i} is not an object — every element must carry source/target"
+                ));
+            }
+        };
+        let get = |keys: &[&str]| {
+            keys.iter()
+                .find_map(|k| obj.get(*k))
+                .and_then(|v| v.as_str())
+                .map(str::to_string)
+        };
+        rows.push(TmImportRow {
+            source: get(&["source", "source_text"]).unwrap_or_default(),
+            target: get(&["target", "target_text"]).unwrap_or_default(),
+            locale: get(&["locale", "target_locale"]),
+            status: get(&["status"]),
+        });
+    }
+    Ok(rows)
+}
+
+/// CSV lines `source,target[,locale][,status]`. An optional header row
+/// (`source,target,...` in any casing) is detected and skipped. Quoting is
+/// RFC-4180-lite: fields may be wrapped in `"`, embedded quotes double
+/// (`""`), embedded separators/newlines live inside quotes.
+fn parse_tm_csv_rows(payload: &str) -> Vec<TmImportRow> {
+    let records = parse_csv_records(payload);
+    let mut rows = Vec::with_capacity(records.len());
+    for (i, fields) in records.iter().enumerate() {
+        let all_empty = fields.iter().all(|f| f.trim().is_empty());
+        if all_empty {
+            continue;
+        }
+        if i == 0 && is_tm_csv_header(fields) {
+            continue;
+        }
+        let field = |n: usize| fields.get(n).map(|s| s.trim().to_string());
+        rows.push(TmImportRow {
+            source: field(0).unwrap_or_default(),
+            target: field(1).unwrap_or_default(),
+            locale: field(2).filter(|s| !s.is_empty()),
+            status: field(3).filter(|s| !s.is_empty()),
+        });
+    }
+    rows
+}
+
+/// Header detection for the optional CSV header row.
+fn is_tm_csv_header(fields: &[String]) -> bool {
+    let first = fields.first().map(|s| s.trim().to_lowercase());
+    matches!(first.as_deref(), Some("source" | "source_text"))
+}
+
+/// RFC-4180-lite CSV record tokenizer: splits on unquoted commas/newlines,
+/// honors `"` quoting with `""` as an escaped quote. Own implementation —
+/// no new dependencies (the workspace rule for core crates).
+fn parse_csv_records(payload: &str) -> Vec<Vec<String>> {
+    let mut records: Vec<Vec<String>> = Vec::new();
+    let mut record: Vec<String> = Vec::new();
+    let mut field = String::new();
+    let mut in_quotes = false;
+    let mut chars = payload.chars().peekable();
+    let mut any = false;
+    while let Some(c) = chars.next() {
+        if in_quotes {
+            match c {
+                '"' => {
+                    if chars.peek() == Some(&'"') {
+                        chars.next();
+                        field.push('"');
+                    } else {
+                        in_quotes = false;
+                    }
+                }
+                _ => field.push(c),
+            }
+            continue;
+        }
+        match c {
+            '"' if field.is_empty() => {
+                in_quotes = true;
+                any = true;
+            }
+            ',' => {
+                record.push(std::mem::take(&mut field));
+                any = true;
+            }
+            '\n' => {
+                record.push(std::mem::take(&mut field));
+                records.push(std::mem::take(&mut record));
+                any = false;
+            }
+            '\r' => {
+                // Normalize CRLF: the \n handler closes the record.
+                continue;
+            }
+            _ => {
+                field.push(c);
+                any = true;
+            }
+        }
+    }
+    if any || !field.is_empty() || !record.is_empty() {
+        record.push(field);
+        records.push(record);
+    }
+    records
+}
+
+/// Resolve one import row into validated (source, target, locale, status).
+/// `None` = the row is form-rejected (missing required fields, over-limit
+/// lengths, control characters, unknown status wording). Absent locale is
+/// a rejection: locale isolation is MANDATORY, a record without a locale
+/// can never be looked up honestly.
+fn resolve_tm_row(row: &TmImportRow) -> Option<(String, String, String, TmStatus)> {
+    let (source, target, locale) = rimloc_domain::tm::validate_input(
+        &row.source,
+        &row.target,
+        row.locale.as_deref().unwrap_or(""),
+    )
+    .ok()?;
+    let status = match &row.status {
+        Some(s) => TmStatus::parse(s)?,
+        // B: the import is NOT trusted blindly — DRAFT by default.
+        None => TmStatus::Draft,
+    };
+    Some((source, target, locale, status))
+}
+
+use rimloc_domain::tm::TmStatus;
+
+/// TM live (A): fold ACCEPTED translations into the memory. Called ONLY on
+/// the acked apply path (persist-before-ack, never on a draft). Policy per
+/// triple:
+/// - form-invalid triples (e.g. an inventory source over the TM limit) are
+///   skipped, never fatal: the apply must not fail because the TM could
+///   not store;
+/// - same key + same target: no-op (already recorded);
+/// - existing REVIEWED record: KEPT — curated work is never weakened by
+///   auto-accumulation;
+/// - otherwise (fresh key, or an equal/weaker record with a different
+///   target): the accepted human translation wins — record written with
+///   provenance=Auto, status=Accepted.
+///
+/// Returns the number of records written/updated (observability counter).
+fn tm_auto_accumulate(
+    tm: &mut Vec<rimloc_domain::tm::TranslationMemoryEntry>,
+    accepted: &[(String, String, String)],
+) -> usize {
+    let mut changed = 0usize;
+    for (source, target, locale) in accepted {
+        let Ok((source, target, locale)) =
+            rimloc_domain::tm::validate_input(source, target, locale)
+        else {
+            continue;
+        };
+        // The immutable scan ends at `position` — the mutable arms below
+        // never alias it.
+        let existing = tm
+            .iter()
+            .position(|e| e.target_locale == locale && e.source_text == source);
+        match existing {
+            Some(i) if tm[i].target_text == target => {}
+            Some(i) if tm[i].status == TmStatus::Reviewed => {}
+            Some(i) => {
+                let slot = &mut tm[i];
+                slot.target_text = target;
+                slot.status = TmStatus::Accepted;
+                slot.provenance = rimloc_domain::tm::TmProvenance::Auto;
+                changed += 1;
+            }
+            None => {
+                tm.push(rimloc_domain::tm::TranslationMemoryEntry {
+                    id: generate_operation_id(),
+                    source_text: source,
+                    target_text: target,
+                    target_locale: locale,
+                    status: TmStatus::Accepted,
+                    provenance: rimloc_domain::tm::TmProvenance::Auto,
+                });
+                changed += 1;
+            }
+        }
+    }
+    changed
+}
+
+/// Ranked TM matches for one (query, locale): exact → normalized → bounded
+/// fuzzy. Locales are ISOLATED — only records with `target_locale == locale`
+/// are ever considered. Ordering: tier, then distance, then trust rank
+/// (REVIEWED > ACCEPTED > DRAFT), then stable insertion order. `distance`
+/// rides only on the fuzzy tier (exact/normalized are 0-distance by
+/// construction and omit the field on the wire).
+fn tm_ranked_matches(
+    tm: &[rimloc_domain::tm::TranslationMemoryEntry],
+    query: &str,
+    locale: &str,
+    limit: usize,
+) -> Vec<TmMatch> {
+    let query = query.trim();
+    if query.is_empty() || locale.is_empty() {
+        return Vec::new();
+    }
+    let scoped: Vec<(usize, &rimloc_domain::tm::TranslationMemoryEntry)> = tm
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| e.target_locale == locale)
+        .collect();
+    let nq = rimloc_domain::tm::normalize(query);
+    let threshold = rimloc_domain::tm::fuzzy_threshold(&nq);
+
+    // (tier, distance_for_order, rank, index) — best first.
+    let mut scored: Vec<(u8, usize, u8, usize)> = Vec::new();
+    for (i, e) in &scoped {
+        if e.source_text == query {
+            scored.push((0, 0, e.status.rank(), *i));
+            continue;
+        }
+        let normalized = rimloc_domain::tm::normalize(&e.source_text);
+        if normalized == nq {
+            scored.push((1, 0, e.status.rank(), *i));
+            continue;
+        }
+        if let Some(d) = rimloc_domain::tm::bounded_levenshtein(&nq, &normalized, threshold) {
+            scored.push((2, d, e.status.rank(), *i));
+        }
+    }
+    scored.sort_by(|a, b| {
+        a.0.cmp(&b.0)
+            .then(a.1.cmp(&b.1))
+            .then(b.2.cmp(&a.2))
+            .then(a.3.cmp(&b.3))
+    });
+    scored
+        .into_iter()
+        .take(limit)
+        .map(|(tier, d, _, i)| {
+            let entry = tm[i].clone();
+            let (match_kind, distance) = match tier {
+                0 => ("exact", None),
+                1 => ("normalized", None),
+                _ => ("fuzzy", Some(d)),
+            };
+            TmMatch {
+                entry,
+                match_kind: match_kind.into(),
+                distance,
+            }
+        })
+        .collect()
 }
 
 /// Strict language-folder form for client locale strings (P1-2). A locale
@@ -1060,6 +2758,94 @@ fn ensure_locale_form(locale: &str) -> Result<(), String> {
             "malformed locale `{locale}`: expected the language-folder form (letters, digits, `_`, `-`)"
         ))
     }
+}
+
+/// Fail-closed path-FORM guard for every contract entry that takes a
+/// caller-specified out dir (`export_project`, `diagnose`): the writers
+/// create directories under this path with the GUI process CWD as the
+/// implicit base, so a relative path silently lands wherever the app was
+/// launched from (the built-app `…/RimLoc-Export/…` incident). `Path::
+/// is_absolute` is a pure form check — no filesystem access — so the
+/// refusal precedes any guard, canonicalization or write, typed as
+/// `invalid_output_path`. Never resolve on the caller's behalf: guessing
+/// a base directory is how the incident happened.
+fn ensure_out_dir_absolute(out_dir: &Path) -> Result<(), ContractError> {
+    if out_dir.is_absolute() {
+        Ok(())
+    } else {
+        Err(ContractError::invalid_output_path(out_dir))
+    }
+}
+
+/// Guards for a caller-specified EXISTING translation pack directory
+/// (input, read-only — `import_existing` / `apply_existing`):
+/// - path-FORM guard FIRST: a relative pack path would resolve against the
+///   GUI process CWD — refused before any filesystem access (typed
+///   `invalid_output_path`, the same form code as outputs; the message is
+///   neutral about direction);
+/// - it must be a directory;
+/// - managed-record containment: the pack is never read from inside the
+///   managed-projects root (typed `guard_output_denied`). Unlike a WRITE
+///   target, the pack MAY legitimately live inside the read-only source
+///   tree (`Languages/<locale>` of the mod itself) — reading it is the
+///   whole point, so no source-tree guard applies here;
+/// - pack↔locale cross-check: the chosen directory's folder name must be
+///   the requested locale (case-insensitive). The scanner walks ANY
+///   `*/Languages/<Any>/{Keyed,DefInjected}` under the given root, so
+///   picking the MOD ROOT (or `Languages/English`) with locale `Russian`
+///   would silently classify the ENGLISH source as reusable — the apply
+///   would import source text as "translations". RimLoc's own export
+///   layout is `Languages/<locale>`, so the folder the locale names is the
+///   only honest pack root (fail-closed: an unusually named pack folder is
+///   renamed or re-exported, never guessed).
+fn existing_pack_dir(
+    dir_dto: &crate::contract::PathBufDto,
+    managed_root: &Path,
+    locale: &str,
+) -> Result<PathBuf, ContractError> {
+    let dir = PathBuf::from(&dir_dto.path);
+    if !dir.is_absolute() {
+        return Err(ContractError::new(
+            ContractErrorCode::InvalidOutputPath,
+            format!(
+                "existing translation directory `{}` is not absolute; specify an absolute directory (e.g. `/Users/you/Mods/MyMod/Languages/{locale}`)",
+                dir.display()
+            ),
+        ));
+    }
+    if crate::is_within(&dir, managed_root) {
+        return Err(ContractError::new(
+            ContractErrorCode::GuardOutputDenied,
+            format!(
+                "existing translation directory `{}` is inside the managed projects root `{}`",
+                dir.display(),
+                managed_root.display()
+            ),
+        ));
+    }
+    if !dir.is_dir() {
+        return Err(ContractError::new(
+            ContractErrorCode::ContractViolation,
+            format!(
+                "existing translation directory `{}` is not a directory",
+                dir.display()
+            ),
+        ));
+    }
+    let leaf_ok = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(|leaf| leaf.eq_ignore_ascii_case(locale));
+    if !leaf_ok {
+        return Err(ContractError::new(
+            ContractErrorCode::ContractViolation,
+            format!(
+                "existing translation directory `{}` does not match the locale `{locale}`: the pack folder must be the language folder itself (…/Languages/{locale}), otherwise the scan would pick up other languages' files",
+                dir.display()
+            ),
+        ));
+    }
+    Ok(dir)
 }
 
 /// Virtual validation path for one entry translation, mirroring the REAL
@@ -1093,6 +2879,71 @@ fn synthesized_unit_path(entry: &SourceEntry, locale: &str) -> String {
         // PatchDerived): still validated, in a distinct stable bucket.
         _ => format!("Languages/{locale}/_other/{}.xml", entry.id.key),
     }
+}
+
+/// DefInjected defNames that collide case-insensitively within one def
+/// type (M4): the export writer materializes ONE file per defName
+/// (`{defName}.xml`), so `Dup` and `dup` are the same file on a
+/// case-insensitive filesystem (macOS/Windows) — one translation would
+/// silently overwrite the other. Detected per (locale, def type) —
+/// colliding names across different export locales never share a file.
+/// Returns `(def_type, name_a, name_b)` with the ORIGINAL spellings.
+fn case_collision_pairs(project: &Project, locale: Option<&str>) -> Vec<(String, String, String)> {
+    use std::collections::BTreeMap;
+    // (locale, def_type, lowercase defName) -> original defName.
+    let mut seen: BTreeMap<(String, String, String), String> = BTreeMap::new();
+    // (def_type, name_a) -> name_b (first collision wins, deterministic).
+    let mut collisions: BTreeMap<(String, String), String> = BTreeMap::new();
+    for t in &project.translations {
+        if let Some(filter) = locale {
+            if t.locale != filter {
+                continue;
+            }
+        }
+        if t.lifecycle == Lifecycle::Obsolete {
+            continue;
+        }
+        let Some(text) = t.text.as_deref().filter(|s| !s.trim().is_empty()) else {
+            continue;
+        };
+        let _ = text;
+        let Some(entry) = project.entries.iter().find(|e| e.id == t.source_id) else {
+            continue;
+        };
+        if !matches!(entry.id.kind, EntryKind::TKey | EntryKind::DefInjected) {
+            continue;
+        }
+        let Some(def_type) = entry
+            .id
+            .def_type
+            .clone()
+            .or_else(|| entry.tkey.as_ref().map(|m| m.def_type.clone()))
+            .or_else(|| crate::project::def_type_from_contexts(entry))
+        else {
+            continue;
+        };
+        let Some(def_name) = entry.id.key.split('.').next().filter(|s| !s.is_empty()) else {
+            continue;
+        };
+        let slot = seen.entry((t.locale.clone(), def_type.clone(), def_name.to_lowercase()));
+        match slot {
+            std::collections::btree_map::Entry::Vacant(v) => {
+                v.insert(def_name.to_string());
+            }
+            std::collections::btree_map::Entry::Occupied(o) => {
+                let first = o.get();
+                if *first != def_name {
+                    collisions
+                        .entry((def_type.clone(), first.clone()))
+                        .or_insert_with(|| def_name.to_string());
+                }
+            }
+        }
+    }
+    collisions
+        .into_iter()
+        .map(|((def_type, a), b)| (def_type, a, b))
+        .collect()
 }
 
 /// Placeholder tokens of a text ('%s'-style and {name}/{0}).
@@ -1182,14 +3033,93 @@ fn schema_or_internal(err: &color_eyre::Report, project_id: &str) -> ContractErr
 }
 
 fn snapshot_of(project_id: &str, st: &SessionState) -> ProjectSnapshot {
+    // Live Source Inspector bridge (wave 12): the snapshot DECORATES the
+    // trusted state with the per-entry `source_ref` projection; the trusted
+    // state itself stays projection-free, so persisted bytes never grow a
+    // denormalized copy of contexts/provenance that could drift.
+    let mut project = st.project.clone();
+    for entry in &mut project.entries {
+        entry.source_ref = live_source_ref(entry, &st.mod_root);
+    }
     ProjectSnapshot {
         project_id: project_id.to_string(),
         revision: st.revision,
         session_epoch: st.epoch,
         dirty: st.dirty,
         acked_revision: st.acked_revision,
-        project: st.project.clone(),
+        project,
+        source_changed: st.source_changed,
+        source_root: if st.mod_root.as_os_str().is_empty() {
+            None
+        } else {
+            Some(PathBufDto::new(st.mod_root.display().to_string()))
+        },
     }
+}
+
+/// The per-entry `source_ref` projection (append-only contract field):
+/// the EFFECTIVE context's file relative to the project root + the
+/// parser-guaranteed line + the winner reason. Honest-by-default rules:
+/// `None` when the winner reason was never recorded (legacy inventories)
+/// or the entry carries no context at all; a line the parser did not
+/// record stays `None` (never fabricated); a path outside the project
+/// root stays ABSOLUTE rather than being guessed into a wrong relative
+/// form. `mod_root` doubles as the catalog dir for ui-catalog projects,
+/// so the same rule yields `catalog.en.json` there.
+fn live_source_ref(entry: &SourceEntry, root: &Path) -> Option<EntrySourceRef> {
+    let selected_by = entry.provenance.selected_by.as_deref()?;
+    let ctx = entry
+        .contexts
+        .iter()
+        .find(|c| c.role == ContextRole::Effective)
+        .or_else(|| entry.contexts.first())?;
+    Some(EntrySourceRef {
+        file: relativize_source_file(&ctx.file, root),
+        line: ctx.line,
+        selected_by: selected_by.to_string(),
+    })
+}
+
+/// Project-root-relative form of a recorded source file for the UI:
+/// path-prefix strip first, then a separator-normalized string fallback;
+/// when neither matches (path outside the root, empty root, legacy
+/// envelope) the recorded form stays AS IS — truthful, just not relative.
+fn relativize_source_file(file: &str, root: &Path) -> String {
+    if root.as_os_str().is_empty() {
+        return file.to_string();
+    }
+    if let Ok(rel) = Path::new(file).strip_prefix(root) {
+        let s = rel.to_string_lossy().replace('\\', "/");
+        if !s.is_empty() {
+            return s;
+        }
+    }
+    let root_norm = root.to_string_lossy().replace('\\', "/");
+    let file_norm = file.replace('\\', "/");
+    if let Some(stripped) = file_norm.strip_prefix(&root_norm) {
+        let stripped = stripped.trim_start_matches('/');
+        if !stripped.is_empty() {
+            return stripped.to_string();
+        }
+    }
+    file.to_string()
+}
+
+/// M3 drift verdict: `Some(cur != recorded)` when a recorded fingerprint
+/// can be compared against the readable source; `None` when there is
+/// nothing recorded (legacy envelope) or the source cannot be fingerprinted
+/// right now — unknown stays unknown, never a false "in sync".
+fn drift_verdict(
+    recorded: Option<&str>,
+    mod_root: &Path,
+    target_version: Option<&str>,
+) -> Option<bool> {
+    let recorded = recorded?;
+    if mod_root.as_os_str().is_empty() {
+        return None;
+    }
+    let current = crate::scan::source_fingerprint(mod_root, target_version).ok()?;
+    Some(current != recorded)
 }
 
 /// Apply ONE intent to the trusted canonical state. The service owns
@@ -1315,13 +3245,128 @@ fn apply_intent(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::contract::{ApplyIntentsRequest, ContractErrorCode, UI_CONTRACT_VERSION};
-    use rimloc_domain::canonical::{EntryKind, SourceEntryId};
+    use crate::contract::{
+        ApplyIntentsRequest, ContractErrorCode, TmDeleteRequest, TmImportFormat, TmImportRequest,
+        TmListRequest, TmLookupRequest, TmUpsertRequest, UI_CONTRACT_VERSION,
+    };
+    use rimloc_domain::canonical::{EntryKind, SourceEntryId, SourceProvenance};
     use std::fs;
 
     fn write(path: &Path, body: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();
+    }
+
+    /// Live Source Inspector bridge (wave 12): the projection rules of
+    /// `live_source_ref` — effective context + recorded winner reason,
+    /// project-root-relative file, honest absence everywhere else.
+    #[test]
+    fn live_source_ref_projection_rules() {
+        use rimloc_domain::canonical::{ContextRole, SourceContext};
+
+        let mk_entry = |contexts: Vec<SourceContext>, selected_by: Option<&str>| -> SourceEntry {
+            SourceEntry {
+                id: SourceEntryId {
+                    kind: EntryKind::Keyed,
+                    key: "K".into(),
+                    def_type: None,
+                },
+                text: "v".into(),
+                source_locale: "en".into(),
+                contexts,
+                provenance: SourceProvenance {
+                    selected_by: selected_by.map(str::to_string),
+                    ..Default::default()
+                },
+                tkey: None,
+                source_ref: None,
+            }
+        };
+        let ctx = |file: &str, line: Option<usize>, role: ContextRole| SourceContext {
+            file: file.into(),
+            line,
+            def_type: None,
+            role,
+        };
+        let root = Path::new("/mods/MyMod");
+
+        // Full triple: effective context wins, file goes root-relative.
+        let e = mk_entry(
+            vec![
+                ctx(
+                    "/mods/MyMod/Languages/English/Keyed/K.xml",
+                    Some(7),
+                    ContextRole::Effective,
+                ),
+                ctx(
+                    "/mods/MyMod/Languages/English/Keyed/Z.xml",
+                    Some(3),
+                    ContextRole::Overridden,
+                ),
+            ],
+            Some("keyed-last-wins"),
+        );
+        let sr = live_source_ref(&e, root).expect("projected_when_reason_recorded");
+        assert_eq!(sr.file, "Languages/English/Keyed/K.xml", "{sr:?}");
+        assert_eq!(sr.line, Some(7));
+        assert_eq!(sr.selected_by, "keyed-last-wins");
+
+        // No recorded winner reason (legacy inventory) -> NO projection.
+        let e = mk_entry(
+            vec![ctx(
+                "/mods/MyMod/Languages/English/Keyed/K.xml",
+                Some(7),
+                ContextRole::Effective,
+            )],
+            None,
+        );
+        assert!(
+            live_source_ref(&e, root).is_none(),
+            "absent_reason_no_projection"
+        );
+
+        // No context at all -> NO projection.
+        let e = mk_entry(vec![], Some("keyed-last-wins"));
+        assert!(
+            live_source_ref(&e, root).is_none(),
+            "absent_context_no_projection"
+        );
+
+        // A path outside the root stays ABSOLUTE (truthful, never guessed).
+        let e = mk_entry(
+            vec![ctx("/elsewhere/K.xml", None, ContextRole::Effective)],
+            Some("patch-applied"),
+        );
+        let sr = live_source_ref(&e, root).expect("outside_root_still_projected");
+        assert_eq!(sr.file, "/elsewhere/K.xml", "{sr:?}");
+        assert_eq!(sr.line, None, "unrecorded_line_stays_none");
+
+        // Separator-normalized fallback: a Windows backslash display form
+        // relativizes against the same root.
+        let e = mk_entry(
+            vec![ctx(
+                "C:\\mods\\MyMod\\Languages\\English\\Keyed\\K.xml",
+                Some(2),
+                ContextRole::Effective,
+            )],
+            Some("keyed-first-in-file"),
+        );
+        let sr = live_source_ref(&e, Path::new("C:\\mods\\MyMod")).expect("windows_form_projected");
+        assert_eq!(sr.file, "Languages/English/Keyed/K.xml", "{sr:?}");
+    }
+
+    /// Two ThingDefs whose defNames differ ONLY in case (`Dup` / `dup`) —
+    /// from two source files (defName collisions live in XML content, so
+    /// the fixture works on every filesystem).
+    fn case_collision_mod(root: &Path) {
+        write(
+            &root.join("Defs/A1.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>thing A</label></ThingDef></Defs>"#,
+        );
+        write(
+            &root.join("Defs/B1.xml"),
+            r#"<Defs><ThingDef><defName>dup</defName><label>thing B</label></ThingDef></Defs>"#,
+        );
     }
 
     fn two_types_mod(root: &Path) {
@@ -1409,6 +3454,872 @@ mod tests {
         let reopened = mgr.open(&snap.project_id).unwrap();
         assert_eq!(reopened.session_epoch, 2);
         assert_eq!(reopened.revision, 2);
+    }
+
+    // ---------- Glossary (wave 13) ----------
+
+    fn upsert_req(
+        pid: &str,
+        epoch: u64,
+        term: &str,
+        tr: &str,
+        note: Option<&str>,
+    ) -> crate::contract::ProjectGlossaryUpsertRequest {
+        crate::contract::ProjectGlossaryUpsertRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            term: term.into(),
+            translation: tr.into(),
+            note: note.map(|n| n.into()),
+        }
+    }
+
+    fn delete_req(
+        pid: &str,
+        epoch: u64,
+        term: &str,
+    ) -> crate::contract::ProjectGlossaryDeleteRequest {
+        crate::contract::ProjectGlossaryDeleteRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            term: term.into(),
+        }
+    }
+
+    #[test]
+    fn glossary_crud_cycle_case_insensitive_upsert_updates() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = snap.project_id.clone();
+        let epoch = snap.session_epoch;
+
+        // Create.
+        let r1 = mgr
+            .glossary_upsert(&upsert_req(
+                &pid,
+                epoch,
+                "scorched earth",
+                "выжженная земля",
+                Some("GW"),
+            ))
+            .unwrap();
+        assert_eq!(r1.revision, 2);
+        assert_eq!(r1.entry.term, "scorched earth");
+        assert!(!r1.entry.id.is_empty());
+
+        // Case-insensitive duplicate = UPDATE (stable id survives).
+        let r2 = mgr
+            .glossary_upsert(&upsert_req(
+                &pid,
+                epoch,
+                "  Scorched Earth  ",
+                "выжженные земли",
+                None,
+            ))
+            .unwrap();
+        assert_eq!(r2.entry.id, r1.entry.id);
+        assert_eq!(r2.entry.translation, "выжженные земли");
+        assert_eq!(r2.entry.note, None);
+        assert_eq!(r2.revision, 3);
+
+        let list = mgr.glossary_list(&pid, epoch).unwrap();
+        assert_eq!(list.len(), 1, "no duplicate entry");
+
+        // Delete by different casing.
+        let d = mgr
+            .glossary_delete(&delete_req(&pid, epoch, "SCORCHED EARTH"))
+            .unwrap();
+        assert_eq!(d.removed_id, r1.entry.id);
+        assert_eq!(d.revision, 4);
+        assert!(mgr.glossary_list(&pid, epoch).unwrap().is_empty());
+    }
+
+    #[test]
+    fn glossary_persists_across_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.glossary_upsert(&upsert_req(
+            &snap.project_id,
+            snap.session_epoch,
+            "term",
+            "перевод",
+            None,
+        ))
+        .unwrap();
+
+        // Durable: the envelope carries the glossary.
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        assert_eq!(loaded.project.glossary.len(), 1);
+        assert_eq!(loaded.project.glossary[0].term, "term");
+
+        let reopened = mgr.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.session_epoch, 2);
+        let list = mgr
+            .glossary_list(&snap.project_id, reopened.session_epoch)
+            .unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].translation, "перевод");
+    }
+
+    #[test]
+    fn glossary_epoch_guard_refuses_all_three_ops() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let stale = snap.session_epoch + 100;
+
+        assert!(matches!(
+            mgr.glossary_list(&snap.project_id, stale).unwrap_err().code,
+            crate::contract::ContractErrorCode::StaleEpoch
+        ));
+        assert!(matches!(
+            mgr.glossary_upsert(&upsert_req(&snap.project_id, stale, "a", "b", None))
+                .unwrap_err()
+                .code,
+            crate::contract::ContractErrorCode::StaleEpoch
+        ));
+        assert!(matches!(
+            mgr.glossary_delete(&delete_req(&snap.project_id, stale, "a"))
+                .unwrap_err()
+                .code,
+            crate::contract::ContractErrorCode::StaleEpoch
+        ));
+    }
+
+    #[test]
+    fn glossary_validation_refusals_never_bump_revision() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = snap.project_id.as_str();
+        let epoch = snap.session_epoch;
+
+        for bad in [
+            upsert_req(pid, epoch, "  ", "x", None),
+            upsert_req(pid, epoch, "x", " ", None),
+            upsert_req(pid, epoch, &"x".repeat(201), "y", None),
+            upsert_req(pid, epoch, "x", &"y".repeat(2001), None),
+            upsert_req(
+                pid,
+                epoch,
+                &"x".repeat(200),
+                &"y".repeat(2000),
+                Some(&"n".repeat(501)),
+            ),
+            upsert_req(pid, epoch, "a\nb", "y", None),
+            upsert_req(pid, epoch, "a\tb", "y", None),
+            upsert_req(pid, epoch, "x", "y", Some("n\u{7f}")),
+        ] {
+            let err = mgr.glossary_upsert(&bad).unwrap_err();
+            assert!(
+                matches!(
+                    err.code,
+                    crate::contract::ContractErrorCode::ContractViolation
+                ),
+                "{err}"
+            );
+        }
+        // Nothing changed: revision intact, list empty.
+        assert_eq!(mgr.glossary_list(pid, epoch).unwrap().len(), 0);
+        assert_eq!(mgr.snapshot(pid).unwrap().revision, 1);
+    }
+
+    #[test]
+    fn glossary_delete_unknown_term_is_typed_refusal() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let err = mgr
+            .glossary_delete(&delete_req(
+                &snap.project_id,
+                snap.session_epoch,
+                "no-such-term",
+            ))
+            .unwrap_err();
+        assert!(matches!(
+            err.code,
+            crate::contract::ContractErrorCode::ContractViolation
+        ));
+        assert!(err.message.contains("no-such-term"));
+    }
+
+    // ---------- Translation memory (TM live A+B+C) ----------
+
+    fn tm_upsert_req(
+        pid: &str,
+        epoch: u64,
+        source: &str,
+        target: &str,
+        locale: &str,
+        status: Option<rimloc_domain::tm::TmStatus>,
+    ) -> TmUpsertRequest {
+        TmUpsertRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            source_text: source.into(),
+            target_text: target.into(),
+            target_locale: locale.into(),
+            status,
+        }
+    }
+
+    fn tm_list_req(
+        pid: &str,
+        epoch: u64,
+        locale: Option<&str>,
+        query: Option<&str>,
+    ) -> TmListRequest {
+        TmListRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            locale: locale.map(str::to_string),
+            status: None,
+            query: query.map(str::to_string),
+        }
+    }
+
+    fn tm_lookup_req(
+        pid: &str,
+        epoch: u64,
+        source: &str,
+        locale: &str,
+        limit: Option<usize>,
+    ) -> TmLookupRequest {
+        TmLookupRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            source_text: source.into(),
+            target_locale: locale.into(),
+            limit,
+        }
+    }
+
+    fn tm_import_req(
+        pid: &str,
+        epoch: u64,
+        payload: &str,
+        format: Option<TmImportFormat>,
+    ) -> TmImportRequest {
+        TmImportRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            payload: payload.into(),
+            format,
+        }
+    }
+
+    fn tm_fixture() -> (tempfile::TempDir, ProjectSessionManager, String, u64) {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        (dir, mgr, snap.project_id, snap.session_epoch)
+    }
+
+    /// C = manual CRUD: upsert mints a MANUAL record (default ACCEPTED),
+    /// an explicit status is honored (including a deliberate downgrade —
+    /// the human decides), an update keeps the stable id, an unknown-id
+    /// delete is a typed refusal, and everything survives a full restart
+    /// (a SECOND manager over the same managed root sees the records).
+    #[test]
+    fn tm_crud_roundtrip_and_restart_persistence() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+
+        let res = mgr
+            .tm_upsert(&tm_upsert_req(
+                &pid,
+                epoch,
+                "  Save game ",
+                "Сохранить игру",
+                "Russian",
+                None,
+            ))
+            .unwrap();
+        assert_eq!(
+            res.entry.provenance,
+            rimloc_domain::tm::TmProvenance::Manual
+        );
+        assert_eq!(res.entry.status, rimloc_domain::tm::TmStatus::Accepted);
+        assert_eq!(res.revision, 2);
+        let id = res.entry.id.clone();
+
+        // Update in place: same key, stable id, explicit status honored.
+        let res2 = mgr
+            .tm_upsert(&tm_upsert_req(
+                &pid,
+                epoch,
+                "Save game",
+                "Сохранить игру.",
+                "Russian",
+                Some(rimloc_domain::tm::TmStatus::Reviewed),
+            ))
+            .unwrap();
+        assert_eq!(res2.entry.id, id, "stable id survives the upsert");
+        assert_eq!(res2.entry.status, rimloc_domain::tm::TmStatus::Reviewed);
+
+        // Unknown-id delete is a typed refusal.
+        let err = mgr
+            .tm_delete(&TmDeleteRequest {
+                project_id: pid.clone(),
+                session_epoch: epoch,
+                id: "op-does-not-exist".into(),
+            })
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+
+        // Restart: a fresh manager over the same managed root reloads the
+        // TM from the project envelope.
+        let mgr2 = ProjectSessionManager::new(mgr.managed_root()).unwrap();
+        let snap2 = mgr2.open(&pid).unwrap();
+        let list = mgr2
+            .tm_list(&tm_list_req(
+                &pid,
+                snap2.session_epoch,
+                Some("Russian"),
+                None,
+            ))
+            .unwrap();
+        assert_eq!(list.total, 1);
+        assert_eq!(list.entries.len(), 1);
+        assert_eq!(list.entries[0].id, id);
+        assert_eq!(list.entries[0].target_text, "Сохранить игру.");
+
+        // Delete acks and removes.
+        let del = mgr2
+            .tm_delete(&TmDeleteRequest {
+                project_id: pid.clone(),
+                session_epoch: snap2.session_epoch,
+                id,
+            })
+            .unwrap();
+        assert_eq!(del.revision, snap2.revision + 1);
+        assert!(mgr2
+            .tm_list(&tm_list_req(&pid, snap2.session_epoch, None, None))
+            .unwrap()
+            .entries
+            .is_empty());
+    }
+
+    /// Locale isolation is MANDATORY: a lookup/list in one locale never
+    /// returns records of another, even when the source texts are
+    /// identical.
+    #[test]
+    fn tm_locale_isolation_in_lookup_and_list() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "Save game",
+            "Сохранить игру",
+            "Russian",
+            None,
+        ))
+        .unwrap();
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "Save game",
+            "Sauvegarder",
+            "French",
+            None,
+        ))
+        .unwrap();
+
+        let ru = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "Russian", None))
+            .unwrap();
+        assert_eq!(ru.matches.len(), 1);
+        assert_eq!(ru.matches[0].match_kind, "exact");
+        assert_eq!(ru.matches[0].entry.target_text, "Сохранить игру");
+
+        let fr = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "French", None))
+            .unwrap();
+        assert_eq!(fr.matches.len(), 1);
+        assert_eq!(fr.matches[0].entry.target_text, "Sauvegarder");
+
+        // An unrecorded locale sees nothing.
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "German", None))
+            .unwrap()
+            .matches
+            .is_empty());
+
+        // List filter isolates the same way; total stays unfiltered.
+        let list = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        assert_eq!(list.entries.len(), 1);
+        assert_eq!(list.total, 2);
+    }
+
+    /// Lookup tiers: exact → normalized → bounded fuzzy; trust rank breaks
+    /// ties (REVIEWED > ACCEPTED > DRAFT); fuzzy refuses beyond the bound.
+    #[test]
+    fn tm_lookup_tiers_and_rank_priority() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+        // Two records whose sources collide ONLY after normalization;
+        // different trust ranks.
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "save  game",
+            "сохранить (черновик)",
+            "Russian",
+            Some(rimloc_domain::tm::TmStatus::Draft),
+        ))
+        .unwrap();
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "Save Game",
+            "Сохранить игру",
+            "Russian",
+            Some(rimloc_domain::tm::TmStatus::Reviewed),
+        ))
+        .unwrap();
+
+        // Normalized hit ranks the REVIEWED record first.
+        let res = mgr
+            .tm_lookup(&tm_lookup_req(
+                &pid,
+                epoch,
+                "  SAVE   GAME ",
+                "Russian",
+                None,
+            ))
+            .unwrap();
+        assert_eq!(res.matches.len(), 2);
+        assert!(res.matches.iter().all(|m| m.match_kind == "normalized"));
+        assert_eq!(
+            res.matches[0].entry.status,
+            rimloc_domain::tm::TmStatus::Reviewed
+        );
+        assert_eq!(res.matches[0].entry.target_text, "Сохранить игру");
+
+        // Fuzzy within the bound ("save game" vs "save gane" = 1 edit).
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "save gane",
+            "сохранить игрy (typo target)",
+            "Russian",
+            Some(rimloc_domain::tm::TmStatus::Accepted),
+        ))
+        .unwrap();
+        let fuzzy = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "save game", "Russian", None))
+            .unwrap();
+        // The normalized twins still outrank the fuzzy candidate.
+        assert_eq!(fuzzy.matches[0].match_kind, "normalized");
+        let fuzzy_hit = fuzzy
+            .matches
+            .iter()
+            .find(|m| m.match_kind == "fuzzy")
+            .expect("fuzzy candidate within threshold");
+        assert_eq!(fuzzy_hit.distance, Some(1));
+
+        // Beyond the bound there is no match at all.
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(
+                &pid,
+                epoch,
+                "a completely unrelated long sentence about thermodynamics",
+                "Russian",
+                None
+            ))
+            .unwrap()
+            .matches
+            .is_empty());
+
+        // limit is honored (default 5, clamped).
+        let capped = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "save game", "Russian", Some(1)))
+            .unwrap();
+        assert_eq!(capped.matches.len(), 1);
+    }
+
+    /// B = import: JSON and CSV both land as IMPORT/DRAFT by default, an
+    /// explicit row status IS honored, stronger existing records are never
+    /// weakened, form-broken rows are counted as rejected, and a payload
+    /// that parses as neither format is a whole-operation typed refusal.
+    #[test]
+    fn tm_import_json_csv_policies_and_broken_input() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+
+        // JSON: fresh keys, one explicit status, one broken row (no locale).
+        let json = r#"[
+            {"source": "Save game", "target": "Сохранить игру", "locale": "Russian"},
+            {"source": "Load game", "target": "Загрузить игру", "locale": "Russian", "status": "reviewed"},
+            {"source": "No locale", "target": "нет локали"},
+            {"source": "", "target": "пустой source", "locale": "Russian"}
+        ]"#;
+        let res = mgr
+            .tm_import(&tm_import_req(&pid, epoch, json, None))
+            .unwrap();
+        assert_eq!(res.imported, 2);
+        assert_eq!(res.rejected, 2);
+        assert_eq!(res.revision, 2);
+
+        let list = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        let by_source: std::collections::HashMap<
+            String,
+            &rimloc_domain::tm::TranslationMemoryEntry,
+        > = list
+            .entries
+            .iter()
+            .map(|e| (e.source_text.clone(), e))
+            .collect();
+        assert_eq!(
+            by_source["Save game"].status,
+            rimloc_domain::tm::TmStatus::Draft,
+            "import without explicit status is DRAFT (never trusted blindly)"
+        );
+        assert_eq!(
+            by_source["Save game"].provenance,
+            rimloc_domain::tm::TmProvenance::Import
+        );
+        assert_eq!(
+            by_source["Load game"].status,
+            rimloc_domain::tm::TmStatus::Reviewed
+        );
+
+        // CSV with header + quoted fields: equal-rank DRAFT is refreshed,
+        // stronger REVIEWED is skipped, a quoted comma field parses whole.
+        let csv = "source,target,locale,status\n\
+                   \"Save game\",\"Сохранить игру (обновлено)\",Russian,draft\n\
+                   Load game,Загрузить (сильнее),Russian,accepted\n\
+                   \"Extra, key\",\"в кавычках, с запятой\",Russian,draft\n";
+        let res2 = mgr
+            .tm_import(&tm_import_req(&pid, epoch, csv, Some(TmImportFormat::Csv)))
+            .unwrap();
+        assert_eq!(res2.updated, 1, "equal-rank DRAFT refreshed");
+        assert_eq!(res2.skipped, 1, "REVIEWED never weakened by import");
+        assert_eq!(res2.imported, 1, "quoted-comma key lands whole");
+        let after = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        let save = after
+            .entries
+            .iter()
+            .find(|e| e.source_text == "Save game")
+            .unwrap();
+        assert_eq!(save.target_text, "Сохранить игру (обновлено)");
+        assert_eq!(save.status, rimloc_domain::tm::TmStatus::Draft);
+        let load = after
+            .entries
+            .iter()
+            .find(|e| e.source_text == "Load game")
+            .unwrap();
+        assert_eq!(load.target_text, "Загрузить игру", "REVIEWED kept");
+
+        // Broken JSON is a whole-operation typed refusal that changes
+        // nothing.
+        let before = mgr
+            .tm_list(&tm_list_req(&pid, epoch, None, None))
+            .unwrap()
+            .total;
+        let err = mgr
+            .tm_import(&tm_import_req(&pid, epoch, "{ not json", None))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+        assert!(
+            err.message.contains("not valid JSON"),
+            "honest parse message: {}",
+            err.message
+        );
+        // JSON of the wrong SHAPE (not an array) is the same refusal class.
+        let err = mgr
+            .tm_import(&tm_import_req(&pid, epoch, "{\"source\": \"x\"}", None))
+            .unwrap_err();
+        assert!(err.message.contains("ARRAY"), "{}", err.message);
+        // Empty payload.
+        let err = mgr
+            .tm_import(&tm_import_req(&pid, epoch, "   ", None))
+            .unwrap_err();
+        assert!(err.message.contains("empty"), "{}", err.message);
+        assert_eq!(
+            mgr.tm_list(&tm_list_req(&pid, epoch, None, None))
+                .unwrap()
+                .total,
+            before,
+            "a refused import never touches the state"
+        );
+    }
+
+    /// A = auto-accumulation rides ONLY the acked accept
+    /// (`project_apply_intents`): accepted set_translation lands as
+    /// AUTO/ACCEPTED; skipped intents, cancels, todo/clear and refused
+    /// operations never accumulate; re-accepting the same text is a no-op;
+    /// a NEW accepted target overwrites a weaker record; a REVIEWED record
+    /// is never weakened.
+    #[test]
+    fn tm_auto_accumulation_on_accepted_apply_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = &snap.project_id;
+        let epoch = snap.session_epoch;
+
+        let list = |m: &ProjectSessionManager, e: u64| {
+            m.tm_list(&tm_list_req(pid, e, None, None)).unwrap()
+        };
+
+        // Accepted set_translation accumulates (source from the inventory,
+        // revision bumped once, record AUTO/ACCEPTED).
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                1,
+                vec![set_text("Dup.label", "ThingDef", "вещь")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+        let l = list(&mgr, epoch);
+        assert_eq!(l.entries.len(), 1);
+        assert_eq!(
+            l.entries[0].provenance,
+            rimloc_domain::tm::TmProvenance::Auto
+        );
+        assert_eq!(l.entries[0].status, rimloc_domain::tm::TmStatus::Accepted);
+        assert_eq!(l.entries[0].source_text, "thing label");
+        assert_eq!(l.entries[0].target_text, "вещь");
+
+        // A SKIPPED intent (unknown identity) does NOT accumulate.
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                res.revision,
+                vec![set_text("NoSuchKey.label", "ThingDef", "призрак")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 0);
+        assert_eq!(list(&mgr, epoch).entries.len(), 1);
+
+        // mark_todo / clear_translation never accumulate.
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                res.revision,
+                vec![
+                    intent("Dup.label", "AbilityDef", None, IntentAction::MarkTodo),
+                    intent(
+                        "Dup.label",
+                        "AbilityDef",
+                        None,
+                        IntentAction::ClearTranslation,
+                    ),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 2);
+        assert_eq!(list(&mgr, epoch).entries.len(), 1);
+
+        // Re-accepting the same translation: no duplicate, no rewrite.
+        let rev_before = list(&mgr, epoch).entries.len();
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                res.revision,
+                vec![set_text("Dup.label", "ThingDef", "вещь")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+        assert_eq!(list(&mgr, epoch).entries.len(), rev_before);
+
+        // A NEW accepted target overwrites the weaker (auto) record.
+        mgr.apply(&req(
+            pid,
+            epoch,
+            res.revision,
+            vec![set_text("Dup.label", "ThingDef", "вещь v2")],
+        ))
+        .unwrap();
+        let l = list(&mgr, epoch);
+        assert_eq!(l.entries.len(), 1);
+        assert_eq!(l.entries[0].target_text, "вещь v2");
+        assert_eq!(
+            l.entries[0].provenance,
+            rimloc_domain::tm::TmProvenance::Auto
+        );
+
+        // A REVIEWED record is never weakened by auto-accumulation.
+        mgr.tm_upsert(&tm_upsert_req(
+            pid,
+            epoch,
+            "thing label",
+            "вещь (ручная)",
+            "Russian",
+            Some(rimloc_domain::tm::TmStatus::Reviewed),
+        ))
+        .unwrap();
+        mgr.apply(&req(
+            pid,
+            epoch,
+            mgr.snapshot(pid).unwrap().revision,
+            vec![set_text("Dup.label", "ThingDef", "вещь v3")],
+        ))
+        .unwrap();
+        let l = list(&mgr, epoch);
+        assert_eq!(l.entries.len(), 1);
+        assert_eq!(l.entries[0].target_text, "вещь (ручная)");
+        assert_eq!(l.entries[0].status, rimloc_domain::tm::TmStatus::Reviewed);
+
+        // Cancelled apply: nothing lands (cancel_next covers the batch).
+        mgr.cancel_next(pid).unwrap();
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                mgr.snapshot(pid).unwrap().revision,
+                vec![set_text("Dup.label", "AbilityDef", "способность")],
+            ))
+            .unwrap();
+        assert!(res.cancelled);
+        assert_eq!(list(&mgr, epoch).entries.len(), 1);
+    }
+
+    /// Source-update behavior (documented contract): the TM record is
+    /// keyed by source TEXT, so when the source changes the old record
+    /// stays (ages) and the NEW source is a lookup miss until it is
+    /// translated again.
+    #[test]
+    fn tm_source_update_ages_the_old_record() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+
+        // Seed the memory with the OLD source wording.
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "assault rifle",
+            "штурмовая винтовка",
+            "Russian",
+            None,
+        ))
+        .unwrap();
+
+        // The source text changed upstream (a new mod version). The record
+        // is still THERE (aged, maybe useful), but the new source is a
+        // miss.
+        let aged = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        assert_eq!(aged.total, 1, "the old record stays, never deleted");
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(
+                &pid,
+                epoch,
+                "assault rifle mk2",
+                "Russian",
+                None
+            ))
+            .unwrap()
+            .matches
+            .is_empty());
+        // ...within the fuzzy bound it can still surface as a hint — that
+        // is the point of a memory (threshold for a 19-char query is 2;
+        // "assault rifle mk2" is 4 edits away — a MISS here by design).
+        assert!(
+            mgr.tm_lookup(&tm_lookup_req(&pid, epoch, "assault rifl", "Russian", None))
+                .unwrap()
+                .matches
+                .len()
+                == 1,
+            "close typo still finds the aged record"
+        );
+
+        // A different source key coexists: no merge, no overwrite.
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "assault rifle mk2",
+            "штурмовая винтовка mk2",
+            "Russian",
+            None,
+        ))
+        .unwrap();
+        assert_eq!(
+            mgr.tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+                .unwrap()
+                .total,
+            2
+        );
+    }
+
+    /// Pure helper coverage: CSV tokenizer (quotes/escapes/CRLF), JSON row
+    /// aliases, and the fuzzy rank ordering.
+    #[test]
+    fn tm_parse_helpers_csv_json_and_ranking() {
+        let rows =
+            parse_tm_csv_rows("source,target,locale,status\r\n\"a,\"\"b\"\",c\",d,Russian,\r\n");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].source, "a,\"b\",c");
+        assert_eq!(rows[0].target, "d");
+        assert_eq!(rows[0].locale.as_deref(), Some("Russian"));
+        assert_eq!(rows[0].status, None, "empty status cell = absent");
+
+        let rows = parse_tm_rows(
+            r#"[{"source_text": "x", "target_text": "y", "target_locale": "Russian", "status": "draft"}]"#,
+            Some(TmImportFormat::Json),
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].source, "x");
+        assert_eq!(rows[0].status.as_deref(), Some("draft"));
+
+        // Headerless CSV without status column.
+        let rows = parse_tm_rows("hello,привет,Russian\n", None).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].locale.as_deref(), Some("Russian"));
+
+        // Rank ordering: tier first, then distance, then rank, then order.
+        use rimloc_domain::tm::{TmProvenance, TranslationMemoryEntry};
+        let mk = |i: &str, s: &str, st: TmStatus| TranslationMemoryEntry {
+            id: i.into(),
+            source_text: s.into(),
+            target_text: "t".into(),
+            target_locale: "Russian".into(),
+            status: st,
+            provenance: TmProvenance::Manual,
+        };
+        let tm = vec![
+            mk("d1", "save gane", TmStatus::Reviewed),  // fuzzy d=1
+            mk("n1", "Save Game", TmStatus::Draft),     // normalized
+            mk("n2", "save  game", TmStatus::Reviewed), // normalized, ranked
+            mk("f1", "save_game", TmStatus::Accepted),  // fuzzy d=1
+        ];
+        let matches = tm_ranked_matches(&tm, "save game", "Russian", 10);
+        assert_eq!(matches[0].entry.id, "n2", "normalized reviewed first");
+        assert_eq!(matches[1].entry.id, "n1", "normalized draft second");
+        // Fuzzy d=1 pair: rank breaks the tie (Accepted over Reviewed is
+        // WRONG — reviewed wins).
+        assert_eq!(
+            matches[2].entry.id, "d1",
+            "fuzzy reviewed outranks accepted"
+        );
+        assert_eq!(matches[2].distance, Some(1));
+        assert_eq!(matches[3].entry.id, "f1");
     }
 
     /// Stale epoch and stale revision are distinct typed errors, and a
@@ -1535,14 +4446,17 @@ mod tests {
 
         // External writer (another process) bumps the file to revision 9.
         let path = mgr.managed_path(&snap.project_id).unwrap();
-        let external = load_project_with_meta(&path).unwrap().project;
+        let external = load_project_with_meta(&path).unwrap();
         let meta = ProjectEnvelopeMeta {
             project_id: Some(snap.project_id.clone()),
             revision: Some(9),
             display_name: Some("external".into()),
             source_root: Some(mod_root.to_string_lossy().into_owned()),
+            // The recorded fingerprint is durable state an outside writer
+            // bumps only alongside the content it describes.
+            source_fingerprint: external.meta.source_fingerprint.clone(),
         };
-        save_project_with_meta(&external, &meta, &path).unwrap();
+        save_project_with_meta(&external.project, &meta, &path).unwrap();
 
         let err = mgr
             .apply(&req(
@@ -1943,6 +4857,116 @@ mod tests {
             .exists());
     }
 
+    /// Build-mod wave: the FULL drop-in package from the session state —
+    /// the Languages tree plus `About/About.xml` in the CLI build-mod
+    /// `<ModMetaData>` shape, reparse-verified with the same counters.
+    #[test]
+    fn build_mod_package_is_reparse_verified() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "вещь")],
+        ))
+        .unwrap();
+
+        let out = dir.path().join("mod-package");
+        let res = mgr
+            .build_mod_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap();
+        assert!(
+            res.files_written >= 2,
+            "About.xml + DefInjected file, {res:?}"
+        );
+        assert_eq!(res.reparsed_keys, 1, "one translated key reparsed");
+        assert!(res.skipped_unknown_type.is_empty());
+        assert!(out
+            .join("Languages/Russian/DefInjected/ThingDef/Dup.xml")
+            .exists());
+        // The manifest is the game-loadable build-mod shape, with the
+        // restricted-charset packageId slug and the project's target version.
+        let about = std::fs::read_to_string(out.join("About/About.xml")).unwrap();
+        assert!(about.contains("<ModMetaData>"), "{about}");
+        assert!(about.contains("rimloc."), "{about}");
+        assert!(about.contains("<li>1.6</li>"), "{about}");
+    }
+
+    /// Build-mod guard partition (copy of the export partition): an out dir
+    /// inside the read-only source tree is a typed guard_output_denied.
+    #[test]
+    fn build_mod_into_source_tree_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let out_inside = mod_root.join("Translation");
+        let err = mgr
+            .build_mod_project(&snap_of_create(&mgr, &mod_root), 1, &out_inside, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// Build-mod guard partition: a symlink ALIAS into the source tree
+    /// resolves through the link and gets the same verdict (K4,
+    /// deny-direction containment via the canonical view). Unix-only.
+    #[test]
+    #[cfg(unix)]
+    fn build_mod_symlink_alias_into_source_tree_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let alias = dir.path().join("alias-package");
+        std::os::unix::fs::symlink(&mod_root, &alias).expect("symlink");
+        let err = mgr
+            .build_mod_project(&snap_of_create(&mgr, &mod_root), 1, &alias, "Russian")
+            .unwrap_err();
+        assert_eq!(
+            err.code,
+            ContractErrorCode::GuardOutputDenied,
+            "a symlink alias into the source tree must be denied, not just the direct absolute path"
+        );
+    }
+
+    /// Build-mod guard partition: a RELATIVE out dir is a typed
+    /// invalid_output_path refusal BEFORE anything is written, and the
+    /// managed-root target is denied like on export.
+    #[test]
+    fn build_mod_relative_out_dir_is_rejected_before_any_write() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+        for out in ["RimLoc-Package", "out/../pkg"] {
+            let err = mgr
+                .build_mod_project(&snap.project_id, 1, Path::new(out), "Russian")
+                .unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::InvalidOutputPath,
+                "[{out}] {err}"
+            );
+            assert!(!cwd.join(out).exists(), "[{out}] no side effects in CWD");
+        }
+        let err = mgr
+            .build_mod_project(&snap.project_id, 1, &managed.join("pkg"), "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
     /// Build wave guard: an out dir inside the read-only source tree is a
     /// typed guard_output_denied rejection.
     #[test]
@@ -1958,6 +4982,98 @@ mod tests {
             .export_project(&snap_of_create(&mgr, &mod_root), 1, &out_inside, "Russian")
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// K4 closeout: the containment guard authorizes the DESTINATION, not
+    /// the path's surface form. An out dir that is itself a symlink ALIAS
+    /// into the read-only source tree must resolve through the link and
+    /// receive the same guard_output_denied verdict as the direct
+    /// inside-source path (deny-direction containment via the real
+    /// canonical view — `is_within`). Unix-only: needs real symlinks.
+    #[test]
+    #[cfg(unix)]
+    fn symlink_out_dir_into_source_tree_is_denied() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let alias = dir.path().join("alias-out");
+        std::os::unix::fs::symlink(&mod_root, &alias).expect("symlink");
+        assert!(
+            alias.exists(),
+            "alias must resolve for the test to be meaningful"
+        );
+
+        let err = mgr
+            .export_project(&snap_of_create(&mgr, &mod_root), 1, &alias, "Russian")
+            .unwrap_err();
+        assert_eq!(
+            err.code,
+            ContractErrorCode::GuardOutputDenied,
+            "a symlink alias into the source tree must be denied, not just the direct absolute path"
+        );
+    }
+
+    /// Path-FORM guard (invalid_output_path): a RELATIVE out dir is a
+    /// typed refusal BEFORE any guard, canonicalization or write — the
+    /// built-app `…/RimLoc-Export/…` shape must never silently land
+    /// relative to the process CWD. Absolute targets keep the existing
+    /// semantics: an allowed absolute dir exports end-to-end, and an
+    /// absolute `..` traversal resolving into the source tree still hits
+    /// the containment guard_output_denied.
+    #[test]
+    fn relative_out_dirs_are_rejected_before_any_write() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let cwd = std::env::current_dir().unwrap();
+        let relative = [
+            "RimLoc-Export",
+            "…/RimLoc-Export/proj-x-Russian",
+            "out/../more",
+        ];
+        for out in relative {
+            let err = mgr
+                .export_project(&snap.project_id, 1, Path::new(out), "Russian")
+                .unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::InvalidOutputPath,
+                "[{out}] {err}"
+            );
+            // No filesystem side effects in the process CWD.
+            assert!(!cwd.join(out).exists(), "[{out}]");
+            // Same form refusal on the diagnose (bundle) entry.
+            let err = mgr.diagnose(&snap.project_id, Path::new(out)).unwrap_err();
+            assert_eq!(
+                err.code,
+                ContractErrorCode::InvalidOutputPath,
+                "[diagnose {out}] {err}"
+            );
+        }
+
+        // An ABSOLUTE out dir outside the source/managed roots still
+        // exports end-to-end.
+        let out_abs = dir.path().join("export-out");
+        let res = mgr
+            .export_project(&snap.project_id, 1, &out_abs, "Russian")
+            .unwrap();
+        assert!(res.files_written >= 1);
+
+        // `..` INSIDE an absolute path keeps the containment semantics:
+        // `<source>/Sub/..` resolves back into (or fails to resolve away
+        // from) the read-only source root → the existing
+        // guard_output_denied still fires.
+        let out_traverse = mod_root.join("Sub").join("..");
+        let err = mgr
+            .export_project(&snap.project_id, 1, &out_traverse, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied, "{err}");
     }
 
     /// P1-2 security regression: client locales are joined into
@@ -2038,6 +5154,7 @@ mod tests {
             revision: loaded.meta.revision,
             display_name: loaded.meta.display_name.clone(),
             source_root: None,
+            source_fingerprint: None,
         };
         save_project_with_meta(&loaded.project, &legacy, &path).unwrap();
 
@@ -2112,6 +5229,206 @@ mod tests {
         .unwrap();
     }
 
+    // ------------------------------------------------------------------
+    // M3: source-drift detection (fingerprint recorded in the envelope,
+    // verdict evaluated at session (re)start, surfaced on snapshot and
+    // validate).
+    // ------------------------------------------------------------------
+
+    /// M3: the source the inventory was built from changed between
+    /// sessions (edit + added file, harness "sourcedrift") — a fresh
+    /// manager's open honestly marks the drift, and validate carries the
+    /// source-drift finding (a warning: the project still validates
+    /// against its own inventory).
+    #[test]
+    fn source_drift_detected_on_reopen_and_validate() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert_eq!(snap.source_changed, Some(false));
+
+        // Source rewrite: edit one Def's text, add another.
+        write(
+            &mod_root.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>CHANGED label</label></ThingDef></Defs>"#,
+        );
+        write(
+            &mod_root.join("Defs/C_New.xml"),
+            r#"<Defs><ThingDef><defName>NewThing</defName><label>new</label></ThingDef></Defs>"#,
+        );
+
+        // "App restart": a fresh manager reopens and re-evaluates.
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, Some(true));
+
+        let v = mgr2
+            .validate_project(&reopened.project_id, reopened.session_epoch, None)
+            .unwrap();
+        assert_eq!(v.status, "succeeded", "drift is a warning, not a failure");
+        assert!(v.findings.iter().any(|f| f.kind == "source-drift"), "{v:?}");
+        assert_eq!(v.warning_count, 1);
+    }
+
+    /// M3: unchanged source stays in sync across restart and refresh —
+    /// no drift finding on validate.
+    #[test]
+    fn no_drift_when_source_unchanged() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "метка")],
+        ))
+        .unwrap();
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, Some(false));
+        let v = mgr2
+            .validate_project(&reopened.project_id, reopened.session_epoch, None)
+            .unwrap();
+        assert!(
+            !v.findings.iter().any(|f| f.kind == "source-drift"),
+            "{v:?}"
+        );
+
+        // refresh is a session (re)start too — still in sync.
+        let refreshed = mgr2.refresh(&reopened.project_id).unwrap();
+        assert_eq!(refreshed.source_changed, Some(false));
+    }
+
+    /// M3: refresh re-evaluates the verdict without a fresh manager — a
+    /// source edit then refresh flips it to drifted.
+    #[test]
+    fn refresh_reevaluates_drift() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert_eq!(snap.source_changed, Some(false));
+
+        write(
+            &mod_root.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>REWRITTEN</label></ThingDef></Defs>"#,
+        );
+        let refreshed = mgr.refresh(&snap.project_id).unwrap();
+        assert_eq!(refreshed.source_changed, Some(true));
+    }
+
+    /// M3: an applied edit does NOT rewrite the recorded fingerprint —
+    /// the envelope keeps describing the SOURCE, not the session.
+    #[test]
+    fn apply_keeps_recorded_fingerprint() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let recorded = load_project_with_meta(&path)
+            .unwrap()
+            .meta
+            .source_fingerprint;
+        assert!(recorded.is_some(), "create records the fingerprint");
+
+        mgr.apply(&req(
+            &snap.project_id,
+            1,
+            1,
+            vec![set_text("Dup.label", "ThingDef", "метка")],
+        ))
+        .unwrap();
+        let after = load_project_with_meta(&path)
+            .unwrap()
+            .meta
+            .source_fingerprint;
+        assert_eq!(after, recorded);
+    }
+
+    /// M3: a legacy envelope (no recorded fingerprint) stays UNKNOWN —
+    /// `None`, never a false "in sync" — and validate carries no drift
+    /// finding for it.
+    #[test]
+    fn legacy_envelope_drift_is_unknown() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let path = mgr.managed_path(&snap.project_id).unwrap();
+        let loaded = load_project_with_meta(&path).unwrap();
+        let legacy = ProjectEnvelopeMeta {
+            project_id: loaded.meta.project_id.clone(),
+            revision: loaded.meta.revision,
+            display_name: loaded.meta.display_name.clone(),
+            source_root: Some(mod_root.to_string_lossy().into_owned()),
+            source_fingerprint: None,
+        };
+        save_project_with_meta(&loaded.project, &legacy, &path).unwrap();
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, None);
+        let v = mgr2
+            .validate_project(&reopened.project_id, reopened.session_epoch, None)
+            .unwrap();
+        assert!(
+            !v.findings.iter().any(|f| f.kind == "source-drift"),
+            "{v:?}"
+        );
+    }
+
+    /// M3: LoadFolders rollback (1.6 → 1.5-only manifest) between
+    /// sessions is visible drift at reopen (harness "cases" shape).
+    #[test]
+    fn loadfolders_rollback_is_drift_on_reopen() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        write(
+            &mod_root.join("LoadFolders.xml"),
+            "<loadFolders><v1.6><li>/</li><li>Common16</li></v1.6>\
+             <v1.5><li>/</li><li>Common15</li></v1.5></loadFolders>",
+        );
+        write(
+            &mod_root.join("Defs/A.xml"),
+            r#"<Defs><ThingDef><defName>Dup</defName><label>label</label></ThingDef></Defs>"#,
+        );
+        write(
+            &mod_root.join("Common16/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>16</K1></LanguageData>",
+        );
+        write(
+            &mod_root.join("Common15/Languages/Russian/Keyed/K.xml"),
+            "<LanguageData><K1>15</K1></LanguageData>",
+        );
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        // Roll the manifest back to 1.5-only.
+        write(
+            &mod_root.join("LoadFolders.xml"),
+            "<loadFolders><v1.5><li>/</li><li>Common15</li></v1.5></loadFolders>",
+        );
+
+        let mgr2 = ProjectSessionManager::new(&managed).unwrap();
+        let reopened = mgr2.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_changed, Some(true));
+    }
+
     /// The managed-projects root is a protected write target too: export
     /// artifacts never land next to the durable records.
     #[test]
@@ -2126,6 +5443,52 @@ mod tests {
             .export_project(&snap.project_id, 1, &managed.join("out"), "Russian")
             .unwrap_err();
         assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+    }
+
+    /// M-7 (live audit 2026-09-30): the snapshot carries the read-only
+    /// source root so the Project tab renders the REAL mod location on a
+    /// live project — never a template placeholder. An empty session root
+    /// (bare/legacy) must surface as None (honest unknown).
+    #[test]
+    fn snapshot_exposes_source_root() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        assert_eq!(
+            snap.source_root.as_ref().map(|p| p.path.as_str()),
+            Some(mod_root.to_str().unwrap())
+        );
+
+        // Reopen restores the same root from the durable envelope (H5).
+        let reopened = mgr.open(&snap.project_id).unwrap();
+        assert_eq!(reopened.source_root, snap.source_root);
+    }
+
+    /// An empty mod_root (legacy/bare session) never fabricates a path:
+    /// `None` is the honest unknown the UI renders as «—».
+    #[test]
+    fn snapshot_source_root_none_on_empty_root() {
+        let st = SessionState {
+            path: PathBuf::from("/nonexistent/managed/mock.json"),
+            display_name: "legacy".into(),
+            mod_root: PathBuf::new(), // bare root: honest-unknown case
+            target_version: None,
+            epoch: 1,
+            revision: 1,
+            acked_revision: 1,
+            project: Project::default(),
+            disk_hash: None,
+            dirty: false,
+            cancel_requested: false,
+            last_failed_operation: None,
+            last_failed_affected: Vec::new(),
+            source_fingerprint: None,
+            source_changed: None,
+        };
+        let snap = snapshot_of("legacy-0001", &st);
+        assert!(snap.source_root.is_none());
     }
 
     /// P2-4 (backend half): the snapshot exposes the dirty flag and the
@@ -2256,7 +5619,15 @@ mod tests {
     #[test]
     fn export_about_xml_is_escaped_and_package_id_is_a_slug() {
         let dir = tempfile::tempdir().unwrap();
-        let mod_root = dir.path().join("My Mod & <Test>");
+        // Hostile name: `<`/`>` are legal folder characters on unix but
+        // ILLEGAL on NTFS (os error 123), so Windows gets an NTFS-legal
+        // but still XML-hostile spelling; the assertions below follow the
+        // same split and keep the slug identical on both platforms.
+        #[cfg(windows)]
+        let (mod_name, mod_name_escaped) = ("My Mod & Test", "My Mod &amp; Test");
+        #[cfg(not(windows))]
+        let (mod_name, mod_name_escaped) = ("My Mod & <Test>", "My Mod &amp; &lt;Test&gt;");
+        let mod_root = dir.path().join(mod_name);
         two_types_mod(&mod_root);
         let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
@@ -2275,9 +5646,9 @@ mod tests {
         assert_eq!(res.reparsed_keys, 1);
 
         let about = std::fs::read_to_string(out.join("About/About.xml")).unwrap();
-        assert!(about.contains("My Mod &amp; &lt;Test&gt;"), "{about}");
+        assert!(about.contains(mod_name_escaped), "{about}");
         assert!(
-            !about.contains("My Mod & <Test>"),
+            !about.contains(mod_name),
             "raw special chars must not survive: {about}"
         );
         let id_start = about.find("<packageId>").unwrap() + "<packageId>".len();
@@ -2319,5 +5690,538 @@ mod tests {
         assert!(mgr2.list().is_empty());
         // ...and a raw bytes view remains possible: the file still exists.
         assert!(path.is_file());
+    }
+
+    /// M4: defNames differing only by case (`Dup`/`dup`, same def type)
+    /// collide into ONE DefInjected output file on case-insensitive
+    /// filesystems. Export refuses deterministically on EVERY filesystem
+    /// (the old reparse guard only caught this on such a filesystem, and on
+    /// a case-sensitive one the collision shipped to players); validate
+    /// surfaces the pair early as a warning finding.
+    #[test]
+    fn export_refuses_defname_case_collisions_and_validate_warns() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        case_collision_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let res = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![
+                    set_text("Dup.label", "ThingDef", "вещь А"),
+                    set_text("dup.label", "ThingDef", "вещь Б"),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 2, "both case-distinct identities must exist");
+
+        // Validate: honest early signal — warning, does not fail the run.
+        let resp = mgr.validate_project(&snap.project_id, 1, None).unwrap();
+        let hit = resp
+            .findings
+            .iter()
+            .find(|f| f.kind == "case-collision")
+            .expect("case-collision finding expected");
+        assert_eq!(hit.severity, "warning");
+        assert_eq!(hit.path, "DefInjected/ThingDef");
+        assert!(
+            hit.message.contains("Dup") && hit.message.contains("dup"),
+            "{}",
+            hit.message
+        );
+
+        // Export: typed refusal naming both spellings — never a silent
+        // one-file overwrite, never a shipped collision.
+        let out = dir.path().join("out");
+        let err = mgr
+            .export_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+        let msg = err.to_string();
+        assert!(msg.contains("case"), "{msg}");
+        assert!(msg.contains("Dup") && msg.contains("dup"), "{msg}");
+        assert!(
+            !out.join("Languages").exists(),
+            "nothing written on refusal"
+        );
+
+        // A cross-locale pair (same spelling pair, different locales) never
+        // shares one export file — no finding when the locales differ.
+    }
+
+    /// M4 negative: the SAME defName in DIFFERENT def types is legitimate
+    /// (separate output directories) — no collision, export proceeds.
+    #[test]
+    fn same_defname_across_def_types_is_not_a_collision() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let res = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![
+                    set_text("Dup.label", "ThingDef", "вещь"),
+                    set_text("Dup.label", "AbilityDef", "способность"),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 2);
+
+        let resp = mgr.validate_project(&snap.project_id, 1, None).unwrap();
+        assert!(
+            !resp.findings.iter().any(|f| f.kind == "case-collision"),
+            "cross-def-type same-case names are not collisions"
+        );
+
+        let out = dir.path().join("out");
+        let export = mgr
+            .export_project(&snap.project_id, 1, &out, "Russian")
+            .unwrap();
+        assert!(export.files_written >= 3);
+    }
+
+    // --- W2: existing translation pack (dry-run analyze + guarded apply) ---
+
+    /// Synthetic mod + a PARTIALLY overlapping existing RU pack:
+    /// - Keyed `Greeting` — empty slot in the project  → reusable;
+    /// - DefInjected `Alpha.label` — empty slot        → reusable;
+    /// - DefInjected `Beta.label` — manually translated → conflict;
+    /// - Keyed `ObsoleteKey` — not in the inventory     → obsolete;
+    /// - Keyed `Farewell` — TODO marker in the pack    → invalid (BOTH the
+    ///   analyzer and the application refuse it: `Farewell` has an EMPTY
+    ///   slot in the project, so an apply without the TODO filter would
+    ///   write the literal "TODO" in as a fake translation).
+    fn mod_with_partial_pack(root: &Path) {
+        write(
+            &root.join("mod/Defs/Things.xml"),
+            r#"<Defs><ThingDef><defName>Alpha</defName><label>alpha thing</label></ThingDef><ThingDef><defName>Beta</defName><label>beta thing</label></ThingDef></Defs>"#,
+        );
+        write(
+            &root.join("mod/Languages/English/Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>hello</Greeting><Farewell>bye</Farewell></LanguageData>",
+        );
+        // The existing pack lives INSIDE the read-only source tree — the
+        // canonical location (Languages/<locale>), which the pack INPUT is
+        // allowed to read (only the managed root is refused).
+        let pack = root.join("mod/Languages/Russian");
+        write(
+            &pack.join("Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>привет</Greeting><Farewell>TODO</Farewell><ObsoleteKey>старое</ObsoleteKey></LanguageData>",
+        );
+        write(
+            &pack.join("DefInjected/ThingDef/Things.xml"),
+            "<LanguageData><Alpha.label>альфа</Alpha.label><Beta.label>бета</Beta.label></LanguageData>",
+        );
+    }
+
+    fn existing_req(
+        pid: &str,
+        epoch: SessionEpoch,
+        dir: &Path,
+    ) -> crate::contract::ImportExistingRequest {
+        crate::contract::ImportExistingRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            existing_dir: crate::contract::PathBufDto::new(dir.display().to_string()),
+            locale: "Russian".into(),
+        }
+    }
+
+    fn apply_existing_req(
+        pid: &str,
+        epoch: SessionEpoch,
+        rev: Revision,
+        dir: &Path,
+    ) -> crate::contract::ApplyExistingRequest {
+        crate::contract::ApplyExistingRequest {
+            project_id: pid.into(),
+            expected_revision: rev,
+            session_epoch: epoch,
+            existing_dir: crate::contract::PathBufDto::new(dir.display().to_string()),
+            locale: "Russian".into(),
+        }
+    }
+
+    /// Dry-run categories are correct, and the dry-run writes NOTHING:
+    /// the revision stays put and no translation appears.
+    #[test]
+    fn import_existing_dry_run_classifies_and_writes_nothing() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        assert_eq!(snap.revision, 1);
+
+        // Manual edit FIRST so the pack's Beta.label line is a conflict.
+        let res = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![set_text("Beta.label", "ThingDef", "бета вручную")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+
+        let resp = mgr
+            .import_existing(&existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &root.join("mod/Languages/Russian"),
+            ))
+            .unwrap();
+        assert_eq!(resp.reusable_count, 2, "{resp:?}");
+        assert_eq!(resp.conflict_count, 1);
+        assert_eq!(resp.obsolete_count, 1);
+        assert_eq!(resp.invalid_count, 1);
+        // After the merge only `Farewell` stays untranslated (Beta keeps its
+        // manual translation; Greeting + Alpha.label are covered by the pack).
+        assert_eq!(resp.new_count, 1);
+        let reusable_keys: Vec<&str> = resp.reusable.iter().map(|i| i.key.as_str()).collect();
+        assert!(reusable_keys.contains(&"Greeting"));
+        assert!(reusable_keys.contains(&"Alpha.label"));
+        let conflict = &resp.conflicts[0];
+        assert_eq!(conflict.key, "Beta.label");
+        assert_eq!(
+            conflict.entry.as_ref().unwrap().def_type.as_deref(),
+            Some("ThingDef")
+        );
+        assert_eq!(resp.obsolete[0].key, "ObsoleteKey");
+        assert!(resp.obsolete[0].entry.is_none());
+        // Structurally unreachable today (the resolver never feeds alias
+        // data — aliases are data, never shape heuristics), so zero, never
+        // guessed.
+        assert_eq!(resp.ambiguous_count, 0);
+
+        // Dry-run wrote NOTHING: same revision, no new translations.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        assert_eq!(after.revision, snap.revision + 1);
+        let farewell = after
+            .project
+            .translations
+            .iter()
+            .find(|t| t.source_id.key == "Farewell" && t.locale == "Russian");
+        assert!(farewell.is_none(), "dry-run must not apply anything");
+    }
+
+    /// Apply moves ONLY the reusable set: conflicts keep the manual text
+    /// (origin stays Human), obsolete/invalid are never applied, and the
+    /// result persists (reload from disk proves it).
+    #[test]
+    fn apply_existing_moves_reusable_never_overwrites_conflicts() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let manual = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![set_text("Beta.label", "ThingDef", "бета вручную")],
+            ))
+            .unwrap();
+        let manual_revision = manual.revision;
+
+        let resp = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                manual_revision,
+                &root.join("mod/Languages/Russian"),
+            ))
+            .unwrap();
+        assert_eq!(resp.applied, 2);
+        assert_eq!(resp.conflicts, 1);
+        assert_eq!(resp.unmatched, 1);
+        assert_eq!(resp.ambiguous, 0);
+        assert_eq!(resp.revision, manual_revision + 1);
+
+        // Durable proof: reload the managed file from disk.
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        let get = |key: &str, def_type: Option<&str>| {
+            loaded
+                .project
+                .translations
+                .iter()
+                .find(|t| {
+                    t.source_id.key == key
+                        && t.source_id.def_type.as_deref() == def_type
+                        && t.locale == "Russian"
+                })
+                .map(|t| (t.text.clone(), t.origin))
+        };
+        assert_eq!(
+            get("Greeting", None),
+            Some((Some("привет".into()), Origin::Imported))
+        );
+        assert_eq!(
+            get("Alpha.label", Some("ThingDef")),
+            Some((Some("альфа".into()), Origin::Imported))
+        );
+        // The manual translation WON — never overwritten by the pack.
+        assert_eq!(
+            get("Beta.label", Some("ThingDef")),
+            Some((Some("бета вручную".into()), Origin::Human))
+        );
+        // Obsolete / invalid pack lines were never applied.
+        assert!(get("ObsoleteKey", None).is_none());
+        assert!(get("Farewell", None).is_none());
+    }
+
+    /// Apply-intents guards on the existing-pack flow: a manual edit AFTER
+    /// the analysis changes the revision — the stale `expected_revision`
+    /// refuses the whole apply, the stale epoch refuses even the dry-run.
+    #[test]
+    fn apply_existing_refuses_stale_revision_and_epoch() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let pack = root.join("mod/Languages/Russian");
+
+        // Analyze first (the caller's decision basis, revision 1): at this
+        // point Beta.label is still an EMPTY slot, so it counts as reusable
+        // — Greeting, Alpha.label and Beta.label.
+        let analysis = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &pack))
+            .unwrap();
+        assert_eq!(analysis.reusable_count, 3);
+
+        // A manual edit lands AFTER the analysis (revision bump).
+        mgr.apply(&req(
+            &snap.project_id,
+            snap.session_epoch,
+            1,
+            vec![set_text("Beta.label", "ThingDef", "ручная правка")],
+        ))
+        .unwrap();
+
+        // The stale base refuses the whole apply — nothing is written.
+        let err = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1, // the analyzed-at revision is now stale
+                &pack,
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::StaleRevision);
+        assert_eq!(
+            mgr.snapshot(&snap.project_id).unwrap().revision,
+            snap.revision + 1
+        );
+
+        // Stale epoch refuses even the read-only dry-run.
+        let err = mgr
+            .import_existing(&existing_req(&snap.project_id, 99, &pack))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::StaleEpoch);
+    }
+
+    /// Path guards on the pack input: relative form, non-directory, and a
+    /// directory inside the managed root are each a typed refusal BEFORE
+    /// any scan.
+    #[test]
+    fn existing_pack_path_guards_are_typed() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // Relative form.
+        let mut r = existing_req(
+            &snap.project_id,
+            snap.session_epoch,
+            Path::new("relative/pack"),
+        );
+        r.existing_dir = crate::contract::PathBufDto::new("relative/pack".to_string());
+        let err = mgr.import_existing(&r).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::InvalidOutputPath);
+
+        // Not a directory.
+        let err = mgr
+            .import_existing(&existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &root.join("mod/Languages/English/Keyed/Greetings.xml"),
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+
+        // Inside the managed projects root.
+        let err = mgr
+            .import_existing(&existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &mgr.managed_root().join("proj-x.rimloc.json"),
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+
+        // Malformed locale form is refused before any scan (it would
+        // persist into the durable record on apply).
+        let mut r = existing_req(
+            &snap.project_id,
+            snap.session_epoch,
+            &root.join("mod/Languages/Russian"),
+        );
+        r.locale = "../evil".into();
+        let err = mgr.import_existing(&r).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+
+        // Pack↔locale cross-check: the scanner walks ANY
+        // */Languages/<Any> under the given root, so a mod root (or an
+        // English folder) chosen with locale `Russian` is a typed refusal —
+        // otherwise the English SOURCE text would be classified reusable
+        // and imported as fake "translations".
+        for wrong in ["mod", "mod/Languages", "mod/Languages/English"] {
+            let err = mgr
+                .import_existing(&existing_req(
+                    &snap.project_id,
+                    snap.session_epoch,
+                    &root.join(wrong),
+                ))
+                .unwrap_err();
+            assert_eq!(err.code, ContractErrorCode::ContractViolation, "{wrong}");
+        }
+
+        // Apply path guards: the same refusals, nothing written.
+        let mut ar = apply_existing_req(
+            &snap.project_id,
+            snap.session_epoch,
+            1,
+            Path::new("relative"),
+        );
+        ar.existing_dir = crate::contract::PathBufDto::new("relative".to_string());
+        let err = mgr.apply_existing(&ar).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::InvalidOutputPath);
+        assert_eq!(
+            mgr.snapshot(&snap.project_id).unwrap().revision,
+            snap.revision
+        );
+    }
+
+    /// Symlinks on the pack input are resolved through the real path view:
+    /// a link INTO the managed projects root is denied (deny orientation is
+    /// fail-closed), while a link to the source-tree pack reads fine — the
+    /// canonical pack location is inside the mod's own Languages folder.
+    #[test]
+    #[cfg(unix)] // std::os::unix::fs::symlink; windows-эквивалент покрытия — в guard-тестах util.rs
+    fn existing_pack_symlink_resolves_through_real_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // DENY: a symlink whose TARGET lives inside the managed root.
+        let real = mgr.managed_root().join("pack-real");
+        std::fs::create_dir_all(real.join("Keyed")).unwrap();
+        std::fs::write(
+            real.join("Keyed/Greetings.xml"),
+            "<LanguageData><Greeting>привет</Greeting></LanguageData>",
+        )
+        .unwrap();
+        let denied_link = root.join("linkdir");
+        std::fs::create_dir_all(&denied_link).unwrap();
+        let link = denied_link.join("Russian");
+        std::os::unix::fs::symlink(&real, &link).expect("symlink");
+        let err = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &link))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+
+        // ALLOW: a symlink to the source-tree pack (the canonical pack
+        // location) resolves outside the managed root and classifies — the
+        // folder name must still be the locale. The link PATH itself keeps
+        // the `…/Languages/Russian` shape: the scanner matches the
+        // traversal string, and the resolver reads the pack file's scope
+        // from its (traversed) path.
+        let alias_base = root.join("alias/Languages");
+        std::fs::create_dir_all(&alias_base).unwrap();
+        let alias = alias_base.join("Russian");
+        std::os::unix::fs::symlink(root.join("mod/Languages/Russian"), &alias).expect("symlink");
+        let resp = mgr
+            .import_existing(&existing_req(&snap.project_id, snap.session_epoch, &alias))
+            .unwrap();
+        // No manual edit in THIS test: Greeting, Alpha.label AND Beta.label
+        // are all empty slots → reusable; ObsoleteKey obsolete, Farewell
+        // TODO-invalid.
+        assert_eq!(resp.reusable_count, 3, "{resp:?}");
+        assert_eq!(resp.conflict_count, 0);
+        assert_eq!(resp.invalid_count, 1);
+    }
+
+    /// Persist-before-ack survives a failed save: the first apply bumps the
+    /// revision in memory and fails to persist (dirty, acked base stays
+    /// legal); the retry applies nothing NEW (the slots are already filled
+    /// in memory) but COMPLETES the pending revision — the caller receives
+    /// an `Ok` revision that is actually on disk, never a phantom one.
+    #[test]
+    fn apply_existing_dirty_retry_completes_the_persist() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let pack = root.join("mod/Languages/Russian");
+
+        // Break the durable write: a DIRECTORY sits at the managed path.
+        let file_path = mgr.managed_path(&snap.project_id).unwrap();
+        std::fs::remove_file(&file_path).unwrap();
+        std::fs::create_dir(&file_path).unwrap();
+
+        let err = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1,
+                &pack,
+            ))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::SaveFailed);
+        // The in-memory state moved ahead of the disk (dirty, unacked).
+        assert_eq!(mgr.snapshot(&snap.project_id).unwrap().revision, 2);
+
+        // Clear the fs problem; the retry (same acked base 1) applies
+        // nothing new — the reusable slots are already filled in memory —
+        // and must complete the PENDING revision, not report it as done
+        // while it exists only in memory.
+        std::fs::remove_dir(&file_path).unwrap();
+        let res = mgr
+            .apply_existing(&apply_existing_req(
+                &snap.project_id,
+                snap.session_epoch,
+                1,
+                &pack,
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 0, "{res:?}");
+        assert_eq!(res.revision, 2);
+        // Durable proof: the pending revision is on disk WITH the imported
+        // lines the failed first attempt applied in memory.
+        let loaded = load_project_with_meta(&file_path).unwrap();
+        assert_eq!(loaded.meta.revision, Some(2));
+        assert!(loaded.project.translations.iter().any(|t| {
+            t.source_id.key == "Greeting" && t.locale == "Russian" && t.origin == Origin::Imported
+        }));
+        // The session is clean again: acked == revision, further stale
+        // guards use the published base.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        assert_eq!(after.revision, 2);
     }
 }

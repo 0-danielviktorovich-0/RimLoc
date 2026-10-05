@@ -6,6 +6,20 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Added
+- [gui] Agent automation layer (owner mandate): `RIMLOC_AUTOMATION=1` opts the app out of App Nap and deterministically activates the macOS accessibility server in any build profile, so an external System Events driver can drive the app; `RIMLOC_TRACE=1` appends a JSONL action trace of contract commands (name, duration, ok/error) to the app-data logs. Both default to off with zero behavior change.
+- [testlab] `auto_install.py`: agent-grade install/run/stop of the app into /Applications without DMG or Finder dialogs (atomic staging swap, one updated copy, quarantine stripped, trash-safe uninstall).
+- [gui] Home redesign (designer-system variant from the five-lens skill jury), recents meta `v/r/#id`, live-transport chip, and a wizard-tour entry button; UI bugfix waves 1-2 (3 high, 11 medium, low-pack) from the autonomous 21-screen AX audit.
+- [gui] Native folder picker on the create panel and on every output-path field (build/export/diagnostics): paths are chosen through the OS dialog instead of being typed by hand; cancelling is silent, errors are visible.
+- [gui] Full mod-package build from the GUI (`project_build_mod`): a drop-in `ModMetaData` About plus Languages, the same guards as export (absolute-path refusal, source-tree containment, symlink aliasing, case-collision and control-char checks) — the result folder can be dropped into RimWorld Mods without the CLI.
+- [gui] "Translate RimLoc" beta card: opens the app's own UI catalog (~1.2k messages) as an ORDINARY translation project through the standard create flow; a repeat click reopens the existing catalog project instead of duplicating it.
+- [gui] Language pack preview (dev panel): data-only packs load through a strict schema (unknown ids, duplicate ids, placeholder mismatches and oversized values are refused whole), preview is in-memory and reversible, missing messages fall back to the built-in locale.
+- [i18n] Deterministic build-time JSON bridge for the UI catalog (one authority: TS dictionaries are hand-edited, JSON is generated and drift-guarded by tests).
+- [scripts] Offline contribution bundle: `build:contribution` (READY / PARTIAL-BUT-VALID / NEEDS-FIXES gate, sanitizer, secret scan) and `apply:contribution` (surgical apply onto the authoritative dictionaries with dry-run, stale-catalog gate and base-value conflict protection — a manual dictionary edit can never be silently overwritten).
+- [services] First-party UI-catalog source adapter: a directory containing `catalog.en.json` opens as a normal project (Keyed-kind entries with `ui-catalog` provenance); the catalog participates in M3 source-drift; DefInjected machinery never touches application messages.
+- [gui] Live Validate, Export and Diagnostics panels: translations can be validated, written into the mod tree and diagnosed directly from the GUI, through the same guarded pipeline as the CLI; problems appear as error/warning badges on the affected entries.
+- [gui] Guided onboarding: a first-run tour over the real workspace plus a built-in demo project to explore without touching your mods.
+- [gui] The app now shows which live backend features the current project actually supports and gates the rest, instead of offering buttons that dead-end.
+- [gui] New projects pin the RimWorld game version they were created for.
 - [services] Binding seam, first slice (lead 033): framework-neutral `contract` module (UI_CONTRACT_VERSION, typed DTOs — snapshot/summary/apply-intents/intents, ContractError with stable snake_case codes, honest capability report) and `session` module (opaque durable projectId, session epoch, durable revision in the same atomic record, per-project serialized apply-intents with identity/eligibility resolution, persist-before-ack, save_failed dirty semantics, external-change content-hash detection, cancel-next, restart recovery). Intents carry full structural SourceEntryIds — the UI never sends a whole Project.
 - [services/store] Additive binding envelope in the v2 container: optional project_id/revision/display_name ride the same atomic record; bare saves stay legacy-shaped and old files load unchanged.
 - [domain/services] Identity fix (pre-freeze blocker): `SourceEntryId` carries an optional def-type discriminator (participates in equality/order/hash). Two def types sharing one `{defName}.{field}` key are two distinct entries end-to-end — build, scoped pack/PO import, save/reload, native output in separate DefInjected catalogs, and full-identity source-change detection. Keyed stays unscoped; unknown types stay `None` (never a guessed "Misc").
@@ -29,45 +43,6 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [services] Symlink-safe atomic writes: staging files are created with unique names via `create_new` (a pre-planted temp symlink can no longer be truncated), so user and game files cannot be overwritten through temp paths.
 - [gui/tauri] Backend commands to load/list dynamic parser plugins (for future UI hookup).
 - [parsers-xml] New `read_keyed_file_map(_with_comments)` API: robust Keyed reader with `<li>`/`<LineBreak/>`/CDATA and optional EN: comment override.
-
-### Changed
-- [services/scan] Optionally merge fuzzy candidates; deterministic sort preserved.
-- [cli/scan] `--lang` now filters the scan to a single `Languages/<dir>` (English additionally includes Defs-derived strings); previously the flag only affected the CSV column, so mods with several language folders produced mixed, colliding results.
-- [cli/validate] Per-row validation now targets the translation (`--lang-dir`, `--lang`, or config `target_lang`) instead of silently validating the English source picked up from config defaults.
-
-### Fixed
-- [services/project] Pack/PO import matching is scope-aware (kind + def type from the pack's own folder); a Keyed line now imports as the Keyed entry, and alias/TKey-suffix proofs never cross kinds or def types. `detect_source_changes` compares full identities and keeps the RESOLVED version on rescanned entries.
-- [parsers-xml] TKey duplicate rejection is def-type-scoped: two def types sharing defName+TKey are distinct identities, not duplicates.
-- [services/scan] DefInjected precedence is def-type-scoped: two def types sharing `{defName}.{field}` no longer destroy each other at unit level (canonical kind+key collapse stays a documented limitation).
-- [services/scan] LoadFolders effective scan no longer drops same-file Keyed duplicates (kept as Gate H diagnostics / Overridden contexts).
-- [services/project] `build_project` no longer fakes patch coverage from "a Patches dir exists" and no longer asserts EXACT with unresolved `IfModActive` dirs or partial patch coverage; `version_selected` records the resolved, not the requested, version.
-- [gui/security] Hardened the Tauri trust boundary: Content-Security-Policy replaces `csp: null`; arbitrary file writes (`save_text_file`, diagnostics out-path) now go through a native save dialog opened on the Rust side; dynamic plugin loading is opt-in via `~/.rimloc/plugins-allow.json`; `open_path` uses the platform open API instead of a shell interpreter; removed the unused shell plugin and asset protocol.
-- [services/lang-update] Fixed zip-slip: archive entry names are sanitized before extraction (rejects `..`, absolute paths, backslashes); malformed archives return an error instead of panicking.
-- [services/validate] `duplicate-global` no longer reports the same key in different language folders (a translated Def is not a duplicate); duplicates are scoped per language folder.
-- [services/validate] `coverage` and cross-language checks accept full paths for language directory arguments (previously compared against bare folder names, so coverage always reported 0).
-- [cli/i18n] Removed duplicate Fluent key `diffxml-summary` that logged an ERROR on every CLI launch.
-- [repo] Added a CI workflow running fmt, clippy (-D warnings), workspace tests on Linux/macOS/Windows, a Tauri GUI build, and cargo-deny; license fields added to crates missing them; deny.toml with advisories/license policy (transitive unmaintained deps pinned by tauri documented as ignored).
-
-<!--
-Template (copy the sections you need):
-
-### Added
-- [scope] short bullet with (#PR)
-
-### Changed
-- [scope] short bullet with (#PR)
-
-### Fixed
-- [scope] short bullet with (#PR)
-
-### Docs
-- [docs] Add README banner and move asset to `docs/assets` (#PR)
-
-### Internal
-- [internal] Introduce `rimloc-services` orchestration crate and adopt it in `scan` CLI path (#PR)
-- [internal] Route `export-po`, `validate`, `import-po`, `build-mod` via services; add import/build wrappers (#PR)
--->
-### Added
 - [export-po] Translation Memory prefill: `--tm-root` to prefill msgstr and mark entries as `fuzzy` (#PR)
 - [cli] Localized help for `--tm-root` and TM coverage summary in export output (#PR)
 - [cli] New `diff-xml` command: compares source vs translation presence and, with a baseline PO, detects changed source strings; supports text/json and writing ChangedData.txt/TranslationData.txt/ModData.txt (#PR)
@@ -86,17 +61,11 @@ Template (copy the sections you need):
  - [gui] Structured log viewer with filters (source/level/text) and JSONL export; Debug Console replaces legacy modal (#PR)
  - [tauri] Backend commands: `validate_po_gui`, `learn_patches_cmd`; expose CLI i18n to GUI (#PR)
 
-### Fixed
-- [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
-- [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
-- [parsers-xml] Aggregate <li> list items and <LineBreak/> into a single value for LanguageData keys; improves DefInjected/Keyed lists handling (#PR)
-- [services/merge-keyed] Read <li> and <LineBreak/> correctly when merging English→target; preserves multi-line values and list semantics (#PR)
-- [parsers-xml] Resolve Defs inheritance across files via Name/ParentName (fallback to defName), respect Inherit="false"; improves DefInjected candidates discovery (#PR)
- - [cli/logging] Validate `RIMLOC_LOG_DIR` against traversal/absolute paths; reject unsafe values (#PR)
- - [gui] Lang update: resolve macOS .app bundle to `Resources`; enforce Accept: zip and header check for downloads (#PR)
- - [gui/frontend] Use backend `open_path` to avoid plugin-shell URL regex warnings; fix save-report wrappers (#PR)
-
 ### Changed
+- [gui] Project state is tracked honestly: external changes to project files are detected, unsaved drafts survive a refresh and the data-mode badge reflects the real state of a live project.
+- [services/scan] Optionally merge fuzzy candidates; deterministic sort preserved.
+- [cli/scan] `--lang` now filters the scan to a single `Languages/<dir>` (English additionally includes Defs-derived strings); previously the flag only affected the CSV column, so mods with several language folders produced mixed, colliding results.
+- [cli/validate] Per-row validation now targets the translation (`--lang-dir`, `--lang`, or config `target_lang`) instead of silently validating the English source picked up from config defaults.
 - [parsers-xml] Support path markers in dict (`li{h}`) to hint pseudo-handles for list segments; markers are ignored during value traversal and stripped from produced keys (#PR)
 - [services/learn] Generate EN: comments alongside suggested DefInjected entries to help translators (#PR)
 - [parsers-xml/assets] Expand `defs_fields.json` with common fields from Core/popular mods; add handle-hinted list paths (e.g., `ingredients.li{h}.label`, `degreeDatas.li{h}.description`, `SoundDef.subSounds.li{h}.name`) (#PR)
@@ -111,14 +80,55 @@ Template (copy the sections you need):
  - [gui/i18n] Remove hardcoded UI strings; centralize i18n (EN/RU) and add simple i18n linter; localize placeholders and common labels (#PR)
  - [gui/tauri] Validate/Diff panels support extended inputs (`defs_dict`, `defs_type_schema`, extra fields); mirror CLI outputs and report saving (#PR)
 
+### Fixed
+- [contribution] Safety hardening confirmed by an independent review: stale bundles can no longer overwrite fresh manual edits (mandatory `base_value` with value-conflict refusal); prototype-property ids (`constructor`, `__proto__`) are machine-refused instead of crashing; secret-like contributor metadata blocks the bundle; duplicate ids are refused instead of last-write-wins.
+- [gui] Honesty wave: fake-success statuses replaced with honest "not wired in this build" notices (update check, rescan, log/config buttons, provider connectivity, demo build actions); the review overview in live mode now computes from the real snapshot and marks non-computable dimensions as dashes instead of plausible zeros; the logs hint shows the real per-OS path.
+- [gui/legacy] Legacy write commands refuse CWD-relative output paths (previously wrote silently relative to the app's working directory); `apply_translation` gained the locale form guard.
+
+- [gui/tauri] LEGACY surface (`RIMLOC_LEGACY_COMMANDS=1`, operator opt-in) no longer writes to caller-RELATIVE paths that silently landed relative to the process working directory: `merge_keyed_gui`, `export_xliff_gui`, `import_xliff_gui`, `dump_schemas` and `learn_patches_cmd` now require absolute out paths with an explicit error instead (same form policy as the contract surface). Legacy `apply_translation` validates the language-folder form of `lang_dir` before joining it into the output path, so traversal or absolute values can no longer escape the mod tree.
+- [release] Workspace MSRV declaration corrected from `1.70` (false — it predated `is_multiple_of` 1.87 and dependency floors up to 1.89) to `1.89` in every crate manifest; tested toolchain is `1.96.0`.
+- [gui/services] Contract export and diagnostics refuse a RELATIVE output directory with a typed `invalid_output_path` error before anything is written (a relative path silently landed relative to the app's working directory); the GUI out-dir fields now start empty with an absolute-path hint instead of pre-filling a decorative `…/RimLoc-Export/…` literal, and the run buttons stay disabled until the path is absolute.
+- [cli] Language-folder flags (`init --lang-dir`, `import-po --lang-dir`, `build-mod --lang`, `merge-keyed`, `morph`) reject absolute paths and `..` values that would write outside the mod folder.
+- [scan] A mod's LoadFolders entries can no longer make RimLoc scan directories outside the mod root (absolute paths and `..` are refused).
+- [export] Control characters that XML 1.0 forbids are refused when applying or exporting, instead of producing files the game silently drops; a byte-level check guards every written `.xml`.
+- [export] About.xml is written safely: fields are escaped and the packageId becomes a clean lowercase slug, so mod folders with `&`, `<` or non-Latin names no longer break the game's mod parsing.
+- [gui] A session now survives an app restart with its source mod folder intact — previously export and diagnostics refused until the project was re-created.
+- [cli] `scan` and `validate` fail with a clear message when `--root` points to a missing folder, instead of quietly returning an empty success.
+- [gui] Corrupt project files are reported as unopenable (with a reason) instead of silently disappearing, and project-list errors are visible instead of looking like "no projects yet".
+- [validate] Invisible or bi-directional control characters in translation keys now raise a warning (previously only values were checked).
+- [services/project] Pack/PO import matching is scope-aware (kind + def type from the pack's own folder); a Keyed line now imports as the Keyed entry, and alias/TKey-suffix proofs never cross kinds or def types. `detect_source_changes` compares full identities and keeps the RESOLVED version on rescanned entries.
+- [parsers-xml] TKey duplicate rejection is def-type-scoped: two def types sharing defName+TKey are distinct identities, not duplicates.
+- [services/scan] DefInjected precedence is def-type-scoped: two def types sharing `{defName}.{field}` no longer destroy each other at unit level (canonical kind+key collapse stays a documented limitation).
+- [services/scan] LoadFolders effective scan no longer drops same-file Keyed duplicates (kept as Gate H diagnostics / Overridden contexts).
+- [services/project] `build_project` no longer fakes patch coverage from "a Patches dir exists" and no longer asserts EXACT with unresolved `IfModActive` dirs or partial patch coverage; `version_selected` records the resolved, not the requested, version.
+- [gui/security] Hardened the Tauri trust boundary: Content-Security-Policy replaces `csp: null`; arbitrary file writes (`save_text_file`, diagnostics out-path) now go through a native save dialog opened on the Rust side; dynamic plugin loading is opt-in via `~/.rimloc/plugins-allow.json`; `open_path` uses the platform open API instead of a shell interpreter; removed the unused shell plugin and asset protocol.
+- [services/lang-update] Fixed zip-slip: archive entry names are sanitized before extraction (rejects `..`, absolute paths, backslashes); malformed archives return an error instead of panicking.
+- [services/validate] `duplicate-global` no longer reports the same key in different language folders (a translated Def is not a duplicate); duplicates are scoped per language folder.
+- [services/validate] `coverage` and cross-language checks accept full paths for language directory arguments (previously compared against bare folder names, so coverage always reported 0).
+- [cli/i18n] Removed duplicate Fluent key `diffxml-summary` that logged an ERROR on every CLI launch.
+- [repo] Added a CI workflow running fmt, clippy (-D warnings), workspace tests on Linux/macOS/Windows, a Tauri GUI build, and cargo-deny; license fields added to crates missing them; deny.toml with advisories/license policy (transitive unmaintained deps pinned by tauri documented as ignored).
+- [parsers-xml] Handle self-closing keyed XML elements correctly (#PR)
+- [services] diff-xml baseline: honor msgctxt key extraction when computing changed entries (#PR)
+- [parsers-xml] Aggregate <li> list items and <LineBreak/> into a single value for LanguageData keys; improves DefInjected/Keyed lists handling (#PR)
+- [services/merge-keyed] Read <li> and <LineBreak/> correctly when merging English→target; preserves multi-line values and list semantics (#PR)
+- [parsers-xml] Resolve Defs inheritance across files via Name/ParentName (fallback to defName), respect Inherit="false"; improves DefInjected candidates discovery (#PR)
+ - [cli/logging] Validate `RIMLOC_LOG_DIR` against traversal/absolute paths; reject unsafe values (#PR)
+ - [gui] Lang update: resolve macOS .app bundle to `Resources`; enforce Accept: zip and header check for downloads (#PR)
+ - [gui/frontend] Use backend `open_path` to avoid plugin-shell URL regex warnings; fix save-report wrappers (#PR)
+
 ### Docs
-- [docs] AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
-- [docs] README: replace AGENTS.md link with CONTRIBUTING.md (#PR)
-- [docs] AGENTS: make commit via scripts/agent-commit.sh a mandatory finish step for agents (#PR)
-- [docs] AGENTS: explicitly allow using GH_TOKEN/GITHUB_TOKEN when provided by the user, with safety rules (#PR)
-- [docs] AGENTS: add final guard step with scripts/agent-ensure-commit.sh (#PR)
+- Release-candidate docs: RELEASE_READINESS_REPORT (gate matrix, honest limitations, owner gates), BETA_TEST_CHECKLIST for testers, REVIEW_SCREEN_MAP for GUI review.
+- README: honest project status, screenshots section and a GUI build guide; real GUI screenshots added.
+- AGENTS: add rule to reply in Russian when addressed in Russian (#PR)
+- README: replace AGENTS.md link with CONTRIBUTING.md (#PR)
+- AGENTS: make commit via scripts/agent-commit.sh a mandatory finish step for agents (#PR)
+- AGENTS: explicitly allow using GH_TOKEN/GITHUB_TOKEN when provided by the user, with safety rules (#PR)
+- AGENTS: add final guard step with scripts/agent-ensure-commit.sh (#PR)
  - [docs/schemas] Refresh generated JSON Schemas via `rimloc-cli schema`; document `out_dir` in configuration guide (#PR)
  - [docs/gui] Expand GUI guide with Morph and Tools (schemas) sections (#PR)
+
+### Internal
+- [gui/i18n] Build-time JSON bridge for the self-localization foundation: `npm run export:catalog` deterministically exports the UI catalog (`src/i18n/{en,ru}.ts`) into committed versioned JSON (`src/i18n/generated/catalog.{en,ru,meta}.json`, schema_version 1, git-revision provenance, `{name}` placeholder contract); drift-guard tests keep TS as the single hand-edited authority. See `docs/development/SELFLOC_BRIDGE.md`.
 
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added

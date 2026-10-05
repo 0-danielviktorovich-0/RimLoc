@@ -1,4 +1,5 @@
 use crate::Result;
+use rimloc_core::path_text::has_path_marker;
 use std::path::{Path, PathBuf};
 
 /// Build translation mod from an existing Languages/<lang> tree under `from_root`.
@@ -22,21 +23,20 @@ pub fn build_from_root(
     let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
     for u in units {
         let path_str = u.path.to_string_lossy();
-        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+        if !rimloc_core::path_text::has_path_marker(&path_str, "Languages") {
             continue;
         }
-        if !(path_str.contains(&format!("/Languages/{}/", lang_folder))
-            || path_str.contains(&format!("\\Languages\\{}\\", lang_folder)))
+        let lang_marker_slash = format!("Languages/{lang_folder}");
+        let lang_marker_back = format!("Languages\\{lang_folder}");
+        if !(has_path_marker(&path_str, &lang_marker_slash)
+            || has_path_marker(&path_str, &lang_marker_back))
         {
             continue;
         }
         if let Some(vers) = versions {
             let mut matched = false;
             for ver in vers {
-                if path_str.contains(&format!("/{}/", ver))
-                    || path_str.contains(&format!("\\{}\\", ver))
-                    || path_str.contains(&format!("/v{}/", ver))
-                    || path_str.contains(&format!("\\v{}\\", ver))
+                if has_path_marker(&path_str, ver) || has_path_marker(&path_str, &format!("v{ver}"))
                 {
                     matched = true;
                     break;
@@ -108,21 +108,20 @@ pub fn build_from_root_with_progress(
     let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
     for u in units {
         let path_str = u.path.to_string_lossy();
-        if !(path_str.contains("/Languages/") || path_str.contains("\\Languages\\")) {
+        if !rimloc_core::path_text::has_path_marker(&path_str, "Languages") {
             continue;
         }
-        if !(path_str.contains(&format!("/Languages/{}/", lang_folder))
-            || path_str.contains(&format!("\\Languages\\{}\\", lang_folder)))
+        let lang_marker_slash = format!("Languages/{lang_folder}");
+        let lang_marker_back = format!("Languages\\{lang_folder}");
+        if !(has_path_marker(&path_str, &lang_marker_slash)
+            || has_path_marker(&path_str, &lang_marker_back))
         {
             continue;
         }
         if let Some(vers) = versions {
             let mut matched = false;
             for ver in vers {
-                if path_str.contains(&format!("/{}/", ver))
-                    || path_str.contains(&format!("\\{}\\", ver))
-                    || path_str.contains(&format!("/v{}/", ver))
-                    || path_str.contains(&format!("\\v{}\\", ver))
+                if has_path_marker(&path_str, ver) || has_path_marker(&path_str, &format!("v{ver}"))
                 {
                     matched = true;
                     break;
@@ -299,4 +298,40 @@ pub fn build_from_po_with_progress(
         progress(idx, total, &out_path);
     }
     Ok(())
+}
+
+/// Contract `project_build_mod` — the FULL drop-in mod package from the
+/// canonical session state (GUI parity with `rimloc build-mod`). The
+/// `Languages/<lang>` tree and the per-key accounting reuse the PROVEN
+/// export writer ([`crate::project::write_rimworld_translation`], same
+/// Keyed/TKey/DefInjected acceptance and `skipped_unknown_type` report);
+/// then the manifest is stamped in the CLI build-mod shape
+/// ([`crate::project::write_modmetadata_about`], `<ModMetaData>` — what the
+/// game loads from a folder dropped into Mods) instead of the export's
+/// internal `<RimWorldManifest>`. The H1 guard runs here as on every other
+/// build entry point; the session layer adds its own partition before
+/// calling in (epoch, locale form, absolute out dir, source/managed deny).
+pub fn build_mod_from_project_execute(
+    project: &rimloc_domain::canonical::Project,
+    out_mod: &Path,
+    lang_folder: &str,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> crate::Result<crate::project::WriteReport> {
+    // H1: strict form + containment before anything is planned or written.
+    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
+    let report = crate::project::write_rimworld_translation(
+        project,
+        out_mod,
+        lang_folder,
+        mod_name,
+        package_id,
+        rw_version,
+    )?;
+    // Replace the export-internal manifest with the game-loadable shape.
+    // The Languages tree above is unaffected; the final package matches the
+    // `rimloc build-mod` output byte-shape for About.xml.
+    crate::project::write_modmetadata_about(out_mod, mod_name, package_id, rw_version)?;
+    Ok(report)
 }

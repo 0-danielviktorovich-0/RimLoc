@@ -96,6 +96,11 @@ export interface Entry {
   note?: string;
   /** TKey multi-contexts; absent for plain Keyed/DefInjected records. */
   contexts?: EntryContext[];
+  /** Live source projection (contract, wave 12): the backend-projected
+   *  effective file (project-root-relative) + parser-guaranteed line +
+   *  winner reason. Present only on contract (live) snapshots; mock/fixture
+   *  records never carry it — the SOURCE tab renders fixtures there. */
+  sourceRef?: { file: string; line: number | null; selected_by: string } | null;
   /** Where else this string surfaces in the product (user-oriented context). */
   usages?: string[];
   /** Previous source text for sourceChanged entries. */

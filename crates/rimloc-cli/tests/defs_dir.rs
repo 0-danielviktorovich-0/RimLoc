@@ -1,3 +1,8 @@
+// Раньше файл скрывался под cfg(not(windows)): CLI падал STATUS_STACK_OVERFLOW на
+// любой команде (1MB main-thread стек windows, гигантский derive-кадр augment_subcommands
+// на 25 вариантах Commands). Фикс: Commands разбит на 6 flatten-групп — см. lib.rs и
+// tests/startup_stack.rs (детерминированный 1MB-репро).
+
 use assert_cmd::prelude::*;
 use std::fs;
 use std::process::Command;

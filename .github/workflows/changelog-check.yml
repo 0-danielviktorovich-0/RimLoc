@@ -1,3 +1,7 @@
+# Гигиена PR: пользовательские изменения должны сопровождаться записью в
+# CHANGELOG (scripts/check-changelog.sh против base-ветки). Лейбл `internal-only`
+# выключает проверку. Триггер только pull_request — вне PR-контекста job'у
+# нечего проверять; отдельный workflow_dispatch не нужен.
 name: changelog
 
 on:
@@ -12,7 +16,7 @@ jobs:
     if: ${{ !contains(join(fromJson(toJson(github.event.pull_request.labels)).*.name, ','), 'internal-only') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
         with:
           fetch-depth: 0
       - name: Check changelog updated for user-facing changes

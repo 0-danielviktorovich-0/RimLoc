@@ -6,7 +6,9 @@
 // project.source and keep their marked demo flows.
 import { ContractClientError } from '../client/client';
 import { clientInstance } from '../client/instance.svelte';
+import { contractErrorText, findingText } from '../client/messages';
 import type {
+  BuildModProjectResponseDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
   ValidateProjectResponseDto,
@@ -31,6 +33,8 @@ class ContractOpsStore {
   validateResult = $state<ValidateProjectResponseDto | null>(null);
   exporting = $state(false);
   exportResult = $state<ExportProjectResponseDto | null>(null);
+  buildingMod = $state(false);
+  buildModResult = $state<BuildModProjectResponseDto | null>(null);
   diagnosing = $state(false);
   diagnoseResult = $state<DiagnoseResponseDto | null>(null);
   /** Last typed contract failure (shown verbatim by the panels). */
@@ -55,6 +59,8 @@ class ContractOpsStore {
     this.validateResult = null;
     this.exporting = false;
     this.exportResult = null;
+    this.buildingMod = false;
+    this.buildModResult = null;
     this.diagnosing = false;
     this.diagnoseResult = null;
     this.error = null;
@@ -62,7 +68,7 @@ class ContractOpsStore {
 
   private fail(e: unknown): void {
     this.error =
-      e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
   }
 
   /** Read-only validate over the trusted session state. On success the
@@ -107,7 +113,8 @@ class ContractOpsStore {
       );
       if (!entry) continue;
       entry.validation = 'issues';
-      entry.validationIssues = [f.message];
+      // Localized by the stable finding kind (audit §7), raw message inside.
+      entry.validationIssues = [findingText(f.kind, f.message)];
     }
   }
 
@@ -141,6 +148,42 @@ class ContractOpsStore {
       return false;
     } finally {
       this.exporting = false;
+    }
+  }
+
+  /** FULL drop-in mod package (About `<ModMetaData>` + Languages) into the
+   *  explicit caller-chosen out directory — same guard partition and DTO
+   *  pattern as the export; the folder drops straight into the game's Mods
+   *  directory without a terminal. */
+  async runBuildMod(outDir: string): Promise<boolean> {
+    let projectId: string;
+    try {
+      projectId = this.requireActive();
+    } catch (e) {
+      this.fail(e);
+      return false;
+    }
+    const dir = outDir.trim();
+    if (!dir) {
+      this.error = 'build_mod: choose an output directory first';
+      return false;
+    }
+    this.buildingMod = true;
+    this.buildModResult = null;
+    this.error = null;
+    try {
+      this.buildModResult = await this.cc().buildModProject(
+        projectId,
+        project.contractEpoch,
+        dir,
+        folderForm(project.targetLocale)
+      );
+      return true;
+    } catch (e) {
+      this.fail(e);
+      return false;
+    } finally {
+      this.buildingMod = false;
     }
   }
 

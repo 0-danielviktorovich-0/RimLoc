@@ -8,34 +8,74 @@
   // lists all three as supported); typed contract errors surface verbatim.
   import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
+  import { looksAbsolutePath } from '../../paths';
   import { project } from '../../stores/project.svelte';
   import { contractops, folderForm } from '../../stores/contractops.svelte';
+  import { clientInstance } from '../../client/instance.svelte';
+  import { findingText } from '../../client/messages';
 
   let { kind }: { kind: 'build' | 'diagnostics' } = $props();
 
-  // Explicit user-chosen output roots: honest defaults the user can edit —
-  // no silent destination, the services guard is the last line anyway.
-  const defaultExportDir = $derived(`…/RimLoc-Export/${project.projectName}-${folderForm(project.targetLocale)}`);
-  const defaultBundleDir = $derived(`…/RimLoc-Bundles/${project.projectName}`);
+  // Explicit user-chosen output roots: the field starts EMPTY and nothing
+  // fake is pre-filled or sent (the old `…/RimLoc-Export/…` literal with a
+  // decorative ellipsis landed RELATIVE to the app's CWD). A client-side
+  // absolute-form check keeps the run button honest until the path is
+  // absolute; the services guard (`invalid_output_path`) is the last line.
   let exportDir = $state('');
+  let modDir = $state('');
   let bundleDir = $state('');
+  // M-10: the last export refusal, mirrored into the export card so the
+  // failure is never silent (source of truth stays ops.error).
+  let exportError = $state<string | null>(null);
+
+  // Native folder dialog for the output roots (same flow as the Home
+  // contract panel). Cancel = silent; a real failure surfaces verbatim.
+  let picking = $state(false);
+  let pickError = $state<string | null>(null);
+
+  async function pickInto(target: 'export' | 'mod' | 'bundle') {
+    if (picking) return;
+    picking = true;
+    pickError = null;
+    try {
+      const current =
+        target === 'export' ? exportDir.trim() : target === 'mod' ? modDir.trim() : bundleDir.trim();
+      const dir = await clientInstance.getClient().pickDirectory(current || undefined);
+      if (target === 'export') {
+        if (dir) exportDir = dir;
+      } else if (target === 'mod') {
+        if (dir) modDir = dir;
+      } else if (dir) {
+        bundleDir = dir;
+      }
+    } catch (e) {
+      pickError = e instanceof Error ? e.message : String(e);
+    } finally {
+      picking = false;
+    }
+  }
 
   const ops = $derived(contractops);
+  const exportDirOk = $derived(looksAbsolutePath(exportDir));
+  const modDirOk = $derived(looksAbsolutePath(modDir));
+  const bundleDirOk = $derived(looksAbsolutePath(bundleDir));
   const severityIcon: Record<string, string> = {
     error: 'warning',
     warning: 'warning',
     info: 'info'
   };
 
-  $effect(() => {
-    if (!exportDir) exportDir = defaultExportDir;
-  });
-  $effect(() => {
-    if (!bundleDir) bundleDir = defaultBundleDir;
-  });
-
   function runExport() {
-    void ops.runExport(exportDir);
+    // M-10 (UI audit 2026-09-29): a refusal that happens AFTER the request
+    // went out must be visible where the user clicked — inside the export
+    // card, not only in the section-level alert above the fold.
+    exportError = null;
+    void ops.runExport(exportDir).then((ok) => {
+      if (!ok && ops.error) exportError = ops.error;
+    });
+  }
+  function runBuildMod() {
+    void ops.runBuildMod(modDir);
   }
   function runDiagnose() {
     void ops.runDiagnose(bundleDir);
@@ -47,6 +87,13 @@
     <p class="ops-error" role="alert" data-testid="contractops.error">
       <Icon name="warning" size={14} />
       {ops.error}
+    </p>
+  {/if}
+
+  {#if pickError}
+    <p class="ops-error" role="alert" data-testid="contractops.pick.error">
+      <Icon name="warning" size={14} />
+      {pickError}
     </p>
   {/if}
 
@@ -89,7 +136,7 @@
               <li class="finding finding-{f.severity}" data-testid={`contractops.finding.${i}`}>
                 <span class="sev"><Icon name={severityIcon[f.severity] ?? 'info'} size={13} /> {f.severity}</span>
                 <span class="mono key">{f.key}{f.line !== undefined ? `:${f.line}` : ''}</span>
-                <span class="msg">{f.message}</span>
+                <span class="msg">{findingText(f.kind, f.message)}</span>
               </li>
             {/each}
           </ul>
@@ -103,28 +150,66 @@
     <div class="card" data-testid="contractops.export">
       <h2 class="card-title"><Icon name="package" size={16} /> {t('contractops.export.title')}</h2>
       <p class="hint">{t('contractops.export.desc', { locale: folderForm(project.targetLocale) })}</p>
+      <!-- T6 (2026-10-01): the export output is the isolated/native shape
+           (internal manifest) — the GAME-loadable package is build-mod
+           below. Say so where the paths are typed. -->
+      <p class="hint">{t('contractops.export.notGameMod')}</p>
       <label class="field">
         <span>{t('contractops.export.outdir')}</span>
         <input
           type="text"
           class="mono"
           bind:value={exportDir}
+          placeholder={t('contractops.abs_path_example')}
           data-testid="contractops.export.outdir"
           spellcheck="false"
         />
+        <button
+          type="button"
+          class="btn pick"
+          data-testid="contractops.export.pick"
+          disabled={picking}
+          onclick={() => void pickInto('export')}
+        >
+          <Icon name="folder-open" size={14} />
+          {t('contractops.pick')}
+        </button>
+        <span class="hint">{t('contractops.abs_path_hint')}</span>
+        <!-- M-10: a disabled button must EXPLAIN itself — a non-empty
+             non-absolute path shows the concrete reason inline, the
+             refusal is never silence. -->
+        {#if exportDir && !exportDirOk}
+          <span
+            class="hint invalid"
+            role="status"
+            data-testid="contractops.export.outdir.invalid"
+          >
+            <Icon name="warning" size={13} />
+            {t('contractops.export.outdirInvalid')}
+          </span>
+        {/if}
       </label>
       <div class="row">
         <button
           type="button"
           class="btn btn-primary"
           data-testid="contractops.export.run"
-          disabled={ops.exporting}
+          disabled={ops.exporting || !exportDirOk}
           onclick={runExport}
         >
           <Icon name="package" size={14} />
           {ops.exporting ? t('contractops.running') : t('contractops.export.run')}
         </button>
       </div>
+
+      <!-- M-10 (UI audit): the refusal surfaces IN the export card, next to
+           the button that sent the request — never as silence. -->
+      {#if exportError}
+        <p class="ops-error" role="alert" data-testid="contractops.export.error">
+          <Icon name="warning" size={14} />
+          {exportError}
+        </p>
+      {/if}
 
       {#if ops.exportResult}
         <div class="result" data-testid="contractops.export.result">
@@ -145,6 +230,66 @@
         </div>
       {/if}
     </div>
+
+    <!-- 3. BUILD MOD: the FULL drop-in package (About `<ModMetaData>` +
+         Languages) into an explicit user-chosen directory — no terminal. -->
+    <div class="card" data-testid="contractops.buildmod">
+      <h2 class="card-title"><Icon name="package" size={16} /> {t('contractops.buildmod.title')}</h2>
+      <p class="hint">{t('contractops.buildmod.desc', { locale: folderForm(project.targetLocale) })}</p>
+      <label class="field">
+        <span>{t('contractops.buildmod.outdir')}</span>
+        <input
+          type="text"
+          class="mono"
+          bind:value={modDir}
+          placeholder={t('contractops.abs_path_example_mod')}
+          data-testid="contractops.buildmod.outdir"
+          spellcheck="false"
+        />
+        <button
+          type="button"
+          class="btn pick"
+          data-testid="contractops.buildmod.pick"
+          disabled={picking}
+          onclick={() => void pickInto('mod')}
+        >
+          <Icon name="folder-open" size={14} />
+          {t('contractops.pick')}
+        </button>
+        <span class="hint">{t('contractops.abs_path_hint')}</span>
+      </label>
+      <div class="row">
+        <button
+          type="button"
+          class="btn btn-primary"
+          data-testid="contractops.buildmod.run"
+          disabled={ops.buildingMod || !modDirOk}
+          onclick={runBuildMod}
+        >
+          <Icon name="package" size={14} />
+          {ops.buildingMod ? t('contractops.running') : t('contractops.buildmod.run')}
+        </button>
+      </div>
+
+      {#if ops.buildModResult}
+        <div class="result" data-testid="contractops.buildmod.result">
+          <p class="hint ok"><Icon name="circle-check" size={14} /> {t('contractops.buildmod.done')}</p>
+          <dl class="counts">
+            <div><dt>{t('contractops.buildmod.files')}</dt><dd class="mono">{ops.buildModResult.files_written}</dd></div>
+            <div><dt>{t('contractops.export.reparsed')}</dt><dd class="mono">{ops.buildModResult.reparsed_keys}</dd></div>
+          </dl>
+          <p class="mono dest">{ops.buildModResult.out_dir.path}</p>
+          {#if ops.buildModResult.skipped_unknown_type.length > 0}
+            <p class="hint" data-testid="contractops.buildmod.skipped">
+              {t('contractops.export.skipped', { count: ops.buildModResult.skipped_unknown_type.length })}:
+              {#each ops.buildModResult.skipped_unknown_type as key (key)}
+                <span class="mono key">{key}</span>
+              {/each}
+            </p>
+          {/if}
+        </div>
+      {/if}
+    </div>
   {:else}
     <!-- DIAGNOSTICS: sanitized bundle over the last failed operation. -->
     <div class="card" data-testid="contractops.diagnose">
@@ -156,16 +301,28 @@
           type="text"
           class="mono"
           bind:value={bundleDir}
+          placeholder={t('contractops.abs_path_example_bundle')}
           data-testid="contractops.diagnose.outdir"
           spellcheck="false"
         />
+        <button
+          type="button"
+          class="btn pick"
+          data-testid="contractops.diagnose.pick"
+          disabled={picking}
+          onclick={() => void pickInto('bundle')}
+        >
+          <Icon name="folder-open" size={14} />
+          {t('contractops.pick')}
+        </button>
+        <span class="hint">{t('contractops.abs_path_hint')}</span>
       </label>
       <div class="row">
         <button
           type="button"
           class="btn btn-primary"
           data-testid="contractops.diagnose.run"
-          disabled={ops.diagnosing}
+          disabled={ops.diagnosing || !bundleDirOk}
           onclick={runDiagnose}
         >
           <Icon name="package" size={14} />
@@ -253,6 +410,15 @@
     padding: var(--space-1) var(--space-2);
   }
 
+  /* Native-folder-dialog button under the path fields. */
+  .btn.pick {
+    align-self: flex-start;
+  }
+
+  .hint.invalid {
+    color: var(--color-destructive);
+  }
+
   .ops-error {
     display: flex;
     align-items: center;
@@ -277,15 +443,26 @@
     color: var(--color-destructive);
   }
 
+  /* M-9 (UI audit 2026-09-29): the counters row used to reference an
+     UNDEFINED spacing token (--space-5 is not in tokens.css), so the gap
+     collapsed to 0 and the labels fused into «ОшибкиПредупрежденияИнфо».
+     Real tokens now, plus a divider between the number+label pairs so each
+     number visibly owns its label. */
   .counts {
     display: flex;
-    gap: var(--space-5);
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
     margin: 0;
   }
 
   .counts div {
     display: flex;
     flex-direction: column;
+  }
+
+  .counts div + div {
+    border-left: 1px solid var(--color-border);
+    padding-left: var(--space-4);
   }
 
   .counts dt {

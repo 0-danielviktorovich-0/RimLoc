@@ -1,24 +1,36 @@
-name: semver-checks
+# API stability: semver-проверки (гейт) + публичный API-диф (информационный).
+# Информационный job public-api перенесён сюда из public-api.yml (удалён) —
+# это один сюжет. Дизайн — docs/development/CI.md.
+#
+# Правила: actions запинены на полные SHA; permissions по job'ам; без `|| true`
+# на обязательных шагах (упавший инструмент = красный PR, молчаливой деградации нет).
+name: API stability
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
+
+concurrency:
+  group: api-stability-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  check:
+  semver:
+    name: cargo-semver-checks (gating)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
         with:
           fetch-depth: 0
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
       - name: Install cargo-semver-checks
-        run: |
-          cargo install cargo-semver-checks --locked
+        run: cargo install cargo-semver-checks --locked
       - name: Run semver checks for published crates
         run: |
           set -euo pipefail
@@ -32,10 +44,49 @@ jobs:
           )
           for c in "${crates[@]}"; do
             echo "Checking crate: $c"
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://crates.io/api/v1/crates/$c || echo 000)
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://crates.io/api/v1/crates/$c" || echo 000)
             if [[ "$code" != "200" ]]; then
               echo "- Skipping $c (not published on crates.io)"
               continue
             fi
             cargo semver-checks check-release -p "$c"
+          done
+
+  public-api:
+    name: public-api diff (informational)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+      - name: Install cargo-public-api
+        run: |
+          # cargo-public-api строит rustdoc-json через nightly rustc — без
+          # nightly падает «toolchain nightly is not installed» (лог PR #60).
+          rustup toolchain install nightly --profile minimal
+          cargo install cargo-public-api --locked
+      # Человекочитаемый слепок публичного API к published-крейтам. Информационный:
+      # изменения API ловит gating-джоба cargo-semver-checks выше. Флаг
+      # --diff-git-branch не существует в upstream cargo-public-api (лог PR #60:
+      # «unexpected argument») — диф веток инструментом не поддерживается, поэтому
+      # job печатает текущий API и падает только на реальной ошибке инструмента.
+      - name: Show public API inventory
+        run: |
+          set -euo pipefail
+          CRATES=(
+            rimloc-core
+            rimloc-parsers-xml
+            rimloc-export-csv
+            rimloc-export-po
+            rimloc-import-po
+            rimloc-validate
+          )
+          for c in "${CRATES[@]}"; do
+            echo "=== $c ==="
+            cargo public-api -p "$c" --all-features
+            echo
           done

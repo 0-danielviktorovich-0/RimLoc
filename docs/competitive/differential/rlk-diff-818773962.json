@@ -1,0 +1,5167 @@
+{
+ "both": [
+  {
+   "rimlangkit": {
+    "file": "Defs/KeyBindingCategoryDefs/KeyBindingCategories.xml",
+    "key": "HugsLibShortcuts.label",
+    "text": "HugsLib",
+    "tag": "label",
+    "def_type": "KeyBindingCategoryDef"
+   },
+   "rimloc": {
+    "file": "Languages/ChineseSimplified/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+    "line": 4,
+    "key": "HugsLibShortcuts.label",
+    "text": "HugsLib",
+    "kind": "existing_translation"
+   }
+  }
+ ],
+ "rimloc_only": [
+  {
+   "file": "Languages/German/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 7,
+   "key": "HLOpenModSettings.label",
+   "text": "Mod-Einstellungen-Fenster öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 7,
+   "key": "HLOpenModSettings.label",
+   "text": "Mod設定を開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 7,
+   "key": "HLOpenModSettings.label",
+   "text": "Открыть настройки модов",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 8,
+   "key": "HLOpenUpdateNews.label",
+   "text": "Mod-Update-Neuigkeiten-Fenster öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 8,
+   "key": "HLOpenUpdateNews.label",
+   "text": "Mod更新情報を開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 8,
+   "key": "HLOpenUpdateNews.label",
+   "text": "Открыть новости обновлений модов",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "Atajos para HugsLib.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "Atalhos para HugsLib.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "HugsLib klavye kısayolu.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "HugsLib library向けショートカットキー",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/DefInjected/KeyBindingCategoryDefs/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "HugsLib 라이브러리 단축키.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "HugsLib运行库的快捷键。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "HugsLib運行庫的快捷鍵。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "Raccourci clavier HugsLib.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "Tastenkürzel für die HugsLib-Bibliothek.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml",
+   "line": 5,
+   "key": "HugsLibShortcuts.description",
+   "text": "Сочетания клавиш для библиотеки HugsLib.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 45,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "CPanoya kaydet.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 28,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Copiado al portapapeles.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 45,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Copiado para a área de transferência.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 45,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Copied to clipboard.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 28,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Copié dans le presse-papier.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 45,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "In die Zwischenablage kopiert.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 25,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Skopiowano do schowka.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 45,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Скопировано в буфер обмена.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 45,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "クリップボードにコピーされました。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 28,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "已复制到剪切板。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 33,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "已複製到剪貼簿。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 28,
+   "key": "HugsLib_copiedToClipboard",
+   "text": "클립보드에 복사됨.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 38,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "Ignorar notícias de atualizações futuras de {0}?\\n\\nPode ser reativado nas Opções de ModsTodas as notícias de atualizações de mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 38,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "Ignore future update news from {0}?\\n\\nCan be re-enabled in Mod OptionsAll mod update news",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 38,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "Zukünftige Update-Neuigkeiten von {0} ignorieren?\\n\\nKann in Mod-EinstellungenAlle Mod-Update-Neuigkeiten wieder aktiviert werden.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 38,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "{0} ile ilgili gelecekteki güncelleme haberlerini yoksay?\\n\\nMod Seçeneklerinde yeniden etkinleştirilebilirTüm mod güncelleme haberleri",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 38,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "Больше не показывать новости обновлений мода {0}?\\n\\nМожно повторно включить в меню Настройки модификацийВсе новости обновлений",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 38,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "今後{0}の更新情報を無視しますか？\\n\\nModオプションで再度有効に切替えることが可能ですすべての更新情報",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 31,
+   "key": "HugsLib_features_confirmIgnore",
+   "text": "忽略來自{0}的更新消息??\\n\\n可以在Mod選項中重新開啟所有mod更新訊息 update news",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 37,
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "Bestätigen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 37,
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "Confirm",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 37,
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "Confirma",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 37,
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "Onayla",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 37,
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "Подтвердить",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 30,
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "確認",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 32,
+   "key": "HugsLib_features_description",
+   "text": "As seguintes atualizações de mods foram instaladas, e estes são os novos recursos e melhorias que veio com eles.\\nVocê pode desabilitar esta caixa de diálogo nas Opções OptionsConfig. dos Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 32,
+   "key": "HugsLib_features_description",
+   "text": "Aşağıdaki mod güncellemeleri yüklendi ve bunlar, onlarla birlikte gelen yeni özellikler ve geliştirmelerdir. Bu iletişim kutusunu Seçenekler'den devre dışı bırakabilirsiniz.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 32,
+   "key": "HugsLib_features_description",
+   "text": "Die folgenden Mod-Updates wurden installiert. Hier siehst du die neuen Features und Verbesserungen, die mit den Updates eingeführt wurden.\\n\\nDu kannst dieses Dialogfenster in OptionenMod-Einstellungen deaktivieren.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 23,
+   "key": "HugsLib_features_description",
+   "text": "Les mises à jours suivante ont été installées, et voici les nouvelles fonctions et améliorations.\\nVous pouvez désactiver ce dialogue dans OptionsRéglages des mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 20,
+   "key": "HugsLib_features_description",
+   "text": "Następujące aktualizacje modów zostały zainstalowane, a wraz z nimi doszły nowe funkcjonalności.\\nMożesz wyłączyć to powiadomienie, wchodząc w OpcjeUstawienia modyfikacji.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 23,
+   "key": "HugsLib_features_description",
+   "text": "Se han instalado las siguientes actualizaciones de mod y éstas son las nuevas características y mejoras incluidas en ellas. \\nPuede deshabilitar este diálogo en OpcionesMod Settings",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 32,
+   "key": "HugsLib_features_description",
+   "text": "The following mod updates were installed, and these are the new features and improvements that came with them.\\nYou can disable this dialog in OptionsMod Settings",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 32,
+   "key": "HugsLib_features_description",
+   "text": "Здесь показаны недавно установленные версии модов и новый функционал, который они добавили в игру.\\nЭто окно можно отключить в меню НастройкиНастройки модификаций",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 32,
+   "key": "HugsLib_features_description",
+   "text": "以下のMODアップデートがインストールされており、これらは新しい機能と改良版です。\\nこのダイアログはオプションからMod設定を開いて無効にできます",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 23,
+   "key": "HugsLib_features_description",
+   "text": "以下是新安装的Mod的更新信息，包含了新特性和对游戏的改进。\\n你可以在「选项」「Mod 选项」中关闭这个弹出窗口。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 25,
+   "key": "HugsLib_features_description",
+   "text": "以下是新安裝的Mod的更新信息，包含了新特性和對遊戲的改進。\\n你可以在「選項」「Mod 選項」中關閉這個彈出窗口。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 23,
+   "key": "HugsLib_features_description",
+   "text": "다음 모드 업데이트가 설치됐으며 새로운 기능이나 향상된 부분을 목록에서 확인할 수 있습니다.\\n이 창은 설정모드 설정에서 비활성화 할 수 있습니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 41,
+   "key": "HugsLib_features_filterAllMods",
+   "text": "All mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 41,
+   "key": "HugsLib_features_filterAllMods",
+   "text": "Alle Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 41,
+   "key": "HugsLib_features_filterAllMods",
+   "text": "Todos mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 41,
+   "key": "HugsLib_features_filterAllMods",
+   "text": "Tüm modlar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 41,
+   "key": "HugsLib_features_filterAllMods",
+   "text": "Все моды",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 41,
+   "key": "HugsLib_features_filterAllMods",
+   "text": "全てのMod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 39,
+   "key": "HugsLib_features_filterBtn",
+   "text": "Filter by mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 39,
+   "key": "HugsLib_features_filterBtn",
+   "text": "Filtrar por mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 39,
+   "key": "HugsLib_features_filterBtn",
+   "text": "Moda öre filtrele",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 39,
+   "key": "HugsLib_features_filterBtn",
+   "text": "Modでフィルター",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 39,
+   "key": "HugsLib_features_filterBtn",
+   "text": "Nach Mod filtern",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 39,
+   "key": "HugsLib_features_filterBtn",
+   "text": "Фильтр по модам",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 42,
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0} ({1} Neuigkeiten{2})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 42,
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0} ({1} news{2})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 42,
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0} ({1} notícias{2})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 42,
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0} ({1} yeni{2})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 42,
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0} ({1} новостей{2})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 42,
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0}（{1}更新情報{2}）",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 43,
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ", ignorado",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 43,
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ", ignored",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 43,
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ", ignoriert",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 43,
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ", yok sayıldı",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 43,
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ", игнорируется",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 43,
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ",無視済",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 40,
+   "key": "HugsLib_features_filterStatus",
+   "text": "Aktueller Filter: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 40,
+   "key": "HugsLib_features_filterStatus",
+   "text": "Current filter: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 40,
+   "key": "HugsLib_features_filterStatus",
+   "text": "Filtre: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 40,
+   "key": "HugsLib_features_filterStatus",
+   "text": "Filtro atual: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 40,
+   "key": "HugsLib_features_filterStatus",
+   "text": "Текущий фильтр: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 40,
+   "key": "HugsLib_features_filterStatus",
+   "text": "現在のフィルター：{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 36,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "Bu moddan gelecek güncellemeler hakkında bilgi verin",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 36,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "Notifica sobre atualizações futuras deste mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 36,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "Notify about future updates from this mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 36,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "Über zukünftige Updates dieser Mod benachrichtigen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 36,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "Показывать новости от этого мода и в будущем",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 36,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "このModからの更新情報を今後も通知する",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 29,
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "通知關於這個Mod的更新",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 25,
+   "key": "HugsLib_features_link",
+   "text": "Enlace",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 25,
+   "key": "HugsLib_features_link",
+   "text": "Lien",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 34,
+   "key": "HugsLib_features_link",
+   "text": "Link",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 34,
+   "key": "HugsLib_features_link",
+   "text": "Ссылка",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 27,
+   "key": "HugsLib_features_link",
+   "text": "網頁連結",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 25,
+   "key": "HugsLib_features_link",
+   "text": "网页链接",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 34,
+   "key": "HugsLib_features_link",
+   "text": "詳細",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 25,
+   "key": "HugsLib_features_link",
+   "text": "링크",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 35,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Abre seu navegador em uma página onde você pode aprender mais sobre esta atualização.\\nEndereço: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 26,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Abre su navegador en una página donde puede obtener más información sobre esta actualización..\\nDireccion: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 35,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Bu güncelleme hakkında daha fazla bilgi edinebileceğiniz bir sayfada tarayıcınızı açar.\\nURL: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 35,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Opens your browser on a page where you can learn more about this update.\\nAddress: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 23,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Otwiera stronę poprzez Twoją domyślną przeglądarkę, skąd możesz przeczytać więcej o tej aktualizacji.\\nAdres: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 26,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Ouvrir votre navigateur sur une page où vous pourrez en apprendre plus à propos de cette mise à jour.\\nAddress: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 35,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Öffnet eine Seite in deinem Browser, auf der du ggf. mehr über dieses Update erfährst.\\n\\nAdresse: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 35,
+   "key": "HugsLib_features_linkDesc",
+   "text": "Открывает в браузере страницу с информацией об этом обновлении.\\nСсылка: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 35,
+   "key": "HugsLib_features_linkDesc",
+   "text": "この更新プログラムについて詳しく知ることができるページでブラウザを開きます。\\nAddress：{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 26,
+   "key": "HugsLib_features_linkDesc",
+   "text": "用你的浏览器打开这个链接以了解关于此次更新的更多信息。\\n地址：{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 28,
+   "key": "HugsLib_features_linkDesc",
+   "text": "用你的瀏覽器打開這個連結以了解關於此次更新的更多訊息。\\n網址：{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 26,
+   "key": "HugsLib_features_linkDesc",
+   "text": "업데이트에 대한 자세한 정보를 포함한 웹페이지를 브라우저에서 확인합니다.\\n주소: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 19,
+   "key": "HugsLib_features_title",
+   "text": "Aktualności modyfikacji",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 22,
+   "key": "HugsLib_features_title",
+   "text": "Mod新特性",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 31,
+   "key": "HugsLib_features_title",
+   "text": "Neue Mod-Features",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 31,
+   "key": "HugsLib_features_title",
+   "text": "New Mod Features",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 22,
+   "key": "HugsLib_features_title",
+   "text": "Nouvelles fonctions",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 31,
+   "key": "HugsLib_features_title",
+   "text": "Novos Recursos de Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 22,
+   "key": "HugsLib_features_title",
+   "text": "Nuevas funciones de mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 31,
+   "key": "HugsLib_features_title",
+   "text": "Yeni mod özellikleri",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 31,
+   "key": "HugsLib_features_title",
+   "text": "Новости обновлений модов",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 31,
+   "key": "HugsLib_features_title",
+   "text": "新しいMod機能",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 22,
+   "key": "HugsLib_features_title",
+   "text": "새로운 기능",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 24,
+   "key": "HugsLib_features_update",
+   "text": "{0} v{1}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 77,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "Die HugsLib-Mod/bsollte immer nachbCore/bgeladen werden, um Probleme zu vermeiden.\\n\\nBitte passe deine Mod-Reihenfolge im Mods-Menü an und starte das Spiel neu.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 51,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bEl mod HugsLib/bdebe cargarse siempre después debCore/bpara evitar problemas.\\nPor favor, ajuste su orden de carga de mods en el menú Mods y reinicie el juego.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 51,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bHugsLib Mod/b应该排在bCore/b之后，以避免引起问题。\\n请在Mod菜单中调整你的Mod排序并重启游戏。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 65,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bHugsLib mod/b應該排在bCore/b，以避免引起問題。\\n請在Mod選單中調整你的Mod順序並重啟遊戲。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 51,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bHugsLib/b을bCore/b다음에 불러와야 문제가 발생하지 않습니다.\\n모드 메뉴에서 순서를 재설정하고 게임을 다시 시작해주세요.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 51,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bLe mod HugsLib/bdoit toujours être charger aprèsbCore/bpour éviter les erreurs.\\nSVP ajustez l'ordre de votre liste de mod dans la fenêtre Mods et relancez le jeu.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 77,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bO mod HugsLib/bdeve ser sempre carregado apósbCore/bpara evitar problemas.\\nPor favor ajuste a ordem dos mods no menu de Mods e reinicie o jogo.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 79,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bThe HugsLib mod/bshould always be loaded afterbCore/bto avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 77,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "bМод HugsLib/bдолжен всегда загружаться послеbCore/bво избежание проблем.\\nПожалуйста исправьте порядок в меню модов.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 79,
+   "key": "HugsLib_loadOrderWarning_text",
+   "text": "問題を避けるために、bHugsLib mod/bは常にbCore/bの後にロードする必要があります。\\nModsメニューでmodの順序を調整してゲームを再開してください。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 50,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Erreur dans l'ordre de chargement des mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 76,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Falsche Reihenfolge beim Laden der Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 78,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Improper mod load order",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 76,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Ordem de carregamento de mods imprópria",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 50,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Orden de carga de los mods incorrecto",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 76,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Неверный порядок модов",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 78,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "不適切なmod読込順",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 64,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "錯誤的Mod排序",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 50,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "错误的Mod排序",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 50,
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "부적절한 모드 순서",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 56,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Abbrechen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 56,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Abort",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 56,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Abortar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 39,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Annuler",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 36,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Przerwij",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 56,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "İptal et",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 56,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Отменить",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 39,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "中止",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 39,
+   "key": "HugsLib_logs_abortBtn",
+   "text": "중단",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 41,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Abrir en el navegador",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 58,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Abrir no navegador",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 58,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Im Browser öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 58,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Open in browser",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 38,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Otwórz w przeglądarce",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 41,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Ouvrir dans le navigateur",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 58,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Tarayıcıda aç",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 58,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Открыть в браузере",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 58,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "ブラウザで開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 41,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "在浏览器中打开",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 46,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "在瀏覽器中打開",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 41,
+   "key": "HugsLib_logs_browseBtn",
+   "text": "브라우저에서 확인",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 47,
+   "key": "HugsLib_logs_copy",
+   "text": "Copiar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 30,
+   "key": "HugsLib_logs_copy",
+   "text": "Copier",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 47,
+   "key": "HugsLib_logs_copy",
+   "text": "Copy",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 47,
+   "key": "HugsLib_logs_copy",
+   "text": "Kopieren",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 27,
+   "key": "HugsLib_logs_copy",
+   "text": "Kopiuj",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 47,
+   "key": "HugsLib_logs_copy",
+   "text": "Kopyala",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 47,
+   "key": "HugsLib_logs_copy",
+   "text": "Скопировать",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 47,
+   "key": "HugsLib_logs_copy",
+   "text": "コピー",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 30,
+   "key": "HugsLib_logs_copy",
+   "text": "复制",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 35,
+   "key": "HugsLib_logs_copy",
+   "text": "複製",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 30,
+   "key": "HugsLib_logs_copy",
+   "text": "복사",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 43,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Archivos",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 69,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Arquivos",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 69,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Daten",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 43,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Fichiers",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 71,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Files",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 69,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Файлы",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 71,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "ファイル",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 43,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "文件",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 57,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "檔案",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 43,
+   "key": "HugsLib_logs_filesBtn",
+   "text": "파일",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 66,
+   "key": "HugsLib_logs_github_token",
+   "text": "GitHub access token",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 66,
+   "key": "HugsLib_logs_github_token",
+   "text": "GitHub接続トークン",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 67,
+   "key": "HugsLib_logs_github_token_tip",
+   "text": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings > Developer Settings > Personal access tokens. Leave blank to publish to the public HugsLib account.\\n\\nLogs published to your account can only be viewed by others using a link.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 67,
+   "key": "HugsLib_logs_github_token_tip",
+   "text": "設定すると、個人用GitHubアカウントに自分のログを出力します。GitHub から発行されたトークンを貼り付けるには設定開発者設定個人用接続トークンを開きます。以前のようにHugsLib公開アカウントでログを公開する場合は空白のままにします。\\n\\n個人用GitHubアカウントで公開されたログは、そのURLリンクを使った場合だけ他のユーザーが閲覧できます。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 44,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Abrir archivo de registro",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 70,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Abrir arquivo de registro",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 70,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Log-Datei öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 72,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Open log file",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 44,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Ouvrir le fichier log",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 70,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Открыть журнал событий",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 72,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "ログファイルを開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 44,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "打开日志文件",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 58,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "打開日誌檔案",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 44,
+   "key": "HugsLib_logs_openLogFile",
+   "text": "로그파일 열기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 46,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Abrir carpeta de Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 72,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Abrir pasta de mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 74,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Modsフォルダを開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 74,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Open mods folder",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 72,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Ordner mit Mods öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 46,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Ouvrir le dossier Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 72,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Открыть папку с модами",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 46,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "打开Mod文件夹",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 60,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "打開Mod資料夾",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 46,
+   "key": "HugsLib_logs_openModsDir",
+   "text": "모드 폴더 열기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 45,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Abrir carpeta de guardados",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 71,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Abrir pasta de arquivos salvos",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 73,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Open save folder",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 71,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Ordner mit Speicherständen öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 45,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Ouvrir le dossier des sauvegardes",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 71,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Открыть папку с сохраненными играми",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 73,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "保存フォルダを開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 45,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "打开存档文件夹",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 59,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "打開存檔資料夾",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 45,
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "저장 폴더 열기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 62,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "Include platform information",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 62,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "Incluir informação da plataforma",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 62,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "Platform bilgilerini dahil et",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 62,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "Plattforminformationen einfügen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 62,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "С информацией о железе",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 62,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "ハード環境情報を含む",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 50,
+   "key": "HugsLib_logs_platformInfo",
+   "text": "包含平台資訊",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 63,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "CPUやメモリ、ビデオカードに関する情報をログに記録します。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 63,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "Fügt Informationen über deine CPU, deinen Arbeitsspeicher und deine Grafikkarte in die Logs ein.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 63,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "Günlükte CPU, bellek ve video kartınız hakkında bilgi içerir.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 63,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "Includes information about your CPU, memory and video card in the log.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 63,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "Inclui informações sobre sua CPU, memória e placa de vídeo no registro.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 63,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "Добавляет в публикуемый журнал информацию о процессоре, памяти и видеокарте.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 51,
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "在日誌中包含關於你的CPU, 記憶體和顯示卡資訊.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 34,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Editor de registro",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 51,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Kayıt yayınlayıcı",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 51,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Log publisher",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 51,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Log-Publisher",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 34,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Poster le log",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 51,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Publicador de Registros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 51,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Публикация журнала",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 51,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "ログ発行者",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 34,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "发布游戏日志",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 39,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "發布遊戲日誌",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 34,
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "올린 사람",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 37,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Powtórz",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 40,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Reintentar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 57,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Retry",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 40,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Ré-essayer",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 57,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Tentar novamente",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 57,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Wiederholen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 57,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Yeniden dene",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 57,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Повторить попытку",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 57,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "リトライ",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 45,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "重試",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 40,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "重试",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 40,
+   "key": "HugsLib_logs_retryBtn",
+   "text": "재시도",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Compartilhar registros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 31,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Compartir registros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Kayıtları paylaş",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Logs hochladen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 28,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Opublikuj logi",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 31,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Partage les logs",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Share logs",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Опубликовать журнал",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "ログを共有する",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 31,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "导出日志",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 36,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "導出日誌",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 31,
+   "key": "HugsLib_logs_shareBtn",
+   "text": "로그 공유",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 50,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Enviar registros do jogo agora?\\n\\nIsto irá postar os registros do jogo em um servidor público e te dar o link para compartilhar com outras pessoas. Isto é útil se você precisa de ajuda consertando um problema ou gostaria de reportar um problema para o criador de um mod.\\n\\nNenhuma informação privada será compartilhada.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 50,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Logs jetzt hochladen?\\n\\nWenn du das tust, werden deine Logs auf einen öffentlichen Server hochgeladen, außerdem erhältst du einen Link, den du mit anderen teilen kannst. Das ist nützlich, wenn du Hilfe bei einem Problem brauchst oder einem Mod-Autor ein Problem melden möchtest.\\n\\nEs werden keine privaten Informationen preisgegeben.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 30,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Opublikować logi gry?\\n\\nSprawi to, że zostaną one wysłane na publiczny serwer, dając Ci link, którym możesz podzielić się z innymi - szukając pomocy albo zgłaszając problem do twórcy jednego z modów.\\n\\nŻadne poufne informacje nie zostaną opublikowane.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 50,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Oyun günlükleri şimdi yüklensin mi?\\n\\nBu, oyun günlüklerinizi herkese açık bir sunucuya gönderir ve size başkalarıyla paylaşmanız için bir bağlantı verir. Bu, bir sorunu düzeltmek için yardıma ihtiyacınız varsa veya bir sorunu mod yazarına bildirmek istiyorsanız kullanışlıdır.\\n\\nHiçbir özel bilgi paylaşılmaz.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 33,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Publier les logs?\\n\\nCeci chargera votre ficher log sur un serveur public et vous fournira un lien pour le partager sur internet. Cela peut être utile pour demander de l'aide ou pour signaler de manière précise un bug à l'auteur d'un mod.\\n\\nAucunes informations privées ne sera publiés.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 50,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Upload game logs now?\\n\\nThis will post your game logs to a public server and give you the link to share with others. This is useful if you need help fixing a problem or would like to report an issue to a mod author.\\n\\nNo private information will be shared.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 33,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "¿Subir los registros ahora?\\n\\nEsto publicará los registros de su juego en un servidor público y le dará el enlace para compartir con otros. Esto es útil si necesita ayuda para solucionar un problema o desea informar de un problema a un autor del mod.\\n\\nNo se compartirá información privada.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 50,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Опубликовать журнал событий?\\n\\nЭта операция загрузит журнал событий игры на общедоступный сервер. Это полезно когда нужно решить проблему с игрой с помощью окружающих или сообщить автору мода о неисправности.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 50,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "今すぐゲームログをアップロードしますか？\\n\\nこれはあなたのゲームログを公開サーバに投稿し、他の人と共有するためのリンクを提供します。これは、問題を解決するのに役立つ必要がある場合、またはmodの作者へ問題を報告したい場合に便利です。\\n\\n個人情報は共有されません。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 33,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "确定要上传游戏日志吗？\\n\\n这将上传游戏日志到公共服务器以方便你将其分享至他人。有助于于让他人或Mod作者帮助你解决游戏中所遇到的和Mod相关的问题。\\n\\n其他的个人信息不会被分享。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 38,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "確定要上傳遊戲日誌嗎？\\n\\n這將上傳你的遊戲日誌到公共服務器並給你連結以方便你分享給其他人。有助於於讓他人或Mod作者幫助你解決遊戲中所遇到的和Mod相關的問題。\\n\\n個人信息將不會被分享。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 33,
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "게임 로그를 올리시겠습니까?\\n\\n게임 로그가 공개 서버에 업로드되고 다른 사람과 공유할 수 있는 링크가 주어집니다. 문제를 해결하거나 모드 제작자에게 오류를 제보해야 할 때 유용합니다.\\n\\n개인정보는 공유되지 않습니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Bestätigen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Confirm",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Confirmar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 32,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Confirmer",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Onayla",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 29,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Potwierdź",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Подтвердить",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 32,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "确定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 37,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "確定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "確認",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 32,
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "확인",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 60,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "Kurze URL generieren",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 60,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "URL kısaltıcı kullan",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 60,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "URL短縮サービスを利用",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 60,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "Usar encurtador de URL",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 60,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "Use URL shortener",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 60,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "С короткой ссылкой",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 48,
+   "key": "HugsLib_logs_shortUrls",
+   "text": "使用短網址",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 61,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "Erzeugt beim Hochladen einen kürzeren Link. Nicht für die Nutzung auf Steam empfohlen - kurze Links werden automatisch entfernt.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 61,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "Produces a shorter link when uploading. Not recommended on Steam- short links are automatically removed.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 61,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "Produz um link curto quando enviar. Não recomendado na Steam- links encurtados são automaticamente removidos.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 61,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "Yükleme sırasında daha kısa bir bağlantı oluşturur. Steam'de önerilmez - kısa bağlantılar otomatik olarak kaldırılır.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 61,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "Создает более короткую ссылку при загрузке. Не рекомендуется, если ссылка будет выложена на сайте Steam- короткие ссылки автоматически удаляются.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 61,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "アップロードする際に短縮URLを作成します。Steamでは短縮URLは自動的に削除されるのでURLを張る用には推奨できません。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 49,
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "上傳時產生一個短網址. 不建議在 Steam 上使用 - 短網址將自動被刪除.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 53,
+   "key": "HugsLib_logs_shortening",
+   "text": "Conseguindo o link{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 53,
+   "key": "HugsLib_logs_shortening",
+   "text": "Getting link{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 36,
+   "key": "HugsLib_logs_shortening",
+   "text": "Obteniendo URL{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 33,
+   "key": "HugsLib_logs_shortening",
+   "text": "Otrzymywanie linku{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 53,
+   "key": "HugsLib_logs_shortening",
+   "text": "Rufe Link ab{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 36,
+   "key": "HugsLib_logs_shortening",
+   "text": "Récupération de l'URL{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 53,
+   "key": "HugsLib_logs_shortening",
+   "text": "URLを取得する{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 53,
+   "key": "HugsLib_logs_shortening",
+   "text": "Url alınıor{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 53,
+   "key": "HugsLib_logs_shortening",
+   "text": "Получение адреса {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 41,
+   "key": "HugsLib_logs_shortening",
+   "text": "獲取URL中{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 36,
+   "key": "HugsLib_logs_shortening",
+   "text": "获取URL中{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 36,
+   "key": "HugsLib_logs_shortening",
+   "text": "주소 받는 중{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 66,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "In die Zwischenablage",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 66,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "Panoya",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 66,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "Para área de preferência",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 68,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "To clipboard",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 66,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "В буфер обмена",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 68,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "クリップボードにコピー",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 54,
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "到剪貼簿",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 64,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "Allow unlimited log size",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 64,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "Permitir tamanho de registro ilimitado",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 64,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "Sınırsız günlük boyutuna izin ver",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 64,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "Unbegrenzte Log-Größe erlauben",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 64,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "Неограниченный объем журнала",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 52,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "允許無限大小的日誌.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 64,
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "無制限なログサイズを許可",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 65,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "Bei Deaktivierung wird die Log-Größe auf 10.000 Zeilen begrenzt, um Probleme mit sehr langen Logs zu verhindern.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 65,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "Devre dışı bırakıldığında, çok uzun günlüklerin sorunlara neden olmasını önlemek için günlük boyutu 10K satırla sınırlıdır.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 65,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "Quando desativado, tamanho do registro é limitado em 10 mil linhas para evitar erros causados por registros muito longos.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 65,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "When disabled, log size is limited to 10K lines to prevent very long logs from causing issues.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 65,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "Если отключено, журнал ограничен длинной в 10000 строк. Это позволяет избежать проблем при загрузке журналов с большим количеством ошибок.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 53,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "當禁用時, 日誌大小被限制在一萬行, 以防止太長的日誌引發問題.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 65,
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "長くなりすぎたログによって問題が発生しないように、無効にするとログファイルの最大サイズは1万行までに制限されます。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 67,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "Enviar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 67,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "Hochladen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 69,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "Upload",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 67,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "Yükle",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 67,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "Отправить на сервер",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 69,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "アップロード",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "上傳",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 35,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Błąd publikacji: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 38,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Erreur de chargement: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Erro de envio: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 38,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Error en carga: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Fehler beim Hochladen: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Upload error: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Yükleme hatası: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadError",
+   "text": "Ошибка при загрузке: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 55,
+   "key": "HugsLib_logs_uploadError",
+   "text": "アップロード失敗:{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 38,
+   "key": "HugsLib_logs_uploadError",
+   "text": "上传出错：{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 43,
+   "key": "HugsLib_logs_uploadError",
+   "text": "上傳出錯：{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 38,
+   "key": "HugsLib_logs_uploadError",
+   "text": "업로드 오류: {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 37,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Chargement terminé!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 54,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Envio completo!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 54,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Hochladen erfolgreich!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 54,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Upload complete!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 34,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Wysyłanie zakończone!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 54,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Yükleme tamamlandı!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 37,
+   "key": "HugsLib_logs_uploaded",
+   "text": "¡Carga completa!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 54,
+   "key": "HugsLib_logs_uploaded",
+   "text": "Загрузка завершена!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 54,
+   "key": "HugsLib_logs_uploaded",
+   "text": "アップロード完了!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 37,
+   "key": "HugsLib_logs_uploaded",
+   "text": "上传完毕！",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 42,
+   "key": "HugsLib_logs_uploaded",
+   "text": "上傳完畢！",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 37,
+   "key": "HugsLib_logs_uploaded",
+   "text": "업로드 완료!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 35,
+   "key": "HugsLib_logs_uploading",
+   "text": "Cargando{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 35,
+   "key": "HugsLib_logs_uploading",
+   "text": "Chargement{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 52,
+   "key": "HugsLib_logs_uploading",
+   "text": "Enviando{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 52,
+   "key": "HugsLib_logs_uploading",
+   "text": "Lade hoch{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 52,
+   "key": "HugsLib_logs_uploading",
+   "text": "Uploading{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 52,
+   "key": "HugsLib_logs_uploading",
+   "text": "Yükleniyor{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 32,
+   "key": "HugsLib_logs_uploading",
+   "text": "Zamieszczanie{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 52,
+   "key": "HugsLib_logs_uploading",
+   "text": "Загрузка {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 52,
+   "key": "HugsLib_logs_uploading",
+   "text": "アップロード中{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 35,
+   "key": "HugsLib_logs_uploading",
+   "text": "上传中{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 40,
+   "key": "HugsLib_logs_uploading",
+   "text": "上傳中{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 35,
+   "key": "HugsLib_logs_uploading",
+   "text": "올리는 중{0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 59,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "Empfohlene Einstellungen nutzen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 59,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "Usar configurações recomendadas",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 59,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "Use recommended settings",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 59,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "Önerilen ayarları kullan",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 59,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "Стандартные настройки",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 47,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "使用建議的設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 59,
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "推奨設定を使用",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 11,
+   "key": "HugsLib_ownSettingsName",
+   "text": "Autre",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 11,
+   "key": "HugsLib_ownSettingsName",
+   "text": "Inne",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 11,
+   "key": "HugsLib_ownSettingsName",
+   "text": "Otros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 11,
+   "key": "HugsLib_ownSettingsName",
+   "text": "其他",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 11,
+   "key": "HugsLib_ownSettingsName",
+   "text": "기타",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 74,
+   "key": "HugsLib_restart_language_text",
+   "text": "A língua do jogo mudou. O jogo irá reiniciar automaticamente.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 74,
+   "key": "HugsLib_restart_language_text",
+   "text": "Die Sprache wurde geändert. Das Spiel wird jetzt automatisch neu gestartet.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 48,
+   "key": "HugsLib_restart_language_text",
+   "text": "El idioma del juego ha cambiado. El juego se reiniciará automáticamente.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 48,
+   "key": "HugsLib_restart_language_text",
+   "text": "La langue à été changé. Le jeu va maintenant redémarrer automatiquement.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 76,
+   "key": "HugsLib_restart_language_text",
+   "text": "The game language has changed. The game will now restart automatically.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 74,
+   "key": "HugsLib_restart_language_text",
+   "text": "Язык игры был изменен. Игра будет автоматически перезапущена.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 76,
+   "key": "HugsLib_restart_language_text",
+   "text": "ゲームの言語が変更されました。Modをリロードできるようにゲームを再起動することをお勧めします。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 48,
+   "key": "HugsLib_restart_language_text",
+   "text": "游戏语言已更改。游戏将会自动重启。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 62,
+   "key": "HugsLib_restart_language_text",
+   "text": "遊戲語言已更改。遊戲將會自動重啟。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 48,
+   "key": "HugsLib_restart_language_text",
+   "text": "게임 언어가 변경됐습니다. 게임이 재시작됩니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 16,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Afficher maintenant",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 20,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Göster",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 20,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Jetzt anzeigen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 20,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Mostrar agora",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 16,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Mostrar ahora",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 16,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Pokaż!",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 20,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Show now",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 20,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Показать сейчас",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 20,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "今すぐ表示",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 16,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "显示更新",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 16,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "顯示更新",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 16,
+   "key": "HugsLib_setting_allNews_button",
+   "text": "지금 보이기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 15,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Afficher toutes les infos de mise à jour des mods, y compris les infos déjà présentées.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 19,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Halihazırda görüntülenmiş olanlar da dahil olmak üzere mevcut tüm mod güncelleme haberlerini gösterir.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 19,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Mostrar todas as notícias de atualizações de mods, incluindo aqueles que já foram mostrados.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 15,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Muestra todas las noticias de actualizaciones de mods disponibles, incluidas las que ya se han mostrado.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 15,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Pokaż wszystkie dostępne aktualności, wliczając te, które były już wyświetlone.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 19,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Shows all available mod update news, including those that have already been displayed.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 19,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Zeigt alle Mod-Update-Neuigkeiten an, auch jene, die bereits angezeigt wurden.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 19,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Показывает все доступные новости обновлений, включая те, что уже были показаны.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 19,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "既に表示されているものを含め、使用可能な全てのMod更新情報を表示します。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 15,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "显示所有可用的Mod更新信息，包含之前已显示过的更新信息。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 15,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "顯示所有可用的Mod更新信息，包含之前已顯示過的更新信息。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 15,
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "이미 설치된 모드를 포함해 가능한 업데이트 소식을 모두 표시합니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 21,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Aktif modların hiçbirinde gösterilecek güncelleme haberi yok.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 17,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Aucuns des mods actifs n'a d'informations de mise à jours.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 21,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Keiner der aktiven Mods hat eine Update-Neuigkeit.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 21,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Nenhum dos mods ativos tem atualizações a serem mostradas.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 17,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Ninguno de los mods activos tiene noticias de actualizaciones que mostrar.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 21,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "None of the active mods have any update news to display.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 17,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Żaden z aktywnych modów nie ma aktualności do pokazania.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 21,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "Ни один из загруженных модов не содержит новостей.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 17,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "已启用的Mod中没有任何可供显示的更新信息。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 17,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "已啟用的Mod中沒有任何可供顯示的更新信息。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 21,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "読み込まれているModには更新情報が有りません。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 17,
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "업데이트 소식을 가진 모드가 없습니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 18,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "All mod update news",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 18,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Alle Mod-Update-Neuigkeiten",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 18,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Todas as notícias de atualizações de mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 14,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Todas las noticias de actualizaciones de mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 14,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Toutes les infos de mise à jours",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 18,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Tüm güncel mod haberleri",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 14,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Wszystkie aktualności",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 18,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "Все новости обновлений",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 18,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "全Modの更新情報",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 14,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "显示所有Mod更新信息",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 14,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "顯示所有Mod更新信息",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 14,
+   "key": "HugsLib_setting_allNews_label",
+   "text": "모든 업데이트 소식",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 26,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "Close",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 26,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "Fechar",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 26,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "Kapat",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 26,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "Schließen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 26,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "Закрыть",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 26,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "閉じる",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 22,
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "關閉",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 25,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "Abrir",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 25,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "Aç",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 25,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "Open",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 25,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "Öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 25,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "Открыть",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 25,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 21,
+   "key": "HugsLib_setting_expand_mod",
+   "text": "開啟",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 29,
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "Ignored mod update news providers",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 29,
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "Ignorierte Anbieter von Mod-Update-Neuigkeiten",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 29,
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "Provedores de notícias de atualização de mod ignorados",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 29,
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "Yok sayılan mod güncelleme haber sağlayıcıları",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 29,
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "Игнорируемые новости обновлений модов",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 29,
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "無効化済の更新情報プロバイダ",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 28,
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "Log publisher preferences",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 28,
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "Preferências de publicador de registros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 28,
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "Publisher-Einstellungen loggen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 28,
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "Yayıncı tercihlerini kaydet",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 28,
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "Настройки публикации журнала событий",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 28,
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "ログ発行元の設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 20,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Ajustes del mod {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 24,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Configurações de mod para {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 24,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Einstellungen für {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 24,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Mod settings for {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 20,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Réglages pour {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 20,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "{0} Mod 設置",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 20,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "{0} Mod 设置",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 24,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "{0} için mod ayarları",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 20,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "{0} 설정",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 24,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "{0}のMod設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 24,
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Настройки мода {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 27,
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "Configuração de início rápido",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 27,
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "Hızlı başlangıç ayarları",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 27,
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "Quickstart configuration",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 27,
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "Schnellstart-Konfiguration",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 27,
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "Настройки быстрого запуска",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 27,
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "クイックスタートの設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 17,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Allows newly installed mods to highlight their new features in a pop-up window when you start your game.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 17,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Ermöglicht neu installierten Mods, ihre neuen Features in einem Popupfenster zu präsentieren, wenn du dein Spiel startest.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 17,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Oyuna başladığınızda yeni yüklenen modların bir açılır pencerede yeni özelliklerini vurgulamasına izin verir.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 13,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Permet aux mods nouvellement installés de présenter leurs fonctionnalités dans une bulle d'aide en jeux.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 13,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Permite que los mods recién instalados resalten sus nuevas funciones en una ventana emergente al iniciar el juego.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 17,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Permite que mods recém instalados a mostrar seus novos recursos em uma janela quando você começar o seu jogo.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 13,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Pozwala świeżo zainstalowanym modom na podświetlenie ich najnowszych funkcjonalności w wyskakującym oknie po rozpoczęciu gry.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 17,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Позволяет модам показывать окно с описанием функционала, добавленного при обновлении.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 13,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "允許新安裝及升級的Mod在啟動遊戲時彈出窗口顯示新特性和更新。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 13,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "允许新安装及升级的Mod在启动游戏时弹出窗口显示新特性和更新。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 17,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "新しくインストールされたModがあなたがゲームを開始する際に新しい機能をポップアップウィンドウで強調表示することを許可します。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 13,
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "새로 설치된 모드가 새 기능들을 소개하는 창을 띄울 수 있습니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 12,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Afficher les infos de mise jour des mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 16,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Güncel mod haberleri",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 16,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Mod-Update-Neuigkeiten anzeigen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 16,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Mod更新情報を表示",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 12,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Mostrar noticias de actualizaciones de mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 16,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Mostrar notícias de mods atualizados",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 12,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Pokaż aktualności w grze",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 16,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Show mod update news",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 16,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Новости обновлений модов",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 12,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "显示Mod更新信息",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 12,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "顯示Mod更新信息",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 12,
+   "key": "HugsLib_setting_showNews_label",
+   "text": "모드 업데이트 소식 보기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 19,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Afficher les réglages",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 23,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Ayarları göster",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 23,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Einstellungen anzeigen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 19,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Mostrar ajustes",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 23,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Mostrar configurações",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 23,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Show settings",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 23,
+   "key": "HugsLib_setting_show_settings",
+   "text": "Показать настройки",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 19,
+   "key": "HugsLib_setting_show_settings",
+   "text": "显示设置",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 23,
+   "key": "HugsLib_setting_show_settings",
+   "text": "設定を表示する",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 19,
+   "key": "HugsLib_setting_show_settings",
+   "text": "顯示設置",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 19,
+   "key": "HugsLib_setting_show_settings",
+   "text": "설정 보기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 18,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(Mod sin nombre)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 22,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(isimsiz mod)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 18,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(mod sans nom)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 22,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(mod sem nome)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 22,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(namenlose Mod)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 22,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(unnamed mod)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 22,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(мод без названия)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 22,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(無名MOD)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 18,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(이름 없는 모드)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 18,
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "（未命名Mod）",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Ajustes de mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Config. dos Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Mod Ayarları",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Mod Settings",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Mod 設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Mod 选项",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Mod-Einstellungen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Mod設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Réglages des mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Ustawienia modyfikacji",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "Настройки модификаций",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 4,
+   "key": "HugsLib_settings_btn",
+   "text": "모드 설정",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 13,
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "Configurações ocultas:",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 13,
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "Gizli mod ayarları:",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 13,
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "Hidden mod settings:",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 13,
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "Versteckte Mod-Einstellungen:",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 13,
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "Скрытые настройки:",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 13,
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "非表示のmod設定：",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "Aucun mods avec options modifiables.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "Keine Mods mit veränderbaren Einstellungen geladen.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "Konfigüre edilebilir ayarlara sahip modlar yüklenemedi.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "Nenhum mod com configurações ajustáveis foi carregado.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "Nie masz modów, które można by było skonfigurować.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "No mods with configurable settings are loaded.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "No se cargaron mods con ajustes configurables.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "Не загружено ни одного мода с настройками.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "変更可能な設定を持つModは読み込まれていません。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "未加載任何有可設置選項的Mod。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "未加载任何有可设置选项的Mod。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 9,
+   "key": "HugsLib_settings_noSettings",
+   "text": "설정 가능한 모드가 없습니다.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Alle zurücksetzen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Herşeyi sıfırla",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Reset all",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Resetar tudo",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Restablecer todo",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Tout réinitialiser",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Zresetuj",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "Сбросить все",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "全て初期化",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "全部重置",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "重设所有",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 7,
+   "key": "HugsLib_settings_resetAll",
+   "text": "모두 초기화",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Alle Mods auf ihre Standardeinstellungen zurücksetzen?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "MOD設定を全て初期化しますか？",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Przywrócić domyślne ustawienia wszystkich modyfikacji?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Reset all mod settings to their original values?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Resetar todas as configurações de mods para seus valores originais?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Tüm mod ayarlarını orijinal değerleri sıfırlayın?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Voulez-vous réinitialiser les réglages par défaut?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "¿Restablecer todos los ajustes del mod a sus valores originales?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Сбросить настройки всех модов на их начальные значения?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "确定要将所有选项重设为默认值吗？",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "確定要將所有選項重置為預設值嗎？",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 8,
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "모든 모드의 설정을 초기화하시겠습니까?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 12,
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "Gizli ayarları dahil et ({0})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 12,
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "Include hidden settings ({0})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 12,
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "Incluir configurações ocultas ({0})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 12,
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "Versteckte Einstellungen einbeziehen ({0})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 12,
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "Включая скрытые настройки ({0})",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 12,
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "非表示の設定を含む（{0}）",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 10,
+   "key": "HugsLib_settings_resetMod",
+   "text": "Reset {0} settings to default",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 10,
+   "key": "HugsLib_settings_resetMod",
+   "text": "Resetar as configurações de {0} para o padrão",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 10,
+   "key": "HugsLib_settings_resetMod",
+   "text": "{0} auf Standard zurücksetzen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 10,
+   "key": "HugsLib_settings_resetMod",
+   "text": "{0} ayarlarını varsayılana sıfırlayın",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 10,
+   "key": "HugsLib_settings_resetMod",
+   "text": "{0}の設定を初期化リセットする",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 10,
+   "key": "HugsLib_settings_resetMod",
+   "text": "Сбросить настройки {0}",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 11,
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "Reset all {0} settings to their original values?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 11,
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "Resetar todas {0} configurações para seus valores originais?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 11,
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "{0} Mod auf ihre Standardeinstellungen zurücksetzen?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 11,
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "{0} mod ayarlarını orijinal değerleri sıfırlayın?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 11,
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "{0}のすべての設定を初期状態の値にリセットしますか？",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 11,
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "Сбросить все настройки мода {0} на их начальные значения?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 14,
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "{0} Einstellungen wurden zurückgesetzt.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 14,
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "{0} ayarları sıfırlandı.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 14,
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "{0} configurações foram resetadas.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 14,
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "{0} settings have been reset.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 14,
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "{0}の設定をリセットしました。",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 14,
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "Сброшено {0} настроек.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Auf Standard zurücksetzen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Ayarları sıfırla",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Przywróć ustawienia domyślne",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Reset setting to default",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Resetar configurações para seus padrões",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Restablecer ajustes por defecto",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Réinitialiser les réglages par défaut",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "Сбросить настройку на начальное значение",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "設定を初期化する",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "重置為預設值",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "重设为默认值",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 6,
+   "key": "HugsLib_settings_resetValue",
+   "text": "초기화",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Ajustes de mod",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Config. dos Mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/Keyed/Turkish.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod Ayarları",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod Settings",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod 設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod 选项",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod-Einstellungen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod設定",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Réglages des mods",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Ustawienia modyfikacji",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Настройки модификаций",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 5,
+   "key": "HugsLib_settings_windowTitle",
+   "text": "모드 설정",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 80,
+   "key": "HugsLib_updateRequired_text",
+   "text": "b{0}/bbenötigt die Versionb{1}/bvon derbHugsLib-Bibliothek/b, um richtig zu funktionieren.\\n\\nWillst du sie jetzt aktualisieren?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 80,
+   "key": "HugsLib_updateRequired_text",
+   "text": "b{0}/brequer a versãob{1}/bdabBiblioteca HugsLib/bpara funcionar apropriadamente.\\n\\nVocê gostaria de atualizar agora?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 82,
+   "key": "HugsLib_updateRequired_text",
+   "text": "b{0}/brequires versionb{1}/bof thebHugsLib library/bto work properly.\\n\\nWould you like to update it now?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 80,
+   "key": "HugsLib_updateRequired_text",
+   "text": "b{0}/bтребует версиюb{1}/bбиблиотекиbHugsLib/bдля правильной работы.\\n\\nЖелаете обновить ее сейчас?",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 82,
+   "key": "HugsLib_updateRequired_text",
+   "text": "b{0}/bが正しく動作するには,bHugsLibライブラリ/bのバージョンb{1}/bが必要です.\\n\\n今すぐ更新しますか？",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 79,
+   "key": "HugsLib_updateRequired_title",
+   "text": "Aktualisierung der Bibliothek erforderlich",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 79,
+   "key": "HugsLib_updateRequired_title",
+   "text": "Atualização necessária da Biblioteca",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 81,
+   "key": "HugsLib_updateRequired_title",
+   "text": "Library update required",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 79,
+   "key": "HugsLib_updateRequired_title",
+   "text": "Требуется обновление",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 81,
+   "key": "HugsLib_updateRequired_title",
+   "text": "ライブラリの更新が必要",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 81,
+   "key": "HugsLib_updateRequired_updateBtn",
+   "text": "Aktualisieren",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 81,
+   "key": "HugsLib_updateRequired_updateBtn",
+   "text": "Atualizar agora.",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 83,
+   "key": "HugsLib_updateRequired_updateBtn",
+   "text": "Update now",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 81,
+   "key": "HugsLib_updateRequired_updateBtn",
+   "text": "Обновить",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 83,
+   "key": "HugsLib_updateRequired_updateBtn",
+   "text": "今すぐ更新",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": ".log dosyasını aç",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "Abrir archivo de registros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "Abrir arquivo de registros",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "Log-Datei öffnen",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "Ouvrir le fichier .log",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "Открыть журнал",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "ログを開く",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "打开日志文件",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 5,
+   "key": "OpenLogFile.label",
+   "text": "打開日誌文件",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/DefInjected/KeyBindingDefs/KeyBindings.xml",
+   "line": 6,
+   "key": "OpenLogFile.label",
+   "text": "로그파일 열기",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": ".log dosyasını yayınla (Ctrl tuşunu basılı tutun)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "Log-Datei veröffentlichen (halte Strg)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "Publicar archivo de registros (mantener Ctrl)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "Publicar arquivo de registros (manter Ctrl pressionado)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "Publier le fichier .log (Maintenir Ctrl)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "Опубликовать журнал (зажмите Ctrl)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "ログを公開（Ctrlキー押）",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "发布日志文件（按住Ctrl）",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "發佈日誌文件（按住Ctrl）",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/DefInjected/KeyBindingDefs/KeyBindings.xml",
+   "line": 4,
+   "key": "PublishLogs.label",
+   "text": "로그파일 업로드 (Ctrl 누른 채로)",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "Redémarrer Rimworld",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "Reiniciar Rimworld",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "RimWorld neu starten",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "RimWorldを再起動",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Turkish/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "Rimworld'ü yeniden başlatın",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "Перезапуск Rimworld",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "重启RimWorld",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/DefInjected/KeyBindingDef/KeyBindings.xml",
+   "line": 6,
+   "key": "RestartRimworld.label",
+   "text": "重啟RimWorld",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/DefInjected/KeyBindingDefs/KeyBindings.xml",
+   "line": 8,
+   "key": "RestartRimworld.label",
+   "text": "림월드 재시작",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 85,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Default Value",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 83,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Standardwert",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 53,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Valeur par défaut",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 83,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Valor padrão",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 53,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Valor por defecto",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 40,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Wartość domyślna",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 84,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Значение по умолчанию",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 85,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "初期値",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 67,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "預設值",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 53,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "默认值",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 53,
+   "key": "test_enumSetting_DefaultValue",
+   "text": "기본값",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 41,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Pierwsza wartość",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 54,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Valeur Un",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 84,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Valor Um",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 54,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Valor Uno",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 86,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Value One",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 84,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Wert Eins",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 85,
+   "key": "test_enumSetting_ValueOne",
+   "text": "Значение первое",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 86,
+   "key": "test_enumSetting_ValueOne",
+   "text": "初期値 1",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 68,
+   "key": "test_enumSetting_ValueOne",
+   "text": "預設值一",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 54,
+   "key": "test_enumSetting_ValueOne",
+   "text": "默认值一",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 54,
+   "key": "test_enumSetting_ValueOne",
+   "text": "값 1",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Polish/Keyed/Polish.xml",
+   "line": 42,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Druga wartość",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/French/Keyed/French.xml",
+   "line": 55,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Valeur Deux",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/PortugueseBrazilian/Keyed/PortugueseBrazilian.xml",
+   "line": 85,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Valor Dois",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Spanish/Keyed/Spanish.xml",
+   "line": 55,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Valor Dos",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/English/Keyed/English.xml",
+   "line": 87,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Value Two",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/German/Keyed/German.xml",
+   "line": 85,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Wert Zwei",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Russian/Keyed/Russian.xml",
+   "line": 86,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Значение второе",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Japanese/Keyed/Japanese.xml",
+   "line": 87,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "初期値 2",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseTraditional/Keyed/Chinese.xml",
+   "line": 69,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "預設值二",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/ChineseSimplified/Keyed/Chinese.xml",
+   "line": 55,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "默认值二",
+   "kind": "existing_translation"
+  },
+  {
+   "file": "Languages/Korean/Keyed/Korean.xml",
+   "line": 55,
+   "key": "test_enumSetting_ValueTwo",
+   "text": "값 2",
+   "kind": "existing_translation"
+  }
+ ],
+ "rimlangkit_only": [
+  {
+   "file": "Defs/KeyBindingDefs/KeyBindings.xml",
+   "key": "HLOpenModSettings.label",
+   "text": "Open Mod Setting window",
+   "tag": "label",
+   "def_type": "KeyBindingDef"
+  },
+  {
+   "file": "Defs/KeyBindingDefs/KeyBindings.xml",
+   "key": "HLOpenUpdateNews.label",
+   "text": "Open Mod Update News window",
+   "tag": "label",
+   "def_type": "KeyBindingDef"
+  },
+  {
+   "file": "Defs/KeyBindingCategoryDefs/KeyBindingCategories.xml",
+   "key": "HugsLibShortcuts.description",
+   "text": "Shortcuts for the HugsLib library.",
+   "tag": "description",
+   "def_type": "KeyBindingCategoryDef"
+  },
+  {
+   "file": "Defs/KeyBindingDefs/KeyBindings.xml",
+   "key": "OpenLogFile.label",
+   "text": "Open log file",
+   "tag": "label",
+   "def_type": "KeyBindingDef"
+  },
+  {
+   "file": "Defs/KeyBindingDefs/KeyBindings.xml",
+   "key": "PublishLogs.label",
+   "text": "Publish log file (hold Ctrl)",
+   "tag": "label",
+   "def_type": "KeyBindingDef"
+  },
+  {
+   "file": "Defs/KeyBindingDefs/KeyBindings.xml",
+   "key": "RestartRimworld.label",
+   "text": "Restart Rimworld",
+   "tag": "label",
+   "def_type": "KeyBindingDef"
+  }
+ ],
+ "semantic_difference": [
+  {
+   "key": "HugsLibShortcuts.description",
+   "rimlangkit_texts": [
+    "Shortcuts for the HugsLib library."
+   ],
+   "rimloc_texts": [
+    "Atajos para HugsLib.",
+    "Atalhos para HugsLib.",
+    "HugsLib klavye kısayolu."
+   ]
+  },
+  {
+   "key": "HLOpenUpdateNews.label",
+   "rimlangkit_texts": [
+    "Open Mod Update News window"
+   ],
+   "rimloc_texts": [
+    "Mod-Update-Neuigkeiten-Fenster öffnen",
+    "Mod更新情報を開く",
+    "Открыть новости обновлений модов"
+   ]
+  },
+  {
+   "key": "RestartRimworld.label",
+   "rimlangkit_texts": [
+    "Restart Rimworld"
+   ],
+   "rimloc_texts": [
+    "Redémarrer Rimworld",
+    "Reiniciar Rimworld",
+    "RimWorld neu starten"
+   ]
+  },
+  {
+   "key": "OpenLogFile.label",
+   "rimlangkit_texts": [
+    "Open log file"
+   ],
+   "rimloc_texts": [
+    ".log dosyasını aç",
+    "Abrir archivo de registros",
+    "Abrir arquivo de registros"
+   ]
+  },
+  {
+   "key": "HLOpenModSettings.label",
+   "rimlangkit_texts": [
+    "Open Mod Setting window"
+   ],
+   "rimloc_texts": [
+    "Mod-Einstellungen-Fenster öffnen",
+    "Mod設定を開く",
+    "Открыть настройки модов"
+   ]
+  },
+  {
+   "key": "PublishLogs.label",
+   "rimlangkit_texts": [
+    "Publish log file (hold Ctrl)"
+   ],
+   "rimloc_texts": [
+    ".log dosyasını yayınla (Ctrl tuşunu basılı tutun)",
+    "Log-Datei veröffentlichen (halte Strg)",
+    "Publicar archivo de registros (mantener Ctrl)"
+   ]
+  }
+ ],
+ "both_file_diff_count": 1,
+ "rimloc_only_kind_breakdown": {
+  "existing_translation": 717
+ },
+ "totals": {
+  "rimlangkit_unique": 7,
+  "rimloc_unique": 718,
+  "both": 1,
+  "rimloc_only": 717,
+  "rimlangkit_only": 6,
+  "semantic_keys": 6,
+  "files_scanned_by_rlk": 48,
+  "files_matched_by_rlk": 2
+ }
+}

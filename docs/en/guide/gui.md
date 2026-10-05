@@ -4,6 +4,12 @@ title: GUI (Tauri)
 
 # RimLoc GUI (Tauri)
 
+> **Legacy v1 page.** This document describes the first-generation interface
+> (the vanilla JS shell in `gui/tauri-app/frontend/`). The shipped app now uses
+> the v2 front end (`gui/tauri-app/frontend-v2`, Svelte), which the Tauri shell
+> loads by default, so tabs and shortcuts listed below may not match what you
+> see. The page will be rewritten once the v2 interface stabilizes.
+
 RimLoc ships an optional desktop shell built with Tauri that wraps common CLI workflows.
 
 ## Features (MVP)

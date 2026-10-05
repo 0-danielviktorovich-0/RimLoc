@@ -57,6 +57,14 @@ impl From<std::io::Error> for ApiError {
     }
 }
 
+impl From<rimloc_services::PathGuardError> for ApiError {
+    fn from(err: rimloc_services::PathGuardError) -> Self {
+        ApiError {
+            message: err.to_string(),
+        }
+    }
+}
+
 impl From<serde_json::Error> for ApiError {
     fn from(err: serde_json::Error) -> Self {
         ApiError {
@@ -423,6 +431,9 @@ fn merge_keyed_gui(
         });
     }
     let out_dir = request.out_dir.as_deref().map(PathBuf::from);
+    if let Some(o) = &out_dir {
+        ensure_caller_path_absolute("out_dir", o)?;
+    }
     let stats = svc_merge_keyed(
         &root,
         &request.source_lang_dir,
@@ -519,6 +530,7 @@ fn export_xliff_gui(
     let src = request.source_lang_dir.as_deref().unwrap_or("English");
     units.retain(|u| rimloc_services::is_under_languages_dir(&u.path, src));
     let out = PathBuf::from(&request.out_xlf);
+    ensure_caller_path_absolute("out_xlf", &out)?;
     if let Some(parent) = out.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -543,6 +555,7 @@ fn import_xliff_gui(
 ) -> Result<String, ApiError> {
     let xlf = PathBuf::from(&request.xlf);
     let out = PathBuf::from(&request.out_xml);
+    ensure_caller_path_absolute("out_xml", &out)?;
     if let Some(parent) = out.parent() {
         let _ = std::fs::create_dir_all(parent);
     }
@@ -790,7 +803,9 @@ fn scan_strings_gui(
     }
     items.sort_by_key(|a| (a.path.clone(), a.line));
     let saved_json = if let Some(path) = request.out_json.as_ref() {
-        let path = make_absolute(&scan_root, Path::new(path));
+        // Canonical guard: absolute form + real-location resolution +
+        // managed-store fence; write goes to the returned canonical path.
+        let path = ensure_legacy_out_path("out_json", Path::new(path))?;
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -987,6 +1002,29 @@ struct InitResponse {
 fn get_app_info() -> Result<AppInfo, ApiError> {
     Ok(AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
+    })
+}
+
+/// Build identity of the RUNNING binary (owner soak-hardening §1): a
+/// long-running acceptance run must verify the artifact it drives
+/// independently of any wrapper path — the app reports its own source
+/// truth. Shell-level read-only info, same class as get_app_info.
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct BuildIdentity {
+    source_commit: String,
+    build_profile: String,
+    build_features: String,
+    app_version: String,
+}
+
+#[tauri::command]
+fn build_identity() -> Result<BuildIdentity, ApiError> {
+    Ok(BuildIdentity {
+        source_commit: env!("RIMLOC_SOURCE_COMMIT").to_string(),
+        build_profile: env!("RIMLOC_BUILD_PROFILE").to_string(),
+        build_features: env!("RIMLOC_BUILD_FEATURES").to_string(),
+        app_version: env!("CARGO_PKG_VERSION").to_string(),
     })
 }
 
@@ -1335,7 +1373,9 @@ fn run_scan(
     }
 
     let saved_json = if let Some(path) = request.out_json.as_ref() {
-        let path = make_absolute(scan_root, Path::new(path));
+        // Canonical guard (repeated inside the writer helpers); the
+        // response reports the canonical path actually written to.
+        let path = ensure_legacy_out_path("out_json", Path::new(path))?;
         write_scan_json(&path, &units)?;
         Some(path.display().to_string())
     } else {
@@ -1343,7 +1383,7 @@ fn run_scan(
     };
 
     let saved_csv = if let Some(path) = request.out_csv.as_ref() {
-        let path = make_absolute(scan_root, Path::new(path));
+        let path = ensure_legacy_out_path("out_csv", Path::new(path))?;
         write_scan_csv(&path, &units, request.lang.as_deref())?;
         Some(path.display().to_string())
     } else {
@@ -1364,6 +1404,10 @@ fn run_scan(
 }
 
 fn write_scan_json(path: &Path, units: &[rimloc_services::TransUnit]) -> Result<(), ApiError> {
+    // Canonical guard at the helper boundary: both IPC callers (and any
+    // future one) get absolute-form + real-location + managed-store checks
+    // before the sink, and write to the vetted canonical path.
+    let path = &ensure_legacy_out_path("out_json", path)?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -1386,6 +1430,8 @@ fn write_scan_csv(
     units: &[rimloc_services::TransUnit],
     lang: Option<&str>,
 ) -> Result<(), ApiError> {
+    // Same canonical guard as `write_scan_json`.
+    let path = &ensure_legacy_out_path("out_csv", path)?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -1399,6 +1445,40 @@ fn make_absolute(base: &Path, candidate: &Path) -> PathBuf {
     } else {
         base.join(candidate)
     }
+}
+
+/// LEGACY hardening (RC K4, 2026-09-27): the contract surface refuses
+/// CWD-relative caller paths as a typed `invalid_output_path` BEFORE any
+/// filesystem work — a relative path silently lands wherever the app was
+/// launched from, and resolving one on the caller's behalf is exactly how
+/// the built-app `…/RimLoc-Export/…` incident happened. Legacy write
+/// commands that take a caller-chosen out path now enforce the same form
+/// policy: absolute only, never resolved, never CWD-dependent.
+fn ensure_caller_path_absolute(field: &str, p: &Path) -> Result<(), ApiError> {
+    if p.is_absolute() {
+        Ok(())
+    } else {
+        Err(ApiError {
+            message: format!(
+                "{field} must be an absolute path (got `{}`); the legacy surface does not resolve relative paths against the process working directory",
+                p.display()
+            ),
+        })
+    }
+}
+
+/// THE canonical write guard for the legacy GUI out-paths (F-1, the
+/// containment half that `ensure_caller_path_absolute` never had): after
+/// the absolute-FORM refusal, the destination is resolved to its real
+/// (symlink-resolved) location via `rimloc_services::ensure_free_output_path`
+/// and must not land inside the RimLoc-managed projects store. The caller
+/// writes to the RETURNED canonical path, never to the raw spelling.
+/// Everything the operator picks in a dialog or types as an absolute path
+/// keeps working — only RimLoc-owned ground is fenced off.
+fn ensure_legacy_out_path(field: &str, p: &Path) -> Result<PathBuf, ApiError> {
+    ensure_caller_path_absolute(field, p)?;
+    let managed = contract_adapter::default_managed_root();
+    Ok(rimloc_services::ensure_free_output_path(p, &[&managed])?)
 }
 
 fn classify_unit(path: &Path) -> ScanKind {
@@ -1976,7 +2056,9 @@ fn validate_mod(
         Some(100),
     );
     if let Some(out) = request.out_json.as_deref() {
-        let path = make_absolute(&scan_root, Path::new(out));
+        // Canonical guard: absolute form + real location + managed-store
+        // fence; the write goes to the returned canonical path.
+        let path = ensure_legacy_out_path("out_json", Path::new(out))?;
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -2080,7 +2162,9 @@ fn xml_health(
         issues: report.issues,
     };
     if let Some(path_str) = request.out_json.as_deref() {
-        let p = make_absolute(&scan_root, Path::new(path_str));
+        // Canonical guard: absolute form + real location + managed-store
+        // fence; the write goes to the returned canonical path.
+        let p = ensure_legacy_out_path("out_json", Path::new(path_str))?;
         if let Some(parent) = p.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -2818,6 +2902,9 @@ fn learn_patches_cmd(
         .as_deref()
         .map(PathBuf::from)
         .unwrap_or_else(|| out_dir.join("patches_texts.json"));
+    // Canonical guard: absolute form + real location + managed-store
+    // fence (the learn_out default inside the mod tree stays legitimate).
+    let out_json = ensure_legacy_out_path("out_json", &out_json)?;
     if let Some(parent) = out_json.parent() {
         std::fs::create_dir_all(parent).ok();
     }
@@ -2842,8 +2929,14 @@ fn learn_patches_cmd(
     });
     let mut suggested: Option<PathBuf> = None;
     if !inferred.is_empty() {
-        std::fs::create_dir_all(&out_dir).ok();
-        let sug = out_dir.join("_SuggestedFromPatches.xml");
+        // Same canonical guard as the JSON output above; the canonical
+        // `sug` parent replaces the raw `out_dir` for mkdir, so staging
+        // happens next to the real destination.
+        let sug =
+            ensure_legacy_out_path("suggested_xml", &out_dir.join("_SuggestedFromPatches.xml"))?;
+        if let Some(parent) = sug.parent() {
+            std::fs::create_dir_all(parent).ok();
+        }
         let mut f = std::fs::File::create(&sug)?;
         use std::io::Write;
         writeln!(f, "<LanguageData>")?;
@@ -3006,9 +3099,32 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // final night wave: validate/build/diagnostics over the contract
     "project_validate",
     "project_export",
+    "project_build_mod",
     "project_diagnose",
+    // W2 (existing-pack flow): dry-run analysis + guarded application.
+    "project_import_existing",
+    "project_apply_existing",
+    // Wave 13: project glossary (generic project state, persist-before-ack).
+    "project_glossary",
+    "project_glossary_upsert",
+    "project_glossary_delete",
+    // TM live (A+B+C): translation memory — the glossary pattern again.
+    "project_tm_list",
+    "project_tm_upsert",
+    "project_tm_delete",
+    "project_tm_import",
+    "project_tm_lookup",
+    // Provider instances (provider/settings parity): app-global CRUD; the
+    // API key lives in the OS keychain, never in a file.
+    "contract_provider_instance_list",
+    "contract_provider_instance_upsert",
+    "contract_provider_instance_delete",
+    "contract_provider_instance_validate",
     // safe read-only legacy extras
     "get_app_info",
+    // build identity of the running binary (soak-hardening §1) — read-only
+    // shell info, registered via POST_ORIGINAL_LIVE_EXTRAS arithmetic.
+    "build_identity",
     "scan_mod",
     "scan_strings_gui",
     "validate_mod",
@@ -3018,6 +3134,13 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "diff_xml_cmd",
     "get_cli_i18n",
     "pick_directory",
+    // selfloc entry (mandate D): resolve the app-bundled UI catalog dir —
+    // read-only shell extra, same class as pick_directory.
+    "selfloc_catalog_dir",
+    // selfloc contribution (beta, wave 7): build the offline bundle from the
+    // open UI-catalog session into a caller-chosen dir — the services layer
+    // owns the §6 gate and the export_project guard partition.
+    "selfloc_build_contribution",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3061,19 +3184,88 @@ pub const LEGACY_PRIVILEGED_COMMANDS: &[&str] = &[
     "load_tm",
 ];
 
+/// Automation dev-log markers (see the DEV_LOG_* note above: stderr strings
+/// live in consts so the workspace i18n guard sees pure formatter calls).
+/// Используются только из macOS-automation путей — на других ОС мертвы.
+#[cfg(target_os = "macos")]
+const DEV_LOG_AUTOMATION_AX_ENABLED: &str = "rimloc-gui: automation webview accessibility enabled";
+#[cfg(target_os = "macos")]
+const DEV_LOG_AUTOMATION_AX_FAILED: &str = "rimloc-gui: automation webview accessibility FAILED";
+#[cfg(target_os = "macos")]
+const DEV_LOG_AUTOMATION_NSAPP_SET: &str = "rimloc-gui: NSApp accessibilitySupportEnabled set";
+#[cfg(target_os = "macos")]
+const DEV_LOG_AUTOMATION_FRAME_APPLIED: &str = "rimloc-gui: automation frame applied";
+
 fn legacy_commands_enabled() -> bool {
     std::env::var("RIMLOC_LEGACY_COMMANDS").as_deref() == Ok("1")
 }
 
-
-
-/// DEV-ONLY: [NSApp accessibilityActivate] — starts the app's accessibility
-/// server deterministically. Off-screen the AX bridge is lazy and sometimes
-/// never hydrates from client queries alone, which would break AXPress
-/// automation.
-#[cfg(debug_assertions)]
+/// macOS automation hook: claim user-initiated activity for the whole process
+/// lifetime so App Nap never suspends an automation instance. A suspended
+/// process stops answering AXWindows entirely, which kills AXPress-driven
+/// journeys ~10-30s after launch (measured 2026-09-27: AXWindows empties
+/// mid-journey and never revives). Used by the dev off-screen mode AND by
+/// RIMLOC_AUTOMATION=1 (release-capable agent automation). The activity
+/// token and its reason string are intentionally leaked: the claim lives as
+/// long as the process.
 #[cfg(target_os = "macos")]
-fn dev_accessibility_activate() {
+fn automation_disable_app_nap() {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        // One declaration for both call shapes: on arm64 the callee reads
+        // only the registers it needs, extra args in x2/x3 are ignored.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            options: u64,
+            reason: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+        fn CFStringCreateWithCString(
+            alloc: *mut std::ffi::c_void,
+            c_str: *const std::os::raw::c_char,
+            encoding: u32,
+        ) -> *mut std::ffi::c_void;
+    }
+    const K_CF_STRING_ENCODING_UTF8: u32 = 0x08000100;
+    // NSActivityUserInitiated = idleSystemSleepDisabled | userInitiated
+    const NS_ACTIVITY_USER_INITIATED: u64 = (1 << 20) | (1 << 15);
+    unsafe {
+        let cls = objc_getClass(c"NSProcessInfo".as_ptr());
+        if cls.is_null() {
+            return;
+        }
+        let info = objc_msgSend(
+            cls,
+            sel_registerName(c"processInfo".as_ptr()),
+            0,
+            std::ptr::null_mut(),
+        );
+        if info.is_null() {
+            return;
+        }
+        let reason = CFStringCreateWithCString(
+            std::ptr::null_mut(),
+            c"rimloc off-screen UI automation".as_ptr(),
+            K_CF_STRING_ENCODING_UTF8,
+        );
+        let _activity = objc_msgSend(
+            info,
+            sel_registerName(c"beginActivityWithOptions:reason:".as_ptr()),
+            NS_ACTIVITY_USER_INITIATED,
+            reason,
+        );
+    }
+}
+
+/// macOS automation hook: plain-C AX self-query that deterministically starts
+/// the app's accessibility server. Off-screen the AX bridge is lazy and
+/// sometimes never hydrates from client queries alone, which would break
+/// AXPress automation; the same laziness hits release builds on a normal
+/// display when nobody activated AX yet. Used by the dev off-screen mode AND
+/// by RIMLOC_AUTOMATION=1.
+#[cfg(target_os = "macos")]
+fn automation_accessibility_activate() {
     // Plain-C AX client query aimed at our own pid: forces the ApplicationServices
     // accessibility machinery to initialize without any ObjC exception risk
     // (every call reports errors by code).
@@ -3101,7 +3293,7 @@ fn dev_accessibility_activate() {
         }
         let attr = CFStringCreateWithCString(
             std::ptr::null_mut(),
-            b"AXWindows\0".as_ptr() as *const _,
+            c"AXWindows".as_ptr(),
             K_CF_STRING_ENCODING_UTF8,
         );
         let mut out: *mut std::ffi::c_void = std::ptr::null_mut();
@@ -3116,22 +3308,233 @@ fn dev_accessibility_activate() {
     }
 }
 
+/// macOS automation hook: wry unconditionally NSApplication::activate()s at
+/// webview creation (wry 0.55.1, wkwebview/mod.rs "make sure the window is
+/// always on top" block) — the `focused: false` window flag, `open -g` and
+/// background spawns are all overridden by it (measured 2026-09-30: every
+/// launch path made rimloc-gui frontmost). For automation instances we
+/// immediately deactivate: macOS hands focus back to the owner's previous
+/// app, so the launch flicker collapses to a sub-second activate→deactivate
+/// pair instead of stealing focus for the whole session.
+#[cfg(target_os = "macos")]
+fn automation_yield_focus() {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        // objc_msgSend is variadic by ABI; objc2 declares it with a different
+        // fixed signature elsewhere in the crate graph, which trips
+        // clashing_extern_declarations. Both declarations link the same symbol.
+        #[allow(clashing_extern_declarations)]
+        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void);
+    }
+    unsafe {
+        let cls = objc_getClass(c"NSApplication".as_ptr());
+        if cls.is_null() {
+            return;
+        }
+        let app = {
+            let send: extern "C" fn(
+                *mut std::ffi::c_void,
+                *mut std::ffi::c_void,
+            ) -> *mut std::ffi::c_void = std::mem::transmute(objc_msgSend as *const ());
+            send(cls, sel_registerName(c"sharedApplication".as_ptr()))
+        };
+        if app.is_null() {
+            return;
+        }
+        let send_void: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) =
+            std::mem::transmute(objc_msgSend as *const ());
+        // macOS 14+ NSApplication.yieldActivationAsNeeded: hands activation
+        // back to the app that would be active without us; plain deactivate()
+        // measured not to return focus (30.09).
+        let yield_sel = sel_registerName(c"yieldActivationAsNeeded".as_ptr());
+        let responds: extern "C" fn(
+            *mut std::ffi::c_void,
+            *mut std::ffi::c_void,
+            *mut std::ffi::c_void,
+        ) -> i8 = std::mem::transmute(objc_msgSend as *const ());
+        if responds(
+            app,
+            sel_registerName(c"respondsToSelector:".as_ptr()),
+            yield_sel,
+        ) != 0
+        {
+            send_void(app, yield_sel);
+        } else {
+            send_void(app, sel_registerName(c"deactivate".as_ptr()));
+        }
+    }
+}
+
+/// Agent automation entry (release-capable, owner mandate 2026-09-29: the
+/// agent must be able to fully drive the app itself). RIMLOC_AUTOMATION=1
+/// exposes the WKWebView web content to the macOS accessibility tree
+/// (AXManualAccessibility — the documented WKWebView switch for external
+/// AX drivers), then re-activates the app AX server from a background
+/// thread: activating from inside setup BEFORE the window exists wedges the
+/// process's own AX server (measured: AXWindows goes empty forever), so the
+/// hook must run after the window is live. Also opts out of App Nap.
+#[cfg(target_os = "macos")]
+fn automation_env_setup(window: &tauri::WebviewWindow<tauri::Wry>) {
+    if std::env::var("RIMLOC_AUTOMATION").as_deref() != Ok("1") {
+        return;
+    }
+    automation_disable_app_nap();
+    automation_yield_focus();
+    if automation_webview_accessibility(window) {
+        eprintln!("{}", DEV_LOG_AUTOMATION_AX_ENABLED);
+    } else {
+        eprintln!("{}", DEV_LOG_AUTOMATION_AX_FAILED);
+    }
+    // NSApp accessibilitySupportEnabled (the Electron macOS switch): tells
+    // AppKit an assistive client is present, which is what makes WebKit
+    // publish the web accessibility tree. Guarded by respondsToSelector —
+    // the selector is not a public API contract.
+    if automation_nsapp_accessibility_support() {
+        eprintln!("{}", DEV_LOG_AUTOMATION_NSAPP_SET);
+    }
+    // Late AX server activation: the window is up by now, so the self-query
+    // hydrates the bridge instead of wedging it. Repeated — WebKit page
+    // loads can drop the web AX tree (same lesson as the dev park thread).
+    // The same park loop flags the WDIO guest bridge into the page
+    // (frontier §10: the bridge imports ONLY in automation sessions —
+    // user sessions never load it).
+    {
+        let window = window.clone();
+        std::thread::spawn(move || {
+            for _ in 0..60 {
+                std::thread::sleep(std::time::Duration::from_millis(1500));
+                automation_accessibility_activate();
+                // Idempotent flag+event: whichever side initializes first
+                // (main.ts listener or this eval) completes the handshake.
+                let _ = window.eval(
+                    "window.__RIMLOC_WDIO__ = true; \
+                     window.dispatchEvent(new Event('rimloc:wdio'));",
+                );
+            }
+        });
+    }
+}
+
+/// Non-macOS twin: agent automation hooks are macOS AX machinery, nothing
+/// to do elsewhere.
+#[cfg(not(target_os = "macos"))]
+fn automation_env_setup(_window: &tauri::WebviewWindow<tauri::Wry>) {}
+
+/// Ask the WKWebView to expose web content to accessibility via the
+/// AXManualAccessibility setter — BUT only when the view actually responds
+/// to that selector: a blind KVC setValue:forKey: on macOS throws
+/// NSUndefinedKeyException inside the C closure boundary, which aborts the
+/// whole process (measured 2026-09-29). On macOS the setter usually does
+/// not exist (it is the iOS WKWebView switch); the late AX activation in
+/// [`automation_env_setup`] is the macOS path.
+#[cfg(target_os = "macos")]
+fn automation_webview_accessibility(window: &tauri::WebviewWindow<tauri::Wry>) -> bool {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            arg0: u64,
+            arg1: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+    }
+    static AX_SET: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    AX_SET.store(false, std::sync::atomic::Ordering::Relaxed);
+    let res = window.with_webview(|webview| unsafe {
+        let wv: *mut std::ffi::c_void = webview.inner();
+        if wv.is_null() {
+            return;
+        }
+        let setter = sel_registerName(c"setAXManualAccessibility:".as_ptr());
+        let responds: i8 = objc_msgSend(
+            wv,
+            sel_registerName(c"respondsToSelector:".as_ptr()),
+            setter as u64,
+            std::ptr::null_mut(),
+        ) as i8;
+        if responds == 0 {
+            // macOS view without the iOS-only setter: not an error, the AX
+            // activation path below is the real mechanism there.
+            AX_SET.store(true, std::sync::atomic::Ordering::Relaxed);
+            return;
+        }
+        objc_msgSend(wv, setter, 1, std::ptr::null_mut());
+        AX_SET.store(true, std::sync::atomic::Ordering::Relaxed);
+    });
+    res.is_ok() && AX_SET.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// [NSApp setAccessibilitySupportEnabled:2] — the native equivalent of
+/// Electron's accessibilitySupportEnabled: announces an assistive client so
+/// WebKit exposes the web AX tree. Guarded: private-ish selector, absence
+/// is not an error.
+#[cfg(target_os = "macos")]
+fn automation_nsapp_accessibility_support() -> bool {
+    extern "C" {
+        fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            arg0: u64,
+            arg1: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
+    }
+    unsafe {
+        let cls = objc_getClass(c"NSApplication".as_ptr());
+        if cls.is_null() {
+            return false;
+        }
+        let app = objc_msgSend(
+            cls,
+            sel_registerName(c"sharedApplication".as_ptr()),
+            0,
+            std::ptr::null_mut(),
+        );
+        if app.is_null() {
+            return false;
+        }
+        let setter = sel_registerName(c"setAccessibilitySupportEnabled:".as_ptr());
+        let responds: i8 = objc_msgSend(
+            app,
+            sel_registerName(c"respondsToSelector:".as_ptr()),
+            setter as u64,
+            std::ptr::null_mut(),
+        ) as i8;
+        if responds == 0 {
+            return false;
+        }
+        objc_msgSend(app, setter, 2, std::ptr::null_mut());
+        true
+    }
+}
+
 /// DEV-ONLY: [NSApplication sharedApplication] for the setup hooks.
+/// Kept unused for now: the documented entry point for upcoming setup hooks.
 #[cfg(debug_assertions)]
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 unsafe fn shared_app() -> *mut std::ffi::c_void {
     extern "C" {
         fn sel_registerName(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
-        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void)
-            -> *mut std::ffi::c_void;
+        // Same unified 4-arg shape as in automation_disable_app_nap: on arm64 the
+        // callee reads only the registers it needs, extra args are ignored,
+        // and one signature across the crate avoids redeclaration errors.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            options: u64,
+            reason: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
     }
-    let cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+    let cls = objc_getClass(c"NSApplication".as_ptr());
     if cls.is_null() {
         return std::ptr::null_mut();
     }
-    let sel = sel_registerName(b"sharedApplication\0".as_ptr() as *const _);
-    objc_msgSend(cls, sel)
+    let sel = sel_registerName(c"sharedApplication".as_ptr());
+    objc_msgSend(cls, sel, 0, std::ptr::null_mut())
 }
 
 /// DEV-ONLY diagnostics: ObjC class name of the underlying NSWindow.
@@ -3147,7 +3550,10 @@ fn ns_window_class_name(window: &tauri::WebviewWindow) -> &'static str {
             if name.is_null() {
                 "<null>"
             } else {
-                std::ffi::CStr::from_ptr(name).to_string_lossy().into_owned().leak() as &str
+                std::ffi::CStr::from_ptr(name)
+                    .to_string_lossy()
+                    .into_owned()
+                    .leak() as &str
                 /* dev-only diagnostics leak: one string per process */
             }
         },
@@ -3190,9 +3596,15 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         fn object_getClass(obj: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
         fn objc_getClass(name: *const std::os::raw::c_char) -> *mut std::ffi::c_void;
         // no-arg method returning id (used for [NSApplication sharedApplication]);
-        // the real objc_msgSend symbol, given a Rust-friendly alias-free name
-        fn objc_msgSend(receiver: *mut std::ffi::c_void, sel: *mut std::ffi::c_void)
-            -> *mut std::ffi::c_void;
+        // the real objc_msgSend symbol, given a Rust-friendly alias-free name.
+        // Same unified 4-arg shape as in automation_disable_app_nap: on arm64 the
+        // callee reads only the registers it needs, extra args are ignored.
+        fn objc_msgSend(
+            receiver: *mut std::ffi::c_void,
+            sel: *mut std::ffi::c_void,
+            options: u64,
+            reason: *mut std::ffi::c_void,
+        ) -> *mut std::ffi::c_void;
     }
     // extern "C" fns returning NSUInteger / BOOL (arm64: x0 / w0).
     extern "C" fn ret_occlusion_visible(
@@ -3202,20 +3614,22 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         let _ = (_self, _cmd);
         2 // NSWindowOcclusionStateVisible
     }
-    extern "C" fn ret_true(
-        _self: *mut std::ffi::c_void,
-        _cmd: *mut std::ffi::c_void,
-    ) -> u8 {
+    extern "C" fn ret_true(_self: *mut std::ffi::c_void, _cmd: *mut std::ffi::c_void) -> u8 {
         let _ = (_self, _cmd);
         1
     }
+    type OcclusionImp = extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u64;
+    type BoolImp = extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u8;
     let ns_window = match window.ns_window() {
         Ok(p) if !p.is_null() => p,
         _ => return false,
     };
-    let occ_imp: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u64 =
-        ret_occlusion_visible;
-    let bool_imp: extern "C" fn(*mut std::ffi::c_void, *mut std::ffi::c_void) -> u8 = ret_true;
+    let occ_imp: OcclusionImp = ret_occlusion_visible;
+    let bool_imp: BoolImp = ret_true;
+    // IMPs are passed to the ObjC runtime as raw pointers; a plain `as` cast
+    // is the clippy-preferred alternative to `mem::transmute` here.
+    let occ_imp_ptr = occ_imp as *mut std::ffi::c_void;
+    let bool_imp_ptr = bool_imp as *mut std::ffi::c_void;
     unsafe {
         let cls = object_getClass(ns_window);
         let mut window_lies: Vec<(&str, &str)> = Vec::new();
@@ -3241,9 +3655,9 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
                 Err(_) => return false,
             };
             let imp = if types == "Q@:" {
-                std::mem::transmute::<_, *mut std::ffi::c_void>(occ_imp)
+                occ_imp_ptr
             } else {
-                std::mem::transmute::<_, *mut std::ffi::c_void>(bool_imp)
+                bool_imp_ptr
             };
             class_replaceMethod(cls, sel, imp, t.as_ptr());
         }
@@ -3251,12 +3665,12 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         // active ([NSApp isActive]). Lie the same way for the automation run:
         // replace -isActive on the NSApplication class (single instance).
         if want("app") {
-            let nsapp_cls = objc_getClass(b"NSApplication\0".as_ptr() as *const _);
+            let nsapp_cls = objc_getClass(c"NSApplication".as_ptr());
             if !nsapp_cls.is_null() {
-                let sel_shared = sel_registerName(b"sharedApplication\0".as_ptr() as *const _);
-                let nsapp = objc_msgSend(nsapp_cls, sel_shared);
+                let sel_shared = sel_registerName(c"sharedApplication".as_ptr());
+                let nsapp = objc_msgSend(nsapp_cls, sel_shared, 0, std::ptr::null_mut());
                 if !nsapp.is_null() {
-                    let sel_active = sel_registerName(b"isActive\0".as_ptr() as *const _);
+                    let sel_active = sel_registerName(c"isActive".as_ptr());
                     let t = match std::ffi::CString::new("c@:") {
                         Ok(s) => s,
                         Err(_) => return false,
@@ -3264,7 +3678,7 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
                     class_replaceMethod(
                         object_getClass(nsapp),
                         sel_active,
-                        std::mem::transmute(bool_imp),
+                        bool_imp_ptr,
                         t.as_ptr(),
                     );
                 }
@@ -3272,7 +3686,7 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
         }
         // First-click swallowing: see the stage docs above.
         if want("firstmouse") {
-            let sel_fm = sel_registerName(b"acceptsFirstMouse:\0".as_ptr() as *const _);
+            let sel_fm = sel_registerName(c"acceptsFirstMouse:".as_ptr());
             let t = match std::ffi::CString::new("c@:@") {
                 Ok(s) => s,
                 Err(_) => return false,
@@ -3280,23 +3694,13 @@ fn fake_window_visibility(window: &tauri::WebviewWindow) -> bool {
             // the webview's own class (wry's WryWebView override wins over base)
             if let Ok(ns_view) = window.ns_view() {
                 if !ns_view.is_null() {
-                    class_replaceMethod(
-                        object_getClass(ns_view),
-                        sel_fm,
-                        std::mem::transmute(bool_imp),
-                        t.as_ptr(),
-                    );
+                    class_replaceMethod(object_getClass(ns_view), sel_fm, bool_imp_ptr, t.as_ptr());
                 }
             }
             // and the NSView base, for private subviews that hitTest may return
-            let nsv_cls = objc_getClass(b"NSView\0".as_ptr() as *const _);
+            let nsv_cls = objc_getClass(c"NSView".as_ptr());
             if !nsv_cls.is_null() {
-                class_replaceMethod(
-                    nsv_cls,
-                    sel_fm,
-                    std::mem::transmute(bool_imp),
-                    t.as_ptr(),
-                );
+                class_replaceMethod(nsv_cls, sel_fm, bool_imp_ptr, t.as_ptr());
             }
         }
         true
@@ -3363,12 +3767,13 @@ fn disable_window_frame_constrain(window: &tauri::WebviewWindow) -> bool {
             Ok(s) => s,
             Err(_) => return false,
         };
-        let imp: extern "C" fn(
+        type ConstrainImp = extern "C" fn(
             *mut std::ffi::c_void,
             *mut std::ffi::c_void,
             NsRect,
             *mut std::ffi::c_void,
-        ) -> NsRect = constrain_identity;
+        ) -> NsRect;
+        let imp: ConstrainImp = constrain_identity;
         // NULL previous IMP means the method was absent on this class and has
         // been ADDED (class_addMethod semantics) — e.g. the window class is a
         // KVO subclass and constrainFrameRect: lives on a superclass. Both
@@ -3376,23 +3781,78 @@ fn disable_window_frame_constrain(window: &tauri::WebviewWindow) -> bool {
         let _prev = class_replaceMethod(
             object_getClass(ns_window),
             selector,
-            std::mem::transmute(imp),
+            imp as *mut std::ffi::c_void,
             types.as_ptr(),
         );
         true
     }
 }
 
+/// Dev-log event tags for stderr diagnostics. These are dev/diagnostic lines
+/// (not localized UI text), emitted as machine tag + detail via `{}`-formatter
+/// `eprintln!` — the shape the no-hardcoded-user-strings guard accepts for
+/// structured dev logs — so the diagnostics stay on stderr without failing CI.
+const DEV_LOG_CONTRACT_ROOT_INIT_FAILED: &str = "contract_root_init_failed";
+// Used only inside the attribute-gated off-screen setup block below, so the
+// constant must live under the same gate (otherwise it is dead code in
+// release/non-macOS profiles).
+#[cfg(all(debug_assertions, target_os = "macos"))]
+const DEV_LOG_WINDOW_ORIGIN_INVALID: &str = "window_origin_env_invalid";
+
 fn main() {
     let _ = color_eyre::install();
     let builder = tauri::Builder::default().plugin(tauri_plugin_dialog::init());
+    // Automation bridge (owner §B, 2026-10-01): COMPILE-TIME exclusion —
+    // the embedded WDIO server (tauri-plugin-wdio-webdriver) and the
+    // execute/mock/log plugin (tauri-plugin-wdio) are linked ONLY when the
+    // `automation-bridge` cargo feature is on (automation artifact builds).
+    // A production build carries no bridge code at all: RIMLOC_AUTOMATION=1
+    // cannot conjure a listener that was never linked. The runtime env stays
+    // as defense in depth on automation builds (§4 layering), and gates the
+    // AX hooks, which ship in every build (no listener, no IPC).
+    // Window correction §5: automation sessions are EPHEMERAL — they skip
+    // the window-state plugin so a run frame never overwrites the persisted
+    // USER frame.
+    #[cfg(feature = "automation-bridge")]
+    let automation = std::env::var("RIMLOC_AUTOMATION").as_deref() == Ok("1");
+    #[cfg(not(feature = "automation-bridge"))]
+    let automation = false;
+    let builder = if automation {
+        #[cfg(feature = "automation-bridge")]
+        {
+            builder
+                .plugin(tauri_plugin_wdio_webdriver::init())
+                .plugin(tauri_plugin_wdio::init())
+        }
+        #[cfg(not(feature = "automation-bridge"))]
+        builder
+    } else {
+        // User sessions persist and restore their window frame normally.
+        // P0 zero-focus-stealing: VISIBLE excluded from restore flags —
+        // the plugin's visible-restore path calls set_focus() (activates
+        // the app on every relaunch). The window is already created
+        // visible by config; only geometry is restored.
+        builder.plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(
+                    tauri_plugin_window_state::StateFlags::SIZE
+                        | tauri_plugin_window_state::StateFlags::POSITION
+                        | tauri_plugin_window_state::StateFlags::MAXIMIZED
+                        | tauri_plugin_window_state::StateFlags::DECORATIONS
+                        | tauri_plugin_window_state::StateFlags::FULLSCREEN,
+                )
+                .build(),
+        )
+    };
     let builder = match contract_adapter::attach_contract(
         builder,
         contract_adapter::default_managed_root(),
     ) {
         Ok(b) => b,
         Err(e) => {
-            eprintln!("contract managed root init failed: {e}");
+            // Dev-log: this fires before any window exists, so stderr is the
+            // only channel (see DEV_LOG_* note above).
+            eprintln!("{} {}", DEV_LOG_CONTRACT_ROOT_INIT_FAILED, e);
             return;
         }
     };
@@ -3409,7 +3869,26 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_cancel_next,
             rimloc_gui_lib::contract_adapter::project_validate,
             rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
+            // W2 (existing-pack flow): dry-run analysis + guarded application.
+            rimloc_gui_lib::contract_adapter::project_import_existing,
+            rimloc_gui_lib::contract_adapter::project_apply_existing,
+            // Wave 13: project glossary.
+            rimloc_gui_lib::contract_adapter::project_glossary,
+            rimloc_gui_lib::contract_adapter::project_glossary_upsert,
+            rimloc_gui_lib::contract_adapter::project_glossary_delete,
+            // TM live (A+B+C): translation memory.
+            rimloc_gui_lib::contract_adapter::project_tm_list,
+            rimloc_gui_lib::contract_adapter::project_tm_upsert,
+            rimloc_gui_lib::contract_adapter::project_tm_delete,
+            rimloc_gui_lib::contract_adapter::project_tm_import,
+            rimloc_gui_lib::contract_adapter::project_tm_lookup,
+            // Provider instances (provider/settings parity).
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3448,7 +3927,13 @@ fn main() {
             coverage_gui,
             export_xliff_gui,
             import_xliff_gui,
-            merge_keyed_gui
+            merge_keyed_gui,
+            // selfloc entry: safe read-only shell extra (live too)
+            selfloc_catalog_dir,
+            build_identity,
+            // selfloc contribution (beta, wave 7): build the offline bundle
+            // from the open UI-catalog session — services-guarded write.
+            selfloc_build_contribution
         ])
     } else {
         builder.invoke_handler(tauri::generate_handler![
@@ -3464,7 +3949,26 @@ fn main() {
             // final night wave: validate/build/diagnostics over the contract
             rimloc_gui_lib::contract_adapter::project_validate,
             rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
+            // W2 (existing-pack flow): dry-run analysis + guarded application.
+            rimloc_gui_lib::contract_adapter::project_import_existing,
+            rimloc_gui_lib::contract_adapter::project_apply_existing,
+            // Wave 13: project glossary.
+            rimloc_gui_lib::contract_adapter::project_glossary,
+            rimloc_gui_lib::contract_adapter::project_glossary_upsert,
+            rimloc_gui_lib::contract_adapter::project_glossary_delete,
+            // TM live (A+B+C): translation memory.
+            rimloc_gui_lib::contract_adapter::project_tm_list,
+            rimloc_gui_lib::contract_adapter::project_tm_upsert,
+            rimloc_gui_lib::contract_adapter::project_tm_delete,
+            rimloc_gui_lib::contract_adapter::project_tm_import,
+            rimloc_gui_lib::contract_adapter::project_tm_lookup,
+            // Provider instances (provider/settings parity).
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
+            rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,
@@ -3475,7 +3979,14 @@ fn main() {
             coverage_gui,
             diff_xml_cmd,
             get_cli_i18n,
-            pick_directory
+            pick_directory,
+            // selfloc entry (mandate D): resolve the app-bundled UI catalog
+            // dir — read-only shell extra, same class as pick_directory.
+            selfloc_catalog_dir,
+            build_identity,
+            // selfloc contribution (beta, wave 7): build the offline bundle
+            // from the open UI-catalog session — services-guarded write.
+            selfloc_build_contribution
         ])
     };
     builder
@@ -3504,11 +4015,57 @@ fn main() {
             });
             let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
-                // DEV-ONLY background automation: RIMLOC_WINDOW_ORIGIN="x,y"
-                // relocates the window off-screen (e.g. "-3000,-3000") so an
-                // automation driver can click it without ever appearing on the
-                // owner's display. Guarded by cfg!(debug_assertions): release
-                // builds ignore the variable entirely.
+                // Agent automation (RIMLOC_AUTOMATION=1): AXManualAccessibility
+                // on the live webview + late AX server activation, so an
+                // external System Events driver can read and press real UI
+                // controls. Must run with the window already live.
+                automation_env_setup(&window);
+
+                // AUTOMATION EPHEMERAL FRAME (window correction §5/§6,
+                // 2026-10-01): RIMLOC_WINDOW_FRAME="x,y,WxH" places the
+                // automation window at a DERIVED safe spot (right-bottom of
+                // the actual visible frame, away from the owner's click
+                // zone) — normal decorations, never persisted (window-state
+                // plugin is OFF in automation sessions). Not off-screen
+                // parking: fully on-display, inspectable, draggable.
+                // §B compile-time gate: production builds ignore the env.
+                #[cfg(all(feature = "automation-bridge", target_os = "macos"))]
+                if let Ok(frame) = std::env::var("RIMLOC_WINDOW_FRAME") {
+                    let parts: Vec<f64> = frame
+                        .split([',', 'x'])
+                        .filter_map(|t| t.trim().parse().ok())
+                        .collect();
+                    let parsed: Option<(f64, f64, f64, f64)> = match parts.as_slice() {
+                        [x, y, w, h] => Some((*x, *y, *w, *h)),
+                        _ => None,
+                    };
+                    if let Some((x, y, w, h)) = parsed {
+                        let _ = window.set_size(tauri::LogicalSize::new(w, h));
+                        let _ = window.set_position(tauri::LogicalPosition::new(x, y));
+                        // DEV_LOG_* convention: the text lives in a const,
+                        // the call site stays a pure formatter (workspace
+                        // i18n guard scans source lines regardless of
+                        // cfg-gating).
+                        eprintln!(
+                            "{} {x},{y},{w}x{h}",
+                            DEV_LOG_AUTOMATION_FRAME_APPLIED
+                        );
+                    }
+                }
+
+                // DEPRECATED (window correction 2026-09-30, owner
+                // directive §2/§12): off-screen parking and the borderless
+                // move mode are DEBUG-ONLY relics — the canonical semantic
+                // acceptance path now runs a NORMAL VISIBLE background
+                // window (embedded WDIO / background AX; no positioning).
+                // A borderless window is owner-hostile: it cannot be
+                // dragged normally (the very defect the correction bans).
+                // Keep ONLY for bounded visual-regression scenarios until
+                // replacement acceptance is proven, then REMOVE.
+                //
+                // RIMLOC_WINDOW_ORIGIN="x,y" relocates the window
+                // (e.g. "-3000,-3000" off-screen). Guarded by
+                // cfg!(debug_assertions): release builds ignore it.
                 //
                 // RIMLOC_WINDOW_MOVE selects the relocation method:
                 //   "borderless" — set_decorations(false) first: AppKit's
@@ -3522,6 +4079,14 @@ fn main() {
                 //   "hide" — orderOut then tauri set_position (ordered-out
                 //     windows move freely, but WKWebView event routing to a
                 //     hidden window is not guaranteed).
+                //
+                // Attribute-gated (NOT cfg!()): cfg!() is a runtime check and
+                // its body compiles in every profile, while the hooks called
+                // inside are #[cfg]-removed from release/non-macOS builds —
+                // that combination once broke `cargo check --release` with
+                // six E0425s. The attribute removes the whole block where the
+                // hooks do not exist.
+                #[cfg(all(debug_assertions, target_os = "macos"))]
                 if cfg!(debug_assertions) {
                     if let Ok(origin) = std::env::var("RIMLOC_WINDOW_ORIGIN") {
                         let parsed = origin.split_once(',').and_then(|(a, b)| {
@@ -3558,28 +4123,54 @@ fn main() {
                                 eprintln!(
                                     "rimloc-gui: RIMLOC_WINDOW_ORIGIN=({x},{y}) mode={mode} moved={moved}"
                                 );
+                                // App Nap opt-out FIRST: a napped
+                                // process stops answering AXWindows and
+                                // the AX tree dies mid-journey.
+                                automation_disable_app_nap();
                                 // Make the app's accessibility server
                                 // start deterministically: off-screen the
                                 // AX bridge is lazy and sometimes never
                                 // hydrates on client queries alone, which
                                 // breaks AXPress-driven automation.
-                                dev_accessibility_activate();
+                                automation_accessibility_activate();
                                 // Keep the window parked: some WebKit
                                 // interactions (AXPress navigation,
                                 // scroll-to-reveal) nudge the window frame
                                 // after the initial move.
                                 let park = window.clone();
-                                std::thread::spawn(move || loop {
-                                    std::thread::sleep(std::time::Duration::from_secs(3));
-                                    // keep re-asserting the AX registration:
-                                    // WebKit page loads can drop it, and an
-                                    // unhydrated AX bridge breaks automation
-                                    dev_accessibility_activate();
-                                    let _ = park.set_position(tauri::LogicalPosition::new(x, y));
+                                std::thread::spawn(move || {
+                                    // macOS 27 drops off-screen windows from
+                                    // the app's AXWindows report seconds after
+                                    // launch (measured 2026-09-27) and a
+                                    // same-position re-assert is a no-op that
+                                    // does NOT re-register. A REAL 2px frame
+                                    // change re-registers the window with AX,
+                                    // so park ticks alternate x by 2px and run
+                                    // every second — the driver's 1.5s poll
+                                    // then always finds a live AX window.
+                                    let mut tick: u32 = 0;
+                                    loop {
+                                        std::thread::sleep(
+                                            std::time::Duration::from_millis(1000),
+                                        );
+                                        tick += 1;
+                                        // keep re-asserting the AX registration:
+                                        // WebKit page loads can drop it, and an
+                                        // unhydrated AX bridge breaks automation
+                                        automation_accessibility_activate();
+                                        let px =
+                                            if tick.is_multiple_of(2) { x } else { x - 2.0 };
+                                        let _ = park.set_position(
+                                            tauri::LogicalPosition::new(px, y),
+                                        );
+                                    }
                                 });
                             }
                             None => {
-                                eprintln!("rimloc-gui: bad RIMLOC_WINDOW_ORIGIN={origin:?} (want \"x,y\")");
+                                // Dev-log (see DEV_LOG_* note above): bad env
+                                // payload in the dev-only off-screen mode.
+                                let detail = format!("origin={origin:?} want=\"x,y\"");
+                                eprintln!("{} {}", DEV_LOG_WINDOW_ORIGIN_INVALID, detail);
                             }
                         }
                     }
@@ -3621,6 +4212,56 @@ fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<Stri
         .blocking_pick_folder()
         .map(|p| p.simplified().to_string());
     Ok(picked)
+}
+
+/// Self-localization entry (mandate D): resolve the app-bundled RimLoc UI
+/// catalog as an ORDINARY project source directory. Thin shell over
+/// [`rimloc_gui_lib::selfloc_catalog::resolve_catalog_dir`] (resource
+/// candidates → idempotent app-data copy → project dir whose basename IS the
+/// project display name "RimLoc UI (en)"). Read-only extra: no dialog, no
+/// caller-chosen paths — total failure is a typed refusal, never a guess.
+#[tauri::command]
+fn selfloc_catalog_dir(app: tauri::AppHandle) -> Result<String, ApiError> {
+    use tauri::Manager;
+    let resource_dir = app.path().resource_dir().ok();
+    let app_data = app.path().app_data_dir().unwrap_or_else(|_| {
+        dirs::data_dir()
+            .map(|d| d.join("com.rimloc.gui"))
+            .unwrap_or_else(std::env::temp_dir)
+    });
+    rimloc_gui_lib::selfloc_catalog::resolve_catalog_dir(resource_dir, &app_data)
+        .map_err(|e| ApiError { message: e })
+}
+
+/// Self-localization contribution (beta, wave 7): build the offline
+/// contribution bundle from the OPEN session (the RimLoc UI catalog project)
+/// into a CALLER-SPECIFIED out directory. Thin shell over
+/// [`rimloc_services::contribution::build_contribution`] — the §6 gate, the
+/// READY / PARTIAL-BUT-VALID / NEEDS-FIXES statuses, the schema-v1 wire
+/// fields and the export_project guard partition (absolute out dir, no
+/// source-tree/managed-root writes) all live in the services layer; the
+/// adapter owns state + wire-shape only. NEEDS-FIXES writes nothing and
+/// returns the enumerated refusals.
+#[tauri::command(rename_all = "snake_case")]
+fn selfloc_build_contribution(
+    state: State<'_, rimloc_gui_lib::contract_adapter::ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    out_dir: String,
+    locale: String,
+) -> Result<
+    rimloc_services::contribution::BuildContributionResponse,
+    rimloc_services::contract::ContractError,
+> {
+    state.with_manager(|manager| {
+        rimloc_services::contribution::build_contribution(
+            manager,
+            &project_id,
+            session_epoch,
+            std::path::Path::new(&out_dir),
+            &locale,
+        )
+    })
 }
 
 /// Save arbitrary text, but the destination is always confirmed by the user
@@ -3772,6 +4413,7 @@ fn diff_xml_cmd(
         changed: out.changed,
     };
     if let Some(p) = request.out_json.as_deref() {
+        ensure_caller_path_absolute("out_json", Path::new(p))?;
         let path = make_absolute(&scan_root, Path::new(p));
         if let Some(parent) = path.parent() {
             let _ = std::fs::create_dir_all(parent);
@@ -3822,6 +4464,9 @@ fn lang_update_cmd(
         ),
     );
     // Expecting game root (folder containing Data/)
+    // mut нужен только macOS-ветке ниже (resolving .app bundle) — на других ОС
+    // переприсвоений нет, и clippy -D warnings роняет unused_mut (лог PR #60).
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
     let mut scan_root = PathBuf::from(&request.root);
     // macOS: allow selecting the .app bundle; resolve to Contents/Resources if needed
     #[cfg(target_os = "macos")]
@@ -4144,6 +4789,7 @@ fn dump_schemas(
 ) -> Result<String, ApiError> {
     use std::fs;
     let out_dir = PathBuf::from(&req.out_dir);
+    ensure_caller_path_absolute("out_dir", &out_dir)?;
     fs::create_dir_all(&out_dir)?;
     macro_rules! dump {
         ($ty:ty, $name:literal) => {{
@@ -4418,6 +5064,19 @@ fn apply_translation(
                 .map(|c| rimloc_import_po::rimworld_lang_dir(c))
         })
         .unwrap_or_else(|| "Russian".to_string());
+    // LEGACY hardening (RC K4, P1-2 class): the lang dir is joined into the
+    // output path (`Languages/<dir>/Keyed/_Edited.xml`) — `Path::join` with
+    // an absolute string replaces the whole prefix and `..` escapes the
+    // mod. The strict folder form is the same predicate the services layer
+    // enforces on every other mod-tree write; enforce it here too, before
+    // any path is built.
+    if !rimloc_services::lang_dir_form_ok(&lang_dir) {
+        return Err(ApiError {
+            message: format!(
+                "lang_dir `{lang_dir}` is malformed: expected a plain language-folder name (letters, digits, `_`, `-`)"
+            ),
+        });
+    }
     let out_path = if let Some(f) = request.file.as_deref() {
         make_absolute(&root, Path::new(f))
     } else {

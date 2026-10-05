@@ -1,0 +1,301 @@
+{
+ "both": [],
+ "rimloc_only": [
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 42,
+   "key": "AnomalyPatch_Age",
+   "text": "Age",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 11,
+   "key": "AnomalyPatch_AtmosphericHeaterFactor",
+   "text": "Disable \"Need warm clothes\" alert with atmospheric heater",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 36,
+   "key": "AnomalyPatch_AvoidDreadLeather",
+   "text": "Pawns avoid dread leather apparel if they don't like it",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 12,
+   "key": "AnomalyPatch_BioferriteHarvesterMultipleSelection",
+   "text": "Show total bioferrite contained with multiple harvesters selected",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 9,
+   "key": "AnomalyPatch_BugFix",
+   "text": "Bug fix",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 13,
+   "key": "AnomalyPatch_CharacterHighlighting",
+   "text": "Show silhouettes even in unnatural darkness",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 30,
+   "key": "AnomalyPatch_CreepJoinerLove",
+   "text": "Allow creepjoiners to romance non-creepjoiners and vice versa",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 37,
+   "key": "AnomalyPatch_CreepjoinerBodyTypeFix",
+   "text": "Female creepjoiners erroneously have male body type",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 14,
+   "key": "AnomalyPatch_DangerousActivityLevels",
+   "text": "Show highest obelisk activity level in multiple alert",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 32,
+   "key": "AnomalyPatch_DeadGhoulsInColonistBar",
+   "text": "Show ghouls in colonist bar even while dead or in a caravan",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 15,
+   "key": "AnomalyPatch_DeathPallResurrectionSound",
+   "text": "Death pall resurrection messages are silent",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 16,
+   "key": "AnomalyPatch_DevourerWaterAssaultFix",
+   "text": "Void provocation can silently fail on devourer water assault",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 33,
+   "key": "AnomalyPatch_DisableDisturbingVision",
+   "text": "Disable disturbing vision letter",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 17,
+   "key": "AnomalyPatch_DontBlockDoors",
+   "text": "Don't perform work in a containment cell doorway",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 38,
+   "key": "AnomalyPatch_DontBlockPrisonDoors",
+   "text": "Also don't perform work in a prison doorway",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 26,
+   "key": "AnomalyPatch_DontHideStats",
+   "text": "Don't hide entity stats",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 6,
+   "key": "AnomalyPatch_Entities",
+   "text": "Dark entities",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 39,
+   "key": "AnomalyPatch_ExtractBioferriteByDefault",
+   "text": "Enable manual bioferrite extraction on entities by default when no bioferrite extractor exists",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 18,
+   "key": "AnomalyPatch_FoodPriority",
+   "text": "Prioritize twisted meat for caravaning ghouls and animals",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 27,
+   "key": "AnomalyPatch_ForbidMonolithCorpses",
+   "text": "Automatically forbid corpses spawned around monolith",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 19,
+   "key": "AnomalyPatch_GhoulHunting",
+   "text": "Allow ghouls to hunt prey on their own",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 29,
+   "key": "AnomalyPatch_HoldingPlatformAlert",
+   "text": "Disable holding platforms needed alert",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 20,
+   "key": "AnomalyPatch_HorrorMusic",
+   "text": "Pit gates don't cause horror/combat music to play unless you're in them",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 3,
+   "key": "AnomalyPatch_Incidents",
+   "text": "Anomaly incidents",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 34,
+   "key": "AnomalyPatch_InhumanPregnancyAttitude",
+   "text": "Inhumanized pawns don't care when their pregnancy is terminated",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 21,
+   "key": "AnomalyPatch_LabyrinthClosing",
+   "text": "Forbid items from the labyrinth outside the home area",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 7,
+   "key": "AnomalyPatch_Misc",
+   "text": "Miscellaneous",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 22,
+   "key": "AnomalyPatch_NoProjectNoStudy",
+   "text": "Don't do dark study without an anomaly research project active",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 10,
+   "key": "AnomalyPatch_NoResearchSelected",
+   "text": "No Anomaly research project active",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 23,
+   "key": "AnomalyPatch_PsychicRitualZoning",
+   "text": "Adhere to zone restrictions while preparing for psychic rituals",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 8,
+   "key": "AnomalyPatch_RestartRequired",
+   "text": "(requires restart)",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 41,
+   "key": "AnomalyPatch_Reverse",
+   "text": "Reverse",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 24,
+   "key": "AnomalyPatch_RitualDialogSorting",
+   "text": "Sort pawns by psychic sensitivity in psychic ritual dialog",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 35,
+   "key": "AnomalyPatch_RitualTargetsDontNeedRescue",
+   "text": "Suppress \"Colonist needs rescue\" alert for psychic ritual targets",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 4,
+   "key": "AnomalyPatch_Rituals",
+   "text": "Psychic rituals",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 40,
+   "key": "AnomalyPatch_SortBy",
+   "text": "Sort by:",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 28,
+   "key": "AnomalyPatch_StopSuppression",
+   "text": "Allow pawns to stop suppressing obelisk activity before target level reached",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 5,
+   "key": "AnomalyPatch_Study",
+   "text": "Study, suppression, and containment",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 25,
+   "key": "AnomalyPatch_StudyAndSuppressByDefault",
+   "text": "Enable study and suppression of entities by default",
+   "kind": "other"
+  },
+  {
+   "file": "1.6/Languages/English/Keyed/AnomalyPatch_Keys.xml",
+   "line": 31,
+   "key": "AnomalyPatch_UnnaturalDarknessMapFix",
+   "text": "Certain Anomaly incidents can generate using threat points from one map but spawn on another",
+   "kind": "other"
+  }
+ ],
+ "rimlangkit_only": [],
+ "semantic_difference": [],
+ "both_file_diff_count": 0,
+ "rimloc_only_kind_breakdown": {
+  "other": 40
+ },
+ "totals": {
+  "rimlangkit_unique": 0,
+  "rimloc_unique": 40,
+  "both": 0,
+  "rimloc_only": 40,
+  "rimlangkit_only": 0,
+  "semantic_keys": 0,
+  "files_scanned_by_rlk": 11,
+  "files_matched_by_rlk": 0
+ }
+}

@@ -488,7 +488,7 @@ pub fn coverage_report(
         .collect();
     let source_total = src.len();
     let mut translated = 0usize;
-    for (k, _) in src.iter() {
+    for k in src.keys() {
         let value = tgt.get(k).or_else(|| {
             tkey_registry
                 .identity_for(k)

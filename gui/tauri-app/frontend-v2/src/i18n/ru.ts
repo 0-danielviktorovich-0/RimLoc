@@ -27,8 +27,10 @@ export const ru: Record<string, string> = {
 
   // Honest capability degradation (audit P1-5): CTA/buttons gated by the
   // handshake capability report while the J backend slices are pending.
-  'capability.unsupported.title': 'Пока недоступно: операция ждёт контракт-слайс. {reason}',
-  'capability.unsupported.note': 'Сборка через контракт ещё не подключена (бэкенд-слайс в работе). {reason}',
+  // Волна 9 (мандат §14): «контракт-слайс» — внутренний термин; пользователю
+  // говорим человечески про подключение к бэкенду.
+  'capability.unsupported.title': 'Пока недоступно: функция ещё подключается к бэкенду. {reason}',
+  'capability.unsupported.note': 'Сборка перевода ещё не подключена к бэкенду — работа идёт. {reason}',
 
   // Recovery после typed-отказа (Pass A P1-1/P1-2): refresh принимает диск
   // (backend-dirty отбрасывается) — всегда явным действием пользователя.
@@ -37,10 +39,16 @@ export const ru: Record<string, string> = {
   'workspace.contract.rereading': 'Перечитываю…',
 
   // Живые контрактные операции (финальная волна): validate/export/diagnose
-  // поверх RimLocClient. Сообщения находок — данные бэкенда (EN), чипы и
-  // подписи локализованы.
+  // поверх RimLocClient. Сообщения бэкенда локализуются по СТАБИЛЬНЫМ
+  // машинным id (аудит §4/§7): `contract.error.<code>` ниже покрывает каждый
+  // вариант ContractErrorCode, `finding.<kind>` — каждую категорию находок,
+  // которую выдаёт project_validate. Свободный EN-текст сервера едет внутри
+  // локализованной фразы через {message}; для категории без ключа — откат
+  // на сырой текст (мок-данные остаются данными бэкенда).
   'contractops.running': 'Выполняется…',
-  'contractops.validate.title': 'Валидация (контракт)',
+  // L-10 (аудит UI 2026-09-29): «(контракт)» — внутренний термин, из заголовков
+  // карточек убран; режим сборки виден из бейджа транспорта в шапке.
+  'contractops.validate.title': 'Валидация',
   'contractops.validate.desc': 'Чтение над доверенным состоянием проекта; проект не меняется. Ошибки делают операцию неуспешной и становятся целью диагностики.',
   'contractops.validate.run': 'Проверить проект',
   'contractops.validate.rerun': 'Проверить снова',
@@ -50,7 +58,7 @@ export const ru: Record<string, string> = {
   'contractops.counts.warnings': 'Предупреждения',
   'contractops.counts.info': 'Инфо',
   'contractops.findings.empty': 'Замечаний нет.',
-  'contractops.export.title': 'Сборка перевода (контракт)',
+  'contractops.export.title': 'Сборка перевода',
   'contractops.export.desc': 'Изолированный вывод в указанную вами папку (не в дерево исходников — guard бэкенда отклонит). Язык папки: {locale}.',
   'contractops.export.outdir': 'Папка вывода',
   'contractops.export.run': 'Собрать и записать',
@@ -58,7 +66,13 @@ export const ru: Record<string, string> = {
   'contractops.export.files': 'Файлов',
   'contractops.export.reparsed': 'Ключей перепарсено',
   'contractops.export.skipped': 'Пропущены неизвестные типы ({count})',
-  'contractops.diagnose.title': 'Диагностика (контракт)',
+  'contractops.buildmod.title': 'Сборка мод-пакета',
+  'contractops.buildmod.desc': 'Готовая папка мода — About.xml + Languages ({locale}) — которую можно перенести в папку Mods игры. В дерево исходников бэкенд не пустит.',
+  'contractops.buildmod.outdir': 'Папка мод-пакета',
+  'contractops.buildmod.run': 'Собрать мод-пакет',
+  'contractops.buildmod.done': 'Мод-пакет записан и перепроверен сканером.',
+  'contractops.buildmod.files': 'Файлов',
+  'contractops.diagnose.title': 'Диагностика',
   'contractops.diagnose.desc': 'Санитизированный бандл по последней неуспешной операции: id операции, причина, затронутые записи. Папка — вне дерева исходников.',
   'contractops.diagnose.outdir': 'Папка бандла',
   'contractops.diagnose.run': 'Собрать бандл',
@@ -66,12 +80,64 @@ export const ru: Record<string, string> = {
   'contractops.diagnose.operation': 'Операция',
   'contractops.diagnose.redacted': 'Санитизировано',
   'contractops.diagnose.excluded': 'Исключено',
+  // Подсказка абсолютного пути (invalid_output_path): поле стартует пустым —
+  // фиктивный дефолтный путь никогда не отправляется.
+  'contractops.export.notGameMod': 'Это изолированный вывод перевода. Для мода, который игра увидит в списке, — «Сборка мод-пакета» ниже: у неё игровой About.xml.',
+  'contractops.export.outdirInvalid': 'Путь должен быть абсолютным — начинаться с «/». Относительный путь отклоняется до любой записи.',
+  'contractops.abs_path_hint': 'Только абсолютный путь — относительный отклоняется (invalid_output_path) до любой записи.',
+  'contractops.abs_path_example': 'например /Users/you/RimLoc-Export/Мод-Russian',
+  'contractops.abs_path_example_mod': 'например /Users/you/RimWorld/Mods/Мод-Russian',
+  'contractops.abs_path_example_bundle': 'например /Users/you/RimLoc-Bundles/Мод',
+  // Нативный диалог выбора папки под полями вывода (тот же поток, что на Home).
+  'contractops.pick': 'Выбрать папку…',
+
+  // --- Локализация сообщений бэкенда (аудит §4/§7) ----------------------
+  // `contract.error.<code>` — по ключу на каждый вариант ContractErrorCode
+  // (append-only wire-enum в rimloc-services contract.rs). snake_case-код
+  // добавляет форматтер, {message} несёт сырую серверную деталь.
+  'contract.error.stale_epoch': 'Вашу сессию редактирования сменила более новая (проект открыли или обновили заново) — откройте проект, чтобы продолжить. Детали: {message}',
+  'contract.error.stale_revision': 'Пока вы правили, проект изменился (ваша базовая ревизия устарела) — повторите правку на свежем состоянии. Детали: {message}',
+  'contract.error.save_failed': 'Запись на диск не удалась; правки остались в памяти как черновик и не потеряны. Детали: {message}',
+  'contract.error.project_changed_on_disk': 'Файл проекта изменился на диске вне этой сессии — примите версию с диска, чтобы продолжить; черновик сохранён. Детали: {message}',
+  'contract.error.contract_violation': 'Действие запрещено для текущего состояния проекта (неизвестная запись или недопустимое действие). Детали: {message}',
+  'contract.error.guard_output_denied': 'Выбранное место вывода отклонено гардом записи — вывод не может идти в дерево исходников или другую защищённую зону. Детали: {message}',
+  'contract.error.invalid_output_path': 'Путь вывода должен быть абсолютной папкой. Детали: {message}',
+  'contract.error.unsupported_capability': 'Этой операции в текущей сборке ещё нет — она честно сообщается, а не имитируется. Детали: {message}',
+  'contract.error.project_not_found': 'Управляемого проекта с таким id нет (возможно, он выгружен). Детали: {message}',
+  'contract.error.schema_version': 'Файл проекта записан другой версией формата и не поддерживается этой сборкой. Детали: {message}',
+  'contract.error.validation_failed': 'Операция дала ошибки валидации — исправьте их и повторите. Детали: {message}',
+  'contract.error.internal': 'Неожиданная ошибка бэкенда. Детали: {message}',
+
+  // `finding.<kind>` — по ключу на каждую категорию находок project_validate:
+  // пять kinds из rimloc-validate (empty, invisible-char, placeholder-check,
+  // duplicate, duplicate-global) плюс сессионные (lost-placeholder,
+  // case-collision, source-drift).
+  'finding.empty': 'Перевод пуст — игра не отрисует ничего.',
+  'finding.invisible-char': 'В тексте подозрительные невидимые/двунаправленные управляющие символы. Детали: {message}',
+  'finding.placeholder-check': 'Проблема с плейсхолдерами в переводе. Детали: {message}',
+  'finding.duplicate': 'Дубликат ключа в одном файле — игра оставит только первую копию.',
+  'finding.duplicate-global': 'Ключ встречается в нескольких файлах одной языковой зоны. Детали: {message}',
+  'finding.lost-placeholder': 'Перевод потерял плейсхолдер(ы), которые есть в исходнике, — они отрисуются незаполненными. Детали: {message}',
+  'finding.case-collision': 'Два defName различаются только регистром и столкнутся в одном DefInjected-файле. Детали: {message}',
+  'finding.source-drift': 'Исходник изменился после сборки проекта — инвентарь устарел; пересканируйте перед сборкой экспорта. Детали: {message}',
 
   // Честный live-вариант бейджа (аудит P1-4): на контракт-проекте глобальный
   // чип показывает живой режим вместо «демо-данные».
-  'livebadge.label': 'Живой проект (контракт)',
-  'livebadge.title':
-    'Открыт реальный проект через контракт RimLocClient → Tauri: данные не демо-фикстуры, правки сохраняются в управляемый проект.',
+  // Волна 9 (мандат §14): без «(контракт)» — внутренний термин; подсказка
+  // отвечает человечески, без имён внутренних мостов.
+  'livebadge.label': 'Живой проект',
+  'livebadge.title': 'Открыт настоящий проект: это не демо-данные, правки сохраняются.',
+
+  // M-2 (аудит UI 2026-09-29): пока проект не открыт, чип в шапке говорит
+  // правду о ТРАНСПОРТЕ (Live/Mock по режиму клиента) — живой список
+  // проектов ниже не является демо-данными. Пометка «Демо-данные (мок)»
+  // остаётся только у встроенного демо-датасета (MockBadge, только isDemo).
+  'transportbadge.live.label': 'Живой транспорт',
+  'transportbadge.live.title':
+    'Подключён настоящий бэкенд десктоп-приложения через мост Tauri. Проект пока не открыт — список ниже это ваши реальные управляемые проекты.',
+  'transportbadge.mock.label': 'Мок-транспорт (демо-режим)',
+  'transportbadge.mock.title':
+    'Клиент работает на встроенном мок-транспорте (явный демо-режим). Реальные проекты не затрагиваются.',
 
   // Встроенный демо-проект (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
@@ -113,9 +179,45 @@ export const ru: Record<string, string> = {
   'home.secondaryHelp': 'Справка',
   'home.recent.title': 'Недавние проекты',
   'home.recent.progress': 'Прогресс перевода',
-  'home.recent.modified': 'Изменён',
-  'home.recent.sourceChanged': 'источник изменился: {count}',
-  'home.recent.issues': 'проблем: {count}',
+  // Дизайн-синтез (жюри, 2026-09-29): бейджи называют следующий шаг с числом,
+  // даты — человеческие («изменён сегодня в 14:32»), заметки несут счётчики
+  // строк. Статус-чипы — мягкие тройки токенов из tokens.css.
+  'home.locals':
+    'Всё работает локально: проекты остаются на этой машине, файлы мода не изменяются.',
+  'home.continue.kicker': 'Продолжить работу',
+  'home.continue.linesDone': '{done} из {total} строк переведено',
+  'home.continue.linesLeft': 'осталось {count}',
+  'home.continue.review': 'Проверка',
+  'home.continue.build': 'Собрать перевод',
+  'home.status.working': 'В работе',
+  'home.status.ready': 'Готов к сборке',
+  'home.status.problems': 'Ошибки валидации',
+  'home.recent.count': '{shown} из {total}',
+  'home.recent.byDate': 'по дате изменения',
+  'home.recent.colProject': 'Проект',
+  'home.recent.colUpdated': 'Обновлён',
+  'home.recent.colProgress': 'Прогресс',
+  'home.recent.colStatus': 'Статус',
+  'home.recent.colActions': 'Действия',
+  'home.recent.open': 'Открыть',
+  'home.recent.empty': 'Пока нет недавних проектов.',
+  'home.recent.modifiedWhen': 'изменён {when}',
+  'home.recent.when.today': 'сегодня в {time}',
+  'home.recent.when.yesterday': 'вчера в {time}',
+  'home.recent.sourceChanged': 'Источник обновился: {count}',
+  'home.recent.sourceChangedTitle': 'У источника {count} строк позже вашей последней правки.',
+  'home.recent.issues': 'Замечаний: {count}',
+  'home.recent.issuesTitle': '{count} записей ждут проверки перед сборкой.',
+  'home.create.stepsTitle': 'Как это работает',
+  'home.create.step1': 'RimLoc читает XML-строки мода и считает их.',
+  'home.create.step2': 'Переводите в таблице — с глоссарием и памятью переводов.',
+  'home.create.step3': 'Собираете перевод отдельной папкой в мод.',
+  'home.contract.pathLabel': 'Папка мода',
+  'home.contract.helperLead': 'Нужна папка мода с подпапкой',
+  'home.contract.helperMid': 'или',
+  'home.contract.helperTail': '— например,',
+  'home.contract.helperExample': '~/Mods/MyMod',
+  'home.contract.revision': 'ревизия {count}',
   'home.state.loading': 'Загрузка…',
   'home.state.error':
     'Не удалось открыть список проектов. Проверьте доступ и попробуйте ещё раз.',
@@ -138,7 +240,8 @@ export const ru: Record<string, string> = {
   'wizard.w2.subtitle.dlc': 'Выберите установку игры, затем отметьте DLC для перевода',
   'wizard.w2.subtitle.pack': 'Найденные языковые пакеты',
   'wizard.w2.folder': 'Выбрать папку…',
-  'wizard.w2.drop': 'или перетащите папку мода сюда',
+  'wizard.w2.drop': 'или перетащите папку мода сюда — перетаскивание в этой сборке демонстрационное',
+  'wizard.w2.folderStub': 'Выбор папки и перетаскивание в этой сборке не подключены (демо) — выберите ветку из демо-списка выше.',
   'wizard.w2.author': 'автор',
   'wizard.w2.defs': 'записей',
   'wizard.w2.installation': 'Установка игры',
@@ -163,7 +266,8 @@ export const ru: Record<string, string> = {
   'wizard.w4.existing.title': 'Использовать существующие знания',
   'wizard.w4.existing.translation': 'Существующий перевод',
   'wizard.w4.existing.translationDesc': 'Готовые тексты из чужого пакета или прошлой версии',
-  'wizard.w4.existing.tm': 'Translation Memory',
+  // L-2 (аудит UI 2026-09-29): один концепт — одно имя, как во вкладке ниже.
+  'wizard.w4.existing.tm': 'Память переводов',
   'wizard.w4.existing.tmDesc': 'Совпадения из памяти переводов проекта',
   'wizard.w4.existing.glossary': 'Глоссарий',
   'wizard.w4.existing.glossaryDesc': 'Термины подставляются и проверяются на выходе',
@@ -220,6 +324,8 @@ export const ru: Record<string, string> = {
   'workspace.col.source': 'Источник',
   'workspace.col.target': 'Перевод',
   'workspace.col.changed': 'Изменён источник',
+  // L-3 (аудит UI 2026-09-29): мягкий маркер в пустой ячейке «Перевод».
+  'workspace.col.noTranslation': 'Нет перевода',
   'workspace.changed.yes': 'Источник изменился с последнего перевода',
   'workspace.filter.untranslated': 'Не переведено',
   'workspace.filter.translated': 'Переведено',
@@ -265,7 +371,8 @@ export const ru: Record<string, string> = {
   'workspace.navigator.title': 'Записи',
   'workspace.navigator.all': 'Все записи',
   'workspace.navigator.status': 'Статус',
-  'workspace.navigator.advanced': 'Структура (advanced)',
+  // L-4 (аудит UI 2026-09-29): англицизм в скобках заменён на русский эквивалент.
+  'workspace.navigator.advanced': 'Структура (расширенная)',
 
   // Filter popover (mandate §10)
   'workspace.filters.title': 'Фильтры',
@@ -301,6 +408,8 @@ export const ru: Record<string, string> = {
   'languages.manager.compareStub': 'Сравнение бок о бок появится на этапе compare (мок).',
   'languages.manager.import': 'Импорт',
   'languages.manager.importDone': 'Тексты пакета импортированы как черновики.',
+  'languages.manager.importStub': 'Импорт из файла в этой сборке не подключён (демо). Начните новый язык через «Добавить язык».',
+  'languages.manager.addedEmpty': 'Язык перевода добавлен с пустым проектом — тексты не импортировались.',
   'languages.manager.export': 'Экспорт',
   'languages.manager.exportStub': 'Экспорт появится вместе со сборкой перевода (мок).',
   'languages.manager.sourceNote': 'Язык источника — база проекта, его нельзя убрать.',
@@ -404,10 +513,10 @@ export const ru: Record<string, string> = {
   'validation.severity.warning': 'Предупреждение',
   'issue.placeholder_mismatch': 'Несовпадение плейсхолдеров',
   'issue.glossary': 'Глоссарий',
-  'issue.untranslated_suspect': 'Подозрительный untranslated',
-  'issue.wordinfo': 'WordInfo',
+  'issue.untranslated_suspect': 'Похоже, не переведено',
+  'issue.wordinfo': 'Словарные слова (WordInfo)',
   'issue.ambiguity': 'Неоднозначный источник',
-  'issue.ai_concern': 'Замечание AI-ревью',
+  'issue.ai_concern': 'Замечание ИИ-проверки',
   'history.created': 'Создано',
   'history.edited': 'Правка человеком',
   'history.tm_match': 'Из памяти переводов',
@@ -438,6 +547,14 @@ export const ru: Record<string, string> = {
   'workspace.project.rescan': 'Пересканировать',
   'workspace.project.reviewChanges': 'Разобрать изменения ({count})',
   'workspace.project.tools': 'Специальные инструменты',
+  'workspace.project.tool.existing': 'Импортировать существующий перевод',
+  'workspace.project.contribution.title': 'Вклад в перевод RimLoc (бета)',
+  'workspace.project.contribution.note': 'Собирает переводы этого проекта в офлайн-файл-бандл, который можно передать мейнтейнеру RimLoc. Никуда не отправляется.',
+  'workspace.project.contribution.build': 'Собрать вклад…',
+  'workspace.project.contribution.building': 'Собираю…',
+  'workspace.project.contribution.status': '{status}: принято изменений — {accepted}',
+  'workspace.project.contribution.path': 'Бандл: {path}',
+  'workspace.project.contribution.rejected': 'Отклонено: {count}',
   'workspace.project.danger': 'Опасная зона',
   'workspace.project.dangerNote': 'Эти действия меняют проект целиком. Каждое спрашивает подтверждение дважды.',
   'workspace.project.reset': 'Сбросить прогресс перевода',
@@ -460,6 +577,15 @@ export const ru: Record<string, string> = {
   'review.categories': 'Категории проблем',
   'review.categories.all': 'Все проблемы',
   'review.scope': 'Счётчики — по всему проекту; очередь показывает проблемы записей, загруженных в этой сессии.',
+  'review.overview.unavailable': 'Не считается в этой сборке.',
+  'review.overview.partial':
+    'Обзор частичный: отслеживание изменений источника и проверка глоссария в этой сборке не подключены — остальные счётчики посчитаны по снапшоту проекта.',
+  // M-6 (аудит UI 2026-09-29): видимая связь карточек обзора с очередью и
+  // обратно — пара «0 рядом с 45» — это два разных честных счёта, не сбой.
+  'review.overview.queueLink': 'См. очередь проблем ниже',
+  'review.overview.queueExplainer':
+    'Счётчики считают снапшот проекта, очередь — находки проверок этой сессии: числа не обязаны совпадать.',
+  'review.queue.overviewLink': '↑ К счётчикам обзора',
   'review.queue': 'Очередь проблем',
   'review.queue.empty.title': 'Очередь пуста',
   'review.queue.empty.desc': 'В этой сессии проблем не осталось. Можно собирать перевод.',
@@ -481,6 +607,22 @@ export const ru: Record<string, string> = {
   'glossary.term': 'Термин',
   'glossary.translation': 'Перевод',
   'glossary.note': 'Редактор глоссария и проверка терминов — фаза 2 спринта G4.',
+  // Wave 13 (glossary live): вкладка глоссария воркспейса поверх project_glossary.
+  'glossary.live.badge': 'Живые данные',
+  'glossary.live.demoBadge': 'Демо-данные',
+  'glossary.live.loading': 'Загружаю термины…',
+  'glossary.live.note': 'Заметка',
+  'glossary.live.actions': 'Действия',
+  'glossary.live.edit': 'Правка',
+  'glossary.live.save': 'Сохранить',
+  'glossary.live.cancel': 'Отмена',
+  'glossary.live.delete': 'Удалить',
+  'glossary.live.confirmDelete': 'Удалить этот термин?',
+  'glossary.live.add': 'Добавить термин',
+  'glossary.live.empty': 'Терминов пока нет — добавьте первый ниже.',
+  'glossary.live.placeholderTerm': 'Термин',
+  'glossary.live.placeholderTranslation': 'Перевод',
+  'glossary.live.placeholderNote': 'Заметка (необязательно)',
   'tm.title': 'Память переводов',
   'tm.source': 'Источник',
   'tm.target': 'Перевод',
@@ -548,14 +690,14 @@ export const ru: Record<string, string> = {
   'build.warnings': 'Известные предупреждения',
   'build.warnings.none': 'Известных предупреждений нет',
   'build.warnings.review': 'Проверить проблемы',
-  'build.success': 'Перевод собран',
+  'build.success': 'Демо-сборка завершена — на диск ничего не записано.',
   'build.output': 'Результат',
   'build.openFolder': 'Открыть папку',
-  'build.openedNote': 'Папка открыта: {path}',
+  'build.openedNote': 'Демо: открытие папки в этой сборке не подключено — путь вывода: {path}.',
   'build.install': 'Установить перевод',
   'build.installingNote': 'Копируем в папку Mods игры…',
   'build.installed': 'Установлено',
-  'build.installedNote': 'Скопировано в папку Mods игры — включите перевод в списке модов перед запуском.',
+  'build.installedNote': 'Демо: ничего не копировалось — установка появится в живой сборке.',
   'build.retest': 'Проверить ещё раз',
   'build.advanced': 'Подробности',
   'build.advanced.keys': 'Записей записано',
@@ -589,6 +731,26 @@ export const ru: Record<string, string> = {
   'existing.continueTranslation': 'Продолжить перевод',
   'existing.back': 'Выбрать другое',
   'existing.note': 'Мок-поток: числа анализа демонстрируют проект реального масштаба.',
+  // W2 — живой контрактный поток сценария существующего перевода
+  // (dry-run анализ + охраняемое применение в открытом проекте).
+  'existing.live.dir': 'Папка существующего перевода',
+  'existing.live.dirHint': '/путь/к/моду/Languages/Russian',
+  'existing.live.pick': 'Выбрать папку…',
+  'existing.live.analyzeNote':
+    'Анализ — это dry run: RimLoc только сравнивает пак с открытым проектом — пока ничего не записывается.',
+  'existing.live.scanned': 'Просмотрено файлов: {files}, строк: {keys}.',
+  'existing.live.list.reusable': 'Будет импортировано (пустые слоты)',
+  'existing.live.list.conflicts': 'Останется как есть (в проекте уже есть перевод)',
+  'existing.live.list.obsolete': 'Нет в этом проекте (останется в паке)',
+  'existing.live.list.ambiguous': 'Неоднозначные — нужно ваше решение',
+  'existing.live.applyNote':
+    'Применение импортирует только готовые строки. Существующие переводы не перезаписываются, неоднозначные остаются списком для вашего решения.',
+  'existing.live.apply': 'Импортировать готовые ({count})',
+  'existing.live.applied':
+    'Импортировано переводов: {count}. Не тронуто: существующих {conflicts}, устаревших {obsolete}, неоднозначных {ambiguous}.',
+  'existing.live.dirChanged':
+    'Папка изменилась после анализа — запустите анализ заново, прежде чем применять.',
+  'existing.conflicts': 'Конфликты (сохранены)',
 
   // Settings screen (mandate §15, spec §17). Семь секций, сгруппированных по
   // задаче; CLI-флаги наружу 1:1 не выставляем — экспериментальное и
@@ -611,13 +773,14 @@ export const ru: Record<string, string> = {
   'settings.general.updates': 'Обновления',
   'settings.general.updates.auto': 'Проверять обновления автоматически',
   'settings.general.updates.check': 'Проверить сейчас',
-  'settings.general.updates.ok': 'У вас последняя версия (мок).',
+  'settings.general.updates.ok': 'Проверка обновлений в этой сборке не подключена (демо) — сетевой запрос не выполнялся.',
 
   'settings.rimworld.desc': 'Где RimLoc ищет игру и моды.',
   'settings.rimworld.installs': 'Установки игры',
+  'settings.rimworld.installsNote': 'Пример данных — обнаружение установок игры в этой сборке не подключено.',
   'settings.rimworld.primary': 'основная',
   'settings.rimworld.rescan': 'Пересканировать',
-  'settings.rimworld.found': 'Найдено: 2 установки · 143 мода (мок)',
+  'settings.rimworld.found': 'Пересканирование в этой сборке не подключено (демо) — список не менялся.',
   'settings.rimworld.version': 'Целевая версия RimWorld',
   'settings.rimworld.autodetect': 'Находить установки автоматически',
   'settings.rimworld.workshop': 'Папка Workshop',
@@ -679,16 +842,22 @@ export const ru: Record<string, string> = {
     'Диагностика, журналы и поверхность разработчика. Экспериментальное и внутреннее — только здесь.',
   'settings.advanced.logs': 'Журналы',
   'settings.advanced.openLogs': 'Открыть папку журналов',
-  'settings.advanced.logsDone': 'Папка журналов готова (мок): ~/RimLoc/logs',
+  'settings.advanced.logsDone':
+    'Открытие папки журналов в этой сборке не подключено (демо) — ничего не открыто. Журнал лежит в папке данных приложения: ' +
+    '~/Library/Application Support/com.rimloc.gui/RimLoc/logs/gui.log (macOS); %APPDATA%\\com.rimloc.gui\\RimLoc\\logs (Windows); ' +
+    '~/.local/share/com.rimloc.gui/RimLoc/logs (Linux).',
   'settings.advanced.diagnostics': 'Диагностика',
   'settings.advanced.runDiag': 'Запустить диагностику',
   'settings.advanced.rules': 'Знания и правила',
   'settings.advanced.viewRules': 'Посмотреть правила',
+  'settings.advanced.rulePlaceholders': 'плейсхолдеры сохраняются как есть',
+  'settings.advanced.ruleGlossary': 'приоритет терминам глоссария',
+  'settings.advanced.ruleTone': 'Тональность: нейтральный игровой UI',
   'settings.advanced.config': 'Конфигурация',
   'settings.advanced.export': 'Экспортировать конфиг',
-  'settings.advanced.exported': 'Конфигурация экспортирована (мок).',
+  'settings.advanced.exported': 'Экспорт конфигурации в этой сборке не подключён (демо) — ничего не записано.',
   'settings.advanced.import': 'Импортировать конфиг',
-  'settings.advanced.imported': 'Конфигурация импортирована (мок).',
+  'settings.advanced.imported': 'Импорт конфигурации в этой сборке не подключён (демо) — ничего не прочитано.',
   'settings.advanced.dev': 'Опции разработчика',
   'settings.advanced.mocks':
     'Эта сборка работает на мок-адаптерах: ноль вызовов бэкенда (мандат §31).',
@@ -707,12 +876,19 @@ export const ru: Record<string, string> = {
   'provider.anthropic.desc': 'Модели Claude через Anthropic API.',
   'provider.ollama.desc': 'Локальные модели через Ollama на этой машине.',
   'provider.custom.desc': 'Свой эндпоинт с OpenAI-совместимым API.',
+  // M-11 (аудит UI 2026-09-29): суффикс «(мок)» отделён от статуса и
+  // показывается только на мок-транспорте (providers.status.mockMark); на
+  // реальном транспорте настроенный провайдер честно показывает
+  // «настроен (не проверялся)» — сетевого прогона в этой сборке нет.
   'providers.status.connected': 'Подключён',
   'providers.status.not_configured': 'Не настроен',
   'providers.status.offline': 'Офлайн',
   'providers.status.testing': 'Проверяем…',
+  'providers.status.mockMark': '(мок)',
+  'providers.status.configured': 'Настроен (не проверялся)',
   'providers.model': 'Модель',
-  'providers.baseUrl': 'Base URL',
+  // L-12 (аудит UI 2026-09-29): EN-термин в RU-интерфейсе заменён.
+  'providers.baseUrl': 'Адрес сервера',
   'providers.action.configure': 'Настроить',
   'providers.action.test': 'Проверить связь',
   'providers.action.changeModel': 'Сменить модель',
@@ -765,6 +941,8 @@ export const ru: Record<string, string> = {
   'providers.export.fallbackNote': 'Конфигурация провайдера (без секретов):',
   'providers.inst.removeConfirm': 'Удалить?',
   'providers.inst.removeWarn': 'Повторное нажатие удаляет провайдера. Ключ в keychain не трогается.',
+  // L-12 (аудит UI 2026-09-29): «(keychain)» в строке ключа — по-русски.
+  'providers.inst.key.keychain': 'связка ключей',
   'providers.form.key': 'Ключ',
   'providers.form.addTitle': 'Новый провайдер',
   'providers.form.editTitle': 'Настройка провайдера',
@@ -775,7 +953,8 @@ export const ru: Record<string, string> = {
   'providers.form.auth.none': 'Без ключа (локальный)',
   'providers.form.auth.noneHint': 'Локальные сервисы ключа не требуют; облачным нужен ключ.',
   'providers.form.discovery': 'Обнаружение моделей',
-  'providers.form.discovery.auto': 'Список с сервера',
+  // L-12 (аудит UI 2026-09-29): естественная русская формулировка авто-режима.
+  'providers.form.discovery.auto': 'Запрашивать у сервера',
   'providers.form.discovery.manual': 'Вручную',
   'providers.form.modelPlaceholder': 'Например my-model-7b',
   'providers.form.add': 'Добавить',
@@ -913,6 +1092,12 @@ export const ru: Record<string, string> = {
   'help.replay.demoTour': 'Демо-тур с действиями',
   'help.replay.demoTourDesc':
     'Проход по всему циклу со стрелкой-подсказкой на реальных контролах демо-проекта: открыть, выбрать и отредактировать строку, разобрать намеренную ошибку, проверить и собрать (синтетически).',
+  // Вход в самоперевод с экрана Help (волна 5): тот же флоу, что у карточки
+  // на Home (lib/selfloc.ts), дедуп по 'RimLoc UI (en)' сохранён.
+  'help.selfloc.title': 'Помочь с переводом RimLoc',
+  'help.selfloc.desc':
+    'Интерфейс RimLoc — обычный проект перевода (~1,2 тыс. сообщений): вклад уезжает вместе с приложением, ваши моды не затрагиваются.',
+  'help.selfloc.open': 'Перевести RimLoc',
   'help.shortcuts.title': 'Горячие клавиши',
   'help.shortcuts.palette': 'Палитра команд',
   'help.shortcuts.save': 'Сохранить правку',
@@ -1137,17 +1322,37 @@ export const ru: Record<string, string> = {
   'dev.reset': 'Сбросить мок-данные',
   'dev.summary': 'Ноль вызовов бэкенда: все данные локальные.',
   'dev.scenarios': 'Браузер сценариев',
+  'dev.pack.pick': 'Файл пака (JSON)',
+  'dev.pack.load': 'Загрузить пак (превью)',
+  'dev.pack.reset': 'Сбросить превью',
+  'dev.pack.idle': 'Пак не загружен.',
+  'dev.pack.active': 'Превью активно: {locale} ({count} сообщений)',
+  'dev.pack.rejected': 'Пак отвергнут: {reason}',
 
   // W-built гейт загрузки + контрактная Home
   'boot.configError.title': 'В этом запуске нет бэкенда',
   'boot.configError.hint': 'Запустите настольное приложение RimLoc для живого бэкенда или включите демо-режим (?dev=1 в адресной строке), чтобы смотреть синтетическое демо.',
+  // H-1 (аудит UI 2026-09-29): реализованный мастер был недостижим с живой
+  // Home. Вторичный вход в live-панели создания, честно помечен как ДЕМО-тур
+  // — мастер никогда не выдаёт себя за живой поток создания проекта.
+  'home.wizard.tour': 'Мастер перевода (демо-тур)',
+  'home.wizard.tourNote': 'Экскурсия по шагам на встроенном демо-проекте — ваши моды не затрагиваются. Реальный проект создаётся кнопкой выше.',
   'home.contract.title': 'RimLoc — живой проект',
   'home.contract.desc': 'Создайте проект перевода из реальной папки мода или откройте недавний. Проект остаётся на этой машине.',
   'home.contract.pathPlaceholder': 'Путь к папке мода…',
+  // Нативный диалог выбора папки рядом с полем пути (main.rs pick_directory).
+  'home.contract.pick': 'Выбрать папку…',
   'home.contract.create': 'Создать проект',
   'home.contract.open': 'Открыть',
+  // Точка самоперевода (мандат D): собственный каталог интерфейса как
+  // обычный проект, через тот же контрактный create-поток.
+  'home.selfloc.title': 'Перевести RimLoc',
+  'home.selfloc.desc': 'Откройте каталог интерфейса RimLoc как обычный проект перевода — английский источник, ваш перевод поедет вместе с приложением.',
+  'home.selfloc.open': 'Перевести RimLoc',
+  'home.selfloc.beta': 'бета',
   'workspace.project.fixtureDataset': 'Демо-датасет — правки не сохраняются',
-  'workspace.project.live': 'живой контракт',
+  'workspace.project.fixtureNote': 'Демонстрационный набор, встроенный в приложение — исследуйте свободно; он не трогает ваши моды.',
+  'workspace.project.live': 'живой проект',
 
   // Браузер сценариев (W6, только dev; MOCK_LIVE_ONBOARDING_MANDATE §11)
   'scenarios.title': 'Браузер сценариев',
@@ -1187,7 +1392,9 @@ export const ru: Record<string, string> = {
   'status.orphan': 'Осиротевшая'
 ,
 // ---- W7 source inspector (SOURCE_INSPECTOR_MANDATE) ----
-  'workspace.detail.tab.source': 'ИСТОЧНИК',
+  // L-пакет (аудит UI 2026-09-29): регистр вкладки панели записи приведён
+  // к общему виду остальных вкладок (Контекст/Подсказки/Проверка/История).
+  'workspace.detail.tab.source': 'Источник',
   'source.tab.location': 'Действующий источник',
   'source.tab.why': 'Почему этот источник?',
   'source.tab.otherUsages': 'Другие вхождения ({n})',
@@ -1205,6 +1412,17 @@ export const ru: Record<string, string> = {
   'source.why.first-file-wins': 'Побеждает первый файл',
   'source.why.keyed-last-wins': 'Keyed: побеждает последний',
   'source.why.patch-applied': 'Применён патч',
+  // winner_reason-словарь, которого нет в фикстурах (live-мост, волна 12)
+  'source.why.keyed-first-in-file': 'Keyed: побеждает первое вхождение в файле',
+  'source.why.tkey-last-assignment': 'TKey: побеждает последнее присваивание',
+  'source.why.definjected-setoradd': 'DefInjected: перезапись последним вхождением',
+  'source.why.ui-catalog': 'Собственный каталог интерфейса RimLoc',
+  // live-режим вкладки ИСТОЧНИК (волна 12): снапшот-проекция source_ref
+  'source.tab.live.relativePath': 'Путь относительно корня проекта.',
+  'source.tab.lineUnknown': 'строка неизвестна — сканер её не записал',
+  'source.tab.live.usagesUnavailable': 'Вхождения и сравнение недоступны для этого проекта.',
+  'source.empty.live': 'Источник для этой записи недоступен в живом проекте.',
+  'source.editor.wouldLaunchLive': 'Живой проект: это превью argv — ничего не запускалось.',
   'source.action.view': 'Открыть',
   'source.action.open': 'Открыть источник',
   'source.action.reveal': 'Показать в Finder',

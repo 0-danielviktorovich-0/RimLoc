@@ -25,6 +25,27 @@ use std::path::{Path, PathBuf};
 /// - winner reasons are per entry (stamped by the scan pipeline), so no
 ///   batch-level `selected_by` label is passed here.
 pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Project> {
+    // Self-localization (wave B4): a directory carrying the app's own
+    // generated UI catalog (`catalog.en.json`, schema "1") is its own SOURCE
+    // kind. The catalog adapter produces the inventory through this SAME
+    // canonical create-path contract (entries + M3 fingerprint) and NO
+    // RimWorld scanner runs on catalog data — see `crate::ui_catalog`.
+    // SF-09: recognition is TYPED — a broken catalog (marker present, source
+    // unreadable/unparseable/foreign) is a refusal carrying the reason, NOT
+    // a silent fall-through into the mod scan: a corrupted source must never
+    // look like a legitimately empty mod.
+    match crate::ui_catalog::recognize_catalog(mod_root) {
+        crate::ui_catalog::CatalogStatus::NotCatalog => {} // ordinary mod pipeline
+        crate::ui_catalog::CatalogStatus::Valid(_) => {
+            return crate::ui_catalog::build_catalog_project(mod_root);
+        }
+        crate::ui_catalog::CatalogStatus::Invalid(reason) => {
+            return Err(color_eyre::eyre::eyre!(
+                "UI catalog source at `{}` is invalid and was not scanned: {reason}",
+                mod_root.display()
+            ));
+        }
+    }
     let auto = crate::autodiscover_defs_context(mod_root)?;
     // ONE effective pipeline for every layout: the modview resolver decides
     // between flat, classic version dirs and LoadFolders, so a version-only
@@ -166,10 +187,27 @@ impl ScopedPackResolver {
 
     /// The canonical identity a pack line (path + key) addresses, if any.
     fn resolve(&self, pack_path: &Path, pack_key: &str) -> Option<SourceEntryId> {
+        match self.resolve_report(pack_path, pack_key) {
+            PackResolution::Matched(id) => Some(id),
+            _ => None,
+        }
+    }
+
+    /// FULL resolution report for the dry-run analyzer (W2): Matched /
+    /// Ambiguous / Unmatched. The plain [`Self::resolve`] (application) is
+    /// this filtered to `Matched`, so the analyzer's reusable set is
+    /// EXACTLY what application applies — analysis and application can
+    /// never disagree about what a pack line addresses.
+    fn resolve_report(&self, pack_path: &Path, pack_key: &str) -> PackResolution {
         let s = pack_path.to_string_lossy().replace('\\', "/");
         if s.contains("/Keyed/") {
-            let scope = self.keyed.as_ref()?;
-            return scope.definj.get(pack_key).cloned();
+            let Some(scope) = self.keyed.as_ref() else {
+                return PackResolution::Unmatched;
+            };
+            return match scope.definj.get(pack_key) {
+                Some(id) => PackResolution::Matched(id.clone()),
+                None => PackResolution::Unmatched,
+            };
         }
         let typed = if let Some(i) = s.find("/DefInjected/") {
             let seg = s[i + "/DefInjected/".len()..]
@@ -180,24 +218,49 @@ impl ScopedPackResolver {
         } else {
             None
         };
-        let dt = typed?;
-        let scope = self.typed.get(&dt)?;
+        let Some(dt) = typed else {
+            return PackResolution::Unmatched;
+        };
+        let Some(scope) = self.typed.get(&dt) else {
+            return PackResolution::Unmatched;
+        };
         // 1) The real serialized native DefInjected element wins over any
         //    alias path.
         if let Some(id) = scope.definj.get(pack_key) {
-            return Some(id.clone());
+            return PackResolution::Matched(id.clone());
         }
         // 2) The canonical matcher within the SAME scope: exact TKey
         //    identity, proven alias, known suffix — kinds are never swapped
         //    and an unresolved line stays unresolved (no guessed match).
-        scope.matcher().source_for_target(pack_key).and_then(|key| {
-            scope
+        //    Ambiguity is REPORTED for review, never resolved to an
+        //    arbitrary winner.
+        match scope.matcher().resolve_target(pack_key) {
+            crate::matching::Resolution::Matched { source_key, .. } => scope
                 .tkey
-                .get(&key)
-                .or_else(|| scope.definj.get(&key))
-                .cloned()
-        })
+                .get(&source_key)
+                .or_else(|| scope.definj.get(&source_key))
+                .map(|id| PackResolution::Matched(id.clone()))
+                .unwrap_or(PackResolution::Unmatched),
+            crate::matching::Resolution::Ambiguous { candidates, .. } => {
+                PackResolution::Ambiguous(candidates)
+            }
+            crate::matching::Resolution::Unmatched { .. } => PackResolution::Unmatched,
+        }
     }
+}
+
+/// Dry-run resolution outcome of one existing-pack line (W2).
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum PackResolution {
+    /// Addresses exactly one canonical identity.
+    Matched(SourceEntryId),
+    /// Could plausibly address more than one source identity (alias /
+    /// exact-entry collision in the shared matcher). Reported for review,
+    /// never auto-applied.
+    Ambiguous(Vec<String>),
+    /// The pack line addresses nothing in the project inventory
+    /// (typically a key from an older source version).
+    Unmatched,
 }
 
 /// Workflow C seed: import an existing translation pack into the project.
@@ -221,7 +284,16 @@ pub fn apply_existing_translation(
     let pack_units = rimloc_parsers_xml::scan_keyed_xml(pack_root)?;
     let mut applied = 0usize;
     for u in &pack_units {
-        let Some(text) = u.source.as_deref().map(str::trim).filter(|t| !t.is_empty()) else {
+        // THE SAME text rule the dry-run analyzer applies (empty / TODO
+        // placeholders are never reusable): analysis and application must
+        // agree line by line, so a "TODO" marker can never land in an empty
+        // slot as a fake "translation".
+        let Some(text) = u
+            .source
+            .as_deref()
+            .map(str::trim)
+            .filter(|t| !crate::matching::is_todo(t))
+        else {
             continue;
         };
         let Some(id) = resolver.resolve(&u.path, &u.key) else {
@@ -233,6 +305,187 @@ pub fn apply_existing_translation(
         }
     }
     Ok(applied)
+}
+
+// ---------------------------------------------------------------------------
+// Existing-pack dry-run analysis (W2, mandate "update an existing
+// translation"): classify a translation pack against the canonical project
+// BEFORE anything is written. ONE resolution path — the same
+// [`ScopedPackResolver`] application uses — so the analysis's reusable set
+// is by construction what `apply_existing_translation` applies.
+// ---------------------------------------------------------------------------
+
+/// Size cap for the per-category sample lists in [`ExistingPackAnalysis`].
+/// Counts are always exact; the lists are capped samples for review.
+pub const EXISTING_ANALYSIS_LIST_LIMIT: usize = 50;
+
+/// One analyzed existing-pack line (sample list item).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistingPackLine {
+    /// The pack's serialization key.
+    pub key: String,
+    /// The canonical identity the line addresses (reusable / conflict only).
+    pub target: Option<SourceEntryId>,
+}
+
+/// One ambiguous pack line: the matcher reported several candidate source
+/// identities; a human decides, the application never auto-applies it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistingPackAmbiguousLine {
+    pub key: String,
+    /// Candidate source keys (sorted, from the shared matcher).
+    pub candidates: Vec<String>,
+}
+
+/// Dry-run classification of a translation pack against the canonical
+/// project (NEVER mutates anything):
+///
+/// - `reusable` — matched a project entry whose `<locale>` slot is empty:
+///   exactly what `apply_existing_translation` would apply;
+/// - `conflicts` — matched a project entry that ALREADY has a `<locale>`
+///   translation: the existing (human/imported) work wins, never
+///   overwritten;
+/// - `obsolete` — pack lines addressing nothing in the inventory
+///   (typically keys from an older source version); preserved in the pack,
+///   never applied;
+/// - `ambiguous` — the shared matcher reported several candidate
+///   identities; reported for review, never auto-applied;
+/// - `invalid` — empty or TODO-only pack lines (nothing to reuse);
+/// - `new_uncovered` — project entries that stay untranslated after the
+///   merge: the pack has no line for them ("new" source strings).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct ExistingPackAnalysis {
+    pub scanned_files: usize,
+    pub scanned_keys: usize,
+    /// EXACT totals over every scanned line ...
+    pub reusable_count: usize,
+    pub conflict_count: usize,
+    pub obsolete_count: usize,
+    pub ambiguous_count: usize,
+    pub invalid_count: usize,
+    /// ... and size-capped sample lists (see
+    /// [`EXISTING_ANALYSIS_LIST_LIMIT`]) for review UIs.
+    pub reusable: Vec<ExistingPackLine>,
+    pub conflicts: Vec<ExistingPackLine>,
+    pub obsolete: Vec<ExistingPackLine>,
+    pub ambiguous: Vec<ExistingPackAmbiguousLine>,
+    pub invalid: Vec<ExistingPackLine>,
+    /// Project entries that stay untranslated after the merge: the pack
+    /// has no line for them ("new" source strings).
+    pub new_uncovered: usize,
+}
+
+impl ExistingPackAnalysis {
+    /// Cap a category list to the sample limit, keeping the EXACT total.
+    fn capped(lines: Vec<ExistingPackLine>) -> (usize, Vec<ExistingPackLine>) {
+        let total = lines.len();
+        (
+            total,
+            lines
+                .into_iter()
+                .take(EXISTING_ANALYSIS_LIST_LIMIT)
+                .collect(),
+        )
+    }
+}
+
+/// Dry-run analyzer over an existing translation pack (READ-ONLY on both
+/// sides: the pack is scanned, the project is borrowed). The reusable set
+/// is defined through the SAME resolution application uses, so a passing
+/// analysis followed by `apply_existing_translation` yields exactly the
+/// reusable lines and nothing else.
+pub fn analyze_existing_translation(
+    project: &Project,
+    pack_root: &Path,
+    locale: &str,
+) -> Result<ExistingPackAnalysis> {
+    let resolver = ScopedPackResolver::new(project);
+    let pack_units = rimloc_parsers_xml::scan_keyed_xml(pack_root)?;
+
+    let mut reusable = Vec::new();
+    let mut conflicts = Vec::new();
+    let mut obsolete = Vec::new();
+    let mut ambiguous = Vec::new();
+    let mut invalid = Vec::new();
+    let mut covered: std::collections::BTreeSet<SourceEntryId> = Default::default();
+    let mut files: std::collections::BTreeSet<PathBuf> = Default::default();
+    for u in &pack_units {
+        files.insert(
+            u.path
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| u.path.clone()),
+        );
+        let text = u.source.as_deref().map(str::trim).unwrap_or_default();
+        // ONE text rule shared with `apply_existing_translation` (empty /
+        // TODO placeholders): the reusable set is EXACTLY what application
+        // applies, line by line.
+        if crate::matching::is_todo(text) {
+            invalid.push(ExistingPackLine {
+                key: u.key.clone(),
+                target: None,
+            });
+            continue;
+        }
+        match resolver.resolve_report(&u.path, &u.key) {
+            PackResolution::Matched(id) => {
+                covered.insert(id.clone());
+                let line = ExistingPackLine {
+                    key: u.key.clone(),
+                    target: Some(id),
+                };
+                match project.translation(&line.target.clone().unwrap(), locale) {
+                    Some(_) => conflicts.push(line),
+                    None => reusable.push(line),
+                }
+            }
+            PackResolution::Ambiguous(candidates) => {
+                ambiguous.push(ExistingPackAmbiguousLine {
+                    key: u.key.clone(),
+                    candidates,
+                });
+            }
+            PackResolution::Unmatched => {
+                obsolete.push(ExistingPackLine {
+                    key: u.key.clone(),
+                    target: None,
+                });
+            }
+        }
+    }
+
+    let mut out = ExistingPackAnalysis {
+        scanned_files: files.len(),
+        scanned_keys: pack_units.len(),
+        new_uncovered: 0,
+        ..Default::default()
+    };
+    (out.reusable_count, out.reusable) = ExistingPackAnalysis::capped(reusable);
+    (out.conflict_count, out.conflicts) = ExistingPackAnalysis::capped(conflicts);
+    (out.obsolete_count, out.obsolete) = ExistingPackAnalysis::capped(obsolete);
+    (out.ambiguous_count, out.ambiguous) = {
+        let total = ambiguous.len();
+        (
+            total,
+            ambiguous
+                .into_iter()
+                .take(EXISTING_ANALYSIS_LIST_LIMIT)
+                .collect(),
+        )
+    };
+    (out.invalid_count, out.invalid) = ExistingPackAnalysis::capped(invalid);
+
+    // "New" = inventory entries that stay untranslated after the merge:
+    // no `<locale>` translation now AND no pack line covered them.
+    for entry in &project.entries {
+        if project.translation(&entry.id, locale).is_some() {
+            continue;
+        }
+        if !covered.contains(&entry.id) {
+            out.new_uncovered += 1;
+        }
+    }
+    Ok(out)
 }
 
 /// Workflow A final step: write RimWorld translation output straight from
@@ -392,7 +645,38 @@ pub fn write_rimworld_translation(
     })
 }
 
-fn def_type_from_contexts(entry: &rimloc_domain::canonical::SourceEntry) -> Option<String> {
+/// Game-loadable `About/About.xml` in the CLI build-mod shape: a
+/// `<ModMetaData>` root with packageId/name/description/supportedVersions —
+/// exactly what `rimloc_import_po::write_about_xml` (behind
+/// `build_from_po_execute`) emits for `rimloc build-mod`, so the package
+/// this writer produces drops straight into the game's Mods folder. The
+/// export writer's own `<RimWorldManifest>` stays untouched (its semantics
+/// are frozen); this is the build-mod counterpart. H4: manifest fields are
+/// user-controlled text — escaped, never raw.
+pub fn write_modmetadata_about(
+    out_mod: &Path,
+    mod_name: &str,
+    package_id: &str,
+    rw_version: &str,
+) -> Result<()> {
+    use std::fmt::Write as _;
+    let about = out_mod.join("About");
+    std::fs::create_dir_all(&about)?;
+    let mut about_xml = String::new();
+    let _ = write!(
+        about_xml,
+        "<ModMetaData>\n  <packageId>{}</packageId>\n  <name>{}</name>\n  <description>Translation mod (generated by RimLoc)</description>\n  <supportedVersions>\n    <li>{}</li>\n  </supportedVersions>\n</ModMetaData>\n",
+        rimloc_core::xml_chars::escape_text(package_id),
+        rimloc_core::xml_chars::escape_text(mod_name),
+        rimloc_core::xml_chars::escape_text(rw_version)
+    );
+    crate::write_atomic(&about.join("About.xml"), about_xml.as_bytes())?;
+    Ok(())
+}
+
+pub(crate) fn def_type_from_contexts(
+    entry: &rimloc_domain::canonical::SourceEntry,
+) -> Option<String> {
     for c in &entry.contexts {
         let s = c.file.replace('\\', "/");
         if let Some(i) = s.find("/DefInjected/") {
@@ -453,6 +737,7 @@ mod gate_i_tests {
                 contexts: vec![],
                 provenance: SourceProvenance::default(),
                 tkey,
+                source_ref: None,
             }],
             translations: vec![Translation {
                 source_id: id,
@@ -515,6 +800,7 @@ mod gate_i_tests {
             contexts: vec![],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         });
         let report = write_rimworld_translation(&p, &out, "Russian", "T", "t.test", "1.6").unwrap();
         let out = report.out_mod;
@@ -553,8 +839,11 @@ mod gate_i4_acceptance {
     ///
     /// A. native/no-PO:  source -> project -> apply existing RU -> write.
     /// B. PO interop:    project -> PO file -> import -> project -> write.
-    /// C. existing pack: covered by A's import step (preserve + TODO parity),
-    ///    plus reopen via the persistence store between workflows.
+    /// C. existing pack: covered by A's import step (preserve; the shared
+    ///    text rule refuses TODO placeholders on BOTH the analyzer and the
+    ///    application, so a TODO marker never lands in a slot as a fake
+    ///    translation), plus reopen via the persistence store between
+    ///    workflows.
     #[test]
     fn three_workflows_over_one_canonical_project() {
         let root = fixture_path();
@@ -587,9 +876,13 @@ mod gate_i4_acceptance {
             quest_a.contains("<SampleQuest.LetterTextParms.value.slateRef>Пармс-текст.<"),
             "{quest_a}"
         );
+        // The pack's TODO placeholder is refused by the shared text rule
+        // (analyze AND apply): the slot stays empty, so the entry is not
+        // written at all — it stays on the to-translate list instead of
+        // exporting a literal "TODO" as if it were a translation.
         assert!(
-            quest_a.contains("<SampleQuest.ExpiryTip.slateRef>TODO</"),
-            "{quest_a}"
+            !quest_a.contains("ExpiryTip"),
+            "TODO placeholder must not be imported as a translation: {quest_a}"
         );
         let tips_a = std::fs::read_to_string(
             out_a.join("Languages/Russian/DefInjected/TipSetDef/SampleTips.xml"),
@@ -1002,6 +1295,7 @@ mod identity_regression {
             }],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         });
         p.update_translation(
             unknown.clone(),
@@ -1251,8 +1545,10 @@ mod provenance_regression {
         );
         let ctx = &dup.contexts[0];
         assert_eq!(ctx.role, ContextRole::Effective);
+        // `file` is a display String with the native separator — normalize
+        // before matching the fixture-relative suffix (Windows `\`).
         assert!(
-            ctx.file.ends_with("Defs/A_Root.xml"),
+            ctx.file.replace('\\', "/").ends_with("Defs/A_Root.xml"),
             "real effective source file expected, got {}",
             ctx.file
         );
@@ -1507,7 +1803,7 @@ mod provenance_regression {
         assert_eq!(tk.contexts[1].role, ContextRole::Overridden);
         for c in &tk.contexts {
             assert!(
-                c.file.ends_with("Defs/Q.xml"),
+                c.file.replace('\\', "/").ends_with("Defs/Q.xml"),
                 "real source file expected, got {}",
                 c.file
             );
@@ -1704,6 +2000,7 @@ mod gate_k_tests {
             contexts: vec![],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         }
     }
 

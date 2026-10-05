@@ -1,0 +1,7301 @@
+{
+ "modid": "2023507013",
+ "counts": {
+  "both": 759,
+  "rimloc_only": 4,
+  "competitor_only": 127,
+  "semantic": 1,
+  "li_fold_pairs": 5,
+  "tg_identities": 887,
+  "rl_identities": 764
+ },
+ "by_kind": {
+  "both": {
+   "def": 161,
+   "keyed": 593
+  },
+  "competitor_only": {
+   "ApparelLayerDef": 1,
+   "HediffDef": 45,
+   "IncidentDef": 2,
+   "KeyBindingDef": 1,
+   "MentalStateDef": 3,
+   "PawnRenderTreeDef": 14,
+   "RulePackDef": 1,
+   "ScenPartDef": 3,
+   "StatCategoryDef": 1,
+   "StatDef": 7,
+   "TrainableDef": 16,
+   "VEF": 3,
+   "WorkGiverDef": 30
+  },
+  "rimloc_only": {
+   "ThingDef": 4
+  },
+  "semantic": {
+   "StatDef": 1
+  }
+ },
+ "both": [
+  {
+   "kind": "def",
+   "deftype": "AbilityDef",
+   "key": "VEF_ControlledBlinking.description",
+   "text": "Override the creature's usual erratic blinking, allowing a directed way to blink to a chosen location within range.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "AbilityDef",
+   "key": "VEF_ControlledBlinking.label",
+   "text": "controlled blinking",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "AbilityDef",
+   "key": "VEF_ControlledDetonation.description",
+   "text": "Willingly trigger a powerful self-destructive explosion, sacrificing this animal in a final act that unleashes all stored volatile compounds in a devastating blast.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "AbilityDef",
+   "key": "VEF_ControlledDetonation.label",
+   "text": "controlled detonation",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "AbilityDef",
+   "key": "VEF_ControlledInvisibility.description",
+   "text": "Shroud the animal in a veil of controlled invisibility, vanishing from sight while retaining full awareness and precision.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "AbilityDef",
+   "key": "VEF_ControlledInvisibility.label",
+   "text": "controlled invisibility",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "DamageDef",
+   "key": "VEF_PermanentBurn.deathMessage",
+   "text": "{0} has been killed by burning.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "DamageDef",
+   "key": "VEF_PermanentBurn.label",
+   "text": "permanent burn",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "DamageDef",
+   "key": "VEF_SecondaryAcidBurn.deathMessage",
+   "text": "{0} has been corroded to death.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "DamageDef",
+   "key": "VEF_SecondaryAcidBurn.label",
+   "text": "acid burn",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "BetterReload.reportString",
+   "text": "reloading TargetA.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "IP_InsertFirstIngredient.reportString",
+   "text": "inserting ingredient.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "IP_InsertSecondIngredient.reportString",
+   "text": "inserting ingredient.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "IP_InsertThirdIngredient.reportString",
+   "text": "inserting ingredient.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "IP_RemoveProduct.reportString",
+   "text": "removing finished product.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "KCSG_GoToPassage.reportString",
+   "text": "entering TargetA.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "PS_BringToProcessor.reportString",
+   "text": "bringing TargetB to TargetA.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "PS_DrainFromMarkedStorage.reportString",
+   "text": "draining out of TargetA.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "PS_FillStorage.reportString",
+   "text": "filling TargetA.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "PS_PickUpProcessor.reportString",
+   "text": "picking up from TargetA.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "ReloadFromInventory.reportString",
+   "text": "reloading TargetA.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "Unload.reportString",
+   "text": "unloading TargetA.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_AnimalResource.reportString",
+   "text": "gathering animal resource from TargetA.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_AutoNutrition.reportString",
+   "text": "eating.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_CustomizeItem.reportString",
+   "text": "customizing TargetA.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_DestroyItem.reportString",
+   "text": "destroying an item.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_ExtractFlower.reportString",
+   "text": "extracting a flower.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_FleeAndCowerShort.reportString",
+   "text": "fleeing.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_IngestWeird.reportString",
+   "text": "consuming TargetA.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_LayExplodingEgg.reportString",
+   "text": "laying egg.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_RefuelSecondary.reportString",
+   "text": "refueling TargetA with ammunition.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_ReloadWeaponTrait.reportString",
+   "text": "reloading TargetA.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_RemoveWeeds.reportString",
+   "text": "removing weeds.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VEF_UseDoorTeleporter.reportString",
+   "text": "using TargetA to teleport to TargetB",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFEA_StandAndFaceTarget.reportString",
+   "text": "standing.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFEC_EquipShield.reportString",
+   "text": "equipping TargetA.",
+   "tg_mult": 7,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFEC_LeaveMap.reportString",
+   "text": "leaving.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFE_Loot.reportString",
+   "text": "looting TargetA.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFE_Mechanoids_AttachTurret.reportString",
+   "text": "attaching turret.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFE_Mechanoids_Recharge.reportString",
+   "text": "recharging.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFE_Mechanoids_RepairMachine.reportString",
+   "text": "rebuilding machine.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "JobDef",
+   "key": "VFE_StudyBuilding.reportString",
+   "text": "studying TargetA.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "MentalStateDef",
+   "key": "VEF_XenophobicRage.label",
+   "text": "xenophobic rage",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "NeedDef",
+   "key": "VFE_Mechanoids_Power.description",
+   "text": "Power represents the state of a machine's internal battery. If it gets too low, the machine will stop performing tasks and return to its station to recharge.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "NeedDef",
+   "key": "VFE_Mechanoids_Power.label",
+   "text": "power",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "SitePartDef",
+   "key": "KCSG_EnnemiesPresence.description",
+   "text": "Enemies are present in this place.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "SitePartDef",
+   "key": "KCSG_EnnemiesPresence.label",
+   "text": "enemies present",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_AnimalProductIntervalFactor.description",
+   "text": "A multiplier on the interval of time needed for this animal to produce special animal products.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_AnimalProductIntervalFactor.label",
+   "text": "animal product interval factor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_AnimalProductYieldFactor.description",
+   "text": "A multiplier on the amount of special animal products produced by this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_AnimalProductYieldFactor.label",
+   "text": "animal product yield factor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BodySize_Multiplier.description",
+   "text": "Increases the size of the pawn by a multiple of their current size",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BodySize_Multiplier.label",
+   "text": "body size multiplier",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BodySize_Offset.description",
+   "text": "Increases the size of the pawn relative to their current size",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BodySize_Offset.label",
+   "text": "body size offset",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BuildingBreakdownFactor.description",
+   "text": "A multiplier on how often this building breaks down.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BuildingBreakdownFactor.label",
+   "text": "breakdown factor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BuildingLearningRateOffset.description",
+   "text": "A multiplier on how quickly children learn during lessons which are assisted by this.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BuildingLearningRateOffset.label",
+   "text": "learning rate",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BuildingMaxOverclockFactor.description",
+   "text": "A multiplier on the maximum possible overclock of a factory.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_BuildingMaxOverclockFactor.label",
+   "text": "maximum overclock factor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_CosmeticBodySize_Multiplier.description",
+   "text": "Increases the size of the pawn by a multiple of their current size",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_CosmeticBodySize_Multiplier.label",
+   "text": "cosmetic body size multiplier",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_CosmeticBodySize_Offset.description",
+   "text": "Increases the size of the pawn relative to their current size",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_CosmeticBodySize_Offset.label",
+   "text": "cosmetic body size offset",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxApparel.description",
+   "text": "The maximum energy a shield generator can have at one time. More energy absorbs more damage.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxApparel.label",
+   "text": "shield max energy",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxBuilding.description",
+   "text": "The maximum energy the shield can have. More energy allows the shield to absorb more damage.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxBuilding.label",
+   "text": "shield max energy",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxFactor.description",
+   "text": "Factor of the maximum shield energy that the user can boost through various means.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxFactor.label",
+   "text": "Shield max energy factor",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxOffset.description",
+   "text": "Offset of the maximum shield energy that the user can boost through various means.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxOffset.label",
+   "text": "Shield max energy offset",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxPawn.description",
+   "text": "The maximum energy a shield generator can have at one time. More energy absorbs more damage.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldEnergyMaxPawn.label",
+   "text": "shield max energy",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusApparel.description",
+   "text": "The area covered when the energy shield is active.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusApparel.label",
+   "text": "shield radius",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusBuilding.description",
+   "text": "The radius of the energy shield protection.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusBuilding.label",
+   "text": "shield radius",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusPawn.description",
+   "text": "The area covered when the energy shield is active.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusPawn.label",
+   "text": "shield radius",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRechargeRateApparel.description",
+   "text": "The rate at which a shield gains energy as long as it is not broken.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRechargeRateApparel.label",
+   "text": "shield recharge rate",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRechargeRateBuilding.description",
+   "text": "The rate at which the shield recharges energy per second, as long as it is not broken.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRechargeRateBuilding.label",
+   "text": "shield recharge rate",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRechargeRatePawn.description",
+   "text": "The rate at which a shield gains energy as long as it is not broken.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRechargeRatePawn.label",
+   "text": "shield recharge rate",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_FactoryHeatPerSecondFactor.description",
+   "text": "A multiplier on the heat per second produced by a factory.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_FactoryHeatPerSecondFactor.label",
+   "text": "heat per second factor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_FoodCapacityMultiplier.description",
+   "text": "Increases the size of the pawn's hunger bar. This does not affect hunger",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_FoodCapacityMultiplier.label",
+   "text": "body food capacity multiplier",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_GaussProjectileDamageModifier.description",
+   "text": "How much the damage dealt is modified (as a percentage of the base damage) for each previously hit target.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_GaussProjectileDamageModifier.label",
+   "text": "piercing damage modifier",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_GrowthPointMultiplier.description",
+   "text": "Increases the amount of growth points accumulated by children when learning",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_GrowthPointMultiplier.label",
+   "text": "growth point multiplier",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_HeadSize_Cosmetic.label",
+   "text": "head size multiplier",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_HeatstrokeBuildupMultiplier.description",
+   "text": "A factor on how fast heatstroke will be gained.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_HeatstrokeBuildupMultiplier.label",
+   "text": "Heatstroke buildup multiplier",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MTBLovinFactor.description",
+   "text": "A factor of the mean time between (MTB) this person looking for some lovin'.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MTBLovinFactor.label",
+   "text": "MTB Lovin Factor",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MassCarryCapacity.description",
+   "text": "Total mass carrying capacity of the pawn in caravans.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MassCarryCapacity.label",
+   "text": "Mass carry capacity",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MeleeAttackDamageFactor.description",
+   "text": "A multiplier on melee attack damage.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MeleeAttackDamageFactor.label",
+   "text": "melee attack damage factor",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MeleeAttackSpeedFactor.description",
+   "text": "A multiplier on melee attack speed.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MeleeAttackSpeedFactor.label",
+   "text": "melee attack speed factor",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MeleeWeaponRange.description",
+   "text": "The range of this melee weapon.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MeleeWeaponRange.label",
+   "text": "melee weapon range",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_NegativeThoughtDurationFactor.description",
+   "text": "The duration of negative thoughts is multiplied by this value.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_NegativeThoughtDurationFactor.label",
+   "text": "thought duration factor - negative",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_NeutralThoughtDurationFactor.description",
+   "text": "The duration of neutral thoughts is multiplied by this value.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_NeutralThoughtDurationFactor.label",
+   "text": "thought duration factor - neutral",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_PawnRenderPosOffset.description",
+   "text": "Modifies the pawn's rendered position in y-axis.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_PawnRenderPosOffset.label",
+   "text": "pawn render offset",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_PositiveThoughtDurationFactor.description",
+   "text": "The duration of positive thoughts is multiplied by this value.",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_PositiveThoughtDurationFactor.label",
+   "text": "thought duration factor - positive",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangeAttackDamageFactor.description",
+   "text": "A multiplier on range attack damage.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangeAttackDamageFactor.label",
+   "text": "range attack damage factor",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangeAttackSpeedFactor.description",
+   "text": "A multiplier on range attack speed.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangeAttackSpeedFactor.label",
+   "text": "range attack speed factor",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangedCooldownFactor.description",
+   "text": "The cooldown on ranged weapons of the wearer is multiplied by this value.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangedCooldownFactor.label",
+   "text": "ranged cooldown factor",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangedDodgeChance.description",
+   "text": "Chance to dodge a ranged attack that would've otherwise hit, or (if negative) get hit by a ranged attack that was meant for a different target.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_RangedDodgeChance.label",
+   "text": "ranged dodge chance",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_VerbCooldownFactor.description",
+   "text": "The cooldown on weapons is multiplied by this value.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_VerbCooldownFactor.label",
+   "text": "verb cooldown factor",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_VerbRangeFactor.description",
+   "text": "The range on weapons is multiplied by this value.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TerrainDef",
+   "key": "VEF_NullTerrain.label",
+   "text": "null terrain",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TerrainDef",
+   "key": "VEF_PrefabBorderBlue.label",
+   "text": "prefab border (blue)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TerrainDef",
+   "key": "VEF_PrefabBorderGreen.label",
+   "text": "prefab border (green)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TerrainDef",
+   "key": "VEF_PrefabBorderRed.label",
+   "text": "prefab border (red)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TerrainDef",
+   "key": "VEF_PrefabBorderWhite.label",
+   "text": "prefab border (white)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TerrainDef",
+   "key": "VEF_PrefabBorderYellow.label",
+   "text": "prefab border (yellow)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingCategoryDef",
+   "key": "VFEC_Shields.label",
+   "text": "shields",
+   "tg_mult": 7,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "KCSG_PowerConduit.description",
+   "text": "A burried bundle of electrical cables for moving power around.",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "KCSG_PowerConduit.label",
+   "text": "power conduit",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "MVCF_Dummy.description",
+   "text": "no",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "MVCF_Dummy.label",
+   "text": "dummy",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "VEF_OutpostDeliverySpot.description",
+   "text": "Designates a spot for items from outposts to be delivered to.",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "VEF_OutpostDeliverySpot.label",
+   "text": "outpost delivery spot",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "VPEF_MinifiedFlower.label",
+   "text": "minified flower",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertFirstIngredient.label",
+   "text": "bringing ingredient",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertSecondIngredient.label",
+   "text": "bringing ingredient",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertThirdIngredient.label",
+   "text": "bringing ingredient",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_RemoveProduct.label",
+   "text": "removing finished product",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_BringToProcessor.label",
+   "text": "bring ingredient to processor",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_DrainOutOfStorage.label",
+   "text": "drain out of storage",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_FillStorage.label",
+   "text": "fill storage",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_PickUpProcessor.label",
+   "text": "pick up result from processor",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_AnimalResource.label",
+   "text": "gather animal resource",
+   "tg_mult": 5,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_Art_ConstructDeliverResourcesToBlueprints.label",
+   "text": "deliver resources to blueprints",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_Art_ConstructDeliverResourcesToFrames.label",
+   "text": "deliver resources to frames",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_Art_ConstructFinishFrames.label",
+   "text": "construct placed frames",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_DestroyItems.label",
+   "text": "destroy items",
+   "tg_mult": 4,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_ExtractFlower.label",
+   "text": "extract flower",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_RefuelSecondary.label",
+   "text": "refuel ammunition",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_RemoveWeeds.label",
+   "text": "remove weeds",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VFE_Loot.label",
+   "text": "loot objects",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VFE_StudyBuilding.label",
+   "text": "study a building",
+   "tg_mult": 2,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorldObjectDef",
+   "key": "KCSG_UndergroundRoom.description",
+   "text": "An underground room.",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorldObjectDef",
+   "key": "KCSG_UndergroundRoom.label",
+   "text": "underground room",
+   "tg_mult": 3,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AskForPopUp",
+   "text": "Add faction(s)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "AskForPopUpExplained",
+   "text": "Click this to be asked for each faction if you want it to be added to your game",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "CSGLog",
+   "text": "Enable structure generation debugging log:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "CSGTitle",
+   "text": "Custom structure generation:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "CanAddXFaction",
+   "text": "{0} faction(s) can be added to your current save",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "FDTitle",
+   "text": "Faction Discovery",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_BringIngredients",
+   "text": "Bring Ingredients",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_BringIngredientsDesc",
+   "text": "Bring ingredients to start the process",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_CancelIngredients",
+   "text": "Cancel Bringing Ingredients",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_CancelIngredientsDesc",
+   "text": "Cancel Bringing Ingredients to this building",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_CantFindThing",
+   "text": "No items of that kind ({0}) found in this map",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ChooseIngredient",
+   "text": "Choose Ingredient",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ChooseIngredientFourth",
+   "text": "Choose Fourth Ingredient",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ChooseIngredientSecond",
+   "text": "Choose Second Ingredient",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ChooseIngredientThird",
+   "text": "Choose Third Ingredient",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ChooseOutput",
+   "text": "Choose Output",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ChooseQualityAuto",
+   "text": "Choose Auto Quality",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_FilledWith",
+   "text": "{0} is filled with {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_FilledWithFourth",
+   "text": "{0}'s 4th slot is filled with {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_FilledWithSecond",
+   "text": "{0}'s 2nd slot is filled with {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_FilledWithThird",
+   "text": "{0}'s 3rd slot is filled with {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_GenericProductFinished",
+   "text": "A product has finished processing and is waiting for pickup",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_IngredientImproperlyDefined",
+   "text": "One of the ingredients has been improperly defined to work with the item processor, contact the mod's author",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_IngredientPercentage",
+   "text": "(filled at {0} of {1})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertFirstItemDesc",
+   "text": "Insert",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertFourthItemDesc",
+   "text": "Insert",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertSecondItemDesc",
+   "text": "Insert",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertThirdItemDesc",
+   "text": "Insert",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertVariable",
+   "text": "Insert {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertVariableSecond",
+   "text": "Insert {0} in 2nd slot",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_InsertVariableThird",
+   "text": "Insert {0} in 3rd slot",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_IsEmpty",
+   "text": "{0} is empty",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ItRains",
+   "text": "The process in this machine is being interrupted due to inclement weather and will be spoiled soon",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_LightDestroysWarning",
+   "text": "{0} needs to have an adequate light level to start working",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoCombination",
+   "text": "No combination found for these ingredients",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoFuelDestroysWarning",
+   "text": "{0} needs to be fueled to start working",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoIngredientFound",
+   "text": "No ingredient found on map",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoPowerDestroysInitialWarning",
+   "text": "The result is spoiling due to a power failure in the item processor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoPowerDestroysMessage",
+   "text": "The result has spoiled due to a power failure in the item processor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoPowerDestroysWarning",
+   "text": "{0} needs to be powered to start working",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_NoRecipesHere",
+   "text": "No modded recipes found for this factory",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_Output",
+   "text": "Output {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_OutputDesc",
+   "text": "Processor will output {0}. It needs to be fed {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_OutputVariable",
+   "text": "Output {0} from {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_OutsideLightRange",
+   "text": "The process in this machine is being interrupted due to an inadequate level of light and will be spoiled soon",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_OverThreshold",
+   "text": "Waiting for output to clear. Output limit is {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ProcessingInProgress",
+   "text": "{0} is processing {1}. {2} will be ready with {3} quality in {4}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ProcessingInProgressNoQuality",
+   "text": "{0} is processing {1}. {2} will be ready in {3}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ProcessorPaused",
+   "text": "{0} is paused:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ProcessorWorking",
+   "text": "{0} is working:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ProductWaiting",
+   "text": "Waiting for pickup",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_QualityAutoEstablished",
+   "text": "Auto Quality, product will be extracted at quality level: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_QualityAutoIs",
+   "text": "Auto Quality: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_QualityAutoNot",
+   "text": "Disable Auto Quality",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_RainDestroysWarning",
+   "text": "{0} needs to not be raining to start working",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_RemoveProduct",
+   "text": "Remove {0} ({1})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_RemoveProductDesc",
+   "text": "Remove {0} from the {1}. The product will be ready at the present quality level ({2})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ResetFullAuto",
+   "text": "Reset Machine",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ResetFullAutoDesc",
+   "text": "Fully resets the machine and makes it stop. Warning, it will destroy the process and the input items",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ResetSemiautomatic",
+   "text": "Reset Recipes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ResetSemiautomaticDesc",
+   "text": "This will reset the building after the current product is finished, so a new input ingredient can be chosen",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_SetAutoQuality",
+   "text": "Set quality for product extraction. When the product reaches this quality, a colonist will automatically retrieve it and carry it to an stockpile if available. If not set, products will be extracted manually, or at Legendary quality.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_SpoiledDueToLight",
+   "text": "The product in this machine has spoiled due to an inadequate level of light",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_SpoiledDueToRain",
+   "text": "The product in this machine has spoiled due to inclement weather",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_SpoiledDueToWrongTemp",
+   "text": "The product has spoiled due to an unsuitable temperature. Needs between {0} and {1} ºC",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_TempRangeInThisMachine",
+   "text": "Current process needs a temperature between {0} and {1} ºC",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_TemperatureDestroysWarning",
+   "text": "{0} needs to have an adequate temperature ({1} - {2}) to start working",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ToggleAuto",
+   "text": "Auto Ingredient Acquiring",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_ToggleAutoDesc",
+   "text": "If set to active, this building will automatically grab ingredients from adjacent hoppers, and automatically start working again once the product is removed. If not, colonists will haul the ingredients to the building, and it will need to be activated manually once refilled",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_TogglePause",
+   "text": "Pause / Restart",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_TogglePauseDesc",
+   "text": "Pause / Restart this machine's processing",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "IP_WrongTemp",
+   "text": "The process in this machine is being interrupted due to an unsuitable temperature and will be spoiled soon",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.Add",
+   "text": "Add",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.AllowFoggedPosition",
+   "text": "Allow fogged position",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.CantEnter",
+   "text": "Cannot enter {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.Enter",
+   "text": "Enter {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.Mapcontains",
+   "text": "Map contains",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.Remove",
+   "text": "Remove",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.SpawnNearCenter",
+   "text": "Spawn near center",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "KCSG.SpawnPartOfEnnemyFaction",
+   "text": "Spawn part of ennemy faction",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Cooldown",
+   "text": "Still on cooldown. {0} left.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Setting",
+   "text": "Multi-Verb Combat Framework",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.Debug",
+   "text": "Developer Mode",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel",
+   "text": "Log level:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel.Important",
+   "text": "Important",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel.Info",
+   "text": "Info",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel.None",
+   "text": "None",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel.Silly",
+   "text": "Silly",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel.Tick",
+   "text": "Tick",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Settings.LogLevel.Verbose",
+   "text": "Verbose",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.Toggle",
+   "text": "Toggle {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.ToggleAuto",
+   "text": "Toggle automatic usage",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.ToggleAutoReload",
+   "text": "Toggle automatic reloading while drafted",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "MVCF.ToggleUsing",
+   "text": "Toggle using {0} automatically",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NeedRestart",
+   "text": "All settings need a restart to be applied",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NeedToBeInGame",
+   "text": "You first need to load a save",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NocturnalAnimals.BodyClock",
+   "text": "Body clock",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NocturnalAnimals.BodyClock_Crepuscular",
+   "text": "Crepuscular",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NocturnalAnimals.BodyClock_Description",
+   "text": "Determines when the animal sleeps and when it is awake.\\n\\nDiurnal animals sleep during the night and are awake during the day, while nocturnal animals sleep during the day and are awake during the night. Crepuscular animals are mainly active during dusk.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NocturnalAnimals.BodyClock_Diurnal",
+   "text": "Diurnal",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "NocturnalAnimals.BodyClock_Nocturnal",
+   "text": "Nocturnal",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Abandoned",
+   "text": "Outpost abandoned",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Abandoned.Desc",
+   "text": "{0} has been abonded due to having no one inside to run it. It will very quickly be looted and taken over by nature, leaving no trace it was ever there.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.AddTo",
+   "text": "Add to outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.AddedFromTransportPods",
+   "text": "Your transport pods have arrived. {0} has been added to {1}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.AllowedBiomes",
+   "text": "Must be in one of the following biomes:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.AlreadyPacking",
+   "text": "Already packing",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.CannotBeMade",
+   "text": "Cannot be made in {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Command.Remove.Only1",
+   "text": "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \"Pack\".",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.AddPawn.Desc",
+   "text": "Transfer a pawn from this caravan to the outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.AddPawn.Label",
+   "text": "Add pawn",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.Create.Desc",
+   "text": "Create a new outpost using this caravan.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.Create.Label",
+   "text": "Create outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.DeliveryColony.Desc",
+   "text": "Select which colony will recieve the goods. Currently: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.DeliveryColony.Label",
+   "text": "Delivery destination",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.GiveItems.Desc",
+   "text": "Take items from {0} and add them to the outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.GiveItems.Label",
+   "text": "Give items",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.Pack.Desc",
+   "text": "Begin packing this outpost back into a caravan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.Pack.Label",
+   "text": "Pack",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.Remove.Desc",
+   "text": "Remove a pawn from this outpost into a new caravan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.Remove.Label",
+   "text": "Remove pawn",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.StopPack.Desc",
+   "text": "Cancel packing this outpost into a caravan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.StopPack.Label",
+   "text": "Stop packing",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.TakeItems.Desc",
+   "text": "Take items from {0} and add them to the caravan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Commands.TakeItems.Label",
+   "text": "Take items",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Contains",
+   "text": "Contains {0} pawns",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Dialog.Create",
+   "text": "Create",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.DisallowedBiomes",
+   "text": "Cannot be in any of the following biomes:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Give",
+   "text": "Give",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.GrowingRequired",
+   "text": "Must have ability to grow plants",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.BattleWon.Captured",
+   "text": "We have managed to capture {0} in the aftermath",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.BattleWon.Label",
+   "text": "Outpost battle won",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.BattleWon.Rescued",
+   "text": "We have managed to recover {0}'s body",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.BattleWon.Secured",
+   "text": "We have secured: {0} worth of goods and weapons from the raiders",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.BattleWon.Text",
+   "text": "We have successfully won the battle for {0}.{1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.Items.Label",
+   "text": "Items From {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.Items.Text",
+   "text": "You have received the follow items from the outpost {0}:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.Lost.Label",
+   "text": "Outpost lost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Letters.Lost.Text",
+   "text": "Regretfully, due to the deaths of all inhabitants, the outpost of {0} has been lost to us.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.MustHaveInCaravan",
+   "text": "Must have {0} in caravan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.NoValidPawns",
+   "text": "No valid pawns to add to outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.NotEnoughPawns",
+   "text": "Not enough pawns in caravan, need at least {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.NotSkilledEnough",
+   "text": "Pawns are not skilled enough, need a cumulative {0} skill of at least {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.NumPawns",
+   "text": "Must have at least {0} pawns willing to join the outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Packing",
+   "text": "Packing into caravan. Done in {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.RequiredSkill",
+   "text": "Cumulative {0} skill must be at least {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.RestingAt",
+   "text": "Resting at outpost {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.SendNonPawns",
+   "text": "Confirm sending items to the outpost? They will be permanently lost.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Setting.MinimumPawns",
+   "text": "Minimum Pawns to Create",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Setting.PackTime",
+   "text": "Pack Time",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Setting.ProductionTime",
+   "text": "Production Time",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Setting.Range",
+   "text": "Range",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DeliveryMethod",
+   "text": "Delivery method",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DeliveryMethod.ForcePods",
+   "text": "Always send drop pods",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DeliveryMethod.PackAnimal",
+   "text": "Send pack animal carrying items to colony",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DeliveryMethod.PackOrPods",
+   "text": "Pods if available, otherwise pack animal",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DeliveryMethod.Store",
+   "text": "Store items at outpost",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DeliveryMethod.Teleport",
+   "text": "Teleport items to colony",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.DoRaids",
+   "text": "Enable Outpost Raids?",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.Multiplier.Production",
+   "text": "Gloabal Production Multiplier: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.Multiplier.Time",
+   "text": "Global Time Multiplier: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.Production",
+   "text": "Production Multiplier",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.RaidDifficulty",
+   "text": "Global Raid Difficulty Multiplier: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.RaidFrequency",
+   "text": "Raid Frequency Range",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Settings.Title",
+   "text": "VE Framework - Outposts",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.SkillChange",
+   "text": "Due to changes in skill level, {0} can no longer produce {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.Take",
+   "text": "Take",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.TooClose",
+   "text": "Too close to settlement or other outpost, must have at least 1 tile between them.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.TotalSkill",
+   "text": "Cumulative {0} skill: {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.WillProduce.0",
+   "text": "Will produce some items in {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.WillProduce.1",
+   "text": "Will produce {0} {1} in {2}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.WillProduce.2",
+   "text": "Will produce {0} {1} and {2} {3} in {4}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Outposts.WillProduce.N",
+   "text": "Will produce the following in {0}:\\n{1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AddProcess",
+   "text": "Add process",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AllowManualRefill",
+   "text": "Allow manual refill",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AllowManualRefillDesc",
+   "text": "Allow pawns to directly refill storage",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AmountOut",
+   "text": "Maximum amount stored here: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AugmentStack",
+   "text": "+1",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AugmentStackB",
+   "text": "+10",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AugmentStackDesc",
+   "text": "Augment output maximum stack size by 1.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_AugmentStackDescB",
+   "text": "Augment output maximum stack size by 10.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_CancelCurrentProcess",
+   "text": "Cancel current process",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_CantExtract",
+   "text": "Can't extract: Tanks are full",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_CantPlaceHere",
+   "text": "{0} can only be placed on the {1} deposit. Use ground-penetrating scanner to find the deposits.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ChooseResult",
+   "text": "Choose result",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ChooseResultDesc",
+   "text": "Choose processor result.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Consumption",
+   "text": "{0} consumption",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ConsumptionExplained",
+   "text": "The amount per day of {0} this building will draw from the {1} grid.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ContentWillRot",
+   "text": "Content will rot in {0} due to a lack of power.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_CopyProcesses",
+   "text": "Copy processes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_CurrentNotReachedAwful",
+   "text": "Process hasn't reached Awful quality yet",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_CurrentQuality",
+   "text": "Current quality: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_DeconstructDesc",
+   "text": "Only deconstruct pipes part of the {0} network.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_DeconstructLabel",
+   "text": "Deconstruct {0} pipes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_DecreaseStack",
+   "text": "-1",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_DecreaseStackB",
+   "text": "-10",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_DecreaseStackDesc",
+   "text": "Decrease output maximum stack size by 1.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_DecreaseStackDescB",
+   "text": "Decrease output maximum stack size by 10.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ExcessStored",
+   "text": "{0} net excess/stored in network: {1} {3}/d / {2} {3}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ExtractAtCurrentQuality",
+   "text": "Extract at current quality",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ExtractAtCurrentQuality_Desc",
+   "text": "Extract the product at the current quality.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ExtractingAtCurrent",
+   "text": "Extracting product at current quality",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_IdleConsumption",
+   "text": "{0} idle consumption",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_IdleConsumptionExplained",
+   "text": "The amount of {0} this building will draw from the {1} grid when idle.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_InterruptedByGillRot",
+   "text": "Can’t breed fish due to gill rot",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_MakeProcess",
+   "text": "Make {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_MarkedToTransferContent",
+   "text": "Transfering content to other available storages...",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_MissingInputIngredients",
+   "text": "Missing inputs: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NoProcess",
+   "text": "No current process",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NoProcessAvailable",
+   "text": "No process available",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NoStorageInNet",
+   "text": "No storage connected",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NoStorageInNetDesc",
+   "text": "The following networks are not connected to any storage building, but need one:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NotConnected",
+   "text": "Not connected to {0}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NotInRoomExplanation",
+   "text": "This processor is not situated in a room that counts as a {0}, and will receive a {1} penalty to its work speed. This will be recalculated once a process has started.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NothingToPickUp",
+   "text": "Nothing to pick-up",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_NothingToRefill",
+   "text": "No thing to refill {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_OrNet",
+   "text": "or {0} net",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_OutputFactoryHopperFull",
+   "text": "Output factory hopper too full (max {0} units)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_OutputFactoryHopperIncorrect",
+   "text": "Output factory hopper absent or not accepting item due to storage configuration.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_OutputOnGround",
+   "text": "Can output on ground",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_OutputToNet",
+   "text": "{0} to net",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_PasteAllRecipes",
+   "text": "Paste all processes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_PasteAllRecipes_Desc",
+   "text": "Paste all copied processes into this processor. You can select multiple and the processes will be pasted to all of them.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_PasteProcesses",
+   "text": "Paste processes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ProcessNeedsAwfulAtLeast",
+   "text": "Process needs to advance at least until the Awful quality time, which is {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Processes",
+   "text": "Processes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ProcessorBuffer",
+   "text": "Buffer: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Produce",
+   "text": "Produce {0} {1} from {2} {3}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ProduceLabel",
+   "text": "Produce {0} {1} using:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Producing",
+   "text": "Producing {0} {1}. Cycle progress: {2}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Product",
+   "text": "Product",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Production",
+   "text": "{0} production",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ProductionExplained",
+   "text": "The amount per day of {0} this building will produce for the {1} grid.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ProgressInInfobox",
+   "text": "{0}: {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_QualitySelector",
+   "text": "Select the quality at which this process will stop",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ResourceLeft",
+   "text": "Amount left in deposit: {0}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ResourceNeeded",
+   "text": "{0} needed:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ResourceOutput",
+   "text": "{0} output:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ResourceStored",
+   "text": "{0} stored:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_StorageContentRotted",
+   "text": "{0} content rotted away due to a lack of power.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_Stored",
+   "text": "{0} stored in network:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_TransferContent",
+   "text": "Transfer storage content",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_TransferContentDesc",
+   "text": "Transfer storage content to other available storages.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ValveClosed",
+   "text": "Valve closed.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_ValveOpened",
+   "text": "Valve opened.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_WorkSpeed",
+   "text": "work speed",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "PipeSystem_XFromNet",
+   "text": "{0} from net",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Reloading.Ammo",
+   "text": "Ammo: {0} / {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Reloading.NoAmmo",
+   "text": "No Ammo",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Reloading.Reload",
+   "text": "Reload {GEAR} with {AMMO_label}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "Reloading.Unload",
+   "text": "Unload {GEAR_labelShort}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "TerrainTagVFEI2_Creep",
+   "text": "insect creep",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "TerrainTagVFEI2_JellyFloor",
+   "text": "jellyfloor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "TerrainTagVFEI2_RoyalJellyFloor",
+   "text": "royal jellyfloor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_AffectsAllAnimalMods",
+   "text": "These animal behaviours options will affect all animal mods that share code from the Vanilla Expanded Framework",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_AllowConditions",
+   "text": "Allow chronic health conditions in food (Diabetes, Cholesterol and High Blood Pressure)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_AnimalParticlesOption",
+   "text": "Allow animal particles (gas and filth)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_AsexualReproductionOption",
+   "text": "Allow asexual reproduction",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_BlinkMechanicsOption",
+   "text": "Allow \"blink\" mechanics (for example, Skiphounds)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_BuildPeriodicallyOption",
+   "text": "Allow animals building things (for example, beavers building dams)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_ChargeBatteriesOption",
+   "text": "Allow animals recharging nearby batteries or refueling",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_CorpseDecayingEffectOption",
+   "text": "Allow corpse decaying mechanics (for example, Helixien slug's effect)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_DigPeriodicallyOption",
+   "text": "Allows animals digging for things periodically",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_DigWhenHungryOption",
+   "text": "Allow digging when hungry mechanics (for example, Frostmites digging corpses)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_EffecterOption",
+   "text": "Allows animals causing hediffs, mental states or thoughts",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_ExplodingEggsOption",
+   "text": "Allow animals' eggs that explode (such as dragons')",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_GraphicChangingOption",
+   "text": "Allow animals changing graphics (for example, Chameleon Yak)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_HoveringOption",
+   "text": "Allow animals \"hovering\", ignoring terrain movement costs and waterstriding",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_InEquator",
+   "text": "In equatorial region, growing 30% faster.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_MustBeInstalled",
+   "text": "Vanilla Cooking Expanded must be installed for these options to have any effect",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_NeedsShade",
+   "text": "This plant needs to grow in shade: outside, but under a roof.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_NoSeaTilesNearby",
+   "text": "Too far away from the sea, no extra growth bonus",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_NoWaterNearby",
+   "text": "Lack of a body of water nearby is impeding this plant's growth",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_NotInEquator",
+   "text": "Not in equatorial region (in this planet, below {0} latitude). Growing normally.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_NotPollinated",
+   "text": "No apiary found in a 6 tiles radius (calculated on sowing)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_Pollinated",
+   "text": "Apiary found nearby",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_RegenerationOption",
+   "text": "Allow health regeneration (active and passive)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_ResurrectionOption",
+   "text": "Allow animals to auto-resurrect (for example Phoenix Owlcat)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_SeaTilesNearby",
+   "text": "{0} sea tiles nearby, providing {0}% growth bonus",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_StoppedGrowthFertility",
+   "text": "Growth impossible due to too fertile terrain",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_StuntedGrowthFertility",
+   "text": "Growth reduced due to non-rocky terrain",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_UntameableOption",
+   "text": "Allow some animals to be untameable",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VCE_WaterNearby",
+   "text": "A body of water nearby is impeding this plant's growth",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.AvailableContracts",
+   "text": "Available contracts: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.AvailableSilver",
+   "text": "Available Silver: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Breakdown",
+   "text": "Breakdown",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Cancel",
+   "text": "Cancel",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.CancelContract",
+   "text": "Cancel Contract",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.ChooseNumberOfUnits",
+   "text": "How many of that unit do you want to have?",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.CommandAttackMovingBaseDesc",
+   "text": "Attack this {0}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.ContractInfo",
+   "text": "View contract with {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.ContractTitle",
+   "text": "Contract with {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Cost",
+   "text": "Cost to hire",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.CustomizationTitle",
+   "text": "{0} Customization",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Customize",
+   "text": "Customize {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DayAmount",
+   "text": "Amount of Days",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DisableModSourceReport",
+   "text": "Disable mod source reports",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockDefault",
+   "text": "Default",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockEveryone",
+   "text": "Everyone",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockOnlyColonistsAndAnimals",
+   "text": "Only colonists and animals",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockOnlyColonistsAndAnimalsAndFriendlies",
+   "text": "Only colonists, animals and friendlies",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockOnlyDrafted",
+   "text": "Only drafted",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockState",
+   "text": "Current door lock policy \"{0}\"",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockStateDesc",
+   "text": "Click to change current door lock policy.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DoorLockStatePowerOff",
+   "text": "Power is off. Impossible to change door lock policy.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.DraftHuntLabel",
+   "text": "Hunt",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.EnableWeatherDamage",
+   "text": "{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_GiftIllegalWarning",
+   "text": "Gifting {ILLEGALTHING_label} to {ILLEGALFACTION_name} is against {FACTION_name} law. This may or may not affect your relations with them in the future",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_GiftWarning",
+   "text": "Gifting {ILLEGALTHING_label} is against {FACTION_name} law. This may or may not affect your relations with them in the future",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_LetterDescGift",
+   "text": "{FACTION_name} caught wind that you have been gifting {ILLEGALTHING_label} behind their back. They consider it to be against the law, and your relations have degraded",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_LetterDescIllegalGift",
+   "text": "{FACTION_name} caught wind that you have been gifting {ILLEGALTHING_label} to {ILLEGALFACTION_name} behind their back. They consider it to be against the law, and your relations have degraded",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_LetterDescIllegalSold",
+   "text": "{FACTION_name} caught wind that you have been selling {ILLEGALTHING_label} to {ILLEGALFACTION_name} behind their back. They consider it to be against the law, and your relations have degraded",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_LetterDescSold",
+   "text": "{FACTION_name} caught wind that you have been selling {ILLEGALTHING_label} behind their back. They consider it to be against the law, and your relations have degraded",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_LetterLabel",
+   "text": "{FACTION_name} angered",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_RelationInfo",
+   "text": "Goodwill with {FACTION_name} is now {1}. (Changed by {2})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_SellIllegalWarning",
+   "text": "Selling {ILLEGALTHING_label} to {ILLEGALFACTION_name} is against {FACTION_name} law. This may or may not affect your relations with them in the future",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.Contraband_Booze_SellWarning",
+   "text": "Selling {ILLEGALTHING_label} is against {FACTION_name} law. This may or may not affect your relations with them in the future",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.FactionDef_Description_Contraband",
+   "text": "Trading details",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.FactionDef_Description_Negatives",
+   "text": "Negative goodwill from trading {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Factions.FactionDef_Description_Positives",
+   "text": "Positive goodwill from trading {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Hire",
+   "text": "Hire {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.HireDesc",
+   "text": "Hire some {0} to help around the colony, for example with defense.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.HiringDesc",
+   "text": "You can hire {0} for any period of time.You can only have one contract active at a time, and you cannot mix and match the factions from which you hire. If hired {0} die on duty, you will incur an additional 5% increase to contract price per dead pirate on all future contracts for a full year.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.HuntDescription",
+   "text": "While this is on characters will automatically move to engage nearby targets.\\n\\nYou can right-click this button to toggle autofire for ALL abilities on the selected pawn.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.LongTerm",
+   "text": "Long term contracts are significantly more expensive",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.MechsSection",
+   "text": "Mechanoids",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.MinCapacityLevel",
+   "text": "min {MIN}%",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Name",
+   "text": "Name",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.NoRefund",
+   "text": "Cancelling your contract will not refund the silver you spent on it.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.PawnsList",
+   "text": "Contracted:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.QuestChainTooltip",
+   "text": "This quest is a part of a quest chain. Completing it may trigger continuation quests.\\n\\n{0}\\n\\n{1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.RangedDodge.ShotReportReadout",
+   "text": "Dodge",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.RiskMult",
+   "text": "Risk multiplier",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Shields.ExplanationTitle",
+   "text": "Set weapons to be usable or not usable with shields.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Shields.ResetModSettingsToDefault",
+   "text": "Reset mod settings to default",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Shields.Search",
+   "text": "Search:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Shields.ShowMeleeWeapons",
+   "text": "Show melee weapons",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Shields.ShowRangeWeapons",
+   "text": "Show range weapons",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Spent",
+   "text": "Silver spent:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TeleportTo",
+   "text": "Teleport to {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TimeLeft",
+   "text": "Time remaining:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TotalMarketValueRange",
+   "text": "Market value range (base)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TotalMarketValueRange_Desc",
+   "text": "Total market value range (minimum and maximum) of the objects that can be found by opening this loot box.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TotalMarketValueRange_Quality",
+   "text": "Market value range (by quality)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TotalMarketValueRange_Quality_Desc",
+   "text": "Total market value range (minimum and maximum) of the objects that can be found by opening this loot box. Box quality has modified the base value by a factor of {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.TotalPrice",
+   "text": "Total Price",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Value",
+   "text": "Value",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Weapons.Stat_Thing_MaterialPerCharge",
+   "text": "Ammo per charge",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Weapons.Stat_Thing_MaterialPerCharge_Desc",
+   "text": "The amount of {0} per charge this ability needs to be recharged.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.Weapons.Stat_Thing_MaterialPerCharge_Value",
+   "text": "{0} {1} per charge (total {2} charges)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF.WeatherDamages",
+   "text": "Weather damages",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_Always",
+   "text": "Always",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AlwaysDesc",
+   "text": "Ores mined by pawns are always unforbidden",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AnimalProductIntervalFactorDetails",
+   "text": "Base special animal products interval for this animal is {0} days. Adjusted by its animal products interval factor this will result in {1} days instead. This value is capped at a minimum of 1 day.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AnimalProductYieldFactorDetails",
+   "text": "Base special animal products production for this animal is {0} {1}. Adjusted by its animal product yield factor this will result in {2} {1} instead.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AnimalProductYieldFactorDetails_Random",
+   "text": "Base special animal products production for this animal is {0} of a selection of randomized or terrain dependent items. Adjusted by its animal product yield factor this will result in {1} units instead.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AnimalsSearch",
+   "text": "Search:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AsexualCloning",
+   "text": "{0} has cloned itself.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AsexualHatched",
+   "text": "{0} has reproduced asexually.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_AsexualHatchedEgg",
+   "text": "{0} has sporulated.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_BillRequiresMass",
+   "text": "Requires {0} Kg total mass",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_CustomStructureGeneration",
+   "text": "Custom Structure Generation:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DigestionTime",
+   "text": "Will be consumed in {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableAnimal",
+   "text": "Disable {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableCorpseDecaying",
+   "text": "Disable corpse decaying",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableCorpseDecayingDesc",
+   "text": "Disable the constant corpse decaying ability of this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableDigging",
+   "text": "Disable digging for food",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableDiggingDesc",
+   "text": "Disable the ability to dig the terrain for food of this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableGas",
+   "text": "Disable gas production",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableGasDesc",
+   "text": "Disable the ability to produce gas of this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_DisableTextureCaching",
+   "text": "Disable Texture Caching",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnableCorpseDecaying",
+   "text": "Enable corpse decaying",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnableCorpseDecayingDesc",
+   "text": "Enable the constant corpse decaying ability of this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnableDigging",
+   "text": "Enable digging for food",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnableDiggingDesc",
+   "text": "Enable the ability to dig the terrain for food of this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnableGas",
+   "text": "Enable gas production",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnableGasDesc",
+   "text": "Enable the ability to produce gas of this animal.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_EnablePipeSystemNoStorageAlert",
+   "text": "Enable PipeSystem no storage alert",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_FactionDiscovery",
+   "text": "Faction Discovery",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_GeneralTitle",
+   "text": "General",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_HomeArea",
+   "text": "Home Area",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_HomeAreaDesc",
+   "text": "Ores mined by pawns are only unforbidden if mined in the home area",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_LetterLabelWeeds",
+   "text": "Weeds: {PLANTDEF_labelPlural}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_LetterWeeds",
+   "text": "Weeds have spread across your {PLANTDEF_labelPlural}, as well as other nearby blooming flowers, greatly affecting their beauty.\\n\\nYou can order your colonists to remove the weeds, though it is a time consuming process.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_Never",
+   "text": "Never",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_NeverDesc",
+   "text": "Never unforbid mined ores (this is how the base game works for non-human pawns, such as animals and mechs)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_NotTameable",
+   "text": "This creature is untameable",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_RangeAttackSpeedFactor",
+   "text": "Range Attack Speed Factor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_StomachContents",
+   "text": "{0} creatures swallowed whole.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_TPTitle",
+   "text": "Toggleable patches",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_TerrainsNeedsDiggable",
+   "text": "The terrain needs to be diggable to do this",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_TextureVariations",
+   "text": "Texture Variations:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_TimeToDie",
+   "text": "Animal expires in: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_TimeToMetamorphosis",
+   "text": "Time to metamorphosis: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_UnforbidMinedOres",
+   "text": "Unforbid mined ores",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_VerboseLogging",
+   "text": "Verbose logging",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_WarningEggExplodes",
+   "text": "Warning, this egg explodes when hatching!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VEF_WhileCaravaning",
+   "text": "While caravaning, produces {0} {1} every:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE.ChangeColorTo",
+   "text": "Change color to {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE.ChangeVisualDesc",
+   "text": "Set a specific visual for the building or item.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE.ChangeVisualLabel",
+   "text": "Change visual",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE.ColorSwitchPowerOff",
+   "text": "Power is off. Impossible to switch color.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE.SwitchLightColor",
+   "text": "Switch light color",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE.SwitchLightColorDesc",
+   "text": "Change current light colour.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.AbilityDisableReasonCooldown",
+   "text": "{0} is on cooldown for {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.AbilityDisableReasonGeneral",
+   "text": "{0} doesn't meet the requirements",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.AbilityStatsDuration",
+   "text": "Duration",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.AbilityStatsPower",
+   "text": "Power",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.MinRadius",
+   "text": "Minimum radius",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.RClickToAuto",
+   "text": "Right-click to enable autocasting.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.RClickToNoAuto",
+   "text": "Right-click to disable autocasting.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEA.TargetMustBeHostile",
+   "text": "Target must be hostile",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFECore.Advanced",
+   "text": "advanced",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFECore.IsToo",
+   "text": "is too",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFECore.Primitive",
+   "text": "primitive",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFECore.StatsReport_Powered",
+   "text": "Powered",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFECore.StatsReport_Unpowered",
+   "text": "Unpowered",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEM.CaravanMachineRanOutPower",
+   "text": "{MACHINE_nameDef} ran out of power, and was left behind.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEM.DroneGainsName",
+   "text": "The drone's name is now {0}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMRideableMachineTip",
+   "text": "This droid is rideable. People in a caravan will ride the fastest available animals/droids, improving the speed of the caravan as a whole.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechAttachTurret",
+   "text": "Attach Turret",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechAttachTurretDesc",
+   "text": "Construct a turret atop this mobile platform. This will require a colonist to deliver resources equal to that turret's normal construction cost.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechForceRecharge",
+   "text": "Force Recharge",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechForceRechargeDesc",
+   "text": "Order the associated machine to return to this platform for charging, regardless of its current battery level.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechLowerRange",
+   "text": "Reduce range",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechLowerRangeDesc",
+   "text": "Reduce the number of tiles this machine will travel.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechMachineDied",
+   "text": "Machine destroyed",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechMachineDiedDesc",
+   "text": "One of your machines has been destroyed! You can dismantle its remains at a machining table. In order to construct a replacement, one of your colonists will need to deliver the following parts to its platform:\\n\\n{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechMachineHitObstacle",
+   "text": "Machine has run into an obstacle!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechNoResources",
+   "text": "Not enough resources",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechNoTurret",
+   "text": "No active mobile turret",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechRaiseRange",
+   "text": "Increase range",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechRaiseRangeDesc",
+   "text": "Increase the number of tiles this machine will travel.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechReconstruct",
+   "text": "Needed to rebuild machine:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechSetArea",
+   "text": "Set area",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechSetAreaDesc",
+   "text": "Set the allowed area for all of this platform's associated machines.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechStartMachine",
+   "text": "Start machine",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechStartMachineDesc",
+   "text": "Start this machine.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechStopMachine",
+   "text": "Stop machine",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechStopMachineDesc",
+   "text": "Stop this machine's progress and force it to return to base.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFEMechTurretResources",
+   "text": "Needed to construct turret:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_AsexualReproductionDisabled",
+   "text": "Asexual reproduction disabled via mod options",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChangeGraphic",
+   "text": "Random Graphic",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChangeGraphicDesc",
+   "text": "Change Graphic of this building randomly between those available",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChooseGraphic",
+   "text": "Choose Graphic",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChooseGraphicDesc",
+   "text": "Choose Graphic of this building via a menu with all available options",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChooseMine",
+   "text": "Choose chunk type to drill",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChooseMineDesc",
+   "text": "Choose chunk type to drill. You can choose any of the map's rock types, or random",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChunkRandomMine",
+   "text": "Drill for Random Chunks",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_ChunkToMine",
+   "text": "Drill for {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_DeepDrillNo",
+   "text": "Deep drill cannot be used with {0}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_HideRandomizeButton",
+   "text": "Hide the \"Random Graphic\" and \"Choose Graphic\" buttons",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_NeedsSand",
+   "text": "This building must be placed on sand",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_NeedsWater",
+   "text": "This building must be placed on water",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_NoGraphics",
+   "text": "This building doesn't have extra random graphics to choose from. Some modder added the comp class to the building without alternative graphics, which is weird",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_PleaseSelectOutput",
+   "text": "Select machine output",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_RandomBuildingsDontStartRandom",
+   "text": "Make random graphics buildings NOT start randomized",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VFE_RandomRock",
+   "text": "Random chunk",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_EggHatched",
+   "text": "{0} has hatched from an egg!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_EggHatchedLabel",
+   "text": "{0} hatched!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_EggLaid",
+   "text": "{0} has laid an egg! Keep it warm and protected.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_EggLaidLabel",
+   "text": "{0} laid an egg!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_EggPregnancy",
+   "text": "{0}'s eggs have been fertilized! The egglaying process will continue until a fertile egg is laid.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_EggPregnancyLabel",
+   "text": "{0} fertilized!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_ForGenderOnly",
+   "text": "{0} only gene.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_Male_Egg",
+   "text": "Males don't lay eggs",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_PregnancyFactor",
+   "text": "Pregnancy factor gene: {0} gestation speed",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_AnyLightSensitivity",
+   "text": "light sensitivity",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_Armoured",
+   "text": "armoured",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_Below0",
+   "text": "below 0ºC",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_ColonyMap",
+   "text": "on colony map",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InDarkness",
+   "text": "below 50% lit",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InGreatPain",
+   "text": "in great pain (>20%)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InLight",
+   "text": "above 50% lit",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InPain",
+   "text": "in pain",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InPlanet",
+   "text": "in the planet",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InPollution",
+   "text": "in polluted terrain",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InSpace",
+   "text": "in Space",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_InVacuum",
+   "text": "in vacuum",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_Inside",
+   "text": "indoors",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_NoSunlight",
+   "text": "no sunlight",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_NotWater",
+   "text": "on dry land",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_Outside",
+   "text": "outdoors",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_OutsideColonyMap",
+   "text": "outside colony map",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_Over40",
+   "text": "over 40ºC",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VGE_StatsReport_Water",
+   "text": "on water",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VME_MessageNeedsThePairedMeme",
+   "text": "{0} needs one of the following memes to be chosen too to work: {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_AgeBeautyModifier",
+   "text": "Age beauty modifier",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_AgeBeautyModifier_Desc",
+   "text": "The beauty of this plant will increase by this amount for every year it is kept alive, up to a maximum of +{0}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BeautyByAge",
+   "text": "Beauty by age: +{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BeautyByBloming",
+   "text": "Beauty by blooming: x{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BeautyByLeafless",
+   "text": "Leafless beauty: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BeautyByWeeds",
+   "text": "Beauty because of weeds: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomBeautyModifier",
+   "text": "Bloom beauty modifier",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomBeautyModifier_Desc",
+   "text": "The beauty of this plant will be multiplied by this amount when in its blooming stage.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomTemperatureMax",
+   "text": "Maximum bloom temperature",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomTemperatureMax_Desc",
+   "text": "The maximum temperature the plant will need to be below to enter a blooming stage.\\n\\n{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomTemperatureMin",
+   "text": "Minimum bloom temperature",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomTemperatureMin_Desc",
+   "text": "The minimum temperature the plant will need to enter a blooming stage.\\n\\n{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomingPeriod",
+   "text": "Blooming period",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_BloomingPeriod_Desc",
+   "text": "This flower will enter a blooming stage in this period, or the equivalent in days of the year in permanent summer / winter.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_CanBloom",
+   "text": "If the blooming stops due to low temperature, this flower can enter a blooming stage again if the conditions improve.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_CancelExtractFlower",
+   "text": "Cancel extraction",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_CancelExtractFlower_Desc",
+   "text": "Cancel extracting this flower.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_CancelWeedRemoval",
+   "text": "Cancel weed removal",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_CancelWeedRemoval_Desc",
+   "text": "Cancel removing the weeds from this flower.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_CantBloom",
+   "text": "If the blooming stops due to low temperature, this flower won't be able to bloom again until next year!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_DeadlyColdTemperature",
+   "text": "Deadly cold temperature",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_DeadlyColdTemperature_Desc",
+   "text": "Below this temperature, the plant will start dying.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_ExtractFlower",
+   "text": "Extract flower",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_ExtractFlower_Desc",
+   "text": "Extract this flower while keeping it alive, so that it can be replanted elsewhere.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_FlowerIsBlooming",
+   "text": "Flower is blooming",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_LeaflessBeauty",
+   "text": "Leafless beauty",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_LeaflessBeauty_Desc",
+   "text": "Blooming flowers are pretty ugly when leafless due to cold. They won't die just for being leafless, but their beauty will be greatly affected.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_MinifiedFlowerWillDieIn",
+   "text": "Extracted flower will die in {time} unless replanted.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_MustBeGrown",
+   "text": "Plant must be fully grown before you can add age to it",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_RealAge",
+   "text": "Age: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_RemoveWeeds",
+   "text": "Remove weeds",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_RemoveWeeds_Desc",
+   "text": "Remove the weeds that are negatively impacting this flower's beauty.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_ReplantFlower",
+   "text": "Replant",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_ReplantFlower_Desc",
+   "text": "The flower is currently packaged up for storage and transport. Use this command to replant it in the new location.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_TempTooHighForBlooming",
+   "text": "Temperature too high for blooming",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VPE_TempTooLowForBlooming",
+   "text": "Temperature too low for blooming",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AllowedPartners",
+   "text": "Allowed partners",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AllowedPartnersDesc",
+   "text": "A list of all feratypes belonging to the {0} feratype family that this animal can make offspring with.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AnimalGenes",
+   "text": "Animal genes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AnimalGenesDesc",
+   "text": "Genes present in this animal",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AnimalGenesFeratypeDesc",
+   "text": "The genes associated with this feratype.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AnimalIllness",
+   "text": "Animal illness MTB",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_AnimalTantrum",
+   "text": "Animal tantrum MTB",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_Days",
+   "text": "days",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_FamilyTag",
+   "text": "Gene family",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_Feratype",
+   "text": "Feratype",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_FeratypeFamily",
+   "text": "feratype family",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_FeratypeFamilyDesc",
+   "text": "This feratype belongs to the {0} feratype family:\\n\\n{1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_LifespanFactor",
+   "text": "Lifespan",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_LifespanFactorDesc",
+   "text": "Lifespan factor of this animal according to its genetic stability",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_MoreInfoInInfoScreen",
+   "text": "More information is available on this feratype's information screen.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_NotPregnant",
+   "text": "This animal is not pregnant",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_SpecializedGene",
+   "text": "Specialized gene",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_SpecializedGeneDesc",
+   "text": "This gene is only inherited by offspring whose feratype contains a gene from this family.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_Stability",
+   "text": "Stability",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_StabilityDesc",
+   "text": "Stability represents the complexity of an animal's genetic code and affecting predictability of gene inheritance.\\n\\nHigh stability ensures offspring typically inherit the average of their parents' genes, whereas low stability increases the likelihood that offspring will deviate from parental traits towards the natural median.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_StatsReport_Genes",
+   "text": "Relevant animal genes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_StillbornDesc",
+   "text": "Your {0}, {1} gave birth to a stillborn offspring.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_StillbornLabel",
+   "text": "Stillborn {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_TabAnimalGenes",
+   "text": "Genes",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VRE_Trainability",
+   "text": "Trainability set to",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VSE.CostGoodwill",
+   "text": "cost: {0} goodwill",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VSE.Reinforcements",
+   "text": "Reinforcements",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VSE.ReinforcementsDesc",
+   "text": "Seeing that your forces suffered losses, {FACTION_name} has decided to reinforce their raiding force",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VWE.CannotEquipHeavy",
+   "text": "Weapon requires powered armor",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VWEL_ToggleHotshotDesc",
+   "text": "Shots fired when standing still warm-up the weapon allowing for increased firing speed. Overheating can lead to detonation.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VWEL_ToggleHotshotLabel",
+   "text": "Weapon warm-up",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.AffectHiddenFactions",
+   "text": "Affect hidden",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.AllFactions",
+   "text": "All factions",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.AllFactionsIncludingHidden",
+   "text": "All factions including hidden",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.AlwaysHostile",
+   "text": "Always hostile",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.AnUnknownMod",
+   "text": "an unknown mod",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.EquipShield",
+   "text": "Equip {0} as shield",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.EquipWarningShieldUnusable",
+   "text": "(unusable with {0})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.EquipWarningShieldUnusableWithWeapon",
+   "text": "({0} will be unusable)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionButtonAdd",
+   "text": "Add the faction",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionButtonAddFull",
+   "text": "Add the faction with settlements",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionButtonCancel",
+   "text": "Cancel",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionButtonIgnore",
+   "text": "Don't ask for this faction again",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionButtonSkip",
+   "text": "Do nothing",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionButtonSpawn",
+   "text": "Spawn",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionDiscoveryRequired",
+   "text": "It is marked as required, and you must add it to the game.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionFailedMessage",
+   "text": "Failed to generate this faction. It is recommended to try again, but you can now skip adding this faction. Skipping may cause issues.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionMessageFailed",
+   "text": "Failed to add the faction.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionMessageFailedFull",
+   "text": "Failed to create a faction with settlements.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionMessageSuccess",
+   "text": "Added {FactionName}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionMessageSuccessFull",
+   "text": "Added {FactionName} with {Amount} settlements.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionMinDistance",
+   "text": "The minimum distance from player bases (recommended are {0}): {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionRecommended",
+   "text": "{REQUIRED_multiple ? It is recommended to have at least {REQUIRED} factions of {FACTION} type, but currently there's only {COUNT}. : It is recommended to enable {FACTION}.}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionRequired",
+   "text": "{FACTION} cannot be disabled{REQUIRED_multiple ? , you need at least {REQUIRED} factions of that type. : .}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionSelectOption",
+   "text": "Please select how to proceed:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionSettlementsToSpawn",
+   "text": "Settlements to spawn (recommended are {0}): {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.FactionTitle",
+   "text": "New faction: {FactionName}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.HiddenFactionInfo",
+   "text": "This is a hidden faction and won't show up in your faction list.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.ModInfo",
+   "text": "This faction is added by {ModName} and not currently present in your game.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.NaturalGoodwill",
+   "text": "Natural",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.NonSpawningFactionInfo",
+   "text": "This faction is marked as non-spawning and you should probably just ignore it.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.NumberRange",
+   "text": "{0} to {1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.Protects",
+   "text": "Protects",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.Protects_Desc",
+   "text": "What body parts the shield protects.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.RequiredFactionInfo",
+   "text": "It is marked as required by {ModName}.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.ScenPart_ForcedFactionRelations",
+   "text": "Faction relation modifiers",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.StartingGoodwill",
+   "text": "Starting",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.UsableWithShield",
+   "text": "Usable with shields",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "VanillaFactionsExpanded.UsableWithShield_Desc",
+   "text": "Whether or not this weapon can be used if the character also has a shield equipped.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "XPatchFound",
+   "text": "{0} patches found",
+   "tg_mult": 1,
+   "rl_mult": 1
+  }
+ ],
+ "both_li_fold": [
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBuildup.stages.li.label",
+   "text": "minor, receiving burns",
+   "file_rl": "2023507013/Languages/English/DefInjected/HediffDef/Hediffs_Global_Misc.xml",
+   "note": "notation: RimLoc 'VEF_AcidBuildup.stages.li.label' == TG 'VEF_AcidBuildup.stages.0.label'"
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_Kamikaze.stages.li.label",
+   "text": "initial-hidden",
+   "file_rl": "2023507013/Languages/English/DefInjected/HediffDef/Hediffs_Global_Misc.xml",
+   "note": "notation: RimLoc 'VEF_Kamikaze.stages.li.label' == TG 'VEF_Kamikaze.stages.0.label'"
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.stages.li.label",
+   "text": "adequate light",
+   "file_rl": "2023507013/Languages/English/DefInjected/HediffDef/Hediffs_Global_Misc.xml",
+   "note": "notation: RimLoc 'VEF_LightSustenance.stages.li.label' == TG 'VEF_LightSustenance.stages.0.label'"
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.stages.li.label",
+   "text": "initial",
+   "file_rl": "2023507013/Languages/English/DefInjected/HediffDef/Hediffs_Global_Misc.xml",
+   "note": "notation: RimLoc 'VEF_ToxicBuildup.stages.li.label' == TG 'VEF_ToxicBuildup.stages.0.label'"
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.stages.li.label",
+   "text": "minor",
+   "file_rl": "2023507013/Languages/English/DefInjected/HediffDef/Hediffs_Global_Misc.xml",
+   "note": "notation: RimLoc 'VFEP_HypothermicSlowdown.stages.li.label' == TG 'VFEP_HypothermicSlowdown.stages.0.label'"
+  }
+ ],
+ "rimloc_only": [
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "Mote_FTSmoketrail.label",
+   "file_rl": "2023507013/Languages/English/DefInjected/ThingDef/Motes.xml",
+   "text": "Mote"
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "Mote_Firetrail.label",
+   "file_rl": "2023507013/Languages/English/DefInjected/ThingDef/Motes.xml",
+   "text": "Mote"
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "Mote_GreenSmoketrail.label",
+   "file_rl": "2023507013/Languages/English/DefInjected/ThingDef/Motes.xml",
+   "text": "Mote"
+  },
+  {
+   "kind": "def",
+   "deftype": "ThingDef",
+   "key": "Mote_Smoketrail.label",
+   "file_rl": "2023507013/Languages/English/DefInjected/ThingDef/Motes.xml",
+   "text": "Mote"
+  }
+ ],
+ "competitor_only": [
+  {
+   "kind": "def",
+   "deftype": "ApparelLayerDef",
+   "key": "VFEC_OuterShell.label",
+   "file_tg": "2023507013/1.0/Defs/ApparelLayerDefs/ApparelLayerDefs.xml",
+   "text": "on top",
+   "kind_tg": "def",
+   "tg_mult": 7
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBuildup.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "A splash of acid that continues to cause burn wounds for quite some time after the initial attack.",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBuildup.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "acid burn",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBuildup.stages.1.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "moderate, receiving burns",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBuildup.stages.2.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "serious, receiving burns",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.comps.0.labelSolidTendedWell",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "tended",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.comps.0.labelTendedWell",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "bandaged",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.comps.0.labelTendedWellInner",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "tended",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.comps.2.permanentLabel",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "acid burn scar",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "An acid burn.",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.injuryProps.destroyedLabel",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Corroded",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.injuryProps.destroyedOutLabel",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Corroded",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "acid burn",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_AcidBurn.labelNoun",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "an acid burn",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ControlledInvisibility.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Shrouded in a veil of controlled invisibility.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ControlledInvisibility.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "invisibility",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_Kamikaze.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Boom.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_Kamikaze.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "sudden detonation",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_Kamikaze.stages.1.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "critical",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "This creature feeds on sunlight. Inadequate levels of light will kill it.",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "level of sunlight",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.stages.1.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "poor light levels",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.stages.2.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "very low light levels",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.stages.3.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "lack of sunlight",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_LightSustenance.stages.4.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "extreme lack of sustenance",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_PermanentBurn.comps.1.permanentLabel",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "permanent burn",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_PermanentBurn.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "A permanent burn scar that cannot be treated.",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_PermanentBurn.injuryProps.destroyedLabel",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Burned off",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_PermanentBurn.injuryProps.destroyedOutLabel",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Burned out",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_PermanentBurn.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "permanent burn",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_PermanentBurn.labelNoun",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "a permanent burn",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_StillbornAnimal.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "This animal died due to non-specific complications during pregnancy.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_StillbornAnimal.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "stillborn animal",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Toxins in the bloodstream. This can come from various sources, including environmental toxins, venomous bites, or poisoned weapons. \\nAt high doses, toxic buildup is lethal. Even at low doses, it can generate cancers. \\nContrary to base game toxic buildup, creatures who die with this toxic damage can be eaten.",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "toxic buildup",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.stages.1.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "initial",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.stages.2.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "minor",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.stages.3.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "moderate",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.stages.4.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "serious",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VEF_ToxicBuildup.stages.5.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "extreme",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.description",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "Dangerously low core body temperature. Unless re-warmed, hypothermic slowdown gets worse and ends in death. Recovery is quick once the victim is re-warmed.",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "hypothermic slowdown",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.stages.1.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "minor",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.stages.2.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "moderate",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.stages.3.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "serious",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "HediffDef",
+   "key": "VFEP_HypothermicSlowdown.stages.4.label",
+   "file_tg": "2023507013/1.6/Defs/HediffDefs/Hediffs_Global_Misc.xml",
+   "text": "extreme",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "IncidentDef",
+   "key": "VEF_OutpostAttacked.label",
+   "file_tg": "2023507013/1.4/Defs/StorytellerDefs/Incidents_Map_Threats.xml",
+   "text": "outpost under attack",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "IncidentDef",
+   "key": "VSE_Reinforcements.label",
+   "file_tg": "2023507013/1.6/Defs/StorytellerDefs/Incidents_Map_Threats.xml",
+   "text": "reinforcements",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingDef",
+   "key": "VFE_Dev_Restart.label",
+   "file_tg": "2023507013/1.6/Defs/Misc/KeyBindings/Restart.xml",
+   "text": "restart game",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "MentalStateDef",
+   "key": "VEF_XenophobicRage.baseInspectLine",
+   "file_tg": "2023507013/1.6/Defs/MentalStateDefs/MentalStates_Mood.xml",
+   "text": "Mental state: Xenophobic rage",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "MentalStateDef",
+   "key": "VEF_XenophobicRage.beginLetter",
+   "file_tg": "2023507013/1.6/Defs/MentalStateDefs/MentalStates_Mood.xml",
+   "text": "{0} has flown into a xenophobic rage.\\n\\n[PAWN_pronoun] has decided to kill {1}.",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "MentalStateDef",
+   "key": "VEF_XenophobicRage.recoveryMessage",
+   "file_tg": "2023507013/1.6/Defs/MentalStateDefs/MentalStates_Mood.xml",
+   "text": "{0} is no longer in a xenophobic rage.",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.children.0.children.0.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Wounds",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.children.0.children.1.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Pack",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.children.0.children.1.rotDrawMode",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Fresh, Rotting",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.children.0.children.2.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Firefoam",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.children.0.children.3.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Carried thing",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.children.0.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Body",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByStyleRenderTree.root.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Root",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.children.0.children.0.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Wounds",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.children.0.children.1.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Pack",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.children.0.children.1.rotDrawMode",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Fresh, Rotting",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.children.0.children.2.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Firefoam",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.children.0.children.3.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Carried thing",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.children.0.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Body",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "PawnRenderTreeDef",
+   "key": "VEF_GraphicByTerrainRenderTree.root.debugLabel",
+   "file_tg": "2023507013/1.6/Defs/PawnRenderTreeDefs/PawnRenderTreeDefs.xml",
+   "text": "Root",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "RulePackDef",
+   "key": "VEF_Description_Schematic_Defaults.rulePack.rulesStrings",
+   "file_tg": "2023507013/1.6/Defs/RulePackDefs/RulePacks_Book_Defaults.xml",
+   "text": "<li>subject->innovation's path</li> <li>subject_story->unveiled simple truths behind complex phenomena</li> <li>subject_story->simplified the intricate to make way for practical applications</li> <li>subject_story->harnessed basic principles to achieve remarkable feats</li> <li>subject_gerund->streamlining the essence of discovery</li> <li>subject->building blocks of progress</li> <li>subject_story->laid the groundwork for monumental leaps forward</li> <li>subject_story->connected dots across disciplines to reveal new insights</li> <li>subject_story->crafted the foundation upon which future innovations stand</li> <li>subject_gerund->laying down the keystones of advancement</li> <li>subject->seeds of tomorrow</li> <li>subject_story->planted ideas that would grow into transformative solutions</li> <li>subject_story->cultivated a garden of knowledge, ripe with potential</li> <li>subject_story->nurtured the roots of change with care and foresight</li> <li>subject_gerund->sowing the future with today’s discoveries</li> <li>subject->the ripple of curiosity</li> <li>subject_story->set forth waves of inquiry that echoed through time</li> <li>subject_story->dropped pebbles of innovation into the pond of knowledge</li> <li>subject_story->watched as one question led to another, expanding the circle of understanding</li> <li>subject_gerund->casting stones to create waves of progress</li> <li>subject->the alchemy of progress</li> <li>subject_story->merged disparate disciplines to unlock new realms of possibility</li> <li>subject_story->turned the impossible into the inevitable through sheer ingenuity</li> <li>subject_story->crafted solutions that reshaped the understanding of what's achievable</li> <li>subject_gerund->blending science and magic into the fabric of reality</li> <li>subject->the tapestry of discovery</li> <li>subject_story->wove together threads of knowledge from the four corners of the world</li> <li>subject_story->revealed patterns in the chaos, charting paths to untold innovations</li> <li>subject_story->embroidered the annals of history with tales of serendipitous breakthroughs</li> <li>subject_gerund->weaving the future from the loom of the present</li> <li>subject->the crucible of creation</li> <li>subject_story->fused raw elements into the building blocks of tomorrow</li> <li>subject_story->tempered the fires of creativity to forge unprecedented technologies</li> <li>subject_story->quenched the thirst for knowledge with the elixir of invention</li> <li>subject_gerund->molding the raw materials of today into the artifacts of the future</li> <li>subject->the beacon of enlightenment</li> <li>subject_story->illuminated the dark corners of ignorance, guiding the way forward</li> <li>subject_story->cast light on the unknown, making the unseen visible to curious minds</li> <li>subject_story->ignited the flames of curiosity, kindling a worldwide pursuit of understanding</li> <li>subject_gerund->lighting the torches of progress and knowledge</li> <li>subject->the frontier of knowledge</li> <li>subject_story->crossed new horizons in the pursuit of understanding</li> <li>subject_story->challenged the status quo with groundbreaking theories</li> <li>subject_story->merged ancient wisdom with modern technology for innovative solutions</li> <li>subject_gerund->pushing the boundaries of science and art</li> <li>subject->the essence of innovation</li> <li>subject_story->transformed everyday materials into extraordinary tools</li> <li>subject_story->paved the way for future generations with sustainable practices</li> <li>subject_story->harnessed the power of nature to fuel new advancements</li> <li>subject_gerund->fostering an ecosystem of creativity and progress</li> <li>subject->the architects of tomorrow</li> <li>subject_story->built the foundations for a utopia where technology serves all</li> <li>subject_story->envisioned a future where harmony between technology and nature thrives</li> <li>subject_story->crafted tools that empower humanity to reach its fullest potential</li> <li>subject_gerund->laying the keystones for future landscapes</li> <li>subject->exploratory leaps</li> <li>subject_story->stepped boldly into uncharted territories of knowledge</li> <li>subject_story->bridged the gap between the known and the unknown</li> <li>subject_story->ventured where curiosity dared to lead</li> <li>subject_gerund->embarking on journeys of discovery</li> <li>subject->the essence of ingenuity</li> <li>subject_story->transformed challenges into opportunities for growth</li> <li>subject_story->applied creative thinking to overcome traditional obstacles</li> <li>subject_story->crafted elegant solutions with a blend of art and science</li> <li>subject_gerund->unlocking potential through innovation</li> <li>subject->knowledge’s harvest</li> <li>subject_story->gathered insights as one reaps the fields at harvest</li> <li>subject_story->cultivated a bounty of understanding from the seeds of inquiry</li> <li>subject_story->shared the fruits of research with the world</li> <li>subject_gerund->reaping the rewards of relentless curiosity</li> <li>subject->the puzzle of progress</li> <li>subject_story->assembled the pieces of mystery to reveal the big picture</li> <li>subject_story->matched theory with practice to solve longstanding puzzles</li> <li>subject_story->uncovered hidden connections that unlocked new possibilities</li> <li>subject_gerund->piecing together the elements of advancement</li>",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "ScenPartDef",
+   "key": "VFEC_AddStartingStructure.label",
+   "file_tg": "2023507013/1.6/Defs/Scenarios/ScenParts_Various.xml",
+   "text": "add custom structure to starting map",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "ScenPartDef",
+   "key": "VFEC_ForcedFactionGoodwill.label",
+   "file_tg": "2023507013/1.0/Defs/Scenarios/ScenParts_Various.xml",
+   "text": "forced faction relations",
+   "kind_tg": "def",
+   "tg_mult": 7
+  },
+  {
+   "kind": "def",
+   "deftype": "ScenPartDef",
+   "key": "VFEC_PlayerPawnsArriveMethodEdge.label",
+   "file_tg": "2023507013/1.6/Defs/Scenarios/ScenParts_Various.xml",
+   "text": "pawn arrive method",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "StatCategoryDef",
+   "key": "VFE_EquippedStatFactors.label",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_WeaponsAndApparel.xml",
+   "text": "Factors when equipped",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusApparel.formatString",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_WeaponsAndApparel.xml",
+   "text": "{0} c",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusBuilding.formatString",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_Buildings.xml",
+   "text": "{0} c",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_EnergyShieldRadiusPawn.formatString",
+   "file_tg": "2023507013/1.4/Defs/StatDefs/Stats.xml",
+   "text": "{0} c",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MassCarryCapacity.formatString",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_Pawns.xml",
+   "text": "{0} kg",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_MassCarryCapacity.formatStringUnfinalized",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_Pawns.xml",
+   "text": "{0} kg",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_VerbCooldownFactor.labelForFullStatList",
+   "file_tg": "2023507013/1.4/Defs/StatDefs/Stats.xml",
+   "text": "verb cooldown factor (people)",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_VerbRangeFactor.labelForFullStatList",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_Pawns.xml",
+   "text": "weapon range factor (people)",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_Beastmastery.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "Train and attune this animal to your will, granting direct control over their movements and actions through a powerful bond of dominance and trust.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_Beastmastery.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "beastmastery",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledBlinking.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "Override the creature's usual erratic blinking, allowing a directed way to blink to a chosen location within range.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledBlinking.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "controlled blinking",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledCorpseDecay.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "Teach the animal to control its corpse decaying abilities.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledCorpseDecay.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "controlled corpse decay",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledDetonation.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "The animal can willingly trigger a powerful self-destructive explosion, sacrificing itself in a final act that unleashes all stored volatile compounds in a devastating blast.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledDetonation.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "controlled detonation",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledInvisibility.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "The animal can willingly shroud itself in a veil of controlled invisibility, vanishing from sight while retaining full awareness and precision.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_ControlledInvisibility.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "controlled invisibility",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_CycleSeverance.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "Suppress the natural reproduction cycle, preventing the release of offspring and completely negating the creature’s asexual reproduction.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_CycleSeverance.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "cycle severance",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_DiggingDiscipline.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "Teach the animal to control its terrain digging abilities.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_DiggingDiscipline.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "digging discipline",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_FumeRegulation.description",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "Teach the animal to control its gas production abilities.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "TrainableDef",
+   "key": "VEF_FumeRegulation.label",
+   "file_tg": "2023507013/1.6/Defs/TrainableDefs/Trainables.xml",
+   "text": "fume regulation",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "VEF",
+   "key": "OptionalFeatures.OptionalFeaturesDef.VFE_IdeoFloatMenuPlus.description",
+   "file_tg": "2023507013/1.6/Defs/OptionalFeaturesDefs/OptionalFeaturesDefs.xml",
+   "text": "This optional feature extends the menus in the Ideo creation screen, allowing search and scroll bars. Used by VE Memes and Alpha Memes.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "VEF",
+   "key": "OptionalFeatures.OptionalFeaturesDef.VFE_TileMutatorMechanics.description",
+   "file_tg": "2023507013/1.6/Defs/OptionalFeaturesDefs/OptionalFeaturesDefs.xml",
+   "text": "This optional feature adds a Def extension, TileMutatorExtension, to add new tile mutator mechanics for Odyssey.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "VEF",
+   "key": "OptionalFeatures.OptionalFeaturesDef.VFE_WeaponTraitDefMechanics.description",
+   "file_tg": "2023507013/1.6/Defs/OptionalFeaturesDefs/OptionalFeaturesDefs.xml",
+   "text": "This optional feature adds a Def extension to WeaponTraitDefs to allow for new unique weapon behaviours.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertFirstIngredient.gerund",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "bringing ingredient to",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertFirstIngredient.verb",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "bring ingredient to",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertSecondIngredient.gerund",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "bringing ingredient to",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertSecondIngredient.verb",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "bring ingredient to",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertThirdIngredient.gerund",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "bringing ingredient to",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_InsertThirdIngredient.verb",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "bring ingredient to",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_RemoveProduct.gerund",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "removing finished product from",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "IP_RemoveProduct.verb",
+   "file_tg": "2023507013/1.4/Defs/WorkGiverDefs/WorkGivers_ItemProcessor.xml",
+   "text": "remove finished product from",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_BringToProcessor.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "bringing ingredients to",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_BringToProcessor.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "bring ingredients to",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_DrainOutOfStorage.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "draining out of storage",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_DrainOutOfStorage.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "drain out of storage",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_FillStorage.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "filling storage",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_FillStorage.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "fill storage",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_PickUpProcessor.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "picking up result from",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "PS_PickUpProcessor.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_PipeSystem.xml",
+   "text": "pick up result from",
+   "kind_tg": "def",
+   "tg_mult": 3
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_AnimalResource.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_AnimalBehaviours.xml",
+   "text": "gathering animal resource from",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_AnimalResource.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_AnimalBehaviours.xml",
+   "text": "gather animal resource from",
+   "kind_tg": "def",
+   "tg_mult": 5
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_DestroyItems.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_AnimalBehaviours.xml",
+   "text": "destroying items",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_DestroyItems.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_AnimalBehaviours.xml",
+   "text": "destroy items",
+   "kind_tg": "def",
+   "tg_mult": 4
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_ExtractFlower.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "extracting",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_ExtractFlower.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "extract",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_RefuelSecondary.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "refueling",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_RefuelSecondary.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "refuel",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_RemoveWeeds.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "removing weeds",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VEF_RemoveWeeds.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "remove weeds",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VFE_Loot.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "looting",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VFE_Loot.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "loot",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VFE_StudyBuilding.gerund",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "studying",
+   "kind_tg": "def",
+   "tg_mult": 2
+  },
+  {
+   "kind": "def",
+   "deftype": "WorkGiverDef",
+   "key": "VFE_StudyBuilding.verb",
+   "file_tg": "2023507013/1.6/Defs/WorkGiverDefs/WorkGivers_Misc.xml",
+   "text": "study",
+   "kind_tg": "def",
+   "tg_mult": 2
+  }
+ ],
+ "semantic": [
+  {
+   "kind": "def",
+   "deftype": "StatDef",
+   "key": "VEF_VerbRangeFactor.label",
+   "file_tg": "2023507013/1.6/Defs/StatDefs/Stats_Pawns.xml",
+   "file_rl": "2023507013/Languages/English/DefInjected/StatDef/Stats.xml",
+   "text_tg": "weapon range factor",
+   "text_rl": "verb range factor"
+  }
+ ]
+}

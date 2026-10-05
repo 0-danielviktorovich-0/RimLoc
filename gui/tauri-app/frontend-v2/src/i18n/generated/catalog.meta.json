@@ -1,0 +1,10 @@
+{
+  "schema_version": "1",
+  "source_app": "rimloc",
+  "catalog_identity": {
+    "package": "rimloc-gui-frontend-v2",
+    "version": "0.1.0"
+  },
+  "catalog_revision": "7326adad9ab670edfbd3aa054c3f0ce47d89398c-dirty",
+  "source_locale": "en"
+}

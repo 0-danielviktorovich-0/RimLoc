@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.rimloc.gui",
   "build": {
-    "frontendDist": "../frontend-v2/dist"
+    "frontendDist": "../frontend-v2/dist",
+    "beforeBuildCommand": "cd frontend-v2 && npm run build",
+    "beforeDevCommand": "cd frontend-v2 && npm run dev"
   },
   "app": {
     "security": {
@@ -15,7 +17,10 @@
       },
       "pattern": {
         "use": "brownfield"
-      }
+      },
+      "capabilities": [
+        "default"
+      ]
     },
     "withGlobalTauri": true,
     "windows": [
@@ -26,7 +31,8 @@
         "width": 1200,
         "height": 800,
         "resizable": true,
-        "devtools": true
+        "devtools": true,
+        "focus": false
       }
     ]
   },
@@ -38,7 +44,10 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Tauri desktop GUI for RimLoc",
-    "publisher": "RimLoc Team"
+    "publisher": "RimLoc Team",
+    "resources": {
+      "../frontend-v2/src/i18n/generated": "selfloc-catalog"
+    }
   },
   "plugins": {}
 }

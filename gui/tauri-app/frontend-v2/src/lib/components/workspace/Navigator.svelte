@@ -1,18 +1,21 @@
 <script lang="ts">
   // Left navigator, user-oriented (mandate §9): "All entries" + statuses come
   // first; technical record kinds live collapsed under "Structure (advanced)".
-  // A status click is a single-select quick filter; "All entries" clears it.
+  // M-3 (UI audit 2026-09-29): this panel is NAVIGATION OVER the table chips,
+  // not a second filter set — status items toggle the SAME project.filters
+  // array the chips above the table do, and the item set mirrors FilterBar's
+  // QUICK exactly ('translated' used to be chip-only, 'orphan' panel-only).
   import { t } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
   import Icon from '../Icon.svelte';
   import type { EntryStatus } from '../../mock/types';
 
-  // Most useful statuses for normal users (mandate §9); 'translated' stays
-  // reachable via the filter popover.
+  // Same set as FilterBar QUICK — keep the two lists in lockstep by design.
   const STATUS_ITEMS: EntryStatus[] = [
     'untranslated',
     'pending_review',
     'sourceChanged',
+    'translated',
     'todo',
     'orphan'
   ];
@@ -23,10 +26,6 @@
 
   const statusCounts = $derived(project.statusCounts());
   const total = $derived(project.entries.length);
-
-  function activeStatus(): EntryStatus | null {
-    return project.filters.length === 1 ? project.filters[0] : null;
-  }
 </script>
 
 <nav class="navigator" aria-label={t('workspace.navigator.title')} data-testid="workspace.navigator">
@@ -53,10 +52,9 @@
         <button
           type="button"
           class="nav-item"
-          aria-pressed={activeStatus() === status}
+          aria-pressed={project.filters.includes(status)}
           data-testid={`workspace.navigator.status.${status}`}
-          onclick={() =>
-            project.setStatusFilter(activeStatus() === status ? null : status)}
+          onclick={() => project.toggleFilter(status)}
         >
           <span class="nav-label">{t(`workspace.filter.${status}`)}</span>
           <span class="nav-count" aria-hidden="true">{statusCounts[status]}</span>

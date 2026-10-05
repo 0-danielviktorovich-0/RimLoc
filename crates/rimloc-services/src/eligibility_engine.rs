@@ -584,6 +584,7 @@ mod tests {
             }],
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         }
     }
 

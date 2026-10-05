@@ -1,3 +1,8 @@
+// Раньше файл скрывался под cfg(not(windows)): CLI падал STATUS_STACK_OVERFLOW на
+// любой команде (1MB main-thread стек windows, гигантский derive-кадр augment_subcommands
+// на 25 вариантах Commands). Фикс: Commands разбит на 6 flatten-групп — см. lib.rs и
+// tests/startup_stack.rs (детерминированный 1MB-репро).
+
 use assert_cmd::prelude::*;
 use serde::Deserialize;
 use serde_json::Value;
@@ -50,9 +55,13 @@ fn scan_detects_defs_without_english_definj() {
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
     let json: Value = serde_json::from_str(&stdout).expect("valid json");
     let arr = json.as_array().expect("array");
-    let paths: Vec<&str> = arr
+    // Нормализация ПОСЛЕ парсинга (по значениям): замена в сыром тексте до
+    // serde задваивает JSON-эскейпы `\\` → `//`. Продукт вправе печатать
+    // нативные и смешанные разделители — тест сравнивает по единому виду.
+    let paths: Vec<String> = arr
         .iter()
         .filter_map(|item| item.get("path").and_then(|p| p.as_str()))
+        .map(|p| p.replace('\\', "/"))
         .collect();
     let keys: Vec<&str> = arr
         .iter()
@@ -64,7 +73,7 @@ fn scan_detects_defs_without_english_definj() {
         paths
             .iter()
             .any(|p| p.contains("Languages/English/DefInjected/ThingDef/Food.xml")),
-        "scan should surface DefInjected target path for learned defs",
+        "scan should surface DefInjected target path for learned defs; paths={paths:?} keys={keys:?}",
     );
 }
 
@@ -89,7 +98,11 @@ fn scan_reports_both_keyed_and_defs() {
             if key == "Weapon_Bow.description" {
                 has_def = true;
                 if let Some(path) = item.get("path").and_then(|p| p.as_str()) {
-                    if path.contains("Languages/English/DefInjected/ThingDef/Weapons.xml") {
+                    // нормализация по значению (см. комментарий в первом тесте)
+                    if path
+                        .replace('\\', "/")
+                        .contains("Languages/English/DefInjected/ThingDef/Weapons.xml")
+                    {
                         has_definj_path = true;
                     }
                 }
@@ -101,9 +114,13 @@ fn scan_reports_both_keyed_and_defs() {
         has_def,
         "Weapon_Bow.description from Defs should be present"
     );
+    let all_paths: Vec<&str> = arr
+        .iter()
+        .filter_map(|item| item.get("path").and_then(|p| p.as_str()))
+        .collect();
     assert!(
         has_definj_path,
-        "DefInjected entries should point to the canonical English path"
+        "DefInjected entries should point to the canonical English path; paths={all_paths:?}"
     );
 }
 
@@ -118,13 +135,19 @@ fn export_po_emits_definj_entries_and_hint() {
     cmd.args(["--lang", "ru", "--source-lang-dir", "English"]);
     let assert = cmd.assert().success();
     let stderr = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
+    let stderr = stderr.replace('\\', "/"); // нативные сепараторы windows-консоли
     assert!(
         stderr.contains("_learn/suggested.xml"),
-        "should hint about suggested.xml"
+        "should hint about suggested.xml; stderr={stderr}"
     );
     let po = fs::read_to_string(&out_po).expect("po written");
+    let po_norm = po.replace('\\', "/"); // сравнение путей по единому виду
     assert!(po.contains("Meal_Fine.description"));
-    assert!(po.contains("Languages/English/DefInjected/ThingDef/Food.xml"));
+    assert!(
+        po_norm.contains("Languages/English/DefInjected/ThingDef/Food.xml"),
+        "po should carry the canonical DefInjected path; po head: {}",
+        po.chars().take(800).collect::<String>()
+    );
 }
 
 #[test]

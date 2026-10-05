@@ -6,30 +6,36 @@
 
 <section class="tm" aria-labelledby="tm-heading" data-testid="workspace.tm-stub">
   <h2 id="tm-heading" class="title">{t('tm.title')}</h2>
-  <table class="rows">
-    <thead>
-      <tr>
-        <th scope="col">{t('tm.source')}</th>
-        <th scope="col">{t('tm.target')}</th>
-        <th scope="col">{t('tm.from')}</th>
-        <th scope="col">{t('tm.match')}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each mockTm as row (row.source)}
+  <!-- Wave 9 (owner blank-tail class): the TM rows table is the stretching
+       scroll container, the stub note anchors the bottom — no dead tail. -->
+  <div class="scroll">
+    <table class="rows">
+      <thead>
         <tr>
-          <td>{row.source}</td>
-          <td>{row.target}</td>
-          <td class="mono">{row.from}</td>
-          <td class="mono">{row.match}</td>
+          <th scope="col">{t('tm.source')}</th>
+          <th scope="col">{t('tm.target')}</th>
+          <th scope="col">{t('tm.from')}</th>
+          <th scope="col">{t('tm.match')}</th>
         </tr>
-      {/each}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {#each mockTm as row (row.source)}
+          <tr>
+            <td>{row.source}</td>
+            <td>{row.target}</td>
+            <td class="mono">{row.from}</td>
+            <td class="mono">{row.match}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
   <p class="note">{t('tm.note')}</p>
 </section>
 
 <style>
+  /* Wave 9 (owner blank-tail class): the section fills the tab column instead
+     of clamping to content height; the rows area is the scroll container. */
   .tm {
     padding: var(--space-4) var(--space-6);
     overflow-y: auto;
@@ -37,6 +43,14 @@
     flex-direction: column;
     gap: var(--space-3);
     max-width: 760px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .title {

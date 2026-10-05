@@ -9,8 +9,6 @@ body:
       options:
         - label: I searched open and closed issues for duplicates
           required: true
-        - label: I searched Discussions (if applicable)
-          required: false
     validations:
       required: true
   - type: markdown

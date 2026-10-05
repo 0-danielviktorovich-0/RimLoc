@@ -8,14 +8,19 @@ import { flushSync } from 'svelte';
 import App from '../src/App.svelte';
 import { i18n } from '../src/i18n/store.svelte';
 import { project } from '../src/lib/stores/project.svelte';
+import { demoProject } from '../src/lib/demo/demoProject.svelte';
 import { cleanupMounted, exists, goto, mountCmp, q } from './helpers';
 
 describe('global mock badge', () => {
+  // Audit M-2 (2026-09-29): with no project open the header chip states the
+  // TRANSPORT truth (mock mode → mock-transport badge) instead of calling
+  // the live recents "demo data"; the old copy stays scoped to the bundled
+  // demo dataset (MockBadge, project.isDemo only).
   it('is visible on every route of the app shell', () => {
     for (const route of ['home', 'workspace', 'review', 'build', 'diagnostics', 'help', 'settings']) {
       goto(`#/${route}`);
       mountCmp(App);
-      expect(exists('mock-badge'), `badge on #/${route}`).toBe(true);
+      expect(exists('transport-mock-badge'), `badge on #/${route}`).toBe(true);
       cleanupMounted();
     }
   });
@@ -23,13 +28,15 @@ describe('global mock badge', () => {
   it('uses the honest i18n label in both locales', () => {
     goto('#/home');
     mountCmp(App);
-    const badge = document.querySelector('[data-testid="mock-badge"]');
-    expect(badge?.textContent).toContain('Демо-данные (мок)');
+    const badge = document.querySelector('[data-testid="transport-mock-badge"]');
+    expect(badge?.textContent).toContain('Мок-транспорт (демо-режим)');
     cleanupMounted();
     // EN pass: switch the live locale (localStorage alone is read at boot).
     i18n.setLocale('en');
     mountCmp(App);
-    expect(document.querySelector('[data-testid="mock-badge"]')?.textContent).toContain('Demo data (mock)');
+    expect(document.querySelector('[data-testid="transport-mock-badge"]')?.textContent).toContain(
+      'Mock transport (demo mode)'
+    );
   });
 
   it('has no env-based gating in the component source (preview builds included)', async () => {
@@ -45,7 +52,7 @@ describe('global mock badge', () => {
     mountCmp(App);
     flushSync();
     expect(exists('diagnostics.demoBadge')).toBe(false);
-    expect(exists('mock-badge')).toBe(true);
+    expect(exists('transport-mock-badge')).toBe(true);
   });
 });
 
@@ -75,11 +82,22 @@ describe('data-mode badge truth', () => {
     cleanupMounted();
   });
 
-  it('keeps the mock badge on fixture/demo data', () => {
+  it('fixture data (no demo open) shows the mock-transport badge, never "live"', () => {
     project.reset(); // back to the explicit fixture dataset
     goto('#/home');
     mountCmp(App);
+    // M-2: fixture without the demo identity → the chip names the transport.
+    expect(exists('transport-mock-badge')).toBe(true);
+    expect(exists('live-badge')).toBe(false);
+  });
+
+  it('the «Демо-данные» badge stays scoped to the bundled demo dataset (M-2)', () => {
+    project.reset();
+    demoProject.seed(); // the demo identity is what makes the label honest
+    goto('#/home');
+    mountCmp(App);
     expect(exists('mock-badge')).toBe(true);
+    expect(exists('transport-mock-badge')).toBe(false);
     expect(exists('live-badge')).toBe(false);
   });
 });

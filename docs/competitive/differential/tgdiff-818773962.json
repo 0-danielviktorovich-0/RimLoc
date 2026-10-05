@@ -1,0 +1,700 @@
+{
+ "modid": "818773962",
+ "counts": {
+  "both": 71,
+  "rimloc_only": 0,
+  "competitor_only": 7,
+  "semantic": 4,
+  "li_fold_pairs": 0,
+  "tg_identities": 82,
+  "rl_identities": 75
+ },
+ "by_kind": {
+  "both": {
+   "keyed": 71
+  },
+  "competitor_only": {
+   "KeyBindingCategoryDef": 2,
+   "KeyBindingDef": 5
+  },
+  "rimloc_only": {},
+  "semantic": {
+   "": 4
+  }
+ },
+ "both": [
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_copiedToClipboard",
+   "text": "Copied to clipboard.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_confirmIgnoreTitle",
+   "text": "Confirm",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_filterAllMods",
+   "text": "All mods",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_filterBtn",
+   "text": "Filter by mod",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_filterDropdownEntry",
+   "text": "{0} ({1} news{2})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_filterIgnoredModSuffix",
+   "text": ", ignored",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_filterStatus",
+   "text": "Current filter: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_ignoreTooltip",
+   "text": "Notify about future updates from this mod",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_link",
+   "text": "Link",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_linkDesc",
+   "text": "Opens your browser on a page where you can learn more about this update.\\nAddress: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_title",
+   "text": "New Mod Features",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_update",
+   "text": "{0} v{1}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_loadOrderWarning_title",
+   "text": "Improper mod load order",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_abortBtn",
+   "text": "Abort",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_browseBtn",
+   "text": "Open in browser",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_copy",
+   "text": "Copy",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_filesBtn",
+   "text": "Files",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_github_token",
+   "text": "GitHub access token",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_github_token_tip",
+   "text": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings > Developer Settings > Personal access tokens. Leave blank to publish to the public HugsLib account.\\n\\nLogs published to your account can only be viewed by others using a link.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_openLogFile",
+   "text": "Open log file",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_openModsDir",
+   "text": "Open mods folder",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_openSaveDir",
+   "text": "Open save folder",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_platformInfo",
+   "text": "Include platform information",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_platformInfo_tip",
+   "text": "Includes information about your CPU, memory and video card in the log.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_publisherTitle",
+   "text": "Log publisher",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_retryBtn",
+   "text": "Retry",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_shareBtn",
+   "text": "Share logs",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_shareConfirmMessage",
+   "text": "Upload game logs now?\\n\\nThis will post your game logs to a public server and give you the link to share with others. This is useful if you need help fixing a problem or would like to report an issue to a mod author.\\n\\nNo private information will be shared.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_shareConfirmTitle",
+   "text": "Confirm",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_shortUrls",
+   "text": "Use URL shortener",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_shortUrls_tip",
+   "text": "Produces a shorter link when uploading. Not recommended on Steam- short links are automatically removed.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_shortening",
+   "text": "Getting link{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_toClipboardBtn",
+   "text": "To clipboard",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_unlimitedLogSize",
+   "text": "Allow unlimited log size",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_unlimitedLogSize_tip",
+   "text": "When disabled, log size is limited to 10K lines to prevent very long logs from causing issues.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_uploadBtn",
+   "text": "Upload",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_uploadError",
+   "text": "Upload error: {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_uploaded",
+   "text": "Upload complete!",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_uploading",
+   "text": "Uploading{0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_logs_useRecommendedSettings",
+   "text": "Use recommended settings",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_restart_language_text",
+   "text": "The game language has changed. The game will now restart automatically.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_allNews_button",
+   "text": "Show now",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_allNews_desc",
+   "text": "Shows all available mod update news, including those that have already been displayed.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_allNews_fail",
+   "text": "None of the active mods have any update news to display.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_allNews_label",
+   "text": "All mod update news",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_collapse_mod",
+   "text": "Close",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_expand_mod",
+   "text": "Open",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_ignoredUpdateNews_label",
+   "text": "Ignored mod update news providers",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_logPublisherSettings_label",
+   "text": "Log publisher preferences",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_mod_name_title",
+   "text": "Mod settings for {0}",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_quickstartSettings_label",
+   "text": "Quickstart configuration",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_showNews_desc",
+   "text": "Allows newly installed mods to highlight their new features in a pop-up window when you start your game.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_showNews_label",
+   "text": "Show mod update news",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_show_settings",
+   "text": "Show settings",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_setting_unnamed_mod",
+   "text": "(unnamed mod)",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_btn",
+   "text": "Mod Settings",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_hiddenSettingsHeader",
+   "text": "Hidden mod settings:",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_noSettings",
+   "text": "No mods with configurable settings are loaded.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetAll",
+   "text": "Reset all",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetAll_prompt",
+   "text": "Reset all mod settings to their original values?",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetIncludeHidden",
+   "text": "Include hidden settings ({0})",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetMod",
+   "text": "Reset {0} settings to default",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetMod_prompt",
+   "text": "Reset all {0} settings to their original values?",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetSuccessMessage",
+   "text": "{0} settings have been reset.",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_resetValue",
+   "text": "Reset setting to default",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_settings_windowTitle",
+   "text": "Mod Settings",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_updateRequired_title",
+   "text": "Library update required",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_updateRequired_updateBtn",
+   "text": "Update now",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "test_enumSetting_DefaultValue",
+   "text": "Default Value",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "test_enumSetting_ValueOne",
+   "text": "Value One",
+   "tg_mult": 1,
+   "rl_mult": 1
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "test_enumSetting_ValueTwo",
+   "text": "Value Two",
+   "tg_mult": 1,
+   "rl_mult": 1
+  }
+ ],
+ "both_li_fold": [],
+ "rimloc_only": [],
+ "competitor_only": [
+  {
+   "kind": "def",
+   "deftype": "KeyBindingCategoryDef",
+   "key": "HugsLibShortcuts.description",
+   "file_tg": "818773962/Defs/KeyBindingCategoryDefs/KeyBindingCategories.xml",
+   "text": "Shortcuts for the HugsLib library.",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingCategoryDef",
+   "key": "HugsLibShortcuts.label",
+   "file_tg": "818773962/Defs/KeyBindingCategoryDefs/KeyBindingCategories.xml",
+   "text": "HugsLib",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingDef",
+   "key": "HLOpenModSettings.label",
+   "file_tg": "818773962/Defs/KeyBindingDefs/KeyBindings.xml",
+   "text": "Open Mod Setting window",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingDef",
+   "key": "HLOpenUpdateNews.label",
+   "file_tg": "818773962/Defs/KeyBindingDefs/KeyBindings.xml",
+   "text": "Open Mod Update News window",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingDef",
+   "key": "OpenLogFile.label",
+   "file_tg": "818773962/Defs/KeyBindingDefs/KeyBindings.xml",
+   "text": "Open log file",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingDef",
+   "key": "PublishLogs.label",
+   "file_tg": "818773962/Defs/KeyBindingDefs/KeyBindings.xml",
+   "text": "Publish log file (hold Ctrl)",
+   "kind_tg": "def",
+   "tg_mult": 1
+  },
+  {
+   "kind": "def",
+   "deftype": "KeyBindingDef",
+   "key": "RestartRimworld.label",
+   "file_tg": "818773962/Defs/KeyBindingDefs/KeyBindings.xml",
+   "text": "Restart Rimworld",
+   "kind_tg": "def",
+   "tg_mult": 1
+  }
+ ],
+ "semantic": [
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_confirmIgnore",
+   "file_tg": "818773962/Languages/English/Keyed/English.xml",
+   "file_rl": "818773962/Languages/English/Keyed/English.xml",
+   "text_tg": "Ignore future update news from {0}?\\n\\nCan be re-enabled in Mod Options > All mod update news",
+   "text_rl": "Ignore future update news from {0}?\\n\\nCan be re-enabled in Mod OptionsAll mod update news"
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_features_description",
+   "file_tg": "818773962/Languages/English/Keyed/English.xml",
+   "file_rl": "818773962/Languages/English/Keyed/English.xml",
+   "text_tg": "The following mod updates were installed, and these are the new features and improvements that came with them.\\nYou can disable this dialog in Options > Mod Settings",
+   "text_rl": "The following mod updates were installed, and these are the new features and improvements that came with them.\\nYou can disable this dialog in OptionsMod Settings"
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_loadOrderWarning_text",
+   "file_tg": "818773962/Languages/English/Keyed/English.xml",
+   "file_rl": "818773962/Languages/English/Keyed/English.xml",
+   "text_tg": "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game.",
+   "text_rl": "bThe HugsLib mod/bshould always be loaded afterbCore/bto avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game."
+  },
+  {
+   "kind": "keyed",
+   "deftype": "",
+   "key": "HugsLib_updateRequired_text",
+   "file_tg": "818773962/Languages/English/Keyed/English.xml",
+   "file_rl": "818773962/Languages/English/Keyed/English.xml",
+   "text_tg": "<b>{0}</b> requires version <b>{1}</b> of the <b>HugsLib library</b> to work properly.\\n\\nWould you like to update it now?",
+   "text_rl": "b{0}/brequires versionb{1}/bof thebHugsLib library/bto work properly.\\n\\nWould you like to update it now?"
+  }
+ ]
+}

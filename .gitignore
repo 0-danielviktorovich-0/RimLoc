@@ -55,3 +55,7 @@ Thumbs.db
 # (no trailing slash: the worktree entry is a SYMLINK, not a directory)
 node_modules
 __pycache__/
+
+# generated build artifacts (local)
+gui/tauri-app/frontend-react/tsconfig.tsbuildinfo
+testlab/runtime_bridge/bin/

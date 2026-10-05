@@ -129,6 +129,23 @@ pub enum PatchStage {
     Partial,
 }
 
+/// UI-facing projection of ONE entry's effective source location + winner
+/// reason (Source Inspector live bridge, wave 12). Additive OPTIONAL field
+/// `source_ref` on [`SourceEntry`]: the session layer fills it at snapshot
+/// assembly so the client renders the real source without computing any
+/// precedence; the persisted canonical state stays projection-free.
+/// `file` is relative to the project root (`catalog.en.json` for ui-catalog
+/// entries); `line` stays `None` wherever the parser recorded none — never
+/// fabricated; `selected_by` mirrors the `rimloc_core::winner_reason`
+/// vocabulary (same strings as `SourceProvenance.selected_by`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct EntrySourceRef {
+    pub file: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub line: Option<usize>,
+    pub selected_by: String,
+}
+
 /// The canonical source unit. `id` is target-independent; translations live
 /// in [`Translation`] keyed by locale.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
@@ -143,6 +160,12 @@ pub struct SourceEntry {
     /// TKey serialization metadata when kind == EntryKind::TKey.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tkey: Option<rimloc_core::TKeyMeta>,
+    /// Live Source Inspector projection (wave 12): effective file + line +
+    /// winner reason, project-root-relative. `None` = not projected (legacy
+    /// payloads, inventories without a recorded winner reason) — append-only
+    /// additive field, absent from the wire rather than null.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_ref: Option<EntrySourceRef>,
 }
 
 /// Translated state for one (source entry, target locale) pair.
@@ -233,12 +256,63 @@ pub enum ViewLabel {
     Potential,
 }
 
+/// Which localization adapter owns this project's source semantics (§F9,
+/// docs/architecture/LOCALIZATION_ADAPTERS.md): stable platform identity
+/// plus the contract versions the project was written against. ONE canonical
+/// core hosts MANY adapters (RimWorld, RimLoc application self-localization,
+/// ... future targets); a project created by an unavailable/incompatible
+/// adapter must fail to load with useful diagnostics, never open corrupt.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct AdapterIdentity {
+    /// Stable adapter id (see [`adapter_ids`]); selects the semantics of
+    /// every adapter-specific field in the project (EntryKind families,
+    /// context fields, provenance vocabulary).
+    pub adapter_id: String,
+    /// Adapter contract version the project was WRITTEN against.
+    pub adapter_api_version: String,
+    /// Adapter's own project-schema version (its additive/breaking policy).
+    pub adapter_project_schema_version: String,
+}
+
+impl Default for AdapterIdentity {
+    // Legacy projects predate the field — they are RimWorld mod projects;
+    // the default keeps those envelopes loadable unchanged.
+    fn default() -> Self {
+        Self {
+            adapter_id: adapter_ids::RIMWORLD.to_string(),
+            adapter_api_version: "1".to_string(),
+            adapter_project_schema_version: "1".to_string(),
+        }
+    }
+}
+
+/// Built-in first-party adapter ids. Anything else fails the load with an
+/// `unknown adapter` diagnostic naming the owning application.
+pub mod adapter_ids {
+    pub const RIMWORLD: &str = "rimworld";
+    pub const RIMLOC_APPLICATION: &str = "rimloc-application";
+}
+
 /// The canonical project: one source inventory + per-locale translations.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Project {
+    /// Owning localization adapter (§F9). RimWorld-specific knowledge lives
+    /// behind this identity — the generic editor/TM/review core never
+    /// assumes it.
+    #[serde(default)]
+    pub adapter: AdapterIdentity,
     pub context: InventoryContext,
     pub entries: Vec<SourceEntry>,
     pub translations: Vec<Translation>,
+    /// Project glossary (wave 13) — GENERIC core state (adapter-independent;
+    /// see rimloc_domain::glossary). `default` keeps legacy files loadable.
+    #[serde(default)]
+    pub glossary: Vec<crate::glossary::GlossaryTerm>,
+    /// Translation memory (TM live, owner decision A+B+C) — GENERIC core
+    /// state (see rimloc_domain::tm). Records are unique per
+    /// (source_text, target_locale). `default` keeps legacy files loadable.
+    #[serde(default)]
+    pub tm: Vec<crate::tm::TranslationMemoryEntry>,
 }
 
 impl Project {
@@ -337,6 +411,7 @@ mod tests {
                 selected_by: Some("loadfolders".into()),
             },
             tkey: None,
+            source_ref: None,
         }
     }
 
@@ -384,6 +459,35 @@ mod tests {
         // Older artifacts without the field still deserialize (serde default).
         let legacy: SourceProvenance = serde_json::from_str(r#"{"patch_stage": "none"}"#).unwrap();
         assert!(legacy.selected_by.is_none());
+    }
+
+    /// Live Source Inspector bridge (wave 12): `source_ref` is an
+    /// append-only OPTIONAL entry field — omitted from the wire when not
+    /// projected, and older payloads without it still deserialize.
+    #[test]
+    fn source_ref_roundtrips_and_stays_absent_when_unprojected() {
+        let mut e = entry("Q.Key");
+        assert!(e.source_ref.is_none());
+        let json = serde_json::to_value(&e).unwrap();
+        // Absent means ABSENT on the wire, not null.
+        assert!(json.get("source_ref").is_none());
+
+        e.source_ref = Some(EntrySourceRef {
+            file: "Defs/X.xml".into(),
+            line: Some(3),
+            selected_by: "loadfolders".into(),
+        });
+        let json = serde_json::to_value(&e).unwrap();
+        assert_eq!(json["source_ref"]["file"], "Defs/X.xml");
+        assert_eq!(json["source_ref"]["line"], 3);
+        assert_eq!(json["source_ref"]["selected_by"], "loadfolders");
+        let back: SourceEntry = serde_json::from_value(json).unwrap();
+        assert_eq!(back.source_ref, e.source_ref);
+
+        // A legacy payload (no source_ref, no line) loads with honest None.
+        let legacy: SourceEntry =
+            serde_json::from_str(r#"{"id":{"kind":"t_key","key":"Q.Key"},"text":"Hello","source_locale":"en","contexts":[],"provenance":{}}"#).unwrap();
+        assert!(legacy.source_ref.is_none());
     }
 
     #[test]

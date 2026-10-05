@@ -1,5 +1,4 @@
 use crate::Result;
-use quick_xml::{events::Event, Reader};
 use rimloc_domain::{ImportFileStat as DFileStat, ImportSummary as DSummary};
 use std::path::{Path, PathBuf};
 
@@ -20,52 +19,16 @@ pub struct FileStat {
 
 pub type ImportSummary = DSummary;
 
+/// Read an existing Keyed/LanguageData XML file into a key -> value map for
+/// import diffing. Delegates to the canonical Keyed reader so that entity
+/// markup (`&lt;b&gt;...&lt;/b&gt;`) resolves to the same in-game text
+/// (`<b>...</b>`) the PO side carries — otherwise every marked-up value would
+/// look "changed" on each import.
 fn parse_language_file_keys(
     path: &Path,
-) -> std::io::Result<std::collections::HashMap<String, String>> {
-    let content = std::fs::read_to_string(path)?;
-    let mut reader = Reader::from_str(&content);
-    reader.config_mut().trim_text(true);
-    let mut buf = Vec::new();
-    let mut stack: Vec<String> = Vec::new();
-    let mut key: Option<String> = None;
-    let mut acc = std::collections::HashMap::new();
-    loop {
-        match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(e)) => {
-                let name = e.name().as_ref().to_owned();
-                stack.push(name.clone());
-                if stack.len() == 2 && !name.is_empty() {
-                    key = Some(name);
-                }
-            }
-            Ok(Event::End(_)) => {
-                if stack.len() == 2 {
-                    key = None;
-                }
-                stack.pop();
-            }
-            Ok(Event::Text(t)) => {
-                if stack.len() == 2 {
-                    if let Some(k) = key.as_ref() {
-                        let v = t.xml10_content().to_string();
-                        acc.insert(k.clone(), v);
-                    }
-                }
-            }
-            Ok(Event::Empty(e)) => {
-                if stack.len() == 1 {
-                    let name = e.name().as_ref().to_owned();
-                    acc.insert(name, String::new());
-                }
-            }
-            Ok(Event::Eof) => break,
-            Err(_) => break,
-            _ => {}
-        }
-        buf.clear();
-    }
-    Ok(acc)
+) -> std::io::Result<std::collections::BTreeMap<String, String>> {
+    rimloc_parsers_xml::read_keyed_file_map(path)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string()))
 }
 
 /// Import a PO file into a single XML file at `out_xml`.

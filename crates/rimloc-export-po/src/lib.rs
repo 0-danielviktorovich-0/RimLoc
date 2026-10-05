@@ -174,4 +174,35 @@ mod tests {
         // msgid
         assert!(s.contains(r#"msgid "Hello""#));
     }
+
+    #[test]
+    fn po_msgid_keeps_xml_markup_verbatim() {
+        // MUST_FIX_BEFORE_BETA: разметка из Keyed (`&lt;b&gt;...&lt;/b&gt;` в
+        // XML, `<b>...</b>` в распарсенном source) попадает в msgid как есть:
+        // PO не требует экранирования угловых скобок, а двойной unescape
+        // (и потеря тегов `bvalue/b`) недопустимы.
+        let tmp = NamedTempFile::new().unwrap();
+        let units = vec![unit(
+            "HugsLib_loadOrderWarning_text",
+            "<b>The HugsLib mod</b> should always be loaded after <b>Core</b>",
+            79,
+        )];
+        write_po(tmp.path(), &units, Some("ru")).unwrap();
+
+        let s = fs::read_to_string(tmp.path()).unwrap();
+        assert!(
+            s.contains(
+                r#"msgid "<b>The HugsLib mod</b> should always be loaded after <b>Core</b>""#
+            ),
+            "msgid must keep parsed markup verbatim, got: {s}"
+        );
+        assert!(
+            !s.contains("bvalue/b"),
+            "stripped-tag corruption must not return"
+        );
+        assert!(
+            !s.contains("&lt;") && !s.contains("&amp;"),
+            "msgid must not double-escape entities"
+        );
+    }
 }

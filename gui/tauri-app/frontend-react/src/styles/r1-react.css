@@ -1,0 +1,304 @@
+/* React-lane bridge styles: the R1 system targets the Lovable DOM (shadcn
+ * Button/Link). These few classes bridge React elements onto the same
+ * tokens — additive only, never edits to r1.css (mandate: fidelity first). */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 5px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { background: var(--accent); color: var(--primary); }
+button:disabled { opacity: 0.5; cursor: default; }
+.icon-btn { padding: 6px; border: 0; background: transparent; color: var(--muted-foreground); }
+.icon-btn:hover { color: var(--primary); background: var(--accent); }
+.btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.1); }
+
+/* Workspace three-pane layout (R1): resizable center/inspector. */
+.ws-root { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.ws-panes { flex: 1; min-height: 0; display: flex; }
+.ws-panes [data-panel] { display: flex; min-width: 0; min-height: 0; }
+.ws-panes [data-panel] > .entries-pane, .ws-panes [data-panel] > .detail-pane { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
+.ws-handle { width: 5px; cursor: col-resize; background: transparent; border-left: 1px solid var(--border); margin: 0 2px; border-radius: 0; padding: 0; min-height: 100%; }
+.ws-handle:hover { background: var(--accent); }
+.ws-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 28px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
+.ws-error { padding: 8px 28px; color: var(--destructive); }
+.route-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.page-content { overflow-y: auto; }
+.entries-pane .entry-list { border: 0; }
+
+/* Nav anchors: the Lovable shell rendered nav items as shadcn Buttons
+ * (inline-flex rows); the React lane uses real <a> elements. */
+.primary-nav a,
+.sidebar-bottom a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 39px;
+  padding: 0 12px;
+  gap: 11px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  border-radius: 5px;
+  text-decoration: none;
+}
+.primary-nav a { font-size: 11px; padding: 0 8px; }
+.primary-nav a:hover, .sidebar-bottom a:hover { background: var(--accent); color: var(--primary); }
+.primary-nav a.active, .sidebar-bottom a.active { background: var(--accent); color: var(--primary); font-weight: 500; }
+.sidebar-bottom a { margin: 0 12px 10px; }
+
+/* App frame: the workspace fills the viewport; topbar stays fixed at the
+ * top of app-main (the first capture let the page scroll it away). */
+html, body { height: 100%; }
+.rim-app { height: 100vh; }
+.app-main { margin-left: 222px; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.route-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.app-footer { flex-shrink: 0; }
+
+/* Entry rows: workstation density (63px, line-clamp-2 per canon). */
+.entry-row { min-height: 63px; height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; align-content: center; padding: 10px 13px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
+.entry-row:hover:not(:disabled) { background: var(--secondary); color: var(--foreground); }
+.entry-row.selected { background: var(--accent); color: var(--primary); box-shadow: inset 2px 0 0 var(--primary); }
+.row-source { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row-source span { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.row-source code { font-size: 9px; color: var(--muted-foreground); font-family: var(--font-mono); }
+.row-target { font-size: 12px; color: var(--foreground); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.row-target.untranslated { color: var(--muted-foreground); font-style: italic; }
+
+/* Workspace heading zone (canon): eyebrow + display h1 + controls. */
+.workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 28px 18px; border-bottom: 1px solid var(--border); }
+.workspace-heading .heading-eyebrow { font-size: 8px; font-weight: 500; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; }
+.workspace-heading h1 { font-family: var(--font-display); font-size: 30px; font-weight: 400; }
+.workspace-heading p { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; }
+.heading-controls { display: flex; align-items: center; gap: 10px; }
+.heading-controls .version-select { font-size: 10px; color: var(--muted-foreground); display: inline-flex; gap: 6px; align-items: center; }
+
+/* Inspector: long paths truncate, never blow the pane. */
+.context-content code { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+
+/* Sidebar progress block (canon): live percent of translated strings. */
+.sidebar-progress { margin: auto 20px 0; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
+.sidebar-progress strong { font-size: 20px; font-family: var(--font-display); }
+
+/* Glossary table + confirm row (canon shapes). */
+.glossary-table > div { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; padding: 10px 4px; border-bottom: 1px solid var(--border); align-items: center; }
+.glossary-head { font-size: 7px; color: var(--muted-foreground); text-transform: uppercase; }
+.confirm-row { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted-foreground); }
+button.danger { color: var(--destructive); border-color: var(--destructive); }
+.ml-auto { margin-left: auto; }
+.text-destructive { color: var(--destructive); }
+.text-warning { color: var(--warning); }
+.text-success { color: var(--success); }
+
+/* LEFT tree (canon shapes; data = real inventory kind groups). */
+.ws-center { display: flex; flex: 1; min-width: 0; min-height: 0; }
+.file-tree { width: 176px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 8px; overflow-y: auto; }
+.file-tree .pane-title { height: 49px; display: flex; align-items: center; justify-content: space-between; font-size: 8px; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0.04em; }
+.tree-root, .file-item { justify-content: flex-start; width: 100%; height: 31px; padding: 0 8px; font-size: 11px; gap: 8px; color: var(--muted-foreground); border: 0; background: transparent; }
+.tree-root.active, .file-item.active { background: var(--accent); color: var(--primary); }
+.tree-root span, .file-item small { margin-left: auto; font-family: var(--font-mono); font-size: 9px; color: var(--muted-foreground); }
+.file-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tree-bottom { margin-top: auto; padding: 12px 6px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; font-size: 10px; }
+.tree-bottom code { font-family: var(--font-mono); font-size: 9px; }
+
+/* Topbar primary action: compact, never clips the corner (round 3). */
+.topbar-actions { padding-right: 4px; }
+.topbar-actions .btn-primary { height: 34px; padding: 0 14px; font-size: 12px; white-space: nowrap; }
+
+/* Checks: unify tabs to the underline pattern (one language per row). */
+.section-tabs button { border: 0; background: transparent; color: var(--muted-foreground); border-radius: 0; padding: 6px 2px; margin-right: 14px; border-bottom: 2px solid transparent; }
+.section-tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
+.section-tabs button:hover:not(:disabled) { background: transparent; color: var(--primary); }
+
+/* Finding row: aligned baselines. */
+.finding-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; }
+.finding-row p { grid-column: 2; }
+.finding-row div { display: flex; gap: 10px; align-items: baseline; }
+
+/* Glossary: primary CTA + honest copy already in i18n. */
+.add-term button[type="submit"] { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.add-term button[type="submit"]:hover:not(:disabled) { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.1); }
+
+/* Sidebar progress block: live percent (canon bottom block). */
+.sidebar-progress progress { margin: 0; }
+
+/* Build/Export (canon shapes). */
+.build-grid { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+.out-dir-row { display: flex; gap: 8px; }
+.out-dir-row input { flex: 1; min-width: 0; }
+.build-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+.build-preview { border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+.preview-heading { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--muted-foreground); margin-bottom: 10px; }
+.safe-label { display: inline-flex; gap: 6px; align-items: center; font-size: 11px; color: var(--success); }
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 11px; color: var(--muted-foreground); }
+
+/* Wizard overlay (canon dialog shapes). */
+.wizard-overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center; z-index: 50; }
+.rim-dialog { width: 530px; max-width: calc(100vw - 40px); background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); padding: 30px; }
+.dialog-header h2 { font-family: var(--font-display); font-size: 24px; font-weight: 400; margin: 6px 0; }
+.dialog-header p { font-size: 11px; color: var(--muted-foreground); }
+.wizard-dots { display: flex; gap: 4px; margin: 14px 0 18px; }
+.wizard-dots div { height: 3px; flex: 1; background: var(--border); border-radius: 2px; }
+.wizard-dots div.done { background: var(--primary); }
+.file-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 24px; border: 1px dashed var(--border); border-radius: 6px; margin-bottom: 12px; color: var(--muted-foreground); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wizard-summary { text-align: center; padding: 10px 0; }
+.success-emblem { width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--primary); display: grid; place-items: center; margin: 0 auto 10px; }
+.wizard-summary h3 { font-family: var(--font-display); font-size: 26px; font-weight: 400; }
+.wizard-summary code { font-family: var(--font-mono); font-size: 9px; color: var(--muted-foreground); display: block; margin: 8px 0; word-break: break-all; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* WCAG AA token deviation (STANDARD REQUIREMENT, §56/§17): the Lovable
+ * canon muted-foreground oklch(.565 .018 40) measures 4.43:1 on background
+ * and 4.21:1 on sidebar — below 4.5:1 for 13px text. Darkened to .52:
+ * ≥4.5 in both themes. Deliberate, recorded in the adaptation doc. */
+:root { --muted-foreground: oklch(.52 .018 40); }
+.dark { --muted-foreground: oklch(.72 .014 60); }
+
+/* Settings sections (canon shapes). */
+.settings-section { margin-bottom: 22px; padding-bottom: 6px; }
+.settings-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.capability-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+
+/* Round-4 critic fixes. */
+
+/* (1) Topbar primary button: compact, fits, canon dark (wine bg + light text
+ *    — no light-pink block in dark). */
+.topbar-actions .btn-primary {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.btn-primary:hover:not(:disabled) { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.08); }
+
+/* (2) Selected entry row in DARK: dark wine tint + light text (the generic
+ *    `button` base background=card leaked light through the selection). */
+.entry-row.selected, .entry-row.selected:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--primary);
+}
+.dark .entry-row.selected { color: var(--foreground); }
+.dark .entry-row.selected .row-target { color: var(--foreground); }
+
+/* (3) Entry rows: canon density — compact single-line source + target grid
+ *    (63px total, line-clamp 1 per cell at default density). */
+.entry-row { grid-template-columns: 1.2fr 1fr; padding: 8px 13px; }
+.row-source span { -webkit-line-clamp: 1; }
+.row-target { -webkit-line-clamp: 1; }
+
+/* (4) File tree: canon 176px width (not expanded by flex). */
+.ws-center .file-tree { width: 176px; max-width: 176px; }
+
+/* (5) Editor actions: never clipped — scrollable body. */
+.detail-body { overflow-y: auto; min-height: 0; }
+
+/* (6) Nav: keep 39px rhythm — two-line labels truncate. */
+.primary-nav a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Round-5 critic fixes (final acceptance). */
+
+/* D1: topbar primary anchor — inline-flex (anchors are inline by default,
+ * height never applied), explicit size that fits the 66px topbar. */
+.topbar-actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* D2: dark selected row — explicit dark wine tint + foreground text (the
+ * var-based rule resolved light values in this WebKit for the virtualized
+ * rows; literal oklch cannot be affected by any scoping quirk). */
+.dark .entry-row.selected {
+  background: oklch(.35 .04 15);
+  color: var(--foreground);
+}
+.dark .entry-row.selected .row-source > span {
+  color: var(--primary);
+}
+.dark .entry-row.selected .row-target {
+  color: var(--muted-foreground);
+}
+
+/* D4: glossary table bottom padding — last row clears the status strip. */
+.glossary-table { padding-bottom: 28px; }
+
+/* Round-6: NUCLEAR dark fixes — literal colors, html.scoped, !important.
+ * Root cause of the light-leak: var() resolution inside the virtualized
+ * list rendered LIGHT values in this WebKit build despite html.dark. The
+ * literal oklch/hex values cannot be affected by any scoping or cascade
+ * quirk. Revisit if tokens.css ever redefines these roles. */
+html.dark .entry-row.selected,
+html.dark .entry-row.selected:hover:not(:disabled) {
+  background: oklch(.35 .045 15) !important;
+  color: oklch(.93 .012 60) !important;
+}
+html.dark .entry-row.selected .row-source > span {
+  color: oklch(.93 .012 60) !important;
+  font-weight: 500 !important;
+}
+html.dark .entry-row.selected .row-target {
+  color: oklch(.80 .05 40) !important;
+}
+html.dark .entry-row.selected code {
+  color: oklch(.72 .02 40) !important;
+}
+html.dark .topbar-actions .btn-primary {
+  background: oklch(.50 .11 15) !important;
+  color: oklch(.96 .012 40) !important;
+  border-color: oklch(.50 .11 15) !important;
+}
+html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
+  background: oklch(.56 .12 15) !important;
+  color: oklch(.96 .012 40) !important;
+}
+
+/* Editor action bar: always fully visible inside the pane. */
+.detail-actions { flex-shrink: 0; padding-bottom: 6px; }
+
+/* Providers: status colors reuse the canon dot/token vocabulary. */
+.text-info { color: var(--info); }
+
+/* Command palette (Cmd+K). */
+.palette-overlay { position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: start center; padding-top: 80px; z-index: 100; }
+.palette-box { width: 420px; max-width: calc(100vw - 40px); background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow); padding: 8px; }
+.palette-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 5px; background: var(--background); color: var(--foreground); font: inherit; outline: none; }
+.palette-input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--accent); }
+.palette-list { margin-top: 6px; max-height: 280px; overflow-y: auto; }
+.palette-item { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 0; background: transparent; color: var(--foreground); font: inherit; cursor: pointer; border-radius: 5px; }
+.palette-item:hover { background: var(--accent); color: var(--primary); }
+/* Keyboard-active option (activeIndex; same visual language as hover, cf.
+   Svelte canon .opt.active in CommandPalette.svelte). */
+.palette-item.palette-item-active, .palette-item.palette-item-active:hover { background: var(--accent); color: var(--primary); }
+.palette-empty { padding: 12px; color: var(--muted-foreground); font-size: 11px; }
+
+/* Translation memory (TM live, owner decision A+B+C): the glossary table
+   pattern extended to the record shape (source / target / locale / status /
+   provenance / actions). Reuses .glossary-table chrome; only the grid and
+   the filter/import affordances are TM-specific. */
+.tm-table > div { grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) 96px 104px 76px 32px; }
+.tm-table > div > select { max-width: 104px; font-size: 10px; height: 26px; }
+.tm-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
+.tm-filters select, .tm-filters input { height: 33px; font-size: 10px; }
+.tm-filters .lookup-field { flex: 1; min-width: 220px; }
+.tm-import-area textarea { width: 100%; min-height: 110px; font-size: 11px; font-family: var(--font-mono); margin-top: 10px; }
+.tm-import-area .import-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.tm-import-area .import-actions button { font-size: 10px; height: 33px; }
+.tm-import-result { font-size: 10px; color: var(--muted-foreground); }
+.tm-count { font-size: 9px; color: var(--muted-foreground); margin-bottom: 12px; }

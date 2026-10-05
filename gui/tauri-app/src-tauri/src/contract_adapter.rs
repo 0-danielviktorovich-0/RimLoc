@@ -22,7 +22,13 @@
 
 use rimloc_services::contract::{
     capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse,
-    CapabilityReport, CreateProjectRequest, ProjectSnapshot, ProjectSummary,
+    CapabilityReport, CreateProjectRequest, ProjectGlossaryDeleteRequest,
+    ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse,
+    ProjectSnapshot, ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
+    ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
+    ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, TmDeleteRequest,
+    TmDeleteResponse, TmImportRequest, TmImportResponse, TmListRequest, TmListResponse,
+    TmLookupRequest, TmLookupResponse, TmUpsertRequest, TmUpsertResponse,
 };
 use rimloc_services::session::ProjectSessionManager;
 use serde::Serialize;
@@ -44,12 +50,45 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // (services landed in 47758cb; this registration is the transport).
     "project_validate",
     "project_export",
+    "project_build_mod",
     "project_diagnose",
+    // W2 (existing-pack flow): dry-run analysis + guarded application of an
+    // existing translation pack against the open project.
+    "project_import_existing",
+    "project_apply_existing",
+    // Wave 13: project glossary — generic project state, persist-before-ack.
+    "project_glossary",
+    "project_glossary_upsert",
+    "project_glossary_delete",
+    // TM live (owner decision A+B+C): translation memory — the glossary
+    // pattern again (Project.tm, persist-before-ack).
+    "project_tm_list",
+    "project_tm_upsert",
+    "project_tm_delete",
+    "project_tm_import",
+    "project_tm_lookup",
+    // Provider instances (provider/settings parity): app-global CRUD; the
+    // API key NEVER crosses into a file — it goes to the OS keychain.
+    "contract_provider_instance_list",
+    "contract_provider_instance_upsert",
+    "contract_provider_instance_delete",
+    "contract_provider_instance_validate",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
 /// (identifier `com.rimloc.gui` from tauri.conf).
+///
+/// Test isolation (owner directive §4, 2026-10-01): automation instances
+/// launched with RIMLOC_DATA_DIR=<disposable root> get a fully separate
+/// projects universe — owner managed projects/recents are absent from the
+/// instance's discovery root entirely. Production never sets the variable;
+/// the write fence in the T6 harness (§3) is the second layer.
 pub fn default_managed_root() -> PathBuf {
+    if let Ok(dir) = std::env::var("RIMLOC_DATA_DIR") {
+        if !dir.is_empty() {
+            return PathBuf::from(dir).join("managed");
+        }
+    }
     dirs::data_dir()
         .unwrap_or_else(std::env::temp_dir)
         .join("com.rimloc.gui")
@@ -62,17 +101,56 @@ pub struct ContractState {
     manager: Mutex<ProjectSessionManager>,
 }
 
+/// Session manager construction for the shell: with the `keychain` feature
+/// the manager gets the OS-keychain secret sink (provider API keys), without
+/// it the manager stays sink-less and secret-bearing provider upserts are
+/// refused honestly by the services layer.
+fn build_session_manager(managed_root: PathBuf) -> std::io::Result<ProjectSessionManager> {
+    #[cfg(feature = "keychain")]
+    {
+        let sink = std::sync::Arc::new(
+            rimloc_services::providers::KeychainSecretSink::with_default_service(),
+        );
+        ProjectSessionManager::new_with_secret_sink(managed_root, sink)
+    }
+    #[cfg(not(feature = "keychain"))]
+    {
+        ProjectSessionManager::new(managed_root)
+    }
+}
+
 impl ContractState {
     pub fn new(managed_root: PathBuf) -> std::io::Result<Self> {
         Ok(Self {
-            manager: Mutex::new(ProjectSessionManager::new(managed_root)?),
+            manager: Mutex::new(build_session_manager(managed_root)?),
         })
+    }
+
+    /// Run one operation against the session manager (the ONE state seam;
+    /// the manager serializes per project internally). Used by the shell
+    /// commands outside `contract_adapter` that need session services —
+    /// business logic stays in `rimloc-services`, the adapter owns state
+    /// and wire-shape only.
+    pub fn with_manager<R>(&self, f: impl FnOnce(&ProjectSessionManager) -> R) -> R {
+        let manager = self
+            .manager
+            .lock()
+            .expect("contract session registry poisoned");
+        f(&manager)
     }
 
     #[cfg(test)]
     fn with_root_for_tests(root: &std::path::Path) -> std::io::Result<Self> {
         Self::new(root.to_path_buf())
     }
+}
+
+/// Agent trace (RIMLOC_TRACE=1): command name + duration + ok/error —
+/// payload details deliberately stay out of the log.
+fn traced_simple<T, E>(cmd: &'static str, body: impl FnOnce() -> Result<T, E>) -> Result<T, E> {
+    crate::trace::traced(cmd, body, |r| {
+        if r.is_ok() { "ok" } else { "error" }.to_string()
+    })
 }
 
 /// ui_contract_version + honest capability report (supported vs unsupported
@@ -102,10 +180,12 @@ pub fn project_create(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.create(
-        std::path::Path::new(&request.mod_root.path),
-        request.target_version.as_deref(),
-    )
+    traced_simple("project_create", || {
+        manager.create(
+            std::path::Path::new(&request.mod_root.path),
+            request.target_version.as_deref(),
+        )
+    })
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -117,7 +197,7 @@ pub fn project_open(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.open(&project_id)
+    traced_simple("project_open", || manager.open(&project_id))
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -165,6 +245,190 @@ pub fn project_refresh(
     manager.refresh(&project_id)
 }
 
+/// `project_glossary` — the project's terms (wave 13, read-only).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_glossary(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+) -> Result<Vec<rimloc_domain::glossary::GlossaryTerm>, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_glossary", || {
+        manager.glossary_list(&project_id, session_epoch)
+    })
+}
+
+/// `project_glossary_upsert` — create/update one term (case-insensitive
+/// `term` match); persist-before-ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_glossary_upsert(
+    state: State<'_, ContractState>,
+    request: ProjectGlossaryUpsertRequest,
+) -> Result<ProjectGlossaryUpsertResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_glossary_upsert", || {
+        manager.glossary_upsert(&request)
+    })
+}
+
+/// `project_glossary_delete` — remove one term; unknown term is a typed
+/// refusal, never silent success.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_glossary_delete(
+    state: State<'_, ContractState>,
+    request: ProjectGlossaryDeleteRequest,
+) -> Result<ProjectGlossaryDeleteResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_glossary_delete", || {
+        manager.glossary_delete(&request)
+    })
+}
+
+// TM live (owner decision A+B+C): the glossary command chain, repeated
+// literally — pass-through into the session manager, typed errors, trace.
+
+/// `project_tm_list` — TM records with optional locale/status/query
+/// filters (read-only).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_list(
+    state: State<'_, ContractState>,
+    request: TmListRequest,
+) -> Result<TmListResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_list", || manager.tm_list(&request))
+}
+
+/// `project_tm_upsert` — manual CRUD write (C); persist-before-ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_upsert(
+    state: State<'_, ContractState>,
+    request: TmUpsertRequest,
+) -> Result<TmUpsertResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_upsert", || manager.tm_upsert(&request))
+}
+
+/// `project_tm_delete` — remove by stable id; unknown id is a typed
+/// refusal, never silent success.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_delete(
+    state: State<'_, ContractState>,
+    request: TmDeleteRequest,
+) -> Result<TmDeleteResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_delete", || manager.tm_delete(&request))
+}
+
+/// `project_tm_import` — bulk import (B), JSON or CSV; persist-before-ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_import(
+    state: State<'_, ContractState>,
+    request: TmImportRequest,
+) -> Result<TmImportResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_import", || manager.tm_import(&request))
+}
+
+/// `project_tm_lookup` — ranked candidates within one target locale
+/// (read-only).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_tm_lookup(
+    state: State<'_, ContractState>,
+    request: TmLookupRequest,
+) -> Result<TmLookupResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_tm_lookup", || manager.tm_lookup(&request))
+}
+
+// Provider instances (provider/settings parity): the TM chain again —
+// pass-through into the session manager, typed errors, trace. The adapter
+// never sees the secret value (it rides inside the request DTO once and is
+// manual-Debug-masked); `traced_simple` logs only the command + ok/error.
+
+/// `provider_instance_list` — redacted summaries (`has_key`, no secret).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_list(
+    state: State<'_, ContractState>,
+) -> Result<ProviderInstanceListResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_list", || {
+        manager.provider_instance_list()
+    })
+}
+
+/// `provider_instance_upsert` — create/edit; the key goes to the OS
+/// keychain, the metadata to the settings file (persist-before-ack).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_upsert(
+    state: State<'_, ContractState>,
+    request: ProviderInstanceUpsertRequest,
+) -> Result<ProviderInstanceUpsertResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_upsert", || {
+        manager.provider_instance_upsert(&request)
+    })
+}
+
+/// `provider_instance_delete` — keychain key first, then metadata.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_delete(
+    state: State<'_, ContractState>,
+    request: ProviderInstanceDeleteRequest,
+) -> Result<ProviderInstanceDeleteResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_delete", || {
+        manager.provider_instance_delete(&request)
+    })
+}
+
+/// `provider_instance_validate` — typed form validation, no network.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_provider_instance_validate(
+    state: State<'_, ContractState>,
+    request: ProviderInstanceValidateRequest,
+) -> Result<ProviderInstanceValidateResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_provider_instance_validate", || {
+        manager.provider_instance_validate(&request)
+    })
+}
+
 #[tauri::command(rename_all = "snake_case")]
 pub fn project_cancel_next(
     state: State<'_, ContractState>,
@@ -194,7 +458,9 @@ pub fn project_validate(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.validate_project(&project_id, session_epoch, locale.as_deref())
+    traced_simple("project_validate", || {
+        manager.validate_project(&project_id, session_epoch, locale.as_deref())
+    })
 }
 
 /// `project_export` — isolated native output into a CALLER-SPECIFIED out
@@ -215,12 +481,44 @@ pub fn project_export(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    manager.export_project(
-        &project_id,
-        session_epoch,
-        std::path::Path::new(&out_dir),
-        &locale,
-    )
+    traced_simple("project_export", || {
+        manager.export_project(
+            &project_id,
+            session_epoch,
+            std::path::Path::new(&out_dir),
+            &locale,
+        )
+    })
+}
+
+/// `project_build_mod` — the FULL drop-in mod package (`About/About.xml` in
+/// the game-loadable `<ModMetaData>` shape + `Languages/<locale>`) into a
+/// CALLER-SPECIFIED out directory; the guard partition is identical to
+/// `project_export` (source-tree/managed-root denies, absolute form) and
+/// the result is reparse-verified before the ack.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_build_mod(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    out_dir: String,
+    locale: String,
+) -> Result<
+    rimloc_services::contract::BuildModProjectResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_build_mod", || {
+        manager.build_mod_project(
+            &project_id,
+            session_epoch,
+            std::path::Path::new(&out_dir),
+            &locale,
+        )
+    })
 }
 
 /// `project_diagnose` — sanitized support bundle over the project's last
@@ -236,6 +534,46 @@ pub fn project_diagnose(
         .lock()
         .expect("contract session registry poisoned");
     manager.diagnose(&project_id, std::path::Path::new(&out_dir))
+}
+
+/// `project_import_existing` — DRY-RUN analysis of an existing translation
+/// pack against the open project; read-only (the services guard refuses
+/// relative paths, non-directories and managed-root targets).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_import_existing(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ImportExistingRequest,
+) -> Result<
+    rimloc_services::contract::ImportExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_import_existing", || {
+        manager.import_existing(&request)
+    })
+}
+
+/// `project_apply_existing` — apply the REUSABLE set of an analyzed pack
+/// into the open project; persist-before-ack, existing translations never
+/// overwritten, ambiguous lines never auto-applied.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_apply_existing(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ApplyExistingRequest,
+) -> Result<
+    rimloc_services::contract::ApplyExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_apply_existing", || {
+        manager.apply_existing(&request)
+    })
 }
 
 /// Manage the contract state on a builder. Returns the same builder type;
@@ -274,6 +612,7 @@ mod tests {
         for cap in [
             "project_validate",
             "project_build_export",
+            "project_build_mod",
             "project_diagnostics_bundle",
         ] {
             assert!(

@@ -59,6 +59,9 @@ pub enum ProjectLoadDiagnostic {
     /// A def-type discriminator is present but empty — never a valid
     /// identity (an unknown type is `None`, not `Some("")`).
     InvalidDiscriminator { identity: String },
+    /// The project was written by an adapter this build does not know (§F9):
+    /// refuse cleanly instead of interpreting foreign semantics as RimWorld.
+    UnknownAdapter { adapter_id: String, known: String },
 }
 
 impl ProjectLoadDiagnostic {
@@ -80,6 +83,9 @@ impl ProjectLoadDiagnostic {
                 "rescan the source mod and review the affected entry"
             }
             Self::InvalidDiscriminator { .. } => "rescan and rebuild the project",
+            Self::UnknownAdapter { .. } => {
+                "open this project with the application that owns its adapter"
+            }
         }
     }
 }
@@ -114,6 +120,11 @@ impl std::fmt::Display for ProjectLoadDiagnostic {
                 f,
                 "entry identity `{identity}` has an empty def-type discriminator"
             ),
+            Self::UnknownAdapter { adapter_id, known } => write!(
+                f,
+                "unknown localization adapter `{adapter_id}` (this build speaks: {known}); \
+                 the project file is intact but its source semantics are foreign"
+            ),
         }
     }
 }
@@ -144,6 +155,13 @@ pub struct ProjectEnvelopeMeta {
     /// refuses instead of silently disabling itself).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_root: Option<String>,
+    /// Fingerprint of the source content the inventory was built from (M3):
+    /// the resolved effective view (including the resolved game version)
+    /// plus hashes of the scanned trees. Recorded at create, re-asserted on
+    /// every save; `None` on legacy envelopes - drift detection stays
+    /// honestly unavailable for them (never reported as "in sync").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_fingerprint: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -431,7 +449,25 @@ fn migrate_v1(mut project: Project) -> std::result::Result<Project, ProjectLoadD
 /// contradict TKey metadata or contexts). A present-but-empty discriminator
 /// is invalid — unknown is `None`, not `Some("")`.
 fn validate_v2(project: Project) -> std::result::Result<Project, ProjectLoadDiagnostic> {
-    use rimloc_domain::canonical::SourceEntryId;
+    use rimloc_domain::canonical::{adapter_ids, SourceEntryId};
+
+    // §F9 adapter identity gate: an unknown adapter's project is FOREIGN —
+    // its EntryKind/context semantics cannot be interpreted here. Fail with
+    // a useful diagnostic; the file on disk stays untouched.
+    let known = format!(
+        "{}, {}",
+        adapter_ids::RIMWORLD,
+        adapter_ids::RIMLOC_APPLICATION
+    );
+    match project.adapter.adapter_id.as_str() {
+        adapter_ids::RIMWORLD | adapter_ids::RIMLOC_APPLICATION => {}
+        other => {
+            return Err(ProjectLoadDiagnostic::UnknownAdapter {
+                adapter_id: other.to_string(),
+                known,
+            });
+        }
+    }
 
     let mut seen: std::collections::BTreeSet<SourceEntryId> = std::collections::BTreeSet::new();
     for e in &project.entries {
@@ -508,6 +544,7 @@ mod tests {
                     contexts: 1,
                     locations: Vec::new(),
                 }),
+                source_ref: None,
             }],
             translations: vec![Translation {
                 source_id: SourceEntryId {
@@ -547,6 +584,77 @@ mod tests {
         let loaded = load_project(&path).unwrap();
         // Exact model equality proves no field is lost on the round trip.
         assert_eq!(loaded, original);
+    }
+
+    // ---------- Adapter identity conformance (§F9/§F14, LOCALIZATION_ADAPTERS) ----------
+
+    #[test]
+    fn legacy_envelope_without_adapter_defaults_to_rimworld() {
+        let bytes = serialize_project(&sample()).unwrap();
+        let s = String::from_utf8(bytes).unwrap();
+        assert!(s.contains("\"adapter\""), "new saves record the adapter");
+        // Legacy v2 file: strip the adapter object entirely.
+        let legacy = strip_adapter_object(&s);
+        let loaded = load_project_str(&legacy).unwrap();
+        assert_eq!(loaded.adapter.adapter_id, "rimworld");
+        assert_eq!(loaded.adapter.adapter_api_version, "1");
+    }
+
+    #[test]
+    fn adapter_identity_round_trips() {
+        let mut p = sample();
+        p.adapter.adapter_id = "rimloc-application".to_string();
+        p.adapter.adapter_api_version = "1".to_string();
+        p.adapter.adapter_project_schema_version = "3".to_string();
+        let loaded =
+            load_project_str(&String::from_utf8(serialize_project(&p).unwrap()).unwrap()).unwrap();
+        assert_eq!(loaded.adapter.adapter_id, "rimloc-application");
+        assert_eq!(loaded.adapter.adapter_project_schema_version, "3");
+    }
+
+    #[test]
+    fn unknown_adapter_fails_cleanly_with_diagnostic() {
+        let bytes = serialize_project(&sample()).unwrap();
+        let s = String::from_utf8(bytes).unwrap().replace(
+            "\"adapter_id\": \"rimworld\"",
+            "\"adapter_id\": \"minecraft\"",
+        );
+        assert!(s.contains("minecraft"), "tamper must apply");
+        let err = load_project_str(&s).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("minecraft"), "{msg}");
+        assert!(msg.contains("unknown localization adapter"), "{msg}");
+        assert!(msg.contains("rimworld"), "{msg}"); // known list present
+    }
+
+    #[test]
+    fn rimworld_and_selfloc_adapter_projects_coexist() {
+        let rimworld = sample();
+        let mut selfloc = sample();
+        selfloc.adapter.adapter_id = "rimloc-application".to_string();
+        let a =
+            load_project_str(&String::from_utf8(serialize_project(&rimworld).unwrap()).unwrap())
+                .unwrap();
+        let b = load_project_str(&String::from_utf8(serialize_project(&selfloc).unwrap()).unwrap())
+            .unwrap();
+        assert_eq!(a.adapter.adapter_id, "rimworld");
+        assert_eq!(b.adapter.adapter_id, "rimloc-application");
+        // Same generic core operations on both — no RimWorld-specific reads.
+        assert_eq!(a.entries.len(), b.entries.len());
+    }
+
+    /// Remove the serialized `adapter` object from a project file (legacy
+    /// simulation). The block is a fixed-shape pretty-printed object right
+    /// after the file's opening fields.
+    fn strip_adapter_object(file: &str) -> String {
+        let start = file
+            .find("  \"adapter\": {")
+            .expect("adapter block must exist in new saves");
+        let end = file[start..].find("  },\n").map(|i| start + i + 5).unwrap();
+        let mut out = String::with_capacity(file.len());
+        out.push_str(&file[..start]);
+        out.push_str(&file[end..]);
+        out
     }
 
     #[test]
@@ -701,6 +809,7 @@ mod tests {
             contexts: Vec::new(),
             provenance: SourceProvenance::default(),
             tkey: None,
+            source_ref: None,
         });
         let path = dir.path().join("dup.rimloc.json");
         let err = save_project(&p, &path).unwrap_err();
@@ -786,6 +895,7 @@ mod tests {
                 contexts: vec![],
                 provenance: SourceProvenance::default(),
                 tkey: None,
+                source_ref: None,
             });
             p.update_translation(id.clone(), "ru", Some(format!("{text} ru")), Origin::Human);
         }
@@ -1015,12 +1125,14 @@ mod tests {
         let bare = load_project(&path).unwrap();
         assert_eq!(bare.entries.len(), sample().entries.len());
 
-        // Meta save: id + revision + display name ride along.
+        // Meta save: id + revision + display name ride along. The M3
+        // source fingerprint rides the same envelope and round-trips.
         let meta = ProjectEnvelopeMeta {
             project_id: Some("proj-abc".into()),
             revision: Some(7),
             display_name: Some("My Mod".into()),
             source_root: None,
+            source_fingerprint: Some("a".repeat(64)),
         };
         save_project_with_meta(&sample(), &meta, &path).unwrap();
         let text = std::fs::read_to_string(&path).unwrap();
@@ -1032,6 +1144,10 @@ mod tests {
         assert_eq!(loaded.meta.project_id.as_deref(), Some("proj-abc"));
         assert_eq!(loaded.meta.revision, Some(7));
         assert_eq!(loaded.meta.display_name.as_deref(), Some("My Mod"));
+        assert_eq!(
+            loaded.meta.source_fingerprint.as_deref(),
+            Some("a".repeat(64).as_str())
+        );
 
         // Old-shaped bare v2 (no envelope fields) still loads with defaults.
         let bare_v2 = "{\"schema_version\": 2, \"context\": {\"view\": \"potential\"}, \"entries\": [], \"translations\": []}\n"

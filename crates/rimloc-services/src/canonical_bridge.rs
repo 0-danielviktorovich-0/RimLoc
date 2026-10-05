@@ -173,6 +173,10 @@ pub fn source_entries(
                                 .or_else(|| selected_by.map(String::from)),
                         },
                         tkey: u.tkey.clone(),
+                        // The session layer projects `source_ref` at snapshot
+                        // assembly (it owns the project root for the
+                        // relative path); the bridge stays projection-free.
+                        source_ref: None,
                     },
                 );
             }
@@ -193,9 +197,14 @@ pub fn project_from_inventory(
     context: rimloc_domain::canonical::InventoryContext,
 ) -> Project {
     let mut p = Project {
+        // RimWorld adapter boundary: this builder turns a scanned RimWorld
+        // mod into a canonical project (adapter identity default = rimworld).
+        adapter: rimloc_domain::canonical::AdapterIdentity::default(),
         context,
         entries: source_entries(units, patch_stage, version, selected_by),
         translations: Vec::new(),
+        glossary: Vec::new(),
+        tm: Vec::new(),
     };
     if p.context.view == ViewLabel::Potential && p.context.target_version.is_none() {
         // Without a known version the view can never be Exact.

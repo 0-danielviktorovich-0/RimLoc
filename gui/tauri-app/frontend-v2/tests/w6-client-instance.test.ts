@@ -55,7 +55,10 @@ describe('tauri mode Home surface (P2-a: no fixture leak)', () => {
     expect(exists('home.entry-existing')).toBe(false);
     expect(exists('home.demo')).toBe(false);
     expect(exists('home.contract.create')).toBe(true);
-    expect(exists('mock-badge')).toBe(true); // data-mode honesty stays
+    // Audit M-2: with no project open the chip states the transport (live
+    // bridge) — the honest-mode chip stays, it no longer claims demo data.
+    expect(exists('transport-live-badge')).toBe(true);
+    expect(exists('mock-badge')).toBe(false);
     cleanupMounted();
     delete (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
   });

@@ -1,0 +1,38 @@
+{
+ "3170653412": {
+  "both": 161,
+  "rimloc_only": 0,
+  "competitor_only": 230,
+  "semantic": 1,
+  "li_fold_pairs": 0,
+  "tg_identities": 392,
+  "rl_identities": 162
+ },
+ "818773962": {
+  "both": 71,
+  "rimloc_only": 0,
+  "competitor_only": 7,
+  "semantic": 4,
+  "li_fold_pairs": 0,
+  "tg_identities": 82,
+  "rl_identities": 75
+ },
+ "2023507013": {
+  "both": 759,
+  "rimloc_only": 4,
+  "competitor_only": 127,
+  "semantic": 1,
+  "li_fold_pairs": 5,
+  "tg_identities": 887,
+  "rl_identities": 764
+ },
+ "3242000764": {
+  "both": 40,
+  "rimloc_only": 0,
+  "competitor_only": 0,
+  "semantic": 0,
+  "li_fold_pairs": 0,
+  "tg_identities": 40,
+  "rl_identities": 40
+ }
+}

@@ -27,8 +27,10 @@ export const en: Record<string, string> = {
 
   // Honest capability degradation (audit P1-5): CTA/buttons gated by the
   // handshake capability report while the J backend slices are pending.
-  'capability.unsupported.title': 'Not available yet: the operation waits for its contract slice. {reason}',
-  'capability.unsupported.note': 'Contract build is not wired yet (backend slice in progress). {reason}',
+  // Wave 9 (mandate §14): "contract slice" is an internal term; the user
+  // gets plain words about the backend connection instead.
+  'capability.unsupported.title': 'Not available yet: this feature is still being connected to the backend. {reason}',
+  'capability.unsupported.note': 'Translation build is not connected to the backend yet — work in progress. {reason}',
 
   // Recovery after a typed failure (Pass A P1-1/P1-2): refresh adopts the
   // disk (backend-dirty discarded) — always an explicit user action.
@@ -37,10 +39,16 @@ export const en: Record<string, string> = {
   'workspace.contract.rereading': 'Re-reading…',
 
   // Live contract operations (final night wave): validate/export/diagnose
-  // over the RimLocClient. Finding messages are backend data (EN); chips
-  // and labels are localized.
+  // over the RimLocClient. Backend messages localize by their STABLE machine
+  // ids (audit §4/§7): `contract.error.<code>` below covers every
+  // ContractErrorCode variant, `finding.<kind>` every finding kind
+  // project_validate can emit. The free-form EN server message rides inside
+  // the localized sentence via {message}; a kind without a key falls back
+  // to the raw message (mock data stays backend EN data).
   'contractops.running': 'Running…',
-  'contractops.validate.title': 'Validation (contract)',
+  // L-10 (UI audit 2026-09-29): the internal "(contract)" qualifier is gone
+  // from the card titles; the build mode is visible from the header badge.
+  'contractops.validate.title': 'Validation',
   'contractops.validate.desc': 'Read-only over the trusted session state; the project is never mutated. Errors fail the operation and become the diagnostics target.',
   'contractops.validate.run': 'Validate project',
   'contractops.validate.rerun': 'Validate again',
@@ -50,7 +58,7 @@ export const en: Record<string, string> = {
   'contractops.counts.warnings': 'Warnings',
   'contractops.counts.info': 'Info',
   'contractops.findings.empty': 'No findings.',
-  'contractops.export.title': 'Build translation (contract)',
+  'contractops.export.title': 'Build translation',
   'contractops.export.desc': 'Isolated output into a directory YOU choose (never the source tree — the backend guard refuses it). Language folder: {locale}.',
   'contractops.export.outdir': 'Output directory',
   'contractops.export.run': 'Build and write',
@@ -58,7 +66,13 @@ export const en: Record<string, string> = {
   'contractops.export.files': 'Files',
   'contractops.export.reparsed': 'Keys re-parsed',
   'contractops.export.skipped': 'Skipped unknown types ({count})',
-  'contractops.diagnose.title': 'Diagnostics (contract)',
+  'contractops.buildmod.title': 'Build mod package',
+  'contractops.buildmod.desc': 'The complete mod folder — About.xml + Languages ({locale}) — ready to move into the game’s Mods directory. The backend refuses source-tree targets.',
+  'contractops.buildmod.outdir': 'Mod package directory',
+  'contractops.buildmod.run': 'Build mod package',
+  'contractops.buildmod.done': 'Mod package written and reparse-verified.',
+  'contractops.buildmod.files': 'Files',
+  'contractops.diagnose.title': 'Diagnostics',
   'contractops.diagnose.desc': 'Sanitized bundle over the last failed operation: operation id, cause, affected entries. The folder stays outside the source tree.',
   'contractops.diagnose.outdir': 'Bundle directory',
   'contractops.diagnose.run': 'Collect bundle',
@@ -66,12 +80,65 @@ export const en: Record<string, string> = {
   'contractops.diagnose.operation': 'Operation',
   'contractops.diagnose.redacted': 'Redacted',
   'contractops.diagnose.excluded': 'Excluded',
+  // Absolute-path form hint (invalid_output_path): the field starts empty —
+  // no fake default path is ever sent.
+  'contractops.export.notGameMod': 'This is the isolated translation output. For a mod the game lists, use "Build mod package" below — it writes the game-loadable About.xml.',
+  'contractops.export.outdirInvalid': 'The path must be absolute — starting with "/". A relative path is refused before any write.',
+  'contractops.abs_path_hint': 'Absolute path only — a relative path is refused (invalid_output_path) before anything is written.',
+  'contractops.abs_path_example': 'e.g. /Users/you/RimLoc-Export/MyMod-Russian',
+  'contractops.abs_path_example_mod': 'e.g. /Users/you/RimWorld/Mods/MyMod-Russian',
+  'contractops.abs_path_example_bundle': 'e.g. /Users/you/RimLoc-Bundles/MyMod',
+  // Native OS folder dialog under the output fields (same flow as Home).
+  'contractops.pick': 'Choose folder…',
+
+  // --- Backend message localization (audit §4/§7) -----------------------
+  // `contract.error.<code>` — one key per ContractErrorCode variant (the
+  // append-only wire enum in rimloc-services contract.rs). The snake_case
+  // code is prefixed by the formatter, {message} carries the raw server
+  // detail. Keys here are the UI's translations, NOT backend data.
+  'contract.error.stale_epoch': 'Your editing session was superseded by a newer open/refresh — reopen the project to continue. Detail: {message}',
+  'contract.error.stale_revision': 'The project moved on while you were editing (your base revision is outdated) — retry the edit on the fresh state. Detail: {message}',
+  'contract.error.save_failed': 'The durable write failed; your edits stay in memory as a draft and nothing was lost. Detail: {message}',
+  'contract.error.project_changed_on_disk': 'The project file changed on disk outside this session — adopt the disk version to continue; your draft is kept. Detail: {message}',
+  'contract.error.contract_violation': 'This action is not permitted for the current project state (unknown identity or a non-permitted action). Detail: {message}',
+  'contract.error.guard_output_denied': 'The chosen output location was refused by the write guard — output never goes into the source tree or another protected root. Detail: {message}',
+  'contract.error.invalid_output_path': 'The output path must be an absolute directory. Detail: {message}',
+  'contract.error.unsupported_capability': 'This operation is not part of the current build yet — it is reported honestly instead of being approximated. Detail: {message}',
+  'contract.error.project_not_found': 'No managed project with this id exists (it may have been unloaded). Detail: {message}',
+  'contract.error.schema_version': 'The project file was written in another file format version and is not supported by this build. Detail: {message}',
+  'contract.error.validation_failed': 'The operation produced validation errors — fix them and retry. Detail: {message}',
+  'contract.error.internal': 'An unexpected backend error occurred. Detail: {message}',
+
+  // `finding.<kind>` — one key per finding kind project_validate emits:
+  // the five rimloc-validate kinds (empty, invisible-char, placeholder-check,
+  // duplicate, duplicate-global) plus the session-level ones (lost-placeholder,
+  // case-collision, source-drift).
+  'finding.empty': 'This translation is empty — the game will render nothing.',
+  'finding.invisible-char': 'Suspicious invisible/bi-di control characters in the text. Detail: {message}',
+  'finding.placeholder-check': 'Placeholder problem in the translation. Detail: {message}',
+  'finding.duplicate': 'Duplicate key in the same file — the game keeps only the first copy.',
+  'finding.duplicate-global': 'The same key appears in several files of one language scope. Detail: {message}',
+  'finding.lost-placeholder': 'The translation dropped placeholder(s) present in the source — they would render unfilled. Detail: {message}',
+  'finding.case-collision': 'Two defNames differ only in letter case and would collide in one DefInjected file. Detail: {message}',
+  'finding.source-drift': 'The source changed since this project was built — the inventory is stale; rescan before building exports. Detail: {message}',
 
   // Honest live counterpart of the mock badge (audit P1-4): on a contract
   // project the global chip shows the live mode instead of claiming demo data.
-  'livebadge.label': 'Live project (contract)',
-  'livebadge.title':
-    'A real project is open over the RimLocClient → Tauri contract: the data is not demo fixtures and edits persist into the managed project.',
+  // Wave 9 (mandate §14): drop "(contract)" — an internal term; the tooltip
+  // answers in plain words, no internal bridge names.
+  'livebadge.label': 'Live project',
+  'livebadge.title': 'A real project is open: this is not demo data and your edits persist.',
+
+  // M-2 (UI audit 2026-09-29): with no project open the header chip states
+  // the TRANSPORT truth (Live/Mock by client mode) — the live project list
+  // below is not demo data. The «Demo data (mock)» label stays scoped to the
+  // bundled demo dataset (MockBadge, only while project.isDemo).
+  'transportbadge.live.label': 'Live transport',
+  'transportbadge.live.title':
+    'The real desktop backend is connected through the Tauri bridge. No project is open yet — the projects below are your real managed ones.',
+  'transportbadge.mock.label': 'Mock transport (demo mode)',
+  'transportbadge.mock.title':
+    'The client runs on the built-in mock transport (explicit dev/demo opt-in). Real projects are never touched.',
 
   // Bundled demo project (W6, MOCK_LIVE_ONBOARDING_MANDATE §6/§8)
   'home.demo.title': 'RimLoc Demo',
@@ -113,9 +180,45 @@ export const en: Record<string, string> = {
   'home.secondaryHelp': 'Help',
   'home.recent.title': 'Recent projects',
   'home.recent.progress': 'Translation progress',
-  'home.recent.modified': 'Modified',
-  'home.recent.sourceChanged': 'source changed: {count}',
-  'home.recent.issues': 'issues: {count}',
+  // Design-system synthesis (2026-09-29): badges name the next step with its
+  // number; dates are human ("modified today at 14:32"); notes carry line
+  // counters. Status chips use the soft token triples from tokens.css.
+  'home.locals':
+    'Everything runs locally: projects stay on this machine, mod files are never modified.',
+  'home.continue.kicker': 'Continue where you left off',
+  'home.continue.linesDone': '{done} of {total} lines translated',
+  'home.continue.linesLeft': '{count} left',
+  'home.continue.review': 'Review',
+  'home.continue.build': 'Build translation',
+  'home.status.working': 'In progress',
+  'home.status.ready': 'Ready to build',
+  'home.status.problems': 'Validation problems',
+  'home.recent.count': '{shown} of {total}',
+  'home.recent.byDate': 'by last modified',
+  'home.recent.colProject': 'Project',
+  'home.recent.colUpdated': 'Updated',
+  'home.recent.colProgress': 'Progress',
+  'home.recent.colStatus': 'Status',
+  'home.recent.colActions': 'Actions',
+  'home.recent.open': 'Open',
+  'home.recent.empty': 'No recent projects yet.',
+  'home.recent.modifiedWhen': 'modified {when}',
+  'home.recent.when.today': 'today at {time}',
+  'home.recent.when.yesterday': 'yesterday at {time}',
+  'home.recent.sourceChanged': 'Source updated: {count}',
+  'home.recent.sourceChangedTitle': 'The source has {count} newer lines than your last edit.',
+  'home.recent.issues': 'Issues: {count}',
+  'home.recent.issuesTitle': '{count} entries wait for review before the build.',
+  'home.create.stepsTitle': 'How it works',
+  'home.create.step1': 'RimLoc reads the mod’s XML strings and counts them.',
+  'home.create.step2': 'Translate in the table — with the glossary and translation memory.',
+  'home.create.step3': 'Build the translation into a separate folder in the mod.',
+  'home.contract.pathLabel': 'Mod folder',
+  'home.contract.helperLead': 'Pick a mod folder that contains',
+  'home.contract.helperMid': 'or',
+  'home.contract.helperTail': '— for example,',
+  'home.contract.helperExample': '~/Mods/MyMod',
+  'home.contract.revision': 'revision {count}',
   'home.state.loading': 'Loading…',
   'home.state.error': 'Could not load the project list. Check access and try again.',
 
@@ -137,7 +240,8 @@ export const en: Record<string, string> = {
   'wizard.w2.subtitle.dlc': 'Pick the game installation, then tick the DLC to translate',
   'wizard.w2.subtitle.pack': 'Detected language packs',
   'wizard.w2.folder': 'Choose folder…',
-  'wizard.w2.drop': 'or drag a mod folder here',
+  'wizard.w2.drop': 'or drag a mod folder here — drag is a demo placeholder in this build',
+  'wizard.w2.folderStub': 'The folder picker and drag-and-drop are not wired in this build (demo) — pick a branch from the demo list above.',
   'wizard.w2.author': 'by',
   'wizard.w2.defs': 'entries',
   'wizard.w2.installation': 'Installation',
@@ -218,6 +322,8 @@ export const en: Record<string, string> = {
   'workspace.col.source': 'Source',
   'workspace.col.target': 'Translation',
   'workspace.col.changed': 'Source changed',
+  // L-3 (UI audit 2026-09-29): quiet marker in an empty TARGET cell.
+  'workspace.col.noTranslation': 'No translation',
   'workspace.changed.yes': 'Source changed since the last translation',
   'workspace.filter.untranslated': 'Untranslated',
   'workspace.filter.translated': 'Translated',
@@ -298,6 +404,8 @@ export const en: Record<string, string> = {
   'languages.manager.compareStub': 'Side-by-side comparison is planned for the compare milestone (mock).',
   'languages.manager.import': 'Import',
   'languages.manager.importDone': 'Pack texts imported as drafts.',
+  'languages.manager.importStub': 'Importing from a file is not wired in this build (demo). Start a fresh target via Add language instead.',
+  'languages.manager.addedEmpty': 'Target language added with an empty project — no texts were imported.',
   'languages.manager.export': 'Export',
   'languages.manager.exportStub': 'Export arrives together with the build stage (mock).',
   'languages.manager.sourceNote': 'The source language is the project baseline — it cannot be removed.',
@@ -435,6 +543,14 @@ export const en: Record<string, string> = {
   'workspace.project.rescan': 'Rescan',
   'workspace.project.reviewChanges': 'Review changes ({count})',
   'workspace.project.tools': 'Specialized tools',
+  'workspace.project.tool.existing': 'Import existing translation',
+  'workspace.project.contribution.title': 'Contribute to the RimLoc translation (beta)',
+  'workspace.project.contribution.note': 'Collects the translations of this project into an offline bundle file you can hand to the RimLoc maintainer. Nothing is sent anywhere.',
+  'workspace.project.contribution.build': 'Collect contribution…',
+  'workspace.project.contribution.building': 'Collecting…',
+  'workspace.project.contribution.status': '{status}: {accepted} change(s) accepted',
+  'workspace.project.contribution.path': 'Bundle: {path}',
+  'workspace.project.contribution.rejected': 'Rejected: {count}',
   'workspace.project.danger': 'Danger zone',
   'workspace.project.dangerNote': 'These actions change the whole project. Each one asks twice before it runs.',
   'workspace.project.reset': 'Reset translation progress',
@@ -457,6 +573,15 @@ export const en: Record<string, string> = {
   'review.categories': 'Issue categories',
   'review.categories.all': 'All issues',
   'review.scope': 'Counters cover the whole project; the queue lists issues from the entries loaded in this session.',
+  'review.overview.unavailable': 'Not computed in this build.',
+  'review.overview.partial':
+    'Partial overview: source-change tracking and the glossary check are not wired in this build — the other counters come from the project snapshot.',
+  // M-6 (UI audit 2026-09-29): a visible bridge between the overview cards
+  // and the session queue both ways — "0 next to 45" is two honest counts.
+  'review.overview.queueLink': 'See the issue queue below',
+  'review.overview.queueExplainer':
+    'The counters cover the project snapshot; the queue lists this session’s validation findings — the numbers need not match.',
+  'review.queue.overviewLink': '↑ Back to the overview counters',
   'review.queue': 'Issue queue',
   'review.queue.empty.title': 'Queue is clear',
   'review.queue.empty.desc': 'No issues left in this session. You can build the translation.',
@@ -478,6 +603,22 @@ export const en: Record<string, string> = {
   'glossary.term': 'Term',
   'glossary.translation': 'Translation',
   'glossary.note': 'Glossary editing and term checks arrive in GUI sprint phase 2.',
+  // Wave 13 (glossary live): the workspace glossary tab over project_glossary.
+  'glossary.live.badge': 'Live',
+  'glossary.live.demoBadge': 'Demo data',
+  'glossary.live.loading': 'Loading terms…',
+  'glossary.live.note': 'Note',
+  'glossary.live.actions': 'Actions',
+  'glossary.live.edit': 'Edit',
+  'glossary.live.save': 'Save',
+  'glossary.live.cancel': 'Cancel',
+  'glossary.live.delete': 'Delete',
+  'glossary.live.confirmDelete': 'Delete this term?',
+  'glossary.live.add': 'Add term',
+  'glossary.live.empty': 'No terms yet — add the first one below.',
+  'glossary.live.placeholderTerm': 'Term',
+  'glossary.live.placeholderTranslation': 'Translation',
+  'glossary.live.placeholderNote': 'Note (optional)',
   'tm.title': 'Translation memory',
   'tm.source': 'Source',
   'tm.target': 'Translation',
@@ -545,14 +686,14 @@ export const en: Record<string, string> = {
   'build.warnings': 'Known warnings',
   'build.warnings.none': 'No known warnings',
   'build.warnings.review': 'Review problems',
-  'build.success': 'Translation built successfully',
+  'build.success': 'Demo build complete — nothing was written to disk.',
   'build.output': 'Output',
   'build.openFolder': 'Open folder',
-  'build.openedNote': 'Folder opened: {path}',
+  'build.openedNote': 'Demo: opening the folder is not wired in this build — output path: {path}.',
   'build.install': 'Install translation',
   'build.installingNote': 'Copying into the game Mods folder…',
   'build.installed': 'Installed',
-  'build.installedNote': 'Copied into the game Mods folder — enable it in the mod list before the next run.',
+  'build.installedNote': 'Demo: nothing was copied — installation arrives with the live build.',
   'build.retest': 'Test / validate again',
   'build.advanced': 'Advanced details',
   'build.advanced.keys': 'Entries written',
@@ -586,6 +727,26 @@ export const en: Record<string, string> = {
   'existing.continueTranslation': 'Continue translation',
   'existing.back': 'Choose different content',
   'existing.note': 'Mock flow: the analysis numbers demonstrate a real-scale project.',
+  // W2 — LIVE contract flow of the existing-pack scenario (dry-run analyze
+  // + guarded apply over an open project).
+  'existing.live.dir': 'Existing translation directory',
+  'existing.live.dirHint': '/path/to/mod/Languages/Russian',
+  'existing.live.pick': 'Choose folder…',
+  'existing.live.analyzeNote':
+    'Analyze is a dry run: RimLoc only compares the pack with the open project — nothing is written yet.',
+  'existing.live.scanned': 'Scanned {files} files, {keys} lines.',
+  'existing.live.list.reusable': 'Will be imported (empty slots)',
+  'existing.live.list.conflicts': 'Kept as is (the project already has a translation)',
+  'existing.live.list.obsolete': 'Not in this project (kept in the pack)',
+  'existing.live.list.ambiguous': 'Ambiguous — need your decision',
+  'existing.live.applyNote':
+    'Apply imports only the reusable lines. Existing translations are never overwritten, and ambiguous lines stay a list for you to decide.',
+  'existing.live.apply': 'Import reusable ({count})',
+  'existing.live.applied':
+    'Imported {count} translations. Kept untouched: {conflicts} existing, {obsolete} obsolete, {ambiguous} ambiguous.',
+  'existing.live.dirChanged':
+    'The directory changed since the analysis — run Analyze again before applying.',
+  'existing.conflicts': 'Conflicts (kept)',
 
   // Settings screen (mandate §15, spec §17). Seven task-grouped sections;
   // CLI flags are deliberately not exposed 1:1 — experimental/internal live
@@ -608,13 +769,14 @@ export const en: Record<string, string> = {
   'settings.general.updates': 'Updates',
   'settings.general.updates.auto': 'Check for updates automatically',
   'settings.general.updates.check': 'Check now',
-  'settings.general.updates.ok': 'You are on the latest version (mock).',
+  'settings.general.updates.ok': 'Update check is not wired in this build (demo) — no network request was made.',
 
   'settings.rimworld.desc': 'Where RimLoc looks for the game and mods.',
   'settings.rimworld.installs': 'Game installations',
+  'settings.rimworld.installsNote': 'Example data — game-install detection is not wired in this build.',
   'settings.rimworld.primary': 'primary',
   'settings.rimworld.rescan': 'Rescan',
-  'settings.rimworld.found': 'Found: 2 installations · 143 mods (mock)',
+  'settings.rimworld.found': 'Rescan is not wired in this build (demo) — the list was not changed.',
   'settings.rimworld.version': 'Target RimWorld version',
   'settings.rimworld.autodetect': 'Detect installations automatically',
   'settings.rimworld.workshop': 'Workshop folder',
@@ -676,16 +838,22 @@ export const en: Record<string, string> = {
     'Diagnostics, logs and the developer surface. Experimental and internal options live only here.',
   'settings.advanced.logs': 'Logs',
   'settings.advanced.openLogs': 'Open logs folder',
-  'settings.advanced.logsDone': 'Log folder ready (mock): ~/RimLoc/logs',
+  'settings.advanced.logsDone':
+    'Opening the log folder is not wired in this build (demo) — nothing was opened. The log file lives in the app data dir: ' +
+    '~/Library/Application Support/com.rimloc.gui/RimLoc/logs/gui.log (macOS); %APPDATA%\\com.rimloc.gui\\RimLoc\\logs (Windows); ' +
+    '~/.local/share/com.rimloc.gui/RimLoc/logs (Linux).',
   'settings.advanced.diagnostics': 'Diagnostics',
   'settings.advanced.runDiag': 'Run diagnostics',
   'settings.advanced.rules': 'Knowledge & rules',
   'settings.advanced.viewRules': 'View rules',
+  'settings.advanced.rulePlaceholders': 'placeholders kept verbatim',
+  'settings.advanced.ruleGlossary': 'glossary terms preferred',
+  'settings.advanced.ruleTone': 'Tone register: neutral game UI',
   'settings.advanced.config': 'Configuration',
   'settings.advanced.export': 'Export config',
-  'settings.advanced.exported': 'Configuration exported (mock).',
+  'settings.advanced.exported': 'Configuration export is not wired in this build (demo) — nothing was written.',
   'settings.advanced.import': 'Import config',
-  'settings.advanced.imported': 'Configuration imported (mock).',
+  'settings.advanced.imported': 'Configuration import is not wired in this build (demo) — nothing was read.',
   'settings.advanced.dev': 'Developer options',
   'settings.advanced.mocks':
     'This build runs against mock adapters: zero backend calls (mandate §31).',
@@ -704,10 +872,16 @@ export const en: Record<string, string> = {
   'provider.anthropic.desc': 'Claude models via the Anthropic API.',
   'provider.ollama.desc': 'Local models via Ollama on this machine.',
   'provider.custom.desc': 'Your own endpoint with an OpenAI-compatible API.',
+  // M-11 (UI audit 2026-09-29): the "(mock)" suffix is a separate quiet span
+  // (providers.status.mockMark) shown only on the mock transport; on the real
+  // transport a configured provider honestly reads "configured (not
+  // verified)" — there is no network probe in this build.
   'providers.status.connected': 'Connected',
   'providers.status.not_configured': 'Not configured',
   'providers.status.offline': 'Offline',
   'providers.status.testing': 'Testing…',
+  'providers.status.mockMark': '(mock)',
+  'providers.status.configured': 'Configured (not verified)',
   'providers.model': 'Model',
   'providers.baseUrl': 'Base URL',
   'providers.action.configure': 'Configure',
@@ -762,6 +936,9 @@ export const en: Record<string, string> = {
   'providers.export.fallbackNote': 'Provider configuration (credentials excluded):',
   'providers.inst.removeConfirm': 'Remove?',
   'providers.inst.removeWarn': 'Click again to remove the provider. The keychain entry is untouched.',
+  // L-12 (UI audit 2026-09-29): the key-row marker is a dictionary value now,
+  // not a hardcoded literal (ru renders «связка ключей»).
+  'providers.inst.key.keychain': 'keychain',
   'providers.form.key': 'Key',
   'providers.form.addTitle': 'New provider',
   'providers.form.editTitle': 'Provider settings',
@@ -910,6 +1087,12 @@ export const en: Record<string, string> = {
   'help.replay.demoTour': 'Guided demo tour',
   'help.replay.demoTourDesc':
     'Anchored walkthrough of the whole loop on the bundled demo project: open it, pick and edit a row, review the intentional error, validate and build (synthetic).',
+  // Selfloc entry on the Help screen (wave 5): the SAME flow as the Home
+  // card (lib/selfloc.ts), the dedup by 'RimLoc UI (en)' preserved.
+  'help.selfloc.title': 'Help translate RimLoc',
+  'help.selfloc.desc':
+    'The RimLoc interface is an ordinary translation project (~1.2k messages): your contribution ships with the app and your mods are never touched.',
+  'help.selfloc.open': 'Translate RimLoc',
   'help.shortcuts.title': 'Keyboard shortcuts',
   'help.shortcuts.palette': 'Command palette',
   'help.shortcuts.save': 'Save edit',
@@ -1135,16 +1318,36 @@ export const en: Record<string, string> = {
   'dev.reset': 'Reset mock data',
   'dev.summary': 'Zero backend calls: all data is local.',
   'dev.scenarios': 'Scenario browser',
+  'dev.pack.pick': 'Pack file (JSON)',
+  'dev.pack.load': 'Load pack (preview)',
+  'dev.pack.reset': 'Reset preview',
+  'dev.pack.idle': 'No pack loaded.',
+  'dev.pack.active': 'Preview active: {locale} ({count} messages)',
+  'dev.pack.rejected': 'Pack rejected: {reason}',
 
   // W-built boot gate + contract Home
   'boot.configError.title': 'No backend in this launch',
   'boot.configError.hint': 'Start the RimLoc desktop app for the live backend, or enable the demo mode (?dev=1 in the address bar) to browse the synthetic demo.',
+  // H-1 (UI audit 2026-09-29): the implemented wizard was unreachable on the
+  // live Home. Secondary entry in the live create panel, honestly labeled a
+  // DEMO tour — it never poses as the live create flow.
+  'home.wizard.tour': 'Translation wizard (demo tour)',
+  'home.wizard.tourNote': 'A guided walkthrough on the bundled demo project — your mods are never touched. A real project is created with the button above.',
   'home.contract.title': 'RimLoc — live project',
   'home.contract.desc': 'Create a translation project from a real mod folder, or reopen a recent one. The project stays on this machine.',
   'home.contract.pathPlaceholder': 'Path to the mod folder…',
+  // Native OS folder dialog next to the path field (main.rs pick_directory).
+  'home.contract.pick': 'Choose folder…',
   'home.contract.create': 'Create project',
   'home.contract.open': 'Open',
+  // Self-localization entry (mandate D): the app's own UI catalog as an
+  // ordinary project, reached through the same contract create flow.
+  'home.selfloc.title': 'Translate RimLoc itself',
+  'home.selfloc.desc': 'Open the RimLoc UI catalog as an ordinary translation project — English source, your translation ships with the app.',
+  'home.selfloc.open': 'Translate RimLoc',
+  'home.selfloc.beta': 'beta',
   'workspace.project.fixtureDataset': 'Demo dataset — edits are not saved',
+  'workspace.project.fixtureNote': 'Sample dataset bundled with the app — explore freely; it never touches your mods.',
   'workspace.project.live': 'live project',
 
   // Scenario browser (W6, dev-only; MOCK_LIVE_ONBOARDING_MANDATE §11)
@@ -1202,6 +1405,17 @@ export const en: Record<string, string> = {
   'source.why.first-file-wins': 'First file wins',
   'source.why.keyed-last-wins': 'Keyed last wins',
   'source.why.patch-applied': 'Patch applied',
+  // winner_reason vocabulary missing from the fixtures (live bridge, wave 12)
+  'source.why.keyed-first-in-file': 'Keyed: first occurrence in the file wins',
+  'source.why.tkey-last-assignment': 'TKey: the last assignment wins',
+  'source.why.definjected-setoradd': 'DefInjected: overwritten by the last occurrence',
+  'source.why.ui-catalog': "RimLoc's own UI catalog",
+  // live SOURCE tab mode (wave 12): the snapshot source_ref projection
+  'source.tab.live.relativePath': 'Path relative to the project root.',
+  'source.tab.lineUnknown': 'line unknown — the scanner recorded none',
+  'source.tab.live.usagesUnavailable': 'Usages and compare are not available for this project.',
+  'source.empty.live': 'Source data for this entry is unavailable in the live project.',
+  'source.editor.wouldLaunchLive': 'Live project: this is an argv preview — nothing was launched.',
   'source.action.view': 'View',
   'source.action.open': 'Open source',
   'source.action.reveal': 'Reveal in Finder',

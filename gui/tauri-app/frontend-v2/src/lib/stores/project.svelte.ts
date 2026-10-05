@@ -12,6 +12,7 @@ import { buildState } from '../mock/buildState.svelte';
 // demo/dev mock (devMode) and is never a silent production default.
 import { clientInstance } from '../client/instance.svelte';
 import { ContractClientError, type RimLocClient } from '../client/client';
+import { contractErrorText } from '../client/messages';
 import type { ProjectSnapshotDto, ProjectSummaryDto, SourceEntryIdDto } from '../client/types';
 
 export type StatusCounts = Record<EntryStatus, number>;
@@ -46,9 +47,24 @@ const DEFAULT_PROJECT_NAME = 'TestMod';
 
 class ProjectStore {
   projectName = $state(DEFAULT_PROJECT_NAME);
+  /**
+   * M-5 (UI audit 2026-09-29): the HUMAN project name for headers — on a
+   * contract project the wire snapshot carries only the service id
+   * (`proj-…`), the display name rides `project_list` summaries
+   * (ProjectSummaryDto.name ← session display_name in session.rs). Resolved
+   * after every snapshot application; null = not (yet) known → the id shows.
+   */
+  projectDisplayName = $state<string | null>(null);
   targetLocale = $state('ru');
   /** True only while the workspace shows the bundled W6 demo project. */
   isDemo = $state(false);
+  /**
+   * M-7 (live audit 2026-09-30): read-only source mod root of the OPEN
+   * contract project, from the wire snapshot (session.rs → envelope H5).
+   * null = not known (legacy envelope / not a contract project) — the UI
+   * shows an honest unknown, NEVER a template placeholder.
+   */
+  contractSourceRoot = $state<string | null>(null);
 
   entries = $state<Entry[]>(cloneInitial());
 
@@ -115,6 +131,12 @@ class ProjectStore {
 
   get selected(): Entry | null {
     return this.selectedId ? (this.byId(this.selectedId) ?? null) : null;
+  }
+
+  /** M-5: display name for headers — the human name when resolved, the raw
+   * id otherwise (never an invented label). */
+  get displayName(): string {
+    return this.projectDisplayName ?? this.projectName;
   }
 
   statusCounts(): StatusCounts {
@@ -324,7 +346,13 @@ class ProjectStore {
         target: '',
         status: 'untranslated',
         file: '',
-        line: 0
+        line: 0,
+        // Live Source Inspector projection (wave 12): present on contract
+        // snapshots that can honestly project it; the SOURCE tab renders it
+        // verbatim and never fixture data in this mode.
+        sourceRef: e.source_ref
+          ? { file: e.source_ref.file, line: e.source_ref.line ?? null, selected_by: e.source_ref.selected_by }
+          : null
       };
       mapped.push(entry);
       byId.set(id, entry);
@@ -384,7 +412,27 @@ class ProjectStore {
     this.contractEpoch = snap.session_epoch;
     this.contractError = null;
     this.projectName = snap.project_id;
+    this.projectDisplayName = null;
+    // M-7: real source root rides the snapshot; absent (legacy) → honest null.
+    this.contractSourceRoot = snap.source_root?.path ?? null;
     this.source = 'contract';
+    // M-5: the snapshot DTO carries no display name — resolve it from the
+    // project list summaries (best-effort; the id remains the fallback and a
+    // dead transport only costs the nicer label, never a failure).
+    void this.resolveDisplayName(snap.project_id);
+  }
+
+  /** Fire-and-forget display-name resolution (M-5). Guarded against a project
+   * switch mid-flight: only the CURRENT project's name may land. */
+  private async resolveDisplayName(projectId: string): Promise<void> {
+    try {
+      const list = await this.listContractProjects();
+      if (this.contractProjectId !== projectId) return;
+      const hit = list.find((p) => p.project_id === projectId);
+      if (hit?.name) this.projectDisplayName = hit.name;
+    } catch {
+      // Cosmetic resolution — the id fallback stays.
+    }
   }
 
   /** Pass A P1-1: adopt the DISK state after a typed failure
@@ -403,7 +451,8 @@ class ProjectStore {
       this.contractError = null;
       return true;
     } catch (e) {
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     } finally {
       this.refreshing = false;
@@ -420,7 +469,8 @@ class ProjectStore {
       this.applyContractSnapshot(snap);
       return true;
     } catch (e) {
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     }
   }
@@ -432,7 +482,8 @@ class ProjectStore {
       this.applyContractSnapshot(snap);
       return true;
     } catch (e) {
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     }
   }
@@ -510,14 +561,15 @@ class ProjectStore {
         // the typed refusal where the user works.
         const sk = resp.skipped[0];
         this.contractError = sk
-          ? `${sk.code}: ${sk.message}`
+          ? contractErrorText(sk.code, sk.message)
           : 'contract_violation: the intent was skipped by the backend';
       }
       return resp.applied > 0;
     } catch (e) {
       // persist-before-ack: the draft stays staged for retry; the typed
       // error is surfaced without ever clearing the caller's text.
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       this.saveStates[id] = 'dirty';
       return false;
     }
@@ -580,13 +632,14 @@ class ProjectStore {
         // Pass A 2.2: a refused intent is DATA — surface the typed refusal.
         const sk = resp.skipped[0];
         this.contractError = sk
-          ? `${sk.code}: ${sk.message}`
+          ? contractErrorText(sk.code, sk.message)
           : 'contract_violation: the intent was skipped by the backend';
       }
       return resp.applied > 0;
     } catch (e) {
       rollback?.();
-      this.contractError = e instanceof ContractClientError ? `${e.code}: ${e.message}` : String(e);
+      this.contractError =
+        e instanceof ContractClientError ? contractErrorText(e.code, e.message) : String(e);
       return false;
     }
   }
@@ -641,6 +694,7 @@ class ProjectStore {
     this.draftEpoch = {};
     this.entries = cloneInitial();
     this.projectName = DEFAULT_PROJECT_NAME;
+    this.projectDisplayName = null;
     this.drafts = {};
     this.saveStates = {};
     this.selectedId = null;
@@ -654,6 +708,7 @@ class ProjectStore {
     this.contractRevision = 0;
     this.contractAckedRevision = 0;
     this.contractEpoch = 0;
+    this.contractSourceRoot = null;
     this.contractError = null;
     this.refreshing = false;
   }

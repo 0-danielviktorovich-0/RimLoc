@@ -53,7 +53,7 @@ pub fn annotate(
             continue;
         }
         let p_str = p.to_string_lossy();
-        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&p_str, "Keyed")) {
             continue;
         }
         files.push(p.to_path_buf());
@@ -197,7 +197,7 @@ pub fn annotate_dry_run_plan(
             continue;
         }
         let p_str = p.to_string_lossy();
-        if !(p_str.contains("/Keyed/") || p_str.contains("\\Keyed\\")) {
+        if !(rimloc_core::path_text::has_path_marker(&p_str, "Keyed")) {
             continue;
         }
         files.push(p.to_path_buf());

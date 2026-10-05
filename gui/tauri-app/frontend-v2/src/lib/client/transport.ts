@@ -4,15 +4,27 @@
 // mode choice is EXPLICIT at client construction; the mock is never the
 // production default (MOCK_LIVE_ONBOARDING §2, lead decision 010).
 import type {
+  ApplyExistingRequestDto,
+  ApplyExistingResponseDto,
   ApplyIntentsRequestDto,
+  BuildIdentityDto,
   ApplyIntentsResponseDto,
+  BuildModProjectResponseDto,
   ContractHandshakeDto,
   ContractMethod,
   CreateProjectRequestDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
+  GlossaryTermDto,
+  ImportExistingRequestDto,
+  ImportExistingResponseDto,
+  ProjectGlossaryDeleteRequestDto,
+  ProjectGlossaryDeleteResponseDto,
+  ProjectGlossaryUpsertRequestDto,
+  ProjectGlossaryUpsertResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
+  SelflocBuildContributionResponseDto,
   ValidateProjectResponseDto
 } from './types';
 
@@ -35,10 +47,54 @@ export interface ContractMethodMap {
     params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
     result: ExportProjectResponseDto;
   };
+  project_build_mod: {
+    params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
+    result: BuildModProjectResponseDto;
+  };
   project_diagnose: {
     params: { project_id: string; out_dir: string };
     result: DiagnoseResponseDto;
   };
+  // Native folder dialog (main.rs pick_directory). `initial` seeds the
+  // dialog's start directory; null result = the user cancelled. No OS
+  // dialog exists outside the desktop bridge — the mock refuses honestly.
+  pick_directory: { params: { initial?: string }; result: string | null };
+  // Self-localization entry (mandate D): absolute path of the app-managed
+  // RimLoc UI catalog project dir (mod_root for project_create). Refused
+  // honestly in mock — there is no bundled catalog outside the desktop app.
+  selfloc_catalog_dir: { params: Record<string, never>; result: string };
+  // Self-localization contribution (beta, wave 7): build the offline
+  // translation bundle from the OPEN session into a caller-chosen
+  // directory. The services layer owns the §6 gate and the readiness
+  // statuses; refused honestly in mock (no backend session there).
+  selfloc_build_contribution: {
+    params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
+    result: SelflocBuildContributionResponseDto;
+  };
+  // Existing translation pack (W2): dry-run analysis + separate guarded
+  // application against the open project.
+  project_import_existing: {
+    params: { request: ImportExistingRequestDto };
+    result: ImportExistingResponseDto;
+  };
+  project_apply_existing: {
+    params: { request: ApplyExistingRequestDto };
+    result: ApplyExistingResponseDto;
+  };
+  // Project glossary (wave 13): generic project state, persist-before-ack.
+  project_glossary: {
+    params: { project_id: string; session_epoch: number };
+    result: GlossaryTermDto[];
+  };
+  project_glossary_upsert: {
+    params: { request: ProjectGlossaryUpsertRequestDto };
+    result: ProjectGlossaryUpsertResponseDto;
+  };
+  project_glossary_delete: {
+    params: { request: ProjectGlossaryDeleteRequestDto };
+    result: ProjectGlossaryDeleteResponseDto;
+  };
+  build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }
 
 export type TransportMode = 'tauri' | 'mock';

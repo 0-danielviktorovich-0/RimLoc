@@ -1,0 +1,133 @@
+# RIMLOC ACCEPTANCE MANIFEST — declarative gate config (persist mandate 04)
+# Source of truth: docs/development/testing/AUTONOMOUS_ACCEPTANCE_ARCHITECTURE.md
+version: 2
+updated: 2026-10-03   # +runtime-bridge v1 hardening (директива POST-PASS HARDENING §1-12)
+
+# §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
+# и в RimLoc-evidence):
+matrix_20261003:
+  T6_PRODUCT_REAL_GAME: "PASS (03.10, golden, не перезапускался)"
+  T6_BACKGROUND_AUTONOMOUS: "PASS (03.10, golden, не перезапускался)"
+  RUNTIME_BRIDGE: "PASS / v1.0.0 — JSON-конверт протокол, семантические ошибки,
+    frame freshness, capability-манифест; конформанс 30/30 live (35с, фон)"
+  LANGUAGE_CORE_SEMANTICS: "PASS — folder = identity; display (native/english) =
+    отдельные поля; LanguageInfo.xml для contributor = NOT REQUIRED (A/B)"
+  INACTIVE_LANGUAGE_PACK_REGISTRATION_CLAIM: "UNCONFIRMED — нужен контролируемый
+    A/B или пруф по коду загрузчика; экспортёр от claim НЕ зависит"
+  FRAME_FRESHNESS_HARDENING: "PASS (live: frame_at_request/at_present/advanced/
+    stale + state_revision; capture-запрос = наименее инвазивный рендер-пинок)"
+  PROTOCOL_V1_HARDENING: "PASS (live: envelope, run_id-гейт, карантин,
+    EVIDENCE_ROOT_ESCAPE fence, RUN_ID_MISMATCH/BAD_REQUEST проверены живьём)"
+  LOCALIZATION_ADAPTER_SEAM: "PASS — AdapterIdentity в каноне; rimworld +
+    rimloc-application сосуществуют; unknown adapter = чистый отказ; 211/211"
+
+defaults:
+  same_host: true
+  vm: false
+  physical_pointer: false
+  steal_focus: false
+  vision_primary: false
+  sources_read_only: true
+  record:
+    - frontend_log        # gui.log
+    - backend_trace       # RIMLOC_TRACE=1 trace.jsonl
+    - filesystem_delta
+    - operation_ids       # run_id/scenario_id/step
+
+tiers:
+  T0_domain:
+    run: cargo test --workspace
+    required_for: [every_wave]
+  T1_headless_frontend:
+    run: |
+      cd gui/tauri-app/frontend-v2
+      npx svelte-check --output summary
+      npm run test
+    required_for: [frontend_wave]
+  T2_tauri_semantic_e2e:
+    driver: "@wdio/tauri-service"   # spike PROVEN 30.09: WDIO_EMBEDDED_SPIKE.md (мост-шим — follow-up)
+    controls: [aria_role, accessible_name, testid, dom_state]
+    required_for: [release_gate, new_live_workflow]
+    invariants:
+      - geometry.no_giant_blank_tail      # >40% viewport пусто при непустых данных → fail
+      - geometry.no_unintended_hscroll
+      - geometry.cta_visible_nonzero
+      - geometry.sticky_header_no_cover
+      - scroll.ownership_explicit          # app/list/detail/modal — задокументированы
+      - scroll.no_nested_trap
+      - focus.tablist_roving               # Tab входит once, стрелки двигают, Enter активирует
+      - focus.max_budget                   # крит-задача ≤ N интеракций (см. matrix)
+      - overlays.inside_viewport
+      - overlays.not_covering_target
+      - honesty.no_mock_action_in_prod     # actionable control требует LIVE-контракт
+      - honesty.no_template_placeholders   # живой вид без маркеров /Users/<user>, <mod>, <publishedfileid> (M-7, живьём на REL-12)
+      - effects.backend_truth             # success ⇒ files/revision/reparse подтверждены
+  T3_native:
+    run: testlab/auto_install.py install+launch+smoke
+    required_for: [release_gate]
+    channel: ax_background
+    # Мандат владельца 2026-09-30: keystroke крадёт фокус — запрещён.
+    # Протокол testlab/ui_automation/ax/README.md: запуск бинарем с
+    # RIMLOC_AUTOMATION=1 → одна активация 1.5с (материализация web-AX) →
+    # возврат фокуса → далее только AXPress/AXSetValue + screencapture -x -l.
+    # Доказано на REL-12: AXPress err=0, кадры меняются, frontmodest нетронут.
+  T4_package:
+    run: cargo tauri build (beforeBuildCommand обязателен — инцидент stale-dist 30.09)
+    required_for: [release_gate]
+  T5_visual:
+    ready_base: "54 сцены (dark/light × ru/en × 9 маршрутов + оси narrow/wide на dark/ru) — npm run scenes:t5, e2e/scenes/generate-t5-scenes.mjs, вывод RimLoc-evidence/t5-scenes; smoke light-review: тема/заполнение ОК; оси long_text/cjk/narrow/wide — следующая волна"
+    scenes: [Home, Workspace, Review, Settings, Language, Onboarding, Source, Build, Diagnostics]
+    axes: [light, dark, ru, en, long_text, cjk, narrow, wide]
+    method: deterministic screenshot diff + независимый дизайн-ревью финалистов
+    required_for: [owner_review_pack]
+  T6_game:
+    method: изолированный RimWorld-профиль, read-only исходники, game logs — primary evidence
+    phase1_structural: "DONE 01.10 (background-only): реальные export+build-mod
+      через REL-13, build-mod валиден (<ModMetaData>/Languages/Keyed);
+      находка T6-a (export-vs-buildmod UX) исправлена подсказкой"
+    phase2_in_game: "PASS 03.10 — полная цепочка: RimLoc-пакет (Keyed + DefInjected маркеры,
+      языковая папка 'Russian (Русский)' = активной) → RimWorld 1.6 загрузил →
+      живой runtime разрешил маркеры → Research UI отрисовал → in-process
+      скриншот зафиксировал (t6-background-acceptance/ACCEPTANCE.md).
+      Runtime Bridge v0.3.0 (file channel, StaticConstructorOnStartup, READY 10/10).
+      Языковая семантика: folder = identity, LanguageInfo не нужен (A/B).
+      -savedatafolder песочница; полное решение — RIMWORLD_BACKGROUND_QA_DECISION.md).
+      ФИНАЛЬНАЯ ЦЕПОЧКА ДОКАЗАНА: RimLoc-пакет (Keyed+DefInjected маркеры,
+      языковая папка 'Russian (Русский)' = активной) → игра загрузила и
+      ОТРИСОВАЛА перевод в research-экране: 'RIMLOC-T6 MARKER definjected
+      research' (кадр t6-final/marker-in-game-full.png). LanguageInfo: НЕ нужен
+      для контрибьютора (язык регистрируют RU-паки; A/B). См. §14 статусы."
+    runtime_bridge_v1: "03.10: мост хардненён до v1.0.0 (JSON envelope, семантические
+      ошибки, freshness, capabilities, evidence-fence) — конформанс 30/30 live,
+      golden-сценарий и маркеры НЕ мутированы; исходник канонизирован в
+      testlab/runtime_bridge/ (test-only, never ship)"
+    required_for: [public_release_decision]
+
+semantic_snapshot:
+  tool: "npm run snapshot:semantic (e2e/scenes/semantic-snapshot.mjs)"
+  ready: "9 маршрутов — фокус/диалоги/контролы/scroll-состояние в JSON (RimLoc-evidence/semantic-snapshots); AI-читаемое наблюдение без скриншотов (мандат 03 §7)"
+  facts_20260930: "overflowX=0 на всех 9 маршрутах; scroll-контейнеры: workspace/review/help/providers/home"
+
+sensor_gaps:
+  post_action_states: "счётчики/результаты рендерятся только ПОСЛЕ действий (validate/export) — пассивный снимок их не видит (M-9-класс); кандидат: снапшот-маршруты с пре-действиями по образцу project-tab; follow-up"
+non_interference_contract:
+  policy: "RIMLOC_AUTOMATION_POLICY=background-only (P0, владелец 2026-10-01):
+    НОЛЬ активаций — ни NSApp.activate, ни System Events activate/keystroke,
+    ни CGEvent-глобального ввода; фолбэк к foreground недостижим из фонового
+    режима. Сценарии, требующие переднего плана (реальный NSOpenPanel, IME,
+    fullscreen/Spaces), — RIMLOC_AUTOMATION_POLICY=exclusive, только с явным
+    одобрением владельца на прогон, никогда автоматически."
+  enforcement: "watchdog: сэмплы frontmost/pointer/clipboard каждые 0.5с;
+    rimloc-gui frontmost в background-only ⇒ HOST_INTERFERENCE_FOREGROUND_
+    ACTIVATION, драйвер глушится немедленно; правки указателя/клипборда
+    фоном ⇒ HOST_INTERFERENCE (клипборд — только fingerprint, без контента)"
+  assert_before_after: [pointer_idle, frontmost_app, active_space, clipboard]
+  exceptions: [native_file_dialogs]   # EXCLUSIVE mode only
+
+release_requirements:
+  pre_public_soak: "один чистый (0 необъяснённых смертей процесса) background
+    automation soak >= 60 минут перед любым публичным шагом; не блокирует волну 13"
+  rimworld_adapter: "T6-сценарий (изоляция: клон .app + -savedatafolder; маркеры;
+    лог-маркеры; хэши источников) —persist как переиспользуемый адаптер-тест;
+    RimWorld-специфика (launch/log/translation assertions) держится за
+    RimWorld-адаптером, не за общим фреймворком (владелец §10)"

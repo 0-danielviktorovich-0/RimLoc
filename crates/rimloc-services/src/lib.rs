@@ -8,6 +8,7 @@ pub use rimloc_validate::ValidationMessage;
 pub mod build;
 pub mod canonical_bridge;
 pub mod contract;
+pub mod contribution;
 pub mod eligibility_engine;
 pub mod export;
 pub mod extras;
@@ -25,8 +26,10 @@ pub mod plugins_xml_ext;
 pub mod plugins_yaml;
 pub mod project;
 pub mod project_store;
+pub mod providers;
 pub mod scan;
 pub mod session;
+pub mod ui_catalog;
 mod util;
 pub mod validate;
 
@@ -35,10 +38,12 @@ pub use build::{
     build_from_root_with_progress, BuildPlan,
 };
 pub use contract::{
-    capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse, Capability,
-    CapabilityReport, ContractError, ContractErrorCode, CreateProjectRequest, IntentAction, JobId,
-    PathBufDto, ProjectId, ProjectSnapshot, ProjectSummary, Revision, SessionEpoch,
-    TranslationIntent, UnsupportedCapability, UI_CONTRACT_VERSION,
+    capability_report, ui_contract_version, ApplyExistingRequest, ApplyExistingResponse,
+    ApplyIntentsRequest, ApplyIntentsResponse, Capability, CapabilityReport, ContractError,
+    ContractErrorCode, CreateProjectRequest, ExistingAmbiguousItem, ExistingMatchItem,
+    ImportExistingRequest, ImportExistingResponse, IntentAction, JobId, PathBufDto, ProjectId,
+    ProjectSnapshot, ProjectSummary, Revision, SessionEpoch, TranslationIntent,
+    UnsupportedCapability, EXISTING_LIST_LIMIT, UI_CONTRACT_VERSION,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
 pub use export::export_po_with_tm;
@@ -74,12 +79,17 @@ pub use scan::{
 pub use session::ProjectSessionManager;
 pub use util::canonical_match_key;
 pub use util::canonical_view;
+pub use util::ensure_free_output_path;
+pub use util::ensure_writable_output_path;
 pub use util::is_source_for_lang_dir;
 pub use util::is_under_languages_dir;
 pub use util::is_within;
+pub use util::lang_dir_form_ok;
 pub use util::normalize_lang_dir;
 pub use util::package_id_slug;
+pub use util::resolve_cli_out_path;
 pub use util::write_atomic;
+pub use util::{PathGuardError, PathGuardErrorKind};
 pub use validate::validate_placeholders_cross_language;
 pub use validate::{validate_lists_cross_language, validate_orphans_cross_language};
 pub use validate::{

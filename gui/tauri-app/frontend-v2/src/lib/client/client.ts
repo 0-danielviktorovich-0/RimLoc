@@ -9,14 +9,26 @@
 // Store binding is a LATER step (post contract accept); nothing here
 // imports ../mock/* — the mock lives behind MockTransport only.
 import type {
+  ApplyExistingRequestDto,
+  ApplyExistingResponseDto,
+  BuildIdentityDto,
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
+  BuildModProjectResponseDto,
   ContractErrorCode,
   ContractHandshakeDto,
   DiagnoseResponseDto,
   ExportProjectResponseDto,
+  GlossaryTermDto,
+  ImportExistingRequestDto,
+  ImportExistingResponseDto,
+  ProjectGlossaryDeleteRequestDto,
+  ProjectGlossaryDeleteResponseDto,
+  ProjectGlossaryUpsertRequestDto,
+  ProjectGlossaryUpsertResponseDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
+  SelflocBuildContributionResponseDto,
   TranslationIntentDto,
   ValidateProjectResponseDto
 } from './types';
@@ -186,6 +198,104 @@ export class RimLocClient {
   /** Sanitized support bundle over the project's LAST FAILED operation. */
   async diagnoseProject(projectId: string, outDir: string): Promise<DiagnoseResponseDto> {
     return this.call('project_diagnose', { project_id: projectId, out_dir: outDir });
+  }
+
+  /** Dry-run analysis of an existing translation pack against the open
+   *  project (READ-ONLY: nothing is written, no revision bump). The
+   *  reusable set it reports is exactly what applyExisting applies. */
+  async importExisting(request: ImportExistingRequestDto): Promise<ImportExistingResponseDto> {
+    return this.call('project_import_existing', { request });
+  }
+
+  /** Apply the REUSABLE set of an analyzed pack into the open project
+   *  (persist-before-ack). Existing translations are never overwritten;
+   *  ambiguous lines are never auto-applied. */
+  async applyExisting(request: ApplyExistingRequestDto): Promise<ApplyExistingResponseDto> {
+    return this.call('project_apply_existing', { request });
+  }
+
+  /** Project glossary: the project's terms (wave 13, read-only). */
+  async glossaryList(projectId: string, sessionEpoch: number): Promise<GlossaryTermDto[]> {
+    return this.call('project_glossary', { project_id: projectId, session_epoch: sessionEpoch });
+  }
+
+  /** Create/update one glossary term (case-insensitive `term` match;
+   *  persist-before-ack — the returned revision is durable). */
+  async glossaryUpsert(
+    request: ProjectGlossaryUpsertRequestDto
+  ): Promise<ProjectGlossaryUpsertResponseDto> {
+    return this.call('project_glossary_upsert', { request });
+  }
+
+  /** Remove one glossary term; an unknown term is a typed refusal. */
+  async glossaryDelete(
+    request: ProjectGlossaryDeleteRequestDto
+  ): Promise<ProjectGlossaryDeleteResponseDto> {
+    return this.call('project_glossary_delete', { request });
+  }
+
+  /** Identity of the RUNNING binary (soak-hardening §1): acceptance
+   * preflight compares this against the expected source commit BEFORE any
+   * cycles — a wrong artifact aborts, never soaks silently. */
+  async buildIdentity(): Promise<BuildIdentityDto> {
+    return this.call('build_identity', {});
+  }
+
+  /** FULL drop-in mod package (`About/About.xml` in the game-loadable
+   *  `<ModMetaData>` shape + `Languages/<locale>`) into a CALLER-SPECIFIED
+   *  out directory — the folder can move straight into the game's Mods
+   *  directory. The services guard partition is identical to exportProject
+   *  and the result is reparse-verified before the ack. */
+  async buildModProject(
+    projectId: string,
+    sessionEpoch: number,
+    outDir: string,
+    locale: string
+  ): Promise<BuildModProjectResponseDto> {
+    return this.call('project_build_mod', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      out_dir: outDir,
+      locale
+    });
+  }
+
+  /** Native OS folder dialog (main.rs pick_directory → blocking_pick_folder).
+   *  Resolves the picked ABSOLUTE path, or null when the user cancelled —
+   *  null is a normal outcome, never an error. In mock mode this rejects
+   *  with the honest `unsupported_capability` refusal: there is no OS dialog
+   *  without the desktop bridge, and the mock never fakes one. */
+  async pickDirectory(initial?: string): Promise<string | null> {
+    return this.call('pick_directory', initial ? { initial } : {});
+  }
+
+  /** Self-localization entry (mandate D): absolute path of the app-bundled
+   * RimLoc UI catalog, prepared as an ORDINARY project source directory —
+   * feed it straight into createProject() and the existing ui_catalog
+   * adapter routes it (no special-cased client flow). Failure is a typed
+   * error, never a fabricated path; in mock mode this rejects with the
+   * honest `unsupported_capability` refusal. */
+  async selflocCatalogDir(): Promise<string> {
+    return this.call('selfloc_catalog_dir', {});
+  }
+
+  /** Self-localization contribution (beta): build the offline translation
+   * bundle from the OPEN session (the RimLoc UI catalog project) into the
+   * CALLER-SPECIFIED out directory. The services guard refuses relative
+   * paths and source-tree/managed-root targets; NEEDS-FIXES writes nothing
+   * and carries the enumerated refusals. */
+  async selflocBuildContribution(
+    projectId: string,
+    sessionEpoch: number,
+    outDir: string,
+    locale: string
+  ): Promise<SelflocBuildContributionResponseDto> {
+    return this.call('selfloc_build_contribution', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      out_dir: outDir,
+      locale
+    });
   }
 }
 

@@ -7,31 +7,47 @@
   // links into the specialized tools · a clearly separated danger zone with
   // confirmed reset/archive. Deliberately NOT a clone of Settings: it reports
   // project state and routes into tools, it does not re-edit configuration.
-  // Mock paths and states, zero backend.
+  // M-7 (live audit 2026-09-30): locations are LIVE-first — a contract
+  // project shows its real source root from the wire snapshot (honest «—»
+  // on legacy envelopes); the mock constants only describe the demo/dev
+  // fixture, never a live project.
   import Icon from '../Icon.svelte';
   import { t } from '../../../i18n/store.svelte';
   import { project } from '../../stores/project.svelte';
   import { languages, type TargetSummary } from '../../languages/store.svelte';
   import { registry } from '../../languages/registry';
   import { router } from '../../router.svelte';
-  import { RW_VERSION } from '../../mock/diagnostics';
-  import { SOURCE_LOCATION, OUTPUT_LOCATION } from '../../stores/diagnostics.svelte';
-  import { capability, CAP_BUILD } from '../../client/capability.svelte';
+  import { RW_VERSION, DEMO_SOURCE_ROOT } from '../../mock/diagnostics';
+  import { clientInstance } from '../../client/instance.svelte';
+  import { SELFLOC_PROJECT_NAME } from '../../selfloc';
+  import type { SelflocBuildContributionResponseDto } from '../../client/types';
 
   // ------------------------------------------------------------ lifecycle CTA
   const counts = $derived(project.statusCounts());
   const problems = $derived(counts.pending_review + counts.sourceChanged);
   const activeSummary = $derived(languages.summary(languages.activeLocale));
-  // Audit P1-5: honest degradation on a REAL contract project while the
-  // build slice has not landed (see Workspace for the same gate).
-  const buildBlocked = $derived(
-    project.source === 'contract' && capability.state(CAP_BUILD) === false
+
+  // ------------------------------------------------------------ M-7 locations
+  // Contract project → real paths from the session (source root rides the
+  // snapshot; output dir is chosen at export time — honest «—», not a
+  // template). Anything else is the demo/dev fixture the mock constants
+  // legitimately describe.
+  const isContractProject = $derived(project.source === 'contract');
+  function tildeDisplay(p: string): string {
+    return p.replace(/^\/Users\/[^/]+/, '~');
+  }
+  const sourceLocationValue = $derived(
+    isContractProject
+      ? project.contractSourceRoot
+        ? tildeDisplay(project.contractSourceRoot)
+        : '—'
+      : DEMO_SOURCE_ROOT,
   );
-  const buildBlockedTitle = $derived(
-    buildBlocked
-      ? t('capability.unsupported.title', { reason: capability.reason(CAP_BUILD) ?? '' })
-      : undefined
-  );
+  // Output dir выбирается в момент экспорта — честный «—» в обоих режимах.
+  const outputLocationValue = $derived('—');
+  // L-8 (UI audit 2026-09-29): the overview no longer duplicates the toolbar
+  // build CTA right under the heading — the single CTA lives in the
+  // Workspace toolbar; the Health block below still routes into review.
 
   // ------------------------------------------------------------ source update
   // Mock state machine for "the game/mod changed under the project":
@@ -83,6 +99,46 @@
       return iso;
     }
   }
+
+  // ------------------------------------------------------- contribution (beta)
+  // Wave 7: the offline contribution bundle builder — ONLY on the RimLoc UI
+  // catalog project (identity via the store's resolved display name, the
+  // same name the selfloc entry stamps at create). The flow is the standard
+  // pick_directory → command chain: the OS dialog resolves the absolute out
+  // dir, cancel is silent, the typed result carries the readiness status,
+  // the accepted count and the enumerated refusals verbatim.
+  const isSelflocProject = $derived(
+    project.source === 'contract' && project.displayName === SELFLOC_PROJECT_NAME
+  );
+  let contributionBusy = $state(false);
+  let contributionResult = $state<SelflocBuildContributionResponseDto | null>(null);
+  let contributionError = $state<string | null>(null);
+  let showRejections = $state(false);
+
+  async function buildContribution() {
+    if (contributionBusy) return;
+    const projectId = project.contractProjectId;
+    if (!projectId) return;
+    contributionBusy = true;
+    contributionResult = null;
+    contributionError = null;
+    showRejections = false;
+    try {
+      const client = clientInstance.getClient();
+      const dir = await client.pickDirectory(languages.activeLocale || undefined);
+      if (!dir) return; // cancel — a normal outcome, nothing to report
+      contributionResult = await client.selflocBuildContribution(
+        projectId,
+        project.contractEpoch,
+        dir,
+        languages.activeLocale
+      );
+    } catch (e) {
+      contributionError = e instanceof Error ? e.message : String(e);
+    } finally {
+      contributionBusy = false;
+    }
+  }
 </script>
 
 <section class="overview" aria-labelledby="project-overview-heading" data-testid="workspace.project.overview">
@@ -100,7 +156,11 @@
 
   <!-- Identity: content/mod + RimWorld version. -->
   <div class="identity">
-    <span class="name mono" data-testid="workspace.project.name">{project.projectName}</span>
+    <!-- M-5 parity with the Workspace toolbar-meta: the human name when
+         resolved, the raw service id as title (and fallback). -->
+    <span class="name mono" data-testid="workspace.project.name" title={project.projectName}>
+      {project.displayName}
+    </span>
     <span class="chip">{t('workspace.project.contentKind')}</span>
     <span class="chip mono" data-testid="workspace.project.rwversion">{RW_VERSION}</span>
     {#if project.source === 'contract'}
@@ -112,28 +172,8 @@
     {/if}
   </div>
 
-  <!-- Lifecycle CTA (§15/§21): what remains → what next. -->
-  <div class="cta-row">
-    {#if problems > 0}
-      <button type="button" class="btn btn-primary" data-testid="workspace.project.cta" onclick={() => router.navigate('review')}>
-        <Icon name="clipboard-check" size={14} />
-        {t('workspace.cta.reviewIssues', { count: problems })}
-      </button>
-    {:else}
-      <button
-        type="button"
-        class="btn btn-primary"
-        data-testid="workspace.project.cta"
-        disabled={buildBlocked}
-        title={buildBlockedTitle}
-        aria-disabled={buildBlocked}
-        onclick={() => router.navigate('build')}
-      >
-        <Icon name="package" size={14} />
-        {t('workspace.cta.build')}
-      </button>
-    {/if}
-  </div>
+  <!-- L-8: the lifecycle CTA was removed — it duplicated the Workspace
+       toolbar CTA verbatim (same label, same route) right under the heading. -->
 
   <!-- Languages: one source → N targets, active highlighted (multi-target). -->
   <div class="block" data-testid="workspace.project.languages-block">
@@ -181,11 +221,11 @@
   <dl class="locations" data-testid="workspace.project.locations">
     <div class="loc-row">
       <dt>{t('workspace.project.sourceLocation')}</dt>
-      <dd class="mono">{SOURCE_LOCATION}</dd>
+      <dd class="mono" data-testid="workspace.project.sourceLocation.value">{sourceLocationValue}</dd>
     </div>
     <div class="loc-row">
       <dt>{t('workspace.project.outputLocation')}</dt>
-      <dd class="mono">{OUTPUT_LOCATION}</dd>
+      <dd class="mono" data-testid="workspace.project.outputLocation.value">{outputLocationValue}</dd>
     </div>
     <div class="loc-row">
       <dt>{t('workspace.project.entries')}</dt>
@@ -267,8 +307,77 @@
       <button type="button" class="btn" data-testid="workspace.project.tool.build" onclick={() => router.navigate('build')}>
         <Icon name="package" size={13} /> {t('workspace.cta.build')}
       </button>
+      <!-- W2: the existing-pack matching flow makes sense INSIDE an open
+           project — it analyzes against THIS project's inventory. -->
+      <button type="button" class="btn" data-testid="workspace.project.tool.existing" onclick={() => router.navigate('existing')}>
+        <Icon name="folder-open" size={13} /> {t('workspace.project.tool.existing')}
+      </button>
     </div>
   </div>
+
+  <!-- Wave 7 (beta): the offline contribution bundle — ONLY on the RimLoc
+       UI catalog project; nothing is sent anywhere, the bundle file lands
+       in the folder the user picks. -->
+  {#if isSelflocProject}
+    <div class="block" data-testid="workspace.project.contribution">
+      <h3 class="block-title">{t('workspace.project.contribution.title')}</h3>
+      <p class="muted-text">{t('workspace.project.contribution.note')}</p>
+      <div>
+        <button
+          type="button"
+          class="btn"
+          data-testid="workspace.project.contribution.build"
+          onclick={buildContribution}
+          disabled={contributionBusy}
+        >
+          <Icon name="package" size={13} />
+          {contributionBusy
+            ? t('workspace.project.contribution.building')
+            : t('workspace.project.contribution.build')}
+        </button>
+      </div>
+      {#if contributionError}
+        <p class="state warn" data-testid="workspace.project.contribution.error">{contributionError}</p>
+      {/if}
+      {#if contributionResult}
+        <div class="contribution-result" data-testid="workspace.project.contribution.result" data-status={contributionResult.status}>
+          <span
+            class="state"
+            class:ok={contributionResult.status === 'READY'}
+            class:warn={contributionResult.status !== 'READY'}
+            data-testid="workspace.project.contribution.status"
+          >
+            {t('workspace.project.contribution.status', {
+              status: contributionResult.status,
+              accepted: contributionResult.accepted_count
+            })}
+          </span>
+          {#if contributionResult.bundle_path}
+            <p class="mono muted contribution-path" data-testid="workspace.project.contribution.path">
+              {t('workspace.project.contribution.path', { path: contributionResult.bundle_path })}
+            </p>
+          {/if}
+          {#if contributionResult.rejected.length > 0}
+            <button
+              type="button"
+              class="btn"
+              data-testid="workspace.project.contribution.rejected"
+              onclick={() => (showRejections = !showRejections)}
+            >
+              {t('workspace.project.contribution.rejected', { count: contributionResult.rejected.length })}
+            </button>
+            {#if showRejections}
+              <ul class="rejections" data-testid="workspace.project.contribution.rejections">
+                {#each contributionResult.rejected as rejection (rejection.id + rejection.reason)}
+                  <li class="mono"><span class="rejection-id">{rejection.id}</span> — {rejection.reason}</li>
+                {/each}
+              </ul>
+            {/if}
+          {/if}
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   <!-- Danger zone: separated, confirmed, explained. -->
   <div class="danger" data-testid="workspace.project.danger">
@@ -321,6 +430,10 @@
 </section>
 
 <style>
+  /* Wave 9 (owner blank-tail class): the section is the tab's fill-and-scroll
+     region — flex: 1 keeps it owning the tab column instead of clamping to
+     content height and leaving a dead tail below (inert when mounted outside
+     a flex column, e.g. a summary context). */
   .overview {
     padding: var(--space-4) var(--space-6);
     overflow-y: auto;
@@ -328,6 +441,8 @@
     flex-direction: column;
     gap: var(--space-4);
     max-width: 640px;
+    flex: 1;
+    min-height: 0;
   }
 
   .title {
@@ -373,10 +488,6 @@
     background: var(--color-muted);
     font-size: var(--text-meta-size);
     color: var(--color-muted-fg);
-  }
-
-  .cta-row {
-    display: flex;
   }
 
   .fixture-chip,
@@ -571,6 +682,35 @@
   .update-actions {
     display: flex;
     gap: var(--space-2);
+  }
+
+  .contribution-result {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    font-size: var(--text-dense-size);
+  }
+
+  .contribution-path {
+    margin: 0;
+    word-break: break-all;
+  }
+
+  .rejections {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-muted);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: var(--text-meta-size);
+  }
+
+  .rejection-id {
+    font-weight: 600;
   }
 
   .tool-grid {
