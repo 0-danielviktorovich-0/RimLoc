@@ -1,7 +1,5 @@
 use crate::Result;
-use roxmltree::Document;
 use std::path::{Path, PathBuf};
-use walkdir::WalkDir;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct PatchTextCandidate {
@@ -21,99 +19,33 @@ pub struct InferredDefInjected {
     pub field_path: String,
 }
 
-fn collect_texts(node: roxmltree::Node, path_prefix: &str, out: &mut Vec<(String, String)>) {
-    for child in node.children().filter(|n| n.is_element()) {
-        let name = child.tag_name().name();
-        let path = if path_prefix.is_empty() {
-            name.to_string()
-        } else {
-            format!("{}.{}", path_prefix, name)
-        };
-        if let Some(t) = child.text().map(str::trim) {
-            if !t.is_empty() {
-                out.push((path.clone(), t.to_string()));
-            }
-        }
-        collect_texts(child, &path, out);
-    }
-}
-
-/// Scan PatchOperations in Patches/ and collect human-readable text values introduced via <value> nodes.
+/// Scan PatchOperations in Patches/ and collect player-visible text values
+/// introduced via <value> nodes. Extraction (leaf walking, whitelist/noise
+/// filtering, wrapper-aware operation discovery) lives in
+/// `rimloc_parsers_xml::patches_extract`; this layer only adds DefInjected
+/// key inference from the operation xpath.
 pub fn scan_patches_texts(root: &Path, min_len: usize) -> Result<Vec<PatchTextCandidate>> {
-    let mut out = Vec::new();
-    for entry in WalkDir::new(root).into_iter().filter_map(|e| e.ok()) {
-        let p = entry.path();
-        if !p.is_file() {
-            continue;
-        }
-        if p.extension()
-            .and_then(|e| e.to_str())
-            .is_none_or(|ext| !ext.eq_ignore_ascii_case("xml"))
-        {
-            continue;
-        }
-        let s = p.to_string_lossy();
-        if !(s.contains("/Patches/") || s.contains("\\Patches\\")) {
-            continue;
-        }
-        let content = match std::fs::read_to_string(p) {
-            Ok(s) => s,
-            Err(_) => continue,
-        };
-        let doc = match Document::parse(&content) {
-            Ok(d) => d,
-            Err(_) => continue,
-        };
-        let root_el = doc.root_element();
-        for op in root_el.descendants().filter(|n| n.is_element()) {
-            let tag = op.tag_name().name();
-            if tag.eq_ignore_ascii_case("Operation") {
-                let class = op.attribute("Class").unwrap_or("").to_string();
-                if class.is_empty() {
-                    continue;
-                }
-                let xpath = op
-                    .children()
-                    .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("xpath"))
-                    .and_then(|n| n.text())
-                    .map(|s| s.trim().to_string());
-                if let Some(value_node) = op
-                    .children()
-                    .find(|c| c.is_element() && c.tag_name().name().eq_ignore_ascii_case("value"))
-                {
-                    // Parse inner fragment as XML if possible; otherwise treat as plain text
-                    let mut texts = Vec::new();
-                    let frag = value_node.text().unwrap_or("").trim();
-                    if !frag.is_empty() {
-                        let wrapped = format!("<Root>{}</Root>", frag);
-                        if let Ok(fdoc) = Document::parse(&wrapped) {
-                            collect_texts(fdoc.root_element(), "", &mut texts);
-                        }
-                    }
-                    for (tag_path, val) in texts {
-                        if val.len() < min_len {
-                            continue;
-                        }
-                        let strict = std::env::var("RIMLOC_PATCH_STRICT_XPATH")
-                            .map(|v| v == "1")
-                            .unwrap_or(false);
-                        let inferred = xpath
-                            .as_deref()
-                            .and_then(|xp| infer_definj_from_xpath_mode(xp, &tag_path, strict));
-                        out.push(PatchTextCandidate {
-                            operation_class: class.clone(),
-                            xpath: xpath.clone(),
-                            tag_path,
-                            value: val,
-                            source_file: p.to_path_buf(),
-                            inferred,
-                        });
-                    }
-                }
+    let (cands, _stats) = rimloc_parsers_xml::scan_patch_values(root, min_len)?;
+    let strict = std::env::var("RIMLOC_PATCH_STRICT_XPATH")
+        .map(|v| v == "1")
+        .unwrap_or(false);
+    Ok(cands
+        .into_iter()
+        .map(|c| {
+            let inferred = c
+                .xpath
+                .as_deref()
+                .and_then(|xp| infer_definj_from_xpath_mode(xp, &c.field_path, strict));
+            PatchTextCandidate {
+                operation_class: c.operation_class,
+                xpath: c.xpath,
+                tag_path: c.field_path,
+                value: c.value,
+                source_file: c.source_file,
+                inferred,
             }
-        }
-    }
-    Ok(out)
+        })
+        .collect())
 }
 
 pub(crate) fn infer_definj_from_xpath_mode(
@@ -122,11 +54,15 @@ pub(crate) fn infer_definj_from_xpath_mode(
     strict: bool,
 ) -> Option<InferredDefInjected> {
     // Heuristic: looking for .../Defs/<DefType>[defName='X' or @defName='X' or @Name='X']/rest/of/path
-    // Then map rest/of/path + tag_path into dot path; normalize li's
-    let xp = xpath.replace("\\", "/");
-    // find segment after /Defs/
-    let idx = xp.find("/Defs/")?;
-    let after_defs = &xp[idx + "/Defs/".len()..];
+    // Then map rest/of/path + tag_path into dot path; normalize li's.
+    // Corpus xpaths are usually RELATIVE (`Defs/ThingDef[…]`) and quote
+    // conditions with double quotes — both accepted here.
+    let xp = xpath.replace('\\', "/");
+    let after_defs = match xp.find("/Defs/") {
+        Some(idx) => &xp[idx + "/Defs/".len()..],
+        // relative form `Defs/ThingDef[…]`
+        None => xp.strip_prefix("Defs/")?,
+    };
     // take the first segment (DefType[...] or DefType)
     let seg_end = after_defs.find('/').unwrap_or(after_defs.len());
     let first = &after_defs[..seg_end];
@@ -142,12 +78,12 @@ pub(crate) fn infer_definj_from_xpath_mode(
     if def_type.trim().is_empty() {
         return None;
     }
-    // try extract def_name from condition
+    // try extract def_name from condition (single- AND double-quoted xpath
+    // strings are both legal in RimWorld patch xpaths)
     let name_re = if strict {
-        regex::Regex::new(r"(?i)^(?:\[@?defName\s*=\s*'([^']+)'\]|\[@?Name\s*=\s*'([^']+)'\])$")
-            .ok()?
+        regex::Regex::new(r#"(?i)^\[@?(?:defName|Name)\s*=\s*["']([^"']+)["']\]$"#).ok()?
     } else {
-        regex::Regex::new(r"(?i)(?:@?defName|@?Name)\s*=\s*'([^']+)'").ok()?
+        regex::Regex::new(r#"(?i)(?:@?defName|@?Name)\s*=\s*["']([^"']+)["']"#).ok()?
     };
     let def_name = name_re
         .captures(&cond)
@@ -191,11 +127,21 @@ pub(crate) fn infer_definj_from_xpath_mode(
             segs.push(name.to_string());
         }
     }
-    for part in tag_path.split('.') {
+    for (i, part) in tag_path.split('.').enumerate() {
         if part.is_empty() {
             continue;
         }
         let name = part.split('[').next().unwrap_or("");
+        if i == 0
+            && segs
+                .last()
+                .map(|s| s.eq_ignore_ascii_case(name))
+                .unwrap_or(false)
+        {
+            // xpath already names this field (`…/baseDesc` + <baseDesc>…):
+            // appending it again would double the segment (`X.baseDesc.baseDesc`).
+            continue;
+        }
         if name.eq_ignore_ascii_case("li") {
             segs.push("li".to_string());
         } else if name.is_empty() {
@@ -239,5 +185,40 @@ mod tests {
         assert_eq!(inf.def_type, "RecipeDef");
         assert_eq!(inf.def_name, "Cook_SimpleMeal");
         assert_eq!(inf.field_path, "ingredients.li.label");
+    }
+
+    #[test]
+    fn infer_from_relative_xpath_double_quotes() {
+        // Corpus style: relative `Defs/…` and multiline double-quoted condition
+        let xp = "Defs/BackstoryDef[\n\t\t\t\tdefName=\"MenagerieKeeper1\"\n\t\t\t]/title";
+        let inf = infer_definj_from_xpath_mode(xp, "title", false).expect("infer");
+        assert_eq!(inf.def_type, "BackstoryDef");
+        assert_eq!(inf.def_name, "MenagerieKeeper1");
+        assert_eq!(inf.field_path, "title");
+    }
+
+    #[test]
+    fn infer_atname_double_quotes_strict() {
+        let xp = "/Defs/RecipeDef[@Name=\"Cook_SimpleMeal\"]/label";
+        let inf = infer_definj_from_xpath_mode(xp, "label", true).expect("infer");
+        assert_eq!(inf.def_name, "Cook_SimpleMeal");
+        assert_eq!(inf.field_path, "label");
+    }
+
+    #[test]
+    fn infer_collapses_xpath_tail_duplicate() {
+        // xpath tail names the same field as the <value> leaf: no doubling
+        let inf = infer_definj_from_xpath_mode(
+            "Defs/BackstoryDef[defName=\"X\"]/baseDesc",
+            "baseDesc",
+            false,
+        )
+        .expect("infer");
+        assert_eq!(inf.field_path, "baseDesc");
+        // different tail keeps both segments
+        let inf2 =
+            infer_definj_from_xpath_mode("Defs/ThingDef[defName=\"Y\"]/verbs", "li.label", false)
+                .expect("infer");
+        assert_eq!(inf2.field_path, "verbs.li.label");
     }
 }
