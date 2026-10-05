@@ -1,6 +1,6 @@
 # CI — дизайн production-конвейера
 
-Дата: 2026-09-27 · Статус: **дизайн-документ + имплементация волны**. Push-триггеры не возвращены — решение владельца (b102f3e) сохранено.
+Дата: 2026-09-27 · Обновлено: 2026-10-06 · Статус: **живой дизайн + имплементация**. Тяжёлый core CI по-прежнему PR/manual; точечные push-триггеры разрешены только там, где они реально нужны (GitHub Pages после docs-merge и Codecov baseline после code push).
 Связанное: [BRANCH_STRATEGY.md](BRANCH_STRATEGY.md) (гейты на PR, trunk-based), [VERSIONING.md](VERSIONING.md) (каноническая схема версий), [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 
 ## 1. Аудит до редизайна (evidence: 8 активных + 2 запаркованных)
@@ -22,7 +22,7 @@
 
 ## 2. Рамка владельца (не пересматривалась)
 
-- **Push-триггеры сняты** (b102f3e «ci: disable push triggers, keep manual dispatch») — все workflow реагируют только на `pull_request` (в main) и/или `workflow_dispatch`. Еженедельный `schedule` у CI в ту же рамку не влезает и снят; сниппет для возврата — §6.
+- **Тяжёлый core CI не запускается на каждый push**: `ci.yml`, semver и release-пути остаются PR/manual. После ревизии 2026-10 точечный `push` используется только для дешёвых/необходимых post-merge действий: публикация MkDocs Pages при изменении docs на `main` и запись Codecov baseline на `main`/активной convergence-ветке.
 - **Релизные workflow припаркованы** (9591f4f) — `.github/workflows-disabled/` не тронут; при разморозке см. §7.
 
 ## 3. Полномочия релиза (кто что публикует)
@@ -41,11 +41,12 @@
 | `ci.yml` | PR→main, dispatch | `lint` (fmt+clippy), `test` (ubuntu/macos/windows), `gui` (Tauri build), `frontend` (svelte-check + vitest), `deny` (cargo-deny), `schema` (drift), `workflows-lint` (actionlint) | единый quality gate |
 | `semver.yml` | PR→main, dispatch | `semver` (cargo-semver-checks, гейт), `public-api` (информационный диф) | стабильность API |
 | `changelog-check.yml` | PR→main | `verify` | CHANGELOG сопровождает пользовательские изменения (лейбл `internal-only` выключает) |
-| `docs.yml` | PR→main, dispatch | `build`, `deploy-prod`, `deploy-preview` | MkDocs |
+| `docs.yml` | docs PR→main + docs push→main + dispatch | `build`, `deploy-prod`, optional `deploy-preview` | strict MkDocs + Pages; docs-only PR не гоняет тяжёлый Rust matrix |
+| `coverage.yml` | code PR/push→main + активная convergence-ветка, dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov + Codecov OIDC, два coverage-family report |
 | `publish.yml` | dispatch | `publish` | recovery-публикация crates.io |
 | `release-plz.yml` | dispatch | `release_pr`, `release` | версионирование и релизы |
 
-Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; frontend typecheck/tests — `ci.frontend`; dependency/security audit — `ci.deny` (cargo-deny: RustSec-advизории + лицензии + bans; cargo-audit не добавлен как дубликат — см. §6); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория (см. §6); mkdocs build — `docs.build`.
+Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; React typecheck/build — `ci.frontend-react`; frozen Svelte regression — `ci.frontend`; dependency/security audit — `ci.deny`; coverage — отдельный `coverage.yml` (Rust workspace + Tauri Rust, Codecov Components/Flags, OIDC); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория с path-конфигом; mkdocs — strict `docs.build`.
 
 ## 5. Правила безопасности, общие для всех workflow
 
@@ -76,7 +77,7 @@
 
 ## 6. Осознанно отложенное (позже, по решению владельца)
 
-- **Coverage (`cargo-llvm-cov` + vitest `--coverage`).** Спроектировано, не имплементировано: матчер — job `ci.coverage` на ubuntu (`cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info` + `npm test -- --coverage` в `gui/tauri-app/frontend-v2`), загрузка в Codecov или отдельный артефакт; пороги покрытия — после накопления базовой линии, иначе гейт родится красным. Включается одним job'ом в `ci.yml`, когда появится baseline.
+- **React coverage.** Rust coverage уже имплементирован отдельным `coverage.yml` и реально загружается в Codecov (PR #62; validator + workspace + Tauri Rust jobs прошли). React R1 пока не имеет стабильного unit/component coverage runner в `package.json`, поэтому фальшивый 0% не публикуется. Контракт на будущее: `npm run test:coverage` → `frontend-react/coverage/lcov.info` → отдельный Codecov flag/component.
 - **cargo-audit не добавлен**: `cargo-deny` (job `deny`, конфиг `deny.toml`) уже проверяет RustSec-advизории по всем lockfile'ам (включая `gui/tauri-app/src-tauri`), плюс лицензии и bans. Второй сканер тех же advisory-DB — дубль без новой гарантии.
 - **CodeQL** работает через default setup репозитория («dynamic») с конфигом `.github/codeql/codeql-config.yml` (`security-extended`). Workflow-файл `codeql.yml` НЕ добавлять: GitHub запрещает default setup и workflow одновременно. При переходе на advanced setup — мигрировать явно, не дублировать.
 - **Schedule-прогон** (еженедельная проверка дрейфа зависимостей/clippy) снят вместе с push-триггерами. Вернуть можно сниппетом в `ci.yml`:
@@ -100,6 +101,7 @@ actionlint -color .github/workflows/*.yml
 
 ## 9. Рекомендации владельцу (в этой волне не сделано)
 
-1. **Dependabot: ecosystem `github-actions`** (в `.github/dependabot.yml` сейчас только cargo+pip) — иначе пины SHA устаревают вручную. PR от dependabot будет поднимать SHA и comment-теги разом.
-2. **Branch protection на main** (сейчас не защищена, rulesets пусты): после включения — required checks `CI / lint`, `CI / test (ubuntu-latest)`, `CI / deny`, `CI / schema`, `API stability / cargo-semver-checks (gating)`, `changelog / verify` (минимальный набор; matrix-OS и GUI — по вкусу).
-3. **Удалить `publish.yml`**, когда release-plz проведёт 2-3 релиза без сбоев, — второй путь публикации стоит держать только пока первый не обкатан.
+1. **Dependabot** уже расширен: Rust + React npm + frozen Svelte npm + pip + GitHub Actions; routine updates сгруппированы и cadence снижена, чтобы не плодить десятки PR.
+2. **Branch protection / rulesets:** REST `rulesets` сейчас возвращает пустой список; branch-protection endpoint недоступен GitHub App без admin permission. После стабилизации baseline стоит включить required checks `CI / lint`, `CI / test (ubuntu-latest)`, `CI / deny`, `CI / schema`, `API stability / cargo-semver-checks (gating)`, `changelog / verify` (минимальный набор; matrix-OS и GUI — по вкусу).
+3. **Codecov gate:** пока project/patch statuses informational. После нескольких репрезентативных PR — включить blocking `target: auto` с малым допустимым regression threshold и затем разумный patch target; не ставить случайный глобальный «80%».
+4. **Удалить `publish.yml`**, когда release-plz проведёт 2-3 релиза без сбоев, — второй путь публикации стоит держать только пока первый не обкатан.
