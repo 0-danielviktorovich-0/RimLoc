@@ -1,16 +1,24 @@
 name: RimLoc CodeQL Config
+
 queries:
   - uses: security-extended
+
 paths:
-  - RimLoc
+  - crates/**
+  - gui/tauri-app/frontend-react/**
+  - gui/tauri-app/frontend-v2/**
+  - gui/tauri-app/src-tauri/src/**
+  - gui/tauri-app/src-tauri/build.rs
+  - scripts/**
+
 paths-ignore:
-  - RimLoc/gui/tauri-app/src-tauri/vendor/**
-  - RimLoc/**/target/**
-  - RimLoc/test/**
-  - RimLoc/docs/**
-  - icons/**
-  - compare/**
-  - mods/**
+  - gui/tauri-app/src-tauri/vendor/**
+  - "**/node_modules/**"
+  - "**/target/**"
+  - test/**
+  - testlab/**
+  - docs/**
+  - site/**
   - "**/*.md"
   - "**/*.png"
   - "**/*.ico"
