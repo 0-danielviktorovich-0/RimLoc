@@ -110,6 +110,7 @@ CI должен проверять актуальный Rust + React stack и н
 ## Ещё
 
 - [Adapter authoring](adapters.md)
+- [Coverage & Codecov](coverage.md)
 - [Legacy scan plugins](plugins.md)
 - [Testing](../testing.md)
 - [Docs style](docs_style.md)
