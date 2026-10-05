@@ -10,6 +10,16 @@ name: docs
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "docs/**"
+      - "README.md"
+      - "SECURITY.md"
+      - "SUPPORT.md"
+      - "CONTRIBUTING.md"
+      - "AGENTS.md"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions: {}
@@ -45,11 +55,14 @@ jobs:
           pip install -r requirements-docs.txt
 
       - name: Build site
-        run: mkdocs build --verbose --clean
+        run: mkdocs build --strict --clean
         env:
           SITE_URL: https://0-danielviktorovich-0.github.io/RimLoc/
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
+        # Normal PR validation only needs the strict build. Avoid retaining a
+        # Pages artifact unless it will actually be deployed.
+        if: github.event_name == 'workflow_dispatch' || vars.PAGES_PREVIEW_ENABLED == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5 (pinned 2026-09-27)
         with:
           path: site
