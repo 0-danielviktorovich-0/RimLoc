@@ -137,3 +137,43 @@
 - Смоук-логи: /tmp/react-smoke-*.log; билды: /tmp/react-auto-build*.log.
 - Канон Lovable: ~/Developing/RimLoc-reference/lovable-r1/…
 - Скилл-ревью: ~/Developing/RimLoc-reference/design-skills-review/…
+
+## §87. Волна 1+2 P0-сходимости (2026-10-05, вечер)
+
+**HEAD feature/ui-r1-convergence = fee1e35** (плавает; ветка = PR #60 → main).
+
+### Решения владельца — СТАРЫЕ НЕ СПРАШИВАТЬ
+TM=A+B+C (DRAFT/ACCEPTED/REVIEWED, provenance) · DMG deferred · git: feature→push→Draft PR→merge
+разрешён, force/tag/release/notarization запрещены · Svelte frozen legacy · React = прод.
+Канон: docs/campaign/STATE_CORRECTION_2026-10-05.md.
+
+### Волна 1 — ЗАВЕРШЕНА И ВЛИТА
+- Competitive: 16 конкурентов (13× level-2), Remis=угроза HIGH · TEXT_GRABBER_VS_RIMLOC (ev.5) +
+  RIMLANGKIT_VS_RIMLOC (ev.6) на корпусе 4 модов; находки: RimLoc dict-gap (49 типов),
+  entity-разметка Keyed, is_version_directory ловит workshop-id (фикс в волне 2).
+- Security: guard path-injection (ensure_writable_output_path и др., 314/0) · F-1 закрыт ·
+  CODE_SCANNING_RECONCILIATION (130 алертов: 80 FP/43 DEV_ONLY/0 PRODUCTION_REACHABLE) ·
+  DEPENDABOT_RECONCILIATION (15 PR: 0 security).
+- Docs: SECURITY.md/README/CONTRIBUTING/AGENTS.md переписаны · DOCUMENTATION_AUDIT (168 файлов) ·
+  mkdocs strict зелёный · wiki пуста → deprecate.
+- TM A+B+C: ветка glm/tm-live ВЛИТА (b0bed86→merge 92b28e6); 248/0 независимо верифицировано;
+  React экран #/tm; docs/campaign/TM_LIVE_IMPLEMENTATION.md.
+
+### Волна 2 — идёт (workflow dwfrun-83e9)
+fs-adversarial (wt-adversarial) · version-dir-fix (wt-versionfix) · artifact rel18+identity ·
+perf React-vs-Svelte · keychain proof (wt-providers) · palette/LM acceptance.
+Деливераблы: FRONTEND_PERFORMANCE_EVIDENCE.md, PALETTE_LM_ACCEPTANCE.md, artifact-rel18-react-tm.
+
+### CI PR #60 — почти зелёный
+Исправлены: fmt (дважды — TM дрейф), clippy -D warnings (+vendor allow), yoke-derive/deny,
+actionlint PATH, public-api (--diff-git-branch не существует → inventory), test --exclude
+rimloc-gui + dist в gui-джобе, +frontend-react джоба. Остались: CodeQL summary (default-setup
+rust config — owner-настройка), deploy preview (BlobNotFound — контрольный rerun запрошен).
+
+### Среда (важно для свежих сессий)
+- Cargo: SSD таргеты ПЕР-WORKTREE (collision last-build-wins на одинаковых пакетах!):
+  rimloc (ba-main), rimloc-tm (wt-tm-live), fs-adversarial, versionfix, providers...
+  mkdir таргет-каталога ОТДЕЛЬНОЙ командой до cargo (иначе storage-guard unrouted 20+10).
+  Всегда CARGO_INCREMENTAL=0 (btrfs). SSD может уснуть (os error 60) — ретрай.
+- Диск internal ~14 GiB; npm vite build блокирован сторожем (не heavy-роут), tsc/vitest — нет.
+- RimLoc commit-хук: CC type(scope): ≤72 + '- ' буллеты.
