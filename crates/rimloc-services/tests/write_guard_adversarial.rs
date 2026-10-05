@@ -296,6 +296,7 @@ fn writable_guard_refuses_absolute_outside_allow_roots() {
 /// `/tmp`-located target must be refused as `SymlinkEscape` when the raw
 /// spelling looks contained — and the escape target must stay untouched.
 #[test]
+#[cfg(unix)] // std::os::unix::fs::symlink; windows-покрытие эскейпа — в unit-тестах util.rs
 fn symlink_escape_from_temp_root_is_refused_and_target_untouched() {
     let tmp = tempfile::tempdir().expect("tmp");
     let root = tmp.path().join("writable-root");
@@ -348,6 +349,7 @@ fn symlink_escape_from_temp_root_is_refused_and_target_untouched() {
 ///   `../..`, or through a symlink alias) is refused before any write;
 /// - a legitimate outside dir works and writes OUTSIDE the source.
 #[test]
+#[cfg(unix)] // вариант (b) ставит symlink через std::os::unix (см. строку ~394)
 fn free_mode_refuses_destinations_inside_the_scanned_source() {
     let tmp = tempfile::tempdir().expect("tmp");
     let scan_root = tmp.path().join("source-mod");
