@@ -5,185 +5,250 @@
 </p>
 
 <p align="center">
-<strong>Локальный тулкит для перевода модов RimWorld</strong> — от извлечения строк до готового мода-перевода, без обязательного облака.
+  <strong>RimWorld-first localization workstation with a local-first Rust core and an adapter-ready architecture.</strong>
 </p>
 
-<p align="center">
 [![CI](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/)
-[![License](https://img.shields.io/badge/license-GNU%20GPL%20v3-blue)](LICENSE)
-[![Sponsor](https://img.shields.io/badge/sponsor-support%20RimLoc-%23ea4aaa?logo=github-sponsors)](docs/en/community/support.md)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich)
-[![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich)
-</p>
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+[![Rust](https://img.shields.io/badge/core-Rust-orange)](Cargo.toml)
+[![Desktop](https://img.shields.io/badge/desktop-Tauri%202-blue)](gui/tauri-app)
 
-**Статус: pre-beta (0.1.x), обновлено 2026-10-05.** Активно разрабатывается,
-интерфейс и контракт ещё меняются. Что уже работает, а что нет — честно
-расписано в [«Статус возможностей»](#статус-возможностей).
+> **Status: pre-beta.** RimLoc is under active development. The RimWorld workflow is the first production target; the desktop UI is being converged on the new React R1 frontend. No stable public desktop release is claimed yet.
+
+[Русская документация](https://0-danielviktorovich-0.github.io/RimLoc/ru/) ·
+[Documentation](https://0-danielviktorovich-0.github.io/RimLoc/) ·
+[Issues](https://github.com/0-danielviktorovich-0/RimLoc/issues) ·
+[Security](SECURITY.md) ·
+[Contributing](CONTRIBUTING.md)
 
 ---
 
-## Зачем
+## What RimLoc is
 
-Перевод мода RimWorld — это сотни XML-строк в `Keyed` и `DefInjected`, которые
-легко потерять, продублировать или перевести с устаревшим плейсхолдером. RimLoc
-закрывает этот конвейер одним инструментом:
+RimLoc is a localization toolchain for translating and maintaining RimWorld content without editing the original game or Workshop sources in place.
 
-- находит все переводимые строки мода и следит за их актуальностью;
-- ловит дубликаты, пустые значения и потерянные плейсхолдеры до релиза;
-- отдаёт переводчику привычный `.po` (Poedit, любой CAT-редактор) и забирает
-  его обратно в XML;
-- собирает отдельный мод-перевод, который не трогает файлы оригинала.
+The current product combines:
 
-**RimWorld-first.** Формат модов, версионные папки, `LoadFolders`, плейсхолдеры
-игры — знания об этом зашиты в первичный адаптер. Мультиигровая архитектура
-адаптеров заложена, но кроме RimWorld ничего не заявляется.
+- **RimWorld-aware source discovery** for Core/DLC/mod layouts and versioned content;
+- **translation project state** with revisions and multiple target locales;
+- **manual editing, validation, glossary and diagnostics** in a desktop workstation;
+- **CLI workflows** for scanning, validating, PO interchange and building translation-only mods;
+- **local-first storage** and isolated output paths;
+- an **adapter-oriented architecture** so future games and applications can be added without turning the core into RimWorld-specific code.
 
-**Local-first.** Ядро работает полностью офлайн: проекты лежат файлами на вашем
-диске, исходные папки модов читаются только для чтения, запись идёт лишь в
-указанные вами выходные пути. Сетевые функции (морфологические и LLM-провайдеры)
-опциональны.
+RimWorld is the first production adapter, not the long-term limit of the architecture.
 
-## Что внутри
+## Why it exists
 
-- **CLI** (`rimloc-cli`, Rust): scan · validate · export/import PO ·
-  build-mod · diff · аннотации · health-check XML. Интерфейс CLI двуязычный
-  (английский/русский).
-- **Десктоп-GUI** (Tauri 2): проектная модель с персистентом и ревизиями,
-  редактор с инспектором источника, живая валидация, глоссарий, сборка и
-  экспорт, диагностика с санитизацией. Фронтенд — React 19; прежний Svelte-фронт
-  заморожен и держится как fallback-сборка.
-- **Документация**: [сайт на GitHub Pages](https://0-danielviktorovich-0.github.io/RimLoc/)
-  (англ/рус), гайды, справочник команд, туториалы.
+RimWorld localization is more than copying XML strings. Real projects need to survive mod updates, preserve human work, understand `Keyed`/`DefInjected` and versioned layouts, catch placeholder or structural errors, and produce a clean translation mod.
 
-## Текущий workflow
+RimLoc aims to put that workflow in one place:
 
-1. **Скан** — инвентаризация строк мода (JSON/CSV), с учётом версионных папок.
-2. **Валидация** — дубликаты, пустоты, плейсхолдеры; код выхода 1 при ошибках.
-3. **Экспорт PO** — один файл для переводчика или CAT-инструмента.
-4. **Перевод** — в Poedit или в редакторе GUI (исходник и перевод рядом,
-   история ревизий, глоссарий).
-5. **Импорт/сборка** — обратная сборка `.po` в XML или автономный
-   мод-перевод; есть dry-run.
-6. **Диагностика** — санитизированный support-bundle, когда что-то пошло не так.
+1. discover the source;
+2. build a canonical translation inventory;
+3. translate and review;
+4. validate;
+5. update safely when the source changes;
+6. export/build without writing back into the source tree.
 
-## Статус возможностей
+## Desktop application
 
-Уровни свидетельств: **5** — проверено e2e на живом приложении; **4** —
-интеграционные тесты; **3** — юнит-тесты; **2** — подтверждено кодом;
-**0** — не реализовано.
+The desktop client uses **Tauri 2** over the same Rust service layer as the CLI.
 
-| Область | Состояние | Уровень |
-| --- | --- | --- |
-| Извлечение строк (DefInjected, Keyed) | работает в CLI и GUI | 5 |
-| Валидация: пустоты, плейсхолдеры, дубликаты, дрейф источника | работает | 5 |
-| Экспорт PO / POT / CSV / JSON / XLIFF / XML | работает | 5 |
-| Импорт PO | работает | 5 |
-| Импорт XLIFF | работает | 4 |
-| Сборка мода-перевода с защитой путей вывода | работает | 5 |
-| Редактор GUI: правка→сохранение→ревизии, инспектор источника | работает (React) | 5 |
-| Глоссарий проекта | работает | 5 |
-| Мультиязычность проекта (переключение целевого языка) | работает | 5 |
-| Поддержка версионных папок модов (`1.4`…`v1.6`) | работает | 5 |
-| Патчи (PatchOperations), C#-ключи, бэкстори | частично | 3–4 |
-| Морфология (русский) и WordInfo | не реализовано в новом конвейере | 0–2 |
-| LLM/машинный перевод | шаблоны провайдеров в UI, вызовы не подключены | 2 |
-| TM: накопление, fuzzy-поиск, импорт | не реализовано | 0 |
-| Автоматический и агентный ремонт переводов | не реализовано | 0 |
-| Тест в запущенной игре (Runtime Bridge) | только лаборатория, не в проде | 7 (testlab) |
-| Адаптеры других игр | архитектурная закладка | 0 |
+### React R1
 
-Ограничения, о которых мы знаем и не прячем: графический интерфейс ещё не
-прошёл человеческое a11y/визуальное ревью (автопробы — PASS), подписанных и
-нотаризованных установщиков нет, сравнение производительности React- и
-Svelte-сборок не проводилось.
+The intended production frontend is:
 
-## Поддерживаемые версии RimWorld
+`gui/tauri-app/frontend-react/`
 
-- Мод-раскладки с версионными подпапками (`1.4`, `1.5`, `v1.6` и похожие):
-  поддерживаются, при скане без флага берётся самая свежая найденная.
-- Мод-перевод по умолчанию собирается с `About.xml` на версию **1.5**
-  (переопределяется флагом `--rw-version` и конфигом).
-- GUI-проекты по умолчанию нацелены на **1.6**; целевая версия выбирается при
-  создании проекта.
+It currently provides the new workstation shell and project routes used by the UI R1 campaign: project creation/opening, workspace/editor flows, validation, glossary, multi-target project state, build/export, diagnostics, settings and related tooling.
 
-## Платформы
+### Svelte fallback
 
-| Платформа | Состояние |
-| --- | --- |
-| macOS (Apple Silicon) | верифицировано — основная среда разработки и приёмки |
-| Windows, Linux | код кроссплатформенный, юнит-тесты гоняются в CI на трёх ОС; GUI-сборки на этих ОС руками не проверялись |
-| Подписанные / нотаризованные установщики | нет |
+The previous frontend remains in:
 
-## Быстрый старт
+`gui/tauri-app/frontend-v2/`
 
-Проверенный путь — собрать из исходников: опубликованная на crates.io версия
-`0.1.0-alpha.1` сильно отстаёт от кода, а выложенные релизы — dev-сборки
-pre-release.
+It is intentionally kept as a **frozen legacy/fallback** during React convergence and is not the long-term UI direction.
+
+The two frontends must not be confused when producing test or owner-review artifacts.
+
+## CLI
+
+The Rust CLI remains useful for deterministic and headless workflows.
+
+Typical commands include:
+
+- `scan`
+- `validate`
+- `validate-po`
+- `export-po`
+- `import-po`
+- `build-mod`
+- `diff-xml`
+- `annotate`
+- `xml-health`
+- `init`
+
+Example:
 
 ```bash
-# 1. Нужны Rust (https://rustup.rs) и git
-git clone https://github.com/0-danielviktorovich-0/RimLoc.git
-cd RimLoc
-
-# 2. Собрать CLI
-cargo build -p rimloc-cli
-
-# 3. Прогнать конвейер на встроенном тестовом моде
 cargo run -p rimloc-cli -- scan --root ./test/TestMod --format json
 cargo run -p rimloc-cli -- validate --root ./test/TestMod
-cargo run -p rimloc-cli -- export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-cargo run -p rimloc-cli -- build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru --dry-run
+cargo run -p rimloc-cli -- export-po \
+  --root ./test/TestMod \
+  --out-po ./logs/TestMod.po \
+  --lang ru
+cargo run -p rimloc-cli -- build-mod \
+  --po ./logs/TestMod.po \
+  --out-mod ./logs/TestMod-ru \
+  --lang ru \
+  --dry-run
 ```
 
-Что вы увидите: список строк мода в JSON, вердикт валидации («Всё чисто» на
-фикстуре), файл `TestMod.po` для переводчика и предпросмотр мода-перевода
-(dry-run ничего не пишет). Уберите `--dry-run` — получите готовый мод.
+## Current capability status
 
-Вместо `test/TestMod` подставьте свой мод: `rimloc-cli scan --root ./Mods/МойМод`.
-Полный набор команд и флагов — в [документации](https://0-danielviktorovich-0.github.io/RimLoc/).
+This table is deliberately conservative. A feature being designed or present in a UI mock is not treated as production proof.
 
-Сборка десктоп-GUI (Node.js 20+, Rust):
+| Area | Current direction |
+| --- | --- |
+| RimWorld source scanning / canonical inventory | Implemented and covered by the Rust pipeline |
+| Manual translation editing | Implemented in the desktop project workflow |
+| Validation / findings | Implemented |
+| PO interchange | Implemented in the CLI/service stack |
+| Translation-only build/export | Implemented in the Rust toolchain |
+| Multi-target project state | Implemented in the current project model |
+| Project glossary | Implemented with persistence |
+| Translation Memory | Active pre-beta work: automatic reuse + import + manual management |
+| Existing-translation update workflow | Active pre-beta hardening |
+| Source Inspector / provenance | Active integration/hardening |
+| AI / provider workflows | UI and provider architecture exist; production integration is still being hardened |
+| Runtime/game verification | Test-lab capability; not presented as a normal production feature |
+| Other games/applications | Architecture target only; no support is claimed yet |
+
+For detailed engineering evidence, tests and current limitations, see the repository documentation rather than assuming every roadmap item is already shipped.
+
+## RimWorld scope
+
+The near-term goal is a high-quality RimWorld localization workstation before expanding the product surface.
+
+The project is designed around modern RimWorld layouts, including versioned mod content and the workflows needed for Core, DLC, mods, language packs and existing translations where the relevant adapter capability is available.
+
+**RimWorld 1.6 is the primary target.** Compatibility with older layouts is maintained where practical, but the pre-beta campaign prioritizes current RimWorld behavior and real-corpus testing.
+
+## Local-first and source safety
+
+RimLoc is designed so the source remains authoritative and read-only during normal translation workflows.
+
+Project output is expected to go to isolated locations, with validation around unsafe paths and source-tree escapes.
+
+Security-sensitive development areas include:
+
+- filesystem containment and symlink/path traversal checks;
+- Tauri capability and IPC review;
+- secret handling for optional providers;
+- sanitized diagnostics;
+- production exclusion of test/automation hooks.
+
+See [SECURITY.md](SECURITY.md) for the reporting policy. The pre-beta security audit is being refreshed together with the current dependency graph and GitHub security findings.
+
+## Build from source
+
+### Rust workspace
 
 ```bash
-cd gui/tauri-app/src-tauri
-cargo tauri build        # дефолтная конфигурация (Svelte-fallback)
-cargo tauri build --config tauri.react.conf.json   # React-фронтенд
+cargo build --workspace
+cargo test --workspace
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-## Скриншоты
+### React desktop candidate
 
-> **Development preview.** Ниже — текущая дефолтная сборка (замороженный
-> Svelte-фронтенд). Новые скриншоты React-интерфейса появятся после
-> визуального парити-гейта — заменять их заранее не будем.
+Prerequisites: Rust, Node.js 20+ and the Tauri platform prerequisites.
 
-<p align="center">
-  <img src="docs/screenshots/workspace.png" width="49%" alt="Рабочая область — живые строки проекта" />
-  <img src="docs/screenshots/validate.png" width="49%" alt="Находки валидации" />
-  <img src="docs/screenshots/export.png" width="49%" alt="Экспорт только переводов" />
-  <img src="docs/screenshots/diagnostics.png" width="49%" alt="Санитизированный диагностический бандл" />
-</p>
+```bash
+cd gui/tauri-app/frontend-react
+npm install
+npm run build
 
-## Куда дальше (north-star, не обещание)
+cd ../src-tauri
+cargo tauri build --config tauri.react.conf.json
+```
 
-Ориентиры качества, под которые идёт разработка: контекст перевода уровня
-Gridly, CAT-воркфлоу уровня Trados, комьюнити-процессы уровня Crowdin.
-Архитектура канонических проектов и адаптеров закладывает фундамент для других
-игр (Minecraft, Terraria, Paradox, Unity-тайтлы) — это направление на будущее,
-никаких обязательств и дат по ним нет. Ближайшая инженерная работа: TM
-(память переводов), подключение LLM-провайдеров, человеческое ревью
-доступности.
+The base Tauri configuration still points at the frozen Svelte fallback during the migration, so use the React configuration explicitly when testing the React R1 candidate.
 
-## Документация и сообщество
+## Architecture direction
 
-- [Сайт документации](https://0-danielviktorovich-0.github.io/RimLoc/) —
-  установка, гайды, справочник CLI (исходники в [`docs/`](docs/), MkDocs).
-- [CONTRIBUTING.md](CONTRIBUTING.md) — как собрать, протестировать и прислать PR.
-- [SECURITY.md](SECURITY.md) — как приватно сообщить об уязвимости.
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) и [SUPPORT.md](SUPPORT.md).
-- Баги и идеи — [GitHub Issues](https://github.com/0-danielviktorovich-0/RimLoc/issues);
-  история изменений — [CHANGELOG.md](CHANGELOG.md).
+The generic core should understand localization concepts, not game-specific names.
 
-## Лицензия
+Conceptually:
 
-GNU GPL v3 — см. [LICENSE](LICENSE).
+```text
+Localization source
+      ↓
+LocalizationAdapter
+      ↓
+canonical SourceEntry inventory
+      ↓
+Project / translations / revisions
+      ↓
+TM / glossary / validation / AI
+      ↓
+RimLocClient
+      ↓
+CLI / desktop GUI / future integrations
+```
+
+RimWorld-specific behavior belongs in the RimWorld adapter. RimLoc self-localization is a second distinct adapter direction. Future adapters may target other games or applications, but they are roadmap items rather than pre-beta promises.
+
+The long-term developer experience should make adding a new adapter a bounded task: declare capabilities, map source content into canonical entries, implement relevant import/export/build behavior, add fixtures, and pass an adapter conformance suite.
+
+## Pre-beta priorities
+
+Before the first public graphical beta, the project is prioritizing:
+
+- React R1 visual and workflow convergence;
+- real RimWorld update/existing-translation workflows;
+- Translation Memory and glossary integration;
+- practical differential testing against established RimWorld localization tools;
+- security/dependency/code-scanning reconciliation;
+- macOS and Windows acceptance;
+- current documentation and repository hygiene.
+
+The goal is not to copy every enterprise localization platform before users can try RimLoc.
+
+## Long-term direction
+
+If the project proves useful, the north star is a broader localization workstation:
+
+- game-context quality inspired by **Gridly**;
+- professional translator workflows inspired by **Trados**;
+- continuous/community localization ideas inspired by **Crowdin**;
+- while staying local-first, open-source and adapter-oriented.
+
+Future adapters could cover other games, mod ecosystems and ordinary applications. They will be added only when there is a practical use case and adequate testing.
+
+## Documentation
+
+- [Documentation site](https://0-danielviktorovich-0.github.io/RimLoc/)
+- [Getting started](docs/en/getting-started.md)
+- [CLI reference](docs/en/cli/)
+- [GUI guide](docs/en/guide/gui.md)
+- [Developer documentation](docs/en/dev/)
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+
+The documentation is currently being audited against the React/Rust pre-beta architecture; pages that describe the older GUI should not be treated as authoritative when they conflict with current code.
+
+## Contributing
+
+Contributions are welcome, especially around RimWorld compatibility, real-world fixtures, validation, documentation and future adapter ergonomics.
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) before making repository changes.
+
+## License
+
+RimLoc is licensed under the [GNU General Public License v3.0](LICENSE).
