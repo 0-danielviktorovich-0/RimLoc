@@ -1,174 +1,139 @@
 # Contributing to RimLoc
 
-Обновлено: 2026-10-05. Спасибо за интерес к проекту — здесь описано, как
-настроить окружение, следовать конвенциям и прислать изменения, которые легко
-отревьюить.
+Thanks for helping RimLoc. The project is RimWorld-first today, but the architecture is deliberately adapter-oriented so new games and applications can be added without rewriting the localization core.
 
-## С чего начать
+Русская пользовательская документация: [docs/ru/](docs/ru/).
 
-1. Сделайте форк и заведите feature-ветку от `main` (например,
-   `feat/po-import-dedupe`).
-2. Поставьте стабильный Rust через [rustup](https://rustup.rs).
-3. Соберите и прогоните тесты:
-   ```bash
-   cargo build --workspace
-   cargo test --workspace
-   ```
-4. Перед каждым коммитом — форматирование и линт (как в CI):
-   ```bash
-   cargo fmt
-   cargo clippy --workspace --all-targets --all-features -- -D warnings
-   ```
-5. Откройте **Draft PR** рано, дозаполняйте по мере готовности; когда всё
-   зелёное — переводите в ready for review.
+## Start here
 
-## Структура репозитория
+1. Fork or clone the repository and create a focused branch.
+2. Read [AGENTS.md](AGENTS.md) if you are using a coding agent.
+3. Build the relevant part of the project.
+4. Add tests/evidence for the behavior you changed.
+5. Keep the diff scoped and use Conventional Commits.
+6. Open a PR with what changed, why, and how you verified it.
 
-- `crates/` — Cargo-workspace:
-  - `rimloc-domain` — общие типы и JSON-схемы; **без IO**;
-  - `rimloc-core` — ядро логики перевода; без специфики UI/CLI;
-  - `rimloc-parsers-xml` — только чтение и разбор XML модов;
-  - `rimloc-export-csv|po|xliff`, `rimloc-import-po|xliff` — форматные
-    адаптеры;
-  - `rimloc-validate` — правила проверки; `rimloc-services` — оркестрация,
-    общая для CLI и GUI (здесь живёт файловый IO);
-  - `rimloc-config` — конфигурация; `rimloc-llm` — провайдеры LLM;
-    `rimloc-plugin-api` / `rimloc-plugin-jsonftl` — контракты плагинов;
-  - `rimloc-cli` — тонкий командный слой, без бизнес-логики.
-- `gui/tauri-app/src-tauri/` — Rust-бэкенд десктоп-GUI (Tauri 2).
-- `gui/tauri-app/frontend-react/` — **актуальный фронтенд** (React 19 + Vite +
-  TypeScript strict + Tailwind).
-- `gui/tauri-app/frontend-v2/` — Svelte-фронтенд: **заморожен**, держится как
-  fallback/regression-оракул; багфиксы по согласованию, новые фичи — не сюда.
-- `gui/tauri-app/frontend/` — legacy-оболочка v1, оставлена как референс, не
-  расширять.
-- `test/` — фикстуры для интеграционных тестов; `testlab/` — dev-лаборатория
-  (синтетические фикстуры, UI-автоматизация), это не пользовательская
-  документация.
-- `docs/` — исходники сайта (MkDocs).
+## Repository architecture
 
-## Границы сервисов и фронтенд-контракт
+- <code>crates/rimloc-domain</code> — canonical types/project contracts; no UI logic.
+- <code>crates/rimloc-core</code> — generic localization logic.
+- <code>crates/rimloc-services</code> — orchestration and filesystem-aware services.
+- <code>crates/rimloc-*</code> — parsers/import/export/validation/provider components.
+- <code>crates/rimloc-cli</code> — thin CLI surface over shared services.
+- <code>gui/tauri-app/frontend-react</code> — intended production React 19 frontend.
+- <code>gui/tauri-app/frontend-v2</code> — frozen Svelte fallback during convergence.
+- <code>gui/tauri-app/src-tauri</code> — Tauri 2 / Rust desktop bridge.
+- <code>docs/</code> — canonical documentation sources (MkDocs).
+- <code>test/</code> / <code>testlab/</code> — fixtures and controlled acceptance infrastructure.
 
-- Логика живёт в крейтах (`rimloc-services` для оркестрации), CLI и GUI — тонкие
-  потребители. Не тащите бизнес-логику в `rimloc-cli` или в компоненты
-  фронтенда.
-- Фронтенды говорят с Rust-бэкендом через **`RimLocClient`** —
-  framework-neutral слой контракта над Tauri IPC
-  (`gui/tauri-app/frontend-react/src/lib/client/`). Правила: handshake
-  проверяет версию контракта; каждая мутирующая операция несёт
-  `expectedRevision` + `sessionEpoch`; неудачное сохранение никогда не
-  затирает черновик пользователя (typed `save_failed`/`stale_revision`).
-  Новый вызов IPC сначала попадает в контракт и `RimLocClient`, потом в UI.
-- Римворк-специфика — только в адаптерном слое; общий редактор/валидатор
-  работают по канонической модели из `rimloc-domain`.
-- Инвариант IO: игра и папки модов — **только чтение**; запись — исключительно
-  в явно запрошенные пользователем выходные пути.
+Business/domain behavior should live in Rust services/core, not be reimplemented in React.
 
-## Вклад во фронтенд
+## PO and other interchange formats
 
-- Среда: Node.js 20+; фронт React — `gui/tauri-app/frontend-react`
-  (`npm ci`, `npm run build` = `tsc -b && vite build`).
-- Локальный запуск GUI: `cargo tauri dev` из `gui/tauri-app/src-tauri`
-  (дефолтная конфигурация собирает Svelte-fallback; React-вариант —
-  `cargo tauri dev --config tauri.react.conf.json`).
-- E2E-джорни React — спеки `react-*.spec.ts` в
-  `gui/tauri-app/frontend-v2/e2e/wdio-spike/` под wdio-харнессом
-  (`testlab/ui_automation/`); фикстуры и правила честного LIVE/MOCK — в
-  `docs/design/UI_R1_FINAL_REPORT.md`.
-- Правило моков: мок-транспорт не бандлится в прод; ни один мок не должен
-  выглядеть как живой режим.
+PO is an interchange format, not the canonical RimLoc project model.
 
-## Адаптеры и мультиигровость
+Format-specific commands such as <code>export-po</code> and <code>import-po</code> remain useful for external CAT workflows, but new product behavior should prefer canonical project state plus import/export adapters.
 
-- **RimWorld — первичный адаптер.** Его знания (Keyed/DefInjected, версионные
-  папки, LoadFolders, плейсхолдеры) живут в адаптерном слое, идентификатор —
-  `rimworld` в `rimloc-domain` (`canonical::adapter_ids`).
-- Интерфейс адаптера — каноническая модель проекта
-  (`rimloc-domain::canonical::AdapterIdentity`): адаптер подписывает проект
-  своим id и версиями схемы; чужой/неизвестный id не открывается молча, а
-  падает с диагностикой.
-- Новый игровой адаптер (не RimWorld) — сначала обсуждение в issue: каноническая
-  модель должна остаться общей, а ядро (редактор, глоссарий, валидация) — не
-  обрастать game-specific ветками.
+Do not make a new feature depend on PO unless the feature is specifically about PO interoperability.
 
-## Коммит-сообщения
+## Adding another game or application
 
-В репозитории включён хук `commit-msg` (`.githooks/`, `core.hooksPath`), он
-принуждает Conventional Commits:
+RimWorld-specific knowledge should stay behind the localization-adapter boundary.
 
-- заголовок `type(scope): summary` — **до 72 символов**;
-- типы: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `ci`, `build`,
-  `perf`, `revert`;
-- пустая строка после заголовка;
-- тело — буллетами, каждый пункт начинается с `- ` (что изменилось и почему);
-- для `chore(release):` хук дополнительно требует строку порядка публикации
-  `Run publish in order: core -> parsers -> ...`.
+Read:
 
-Пример:
+- [Localization adapter architecture](docs/architecture/LOCALIZATION_ADAPTERS.md)
+- [Adapter authoring guide](docs/en/dev/adapters.md)
 
-```
-fix(po): keep placeholder order when importing CJK translations
+A useful built-in adapter normally needs to:
 
-- compare placeholder sets, not sequences, in validate-po
-- add reordered-placeholders fixture for ja/zh layouts
-```
+1. declare identity and capabilities;
+2. detect/discover its source;
+3. map source data into canonical <code>SourceEntry</code> inventory;
+4. import existing translations where applicable;
+5. expose source context/provenance;
+6. validate target-specific rules;
+7. build/export safely;
+8. add fixtures and conformance tests.
 
-Только свои файлы в коммит: не включайте попутные переименования, массовое
-форматирование или чужие незакоммиченные изменения. Репо-wide reformat —
-отдельный PR.
+Do not put Minecraft, RimWorld, or other game concepts into the generic core simply because one adapter needs them.
 
-## Pull Request
+There is **not yet a stable third-party binary plugin ABI** for arbitrary localization adapters. Keep new first-party adapters in-tree until a versioned external protocol is designed.
 
-1. Feature-ветка → **Draft PR** в `main`.
-2. CI на PR гоняет: rustfmt+clippy, `cargo test` на Ubuntu/macOS/Windows,
-   сборку Tauri GUI, проверку фронтенда, `cargo-deny`, сверку JSON-схем.
-   Красный чек = PR не мержится; push-триггеры CI выключены намеренно —
-   проверки считаются на PR.
-3. В описании PR: что и зачем изменилось, как проверяли (команды, вывод,
-   скриншоты UI-правок), затронуты ли доки/i18n-ключи, известные ограничения.
-4. Ребейз на свежий `main` перед ревью; обсуждения — по существу и уважительно.
+## Build and test
 
-## Тесты
+Rust:
 
-- **Rust**: юнит-тесты рядом с кодом; интеграционные — `crates/rimloc-cli/tests`
-  (хелперы в `helpers.rs`), временные пути через `tempfile`, долгоживущие
-  фикстуры — в `test/`. Прогон всего: `cargo test --workspace`.
-- **Svelte-fallback**: в `gui/tauri-app/frontend-v2` — `npm run check`
-  (svelte-check) и `npm test` (Vitest).
-- **React**: проверка типов и сборка — `npm run build` в
-  `frontend-react`; e2e-джорни — wdio-спеки (см. «Вклад во фронтенд»).
-- Меняли JSON-схемы вывода — поднимите `OUTPUT_SCHEMA_VERSION`, перегенерируйте
-  схемы (`rimloc-cli schema`) и обновите доки; CI сверяет, что схемы свежие.
+~~~bash
+cargo build --workspace
+cargo test --workspace
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+~~~
 
-## Документация
+React frontend:
 
-- Сайт собирается MkDocs (конфиг `mkdocs.yml`): `python -m venv .venv`,
-  `pip install -r requirements-docs.txt`, затем `mkdocs serve` для локального
-  превью.
-- Английские исходники — `docs/en/`, русские — `docs/ru/`; структура папок
-  зеркалится, при добавлении страницы заведите оба языка.
-- К изменению кода, меняющему поведение CLI/GUI, прилагается правка
-  соответствующих страниц `docs/` и i18n-ключей справки (`crates/rimloc-cli/i18n/`;
-  английский каталог — источник, русский зеркалится).
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npx tsc --noEmit
+npm run build
+~~~
 
-## Ожидания по безопасности
+Svelte fallback should only be changed when a task explicitly targets it.
 
-- **Никаких секретов в репозитории** — ни токенов, ни ключей, ни
-  `.env`-файлов. CI-секреты — только через `secrets.*`; в тестах — заведомо
-  синтетические фикстуры (и помеченные как таковые).
-- Ключи LLM/провайдеров пользовательские хранятся в системном keychain
-  (сервис `rimloc-llm`), не в конфигах и не в переменных окружения кода.
-- Уязвимости — только приватно через
-  [SECURITY.md](SECURITY.md) (GitHub Private Vulnerability Reporting), не в
-  публичных issues.
-- Зависимости проверяются `cargo-deny` (advisories/licenses/bans); новый RUSTSEC
-  ignore в `deny.toml` — только с обоснованием в комментарии.
+Docs:
 
-## Issues и помощь
+~~~bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-docs.txt
+mkdocs build --strict
+~~~
 
-- Баг/фича — GitHub Issues с шагами, ожиданием и фактом, окружением
-  (`rimloc-cli --version`, ОС). Чек-лист — `docs/en/community/issues.md`.
-- Вопросы локализации самого CLI — указывайте локаль и примеры строк.
-- Дискуссии и ревью ведутся в PR/Issues — этого канала пока достаточно.
+## Documentation
 
-Ещё раз спасибо — каждый аккуратный PR ускоряет RimLoc к бете.
+<code>docs/</code> is the canonical documentation source. README is the landing page. Do not create a second technical source of truth in GitHub Wiki.
+
+Keep EN/RU user-facing pages structurally aligned when practical. If a translation lags, mark it honestly rather than silently documenting different behavior.
+
+## Safety
+
+- Treat RimWorld/Workshop/source mod folders as read-only inputs.
+- Use isolated temporary/output directories in tests.
+- Do not commit credentials, tokens or real provider keys.
+- Production artifacts must not include automation/test bridges.
+- Do not add broad Tauri/filesystem/shell permissions without a documented need.
+- Prefer dry-run and containment tests for write paths.
+
+## Commits and PRs
+
+Use Conventional Commits, for example:
+
+~~~text
+feat(adapter): add source discovery capability
+
+- map source records into canonical entries
+- add update and containment fixtures
+~~~
+
+Keep commits focused. Do not force-push shared history or create releases/tags unless explicitly authorized.
+
+A PR should include:
+
+- summary and motivation;
+- user/developer impact;
+- tests/commands run;
+- screenshots for visible UI changes;
+- security implications if filesystem/network/IPC/secrets changed;
+- docs updates for user-facing behavior.
+
+## Changelog and versions
+
+RimLoc uses SemVer and a curated <code>CHANGELOG.md</code>.
+
+During pre-beta development, do not bump versions or publish just because a feature landed. Release preparation is a separate controlled step.
+
+## Need help?
+
+Use [GitHub Issues](https://github.com/0-danielviktorovich-0/RimLoc/issues) for bugs/features and [SUPPORT.md](SUPPORT.md) for support guidance. Security issues belong in the private process described in [SECURITY.md](SECURITY.md).
