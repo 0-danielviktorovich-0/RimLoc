@@ -13,7 +13,7 @@ This file documents how RimLoc uses coverage. It is an engineering signal, not a
   - rust — generic workspace crates;
   - gui-rust — Tauri/Rust desktop layer.
 - Codecov Components divide the combined reports into product subsystems without rerunning the whole test suite per crate.
-- Project, patch, and component statuses are intentionally informational while a stable baseline is collected.
+- Project and patch statuses are intentionally informational while a stable baseline is collected. Components are shown in the PR comment/dashboard without spawning a separate status check for every subsystem.
 - GitHub line annotations are disabled because Codecov is deprecating them and they conflict with Components/Flags. The PR comment and Codecov file view are the canonical coverage review surfaces.
 
 ## Components
@@ -54,7 +54,7 @@ Those require their own evidence.
 
 ### Phase 0 — baseline (current)
 
-- statuses informational;
+- project/patch statuses informational; component views informational without per-component check spam;
 - collect several representative PRs;
 - verify path mapping and component filters;
 - find generated/vendor/test files that should not count;
@@ -67,7 +67,7 @@ After the baseline is stable:
 - make project coverage blocking with target=auto;
 - allow a small threshold (around 0.5–1 percentage point) to avoid noise;
 - keep patch coverage visible;
-- keep component statuses informational until their baselines are stable.
+- add component-specific blocking statuses only for subsystems where a separate gate is genuinely useful.
 
 The goal is “do not silently make the tested surface materially worse”, not “chase a vanity number”.
 
@@ -108,7 +108,7 @@ Then upload it with a dedicated Codecov flag such as react and add a React compo
 
 ## Tauri / desktop coverage
 
-The Tauri Rust layer has its own coverage job because it needs WebKitGTK/GTK and a built frontendDist on Linux. Vendor code is excluded from Codecov.
+The Tauri Rust layer has its own coverage job because it needs WebKitGTK/GTK and a built frontendDist on Linux. Vendor code is excluded from Codecov. The validator, generic Rust upload, and desktop Rust upload have all completed successfully on the integration PR.
 
 Automation-only features are not a reason to inflate production coverage. Coverage should reflect the production/default desktop contract unless a dedicated automation test report is explicitly useful.
 
