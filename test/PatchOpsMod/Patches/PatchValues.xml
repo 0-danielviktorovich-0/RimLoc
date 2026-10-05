@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Golden fixture for patch value extraction (MUST_FIX_BEFORE_BETA #1).
+  Covers: PatchOperationSequence/operations/li nesting, PatchOperationFindMod
+  match branch, PatchOperationIfModActive wrapper, PatchOperationInsert,
+  plain-text <value>, noise fields (spawnCategories, bodyTypeMale,
+  requiredWorkTags), non-string literals (1.5, true).
+  Expected player-visible extractions are asserted in
+  crates/rimloc-parsers-xml/tests/patch_extract.rs (golden_patch_values).
+-->
+<Patch>
+
+	<Operation Class="PatchOperationSequence">
+		<success>Always</success>
+		<operations>
+			<li Class="PatchOperationAdd">
+				<xpath>Defs/BackstoryDef[defName="Golden_One"]/spawnCategories</xpath>
+				<value>
+					<li>NoiseCategory</li>
+					<li>AnotherNoise</li>
+				</value>
+			</li>
+			<li Class="PatchOperationReplace">
+				<xpath>Defs/BackstoryDef[defName="Golden_One"]/description</xpath>
+				<value>
+					<description>Golden one description text.</description>
+				</value>
+			</li>
+			<li Class="PatchOperationReplace">
+				<xpath>Defs/BackstoryDef[defName="Golden_One"]/title</xpath>
+				<value>
+					<title>golden king</title>
+				</value>
+			</li>
+			<li Class="PatchOperationReplace">
+				<xpath>Defs/FactionDef[defName="Golden_Faction"]/rulesStrings</xpath>
+				<value>
+					<rulesStrings>
+						<li>rule one</li>
+						<li>rule two</li>
+					</rulesStrings>
+				</value>
+			</li>
+		</operations>
+	</Operation>
+
+	<Operation Class="PatchOperationFindMod">
+		<mods>
+			<li>Vanilla Fishing Expanded</li>
+		</mods>
+		<match Class="PatchOperationReplace">
+			<xpath>Defs/ThingDef[defName="Golden_Rod"]/label</xpath>
+			<value>
+				<label>golden rod</label>
+			</value>
+		</match>
+	</Operation>
+
+	<Operation Class="PatchOperationIfModActive">
+		<modName>some.mod.identifier</modName>
+		<operations>
+			<li Class="PatchOperationAdd">
+				<xpath>Defs/ThingDef[defName="Golden_Apparel"]</xpath>
+				<value>
+					<description>Apparel description.</description>
+					<bodyTypeMale>Male</bodyTypeMale>
+					<requiredWorkTags>
+						<li>Intellectual</li>
+					</requiredWorkTags>
+					<commonality>1.5</commonality>
+					<shuffleable>true</shuffleable>
+				</value>
+			</li>
+		</operations>
+	</Operation>
+
+	<Operation Class="PatchOperationInsert">
+		<xpath>Defs/ThingDef[defName="Golden_Rod"]/verbs</xpath>
+		<value>
+			<li Class="VerbProperties" />
+		</value>
+	</Operation>
+
+	<Operation Class="PatchOperationReplace">
+		<xpath>Defs/ThingDef[defName="Golden_Rod"]/description</xpath>
+		<value>Plain text description replacement.</value>
+	</Operation>
+
+	<Operation Class="PatchOperationRemove">
+		<xpath>Defs/ThingDef[defName="Golden_Rod"]/verbs</xpath>
+	</Operation>
+
+</Patch>
