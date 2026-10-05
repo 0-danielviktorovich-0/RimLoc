@@ -145,6 +145,21 @@ async function clickItemByLabel(label: string): Promise<boolean> {
   }, label)
 }
 
+/** Keyboard-active option: highlight class + aria-selected + the input's
+ *  aria-activedescendant. This IS the navigation model's observable state. */
+async function activeOption(): Promise<{ index: number; label: string; ad: string }> {
+  return browser.execute(() => {
+    const items = [...document.querySelectorAll('.palette-item')]
+    const idx = items.findIndex((b) => (b as HTMLElement).classList.contains('palette-item-active'))
+    const input = document.querySelector('[data-testid="palette.input"]') as HTMLInputElement | null
+    return {
+      index: idx,
+      label: idx >= 0 ? (items[idx] as HTMLElement).innerText.trim() : '<none>',
+      ad: input?.getAttribute('aria-activedescendant') ?? '<none>',
+    }
+  })
+}
+
 async function activeElementInfo(): Promise<string> {
   return browser.execute(() => {
     const a = document.activeElement
@@ -153,13 +168,16 @@ async function activeElementInfo(): Promise<string> {
   })
 }
 
-// The ARTIFACT palette (commit 53bd1aa) has 6 commands — the TM screen and
-// its palette entry landed AFTER the artifact was cut (893ed9c).
+// The ARTIFACT palette (commit 53bd1aa) had 6 commands — the TM screen and
+// its palette entry landed AFTER the artifact was cut (893ed9c). HEAD (and
+// any build of the palette-nav lane) carries 7: the composition test below
+// expects exactly this list; anything else is a failure.
 const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Строки перевода', hash: '#/home', marker: '[data-testid="wizard.open"]' },
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
   { label: 'Проверки', hash: '#/checks', marker: '[data-testid="checks.findings"], [data-testid="checks.rerun"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Глоссарий', hash: '#/glossary', marker: '[data-testid="gl.table"], [data-testid="gl.error"], .narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Память переводов', hash: '#/tm', marker: '[data-testid="tm.count"], [data-testid="tm.filter-query"], [data-testid="tm.filter-status"], [data-testid="tm.error"]' },
   { label: 'Сборка и экспорт', hash: '#/export', marker: '[data-testid="be.outdir"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Настройки', hash: '#/settings', marker: '[data-testid="settings.theme"]' },
 ]
@@ -245,7 +263,7 @@ describe('Palette §9: открытие и закрытие', () => {
 })
 
 describe('Palette §9: состав команд и поиск', () => {
-  it('состав: ровно 6 команд артефакта (в HEAD их уже 7 — добавили TM)', async () => {
+  it('состав: ровно 7 команд HEAD (6 артефакта + «Память переводов»)', async () => {
     await openPalette('list')
     const items = await paletteItems()
     console.log(`[palette-acc] ITEMS=${JSON.stringify(items)}`)
@@ -259,13 +277,14 @@ describe('Palette §9: состав команд и поиск', () => {
     await shot('palette-full-list')
   })
 
-  it('поиск по названию фильтрует список («перев» → 1 в артефакте)', async () => {
+  it('поиск по названию фильтрует список («перев» → 2 в HEAD: Строки перевода + Память переводов)', async () => {
     await openPalette('filter')
     await browser.$('[data-testid="palette.input"]').setValue('перев')
     await pause(400)
     const items = await paletteItems()
     console.log(`[palette-acc] FILTER перьев=${JSON.stringify(items)}`)
-    if (items.length !== 1 || !items[0]!.includes('Строки перевода')) {
+    // В артефакте «перев» давал 1 команду; с TM-командой в HEAD их 2.
+    if (items.length !== 2 || !items[0]!.includes('Строки перевода') || !items.some((i) => i.includes('Память переводов'))) {
       throw new Error(`фильтр «перев» дал ${JSON.stringify(items)}`)
     }
     await shot('palette-filter-perev')
@@ -363,26 +382,102 @@ describe('Palette §9: route navigation по каждой команде', () =>
 })
 
 describe('Palette §9: клавиатура, фокус, конфликты', () => {
-  it('стрелки ↑↓ и Enter: клавиатурный выбор команды НЕ реализован', async () => {
-    await openPalette('arrows')
-    const focusBefore = await activeElementInfo()
+  // MUST-FIX #4 из приёмки: навигация стрелками и запуск Enter'ом. Пробы
+  // гоняют ТУ же кодовую дорожку, что и живой пользователь: window-level
+  // keydown (pressCombo) — хук useCommandPalette слушает именно его.
+  it('ArrowDown/ArrowUp подсвечивают активный пункт (класс + aria)', async () => {
+    await openPalette('nav-arrows')
+    let a = await activeOption()
+    if (a.index !== 0) throw new Error(`исходный активный пункт #${a.index}, ожидается #0`)
     await pressCombo('ArrowDown', false)
     await pressCombo('ArrowDown', false)
+    a = await activeOption()
+    console.log(`[palette-acc] NAV after 2×↓ index=${a.index} ariaAD=${a.ad} label=${a.label}`)
+    if (a.index !== 2) throw new Error(`после 2×ArrowDown активен #${a.index}, ожидается #2`)
+    if (a.ad !== 'palette-opt-2') throw new Error(`aria-activedescendant=${a.ad}, ожидается palette-opt-2`)
+    await shot('palette-nav-arrows-down')
     await pressCombo('ArrowUp', false)
-    const focusAfterArrows = await activeElementInfo()
-    const items = await paletteItems()
+    a = await activeOption()
+    if (a.index !== 1) throw new Error(`после ArrowUp активен #${a.index}, ожидается #1`)
+    await shot('palette-nav-arrows-up')
+  })
+
+  it('стрелки цикличны, Home/End — первый/последний', async () => {
+    await openPalette('nav-wrap')
+    const n = (await paletteItems()).length
+    await pressCombo('End', false)
+    let a = await activeOption()
+    if (a.index !== n - 1) throw new Error(`End дал #${a.index}, ожидается #${n - 1}`)
+    await shot('palette-nav-end')
+    await pressCombo('ArrowDown', false)
+    a = await activeOption()
+    if (a.index !== 0) throw new Error(`после End+↓ (цикл вниз) активен #${a.index}, ожидается #0`)
+    await pressCombo('ArrowUp', false)
+    a = await activeOption()
+    if (a.index !== n - 1) throw new Error(`после ↑ с первого (цикл вверх) активен #${a.index}, ожидается #${n - 1}`)
+    await pressCombo('Home', false)
+    a = await activeOption()
+    if (a.index !== 0) throw new Error(`Home дал #${a.index}, ожидается #0`)
+    console.log(`[palette-acc] NAV_WRAP items=${n}: End→#${n - 1}, циклы ok, Home→#0`)
+    await shot('palette-nav-wrap')
+  })
+
+  it('Enter запускает активную команду: маршрут + закрытие палитры', async () => {
+    await ensureClosed('enter-pre')
+    await browser.execute(() => { window.location.hash = '#/home' })
+    await pause(400)
+    await openPalette('nav-enter')
+    await pressCombo('ArrowDown', false)
+    const a = await activeOption()
+    const target = COMMANDS.find((c) => c.label === a.label)
+    if (!target) throw new Error(`активная команда «${a.label}» не из списка COMMANDS`)
     await pressCombo('Enter', false)
-    await pause(800)
-    const h = await hash()
-    const nOverlay = await overlayCount()
-    console.log(
-      `[palette-acc] ARROWS focus=${focusBefore}→${focusAfterArrows} items=${items.length} ENTER: hash=${h} overlay=${nOverlay}`,
-    )
-    if (h !== '#/home') {
-      console.log('[palette-acc] НЕОЖИДАННО: Enter что-то сделал — разобрать')
+    let navOk = false
+    let closedOk = false
+    for (let i = 0; i < 20 && !(navOk && closedOk); i++) {
+      await pause(250)
+      navOk = (await hash()) === target.hash
+      closedOk = (await overlayCount()) === 0
     }
-    console.log('[palette-acc] FINDING: навигация стрелками/Enter в палитре отсутствует (нет подсветки активного пункта)')
-    await shot('palette-arrows-noop')
+    console.log(`[palette-acc] NAV_ENTER «${a.label}» hash=${await hash()} navOk=${navOk} closedOk=${closedOk}`)
+    if (!navOk) throw new Error(`Enter не перевёл на ${target.hash} (активной была «${a.label}»)`)
+    if (!closedOk) throw new Error('Enter выполнил команду, но палитра осталась открытой')
+    await shot('palette-nav-enter-runs')
+  })
+
+  it('фильтр сбрасывает активный пункт на первый', async () => {
+    await openPalette('nav-filter-reset')
+    await pressCombo('ArrowDown', false)
+    await pressCombo('ArrowDown', false)
+    let a = await activeOption()
+    if (a.index !== 2) throw new Error(`до фильтра активен #${a.index}, ожидается #2`)
+    await browser.$('[data-testid="palette.input"]').setValue('перев')
+    await pause(400)
+    const items = await paletteItems()
+    a = await activeOption()
+    console.log(`[palette-acc] NAV_FILTER_RESET items=${JSON.stringify(items)} active=#${a.index} ariaAD=${a.ad}`)
+    if (items.length !== 2) throw new Error(`фильтр «перев» дал ${items.length} команд (в HEAD их 2)`)
+    if (a.index !== 0) throw new Error(`после фильтра активен #${a.index}, ожидается #0`)
+    if (a.ad !== 'palette-opt-0') throw new Error(`aria-activedescendant=${a.ad}, ожидается palette-opt-0`)
+    await shot('palette-nav-filter-reset')
+  })
+
+  it('hover мышью синхронизирует активный пункт', async () => {
+    await openPalette('nav-hover')
+    await pressCombo('ArrowDown', false)
+    let a = await activeOption()
+    if (a.index !== 1) throw new Error(`после ↓ активен #${a.index}, ожидается #1`)
+    // React синтезирует onMouseEnter из делегированного mouseover —
+    // всплывающий mouseover по пункту и есть программная имитация наведения.
+    await browser.execute(() => {
+      const item = document.querySelectorAll('.palette-item')[0] as HTMLElement | undefined
+      item?.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+    })
+    await pause(300)
+    a = await activeOption()
+    console.log(`[palette-acc] NAV_HOVER mouseover→#0, активен #${a.index}`)
+    if (a.index !== 0) throw new Error(`hover не синхронизировал курсор: активен #${a.index}, ожидается #0`)
+    await shot('palette-nav-hover')
   })
 
   it('фокус после закрытия: куда возвращается', async () => {
