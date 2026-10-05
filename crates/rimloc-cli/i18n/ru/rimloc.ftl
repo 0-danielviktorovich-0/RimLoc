@@ -32,6 +32,7 @@ scan-csv-stdout = Печать CSV в stdout...
 scan-csv-saved = CSV сохранён в { $path }
 scan-json-stdout = Печать JSON в stdout...
 scan-json-saved = JSON сохранён в { $path }
+scan-patches-summary = PatchOperations: { $records } игроку-видимых записей, { $inferred } с выведенным ключом DefInjected
 validate-clean = Всё чисто, ошибок не найдено
 export-po-saved = PO сохранён в { $path }
 export-po-tm-coverage = TM автозаполнение: { $filled } / { $total } ({ $pct }%)

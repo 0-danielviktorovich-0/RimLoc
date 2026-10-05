@@ -13,6 +13,12 @@ pub fn run_learn_patches(
         std::env::set_var("RIMLOC_PATCH_STRICT_XPATH", "1");
     }
     let cands = rimloc_services::learn::patches::scan_patches_texts(&scan_root, min_len)?;
+    let inferred_count = cands.iter().filter(|c| c.inferred.is_some()).count();
+    crate::ui_info!(
+        "scan-patches-summary",
+        records = cands.len(),
+        inferred = inferred_count
+    );
     let out_dir = scan_root.join("learn_out");
     let out = out_json.unwrap_or_else(|| out_dir.join("patches_texts.json"));
     // Canonical write guard (rust/path-injection chokepoint): the CLI

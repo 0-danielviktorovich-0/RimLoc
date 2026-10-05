@@ -4,6 +4,12 @@ use quick_xml::events::BytesRef;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rimloc_core::{Result as CoreResult, TransUnit};
+
+pub mod patches_extract;
+pub use patches_extract::{
+    is_patch_noise_field, scan_patch_values, PatchScanStats, PatchValueCandidate,
+    PATCH_NOISE_FIELDS,
+};
 use serde::Deserialize;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
