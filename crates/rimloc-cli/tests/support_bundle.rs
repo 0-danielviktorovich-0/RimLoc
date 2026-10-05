@@ -272,11 +272,21 @@ fn json_stdout_stays_parseable_with_support_bundle() {
         "issue objects keep their documented shape"
     );
 
-    // The localized bundle notice went to stderr, not stdout.
+    // The localized bundle notice went to stderr, not stdout. Продукт печатает
+    // канонический путь: на windows это verbatim `\\?\` + длинное имя (tempdir
+    // даёт 8.3 `RUNNER~1`), вокруг — Unicode-isolation обёртки; текст notice
+    // локализован. Поэтому якорим на канонический путь, а не на фразу/подстроку
+    // сырого tempdir (на unix canonicalize добавляет /private-префикс —
+    // подстрока по-прежнему матчится, на windows `\\?\C:\…` содержит `C:\…`).
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    let expected = std::fs::canonicalize(&bundle_out)
+        .expect("canonical bundle path")
+        .to_string_lossy()
+        .trim_start_matches(r"\\?\")
+        .to_string();
     assert!(
-        stderr.contains(&bundle_out.display().to_string()),
-        "bundle path announced on stderr: {stderr}"
+        stderr.contains(&expected),
+        "bundle notice must name the canonical bundle directory ({expected}); stderr={stderr}"
     );
 
     // The bundle itself exists and preserves the causal results.

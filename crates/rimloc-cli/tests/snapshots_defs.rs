@@ -34,7 +34,9 @@ fn sanitize_json_units(mut v: Value) -> Value {
         for obj in arr.iter_mut() {
             if let Some(p) = obj.get_mut("path") {
                 if let Some(s) = p.as_str() {
-                    let norm = s.replace(&ws, "<WS>");
+                    // Сепараторы → `/`: продукт печатает нативные/смешанные пути,
+                    // снапшоты записаны в unix-виде; разделитель не контракт.
+                    let norm = s.replace(&ws, "<WS>").replace('\\', "/");
                     *p = Value::String(norm);
                 }
             }
