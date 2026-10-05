@@ -308,6 +308,11 @@ pub struct Project {
     /// see rimloc_domain::glossary). `default` keeps legacy files loadable.
     #[serde(default)]
     pub glossary: Vec<crate::glossary::GlossaryTerm>,
+    /// Translation memory (TM live, owner decision A+B+C) — GENERIC core
+    /// state (see rimloc_domain::tm). Records are unique per
+    /// (source_text, target_locale). `default` keeps legacy files loadable.
+    #[serde(default)]
+    pub tm: Vec<crate::tm::TranslationMemoryEntry>,
 }
 
 impl Project {
