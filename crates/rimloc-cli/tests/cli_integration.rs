@@ -2310,3 +2310,51 @@ fn cli_validate_and_scan_refuse_nonexistent_root() {
         .failure()
         .stderr(predicates::str::contains("does not exist"));
 }
+
+/// Regression (diff vs Text Grabber, workshop mod 3242000764): a Steam
+/// workshop content folder is named by its numeric workshop id. The numeric
+/// name must not be mistaken for a RimWorld game version, otherwise
+/// `scan --game-version 1.5` silently resolves to the mod root and ships
+/// 1.6 content for a 1.5 request (probe before the fix: 0 units from 1.5,
+/// 40 units from 1.6 on the corpus copy).
+#[test]
+fn scan_honors_game_version_under_numeric_workshop_id_root() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("3242000764");
+    fs::create_dir_all(root.join("About")).unwrap();
+    fs::write(
+        root.join("About").join("About.xml"),
+        "<ModMetaData><name>numeric-root</name>\
+         <supportedVersions><li>1.5</li><li>1.6</li></supportedVersions>\
+         </ModMetaData>",
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("1.5").join("Languages").join("English").join("Keyed"))
+        .unwrap();
+    fs::write(
+        root.join("1.5").join("Languages").join("English").join("Keyed").join("A.xml"),
+        "<LanguageData><From15>old</From15></LanguageData>",
+    )
+    .unwrap();
+    fs::create_dir_all(root.join("1.6").join("Languages").join("English").join("Keyed"))
+        .unwrap();
+    fs::write(
+        root.join("1.6").join("Languages").join("English").join("Keyed").join("B.xml"),
+        "<LanguageData><From16>new</From16></LanguageData>",
+    )
+    .unwrap();
+
+    let output = bin_cmd()
+        .args(["--quiet", "scan", "--root"])
+        .arg(&root)
+        .args(["--game-version", "1.5", "--format", "json"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "scan must succeed");
+    let out = String::from_utf8_lossy(&output.stdout);
+    assert!(out.contains("From15"), "1.5 content must be scanned, got: {out}");
+    assert!(
+        !out.contains("From16"),
+        "1.6 content must not leak into a --game-version 1.5 scan, got: {out}"
+    );
+}
