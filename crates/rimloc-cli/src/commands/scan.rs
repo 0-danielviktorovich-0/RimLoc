@@ -208,7 +208,17 @@ pub fn run_scan(
 
     if with_patches {
         let min_len = patch_min_len.unwrap_or(1);
-        if let Ok(mut extra) = scan_patches_as_units(&scan_root, min_len, patch_strict_xpath) {
+        // Gate H: patch units follow the same effective version view as Defs —
+        // never the cross-version union (1.4 patches must not leak into a
+        // 1.5 scan of a LoadFolders mod).
+        let patch_root = if include_all_versions {
+            scan_root.clone()
+        } else {
+            resolve_game_version_root(&scan_root, game_version.as_deref())
+                .map(|(p, _)| p)
+                .unwrap_or_else(|_| scan_root.clone())
+        };
+        if let Ok(mut extra) = scan_patches_as_units(&patch_root, min_len, patch_strict_xpath) {
             units.append(&mut extra);
             units.sort_by(|a, b| {
                 (

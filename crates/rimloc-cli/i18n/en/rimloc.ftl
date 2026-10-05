@@ -33,6 +33,7 @@ scan-csv-stdout = Printing CSV to stdout...
 scan-csv-saved = CSV saved to { $path }
 scan-json-stdout = Printing JSON to stdout...
 scan-json-saved = JSON saved to { $path }
+scan-patches-summary = PatchOperations: { $records } player-visible text records, { $inferred } with inferred DefInjected key
 
 validate-clean = All clean, no errors found
 
