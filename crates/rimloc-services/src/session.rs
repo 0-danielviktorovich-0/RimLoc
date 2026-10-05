@@ -29,7 +29,10 @@ use crate::contract::{
     ApplyIntentsRequest, ApplyIntentsResponse, ContractError, ContractErrorCode, IntentAction,
     JobId, PathBufDto, ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse,
     ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse, ProjectId, ProjectSnapshot,
-    ProjectSummary, Revision, SessionEpoch, SkippedIntent, TranslationIntent, UI_CONTRACT_VERSION,
+    ProjectSummary, Revision, SessionEpoch, SkippedIntent, TmDeleteRequest, TmDeleteResponse,
+    TmImportFormat, TmImportRequest, TmImportResponse, TmListRequest, TmListResponse,
+    TmLookupRequest, TmLookupResponse, TmMatch, TmUpsertRequest, TmUpsertResponse,
+    TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project;
@@ -550,6 +553,13 @@ impl ProjectSessionManager {
         let cancelled = st.cancel_requested;
         st.cancel_requested = false;
         let engine = crate::eligibility_engine::EligibilityEngine::new();
+        // TM live (A): accepted set_translation intents, resolved to
+        // (source, target, locale) triples. Accumulation lands ONLY here —
+        // after an acked apply, never on a draft/save failure (the triples
+        // below feed the TM only when the persist succeeds, because the
+        // accumulate call sits between the early `applied == 0` return and
+        // the persist step).
+        let mut accepted_tm: Vec<(String, String, String)> = Vec::new();
 
         for (index, intent) in req.intents.iter().enumerate() {
             if cancelled {
@@ -560,6 +570,7 @@ impl ProjectSessionManager {
                 });
                 continue;
             }
+            let before = applied;
             match apply_intent(&mut st.project, &engine, intent) {
                 Ok(()) => applied += 1,
                 Err((code, message)) => skipped.push(SkippedIntent {
@@ -567,6 +578,23 @@ impl ProjectSessionManager {
                     code,
                     message,
                 }),
+            }
+            if applied > before {
+                if let (IntentAction::SetTranslation, Some(text)) =
+                    (&intent.action, intent.text.as_deref())
+                {
+                    // The source text is trusted inventory state (never
+                    // mutated by apply_intent).
+                    if let Some(entry) =
+                        st.project.entries.iter().find(|e| e.id == intent.entry)
+                    {
+                        accepted_tm.push((
+                            entry.text.clone(),
+                            text.trim().to_string(),
+                            intent.locale.clone(),
+                        ));
+                    }
+                }
             }
         }
         log.end_stage("intents");
@@ -584,6 +612,16 @@ impl ProjectSessionManager {
                 skipped,
                 cancelled,
             });
+        }
+
+        // TM live (A): fold the accepted translations into the memory
+        // BEFORE the persist so the same durable write carries them (a
+        // save failure keeps the TM growth dirty in memory together with
+        // the rest of the applied state — one recovery path, no split
+        // brain).
+        let tm_added = tm_auto_accumulate(&mut st.project.tm, &accepted_tm);
+        if tm_added > 0 {
+            log.counter("tm", "accumulated", tm_added as u64);
         }
 
         // Revision bump + persist-before-ack.
@@ -800,6 +838,27 @@ impl ProjectSessionManager {
         st: &mut SessionState,
         project_id: &str,
     ) -> Result<Revision, ContractError> {
+        Self::persist_project_state(st, project_id)
+    }
+
+    /// Shared persist step for TM mutations — the SAME discipline as the
+    /// glossary persist (revision bump + external-change check +
+    /// save-before-ack); both delegate to [`Self::persist_project_state`].
+    fn persist_tm(
+        &self,
+        st: &mut SessionState,
+        project_id: &str,
+    ) -> Result<Revision, ContractError> {
+        Self::persist_project_state(st, project_id)
+    }
+
+    /// The ONE persist step every non-apply mutation shares (glossary, TM):
+    /// revision bump, external-change check, save-before-ack. A failed save
+    /// keeps the edit DIRTY in memory and never acks.
+    fn persist_project_state(
+        st: &mut SessionState,
+        project_id: &str,
+    ) -> Result<Revision, ContractError> {
         let new_revision = st.revision + 1;
         st.revision = new_revision;
         let meta = ProjectEnvelopeMeta {
@@ -835,6 +894,309 @@ impl ProjectSessionManager {
                 ))
             }
         }
+    }
+
+    // ---------- Translation memory (TM live, owner decision A+B+C):
+    // generic project state in `Project.tm`, persist-before-ack. Record
+    // key = (source_text, target_locale); target locales are ISOLATED —
+    // every read/write is scoped to one locale. ----------
+
+    /// `project_tm_list` — the project's TM records with OPTIONAL in-memory
+    /// filters (locale exact, status exact, case-insensitive substring over
+    /// source/target). Read-only; filters never touch the filesystem, so
+    /// they need no form guard (the `project_validate` precedent).
+    pub fn tm_list(
+        &self,
+        req: &TmListRequest,
+    ) -> Result<TmListResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        let job_id: JobId = generate_operation_id();
+        let query = req
+            .query
+            .as_deref()
+            .map(str::trim)
+            .filter(|q| !q.is_empty())
+            .map(str::to_lowercase);
+        let entries: Vec<rimloc_domain::tm::TranslationMemoryEntry> = st
+            .project
+            .tm
+            .iter()
+            .filter(|e| req.locale.as_deref().is_none_or(|l| e.target_locale == l))
+            .filter(|e| req.status.is_none_or(|s| e.status == s))
+            .filter(|e| {
+                query.as_deref().is_none_or(|q| {
+                    e.source_text.to_lowercase().contains(q)
+                        || e.target_text.to_lowercase().contains(q)
+                })
+            })
+            .cloned()
+            .collect();
+        let total = st.project.tm.len();
+        Ok(TmListResponse {
+            job_id,
+            entries,
+            total,
+        })
+    }
+
+    /// `project_tm_upsert` (C = manual CRUD) — create or update one record
+    /// by the (source_text, target_locale) key. The service sets
+    /// provenance=Manual itself (the client never forges provenance);
+    /// status is the user's choice, `None` → ACCEPTED. Manual CRUD is
+    /// explicit user intent: it may upgrade AND downgrade an existing
+    /// record (the human decides).
+    pub fn tm_upsert(
+        &self,
+        req: &TmUpsertRequest,
+    ) -> Result<TmUpsertResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        // Form validation BEFORE any state mutation: a refused write never
+        // bumps the revision and never touches the disk.
+        let (source_text, target_text, target_locale) =
+            rimloc_domain::tm::validate_input(
+                &req.source_text,
+                &req.target_text,
+                &req.target_locale,
+            )
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+
+        let job_id: JobId = generate_operation_id();
+        let status = req.status.unwrap_or(rimloc_domain::tm::TmStatus::Accepted);
+        let existing = st
+            .project
+            .tm
+            .iter_mut()
+            .find(|e| e.target_locale == target_locale && e.source_text == source_text);
+        let entry = match existing {
+            Some(slot) => {
+                // Same key = UPDATE in place: the stable id survives; the
+                // manual edit owns the record's content and status.
+                slot.target_text = target_text;
+                slot.status = status;
+                slot.provenance = rimloc_domain::tm::TmProvenance::Manual;
+                slot.clone()
+            }
+            None => {
+                let entry = rimloc_domain::tm::TranslationMemoryEntry {
+                    id: generate_operation_id(),
+                    source_text,
+                    target_text,
+                    target_locale,
+                    status,
+                    provenance: rimloc_domain::tm::TmProvenance::Manual,
+                };
+                st.project.tm.push(entry.clone());
+                entry
+            }
+        };
+        let revision = self.persist_tm(&mut st, &req.project_id)?;
+        Ok(TmUpsertResponse {
+            job_id,
+            revision,
+            entry,
+        })
+    }
+
+    /// `project_tm_delete` — remove one record by stable id; an unknown id
+    /// is a typed refusal, never silent success.
+    pub fn tm_delete(
+        &self,
+        req: &TmDeleteRequest,
+    ) -> Result<TmDeleteResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let id = req.id.trim();
+        if id.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                "tm record id to delete must not be empty",
+            ));
+        }
+        let pos = st
+            .project
+            .tm
+            .iter()
+            .position(|e| e.id == id)
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::ContractViolation,
+                    format!("unknown tm record id: {id}"),
+                )
+            })?;
+        let removed = st.project.tm.remove(pos);
+        let revision = self.persist_tm(&mut st, &req.project_id)?;
+        Ok(TmDeleteResponse {
+            job_id,
+            revision,
+            removed_id: removed.id,
+        })
+    }
+
+    /// `project_tm_import` (B) — bulk import from a JSON array of
+    /// `{source, target[, locale][, status]}` objects or CSV lines
+    /// `source,target[,locale][,status]`. Records land with
+    /// provenance=IMPORT and status=DRAFT unless the row carries an
+    /// EXPLICIT status — an import is never trusted blindly. Collision
+    /// policy: a stronger existing record (higher [`TmStatus::rank`]) is
+    /// KEPT (skipped); an equal-or-weaker one is refreshed (updated).
+    /// Row-level form refusals are counted in `rejected`, never fatal; a
+    /// payload that parses as NEITHER JSON nor CSV is a whole-operation
+    /// typed refusal.
+    pub fn tm_import(
+        &self,
+        req: &TmImportRequest,
+    ) -> Result<TmImportResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let rows = parse_tm_rows(&req.payload, req.format).map_err(|m| {
+            ContractError::new(ContractErrorCode::ContractViolation, m)
+        })?;
+
+        let mut imported = 0usize;
+        let mut updated = 0usize;
+        let mut skipped = 0usize;
+        let mut rejected = 0usize;
+        for row in rows {
+            // Per-row gate: a bad row is rejected and counted, the rest of
+            // the batch proceeds (one poisoned line must not sink a 10k
+            // import; the count makes the loss visible).
+            let Some((source, target, locale, status)) = resolve_tm_row(&row) else {
+                rejected += 1;
+                continue;
+            };
+            let new_rank = status.rank();
+            match st
+                .project
+                .tm
+                .iter_mut()
+                .find(|e| e.target_locale == locale && e.source_text == source)
+            {
+                Some(slot) if slot.status.rank() > new_rank => {
+                    // Never weaken: a stronger record stays untouched.
+                    skipped += 1;
+                }
+                Some(slot) => {
+                    // Equal-or-weaker: the import refreshes the record.
+                    slot.target_text = target;
+                    slot.status = status;
+                    slot.provenance = rimloc_domain::tm::TmProvenance::Import;
+                    updated += 1;
+                }
+                None => {
+                    st.project
+                        .tm
+                        .push(rimloc_domain::tm::TranslationMemoryEntry {
+                            id: generate_operation_id(),
+                            source_text: source,
+                            target_text: target,
+                            target_locale: locale,
+                            status,
+                            provenance: rimloc_domain::tm::TmProvenance::Import,
+                        });
+                    imported += 1;
+                }
+            }
+        }
+        // Nothing changed when the payload was empty or fully rejected:
+        // no revision bump, no save (the apply discipline).
+        if imported + updated == 0 {
+            return Ok(TmImportResponse {
+                job_id,
+                revision: st.revision,
+                imported,
+                updated,
+                skipped,
+                rejected,
+            });
+        }
+        let revision = self.persist_tm(&mut st, &req.project_id)?;
+        Ok(TmImportResponse {
+            job_id,
+            revision,
+            imported,
+            updated,
+            skipped,
+            rejected,
+        })
+    }
+
+    /// `project_tm_lookup` — ranked candidates for one source text within
+    /// ONE target locale (isolation is mandatory). Tiers: exact →
+    /// normalized (trim/case/whitespace collapse) → bounded fuzzy
+    /// Levenshtein (threshold `max(2, len/10)` over the normalized query);
+    /// best-first by tier, then distance, then trust rank, then stable
+    /// insertion order.
+    pub fn tm_lookup(
+        &self,
+        req: &TmLookupRequest,
+    ) -> Result<TmLookupResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        let job_id: JobId = generate_operation_id();
+        let matches = tm_ranked_matches(
+            &st.project.tm,
+            &req.source_text,
+            &req.target_locale,
+            req.limit.unwrap_or(5).clamp(1, 50),
+        );
+        Ok(TmLookupResponse { job_id, matches })
     }
 
     /// `project_validate` — run the EXISTING validator (026 severity) over
@@ -1993,6 +2355,318 @@ impl ProjectSessionManager {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Translation memory (TM live A+B+C) — pure helpers over `Project.tm`.
+// Kept free (no `&self`) so the domain rules are unit-testable without a
+// session fixture.
+// ---------------------------------------------------------------------------
+
+/// One import row in resolved (still raw-text) form.
+struct TmImportRow {
+    source: String,
+    target: String,
+    locale: Option<String>,
+    status: Option<String>,
+}
+
+/// Parse an import payload into rows. JSON (array of objects) and CSV
+/// (lines `source,target[,locale][,status]`) are supported; the format
+/// auto-detects on the first byte (`[` or `{` → JSON) unless forced. A
+/// payload that parses as NEITHER is a whole-operation refusal with an
+/// exact message — never a silent partial apply.
+fn parse_tm_rows(
+    payload: &str,
+    format: Option<TmImportFormat>,
+) -> Result<Vec<TmImportRow>, String> {
+    let payload = payload.trim();
+    if payload.is_empty() {
+        return Err("tm import payload is empty".into());
+    }
+    let as_json = match format {
+        Some(TmImportFormat::Json) => true,
+        Some(TmImportFormat::Csv) => false,
+        // Auto-detect on the first byte: JSON text always opens with `[`
+        // (array) or `{` (object). Routing `{` into the JSON parser is what
+        // makes "JSON of the wrong shape" and "not JSON at all after a
+        // typo" TYPED refusals — falling back to CSV would silently read
+        // broken JSON as one garbage row.
+        None => payload.starts_with('[') || payload.starts_with('{'),
+    };
+    if as_json {
+        parse_tm_json_rows(payload)
+    } else {
+        Ok(parse_tm_csv_rows(payload))
+    }
+}
+
+/// JSON array of `{source, target[, locale][, status]}` objects. Field
+/// aliases `source_text`/`target_text`/`target_locale` are accepted (the
+/// domain wording) alongside the short CSV-mirrored names.
+fn parse_tm_json_rows(payload: &str) -> Result<Vec<TmImportRow>, String> {
+    let value: serde_json::Value = serde_json::from_str(payload)
+        .map_err(|e| format!("tm import: payload is not valid JSON: {e}"))?;
+    let items = value
+        .as_array()
+        .ok_or_else(|| "tm import: JSON payload must be an ARRAY of objects".to_string())?;
+    let mut rows = Vec::with_capacity(items.len());
+    for (i, item) in items.iter().enumerate() {
+        let obj = match item.as_object() {
+            Some(o) => o,
+            None => {
+                return Err(format!(
+                    "tm import: JSON row #{i} is not an object — every element must carry source/target"
+                ));
+            }
+        };
+        let get = |keys: &[&str]| {
+            keys.iter()
+                .find_map(|k| obj.get(*k))
+                .and_then(|v| v.as_str())
+                .map(str::to_string)
+        };
+        rows.push(TmImportRow {
+            source: get(&["source", "source_text"]).unwrap_or_default(),
+            target: get(&["target", "target_text"]).unwrap_or_default(),
+            locale: get(&["locale", "target_locale"]),
+            status: get(&["status"]),
+        });
+    }
+    Ok(rows)
+}
+
+/// CSV lines `source,target[,locale][,status]`. An optional header row
+/// (`source,target,...` in any casing) is detected and skipped. Quoting is
+/// RFC-4180-lite: fields may be wrapped in `"`, embedded quotes double
+/// (`""`), embedded separators/newlines live inside quotes.
+fn parse_tm_csv_rows(payload: &str) -> Vec<TmImportRow> {
+    let records = parse_csv_records(payload);
+    let mut rows = Vec::with_capacity(records.len());
+    for (i, fields) in records.iter().enumerate() {
+        let all_empty = fields.iter().all(|f| f.trim().is_empty());
+        if all_empty {
+            continue;
+        }
+        if i == 0 && is_tm_csv_header(fields) {
+            continue;
+        }
+        let field = |n: usize| fields.get(n).map(|s| s.trim().to_string());
+        rows.push(TmImportRow {
+            source: field(0).unwrap_or_default(),
+            target: field(1).unwrap_or_default(),
+            locale: field(2).filter(|s| !s.is_empty()),
+            status: field(3).filter(|s| !s.is_empty()),
+        });
+    }
+    rows
+}
+
+/// Header detection for the optional CSV header row.
+fn is_tm_csv_header(fields: &[String]) -> bool {
+    let first = fields.first().map(|s| s.trim().to_lowercase());
+    matches!(first.as_deref(), Some("source" | "source_text"))
+}
+
+/// RFC-4180-lite CSV record tokenizer: splits on unquoted commas/newlines,
+/// honors `"` quoting with `""` as an escaped quote. Own implementation —
+/// no new dependencies (the workspace rule for core crates).
+fn parse_csv_records(payload: &str) -> Vec<Vec<String>> {
+    let mut records: Vec<Vec<String>> = Vec::new();
+    let mut record: Vec<String> = Vec::new();
+    let mut field = String::new();
+    let mut in_quotes = false;
+    let mut chars = payload.chars().peekable();
+    let mut any = false;
+    while let Some(c) = chars.next() {
+        if in_quotes {
+            match c {
+                '"' => {
+                    if chars.peek() == Some(&'"') {
+                        chars.next();
+                        field.push('"');
+                    } else {
+                        in_quotes = false;
+                    }
+                }
+                _ => field.push(c),
+            }
+            continue;
+        }
+        match c {
+            '"' if field.is_empty() => {
+                in_quotes = true;
+                any = true;
+            }
+            ',' => {
+                record.push(std::mem::take(&mut field));
+                any = true;
+            }
+            '\n' => {
+                record.push(std::mem::take(&mut field));
+                records.push(std::mem::take(&mut record));
+                any = false;
+            }
+            '\r' => {
+                // Normalize CRLF: the \n handler closes the record.
+                continue;
+            }
+            _ => {
+                field.push(c);
+                any = true;
+            }
+        }
+    }
+    if any || !field.is_empty() || !record.is_empty() {
+        record.push(field);
+        records.push(record);
+    }
+    records
+}
+
+/// Resolve one import row into validated (source, target, locale, status).
+/// `None` = the row is form-rejected (missing required fields, over-limit
+/// lengths, control characters, unknown status wording). Absent locale is
+/// a rejection: locale isolation is MANDATORY, a record without a locale
+/// can never be looked up honestly.
+fn resolve_tm_row(row: &TmImportRow) -> Option<(String, String, String, TmStatus)> {
+    let (source, target, locale) = rimloc_domain::tm::validate_input(
+        &row.source,
+        &row.target,
+        row.locale.as_deref().unwrap_or(""),
+    )
+    .ok()?;
+    let status = match &row.status {
+        Some(s) => TmStatus::parse(s)?,
+        // B: the import is NOT trusted blindly — DRAFT by default.
+        None => TmStatus::Draft,
+    };
+    Some((source, target, locale, status))
+}
+
+use rimloc_domain::tm::TmStatus;
+
+/// TM live (A): fold ACCEPTED translations into the memory. Called ONLY on
+/// the acked apply path (persist-before-ack, never on a draft). Policy per
+/// triple:
+/// - form-invalid triples (e.g. an inventory source over the TM limit) are
+///   skipped, never fatal: the apply must not fail because the TM could
+///   not store;
+/// - same key + same target: no-op (already recorded);
+/// - existing REVIEWED record: KEPT — curated work is never weakened by
+///   auto-accumulation;
+/// - otherwise (fresh key, or an equal/weaker record with a different
+///   target): the accepted human translation wins — record written with
+///   provenance=Auto, status=Accepted.
+///
+/// Returns the number of records written/updated (observability counter).
+fn tm_auto_accumulate(
+    tm: &mut Vec<rimloc_domain::tm::TranslationMemoryEntry>,
+    accepted: &[(String, String, String)],
+) -> usize {
+    let mut changed = 0usize;
+    for (source, target, locale) in accepted {
+        let Ok((source, target, locale)) =
+            rimloc_domain::tm::validate_input(source, target, locale)
+        else {
+            continue;
+        };
+        // The immutable scan ends at `position` — the mutable arms below
+        // never alias it.
+        let existing = tm
+            .iter()
+            .position(|e| e.target_locale == locale && e.source_text == source);
+        match existing {
+            Some(i) if tm[i].target_text == target => {}
+            Some(i) if tm[i].status == TmStatus::Reviewed => {}
+            Some(i) => {
+                let slot = &mut tm[i];
+                slot.target_text = target;
+                slot.status = TmStatus::Accepted;
+                slot.provenance = rimloc_domain::tm::TmProvenance::Auto;
+                changed += 1;
+            }
+            None => {
+                tm.push(rimloc_domain::tm::TranslationMemoryEntry {
+                    id: generate_operation_id(),
+                    source_text: source,
+                    target_text: target,
+                    target_locale: locale,
+                    status: TmStatus::Accepted,
+                    provenance: rimloc_domain::tm::TmProvenance::Auto,
+                });
+                changed += 1;
+            }
+        }
+    }
+    changed
+}
+
+/// Ranked TM matches for one (query, locale): exact → normalized → bounded
+/// fuzzy. Locales are ISOLATED — only records with `target_locale == locale`
+/// are ever considered. Ordering: tier, then distance, then trust rank
+/// (REVIEWED > ACCEPTED > DRAFT), then stable insertion order. `distance`
+/// rides only on the fuzzy tier (exact/normalized are 0-distance by
+/// construction and omit the field on the wire).
+fn tm_ranked_matches(
+    tm: &[rimloc_domain::tm::TranslationMemoryEntry],
+    query: &str,
+    locale: &str,
+    limit: usize,
+) -> Vec<TmMatch> {
+    let query = query.trim();
+    if query.is_empty() || locale.is_empty() {
+        return Vec::new();
+    }
+    let scoped: Vec<(usize, &rimloc_domain::tm::TranslationMemoryEntry)> = tm
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| e.target_locale == locale)
+        .collect();
+    let nq = rimloc_domain::tm::normalize(query);
+    let threshold = rimloc_domain::tm::fuzzy_threshold(&nq);
+
+    // (tier, distance_for_order, rank, index) — best first.
+    let mut scored: Vec<(u8, usize, u8, usize)> = Vec::new();
+    for (i, e) in &scoped {
+        if e.source_text == query {
+            scored.push((0, 0, e.status.rank(), *i));
+            continue;
+        }
+        let normalized = rimloc_domain::tm::normalize(&e.source_text);
+        if normalized == nq {
+            scored.push((1, 0, e.status.rank(), *i));
+            continue;
+        }
+        if let Some(d) =
+            rimloc_domain::tm::bounded_levenshtein(&nq, &normalized, threshold)
+        {
+            scored.push((2, d, e.status.rank(), *i));
+        }
+    }
+    scored.sort_by(|a, b| {
+        a.0.cmp(&b.0)
+            .then(a.1.cmp(&b.1))
+            .then(b.2.cmp(&a.2))
+            .then(a.3.cmp(&b.3))
+    });
+    scored
+        .into_iter()
+        .take(limit)
+        .map(|(tier, d, _, i)| {
+            let entry = tm[i].clone();
+            let (match_kind, distance) = match tier {
+                0 => ("exact", None),
+                1 => ("normalized", None),
+                _ => ("fuzzy", Some(d)),
+            };
+            TmMatch {
+                entry,
+                match_kind: match_kind.into(),
+                distance,
+            }
+        })
+        .collect()
+}
+
 /// Strict language-folder form for client locale strings (P1-2). A locale
 /// is joined into `Languages/<locale>/...` output paths by the export
 /// writer — anything but a plain folder name (letters, digits, `_`, `-`)
@@ -2494,7 +3168,10 @@ fn apply_intent(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::contract::{ApplyIntentsRequest, ContractErrorCode, UI_CONTRACT_VERSION};
+    use crate::contract::{
+        ApplyIntentsRequest, ContractErrorCode, TmDeleteRequest, TmImportFormat, TmImportRequest,
+        TmListRequest, TmLookupRequest, TmUpsertRequest, UI_CONTRACT_VERSION,
+    };
     use rimloc_domain::canonical::{EntryKind, SourceEntryId, SourceProvenance};
     use std::fs;
 
@@ -2899,6 +3576,583 @@ mod tests {
             crate::contract::ContractErrorCode::ContractViolation
         ));
         assert!(err.message.contains("no-such-term"));
+    }
+
+    // ---------- Translation memory (TM live A+B+C) ----------
+
+    fn tm_upsert_req(
+        pid: &str,
+        epoch: u64,
+        source: &str,
+        target: &str,
+        locale: &str,
+        status: Option<rimloc_domain::tm::TmStatus>,
+    ) -> TmUpsertRequest {
+        TmUpsertRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            source_text: source.into(),
+            target_text: target.into(),
+            target_locale: locale.into(),
+            status,
+        }
+    }
+
+    fn tm_list_req(
+        pid: &str,
+        epoch: u64,
+        locale: Option<&str>,
+        query: Option<&str>,
+    ) -> TmListRequest {
+        TmListRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            locale: locale.map(str::to_string),
+            status: None,
+            query: query.map(str::to_string),
+        }
+    }
+
+    fn tm_lookup_req(
+        pid: &str,
+        epoch: u64,
+        source: &str,
+        locale: &str,
+        limit: Option<usize>,
+    ) -> TmLookupRequest {
+        TmLookupRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            source_text: source.into(),
+            target_locale: locale.into(),
+            limit,
+        }
+    }
+
+    fn tm_import_req(
+        pid: &str,
+        epoch: u64,
+        payload: &str,
+        format: Option<TmImportFormat>,
+    ) -> TmImportRequest {
+        TmImportRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            payload: payload.into(),
+            format,
+        }
+    }
+
+    fn tm_fixture() -> (tempfile::TempDir, ProjectSessionManager, String, u64) {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        (
+            dir,
+            mgr,
+            snap.project_id,
+            snap.session_epoch,
+        )
+    }
+
+    /// C = manual CRUD: upsert mints a MANUAL record (default ACCEPTED),
+    /// an explicit status is honored (including a deliberate downgrade —
+    /// the human decides), an update keeps the stable id, an unknown-id
+    /// delete is a typed refusal, and everything survives a full restart
+    /// (a SECOND manager over the same managed root sees the records).
+    #[test]
+    fn tm_crud_roundtrip_and_restart_persistence() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+
+        let res = mgr
+            .tm_upsert(&tm_upsert_req(&pid, epoch, "  Save game ", "Сохранить игру", "Russian", None))
+            .unwrap();
+        assert_eq!(res.entry.provenance, rimloc_domain::tm::TmProvenance::Manual);
+        assert_eq!(res.entry.status, rimloc_domain::tm::TmStatus::Accepted);
+        assert_eq!(res.revision, 2);
+        let id = res.entry.id.clone();
+
+        // Update in place: same key, stable id, explicit status honored.
+        let res2 = mgr
+            .tm_upsert(&tm_upsert_req(
+                &pid,
+                epoch,
+                "Save game",
+                "Сохранить игру.",
+                "Russian",
+                Some(rimloc_domain::tm::TmStatus::Reviewed),
+            ))
+            .unwrap();
+        assert_eq!(res2.entry.id, id, "stable id survives the upsert");
+        assert_eq!(res2.entry.status, rimloc_domain::tm::TmStatus::Reviewed);
+
+        // Unknown-id delete is a typed refusal.
+        let err = mgr
+            .tm_delete(&TmDeleteRequest {
+                project_id: pid.clone(),
+                session_epoch: epoch,
+                id: "op-does-not-exist".into(),
+            })
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+
+        // Restart: a fresh manager over the same managed root reloads the
+        // TM from the project envelope.
+        let mgr2 = ProjectSessionManager::new(mgr.managed_root()).unwrap();
+        let snap2 = mgr2.open(&pid).unwrap();
+        let list = mgr2
+            .tm_list(&tm_list_req(&pid, snap2.session_epoch, Some("Russian"), None))
+            .unwrap();
+        assert_eq!(list.total, 1);
+        assert_eq!(list.entries.len(), 1);
+        assert_eq!(list.entries[0].id, id);
+        assert_eq!(list.entries[0].target_text, "Сохранить игру.");
+
+        // Delete acks and removes.
+        let del = mgr2
+            .tm_delete(&TmDeleteRequest {
+                project_id: pid.clone(),
+                session_epoch: snap2.session_epoch,
+                id,
+            })
+            .unwrap();
+        assert_eq!(del.revision, snap2.revision + 1);
+        assert!(mgr2
+            .tm_list(&tm_list_req(&pid, snap2.session_epoch, None, None))
+            .unwrap()
+            .entries
+            .is_empty());
+    }
+
+    /// Locale isolation is MANDATORY: a lookup/list in one locale never
+    /// returns records of another, even when the source texts are
+    /// identical.
+    #[test]
+    fn tm_locale_isolation_in_lookup_and_list() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+        mgr.tm_upsert(&tm_upsert_req(&pid, epoch, "Save game", "Сохранить игру", "Russian", None))
+            .unwrap();
+        mgr.tm_upsert(&tm_upsert_req(&pid, epoch, "Save game", "Sauvegarder", "French", None))
+            .unwrap();
+
+        let ru = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "Russian", None))
+            .unwrap();
+        assert_eq!(ru.matches.len(), 1);
+        assert_eq!(ru.matches[0].match_kind, "exact");
+        assert_eq!(ru.matches[0].entry.target_text, "Сохранить игру");
+
+        let fr = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "French", None))
+            .unwrap();
+        assert_eq!(fr.matches.len(), 1);
+        assert_eq!(fr.matches[0].entry.target_text, "Sauvegarder");
+
+        // An unrecorded locale sees nothing.
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "German", None))
+            .unwrap()
+            .matches
+            .is_empty());
+
+        // List filter isolates the same way; total stays unfiltered.
+        let list = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        assert_eq!(list.entries.len(), 1);
+        assert_eq!(list.total, 2);
+    }
+
+    /// Lookup tiers: exact → normalized → bounded fuzzy; trust rank breaks
+    /// ties (REVIEWED > ACCEPTED > DRAFT); fuzzy refuses beyond the bound.
+    #[test]
+    fn tm_lookup_tiers_and_rank_priority() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+        // Two records whose sources collide ONLY after normalization;
+        // different trust ranks.
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid, epoch, "save  game", "сохранить (черновик)", "Russian",
+            Some(rimloc_domain::tm::TmStatus::Draft),
+        ))
+        .unwrap();
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid, epoch, "Save Game", "Сохранить игру", "Russian",
+            Some(rimloc_domain::tm::TmStatus::Reviewed),
+        ))
+        .unwrap();
+
+        // Normalized hit ranks the REVIEWED record first.
+        let res = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "  SAVE   GAME ", "Russian", None))
+            .unwrap();
+        assert_eq!(res.matches.len(), 2);
+        assert!(res.matches.iter().all(|m| m.match_kind == "normalized"));
+        assert_eq!(res.matches[0].entry.status, rimloc_domain::tm::TmStatus::Reviewed);
+        assert_eq!(res.matches[0].entry.target_text, "Сохранить игру");
+
+        // Fuzzy within the bound ("save game" vs "save gane" = 1 edit).
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid, epoch, "save gane", "сохранить игрy (typo target)", "Russian",
+            Some(rimloc_domain::tm::TmStatus::Accepted),
+        ))
+        .unwrap();
+        let fuzzy = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "save game", "Russian", None))
+            .unwrap();
+        // The normalized twins still outrank the fuzzy candidate.
+        assert_eq!(fuzzy.matches[0].match_kind, "normalized");
+        let fuzzy_hit = fuzzy
+            .matches
+            .iter()
+            .find(|m| m.match_kind == "fuzzy")
+            .expect("fuzzy candidate within threshold");
+        assert_eq!(fuzzy_hit.distance, Some(1));
+
+        // Beyond the bound there is no match at all.
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(
+                &pid,
+                epoch,
+                "a completely unrelated long sentence about thermodynamics",
+                "Russian",
+                None
+            ))
+            .unwrap()
+            .matches
+            .is_empty());
+
+        // limit is honored (default 5, clamped).
+        let capped = mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "save game", "Russian", Some(1)))
+            .unwrap();
+        assert_eq!(capped.matches.len(), 1);
+    }
+
+    /// B = import: JSON and CSV both land as IMPORT/DRAFT by default, an
+    /// explicit row status IS honored, stronger existing records are never
+    /// weakened, form-broken rows are counted as rejected, and a payload
+    /// that parses as neither format is a whole-operation typed refusal.
+    #[test]
+    fn tm_import_json_csv_policies_and_broken_input() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+
+        // JSON: fresh keys, one explicit status, one broken row (no locale).
+        let json = r#"[
+            {"source": "Save game", "target": "Сохранить игру", "locale": "Russian"},
+            {"source": "Load game", "target": "Загрузить игру", "locale": "Russian", "status": "reviewed"},
+            {"source": "No locale", "target": "нет локали"},
+            {"source": "", "target": "пустой source", "locale": "Russian"}
+        ]"#;
+        let res = mgr
+            .tm_import(&tm_import_req(&pid, epoch, json, None))
+            .unwrap();
+        assert_eq!(res.imported, 2);
+        assert_eq!(res.rejected, 2);
+        assert_eq!(res.revision, 2);
+
+        let list = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        let by_source: std::collections::HashMap<String, &rimloc_domain::tm::TranslationMemoryEntry> =
+            list.entries
+                .iter()
+                .map(|e| (e.source_text.clone(), e))
+                .collect();
+        assert_eq!(
+            by_source["Save game"].status,
+            rimloc_domain::tm::TmStatus::Draft,
+            "import without explicit status is DRAFT (never trusted blindly)"
+        );
+        assert_eq!(by_source["Save game"].provenance, rimloc_domain::tm::TmProvenance::Import);
+        assert_eq!(by_source["Load game"].status, rimloc_domain::tm::TmStatus::Reviewed);
+
+        // CSV with header + quoted fields: equal-rank DRAFT is refreshed,
+        // stronger REVIEWED is skipped, a quoted comma field parses whole.
+        let csv = "source,target,locale,status\n\
+                   \"Save game\",\"Сохранить игру (обновлено)\",Russian,draft\n\
+                   Load game,Загрузить (сильнее),Russian,accepted\n\
+                   \"Extra, key\",\"в кавычках, с запятой\",Russian,draft\n";
+        let res2 = mgr
+            .tm_import(&tm_import_req(&pid, epoch, csv, Some(TmImportFormat::Csv)))
+            .unwrap();
+        assert_eq!(res2.updated, 1, "equal-rank DRAFT refreshed");
+        assert_eq!(res2.skipped, 1, "REVIEWED never weakened by import");
+        assert_eq!(res2.imported, 1, "quoted-comma key lands whole");
+        let after = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        let save = after
+            .entries
+            .iter()
+            .find(|e| e.source_text == "Save game")
+            .unwrap();
+        assert_eq!(save.target_text, "Сохранить игру (обновлено)");
+        assert_eq!(save.status, rimloc_domain::tm::TmStatus::Draft);
+        let load = after
+            .entries
+            .iter()
+            .find(|e| e.source_text == "Load game")
+            .unwrap();
+        assert_eq!(load.target_text, "Загрузить игру", "REVIEWED kept");
+
+        // Broken JSON is a whole-operation typed refusal that changes
+        // nothing.
+        let before = mgr
+            .tm_list(&tm_list_req(&pid, epoch, None, None))
+            .unwrap()
+            .total;
+        let err = mgr
+            .tm_import(&tm_import_req(&pid, epoch, "{ not json", None))
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ContractViolation);
+        assert!(
+            err.message.contains("not valid JSON"),
+            "honest parse message: {}",
+            err.message
+        );
+        // JSON of the wrong SHAPE (not an array) is the same refusal class.
+        let err = mgr
+            .tm_import(&tm_import_req(&pid, epoch, "{\"source\": \"x\"}", None))
+            .unwrap_err();
+        assert!(err.message.contains("ARRAY"), "{}", err.message);
+        // Empty payload.
+        let err = mgr
+            .tm_import(&tm_import_req(&pid, epoch, "   ", None))
+            .unwrap_err();
+        assert!(err.message.contains("empty"), "{}", err.message);
+        assert_eq!(
+            mgr.tm_list(&tm_list_req(&pid, epoch, None, None))
+                .unwrap()
+                .total,
+            before,
+            "a refused import never touches the state"
+        );
+    }
+
+    /// A = auto-accumulation rides ONLY the acked accept
+    /// (`project_apply_intents`): accepted set_translation lands as
+    /// AUTO/ACCEPTED; skipped intents, cancels, todo/clear and refused
+    /// operations never accumulate; re-accepting the same text is a no-op;
+    /// a NEW accepted target overwrites a weaker record; a REVIEWED record
+    /// is never weakened.
+    #[test]
+    fn tm_auto_accumulation_on_accepted_apply_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = &snap.project_id;
+        let epoch = snap.session_epoch;
+
+        let list = |m: &ProjectSessionManager, e: u64| {
+            m.tm_list(&tm_list_req(pid, e, None, None)).unwrap()
+        };
+
+        // Accepted set_translation accumulates (source from the inventory,
+        // revision bumped once, record AUTO/ACCEPTED).
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                1,
+                vec![set_text("Dup.label", "ThingDef", "вещь")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+        let l = list(&mgr, epoch);
+        assert_eq!(l.entries.len(), 1);
+        assert_eq!(l.entries[0].provenance, rimloc_domain::tm::TmProvenance::Auto);
+        assert_eq!(l.entries[0].status, rimloc_domain::tm::TmStatus::Accepted);
+        assert_eq!(l.entries[0].source_text, "thing label");
+        assert_eq!(l.entries[0].target_text, "вещь");
+
+        // A SKIPPED intent (unknown identity) does NOT accumulate.
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                res.revision,
+                vec![set_text("NoSuchKey.label", "ThingDef", "призрак")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 0);
+        assert_eq!(list(&mgr, epoch).entries.len(), 1);
+
+        // mark_todo / clear_translation never accumulate.
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                res.revision,
+                vec![
+                    intent("Dup.label", "AbilityDef", None, IntentAction::MarkTodo),
+                    intent("Dup.label", "AbilityDef", None, IntentAction::ClearTranslation),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 2);
+        assert_eq!(list(&mgr, epoch).entries.len(), 1);
+
+        // Re-accepting the same translation: no duplicate, no rewrite.
+        let rev_before = list(&mgr, epoch).entries.len();
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                res.revision,
+                vec![set_text("Dup.label", "ThingDef", "вещь")],
+            ))
+            .unwrap();
+        assert_eq!(res.applied, 1);
+        assert_eq!(list(&mgr, epoch).entries.len(), rev_before);
+
+        // A NEW accepted target overwrites the weaker (auto) record.
+        mgr.apply(&req(
+            pid,
+            epoch,
+            res.revision,
+            vec![set_text("Dup.label", "ThingDef", "вещь v2")],
+        ))
+        .unwrap();
+        let l = list(&mgr, epoch);
+        assert_eq!(l.entries.len(), 1);
+        assert_eq!(l.entries[0].target_text, "вещь v2");
+        assert_eq!(l.entries[0].provenance, rimloc_domain::tm::TmProvenance::Auto);
+
+        // A REVIEWED record is never weakened by auto-accumulation.
+        mgr.tm_upsert(&tm_upsert_req(
+            pid, epoch, "thing label", "вещь (ручная)", "Russian",
+            Some(rimloc_domain::tm::TmStatus::Reviewed),
+        ))
+        .unwrap();
+        mgr.apply(&req(
+            pid,
+            epoch,
+            mgr.snapshot(pid).unwrap().revision,
+            vec![set_text("Dup.label", "ThingDef", "вещь v3")],
+        ))
+        .unwrap();
+        let l = list(&mgr, epoch);
+        assert_eq!(l.entries.len(), 1);
+        assert_eq!(l.entries[0].target_text, "вещь (ручная)");
+        assert_eq!(l.entries[0].status, rimloc_domain::tm::TmStatus::Reviewed);
+
+        // Cancelled apply: nothing lands (cancel_next covers the batch).
+        mgr.cancel_next(pid).unwrap();
+        let res = mgr
+            .apply(&req(
+                pid,
+                epoch,
+                mgr.snapshot(pid).unwrap().revision,
+                vec![set_text("Dup.label", "AbilityDef", "способность")],
+            ))
+            .unwrap();
+        assert!(res.cancelled);
+        assert_eq!(list(&mgr, epoch).entries.len(), 1);
+    }
+
+    /// Source-update behavior (documented contract): the TM record is
+    /// keyed by source TEXT, so when the source changes the old record
+    /// stays (ages) and the NEW source is a lookup miss until it is
+    /// translated again.
+    #[test]
+    fn tm_source_update_ages_the_old_record() {
+        let (_dir, mgr, pid, epoch) = tm_fixture();
+
+        // Seed the memory with the OLD source wording.
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid, epoch, "assault rifle", "штурмовая винтовка", "Russian", None,
+        ))
+        .unwrap();
+
+        // The source text changed upstream (a new mod version). The record
+        // is still THERE (aged, maybe useful), but the new source is a
+        // miss.
+        let aged = mgr
+            .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+            .unwrap();
+        assert_eq!(aged.total, 1, "the old record stays, never deleted");
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "assault rifle mk2", "Russian", None))
+            .unwrap()
+            .matches
+            .is_empty());
+        // ...within the fuzzy bound it can still surface as a hint — that
+        // is the point of a memory (threshold for a 19-char query is 2;
+        // "assault rifle mk2" is 4 edits away — a MISS here by design).
+        assert!(mgr
+            .tm_lookup(&tm_lookup_req(&pid, epoch, "assault rifl", "Russian", None))
+            .unwrap()
+            .matches
+            .len()
+            == 1,
+            "close typo still finds the aged record");
+
+        // A different source key coexists: no merge, no overwrite.
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid, epoch, "assault rifle mk2", "штурмовая винтовка mk2", "Russian", None,
+        ))
+        .unwrap();
+        assert_eq!(
+            mgr.tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
+                .unwrap()
+                .total,
+            2
+        );
+    }
+
+    /// Pure helper coverage: CSV tokenizer (quotes/escapes/CRLF), JSON row
+    /// aliases, and the fuzzy rank ordering.
+    #[test]
+    fn tm_parse_helpers_csv_json_and_ranking() {
+        let rows = parse_tm_csv_rows("source,target,locale,status\r\n\"a,\"\"b\"\",c\",d,Russian,\r\n");
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].source, "a,\"b\",c");
+        assert_eq!(rows[0].target, "d");
+        assert_eq!(rows[0].locale.as_deref(), Some("Russian"));
+        assert_eq!(rows[0].status, None, "empty status cell = absent");
+
+        let rows = parse_tm_rows(
+            r#"[{"source_text": "x", "target_text": "y", "target_locale": "Russian", "status": "draft"}]"#,
+            Some(TmImportFormat::Json),
+        )
+        .unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].source, "x");
+        assert_eq!(rows[0].status.as_deref(), Some("draft"));
+
+        // Headerless CSV without status column.
+        let rows = parse_tm_rows("hello,привет,Russian\n", None).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].locale.as_deref(), Some("Russian"));
+
+        // Rank ordering: tier first, then distance, then rank, then order.
+        use rimloc_domain::tm::{TmProvenance, TranslationMemoryEntry};
+        let mk = |i: &str, s: &str, st: TmStatus| TranslationMemoryEntry {
+            id: i.into(),
+            source_text: s.into(),
+            target_text: "t".into(),
+            target_locale: "Russian".into(),
+            status: st,
+            provenance: TmProvenance::Manual,
+        };
+        let tm = vec![
+            mk("d1", "save gane", TmStatus::Reviewed),   // fuzzy d=1
+            mk("n1", "Save Game", TmStatus::Draft),      // normalized
+            mk("n2", "save  game", TmStatus::Reviewed),  // normalized, ranked
+            mk("f1", "save_game", TmStatus::Accepted),   // fuzzy d=1
+        ];
+        let matches = tm_ranked_matches(&tm, "save game", "Russian", 10);
+        assert_eq!(matches[0].entry.id, "n2", "normalized reviewed first");
+        assert_eq!(matches[1].entry.id, "n1", "normalized draft second");
+        // Fuzzy d=1 pair: rank breaks the tie (Accepted over Reviewed is
+        // WRONG — reviewed wins).
+        assert_eq!(matches[2].entry.id, "d1", "fuzzy reviewed outranks accepted");
+        assert_eq!(matches[2].distance, Some(1));
+        assert_eq!(matches[3].entry.id, "f1");
     }
 
     /// Stale epoch and stale revision are distinct typed errors, and a
