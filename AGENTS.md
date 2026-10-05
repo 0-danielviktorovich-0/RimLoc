@@ -25,9 +25,13 @@ RimLoc — кроссплатформенный инструмент перев�
 | `rimloc-plugin-api` / `rimloc-plugin-jsonftl` | плагины сканирования | — |
 | `rimloc-cli` | тонкий командный слой (`src/main.rs`) | никакой бизнес-логики |
 
-Новая логика — в соответствующем крейте (оркестрация — в `rimloc-services`), наружу —
-через CLI; не класть ядро в CLI. Контракты вывода (CSV/JSON/PO/XLIFF) стабильны:
-ломкое изменение JSON = bump `OUTPUT_SCHEMA_VERSION` + `rimloc-cli schema` + правка docs.
+Новая логика — в соответствующем крейте (оркестрация — в `rimloc-services`), а пользовательские
+поверхности (React GUI, CLI, будущие интеграции) подключаются к общему сервисному контракту.
+Не класть доменную логику ни в CLI, ни в React. PO/CSV/XLIFF/XML — **форматные адаптеры обмена**,
+а не каноническое хранилище проекта. Существующие CLI-команды `export-po`/`import-po` сохраняются
+ради совместимости с CAT-процессами, но новая фича не должна зависеть от PO, если она не про PO.
+Контракты вывода (CSV/JSON/PO/XLIFF) стабильны: ломкое изменение JSON = bump
+`OUTPUT_SCHEMA_VERSION` + `rimloc-cli schema` + правка docs.
 Общие крейты платформо-нейтральны; ОС-специфика — за фичами и вне ядра.
 
 Установки RimWorld и папки модов — **read-only входы**: инструмент читает дерево игры/модов
@@ -110,6 +114,9 @@ Rust — дефолтный rustfmt (4 пробела); модули/функц�
 
 ## Documentation Workflow
 
+- **Канонический публичный источник правды — `docs/` → MkDocs.** README — короткий landing page,
+  а GitHub Wiki не должен дублировать техническую документацию; если Wiki включён в настройках,
+  он остаётся пустым/навигационным либо выключается.
 - Сайт: `docs/en/` (канон) + `docs/ru/` — структурно парные; EN/RU правки — одним коммитом.
 - Внутренние рабочие документы (мандаты, кампан-логи, аудиты) живут в `docs/development`,
   `docs/design`, `docs/competitive`, `docs/campaign`, `docs/security`, `docs/architecture` —
@@ -254,9 +261,12 @@ CLI-вывод/скриншоты при изменении поведения; 
 - Чужие незакоммиченные правки: спросить (keep/commit/drop), молча не трогать.
 - Нужен реверт — отдельный коммит со ссылкой на оригинал (`revert: <hash> <subject>`), без смешивания.
 
-## GUI/CLI Parity and i18n
+## Product Surfaces and i18n
 
-- CLI и GUI в локстепе: каждая CLI-команда/флаг экспонируется в GUI с той же семантикой.
+- **GUI не обязан зеркалить каждую CLI-команду.** CLI — headless/automation + format tooling;
+  React GUI — product workflow поверх того же `rimloc-services`/`RimLocClient`. Общая доменная
+  семантика должна совпадать, но UX capability-driven, а не «одна кнопка на каждый флаг».
+- Format-specific CLI (PO/CSV/XLIFF и т.п.) остаются опциональными interoperability tools.
 - Никаких хардкод-строк UI: ключи в `frontend-react/src/lib/i18n/` (EN+RU), RU — дефолтная локаль,
   fallback locale → `en` → key. Для Svelte-fallback — свой `frontend-v2/src/i18n/` (заморожен,
   меняем только при operability-фиксах).
@@ -270,8 +280,9 @@ CLI-вывод/скриншоты при изменении поведения; 
 
 Review checklist for contributors:
 
-- [ ] CLI: команда + аргументы реализованы и задокументированы
-- [ ] Backend: Tauri-команда зеркалит CLI-типы и поля
+- [ ] Domain/service: поведение реализовано в общем слое, а не продублировано во frontend/CLI
+- [ ] CLI: обновлён только если сценарий действительно нужен headless/automation пользователю
+- [ ] Backend: Tauri/RimLocClient проводит нужную product capability без лишней CLI-зависимости
 - [ ] Permissions обновлены; capability-модель не тронута без необходимости
 - [ ] GUI: компоненты обновлены, i18n-ключи EN+RU
 - [ ] Mock-экраны capability-gated или явно помечены как demo
