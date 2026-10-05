@@ -5521,7 +5521,15 @@ mod tests {
     #[test]
     fn export_about_xml_is_escaped_and_package_id_is_a_slug() {
         let dir = tempfile::tempdir().unwrap();
-        let mod_root = dir.path().join("My Mod & <Test>");
+        // Hostile name: `<`/`>` are legal folder characters on unix but
+        // ILLEGAL on NTFS (os error 123), so Windows gets an NTFS-legal
+        // but still XML-hostile spelling; the assertions below follow the
+        // same split and keep the slug identical on both platforms.
+        #[cfg(windows)]
+        let (mod_name, mod_name_escaped) = ("My Mod & Test", "My Mod &amp; Test");
+        #[cfg(not(windows))]
+        let (mod_name, mod_name_escaped) = ("My Mod & <Test>", "My Mod &amp; &lt;Test&gt;");
+        let mod_root = dir.path().join(mod_name);
         two_types_mod(&mod_root);
         let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
@@ -5540,9 +5548,9 @@ mod tests {
         assert_eq!(res.reparsed_keys, 1);
 
         let about = std::fs::read_to_string(out.join("About/About.xml")).unwrap();
-        assert!(about.contains("My Mod &amp; &lt;Test&gt;"), "{about}");
+        assert!(about.contains(mod_name_escaped), "{about}");
         assert!(
-            !about.contains("My Mod & <Test>"),
+            !about.contains(mod_name),
             "raw special chars must not survive: {about}"
         );
         let id_start = about.find("<packageId>").unwrap() + "<packageId>".len();

@@ -1545,8 +1545,10 @@ mod provenance_regression {
         );
         let ctx = &dup.contexts[0];
         assert_eq!(ctx.role, ContextRole::Effective);
+        // `file` is a display String with the native separator — normalize
+        // before matching the fixture-relative suffix (Windows `\`).
         assert!(
-            ctx.file.ends_with("Defs/A_Root.xml"),
+            ctx.file.replace('\\', "/").ends_with("Defs/A_Root.xml"),
             "real effective source file expected, got {}",
             ctx.file
         );
@@ -1801,7 +1803,7 @@ mod provenance_regression {
         assert_eq!(tk.contexts[1].role, ContextRole::Overridden);
         for c in &tk.contexts {
             assert!(
-                c.file.ends_with("Defs/Q.xml"),
+                c.file.replace('\\', "/").ends_with("Defs/Q.xml"),
                 "real source file expected, got {}",
                 c.file
             );
