@@ -1,6 +1,9 @@
 codecov:
+  # Coverage is intentionally informational during the pre-beta baseline period.
+  # The coverage workflow itself runs tests before upload, so Codecov does not
+  # need to wait for every unrelated CI job before processing a report.
   require_ci_to_pass: false
-  max_report_age: "12h"
+  max_report_age: "24h"
 
 coverage:
   precision: 2
@@ -19,53 +22,65 @@ coverage:
         informational: true
         only_pulls: true
 
-# Components give useful per-subsystem visibility from the same uploaded report
-# without re-running the full Rust suite for every crate.
+# Components are the primary subsystem view. They slice the same coverage
+# reports by source path, so we do not rerun the Rust test suite per crate.
+# This follows Codecov's recommendation for new monorepo-style projects:
+# components for product areas, flags for independently uploaded test families.
 component_management:
   individual_components:
-    - component_id: domain_core
-      name: Domain & Core
+    - component_id: domain
+      name: Domain model
       paths:
-        - "crates/rimloc-domain/**"
-        - "crates/rimloc-core/**"
+        - "crates/rimloc-domain/src/**"
+    - component_id: core
+      name: Core localization logic
+      paths:
+        - "crates/rimloc-core/src/**"
     - component_id: services
-      name: Services
+      name: Services / orchestration
       paths:
-        - "crates/rimloc-services/**"
-    - component_id: rimworld_semantics
-      name: RimWorld parsers & validation
+        - "crates/rimloc-services/src/**"
+    - component_id: parsers_xml
+      name: RimWorld XML parsing
       paths:
-        - "crates/rimloc-parsers-xml/**"
-        - "crates/rimloc-validate/**"
-    - component_id: formats
-      name: Import / Export formats
+        - "crates/rimloc-parsers-xml/src/**"
+    - component_id: validation
+      name: Validation
       paths:
-        - "crates/rimloc-export-csv/**"
-        - "crates/rimloc-export-po/**"
-        - "crates/rimloc-export-xliff/**"
-        - "crates/rimloc-import-po/**"
-        - "crates/rimloc-import-xliff/**"
+        - "crates/rimloc-validate/src/**"
     - component_id: cli
       name: CLI
       paths:
-        - "crates/rimloc-cli/**"
-    - component_id: providers_config
-      name: Providers & Config
+        - "crates/rimloc-cli/src/**"
+    - component_id: formats
+      name: Import / export formats
       paths:
-        - "crates/rimloc-llm/**"
-        - "crates/rimloc-config/**"
+        - "crates/rimloc-export-csv/src/**"
+        - "crates/rimloc-export-po/src/**"
+        - "crates/rimloc-export-xliff/src/**"
+        - "crates/rimloc-import-po/src/**"
+        - "crates/rimloc-import-xliff/src/**"
+    - component_id: llm
+      name: LLM / provider layer
+      paths:
+        - "crates/rimloc-llm/src/**"
+    - component_id: config
+      name: Configuration
+      paths:
+        - "crates/rimloc-config/src/**"
     - component_id: plugins
-      name: Plugin compatibility layer
+      name: Legacy scan plugin compatibility
       paths:
-        - "crates/rimloc-plugin-api/**"
-        - "crates/rimloc-plugin-jsonftl/**"
+        - "crates/rimloc-plugin-api/src/**"
+        - "crates/rimloc-plugin-jsonftl/src/**"
     - component_id: desktop_rust
       name: Desktop Rust / Tauri
       paths:
         - "gui/tauri-app/src-tauri/src/**"
 
-# Flags identify independently uploaded test families. Components above then
-# slice those reports by product subsystem.
+# Flags represent independently uploaded test families. Both are uploaded on
+# every relevant run, so carryforward is deliberately false: stale coverage
+# must never masquerade as a fresh test run.
 flags:
   rust:
     paths:
@@ -84,17 +99,24 @@ comment:
   require_head: true
   hide_project_coverage: false
 
-# Codecov has announced GitHub line annotations as deprecated, and they conflict
-# with Components/Flags. Keep GitHub Checks/statuses, but use the PR comment and
-# Codecov UI for line-level exploration.
+# GitHub line annotations are being deprecated by Codecov and also conflict
+# with Flags/Components. Keep Codecov statuses/comments and use Codecov's file
+# view/browser extension for line-level exploration.
 github_checks:
   annotations: false
 
+# Coverage measures production/source code, not fixtures, docs, generated output,
+# vendored dependencies, test bodies, or the frozen UI fallback.
 ignore:
-  - "gui/tauri-app/src-tauri/vendor"
-  - "gui/tauri-app/frontend-v2"
-  - "gui/tauri-app/frontend"
-  - "test"
-  - "testlab"
-  - "docs"
-  - "site"
+  - "gui/tauri-app/src-tauri/vendor/**"
+  - "gui/tauri-app/src-tauri/gen/**"
+  - "gui/tauri-app/frontend-v2/**"
+  - "gui/tauri-app/frontend/**"
+  - "crates/**/tests/**"
+  - "crates/**/benches/**"
+  - "crates/**/examples/**"
+  - "**/build.rs"
+  - "test/**"
+  - "testlab/**"
+  - "docs/**"
+  - "site/**"
