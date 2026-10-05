@@ -1,56 +1,76 @@
 ---
-title: Пул‑реквесты
+title: Пул-реквесты
 ---
 
-# Пул‑реквесты
+# Pull Requests
 
-Этот гайд описывает, как готовить изменения к ревью и каким должен быть хороший PR в RimLoc.
+RimLoc использует отдельные ветки/PR, чтобы code, docs, security и UI-evidence можно было review-ить независимо.
 
-## Рабочий процесс
+## Перед PR
 
-1) Создайте тематическую ветку от `main`.
-2) Делайте небольшие, понятные коммиты (сообщения в стиле Conventional Commits).
-3) Пишите тесты рядом с кодом (unit/integration).
-4) Запустите локальные проверки перед пушем:
+1. Создайте branch от актуальной integration/main линии задачи.
+2. Держите scope узким.
+3. Прочитайте [CONTRIBUTING](../../../CONTRIBUTING.md) и [AGENTS](../../../AGENTS.md), если работает coding agent.
+4. Запустите проверки для затронутой области.
+5. При user-facing изменении обновите EN/RU docs.
 
-```bash
+Не смешивайте случайный refactor, dependency sweep и feature в один PR.
+
+## Проверки
+
+### Rust/domain/services
+
+~~~bash
 cargo build --workspace
 cargo test --workspace
-cargo fmt && cargo clippy --workspace --all-targets -- -D warnings
-```
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+~~~
 
-5) Если менялись CLI‑флаги/поведение — обновите документацию в `docs/` и help‑ключи i18n.
-6) Откройте PR с шагами валидации и ключевыми выводами.
+### React UI
 
-## Что указать в описании PR
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npx tsc --noEmit
+npm run build
+~~~
 
-- Краткое резюме изменений и мотивацию.
-- Тип: fix/feat/docs/refactor/chore.
-- Валидация: какие команды запускали и какой вывод (для JSON используйте `--quiet`).
-- Влияние: обновлялась ли документация? затронуты ли i18n‑ключи? есть ли миграции?
-- Связанные issues: `Closes #123`.
+Для видимых изменений приложите screenshots/same-state evidence.
 
-## Размер и структура
+### Документация
 
-- Лучше несколько маленьких логичных коммитов, чем один огромный.
-- Не делайте «проездом» глобальные рефакторинги/переформат — только по делу.
-- Держите дифф сфокусированным.
+~~~bash
+mkdocs build --strict
+~~~
 
-## Ожидания по тестам
+### Security-sensitive изменения
 
-- Добавляйте/обновляйте тесты рядом с изменённым кодом.
-- Интеграционные тесты CLI: `crates/rimloc-cli/tests/` (используйте `helpers.rs`).
-- Для i18n‑ключей запустите `cargo test --package rimloc-cli -- tests_i18n`.
+Опишите safety impact и приложите релевантные containment/IPC/dependency/secret/adversarial tests.
 
-## Документация и i18n
+## Architecture checklist
 
-- Тексты помощи локализуются через Fluent. Сначала EN, затем зеркалируйте другие локали.
-- Для новых флагов обновите:
-  - FTL‑ключи (EN/RU)
-  - Страницы CLI (`docs/en/cli/`, `docs/ru/cli/`)
-  - Разделы про тестирование, если менялись логи/флаги
+PR должен сохранять границы:
 
-## Шаблон PR
+- domain behavior — Rust/shared services;
+- React/CLI — product surfaces, не отдельные реализации домена;
+- PO/CSV/XLIFF — interchange adapters, если задача не про сам формат;
+- RimWorld semantics — за adapter boundary;
+- game/mod source — read-only;
+- automation/test hooks не попадают в production artifact.
 
-В репозитории есть `.github/PULL_REQUEST_TEMPLATE.md` с чек‑листом — используйте его, чтобы ускорять ревью.
+## Описание PR
 
+Укажите:
+
+- problem/outcome;
+- важные решения;
+- tests/evidence;
+- screenshots для UI;
+- migration/breaking impact;
+- security impact;
+- linked issues.
+
+## Большие миграции
+
+Иногда migration checkpoint неизбежно большой. Изолируйте его от посторонних изменений, оставьте durable report и после него возвращайтесь к небольшим PR. Сотни файлов на PR не должны становиться обычным workflow.
