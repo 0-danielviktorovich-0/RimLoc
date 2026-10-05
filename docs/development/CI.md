@@ -22,17 +22,17 @@
 
 ## 2. Рамка владельца (не пересматривалась)
 
-- **Тяжёлый core CI не запускается на каждый push**: `ci.yml`, semver и release-пути остаются PR/manual. После ревизии 2026-10 точечный `push` используется только для дешёвых/необходимых post-merge действий: публикация MkDocs Pages при изменении docs на `main` и запись Codecov baseline на `main`/активной convergence-ветке.
+- **Тяжёлый core CI не запускается на каждый push**: `ci.yml`, semver и release-пути остаются PR/manual. После ревизии 2026-10 точечный `push` используется только для дешёвых/необходимых post-merge действий: публикация MkDocs Pages при изменении docs на `main` и запись Codecov baseline на `main`; PR coverage при этом работает и для `main`, и для активной convergence-ветки без отдельного duplicate push-run.
 - **Релизные workflow припаркованы** (9591f4f) — `.github/workflows-disabled/` не тронут; при разморозке см. §7.
 
 ## 3. Полномочия релиза (кто что публикует)
 
 | Субъект | Действие | Статус |
 |---------|----------|--------|
-| `release-plz.yml` → job `release` | версии + теги + публикация крейсов в crates.io | **единственный автоматический владелец**. Двухшаговый ручной процесс: (1) dispatch на main → Release PR; (2) смержить Release PR → ещё dispatch на main → теги + publish |
-| `publish.yml` | повторная публикация крейсов | **только ручной recovery** (например, crates.io 429 прервал пачку). Токен — только repo secret; dry_run по умолчанию `true`; любая позиция пачки обязательна. Когда release-plz обкатается на 2-3 релизах — кандидат на удаление (решение владельца) |
+| `release-plz.yml` → jobs `release_pr` / `release` | версии + теги + публикация крейсов в crates.io | **единственный автоматический владелец**. `workflow_dispatch` требует явный `mode`: `release-pr` создаёт/обновляет Release PR; после его merge отдельный dispatch с `mode=release` тегает/публикует. Один запуск физически не может сделать оба шага. |
+| `publish.yml` | повторная публикация крейсов | **только ручной recovery** (например, crates.io 429 прервал пачку). Токен — только repo secret; `dry_run=true` по умолчанию; для реальной публикации дополнительно требуется literal `confirm_publish=PUBLISH`; retries/timeouts ограничены. Когда release-plz обкатается на 2-3 релизах — кандидат на удаление. |
 | `release-dev*.yml` (parked) | GitHub Releases с бинарниками CLI/GUI | разморозка — отдельное решение владельца; до неё не трогаем |
-| `docs.yml` → job `deploy-prod` | публикация сайта на Pages | ручной dispatch на main (раньше — push, мёртвый после b102f3e); preview — для PR из upstream |
+| `docs.yml` → job `deploy-prod` | публикация сайта на Pages | strict build на docs PR; после docs-изменений в `main` Pages деплоится автоматически, manual dispatch остаётся для контролируемого redeploy; preview opt-in. |
 
 ## 4. Целевая архитектура
 
@@ -42,7 +42,7 @@
 | `semver.yml` | PR→main, dispatch | `semver` (cargo-semver-checks, гейт), `public-api` (информационный диф) | стабильность API |
 | `changelog-check.yml` | PR→main | `verify` | CHANGELOG сопровождает пользовательские изменения (лейбл `internal-only` выключает) |
 | `docs.yml` | docs PR→main + docs push→main + dispatch | `build`, `deploy-prod`, optional `deploy-preview` | strict MkDocs + Pages; docs-only PR не гоняет тяжёлый Rust matrix |
-| `coverage.yml` | code PR/push→main + активная convergence-ветка, dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov + Codecov OIDC, два coverage-family report |
+| `coverage.yml` | relevant code PR→main/convergence + push→main + dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov + Codecov OIDC, два coverage-family report; Components делят один отчёт по подсистемам |
 | `publish.yml` | dispatch | `publish` | recovery-публикация crates.io |
 | `release-plz.yml` | dispatch | `release_pr`, `release` | версионирование и релизы |
 
@@ -63,6 +63,8 @@
    | `dtolnay/rust-toolchain` | `stable` | `6bed0761d98439e5a578e2877258200ad565ba87` |
    | `Swatinem/rust-cache` | `v2` | `6323deb102c322ba6fcbdcafc7e3dddab59af2b6` |
    | `EmbarkStudios/cargo-deny-action` | `v2` | `3c6349835b2b7b196a839186cb8b78e02f7b5f25` |
+   | `codecov/codecov-action` | `v7.1.1` | `303a32d7a59b442fa8d48b6a1cc6825c09c847a5` |
+   | `taiki-e/install-action` | `v2.87.25` | `183e4297cca2404691e9380e1307288dced5c82a` |
    | `MarcoIeni/release-plz-action` | `v0.5` | `b8d6b54b02889ff2ae2bb82e8b57c3a8fc1683a5` |
 
    Замечание про `dtolnay/rust-toolchain`: запинен код экшена, но НЕ тулчейн — действие вызывает `rustup`, и `stable` резолвится на стороне GitHub в момент прогона, так что новые стабильные версии Rust продолжают приходить без правки workflow.
@@ -73,7 +75,7 @@
 
 4. **Секреты — только через `secrets.*`.** Input `token` у `publish.yml` удалён (inputs читаемы в UI и логах). Пустой `CARGO_REGISTRY_TOKEN` при `dry_run=false` теперь явная ошибка с понятным сообщением, а не невнятный отказ cargo.
 
-5. **Конкурентность.** Быстрые гейты (`ci`, `semver`, `docs.build`) — `cancel-in-progress: true` по `github.ref`; необратимые операции (`crates-publish`, `docs-pages`, `release-plz-release`) — очереди без отмены: оборванная публикация хуже отложенной.
+5. **Конкурентность и timeouts.** Быстрые гейты (`ci`, `semver`, `docs.build`, coverage) отменяют stale-run по ref; необратимые операции (`crates-publish`, `docs-pages`, `release-plz-release`) не отменяются. Для jobs выставлены разумные `timeout-minutes`, чтобы зависший runner не жил бесконечно.
 
 ## 6. Осознанно отложенное (позже, по решению владельца)
 
