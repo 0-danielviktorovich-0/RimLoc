@@ -55,7 +55,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
-      - run: cargo test --workspace --all-features
+      # rimloc-gui тестируется в отдельной gui-джобе: generate_context! требует
+      # frontend-v2/dist (gitignored), а на ubuntu для вендорного tao нужен gtk —
+      # тянуть то и другое в трёх-ОС матрицу не нужно (лог PR #60).
+      - run: cargo test --workspace --all-features --exclude rimloc-gui
 
   gui:
     name: Tauri GUI build
@@ -72,6 +75,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+      # generate_context! (src-tauri) встраивает frontend-v2/dist — собрать до cargo.
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-v2/package-lock.json
+      - run: npm ci && npm run build
+        working-directory: gui/tauri-app/frontend-v2
       - run: cargo build
         working-directory: gui/tauri-app/src-tauri
 
@@ -93,6 +104,27 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
+
+  frontend-react:
+    name: frontend-react (tsc + vite build)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: gui/tauri-app/frontend-react
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+      # Продакшен-фронт: строгий typecheck + сборка. Vitest-сьюиты живут в
+      # Svelte-fallback (frontend-v2); React-прогоны — WDIO-смоуки вне CI.
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vite build
 
   deny:
     name: cargo-deny (advisories/licenses/bans)

@@ -65,11 +65,12 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
       - name: Install cargo-public-api
         run: cargo install cargo-public-api --locked
-      # Человекочитаемый диф публичного API к published-крейтам. Job'у разрешено
-      # показывать диф и падать только на реальной ошибке инструмента: сам диф
-      # `--diff-git-branch` завершается с кодом 0, так что красный здесь = «не
-      # смогли проверить», а не «API изменился» (изменения ловит semver job выше).
-      - name: Show public API diffs vs origin/main
+      # Человекочитаемый слепок публичного API к published-крейтам. Информационный:
+      # изменения API ловит gating-джоба cargo-semver-checks выше. Флаг
+      # --diff-git-branch не существует в upstream cargo-public-api (лог PR #60:
+      # «unexpected argument») — диф веток инструментом не поддерживается, поэтому
+      # job печатает текущий API и падает только на реальной ошибке инструмента.
+      - name: Show public API inventory
         run: |
           set -euo pipefail
           CRATES=(
@@ -82,6 +83,6 @@ jobs:
           )
           for c in "${CRATES[@]}"; do
             echo "=== $c ==="
-            cargo public-api -p "$c" --diff-git-branch origin/main
+            cargo public-api -p "$c" --all-features
             echo
           done
