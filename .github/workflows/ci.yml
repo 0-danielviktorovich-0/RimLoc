@@ -38,6 +38,7 @@ jobs:
   lint:
     name: rustfmt + clippy
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -54,6 +55,7 @@ jobs:
   test:
     name: cargo test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     permissions:
       contents: read
     strategy:
@@ -72,6 +74,7 @@ jobs:
   gui:
     name: Tauri GUI build
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
@@ -99,8 +102,9 @@ jobs:
         working-directory: gui/tauri-app/src-tauri
 
   frontend:
-    name: frontend (svelte-check + vitest)
+    name: frontend legacy fallback (Svelte)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:
@@ -118,8 +122,9 @@ jobs:
       - run: npm test
 
   frontend-react:
-    name: frontend-react (tsc + vite build)
+    name: frontend production candidate (React)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:
@@ -141,6 +146,7 @@ jobs:
   deny:
     name: cargo-deny (advisories/licenses/bans)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -150,6 +156,7 @@ jobs:
   schema:
     name: schema drift (generated docs match code)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -172,6 +179,7 @@ jobs:
   workflows-lint:
     name: actionlint (workflow lint)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
