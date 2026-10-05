@@ -177,3 +177,35 @@ rust config — owner-настройка), deploy preview (BlobNotFound — ко
   Всегда CARGO_INCREMENTAL=0 (btrfs). SSD может уснуть (os error 60) — ретрай.
 - Диск internal ~14 GiB; npm vite build блокирован сторожем (не heavy-роут), tsc/vitest — нет.
 - RimLoc commit-хук: CC type(scope): ≤72 + '- ' буллеты.
+
+### §87.1 Волна 3 competitive (2026-10-05, ночь)
+
+**Tier A закрыт на практике**: 8 конкурентов PRACTICALLY_RUN с same-corpus диффами
+(Text Grabber ev.5, RimLangKit ev.6, RimTrans-zh ev.6, RimTranslate ev.5,
+Translation Forge ev.5, laskinss27 ev.5, NicoriciN89 ev.5, RimWorldAiTranslator ev.6).
+Матрица 24 строки: docs/competitive/TIER_A_COMPLETION_MATRIX_2026-10.md,
+0 IDENTITY_UNRESOLVED; 16 NOT DONE (7 feasible → следующая practical-волна:
+Remis, Grabber GUI, RimTransAI, RimTrans_PY, etejasdgjjjj532, TokcDK, rtl-tools).
+
+**MUST_FIX_BEFORE_BETA ×2** (подтверждены независимо 3 лейнами):
+1. Патч-слой RimLoc пуст: на 3170653412 конкуренты извлекают 54-163 игроку-видимых
+   строк (title/description/baseDesc/titleShort), RimLoc 0; обязательный
+   blacklist шума (bodyType*/spawnCategories/requiredWorkTags).
+2. Порча entity-разметки в msgid export-po: «&lt;b&gt;…» выгружается как «b…b».
+
+Также: scan по умолчанию пропускает корневые Defs при наличии v1.x-папок
+(workaround --defs-dir); learn-defs словарь — 49 типов (dict-gap); fill-баг
+is_version_directory починен (glm/version-dir-fix, влит).
+
+**Tier B/C/D/E**: docs/competitive/roadmap/ — требования адаптеров (Remis
+Protocol-контракт 7 методов = ориентир шва rimloc-plugin-api) + 32 тулзы
+north-star (Weblate QA-каталог, Trados TM-бэнды, memoQ concordance, git-native
+continuous, PO/XLIFF статусы сегментов).
+
+**Palette/LM acceptance** (волна 2, WDIO живым артефактом, порт 4469):
+6/6 команд палитры работают, НО стрелки ↑/↓/Enter отсутствуют (MUST-FIX);
+LM CRUD/персистентность/рестарт 14/14+1/1. docs/design/PALETTE_LM_ACCEPTANCE.md.
+
+**WINDOWS_BETA_BLOCKER**: CLI на windows падает STATUS_STACK_OVERFLOW на любой
+команде (вплоть до --help; 43/49 тестов). Subprocess-тесты гейтнуты
+cfg(not(windows)); чинить стартовую рекурсию (config/i18n?).
