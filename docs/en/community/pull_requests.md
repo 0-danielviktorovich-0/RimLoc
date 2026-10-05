@@ -2,55 +2,77 @@
 title: Pull Requests
 ---
 
-# Pull Requests
+# Pull requests
 
-This guide explains how to prepare changes for review and what a good PR looks like in RimLoc.
+RimLoc uses focused branches and PRs so code, documentation, security and UI evidence can be reviewed independently.
 
-## Workflow
+## Before opening a PR
 
-1) Create a topic branch from `main`.
-2) Keep commits focused and descriptive (use Conventional Commits in messages).
-3) Write tests (unit/integration) alongside code changes.
-4) Run local checks before pushing:
+1. Branch from the current integration/main line used by the task.
+2. Keep the change scoped.
+3. Read [CONTRIBUTING](../../../CONTRIBUTING.md) and [AGENTS](../../../AGENTS.md) when using coding agents.
+4. Run the checks relevant to the files you changed.
+5. Update user-facing EN/RU docs when behavior changed.
 
-```bash
+Do not mix an unrelated refactor, dependency sweep and product feature into one PR.
+
+## Evidence by area
+
+### Rust/domain/services
+
+~~~bash
 cargo build --workspace
 cargo test --workspace
-cargo fmt && cargo clippy --workspace --all-targets -- -D warnings
-```
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+~~~
 
-5) If CLI flags/behavior changed — update docs under `docs/` and i18n help keys.
-6) Open a PR with validation steps and output snippets.
+### React UI
 
-## What to include in the PR description
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npx tsc --noEmit
+npm run build
+~~~
 
-- Summary: what changed and why.
-- Type: fix/feat/docs/refactor/chore.
-- Validation: commands you ran and key outputs (use `--quiet` for JSON pipelines).
-- Impact: docs updated? i18n keys touched? any migration notes?
-- Related issues: `Closes #123`.
+Visible changes should include screenshots/same-state evidence where useful.
 
-## Size and structure
+### Documentation
 
-- Prefer several small, logical commits over one large commit.
-- Avoid drive-by refactors or repo-wide formatting unless the PR is dedicated to that.
-- Keep diffs minimal and focused on the task.
+~~~bash
+mkdocs build --strict
+~~~
 
-## Testing expectations
+### Security-sensitive changes
 
-- Add or update tests close to the code you change.
-- CLI integration tests live in `crates/rimloc-cli/tests/`; reuse helpers in `helpers.rs`.
-- For i18n keys, run `cargo test --package rimloc-cli -- tests_i18n`.
+Explain the threat/safety impact and include relevant containment, IPC, dependency, secret-handling or adversarial tests.
 
-## Documentation and i18n
+## Architecture checklist
 
-- Help text is localized via Fluent. Update EN keys first, then mirror to other locales.
-- For new flags, update:
-  - FTL help keys (EN/RU)
-  - CLI pages in `docs/en/cli/` and `docs/ru/cli/`
-  - Testing docs if logs/flags change
+A good PR should preserve these boundaries:
 
-## PR Template
+- domain behavior lives in Rust/shared services;
+- React/CLI are product surfaces, not separate domain implementations;
+- PO/CSV/XLIFF are interchange adapters unless the task is specifically format-related;
+- RimWorld-specific semantics stay behind the adapter boundary;
+- source game/mod folders remain read-only;
+- automation/test hooks do not ship in production artifacts.
 
-The repository includes `.github/PULL_REQUEST_TEMPLATE.md` with a checklist — use it to keep reviews fast and predictable.
+## PR description
 
+Include:
+
+- problem and outcome;
+- important implementation choices;
+- tests/evidence;
+- screenshots for UI;
+- migration/breaking impact;
+- security impact where relevant;
+- linked issues.
+
+The repository PR template mirrors this checklist.
+
+## Large migrations
+
+Occasionally a migration checkpoint is necessarily large. In that case, isolate it from unrelated work, keep a durable migration report, and make follow-up PRs small again. Do not normalize permanent “hundreds of files per PR” as the everyday workflow.
