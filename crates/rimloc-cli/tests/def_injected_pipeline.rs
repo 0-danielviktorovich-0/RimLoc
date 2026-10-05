@@ -53,14 +53,15 @@ fn scan_detects_defs_without_english_definj() {
     cmd.args(["--format", "json", "--source-lang-dir", "English"]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    // Windows CLI печатает нативные backslash-пути — нормализуем для подстрочных
-    // ассертов (продукт вправе отдавать native separators).
-    let stdout = stdout.replace('\\', "/");
     let json: Value = serde_json::from_str(&stdout).expect("valid json");
     let arr = json.as_array().expect("array");
-    let paths: Vec<&str> = arr
+    // Нормализация ПОСЛЕ парсинга (по значениям): замена в сыром тексте до
+    // serde задваивает JSON-эскейпы `\\` → `//`. Продукт вправе печатать
+    // нативные и смешанные разделители — тест сравнивает по единому виду.
+    let paths: Vec<String> = arr
         .iter()
         .filter_map(|item| item.get("path").and_then(|p| p.as_str()))
+        .map(|p| p.replace('\\', "/"))
         .collect();
     let keys: Vec<&str> = arr
         .iter()
@@ -84,7 +85,6 @@ fn scan_reports_both_keyed_and_defs() {
     cmd.args(["--format", "json", "--source-lang-dir", "English"]);
     let assert = cmd.assert().success();
     let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
-    let stdout = stdout.replace('\\', "/"); // см. комментарий в первом тесте файла
     let json: Value = serde_json::from_str(&stdout).expect("valid json");
     let arr = json.as_array().expect("array");
     let mut has_keyed = false;
@@ -98,7 +98,11 @@ fn scan_reports_both_keyed_and_defs() {
             if key == "Weapon_Bow.description" {
                 has_def = true;
                 if let Some(path) = item.get("path").and_then(|p| p.as_str()) {
-                    if path.contains("Languages/English/DefInjected/ThingDef/Weapons.xml") {
+                    // нормализация по значению (см. комментарий в первом тесте)
+                    if path
+                        .replace('\\', "/")
+                        .contains("Languages/English/DefInjected/ThingDef/Weapons.xml")
+                    {
                         has_definj_path = true;
                     }
                 }
@@ -137,9 +141,10 @@ fn export_po_emits_definj_entries_and_hint() {
         "should hint about suggested.xml; stderr={stderr}"
     );
     let po = fs::read_to_string(&out_po).expect("po written");
+    let po_norm = po.replace('\\', "/"); // сравнение путей по единому виду
     assert!(po.contains("Meal_Fine.description"));
     assert!(
-        po.contains("Languages/English/DefInjected/ThingDef/Food.xml"),
+        po_norm.contains("Languages/English/DefInjected/ThingDef/Food.xml"),
         "po should carry the canonical DefInjected path; po head: {}",
         po.chars().take(800).collect::<String>()
     );
