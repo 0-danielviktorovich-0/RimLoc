@@ -225,13 +225,45 @@ pub fn canonical_view(path: &std::path::Path) -> std::io::Result<std::path::Path
         }
         match candidate.canonicalize() {
             Ok(c) => break c,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Shrinking the prefix is benign ONLY when this prefix truly
+                // does not exist. Windows reports additional situations as
+                // NotFound-flavoured OS errors — most importantly a FILE used
+                // as an intermediate directory (`file.txt/child`) — and
+                // shrinking past such an entry would anchor the view on the
+                // non-directory and fabricate a resolvable view for a path
+                // that can never exist (fail-open for the deny orientation).
+                // An existing SYMLINK is exempt: the component-wise slow path
+                // below resolves dangling links by design.
+                match std::fs::symlink_metadata(&candidate) {
+                    Err(md_err) if md_err.kind() == std::io::ErrorKind::NotFound => keep -= 1,
+                    Err(md_err) => return Err(md_err),
+                    Ok(md) if md.file_type().is_symlink() => keep -= 1,
+                    Ok(_) => {
+                        return Err(std::io::Error::new(
+                            std::io::ErrorKind::InvalidInput,
+                            "path anchors on an existing entry that is not a directory",
+                        ));
+                    }
+                }
+            }
             // Shrinking the prefix may cross back into existing territory
-            // (not-a-directory chains etc.); only shrinking past a missing
-            // entry is benign — anything else fails closed.
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => keep -= 1,
+            // (not-a-directory chains etc.); anything else fails closed.
             Err(e) => return Err(e),
         }
     };
+
+    // A non-existing tail may only be appended onto a DIRECTORY anchor. The
+    // anchor itself canonicalized fine (it exists), but if it is a plain file
+    // (or a link resolving to one), the tail can never come into existence
+    // under it — on Windows this is exactly the "file used as a directory"
+    // shape that surfaced as NotFound above.
+    if keep < components.len() && !canonical_base.is_dir() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "path extends a non-directory anchor; its tail can never exist",
+        ));
+    }
 
     let mut resolved = canonical_base;
     let mut pending: std::collections::VecDeque<Step> =
@@ -683,13 +715,33 @@ mod tests {
 
         // Pre-plant every historically predictable temp name as symlinks
         // into the source sentinel (old name scheme + dot-prefixed variant).
+        // Windows: symlink creation needs a privilege the runner may not
+        // hold — planting is best-effort there (missing privilege is
+        // reported and skipped); the unprivileged mechanics — sentinel
+        // survival, atomic replace, no staging leftovers — stay asserted
+        // on every platform.
         let target = out.join("environment.json");
+        let mut planted: Vec<String> = Vec::new();
         #[cfg(unix)]
         {
-            std::os::unix::fs::symlink(&sentinel, out.join("environment.tmp.write"))
-                .expect("plant old-name symlink");
-            std::os::unix::fs::symlink(&sentinel, out.join(".environment.json.tmp.write"))
-                .expect("plant dot-name symlink");
+            for name in ["environment.tmp.write", ".environment.json.tmp.write"] {
+                std::os::unix::fs::symlink(&sentinel, out.join(name)).unwrap_or_else(|e| {
+                    panic!("{}", format!("plant {name} symlink: {e}"));
+                });
+                planted.push(name.to_string());
+            }
+        }
+        #[cfg(windows)]
+        {
+            for name in ["environment.tmp.write", ".environment.json.tmp.write"] {
+                match std::os::windows::fs::symlink_file(&sentinel, out.join(name)) {
+                    Ok(()) => planted.push(name.to_string()),
+                    Err(e) => eprintln!(
+                        "{}",
+                        format!("skip planting {name} (no symlink privilege): {e}")
+                    ),
+                }
+            }
         }
 
         write_atomic(&target, b"FRESH").expect("write");
@@ -713,11 +765,8 @@ mod tests {
             .map(|e| e.file_name().to_string_lossy().into_owned())
             .collect();
         names.sort();
-        let mut expected = vec![
-            ".environment.json.tmp.write".to_string(),
-            "environment.json".to_string(),
-            "environment.tmp.write".to_string(),
-        ];
+        let mut expected = planted;
+        expected.push("environment.json".to_string());
         expected.sort();
         assert_eq!(names, expected, "exactly target + planted symlinks remain");
     }
@@ -795,19 +844,41 @@ mod tests {
         // Same drive: containment and sibling discrimination.
         assert!(is_within(Path::new(r"C:\src\sub"), Path::new(r"C:\src")));
         assert!(!is_within(Path::new(r"C:\srcx"), Path::new(r"C:\src")));
-        // UNC roots are preserved and compared natively.
-        assert!(is_within(
-            Path::new(r"\\server\share\src\sub"),
-            Path::new(r"\\server\share\src")
-        ));
-        assert!(!is_within(
+        // UNC roots are preserved and compared natively. Whether the share
+        // resolves depends on the host (CI runners have no `\\server`), so
+        // only the invariants that hold in BOTH regimes are unconditional;
+        // the rest is expressed per regime without guessing.
+        let share_src = Path::new(r"\\server\share\src");
+        // Nesting inside the share root is contained — natively when the
+        // share resolves, by fail-closed when it does not.
+        assert!(is_within(Path::new(r"\\server\share\src\sub"), share_src));
+        // The allow orientation never grants without PROOF — an
+        // unresolvable prefix (foreign server included) is a refusal there
+        // on every host.
+        assert!(!is_within_allow(
             Path::new(r"\\server\share\other"),
-            Path::new(r"\\server\share\src")
+            share_src
         ));
-        assert!(!is_within(
+        assert!(!is_within_allow(
             Path::new(r"\\otherserver\share\src"),
-            Path::new(r"\\server\share\src")
+            share_src
         ));
+        if canonical_view(share_src).is_ok() {
+            // Resolvable share: sibling directories of the share root and
+            // foreign servers must DISCRIMINATE on the canonical view.
+            assert!(!is_within(Path::new(r"\\server\share\other"), share_src));
+        } else {
+            // Unresolvable share: the deny orientation fails CLOSED —
+            // treated as contained so write guards reject, never guess.
+            assert!(
+                is_within(Path::new(r"\\server\share\other"), share_src),
+                "unresolvable UNC pair: deny orientation must reject"
+            );
+            assert!(
+                is_within(Path::new(r"\\otherserver\share\src"), share_src),
+                "unresolvable cross-server pair: deny orientation must reject"
+            );
+        }
         // Forward-slash spellings of a drive resolve to the same view.
         assert!(is_within(Path::new("C:/src/sub/.."), Path::new(r"C:\\src")));
     }
@@ -832,12 +903,19 @@ mod tests {
         assert!(slow.starts_with(&fast), "slow {slow:?} vs fast {fast:?}");
 
         // Case alias of the existing root normalizes to the canonical case:
-        // the slow view of base/source/new equals the fast view of Source/new.
+        // the slow view of base/source/new equals the fast view of
+        // Source/new, and the same alias carried through the full
+        // non-existing tail matches the canonical slow view exactly.
         let lower_alias = base.join("source").join("new");
         assert_eq!(
             canonical_view(&lower_alias).expect("alias slow"),
-            slow,
+            fast.join("new"),
             "case alias must normalize to the canonical case"
+        );
+        assert_eq!(
+            canonical_view(&lower_alias.join("bundle")).expect("alias nested slow"),
+            slow,
+            "aliased nested tail must match the canonical slow view"
         );
 
         // Extended-length spelling of the same root is the same view.
@@ -887,6 +965,38 @@ mod tests {
         // Empty root denies in both orientations (nothing to contain).
         assert!(!is_within(&nested, Path::new("")));
         assert!(!is_within_allow(&nested, Path::new("")));
+    }
+
+    /// A FILE used as an intermediate directory (`file/child`) must fail
+    /// closed: canonical_view refuses to anchor on the file and fabricate a
+    /// view for a tail that can never exist, deny-orientation containment
+    /// treats the shape as contained (reject) and the allow orientation
+    /// refuses to grant. POSIX reports ENOTDIR here; Windows surfaces a
+    /// NotFound-flavoured OS error — which is exactly why the shrink loop
+    /// must distinguish a missing tail from an untraversable anchor (the
+    /// Windows-only fail-open regression this pins).
+    #[test]
+    fn file_as_intermediate_directory_fails_closed() {
+        let tmp = tempfile::tempdir().expect("tmp");
+        let source = tmp.path().join("source");
+        let blocker = tmp.path().join("blocker");
+        std::fs::create_dir_all(&source).expect("dirs");
+        std::fs::write(&blocker, b"not a dir").expect("file");
+
+        let child = blocker.join("child");
+        let view = canonical_view(&child);
+        assert!(
+            view.is_err(),
+            "file-as-directory must not resolve, got {:?}",
+            view
+        );
+        assert!(is_within(&child, &source), "deny-safe: reject");
+        assert!(!is_within_allow(&child, &source), "no grant");
+
+        // A deeper tail keeps the same verdict.
+        let deeper = blocker.join("a").join("b").join("c.xml");
+        assert!(canonical_view(&deeper).is_err());
+        assert!(is_within(&deeper, &source), "deny-safe: reject");
     }
 
     /// H3 tripwire: the strict byte-level XML 1.0 char check catches raw
