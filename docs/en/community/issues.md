@@ -23,7 +23,7 @@ For desktop issues, saying only “latest app” is not enough during pre-beta �
 
 ## Security
 
-Do **not** put exploit details, secrets or sensitive local data into a public issue. Follow [SECURITY.md](../../../SECURITY.md).
+Do **not** put exploit details, secrets or sensitive local data into a public issue. Follow [SECURITY.md](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/SECURITY.md).
 
 ## Feature requests
 
