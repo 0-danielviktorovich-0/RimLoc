@@ -1,0 +1,4261 @@
+{
+ "3170653412": {
+  "rimloc_english_total": 159,
+  "rimtrans_total": 0,
+  "both": [],
+  "rimloc_only": [
+   {
+    "key": "GTF_CommonerLord45.titleShort",
+    "value": "lord"
+   },
+   {
+    "key": "GTF_MedievalMinstrel95.titleShort",
+    "value": "bard"
+   },
+   {
+    "key": "GTF_Tinkerer11.description",
+    "value": "[PAWN_nameDef] spent [PAWN_possessive] spare time creating things from [PAWN_possessive] imagination out of scrap metal and discarded machinery. [PAWN_pronoun] created simple doodads and small tools, for both for fun and for utility."
+   },
+   {
+    "key": "GTF_ShipBoy89.titleShortFemale",
+    "value": "ship girl"
+   },
+   {
+    "key": "GTF_Warmaster54.title",
+    "value": "warmaster"
+   },
+   {
+    "key": "GTF_SpaceSmuggler6.description",
+    "value": "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling."
+   },
+   {
+    "key": "GTF_SpaceSmuggler6.title",
+    "value": "smuggler kid"
+   },
+   {
+    "key": "GTF_Mathematician6.description",
+    "value": "[PAWN_nameDef] did studies in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim."
+   },
+   {
+    "key": "GTF_Artilleryman28.description",
+    "value": "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar."
+   },
+   {
+    "key": "GTF_Missionary99.title",
+    "value": "missionary"
+   },
+   {
+    "key": "GTF_ExiledResearcher44.description",
+    "value": "[PAWN_nameDef]'s intellectual pursuits was not appreciated in [PAWN_possessive] instituition. [PAWN_possessive] superiors expelled [PAWN_objective], and [PAWN_pronoun] was never allowed to return."
+   },
+   {
+    "key": "GTF_SpacePirate55.titleShort",
+    "value": "pirate"
+   },
+   {
+    "key": "GTF_Caravaneer53.titleShort",
+    "value": "caravaneer"
+   },
+   {
+    "key": "GTF_SpaceRaider71.titleShort",
+    "value": "bandit"
+   },
+   {
+    "key": "GTF_Aromatherapist80.description",
+    "value": "[PAWN_nameDef] practiced aromatherapy, using essences extracted from home-grown plants."
+   },
+   {
+    "key": "GTF_AbandonedOrphan61.description",
+    "value": "Abandoned at birth, young [PAWN_nameDef] started [PAWN_possessive] life in an orphanage. A rascal and a scoundrel, [PAWN_pronoun] became a clever troublemaker."
+   },
+   {
+    "key": "GTF_ExoticChef96.description",
+    "value": "[PAWN_nameDef] has always gone overboard when it comes to food. [PAWN_pronoun] is always seeking new and exotic ingredients.\\n\\n[PAWN_possessive] quest for ingredients has brought [PAWN_objective] into some close calls with local flora and fauna."
+   },
+   {
+    "key": "GTF_Delinquent13.titleShort",
+    "value": "delinquent"
+   },
+   {
+    "key": "GTF_Aromatherapist80.title",
+    "value": "aromatherapist"
+   },
+   {
+    "key": "GTF_ExplorerWriter10.title",
+    "value": "explorer-writer"
+   },
+   {
+    "key": "GTF_TraineeAlchemist64.title",
+    "value": "trainee alchemist"
+   },
+   {
+    "key": "GTF_IdealisticCadet64.title",
+    "value": "idealistic cadet"
+   },
+   {
+    "key": "GTF_SpaceRaider71.title",
+    "value": "bandit chief"
+   },
+   {
+    "key": "GTF_PiousSoldier67.title",
+    "value": "pious fighter"
+   },
+   {
+    "key": "GTF_InfantryEngineer46.description",
+    "value": "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines."
+   },
+   {
+    "key": "GTF_Artilleryman28.titleFemale",
+    "value": "artillerywoman"
+   },
+   {
+    "key": "GTF_HiredAssassin37.titleShort",
+    "value": "assassin"
+   },
+   {
+    "key": "GTF_PiousSoldier67.description",
+    "value": "When not training or combat, [PAWN_nameDef] was often at the chaplain's side. [PAWN_pronoun] dedicated [PAWN_possessive] life to serving both [PAWN_possessive] lord and [PAWN_possessive] religion."
+   },
+   {
+    "key": "GTF_StewardsAssisant28.title",
+    "value": "Steward's assisant"
+   },
+   {
+    "key": "GTF_Hunter73.titleShort",
+    "value": "hunter"
+   },
+   {
+    "key": "GTF_StewardsAssisant28.titleShort",
+    "value": "Steward"
+   },
+   {
+    "key": "GTF_Artilleryman28.titleShort",
+    "value": "artilleer"
+   },
+   {
+    "key": "GTF_BeastSlayer67.description",
+    "value": "[PAWN_nameDef] traveled between settlements, following news of animal attacks. [PAWN_pronoun] would camp out in the wild for weeks, learning about [PAWN_possessive] prey before striking. \\n\\nPreferring to work alone, [PAWN_nameDef] enjoyed the thrill of the hunt, and the meat from the kill."
+   },
+   {
+    "key": "GTF_Missionary99.description",
+    "value": "[PAWN_nameDef] decided to devote [PAWN_possessive] life to religious service. [PAWN_pronoun] made a vow of peace and spent several years preaching and helping those who needed the most."
+   },
+   {
+    "key": "GTF_PrivateDetective66.titleShort",
+    "value": "detective"
+   },
+   {
+    "key": "GTF_ShipBoy89.description",
+    "value": "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch."
+   },
+   {
+    "key": "GTF_AdventurousYouth70.title",
+    "value": "adventurous youth"
+   },
+   {
+    "key": "GTF_MilitaryCook18.description",
+    "value": "They say an army marches on its stomach. [PAWN_nameDef]'s job was to prepared chow to keep [PAWN_possessive] unit marching, no matter the conditions. \\nThe job required [PAWN_objective] to pay attention to both the nutritional and psychological needs of the troops."
+   },
+   {
+    "key": "GTF_ArmyCook0.description",
+    "value": "[PAWN_nameDef] joined the army as a worker and spent most of [PAWN_possessive] time cooking and repairing. While [PAWN_pronoun] was stationed on a conflictuous frontier, [PAWN_pronoun] underwent basic combat and survival training."
+   },
+   {
+    "key": "GTF_MedievalNomad12.titleShort",
+    "value": "nomad"
+   },
+   {
+    "key": "GTF_CaravanTraveler6.description",
+    "value": "Born to a family of traveling merchants, [PAWN_nameDef] was mentored by [PAWN_possessive] father in the ways of being a trader. [PAWN_pronoun] was often tasked with caring for the pack animals. Due to [PAWN_possessive] nomadic lifestyle, [PAWN_pronoun] hunted and bartered for [PAWN_possessive] food."
+   },
+   {
+    "key": "GTF_MilitaryCadet46.titleShort",
+    "value": "cadet"
+   },
+   {
+    "key": "GTF_RangerChild57.title",
+    "value": "ranger child"
+   },
+   {
+    "key": "GTF_ExoticChef96.title",
+    "value": "exotic chef"
+   },
+   {
+    "key": "GTF_RangerChild57.description",
+    "value": "[PAWN_nameDef] was raised in a forest. [PAWN_pronoun] was taught how hunt and live off the land, so that [PAWN_pronoun] could live without the need of others. Accustomed to manual labor and with an intuitive mind, [PAWN_nameDef] could survive weeks alone."
+   },
+   {
+    "key": "GTF_RoyalGuard51.titleShort",
+    "value": "guard"
+   },
+   {
+    "key": "GTF_Delinquent13.description",
+    "value": "[PAWN_nameDef] spent most of [PAWN_possessive] childhood behind bars. Following an unsuccessful escape attempt, [PAWN_pronoun] was pressed into the army."
+   },
+   {
+    "key": "GTF_Hunter73.description",
+    "value": "[PAWN_nameDef] was a master hunter.\\n\\n[PAWN_pronoun] learned to track and trap any animal in the most dangerous of places, and had deep knowledge of many ingenious methods for taking down specific large animals."
+   },
+   {
+    "key": "GTF_AbandonedOrphan61.title",
+    "value": "abandoned orphan"
+   },
+   {
+    "key": "GTF_BountyHunter17.titleShort",
+    "value": "hunter"
+   },
+   {
+    "key": "GTF_MilitaryCadet46.title",
+    "value": "army cadet"
+   },
+   {
+    "key": "GTF_BeastSlayer67.title",
+    "value": "beast slayer"
+   },
+   {
+    "key": "GTF_Caravaneer53.title",
+    "value": "caravaneer"
+   },
+   {
+    "key": "GTF_Ranger6.description",
+    "value": "[PAWN_nameDef] lived alone, deep in a forest. [PAWN_pronoun] protected the wildlife against poachers, and learned to satisfy [PAWN_possessive] own material needs without outside help."
+   },
+   {
+    "key": "GTF_ArmyCook0.title",
+    "value": "army cook"
+   },
+   {
+    "key": "GTF_Aromatherapist80.titleShort",
+    "value": "therapist"
+   },
+   {
+    "key": "GTF_ExoticChef96.titleShort",
+    "value": "chef"
+   },
+   {
+    "key": "GTF_CommonerLord45.description",
+    "value": "After years of training in martial arts and diplomacy, [PAWN_nameDef] was eventually given land and subjects of [PAWN_possessive] own to rule.\\n\\nBecause of [PAWN_nameDef]'s commoner heritage, the other lords disapproved. They framed [PAWN_objective] for a heinous crime, and the emperor had no choice but to exile [PAWN_objective]."
+   },
+   {
+    "key": "GTF_SpaceRaider71.description",
+    "value": "[PAWN_nameDef] was the leader of a raider crew. Always on the run, [PAWN_pronoun] became the feared enemy of many settlements."
+   },
+   {
+    "key": "GTF_AbandonedOrphan61.titleShort",
+    "value": "orphan"
+   },
+   {
+    "key": "GTF_MasterTrader65.titleShort",
+    "value": "trader"
+   },
+   {
+    "key": "GTF_MedievalKnight26.title",
+    "value": "medieval knight"
+   },
+   {
+    "key": "GTF_SpacePirate55.description",
+    "value": "[PAWN_nameDef] was part of the piracy tradition, extorting and smashing peaceful trade ships for profit in faraway seas."
+   },
+   {
+    "key": "GTF_MedievalKnight26.titleShort",
+    "value": "knight"
+   },
+   {
+    "key": "GTF_TraineeAlchemist64.titleShort",
+    "value": "alchemist"
+   },
+   {
+    "key": "GTF_Ranger6.titleShort",
+    "value": "ranger"
+   },
+   {
+    "key": "GTF_MilitaryCook18.title",
+    "value": "army cook"
+   },
+   {
+    "key": "GTF_FurnitureBuilder83.description",
+    "value": "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients."
+   },
+   {
+    "key": "GTF_Taster16.description",
+    "value": "As the food taster for a king, [PAWN_nameDef] sampled any dish served at the royal table. [PAWN_pronoun] lived a decadent lifestyle at court, growing fat and doing very little real work."
+   },
+   {
+    "key": "GTF_PrivateDetective66.title",
+    "value": "private detective"
+   },
+   {
+    "key": "GTF_InfantryEngineer46.titleShort",
+    "value": "engineer"
+   },
+   {
+    "key": "GTF_CriminalSurgeon99.title",
+    "value": "criminal surgeon"
+   },
+   {
+    "key": "GTF_CaravanTraveler6.title",
+    "value": "caravan traveler"
+   },
+   {
+    "key": "GTF_ExplorerWriter10.titleShort",
+    "value": "explorer"
+   },
+   {
+    "key": "GTF_MedievalKnight26.description",
+    "value": "[PAWN_nameDef] fought for king and country on the battlefield, where [PAWN_pronoun] further honed [PAWN_possessive] skill as a swordfighter. [PAWN_possessive] greatest glory was leading a charge into an enemy courtroom and capturing the king at sword point."
+   },
+   {
+    "key": "GTF_LineInfanteer20.titleShort",
+    "value": "infanteer"
+   },
+   {
+    "key": "GTF_MedievalNomad12.title",
+    "value": "nomad"
+   },
+   {
+    "key": "GTF_Warmonger35.title",
+    "value": "warmonger"
+   },
+   {
+    "key": "GTF_ExplorerWriter10.description",
+    "value": "[PAWN_nameDef] traveled far and wide, gathering samples, stories, and research.\\n\\n[PAWN_possessive] goal was to bring together enough knowledge to make a survival guide for future generations."
+   },
+   {
+    "key": "GTF_CriminalSurgeon99.description",
+    "value": "Being near many injured fellow criminals, [PAWN_nameDef] took it upon [PAWN_objective]self to work on them. Although many people died, [PAWN_pronoun] did get better at using knives."
+   },
+   {
+    "key": "GTF_WreckageExplorer93.description",
+    "value": "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land."
+   },
+   {
+    "key": "GTF_Abductee43.title",
+    "value": "abductee"
+   },
+   {
+    "key": "GTF_Taster16.title",
+    "value": "taster"
+   },
+   {
+    "key": "GTF_PiousSoldier67.titleShort",
+    "value": "pious fighter"
+   },
+   {
+    "key": "GTF_TraineeAlchemist64.description",
+    "value": "[PAWN_nameDef] learned the basics of alchemy and medicine in one the few monastic schools on [PAWN_possessive] homeland."
+   },
+   {
+    "key": "GTF_WreckageExplorer93.titleShort",
+    "value": "explorer"
+   },
+   {
+    "key": "GTF_Warmaster54.description",
+    "value": "[PAWN_nameDef] was warmaster to a mid-level royal house. [PAWN_pronoun] oversaw martial aspects of the family's strategy. \\nOn the rare occasion a battle occurred, [PAWN_nameDef] directed the commanders."
+   },
+   {
+    "key": "GTF_BountyHunter17.title",
+    "value": "bounty hunter"
+   },
+   {
+    "key": "GTF_Taxonomist0.title",
+    "value": "taxonomist"
+   },
+   {
+    "key": "GTF_Abductee43.description",
+    "value": "[PAWN_nameDef] was abducted at a young age and forced to do menial labor on a pirate ship."
+   },
+   {
+    "key": "GTF_Taster16.titleShort",
+    "value": "taster"
+   },
+   {
+    "key": "GTF_Minister88.titleShort",
+    "value": "minister"
+   },
+   {
+    "key": "GTF_ShipBoy89.title",
+    "value": "ship boy"
+   },
+   {
+    "key": "GTF_ExiledResearcher44.title",
+    "value": "exiled researcher"
+   },
+   {
+    "key": "GTF_CriminalSurgeon99.titleShort",
+    "value": "surgeon"
+   },
+   {
+    "key": "GTF_AdventurousYouth70.titleShort",
+    "value": "adventurer"
+   },
+   {
+    "key": "GTF_PrivateDetective66.description",
+    "value": "As a private eye, sharp wits and a silver tongue were [PAWN_nameDef]'s greatest tools. [PAWN_pronoun] often spent [PAWN_possessive] nights working cases that ranged from uncovering affairs and learning trade secrets to solving murder cases and infiltrating criminal organizations. There wasn't a case [PAWN_pronoun] wouldn't accept for the right price."
+   },
+   {
+    "key": "GTF_LineInfanteer20.title",
+    "value": "line infanteer"
+   },
+   {
+    "key": "GTF_Minister88.title",
+    "value": "minister"
+   },
+   {
+    "key": "GTF_Abductee43.titleShort",
+    "value": "abductee"
+   },
+   {
+    "key": "GTF_CommonerLord45.title",
+    "value": "commoner lord"
+   },
+   {
+    "key": "GTF_Minister88.description",
+    "value": "[PAWN_nameDef] managed to secure an important position in the court of a minor noble house. [PAWN_pronoun] got used to the opulence, while attempting to keep [PAWN_possessive] citizens content. [PAWN_pronoun] had ample time for pleasure and indulgence – though [PAWN_pronoun] never forgot how to do hard work."
+   },
+   {
+    "key": "GTF_ShipBoy89.titleShort",
+    "value": "ship boy"
+   },
+   {
+    "key": "GTF_ExiledResearcher44.titleShort",
+    "value": "exile"
+   },
+   {
+    "key": "GTF_HiredAssassin37.description",
+    "value": "[PAWN_nameDef] was a master thief, working mostly for organized crime. Over time, [PAWN_pronoun] made a name for [PAWN_objective]self and shifted [PAWN_possessive] business into the paid \"removal\" of human threats."
+   },
+   {
+    "key": "GTF_MedievalMinstrel95.baseDesc",
+    "value": "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road."
+   },
+   {
+    "key": "GTF_Hunter73.title",
+    "value": "skilled hunter"
+   },
+   {
+    "key": "GTF_ShipBoy89.titleFemale",
+    "value": "ship girl"
+   },
+   {
+    "key": "GTF_MedievalThief74.title",
+    "value": "urchin thief"
+   },
+   {
+    "key": "GTF_CaravanTraveler6.titleShort",
+    "value": "traveler"
+   },
+   {
+    "key": "GTF_PoisonGardener29.title",
+    "value": "poison gardener"
+   },
+   {
+    "key": "GTF_PoisonGardener29.description",
+    "value": "[PAWN_nameDef] spent almost all [PAWN_possessive] time tending to a poison garden and became withdrawn from society.\\n\\nIn that time [PAWN_pronoun] learnt a few safe culinary and medicinal uses for the otherwise deadly plants."
+   },
+   {
+    "key": "GTF_Warmonger35.description",
+    "value": "[PAWN_nameDef] revelled in bloodshed. Those who served with [PAWN_objective] were terrified of [PAWN_possessive] ferocity. They rarely socialized with [PAWN_nameDef], and [PAWN_pronoun] did not mind the isolation."
+   },
+   {
+    "key": "GTF_Warmaster54.titleShort",
+    "value": "warmaster"
+   },
+   {
+    "key": "GTF_RoyalGuard51.description",
+    "value": "[PAWN_nameDef] guarded the personal palace of a powerful lord. \\nWhile violence was rare, palace intrigue was constant. [PAWN_nameDef]'s work taught [PAWN_pronoun] to handle both words and weapons."
+   },
+   {
+    "key": "GTF_StewardsAssisant28.description",
+    "value": "A steward on a merchant ship, [PAWN_nameDef] was well-traveled on [PAWN_possessive] homeland by [PAWN_possessive] early teens. The constant orders from [PAWN_possessive] captain, however, fostered a defiant streak, as well as a general disaste for anything [PAWN_pronoun] considered to be busywork."
+   },
+   {
+    "key": "GTF_Taxonomist0.titleShort",
+    "value": "taxonomist"
+   },
+   {
+    "key": "GTF_BountyHunter17.description",
+    "value": "[PAWN_nameDef] was a self-employed bounty hunter. [PAWN_pronoun] spent [PAWN_possessive] days hunting outlaws and collecting cash bounties."
+   },
+   {
+    "key": "GTF_Mathematician6.titleShort",
+    "value": "professor"
+   },
+   {
+    "key": "GTF_BeastSlayer67.titleShort",
+    "value": "slayer"
+   },
+   {
+    "key": "GTF_MedievalMinstrel95.title",
+    "value": "wandering bard"
+   },
+   {
+    "key": "GTF_SpaceSmuggler6.titleShort",
+    "value": "smuggler"
+   },
+   {
+    "key": "GTF_Artilleryman28.title",
+    "value": "artilleryman"
+   },
+   {
+    "key": "GTF_MedievalSquire5.description",
+    "value": "[PAWN_nameDef] grew up as a knight in training. [PAWN_pronoun] trained directly under the king's war adviser for most of [PAWN_possessive] youth, and learned to fight with many martial weapons."
+   },
+   {
+    "key": "GTF_HiredAssassin37.title",
+    "value": "hired assassin"
+   },
+   {
+    "key": "GTF_Warmonger35.titleShort",
+    "value": "warmonger"
+   },
+   {
+    "key": "GTF_AdventurousYouth70.description",
+    "value": "[PAWN_nameDef] explored all around [PAWN_possessive] family's large estate, uncovering little natural wonders hidden in nearby catacombs, rivers, and caves. During [PAWN_possessive] teenage years, [PAWN_nameDef] made numerous enemies"
+   },
+   {
+    "key": "GTF_Mathematician6.title",
+    "value": "academic"
+   },
+   {
+    "key": "GTF_FurnitureBuilder83.titleShort",
+    "value": "builder"
+   },
+   {
+    "key": "GTF_FurnitureBuilder83.title",
+    "value": "furniture builder"
+   },
+   {
+    "key": "GTF_SpacePirate55.title",
+    "value": "pirate"
+   },
+   {
+    "key": "GTF_MedievalThief74.description",
+    "value": "[PAWN_nameDef] grew up poor and hungry on a big city, learning to fend for [PAWN_objective]self. At first, [PAWN_pronoun] only took what [PAWN_pronoun] needed. Then [PAWN_pronoun] learned to take what [PAWN_pronoun] wanted."
+   },
+   {
+    "key": "GTF_Tinkerer11.titleShort",
+    "value": "tinkerer"
+   },
+   {
+    "key": "GTF_Tinkerer11.title",
+    "value": "tinkerer"
+   },
+   {
+    "key": "GTF_MilitaryCook18.titleShort",
+    "value": "army cook"
+   },
+   {
+    "key": "GTF_Blacksmith72.description",
+    "value": "As a smith, [PAWN_nameDef] gained a reputation for the high quality of [PAWN_possessive] work. [PAWN_pronoun] wasn't bad at using the swords [PAWN_pronoun] forged either."
+   },
+   {
+    "key": "GTF_PoisonGardener29.titleShort",
+    "value": "botanist"
+   },
+   {
+    "key": "GTF_LineInfanteer20.description",
+    "value": "[PAWN_nameDef] was an ordinary infanteer in an imperial battalion. \\nConscripted at a young age to add bodies the army, [PAWN_nameDef] learned the methods of fighting well enough to satisfy [PAWN_possessive] superiors. However, [PAWN_pronoun] never quite understood what was going on around [PAWN_objective] enough to really believe in it."
+   },
+   {
+    "key": "GTF_Blacksmith72.titleShort",
+    "value": "blacksmith"
+   },
+   {
+    "key": "GTF_MasterTrader65.title",
+    "value": "master trader"
+   },
+   {
+    "key": "GTF_MedievalSquire5.title",
+    "value": "squire"
+   },
+   {
+    "key": "GTF_IdealisticCadet64.titleShort",
+    "value": "cadet"
+   },
+   {
+    "key": "GTF_Taxonomist0.description",
+    "value": "[PAWN_nameDef] traveled through the wilderness, studying and classifying the plant and animal life [PAWN_pronoun] found in the hopes of creating a complete catalogue."
+   },
+   {
+    "key": "GTF_Blacksmith72.title",
+    "value": "blacksmith"
+   },
+   {
+    "key": "GTF_MedievalThief74.titleShort",
+    "value": "thief"
+   },
+   {
+    "key": "GTF_RoyalGuard51.title",
+    "value": "royal guard"
+   },
+   {
+    "key": "GTF_Ranger6.title",
+    "value": "ranger"
+   },
+   {
+    "key": "GTF_MedievalSquire5.titleShort",
+    "value": "squire"
+   },
+   {
+    "key": "GTF_MedievalNomad12.description",
+    "value": "Born to a nomadic family, [PAWN_nameDef] was instructed in the arts of speechcraft, sleight of hand, horse riding. [PAWN_pronoun] was always running around the camp doing odd jobs to help [PAWN_possessive] extended family."
+   },
+   {
+    "key": "GTF_RangerChild57.titleShort",
+    "value": "ranger kid"
+   },
+   {
+    "key": "GTF_InfantryEngineer46.title",
+    "value": "siege engineer"
+   },
+   {
+    "key": "GTF_ArmyCook0.titleShort",
+    "value": "cook"
+   },
+   {
+    "key": "GTF_IdealisticCadet64.description",
+    "value": "Raised in the military traditions of [PAWN_possessive] forefathers, [PAWN_nameDef] was taught from a young age that [PAWN_pronoun] would be a great leader and the hero of [PAWN_possessive] family. [PAWN_pronoun] excelled at [PAWN_possessive] studies and graduated from the academy with honors."
+   },
+   {
+    "key": "GTF_Missionary99.titleShort",
+    "value": "missionary"
+   },
+   {
+    "key": "GTF_MasterTrader65.description",
+    "value": "[PAWN_nameDef] was a master at trading. [PAWN_pronoun] earned [PAWN_possessive] reputation by helping a village through a trying time."
+   },
+   {
+    "key": "GTF_MilitaryCadet46.description",
+    "value": "[PAWN_nameDef] was levied from [PAWN_possessive] family at a young age to join a local army. [PAWN_pronoun] lived in barracks with other kids, learning about duty, weapons, pain, and victory. \\nThe trainers sometimes let the kids escape the base to enjoy the wider world. They wanted fighters who can think independently."
+   },
+   {
+    "key": "GTF_Delinquent13.title",
+    "value": "delinquent"
+   },
+   {
+    "key": "GTF_WreckageExplorer93.title",
+    "value": "ruins explorer"
+   },
+   {
+    "key": "GTF_Caravaneer53.description",
+    "value": "[PAWN_nameDef] was the leader of a caravan. [PAWN_pronoun] was responsible for the safety of [PAWN_possessive] caravan and was the head negotiator in countless trade deals.\\n\\n[PAWN_pronoun] and [PAWN_possessive] people prospered, but their wealth made them a target for brigands. They often had to take up arms to fend off bandits and highwaymen."
+   }
+  ],
+  "rimtrans_only": [],
+  "semantic_difference": []
+ },
+ "818773962": {
+  "rimloc_english_total": 75,
+  "rimtrans_total": 87,
+  "both": [
+   {
+    "key": "HugsLib_setting_allNews_label",
+    "value": "All mod update news"
+   },
+   {
+    "key": "HugsLib_setting_mod_name_title",
+    "value": "Mod settings for {0}"
+   },
+   {
+    "key": "HugsLib_logs_unlimitedLogSize",
+    "value": "Allow unlimited log size"
+   },
+   {
+    "key": "HugsLib_features_linkDesc",
+    "value": "Opens your browser on a page where you can learn more about this update.\\nAddress: {0}"
+   },
+   {
+    "key": "HugsLib_settings_resetMod",
+    "value": "Reset {0} settings to default"
+   },
+   {
+    "key": "HugsLib_settings_btn",
+    "value": "Mod Settings"
+   },
+   {
+    "key": "HugsLib_features_ignoreTooltip",
+    "value": "Notify about future updates from this mod"
+   },
+   {
+    "key": "HugsLib_setting_allNews_desc",
+    "value": "Shows all available mod update news, including those that have already been displayed."
+   },
+   {
+    "key": "HugsLib_setting_show_settings",
+    "value": "Show settings"
+   },
+   {
+    "key": "HugsLib_settings_noSettings",
+    "value": "No mods with configurable settings are loaded."
+   },
+   {
+    "key": "HugsLib_logs_uploadBtn",
+    "value": "Upload"
+   },
+   {
+    "key": "HugsLib_setting_quickstartSettings_label",
+    "value": "Quickstart configuration"
+   },
+   {
+    "key": "HugsLib_features_confirmIgnoreTitle",
+    "value": "Confirm"
+   },
+   {
+    "key": "HugsLib_features_filterIgnoredModSuffix",
+    "value": ", ignored"
+   },
+   {
+    "key": "test_enumSetting_ValueTwo",
+    "value": "Value Two"
+   },
+   {
+    "key": "HugsLib_logs_browseBtn",
+    "value": "Open in browser"
+   },
+   {
+    "key": "HugsLib_logs_shareConfirmTitle",
+    "value": "Confirm"
+   },
+   {
+    "key": "HugsLib_features_link",
+    "value": "Link"
+   },
+   {
+    "key": "HugsLib_logs_toClipboardBtn",
+    "value": "To clipboard"
+   },
+   {
+    "key": "HugsLib_logs_publisherTitle",
+    "value": "Log publisher"
+   },
+   {
+    "key": "HugsLib_setting_ignoredUpdateNews_label",
+    "value": "Ignored mod update news providers"
+   },
+   {
+    "key": "HugsLib_logs_retryBtn",
+    "value": "Retry"
+   },
+   {
+    "key": "HugsLib_settings_resetAll_prompt",
+    "value": "Reset all mod settings to their original values?"
+   },
+   {
+    "key": "HugsLib_logs_shareBtn",
+    "value": "Share logs"
+   },
+   {
+    "key": "HugsLib_logs_shortUrls_tip",
+    "value": "Produces a shorter link when uploading. Not recommended on Steam- short links are automatically removed."
+   },
+   {
+    "key": "HugsLib_setting_expand_mod",
+    "value": "Open"
+   },
+   {
+    "key": "HugsLib_logs_github_token",
+    "value": "GitHub access token"
+   },
+   {
+    "key": "HugsLib_updateRequired_title",
+    "value": "Library update required"
+   },
+   {
+    "key": "HugsLib_logs_unlimitedLogSize_tip",
+    "value": "When disabled, log size is limited to 10K lines to prevent very long logs from causing issues."
+   },
+   {
+    "key": "HugsLib_copiedToClipboard",
+    "value": "Copied to clipboard."
+   },
+   {
+    "key": "HugsLib_features_update",
+    "value": "{0} v{1}"
+   },
+   {
+    "key": "HugsLib_settings_resetSuccessMessage",
+    "value": "{0} settings have been reset."
+   },
+   {
+    "key": "HugsLib_logs_filesBtn",
+    "value": "Files"
+   },
+   {
+    "key": "HugsLib_setting_allNews_fail",
+    "value": "None of the active mods have any update news to display."
+   },
+   {
+    "key": "HugsLib_features_title",
+    "value": "New Mod Features"
+   },
+   {
+    "key": "HugsLib_loadOrderWarning_title",
+    "value": "Improper mod load order"
+   },
+   {
+    "key": "HugsLib_setting_logPublisherSettings_label",
+    "value": "Log publisher preferences"
+   },
+   {
+    "key": "HugsLib_logs_uploaded",
+    "value": "Upload complete!"
+   },
+   {
+    "key": "HugsLib_logs_shortUrls",
+    "value": "Use URL shortener"
+   },
+   {
+    "key": "test_enumSetting_DefaultValue",
+    "value": "Default Value"
+   },
+   {
+    "key": "HugsLib_logs_github_token_tip",
+    "value": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings > Developer Settings > Personal access tokens. Leave blank to publish to the public HugsLib account.\\n\\nLogs published to your account can only be viewed by others using a link."
+   },
+   {
+    "key": "HugsLib_logs_uploading",
+    "value": "Uploading{0}"
+   },
+   {
+    "key": "HugsLib_logs_copy",
+    "value": "Copy"
+   },
+   {
+    "key": "HugsLib_settings_resetAll",
+    "value": "Reset all"
+   },
+   {
+    "key": "HugsLib_logs_openLogFile",
+    "value": "Open log file"
+   },
+   {
+    "key": "HugsLib_logs_abortBtn",
+    "value": "Abort"
+   },
+   {
+    "key": "HugsLib_settings_resetMod_prompt",
+    "value": "Reset all {0} settings to their original values?"
+   },
+   {
+    "key": "HugsLib_settings_resetIncludeHidden",
+    "value": "Include hidden settings ({0})"
+   },
+   {
+    "key": "HugsLib_logs_openModsDir",
+    "value": "Open mods folder"
+   },
+   {
+    "key": "HugsLib_setting_showNews_label",
+    "value": "Show mod update news"
+   },
+   {
+    "key": "HugsLib_features_filterDropdownEntry",
+    "value": "{0} ({1} news{2})"
+   },
+   {
+    "key": "HugsLib_setting_showNews_desc",
+    "value": "Allows newly installed mods to highlight their new features in a pop-up window when you start your game."
+   },
+   {
+    "key": "HugsLib_logs_shortening",
+    "value": "Getting link{0}"
+   },
+   {
+    "key": "HugsLib_logs_platformInfo",
+    "value": "Include platform information"
+   },
+   {
+    "key": "HugsLib_setting_collapse_mod",
+    "value": "Close"
+   },
+   {
+    "key": "HugsLib_setting_unnamed_mod",
+    "value": "(unnamed mod)"
+   },
+   {
+    "key": "HugsLib_settings_hiddenSettingsHeader",
+    "value": "Hidden mod settings:"
+   },
+   {
+    "key": "HugsLib_logs_shareConfirmMessage",
+    "value": "Upload game logs now?\\n\\nThis will post your game logs to a public server and give you the link to share with others. This is useful if you need help fixing a problem or would like to report an issue to a mod author.\\n\\nNo private information will be shared."
+   },
+   {
+    "key": "HugsLib_logs_uploadError",
+    "value": "Upload error: {0}"
+   },
+   {
+    "key": "HugsLib_settings_resetValue",
+    "value": "Reset setting to default"
+   },
+   {
+    "key": "HugsLib_setting_allNews_button",
+    "value": "Show now"
+   },
+   {
+    "key": "HugsLib_logs_openSaveDir",
+    "value": "Open save folder"
+   },
+   {
+    "key": "HugsLib_features_filterAllMods",
+    "value": "All mods"
+   },
+   {
+    "key": "HugsLib_restart_language_text",
+    "value": "The game language has changed. The game will now restart automatically."
+   },
+   {
+    "key": "HugsLib_features_filterBtn",
+    "value": "Filter by mod"
+   },
+   {
+    "key": "HugsLib_updateRequired_updateBtn",
+    "value": "Update now"
+   },
+   {
+    "key": "HugsLib_logs_platformInfo_tip",
+    "value": "Includes information about your CPU, memory and video card in the log."
+   },
+   {
+    "key": "HugsLib_features_filterStatus",
+    "value": "Current filter: {0}"
+   },
+   {
+    "key": "HugsLib_logs_useRecommendedSettings",
+    "value": "Use recommended settings"
+   },
+   {
+    "key": "test_enumSetting_ValueOne",
+    "value": "Value One"
+   },
+   {
+    "key": "HugsLib_settings_windowTitle",
+    "value": "Mod Settings"
+   }
+  ],
+  "rimloc_only": [],
+  "rimtrans_only": [
+   {
+    "key": "OpenLogFile.label",
+    "value": "Open log file",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "HugsLibShortcuts.description",
+    "value": "Shortcuts for the HugsLib library.",
+    "file": "DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml"
+   },
+   {
+    "key": "HLOpenUpdateNews.description",
+    "value": "",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "RestartRimworld.description",
+    "value": "",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "HugsLibShortcuts.label",
+    "value": "HugsLib",
+    "file": "DefInjected/KeyBindingCategoryDef/KeyBindingCategories.xml"
+   },
+   {
+    "key": "HLOpenModSettings.description",
+    "value": "",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "HLOpenUpdateNews.label",
+    "value": "Open Mod Update News window",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "PublishLogs.label",
+    "value": "Publish log file (hold Ctrl)",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "RestartRimworld.label",
+    "value": "Restart Rimworld",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "OpenLogFile.description",
+    "value": "",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "PublishLogs.description",
+    "value": "",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   },
+   {
+    "key": "HLOpenModSettings.label",
+    "value": "Open Mod Setting window",
+    "file": "DefInjected/KeyBindingDef/KeyBindings.xml"
+   }
+  ],
+  "semantic_difference": [
+   {
+    "key": "HugsLib_loadOrderWarning_text",
+    "rimloc_value": "bThe HugsLib mod/bshould always be loaded afterbCore/bto avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game.",
+    "rimtrans_value": "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game.",
+    "file": "Keyed/English.xml"
+   },
+   {
+    "key": "HugsLib_features_confirmIgnore",
+    "rimloc_value": "Ignore future update news from {0}?\\n\\nCan be re-enabled in Mod OptionsAll mod update news",
+    "rimtrans_value": "Ignore future update news from {0}?\\n\\nCan be re-enabled in Mod Options > All mod update news",
+    "file": "Keyed/English.xml"
+   },
+   {
+    "key": "HugsLib_updateRequired_text",
+    "rimloc_value": "b{0}/brequires versionb{1}/bof thebHugsLib library/bto work properly.\\n\\nWould you like to update it now?",
+    "rimtrans_value": "<b>{0}</b> requires version <b>{1}</b> of the <b>HugsLib library</b> to work properly.\\n\\nWould you like to update it now?",
+    "file": "Keyed/English.xml"
+   },
+   {
+    "key": "HugsLib_features_description",
+    "rimloc_value": "The following mod updates were installed, and these are the new features and improvements that came with them.\\nYou can disable this dialog in OptionsMod Settings",
+    "rimtrans_value": "The following mod updates were installed, and these are the new features and improvements that came with them.\\nYou can disable this dialog in Options > Mod Settings",
+    "file": "Keyed/English.xml"
+   }
+  ]
+ },
+ "2023507013": {
+  "rimloc_english_total": 764,
+  "rimtrans_total": 593,
+  "both": [
+   {
+    "key": "IP_IngredientPercentage",
+    "value": "(filled at {0} of {1})"
+   },
+   {
+    "key": "VEF_AnimalProductYieldFactorDetails_Random",
+    "value": "Base special animal products production for this animal is {0} of a selection of randomized or terrain dependent items. Adjusted by its animal product yield factor this will result in {1} units instead."
+   },
+   {
+    "key": "VFE_ChunkRandomMine",
+    "value": "Drill for Random Chunks"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionSelectOption",
+    "value": "Please select how to proceed:"
+   },
+   {
+    "key": "VGE_StatsReport_Outside",
+    "value": "outdoors"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_LetterDescSold",
+    "value": "{FACTION_name} caught wind that you have been selling {ILLEGALTHING_label} behind their back. They consider it to be against the law, and your relations have degraded"
+   },
+   {
+    "key": "PipeSystem_ProcessorBuffer",
+    "value": "Buffer: {0}"
+   },
+   {
+    "key": "VCE_NotInEquator",
+    "value": "Not in equatorial region (in this planet, below {0} latitude). Growing normally."
+   },
+   {
+    "key": "VFE_AsexualReproductionDisabled",
+    "value": "Asexual reproduction disabled via mod options"
+   },
+   {
+    "key": "PipeSystem_Consumption",
+    "value": "{0} consumption"
+   },
+   {
+    "key": "VCE_Pollinated",
+    "value": "Apiary found nearby"
+   },
+   {
+    "key": "VCE_BuildPeriodicallyOption",
+    "value": "Allow animals building things (for example, beavers building dams)"
+   },
+   {
+    "key": "Outposts.RestingAt",
+    "value": "Resting at outpost {0}"
+   },
+   {
+    "key": "TerrainTagVFEI2_RoyalJellyFloor",
+    "value": "royal jellyfloor"
+   },
+   {
+    "key": "IP_SpoiledDueToRain",
+    "value": "The product in this machine has spoiled due to inclement weather"
+   },
+   {
+    "key": "VGE_StatsReport_InGreatPain",
+    "value": "in great pain (>20%)"
+   },
+   {
+    "key": "VCE_MustBeInstalled",
+    "value": "Vanilla Cooking Expanded must be installed for these options to have any effect"
+   },
+   {
+    "key": "Outposts.Setting.MinimumPawns",
+    "value": "Minimum Pawns to Create"
+   },
+   {
+    "key": "KCSG.AllowFoggedPosition",
+    "value": "Allow fogged position"
+   },
+   {
+    "key": "Outposts.AllowedBiomes",
+    "value": "Must be in one of the following biomes:"
+   },
+   {
+    "key": "IP_RemoveProductDesc",
+    "value": "Remove {0} from the {1}. The product will be ready at the present quality level ({2})"
+   },
+   {
+    "key": "VanillaFactionsExpanded.AlwaysHostile",
+    "value": "Always hostile"
+   },
+   {
+    "key": "VFEMechNoResources",
+    "value": "Not enough resources"
+   },
+   {
+    "key": "VEF.DisableModSourceReport",
+    "value": "Disable mod source reports"
+   },
+   {
+    "key": "Outposts.Settings.DeliveryMethod",
+    "value": "Delivery method"
+   },
+   {
+    "key": "KCSG.CantEnter",
+    "value": "Cannot enter {0}"
+   },
+   {
+    "key": "AskForPopUpExplained",
+    "value": "Click this to be asked for each faction if you want it to be added to your game"
+   },
+   {
+    "key": "Outposts.Setting.ProductionTime",
+    "value": "Production Time"
+   },
+   {
+    "key": "PipeSystem_ChooseResult",
+    "value": "Choose result"
+   },
+   {
+    "key": "Outposts.Letters.Items.Text",
+    "value": "You have received the follow items from the outpost {0}:"
+   },
+   {
+    "key": "Outposts.Commands.Pack.Desc",
+    "value": "Begin packing this outpost back into a caravan"
+   },
+   {
+    "key": "VFEMechAttachTurret",
+    "value": "Attach Turret"
+   },
+   {
+    "key": "Outposts.Letters.Items.Label",
+    "value": "Items From {0}"
+   },
+   {
+    "key": "VGE_EggPregnancy",
+    "value": "{0}'s eggs have been fertilized! The egglaying process will continue until a fertile egg is laid."
+   },
+   {
+    "key": "VPE_AgeBeautyModifier_Desc",
+    "value": "The beauty of this plant will increase by this amount for every year it is kept alive, up to a maximum of +{0}."
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionButtonIgnore",
+    "value": "Don't ask for this faction again"
+   },
+   {
+    "key": "PipeSystem_ValveOpened",
+    "value": "Valve opened."
+   },
+   {
+    "key": "Outposts.Packing",
+    "value": "Packing into caravan. Done in {0}"
+   },
+   {
+    "key": "Outposts.AddTo",
+    "value": "Add to outpost"
+   },
+   {
+    "key": "VFEMechMachineDied",
+    "value": "Machine destroyed"
+   },
+   {
+    "key": "VPE_CancelWeedRemoval_Desc",
+    "value": "Cancel removing the weeds from this flower."
+   },
+   {
+    "key": "MVCF.Settings.LogLevel.Tick",
+    "value": "Tick"
+   },
+   {
+    "key": "VPE_CancelExtractFlower_Desc",
+    "value": "Cancel extracting this flower."
+   },
+   {
+    "key": "IP_ProductWaiting",
+    "value": "Waiting for pickup"
+   },
+   {
+    "key": "VEF_AnimalsSearch",
+    "value": "Search:"
+   },
+   {
+    "key": "IP_ResetSemiautomatic",
+    "value": "Reset Recipes"
+   },
+   {
+    "key": "VCE_UntameableOption",
+    "value": "Allow some animals to be untameable"
+   },
+   {
+    "key": "VFEA.AbilityStatsPower",
+    "value": "Power"
+   },
+   {
+    "key": "VEF_DisableGas",
+    "value": "Disable gas production"
+   },
+   {
+    "key": "VFEMechStopMachineDesc",
+    "value": "Stop this machine's progress and force it to return to base."
+   },
+   {
+    "key": "VEF.Hire",
+    "value": "Hire {0}"
+   },
+   {
+    "key": "VEF_EnableGasDesc",
+    "value": "Enable the ability to produce gas of this animal."
+   },
+   {
+    "key": "MVCF.Settings.LogLevel.Silly",
+    "value": "Silly"
+   },
+   {
+    "key": "Outposts.Commands.Remove.Label",
+    "value": "Remove pawn"
+   },
+   {
+    "key": "VEF.RangedDodge.ShotReportReadout",
+    "value": "Dodge"
+   },
+   {
+    "key": "PipeSystem_ChooseResultDesc",
+    "value": "Choose processor result."
+   },
+   {
+    "key": "VEF.TotalMarketValueRange_Quality_Desc",
+    "value": "Total market value range (minimum and maximum) of the objects that can be found by opening this loot box. Box quality has modified the base value by a factor of {0}"
+   },
+   {
+    "key": "VRE_AnimalTantrum",
+    "value": "Animal tantrum MTB"
+   },
+   {
+    "key": "PipeSystem_Product",
+    "value": "Product"
+   },
+   {
+    "key": "Outposts.Command.Remove.Only1",
+    "value": "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \"Pack\"."
+   },
+   {
+    "key": "VanillaFactionsExpanded.EquipWarningShieldUnusableWithWeapon",
+    "value": "({0} will be unusable)"
+   },
+   {
+    "key": "Outposts.Take",
+    "value": "Take"
+   },
+   {
+    "key": "VEF.HireDesc",
+    "value": "Hire some {0} to help around the colony, for example with defense."
+   },
+   {
+    "key": "IP_InsertVariableSecond",
+    "value": "Insert {0} in 2nd slot"
+   },
+   {
+    "key": "IP_ProcessingInProgress",
+    "value": "{0} is processing {1}. {2} will be ready with {3} quality in {4}"
+   },
+   {
+    "key": "PipeSystem_PasteAllRecipes_Desc",
+    "value": "Paste all copied processes into this processor. You can select multiple and the processes will be pasted to all of them."
+   },
+   {
+    "key": "VEF_NeverDesc",
+    "value": "Never unforbid mined ores (this is how the base game works for non-human pawns, such as animals and mechs)"
+   },
+   {
+    "key": "PipeSystem_NotInRoomExplanation",
+    "value": "This processor is not situated in a room that counts as a {0}, and will receive a {1} penalty to its work speed. This will be recalculated once a process has started."
+   },
+   {
+    "key": "VEF.CancelContract",
+    "value": "Cancel Contract"
+   },
+   {
+    "key": "VCE_DigWhenHungryOption",
+    "value": "Allow digging when hungry mechanics (for example, Frostmites digging corpses)"
+   },
+   {
+    "key": "VEF.Weapons.Stat_Thing_MaterialPerCharge_Desc",
+    "value": "The amount of {0} per charge this ability needs to be recharged."
+   },
+   {
+    "key": "PipeSystem_NoProcessAvailable",
+    "value": "No process available"
+   },
+   {
+    "key": "VCE_AffectsAllAnimalMods",
+    "value": "These animal behaviours options will affect all animal mods that share code from the Vanilla Expanded Framework"
+   },
+   {
+    "key": "IP_NoIngredientFound",
+    "value": "No ingredient found on map"
+   },
+   {
+    "key": "VGE_Male_Egg",
+    "value": "Males don't lay eggs"
+   },
+   {
+    "key": "VPE_ReplantFlower_Desc",
+    "value": "The flower is currently packaged up for storage and transport. Use this command to replant it in the new location."
+   },
+   {
+    "key": "VEF_EnableGas",
+    "value": "Enable gas production"
+   },
+   {
+    "key": "VEF.EnableWeatherDamage",
+    "value": "{0}"
+   },
+   {
+    "key": "Outposts.WillProduce.0",
+    "value": "Will produce some items in {0}"
+   },
+   {
+    "key": "VPE_BloomBeautyModifier",
+    "value": "Bloom beauty modifier"
+   },
+   {
+    "key": "VPE_RemoveWeeds",
+    "value": "Remove weeds"
+   },
+   {
+    "key": "MVCF.Settings.LogLevel.Info",
+    "value": "Info"
+   },
+   {
+    "key": "PipeSystem_AllowManualRefill",
+    "value": "Allow manual refill"
+   },
+   {
+    "key": "MVCF.Cooldown",
+    "value": "Still on cooldown. {0} left."
+   },
+   {
+    "key": "VCE_ExplodingEggsOption",
+    "value": "Allow animals' eggs that explode (such as dragons')"
+   },
+   {
+    "key": "VFE_ChooseMineDesc",
+    "value": "Choose chunk type to drill. You can choose any of the map's rock types, or random"
+   },
+   {
+    "key": "PipeSystem_AugmentStackB",
+    "value": "+10"
+   },
+   {
+    "key": "PipeSystem_PasteAllRecipes",
+    "value": "Paste all processes"
+   },
+   {
+    "key": "VGE_StatsReport_AnyLightSensitivity",
+    "value": "light sensitivity"
+   },
+   {
+    "key": "VEF_DisableDiggingDesc",
+    "value": "Disable the ability to dig the terrain for food of this animal."
+   },
+   {
+    "key": "IP_InsertThirdItemDesc",
+    "value": "Insert"
+   },
+   {
+    "key": "PipeSystem_ExtractAtCurrentQuality",
+    "value": "Extract at current quality"
+   },
+   {
+    "key": "VFEMechSetArea",
+    "value": "Set area"
+   },
+   {
+    "key": "PipeSystem_ProcessNeedsAwfulAtLeast",
+    "value": "Process needs to advance at least until the Awful quality time, which is {0}"
+   },
+   {
+    "key": "VEF_DigestionTime",
+    "value": "Will be consumed in {0}"
+   },
+   {
+    "key": "VGE_StatsReport_NoSunlight",
+    "value": "no sunlight"
+   },
+   {
+    "key": "VRE_Feratype",
+    "value": "Feratype"
+   },
+   {
+    "key": "IP_InsertSecondItemDesc",
+    "value": "Insert"
+   },
+   {
+    "key": "Outposts.NoValidPawns",
+    "value": "No valid pawns to add to outpost"
+   },
+   {
+    "key": "VEF_WhileCaravaning",
+    "value": "While caravaning, produces {0} {1} every:"
+   },
+   {
+    "key": "Reloading.Ammo",
+    "value": "Ammo: {0} / {1}"
+   },
+   {
+    "key": "IP_ResetFullAutoDesc",
+    "value": "Fully resets the machine and makes it stop. Warning, it will destroy the process and the input items"
+   },
+   {
+    "key": "VFEM.CaravanMachineRanOutPower",
+    "value": "{MACHINE_nameDef} ran out of power, and was left behind."
+   },
+   {
+    "key": "VEF.Breakdown",
+    "value": "Breakdown"
+   },
+   {
+    "key": "VRE_AnimalGenesDesc",
+    "value": "Genes present in this animal"
+   },
+   {
+    "key": "VEF_CustomStructureGeneration",
+    "value": "Custom Structure Generation:"
+   },
+   {
+    "key": "Outposts.Letters.BattleWon.Secured",
+    "value": "We have secured: {0} worth of goods and weapons from the raiders"
+   },
+   {
+    "key": "VEF_DisableAnimal",
+    "value": "Disable {0}"
+   },
+   {
+    "key": "VFEA.AbilityDisableReasonCooldown",
+    "value": "{0} is on cooldown for {1}"
+   },
+   {
+    "key": "VGE_StatsReport_Armoured",
+    "value": "armoured"
+   },
+   {
+    "key": "Outposts.Abandoned.Desc",
+    "value": "{0} has been abonded due to having no one inside to run it. It will very quickly be looted and taken over by nature, leaving no trace it was ever there."
+   },
+   {
+    "key": "Outposts.Commands.Remove.Desc",
+    "value": "Remove a pawn from this outpost into a new caravan"
+   },
+   {
+    "key": "TerrainTagVFEI2_Creep",
+    "value": "insect creep"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_SellIllegalWarning",
+    "value": "Selling {ILLEGALTHING_label} to {ILLEGALFACTION_name} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionTitle",
+    "value": "New faction: {FactionName}"
+   },
+   {
+    "key": "XPatchFound",
+    "value": "{0} patches found"
+   },
+   {
+    "key": "VEF_DisableTextureCaching",
+    "value": "Disable Texture Caching"
+   },
+   {
+    "key": "VEF.PawnsList",
+    "value": "Contracted:"
+   },
+   {
+    "key": "VEF.ContractTitle",
+    "value": "Contract with {0}"
+   },
+   {
+    "key": "VPE_TempTooHighForBlooming",
+    "value": "Temperature too high for blooming"
+   },
+   {
+    "key": "IP_OutsideLightRange",
+    "value": "The process in this machine is being interrupted due to an inadequate level of light and will be spoiled soon"
+   },
+   {
+    "key": "VEF_Always",
+    "value": "Always"
+   },
+   {
+    "key": "PipeSystem_CancelCurrentProcess",
+    "value": "Cancel current process"
+   },
+   {
+    "key": "VEF.Weapons.Stat_Thing_MaterialPerCharge",
+    "value": "Ammo per charge"
+   },
+   {
+    "key": "IP_TogglePause",
+    "value": "Pause / Restart"
+   },
+   {
+    "key": "VanillaFactionsExpanded.ModInfo",
+    "value": "This faction is added by {ModName} and not currently present in your game."
+   },
+   {
+    "key": "VEF.Cancel",
+    "value": "Cancel"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_LetterDescGift",
+    "value": "{FACTION_name} caught wind that you have been gifting {ILLEGALTHING_label} behind their back. They consider it to be against the law, and your relations have degraded"
+   },
+   {
+    "key": "VPE_BloomingPeriod_Desc",
+    "value": "This flower will enter a blooming stage in this period, or the equivalent in days of the year in permanent summer / winter."
+   },
+   {
+    "key": "IP_ResetSemiautomaticDesc",
+    "value": "This will reset the building after the current product is finished, so a new input ingredient can be chosen"
+   },
+   {
+    "key": "VRE_LifespanFactor",
+    "value": "Lifespan"
+   },
+   {
+    "key": "VCE_AsexualReproductionOption",
+    "value": "Allow asexual reproduction"
+   },
+   {
+    "key": "VGE_StatsReport_InVacuum",
+    "value": "in vacuum"
+   },
+   {
+    "key": "Outposts.AlreadyPacking",
+    "value": "Already packing"
+   },
+   {
+    "key": "PipeSystem_IdleConsumptionExplained",
+    "value": "The amount of {0} this building will draw from the {1} grid when idle."
+   },
+   {
+    "key": "Outposts.Commands.GiveItems.Label",
+    "value": "Give items"
+   },
+   {
+    "key": "VFEMechStartMachine",
+    "value": "Start machine"
+   },
+   {
+    "key": "PipeSystem_ResourceNeeded",
+    "value": "{0} needed:"
+   },
+   {
+    "key": "PipeSystem_ResourceStored",
+    "value": "{0} stored:"
+   },
+   {
+    "key": "VEF.Factions.FactionDef_Description_Contraband",
+    "value": "Trading details"
+   },
+   {
+    "key": "VEF.Shields.ExplanationTitle",
+    "value": "Set weapons to be usable or not usable with shields."
+   },
+   {
+    "key": "VanillaFactionsExpanded.HiddenFactionInfo",
+    "value": "This is a hidden faction and won't show up in your faction list."
+   },
+   {
+    "key": "Outposts.WillProduce.2",
+    "value": "Will produce {0} {1} and {2} {3} in {4}"
+   },
+   {
+    "key": "VFE.SwitchLightColor",
+    "value": "Switch light color"
+   },
+   {
+    "key": "Outposts.Settings.DeliveryMethod.Teleport",
+    "value": "Teleport items to colony"
+   },
+   {
+    "key": "PipeSystem_DecreaseStack",
+    "value": "-1"
+   },
+   {
+    "key": "VPE_CancelWeedRemoval",
+    "value": "Cancel weed removal"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionButtonSpawn",
+    "value": "Spawn"
+   },
+   {
+    "key": "Outposts.Settings.Title",
+    "value": "VE Framework - Outposts"
+   },
+   {
+    "key": "VFE_ChooseMine",
+    "value": "Choose chunk type to drill"
+   },
+   {
+    "key": "NocturnalAnimals.BodyClock",
+    "value": "Body clock"
+   },
+   {
+    "key": "MVCF.Settings.LogLevel.Verbose",
+    "value": "Verbose"
+   },
+   {
+    "key": "VGE_StatsReport_InPain",
+    "value": "in pain"
+   },
+   {
+    "key": "VEF_AsexualHatchedEgg",
+    "value": "{0} has sporulated."
+   },
+   {
+    "key": "VRE_NotPregnant",
+    "value": "This animal is not pregnant"
+   },
+   {
+    "key": "VPE_LeaflessBeauty",
+    "value": "Leafless beauty"
+   },
+   {
+    "key": "NeedToBeInGame",
+    "value": "You first need to load a save"
+   },
+   {
+    "key": "PipeSystem_MissingInputIngredients",
+    "value": "Missing inputs: {0}"
+   },
+   {
+    "key": "VCE_CorpseDecayingEffectOption",
+    "value": "Allow corpse decaying mechanics (for example, Helixien slug's effect)"
+   },
+   {
+    "key": "VRE_TabAnimalGenes",
+    "value": "Genes"
+   },
+   {
+    "key": "VPE_BloomingPeriod",
+    "value": "Blooming period"
+   },
+   {
+    "key": "VEF.Value",
+    "value": "Value"
+   },
+   {
+    "key": "VanillaFactionsExpanded.UsableWithShield",
+    "value": "Usable with shields"
+   },
+   {
+    "key": "NocturnalAnimals.BodyClock_Diurnal",
+    "value": "Diurnal"
+   },
+   {
+    "key": "Outposts.Commands.DeliveryColony.Label",
+    "value": "Delivery destination"
+   },
+   {
+    "key": "VEF_UnforbidMinedOres",
+    "value": "Unforbid mined ores"
+   },
+   {
+    "key": "VRE_LifespanFactorDesc",
+    "value": "Lifespan factor of this animal according to its genetic stability"
+   },
+   {
+    "key": "PipeSystem_OutputToNet",
+    "value": "{0} to net"
+   },
+   {
+    "key": "VRE_FamilyTag",
+    "value": "Gene family"
+   },
+   {
+    "key": "VEF.DoorLockEveryone",
+    "value": "Everyone"
+   },
+   {
+    "key": "Outposts.Commands.Create.Desc",
+    "value": "Create a new outpost using this caravan."
+   },
+   {
+    "key": "Outposts.Commands.AddPawn.Desc",
+    "value": "Transfer a pawn from this caravan to the outpost"
+   },
+   {
+    "key": "TerrainTagVFEI2_JellyFloor",
+    "value": "jellyfloor"
+   },
+   {
+    "key": "VFEMechStartMachineDesc",
+    "value": "Start this machine."
+   },
+   {
+    "key": "VRE_FeratypeFamilyDesc",
+    "value": "This feratype belongs to the {0} feratype family:\\n\\n{1}"
+   },
+   {
+    "key": "VEF.DoorLockOnlyDrafted",
+    "value": "Only drafted"
+   },
+   {
+    "key": "VFE_HideRandomizeButton",
+    "value": "Hide the \"Random Graphic\" and \"Choose Graphic\" buttons"
+   },
+   {
+    "key": "VFEA.RClickToNoAuto",
+    "value": "Right-click to disable autocasting."
+   },
+   {
+    "key": "VFEMechTurretResources",
+    "value": "Needed to construct turret:"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_LetterLabel",
+    "value": "{FACTION_name} angered"
+   },
+   {
+    "key": "KCSG.Mapcontains",
+    "value": "Map contains"
+   },
+   {
+    "key": "VEF_LetterWeeds",
+    "value": "Weeds have spread across your {PLANTDEF_labelPlural}, as well as other nearby blooming flowers, greatly affecting their beauty.\\n\\nYou can order your colonists to remove the weeds, though it is a time consuming process."
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_SellWarning",
+    "value": "Selling {ILLEGALTHING_label} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionDiscoveryRequired",
+    "value": "It is marked as required, and you must add it to the game."
+   },
+   {
+    "key": "VanillaFactionsExpanded.EquipShield",
+    "value": "Equip {0} as shield"
+   },
+   {
+    "key": "IP_RainDestroysWarning",
+    "value": "{0} needs to not be raining to start working"
+   },
+   {
+    "key": "MVCF.Settings.LogLevel",
+    "value": "Log level:"
+   },
+   {
+    "key": "Reloading.Reload",
+    "value": "Reload {GEAR} with {AMMO_label}"
+   },
+   {
+    "key": "Outposts.Letters.Lost.Label",
+    "value": "Outpost lost"
+   },
+   {
+    "key": "PipeSystem_NoStorageInNet",
+    "value": "No storage connected"
+   },
+   {
+    "key": "VGE_StatsReport_NotWater",
+    "value": "on dry land"
+   },
+   {
+    "key": "VGE_StatsReport_OutsideColonyMap",
+    "value": "outside colony map"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionRecommended",
+    "value": "{REQUIRED_multiple ? It is recommended to have at least {REQUIRED} factions of {FACTION} type, but currently there's only {COUNT}. : It is recommended to enable {FACTION}.}"
+   },
+   {
+    "key": "VFEM.DroneGainsName",
+    "value": "The drone's name is now {0}."
+   },
+   {
+    "key": "VFEMechMachineDiedDesc",
+    "value": "One of your machines has been destroyed! You can dismantle its remains at a machining table. In order to construct a replacement, one of your colonists will need to deliver the following parts to its platform:\\n\\n{0}"
+   },
+   {
+    "key": "VEF_HomeAreaDesc",
+    "value": "Ores mined by pawns are only unforbidden if mined in the home area"
+   },
+   {
+    "key": "MVCF.Settings.LogLevel.None",
+    "value": "None"
+   },
+   {
+    "key": "VGE_EggHatched",
+    "value": "{0} has hatched from an egg!"
+   },
+   {
+    "key": "PipeSystem_AugmentStackDesc",
+    "value": "Augment output maximum stack size by 1."
+   },
+   {
+    "key": "VEF_TPTitle",
+    "value": "Toggleable patches"
+   },
+   {
+    "key": "VanillaFactionsExpanded.Protects_Desc",
+    "value": "What body parts the shield protects."
+   },
+   {
+    "key": "VPE_BeautyByLeafless",
+    "value": "Leafless beauty: {0}"
+   },
+   {
+    "key": "VEF.TotalMarketValueRange",
+    "value": "Market value range (base)"
+   },
+   {
+    "key": "PipeSystem_DeconstructDesc",
+    "value": "Only deconstruct pipes part of the {0} network."
+   },
+   {
+    "key": "Reloading.NoAmmo",
+    "value": "No Ammo"
+   },
+   {
+    "key": "VCE_SeaTilesNearby",
+    "value": "{0} sea tiles nearby, providing {0}% growth bonus"
+   },
+   {
+    "key": "Outposts.Letters.BattleWon.Captured",
+    "value": "We have managed to capture {0} in the aftermath"
+   },
+   {
+    "key": "VCE_ChargeBatteriesOption",
+    "value": "Allow animals recharging nearby batteries or refueling"
+   },
+   {
+    "key": "Outposts.Setting.Range",
+    "value": "Range"
+   },
+   {
+    "key": "VEF_AsexualCloning",
+    "value": "{0} has cloned itself."
+   },
+   {
+    "key": "Outposts.Letters.BattleWon.Label",
+    "value": "Outpost battle won"
+   },
+   {
+    "key": "PipeSystem_Produce",
+    "value": "Produce {0} {1} from {2} {3}."
+   },
+   {
+    "key": "NeedRestart",
+    "value": "All settings need a restart to be applied"
+   },
+   {
+    "key": "VPE_DeadlyColdTemperature_Desc",
+    "value": "Below this temperature, the plant will start dying."
+   },
+   {
+    "key": "IP_TogglePauseDesc",
+    "value": "Pause / Restart this machine's processing"
+   },
+   {
+    "key": "Outposts.Letters.BattleWon.Text",
+    "value": "We have successfully won the battle for {0}.{1}"
+   },
+   {
+    "key": "IP_CancelIngredients",
+    "value": "Cancel Bringing Ingredients"
+   },
+   {
+    "key": "VPE_RemoveWeeds_Desc",
+    "value": "Remove the weeds that are negatively impacting this flower's beauty."
+   },
+   {
+    "key": "Outposts.SkillChange",
+    "value": "Due to changes in skill level, {0} can no longer produce {1}"
+   },
+   {
+    "key": "Outposts.Abandoned",
+    "value": "Outpost abandoned"
+   },
+   {
+    "key": "VanillaFactionsExpanded.AffectHiddenFactions",
+    "value": "Affect hidden"
+   },
+   {
+    "key": "PipeSystem_DecreaseStackDescB",
+    "value": "Decrease output maximum stack size by 10."
+   },
+   {
+    "key": "VCE_HoveringOption",
+    "value": "Allow animals \"hovering\", ignoring terrain movement costs and waterstriding"
+   },
+   {
+    "key": "PipeSystem_CurrentNotReachedAwful",
+    "value": "Process hasn't reached Awful quality yet"
+   },
+   {
+    "key": "VEF.Name",
+    "value": "Name"
+   },
+   {
+    "key": "PipeSystem_ValveClosed",
+    "value": "Valve closed."
+   },
+   {
+    "key": "VEF_NotTameable",
+    "value": "This creature is untameable"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_RelationInfo",
+    "value": "Goodwill with {FACTION_name} is now {1}. (Changed by {2})"
+   },
+   {
+    "key": "IP_ProcessorPaused",
+    "value": "{0} is paused:"
+   },
+   {
+    "key": "PipeSystem_ProductionExplained",
+    "value": "The amount per day of {0} this building will produce for the {1} grid."
+   },
+   {
+    "key": "VCE_RegenerationOption",
+    "value": "Allow health regeneration (active and passive)"
+   },
+   {
+    "key": "VSE.ReinforcementsDesc",
+    "value": "Seeing that your forces suffered losses, {FACTION_name} has decided to reinforce their raiding force"
+   },
+   {
+    "key": "IP_ChooseOutput",
+    "value": "Choose Output"
+   },
+   {
+    "key": "IP_ToggleAutoDesc",
+    "value": "If set to active, this building will automatically grab ingredients from adjacent hoppers, and automatically start working again once the product is removed. If not, colonists will haul the ingredients to the building, and it will need to be activated manually once refilled"
+   },
+   {
+    "key": "PipeSystem_CantExtract",
+    "value": "Can't extract: Tanks are full"
+   },
+   {
+    "key": "IP_NoPowerDestroysInitialWarning",
+    "value": "The result is spoiling due to a power failure in the item processor"
+   },
+   {
+    "key": "VGE_EggHatchedLabel",
+    "value": "{0} hatched!"
+   },
+   {
+    "key": "PipeSystem_ResourceOutput",
+    "value": "{0} output:"
+   },
+   {
+    "key": "PipeSystem_AugmentStackDescB",
+    "value": "Augment output maximum stack size by 10."
+   },
+   {
+    "key": "VFE_DeepDrillNo",
+    "value": "Deep drill cannot be used with {0}."
+   },
+   {
+    "key": "VPE_BloomTemperatureMax_Desc",
+    "value": "The maximum temperature the plant will need to be below to enter a blooming stage.\\n\\n{0}"
+   },
+   {
+    "key": "VCE_NoWaterNearby",
+    "value": "Lack of a body of water nearby is impeding this plant's growth"
+   },
+   {
+    "key": "VEF.ContractInfo",
+    "value": "View contract with {0}"
+   },
+   {
+    "key": "MVCF.Settings.Debug",
+    "value": "Developer Mode"
+   },
+   {
+    "key": "VanillaFactionsExpanded.NumberRange",
+    "value": "{0} to {1}"
+   },
+   {
+    "key": "VCE_DigPeriodicallyOption",
+    "value": "Allows animals digging for things periodically"
+   },
+   {
+    "key": "KCSG.SpawnNearCenter",
+    "value": "Spawn near center"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_LetterDescIllegalSold",
+    "value": "{FACTION_name} caught wind that you have been selling {ILLEGALTHING_label} to {ILLEGALFACTION_name} behind their back. They consider it to be against the law, and your relations have degraded"
+   },
+   {
+    "key": "VanillaFactionsExpanded.ScenPart_ForcedFactionRelations",
+    "value": "Faction relation modifiers"
+   },
+   {
+    "key": "PipeSystem_NoProcess",
+    "value": "No current process"
+   },
+   {
+    "key": "MVCF.ToggleAuto",
+    "value": "Toggle automatic usage"
+   },
+   {
+    "key": "Outposts.GrowingRequired",
+    "value": "Must have ability to grow plants"
+   },
+   {
+    "key": "Outposts.Settings.RaidFrequency",
+    "value": "Raid Frequency Range"
+   },
+   {
+    "key": "IP_ProcessingInProgressNoQuality",
+    "value": "{0} is processing {1}. {2} will be ready in {3}"
+   },
+   {
+    "key": "VEF.DraftHuntLabel",
+    "value": "Hunt"
+   },
+   {
+    "key": "VEF.QuestChainTooltip",
+    "value": "This quest is a part of a quest chain. Completing it may trigger continuation quests.\\n\\n{0}\\n\\n{1}"
+   },
+   {
+    "key": "VanillaFactionsExpanded.RequiredFactionInfo",
+    "value": "It is marked as required by {ModName}."
+   },
+   {
+    "key": "Outposts.WillProduce.N",
+    "value": "Will produce the following in {0}:\\n{1}"
+   },
+   {
+    "key": "PipeSystem_Processes",
+    "value": "Processes"
+   },
+   {
+    "key": "VFE_NeedsWater",
+    "value": "This building must be placed on water"
+   },
+   {
+    "key": "VPE_BloomBeautyModifier_Desc",
+    "value": "The beauty of this plant will be multiplied by this amount when in its blooming stage."
+   },
+   {
+    "key": "PipeSystem_Stored",
+    "value": "{0} stored in network:"
+   },
+   {
+    "key": "IP_ChooseQualityAuto",
+    "value": "Choose Auto Quality"
+   },
+   {
+    "key": "VEF.Spent",
+    "value": "Silver spent:"
+   },
+   {
+    "key": "VEF.HiringDesc",
+    "value": "You can hire {0} for any period of time.You can only have one contract active at a time, and you cannot mix and match the factions from which you hire. If hired {0} die on duty, you will incur an additional 5% increase to contract price per dead pirate on all future contracts for a full year."
+   },
+   {
+    "key": "Outposts.Commands.GiveItems.Desc",
+    "value": "Take items from {0} and add them to the outpost"
+   },
+   {
+    "key": "PipeSystem_OutputOnGround",
+    "value": "Can output on ground"
+   },
+   {
+    "key": "VEF_AlwaysDesc",
+    "value": "Ores mined by pawns are always unforbidden"
+   },
+   {
+    "key": "VGE_EggLaid",
+    "value": "{0} has laid an egg! Keep it warm and protected."
+   },
+   {
+    "key": "VFEA.AbilityStatsDuration",
+    "value": "Duration"
+   },
+   {
+    "key": "VFEMechAttachTurretDesc",
+    "value": "Construct a turret atop this mobile platform. This will require a colonist to deliver resources equal to that turret's normal construction cost."
+   },
+   {
+    "key": "VEF.Cost",
+    "value": "Cost to hire"
+   },
+   {
+    "key": "VRE_StatsReport_Genes",
+    "value": "Relevant animal genes"
+   },
+   {
+    "key": "Outposts.AddedFromTransportPods",
+    "value": "Your transport pods have arrived. {0} has been added to {1}."
+   },
+   {
+    "key": "Outposts.Give",
+    "value": "Give"
+   },
+   {
+    "key": "IP_SpoiledDueToWrongTemp",
+    "value": "The product has spoiled due to an unsuitable temperature. Needs between {0} and {1} ºC"
+   },
+   {
+    "key": "VEF.DoorLockStatePowerOff",
+    "value": "Power is off. Impossible to change door lock policy."
+   },
+   {
+    "key": "VEF_AsexualHatched",
+    "value": "{0} has reproduced asexually."
+   },
+   {
+    "key": "IP_ProcessorWorking",
+    "value": "{0} is working:"
+   },
+   {
+    "key": "IP_IsEmpty",
+    "value": "{0} is empty"
+   },
+   {
+    "key": "VPE_AgeBeautyModifier",
+    "value": "Age beauty modifier"
+   },
+   {
+    "key": "VGE_StatsReport_InLight",
+    "value": "above 50% lit"
+   },
+   {
+    "key": "PipeSystem_Producing",
+    "value": "Producing {0} {1}. Cycle progress: {2}."
+   },
+   {
+    "key": "VCE_AllowConditions",
+    "value": "Allow chronic health conditions in food (Diabetes, Cholesterol and High Blood Pressure)"
+   },
+   {
+    "key": "VanillaFactionsExpanded.EquipWarningShieldUnusable",
+    "value": "(unusable with {0})"
+   },
+   {
+    "key": "VEF.Customize",
+    "value": "Customize {0}"
+   },
+   {
+    "key": "VEF.Weapons.Stat_Thing_MaterialPerCharge_Value",
+    "value": "{0} {1} per charge (total {2} charges)"
+   },
+   {
+    "key": "PipeSystem_ExcessStored",
+    "value": "{0} net excess/stored in network: {1} {3}/d / {2} {3}"
+   },
+   {
+    "key": "VanillaFactionsExpanded.AllFactions",
+    "value": "All factions"
+   },
+   {
+    "key": "IP_ResetFullAuto",
+    "value": "Reset Machine"
+   },
+   {
+    "key": "VEF.DoorLockOnlyColonistsAndAnimals",
+    "value": "Only colonists and animals"
+   },
+   {
+    "key": "VFEMechLowerRangeDesc",
+    "value": "Reduce the number of tiles this machine will travel."
+   },
+   {
+    "key": "VEF_StomachContents",
+    "value": "{0} creatures swallowed whole."
+   },
+   {
+    "key": "VFE_ChooseGraphic",
+    "value": "Choose Graphic"
+   },
+   {
+    "key": "VFE.ChangeVisualDesc",
+    "value": "Set a specific visual for the building or item."
+   },
+   {
+    "key": "VFE_NoGraphics",
+    "value": "This building doesn't have extra random graphics to choose from. Some modder added the comp class to the building without alternative graphics, which is weird"
+   },
+   {
+    "key": "PipeSystem_ExtractingAtCurrent",
+    "value": "Extracting product at current quality"
+   },
+   {
+    "key": "VSE.Reinforcements",
+    "value": "Reinforcements"
+   },
+   {
+    "key": "IP_QualityAutoNot",
+    "value": "Disable Auto Quality"
+   },
+   {
+    "key": "VanillaFactionsExpanded.UsableWithShield_Desc",
+    "value": "Whether or not this weapon can be used if the character also has a shield equipped."
+   },
+   {
+    "key": "VEF_Never",
+    "value": "Never"
+   },
+   {
+    "key": "Outposts.NumPawns",
+    "value": "Must have at least {0} pawns willing to join the outpost"
+   },
+   {
+    "key": "IP_CantFindThing",
+    "value": "No items of that kind ({0}) found in this map"
+   },
+   {
+    "key": "VanillaFactionsExpanded.StartingGoodwill",
+    "value": "Starting"
+   },
+   {
+    "key": "VFE_RandomRock",
+    "value": "Random chunk"
+   },
+   {
+    "key": "VRE_StillbornLabel",
+    "value": "Stillborn {0}"
+   },
+   {
+    "key": "PipeSystem_ConsumptionExplained",
+    "value": "The amount per day of {0} this building will draw from the {1} grid."
+   },
+   {
+    "key": "VGE_StatsReport_ColonyMap",
+    "value": "on colony map"
+   },
+   {
+    "key": "Outposts.Settings.DeliveryMethod.PackAnimal",
+    "value": "Send pack animal carrying items to colony"
+   },
+   {
+    "key": "VEF_EnableCorpseDecaying",
+    "value": "Enable corpse decaying"
+   },
+   {
+    "key": "Outposts.Settings.DeliveryMethod.PackOrPods",
+    "value": "Pods if available, otherwise pack animal"
+   },
+   {
+    "key": "Outposts.MustHaveInCaravan",
+    "value": "Must have {0} in caravan"
+   },
+   {
+    "key": "VEF.NoRefund",
+    "value": "Cancelling your contract will not refund the silver you spent on it."
+   },
+   {
+    "key": "Outposts.Letters.BattleWon.Rescued",
+    "value": "We have managed to recover {0}'s body"
+   },
+   {
+    "key": "VGE_StatsReport_Below0",
+    "value": "below 0ºC"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionMessageSuccessFull",
+    "value": "Added {FactionName} with {Amount} settlements."
+   },
+   {
+    "key": "VPE_RealAge",
+    "value": "Age: {0}"
+   },
+   {
+    "key": "VFE.ChangeColorTo",
+    "value": "Change color to {0}"
+   },
+   {
+    "key": "PipeSystem_ContentWillRot",
+    "value": "Content will rot in {0} due to a lack of power."
+   },
+   {
+    "key": "Outposts.Settings.DeliveryMethod.ForcePods",
+    "value": "Always send drop pods"
+   },
+   {
+    "key": "IP_BringIngredients",
+    "value": "Bring Ingredients"
+   },
+   {
+    "key": "VPE_ExtractFlower",
+    "value": "Extract flower"
+   },
+   {
+    "key": "VRE_AnimalGenesFeratypeDesc",
+    "value": "The genes associated with this feratype."
+   },
+   {
+    "key": "VanillaFactionsExpanded.Protects",
+    "value": "Protects"
+   },
+   {
+    "key": "Outposts.Contains",
+    "value": "Contains {0} pawns"
+   },
+   {
+    "key": "IP_FilledWithSecond",
+    "value": "{0}'s 2nd slot is filled with {1}"
+   },
+   {
+    "key": "PipeSystem_DeconstructLabel",
+    "value": "Deconstruct {0} pipes"
+   },
+   {
+    "key": "VPE_TempTooLowForBlooming",
+    "value": "Temperature too low for blooming"
+   },
+   {
+    "key": "Outposts.DisallowedBiomes",
+    "value": "Cannot be in any of the following biomes:"
+   },
+   {
+    "key": "VCE_StuntedGrowthFertility",
+    "value": "Growth reduced due to non-rocky terrain"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionFailedMessage",
+    "value": "Failed to generate this faction. It is recommended to try again, but you can now skip adding this faction. Skipping may cause issues."
+   },
+   {
+    "key": "VRE_AllowedPartners",
+    "value": "Allowed partners"
+   },
+   {
+    "key": "VFEMechRaiseRange",
+    "value": "Increase range"
+   },
+   {
+    "key": "VRE_Trainability",
+    "value": "Trainability set to"
+   },
+   {
+    "key": "VFE_ChangeGraphicDesc",
+    "value": "Change Graphic of this building randomly between those available"
+   },
+   {
+    "key": "VFEMechNoTurret",
+    "value": "No active mobile turret"
+   },
+   {
+    "key": "VEF_FactionDiscovery",
+    "value": "Faction Discovery"
+   },
+   {
+    "key": "VEF_WarningEggExplodes",
+    "value": "Warning, this egg explodes when hatching!"
+   },
+   {
+    "key": "PipeSystem_NotConnected",
+    "value": "Not connected to {0}."
+   },
+   {
+    "key": "PipeSystem_NoStorageInNetDesc",
+    "value": "The following networks are not connected to any storage building, but need one:"
+   },
+   {
+    "key": "IP_IngredientImproperlyDefined",
+    "value": "One of the ingredients has been improperly defined to work with the item processor, contact the mod's author"
+   },
+   {
+    "key": "VFE_RandomBuildingsDontStartRandom",
+    "value": "Make random graphics buildings NOT start randomized"
+   },
+   {
+    "key": "VRE_Days",
+    "value": "days"
+   },
+   {
+    "key": "IP_NoFuelDestroysWarning",
+    "value": "{0} needs to be fueled to start working"
+   },
+   {
+    "key": "VEF_TerrainsNeedsDiggable",
+    "value": "The terrain needs to be diggable to do this"
+   },
+   {
+    "key": "FDTitle",
+    "value": "Faction Discovery"
+   },
+   {
+    "key": "VWEL_ToggleHotshotLabel",
+    "value": "Weapon warm-up"
+   },
+   {
+    "key": "VFE_ChangeGraphic",
+    "value": "Random Graphic"
+   },
+   {
+    "key": "VSE.CostGoodwill",
+    "value": "cost: {0} goodwill"
+   },
+   {
+    "key": "VEF_EnablePipeSystemNoStorageAlert",
+    "value": "Enable PipeSystem no storage alert"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionButtonSkip",
+    "value": "Do nothing"
+   },
+   {
+    "key": "VRE_Stability",
+    "value": "Stability"
+   },
+   {
+    "key": "VGE_StatsReport_Water",
+    "value": "on water"
+   },
+   {
+    "key": "PipeSystem_TransferContent",
+    "value": "Transfer storage content"
+   },
+   {
+    "key": "Outposts.Dialog.Create",
+    "value": "Create"
+   },
+   {
+    "key": "CanAddXFaction",
+    "value": "{0} faction(s) can be added to your current save"
+   },
+   {
+    "key": "Outposts.Commands.StopPack.Desc",
+    "value": "Cancel packing this outpost into a caravan"
+   },
+   {
+    "key": "PipeSystem_InterruptedByGillRot",
+    "value": "Can’t breed fish due to gill rot"
+   },
+   {
+    "key": "VRE_StillbornDesc",
+    "value": "Your {0}, {1} gave birth to a stillborn offspring."
+   },
+   {
+    "key": "VCE_ResurrectionOption",
+    "value": "Allow animals to auto-resurrect (for example Phoenix Owlcat)"
+   },
+   {
+    "key": "IP_ChooseIngredientSecond",
+    "value": "Choose Second Ingredient"
+   },
+   {
+    "key": "VEF.LongTerm",
+    "value": "Long term contracts are significantly more expensive"
+   },
+   {
+    "key": "VFE.SwitchLightColorDesc",
+    "value": "Change current light colour."
+   },
+   {
+    "key": "PipeSystem_TransferContentDesc",
+    "value": "Transfer storage content to other available storages."
+   },
+   {
+    "key": "VRE_FeratypeFamily",
+    "value": "feratype family"
+   },
+   {
+    "key": "AskForPopUp",
+    "value": "Add faction(s)"
+   },
+   {
+    "key": "VEF_TimeToDie",
+    "value": "Animal expires in: {0}"
+   },
+   {
+    "key": "IP_InsertVariable",
+    "value": "Insert {0}"
+   },
+   {
+    "key": "VGE_PregnancyFactor",
+    "value": "Pregnancy factor gene: {0} gestation speed"
+   },
+   {
+    "key": "VEF_TextureVariations",
+    "value": "Texture Variations:"
+   },
+   {
+    "key": "Reloading.Unload",
+    "value": "Unload {GEAR_labelShort}"
+   },
+   {
+    "key": "PipeSystem_CurrentQuality",
+    "value": "Current quality: {0}"
+   },
+   {
+    "key": "Outposts.Commands.StopPack.Label",
+    "value": "Stop packing"
+   },
+   {
+    "key": "Outposts.Settings.DeliveryMethod.Store",
+    "value": "Store items at outpost"
+   },
+   {
+    "key": "VEF.MechsSection",
+    "value": "Mechanoids"
+   },
+   {
+    "key": "IP_OutputDesc",
+    "value": "Processor will output {0}. It needs to be fed {1}"
+   },
+   {
+    "key": "IP_ToggleAuto",
+    "value": "Auto Ingredient Acquiring"
+   },
+   {
+    "key": "KCSG.Add",
+    "value": "Add"
+   },
+   {
+    "key": "NocturnalAnimals.BodyClock_Nocturnal",
+    "value": "Nocturnal"
+   },
+   {
+    "key": "PipeSystem_ExtractAtCurrentQuality_Desc",
+    "value": "Extract the product at the current quality."
+   },
+   {
+    "key": "PipeSystem_DecreaseStackDesc",
+    "value": "Decrease output maximum stack size by 1."
+   },
+   {
+    "key": "VEF_EnableCorpseDecayingDesc",
+    "value": "Enable the constant corpse decaying ability of this animal."
+   },
+   {
+    "key": "Outposts.Commands.AddPawn.Label",
+    "value": "Add pawn"
+   },
+   {
+    "key": "IP_QualityAutoEstablished",
+    "value": "Auto Quality, product will be extracted at quality level: {0}"
+   },
+   {
+    "key": "VEF.Shields.Search",
+    "value": "Search:"
+   },
+   {
+    "key": "PipeSystem_AmountOut",
+    "value": "Maximum amount stored here: {0}"
+   },
+   {
+    "key": "CSGLog",
+    "value": "Enable structure generation debugging log:"
+   },
+   {
+    "key": "IP_NoCombination",
+    "value": "No combination found for these ingredients"
+   },
+   {
+    "key": "VEF.Shields.ShowRangeWeapons",
+    "value": "Show range weapons"
+   },
+   {
+    "key": "VEF_BillRequiresMass",
+    "value": "Requires {0} Kg total mass"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionButtonCancel",
+    "value": "Cancel"
+   },
+   {
+    "key": "PipeSystem_OutputFactoryHopperFull",
+    "value": "Output factory hopper too full (max {0} units)"
+   },
+   {
+    "key": "VEF_HomeArea",
+    "value": "Home Area"
+   },
+   {
+    "key": "VEF_LetterLabelWeeds",
+    "value": "Weeds: {PLANTDEF_labelPlural}"
+   },
+   {
+    "key": "VWEL_ToggleHotshotDesc",
+    "value": "Shots fired when standing still warm-up the weapon allowing for increased firing speed. Overheating can lead to detonation."
+   },
+   {
+    "key": "Outposts.Setting.PackTime",
+    "value": "Pack Time"
+   },
+   {
+    "key": "VRE_AllowedPartnersDesc",
+    "value": "A list of all feratypes belonging to the {0} feratype family that this animal can make offspring with."
+   },
+   {
+    "key": "VGE_StatsReport_InPollution",
+    "value": "in polluted terrain"
+   },
+   {
+    "key": "VGE_StatsReport_Inside",
+    "value": "indoors"
+   },
+   {
+    "key": "VFECore.StatsReport_Powered",
+    "value": "Powered"
+   },
+   {
+    "key": "VEF_TimeToMetamorphosis",
+    "value": "Time to metamorphosis: {0}"
+   },
+   {
+    "key": "PipeSystem_IdleConsumption",
+    "value": "{0} idle consumption"
+   },
+   {
+    "key": "Outposts.Settings.Production",
+    "value": "Production Multiplier"
+   },
+   {
+    "key": "PipeSystem_AllowManualRefillDesc",
+    "value": "Allow pawns to directly refill storage"
+   },
+   {
+    "key": "VEF.AvailableSilver",
+    "value": "Available Silver: {0}"
+   },
+   {
+    "key": "Outposts.SendNonPawns",
+    "value": "Confirm sending items to the outpost? They will be permanently lost."
+   },
+   {
+    "key": "VEF.MinCapacityLevel",
+    "value": "min {MIN}%"
+   },
+   {
+    "key": "VFECore.IsToo",
+    "value": "is too"
+   },
+   {
+    "key": "VCE_AnimalParticlesOption",
+    "value": "Allow animal particles (gas and filth)"
+   },
+   {
+    "key": "IP_NoRecipesHere",
+    "value": "No modded recipes found for this factory"
+   },
+   {
+    "key": "IP_CancelIngredientsDesc",
+    "value": "Cancel Bringing Ingredients to this building"
+   },
+   {
+    "key": "VEF.TotalPrice",
+    "value": "Total Price"
+   },
+   {
+    "key": "IP_TempRangeInThisMachine",
+    "value": "Current process needs a temperature between {0} and {1} ºC"
+   },
+   {
+    "key": "VCE_EffecterOption",
+    "value": "Allows animals causing hediffs, mental states or thoughts"
+   },
+   {
+    "key": "IP_NoPowerDestroysMessage",
+    "value": "The result has spoiled due to a power failure in the item processor"
+   },
+   {
+    "key": "PipeSystem_CantPlaceHere",
+    "value": "{0} can only be placed on the {1} deposit. Use ground-penetrating scanner to find the deposits."
+   },
+   {
+    "key": "PipeSystem_AugmentStack",
+    "value": "+1"
+   },
+   {
+    "key": "VPE_CanBloom",
+    "value": "If the blooming stops due to low temperature, this flower can enter a blooming stage again if the conditions improve."
+   },
+   {
+    "key": "PipeSystem_StorageContentRotted",
+    "value": "{0} content rotted away due to a lack of power."
+   },
+   {
+    "key": "VPE_BeautyByAge",
+    "value": "Beauty by age: +{0}"
+   },
+   {
+    "key": "PipeSystem_WorkSpeed",
+    "value": "work speed"
+   },
+   {
+    "key": "IP_FilledWithThird",
+    "value": "{0}'s 3rd slot is filled with {1}"
+   },
+   {
+    "key": "VEF.DoorLockState",
+    "value": "Current door lock policy \"{0}\""
+   },
+   {
+    "key": "Outposts.CannotBeMade",
+    "value": "Cannot be made in {0}"
+   },
+   {
+    "key": "PipeSystem_OutputFactoryHopperIncorrect",
+    "value": "Output factory hopper absent or not accepting item due to storage configuration."
+   },
+   {
+    "key": "Outposts.RequiredSkill",
+    "value": "Cumulative {0} skill must be at least {1}"
+   },
+   {
+    "key": "VFEMechRaiseRangeDesc",
+    "value": "Increase the number of tiles this machine will travel."
+   },
+   {
+    "key": "VWE.CannotEquipHeavy",
+    "value": "Weapon requires powered armor"
+   },
+   {
+    "key": "VFEMechLowerRange",
+    "value": "Reduce range"
+   },
+   {
+    "key": "IP_ChooseIngredient",
+    "value": "Choose Ingredient"
+   },
+   {
+    "key": "VRE_AnimalIllness",
+    "value": "Animal illness MTB"
+   },
+   {
+    "key": "PipeSystem_AddProcess",
+    "value": "Add process"
+   },
+   {
+    "key": "NocturnalAnimals.BodyClock_Crepuscular",
+    "value": "Crepuscular"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionMessageSuccess",
+    "value": "Added {FactionName}."
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionMessageFailed",
+    "value": "Failed to add the faction."
+   },
+   {
+    "key": "VFEMRideableMachineTip",
+    "value": "This droid is rideable. People in a caravan will ride the fastest available animals/droids, improving the speed of the caravan as a whole."
+   },
+   {
+    "key": "VFEMechMachineHitObstacle",
+    "value": "Machine has run into an obstacle!"
+   },
+   {
+    "key": "Outposts.Settings.Multiplier.Time",
+    "value": "Global Time Multiplier: {0}"
+   },
+   {
+    "key": "VEF_RangeAttackSpeedFactor",
+    "value": "Range Attack Speed Factor"
+   },
+   {
+    "key": "VEF.TeleportTo",
+    "value": "Teleport to {0}"
+   },
+   {
+    "key": "VGE_ForGenderOnly",
+    "value": "{0} only gene."
+   },
+   {
+    "key": "IP_InsertFirstItemDesc",
+    "value": "Insert"
+   },
+   {
+    "key": "VPE_LeaflessBeauty_Desc",
+    "value": "Blooming flowers are pretty ugly when leafless due to cold. They won't die just for being leafless, but their beauty will be greatly affected."
+   },
+   {
+    "key": "PipeSystem_ResourceLeft",
+    "value": "Amount left in deposit: {0}."
+   },
+   {
+    "key": "PipeSystem_DecreaseStackB",
+    "value": "-10"
+   },
+   {
+    "key": "VFEMechForceRecharge",
+    "value": "Force Recharge"
+   },
+   {
+    "key": "VanillaFactionsExpanded.NonSpawningFactionInfo",
+    "value": "This faction is marked as non-spawning and you should probably just ignore it."
+   },
+   {
+    "key": "IP_NoPowerDestroysWarning",
+    "value": "{0} needs to be powered to start working"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionButtonAdd",
+    "value": "Add the faction"
+   },
+   {
+    "key": "VEF_DisableCorpseDecaying",
+    "value": "Disable corpse decaying"
+   },
+   {
+    "key": "Outposts.TotalSkill",
+    "value": "Cumulative {0} skill: {1}"
+   },
+   {
+    "key": "VEF_EnableDigging",
+    "value": "Enable digging for food"
+   },
+   {
+    "key": "VEF.DayAmount",
+    "value": "Amount of Days"
+   },
+   {
+    "key": "VEF.WeatherDamages",
+    "value": "Weather damages"
+   },
+   {
+    "key": "Outposts.NotEnoughPawns",
+    "value": "Not enough pawns in caravan, need at least {0}"
+   },
+   {
+    "key": "VPE_CantBloom",
+    "value": "If the blooming stops due to low temperature, this flower won't be able to bloom again until next year!"
+   },
+   {
+    "key": "VFE.ColorSwitchPowerOff",
+    "value": "Power is off. Impossible to switch color."
+   },
+   {
+    "key": "VEF.TotalMarketValueRange_Desc",
+    "value": "Total market value range (minimum and maximum) of the objects that can be found by opening this loot box."
+   },
+   {
+    "key": "Outposts.WillProduce.1",
+    "value": "Will produce {0} {1} in {2}"
+   },
+   {
+    "key": "VEF_DisableGasDesc",
+    "value": "Disable the ability to produce gas of this animal."
+   },
+   {
+    "key": "VPE_DeadlyColdTemperature",
+    "value": "Deadly cold temperature"
+   },
+   {
+    "key": "VCE_NotPollinated",
+    "value": "No apiary found in a 6 tiles radius (calculated on sowing)"
+   },
+   {
+    "key": "MVCF.Toggle",
+    "value": "Toggle {0}"
+   },
+   {
+    "key": "PipeSystem_XFromNet",
+    "value": "{0} from net"
+   },
+   {
+    "key": "IP_LightDestroysWarning",
+    "value": "{0} needs to have an adequate light level to start working"
+   },
+   {
+    "key": "VGE_StatsReport_InDarkness",
+    "value": "below 50% lit"
+   },
+   {
+    "key": "VRE_SpecializedGene",
+    "value": "Specialized gene"
+   },
+   {
+    "key": "PipeSystem_ProgressInInfobox",
+    "value": "{0}: {1}"
+   },
+   {
+    "key": "Outposts.Commands.DeliveryColony.Desc",
+    "value": "Select which colony will recieve the goods. Currently: {0}"
+   },
+   {
+    "key": "VFEA.MinRadius",
+    "value": "Minimum radius"
+   },
+   {
+    "key": "VanillaFactionsExpanded.AnUnknownMod",
+    "value": "an unknown mod"
+   },
+   {
+    "key": "KCSG.SpawnPartOfEnnemyFaction",
+    "value": "Spawn part of ennemy faction"
+   },
+   {
+    "key": "IP_ChooseIngredientThird",
+    "value": "Choose Third Ingredient"
+   },
+   {
+    "key": "VEF.DoorLockDefault",
+    "value": "Default"
+   },
+   {
+    "key": "VFECore.Advanced",
+    "value": "advanced"
+   },
+   {
+    "key": "KCSG.Enter",
+    "value": "Enter {0}"
+   },
+   {
+    "key": "VEF_GeneralTitle",
+    "value": "General"
+   },
+   {
+    "key": "VFE_NeedsSand",
+    "value": "This building must be placed on sand"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionMessageFailedFull",
+    "value": "Failed to create a faction with settlements."
+   },
+   {
+    "key": "VME_MessageNeedsThePairedMeme",
+    "value": "{0} needs one of the following memes to be chosen too to work: {1}"
+   },
+   {
+    "key": "VEF.CommandAttackMovingBaseDesc",
+    "value": "Attack this {0}."
+   },
+   {
+    "key": "IP_SpoiledDueToLight",
+    "value": "The product in this machine has spoiled due to an inadequate level of light"
+   },
+   {
+    "key": "VPE_BloomTemperatureMin",
+    "value": "Minimum bloom temperature"
+   },
+   {
+    "key": "PipeSystem_CopyProcesses",
+    "value": "Copy processes"
+   },
+   {
+    "key": "VFECore.StatsReport_Unpowered",
+    "value": "Unpowered"
+   },
+   {
+    "key": "IP_Output",
+    "value": "Output {0}"
+   },
+   {
+    "key": "PipeSystem_ProduceLabel",
+    "value": "Produce {0} {1} using:"
+   },
+   {
+    "key": "MVCF.Setting",
+    "value": "Multi-Verb Combat Framework"
+   },
+   {
+    "key": "Outposts.Commands.Create.Label",
+    "value": "Create outpost"
+   },
+   {
+    "key": "NocturnalAnimals.BodyClock_Description",
+    "value": "Determines when the animal sleeps and when it is awake.\\n\\nDiurnal animals sleep during the night and are awake during the day, while nocturnal animals sleep during the day and are awake during the night. Crepuscular animals are mainly active during dusk."
+   },
+   {
+    "key": "VEF_EnableDiggingDesc",
+    "value": "Enable the ability to dig the terrain for food of this animal."
+   },
+   {
+    "key": "VCE_GraphicChangingOption",
+    "value": "Allow animals changing graphics (for example, Chameleon Yak)"
+   },
+   {
+    "key": "VPE_MustBeGrown",
+    "value": "Plant must be fully grown before you can add age to it"
+   },
+   {
+    "key": "IP_ChooseIngredientFourth",
+    "value": "Choose Fourth Ingredient"
+   },
+   {
+    "key": "VEF_AnimalProductIntervalFactorDetails",
+    "value": "Base special animal products interval for this animal is {0} days. Adjusted by its animal products interval factor this will result in {1} days instead. This value is capped at a minimum of 1 day."
+   },
+   {
+    "key": "VCE_NeedsShade",
+    "value": "This plant needs to grow in shade: outside, but under a roof."
+   },
+   {
+    "key": "VanillaFactionsExpanded.NaturalGoodwill",
+    "value": "Natural"
+   },
+   {
+    "key": "VFEA.RClickToAuto",
+    "value": "Right-click to enable autocasting."
+   },
+   {
+    "key": "VGE_EggLaidLabel",
+    "value": "{0} laid an egg!"
+   },
+   {
+    "key": "MVCF.ToggleAutoReload",
+    "value": "Toggle automatic reloading while drafted"
+   },
+   {
+    "key": "VCE_StoppedGrowthFertility",
+    "value": "Growth impossible due to too fertile terrain"
+   },
+   {
+    "key": "VGE_StatsReport_InPlanet",
+    "value": "in the planet"
+   },
+   {
+    "key": "PipeSystem_Production",
+    "value": "{0} production"
+   },
+   {
+    "key": "VEF_AnimalProductYieldFactorDetails",
+    "value": "Base special animal products production for this animal is {0} {1}. Adjusted by its animal product yield factor this will result in {2} {1} instead."
+   },
+   {
+    "key": "VEF.DoorLockOnlyColonistsAndAnimalsAndFriendlies",
+    "value": "Only colonists, animals and friendlies"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_GiftIllegalWarning",
+    "value": "Gifting {ILLEGALTHING_label} to {ILLEGALFACTION_name} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+   },
+   {
+    "key": "IP_FilledWith",
+    "value": "{0} is filled with {1}"
+   },
+   {
+    "key": "VEF.AvailableContracts",
+    "value": "Available contracts: {0}"
+   },
+   {
+    "key": "VEF.Factions.FactionDef_Description_Negatives",
+    "value": "Negative goodwill from trading {0}"
+   },
+   {
+    "key": "VEF.RiskMult",
+    "value": "Risk multiplier"
+   },
+   {
+    "key": "VCE_NoSeaTilesNearby",
+    "value": "Too far away from the sea, no extra growth bonus"
+   },
+   {
+    "key": "VFECore.Primitive",
+    "value": "primitive"
+   },
+   {
+    "key": "IP_QualityAutoIs",
+    "value": "Auto Quality: {0}"
+   },
+   {
+    "key": "VEF.Shields.ShowMeleeWeapons",
+    "value": "Show melee weapons"
+   },
+   {
+    "key": "IP_TemperatureDestroysWarning",
+    "value": "{0} needs to have an adequate temperature ({1} - {2}) to start working"
+   },
+   {
+    "key": "IP_BringIngredientsDesc",
+    "value": "Bring ingredients to start the process"
+   },
+   {
+    "key": "VPE_BeautyByBloming",
+    "value": "Beauty by blooming: x{0}"
+   },
+   {
+    "key": "IP_OutputVariable",
+    "value": "Output {0} from {1}"
+   },
+   {
+    "key": "VGE_StatsReport_InSpace",
+    "value": "in Space"
+   },
+   {
+    "key": "VEF.DoorLockStateDesc",
+    "value": "Click to change current door lock policy."
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionButtonAddFull",
+    "value": "Add the faction with settlements"
+   },
+   {
+    "key": "Outposts.Settings.Multiplier.Production",
+    "value": "Gloabal Production Multiplier: {0}"
+   },
+   {
+    "key": "VEF_VerboseLogging",
+    "value": "Verbose logging"
+   },
+   {
+    "key": "VGE_StatsReport_Over40",
+    "value": "over 40ºC"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionRequired",
+    "value": "{FACTION} cannot be disabled{REQUIRED_multiple ? , you need at least {REQUIRED} factions of that type. : .}"
+   },
+   {
+    "key": "VFEMechSetAreaDesc",
+    "value": "Set the allowed area for all of this platform's associated machines."
+   },
+   {
+    "key": "PipeSystem_MarkedToTransferContent",
+    "value": "Transfering content to other available storages..."
+   },
+   {
+    "key": "Outposts.Settings.RaidDifficulty",
+    "value": "Global Raid Difficulty Multiplier: {0}"
+   },
+   {
+    "key": "VFEMechStopMachine",
+    "value": "Stop machine"
+   },
+   {
+    "key": "VRE_MoreInfoInInfoScreen",
+    "value": "More information is available on this feratype's information screen."
+   },
+   {
+    "key": "Outposts.NotSkilledEnough",
+    "value": "Pawns are not skilled enough, need a cumulative {0} skill of at least {1}"
+   },
+   {
+    "key": "IP_InsertFourthItemDesc",
+    "value": "Insert"
+   },
+   {
+    "key": "CSGTitle",
+    "value": "Custom structure generation:"
+   },
+   {
+    "key": "VPE_BeautyByWeeds",
+    "value": "Beauty because of weeds: {0}"
+   },
+   {
+    "key": "VCE_WaterNearby",
+    "value": "A body of water nearby is impeding this plant's growth"
+   },
+   {
+    "key": "IP_GenericProductFinished",
+    "value": "A product has finished processing and is waiting for pickup"
+   },
+   {
+    "key": "VanillaFactionsExpanded.AllFactionsIncludingHidden",
+    "value": "All factions including hidden"
+   },
+   {
+    "key": "VFE_PleaseSelectOutput",
+    "value": "Select machine output"
+   },
+   {
+    "key": "PipeSystem_OrNet",
+    "value": "or {0} net"
+   },
+   {
+    "key": "VEF.TimeLeft",
+    "value": "Time remaining:"
+   },
+   {
+    "key": "KCSG.Remove",
+    "value": "Remove"
+   },
+   {
+    "key": "VFEMechReconstruct",
+    "value": "Needed to rebuild machine:"
+   },
+   {
+    "key": "IP_ItRains",
+    "value": "The process in this machine is being interrupted due to inclement weather and will be spoiled soon"
+   },
+   {
+    "key": "PipeSystem_NothingToRefill",
+    "value": "No thing to refill {0}"
+   },
+   {
+    "key": "MVCF.Settings.LogLevel.Important",
+    "value": "Important"
+   },
+   {
+    "key": "VPE_ReplantFlower",
+    "value": "Replant"
+   },
+   {
+    "key": "IP_RemoveProduct",
+    "value": "Remove {0} ({1})"
+   },
+   {
+    "key": "Outposts.Commands.Pack.Label",
+    "value": "Pack"
+   },
+   {
+    "key": "IP_WrongTemp",
+    "value": "The process in this machine is being interrupted due to an unsuitable temperature and will be spoiled soon"
+   },
+   {
+    "key": "VFE_ChooseGraphicDesc",
+    "value": "Choose Graphic of this building via a menu with all available options"
+   },
+   {
+    "key": "MVCF.ToggleUsing",
+    "value": "Toggle using {0} automatically"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionSettlementsToSpawn",
+    "value": "Settlements to spawn (recommended are {0}): {1}"
+   },
+   {
+    "key": "VEF.TotalMarketValueRange_Quality",
+    "value": "Market value range (by quality)"
+   },
+   {
+    "key": "IP_InsertVariableThird",
+    "value": "Insert {0} in 3rd slot"
+   },
+   {
+    "key": "Outposts.Commands.TakeItems.Desc",
+    "value": "Take items from {0} and add them to the caravan"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_LetterDescIllegalGift",
+    "value": "{FACTION_name} caught wind that you have been gifting {ILLEGALTHING_label} to {ILLEGALFACTION_name} behind their back. They consider it to be against the law, and your relations have degraded"
+   },
+   {
+    "key": "VEF.ChooseNumberOfUnits",
+    "value": "How many of that unit do you want to have?"
+   },
+   {
+    "key": "VGE_EggPregnancyLabel",
+    "value": "{0} fertilized!"
+   },
+   {
+    "key": "VEF.Factions.Contraband_Booze_GiftWarning",
+    "value": "Gifting {ILLEGALTHING_label} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+   },
+   {
+    "key": "IP_OverThreshold",
+    "value": "Waiting for output to clear. Output limit is {0}"
+   },
+   {
+    "key": "PipeSystem_NothingToPickUp",
+    "value": "Nothing to pick-up"
+   },
+   {
+    "key": "Outposts.Commands.TakeItems.Label",
+    "value": "Take items"
+   },
+   {
+    "key": "VanillaFactionsExpanded.FactionMinDistance",
+    "value": "The minimum distance from player bases (recommended are {0}): {1}"
+   },
+   {
+    "key": "VPE_ExtractFlower_Desc",
+    "value": "Extract this flower while keeping it alive, so that it can be replanted elsewhere."
+   },
+   {
+    "key": "VFEA.AbilityDisableReasonGeneral",
+    "value": "{0} doesn't meet the requirements"
+   },
+   {
+    "key": "VRE_AnimalGenes",
+    "value": "Animal genes"
+   },
+   {
+    "key": "VFEA.TargetMustBeHostile",
+    "value": "Target must be hostile"
+   },
+   {
+    "key": "VEF.Shields.ResetModSettingsToDefault",
+    "value": "Reset mod settings to default"
+   },
+   {
+    "key": "VCE_InEquator",
+    "value": "In equatorial region, growing 30% faster."
+   },
+   {
+    "key": "VRE_SpecializedGeneDesc",
+    "value": "This gene is only inherited by offspring whose feratype contains a gene from this family."
+   },
+   {
+    "key": "VCE_BlinkMechanicsOption",
+    "value": "Allow \"blink\" mechanics (for example, Skiphounds)"
+   },
+   {
+    "key": "IP_SetAutoQuality",
+    "value": "Set quality for product extraction. When the product reaches this quality, a colonist will automatically retrieve it and carry it to an stockpile if available. If not set, products will be extracted manually, or at Legendary quality."
+   },
+   {
+    "key": "VPE_MinifiedFlowerWillDieIn",
+    "value": "Extracted flower will die in {time} unless replanted."
+   },
+   {
+    "key": "VPE_FlowerIsBlooming",
+    "value": "Flower is blooming"
+   },
+   {
+    "key": "Outposts.Settings.DoRaids",
+    "value": "Enable Outpost Raids?"
+   },
+   {
+    "key": "VRE_StabilityDesc",
+    "value": "Stability represents the complexity of an animal's genetic code and affecting predictability of gene inheritance.\\n\\nHigh stability ensures offspring typically inherit the average of their parents' genes, whereas low stability increases the likelihood that offspring will deviate from parental traits towards the natural median."
+   },
+   {
+    "key": "Outposts.TooClose",
+    "value": "Too close to settlement or other outpost, must have at least 1 tile between them."
+   },
+   {
+    "key": "VFE.ChangeVisualLabel",
+    "value": "Change visual"
+   },
+   {
+    "key": "VEF_DisableDigging",
+    "value": "Disable digging for food"
+   },
+   {
+    "key": "PipeSystem_PasteProcesses",
+    "value": "Paste processes"
+   },
+   {
+    "key": "VPE_BloomTemperatureMax",
+    "value": "Maximum bloom temperature"
+   },
+   {
+    "key": "Outposts.Letters.Lost.Text",
+    "value": "Regretfully, due to the deaths of all inhabitants, the outpost of {0} has been lost to us."
+   },
+   {
+    "key": "VEF_DisableCorpseDecayingDesc",
+    "value": "Disable the constant corpse decaying ability of this animal."
+   },
+   {
+    "key": "IP_FilledWithFourth",
+    "value": "{0}'s 4th slot is filled with {1}"
+   },
+   {
+    "key": "PipeSystem_QualitySelector",
+    "value": "Select the quality at which this process will stop"
+   },
+   {
+    "key": "VFEMechForceRechargeDesc",
+    "value": "Order the associated machine to return to this platform for charging, regardless of its current battery level."
+   },
+   {
+    "key": "PipeSystem_MakeProcess",
+    "value": "Make {0}"
+   },
+   {
+    "key": "VPE_CancelExtractFlower",
+    "value": "Cancel extraction"
+   },
+   {
+    "key": "VEF.Factions.FactionDef_Description_Positives",
+    "value": "Positive goodwill from trading {0}"
+   },
+   {
+    "key": "VEF.HuntDescription",
+    "value": "While this is on characters will automatically move to engage nearby targets.\\n\\nYou can right-click this button to toggle autofire for ALL abilities on the selected pawn."
+   },
+   {
+    "key": "VEF.CustomizationTitle",
+    "value": "{0} Customization"
+   },
+   {
+    "key": "VPE_BloomTemperatureMin_Desc",
+    "value": "The minimum temperature the plant will need to enter a blooming stage.\\n\\n{0}"
+   },
+   {
+    "key": "VFE_ChunkToMine",
+    "value": "Drill for {0}"
+   }
+  ],
+  "rimloc_only": [
+   {
+    "key": "VEF_FoodCapacityMultiplier.label",
+    "value": "body food capacity multiplier"
+   },
+   {
+    "key": "PS_DrainOutOfStorage.label",
+    "value": "drain out of storage"
+   },
+   {
+    "key": "KCSG_PowerConduit.description",
+    "value": "A burried bundle of electrical cables for moving power around."
+   },
+   {
+    "key": "VEF_RemoveWeeds.reportString",
+    "value": "removing weeds."
+   },
+   {
+    "key": "VFE_Mechanoids_AttachTurret.reportString",
+    "value": "attaching turret."
+   },
+   {
+    "key": "BetterReload.reportString",
+    "value": "reloading TargetA."
+   },
+   {
+    "key": "VEF_RemoveWeeds.label",
+    "value": "remove weeds"
+   },
+   {
+    "key": "VFEP_HypothermicSlowdown.stages.li.label",
+    "value": "minor"
+   },
+   {
+    "key": "KCSG_UndergroundRoom.description",
+    "value": "An underground room."
+   },
+   {
+    "key": "VEF_AnimalResource.label",
+    "value": "gather animal resource"
+   },
+   {
+    "key": "IP_RemoveProduct.label",
+    "value": "removing finished product"
+   },
+   {
+    "key": "VEF_PermanentBurn.deathMessage",
+    "value": "{0} has been killed by burning."
+   },
+   {
+    "key": "Mote_Smoketrail.label",
+    "value": "Mote"
+   },
+   {
+    "key": "VEF_NegativeThoughtDurationFactor.label",
+    "value": "thought duration factor - negative"
+   },
+   {
+    "key": "VEF_BodySize_Multiplier.label",
+    "value": "body size multiplier"
+   },
+   {
+    "key": "VEF_FleeAndCowerShort.reportString",
+    "value": "fleeing."
+   },
+   {
+    "key": "VEF_AnimalProductYieldFactor.description",
+    "value": "A multiplier on the amount of special animal products produced by this animal."
+   },
+   {
+    "key": "VEF_CosmeticBodySize_Offset.label",
+    "value": "cosmetic body size offset"
+   },
+   {
+    "key": "VEF_MeleeAttackDamageFactor.description",
+    "value": "A multiplier on melee attack damage."
+   },
+   {
+    "key": "VEF_PrefabBorderBlue.label",
+    "value": "prefab border (blue)"
+   },
+   {
+    "key": "VEF_EnergyShieldRadiusBuilding.description",
+    "value": "The radius of the energy shield protection."
+   },
+   {
+    "key": "VEF_FactoryHeatPerSecondFactor.description",
+    "value": "A multiplier on the heat per second produced by a factory."
+   },
+   {
+    "key": "VEF_AcidBuildup.stages.li.label",
+    "value": "minor, receiving burns"
+   },
+   {
+    "key": "VEF_EnergyShieldRechargeRatePawn.description",
+    "value": "The rate at which a shield gains energy as long as it is not broken."
+   },
+   {
+    "key": "VEF_HeatstrokeBuildupMultiplier.label",
+    "value": "Heatstroke buildup multiplier"
+   },
+   {
+    "key": "VEF_PawnRenderPosOffset.description",
+    "value": "Modifies the pawn's rendered position in y-axis."
+   },
+   {
+    "key": "VEF_ExtractFlower.reportString",
+    "value": "extracting a flower."
+   },
+   {
+    "key": "IP_InsertSecondIngredient.label",
+    "value": "bringing ingredient"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxApparel.label",
+    "value": "shield max energy"
+   },
+   {
+    "key": "VEF_EnergyShieldRechargeRateApparel.label",
+    "value": "shield recharge rate"
+   },
+   {
+    "key": "VEF_PrefabBorderGreen.label",
+    "value": "prefab border (green)"
+   },
+   {
+    "key": "VEF_EnergyShieldRadiusPawn.label",
+    "value": "shield radius"
+   },
+   {
+    "key": "VEF_RangedCooldownFactor.description",
+    "value": "The cooldown on ranged weapons of the wearer is multiplied by this value."
+   },
+   {
+    "key": "VEF_IngestWeird.reportString",
+    "value": "consuming TargetA."
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxFactor.description",
+    "value": "Factor of the maximum shield energy that the user can boost through various means."
+   },
+   {
+    "key": "VEF_BodySize_Multiplier.description",
+    "value": "Increases the size of the pawn by a multiple of their current size"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxApparel.description",
+    "value": "The maximum energy a shield generator can have at one time. More energy absorbs more damage."
+   },
+   {
+    "key": "VEF_Art_ConstructFinishFrames.label",
+    "value": "construct placed frames"
+   },
+   {
+    "key": "IP_InsertFirstIngredient.reportString",
+    "value": "inserting ingredient."
+   },
+   {
+    "key": "VFE_Loot.reportString",
+    "value": "looting TargetA."
+   },
+   {
+    "key": "VEF_MTBLovinFactor.label",
+    "value": "MTB Lovin Factor"
+   },
+   {
+    "key": "VEF_NullTerrain.label",
+    "value": "null terrain"
+   },
+   {
+    "key": "VEF_VerbRangeFactor.description",
+    "value": "The range on weapons is multiplied by this value."
+   },
+   {
+    "key": "VFE_Mechanoids_Power.label",
+    "value": "power"
+   },
+   {
+    "key": "KCSG_EnnemiesPresence.label",
+    "value": "enemies present"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxPawn.description",
+    "value": "The maximum energy a shield generator can have at one time. More energy absorbs more damage."
+   },
+   {
+    "key": "VFEC_Shields.label",
+    "value": "shields"
+   },
+   {
+    "key": "PS_DrainFromMarkedStorage.reportString",
+    "value": "draining out of TargetA."
+   },
+   {
+    "key": "VEF_SecondaryAcidBurn.label",
+    "value": "acid burn"
+   },
+   {
+    "key": "VEF_NegativeThoughtDurationFactor.description",
+    "value": "The duration of negative thoughts is multiplied by this value."
+   },
+   {
+    "key": "VEF_PawnRenderPosOffset.label",
+    "value": "pawn render offset"
+   },
+   {
+    "key": "KCSG_UndergroundRoom.label",
+    "value": "underground room"
+   },
+   {
+    "key": "VEF_PermanentBurn.label",
+    "value": "permanent burn"
+   },
+   {
+    "key": "KCSG_EnnemiesPresence.description",
+    "value": "Enemies are present in this place."
+   },
+   {
+    "key": "VEF_ControlledInvisibility.label",
+    "value": "controlled invisibility"
+   },
+   {
+    "key": "VFE_Mechanoids_Recharge.reportString",
+    "value": "recharging."
+   },
+   {
+    "key": "VEF_PrefabBorderRed.label",
+    "value": "prefab border (red)"
+   },
+   {
+    "key": "VEF_RefuelSecondary.reportString",
+    "value": "refueling TargetA with ammunition."
+   },
+   {
+    "key": "VEF_MassCarryCapacity.description",
+    "value": "Total mass carrying capacity of the pawn in caravans."
+   },
+   {
+    "key": "MVCF_Dummy.label",
+    "value": "dummy"
+   },
+   {
+    "key": "VEF_PositiveThoughtDurationFactor.description",
+    "value": "The duration of positive thoughts is multiplied by this value."
+   },
+   {
+    "key": "VEF_EnergyShieldRadiusApparel.description",
+    "value": "The area covered when the energy shield is active."
+   },
+   {
+    "key": "Mote_GreenSmoketrail.label",
+    "value": "Mote"
+   },
+   {
+    "key": "VEF_ControlledDetonation.description",
+    "value": "Willingly trigger a powerful self-destructive explosion, sacrificing this animal in a final act that unleashes all stored volatile compounds in a devastating blast."
+   },
+   {
+    "key": "VEF_EnergyShieldRechargeRateApparel.description",
+    "value": "The rate at which a shield gains energy as long as it is not broken."
+   },
+   {
+    "key": "VEF_ControlledDetonation.label",
+    "value": "controlled detonation"
+   },
+   {
+    "key": "VEF_VerbCooldownFactor.description",
+    "value": "The cooldown on weapons is multiplied by this value."
+   },
+   {
+    "key": "VEF_CustomizeItem.reportString",
+    "value": "customizing TargetA."
+   },
+   {
+    "key": "VEF_BuildingBreakdownFactor.description",
+    "value": "A multiplier on how often this building breaks down."
+   },
+   {
+    "key": "VEF_RangedDodgeChance.label",
+    "value": "ranged dodge chance"
+   },
+   {
+    "key": "VFE_StudyBuilding.reportString",
+    "value": "studying TargetA."
+   },
+   {
+    "key": "VEF_RefuelSecondary.label",
+    "value": "refuel ammunition"
+   },
+   {
+    "key": "PS_FillStorage.label",
+    "value": "fill storage"
+   },
+   {
+    "key": "VEF_MeleeAttackDamageFactor.label",
+    "value": "melee attack damage factor"
+   },
+   {
+    "key": "VEF_AutoNutrition.reportString",
+    "value": "eating."
+   },
+   {
+    "key": "Unload.reportString",
+    "value": "unloading TargetA."
+   },
+   {
+    "key": "VEF_LightSustenance.stages.li.label",
+    "value": "adequate light"
+   },
+   {
+    "key": "VEF_ExtractFlower.label",
+    "value": "extract flower"
+   },
+   {
+    "key": "VFEC_LeaveMap.reportString",
+    "value": "leaving."
+   },
+   {
+    "key": "VEF_GaussProjectileDamageModifier.label",
+    "value": "piercing damage modifier"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxOffset.label",
+    "value": "Shield max energy offset"
+   },
+   {
+    "key": "VEF_RangedDodgeChance.description",
+    "value": "Chance to dodge a ranged attack that would've otherwise hit, or (if negative) get hit by a ranged attack that was meant for a different target."
+   },
+   {
+    "key": "VEF_EnergyShieldRadiusApparel.label",
+    "value": "shield radius"
+   },
+   {
+    "key": "VEF_HeatstrokeBuildupMultiplier.description",
+    "value": "A factor on how fast heatstroke will be gained."
+   },
+   {
+    "key": "VEF_RangeAttackDamageFactor.description",
+    "value": "A multiplier on range attack damage."
+   },
+   {
+    "key": "VEF_MeleeAttackSpeedFactor.label",
+    "value": "melee attack speed factor"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxBuilding.label",
+    "value": "shield max energy"
+   },
+   {
+    "key": "VEF_FoodCapacityMultiplier.description",
+    "value": "Increases the size of the pawn's hunger bar. This does not affect hunger"
+   },
+   {
+    "key": "VEF_OutpostDeliverySpot.label",
+    "value": "outpost delivery spot"
+   },
+   {
+    "key": "VEF_OutpostDeliverySpot.description",
+    "value": "Designates a spot for items from outposts to be delivered to."
+   },
+   {
+    "key": "VEF_CosmeticBodySize_Multiplier.label",
+    "value": "cosmetic body size multiplier"
+   },
+   {
+    "key": "VEF_SecondaryAcidBurn.deathMessage",
+    "value": "{0} has been corroded to death."
+   },
+   {
+    "key": "VEF_MeleeAttackSpeedFactor.description",
+    "value": "A multiplier on melee attack speed."
+   },
+   {
+    "key": "VEF_PrefabBorderWhite.label",
+    "value": "prefab border (white)"
+   },
+   {
+    "key": "VEF_Kamikaze.stages.li.label",
+    "value": "initial-hidden"
+   },
+   {
+    "key": "VEF_ToxicBuildup.stages.li.label",
+    "value": "initial"
+   },
+   {
+    "key": "VEF_ReloadWeaponTrait.reportString",
+    "value": "reloading TargetA."
+   },
+   {
+    "key": "VEF_GaussProjectileDamageModifier.description",
+    "value": "How much the damage dealt is modified (as a percentage of the base damage) for each previously hit target."
+   },
+   {
+    "key": "VEF_Art_ConstructDeliverResourcesToFrames.label",
+    "value": "deliver resources to frames"
+   },
+   {
+    "key": "VEF_ControlledBlinking.label",
+    "value": "controlled blinking"
+   },
+   {
+    "key": "VEF_MeleeWeaponRange.label",
+    "value": "melee weapon range"
+   },
+   {
+    "key": "VEF_NeutralThoughtDurationFactor.description",
+    "value": "The duration of neutral thoughts is multiplied by this value."
+   },
+   {
+    "key": "VFEA_StandAndFaceTarget.reportString",
+    "value": "standing."
+   },
+   {
+    "key": "VEF_VerbCooldownFactor.label",
+    "value": "verb cooldown factor"
+   },
+   {
+    "key": "VEF_AnimalResource.reportString",
+    "value": "gathering animal resource from TargetA."
+   },
+   {
+    "key": "VEF_AnimalProductYieldFactor.label",
+    "value": "animal product yield factor"
+   },
+   {
+    "key": "VEF_BuildingMaxOverclockFactor.label",
+    "value": "maximum overclock factor"
+   },
+   {
+    "key": "VEF_MeleeWeaponRange.description",
+    "value": "The range of this melee weapon."
+   },
+   {
+    "key": "VEF_GrowthPointMultiplier.description",
+    "value": "Increases the amount of growth points accumulated by children when learning"
+   },
+   {
+    "key": "MVCF_Dummy.description",
+    "value": "no"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxPawn.label",
+    "value": "shield max energy"
+   },
+   {
+    "key": "VEF_MassCarryCapacity.label",
+    "value": "Mass carry capacity"
+   },
+   {
+    "key": "VEF_MTBLovinFactor.description",
+    "value": "A factor of the mean time between (MTB) this person looking for some lovin'."
+   },
+   {
+    "key": "VEF_VerbRangeFactor.label",
+    "value": "verb range factor"
+   },
+   {
+    "key": "PS_PickUpProcessor.reportString",
+    "value": "picking up from TargetA."
+   },
+   {
+    "key": "IP_InsertThirdIngredient.label",
+    "value": "bringing ingredient"
+   },
+   {
+    "key": "VEF_BodySize_Offset.description",
+    "value": "Increases the size of the pawn relative to their current size"
+   },
+   {
+    "key": "VEF_AnimalProductIntervalFactor.label",
+    "value": "animal product interval factor"
+   },
+   {
+    "key": "VEF_PrefabBorderYellow.label",
+    "value": "prefab border (yellow)"
+   },
+   {
+    "key": "VEF_BuildingLearningRateOffset.label",
+    "value": "learning rate"
+   },
+   {
+    "key": "IP_InsertThirdIngredient.reportString",
+    "value": "inserting ingredient."
+   },
+   {
+    "key": "Mote_Firetrail.label",
+    "value": "Mote"
+   },
+   {
+    "key": "PS_BringToProcessor.label",
+    "value": "bring ingredient to processor"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxOffset.description",
+    "value": "Offset of the maximum shield energy that the user can boost through various means."
+   },
+   {
+    "key": "VEF_ControlledBlinking.description",
+    "value": "Override the creature's usual erratic blinking, allowing a directed way to blink to a chosen location within range."
+   },
+   {
+    "key": "VEF_EnergyShieldRadiusBuilding.label",
+    "value": "shield radius"
+   },
+   {
+    "key": "VEF_BuildingMaxOverclockFactor.description",
+    "value": "A multiplier on the maximum possible overclock of a factory."
+   },
+   {
+    "key": "VFE_Mechanoids_Power.description",
+    "value": "Power represents the state of a machine's internal battery. If it gets too low, the machine will stop performing tasks and return to its station to recharge."
+   },
+   {
+    "key": "VEF_EnergyShieldRechargeRateBuilding.description",
+    "value": "The rate at which the shield recharges energy per second, as long as it is not broken."
+   },
+   {
+    "key": "KCSG_PowerConduit.label",
+    "value": "power conduit"
+   },
+   {
+    "key": "IP_InsertFirstIngredient.label",
+    "value": "bringing ingredient"
+   },
+   {
+    "key": "VEF_GrowthPointMultiplier.label",
+    "value": "growth point multiplier"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxFactor.label",
+    "value": "Shield max energy factor"
+   },
+   {
+    "key": "VEF_LayExplodingEgg.reportString",
+    "value": "laying egg."
+   },
+   {
+    "key": "VEF_FactoryHeatPerSecondFactor.label",
+    "value": "heat per second factor"
+   },
+   {
+    "key": "VFE_Loot.label",
+    "value": "loot objects"
+   },
+   {
+    "key": "PS_BringToProcessor.reportString",
+    "value": "bringing TargetB to TargetA."
+   },
+   {
+    "key": "PS_FillStorage.reportString",
+    "value": "filling TargetA."
+   },
+   {
+    "key": "VEF_RangeAttackSpeedFactor.description",
+    "value": "A multiplier on range attack speed."
+   },
+   {
+    "key": "VEF_DestroyItem.reportString",
+    "value": "destroying an item."
+   },
+   {
+    "key": "VEF_ControlledInvisibility.description",
+    "value": "Shroud the animal in a veil of controlled invisibility, vanishing from sight while retaining full awareness and precision."
+   },
+   {
+    "key": "VPEF_MinifiedFlower.label",
+    "value": "minified flower"
+   },
+   {
+    "key": "VFEC_EquipShield.reportString",
+    "value": "equipping TargetA."
+   },
+   {
+    "key": "VEF_PositiveThoughtDurationFactor.label",
+    "value": "thought duration factor - positive"
+   },
+   {
+    "key": "VEF_NeutralThoughtDurationFactor.label",
+    "value": "thought duration factor - neutral"
+   },
+   {
+    "key": "VEF_CosmeticBodySize_Offset.description",
+    "value": "Increases the size of the pawn relative to their current size"
+   },
+   {
+    "key": "PS_PickUpProcessor.label",
+    "value": "pick up result from processor"
+   },
+   {
+    "key": "VEF_CosmeticBodySize_Multiplier.description",
+    "value": "Increases the size of the pawn by a multiple of their current size"
+   },
+   {
+    "key": "VFE_StudyBuilding.label",
+    "value": "study a building"
+   },
+   {
+    "key": "VEF_DestroyItems.label",
+    "value": "destroy items"
+   },
+   {
+    "key": "VEF_Art_ConstructDeliverResourcesToBlueprints.label",
+    "value": "deliver resources to blueprints"
+   },
+   {
+    "key": "VEF_AnimalProductIntervalFactor.description",
+    "value": "A multiplier on the interval of time needed for this animal to produce special animal products."
+   },
+   {
+    "key": "ReloadFromInventory.reportString",
+    "value": "reloading TargetA."
+   },
+   {
+    "key": "KCSG_GoToPassage.reportString",
+    "value": "entering TargetA."
+   },
+   {
+    "key": "VFE_Mechanoids_RepairMachine.reportString",
+    "value": "rebuilding machine."
+   },
+   {
+    "key": "VEF_UseDoorTeleporter.reportString",
+    "value": "using TargetA to teleport to TargetB"
+   },
+   {
+    "key": "VEF_BuildingBreakdownFactor.label",
+    "value": "breakdown factor"
+   },
+   {
+    "key": "Mote_FTSmoketrail.label",
+    "value": "Mote"
+   },
+   {
+    "key": "VEF_BodySize_Offset.label",
+    "value": "body size offset"
+   },
+   {
+    "key": "IP_InsertSecondIngredient.reportString",
+    "value": "inserting ingredient."
+   },
+   {
+    "key": "VEF_XenophobicRage.label",
+    "value": "xenophobic rage"
+   },
+   {
+    "key": "VEF_EnergyShieldRadiusPawn.description",
+    "value": "The area covered when the energy shield is active."
+   },
+   {
+    "key": "VEF_EnergyShieldRechargeRatePawn.label",
+    "value": "shield recharge rate"
+   },
+   {
+    "key": "VEF_EnergyShieldRechargeRateBuilding.label",
+    "value": "shield recharge rate"
+   },
+   {
+    "key": "VEF_RangeAttackSpeedFactor.label",
+    "value": "range attack speed factor"
+   },
+   {
+    "key": "VEF_RangedCooldownFactor.label",
+    "value": "ranged cooldown factor"
+   },
+   {
+    "key": "VEF_EnergyShieldEnergyMaxBuilding.description",
+    "value": "The maximum energy the shield can have. More energy allows the shield to absorb more damage."
+   },
+   {
+    "key": "VEF_RangeAttackDamageFactor.label",
+    "value": "range attack damage factor"
+   },
+   {
+    "key": "IP_RemoveProduct.reportString",
+    "value": "removing finished product."
+   },
+   {
+    "key": "VEF_BuildingLearningRateOffset.description",
+    "value": "A multiplier on how quickly children learn during lessons which are assisted by this."
+   },
+   {
+    "key": "VEF_HeadSize_Cosmetic.label",
+    "value": "head size multiplier"
+   }
+  ],
+  "rimtrans_only": [],
+  "semantic_difference": []
+ },
+ "3242000764": {
+  "rimloc_english_total": 40,
+  "rimtrans_total": 0,
+  "both": [],
+  "rimloc_only": [
+   {
+    "key": "AnomalyPatch_DisableDisturbingVision",
+    "value": "Disable disturbing vision letter"
+   },
+   {
+    "key": "AnomalyPatch_InhumanPregnancyAttitude",
+    "value": "Inhumanized pawns don't care when their pregnancy is terminated"
+   },
+   {
+    "key": "AnomalyPatch_CreepjoinerBodyTypeFix",
+    "value": "Female creepjoiners erroneously have male body type"
+   },
+   {
+    "key": "AnomalyPatch_NoResearchSelected",
+    "value": "No Anomaly research project active"
+   },
+   {
+    "key": "AnomalyPatch_AvoidDreadLeather",
+    "value": "Pawns avoid dread leather apparel if they don't like it"
+   },
+   {
+    "key": "AnomalyPatch_Age",
+    "value": "Age"
+   },
+   {
+    "key": "AnomalyPatch_Study",
+    "value": "Study, suppression, and containment"
+   },
+   {
+    "key": "AnomalyPatch_StopSuppression",
+    "value": "Allow pawns to stop suppressing obelisk activity before target level reached"
+   },
+   {
+    "key": "AnomalyPatch_DeadGhoulsInColonistBar",
+    "value": "Show ghouls in colonist bar even while dead or in a caravan"
+   },
+   {
+    "key": "AnomalyPatch_RitualDialogSorting",
+    "value": "Sort pawns by psychic sensitivity in psychic ritual dialog"
+   },
+   {
+    "key": "AnomalyPatch_Reverse",
+    "value": "Reverse"
+   },
+   {
+    "key": "AnomalyPatch_DeathPallResurrectionSound",
+    "value": "Death pall resurrection messages are silent"
+   },
+   {
+    "key": "AnomalyPatch_DontBlockPrisonDoors",
+    "value": "Also don't perform work in a prison doorway"
+   },
+   {
+    "key": "AnomalyPatch_FoodPriority",
+    "value": "Prioritize twisted meat for caravaning ghouls and animals"
+   },
+   {
+    "key": "AnomalyPatch_HorrorMusic",
+    "value": "Pit gates don't cause horror/combat music to play unless you're in them"
+   },
+   {
+    "key": "AnomalyPatch_CharacterHighlighting",
+    "value": "Show silhouettes even in unnatural darkness"
+   },
+   {
+    "key": "AnomalyPatch_RitualTargetsDontNeedRescue",
+    "value": "Suppress \"Colonist needs rescue\" alert for psychic ritual targets"
+   },
+   {
+    "key": "AnomalyPatch_BugFix",
+    "value": "Bug fix"
+   },
+   {
+    "key": "AnomalyPatch_ForbidMonolithCorpses",
+    "value": "Automatically forbid corpses spawned around monolith"
+   },
+   {
+    "key": "AnomalyPatch_DontBlockDoors",
+    "value": "Don't perform work in a containment cell doorway"
+   },
+   {
+    "key": "AnomalyPatch_Misc",
+    "value": "Miscellaneous"
+   },
+   {
+    "key": "AnomalyPatch_Incidents",
+    "value": "Anomaly incidents"
+   },
+   {
+    "key": "AnomalyPatch_ExtractBioferriteByDefault",
+    "value": "Enable manual bioferrite extraction on entities by default when no bioferrite extractor exists"
+   },
+   {
+    "key": "AnomalyPatch_Rituals",
+    "value": "Psychic rituals"
+   },
+   {
+    "key": "AnomalyPatch_SortBy",
+    "value": "Sort by:"
+   },
+   {
+    "key": "AnomalyPatch_AtmosphericHeaterFactor",
+    "value": "Disable \"Need warm clothes\" alert with atmospheric heater"
+   },
+   {
+    "key": "AnomalyPatch_PsychicRitualZoning",
+    "value": "Adhere to zone restrictions while preparing for psychic rituals"
+   },
+   {
+    "key": "AnomalyPatch_LabyrinthClosing",
+    "value": "Forbid items from the labyrinth outside the home area"
+   },
+   {
+    "key": "AnomalyPatch_NoProjectNoStudy",
+    "value": "Don't do dark study without an anomaly research project active"
+   },
+   {
+    "key": "AnomalyPatch_Entities",
+    "value": "Dark entities"
+   },
+   {
+    "key": "AnomalyPatch_RestartRequired",
+    "value": "(requires restart)"
+   },
+   {
+    "key": "AnomalyPatch_CreepJoinerLove",
+    "value": "Allow creepjoiners to romance non-creepjoiners and vice versa"
+   },
+   {
+    "key": "AnomalyPatch_DevourerWaterAssaultFix",
+    "value": "Void provocation can silently fail on devourer water assault"
+   },
+   {
+    "key": "AnomalyPatch_DangerousActivityLevels",
+    "value": "Show highest obelisk activity level in multiple alert"
+   },
+   {
+    "key": "AnomalyPatch_StudyAndSuppressByDefault",
+    "value": "Enable study and suppression of entities by default"
+   },
+   {
+    "key": "AnomalyPatch_DontHideStats",
+    "value": "Don't hide entity stats"
+   },
+   {
+    "key": "AnomalyPatch_GhoulHunting",
+    "value": "Allow ghouls to hunt prey on their own"
+   },
+   {
+    "key": "AnomalyPatch_UnnaturalDarknessMapFix",
+    "value": "Certain Anomaly incidents can generate using threat points from one map but spawn on another"
+   },
+   {
+    "key": "AnomalyPatch_HoldingPlatformAlert",
+    "value": "Disable holding platforms needed alert"
+   },
+   {
+    "key": "AnomalyPatch_BioferriteHarvesterMultipleSelection",
+    "value": "Show total bioferrite contained with multiple harvesters selected"
+   }
+  ],
+  "rimtrans_only": [],
+  "semantic_difference": []
+ }
+}

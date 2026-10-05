@@ -2,6 +2,7 @@
 
 Research: 2026-10-05, GitHub API. 14 verified + 3 new = 17 инструментов.
 Полный отчёт субагента — в evidence директории.
+**Актуальное состояние (прогоны + discovery) — в секции «Реконсиляция 2026-10-05» внизу и в `TIER_A_COMPLETION_MATRIX_2026-10.md` (24 строки).**
 
 ## Ключевые выводы
 - Три имени-омонима RimTrans — разные родословные (не форки)
@@ -41,3 +42,45 @@ Research: 2026-10-05, GitHub API. 14 verified + 3 new = 17 инструмент�
 | NicoriciN89 | — | Офлайн MT | — | — |
 | Grabber GUI | — | MT fallback chain | — | — |
 | Mod Toolkit | — | Терминология | — | — |
+
+---
+
+## Реконсиляция 2026-10-05
+
+Полная матрица завершённости с прогонами — **`TIER_A_COMPLETION_MATRIX_2026-10.md`** (24 строки, без пропусков). Дифф-отчёты wave 2/3 — в `differential/`. Ниже — синхронизация этого списка с результатами практических прогонов и discovery; история таблицы выше сохранена как есть.
+
+### Классификации по словарю статусов (итог)
+- **PRACTICALLY_RUN — 8**: Text Grabber (ev.5), RimLangKit (ev.6, ядро), RimTrans RimWorld-zh (ev.6, extractor), RimTranslate (ev.5), Translation Forge (ev.5), laskinss27 (ev.5, локальные стадии), NicoriciN89 (ev.5, scanner/patches), RimWorldAiTranslator (ev.6, ядро+их тесты 45/82 PASS).
+- **BLOCKED_PLATFORM — 3**: RimTrans Aironsoft (net461 + Assembly-CSharp.dll с Windows-HintPath, 22×CS0246), inkitter (net45 WinForms, без лицензии), Mod Translation Toolkit (pwsh+WPF отсутствуют).
+- **BLOCKED_DEPENDENCY — 1**: JalapenoLabs (единственная функция — платный OpenAI-вызов).
+- **SOURCE_CONFIRMED_ONLY — 4**: Remis (ev.2, threat HIGH — НЕ запускался, вне объёма wave 3), RimTrans_PY (ev.2, новый), etejasdgjjjj532 (ev.2), TokcDK (ev.2).
+- **DOC_ONLY — 4**: Grabber GUI (ev.1), RimTransAI (ev.1), AutonomoAI (ev.1, кода нет), rtl-tools (ev.1, новый).
+- **NOT_MATERIALLY_RELEVANT — 4**: kelvinauta, rwmt (ложное срабатывание), lenhare (новый), Ludeon workflow (не тул).
+- **IDENTITY_UNRESOLVED — 0.**
+
+### Same-corpus: 8 из 24 прогнаны, NOT DONE — 16
+Дифф-корзины (BOTH/RIMLOC_ONLY/COMPETITOR_ONLY/SEMANTIC) получены для: Text Grabber (1031/4/364/6), RimLangKit (286/1452/49/6), RimTrans-zh (664/370/12/4), RimTranslate (HugsLib: 71/163*/7/4), Translation Forge (Defs-слой VE: 196/0/6), NicoriciN89 (патч-фокус: 0 у RimLoc против 54 игроку-видимых), laskinss27 (181/83/1701/72), RWAT (709/325/7/4). Остальные 16 — см. матрицу §2: 7 feasible (Remis, Grabber GUI, RimTransAI, RimTrans_PY, etejasdgjjjj532, TokcDK, rtl-tools — очередь следующего practical-wave), 3 блокировка платформой, 1 блокировка зависимостью, 5 «не за чем/нечего запускать».
+
+### Топ-находки против RimLoc (все подтверждены прогонами)
+1. **MUST_FIX: патч-слой пуст** — learn-patches=0 и scan --with-patches Δ=0 на 3170653412 (25 патч-файлов), у конкурентов 54–163 строки; нужен полевой blacklist (урок N89: 46% шума).
+2. **MUST_FIX: msgid-разметка** — `&lt;b&gt;…` → `b…/b` (4 ключа HugsLib; независимо нашли 3 лейна; RimTrans/RWAT возвращают корректно).
+3. **HIGH**: дефолтный промах Defs вне version-папок (чинится `--defs-dir`, проверено 61 записью); дыры словаря (`all_fields` построен и не используется, `lib.rs:1501-1505`); мост learn-defs→export-po; индексированные стадии; фильтр чисел/цветов; баг `is_version_directory` на числовых workshop-id (probe-подтверждён).
+
+### Исправления фактов в таблице выше
+| Было | Стало (прогоны 2026-10-05) |
+|---|---|
+| RimTrans (RimWorld-zh): «C# WPF» | master — lerna-монорепо, ядро **TypeScript** (`@rimtrans/extractor`); C# WPF — legacy-тег v0.18.2.6; форков **23**, код мёртв с 2020-01 (dependabot до 2022-12) |
+| RimTrans (Aironsoft): «самостоятельный наследник, не форк» | **форк старой C#-линии duduluu** (MIT © duduluu, README-атрибуция на RimWorld-zh/RimTrans), все коммиты за один день |
+| RimWorldAiTranslator: «46 тест-файлов» | измерено **42** .cs в tests/ |
+| RimTrans (inkitter): v1.0 (2017) | последний коммит **2017-05-16**, лицензии нет — подтверждено |
+| kelvinauta: «DeepL API» | подтверждено: index.js 97 строк, DeepL-only, 3 тега, лицензии нет |
+| Grabber GUI: MIT; RimTransAI: GPL-3.0 | подтверждено чтением файлов LICENSE (API-детект GitHub отдаёт null) |
+
+### Новые строки (discovery 2026-10-05: `gh search repos` ×4 запроса + `gh api` по кандидатурам)
+| # | Инструмент | Репо | Лицензия | Язык | Активность | Суть |
+|---|---|---|---|---|---|---|
+| N4 | RimTrans_PY | masakitenchi/RimTrans_PY | MIT (LICENSE прочитан) | Python | спит с 2024-08 | **третье независимое подтверждение патч-линии**: полные `<value>`-дефы из PatchOperationAdd c фильтром abstract + LoadFolders с IfActive/IfNotActive; SOURCE_CONFIRMED_ONLY |
+| N5 | rimworld-rtl-translation-tools | mtimoustafa/rimworld-rtl-translation-tools | НЕТ | Ruby | спит с 2024-05 | пост-обработка RTL (контекстуализация арабских букв, реверс) — заметка для RTL-роадмапа RimLoc; DOC_ONLY |
+| N6 | RimWorldTranslationTool | lenhare/RimWorldTranslationTool | НЕТ | Python | мёртв (1 день, 2024-07) | Google Cloud Translate + **закоммиченный google_credentials.json** — анти-паттерн; NOT_MATERIALLY_RELEVANT |
+
+Footnote (не тула): `BetterRimworlds/Rimworld-Urdu` — контент-репо «via Autonomo AI» (подтверждает активность закрытого пайплайна AutonomoAI); остальные находки поиска — контент-репо и мёртвый шум (см. матрицу §5).
