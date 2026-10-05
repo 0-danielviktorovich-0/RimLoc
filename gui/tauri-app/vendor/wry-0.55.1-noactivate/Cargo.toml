@@ -422,3 +422,8 @@ check-cfg = [
     "cfg(linux)",
     "cfg(gtk)",
 ]
+
+# Vendored fork: third-party code, patched locally (noactivate). Warnings here
+# are upstream concerns and must not fail the workspace -D warnings gate.
+[lints.rust]
+warnings = "allow"
