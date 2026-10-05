@@ -45,7 +45,14 @@ import type {
   TmUpsertRequestDto,
   TmUpsertResponseDto,
   TranslationIntentDto,
-  ValidateProjectResponseDto
+  ValidateProjectResponseDto,
+  ProviderInstanceDeleteRequestDto,
+  ProviderInstanceDeleteResponseDto,
+  ProviderInstanceListResponseDto,
+  ProviderInstanceUpsertRequestDto,
+  ProviderInstanceUpsertResponseDto,
+  ProviderInstanceValidateRequestDto,
+  ProviderInstanceValidateResponseDto
 } from './types';
 import { UI_CONTRACT_VERSION } from './types';
 import {
@@ -287,6 +294,37 @@ export class RimLocClient {
    *  exact → normalized → bounded fuzzy, best-first. */
   async tmLookup(request: TmLookupRequestDto): Promise<TmLookupResponseDto> {
     return this.call('project_tm_lookup', { request });
+  }
+
+  // --- provider instances (provider/settings parity) — the TM chain
+  // repeated: typed requests, persist-before-ack, redacted by construction
+  // (the API key goes to the OS keychain and NEVER comes back). ---
+
+  /** Redacted provider-instance summaries (`has_key`, never the key). */
+  async providerInstanceList(): Promise<ProviderInstanceListResponseDto> {
+    return this.call('contract_provider_instance_list', {});
+  }
+
+  /** Create/edit one instance; `secret` (when present) is stored into the
+   *  OS keychain and never persisted to a file nor echoed back. */
+  async providerInstanceUpsert(
+    request: ProviderInstanceUpsertRequestDto
+  ): Promise<ProviderInstanceUpsertResponseDto> {
+    return this.call('contract_provider_instance_upsert', { request });
+  }
+
+  /** Remove one instance AND its keychain key (key deleted first). */
+  async providerInstanceDelete(
+    request: ProviderInstanceDeleteRequestDto
+  ): Promise<ProviderInstanceDeleteResponseDto> {
+    return this.call('contract_provider_instance_delete', { request });
+  }
+
+  /** Typed form validation — NO network call, NO keychain access. */
+  async providerInstanceValidate(
+    request: ProviderInstanceValidateRequestDto
+  ): Promise<ProviderInstanceValidateResponseDto> {
+    return this.call('contract_provider_instance_validate', { request });
   }
 
   /** Identity of the RUNNING binary (soak-hardening §1): acceptance
