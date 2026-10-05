@@ -141,7 +141,7 @@ fn export_po_emits_definj_entries_and_hint() {
     assert!(
         po.contains("Languages/English/DefInjected/ThingDef/Food.xml"),
         "po should carry the canonical DefInjected path; po head: {}",
-        &po.chars().take(800).collect::<String>()
+        po.chars().take(800).collect::<String>()
     );
 }
 
