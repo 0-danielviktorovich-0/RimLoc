@@ -25,6 +25,13 @@ fn parse_version_components(name: &str) -> Option<Vec<u32>> {
     }
     if parts.is_empty() {
         None
+    } else if parts.len() == 1 {
+        // Numeric-only names ("3242000764" — a Steam workshop id, a year,
+        // a build number) are not RimWorld game versions: legit versions
+        // carry at least one dot ("1.5", "v1.4.3"). Without this guard a
+        // workshop-id mod root short-circuits resolve_game_version_root
+        // and `--game-version 1.5` is silently ignored.
+        None
     } else {
         Some(parts)
     }
@@ -200,6 +207,44 @@ mod tests {
         assert_eq!(parse_version_components("v"), None);
         assert_eq!(parse_version_components("1..2"), None);
         assert_eq!(parse_version_components("a.b"), None);
+    }
+
+    /// Regression (diff vs Text Grabber, workshop mod 3242000764): a Steam
+    /// workshop content folder is named by its numeric workshop id. An
+    /// all-digits name has no dot-separated components, so it is not a
+    /// RimWorld game version (legit forms: `1.5`, `v1.5`, `v1.4.3`).
+    #[test]
+    fn numeric_only_name_is_not_a_version() {
+        assert_eq!(parse_version_components("3242000764"), None);
+        assert_eq!(parse_version_components("v3242000764"), None);
+        assert_eq!(parse_version_components("2026"), None);
+        assert_eq!(parse_version_components("1234567890"), None);
+        // Legit versions keep parsing
+        assert_eq!(parse_version_components("1.5"), Some(vec![1, 5]));
+        assert_eq!(parse_version_components("v1.5"), Some(vec![1, 5]));
+    }
+
+    /// The failing user scenario behind the numeric-only fix: the mod root
+    /// itself is the numeric workshop directory, `--game-version 1.5` must
+    /// resolve into `1.5/` instead of silently scanning the whole root
+    /// (which shipped 1.6 content for a 1.5 request).
+    #[test]
+    fn workshop_id_root_honors_game_version_request() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().join("3242000764");
+        fs::create_dir_all(base.join("About")).unwrap();
+        fs::create_dir_all(base.join("1.5")).unwrap();
+        fs::create_dir_all(base.join("1.6")).unwrap();
+
+        // Requested version must win over the numeric-looking root name
+        let (p, n) = resolve_game_version_root(&base, Some("1.5")).unwrap();
+        assert!(p.ends_with("1.5"), "expected …/1.5, got {}", p.display());
+        assert_eq!(n.as_deref(), Some("1.5"));
+
+        // Without a request the latest real version is picked, not the id
+        let (p2, n2) = resolve_game_version_root(&base, None).unwrap();
+        assert!(p2.ends_with("1.6"), "expected …/1.6, got {}", p2.display());
+        assert_eq!(n2.as_deref(), Some("1.6"));
     }
 
     #[test]
