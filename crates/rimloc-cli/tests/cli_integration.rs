@@ -852,7 +852,9 @@ fn import_single_file_dry_run_path() {
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
     let err = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
-    let combined = format!("{}{}", out, err);
+    // Windows announces the plan path with `\` separators; normalize so
+    // the fixture-relative needle matches the announced location itself.
+    let combined = format!("{}{}", out, err).replace('\\', "/");
     // use std::path::Path;
     let expected_rel = "Languages/Russian/Keyed/_Imported.xml";
     let expected_abs = fixture("test/TestMod").join(expected_rel);
@@ -1015,7 +1017,9 @@ fn supported_locales_startup_message_matches() {
         let assert = cmd.assert().success();
         let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
         let err = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
-        let combined = format!("{}{}", out, err);
+        // Windows announces the plan path with `\` separators; normalize so
+        // the fixture-relative needle matches the announced location itself.
+        let combined = format!("{}{}", out, err).replace('\\', "/");
         let clean = strip_ansi(&combined);
         if !(clean.contains("app_started")
             || clean.contains(&expected)
@@ -1180,7 +1184,9 @@ fn warn_on_unsupported_ui_lang() {
     let assert = cmd.assert().success();
     let out = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
     let err = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
-    let combined = format!("{}{}", out, err);
+    // Windows announces the plan path with `\` separators; normalize so
+    // the fixture-relative needle matches the announced location itself.
+    let combined = format!("{}{}", out, err).replace('\\', "/");
     let clean = strip_ansi(&combined);
     let ui_lang = "xx";
 
@@ -1469,13 +1475,12 @@ fn scan_for_hardcoded_user_strings_in(dir: &std::path::Path, include_tests: bool
                 if name == "target" || name.starts_with('.') {
                     continue;
                 }
-                // Skip vendored third-party code (not subject to our i18n rules)
-                let pstr = path.to_string_lossy();
-                if pstr.contains("/src-tauri/vendor/")
-                    || pstr.contains("\\src-tauri\\vendor\\")
-                    || pstr.contains("/vendor/")
-                    || pstr.contains("\\vendor\\")
-                {
+                // Skip vendored third-party code (not subject to our i18n rules).
+                // Normalized separators: on Windows the path spelling mixes
+                // `/` and `\`, and same-separator contains() missed the skip
+                // (windows CI scanned trees unix never did).
+                let pstr = path.to_string_lossy().replace('\\', "/");
+                if pstr.contains("/src-tauri/vendor/") || pstr.contains("/vendor/") {
                     continue;
                 }
                 // Skip examples/ directories: acceptance-harness examples are
@@ -1504,7 +1509,11 @@ fn scan_for_hardcoded_user_strings_in(dir: &std::path::Path, include_tests: bool
 
             // If we are scanning tests=false and this is clearly a test file path, skip
             if !include_tests {
-                let pstr = path.to_string_lossy();
+                // Normalized separators: same-separator contains() never
+                // matched the Windows `\tests\` spelling, so windows CI
+                // flagged test helpers unix never scans (test-infra bug,
+                // not a product i18n violation).
+                let pstr = path.to_string_lossy().replace('\\', "/");
                 if pstr.contains("/tests/")
                     || pstr.ends_with("_test.rs")
                     || pstr.ends_with("tests.rs")
@@ -1858,9 +1867,16 @@ fn scan_lang_json(root: &std::path::Path, args: &[&str]) -> Vec<(String, String)
         .into_iter()
         .map(|u| {
             let path = u["path"].as_str().unwrap_or_default().to_string();
-            let scope = match path.split("/Languages/").nth(1) {
-                Some(rest) => rest.split('/').next().unwrap_or_default().to_string(),
-                None => "Defs".to_string(),
+            // Separator-agnostic scope: the JSON path on Windows is spelled
+            // with `\` (possibly mixed with `/`), and a pure "/Languages/"
+            // split labeled every unit "Defs" there.
+            let segments: Vec<&str> = path.split(['/', '\\']).collect();
+            let scope = match segments
+                .iter()
+                .position(|s| s.eq_ignore_ascii_case("Languages"))
+            {
+                Some(i) if i + 1 < segments.len() => segments[i + 1].to_string(),
+                _ => "Defs".to_string(),
             };
             (scope, u["key"].as_str().unwrap_or_default().to_string())
         })
