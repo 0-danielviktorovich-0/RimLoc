@@ -1,3 +1,4 @@
+# RimLoc Codecov policy: informational baseline during pre-beta; see .github/CODECOV.md.
 codecov:
   # Coverage is intentionally informational during the pre-beta baseline period.
   # The coverage workflow itself runs tests before upload, so Codecov does not
