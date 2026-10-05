@@ -585,9 +585,7 @@ impl ProjectSessionManager {
                 {
                     // The source text is trusted inventory state (never
                     // mutated by apply_intent).
-                    if let Some(entry) =
-                        st.project.entries.iter().find(|e| e.id == intent.entry)
-                    {
+                    if let Some(entry) = st.project.entries.iter().find(|e| e.id == intent.entry) {
                         accepted_tm.push((
                             entry.text.clone(),
                             text.trim().to_string(),
@@ -905,10 +903,7 @@ impl ProjectSessionManager {
     /// filters (locale exact, status exact, case-insensitive substring over
     /// source/target). Read-only; filters never touch the filesystem, so
     /// they need no form guard (the `project_validate` precedent).
-    pub fn tm_list(
-        &self,
-        req: &TmListRequest,
-    ) -> Result<TmListResponse, ContractError> {
+    pub fn tm_list(&self, req: &TmListRequest) -> Result<TmListResponse, ContractError> {
         self.managed_path(&req.project_id)?;
         let arc = self
             .inner
@@ -956,10 +951,7 @@ impl ProjectSessionManager {
     /// status is the user's choice, `None` → ACCEPTED. Manual CRUD is
     /// explicit user intent: it may upgrade AND downgrade an existing
     /// record (the human decides).
-    pub fn tm_upsert(
-        &self,
-        req: &TmUpsertRequest,
-    ) -> Result<TmUpsertResponse, ContractError> {
+    pub fn tm_upsert(&self, req: &TmUpsertRequest) -> Result<TmUpsertResponse, ContractError> {
         self.managed_path(&req.project_id)?;
         let arc = self
             .inner
@@ -975,13 +967,12 @@ impl ProjectSessionManager {
 
         // Form validation BEFORE any state mutation: a refused write never
         // bumps the revision and never touches the disk.
-        let (source_text, target_text, target_locale) =
-            rimloc_domain::tm::validate_input(
-                &req.source_text,
-                &req.target_text,
-                &req.target_locale,
-            )
-            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let (source_text, target_text, target_locale) = rimloc_domain::tm::validate_input(
+            &req.source_text,
+            &req.target_text,
+            &req.target_locale,
+        )
+        .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
 
         let job_id: JobId = generate_operation_id();
         let status = req.status.unwrap_or(rimloc_domain::tm::TmStatus::Accepted);
@@ -1022,10 +1013,7 @@ impl ProjectSessionManager {
 
     /// `project_tm_delete` — remove one record by stable id; an unknown id
     /// is a typed refusal, never silent success.
-    pub fn tm_delete(
-        &self,
-        req: &TmDeleteRequest,
-    ) -> Result<TmDeleteResponse, ContractError> {
+    pub fn tm_delete(&self, req: &TmDeleteRequest) -> Result<TmDeleteResponse, ContractError> {
         self.managed_path(&req.project_id)?;
         let arc = self
             .inner
@@ -1077,10 +1065,7 @@ impl ProjectSessionManager {
     /// Row-level form refusals are counted in `rejected`, never fatal; a
     /// payload that parses as NEITHER JSON nor CSV is a whole-operation
     /// typed refusal.
-    pub fn tm_import(
-        &self,
-        req: &TmImportRequest,
-    ) -> Result<TmImportResponse, ContractError> {
+    pub fn tm_import(&self, req: &TmImportRequest) -> Result<TmImportResponse, ContractError> {
         self.managed_path(&req.project_id)?;
         let arc = self
             .inner
@@ -1095,9 +1080,8 @@ impl ProjectSessionManager {
         }
 
         let job_id: JobId = generate_operation_id();
-        let rows = parse_tm_rows(&req.payload, req.format).map_err(|m| {
-            ContractError::new(ContractErrorCode::ContractViolation, m)
-        })?;
+        let rows = parse_tm_rows(&req.payload, req.format)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
 
         let mut imported = 0usize;
         let mut updated = 0usize;
@@ -1173,10 +1157,7 @@ impl ProjectSessionManager {
     /// Levenshtein (threshold `max(2, len/10)` over the normalized query);
     /// best-first by tier, then distance, then trust rank, then stable
     /// insertion order.
-    pub fn tm_lookup(
-        &self,
-        req: &TmLookupRequest,
-    ) -> Result<TmLookupResponse, ContractError> {
+    pub fn tm_lookup(&self, req: &TmLookupRequest) -> Result<TmLookupResponse, ContractError> {
         self.managed_path(&req.project_id)?;
         let arc = self
             .inner
@@ -2636,9 +2617,7 @@ fn tm_ranked_matches(
             scored.push((1, 0, e.status.rank(), *i));
             continue;
         }
-        if let Some(d) =
-            rimloc_domain::tm::bounded_levenshtein(&nq, &normalized, threshold)
-        {
+        if let Some(d) = rimloc_domain::tm::bounded_levenshtein(&nq, &normalized, threshold) {
             scored.push((2, d, e.status.rank(), *i));
         }
     }
@@ -3649,12 +3628,7 @@ mod tests {
         two_types_mod(&mod_root);
         let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
         let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
-        (
-            dir,
-            mgr,
-            snap.project_id,
-            snap.session_epoch,
-        )
+        (dir, mgr, snap.project_id, snap.session_epoch)
     }
 
     /// C = manual CRUD: upsert mints a MANUAL record (default ACCEPTED),
@@ -3667,9 +3641,19 @@ mod tests {
         let (_dir, mgr, pid, epoch) = tm_fixture();
 
         let res = mgr
-            .tm_upsert(&tm_upsert_req(&pid, epoch, "  Save game ", "Сохранить игру", "Russian", None))
+            .tm_upsert(&tm_upsert_req(
+                &pid,
+                epoch,
+                "  Save game ",
+                "Сохранить игру",
+                "Russian",
+                None,
+            ))
             .unwrap();
-        assert_eq!(res.entry.provenance, rimloc_domain::tm::TmProvenance::Manual);
+        assert_eq!(
+            res.entry.provenance,
+            rimloc_domain::tm::TmProvenance::Manual
+        );
         assert_eq!(res.entry.status, rimloc_domain::tm::TmStatus::Accepted);
         assert_eq!(res.revision, 2);
         let id = res.entry.id.clone();
@@ -3703,7 +3687,12 @@ mod tests {
         let mgr2 = ProjectSessionManager::new(mgr.managed_root()).unwrap();
         let snap2 = mgr2.open(&pid).unwrap();
         let list = mgr2
-            .tm_list(&tm_list_req(&pid, snap2.session_epoch, Some("Russian"), None))
+            .tm_list(&tm_list_req(
+                &pid,
+                snap2.session_epoch,
+                Some("Russian"),
+                None,
+            ))
             .unwrap();
         assert_eq!(list.total, 1);
         assert_eq!(list.entries.len(), 1);
@@ -3732,10 +3721,24 @@ mod tests {
     #[test]
     fn tm_locale_isolation_in_lookup_and_list() {
         let (_dir, mgr, pid, epoch) = tm_fixture();
-        mgr.tm_upsert(&tm_upsert_req(&pid, epoch, "Save game", "Сохранить игру", "Russian", None))
-            .unwrap();
-        mgr.tm_upsert(&tm_upsert_req(&pid, epoch, "Save game", "Sauvegarder", "French", None))
-            .unwrap();
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "Save game",
+            "Сохранить игру",
+            "Russian",
+            None,
+        ))
+        .unwrap();
+        mgr.tm_upsert(&tm_upsert_req(
+            &pid,
+            epoch,
+            "Save game",
+            "Sauvegarder",
+            "French",
+            None,
+        ))
+        .unwrap();
 
         let ru = mgr
             .tm_lookup(&tm_lookup_req(&pid, epoch, "Save game", "Russian", None))
@@ -3773,28 +3776,49 @@ mod tests {
         // Two records whose sources collide ONLY after normalization;
         // different trust ranks.
         mgr.tm_upsert(&tm_upsert_req(
-            &pid, epoch, "save  game", "сохранить (черновик)", "Russian",
+            &pid,
+            epoch,
+            "save  game",
+            "сохранить (черновик)",
+            "Russian",
             Some(rimloc_domain::tm::TmStatus::Draft),
         ))
         .unwrap();
         mgr.tm_upsert(&tm_upsert_req(
-            &pid, epoch, "Save Game", "Сохранить игру", "Russian",
+            &pid,
+            epoch,
+            "Save Game",
+            "Сохранить игру",
+            "Russian",
             Some(rimloc_domain::tm::TmStatus::Reviewed),
         ))
         .unwrap();
 
         // Normalized hit ranks the REVIEWED record first.
         let res = mgr
-            .tm_lookup(&tm_lookup_req(&pid, epoch, "  SAVE   GAME ", "Russian", None))
+            .tm_lookup(&tm_lookup_req(
+                &pid,
+                epoch,
+                "  SAVE   GAME ",
+                "Russian",
+                None,
+            ))
             .unwrap();
         assert_eq!(res.matches.len(), 2);
         assert!(res.matches.iter().all(|m| m.match_kind == "normalized"));
-        assert_eq!(res.matches[0].entry.status, rimloc_domain::tm::TmStatus::Reviewed);
+        assert_eq!(
+            res.matches[0].entry.status,
+            rimloc_domain::tm::TmStatus::Reviewed
+        );
         assert_eq!(res.matches[0].entry.target_text, "Сохранить игру");
 
         // Fuzzy within the bound ("save game" vs "save gane" = 1 edit).
         mgr.tm_upsert(&tm_upsert_req(
-            &pid, epoch, "save gane", "сохранить игрy (typo target)", "Russian",
+            &pid,
+            epoch,
+            "save gane",
+            "сохранить игрy (typo target)",
+            "Russian",
             Some(rimloc_domain::tm::TmStatus::Accepted),
         ))
         .unwrap();
@@ -3855,18 +3879,27 @@ mod tests {
         let list = mgr
             .tm_list(&tm_list_req(&pid, epoch, Some("Russian"), None))
             .unwrap();
-        let by_source: std::collections::HashMap<String, &rimloc_domain::tm::TranslationMemoryEntry> =
-            list.entries
-                .iter()
-                .map(|e| (e.source_text.clone(), e))
-                .collect();
+        let by_source: std::collections::HashMap<
+            String,
+            &rimloc_domain::tm::TranslationMemoryEntry,
+        > = list
+            .entries
+            .iter()
+            .map(|e| (e.source_text.clone(), e))
+            .collect();
         assert_eq!(
             by_source["Save game"].status,
             rimloc_domain::tm::TmStatus::Draft,
             "import without explicit status is DRAFT (never trusted blindly)"
         );
-        assert_eq!(by_source["Save game"].provenance, rimloc_domain::tm::TmProvenance::Import);
-        assert_eq!(by_source["Load game"].status, rimloc_domain::tm::TmStatus::Reviewed);
+        assert_eq!(
+            by_source["Save game"].provenance,
+            rimloc_domain::tm::TmProvenance::Import
+        );
+        assert_eq!(
+            by_source["Load game"].status,
+            rimloc_domain::tm::TmStatus::Reviewed
+        );
 
         // CSV with header + quoted fields: equal-rank DRAFT is refreshed,
         // stronger REVIEWED is skipped, a quoted comma field parses whole.
@@ -3964,7 +3997,10 @@ mod tests {
         assert_eq!(res.applied, 1);
         let l = list(&mgr, epoch);
         assert_eq!(l.entries.len(), 1);
-        assert_eq!(l.entries[0].provenance, rimloc_domain::tm::TmProvenance::Auto);
+        assert_eq!(
+            l.entries[0].provenance,
+            rimloc_domain::tm::TmProvenance::Auto
+        );
         assert_eq!(l.entries[0].status, rimloc_domain::tm::TmStatus::Accepted);
         assert_eq!(l.entries[0].source_text, "thing label");
         assert_eq!(l.entries[0].target_text, "вещь");
@@ -3989,7 +4025,12 @@ mod tests {
                 res.revision,
                 vec![
                     intent("Dup.label", "AbilityDef", None, IntentAction::MarkTodo),
-                    intent("Dup.label", "AbilityDef", None, IntentAction::ClearTranslation),
+                    intent(
+                        "Dup.label",
+                        "AbilityDef",
+                        None,
+                        IntentAction::ClearTranslation,
+                    ),
                 ],
             ))
             .unwrap();
@@ -4020,11 +4061,18 @@ mod tests {
         let l = list(&mgr, epoch);
         assert_eq!(l.entries.len(), 1);
         assert_eq!(l.entries[0].target_text, "вещь v2");
-        assert_eq!(l.entries[0].provenance, rimloc_domain::tm::TmProvenance::Auto);
+        assert_eq!(
+            l.entries[0].provenance,
+            rimloc_domain::tm::TmProvenance::Auto
+        );
 
         // A REVIEWED record is never weakened by auto-accumulation.
         mgr.tm_upsert(&tm_upsert_req(
-            pid, epoch, "thing label", "вещь (ручная)", "Russian",
+            pid,
+            epoch,
+            "thing label",
+            "вещь (ручная)",
+            "Russian",
             Some(rimloc_domain::tm::TmStatus::Reviewed),
         ))
         .unwrap();
@@ -4064,7 +4112,12 @@ mod tests {
 
         // Seed the memory with the OLD source wording.
         mgr.tm_upsert(&tm_upsert_req(
-            &pid, epoch, "assault rifle", "штурмовая винтовка", "Russian", None,
+            &pid,
+            epoch,
+            "assault rifle",
+            "штурмовая винтовка",
+            "Russian",
+            None,
         ))
         .unwrap();
 
@@ -4076,24 +4129,36 @@ mod tests {
             .unwrap();
         assert_eq!(aged.total, 1, "the old record stays, never deleted");
         assert!(mgr
-            .tm_lookup(&tm_lookup_req(&pid, epoch, "assault rifle mk2", "Russian", None))
+            .tm_lookup(&tm_lookup_req(
+                &pid,
+                epoch,
+                "assault rifle mk2",
+                "Russian",
+                None
+            ))
             .unwrap()
             .matches
             .is_empty());
         // ...within the fuzzy bound it can still surface as a hint — that
         // is the point of a memory (threshold for a 19-char query is 2;
         // "assault rifle mk2" is 4 edits away — a MISS here by design).
-        assert!(mgr
-            .tm_lookup(&tm_lookup_req(&pid, epoch, "assault rifl", "Russian", None))
-            .unwrap()
-            .matches
-            .len()
-            == 1,
-            "close typo still finds the aged record");
+        assert!(
+            mgr.tm_lookup(&tm_lookup_req(&pid, epoch, "assault rifl", "Russian", None))
+                .unwrap()
+                .matches
+                .len()
+                == 1,
+            "close typo still finds the aged record"
+        );
 
         // A different source key coexists: no merge, no overwrite.
         mgr.tm_upsert(&tm_upsert_req(
-            &pid, epoch, "assault rifle mk2", "штурмовая винтовка mk2", "Russian", None,
+            &pid,
+            epoch,
+            "assault rifle mk2",
+            "штурмовая винтовка mk2",
+            "Russian",
+            None,
         ))
         .unwrap();
         assert_eq!(
@@ -4108,7 +4173,8 @@ mod tests {
     /// aliases, and the fuzzy rank ordering.
     #[test]
     fn tm_parse_helpers_csv_json_and_ranking() {
-        let rows = parse_tm_csv_rows("source,target,locale,status\r\n\"a,\"\"b\"\",c\",d,Russian,\r\n");
+        let rows =
+            parse_tm_csv_rows("source,target,locale,status\r\n\"a,\"\"b\"\",c\",d,Russian,\r\n");
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].source, "a,\"b\",c");
         assert_eq!(rows[0].target, "d");
@@ -4140,17 +4206,20 @@ mod tests {
             provenance: TmProvenance::Manual,
         };
         let tm = vec![
-            mk("d1", "save gane", TmStatus::Reviewed),   // fuzzy d=1
-            mk("n1", "Save Game", TmStatus::Draft),      // normalized
-            mk("n2", "save  game", TmStatus::Reviewed),  // normalized, ranked
-            mk("f1", "save_game", TmStatus::Accepted),   // fuzzy d=1
+            mk("d1", "save gane", TmStatus::Reviewed),  // fuzzy d=1
+            mk("n1", "Save Game", TmStatus::Draft),     // normalized
+            mk("n2", "save  game", TmStatus::Reviewed), // normalized, ranked
+            mk("f1", "save_game", TmStatus::Accepted),  // fuzzy d=1
         ];
         let matches = tm_ranked_matches(&tm, "save game", "Russian", 10);
         assert_eq!(matches[0].entry.id, "n2", "normalized reviewed first");
         assert_eq!(matches[1].entry.id, "n1", "normalized draft second");
         // Fuzzy d=1 pair: rank breaks the tie (Accepted over Reviewed is
         // WRONG — reviewed wins).
-        assert_eq!(matches[2].entry.id, "d1", "fuzzy reviewed outranks accepted");
+        assert_eq!(
+            matches[2].entry.id, "d1",
+            "fuzzy reviewed outranks accepted"
+        );
         assert_eq!(matches[2].distance, Some(1));
         assert_eq!(matches[3].entry.id, "f1");
     }

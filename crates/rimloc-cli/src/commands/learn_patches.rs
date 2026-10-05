@@ -63,7 +63,8 @@ pub fn run_learn_patches(
         // Same guard as the JSON output above; the canonical `sug` parent
         // replaces the raw `out_dir` for mkdir, so staging happens next to
         // the real destination, not next to a symlinked spelling of it.
-        let sug = rimloc_services::resolve_cli_out_path(&out_dir.join("_SuggestedFromPatches.xml"))?;
+        let sug =
+            rimloc_services::resolve_cli_out_path(&out_dir.join("_SuggestedFromPatches.xml"))?;
         let sug = rimloc_services::ensure_free_output_path(&sug, &[])?;
         let out_dir = sug
             .parent()

@@ -819,8 +819,7 @@ mod tests {
         let v = serde_json::to_value(&entry).unwrap();
         assert_eq!(v["status"], "draft");
         assert_eq!(v["provenance"], "import");
-        let back: rimloc_domain::tm::TranslationMemoryEntry =
-            serde_json::from_value(v).unwrap();
+        let back: rimloc_domain::tm::TranslationMemoryEntry = serde_json::from_value(v).unwrap();
         assert_eq!(back, entry);
 
         let req = TmLookupRequest {
