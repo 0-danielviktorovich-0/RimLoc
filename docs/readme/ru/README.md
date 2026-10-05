@@ -13,6 +13,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml"><img src="https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://codecov.io/gh/0-danielviktorovich-0/RimLoc"><img src="https://codecov.io/gh/0-danielviktorovich-0/RimLoc/branch/main/graph/badge.svg" alt="Codecov" /></a>
+  <a href="https://0-danielviktorovich-0.github.io/RimLoc/ru/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs" /></a>
+  <a href="../../../LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0" /></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/sponsors/0-danielviktorovich-0"><img src="https://img.shields.io/badge/Sponsor-GitHub-%23ea4aaa?logo=github-sponsors" alt="GitHub Sponsors" /></a>
   <a href="https://buymeacoffee.com/danielviktorovich"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" /></a>
   <a href="https://ko-fi.com/danielviktorovich"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
