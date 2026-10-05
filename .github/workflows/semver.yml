@@ -64,7 +64,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
       - name: Install cargo-public-api
-        run: cargo install cargo-public-api --locked
+        run: |
+          # cargo-public-api строит rustdoc-json через nightly rustc — без
+          # nightly падает «toolchain nightly is not installed» (лог PR #60).
+          rustup toolchain install nightly --profile minimal
+          cargo install cargo-public-api --locked
       # Человекочитаемый слепок публичного API к published-крейтам. Информационный:
       # изменения API ловит gating-джоба cargo-semver-checks выше. Флаг
       # --diff-git-branch не существует в upstream cargo-public-api (лог PR #60:
