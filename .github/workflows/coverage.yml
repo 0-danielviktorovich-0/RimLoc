@@ -1,6 +1,13 @@
 name: coverage
 
 on:
+  push:
+    branches: [main, feature/ui-r1-convergence]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
   pull_request:
     branches: [main, feature/ui-r1-convergence]
     paths-ignore:
@@ -13,14 +20,34 @@ on:
 permissions:
   contents: read
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
 concurrency:
-  group: coverage-${{ github.ref }}
+  group: coverage-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  rust:
-    name: Rust coverage
+  config:
+    name: Validate Codecov config
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Validate codecov.yml
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --data-binary @codecov.yml \
+            https://codecov.io/validate
+
+  rust:
+    name: Rust workspace coverage
+    needs: config
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write
@@ -42,14 +69,92 @@ jobs:
 
       - name: Generate LCOV report
         run: |
-          cargo llvm-cov             --workspace             --all-features             --exclude rimloc-gui             --lcov             --output-path lcov.info
+          cargo llvm-cov \
+            --workspace \
+            --all-features \
+            --exclude rimloc-gui \
+            --lcov \
+            --output-path lcov.info
 
-      - name: Upload coverage to Codecov
+      - name: Upload Rust coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          use_oidc: true
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
           files: ./lcov.info
           disable_search: true
+          disable_telem: true
+          cleanup: true
           flags: rust
           name: rust-workspace
+          fail_ci_if_error: true
+
+  gui-rust:
+    name: Desktop Rust / Tauri coverage
+    needs: config
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 2
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: |
+            .
+            gui/tauri-app/src-tauri
+
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      # The Tauri base config still embeds the frozen fallback during the
+      # convergence period. Build its dist only as a compile/test prerequisite;
+      # this does not make it the production frontend.
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-v2/package-lock.json
+
+      - name: Build Tauri frontend prerequisite
+        working-directory: gui/tauri-app/frontend-v2
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@183e4297cca2404691e9380e1307288dced5c82a # v2.87.25
+        with:
+          tool: cargo-llvm-cov@0.9.1
+
+      - name: Generate desktop Rust LCOV report
+        run: |
+          cargo llvm-cov \
+            --manifest-path gui/tauri-app/src-tauri/Cargo.toml \
+            --lcov \
+            --output-path gui-rust-lcov.info
+
+      - name: Upload desktop Rust coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          files: ./gui-rust-lcov.info
+          disable_search: true
+          disable_telem: true
+          cleanup: true
+          flags: gui-rust
+          name: desktop-rust
           fail_ci_if_error: true
