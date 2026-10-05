@@ -1826,8 +1826,13 @@ mod tests {
 
         let bundle_dir = tmp.path().join("bundle");
         // Build the adversarial home path from the REAL home so the rewrite
-        // is exercised on the machine running the test.
-        let real_home = std::env::var("HOME").unwrap_or_else(|_| "/Users/someone".to_string());
+        // is exercised on the machine running the test. Resolved the same
+        // way the Sanitizer does it (HOME, then USERPROFILE on Windows) —
+        // a unix-only fallback would plant a path that is NOT the real home
+        // there, and the rewrite would legitimately not fire.
+        let real_home = home_dir()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "/Users/someone".to_string());
         let adversarial_home = format!("{real_home}/secretplace");
         let meta = ProjectMeta {
             name: Some("Test".into()),
@@ -2061,8 +2066,11 @@ mod tests {
         let bundle_dir = tmp.path().join("bundle");
 
         // Adversarial values built from the REAL home so the normalization
-        // is exercised on the machine running the test.
-        let real_home = std::env::var("HOME").unwrap_or_else(|_| "/Users/demo".to_string());
+        // is exercised on the machine running the test. Resolved the same
+        // way the Sanitizer does it (HOME, then USERPROFILE on Windows).
+        let real_home = home_dir()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "/Users/demo".to_string());
         let compound_path = format!("{real_home}/mod/Defs/a.xml");
 
         // rw_version is a WHOLE-value secret — must be redacted by the
