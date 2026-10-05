@@ -986,8 +986,9 @@ pub struct TmImportRequest {
     pub format: Option<TmImportFormat>,
 }
 
-/// Import payload format. Auto-detect: a payload whose first non-space
-/// byte is `[` parses as JSON, else as CSV.
+/// Import payload format. Auto-detect: a payload whose first byte is `[`
+/// or `{` parses as JSON (so broken JSON is a typed refusal, never a
+/// garbage CSV row), else as CSV.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TmImportFormat {
