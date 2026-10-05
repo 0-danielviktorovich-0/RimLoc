@@ -1443,6 +1443,12 @@ fn scan_for_hardcoded_user_strings_in(dir: &std::path::Path, include_tests: bool
             if path.extension().and_then(|s| s.to_str()) != Some("rs") {
                 continue;
             }
+            // Skip cargo build scripts: `println!("cargo:…")` inside build.rs is
+            // the build protocol spoken to cargo itself (rerun-if-changed,
+            // rustc-env), machine-facing by construction — not product UI.
+            if path.file_name().and_then(|s| s.to_str()) == Some("build.rs") {
+                continue;
+            }
             // Skip this very test file to avoid flagging the forbidden_macros definition itself
             if path.file_name().and_then(|s| s.to_str()) == Some("cli_integration.rs") {
                 continue;
