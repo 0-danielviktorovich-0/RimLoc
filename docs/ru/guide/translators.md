@@ -1,132 +1,115 @@
 ---
-title: Для переводчиков — пошагово
+title: Для переводчиков
 ---
 
-# Перевод мода с RimLoc (без стресса) 🎯
+# Перевод RimWorld-проекта с RimLoc
 
-!!! tip "Ищете короткий пошаговый гайд?"
-    Рекомендуем начать с "Начало работы": ../getting-started.md и туториалов:
-    - ../tutorials/translate_mod.md — с нуля
-    - ../tutorials/export_po.md — только экспорт в .po
-    - ../tutorials/update_translations.md — обновление готового перевода
+Здесь описан рабочий путь переводчика. Знать RimWorld XML не обязательно, и **PO тоже не обязателен**, если вы не хотите работать через внешний CAT.
 
+## Рекомендуемый путь: desktop project
 
-Эта страница объясняет, как перевести мод даже без опыта работы с терминалом. Короткие шаги, команды для копирования, простые пояснения.
+### 1. Выберите источник
 
-[:material-download: Установка](../install.md){ .md-button .md-button--primary }
-[:material-play-circle: Запуск скачанной сборки](../install_run.md){ .md-button }
-[:material-github: Релизы на GitHub](https://github.com/0-danielviktorovich-0/RimLoc/releases){ .md-button }
+Создайте новый проект или откройте/обновите существующий перевод.
 
-Что мы сделаем:
-- Просканируем мод и найдём строки для перевода
-- Экспортируем единый .po для Poedit (или любого редактора PO)
-- Проверим плейсхолдеры (чтобы не сломать строки)
-- Импортируем переводы обратно в XML
-- Соберём отдельный мод‑перевод для теста в игре
+Выберите поддерживаемый текущей сборкой RimWorld source type (например мод или existing translation). RimLoc строит канонический inventory источника.
 
-Как получить RimLoc CLI (выберите один вариант)
-- Вариант A — Скачать готовую сборку (рекомендуется): откройте страницу Установка и следуйте гайду запуска.
-  - Гайд: Установка → Запуск скачанной сборки.
-  - Windows: запускайте из папки `.\\rimloc-cli`; macOS/Linux: `./rimloc-cli`.
-- Вариант B — Установка через Cargo (нужен Rust):
-  - Поставьте Rust: https://www.rust-lang.org/tools/install
-  - Затем: `cargo install rimloc-cli`
+### 2. Выберите target language
 
-Зачем это знать?
-- Если вы скачали релизную или dev‑сборку, вам НЕ нужны Rust и Cargo.
-- В обоих случаях команда одна и та же: `rimloc-cli`.
+Один проект может хранить несколько target locale. Переключение языка не должно перетирать перевод другого locale.
 
-Простым языком (микро‑глоссарий)
-- Терминал: окно, где выполняются команды. Windows → PowerShell; macOS → Terminal; Linux → любой терминал.
-- Корень мода: верхняя папка мода (ту, что копируют в RimWorld `Mods/`).
-- PO‑файл: один файл перевода с парами «исходник → перевод», открывается в Poedit.
-- Плейсхолдер: кусочки вроде `%d`, `%s`, `{NAME}` — их нельзя менять; RimLoc умеет проверять их.
-- Dry‑run: безопасный прогон без изменений — показывает план действий.
+### 3. Переводите в редакторе
 
-Сделать RimLoc удобнее (рекомендуется)
-Почему это помогает?
-- Конфиг `rimloc.toml` экономит ввод флагов: RimLoc подставляет дефолты за вас. Создайте файл рядом с модом. Минимум:
+В workspace доступны по мере текущих capabilities:
 
-```
-source_lang = "English"
-target_lang = "Russian"
-game_version = "1.5"
-list_limit = 100
-```
+- source/target;
+- контекст и source information;
+- status/review;
+- glossary;
+- TM suggestions;
+- validation findings.
 
-Шаг 1 — Выберите папку мода 📁
-- Пример пути: `C:/RimMods/MyCoolMod` (Windows) или `~/RimMods/MyCoolMod` (Linux/macOS)
-Зачем?
-- Командам нужен корневой каталог мода, чтобы найти папки `Languages/*` и XML‑файлы `Keyed`/`DefInjected`.
+Для обычного сценария перевод не обязан покидать RimLoc.
 
-Шаг 2 — Сканирование и проверка 🔎✅
-```
-rimloc-cli scan --root "C:/RimMods/MyCoolMod" --format json > scan.json
-rimloc-cli validate --root "C:/RimMods/MyCoolMod"
-```
-Зачем два шага?
-- `scan` просто перечисляет всё, что подлежит переводу (можно сохранить в `scan.json` и посмотреть глазами).
-- `validate` заранее показывает типичные проблемы: пустые строки, дубликаты ключей и подозрительные плейсхолдеры. Это экономит время и снижает риск «сломать» перевод.
+### 4. Validation перед сборкой
 
-Шаг 3 — Экспорт .po 📤📝
-```
-rimloc-cli export-po --root "C:/RimMods/MyCoolMod" --out-po "C:/RimMods/MyCoolMod.ru.po" --lang ru
-```
-Откройте .po в Poedit и переводите. Сохраняйте плейсхолдеры (`%d`, `{NAME}` и т.п.).
-Зачем?
-- Получаете один удобный файл для Poedit/локализаторов. В нём есть исходный текст и поле для перевода — не нужно бегать по множеству XML.
+Запустите Checks/validation. Особое внимание — placeholders, tags и source-changed entries.
 
-Шаг 4 — Проверка плейсхолдеров в PO (по желанию) 🧪
-```
-rimloc-cli validate-po --po "C:/RimMods/MyCoolMod.ru.po"
-```
-Зачем?
-- Плейсхолдеры (`%d`, `%s`, `{NAME}`) — «дырки», куда игра подставляет числа/имена. Если их удалить/исказить, строка сломается. Проверка ловит такие случаи до импорта.
+### 5. Безопасный build/export
 
-Шаг 5 — Импорт переводов обратно ⬅️📄
-Вариант A (один файл):
-```
-rimloc-cli import-po --po "C:/RimMods/MyCoolMod.ru.po" --out-xml "C:/RimMods/_Imported.xml" --dry-run
-rimloc-cli import-po --po "C:/RimMods/MyCoolMod.ru.po" --out-xml "C:/RimMods/_Imported.xml"
-```
-Вариант B (по структуре мода):
-```
-rimloc-cli import-po --po "C:/RimMods/MyCoolMod.ru.po" --mod-root "C:/RimMods/MyCoolMod" --lang ru --report --dry-run
-rimloc-cli import-po --po "C:/RimMods/MyCoolMod.ru.po" --mod-root "C:/RimMods/MyCoolMod" --lang ru --report
-```
+Выбирайте отдельный output-каталог. Оригинальный Workshop/game source не должен переписываться.
 
-Шаг 6 — Собрать отдельный мод‑перевод 📦
-Из .po:
-```
-rimloc-cli build-mod --po "C:/RimMods/MyCoolMod.ru.po" --out-mod "C:/RimMods/MyCoolMod_RU" --lang ru --dry-run
-rimloc-cli build-mod --po "C:/RimMods/MyCoolMod.ru.po" --out-mod "C:/RimMods/MyCoolMod_RU" --lang ru
-```
-Из готовой структуры Languages/Russian:
-```
-rimloc-cli build-mod --from-root "C:/RimMods/MyCoolMod" --out-mod "C:/RimMods/MyCoolMod_RU" --lang ru --dry-run
-rimloc-cli build-mod --from-root "C:/RimMods/MyCoolMod" --out-mod "C:/RimMods/MyCoolMod_RU" --lang ru
-```
+Перед публикацией обязательно протестируйте результат в RimWorld.
 
-Тест в игре
-- Перенесите `MyCoolMod_RU` в папку `Mods` RimWorld, включите в списке модов и выберите язык Russian.
+## Опционально: PO / внешний CAT
 
-См. также: ../glossary.md · ../tips.md · ../troubleshooting.md
-Почему это важно?
-- Только так можно увидеть, как строки выглядят «в бою»: переносы, длины, контекст. Если что-то не так — вернитесь к .po, поправьте и снова импортируйте.
+Этот путь нужен, если удобнее Poedit или другой CAT.
 
-Подсказки, если терминал пугает
-- Копируйте команды как есть; пути берём в кавычки "...".
-- Windows: PowerShell; macOS: Terminal; Linux: любой терминал.
-- Добавляйте `--dry-run`, чтобы сначала посмотреть план без изменений.
+Экспорт:
 
-Вопросы и ответы
-- «rimloc-cli не найден»
-  - Устанавливали через Cargo: откройте новый терминал или проверьте PATH (`~/.cargo/bin`, в Windows `%USERPROFILE%\\.cargo\\bin`).
-  - Скачивали релиз: запускайте из папки, куда распаковали — `.\\rimloc-cli` (Windows) или `./rimloc-cli` (macOS/Linux), либо добавьте папку в PATH.
-- «Плейсхолдеры не совпадают» — исправьте строку в Poedit, снова запустите `validate-po`.
-- «Нечего импортировать» — все строки пустые; используйте `--keep-empty`, если нужно заложить заглушки.
-Что выбрать и почему?
-- Вариант A — всё в `_Imported.xml`. Проще для ревью/быстрой проверки.
-- Вариант B — правильно для релиза: строки раскладываются по тем же файлам/папкам, что у оригинала. Легче сопровождать и обновлять.
-Зачем?
-- Это «упаковка» перевода в самостоятельный мод, который можно включить в игре, не меняя оригинал. Подходит для публикации и командной работы.
+~~~bash
+rimloc-cli export-po \
+  --root ./Mods/MyMod \
+  --out-po ./work/MyMod.ru.po \
+  --lang ru
+~~~
+
+Проверка:
+
+~~~bash
+rimloc-cli validate-po --po ./work/MyMod.ru.po --strict
+~~~
+
+Dry-run импорта:
+
+~~~bash
+rimloc-cli import-po \
+  --po ./work/MyMod.ru.po \
+  --mod-root ./work/MyMod-copy \
+  --lang ru \
+  --dry-run
+~~~
+
+Здесь PO — handoff/interchange format, а не база проекта RimLoc.
+
+## Сборка из готового Languages-дерева
+
+Если перевод уже существует в RimWorld XML, PO не нужен:
+
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyModTranslated \
+  --out-mod ./dist/MyMod-Russian \
+  --lang ru \
+  --dry-run
+~~~
+
+Убирайте <code>--dry-run</code> только после проверки плана.
+
+## Обновление существующего перевода
+
+При обновлении source mod важно сохранить ручную работу и различить:
+
+- unchanged;
+- source-changed;
+- new;
+- obsolete/orphan;
+- ambiguous.
+
+Используйте dedicated existing/update workflow, а не начинайте перевод заново.
+
+## Практические советы
+
+- Считайте исходные моды read-only.
+- Не переводите placeholders.
+- После bulk/import/AI изменений снова запускайте validation.
+- Проверяйте результат в игре: контекст и переносы не видны из XML.
+- AI/provider output считайте draft, пока человек его не review-нул.
+
+## См. также
+
+- [Начало работы](../getting-started.md)
+- [Desktop GUI](gui.md)
+- [Обновление перевода](../tutorials/update_translations.md)
+- [Плейсхолдеры](placeholders.md)
+- [Решение проблем](../troubleshooting.md)
