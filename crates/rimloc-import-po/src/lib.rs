@@ -525,3 +525,40 @@ mod tests {
             .contains("Languages/English/Keyed/A.xml:3"));
     }
 }
+
+#[cfg(test)]
+mod entity_escape_tests {
+    use super::*;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn rendered_xml_escapes_markup_back_to_entities() {
+        // Обратный путь export→import: распарсенная разметка `<b>...</b>`
+        // обязана вернуться в Keyed-XML как `&lt;b&gt;...&lt;/b&gt;` —
+        // валидный XML, который RimWorld снова покажет жирным.
+        let bytes = render_language_data_xml_bytes(&[(
+            "HugsLib_loadOrderWarning_text".to_string(),
+            "<b>Мод HugsLib</b> после <b>Core</b>".to_string(),
+        )])
+        .unwrap();
+        let s = String::from_utf8(bytes).unwrap();
+        assert!(
+            s.contains("<HugsLib_loadOrderWarning_text>&lt;b&gt;Мод HugsLib&lt;/b&gt; после &lt;b&gt;Core&lt;/b&gt;</HugsLib_loadOrderWarning_text>"),
+            "imported XML must re-escape markup, got: {s}"
+        );
+    }
+
+    #[test]
+    fn read_po_entries_keeps_markup_verbatim() {
+        let tmp = NamedTempFile::new().unwrap();
+        fs::write(
+            tmp.path(),
+            "#: /Mod/Languages/English/Keyed/A.xml:2\nmsgctxt \"MarkedKey|Keyed/A.xml:2\"\nmsgid \"<b>value</b> tail\"\nmsgstr \"<b>перевод</b> хвост\"\n",
+        )
+        .unwrap();
+        let entries = read_po_entries(tmp.path()).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].key, "MarkedKey");
+        assert_eq!(entries[0].value, "<b>перевод</b> хвост");
+    }
+}

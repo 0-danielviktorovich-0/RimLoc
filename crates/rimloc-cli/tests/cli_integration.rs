@@ -207,6 +207,49 @@ fn export_po_creates_file() {
 }
 
 #[test]
+fn export_po_preserves_entity_markup_in_msgid() {
+    // MUST_FIX_BEFORE_BETA №2: `&lt;b&gt;value&lt;/b&gt;` в Keyed обязан
+    // попасть в msgid распарсенной разметкой `<b>value</b>` — не `bvalue/b`
+    // (quick-xml 0.42 выносит entity в GeneralRef, сканер раньше их терял) и
+    // не `&amp;lt;` (двойной escape). Конкуренты (RimTranslate, RimTrans-zh)
+    // сохраняют разметку — теперь и RimLoc.
+    let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
+    let keyed = tmp.path().join("Languages").join("English").join("Keyed");
+    fs::create_dir_all(&keyed).unwrap();
+    fs::write(
+        keyed.join("Entities.xml"),
+        r#"<LanguageData>
+	<MarkedKey>&lt;b&gt;value&lt;/b&gt; tail</MarkedKey>
+</LanguageData>
+"#,
+    )
+    .unwrap();
+    let out_po = tmp.path().join("out.po");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["export-po", "--root"])
+        .arg(tmp.path())
+        .args(["--out-po"])
+        .arg(&out_po);
+    cmd.assert().success();
+
+    let po = fs::read_to_string(&out_po).unwrap();
+    let line = po
+        .lines()
+        .find(|l| l.starts_with("msgid \"<b>"))
+        .unwrap_or_else(|| panic!("msgid with markup not found in:\n{po}"));
+    assert_eq!(line, "msgid \"<b>value</b> tail\"");
+    assert!(
+        !po.contains("bvalue/b"),
+        "tag-stripped corruption must not return"
+    );
+    assert!(
+        !po.contains("&amp;"),
+        "double-escaped entities must not appear"
+    );
+}
+
+#[test]
 fn validate_json_emits_structured_issues() {
     use serde::Deserialize;
 

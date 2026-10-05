@@ -1,5 +1,6 @@
 pub use rimloc_core::parse_simple_po as parse_po_string;
 
+use quick_xml::events::BytesRef;
 use quick_xml::events::Event;
 use quick_xml::Reader;
 use rimloc_core::{Result as CoreResult, TransUnit};
@@ -41,6 +42,76 @@ impl Default for KeyedScanOptions {
             parallel,
             definj_drop_def_type: true,
         }
+    }
+}
+
+/// One open element in the Keyed scanner's event stack.
+struct ElementFrame {
+    name: String,
+    line: Option<usize>,
+    has_text: bool,
+    buffer: String,
+    /// Whitespace seen since the last committed chunk. Formatting indentation
+    /// is dropped unless content follows within the same value.
+    pending_ws: String,
+}
+
+/// Commit a character-data chunk into a value buffer.
+///
+/// Leading whitespace is dropped only before the first committed chunk of a
+/// value; interior whitespace runs are preserved (RimWorld shows them to the
+/// translator); trailing whitespace stays uncommitted in `pending_ws` and is
+/// dropped at the closing tag via the final trim.
+fn commit_text_chunk(
+    buffer: &mut String,
+    pending_ws: &mut String,
+    has_text: &mut bool,
+    chunk: &str,
+) {
+    if chunk.chars().all(char::is_whitespace) {
+        if !buffer.is_empty() {
+            pending_ws.push_str(chunk);
+        }
+        return;
+    }
+    if buffer.is_empty() {
+        pending_ws.clear();
+        buffer.push_str(chunk.trim_start());
+    } else {
+        let ws = std::mem::take(pending_ws);
+        buffer.push_str(&ws);
+        buffer.push_str(chunk);
+    }
+    *has_text = true;
+}
+
+/// Commit a decoded entity reference (`&lt;` -> `<`, `&#38;` -> `&`).
+/// A reference always carries content — even when it decodes to whitespace
+/// (`&#32;`) — but formatting indentation still precedes it.
+fn commit_ref_chunk(
+    buffer: &mut String,
+    pending_ws: &mut String,
+    has_text: &mut bool,
+    decoded: &str,
+) {
+    if !buffer.is_empty() {
+        let ws = std::mem::take(pending_ws);
+        buffer.push_str(&ws);
+    } else {
+        pending_ws.clear();
+    }
+    buffer.push_str(decoded);
+    *has_text = true;
+}
+
+/// Decode a `&ref;` event into its in-game text: predefined XML entities
+/// (`lt/gt/amp/quot/apos`) and numeric character references. Unknown names
+/// (custom DTD entities) are skipped — RimWorld never declares any.
+fn decode_general_ref(r: &BytesRef<'_>) -> Option<String> {
+    if r.is_char_ref() {
+        r.resolve_char_ref().ok().flatten().map(|c| c.to_string())
+    } else {
+        quick_xml::escape::resolve_xml_entity(r.xml10_content().as_ref()).map(str::to_string)
     }
 }
 
@@ -155,14 +226,13 @@ pub fn scan_keyed_xml_with_options(
         }
 
         let mut reader = Reader::from_str(&content);
-        reader.config_mut().trim_text(true);
+        // Whitespace is trimmed manually per element value: quick-xml 0.42
+        // splits character data around `&ref;` into separate Text/GeneralRef
+        // events, so reader-level trimming would eat spaces that surround an
+        // inline tag (`after &lt;b&gt;Core` -> `after<b>Core`). Those spaces
+        // are part of the translator-visible string.
+        reader.config_mut().trim_text(false);
         let mut buf = Vec::new();
-        struct ElementFrame {
-            name: String,
-            line: Option<usize>,
-            has_text: bool,
-            buffer: String,
-        }
         let mut stack: Vec<ElementFrame> = Vec::new();
 
         loop {
@@ -177,6 +247,7 @@ pub fn scan_keyed_xml_with_options(
                         line,
                         has_text: false,
                         buffer: String::new(),
+                        pending_ws: String::new(),
                     });
                 }
                 Ok(Event::End(_)) => {
@@ -203,7 +274,7 @@ pub fn scan_keyed_xml_with_options(
                                     local.push(TransUnit {
                                         tkey: None,
                                         key,
-                                        source: Some(frame.buffer.clone()),
+                                        source: Some(frame.buffer.trim().to_string()),
                                         path: p.clone(),
                                         line: frame.line,
                                         ..Default::default()
@@ -216,10 +287,13 @@ pub fn scan_keyed_xml_with_options(
                         if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
                             if let Some(parent) = stack.last_mut() {
                                 if opts.join_li_with_newline && !parent.buffer.is_empty() {
+                                    let trimmed_len = parent.buffer.trim_end().len();
+                                    parent.buffer.truncate(trimmed_len);
                                     parent.buffer.push('\n');
                                 }
-                                if !frame.buffer.is_empty() {
-                                    parent.buffer.push_str(&frame.buffer);
+                                let li_text = frame.buffer.trim();
+                                if !li_text.is_empty() {
+                                    parent.buffer.push_str(li_text);
                                     parent.has_text = true;
                                 }
                             }
@@ -229,7 +303,7 @@ pub fn scan_keyed_xml_with_options(
                         // Closing a top-level <Key> under <LanguageData>
                         if stack.len() == 1 && !frame.name.is_empty() {
                             let source = if frame.has_text {
-                                frame.buffer
+                                frame.buffer.trim().to_string()
                             } else if opts.include_empty_keys {
                                 String::new()
                             } else {
@@ -268,7 +342,7 @@ pub fn scan_keyed_xml_with_options(
                             local.push(TransUnit {
                                 tkey: None,
                                 key,
-                                source: Some(frame.buffer),
+                                source: Some(frame.buffer.trim().to_string()),
                                 path: p.clone(),
                                 line: frame.line,
                                 ..Default::default()
@@ -344,14 +418,35 @@ pub fn scan_keyed_xml_with_options(
                     }
                 }
                 Ok(Event::Text(t)) => {
-                    let text = t.xml10_content().trim().to_string();
+                    // quick-xml 0.42 carves `&ref;` out of character data and
+                    // emits it as a separate GeneralRef event, so a single
+                    // logical text run arrives as several chunks. Chunks are
+                    // committed with whitespace bookkeeping instead of a
+                    // per-chunk trim, which used to erase spaces around inline
+                    // tags and lose the tags themselves (MUST_FIX_BEFORE_BETA):
+                    // `<b>The HugsLib mod</b>` degenerated into `bThe HugsLib
+                    // mod/b`.
+                    let text = t.xml10_content().to_string();
                     if let Some(frame) = stack.last_mut() {
-                        if !text.is_empty() {
-                            // Preserve line-break semantics: if previous char is not a newline
-                            // and we're appending a new text chunk that starts with a newline,
-                            // keep it as part of buffer (quick-xml trimmed already).
-                            frame.buffer.push_str(&text);
-                            frame.has_text = true;
+                        let ElementFrame {
+                            buffer,
+                            pending_ws,
+                            has_text,
+                            ..
+                        } = frame;
+                        commit_text_chunk(buffer, pending_ws, has_text, &text);
+                    }
+                }
+                Ok(Event::GeneralRef(r)) => {
+                    if let Some(decoded) = decode_general_ref(&r) {
+                        if let Some(frame) = stack.last_mut() {
+                            let ElementFrame {
+                                buffer,
+                                pending_ws,
+                                has_text,
+                                ..
+                            } = frame;
+                            commit_ref_chunk(buffer, pending_ws, has_text, &decoded);
                         }
                     }
                 }
@@ -1004,6 +1099,11 @@ pub fn read_keyed_file_map_with_comments(
         buffer: String,
         has_text: bool,
         comment_override: Option<String>,
+        /// Whitespace seen since the last committed chunk (see
+        /// [`commit_text_chunk`]): quick-xml 0.42 splits character data around
+        /// `&ref;` into separate events, so per-chunk trimming would eat the
+        /// spaces around inline tags.
+        pending_ws: String,
     }
 
     let mut stack: Vec<Frame> = Vec::new();
@@ -1019,6 +1119,7 @@ pub fn read_keyed_file_map_with_comments(
                     buffer: String::new(),
                     has_text: false,
                     comment_override: None,
+                    pending_ws: String::new(),
                 };
                 if stack.len() == 1 {
                     // Starting a top-level key under <LanguageData>
@@ -1059,14 +1160,15 @@ pub fn read_keyed_file_map_with_comments(
                     if frame.name.eq_ignore_ascii_case("li") && stack.len() == 2 {
                         if let Some(parent) = stack.last_mut() {
                             if parent.has_text && !parent.buffer.ends_with('\n') {
+                                let trimmed_len = parent.buffer.trim_end().len();
+                                parent.buffer.truncate(trimmed_len);
                                 parent.buffer.push('\n');
                             }
-                            if !frame.buffer.is_empty() {
-                                parent.buffer.push_str(frame.buffer.trim());
-                                parent.has_text = true;
-                            } else {
-                                parent.has_text = true;
+                            let li_text = frame.buffer.trim().to_string();
+                            if !li_text.is_empty() {
+                                parent.buffer.push_str(&li_text);
                             }
+                            parent.has_text = true;
                         }
                         continue;
                     }
@@ -1098,10 +1200,26 @@ pub fn read_keyed_file_map_with_comments(
             }
             Ok(Event::Text(t)) => {
                 if let Some(frame) = stack.last_mut() {
+                    let Frame {
+                        buffer,
+                        pending_ws,
+                        has_text,
+                        ..
+                    } = frame;
                     let text = t.xml10_content().to_string();
-                    if !text.trim().is_empty() {
-                        frame.buffer.push_str(text.trim());
-                        frame.has_text = true;
+                    commit_text_chunk(buffer, pending_ws, has_text, &text);
+                }
+            }
+            Ok(Event::GeneralRef(r)) => {
+                if let Some(decoded) = decode_general_ref(&r) {
+                    if let Some(frame) = stack.last_mut() {
+                        let Frame {
+                            buffer,
+                            pending_ws,
+                            has_text,
+                            ..
+                        } = frame;
+                        commit_ref_chunk(buffer, pending_ws, has_text, &decoded);
                     }
                 }
             }
@@ -2821,5 +2939,141 @@ mod tkey_defs_dir_tests {
         assert_eq!(units.len(), 1, "{units:?}");
         assert_eq!(units[0].key, "ExtQuest.ExtKey");
         assert_eq!(units[0].tkey.as_ref().unwrap().suffix, ".slateRef");
+    }
+}
+
+#[cfg(test)]
+mod entity_escape_tests {
+    //! MUST_FIX_BEFORE_BETA: entity-разметка Keyed-значений.
+    //!
+    //! quick-xml 0.42 выносит `&lt;`/`&amp;`/`&#..;` из текста в отдельные
+    //! события `Event::GeneralRef`. Сканер молча выбрасывал их (`_ => {}`) и
+    //! тримел каждый текстовый кусок по отдельности, поэтому
+    //! `&lt;b&gt;The HugsLib mod&lt;/b&gt;` выгружалось как `bThe HugsLib
+    //! mod/b`. Эти тесты держат контракт: в TransUnit попадает ТЕКСТ ЗНАЧЕНИЯ,
+    //! как его видит переводчик в игре — с сохранённой разметкой и пробелами.
+
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write_keyed(root: &Path, body: &str) {
+        let keyed = root.join("Mods/TestMod/Languages/English/Keyed");
+        fs::create_dir_all(&keyed).unwrap();
+        fs::write(keyed.join("Entities.xml"), body).unwrap();
+    }
+
+    fn find<'a>(units: &'a [TransUnit], key: &str) -> &'a str {
+        units
+            .iter()
+            .find(|u| u.key == key)
+            .unwrap_or_else(|| {
+                panic!(
+                    "key {key} not found in {:?}",
+                    units.iter().map(|u| u.key.as_str()).collect::<Vec<_>>()
+                )
+            })
+            .source
+            .as_deref()
+            .unwrap()
+    }
+
+    #[test]
+    fn scan_keyed_preserves_entity_markup_like_hugslib() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            r#"<LanguageData>
+    <HugsLib_loadOrderWarning_text>&lt;b&gt;The HugsLib mod&lt;/b&gt; should always be loaded after &lt;b&gt;Core&lt;/b&gt; to avoid issues.\nPlease adjust your mod order in the Mods menu and restart the game.</HugsLib_loadOrderWarning_text>
+</LanguageData>
+"#,
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(
+            find(&units, "HugsLib_loadOrderWarning_text"),
+            "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game.",
+            "msgid source must carry parsed markup and surrounding spaces, not `b.../b`"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn scan_keyed_resolves_named_and_numeric_entities() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            r#"<LanguageData>
+    <Amp>a &amp; b</Amp>
+    <Quotes>&quot;q&quot; and &apos;s&apos;</Quotes>
+    <Numeric>&#65;&#x42;C</Numeric>
+    <GtCompare>1 &lt; 2 &gt; 0</GtCompare>
+</LanguageData>
+"#,
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Amp"), "a & b");
+        assert_eq!(find(&units, "Quotes"), "\"q\" and 's'");
+        assert_eq!(find(&units, "Numeric"), "ABC");
+        assert_eq!(find(&units, "GtCompare"), "1 < 2 > 0");
+        Ok(())
+    }
+
+    #[test]
+    fn scan_keyed_keeps_interior_spaces_but_drops_indentation() -> CoreResult<()> {
+        // Pretty-printed value: leading/trailing indentation is formatting,
+        // spaces around inline entities are content.
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            r#"<LanguageData>
+    <Spaced>
+        head &lt;b&gt;mid&lt;/b&gt; tail
+    </Spaced>
+</LanguageData>
+"#,
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Spaced"), "head <b>mid</b> tail");
+        Ok(())
+    }
+
+    #[test]
+    fn scan_keyed_li_fold_keeps_entities_and_newlines() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            r#"<LanguageData>
+    <Listed>Intro <li>&lt;i&gt;first&lt;/i&gt;</li><li>second</li></Listed>
+</LanguageData>
+"#,
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Listed"), "Intro\n<i>first</i>\nsecond");
+        Ok(())
+    }
+
+    #[test]
+    fn read_keyed_file_map_resolves_entities() -> CoreResult<()> {
+        let dir = tempdir()?;
+        let keyed = dir.path().join("Keyed");
+        fs::create_dir_all(&keyed)?;
+        let file = keyed.join("M.xml");
+        fs::write(
+            &file,
+            r#"<LanguageData>
+    <K1>&lt;b&gt;value&lt;/b&gt; tail</K1>
+    <K2>a &amp; b</K2>
+</LanguageData>
+"#,
+        )?;
+
+        let map = read_keyed_file_map(&file)?;
+        assert_eq!(map.get("K1").map(String::as_str), Some("<b>value</b> tail"));
+        assert_eq!(map.get("K2").map(String::as_str), Some("a & b"));
+        Ok(())
     }
 }
