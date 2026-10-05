@@ -10,7 +10,7 @@ RimLoc использует отдельные ветки/PR, чтобы code, d
 
 1. Создайте branch от актуальной integration/main линии задачи.
 2. Держите scope узким.
-3. Прочитайте [CONTRIBUTING](../../../CONTRIBUTING.md) и [AGENTS](../../../AGENTS.md), если работает coding agent.
+3. Прочитайте [CONTRIBUTING](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/CONTRIBUTING.md) и [AGENTS](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/AGENTS.md), если работает coding agent.
 4. Запустите проверки для затронутой области.
 5. При user-facing изменении обновите EN/RU docs.
 
