@@ -119,11 +119,14 @@ mod tests {
     }
 
     /// Drops the keychain entry even when an assertion fails — the test
-    /// namespace stays clean no matter how the body exits.
+    /// namespace stays clean no matter how the body exits. Нужен только
+    /// платформам с реальным бэкендом (там живёт roundtrip-тест).
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     struct Cleanup<'a> {
         service: &'a str,
         account: &'a str,
     }
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     impl Drop for Cleanup<'_> {
         fn drop(&mut self) {
             let _ = delete_secret_in(self.service, self.account);
