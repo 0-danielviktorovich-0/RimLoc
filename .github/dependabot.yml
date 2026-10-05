@@ -1,53 +1,73 @@
 version: 2
 updates:
-  # Rust workspace dependencies.
   - package-ecosystem: cargo
-    directory: "/"
-    schedule:
-      interval: daily
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - rust
-    commit-message:
-      prefix: deps
-      include: scope
-
-  # Experimental Tauri desktop application's Rust dependencies.
-  - package-ecosystem: cargo
-    directory: "/gui/tauri-app/src-tauri"
-    schedule:
-      interval: daily
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - gui
-    commit-message:
-      prefix: deps
-      include: scope
-
-  # Documentation tooling dependencies.
-  - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
-    labels:
-      - dependencies
-      - documentation
+    labels: [dependencies, rust]
     commit-message:
       prefix: deps
       include: scope
 
-  # GitHub Actions used by CI and release workflows.
+  - package-ecosystem: cargo
+    directory: "/gui/tauri-app/src-tauri"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: [dependencies, gui]
+    commit-message:
+      prefix: deps
+      include: scope
+
+  - package-ecosystem: npm
+    directory: "/gui/tauri-app/frontend-react"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      react-frontend:
+        patterns:
+          - "*"
+    labels: [dependencies, gui, react]
+    commit-message:
+      prefix: deps
+      include: scope
+
+  - package-ecosystem: npm
+    directory: "/gui/tauri-app/frontend-v2"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      svelte-fallback:
+        patterns:
+          - "*"
+    labels: [dependencies, gui]
+    commit-message:
+      prefix: deps
+      include: scope
+
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    labels: [dependencies, documentation]
+    commit-message:
+      prefix: deps
+      include: scope
+
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-      - ci
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns:
+          - "*"
+    labels: [dependencies, ci]
     commit-message:
       prefix: deps
       include: scope
