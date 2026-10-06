@@ -1,4 +1,6 @@
-use rimloc_services::extras::version_diff::{report_markdown, version_diff, VersionDiffReport};
+use rimloc_services::extras::version_diff::{
+    report_markdown, version_diff_scan, VersionDiffScanOptions,
+};
 
 pub fn run_version_diff(
     root: std::path::PathBuf,
@@ -8,32 +10,21 @@ pub fn run_version_diff(
     out_json: Option<std::path::PathBuf>,
     out_md: Option<std::path::PathBuf>,
 ) -> color_eyre::Result<()> {
-    let scan_version = |ver: &str| -> color_eyre::Result<Vec<rimloc_core::TransUnit>> {
-        let (dir, _) = crate::version::resolve_game_version_root(&root, Some(ver))?;
-        let auto = rimloc_services::autodiscover_defs_context(&dir)?;
-        let units = rimloc_services::scan_units_with_defs_and_dict(
-            &dir,
-            None,
-            &auto
-                .dict
-                .into_iter()
-                .map(|(k, v)| (k, v.into_iter().collect()))
-                .collect(),
-            &auto.extra_fields,
-        )?;
-        // Source-language units only (Defs + Languages/<source>).
-        let cfg = rimloc_config::load_config().unwrap_or_default();
-        let src_dir =
-            rimloc_import_po::rimworld_lang_dir(cfg.source_lang.as_deref().unwrap_or("English"));
-        Ok(units
-            .into_iter()
-            .filter(|u| rimloc_services::is_source_for_lang_dir(&u.path, &src_dir))
-            .collect())
-    };
-
-    let units_a = scan_version(&from)?;
-    let units_b = scan_version(&to)?;
-    let report: VersionDiffReport = version_diff(&units_a, &units_b, &from, &to);
+    // Per-version roots resolve via the standard game-version layout; the
+    // scan+filter pipeline lives in services::version_diff_scan (shared
+    // with the GUI contract_version_diff — one diff semantic everywhere).
+    let cfg = rimloc_config::load_config().unwrap_or_default();
+    let (dir_a, _) = crate::version::resolve_game_version_root(&root, Some(&from))?;
+    let (dir_b, _) = crate::version::resolve_game_version_root(&root, Some(&to))?;
+    let report = version_diff_scan(
+        &dir_a,
+        &dir_b,
+        &VersionDiffScanOptions {
+            source_lang: cfg.source_lang.clone(),
+            from_label: Some(from.clone()),
+            to_label: Some(to.clone()),
+        },
+    )?;
 
     if let Some(path) = &out_json {
         if let Some(parent) = path.parent() {

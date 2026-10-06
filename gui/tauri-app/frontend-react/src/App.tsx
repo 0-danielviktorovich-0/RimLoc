@@ -15,6 +15,7 @@ import { Glossary } from './components/Glossary'
 import { Tm } from './components/Tm'
 import { BuildExport } from './components/BuildExport'
 import { Existing } from './components/Existing'
+import { Compare } from './components/Compare'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
 import { Settings } from './components/Settings'
@@ -29,7 +30,10 @@ import { useCommandPalette, type PaletteCommand } from './lib/palette'
 // эффект курсора зависят от идентичности списка, пересоздание на каждый
 // рендер сбрасывало бы activeIndex стрелками.
 // Acceptance §3 MUST-FIX #5: маршруты existing/compare/selfloc/diagnostics/
-// providers/lm/tools не были покрыты командами — теперь полный набор.
+// providers/lm не были покрыты командами — теперь полный набор.
+// tools УДАЛЁН (W0-решение: нет продуктового определения — LIVE или удалён
+// из навигации; маршрут в Route type остаётся, hash #/tools рендерит
+// fallback как раньше).
 function buildPaletteCommands(): PaletteCommand[] {
   return [
     { id: 'entries', label: t('palette.cmd.entries'), action: () => { window.location.hash = '#/home' } },
@@ -44,7 +48,6 @@ function buildPaletteCommands(): PaletteCommand[] {
     { id: 'diagnostics', label: t('palette.cmd.diagnostics'), action: () => { window.location.hash = '#/diagnostics' } },
     { id: 'providers', label: t('palette.cmd.providers'), action: () => { window.location.hash = '#/providers' } },
     { id: 'lm', label: t('palette.cmd.lm'), action: () => { window.location.hash = '#/lm' } },
-    { id: 'tools', label: t('palette.cmd.tools'), action: () => { window.location.hash = '#/tools' } },
     { id: 'settings', label: t('palette.cmd.settings'), action: () => { window.location.hash = '#/settings' } },
   ]
 }
@@ -77,6 +80,8 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'export', label: t('nav.export'), icon: Wrench },
   // Acceptance MUST-FIX #1: LM был недостижим из UI (только ручной #/lm).
   { to: 'lm', label: t('nav.lm'), icon: Globe },
+  // tools удалён из навигации (W0): не было продуктового определения.
+  // Route 'tools' жив — внешний hash #/tools честно падает в fallback.
 ]
 
 function currentRoute(): Route {
@@ -296,6 +301,8 @@ export function App() {
             </div>
           ) : route === 'existing' ? (
             <Existing />
+          ) : route === 'compare' ? (
+            <Compare />
           ) : route === 'export' ? (
             <BuildExport />
           ) : route === 'selfloc' ? (

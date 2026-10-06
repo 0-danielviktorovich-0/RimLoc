@@ -43,7 +43,8 @@ pub use contract::{
     ContractErrorCode, CreateProjectRequest, ExistingAmbiguousItem, ExistingMatchItem,
     ImportExistingRequest, ImportExistingResponse, IntentAction, JobId, PathBufDto, ProjectId,
     ProjectSnapshot, ProjectSummary, Revision, SessionEpoch, TranslationIntent,
-    UnsupportedCapability, EXISTING_LIST_LIMIT, UI_CONTRACT_VERSION,
+    UnsupportedCapability, VersionDiffCategory, VersionDiffEntryDto, VersionDiffRequest,
+    VersionDiffResponse, EXISTING_LIST_LIMIT, UI_CONTRACT_VERSION, VERSION_DIFF_LIST_LIMIT,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
 pub use export::{export_po_from_units, export_po_with_tm};

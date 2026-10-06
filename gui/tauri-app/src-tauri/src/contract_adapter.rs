@@ -73,6 +73,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "contract_provider_instance_upsert",
     "contract_provider_instance_delete",
     "contract_provider_instance_validate",
+    // Compare screen (version diff): read-only source-inventory diff of two
+    // mod roots — stateless, no project session involved.
+    "contract_version_diff",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -573,6 +576,75 @@ pub fn project_apply_existing(
         .expect("contract session registry poisoned");
     traced_simple("project_apply_existing", || {
         manager.apply_existing(&request)
+    })
+}
+
+/// `contract_version_diff` — read-only cross-version diff of two mod roots
+/// (compare screen). Stateless: no project session, no epoch/revision —
+/// the services scan pipeline classifies new/missing/changed/unchanged per
+/// key. The adapter owns the path-FORM guards BEFORE any filesystem access
+/// (the `existing_pack_dir` partition): absolute form, directory, and
+/// never inside the managed-projects root.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_version_diff(
+    request: rimloc_services::contract::VersionDiffRequest,
+) -> Result<rimloc_services::contract::VersionDiffResponse, rimloc_services::contract::ContractError>
+{
+    use rimloc_services::contract::{ContractError, ContractErrorCode};
+    traced_simple("contract_version_diff", || {
+        let managed_root = default_managed_root();
+        let roots = [
+            ("old", std::path::PathBuf::from(&request.old_root.path)),
+            ("new", std::path::PathBuf::from(&request.new_root.path)),
+        ];
+        for (role, dir) in &roots {
+            if !dir.is_absolute() {
+                return Err(ContractError::new(
+                    ContractErrorCode::InvalidOutputPath,
+                    format!(
+                        "version diff {role} root `{}` is not absolute; specify an absolute directory",
+                        dir.display()
+                    ),
+                ));
+            }
+            if rimloc_services::is_within(dir, &managed_root) {
+                return Err(ContractError::new(
+                    ContractErrorCode::GuardOutputDenied,
+                    format!(
+                        "version diff {role} root `{}` is inside the managed projects root `{}`",
+                        dir.display(),
+                        managed_root.display()
+                    ),
+                ));
+            }
+            if !dir.is_dir() {
+                return Err(ContractError::new(
+                    ContractErrorCode::ContractViolation,
+                    format!(
+                        "version diff {role} root `{}` is not a directory",
+                        dir.display()
+                    ),
+                ));
+            }
+        }
+        let report = rimloc_services::extras::version_diff::version_diff_scan(
+            &roots[0].1,
+            &roots[1].1,
+            &rimloc_services::extras::version_diff::VersionDiffScanOptions {
+                source_lang: request.source_lang.clone(),
+                from_label: None,
+                to_label: None,
+            },
+        )
+        .map_err(|e| {
+            // The scan pipeline reports color_eyre errors; the contract
+            // surface carries them as the typed `internal` code with the
+            // (already sanitized) display text.
+            ContractError::new(ContractErrorCode::Internal, format!("{e}"))
+        })?;
+        Ok(rimloc_services::contract::VersionDiffResponse::from_report(
+            report,
+        ))
     })
 }
 

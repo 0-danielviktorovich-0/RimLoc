@@ -302,3 +302,10 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .tm-import-area .import-actions button { font-size: 10px; height: 33px; }
 .tm-import-result { font-size: 10px; color: var(--muted-foreground); }
 .tm-count { font-size: 9px; color: var(--muted-foreground); margin-bottom: 12px; }
+
+/* Compare screen (version diff): the glossary-table chrome again —
+   category / key (+ source change subline) / old file / new file. */
+.cmp-table > div { grid-template-columns: 96px minmax(0, 2.2fr) minmax(0, 1fr) minmax(0, 1fr); }
+.cmp-table > div > span { min-width: 0; overflow-wrap: anywhere; }
+.cmp-table .cmp-path { font-size: 8px; color: var(--muted-foreground); overflow-wrap: anywhere; }
+.cmp-table .cmp-source-line { display: block; margin-top: 5px; font-size: 9px; color: var(--muted-foreground); }
