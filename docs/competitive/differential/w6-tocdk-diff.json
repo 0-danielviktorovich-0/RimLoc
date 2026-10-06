@@ -1,0 +1,737 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-06",
+  "competitor": "TokcDK/RimworldModTranslator",
+  "commit": "7752a0d6d106a3b7ad4dbb975ef6342349bfb9ee",
+  "mods": {
+    "818773962": {
+      "name": "HugsLib (dll)",
+      "rimloc_records": 815,
+      "rimloc_unique_keys": 83,
+      "ready": {
+        "both": 815,
+        "competitor_only": 0,
+        "rimloc_only": 0,
+        "competitor_only_sample": [],
+        "rimloc_only_sample": []
+      },
+      "defs_extract": {
+        "both": 0,
+        "competitor_only": 7,
+        "rimloc_only": 0,
+        "competitor_only_sample": [
+          "HLOpenModSettings.label",
+          "HLOpenUpdateNews.label",
+          "HugsLibShortcuts.description",
+          "HugsLibShortcuts.label",
+          "OpenLogFile.label",
+          "PublishLogs.label",
+          "RestartRimworld.label"
+        ],
+        "rimloc_only_sample": []
+      },
+      "version_duplicates": {},
+      "tocdk_folders": [
+        "/"
+      ],
+      "tocdk_per_folder": {
+        "/": {
+          "stageA": {
+            "totalStrings": 815,
+            "subPaths": 16,
+            "perLanguage": {
+              "Korean": 49,
+              "Japanese": 82,
+              "German": 80,
+              "PortugueseBrazilian": 78,
+              "ChineseTraditional": 63,
+              "ChineseSimplified": 49,
+              "Turkish": 78,
+              "Russian": 80,
+              "French": 49,
+              "Spanish": 49,
+              "SpanishLatin": 49,
+              "English": 75,
+              "Polish": 34
+            }
+          },
+          "stageB": {
+            "totalStrings": 822,
+            "subPaths": 18,
+            "perLanguage": {
+              "Korean": 49,
+              "Japanese": 82,
+              "German": 80,
+              "PortugueseBrazilian": 78,
+              "ChineseTraditional": 63,
+              "ChineseSimplified": 49,
+              "Turkish": 78,
+              "Russian": 80,
+              "French": 49,
+              "Spanish": 49,
+              "SpanishLatin": 49,
+              "English": 75,
+              "Polish": 34,
+              "Extracted": 7
+            }
+          }
+        }
+      }
+    },
+    "3170653412": {
+      "name": "PatchOperations+LoadFolders",
+      "rimloc_records": 159,
+      "rimloc_unique_keys": 159,
+      "ready": {
+        "both": 0,
+        "competitor_only": 0,
+        "rimloc_only": 0,
+        "competitor_only_sample": [],
+        "rimloc_only_sample": []
+      },
+      "defs_extract": {
+        "both": 106,
+        "competitor_only": 2,
+        "rimloc_only": 53,
+        "competitor_only_sample": [
+          "GTF_WanderingBard.baseDesc",
+          "GTF_WanderingBard.title"
+        ],
+        "rimloc_only_sample": [
+          "GTF_AbandonedOrphan61.titleShort",
+          "GTF_Abductee43.titleShort",
+          "GTF_AdventurousYouth70.titleShort",
+          "GTF_ArmyCook0.titleShort",
+          "GTF_Aromatherapist80.titleShort",
+          "GTF_Artilleryman28.titleShort",
+          "GTF_BeastSlayer67.titleShort",
+          "GTF_Blacksmith72.titleShort",
+          "GTF_BountyHunter17.titleShort",
+          "GTF_CaravanTraveler6.titleShort",
+          "GTF_Caravaneer53.titleShort",
+          "GTF_CommonerLord45.titleShort",
+          "GTF_CriminalSurgeon99.titleShort",
+          "GTF_Delinquent13.titleShort",
+          "GTF_ExiledResearcher44.titleShort",
+          "GTF_ExoticChef96.titleShort",
+          "GTF_ExplorerWriter10.titleShort",
+          "GTF_FurnitureBuilder83.titleShort",
+          "GTF_HiredAssassin37.titleShort",
+          "GTF_Hunter73.titleShort"
+        ]
+      },
+      "version_duplicates": {},
+      "tocdk_folders": [
+        "1.4",
+        "1.5_1.6",
+        "1.5_1.6/Mods/Royalty"
+      ],
+      "tocdk_per_folder": {
+        "1.4": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 2,
+            "subPaths": 1,
+            "perLanguage": {
+              "Extracted": 2
+            }
+          }
+        },
+        "1.5_1.6": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 82,
+            "subPaths": 2,
+            "perLanguage": {
+              "Extracted": 82
+            }
+          }
+        },
+        "1.5_1.6/Mods/Royalty": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 24,
+            "subPaths": 1,
+            "perLanguage": {
+              "Extracted": 24
+            }
+          }
+        }
+      }
+    },
+    "2023507013": {
+      "name": "VE Framework 1.0-1.6",
+      "rimloc_records": 764,
+      "rimloc_unique_keys": 764,
+      "ready": {
+        "both": 592,
+        "competitor_only": 0,
+        "rimloc_only": 1,
+        "competitor_only_sample": [],
+        "rimloc_only_sample": [
+          "('English', 'Keyed/UI.xml', 'VEF.HiringDesc')"
+        ]
+      },
+      "defs_extract": {
+        "both": 162,
+        "competitor_only": 75,
+        "rimloc_only": 9,
+        "competitor_only_sample": [
+          "IP_InsertFirstIngredient.verb",
+          "IP_InsertSecondIngredient.verb",
+          "IP_InsertThirdIngredient.verb",
+          "IP_RemoveProduct.verb",
+          "PS_BringToProcessor.verb",
+          "PS_DrainOutOfStorage.verb",
+          "PS_FillStorage.verb",
+          "PS_PickUpProcessor.verb",
+          "VEF_AcidBuildup.description",
+          "VEF_AcidBuildup.label",
+          "VEF_AcidBuildup.stages.0.label",
+          "VEF_AcidBuildup.stages.1.label",
+          "VEF_AcidBuildup.stages.2.label",
+          "VEF_AcidBurn.description",
+          "VEF_AcidBurn.label",
+          "VEF_AcidBurn.labelNoun",
+          "VEF_AnimalResource.verb",
+          "VEF_Beastmastery.description",
+          "VEF_Beastmastery.label",
+          "VEF_ControlledCorpseDecay.description"
+        ],
+        "rimloc_only_sample": [
+          "Mote_FTSmoketrail.label",
+          "Mote_Firetrail.label",
+          "Mote_GreenSmoketrail.label",
+          "Mote_Smoketrail.label",
+          "VEF_AcidBuildup.stages.li.label",
+          "VEF_Kamikaze.stages.li.label",
+          "VEF_LightSustenance.stages.li.label",
+          "VEF_ToxicBuildup.stages.li.label",
+          "VFEP_HypothermicSlowdown.stages.li.label"
+        ]
+      },
+      "version_duplicates": {
+        "VEF_PermanentBurn.label": [
+          "DefInjected\\DamageDef\\DamageDefs.xml",
+          "DefInjected\\HediffDef\\Hediffs_Global_Misc.xml"
+        ],
+        "VEF_EnergyShieldRadiusApparel.description": [
+          "DefInjected\\StatDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MeleeWeaponRange.description": [
+          "DefInjected\\StatDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_RangedCooldownFactor.label": [
+          "DefInjected\\StatDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MeleeWeaponRange.label": [
+          "DefInjected\\StatDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_EnergyShieldRadiusApparel.label": [
+          "DefInjected\\StatDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_RangedCooldownFactor.description": [
+          "DefInjected\\StatDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VFE_EquippedStatFactors.label": [
+          "DefInjected\\StatCategoryDef\\Stats_WeaponsAndApparel.xml",
+          "DefInjected\\StatCategoryDef\\Stats.xml"
+        ],
+        "VEF_PawnRenderPosOffset.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_GrowthPointMultiplier.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_RangeAttackDamageFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_FoodCapacityMultiplier.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_FoodCapacityMultiplier.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_EnergyShieldEnergyMaxFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MassCarryCapacity.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_GrowthPointMultiplier.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_CosmeticBodySize_Offset.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_CosmeticBodySize_Multiplier.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_PositiveThoughtDurationFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_PawnRenderPosOffset.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_BodySize_Offset.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_EnergyShieldEnergyMaxFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_EnergyShieldEnergyMaxOffset.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MeleeAttackDamageFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MTBLovinFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_PositiveThoughtDurationFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_NegativeThoughtDurationFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_HeadSize_Cosmetic.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_BodySize_Multiplier.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_CosmeticBodySize_Multiplier.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_EnergyShieldEnergyMaxOffset.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_VerbRangeFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_RangeAttackDamageFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_BodySize_Multiplier.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_CosmeticBodySize_Offset.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MTBLovinFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_NeutralThoughtDurationFactor.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_BodySize_Offset.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_NegativeThoughtDurationFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MeleeAttackDamageFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_MassCarryCapacity.label": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_VerbRangeFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_NeutralThoughtDurationFactor.description": [
+          "DefInjected\\StatDef\\Stats_Pawns.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_BuildingLearningRateOffset.label": [
+          "DefInjected\\StatDef\\Stats_Buildings.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_BuildingLearningRateOffset.description": [
+          "DefInjected\\StatDef\\Stats_Buildings.xml",
+          "DefInjected\\StatDef\\Stats.xml"
+        ],
+        "VEF_ControlledDetonation.label": [
+          "DefInjected\\TrainableDef\\Trainables.xml",
+          "DefInjected\\AbilityDef\\Abilities_Trainables.xml"
+        ],
+        "VEF_ControlledInvisibility.label": [
+          "DefInjected\\TrainableDef\\Trainables.xml",
+          "DefInjected\\AbilityDef\\Abilities_Trainables.xml",
+          "DefInjected\\HediffDef\\Hediffs_Global_Misc.xml"
+        ],
+        "VEF_ControlledDetonation.description": [
+          "DefInjected\\TrainableDef\\Trainables.xml",
+          "DefInjected\\AbilityDef\\Abilities_Trainables.xml"
+        ],
+        "VEF_ControlledBlinking.description": [
+          "DefInjected\\TrainableDef\\Trainables.xml",
+          "DefInjected\\AbilityDef\\Abilities_Trainables.xml"
+        ],
+        "VEF_ControlledBlinking.label": [
+          "DefInjected\\TrainableDef\\Trainables.xml",
+          "DefInjected\\AbilityDef\\Abilities_Trainables.xml"
+        ],
+        "VEF_ControlledInvisibility.description": [
+          "DefInjected\\TrainableDef\\Trainables.xml",
+          "DefInjected\\AbilityDef\\Abilities_Trainables.xml",
+          "DefInjected\\HediffDef\\Hediffs_Global_Misc.xml"
+        ]
+      },
+      "tocdk_folders": [
+        "1.0",
+        "1.6",
+        "1.1",
+        "1.4",
+        "1.3",
+        "1.2",
+        "1.5",
+        "/"
+      ],
+      "tocdk_per_folder": {
+        "1.0": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 4,
+            "subPaths": 4,
+            "perLanguage": {
+              "Extracted": 4
+            }
+          }
+        },
+        "1.6": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 210,
+            "subPaths": 30,
+            "perLanguage": {
+              "Extracted": 210
+            }
+          }
+        },
+        "1.1": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 4,
+            "subPaths": 4,
+            "perLanguage": {
+              "Extracted": 4
+            }
+          }
+        },
+        "1.4": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 149,
+            "subPaths": 26,
+            "perLanguage": {
+              "Extracted": 149
+            }
+          }
+        },
+        "1.3": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 119,
+            "subPaths": 24,
+            "perLanguage": {
+              "Extracted": 119
+            }
+          }
+        },
+        "1.2": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 56,
+            "subPaths": 17,
+            "perLanguage": {
+              "Extracted": 56
+            }
+          }
+        },
+        "1.5": {
+          "stageA": {
+            "totalStrings": 0,
+            "subPaths": 0,
+            "perLanguage": {}
+          },
+          "stageB": {
+            "totalStrings": 171,
+            "subPaths": 27,
+            "perLanguage": {
+              "Extracted": 171
+            }
+          }
+        },
+        "/": {
+          "stageA": {
+            "totalStrings": 592,
+            "subPaths": 21,
+            "perLanguage": {
+              "English": 592
+            }
+          },
+          "stageB": {
+            "totalStrings": 592,
+            "subPaths": 21,
+            "perLanguage": {
+              "English": 592
+            }
+          }
+        }
+      }
+    },
+    "3242000764": {
+      "name": "Anomaly Patch",
+      "rimloc_records": 40,
+      "rimloc_unique_keys": 40,
+      "ready": {
+        "both": 40,
+        "competitor_only": 0,
+        "rimloc_only": 0,
+        "competitor_only_sample": [],
+        "rimloc_only_sample": []
+      },
+      "defs_extract": {
+        "both": 0,
+        "competitor_only": 0,
+        "rimloc_only": 0,
+        "competitor_only_sample": [],
+        "rimloc_only_sample": []
+      },
+      "version_duplicates": {},
+      "tocdk_folders": [
+        "1.6",
+        "1.5"
+      ],
+      "tocdk_per_folder": {
+        "1.6": {
+          "stageA": {
+            "totalStrings": 40,
+            "subPaths": 1,
+            "perLanguage": {
+              "English": 40
+            }
+          },
+          "stageB": {
+            "totalStrings": 40,
+            "subPaths": 1,
+            "perLanguage": {
+              "English": 40
+            }
+          }
+        },
+        "1.5": {
+          "stageA": {
+            "totalStrings": 32,
+            "subPaths": 1,
+            "perLanguage": {
+              "English": 32
+            }
+          },
+          "stageB": {
+            "totalStrings": 32,
+            "subPaths": 1,
+            "perLanguage": {
+              "English": 32
+            }
+          }
+        }
+      }
+    }
+  },
+  "dictionary_comparison": {
+    "their_flat_tags": [
+      "adjective",
+      "baseDesc",
+      "baseInspectLine",
+      "commandDesc",
+      "commandLabel",
+      "customLabel",
+      "customLetterLabel",
+      "customLetterText",
+      "deathMessage",
+      "desc",
+      "description",
+      "headerTip",
+      "ideoName",
+      "ingestCommandString",
+      "ingestReportString",
+      "jobString",
+      "label",
+      "labelNoun",
+      "labelPlural",
+      "leaderTitle",
+      "letterText",
+      "member",
+      "name",
+      "outOfFuelMessage",
+      "pawnSingular",
+      "pawnsPlural",
+      "reportString",
+      "slateRef",
+      "structureLabel",
+      "stuffAdjective",
+      "summary",
+      "text",
+      "theme",
+      "title",
+      "titleFemale",
+      "titleshort",
+      "titleshortFemale",
+      "verb"
+    ],
+    "their_count": 38,
+    "our_def_types": 49,
+    "our_distinct_first_segments": 31,
+    "their_only_flat_names": [
+      "adjective",
+      "baseInspectLine",
+      "commandDesc",
+      "commandLabel",
+      "customLabel",
+      "customLetterLabel",
+      "customLetterText",
+      "desc",
+      "headerTip",
+      "ideoName",
+      "ingestCommandString",
+      "ingestReportString",
+      "labelNoun",
+      "member",
+      "name",
+      "outOfFuelMessage",
+      "pawnsPlural",
+      "slateRef",
+      "structureLabel",
+      "stuffAdjective",
+      "summary",
+      "text",
+      "theme",
+      "titleshort",
+      "titleshortFemale",
+      "verb"
+    ],
+    "our_only_first_segments": [
+      "comps",
+      "degreeDatas",
+      "gerundLabel",
+      "helpText",
+      "ingestible",
+      "ingredients",
+      "labelFemale",
+      "labelMale",
+      "labelShort",
+      "letterLabel",
+      "lifeStages",
+      "rulesStrings",
+      "scenario",
+      "stages",
+      "subSounds",
+      "titleShort",
+      "titleShortFemale",
+      "tools",
+      "verbs"
+    ],
+    "case_bugs_theirs": {
+      "titleshort": "titleShort",
+      "titleshortFemale": "titleShortFemale"
+    }
+  },
+  "write_roundtrip": {
+    "mod": "818773962",
+    "files_written": 26,
+    "keyed_keys_source": 47,
+    "keyed_keys_written": 47,
+    "definjected_keys_source": 3,
+    "definjected_keys_written": 3,
+    "order_preserved": true,
+    "differences": [
+      "UTF-8 BOM dropped",
+      "indent 4sp -> 2sp",
+      "blank lines and comments dropped",
+      "XML declaration newline style"
+    ]
+  },
+  "headless_run": {
+    "method": "dotnet build (EnableWindowsTargeting=true) on macOS arm64, SDK 10.0.401; reflection harness net10.0 loads RimworldModTranslator.dll, calls EditorHelper.GetTranslatableFolders/LoadDefKeyedStringsFromTheDir/ExtractStrings/CreateTranslationsTable/FillTranslationsData/WriteFiles",
+    "build": "0 errors, 61 warnings",
+    "gui_runtime": "BLOCKED_PLATFORM (WPF Windows-only), core logic ran headless"
+  }
+}

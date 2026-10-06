@@ -1,0 +1,587 @@
+{
+ "meta": {
+  "date": "2026-10-06",
+  "note": "wave-6 grabber-rimtransai; baseline=RimLoc CLI 0.1.0-alpha.1 (tgbench)"
+ },
+ "keyed_layer": {
+  "3170653412": {
+   "rimloc_export_po": 162,
+   "grabber_vs_rimloc": {
+    "BOTH": 0,
+    "RIMLOC_ONLY": 162,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [],
+     "rimloc_only": [
+      "GTF_AbandonedOrphan61.description",
+      "GTF_AbandonedOrphan61.title",
+      "GTF_AbandonedOrphan61.titleShort",
+      "GTF_Abductee43.description",
+      "GTF_Abductee43.title",
+      "GTF_Abductee43.titleShort",
+      "GTF_AdventurousYouth70.description",
+      "GTF_AdventurousYouth70.title"
+     ],
+     "competitor_only": [],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   },
+   "rimtransai_vs_rimloc": {
+    "BOTH": 0,
+    "RIMLOC_ONLY": 162,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [],
+     "rimloc_only": [
+      "GTF_AbandonedOrphan61.description",
+      "GTF_AbandonedOrphan61.title",
+      "GTF_AbandonedOrphan61.titleShort",
+      "GTF_Abductee43.description",
+      "GTF_Abductee43.title",
+      "GTF_Abductee43.titleShort",
+      "GTF_AdventurousYouth70.description",
+      "GTF_AdventurousYouth70.title"
+     ],
+     "competitor_only": [],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   }
+  },
+  "818773962": {
+   "rimloc_export_po": 75,
+   "grabber_vs_rimloc": {
+    "BOTH": 75,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 7,
+    "_samples": {
+     "both": [
+      "HugsLib_copiedToClipboard",
+      "HugsLib_features_confirmIgnore",
+      "HugsLib_features_confirmIgnoreTitle",
+      "HugsLib_features_description",
+      "HugsLib_features_filterAllMods"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [],
+     "semantic": [
+      "HugsLib_features_confirmIgnore",
+      "HugsLib_features_description",
+      "HugsLib_features_linkDesc",
+      "HugsLib_loadOrderWarning_text",
+      "HugsLib_logs_github_token_tip",
+      "HugsLib_logs_shareConfirmMessage",
+      "HugsLib_updateRequired_text"
+     ]
+    },
+    "_semantic_examples": [
+     {
+      "key": "HugsLib_features_confirmIgnore",
+      "rimloc": "Ignore future update news from {0}?\\\\n\\\\nCan be re-enabled in Mod OptionsAll mod update ne",
+      "competitor": "Ignore future update news from {0}?\\n\\nCan be re-enabled in Mod Options > All mod update n"
+     },
+     {
+      "key": "HugsLib_features_description",
+      "rimloc": "The following mod updates were installed, and these are the new features and improvements ",
+      "competitor": "The following mod updates were installed, and these are the new features and improvements "
+     },
+     {
+      "key": "HugsLib_features_linkDesc",
+      "rimloc": "Opens your browser on a page where you can learn more about this update.\\\\nAddress: {0}",
+      "competitor": "Opens your browser on a page where you can learn more about this update.\\nAddress: {0}"
+     },
+     {
+      "key": "HugsLib_loadOrderWarning_text",
+      "rimloc": "bThe HugsLib mod/bshould always be loaded afterbCore/bto avoid issues.\\\\nPlease adjust you",
+      "competitor": "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues.\\nPlease "
+     },
+     {
+      "key": "HugsLib_logs_github_token_tip",
+      "rimloc": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings >",
+      "competitor": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings >"
+     },
+     {
+      "key": "HugsLib_logs_shareConfirmMessage",
+      "rimloc": "Upload game logs now?\\\\n\\\\nThis will post your game logs to a public server and give you t",
+      "competitor": "Upload game logs now?\\n\\nThis will post your game logs to a public server and give you the"
+     }
+    ]
+   },
+   "rimtransai_vs_rimloc": {
+    "BOTH": 75,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 7,
+    "_samples": {
+     "both": [
+      "HugsLib_copiedToClipboard",
+      "HugsLib_features_confirmIgnore",
+      "HugsLib_features_confirmIgnoreTitle",
+      "HugsLib_features_description",
+      "HugsLib_features_filterAllMods"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [],
+     "semantic": [
+      "HugsLib_features_confirmIgnore",
+      "HugsLib_features_description",
+      "HugsLib_features_linkDesc",
+      "HugsLib_loadOrderWarning_text",
+      "HugsLib_logs_github_token_tip",
+      "HugsLib_logs_shareConfirmMessage",
+      "HugsLib_updateRequired_text"
+     ]
+    },
+    "_semantic_examples": [
+     {
+      "key": "HugsLib_features_confirmIgnore",
+      "rimloc": "Ignore future update news from {0}?\\\\n\\\\nCan be re-enabled in Mod OptionsAll mod update ne",
+      "competitor": "Ignore future update news from {0}?\n\nCan be re-enabled in Mod Options > All mod update new"
+     },
+     {
+      "key": "HugsLib_features_description",
+      "rimloc": "The following mod updates were installed, and these are the new features and improvements ",
+      "competitor": "The following mod updates were installed, and these are the new features and improvements "
+     },
+     {
+      "key": "HugsLib_features_linkDesc",
+      "rimloc": "Opens your browser on a page where you can learn more about this update.\\\\nAddress: {0}",
+      "competitor": "Opens your browser on a page where you can learn more about this update.\nAddress: {0}"
+     },
+     {
+      "key": "HugsLib_loadOrderWarning_text",
+      "rimloc": "bThe HugsLib mod/bshould always be loaded afterbCore/bto avoid issues.\\\\nPlease adjust you",
+      "competitor": "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues.\nPlease a"
+     },
+     {
+      "key": "HugsLib_logs_github_token_tip",
+      "rimloc": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings >",
+      "competitor": "Publishes logs to your own GitHub account when set. Paste a token from GitHub > Settings >"
+     },
+     {
+      "key": "HugsLib_logs_shareConfirmMessage",
+      "rimloc": "Upload game logs now?\\\\n\\\\nThis will post your game logs to a public server and give you t",
+      "competitor": "Upload game logs now?\n\nThis will post your game logs to a public server and give you the l"
+     }
+    ]
+   }
+  },
+  "2023507013": {
+   "rimloc_export_po": 764,
+   "grabber_vs_rimloc": {
+    "BOTH": 593,
+    "RIMLOC_ONLY": 171,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 16,
+    "_samples": {
+     "both": [
+      "AskForPopUp",
+      "AskForPopUpExplained",
+      "CSGLog",
+      "CSGTitle",
+      "CanAddXFaction"
+     ],
+     "rimloc_only": [
+      "BetterReload.reportString",
+      "IP_InsertFirstIngredient.label",
+      "IP_InsertFirstIngredient.reportString",
+      "IP_InsertSecondIngredient.label",
+      "IP_InsertSecondIngredient.reportString",
+      "IP_InsertThirdIngredient.label",
+      "IP_InsertThirdIngredient.reportString",
+      "IP_RemoveProduct.label"
+     ],
+     "competitor_only": [],
+     "semantic": [
+      "NocturnalAnimals.BodyClock_Description",
+      "Outposts.Command.Remove.Only1",
+      "Outposts.WillProduce.N",
+      "VCE_BlinkMechanicsOption",
+      "VCE_HoveringOption",
+      "VEF.DoorLockState",
+      "VEF.HiringDesc",
+      "VEF.HuntDescription"
+     ]
+    },
+    "_semantic_examples": [
+     {
+      "key": "NocturnalAnimals.BodyClock_Description",
+      "rimloc": "Determines when the animal sleeps and when it is awake.\\\\n\\\\nDiurnal animals sleep during ",
+      "competitor": "Determines when the animal sleeps and when it is awake.\\n\\nDiurnal animals sleep during th"
+     },
+     {
+      "key": "Outposts.Command.Remove.Only1",
+      "rimloc": "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \\\"Pack\\",
+      "competitor": "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \"Pack\"."
+     },
+     {
+      "key": "Outposts.WillProduce.N",
+      "rimloc": "Will produce the following in {0}:\\\\n{1}",
+      "competitor": "Will produce the following in {0}:\\n{1}"
+     },
+     {
+      "key": "VCE_BlinkMechanicsOption",
+      "rimloc": "Allow \\\"blink\\\" mechanics (for example, Skiphounds)",
+      "competitor": "Allow \"blink\" mechanics (for example, Skiphounds)"
+     },
+     {
+      "key": "VCE_HoveringOption",
+      "rimloc": "Allow animals \\\"hovering\\\", ignoring terrain movement costs and waterstriding",
+      "competitor": "Allow animals \"hovering\", ignoring terrain movement costs and waterstriding"
+     },
+     {
+      "key": "VEF.DoorLockState",
+      "rimloc": "Current door lock policy \\\"{0}\\",
+      "competitor": "Current door lock policy \"{0}\""
+     }
+    ]
+   },
+   "rimtransai_vs_rimloc": {
+    "BOTH": 593,
+    "RIMLOC_ONLY": 171,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 16,
+    "_samples": {
+     "both": [
+      "AskForPopUp",
+      "AskForPopUpExplained",
+      "CSGLog",
+      "CSGTitle",
+      "CanAddXFaction"
+     ],
+     "rimloc_only": [
+      "BetterReload.reportString",
+      "IP_InsertFirstIngredient.label",
+      "IP_InsertFirstIngredient.reportString",
+      "IP_InsertSecondIngredient.label",
+      "IP_InsertSecondIngredient.reportString",
+      "IP_InsertThirdIngredient.label",
+      "IP_InsertThirdIngredient.reportString",
+      "IP_RemoveProduct.label"
+     ],
+     "competitor_only": [],
+     "semantic": [
+      "NocturnalAnimals.BodyClock_Description",
+      "Outposts.Command.Remove.Only1",
+      "Outposts.WillProduce.N",
+      "VCE_BlinkMechanicsOption",
+      "VCE_HoveringOption",
+      "VEF.DoorLockState",
+      "VEF.HiringDesc",
+      "VEF.HuntDescription"
+     ]
+    },
+    "_semantic_examples": [
+     {
+      "key": "NocturnalAnimals.BodyClock_Description",
+      "rimloc": "Determines when the animal sleeps and when it is awake.\\\\n\\\\nDiurnal animals sleep during ",
+      "competitor": "Determines when the animal sleeps and when it is awake.\n\nDiurnal animals sleep during the "
+     },
+     {
+      "key": "Outposts.Command.Remove.Only1",
+      "rimloc": "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \\\"Pack\\",
+      "competitor": "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \"Pack\"."
+     },
+     {
+      "key": "Outposts.WillProduce.N",
+      "rimloc": "Will produce the following in {0}:\\\\n{1}",
+      "competitor": "Will produce the following in {0}:\n{1}"
+     },
+     {
+      "key": "VCE_BlinkMechanicsOption",
+      "rimloc": "Allow \\\"blink\\\" mechanics (for example, Skiphounds)",
+      "competitor": "Allow \"blink\" mechanics (for example, Skiphounds)"
+     },
+     {
+      "key": "VCE_HoveringOption",
+      "rimloc": "Allow animals \\\"hovering\\\", ignoring terrain movement costs and waterstriding",
+      "competitor": "Allow animals \"hovering\", ignoring terrain movement costs and waterstriding"
+     },
+     {
+      "key": "VEF.DoorLockState",
+      "rimloc": "Current door lock policy \\\"{0}\\",
+      "competitor": "Current door lock policy \"{0}\""
+     }
+    ]
+   }
+  },
+  "3242000764": {
+   "rimloc_export_po": 40,
+   "grabber_vs_rimloc": {
+    "BOTH": 40,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 2,
+    "_samples": {
+     "both": [
+      "AnomalyPatch_Age",
+      "AnomalyPatch_AtmosphericHeaterFactor",
+      "AnomalyPatch_AvoidDreadLeather",
+      "AnomalyPatch_BioferriteHarvesterMultipleSelection",
+      "AnomalyPatch_BugFix"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [],
+     "semantic": [
+      "AnomalyPatch_AtmosphericHeaterFactor",
+      "AnomalyPatch_RitualTargetsDontNeedRescue"
+     ]
+    },
+    "_semantic_examples": [
+     {
+      "key": "AnomalyPatch_AtmosphericHeaterFactor",
+      "rimloc": "Disable \\\"Need warm clothes\\\" alert with atmospheric heater",
+      "competitor": "Disable \"Need warm clothes\" alert with atmospheric heater"
+     },
+     {
+      "key": "AnomalyPatch_RitualTargetsDontNeedRescue",
+      "rimloc": "Suppress \\\"Colonist needs rescue\\\" alert for psychic ritual targets",
+      "competitor": "Suppress \"Colonist needs rescue\" alert for psychic ritual targets"
+     }
+    ]
+   },
+   "rimtransai_vs_rimloc": {
+    "BOTH": 40,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 7,
+    "_samples": {
+     "both": [
+      "AnomalyPatch_Age",
+      "AnomalyPatch_AtmosphericHeaterFactor",
+      "AnomalyPatch_AvoidDreadLeather",
+      "AnomalyPatch_BioferriteHarvesterMultipleSelection",
+      "AnomalyPatch_BugFix"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [],
+     "semantic": [
+      "AnomalyPatch_AtmosphericHeaterFactor",
+      "AnomalyPatch_CreepjoinerBodyTypeFix",
+      "AnomalyPatch_DeadGhoulsInColonistBar",
+      "AnomalyPatch_DevourerWaterAssaultFix",
+      "AnomalyPatch_DontBlockDoors",
+      "AnomalyPatch_RitualTargetsDontNeedRescue",
+      "AnomalyPatch_UnnaturalDarknessMapFix"
+     ]
+    },
+    "_semantic_examples": [
+     {
+      "key": "AnomalyPatch_AtmosphericHeaterFactor",
+      "rimloc": "Disable \\\"Need warm clothes\\\" alert with atmospheric heater",
+      "competitor": "Disable \"Need warm clothes\" alert with atmospheric heater"
+     },
+     {
+      "key": "AnomalyPatch_CreepjoinerBodyTypeFix",
+      "rimloc": "Female creepjoiners erroneously have male body type",
+      "competitor": "Fix bug with female creepjoiners having male body type"
+     },
+     {
+      "key": "AnomalyPatch_DeadGhoulsInColonistBar",
+      "rimloc": "Show ghouls in colonist bar even while dead or in a caravan",
+      "competitor": "Show ghouls in colonist bar even while being carried, dead, or in a caravan"
+     },
+     {
+      "key": "AnomalyPatch_DevourerWaterAssaultFix",
+      "rimloc": "Void provocation can silently fail on devourer water assault",
+      "competitor": "Fix void provocation bug with devourer water assault"
+     },
+     {
+      "key": "AnomalyPatch_DontBlockDoors",
+      "rimloc": "Don't perform work in a containment cell doorway",
+      "competitor": "Don't perform work in a containment or prison cell doorway"
+     },
+     {
+      "key": "AnomalyPatch_RitualTargetsDontNeedRescue",
+      "rimloc": "Suppress \\\"Colonist needs rescue\\\" alert for psychic ritual targets",
+      "competitor": "Suppress \"Colonist needs rescue\" alert for psychic ritual targets"
+     }
+    ]
+   }
+  }
+ },
+ "defs_layer": {
+  "818773962": {
+   "rimloc_learn_defs": 7,
+   "grabber_vs_rimloc": {
+    "BOTH": 7,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [
+      "HLOpenModSettings.label",
+      "HLOpenUpdateNews.label",
+      "HugsLibShortcuts.description",
+      "HugsLibShortcuts.label",
+      "OpenLogFile.label"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   },
+   "rimtransai_vs_rimloc": {
+    "BOTH": 7,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [
+      "HLOpenModSettings.label",
+      "HLOpenUpdateNews.label",
+      "HugsLibShortcuts.description",
+      "HugsLibShortcuts.label",
+      "OpenLogFile.label"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   }
+  },
+  "3170653412": {
+   "rimloc_learn_defs": 162,
+   "rimloc_scan_texts": 159,
+   "grabber_vs_rimloc_learn": {
+    "BOTH": 126,
+    "RIMLOC_ONLY": 36,
+    "COMPETITOR_ONLY": 87,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [
+      "GTF_AbandonedOrphan61.description",
+      "GTF_AbandonedOrphan61.title",
+      "GTF_AbandonedOrphan61.titleShort",
+      "GTF_Abductee43.description",
+      "GTF_Abductee43.title"
+     ],
+     "rimloc_only": [
+      "GTF_Artilleryman28.description",
+      "GTF_Artilleryman28.title",
+      "GTF_Artilleryman28.titleFemale",
+      "GTF_Artilleryman28.titleShort",
+      "GTF_Delinquent13.description",
+      "GTF_Delinquent13.title",
+      "GTF_Delinquent13.titleShort",
+      "GTF_InfantryEngineer46.description"
+     ],
+     "competitor_only": [
+      "GTF_AbandonedOrphan61.titleFemale",
+      "GTF_AbandonedOrphan61.titleShortFemale",
+      "GTF_Abductee43.titleFemale",
+      "GTF_Abductee43.titleShortFemale",
+      "GTF_AdventurousYouth70.titleFemale",
+      "GTF_AdventurousYouth70.titleShortFemale",
+      "GTF_ArmyCook0.titleFemale",
+      "GTF_ArmyCook0.titleShortFemale"
+     ],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   },
+   "rimtransai_vs_rimloc_learn": {
+    "BOTH": 53,
+    "RIMLOC_ONLY": 109,
+    "COMPETITOR_ONLY": 0,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [
+      "GTF_AbandonedOrphan61.description",
+      "GTF_Abductee43.description",
+      "GTF_AdventurousYouth70.description",
+      "GTF_ArmyCook0.description",
+      "GTF_Aromatherapist80.description"
+     ],
+     "rimloc_only": [
+      "GTF_AbandonedOrphan61.title",
+      "GTF_AbandonedOrphan61.titleShort",
+      "GTF_Abductee43.title",
+      "GTF_Abductee43.titleShort",
+      "GTF_AdventurousYouth70.title",
+      "GTF_AdventurousYouth70.titleShort",
+      "GTF_ArmyCook0.title",
+      "GTF_ArmyCook0.titleShort"
+     ],
+     "competitor_only": [],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   }
+  },
+  "2023507013": {
+   "rimloc_learn_defs_1_6": 171,
+   "rimloc_learn_defs_raw": 985,
+   "grabber_1_6_vs_rimloc_1_6": {
+    "BOTH": 171,
+    "RIMLOC_ONLY": 0,
+    "COMPETITOR_ONLY": 62,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [
+      "BetterReload.reportString",
+      "KCSG_EnnemiesPresence.description",
+      "KCSG_EnnemiesPresence.label",
+      "KCSG_GoToPassage.reportString",
+      "KCSG_PowerConduit.description"
+     ],
+     "rimloc_only": [],
+     "competitor_only": [
+      "Mote_FTSmoketrail.label",
+      "Mote_Firetrail.label",
+      "Mote_GreenSmoketrail.label",
+      "Mote_Smoketrail.label",
+      "PS_BringToProcessor.gerund",
+      "PS_BringToProcessor.verb",
+      "PS_DrainOutOfStorage.gerund",
+      "PS_DrainOutOfStorage.verb"
+     ],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   },
+   "rimtransai_1_6_vs_rimloc_1_6": {
+    "BOTH": 166,
+    "RIMLOC_ONLY": 5,
+    "COMPETITOR_ONLY": 52,
+    "SEMANTIC_DIFFERENCE": 0,
+    "_samples": {
+     "both": [
+      "BetterReload.reportString",
+      "KCSG_EnnemiesPresence.description",
+      "KCSG_EnnemiesPresence.label",
+      "KCSG_GoToPassage.reportString",
+      "KCSG_PowerConduit.description"
+     ],
+     "rimloc_only": [
+      "VEF_AcidBuildup.stages.N.label",
+      "VEF_Kamikaze.stages.N.label",
+      "VEF_LightSustenance.stages.N.label",
+      "VEF_ToxicBuildup.stages.N.label",
+      "VFEP_HypothermicSlowdown.stages.N.label"
+     ],
+     "competitor_only": [
+      "ETE_MoteBase.label",
+      "KCSG_EnnemiesPresence.handlesWorldObjectTimeoutInspectString",
+      "PS_BringToProcessor.gerund",
+      "PS_BringToProcessor.verb",
+      "PS_DrainOutOfStorage.gerund",
+      "PS_DrainOutOfStorage.verb",
+      "PS_FillStorage.gerund",
+      "PS_FillStorage.verb"
+     ],
+     "semantic": []
+    },
+    "_semantic_examples": []
+   },
+   "rimtransai_all_versions_total": 960,
+   "grabber_all_versions_total": 275
+  }
+ }
+}

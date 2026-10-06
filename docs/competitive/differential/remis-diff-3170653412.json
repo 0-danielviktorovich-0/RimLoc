@@ -1,0 +1,494 @@
+{
+ "summary": {
+  "mod": "3170653412",
+  "remis_entries": 40,
+  "rimloc_entries": 159,
+  "both_keys": 40,
+  "semantic_keys": 0,
+  "rimloc_only_keys": 119,
+  "competitor_only_keys": 0
+ },
+ "both": {
+  "GTF_AbandonedOrphan61.description": [
+   "Abandoned at birth, young [PAWN_nameDef] started [PAWN_possessive] life in an orphanage.\n\nA rascal and a scoundrel, [PAWN_pronoun] became a clever troublemaker."
+  ],
+  "GTF_Abductee43.description": [
+   "[PAWN_nameDef] was abducted at a young age and forced to do menial labor on a pirate ship."
+  ],
+  "GTF_AdventurousYouth70.description": [
+   "[PAWN_nameDef] explored all around [PAWN_possessive] family's large estate, uncovering little natural wonders hidden in nearby catacombs, rivers, and caves.\n\nDuring [PAWN_possessive] teenage years, [PAWN_nameDef] made numerous enemies"
+  ],
+  "GTF_ArmyCook0.description": [
+   "[PAWN_nameDef] joined the army as a worker and spent most of [PAWN_possessive] time cooking and repairing. While [PAWN_pronoun] was stationed on a conflictuous frontier, [PAWN_pronoun] underwent basic combat and survival training."
+  ],
+  "GTF_Aromatherapist80.description": [
+   "[PAWN_nameDef] practiced aromatherapy, using essences extracted from home-grown plants."
+  ],
+  "GTF_BeastSlayer67.description": [
+   "[PAWN_nameDef] traveled between settlements, following news of animal attacks. [PAWN_pronoun] would camp out in the wild for weeks, learning about [PAWN_possessive] prey before striking. \\n\\nPreferring to work alone, [PAWN_nameDef] enjoyed the thrill of the hunt, and the meat from the kill."
+  ],
+  "GTF_Blacksmith72.description": [
+   "As a smith, [PAWN_nameDef] gained a reputation for the high quality of [PAWN_possessive] work. [PAWN_pronoun] wasn't bad at using the swords [PAWN_pronoun] forged either."
+  ],
+  "GTF_BountyHunter17.description": [
+   "[PAWN_nameDef] was a self-employed bounty hunter. [PAWN_pronoun] spent [PAWN_possessive] days hunting outlaws and collecting cash bounties."
+  ],
+  "GTF_CaravanTraveler6.description": [
+   "Born to a family of traveling merchants, [PAWN_nameDef] was mentored by [PAWN_possessive] father in the ways of being a trader. [PAWN_pronoun] was often tasked with caring for the pack animals. Due to [PAWN_possessive] nomadic lifestyle, [PAWN_pronoun] hunted and bartered for [PAWN_possessive] food."
+  ],
+  "GTF_Caravaneer53.description": [
+   "[PAWN_nameDef] was the leader of a caravan. [PAWN_pronoun] was responsible for the safety of [PAWN_possessive] caravan and was the head negotiator in countless trade deals.\\n\\n[PAWN_pronoun] and [PAWN_possessive] people prospered, but their wealth made them a target for brigands. They often had to take up arms to fend off bandits and highwaymen."
+  ],
+  "GTF_CommonerLord45.description": [
+   "After years of training in martial arts and diplomacy, [PAWN_nameDef] was eventually given land and subjects of [PAWN_possessive] own to rule.\\n\\nBecause of [PAWN_nameDef]'s commoner heritage, the other lords disapproved. They framed [PAWN_objective] for a heinous crime, and the emperor had no choice but to exile [PAWN_objective]."
+  ],
+  "GTF_CriminalSurgeon99.description": [
+   "Being near many injured fellow criminals, [PAWN_nameDef] took it upon [PAWN_objective]self to work on them. Although many people died, [PAWN_pronoun] did get better at using knives."
+  ],
+  "GTF_ExiledResearcher44.description": [
+   "[PAWN_nameDef]'s intellectual pursuits was not appreciated in [PAWN_possessive] instituition. [PAWN_possessive] superiors expelled [PAWN_objective], and [PAWN_pronoun] was never allowed to return."
+  ],
+  "GTF_ExoticChef96.description": [
+   "[PAWN_nameDef] has always gone overboard when it comes to food. [PAWN_pronoun] is always seeking new and exotic ingredients.\\n\\n[PAWN_possessive] quest for ingredients has brought [PAWN_objective] into some close calls with local flora and fauna."
+  ],
+  "GTF_ExplorerWriter10.description": [
+   "[PAWN_nameDef] traveled far and wide, gathering samples, stories, and research.\\n\\n[PAWN_possessive] goal was to bring together enough knowledge to make a survival guide for future generations."
+  ],
+  "GTF_FurnitureBuilder83.description": [
+   "[PAWN_nameDef] grew up near forests. [PAWN_pronoun] spent [PAWN_possessive] time building beautiful furniture for wealthy clients."
+  ],
+  "GTF_HiredAssassin37.description": [
+   "[PAWN_nameDef] was a master thief, working mostly for organized crime. Over time, [PAWN_pronoun] made a name for [PAWN_objective]self and shifted [PAWN_possessive] business into the paid \"removal\" of human threats."
+  ],
+  "GTF_Hunter73.description": [
+   "[PAWN_nameDef] was a master hunter.\\n\\n[PAWN_pronoun] learned to track and trap any animal in the most dangerous of places, and had deep knowledge of many ingenious methods for taking down specific large animals."
+  ],
+  "GTF_IdealisticCadet64.description": [
+   "Raised in the military traditions of [PAWN_possessive] forefathers, [PAWN_nameDef] was taught from a young age that [PAWN_pronoun] would be a great leader and the hero of [PAWN_possessive] family.\n\n[PAWN_pronoun] excelled at [PAWN_possessive] studies and graduated from the academy with honors."
+  ],
+  "GTF_MasterTrader65.description": [
+   "[PAWN_nameDef] was a master at trading. [PAWN_pronoun] earned [PAWN_possessive] reputation by helping a village through a trying time."
+  ],
+  "GTF_Mathematician6.description": [
+   "[PAWN_nameDef] did studies in various subjects at a university.\\n\\n[PAWN_pronoun] spent much of [PAWN_possessive] spare time in a nearby archery range, though [PAWN_pronoun] was frequently ridiculed by others for [PAWN_possessive] terrible aim."
+  ],
+  "GTF_MedievalKnight26.description": [
+   "[PAWN_nameDef] fought for king and country on the battlefield, where [PAWN_pronoun] further honed [PAWN_possessive] skill as a swordfighter. [PAWN_possessive] greatest glory was leading a charge into an enemy courtroom and capturing the king at sword point."
+  ],
+  "GTF_MedievalNomad12.description": [
+   "Born to a nomadic family, [PAWN_nameDef] was instructed in the arts of speechcraft, sleight of hand, horse riding.\n\n[PAWN_pronoun] was always running around the camp doing odd jobs to help [PAWN_possessive] extended family."
+  ],
+  "GTF_MedievalSquire5.description": [
+   "[PAWN_nameDef] grew up as a knight in training. [PAWN_pronoun] trained directly under the king's war adviser for most of [PAWN_possessive] youth, and learned to fight with many martial weapons."
+  ],
+  "GTF_MedievalThief74.description": [
+   "[PAWN_nameDef] grew up poor and hungry on a big city, learning to fend for [PAWN_objective]self.\n\nAt first, [PAWN_pronoun] only took what [PAWN_pronoun] needed. Then [PAWN_pronoun] learned to take what [PAWN_pronoun] wanted."
+  ],
+  "GTF_Minister88.description": [
+   "[PAWN_nameDef] managed to secure an important position in the court of a minor noble house. [PAWN_pronoun] got used to the opulence, while attempting to keep [PAWN_possessive] citizens content. [PAWN_pronoun] had ample time for pleasure and indulgence – though [PAWN_pronoun] never forgot how to do hard work."
+  ],
+  "GTF_Missionary99.description": [
+   "[PAWN_nameDef] decided to devote [PAWN_possessive] life to religious service. [PAWN_pronoun] made a vow of peace and spent several years preaching and helping those who needed the most."
+  ],
+  "GTF_PoisonGardener29.description": [
+   "[PAWN_nameDef] spent almost all [PAWN_possessive] time tending to a poison garden and became withdrawn from society.\\n\\nIn that time [PAWN_pronoun] learnt a few safe culinary and medicinal uses for the otherwise deadly plants."
+  ],
+  "GTF_PrivateDetective66.description": [
+   "As a private eye, sharp wits and a silver tongue were [PAWN_nameDef]'s greatest tools. [PAWN_pronoun] often spent [PAWN_possessive] nights working cases that ranged from uncovering affairs and learning trade secrets to solving murder cases and infiltrating criminal organizations. There wasn't a case [PAWN_pronoun] wouldn't accept for the right price."
+  ],
+  "GTF_Ranger6.description": [
+   "[PAWN_nameDef] lived alone, deep in a forest. [PAWN_pronoun] protected the wildlife against poachers, and learned to satisfy [PAWN_possessive] own material needs without outside help."
+  ],
+  "GTF_RangerChild57.description": [
+   "[PAWN_nameDef] was raised in a forest. [PAWN_pronoun] was taught how hunt and live off the land, so that [PAWN_pronoun] could live without the need of others.\n\nAccustomed to manual labor and with an intuitive mind, [PAWN_nameDef] could survive weeks alone."
+  ],
+  "GTF_SpacePirate55.description": [
+   "[PAWN_nameDef] was part of the piracy tradition, extorting and smashing peaceful trade ships for profit in faraway seas."
+  ],
+  "GTF_SpaceRaider71.description": [
+   "[PAWN_nameDef] was the leader of a raider crew. Always on the run, [PAWN_pronoun] became the feared enemy of many settlements."
+  ],
+  "GTF_SpaceSmuggler6.description": [
+   "[PAWN_nameDef]'s parents used [PAWN_objective] to help smuggle contraband across the frontier.\\n\\nAided by [PAWN_possessive] small size, [PAWN_nameDef] became very adept at carrying out [PAWN_possessive] parents' missions, learning weaponry, negotiations, and most of all smuggling."
+  ],
+  "GTF_StewardsAssisant28.description": [
+   "A steward on a merchant ship, [PAWN_nameDef] was well-traveled on [PAWN_possessive] homeland by [PAWN_possessive] early teens.\n\nThe constant orders from [PAWN_possessive] captain, however, fostered a defiant streak, as well as a general disaste for anything [PAWN_pronoun] considered to be busywork."
+  ],
+  "GTF_Taster16.description": [
+   "As the food taster for a king, [PAWN_nameDef] sampled any dish served at the royal table. [PAWN_pronoun] lived a decadent lifestyle at court, growing fat and doing very little real work."
+  ],
+  "GTF_Taxonomist0.description": [
+   "[PAWN_nameDef] traveled through the wilderness, studying and classifying the plant and animal life [PAWN_pronoun] found in the hopes of creating a complete catalogue."
+  ],
+  "GTF_Tinkerer11.description": [
+   "[PAWN_nameDef] spent [PAWN_possessive] spare time creating things from [PAWN_possessive] imagination out of scrap metal and discarded machinery.\n\n[PAWN_pronoun] created simple doodads and small tools, for both for fun and for utility."
+  ],
+  "GTF_TraineeAlchemist64.description": [
+   "[PAWN_nameDef] learned the basics of alchemy and medicine in one the few monastic schools on [PAWN_possessive] homeland."
+  ],
+  "GTF_WreckageExplorer93.description": [
+   "[PAWN_nameDef] was tasked with watching [PAWN_possessive] family's herds, but often shirked [PAWN_possessive] duties to go exploring the abandoned ruins scattered across the land."
+  ]
+ },
+ "semantic": {},
+ "rimloc_only": {
+  "GTF_AbandonedOrphan61.title": [
+   "abandoned orphan"
+  ],
+  "GTF_AbandonedOrphan61.titleShort": [
+   "orphan"
+  ],
+  "GTF_Abductee43.title": [
+   "abductee"
+  ],
+  "GTF_Abductee43.titleShort": [
+   "abductee"
+  ],
+  "GTF_AdventurousYouth70.title": [
+   "adventurous youth"
+  ],
+  "GTF_AdventurousYouth70.titleShort": [
+   "adventurer"
+  ],
+  "GTF_ArmyCook0.title": [
+   "army cook"
+  ],
+  "GTF_ArmyCook0.titleShort": [
+   "cook"
+  ],
+  "GTF_Aromatherapist80.title": [
+   "aromatherapist"
+  ],
+  "GTF_Aromatherapist80.titleShort": [
+   "therapist"
+  ],
+  "GTF_Artilleryman28.description": [
+   "[PAWN_nameDef] loaded ammunition and aimed artillery to pound [PAWN_possessive] army's enemies from afar."
+  ],
+  "GTF_Artilleryman28.title": [
+   "artilleryman"
+  ],
+  "GTF_Artilleryman28.titleFemale": [
+   "artillerywoman"
+  ],
+  "GTF_Artilleryman28.titleShort": [
+   "artilleer"
+  ],
+  "GTF_BeastSlayer67.title": [
+   "beast slayer"
+  ],
+  "GTF_BeastSlayer67.titleShort": [
+   "slayer"
+  ],
+  "GTF_Blacksmith72.title": [
+   "blacksmith"
+  ],
+  "GTF_Blacksmith72.titleShort": [
+   "blacksmith"
+  ],
+  "GTF_BountyHunter17.title": [
+   "bounty hunter"
+  ],
+  "GTF_BountyHunter17.titleShort": [
+   "hunter"
+  ],
+  "GTF_CaravanTraveler6.title": [
+   "caravan traveler"
+  ],
+  "GTF_CaravanTraveler6.titleShort": [
+   "traveler"
+  ],
+  "GTF_Caravaneer53.title": [
+   "caravaneer"
+  ],
+  "GTF_Caravaneer53.titleShort": [
+   "caravaneer"
+  ],
+  "GTF_CommonerLord45.title": [
+   "commoner lord"
+  ],
+  "GTF_CommonerLord45.titleShort": [
+   "lord"
+  ],
+  "GTF_CriminalSurgeon99.title": [
+   "criminal surgeon"
+  ],
+  "GTF_CriminalSurgeon99.titleShort": [
+   "surgeon"
+  ],
+  "GTF_Delinquent13.description": [
+   "[PAWN_nameDef] spent most of [PAWN_possessive] childhood behind bars. Following an unsuccessful escape attempt, [PAWN_pronoun] was pressed into the army."
+  ],
+  "GTF_Delinquent13.title": [
+   "delinquent"
+  ],
+  "GTF_Delinquent13.titleShort": [
+   "delinquent"
+  ],
+  "GTF_ExiledResearcher44.title": [
+   "exiled researcher"
+  ],
+  "GTF_ExiledResearcher44.titleShort": [
+   "exile"
+  ],
+  "GTF_ExoticChef96.title": [
+   "exotic chef"
+  ],
+  "GTF_ExoticChef96.titleShort": [
+   "chef"
+  ],
+  "GTF_ExplorerWriter10.title": [
+   "explorer-writer"
+  ],
+  "GTF_ExplorerWriter10.titleShort": [
+   "explorer"
+  ],
+  "GTF_FurnitureBuilder83.title": [
+   "furniture builder"
+  ],
+  "GTF_FurnitureBuilder83.titleShort": [
+   "builder"
+  ],
+  "GTF_HiredAssassin37.title": [
+   "hired assassin"
+  ],
+  "GTF_HiredAssassin37.titleShort": [
+   "assassin"
+  ],
+  "GTF_Hunter73.title": [
+   "skilled hunter"
+  ],
+  "GTF_Hunter73.titleShort": [
+   "hunter"
+  ],
+  "GTF_IdealisticCadet64.title": [
+   "idealistic cadet"
+  ],
+  "GTF_IdealisticCadet64.titleShort": [
+   "cadet"
+  ],
+  "GTF_InfantryEngineer46.description": [
+   "Despite being in an infantry battalion, [PAWN_nameDef] rarely fought in battle. [PAWN_possessive] specialty was the rapid construction of defenses, traps and siege engines."
+  ],
+  "GTF_InfantryEngineer46.title": [
+   "siege engineer"
+  ],
+  "GTF_InfantryEngineer46.titleShort": [
+   "engineer"
+  ],
+  "GTF_LineInfanteer20.description": [
+   "[PAWN_nameDef] was an ordinary infanteer in an imperial battalion.\n\\nConscripted at a young age to add bodies the army, [PAWN_nameDef] learned the methods of fighting well enough to satisfy [PAWN_possessive] superiors. However, [PAWN_pronoun] never quite understood what was going on around [PAWN_objective] enough to really believe in it."
+  ],
+  "GTF_LineInfanteer20.title": [
+   "line infanteer"
+  ],
+  "GTF_LineInfanteer20.titleShort": [
+   "infanteer"
+  ],
+  "GTF_MasterTrader65.title": [
+   "master trader"
+  ],
+  "GTF_MasterTrader65.titleShort": [
+   "trader"
+  ],
+  "GTF_Mathematician6.title": [
+   "academic"
+  ],
+  "GTF_Mathematician6.titleShort": [
+   "professor"
+  ],
+  "GTF_MedievalKnight26.title": [
+   "medieval knight"
+  ],
+  "GTF_MedievalKnight26.titleShort": [
+   "knight"
+  ],
+  "GTF_MedievalMinstrel95.baseDesc": [
+   "[PAWN_nameDef] was a bard living out of performances.\\n\\n[PAWN_pronoun] could always be found telling stories or singing songs, and is capable of protecting [PAWN_objective]self from the dangers of the road."
+  ],
+  "GTF_MedievalMinstrel95.title": [
+   "wandering bard"
+  ],
+  "GTF_MedievalMinstrel95.titleShort": [
+   "bard"
+  ],
+  "GTF_MedievalNomad12.title": [
+   "nomad"
+  ],
+  "GTF_MedievalNomad12.titleShort": [
+   "nomad"
+  ],
+  "GTF_MedievalSquire5.title": [
+   "squire"
+  ],
+  "GTF_MedievalSquire5.titleShort": [
+   "squire"
+  ],
+  "GTF_MedievalThief74.title": [
+   "urchin thief"
+  ],
+  "GTF_MedievalThief74.titleShort": [
+   "thief"
+  ],
+  "GTF_MilitaryCadet46.description": [
+   "[PAWN_nameDef] was levied from [PAWN_possessive] family at a young age to join a local army. [PAWN_pronoun] lived in barracks with other kids, learning about duty, weapons, pain, and victory.\n\\nThe trainers sometimes let the kids escape the base to enjoy the wider world. They wanted fighters who can think independently."
+  ],
+  "GTF_MilitaryCadet46.title": [
+   "army cadet"
+  ],
+  "GTF_MilitaryCadet46.titleShort": [
+   "cadet"
+  ],
+  "GTF_MilitaryCook18.description": [
+   "They say an army marches on its stomach. [PAWN_nameDef]'s job was to prepared chow to keep [PAWN_possessive] unit marching, no matter the conditions.\n\\nThe job required [PAWN_objective] to pay attention to both the nutritional and psychological needs of the troops."
+  ],
+  "GTF_MilitaryCook18.title": [
+   "army cook"
+  ],
+  "GTF_MilitaryCook18.titleShort": [
+   "army cook"
+  ],
+  "GTF_Minister88.title": [
+   "minister"
+  ],
+  "GTF_Minister88.titleShort": [
+   "minister"
+  ],
+  "GTF_Missionary99.title": [
+   "missionary"
+  ],
+  "GTF_Missionary99.titleShort": [
+   "missionary"
+  ],
+  "GTF_PiousSoldier67.description": [
+   "When not training or combat, [PAWN_nameDef] was often at the chaplain's side. [PAWN_pronoun] dedicated [PAWN_possessive] life to serving both [PAWN_possessive] lord and [PAWN_possessive] religion."
+  ],
+  "GTF_PiousSoldier67.title": [
+   "pious fighter"
+  ],
+  "GTF_PiousSoldier67.titleShort": [
+   "pious fighter"
+  ],
+  "GTF_PoisonGardener29.title": [
+   "poison gardener"
+  ],
+  "GTF_PoisonGardener29.titleShort": [
+   "botanist"
+  ],
+  "GTF_PrivateDetective66.title": [
+   "private detective"
+  ],
+  "GTF_PrivateDetective66.titleShort": [
+   "detective"
+  ],
+  "GTF_Ranger6.title": [
+   "ranger"
+  ],
+  "GTF_Ranger6.titleShort": [
+   "ranger"
+  ],
+  "GTF_RangerChild57.title": [
+   "ranger child"
+  ],
+  "GTF_RangerChild57.titleShort": [
+   "ranger kid"
+  ],
+  "GTF_RoyalGuard51.description": [
+   "[PAWN_nameDef] guarded the personal palace of a powerful lord.\n\\nWhile violence was rare, palace intrigue was constant. [PAWN_nameDef]'s work taught [PAWN_pronoun] to handle both words and weapons."
+  ],
+  "GTF_RoyalGuard51.title": [
+   "royal guard"
+  ],
+  "GTF_RoyalGuard51.titleShort": [
+   "guard"
+  ],
+  "GTF_ShipBoy89.description": [
+   "[PAWN_nameDef] was born to low-ranked servants on an sea-faring ship. The crew [PAWN_pronoun] worked for was like a second family.\\n\\n[PAWN_nameDef] rarely saw plants or animals, and still finds them unnerving to touch."
+  ],
+  "GTF_ShipBoy89.title": [
+   "ship boy"
+  ],
+  "GTF_ShipBoy89.titleFemale": [
+   "ship girl"
+  ],
+  "GTF_ShipBoy89.titleShort": [
+   "ship boy"
+  ],
+  "GTF_ShipBoy89.titleShortFemale": [
+   "ship girl"
+  ],
+  "GTF_SpacePirate55.title": [
+   "pirate"
+  ],
+  "GTF_SpacePirate55.titleShort": [
+   "pirate"
+  ],
+  "GTF_SpaceRaider71.title": [
+   "bandit chief"
+  ],
+  "GTF_SpaceRaider71.titleShort": [
+   "bandit"
+  ],
+  "GTF_SpaceSmuggler6.title": [
+   "smuggler kid"
+  ],
+  "GTF_SpaceSmuggler6.titleShort": [
+   "smuggler"
+  ],
+  "GTF_StewardsAssisant28.title": [
+   "Steward's assisant"
+  ],
+  "GTF_StewardsAssisant28.titleShort": [
+   "Steward"
+  ],
+  "GTF_Taster16.title": [
+   "taster"
+  ],
+  "GTF_Taster16.titleShort": [
+   "taster"
+  ],
+  "GTF_Taxonomist0.title": [
+   "taxonomist"
+  ],
+  "GTF_Taxonomist0.titleShort": [
+   "taxonomist"
+  ],
+  "GTF_Tinkerer11.title": [
+   "tinkerer"
+  ],
+  "GTF_Tinkerer11.titleShort": [
+   "tinkerer"
+  ],
+  "GTF_TraineeAlchemist64.title": [
+   "trainee alchemist"
+  ],
+  "GTF_TraineeAlchemist64.titleShort": [
+   "alchemist"
+  ],
+  "GTF_Warmaster54.description": [
+   "[PAWN_nameDef] was warmaster to a mid-level royal house. [PAWN_pronoun] oversaw martial aspects of the family's strategy.\n\\nOn the rare occasion a battle occurred, [PAWN_nameDef] directed the commanders."
+  ],
+  "GTF_Warmaster54.title": [
+   "warmaster"
+  ],
+  "GTF_Warmaster54.titleShort": [
+   "warmaster"
+  ],
+  "GTF_Warmonger35.description": [
+   "[PAWN_nameDef] revelled in bloodshed. Those who served with [PAWN_objective] were terrified of [PAWN_possessive] ferocity. They rarely socialized with [PAWN_nameDef], and [PAWN_pronoun] did not mind the isolation."
+  ],
+  "GTF_Warmonger35.title": [
+   "warmonger"
+  ],
+  "GTF_Warmonger35.titleShort": [
+   "warmonger"
+  ],
+  "GTF_WreckageExplorer93.title": [
+   "ruins explorer"
+  ],
+  "GTF_WreckageExplorer93.titleShort": [
+   "explorer"
+  ]
+ },
+ "competitor_only": {}
+}

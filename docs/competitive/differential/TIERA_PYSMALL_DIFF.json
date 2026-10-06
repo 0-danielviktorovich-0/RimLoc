@@ -1,0 +1,187 @@
+{
+ "meta": {
+  "date": "2026-10-06",
+  "lane": "py-small",
+  "workdir": "/tmp/w6-pysmall/",
+  "corpus_source_readonly": "/Users/danielviktorovich/Developing/rimloc-test-corpus/steamcmd-root/steamapps/workshop/content/294100/",
+  "corpus_mods": [
+   "3170653412",
+   "818773962",
+   "2023507013",
+   "3242000764"
+  ],
+  "rimloc_reference_cli": "/Volumes/Portable-SSD/caches/targets/rimloc-tgbench/release/rimloc-cli (sha 72259e0b, wave-3 эталон)",
+  "rimloc_new_build": "/Volumes/Portable-SSD/caches/targets/w6-pysmall/release/rimloc-cli (ba-main 646581311dbbc143d99e77d26dbda365c2d60c28, собран 2026-10-06)",
+  "buckets": [
+   "BOTH",
+   "RIMLOC_ONLY",
+   "COMPETITOR_ONLY",
+   "SEMANTIC_DIFFERENCE"
+  ],
+  "normalization": "NFC + схлопывание пробелов"
+ },
+ "rimloc_baseline": {
+  "reference_72259e0b": {
+   "scan": {
+    "3170653412": 159,
+    "818773962": 815,
+    "2023507013": 764,
+    "3242000764": 40
+   },
+   "export_po": {
+    "3170653412": 163,
+    "818773962": 76,
+    "2023507013": 765,
+    "3242000764": 41
+   },
+   "learn_patches_3170653412": 0
+  },
+  "head_64658131": {
+   "scan": {
+    "3170653412": 159,
+    "818773962": 815,
+    "2023507013": 143,
+    "3242000764": 40
+   },
+   "export_po": {
+    "3170653412": 3,
+    "818773962": 0,
+    "2023507013": 140,
+    "3242000764": 40
+   },
+   "learn_patches_3170653412": {
+    "default": 66,
+    "game_version_1.5_1.6": 54
+   },
+   "learn_patches_54_composition": {
+    "description": 26,
+    "title": 11,
+    "baseDesc": 6,
+    "titleShort": 5,
+    "titleShortFemale": 4,
+    "titleFemale": 2
+   },
+   "note": "scan/export-po HEAD расходятся с эталоном (детали в отчёте §5); learn-patches — новый слой, 54 на 1.5_1.6 == игроку-видимый набор wave-3"
+  }
+ },
+ "rimtrans_py": {
+  "identity": {
+   "repo": "masakitenchi/RimTrans_PY",
+   "sha": "81cca257053cc22147ce74e726c44459fc5f9131",
+   "last_push": "2024-08-22",
+   "license": "MIT"
+  },
+  "status": "PRACTICALLY_RUN",
+  "extraction_counts": {
+   "3170653412": {
+    "defs": 51,
+    "patches": 26
+   },
+   "818773962": {
+    "defs": 7,
+    "patches": 0
+   },
+   "2023507013": {
+    "defs_unique": 196,
+    "defs_raw_across_versions": 540,
+    "patches": 0
+   },
+   "3242000764": {
+    "defs": 0,
+    "patches": 0
+   }
+  },
+  "patch_diff_vs_rimloc_new_learn_patches": {
+   "3170653412/1.5_1.6": {
+    "BOTH": 26,
+    "COMPETITOR_ONLY": 0,
+    "RIMLOC_ONLY": 28,
+    "SEMANTIC_DIFFERENCE": 0,
+    "rimloc_total": 54,
+    "competitor_total": 26
+   },
+   "3170653412/1.4": {
+    "BOTH": 0,
+    "COMPETITOR_ONLY": 0,
+    "RIMLOC_ONLY": 66,
+    "SEMANTIC_DIFFERENCE": 0,
+    "rimloc_total": 66,
+    "competitor_total": 0
+   }
+  }
+ },
+ "rimwt_etejasdgjjjj532": {
+  "identity": {
+   "repo": "etejasdgjjjj532/RimWorldModTranslator",
+   "sha": "7432f47ddf43a8a69b9318006e3506519a5446bc",
+   "last_push": "2026-08-18",
+   "license": "MIT"
+  },
+  "status": "PRACTICALLY_RUN",
+  "extraction_counts": {
+   "3170653412": {
+    "defs": 0,
+    "keyed": 0,
+    "patches": 0
+   },
+   "818773962": {
+    "defs": 7,
+    "keyed": 75,
+    "patches": 0
+   },
+   "2023507013": {
+    "defs": 0,
+    "keyed": 593,
+    "patches": 0
+   },
+   "3242000764": {
+    "defs": 0,
+    "keyed": 0,
+    "patches": 0
+   }
+  },
+  "keyed_diff_vs_rimloc_export_po_818773962": {
+   "BOTH": 75,
+   "COMPETITOR_ONLY": 0,
+   "RIMLOC_ONLY": 0,
+   "SEMANTIC_DIFFERENCE": 7,
+   "semantic_note": "все 7 — дефект экспорта RimLoc: <b>/<i> вырезаны, ' > ' схлопнут (bThe HugsLib mod/b; OptionsAll), \\\\n сохранён как литерал; rimwt хранит сырой текст"
+  },
+  "semantic_keys": [
+   "HugsLib_features_confirmIgnore",
+   "HugsLib_features_description",
+   "HugsLib_features_linkDesc",
+   "HugsLib_loadOrderWarning_text",
+   "HugsLib_logs_github_token_tip",
+   "HugsLib_logs_shareConfirmMessage",
+   "HugsLib_updateRequired_text"
+  ],
+  "broken": [
+   "extract_patches() = заглушка (translator.py:138-140)",
+   "export_to_xlsx: AttributeError to_sheet (translator.py:151) -> IndexError пустой книги",
+   "только root Defs/Languages: версионные моды 0",
+   "DefInjected-источники не читаются (VE: 765-593=172 мимо)"
+  ]
+ },
+ "rtl_tools": {
+  "identity": {
+   "repo": "mtimoustafa/rimworld-rtl-translation-tools",
+   "sha": "962a1053a7e8f1c3306ccb5bafe601565d5ada0f",
+   "last_push": "2024-05-05",
+   "license": null
+  },
+  "status": "PRACTICALLY_RUN",
+  "same_corpus": "N/A — RTL-символов (арабский/иврит) в корпусе 0 (python-скан всех xml)",
+  "runs": [
+   {
+    "what": "reverse_rtl_text.rb на test/TestFile.xml (копия)",
+    "result": "15 узлов изменено; {0}-плейсхолдеры сохранены"
+   },
+   {
+    "what": "reverse_rtl_text.rb + contextualize_arabic_letters.rb на LanguageData-тесте",
+    "result": "реверс слов, контекстные формы арабских, иврит реверсируется; [PAWN_nameDef]/[PAWN_possessive] и {0} целы"
+   }
+  ],
+  "environment": "ruby 2.6.10 (system) + nokogiri 1.13.8; .ruby-version=3.2.4 не потребовался"
+ }
+}

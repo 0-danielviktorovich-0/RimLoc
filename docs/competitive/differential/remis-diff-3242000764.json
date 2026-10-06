@@ -1,0 +1,136 @@
+{
+ "summary": {
+  "mod": "3242000764",
+  "remis_entries": 40,
+  "rimloc_entries": 40,
+  "both_keys": 40,
+  "semantic_keys": 0,
+  "rimloc_only_keys": 0,
+  "competitor_only_keys": 0
+ },
+ "both": {
+  "AnomalyPatch_Age": [
+   "Age"
+  ],
+  "AnomalyPatch_AtmosphericHeaterFactor": [
+   "Disable \"Need warm clothes\" alert with atmospheric heater"
+  ],
+  "AnomalyPatch_AvoidDreadLeather": [
+   "Pawns avoid dread leather apparel if they don't like it"
+  ],
+  "AnomalyPatch_BioferriteHarvesterMultipleSelection": [
+   "Show total bioferrite contained with multiple harvesters selected"
+  ],
+  "AnomalyPatch_BugFix": [
+   "Bug fix"
+  ],
+  "AnomalyPatch_CharacterHighlighting": [
+   "Show silhouettes even in unnatural darkness"
+  ],
+  "AnomalyPatch_CreepJoinerLove": [
+   "Allow creepjoiners to romance non-creepjoiners and vice versa"
+  ],
+  "AnomalyPatch_CreepjoinerBodyTypeFix": [
+   "Female creepjoiners erroneously have male body type"
+  ],
+  "AnomalyPatch_DangerousActivityLevels": [
+   "Show highest obelisk activity level in multiple alert"
+  ],
+  "AnomalyPatch_DeadGhoulsInColonistBar": [
+   "Show ghouls in colonist bar even while dead or in a caravan"
+  ],
+  "AnomalyPatch_DeathPallResurrectionSound": [
+   "Death pall resurrection messages are silent"
+  ],
+  "AnomalyPatch_DevourerWaterAssaultFix": [
+   "Void provocation can silently fail on devourer water assault"
+  ],
+  "AnomalyPatch_DisableDisturbingVision": [
+   "Disable disturbing vision letter"
+  ],
+  "AnomalyPatch_DontBlockDoors": [
+   "Don't perform work in a containment cell doorway"
+  ],
+  "AnomalyPatch_DontBlockPrisonDoors": [
+   "Also don't perform work in a prison doorway"
+  ],
+  "AnomalyPatch_DontHideStats": [
+   "Don't hide entity stats"
+  ],
+  "AnomalyPatch_Entities": [
+   "Dark entities"
+  ],
+  "AnomalyPatch_ExtractBioferriteByDefault": [
+   "Enable manual bioferrite extraction on entities by default when no bioferrite extractor exists"
+  ],
+  "AnomalyPatch_FoodPriority": [
+   "Prioritize twisted meat for caravaning ghouls and animals"
+  ],
+  "AnomalyPatch_ForbidMonolithCorpses": [
+   "Automatically forbid corpses spawned around monolith"
+  ],
+  "AnomalyPatch_GhoulHunting": [
+   "Allow ghouls to hunt prey on their own"
+  ],
+  "AnomalyPatch_HoldingPlatformAlert": [
+   "Disable holding platforms needed alert"
+  ],
+  "AnomalyPatch_HorrorMusic": [
+   "Pit gates don't cause horror/combat music to play unless you're in them"
+  ],
+  "AnomalyPatch_Incidents": [
+   "Anomaly incidents"
+  ],
+  "AnomalyPatch_InhumanPregnancyAttitude": [
+   "Inhumanized pawns don't care when their pregnancy is terminated"
+  ],
+  "AnomalyPatch_LabyrinthClosing": [
+   "Forbid items from the labyrinth outside the home area"
+  ],
+  "AnomalyPatch_Misc": [
+   "Miscellaneous"
+  ],
+  "AnomalyPatch_NoProjectNoStudy": [
+   "Don't do dark study without an anomaly research project active"
+  ],
+  "AnomalyPatch_NoResearchSelected": [
+   "No Anomaly research project active"
+  ],
+  "AnomalyPatch_PsychicRitualZoning": [
+   "Adhere to zone restrictions while preparing for psychic rituals"
+  ],
+  "AnomalyPatch_RestartRequired": [
+   "(requires restart)"
+  ],
+  "AnomalyPatch_Reverse": [
+   "Reverse"
+  ],
+  "AnomalyPatch_RitualDialogSorting": [
+   "Sort pawns by psychic sensitivity in psychic ritual dialog"
+  ],
+  "AnomalyPatch_RitualTargetsDontNeedRescue": [
+   "Suppress \"Colonist needs rescue\" alert for psychic ritual targets"
+  ],
+  "AnomalyPatch_Rituals": [
+   "Psychic rituals"
+  ],
+  "AnomalyPatch_SortBy": [
+   "Sort by:"
+  ],
+  "AnomalyPatch_StopSuppression": [
+   "Allow pawns to stop suppressing obelisk activity before target level reached"
+  ],
+  "AnomalyPatch_Study": [
+   "Study, suppression, and containment"
+  ],
+  "AnomalyPatch_StudyAndSuppressByDefault": [
+   "Enable study and suppression of entities by default"
+  ],
+  "AnomalyPatch_UnnaturalDarknessMapFix": [
+   "Certain Anomaly incidents can generate using threat points from one map but spawn on another"
+  ]
+ },
+ "semantic": {},
+ "rimloc_only": {},
+ "competitor_only": {}
+}
