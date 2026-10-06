@@ -79,16 +79,20 @@ jobs:
             --workspace \
             --all-features \
             --exclude rimloc-gui \
-            --lcov \
-            --output-path lcov.info \
+            --codecov \
+            --output-path codecov.json \
             -- \
             --skip keychain_roundtrip_write_read_delete
 
       - name: Upload Rust coverage to Codecov
+        # Fork PRs cannot receive this repository's OIDC identity. Let Codecov
+        # attempt its public-repo/tokenless path without making an external
+        # contributor's PR fail solely because upload auth is unavailable.
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          files: ./lcov.info
+          files: ./codecov.json
           disable_search: true
           disable_telem: true
           cleanup: true
@@ -155,14 +159,15 @@ jobs:
         run: |
           cargo llvm-cov \
             --manifest-path gui/tauri-app/src-tauri/Cargo.toml \
-            --lcov \
-            --output-path gui-rust-lcov.info
+            --codecov \
+            --output-path gui-rust-codecov.json
 
       - name: Upload desktop Rust coverage to Codecov
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-          files: ./gui-rust-lcov.info
+          files: ./gui-rust-codecov.json
           disable_search: true
           disable_telem: true
           cleanup: true
