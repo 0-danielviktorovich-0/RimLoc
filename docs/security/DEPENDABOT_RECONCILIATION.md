@@ -22,7 +22,7 @@
 | tauri-plugin-shell | **удалён** из src-tauri/Cargo.toml | только в мёртвом вложенном lock (2.3.1) | 2.3.6 (#36) |
 | markdown / pymdown-extensions | `==3.10.3` / `==12.0.1` (requirements-docs.txt) | — (pip) | 3.11 (#55) / 12.1 (#56) |
 
-Ключевое наблюдение: `gui/tauri-app/src-tauri/Cargo.lock` **не используется** сборкой (src-tauri — member workspace, реальный lock — корневой), но Dependabot продолжает обновлять его (PR #36, #47 правят только этот мёртвый файл). Рекомендация вне PR: удалить вложенный lock.
+Ключевое наблюдение: `gui/tauri-app/src-tauri/Cargo.lock` **не используется** сборкой (src-tauri — member workspace, реальный lock — корневой), но Dependabot продолжает обновлять его (PR #36, #47 правят только этот мёртвый файл). Вложенный lock удалён из репо (2026-10-07): cargo metadata из src-tauri резолвит корневой workspace без него, CI-пути читают только корневой lock.
 
 ## Сводка категорий
 

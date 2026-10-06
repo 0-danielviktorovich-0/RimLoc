@@ -113,25 +113,69 @@ fn parse_po_string(s: &str) -> Result<String> {
     Ok(out)
 }
 
-/// Group PO entries by relative RimWorld path (e.g., Keyed/_Imported.xml)
+static REL_PATH_RE: OnceLock<Regex> = OnceLock::new();
+
+fn rel_path_regex() -> &'static Regex {
+    REL_PATH_RE.get_or_init(|| {
+        Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$").unwrap()
+    })
+}
+
+/// Extract the write-relative path from a PO `#:` reference.
+///
+/// The PO file is a SHARED artifact — it may have come from anywhere — and
+/// every importer joins the captured path into `Languages/<lang>/<rel>`.
+/// A reference like `Languages/Russian/../../../evil.xml` (or an absolute
+/// spelling) would therefore place the write OUTSIDE the mod tree.
+///
+/// Returns `Ok(None)` when the reference does not name a
+/// `Languages/<lang>/...` path (callers fall back to `Keyed/_Imported.xml`);
+/// returns a typed error when the captured path is absolute, carries a `..`
+/// component, or does not name a file — BEFORE any path is joined or
+/// written.
+pub fn rel_from_reference(reference: &str) -> Result<Option<PathBuf>> {
+    use std::path::Component;
+    let Some(caps) = rel_path_regex().captures(reference) else {
+        return Ok(None);
+    };
+    let raw = &caps["rel"];
+    let rel = Path::new(raw);
+    if rel.is_absolute()
+        || rel
+            .components()
+            .any(|c| matches!(c, Component::Prefix(_) | Component::RootDir))
+    {
+        return Err(eyre!(
+            "malformed relative path in PO reference `{reference}`: absolute paths are not allowed"
+        ));
+    }
+    if rel.components().any(|c| c == Component::ParentDir) {
+        return Err(eyre!(
+            "malformed relative path in PO reference `{reference}`: `..` path components are not allowed"
+        ));
+    }
+    if raw.is_empty() || rel.file_name().is_none() {
+        return Err(eyre!(
+            "malformed relative path in PO reference `{reference}`: path does not name a file"
+        ));
+    }
+    Ok(Some(PathBuf::from(raw)))
+}
+
+/// Group PO entries by relative RimWorld path (e.g., Keyed/_Imported.xml).
+/// Every captured rel goes through [`rel_from_reference`] — a hostile
+/// `#:` reference is a typed refusal, not a write outside the mod tree.
 fn group_entries_by_rel_path(
     entries: Vec<PoEntry>,
-) -> std::collections::HashMap<std::path::PathBuf, Vec<(String, String)>> {
+) -> Result<std::collections::HashMap<std::path::PathBuf, Vec<(String, String)>>> {
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
-    static REL_PATH_RE: OnceLock<Regex> = OnceLock::new();
-    let re = REL_PATH_RE.get_or_init(|| {
-        Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](.+?)(?::\d+)?$").unwrap()
-    });
 
     for e in entries {
-        let rel_subpath: PathBuf = if let Some(r) = &e.reference {
-            if let Some(caps) = re.captures(r) {
-                PathBuf::from(&caps[2])
-            } else {
-                PathBuf::from("Keyed/_Imported.xml")
+        let rel_subpath: PathBuf = match &e.reference {
+            Some(r) => {
+                rel_from_reference(r)?.unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml"))
             }
-        } else {
-            PathBuf::from("Keyed/_Imported.xml")
+            None => PathBuf::from("Keyed/_Imported.xml"),
         };
         grouped
             .entry(rel_subpath)
@@ -139,7 +183,7 @@ fn group_entries_by_rel_path(
             .push((e.key, e.value));
     }
 
-    grouped
+    Ok(grouped)
 }
 
 fn dedupe_last_wins(items: &[(String, String)]) -> Vec<(String, String)> {
@@ -309,7 +353,7 @@ pub fn build_translation_mod(
     let entries = read_po_entries(po_path)?;
 
     // 2) группируем по относительным путям
-    let grouped = group_entries_by_rel_path(entries);
+    let grouped = group_entries_by_rel_path(entries)?;
 
     // 3) About/About.xml
     let about_dir = out_mod.join("About");
@@ -342,7 +386,7 @@ pub fn build_translation_mod_with_langdir(
     let entries = read_po_entries(po_path)?;
 
     // 2) группируем по относительным путям
-    let grouped = group_entries_by_rel_path(entries);
+    let grouped = group_entries_by_rel_path(entries)?;
 
     // 3) About/About.xml
     let about_dir = out_mod.join("About");
@@ -379,7 +423,7 @@ pub fn build_translation_mod_with_langdir_opts(
     if skip_empty {
         entries.retain(|e| !e.value.trim().is_empty());
     }
-    let mut grouped = group_entries_by_rel_path(entries);
+    let mut grouped = group_entries_by_rel_path(entries)?;
 
     let about_dir = out_mod.join("About");
     fs::create_dir_all(&about_dir)?;
@@ -422,7 +466,7 @@ pub fn build_translation_mod_dry_run(
 ) -> Result<DryRunPlan> {
     let entries = read_po_entries(po_path)?;
 
-    let grouped = group_entries_by_rel_path(entries);
+    let grouped = group_entries_by_rel_path(entries)?;
 
     let mut total_keys = 0usize;
     let mut files = Vec::new();
@@ -463,7 +507,7 @@ pub fn build_translation_mod_dry_run_opts(
     if skip_empty {
         entries.retain(|e| !e.value.trim().is_empty());
     }
-    let grouped = group_entries_by_rel_path(entries);
+    let grouped = group_entries_by_rel_path(entries)?;
 
     let mut total_keys = 0usize;
     let mut files = Vec::new();
@@ -575,5 +619,73 @@ mod entity_escape_tests {
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].key, "MarkedKey");
         assert_eq!(entries[0].value, "<b>перевод</b> хвост");
+    }
+}
+
+#[cfg(test)]
+mod rel_reference_guard_tests {
+    use super::*;
+
+    #[test]
+    fn valid_references_yield_relative_paths() {
+        // Каноническая форма экспорта: абсолютный путь исходника + :строка.
+        let rel = rel_from_reference("/Mods/My/Stuff/Languages/English/Keyed/A.xml:3")
+            .unwrap()
+            .expect("canonical reference matches");
+        assert_eq!(rel, PathBuf::from("Keyed/A.xml"));
+
+        // Без :строки — тоже валидно.
+        let rel = rel_from_reference("Languages/Russian/Keyed/deep/B.xml")
+            .unwrap()
+            .expect("plain reference matches");
+        assert_eq!(rel, PathBuf::from("Keyed/deep/B.xml"));
+
+        // Windows-разделители в reference сохраняются как есть.
+        let rel = rel_from_reference(r"Mods\M\Languages\Russian\Keyed\B.xml")
+            .unwrap()
+            .expect("windows reference matches");
+        assert_eq!(rel, PathBuf::from(r"Keyed\B.xml"));
+    }
+
+    #[test]
+    fn reference_without_languages_segment_matches_nothing() {
+        assert!(rel_from_reference("DefInjected/ThingDef/Things.xml:5")
+            .unwrap()
+            .is_none());
+        assert!(rel_from_reference("").unwrap().is_none());
+    }
+
+    #[test]
+    fn hostile_reference_shapes_are_typed_refusals() {
+        let hostile = [
+            "Languages/Russian/../../../evil.xml",
+            "Languages/Russian/Keyed/../../evil.xml",
+            "Languages/Russian/..",
+            "x/Languages/Russian/Keyed/a/../..",
+            "Languages/Russian//abs/evil.xml",
+            "/Languages/Russian//etc/passwd",
+            "Languages/Russian/.",
+        ];
+        for reference in hostile {
+            let err =
+                rel_from_reference(reference).expect_err(&format!("`{reference}` must be refused"));
+            let msg = format!("{err}");
+            assert!(
+                msg.contains("malformed relative path in PO reference"),
+                "`{reference}`: {msg}"
+            );
+        }
+    }
+
+    /// Backslash spelling is platform-native: on Windows `..\\` IS a parent
+    /// component and must be refused; on Unix a backslash is a plain
+    /// filename byte — the same string lands as ONE literal file inside the
+    /// language folder, which `Path::join` (and this guard) agree on.
+    #[cfg(windows)]
+    #[test]
+    fn windows_backslash_traversal_is_refused_on_windows() {
+        let err = rel_from_reference(r"Languages\Russian\..\..\evil.xml")
+            .expect_err("windows traversal refused");
+        assert!(format!("{err}").contains("malformed relative path in PO reference"));
     }
 }

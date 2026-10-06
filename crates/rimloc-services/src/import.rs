@@ -162,21 +162,23 @@ pub fn import_po_to_mod_tree(
         ));
     }
 
-    // Group by relative path from Languages/*
-    let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$")
-        .unwrap();
+    // Group by relative path from Languages/*. The `#:` reference comes
+    // from a SHARED PO artifact, so every captured rel is validated before
+    // it can become a write path: absolute/`..`/empty shapes are a typed
+    // refusal (same discipline as `ensure_lang_write_target`), never a
+    // silent fallback.
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
     for e in entries {
-        let rel = e
-            .reference
-            .as_ref()
-            .and_then(|r| re.captures(r))
-            .and_then(|c| c.name("rel").map(|m| PathBuf::from(m.as_str())))
-            .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml"));
+        let rel = match e.reference.as_deref() {
+            Some(r) => rimloc_import_po::rel_from_reference(r)?
+                .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml")),
+            None => PathBuf::from("Keyed/_Imported.xml"),
+        };
         grouped.entry(rel).or_default().push((e.key, e.value));
     }
 
     if dry_run {
+        let lang_base = root.join("Languages").join(lang_folder);
         let mut files = Vec::new();
         let mut total = 0usize;
         let mut keys: Vec<_> = grouped.keys().cloned().collect();
@@ -184,7 +186,7 @@ pub fn import_po_to_mod_tree(
         for rel in keys.into_iter() {
             let n = grouped.get(&rel).map(|v| v.len()).unwrap_or(0);
             total += n;
-            files.push((root.join("Languages").join(lang_folder).join(rel), n));
+            files.push((lang_base.join(rel), n));
         }
         return Ok((
             Some(ImportPlan {
@@ -195,6 +197,7 @@ pub fn import_po_to_mod_tree(
         ));
     }
 
+    let lang_base = root.join("Languages").join(lang_folder);
     let mut created_files = 0usize;
     let mut updated_files = 0usize;
     let mut skipped_files = 0usize;
@@ -202,7 +205,17 @@ pub fn import_po_to_mod_tree(
     let mut files_stat: Vec<DFileStat> = Vec::new();
 
     for (rel, mut items) in grouped {
-        let out_path = root.join("Languages").join(lang_folder).join(&rel);
+        let out_path = lang_base.join(&rel);
+        // Canonical containment (defense in depth): the validated rel keeps
+        // the spelling inside the language folder; this re-check on the
+        // REAL filesystem view catches symlink aliases before any write.
+        if !crate::util::is_within_allow(&out_path, &lang_base) {
+            color_eyre::eyre::bail!(
+                "import target `{}` resolves outside the language folder `{}`; refusing to write",
+                out_path.display(),
+                lang_base.display()
+            );
+        }
         if backup && out_path.exists() {
             let _ = std::fs::copy(&out_path, out_path.with_extension("xml.bak"));
         }
@@ -359,20 +372,20 @@ pub fn import_po_to_mod_tree_with_progress(
         });
     }
 
-    // Group by relative path from Languages/*
-    let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\]([^/\\]+)[/\\](?P<rel>.+?)(?::\d+)?$")
-        .unwrap();
+    // Group by relative path from Languages/*. Same discipline as the
+    // plan/apply twin above: the `#:` reference is shared-artifact input,
+    // every captured rel is validated before it becomes a write path.
     let mut grouped: HashMap<PathBuf, Vec<(String, String)>> = HashMap::new();
     for e in entries {
-        let rel = e
-            .reference
-            .as_ref()
-            .and_then(|r| re.captures(r))
-            .and_then(|c| c.name("rel").map(|m| PathBuf::from(m.as_str())))
-            .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml"));
+        let rel = match e.reference.as_deref() {
+            Some(r) => rimloc_import_po::rel_from_reference(r)?
+                .unwrap_or_else(|| PathBuf::from("Keyed/_Imported.xml")),
+            None => PathBuf::from("Keyed/_Imported.xml"),
+        };
         grouped.entry(rel).or_default().push((e.key, e.value));
     }
 
+    let lang_base = root.join("Languages").join(lang_folder);
     let total_files = grouped.len();
     let mut idx = 0usize;
 
@@ -383,7 +396,16 @@ pub fn import_po_to_mod_tree_with_progress(
     let mut files_stat: Vec<DFileStat> = Vec::new();
 
     for (rel, mut items) in grouped {
-        let out_path = root.join("Languages").join(lang_folder).join(&rel);
+        let out_path = lang_base.join(&rel);
+        // Canonical containment on the real filesystem view before any
+        // write (defense in depth, see the twin loop above).
+        if !crate::util::is_within_allow(&out_path, &lang_base) {
+            color_eyre::eyre::bail!(
+                "import target `{}` resolves outside the language folder `{}`; refusing to write",
+                out_path.display(),
+                lang_base.display()
+            );
+        }
         if backup && out_path.exists() {
             let _ = std::fs::copy(&out_path, out_path.with_extension("xml.bak"));
         }
