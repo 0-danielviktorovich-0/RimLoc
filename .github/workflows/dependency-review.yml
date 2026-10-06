@@ -1,0 +1,46 @@
+# Review newly introduced dependencies before they reach main.
+# This complements Dependabot/cargo-deny: it looks at the dependency diff in
+# the pull request rather than rescanning the whole existing graph.
+name: dependency review
+
+on:
+  pull_request:
+    branches: [main, feature/ui-r1-convergence]
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**/Cargo.toml"
+      - "gui/tauri-app/src-tauri/Cargo.toml"
+      - "gui/tauri-app/src-tauri/Cargo.lock"
+      - "gui/tauri-app/frontend-react/package.json"
+      - "gui/tauri-app/frontend-react/package-lock.json"
+      - "gui/tauri-app/frontend-v2/package.json"
+      - "gui/tauri-app/frontend-v2/package-lock.json"
+      - "requirements-docs.txt"
+      - ".github/workflows/dependency-review.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          # Existing dependency debt is handled by the security audit; this
+          # gate prevents a PR from introducing a new High/Critical runtime
+          # vulnerability.
+          fail-on-severity: high
+          fail-on-scopes: runtime
+          license-check: false
+          show-openssf-scorecard: true
+          show-patched-versions: true

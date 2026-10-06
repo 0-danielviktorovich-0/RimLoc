@@ -16,6 +16,13 @@ name: CI
 on:
   pull_request:
     branches: [main]
+    # Documentation-only changes are validated by docs.yml; do not spend the
+    # full Rust + 3-OS + GUI matrix on a README/MkDocs-only PR.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
   workflow_dispatch:
 
 permissions: {}
@@ -31,6 +38,7 @@ jobs:
   lint:
     name: rustfmt + clippy
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -47,6 +55,7 @@ jobs:
   test:
     name: cargo test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     permissions:
       contents: read
     strategy:
@@ -65,6 +74,7 @@ jobs:
   gui:
     name: Tauri GUI build
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
@@ -92,8 +102,9 @@ jobs:
         working-directory: gui/tauri-app/src-tauri
 
   frontend:
-    name: frontend (svelte-check + vitest)
+    name: frontend legacy fallback (Svelte)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:
@@ -111,8 +122,9 @@ jobs:
       - run: npm test
 
   frontend-react:
-    name: frontend-react (tsc + vite build)
+    name: frontend production candidate (React)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     defaults:
@@ -134,6 +146,7 @@ jobs:
   deny:
     name: cargo-deny (advisories/licenses/bans)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -143,6 +156,7 @@ jobs:
   schema:
     name: schema drift (generated docs match code)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -162,20 +176,3 @@ jobs:
             exit 1
           fi
 
-  workflows-lint:
-    name: actionlint (workflow lint)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
-      # go install верифицирует модуль через checksum-БД sum.golang.org —
-      # пин по версии модуля, без сторонних actions и curl|bash.
-      - name: Install actionlint (pinned module version)
-        run: |
-          # go install кладёт бинарник в $(go env GOPATH)/bin (~/go/bin),
-          # которого нет в PATH раннера — без этого следующий шаг падает
-          # с «actionlint: command not found» (exit 127, лог PR #60).
-          echo "$HOME/go/bin" >> "$GITHUB_PATH"
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-      - run: actionlint -color

@@ -1,15 +1,35 @@
-# Docs: MkDocs build как гейт PR в main; публикация — только вручную
-# (workflow_dispatch на main) или preview для PR из upstream-репозитория.
-# Fork-PR'ы только билдят: у их GITHUB_TOKEN нет Pages-прав.
-#
-# deploy-prod раньше висел на push в main; push-триггеры сняты (решение
-# владельца, b102f3e), поэтому публикация сейчас — явный ручной dispatch.
-# Правила пиннинга/permissions — docs/development/CI.md.
+# Docs: strict MkDocs build for documentation PRs.
+# Production GitHub Pages deploys automatically after docs land on main;
+# workflow_dispatch remains available for a controlled manual redeploy.
+# Fork PRs only build: they do not receive Pages write permissions.
+# Rules/pinning rationale: docs/development/CI.md.
 name: docs
 
 on:
-  pull_request:
+  push:
     branches: [main]
+    paths:
+      - "docs/**"
+      - "README.md"
+      - "SECURITY.md"
+      - "SUPPORT.md"
+      - "CONTRIBUTING.md"
+      - "AGENTS.md"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [main, feature/ui-r1-convergence]
+    paths:
+      - "docs/**"
+      - "README.md"
+      - "SECURITY.md"
+      - "SUPPORT.md"
+      - "CONTRIBUTING.md"
+      - "AGENTS.md"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions: {}
@@ -23,6 +43,7 @@ jobs:
   build:
     name: mkdocs build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -30,7 +51,7 @@ jobs:
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7 (pinned 2026-09-27)
         with:
-          python-version: '3.x'
+          python-version: '3.13'
 
       - name: Cache pip
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6 (pinned 2026-09-27)
@@ -45,20 +66,24 @@ jobs:
           pip install -r requirements-docs.txt
 
       - name: Build site
-        run: mkdocs build --verbose --clean
+        run: mkdocs build --strict --clean
         env:
           SITE_URL: https://0-danielviktorovich-0.github.io/RimLoc/
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
+        # Normal PR validation only needs the strict build. Avoid retaining a
+        # Pages artifact unless it will actually be deployed.
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || vars.PAGES_PREVIEW_ENABLED == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5 (pinned 2026-09-27)
         with:
           path: site
 
   deploy-prod:
     name: deploy (production Pages)
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.repository == '0-danielviktorovich-0/RimLoc'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && github.repository == '0-danielviktorovich-0/RimLoc'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write
@@ -82,6 +107,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.repository == '0-danielviktorovich-0/RimLoc' && github.event.pull_request.head.repo.fork == false && vars.PAGES_PREVIEW_ENABLED == 'true'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write

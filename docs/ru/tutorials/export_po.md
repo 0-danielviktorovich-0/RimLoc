@@ -21,7 +21,7 @@ rimloc-cli validate --root ./Mods/MyMod --format text
 rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru
 ```
 
-⚠️ Важно: не меняйте [плейсхолдеры](../glossary.md#плейсхолдер) в переводе.
+⚠️ Важно: не меняйте [плейсхолдеры](../glossary.md) в переводе.
 
 ## Шаг 3. Проверить `.po` (рекомендуется)
 

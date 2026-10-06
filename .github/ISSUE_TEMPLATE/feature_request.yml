@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest an idea for RimLoc
+description: Suggest a user workflow, adapter, or product improvement for RimLoc
 labels: [enhancement]
 body:
   - type: checkboxes
@@ -11,45 +11,69 @@ body:
           required: true
     validations:
       required: true
+
   - type: textarea
     id: problem
     attributes:
-      label: Problem statement
-      description: What problem would this feature solve?
+      label: Problem / workflow
+      description: What are you trying to do, and what is painful or impossible today?
     validations:
       required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - RimWorld translation workflow
+        - Desktop UI / UX
+        - CLI / automation
+        - Translation Memory / glossary
+        - Validation / review
+        - Import / export format
+        - New game/application adapter
+        - AI / provider workflow
+        - Documentation
+        - Other
+    validations:
+      required: true
+
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      description: Describe the change in behavior and CLI/API surface
+      label: Suggested outcome
+      description: Describe the result you want. Implementation details are optional.
     validations:
       required: true
+
   - type: textarea
-    id: alternatives
+    id: adapter
     attributes:
-      label: Alternatives considered
+      label: If this is a new adapter
+      description: Game/app, source formats, existing translations, build/export format, and any version/dependency rules.
     validations:
       required: false
+
   - type: textarea
-    id: examples
+    id: priorart
     attributes:
-      label: Examples and prior art
-      description: Commands, flags, or tools that inspired this feature
+      label: Prior art / examples
+      description: Other localization tools or workflows that solve this well.
     validations:
       required: false
+
   - type: textarea
     id: validation
     attributes:
-      label: Validation strategy
-      description: How should we test and document this feature?
+      label: How should we know it works?
+      description: Real example/project, expected result, or acceptance scenario.
     validations:
       required: false
+
   - type: input
     id: related
     attributes:
       label: Related issues/PRs
-      description: Links to similar requests or prior attempts
-      placeholder: https://github.com/<owner>/<repo>/issues/123
+      placeholder: https://github.com/0-danielviktorovich-0/RimLoc/issues/123
     validations:
       required: false

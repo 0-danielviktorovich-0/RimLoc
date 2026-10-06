@@ -1,101 +1,73 @@
 ---
-title: Translating RimLoc (i18n)
+title: Translating RimLoc
 ---
 
-# Translating RimLoc (i18n)
+# Translating RimLoc itself
 
-RimLoc’s CLI messages are localized via Fluent (FTL) and embedded at build time. This guide shows how to add or update translations.
+RimLoc is being moved toward **self-localization through the same canonical project model** used by other localization sources.
 
-## Quick guide — no coding required
+That means the long-term contributor experience is not “edit random UI dictionaries by hand”, but:
 
-You can translate directly in GitHub:
+1. open the RimLoc application catalog as a localization project;
+2. choose a target locale;
+3. translate/review in the normal editor;
+4. validate placeholders/select/plural rules;
+5. build a contribution bundle;
+6. submit the translation for review.
 
-1) Open `crates/rimloc-cli/i18n/en/` (English).
-2) Create a sibling folder `crates/rimloc-cli/i18n/<lang>/` (e.g., `es`, `de`, `fr`).
-3) Copy `rimloc.ftl` and `rimloc-tests.ftl` from `en/` into your `<lang>/` folder.
-4) Translate only the values — keep keys and placeholders unchanged.
-5) Commit and open a Pull Request. Mention your language code and (optionally) add a `--help` screenshot.
+This is the second real adapter direction after RimWorld and helps prove that the core is not RimWorld-only.
 
-Prefer local edits? See the commands below to run tests locally.
+## Current pre-beta status
 
-## Folder layout
+The self-localization pipeline is still being integrated into the React product workflow. If the current build exposes **Translate RimLoc**, use that path.
 
-- `crates/rimloc-cli/i18n/en/rimloc.ftl` — English source of truth.
-- `crates/rimloc-cli/i18n/<lang>/rimloc.ftl` — other locales mirror EN keys.
-- `crates/rimloc-cli/i18n/<lang>/rimloc-tests.ftl` — test messages.
+When the UI path is unavailable on your build, contributors can still work with the repository sources, but treat that as a developer fallback rather than the final product experience.
 
-Use IETF/ISO language codes for `<lang>` (e.g., `ru`, `de`, `fr`). RimLoc loads languages by language code; region tags are ignored.
+## CLI messages
 
-## Adding a new language
+The Rust CLI uses Fluent (FTL). English remains the source locale for those CLI message catalogs.
 
-1) Copy the English files:
+Typical layout:
 
-```
-crates/rimloc-cli/i18n/en/rimloc.ftl → crates/rimloc-cli/i18n/<lang>/rimloc.ftl
-crates/rimloc-cli/i18n/en/rimloc-tests.ftl → crates/rimloc-cli/i18n/<lang>/rimloc-tests.ftl
-```
+~~~text
+crates/rimloc-cli/i18n/en/
+crates/rimloc-cli/i18n/ru/
+...
+~~~
 
-2) Translate the values, keep keys and placeholders intact.
-   - Keys: lowercase with hyphens.
-   - Placeholders: keep `{name}`, `{0}`, `%s`, `%d` exactly as in EN.
+When editing FTL directly:
 
-3) Run tests:
+- translate values, not keys;
+- preserve placeholders exactly;
+- keep locale key sets aligned;
+- run the CLI i18n tests.
 
-```bash
+~~~bash
 cargo test --package rimloc-cli -- tests_i18n
-cargo test --workspace
-```
+~~~
 
-4) Verify localized help:
+## UI/application catalog
 
-```bash
-rimloc-cli --ui-lang <lang> --help
-```
+The application UI catalog has its own canonical bridge/project path. Do not assume the CLI FTL directory is the source of every React UI string.
 
-If everything passes, the language is included automatically during build (no extra registration necessary).
+See the internal architecture documentation for the current self-localization bridge when doing implementation work.
 
-## Updating strings
+## Documentation translations
 
-- Update EN first (adds/removes keys), then mirror to other locales.
-- Keep the same set of keys across locales — tests enforce this.
-- Use `docs/en/community/issues.md` to coordinate translation changes if needed.
+Public docs currently maintain English and Russian trees under <code>docs/en</code> and <code>docs/ru</code>.
 
-## Placeholder rules
+For a new docs locale:
 
-See the [Placeholders guide](../guide/placeholders.md). Mismatched or malformed placeholders will fail `validate-po --strict`.
+- mirror the page structure;
+- translate content while keeping technical identifiers/commands accurate;
+- add the locale to the MkDocs i18n configuration;
+- run <code>mkdocs build --strict</code>.
 
-Examples (do not change tokens):
+## Contribution checklist
 
-```
-EN: Found {count} files
-ES: Se encontraron {count} archivos
-
-EN: Invalid value: %s
-DE: Ungültiger Wert: %s
-```
-
-## Helpful editors
-
-- PO files: Poedit (Windows/macOS/Linux), Gtranslator (GNOME), Lokalize (KDE), VS Code + gettext extensions.
-- FTL (Fluent): VS Code extensions for “Fluent/FTL” provide syntax highlight and basic checks. Any text editor works.
-
-## Friendly checklist
-
-- [ ] Keys unchanged (translate only values)
-- [ ] Placeholders intact (`{…}`, `%…`)
-- [ ] Both files present: `rimloc.ftl` and `rimloc-tests.ftl`
-- [ ] PR includes your language code and, if possible, a `--help` screenshot
-
-## Also translate the documentation (optional)
-
-- Copy pages from `docs/en/...` to `docs/<lang>/...` with the same structure.
-- Keep sections aligned across languages (same headings/order).
-- Preview locally:
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-docs.txt
-mkdocs serve
-```
-
-- For a brand‑new docs language, a maintainer needs to add it to `mkdocs.yml` (under the `i18n` plugin). Open an issue or mention it in your PR.
+- target locale identified;
+- placeholders/select/plural syntax preserved;
+- no source IDs changed;
+- validation passes;
+- contribution contains translation data, not secrets/project-local paths;
+- EN/RU docs updated together when behavior changes.

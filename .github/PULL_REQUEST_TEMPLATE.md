@@ -1,36 +1,70 @@
 ## Summary
-- What’s changed? Why?
-- Scope: cli/core/parsers-xml/export-po/export-csv/import-po/validate/docs/ci/release
+
+- What changed and why?
+- User/developer impact:
 - Linked issues: Closes #
 
-## Type (choose one)
-- [ ] feat — new functionality
-- [ ] fix — bug fix
-- [ ] refactor — code change without behavior impact
-- [ ] docs — documentation updates
-- [ ] test — add/update tests
-- [ ] chore — infra/build/deps chores
-- [ ] ci — workflow/build pipeline changes
-- [ ] release — release process/config changes
+## Area
 
-## Breaking Changes
-- None / Describe impact and migration
+- [ ] Rust domain/core/services
+- [ ] RimWorld adapter / parsing
+- [ ] React desktop UI
+- [ ] Svelte fallback (maintenance only)
+- [ ] CLI / format interoperability
+- [ ] Localization adapter / extensibility
+- [ ] Security / dependencies
+- [ ] Documentation
+- [ ] CI / repository infrastructure
+- [ ] Other
 
-## How to Test
-- Steps/commands to validate locally
-- Expected output (paste CLI output or screenshots if behavior changed)
+## Type
 
-## Changelog
-- [ ] CHANGELOG.md updated under Unreleased (Added/Changed/Fixed/Docs/Internal) with PR number
-  - Note: add label `internal-only` to skip the changelog CI check for non user-facing changes
+- [ ] feat
+- [ ] fix
+- [ ] refactor
+- [ ] docs
+- [ ] test
+- [ ] chore
+- [ ] ci
+- [ ] release
 
-## Checklist
-- [ ] Build/tests pass: `cargo build --workspace` and `cargo test --workspace`
-- [ ] Lints clean: `cargo fmt` and `cargo clippy --workspace --all-targets -- -D warnings`
-- [ ] I18n: EN updated, other locales synced (if applicable); `cargo test --package rimloc-cli -- tests_i18n`
-- [ ] Docs (EN/RU) updated; `SITE_URL=… mkdocs build` passes (if docs changed)
+## Evidence / testing
 
-<!-- For agents: follow AGENTS.md → For agents: Changelog & Versioning.
-     - Do NOT bump versions or create tags unless explicitly requested.
-     - Limit changes to scope; add `[scope]` in changelog bullets and `(#PR)`.
-     - Use `internal-only` label for infra-only PRs. -->
+List the exact checks you ran and relevant evidence.
+
+- [ ] Rust tests/build/lints relevant to this change
+- [ ] React typecheck/build if React changed
+- [ ] Svelte checks only if fallback changed
+- [ ] MkDocs strict build if docs changed
+- [ ] Screenshots / same-state evidence for visible UI changes
+- [ ] Security/adversarial tests for filesystem, IPC, network, secrets, or parsing changes
+
+Commands / notes:
+
+~~~text
+paste commands/results here
+~~~
+
+## Product / architecture checks
+
+- [ ] Domain behavior lives in Rust/shared services, not duplicated in React/CLI
+- [ ] PO/CSV/XLIFF/etc. are treated as interchange adapters unless the change is specifically format-related
+- [ ] RimWorld-specific semantics stay behind the adapter boundary
+- [ ] Source game/mod directories remain read-only
+- [ ] Unsupported capabilities are not presented as working UI
+- [ ] Test/automation hooks cannot enter production artifacts
+
+## Documentation / changelog
+
+- [ ] User-facing behavior is documented in EN/RU where relevant
+- [ ] CHANGELOG.md updated under Unreleased, or PR is truly internal-only
+- [ ] No stale Wiki/duplicate docs source was introduced
+
+## Breaking changes
+
+None / describe migration and compatibility impact.
+
+<!--
+Agents: follow AGENTS.md.
+Do not bump versions, tag, publish, force-push, or create releases unless the owner explicitly authorized that operation.
+-->

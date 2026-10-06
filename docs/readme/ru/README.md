@@ -1,97 +1,228 @@
 # RimLoc
 
 <p align="center">
-  <img src="../../assets/RIMLOC-baner.png" alt="RimLoc баннер" />
- </p>
+  <img src="../../assets/RIMLOC-baner.png" alt="RimLoc" />
+</p>
 
-[English version](../../README.md)
+<p align="center">
+  <strong>RimWorld-first рабочая станция локализации — local-first, open-source и с архитектурой адаптеров.</strong>
+</p>
 
-[![CI](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml/badge.svg)](https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml) [![Crates.io](https://img.shields.io/badge/crates.io-rimloc--cli-blue?logo=rust&logoColor=white)](https://crates.io/crates/rimloc-cli) [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://0-danielviktorovich-0.github.io/RimLoc/) [![License](https://img.shields.io/badge/license-GNU%20GPL-blue)](../../LICENSE)
+<p align="center">
+  <a href="../../../README.md">English</a> · <strong>Русский</strong>
+</p>
 
-RimLoc — это инструмент на Rust для локализации и управления переводами модов RimWorld. Он объединяет извлечение строк, проверку качества и экспорт в PO/CSV в едином рабочем процессе на Linux, macOS и Windows.
+<p align="center">
+  <a href="https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml"><img src="https://github.com/0-danielviktorovich-0/RimLoc/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://codecov.io/gh/0-danielviktorovich-0/RimLoc"><img src="https://codecov.io/gh/0-danielviktorovich-0/RimLoc/branch/main/graph/badge.svg" alt="Codecov" /></a>
+  <a href="https://0-danielviktorovich-0.github.io/RimLoc/ru/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs" /></a>
+  <a href="../../../LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0" /></a>
+</p>
 
-## Почему RimLoc?
+<p align="center">
+  <a href="https://github.com/sponsors/0-danielviktorovich-0"><img src="https://img.shields.io/badge/Sponsor-GitHub-%23ea4aaa?logo=github-sponsors" alt="GitHub Sponsors" /></a>
+  <a href="https://buymeacoffee.com/danielviktorovich"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" /></a>
+  <a href="https://ko-fi.com/danielviktorovich"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
+</p>
 
-- Автоматически находит все строки `Keyed`/`DefInjected` и держит их в актуальном виде.
-- Предупреждает о дубликатах, пустых значениях и несоответствиях плейсхолдеров до релиза.
-- Конвертирует XML в удобные для переводчиков форматы PO и CSV и обратно.
-- Сразу собирает отдельный мод-перевод из готового `.po` файла.
-- CLI уже локализован (английский и русский) и использует стек Fluent.
+> **Статус: pre-beta.** Проект активно развивается. Первый production-фокус — RimWorld; новый десктопный интерфейс переводится на React R1. Стабильный публичный десктопный релиз пока не заявляется.
 
-## Быстрый старт за 5 минут
-
-```bash
-cargo install rimloc-cli
-git clone https://github.com/0-danielviktorovich-0/RimLoc.git
-cd RimLoc
-rimloc-cli scan --root ./test/TestMod --format json | jq '.[0]'
-rimloc-cli validate --root ./test/TestMod
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru --dry-run
-```
-
-1. Установите CLI из crates.io.
-2. Воспользуйтесь тестовым модом `test/TestMod` (или своим модом).
-3. `scan` выводит найденные строки; с `jq` удобно смотреть структуру.
-4. `validate` подсвечивает пустые значения, дубликаты и ошибки плейсхолдеров (код возврата 1 при ошибках).
-5. `export-po` формирует единый `.po` для передачи переводчикам.
-6. `build-mod` в режиме `--dry-run` показывает, каким будет готовый мод-перевод.
-
-Нужно подготовить пакет для переводчиков?
-
-```bash
-rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-```
-
-Хотите собрать отдельный мод-перевод?
-
-```bash
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru
-```
-
-## Основные команды
-
-| Команда | Когда использовать | Пример |
-|---------|--------------------|--------|
-| `rimloc-cli scan` | Собрать строки из модов в CSV или JSON. | `rimloc-cli scan --root ./path/to/mod --format json --out-json ./logs/scan.json` |
-| `rimloc-cli validate` | Проверить XML на дубликаты, пустоты и плейсхолдеры. | `rimloc-cli validate --root ./path/to/mod --format text` |
-| `rimloc-cli validate-po` | Убедиться, что переводы в PO сохранили плейсхолдеры. | `rimloc-cli validate-po --po ./translations/ru.po --strict` |
-| `rimloc-cli export-po` | Подготовить единый PO-файл для переводчиков. | `rimloc-cli export-po --root ./path/to/mod --out-po ./out/mymod.po --lang ru` |
-| `rimloc-cli import-po` | Вернуть переводы из PO обратно в XML. | `rimloc-cli import-po --po ./out/mymod.po --mod-root ./path/to/mod --dry-run` |
-| `rimloc-cli build-mod` | Собрать автономный мод-перевод. | `rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru` |
-
-### Версионные папки
-
-Если мод использует поддиректории версий (например, `1.4`, `1.5`, `v1.6`), можно явно выбрать нужную или обработать все:
-
-```bash
-# Сканировать конкретную версию (если не указано — выбирается последняя)
-rimloc-cli scan --root ./Mods/MyMod --game-version 1.4
-
-# Проверить все версии под корнем мода
-rimloc-cli validate --root ./Mods/MyMod --include-all-versions
-
-# Экспорт с учётом версионной структуры
-rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version v1.6
-```
-
-<!-- Демо и скриншоты будут добавлены после записи первого walkthrough. -->
-
-## Документация и поддержка
-
-- Полная документация: [RimLoc Docs](https://0-danielviktorovich-0.github.io/RimLoc/)
-- Справка по командам лежит в `docs/en/cli/` и `docs/ru/cli/`.
-- Примеры и фикстуры для экспериментов находятся в каталоге `test/`.
-- Сообщить об ошибке или предложить улучшение можно через [Issues](https://github.com/0-danielviktorovich-0/RimLoc/issues).
-
-## Как помочь проекту
-
-Для новых контрибьюторов есть гайд [AGENTS.md](../../AGENTS.md) — там описаны структура репозитория, инструменты и правила ревью.
-
-Хотите обновить документацию? Запустите `mkdocs serve` и редактируйте файлы в `docs/`, синхронизируя английскую и русскую версии.
+[Документация](https://0-danielviktorovich-0.github.io/RimLoc/ru/) ·
+[Начало работы](../../ru/getting-started.md) ·
+[Безопасность](../../../SECURITY.md) ·
+[Как помочь проекту](../../../CONTRIBUTING.md) ·
+[Поддержать разработку](../../ru/community/support.md)
 
 ---
 
+## Что такое RimLoc
+
+RimLoc помогает переводить и сопровождать RimWorld-контент без ручной беготни по десяткам XML и без записи поверх оригинальных файлов игры/Workshop.
+
+У проекта два основных интерфейса:
+
+- **десктопная рабочая станция (Tauri 2 + React 19)** — создать/открыть проект, редактировать строки, менять целевой язык, валидировать, пользоваться глоссарием, смотреть контекст, собирать/экспортировать результат;
+- **Rust CLI и service layer** — детерминированная автоматизация, CI, пакетные операции, обмен форматами и диагностика.
+
+Архитектурно RimWorld — первый production-адаптер, а не вечная граница продукта. Общие сущности проекта, переводы, TM, глоссарий, ревизии и review не должны зависеть от конкретной игры.
+
+## PO — опциональный формат, а не внутренний формат проекта
+
+RimLoc **не хранит проект как PO** и не требует обязательного PO-round-trip.
+
+Основной GUI-сценарий:
+
+~~~text
+найти источник
+→ создать/открыть проект
+→ перевести прямо в RimLoc
+→ проверить/review
+→ собрать или экспортировать результат
+~~~
+
+PO нужен как **формат обмена**, когда он полезен:
+
+- отдать работу в Poedit или другой CAT;
+- вернуть готовый перевод из существующего процесса команды;
+- использовать форматные CLI-команды <code>export-po</code> / <code>import-po</code>.
+
+CLI сохраняет эти команды потому, что они полезны сами по себе. Кроме того, <code>build-mod --from-root</code> умеет собирать мод-перевод из уже готового дерева <code>Languages/&lt;язык&gt;</code> без PO.
+
+Долгосрочная модель: PO/CSV/XLIFF/XML — это адаптеры ввода/вывода вокруг канонического проекта, а не обязательная сердцевина RimLoc.
+
+## Что уже есть
+
+| Область | Текущее состояние |
+| --- | --- |
+| RimWorld scan / канонический inventory | реализовано в Rust-конвейере |
+| Ручное редактирование проекта | реализовано в desktop workflow |
+| Validation / findings | реализовано |
+| Multi-target | реализовано |
+| Глоссарий проекта | реализован с persistence |
+| PO interchange | реализован как опциональный CLI/service workflow |
+| Build/export translation-only мода | реализован в Rust-инструментах |
+| Обновление существующего перевода | pre-beta hardening |
+| Translation Memory | pre-beta: автопереиспользование + импорт + ручное управление |
+| AI/providers | архитектура/UI есть, production-интеграция ещё укрепляется |
+| Runtime Bridge | test-lab, не обычная production-функция |
+| Другие игры/приложения | пока только архитектура адаптеров |
+
+## Текущий фокус RimWorld
+
+Основная цель — качественно закрыть реальные сценарии RimWorld 1.6:
+
+- моды;
+- Core/DLC как источники;
+- language packs;
+- обновление существующих переводов;
+- несколько целевых языков;
+- безопасная сборка результата.
+
+Поддержка более старых раскладок сохраняется там, где это практично.
+
+## Новый GUI
+
+Будущий production-фронтенд:
+
+<code>gui/tauri-app/frontend-react/</code>
+
+Старый Svelte-фронтенд временно остаётся:
+
+<code>gui/tauri-app/frontend-v2/</code>
+
+как замороженный fallback/reference до завершения миграции.
+
+React-candidate собирается явно:
+
+~~~bash
+cd gui/tauri-app/frontend-react
+npm install
+npm run build
+
+cd ../src-tauri
+cargo tauri build --config tauri.react.conf.json
+~~~
+
+## Быстрый CLI-пример
+
+~~~bash
+cargo build -p rimloc-cli
+
+cargo run -p rimloc-cli -- scan --root ./test/TestMod --format json
+cargo run -p rimloc-cli -- validate --root ./test/TestMod
+~~~
+
+PO, если нужен внешний CAT:
+
+~~~bash
+cargo run -p rimloc-cli -- export-po \
+  --root ./test/TestMod \
+  --out-po ./logs/TestMod.po \
+  --lang ru
+~~~
+
+Сборка напрямую из готовой структуры Languages — без PO:
+
+~~~bash
+cargo run -p rimloc-cli -- build-mod \
+  --from-root ./Mods/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
+  --lang ru \
+  --dry-run
+~~~
+
+## Local-first и безопасность
+
+Исходники игры и модов считаются read-only. RimLoc пишет в project storage и явно выбранные выходные каталоги.
+
+До beta отдельно проверяются:
+
+- containment путей и symlink/path traversal;
+- Tauri capabilities / IPC;
+- секреты провайдеров;
+- sanitization diagnostics;
+- отсутствие automation/test hooks в production-артефакте;
+- зависимости и CodeQL.
+
+О проблемах безопасности сообщайте по [SECURITY.md](../../../SECURITY.md).
+
+## Архитектура
+
+~~~text
+Localization source
+      ↓
+LocalizationAdapter
+      ↓
+canonical SourceEntry inventory
+      ↓
+Project / translations / revisions
+      ↓
+TM / glossary / validation / AI
+      ↓
+RimLocClient
+      ↓
+CLI / desktop GUI / future integrations
+~~~
+
+Идея проста: новый адаптер для другой игры/приложения должен добавляться как ограниченный модуль, а не требовать переписывания редактора, TM или проекта.
+
+Подробнее: [Localization adapters](../../architecture/LOCALIZATION_ADAPTERS.md).
+
+## До первой beta
+
+Приоритет:
+
+- React R1;
+- Existing/update workflow;
+- TM + glossary;
+- практические сравнения с существующими RimWorld-инструментами;
+- security/dependency/code-scanning;
+- macOS/Windows acceptance;
+- актуальная документация.
+
+Цель — сначала выпустить сильную RimWorld beta и получить реальные отзывы.
+
+## Долгосрочная цель
+
+Если проект окажется полезным, ориентир шире:
+
+- контекст и game-localization UX уровня Gridly;
+- глубина профессионального CAT workflow уровня Trados;
+- community/continuous-localization идеи уровня Crowdin;
+- при этом local-first, open-source и adapter-oriented.
+
+## Документация и сообщество
+
+- [Документация](https://0-danielviktorovich-0.github.io/RimLoc/ru/)
+- [Начало работы](../../ru/getting-started.md)
+- [Для переводчиков](../../ru/guide/translators.md)
+- [GUI](../../ru/guide/gui.md)
+- [CLI](../../ru/cli/)
+- [Contributing](../../../CONTRIBUTING.md)
+- [Security](../../../SECURITY.md)
+- [Support](../../../SUPPORT.md)
+- [Поддержать проект](../../ru/community/support.md)
+
 ## Лицензия
 
-GNU GPL — см. [LICENSE](../../LICENSE).
+GNU GPL v3 — см. [LICENSE](../../../LICENSE).
