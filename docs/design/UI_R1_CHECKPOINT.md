@@ -257,3 +257,31 @@ runtime-проба фокуса PASS ×2, в soak-preflight новый гейт 
 Dependabot закрыты по классификации reconciliation; #56 — stale-closed (rebase не состоялся,
 Dependabot переоткроет). MUST-FIX palette/LM волна смержена PR #63 (f4bf02f). rel20-конвейер
 возобновлён от d964dff: сборка+identity+живой WDIO переведённых спек.
+
+**§89.1**: rel20 принят (358e17a, identity PASS c §89-гейтом --repo, WDIO живьём: palette 30/34 + LM 13/15 — ВСЕ MUST-FIX пробы зелёные; 6 красных = спек-дефекты волны, исправлены PR #69 (2500eae): «перев»=4, compare/tools = home-fallback маркеры, LM-фикстура base36-сабтаг). Реран спек против rel20-артефакта — финальное подтверждение.
+
+**§89.2 ФИНАЛ**: WDIO реран против rel20-артефакта — **palette 34/34 + LM 15/15 = 49/49**,
+ноль красных. Все 5 MUST-FIX закрыты с живыми доказательствами; маркеры compare/tools
+честно указывают на placeholder (.section-heading) — экраны в parity-бэклоге. rel20 —
+актуальный владельческий артефакт (OWNER_TEST_PACKET в evidence-папке).
+
+### §90. Level-7 подготовка: in-game load proven (2026-10-06)
+
+**Level 6.5 достигнут**: полный pipeline RimLoc (scan 75 ключей HugsLib → export-po →
+18 ручных русских переводов → validate --strict → build-mod → xml-health) установлен
+в RimWorld 1.6.4871 (GOG, /Applications/RimWorld.app) — мод `rimloc.test.hugslib`
+загружен игрой с НУЛЁМ ошибок (Player.log evidence). Комплект: RimLoc-evidence/
+level7-hugslib/ (install/restore/launch_verify + ACCEPTANCE_CHECKLIST.md — владельцу
+5 минут: Options → Mod Settings → HugsLib → русский текст = level 7).
+
+**Находки (кандидаты в issues):**
+1. export-po `--game-version 1.6` теряет корневые Languages на LoadFolders «/» модах
+   (резолвит только v1.6/) — на старой сборке работало, возможная регрессия; обход
+   --include-all-versions.
+2. build-mod пишет непереведённые ключи пустыми `<Key></Key>` — риск «пропавшего» UI
+   вместо fallback на английский; рекомендация --skip-empty или fallback-логика.
+
+**Урок среды**: процесс игры = «RimWorld by Ludeon Studios» (pgrep по короткому имени
+ломается); Prepatcher сам перезапускает игру при смене модлиста; user data = ~/Library/
+Application Support/RimWorld/ (НЕ ludeon.rimworld — пустой leftover); моды GOG-инсталла
+лежат ВНУТРИ бандла /Applications/RimWorld.app/Mods/ (290 папок).

@@ -176,7 +176,7 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
   { label: 'Проверки', hash: '#/checks', marker: '[data-testid="checks.findings"], [data-testid="checks.rerun"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Импорт существующего перевода', hash: '#/existing', marker: '[data-testid="ex.dir"], [data-testid="ex.error"], .narrow-page .btn-primary[href="#/home"]' },
-  { label: 'Сравнение версий', hash: '#/compare', marker: '.narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Сравнение версий', hash: '#/compare', marker: '.section-heading' }, // React-lane: placeholder REPRESENTATIVE LANE (отдельный экран — parity-бэклог)
   { label: 'Глоссарий', hash: '#/glossary', marker: '[data-testid="gl.table"], [data-testid="gl.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Память переводов', hash: '#/tm', marker: '[data-testid="tm.count"], [data-testid="tm.filter-query"], [data-testid="tm.filter-status"], [data-testid="tm.error"]' },
   { label: 'Сборка и экспорт', hash: '#/export', marker: '[data-testid="be.outdir"], .narrow-page .btn-primary[href="#/home"]' },
@@ -184,7 +184,7 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Диагностика', hash: '#/diagnostics', marker: '[data-testid="diag.outdir"], [data-testid="diag.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'AI-провайдеры', hash: '#/providers', marker: '[data-testid="prov.catalog"], [data-testid="prov.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Языки', hash: '#/lm', marker: '[data-testid="lm.table"]' },
-  { label: 'Инструменты', hash: '#/tools', marker: '.narrow-page .btn-primary[href="#/home"]' },
+  { label: 'Инструменты', hash: '#/tools', marker: '.section-heading' }, // React-lane: placeholder (parity-бэклог)
   { label: 'Настройки', hash: '#/settings', marker: '[data-testid="settings.theme"]' },
 ]
 
@@ -283,14 +283,16 @@ describe('Palette §9: состав команд и поиск', () => {
     await shot('palette-full-list')
   })
 
-  it('поиск по названию фильтрует список («перев» → 2: Строки перевода + Память переводов)', async () => {
+  it('поиск по названию фильтрует список («перев» → 4 после расширения состава)', async () => {
     await openPalette('filter')
     await browser.$('[data-testid="palette.input"]').setValue('перев')
     await pause(400)
     const items = await paletteItems()
     console.log(`[palette-acc] FILTER перьев=${JSON.stringify(items)}`)
-    if (items.length !== 2 || !items[0]!.includes('Строки перевода') || !items.some((i) => i.includes('Память переводов'))) {
-      throw new Error(`фильтр «перев» дал ${JSON.stringify(items)}`)
+    // Полный состав 14 команд: «перев» матчит 4 (доказано rel20-прогоном).
+    const EXPECT_PEREV = ['Строки перевода', 'Импорт существующего перевода', 'Память переводов', 'Самоперевод RimLoc']
+    if (items.length !== EXPECT_PEREV.length || !EXPECT_PEREV.every((e) => items.some((i) => i.includes(e)))) {
+      throw new Error(`фильтр «перев» дал ${JSON.stringify(items)}, ждали ${JSON.stringify(EXPECT_PEREV)}`)
     }
     await shot('palette-filter-perev')
   })
@@ -466,7 +468,7 @@ describe('Palette §9: клавиатура, фокус, конфликты', ()
     const items = await paletteItems()
     a = await activeOption()
     console.log(`[palette-acc] NAV_FILTER_RESET items=${JSON.stringify(items)} active=#${a.index} ariaAD=${a.ad}`)
-    if (items.length !== 2) throw new Error(`фильтр «перев» дал ${items.length} команд (в HEAD их 2)`)
+    if (items.length !== 4) throw new Error(`фильтр «перев» дал ${items.length} команд (в HEAD их 4)`)
     if (a.index !== 0) throw new Error(`после фильтра активен #${a.index}, ожидается #0`)
     if (a.ad !== 'palette-opt-0') throw new Error(`aria-activedescendant=${a.ad}, ожидается palette-opt-0`)
     await shot('palette-nav-filter-reset')
