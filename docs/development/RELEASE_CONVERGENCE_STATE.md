@@ -34,3 +34,7 @@
 - Secret scanning: 0 open
 - Candidate SHA: c62d331 (main); rel21-rc = артефакт от 2ccdbd1 (код идентичен — c62d331 docs-only)
 - Гейт zero_open_security: **DONE**
+
+## 2026-10-07 (5) — верификация ZERO-OPEN на финальном main
+- CS: 0 open, DA: 0 open на 3477a37 (свежий CodeQL-анализ подтвердил все предыдущие дискламации)
+- RELEASE_PARITY_MATRIX + release-parity.json: создание запущено (новый мандат §1)
