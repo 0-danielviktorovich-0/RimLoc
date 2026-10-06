@@ -1,24 +1,45 @@
 {
   "campaign": "release-convergence",
   "status": "ACTIVE",
-  "updated": "2026-10-07",
-  "main": "719d09d",
-  "candidate": "rel20 (358e17a) — устаревает относительно main, пересборка после интеграции волн",
+  "updated": "2026-10-07T2",
+  "main": "26af13b (integration merged)",
+  "candidate": "rel21 — пересборка от 26af13b после CodeQL rescan",
   "lanes": {
-    "architecture": { "wave": "A", "status": "running", "focus": "PO dependency audit → seam removal plan" },
-    "security": { "wave": "A", "status": "running", "focus": "live inventory 92 CS + 72 DA + 13 PR" },
-    "ui": { "wave": "A", "status": "running", "focus": "route reality audit" },
-    "parity": { "wave": "A", "status": "running", "focus": "reconcile wave1-5 research vs main" },
-    "api": { "wave": "B", "status": "pending", "focus": "CLI/contract/MCP/providers" },
-    "release": { "wave": "A", "status": "running", "focus": "repo/docs/branch audit (read-only)" }
+    "architecture": {
+      "wave": "A+B done",
+      "status": "PO audit: 1 seam (translate.rs); canonical no-PO impl (313a56f-линия); NO-PO-1/2+PO-INTEROP тесты; review REQUEST_CHANGES → MAJOR provenance fix (ApplyOrigin, 11fcce4-линия)"
+    },
+    "security": {
+      "wave": "A done + Wave B",
+      "status": "inventory 177→dismissed/triaged; lru 0.18.5 fix; dead lock removed; PO-#: traversal FIXED",
+      "remaining": "final rescan on candidate SHA → единственный triage+dismiss на финальных номерах"
+    },
+    "ui": {
+      "wave": "A audit + Wave B fixes done",
+      "status": "9 LIVE/4 PARTIAL/2→1 PLACEHOLDER (compare=реальный экран, tools убран); hardcoded-ru батч закрыт; фокус-рестор палитры; compare=WDIO-pending"
+    },
+    "parity": {
+      "wave": "A reconcile done",
+      "status": "SUPERIOR 9 / PARITY 7 / IMPLEMENT_NOW 1 (edge-trim — fix в интеграции) / REJECT 18"
+    },
+    "api": {
+      "wave": "B",
+      "status": "pending",
+      "focus": "CLI/contract/MCP/providers"
+    },
+    "release": {
+      "wave": "A audit done",
+      "status": "branch-карта, release-инфра (no-publish подтверждён), docs-инвентарь, Issue#2 GUI-путь полный"
+    }
   },
   "gates": {
-    "zero_open_security": "FAIL — 92 CS + 72 DA open",
+    "zero_open_security": "IN_PROGRESS — финальный rescan+dismiss на candidate SHA",
     "no_mandatory_po_seams": "PENDING audit",
     "ui_no_placeholder": "PENDING audit",
     "parity_superior_parity_only": "PENDING",
     "real_rimworld": "level 6.5 proven; level 7 visual = OWNER_GATE",
-    "cross_platform_artifacts": "PENDING"
+    "cross_platform_artifacts": "PENDING",
+    "po_decoupling": "DONE — seam translate.rs удалён, NO-PO-1/2 + PO-INTEROP тесты"
   },
   "ownerGates": [
     "level-7 visual confirmation (ACCEPTANCE_CHECKLIST.md)",
