@@ -6,6 +6,7 @@ import { FolderOpen, Package, Play, ShieldCheck, ArrowDownToLine } from 'lucide-
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
 import { contractErrorText } from '../lib/client/messagesError'
+import { folderForm } from '../lib/languages/folderForm'
 import { t } from '../lib/i18n'
 
 type Result =
@@ -67,7 +68,9 @@ export function BuildExport() {
         setBusy(false)
         return
       }
-      const r = await clientInstance.getClient().buildModProject(projectId, epoch, outDir.trim(), 'ru')
+      // АКТИВНАЯ цель проекта, а не захардкоженная 'ru' (тот же класс бага,
+      // что закрыт в commit(); контракт хочет strict folder form).
+      const r = await clientInstance.getClient().buildModProject(projectId, epoch, outDir.trim(), folderForm(st.targetLocale))
       setResult({ kind: 'build', files: r.files_written, reparsed: r.reparsed_keys, outDir: r.out_dir.path })
     } catch (e) {
       setError(
@@ -91,7 +94,7 @@ export function BuildExport() {
     setError(null)
     setResult(null)
     try {
-      const r = await clientInstance.getClient().exportProject(projectId, epoch, outDir.trim(), 'ru')
+      const r = await clientInstance.getClient().exportProject(projectId, epoch, outDir.trim(), folderForm(st.targetLocale))
       setResult({ kind: 'export', files: r.files_written, reparsed: r.reparsed_keys, outDir: r.out_dir.path })
     } catch (e) {
       setError(
