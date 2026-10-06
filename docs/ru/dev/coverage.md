@@ -4,67 +4,41 @@ title: Coverage и Codecov
 
 # Coverage и Codecov
 
-RimLoc использует [Codecov](https://codecov.io/gh/0-danielviktorovich-0/RimLoc) как dashboard покрытия автоматическими тестами.
+RimLoc использует [Codecov](https://codecov.io/gh/0-danielviktorovich-0/RimLoc) для отслеживания покрытия автоматическими тестами.
 
-Coverage полезен, но **не является оценкой корректности продукта**. Выполненная строка кода не доказывает правильность RimWorld semantics, filesystem safety, UX, accessibility или поведения в игре.
+Coverage — **сигнал, а не оценка корректности**. Выполненная строка не доказывает правильность RimWorld semantics, filesystem safety, UX, accessibility или поведения в игре.
 
 ## Текущие coverage families
 
-Workflow загружает отдельные отчёты для:
+Workflow загружает два независимых Rust-отчёта:
 
-- **Rust workspace** — generic crates из \`crates/\`;
-- **Desktop Rust / Tauri** — Rust desktop layer с дополнительными WebKitGTK/GTK/frontend prerequisites.
+- **rust** — workspace под `crates/`, без Tauri GUI crate;
+- **gui-rust** — desktop Rust/Tauri слой с отдельными GTK/WebKit/frontend prerequisites.
 
-Codecov Components группируют данные по подсистемам: Domain & Core, Services, RimWorld parsing/validation, formats, CLI, providers/config, plugins и desktop Rust.
+Codecov **Components** режут эти отчёты по архитектурным подсистемам без повторного запуска тестов для каждого crate:
 
-## Аутентификация
+- Domain & Core;
+- Services;
+- RimWorld parsers & validation;
+- import/export formats;
+- CLI;
+- providers/config;
+- plugin compatibility;
+- desktop Rust/Tauri.
 
-Upload использует GitHub OIDC. Repository secret \`CODECOV_TOKEN\` не нужен.
+То есть **Flags** показывают test families, а **Components** — продуктовые подсистемы.
 
-Для публичных fork PR workflow рассчитан на public/tokenless upload, а не на выдачу секретов форку.
+## Формат отчёта
 
-## Политика pre-beta
+Rust CI использует `cargo-llvm-cov` и отправляет native Codecov coverage JSON вместо обычного LCOV.
 
-Project, patch и component statuses сначала **informational**, пока накапливается стабильный baseline.
+Причины:
 
-Мы сознательно не ставим случайный глобальный gate «80%». После нескольких репрезентативных PR план:
+- сохраняется более богатая LLVM region information;
+- мы не включаем нестабильный `--branch` режим cargo-llvm-cov только ради цифры;
+- Codecov получает формат напрямую без преждевременного сведения к line-only LCOV.
 
-1. блокировать существенное падение overall coverage через \`target: auto\`;
-2. добавить разумный patch-coverage gate для нового кода;
-3. сделать требования строже для safety-critical компонентов;
-4. подключить React unit/component coverage, когда React test runner начнёт выдавать LCOV.
-
-Coverage должен улучшать качество, а не превращаться в vanity metric.
-
-## React coverage
-
-React R1 пока имеет build/typecheck acceptance, но стабильного unit/component coverage report ещё нет.
-
-Будущий contract:
-
-~~~text
-npm run test:coverage
-→ gui/tauri-app/frontend-react/coverage/lcov.info
-→ Codecov flag/component: react
-~~~
-
-Используем существующий frontend test framework; второй framework только ради Codecov не добавляем.
-
-## Что coverage не заменяет
-
-Отдельно нужны:
-
-- same-corpus RimWorld differential;
-- in-game/runtime verification;
-- security/adversarial tests;
-- CodeQL/Dependabot;
-- owner visual review;
-- accessibility review;
-- macOS/Windows artifact acceptance.
-
-## Локальный Rust coverage
-
-После установки \`cargo-llvm-cov\`:
+Локально удобнее HTML:
 
 ~~~bash
 cargo llvm-cov \
@@ -74,4 +48,72 @@ cargo llvm-cov \
   --html
 ~~~
 
-Точная CI-конфигурация: \`.github/workflows/coverage.yml\` и \`codecov.yml\`.
+Формат как в CI:
+
+~~~bash
+cargo llvm-cov \
+  --workspace \
+  --all-features \
+  --exclude rimloc-gui \
+  --codecov \
+  --output-path codecov.json
+~~~
+
+## Аутентификация
+
+Upload использует **GitHub OIDC**, поэтому repository secret `CODECOV_TOKEN` не нужен.
+
+Same-repo PR/push получают OIDC identity. Fork PR не получает repository secrets; workflow допускает public/tokenless путь Codecov и не должен ломать внешний PR только из-за отсутствия upload-auth.
+
+## Политика pre-beta
+
+Statuses сначала **informational**.
+
+Мы не ставим случайный глобальный gate "80%". Сначала собираем baseline на реальных PR, затем постепенно включаем:
+
+1. project `target: auto` с небольшим допустимым regression;
+2. разумный patch coverage для нового/изменённого кода;
+3. более строгие component gates для safety-critical областей после стабилизации baseline;
+4. только обоснованные исключения для generated/platform glue.
+
+Цель — не максимизировать vanity percentage, а не допускать деградацию и видеть нетестированный код.
+
+## React coverage
+
+React R1 уже имеет build/typecheck acceptance, но пока нет стабильного unit/component coverage report в package scripts.
+
+Когда test stack будет готов:
+
+~~~text
+npm run test:coverage
+→ frontend-react/coverage/lcov.info (или другой Codecov-supported report)
+→ Codecov flag: react
+→ Codecov component: frontend-react
+~~~
+
+Не добавляем второй test framework только ради Codecov.
+
+## Test Analytics — позже
+
+Codecov умеет принимать JUnit-style test results и показывать duration/failure rate/flaky tests. Подключать это стоит, когда Rust/React runner уже выдаёт нормальный JUnit.
+
+Не надо повторно гонять весь suite только ради Test Analytics.
+
+## Что coverage не заменяет
+
+Отдельно нужны:
+
+- same-corpus RimWorld differential;
+- in-game/runtime verification;
+- path/symlink/adversarial filesystem tests;
+- CodeQL, dependency review, Dependabot и cargo-deny;
+- owner visual review;
+- accessibility review;
+- macOS/Windows artifact acceptance.
+
+## CI files
+
+- `.github/workflows/coverage.yml` — генерация/upload;
+- `codecov.yml` — policy, components, flags, PR comments.
+
+Workflow сначала валидирует `codecov.yml`, затем запускает coverage.
