@@ -210,15 +210,15 @@ describe('LM §10: CRUD пользовательского языка', () => {
     await submitLang('1плохо код!', 'Битый', 'Битый')
     const after = await lmRows()
     const err = await browser.execute(() => {
-      const e = document.querySelector('.form-error, [data-testid="lm.error"]')
-      return e ? e.textContent : document.body.innerText.match(/invalid locale id format/)?.[0] ?? '<нет>'
+      const e = document.querySelector('.inline-warning, [data-testid="lm.error"]')
+      return e ? e.textContent : document.body.innerText.match(/Неверный формат Locale ID/)?.[0] ?? '<нет>'
     })
     console.log(`[lm-acc] BROKEN_ID rows=${after.length} (было ${before.length}) err=${JSON.stringify(err)}`)
     if (after.includes('1плохо код!')) {
       throw new Error('битый id ПРИНЯТ — валидация isValidLocaleId не работает')
     }
     if (before.length !== after.length) throw new Error('список вырос на отклонённом вводе')
-    if (!String(err).includes('invalid locale id')) throw new Error(`сообщение о формате не показано: ${JSON.stringify(err)}`)
+    if (!String(err).includes('Неверный формат')) throw new Error(`сообщение о формате не показано: ${JSON.stringify(err)}`)
     await shot('lm-broken-id-rejected')
   })
 
