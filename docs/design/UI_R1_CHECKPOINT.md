@@ -257,3 +257,5 @@ runtime-проба фокуса PASS ×2, в soak-preflight новый гейт 
 Dependabot закрыты по классификации reconciliation; #56 — stale-closed (rebase не состоялся,
 Dependabot переоткроет). MUST-FIX palette/LM волна смержена PR #63 (f4bf02f). rel20-конвейер
 возобновлён от d964dff: сборка+identity+живой WDIO переведённых спек.
+
+**§89.1**: rel20 принят (358e17a, identity PASS c §89-гейтом --repo, WDIO живьём: palette 30/34 + LM 13/15 — ВСЕ MUST-FIX пробы зелёные; 6 красных = спек-дефекты волны, исправлены PR #69 (2500eae): «перев»=4, compare/tools = home-fallback маркеры, LM-фикстура base36-сабтаг). Реран спек против rel20-артефакта — финальное подтверждение.
