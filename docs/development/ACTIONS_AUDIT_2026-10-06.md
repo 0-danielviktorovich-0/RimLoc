@@ -104,6 +104,7 @@ Security/operability:
 - upload uses GitHub OIDC;
 - no repository `CODECOV_TOKEN` is required;
 - Codecov config is validated before coverage generation;
+- Codecov policy is locked to the default branch with `strict_yaml_branch: main`;
 - all upload actions are pinned to immutable SHAs;
 - fork PRs never receive repository secrets;
 - timeout and concurrency policies are explicit.
