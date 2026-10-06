@@ -27,3 +27,10 @@
 - Level-7 visual: ожидает владельца по ACCEPTANCE_CHECKLIST.md (уровень 6.5 proven).
 - LM-spec ревизия: 2 красных = EN-литералы/селектор .form-error в спеке vs локализованные коды в rel21 — спек-дефект, не артефакт.
 - Pipeline деталь: build-mod --po формально обязателен даже при --from-root — шероховатость CLI, отмечена в Issue#2 ответе.
+
+## 2026-10-07 (4) — ZERO-OPEN SECURITY GATE
+- Code Scanning: **0 open** (168+106 dismissed with per-group evidence, 9 auto-fixed wry-0.55.1 removal, ~5 test-lab used_in_tests)
+- Dependabot alerts: **0 open** (13 resolved by lock/deps updates, 6 dismissed: 5 npm dev-only tolerable_risk + 1 glib tolerable_risk upstream-blocked)
+- Secret scanning: 0 open
+- Candidate SHA: c62d331 (main); rel21-rc = артефакт от 2ccdbd1 (код идентичен — c62d331 docs-only)
+- Гейт zero_open_security: **DONE**
