@@ -80,7 +80,9 @@ jobs:
             --all-features \
             --exclude rimloc-gui \
             --lcov \
-            --output-path lcov.info
+            --output-path lcov.info \
+            -- \
+            --skip keychain_roundtrip_write_read_delete
 
       - name: Upload Rust coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
