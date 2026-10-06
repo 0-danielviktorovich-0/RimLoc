@@ -66,6 +66,70 @@ fn latest_version_tag(tags: &[String]) -> Option<String> {
         .cloned()
 }
 
+/// A game version string with the optional `v`/`V` prefix stripped and
+/// lowercased (`"v1.6"` → `"1.6"`). Both flag spellings are documented
+/// (`--game-version 1.6 | v1.6`); the LoadFolders resolver used to build
+/// `vv1.6` from the prefixed form and silently fell back to the root view.
+pub fn normalize_version_str(raw: &str) -> String {
+    raw.trim().trim_start_matches(['v', 'V']).to_lowercase()
+}
+
+/// Component-wise version key for ordering (`"1.6.1"` → `[1, 6, 1]`).
+fn version_key(v: &str) -> Vec<u64> {
+    v.split('.').filter_map(|p| p.parse::<u64>().ok()).collect()
+}
+
+/// Classic (LoadFolders-less) version directories of a mod root, ASCENDING by
+/// version: `(normalized version, dir path)`. Names may carry a `v`/`V`
+/// prefix (`v1.4`); non-numeric or dot-less names never match.
+pub fn classic_version_dirs(root: &Path) -> Vec<(String, PathBuf)> {
+    let mut out: Vec<(String, PathBuf)> = root
+        .read_dir()
+        .map(|entries| {
+            entries
+                .flatten()
+                .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
+                .filter_map(|e| {
+                    let name = e.file_name().to_str()?.to_string();
+                    let normalized = normalize_version_str(&name);
+                    if normalized.contains('.')
+                        && normalized.split('.').all(|p| p.parse::<u64>().is_ok())
+                    {
+                        Some((normalized, root.join(&name)))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    out.sort_by_key(|(v, _)| version_key(v));
+    out.dedup_by(|a, b| a.0 == b.0);
+    out
+}
+
+/// The classic-layout content folder for a requested game version: an exact
+/// match, else the LARGEST version ≤ requested (the game's fallback), else
+/// none. Without a request the newest available version is the stand-in for
+/// the running game version.
+fn pick_classic_version(tiers: &[(String, PathBuf)], requested: Option<&str>) -> Option<String> {
+    match requested {
+        Some(req) => {
+            let want = normalize_version_str(req);
+            let req_parts = version_key(&want);
+            if let Some((v, _)) = tiers.iter().find(|(v, _)| *v == want) {
+                return Some(v.clone());
+            }
+            tiers
+                .iter()
+                .filter(|(v, _)| version_key(v) <= req_parts)
+                .max_by_key(|(v, _)| version_key(v))
+                .map(|(v, _)| v.clone())
+        }
+        None => tiers.last().map(|(v, _)| v.clone()),
+    }
+}
+
 /// Parse LoadFolders.xml (BOM-tolerant) and return version tag → folder list.
 /// Conditional entries (`IfModActive`) are returned separately from plain ones.
 /// One LoadFolders version tag: (tag, unconditional dirs, IfModActive dirs).
@@ -109,14 +173,16 @@ fn parse_load_folders(xml: &str) -> Option<Vec<VersionFolders>> {
 }
 
 fn resolve_version_from_tags(tags: &[String], requested: Option<&str>) -> Option<String> {
-    // Tags are normalized to lowercase at parse time.
+    // Tags are normalized to lowercase at parse time; the request accepts
+    // both documented spellings ("1.6" and "v1.6").
     if let Some(req) = requested {
-        let want = format!("v{}", req.to_lowercase());
+        let req = normalize_version_str(req);
+        let want = format!("v{req}");
         if let Some(t) = tags.iter().find(|t| **t == want) {
             return Some(t.trim_start_matches('v').to_string());
         }
         // Game fallback: the largest tag <= the requested version.
-        let req_parts: Vec<u64> = req.split('.').filter_map(|p| p.parse().ok()).collect();
+        let req_parts = version_key(&req);
         return tags
             .iter()
             .filter(|t| {
@@ -226,65 +292,40 @@ pub fn effective_view(root: &Path, requested: Option<&str>) -> Result<EffectiveM
         }
     }
 
-    // Classic layout: root itself, or 1.x directories picked by the existing
-    // version-resolution rules (caller passes the resolved version here).
-    let version = requested.map(str::to_string);
-    let versioned = root
-        .read_dir()
-        .map(|entries| {
-            entries
-                .flatten()
-                .filter(|e| e.file_type().map(|t| t.is_dir()).unwrap_or(false))
-                .filter(|e| {
-                    e.file_name()
-                        .to_str()
-                        .map(|n| n.split('.').all(|p| p.parse::<u64>().is_ok()) && n.contains('.'))
-                        .unwrap_or(false)
-                })
-                .map(|e| root.join(e.file_name()))
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
-    if versioned.is_empty() {
-        return Ok(EffectiveModView {
-            version: None,
-            content_dirs: vec![root.to_path_buf()],
-            conditional_dirs: Vec::new(),
-            languages_dirs: vec![languages_dir.clone()],
-            languages_dir,
-        });
+    // Classic layout (no LoadFolders.xml): the game's conventional fallback
+    // (GAME_SOURCE_FINDINGS §1.3/§1.4, verified on the 1.6 decompile) —
+    // `RootDir/<newest version dir ≤ current>` plus `RootDir/Common` plus the
+    // mod root ALWAYS. The folders SUM, never "or": version-specific content
+    // overrides duplicate registrations by load order (specific above
+    // common above root), which is exactly the view order `content_dirs`
+    // carries here (first entry = highest priority for first-registration
+    // rules).
+    let requested = requested.map(normalize_version_str);
+    let requested = requested.as_deref();
+    let tiers = classic_version_dirs(root);
+    let chosen = pick_classic_version(&tiers, requested);
+    let mut content_dirs: Vec<PathBuf> = Vec::new();
+    if let Some(v) = &chosen {
+        if let Some((_, dir)) = tiers.iter().find(|(name, _)| name == v) {
+            content_dirs.push(dir.clone());
+        }
     }
-    let chosen = match &version {
-        Some(v) => versioned
-            .iter()
-            .find(|d| d.file_name().and_then(|f| f.to_str()) == Some(v.as_str()))
-            .cloned(),
-        None => versioned
-            .iter()
-            .max_by_key(|d| {
-                d.file_name()
-                    .and_then(|f| f.to_str())
-                    .map(|n| {
-                        n.split('.')
-                            .filter_map(|p| p.parse::<u64>().ok())
-                            .collect::<Vec<_>>()
-                    })
-                    .unwrap_or_default()
-            })
-            .cloned(),
-    };
-    let chosen_dir = chosen.clone().unwrap_or_else(|| root.to_path_buf());
-    let version_name = chosen
-        .as_ref()
-        .and_then(|d| d.file_name().and_then(|f| f.to_str()).map(str::to_string));
+    let common = root.join("Common");
+    if common.is_dir() {
+        content_dirs.push(common);
+    }
+    // The root always loads, even when a version folder exists.
+    content_dirs.push(root.to_path_buf());
     let mut languages_dirs = vec![languages_dir.clone()];
-    let lang_in_chosen = chosen_dir.join("Languages");
-    if lang_in_chosen.is_dir() {
-        languages_dirs.push(lang_in_chosen);
+    for dir in &content_dirs {
+        let d = dir.join("Languages");
+        if d.is_dir() && !languages_dirs.contains(&d) {
+            languages_dirs.push(d);
+        }
     }
     Ok(EffectiveModView {
-        version: version_name,
-        content_dirs: vec![chosen_dir],
+        version: chosen,
+        content_dirs,
         conditional_dirs: Vec::new(),
         languages_dir,
         languages_dirs,
@@ -347,7 +388,69 @@ mod tests {
         std::fs::create_dir_all(root.join("1.6")).unwrap();
         let view = effective_view(root, None).unwrap();
         assert_eq!(view.version.as_deref(), Some("1.6"));
-        assert_eq!(view.content_dirs, vec![root.join("1.6")]);
+        // Game rule (§1.3): the version folder loads FIRST (highest
+        // priority), the root ALWAYS loads with it — they sum, never "or".
+        assert_eq!(
+            view.content_dirs,
+            vec![root.join("1.6"), root.to_path_buf()]
+        );
+    }
+
+    /// The classic view follows the game fallback (§1.3): exact match first,
+    /// else the largest version ≤ requested, else NO version folder (root
+    /// only) — never a newer folder than the running game version.
+    #[test]
+    fn classic_version_fallback_largest_le_requested() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        for name in ["1.4", "1.6"] {
+            std::fs::create_dir_all(root.join(name)).unwrap();
+        }
+        // Exact request.
+        let view = effective_view(root, Some("1.4")).unwrap();
+        assert_eq!(view.version.as_deref(), Some("1.4"));
+        assert_eq!(view.content_dirs[0], root.join("1.4"));
+        // Fallback: game 1.5 on a mod shipping 1.4/1.6 → 1.4 content.
+        let view = effective_view(root, Some("1.5")).unwrap();
+        assert_eq!(view.version.as_deref(), Some("1.4"));
+        assert_eq!(view.content_dirs[0], root.join("1.4"));
+        // A version lower than everything → no version folder at all.
+        let view = effective_view(root, Some("1.0")).unwrap();
+        assert_eq!(view.version.as_deref(), None);
+        assert_eq!(view.content_dirs, vec![root.to_path_buf()]);
+        // The prefixed flag spelling resolves like the bare one.
+        let view = effective_view(root, Some("v1.4")).unwrap();
+        assert_eq!(view.version.as_deref(), Some("1.4"));
+    }
+
+    /// `Common/` and `v`-prefixed classic folders follow the game convention:
+    /// view order is version → Common → root.
+    #[test]
+    fn classic_view_orders_version_common_root() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        for name in ["1.4", "v1.6", "Common"] {
+            std::fs::create_dir_all(root.join(name)).unwrap();
+        }
+        let view = effective_view(root, None).unwrap();
+        assert_eq!(view.version.as_deref(), Some("1.6"));
+        assert_eq!(
+            view.content_dirs,
+            vec![root.join("v1.6"), root.join("Common"), root.to_path_buf()]
+        );
+        // Languages dirs follow the same priority (root's own Languages is
+        // always the base).
+        std::fs::create_dir_all(root.join("v1.6/Languages")).unwrap();
+        std::fs::create_dir_all(root.join("Common/Languages")).unwrap();
+        let dirs = view.languages_dirs();
+        assert_eq!(
+            dirs,
+            vec![
+                root.join("Languages"),
+                root.join("v1.6/Languages"),
+                root.join("Common/Languages"),
+            ]
+        );
     }
 }
 
