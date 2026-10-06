@@ -9,6 +9,7 @@ import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, FileCode2, Folder
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { clientInstance } from '../lib/client/instance'
+import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
 
 const ROW_HEIGHT = 63
@@ -92,7 +93,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             ))}
           <div className="tree-bottom">
             <span className="eyebrow">{t('ws.translationFolder')}</span>
-            <code>Languages/Russian</code>
+            <code>Languages/{folderForm(st.targetLocale)}</code>
             <span className="text-success">{t('ws.sourcesSafe')}</span>
           </div>
         </aside>

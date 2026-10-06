@@ -255,7 +255,9 @@ export const projectStore = {
     if (!snap) return
     try {
       const fresh = await clientInstance.getClient().snapshot(snap.project_id)
-      set({ snapshot: fresh, entries: mapSnapshot(fresh, 'ru'), drafts: {} })
+      // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
+      // захардкоженная 'ru' игнорировала targetLocale).
+      set({ snapshot: fresh, entries: mapSnapshot(fresh, state.targetLocale), drafts: {} })
     } catch {
       /* refresh failures surface via the next contract call */
     }

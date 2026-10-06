@@ -7,6 +7,7 @@ import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { contractErrorText } from '../lib/client/messagesError'
+import { folderForm } from '../lib/languages/folderForm'
 import { t } from '../lib/i18n'
 import type { ImportExistingResponseDto } from '../lib/client/types'
 
@@ -63,7 +64,9 @@ export function Existing() {
           project_id: projectId,
           session_epoch: epoch,
           existing_dir: { path: dir.trim() },
-          locale: 'Russian',
+          // Пак кормит АКТИВНУЮ цель (strict folder form), не захардкоженный
+          // 'Russian' — при uk-цели импорт Ukrainian-пака больше не лжёт.
+          locale: folderForm(st.targetLocale),
         }),
       )
     } catch (e) {
@@ -82,7 +85,7 @@ export function Existing() {
         expected_revision: acked,
         session_epoch: epoch,
         existing_dir: { path: dir.trim() },
-        locale: 'Russian',
+        locale: folderForm(st.targetLocale),
       })
       setApplied(r.applied)
       setReport(null)

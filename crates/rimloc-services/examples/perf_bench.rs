@@ -157,6 +157,7 @@ fn phase_full(mod_root: &Path, managed: &Path, batch: usize) -> Result<(), ExitC
             project_id: snap.project_id.clone(),
             expected_revision: rev,
             session_epoch: epoch,
+            origin: None,
             intents,
         };
         let t = Instant::now();

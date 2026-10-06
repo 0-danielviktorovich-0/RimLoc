@@ -209,6 +209,26 @@ pub enum IntentAction {
     ClearTranslation,
 }
 
+/// Provenance class the CALLER claims for an apply batch. The session
+/// stamps it onto every applied translation, so the durable canonical
+/// state never has to guess: a mass machine-written batch (the CLI
+/// `translate` canonical path) must not land as [`ApplyOrigin::Human`]
+/// work. Closed enum by contract — no free-form provenance rides the
+/// wire; the session maps it onto the domain `Origin` vocabulary
+/// (`Import` → `Origin::Imported`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ApplyOrigin {
+    /// A person wrote/edited the text (the GUI intent path).
+    Human,
+    /// Machine translation (CLI `translate`).
+    Llm,
+    /// From translation memory.
+    Tm,
+    /// Imported from an existing pack.
+    Import,
+}
+
 /// Apply typed intents with lost-update protection.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ApplyIntentsRequest {
@@ -218,6 +238,12 @@ pub struct ApplyIntentsRequest {
     /// Stale-session guard: the epoch of the caller's open session.
     pub session_epoch: u64,
     pub intents: Vec<TranslationIntent>,
+    /// Provenance stamped onto EVERY applied translation of this batch.
+    /// Absent field (the serde default — older clients, the GUI adapter)
+    /// means [`ApplyOrigin::Human`]: additive and behavior-preserving,
+    /// the GUI apply path is unchanged.
+    #[serde(default)]
+    pub origin: Option<ApplyOrigin>,
 }
 
 /// One intent the service refused. The rest of the batch still applies
@@ -414,9 +440,15 @@ pub enum Capability {
     /// `provider_instance_validate`). Instance metadata persists in the
     /// settings file next to the managed projects; the API key NEVER does —
     /// it lives in the OS keychain and the contract surface only ever
-    /// reports the `has_key` boolean. Wire name appends (never renames)
-    /// per the contract rule.
+    /// reports the `has_key` boolean. Wire name appends (never renames) per
+    /// the contract rule.
     ProviderInstances,
+    /// Cross-version diff (`contract_version_diff`): read-only comparison of
+    /// the translatable source inventories of two mod roots —
+    /// new / missing / changed / unchanged classification per key with the
+    /// carrying file per side. Stateless: no project session involved.
+    /// Wire name appends (never renames) per the contract rule.
+    VersionDiff,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -458,6 +490,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectGlossary,
             Capability::TranslationMemory,
             Capability::ProviderInstances,
+            Capability::VersionDiff,
         ],
         unsupported: vec![
             UnsupportedCapability {
@@ -667,6 +700,119 @@ pub struct ApplyExistingResponse {
     pub ambiguous: usize,
 }
 
+// ---------------------------------------------------------------------------
+// Cross-version diff (compare screen): two mod roots → source inventory diff
+// ---------------------------------------------------------------------------
+
+/// Size cap for the entry table in [`VersionDiffResponse`] (the same
+/// sample-vs-exact rule as [`EXISTING_LIST_LIMIT`]): counts are always
+/// exact, the list is capped and pre-ordered changed → new → missing →
+/// unchanged (the review queue), so a cap only ever trims the tail.
+pub const VERSION_DIFF_LIST_LIMIT: usize = 200;
+
+/// Request `contract_version_diff`: read-only diff of the translatable
+/// source inventories of two mod roots. STATELESS — no project session,
+/// no epoch/revision guards; both trees are only ever read.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct VersionDiffRequest {
+    /// Old mod root (absolute directory; the adapter enforces the form
+    /// guards BEFORE any filesystem access).
+    pub old_root: PathBufDto,
+    /// New mod root (absolute directory).
+    pub new_root: PathBufDto,
+    /// Source language folder name treated as the source set
+    /// (`English` when absent — Defs always count as English source).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_lang: Option<String>,
+}
+
+/// Diff category on the wire (snake_case). `missing` = the key exists only
+/// in the OLD root (its translation would be obsolete).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum VersionDiffCategory {
+    Unchanged,
+    Changed,
+    New,
+    Missing,
+}
+
+/// One diff entry with the carrying file per side (absent on the side
+/// where the key does not exist).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct VersionDiffEntryDto {
+    pub key: String,
+    pub category: VersionDiffCategory,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub old_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub old_source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_source: Option<String>,
+}
+
+/// Result of `contract_version_diff`. Counts are exact; `entries` is the
+/// capped, review-ordered sample ([`VERSION_DIFF_LIST_LIMIT`]) with an
+/// honest truncation flag.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct VersionDiffResponse {
+    /// Display labels (roots' folder names unless the caller overrode).
+    pub old_label: String,
+    pub new_label: String,
+    pub unchanged: usize,
+    pub changed: usize,
+    pub new: usize,
+    pub missing: usize,
+    pub entries: Vec<VersionDiffEntryDto>,
+    /// True when `entries` was cut at [`VERSION_DIFF_LIST_LIMIT`] —
+    /// counts above stay the source of truth.
+    pub entries_truncated: bool,
+}
+
+impl VersionDiffResponse {
+    /// Typed conversion from the services diff report (one scan pipeline,
+    /// one diff semantic — CLI and GUI never diverge).
+    pub fn from_report(report: crate::extras::version_diff::VersionDiffReport) -> Self {
+        use crate::extras::version_diff::DiffCategory as Cat;
+        let total = report.entries.len();
+        let entries = report
+            .entries
+            .into_iter()
+            .take(VERSION_DIFF_LIST_LIMIT)
+            .map(|e| {
+                let category = match e.category {
+                    Cat::Unchanged => VersionDiffCategory::Unchanged,
+                    Cat::Changed => VersionDiffCategory::Changed,
+                    Cat::New => VersionDiffCategory::New,
+                    // CLI JSON says "Removed"; the GUI wire vocabulary is
+                    // `missing` — same fact, per-surface naming.
+                    Cat::Removed => VersionDiffCategory::Missing,
+                };
+                VersionDiffEntryDto {
+                    key: e.key,
+                    category,
+                    old_path: e.path_a,
+                    new_path: e.path_b,
+                    old_source: e.source_a,
+                    new_source: e.source_b,
+                }
+            })
+            .collect();
+        Self {
+            old_label: report.from_version,
+            new_label: report.to_version,
+            unchanged: report.unchanged,
+            changed: report.changed,
+            new: report.new,
+            missing: report.removed,
+            entries,
+            entries_truncated: total > VERSION_DIFF_LIST_LIMIT,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -803,6 +949,48 @@ mod tests {
         assert_eq!(v["existing_dir"]["path"], "/mods/MyMod/Languages/Russian");
         let back: ApplyExistingRequest = serde_json::from_value(v).unwrap();
         assert_eq!(back, req);
+    }
+
+    /// Apply-batch provenance (review MAJOR): the absent field defaults to
+    /// no claim (session → Human — older clients stay legal), `llm`
+    /// round-trips as the closed enum, and the wire values are lowercase.
+    /// No free-form provenance can cross the seam.
+    #[test]
+    fn apply_origin_defaults_unset_and_round_trips() {
+        let bare: ApplyIntentsRequest = serde_json::from_value(serde_json::json!({
+            "project_id": "proj-x",
+            "expected_revision": 1,
+            "session_epoch": 1,
+            "intents": []
+        }))
+        .unwrap();
+        assert_eq!(bare.origin, None);
+
+        let req: ApplyIntentsRequest = serde_json::from_value(serde_json::json!({
+            "project_id": "proj-x",
+            "expected_revision": 1,
+            "session_epoch": 1,
+            "intents": [],
+            "origin": "llm"
+        }))
+        .unwrap();
+        assert_eq!(req.origin, Some(ApplyOrigin::Llm));
+
+        let v = serde_json::to_value(&req).unwrap();
+        assert_eq!(v["origin"], "llm");
+        // The full closed vocabulary, lowercase on the wire.
+        assert_eq!(
+            serde_json::to_value(ApplyOrigin::Human).unwrap(),
+            serde_json::json!("human")
+        );
+        assert_eq!(
+            serde_json::to_value(ApplyOrigin::Tm).unwrap(),
+            serde_json::json!("tm")
+        );
+        assert_eq!(
+            serde_json::to_value(ApplyOrigin::Import).unwrap(),
+            serde_json::json!("import")
+        );
     }
 
     /// Intents round-trip with the full structural identity.

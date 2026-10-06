@@ -1,6 +1,5 @@
 ---
 source: crates/rimloc-cli/tests/snapshots.rs
-assertion_line: 65
 expression: cleaned
 ---
 RimWorld localization toolkit (Rust)
@@ -30,7 +29,7 @@ Commands:
   word-info      Diagnose WordInfo coverage of translated labels (help via FTL)
   version-diff   Compare translatable source inventory across two mod versions (help via FTL)
   compare        Compare translations against the source and each other (help via FTL)
-  translate      Translate a mod via an LLM provider into a .po (help via FTL)
+  translate      Translate a mod via an LLM provider into canonical project state (JSON report; --emit-po keeps the legacy .po artifact)
   build-mod      Build a standalone translation mod from a .po file
   doctor         Environment diagnostics: RW install, version, mod dirs, provider config (presence only) and output writability. Always exits 0
   help           Print this message or the help of the given subcommand(s)

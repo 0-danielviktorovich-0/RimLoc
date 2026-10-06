@@ -1,7 +1,7 @@
 // RimLoc React lane — application root (UI R1).
 // Hash router + the R1 visual shell (mandate §9/§47: Lovable R1 is the
 // visual contract; the shell composition is ADOPT, data is LIVE-only).
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight, Globe } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
@@ -15,35 +15,42 @@ import { Glossary } from './components/Glossary'
 import { Tm } from './components/Tm'
 import { BuildExport } from './components/BuildExport'
 import { Existing } from './components/Existing'
+import { Compare } from './components/Compare'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
 import { Settings } from './components/Settings'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
-import { t } from './lib/i18n'
+import { t, getLocale } from './lib/i18n'
 import { useCommandPalette, type PaletteCommand } from './lib/palette'
 
-// Palette commands are pure hash navigations — a module constant keeps a
-// stable identity across renders (the hook's filter memo depends on it).
-// Each command navigates; the hook closes the palette around the action.
+// Palette commands are pure hash navigations. Labels resolve through t()
+// (audit: RU-литералы не менялись с UI-языком); массив строится фабрикой и
+// держит СТАБИЛЬНУЮ идентичность на смену UI-локали — фильтр-мемо хука и
+// эффект курсора зависят от идентичности списка, пересоздание на каждый
+// рендер сбрасывало бы activeIndex стрелками.
 // Acceptance §3 MUST-FIX #5: маршруты existing/compare/selfloc/diagnostics/
-// providers/lm/tools не были покрыты командами — теперь полный набор.
-const PALETTE_COMMANDS: PaletteCommand[] = [
-  { id: 'entries', label: 'Строки перевода', action: () => { window.location.hash = '#/home' } },
-  { id: 'projects', label: 'Проекты', action: () => { window.location.hash = '#/projects' } },
-  { id: 'checks', label: 'Проверки', action: () => { window.location.hash = '#/checks' } },
-  { id: 'existing', label: 'Импорт существующего перевода', action: () => { window.location.hash = '#/existing' } },
-  { id: 'compare', label: 'Сравнение версий', action: () => { window.location.hash = '#/compare' } },
-  { id: 'glossary', label: 'Глоссарий', action: () => { window.location.hash = '#/glossary' } },
-  { id: 'tm', label: 'Память переводов', action: () => { window.location.hash = '#/tm' } },
-  { id: 'export', label: 'Сборка и экспорт', action: () => { window.location.hash = '#/export' } },
-  { id: 'selfloc', label: 'Самоперевод RimLoc', action: () => { window.location.hash = '#/selfloc' } },
-  { id: 'diagnostics', label: 'Диагностика', action: () => { window.location.hash = '#/diagnostics' } },
-  { id: 'providers', label: 'AI-провайдеры', action: () => { window.location.hash = '#/providers' } },
-  { id: 'lm', label: 'Языки', action: () => { window.location.hash = '#/lm' } },
-  { id: 'tools', label: 'Инструменты', action: () => { window.location.hash = '#/tools' } },
-  { id: 'settings', label: 'Настройки', action: () => { window.location.hash = '#/settings' } },
-]
+// providers/lm не были покрыты командами — теперь полный набор.
+// tools УДАЛЁН (W0-решение: нет продуктового определения — LIVE или удалён
+// из навигации; маршрут в Route type остаётся, hash #/tools рендерит
+// fallback как раньше).
+function buildPaletteCommands(): PaletteCommand[] {
+  return [
+    { id: 'entries', label: t('palette.cmd.entries'), action: () => { window.location.hash = '#/home' } },
+    { id: 'projects', label: t('palette.cmd.projects'), action: () => { window.location.hash = '#/projects' } },
+    { id: 'checks', label: t('palette.cmd.checks'), action: () => { window.location.hash = '#/checks' } },
+    { id: 'existing', label: t('palette.cmd.existing'), action: () => { window.location.hash = '#/existing' } },
+    { id: 'compare', label: t('palette.cmd.compare'), action: () => { window.location.hash = '#/compare' } },
+    { id: 'glossary', label: t('palette.cmd.glossary'), action: () => { window.location.hash = '#/glossary' } },
+    { id: 'tm', label: t('palette.cmd.tm'), action: () => { window.location.hash = '#/tm' } },
+    { id: 'export', label: t('palette.cmd.export'), action: () => { window.location.hash = '#/export' } },
+    { id: 'selfloc', label: t('palette.cmd.selfloc'), action: () => { window.location.hash = '#/selfloc' } },
+    { id: 'diagnostics', label: t('palette.cmd.diagnostics'), action: () => { window.location.hash = '#/diagnostics' } },
+    { id: 'providers', label: t('palette.cmd.providers'), action: () => { window.location.hash = '#/providers' } },
+    { id: 'lm', label: t('palette.cmd.lm'), action: () => { window.location.hash = '#/lm' } },
+    { id: 'settings', label: t('palette.cmd.settings'), action: () => { window.location.hash = '#/settings' } },
+  ]
+}
 
 type Route =
   | 'home'
@@ -73,6 +80,8 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'export', label: t('nav.export'), icon: Wrench },
   // Acceptance MUST-FIX #1: LM был недостижим из UI (только ручной #/lm).
   { to: 'lm', label: t('nav.lm'), icon: Globe },
+  // tools удалён из навигации (W0): не было продуктового определения.
+  // Route 'tools' жив — внешний hash #/tools честно падает в fallback.
 ]
 
 function currentRoute(): Route {
@@ -86,6 +95,12 @@ export function App() {
   const [route, setRoute] = useState<Route>(currentRoute)
   const [dark, setDark] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
+  // UI-локаль читается на рендер: смена языка в Settings применяется «на
+  // следующий рендер» (роут-Change) — новый ключ useMemo пересобирает
+  // команды с метками активного языка, идентичность между рендерами
+  // сохраняется.
+  const uiLocale = getLocale()
+  const paletteCommands = useMemo(buildPaletteCommands, [uiLocale])
   // Palette state (open/query/activeIndex) lives in the hook — one source of
   // truth for the window keydown contract (Cmd+K, Escape, arrows, Enter).
   const {
@@ -97,7 +112,7 @@ export function App() {
     activeIndex,
     setActiveIndex,
     runCommand,
-  } = useCommandPalette(PALETTE_COMMANDS)
+  } = useCommandPalette(paletteCommands)
   const [clientError, setClientError] = useState<string | null>(null)
 
   // Keep the active option visible while navigating with arrows/End/Home
@@ -261,14 +276,10 @@ export function App() {
                   <p>{t('ws.headingSubtitle')}</p>
                 </div>
                 <div className="heading-controls">
-                  <label className="version-select">
-                    <span>RimWorld</span>
-                    <select aria-label={t('ws.gameVersion')} defaultValue="1.6">
-                      <option>1.6</option>
-                      <option>1.5</option>
-                      <option>1.4</option>
-                    </select>
-                  </label>
+                  {/* Мёртвый version-select УБРАН (аудит): селект с
+                    defaultValue без onChange ничего не управлял, а
+                    projectStore.gameVersion не существует — возвращаем,
+                    когда версия появится в состоянии проекта. */}
                   <label className="version-select">
                     <span>→</span>
                     <select
@@ -290,6 +301,8 @@ export function App() {
             </div>
           ) : route === 'existing' ? (
             <Existing />
+          ) : route === 'compare' ? (
+            <Compare />
           ) : route === 'export' ? (
             <BuildExport />
           ) : route === 'selfloc' ? (
@@ -356,13 +369,13 @@ export function App() {
               aria-controls="palette-listbox"
               aria-autocomplete="list"
               aria-activedescendant={paletteFiltered[activeIndex] ? `palette-opt-${activeIndex}` : undefined}
-              placeholder="Поиск…"
+              placeholder={t('palette.search')}
               value={paletteQuery}
               onChange={(e) => setPaletteQuery(e.target.value)}
               autoFocus
               data-testid="palette.input"
             />
-            <div className="palette-list" id="palette-listbox" role="listbox" aria-label="Команды">
+            <div className="palette-list" id="palette-listbox" role="listbox" aria-label={t('palette.title')}>
               {paletteFiltered.map((c, i) => (
                 <button
                   key={c.id}
@@ -379,7 +392,7 @@ export function App() {
                 </button>
               ))}
               {paletteQuery.trim() !== '' && paletteFiltered.length === 0 && (
-                <p className="palette-empty">Ничего не найдено</p>
+                <p className="palette-empty">{t('palette.empty')}</p>
               )}
             </div>
           </div>

@@ -59,16 +59,36 @@ struct ElementFrame {
     has_text: bool,
     buffer: String,
     /// Whitespace seen since the last committed chunk. Formatting indentation
-    /// is dropped unless content follows within the same value.
+    /// (a run carrying a newline) is dropped; a same-line run is content and
+    /// survives to the value edges.
     pending_ws: String,
+    /// Serialized `<name attrs>` for an inline markup child (any element
+    /// inside a value except `li`, which folds with a newline instead).
+    /// Empty when this element itself is a key, not markup.
+    open_tag: String,
+}
+
+/// Whitespace semantics for keyed values (game-accurate): RimWorld reads the
+/// element text as-is, so the parser returns the exact characters between the
+/// tags minus FORMATTING INDENTATION — and a whitespace run is formatting
+/// precisely when it carries a newline (indent alignment across lines). A
+/// same-line run is content: `<Label> Search: </Label>` keeps both edge
+/// spaces, because the trailing space of `Search: ` is meaningful when the
+/// game concatenates strings.
+///
+/// Interior runs are always preserved verbatim (newlines inside a value are
+/// the translator's line breaks, as with `<LineBreak/>`).
+fn ws_run_is_formatting(run: &str) -> bool {
+    run.contains('\n')
 }
 
 /// Commit a character-data chunk into a value buffer.
 ///
-/// Leading whitespace is dropped only before the first committed chunk of a
-/// value; interior whitespace runs are preserved (RimWorld shows them to the
-/// translator); trailing whitespace stays uncommitted in `pending_ws` and is
-/// dropped at the closing tag via the final trim.
+/// Whole-whitespace chunks defer into `pending_ws` unless they carry a
+/// newline before any content (layout indentation). The first content chunk
+/// drops its own leading run only when that run is indentation; a same-line
+/// leading run is content. Interior whitespace (deferred runs between
+/// content) is preserved verbatim.
 fn commit_text_chunk(
     buffer: &mut String,
     pending_ws: &mut String,
@@ -76,14 +96,25 @@ fn commit_text_chunk(
     chunk: &str,
 ) {
     if chunk.chars().all(char::is_whitespace) {
-        if !buffer.is_empty() {
+        if !buffer.is_empty() || !ws_run_is_formatting(chunk) {
             pending_ws.push_str(chunk);
         }
         return;
     }
     if buffer.is_empty() {
-        pending_ws.clear();
-        buffer.push_str(chunk.trim_start());
+        let trimmed = chunk.trim_start();
+        let leading = &chunk[..chunk.len() - trimmed.len()];
+        // `pending_ws` before any content only ever holds same-line runs
+        // (newline runs are dropped on sight), i.e. deferred content.
+        let deferred = std::mem::take(pending_ws);
+        buffer.push_str(&deferred);
+        match leading.find('\n') {
+            // Same-line head is content; the newline + indent behind it is layout.
+            Some(head) => buffer.push_str(&leading[..head]),
+            // Whole run stays on the open-tag line: content edge (` Search:`).
+            None => buffer.push_str(leading),
+        }
+        buffer.push_str(trimmed);
     } else {
         let ws = std::mem::take(pending_ws);
         buffer.push_str(&ws);
@@ -101,7 +132,9 @@ fn commit_ref_chunk(
     has_text: &mut bool,
     decoded: &str,
 ) {
-    if !buffer.is_empty() {
+    if !buffer.is_empty() || !ws_run_is_formatting(pending_ws) {
+        // Interior run, or a deferred same-line leading run (content edge
+        // before the reference: `<Label> &lt;b&gt;…` keeps its space).
         let ws = std::mem::take(pending_ws);
         buffer.push_str(&ws);
     } else {
@@ -109,6 +142,52 @@ fn commit_ref_chunk(
     }
     buffer.push_str(decoded);
     *has_text = true;
+}
+
+/// Close a finished value: decide its trailing edge. Everything from the last
+/// newline to the closing tag (the final line break + closing indent) is
+/// formatting and is cut; same-line whitespace before it — or a trailing run
+/// with no newline at all (`Search: `) — is content and stays.
+fn close_value_buffer(buffer: &mut String, pending_ws: &mut String) {
+    if ws_run_is_formatting(pending_ws) {
+        // Pending carries the final newline: drop it together with the
+        // closing indent already committed to the buffer behind it.
+        pending_ws.clear();
+        if let Some(pos) = buffer.rfind('\n') {
+            if buffer[pos + 1..].chars().all(char::is_whitespace) {
+                buffer.truncate(pos);
+            }
+        }
+        return;
+    }
+    if !pending_ws.is_empty() {
+        let ws = std::mem::take(pending_ws);
+        buffer.push_str(&ws);
+    }
+    if let Some(pos) = buffer.rfind('\n') {
+        if buffer[pos + 1..].chars().all(char::is_whitespace) {
+            buffer.truncate(pos);
+        }
+    }
+}
+
+/// Re-serialize an inline markup child opening tag (`<b>`, `<color r="1">`)
+/// so real elements round-trip into the value instead of vanishing together
+/// with their text. Attribute values are copied raw (entities intact).
+fn serialize_start_tag(name: &str, attrs: quick_xml::events::attributes::Attributes<'_>) -> String {
+    let mut tag = String::from("<");
+    tag.push_str(name);
+    for attr in attrs {
+        let Ok(attr) = attr else { break };
+        tag.push(' ');
+        tag.push_str(attr.key.as_ref());
+        tag.push_str("=\"");
+        // Raw value: escape sequences stay as written, round-trip is exact.
+        tag.push_str(&attr.value);
+        tag.push('"');
+    }
+    tag.push('>');
+    tag
 }
 
 /// Decode a `&ref;` event into its in-game text: predefined XML entities
@@ -253,16 +332,26 @@ pub fn scan_keyed_xml_with_options(
                     let offset = reader.buffer_position();
                     let offset = usize::try_from(offset).unwrap_or(usize::MAX);
                     let line = line_for_offset(offset, &line_starts);
+                    // An element nested inside a value is inline markup and
+                    // round-trips verbatim (`<b>Search:</b>`); `li` folds
+                    // into the parent with a newline instead, and root
+                    // children are keys, not markup.
+                    let open_tag = if stack.len() >= 2 && !name.eq_ignore_ascii_case("li") {
+                        serialize_start_tag(&name, e.attributes())
+                    } else {
+                        String::new()
+                    };
                     stack.push(ElementFrame {
                         name,
                         line,
                         has_text: false,
                         buffer: String::new(),
                         pending_ws: String::new(),
+                        open_tag,
                     });
                 }
                 Ok(Event::End(_)) => {
-                    if let Some(frame) = stack.pop() {
+                    if let Some(mut frame) = stack.pop() {
                         // Optional: emit nested dotted keys under LanguageData when enabled
                         if opts.nested && frame.has_text && !frame.name.is_empty() {
                             // stack after pop contains ancestors; expect root[0] == LanguageData
@@ -282,10 +371,11 @@ pub fn scan_keyed_xml_with_options(
                                         def_type.as_deref(),
                                         opts.definj_drop_def_type,
                                     );
+                                    close_value_buffer(&mut frame.buffer, &mut frame.pending_ws);
                                     local.push(TransUnit {
                                         tkey: None,
                                         key,
-                                        source: Some(frame.buffer.trim().to_string()),
+                                        source: Some(std::mem::take(&mut frame.buffer)),
                                         path: p.clone(),
                                         line: frame.line,
                                         ..Default::default()
@@ -313,8 +403,9 @@ pub fn scan_keyed_xml_with_options(
 
                         // Closing a top-level <Key> under <LanguageData>
                         if stack.len() == 1 && !frame.name.is_empty() {
+                            close_value_buffer(&mut frame.buffer, &mut frame.pending_ws);
                             let source = if frame.has_text {
-                                frame.buffer.trim().to_string()
+                                std::mem::take(&mut frame.buffer)
                             } else if opts.include_empty_keys {
                                 String::new()
                             } else {
@@ -330,6 +421,22 @@ pub fn scan_keyed_xml_with_options(
                                     line: frame.line,
                                     ..Default::default()
                                 });
+                            }
+                        } else if stack.len() >= 2 && !frame.name.eq_ignore_ascii_case("li") {
+                            // Inline markup child inside a value: re-serialize
+                            // it verbatim (`<b>Search:</b>`). It used to be
+                            // dropped together with all of its text.
+                            if let Some(parent) = stack.last_mut() {
+                                if frame.has_text {
+                                    parent.has_text = true;
+                                }
+                                let ws = std::mem::take(&mut parent.pending_ws);
+                                parent.buffer.push_str(&ws);
+                                parent.buffer.push_str(&frame.open_tag);
+                                parent.buffer.push_str(&frame.buffer);
+                                parent.buffer.push_str("</");
+                                parent.buffer.push_str(&frame.name);
+                                parent.buffer.push('>');
                             }
                         } else if opts.nested
                             && stack
@@ -350,10 +457,11 @@ pub fn scan_keyed_xml_with_options(
                                 def_type.as_deref(),
                                 opts.definj_drop_def_type,
                             );
+                            close_value_buffer(&mut frame.buffer, &mut frame.pending_ws);
                             local.push(TransUnit {
                                 tkey: None,
                                 key,
-                                source: Some(frame.buffer.trim().to_string()),
+                                source: Some(std::mem::take(&mut frame.buffer)),
                                 path: p.clone(),
                                 line: frame.line,
                                 ..Default::default()
@@ -398,6 +506,27 @@ pub fn scan_keyed_xml_with_options(
                                     parent.buffer.push('\n');
                                 }
                                 parent.has_text = true;
+                            }
+                        }
+                        // Self-closing inline markup inside a value (`<foo/>`)
+                        // round-trips verbatim, like its paired sibling above.
+                        if !name.eq_ignore_ascii_case("LineBreak")
+                            && !name.eq_ignore_ascii_case("li")
+                        {
+                            if let Some(parent) = stack.last_mut() {
+                                let ws = std::mem::take(&mut parent.pending_ws);
+                                parent.buffer.push_str(&ws);
+                                parent.buffer.push('<');
+                                parent.buffer.push_str(&name);
+                                for attr in e.attributes() {
+                                    let Ok(attr) = attr else { break };
+                                    parent.buffer.push(' ');
+                                    parent.buffer.push_str(attr.key.as_ref());
+                                    parent.buffer.push_str("=\"");
+                                    parent.buffer.push_str(&attr.value);
+                                    parent.buffer.push('"');
+                                }
+                                parent.buffer.push_str("/>");
                             }
                         }
                         // Optional nested empty key: produce dotted key
@@ -462,10 +591,14 @@ pub fn scan_keyed_xml_with_options(
                     }
                 }
                 Ok(Event::CData(t)) => {
-                    let text = t.as_ref().trim().to_string();
+                    // CDATA is explicit character data — never layout — so it
+                    // commits verbatim under the same edge rule as text.
+                    let raw = t.as_ref().to_string();
                     if let Some(frame) = stack.last_mut() {
-                        if !text.is_empty() {
-                            frame.buffer.push_str(&text);
+                        if !raw.is_empty() {
+                            let ws = std::mem::take(&mut frame.pending_ws);
+                            frame.buffer.push_str(&ws);
+                            frame.buffer.push_str(&raw);
                             frame.has_text = true;
                         }
                     }
@@ -3138,6 +3271,157 @@ mod entity_escape_tests {
         let map = read_keyed_file_map(&file)?;
         assert_eq!(map.get("K1").map(String::as_str), Some("<b>value</b> tail"));
         assert_eq!(map.get("K2").map(String::as_str), Some("a & b"));
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod edge_trim_tests {
+    //! I1 (RELEASE_PARITY_MATRIX): край-тримминг Keyed-значений.
+    //!
+    //! Правило (game-семантика): RimWorld читает значение как есть, парсер
+    //! возвращает точный текст между тегами минус ОТСТУПЫ ФОРМАТИРОВАНИЯ.
+    //! Форматирование — пробельный рун, несущий перенос строки (выравнивание
+    //! отступами); краевой рун однострочного контента — контент: хвостовой
+    //! пробел `Search: ` значим при конкатенации в игре. Реальные inline-
+    //! элементы (`<b>…</b>`) раньше терялись ЦЕЛИКОМ (пустое значение) —
+    //! теперь сериализуются обратно.
+
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write_keyed(root: &Path, body: &str) {
+        let keyed = root.join("Mods/TestMod/Languages/English/Keyed");
+        fs::create_dir_all(&keyed).unwrap();
+        fs::write(keyed.join("Edges.xml"), body).unwrap();
+    }
+
+    fn find<'a>(units: &'a [TransUnit], key: &str) -> &'a str {
+        units
+            .iter()
+            .find(|u| u.key == key)
+            .unwrap_or_else(|| {
+                panic!(
+                    "key {key} not found in {:?}",
+                    units.iter().map(|u| u.key.as_str()).collect::<Vec<_>>()
+                )
+            })
+            .source
+            .as_deref()
+            .unwrap()
+    }
+
+    /// Однострочный элемент: оба края — контент, сохраняются дословно.
+    #[test]
+    fn scan_keyed_single_line_keeps_edge_spaces() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData>\n    <Label> Search: </Label>\n</LanguageData>\n",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Label"), " Search: ");
+        Ok(())
+    }
+
+    /// Многострочный элемент: отступы сняты, внутренние края строк сохранены,
+    /// включая контентный пробел перед закрывающим отступом.
+    #[test]
+    fn scan_keyed_multiline_drops_indent_but_keeps_line_content() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData>\n    <Spaced>\n        Search: \n    </Spaced>\n</LanguageData>\n",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Spaced"), "Search: ");
+        Ok(())
+    }
+
+    /// A/B на реальной строке HugsLib (`HugsLib_loadOrderWarning_text`,
+    /// апстрим UnlimitedHugs/RimworldHugsLib, English/Keyed/English.xml:78-79)
+    /// плюс sibling класса «Search: » из w5-remis SEMANTIC (хвостовой пробел
+    /// при конкатенации). До фикса: `…issues.\n…` сохранялся, но любой
+    /// хвостовой пробел съедался (`Search: ` → `Search:`); после — край
+    /// сохранён и разметка, и хвостовой пробел.
+    #[test]
+    fn scan_keyed_hugslib_loadorderwarning_keeps_markup_and_edges() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData>\n\t<HugsLib_loadOrderWarning_title>Improper mod load order</HugsLib_loadOrderWarning_title>\n\t<HugsLib_loadOrderWarning_text>&lt;b&gt;The HugsLib mod&lt;/b&gt; should always be loaded after &lt;b&gt;Core&lt;/b&gt; to avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game.</HugsLib_loadOrderWarning_text>\n\t<HugsLib_search_label>Search: </HugsLib_search_label>\n</LanguageData>\n",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(
+            find(&units, "HugsLib_loadOrderWarning_text"),
+            "<b>The HugsLib mod</b> should always be loaded after <b>Core</b> to avoid issues.\\nPlease adjust your mod order in the Mods menu and restart the game."
+        );
+        assert_eq!(find(&units, "HugsLib_search_label"), "Search: ");
+        Ok(())
+    }
+
+    /// Реальный inline-элемент: раньше его контент исчезал весь (значение
+    /// пустое) — теперь сериализуется дословно.
+    #[test]
+    fn scan_keyed_real_inline_elements_round_trip() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData><Label><b>Search:</b></Label></LanguageData>",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Label"), "<b>Search:</b>");
+        Ok(())
+    }
+
+    /// Inline-элемент с краевыми пробелами и атрибутами: края однострочника
+    /// контент, тег с атрибутами восстанавливается как написан.
+    #[test]
+    fn scan_keyed_inline_element_keeps_edges_and_attrs() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData><Label>before <color r=\"1\" g=\"0\">mid</color> after </Label></LanguageData>",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(
+            find(&units, "Label"),
+            "before <color r=\"1\" g=\"0\">mid</color> after "
+        );
+        Ok(())
+    }
+
+    /// Самозакрытый inline-элемент внутри значения.
+    #[test]
+    fn scan_keyed_self_closing_inline_element_round_trips() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData><Label>a<br/>b</Label></LanguageData>",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Label"), "a<br/>b");
+        Ok(())
+    }
+
+    /// CDATA — явные символьные данные, краевой трим к ним не применяется.
+    #[test]
+    fn scan_keyed_cdata_keeps_edges() -> CoreResult<()> {
+        let dir = tempdir()?;
+        write_keyed(
+            dir.path(),
+            "<LanguageData><Label><![CDATA[ Search: ]]></Label></LanguageData>",
+        );
+
+        let units = scan_keyed_xml(dir.path())?;
+        assert_eq!(find(&units, "Label"), " Search: ");
         Ok(())
     }
 }

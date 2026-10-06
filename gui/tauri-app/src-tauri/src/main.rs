@@ -3129,6 +3129,8 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "contract_provider_instance_upsert",
     "contract_provider_instance_delete",
     "contract_provider_instance_validate",
+    // Compare screen (version diff): read-only diff of two mod roots.
+    "contract_version_diff",
     // safe read-only legacy extras
     "get_app_info",
     // build identity of the running binary (soak-hardening §1) — read-only
@@ -3898,6 +3900,8 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
+            // Compare screen (version diff): read-only diff of two mod roots.
+            rimloc_gui_lib::contract_adapter::contract_version_diff,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3978,6 +3982,8 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
+            // Compare screen (version diff): read-only diff of two mod roots.
+            rimloc_gui_lib::contract_adapter::contract_version_diff,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,

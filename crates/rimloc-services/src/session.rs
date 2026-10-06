@@ -26,8 +26,8 @@
 //! intents once application goes async in a later slice).
 
 use crate::contract::{
-    ApplyIntentsRequest, ApplyIntentsResponse, ContractError, ContractErrorCode, IntentAction,
-    JobId, PathBufDto, ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse,
+    ApplyIntentsRequest, ApplyIntentsResponse, ApplyOrigin, ContractError, ContractErrorCode,
+    IntentAction, JobId, PathBufDto, ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse,
     ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse, ProjectId, ProjectSnapshot,
     ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
     ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
@@ -588,6 +588,11 @@ impl ProjectSessionManager {
         // accumulate call sits between the early `applied == 0` return and
         // the persist step).
         let mut accepted_tm: Vec<(String, String, String)> = Vec::new();
+        // Provenance of the whole batch (apply-side claim, closed enum):
+        // the service still resolves identity/eligibility itself — the
+        // client only classifies WHO wrote the text. Absence (older
+        // clients, the GUI) stays HUMAN.
+        let batch_origin = apply_origin_to_domain(req.origin);
 
         for (index, intent) in req.intents.iter().enumerate() {
             if cancelled {
@@ -599,7 +604,7 @@ impl ProjectSessionManager {
                 continue;
             }
             let before = applied;
-            match apply_intent(&mut st.project, &engine, intent) {
+            match apply_intent(&mut st.project, &engine, intent, batch_origin) {
                 Ok(()) => applied += 1,
                 Err((code, message)) => skipped.push(SkippedIntent {
                     index,
@@ -3131,6 +3136,7 @@ fn apply_intent(
     project: &mut Project,
     engine: &crate::eligibility_engine::EligibilityEngine,
     intent: &TranslationIntent,
+    origin: Origin,
 ) -> Result<(), (ContractErrorCode, String)> {
     // Locale form first (P1-2): intent locales persist into the durable
     // record, and a malformed one would poison every later export long
@@ -3222,7 +3228,7 @@ fn apply_intent(
             t.text = text;
             t.completeness = completeness;
             t.validation = validation;
-            t.origin = Origin::Human;
+            t.origin = origin;
         }
         None => {
             project.translations.push(Translation {
@@ -3233,13 +3239,27 @@ fn apply_intent(
                 review: rimloc_domain::canonical::Review::None,
                 validation,
                 lifecycle: rimloc_domain::canonical::Lifecycle::Active,
-                origin: Origin::Human,
+                origin,
                 notes: String::new(),
                 source_changed: None,
             });
         }
     }
     Ok(())
+}
+
+/// Contract apply-batch origin → the domain provenance vocabulary.
+/// Absence (`None` — the serde default of older clients and the GUI
+/// adapter) is HUMAN, so the legacy apply path is behavior-identical.
+/// The mapping is total over the closed [`ApplyOrigin`] enum: no
+/// free-form provenance can cross this seam.
+fn apply_origin_to_domain(origin: Option<ApplyOrigin>) -> Origin {
+    match origin {
+        Some(ApplyOrigin::Llm) => Origin::Llm,
+        Some(ApplyOrigin::Tm) => Origin::Tm,
+        Some(ApplyOrigin::Import) => Origin::Imported,
+        Some(ApplyOrigin::Human) | None => Origin::Human,
+    }
 }
 
 #[cfg(test)]
@@ -3412,6 +3432,7 @@ mod tests {
             project_id: pid.into(),
             expected_revision: rev,
             session_epoch: epoch,
+            origin: None,
             intents,
         }
     }
@@ -4383,6 +4404,42 @@ mod tests {
         assert_eq!(get("AbilityDef").text.as_deref(), Some("способность"));
         assert_eq!(get("ThingDef").origin, Origin::Human);
         assert_eq!(get("ThingDef").completeness, Completeness::Translated);
+    }
+
+    /// Apply-batch provenance (review MAJOR): an explicit `origin = llm`
+    /// batch lands as Llm in the DURABLE canonical state — a mass machine
+    /// write must never be recorded as human work (the translate report
+    /// already claimed `origin:"llm"`). The no-origin default (Human) is
+    /// covered by `intents_hit_typed_identities_only` above via the `req`
+    /// helper (`origin: None`).
+    #[test]
+    fn apply_llm_origin_lands_durable_as_llm() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        two_types_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+
+        let res = mgr
+            .apply(&ApplyIntentsRequest {
+                project_id: snap.project_id.clone(),
+                expected_revision: snap.revision,
+                session_epoch: snap.session_epoch,
+                origin: Some(ApplyOrigin::Llm),
+                intents: vec![set_text("Dup.label", "ThingDef", "вещь (маш)")],
+            })
+            .unwrap();
+        assert_eq!(res.applied, 1);
+
+        // Durable: the provenance persisted with the acked write.
+        let loaded = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        let t = loaded
+            .project
+            .translations
+            .iter()
+            .find(|t| t.source_id.key == "Dup.label" && t.locale == "Russian")
+            .unwrap();
+        assert_eq!(t.origin, Origin::Llm);
     }
 
     /// save_failed keeps the dirty state; a retry after the fs problem is

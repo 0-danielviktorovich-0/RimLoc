@@ -36,6 +36,8 @@ import type {
   TmUpsertRequestDto,
   TmUpsertResponseDto,
   ValidateProjectResponseDto,
+  VersionDiffRequestDto,
+  VersionDiffResponseDto,
   ProviderInstanceDeleteRequestDto,
   ProviderInstanceDeleteResponseDto,
   ProviderInstanceListResponseDto,
@@ -150,6 +152,12 @@ export interface ContractMethodMap {
   contract_provider_instance_validate: {
     params: { request: ProviderInstanceValidateRequestDto };
     result: ProviderInstanceValidateResponseDto;
+  };
+  // Compare screen (version diff): read-only source-inventory diff of two
+  // mod roots — stateless, no project session involved.
+  contract_version_diff: {
+    params: { request: VersionDiffRequestDto };
+    result: VersionDiffResponseDto;
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }

@@ -113,6 +113,7 @@ fn main() -> ExitCode {
         project_id: snap.project_id.clone(),
         expected_revision: snap.revision,
         session_epoch: snap.session_epoch,
+        origin: None,
         intents: seed_intents,
     };
     match gui_mgr.apply(&seed_req) {
@@ -184,6 +185,7 @@ fn main() -> ExitCode {
         project_id: csnap.project_id.clone(),
         expected_revision: csnap.revision,
         session_epoch: csnap.session_epoch,
+        origin: None,
         intents,
     };
     match copy_mgr.apply(&req) {

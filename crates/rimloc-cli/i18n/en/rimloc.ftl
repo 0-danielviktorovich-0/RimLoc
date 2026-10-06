@@ -322,7 +322,7 @@ morph-summary = Morph generated { $processed } entries for { $lang }
 morph-provider-morpher-stub = Morpher API provider is not implemented yet; falling back to dummy rules
 
 # translate
-help-translate-about = Translate a mod via an LLM provider (result: a .po file for import-po/build-mod)
+help-translate-about = Translate a mod via an LLM provider into canonical project state (JSON report; --emit-po keeps the legacy .po artifact)
 help-translate-root = Path to the RimWorld mod root
 help-translate-provider = Provider: mock | anthropic | openai | zai | ollama
 help-translate-model = Model name (defaults to the provider preset)
@@ -331,13 +331,19 @@ help-translate-source-lang = Source language code
 help-translate-target-lang = Target language code
 help-translate-glossary = JSON glossary file on top of the built-in one
 help-translate-checkpoint = Checkpoint file to resume interrupted translations
-help-translate-out-po = Output .po path
+help-translate-out-po = Legacy .po artifact path (written only with --emit-po)
+help-translate-out-json = Canonical JSON results path (schema version 1)
+help-translate-managed-root = Managed projects store (default: the shared RimLoc data dir)
 help-translate-batch-budget = Approximate character budget per batch
 help-translate-dry-run = Estimate scope only; no provider calls
 help-translate-no-strict-placeholders = Disable strict placeholder validation
 help-translate-key-env = Env var name holding the API key (otherwise keychain/auto)
+help-translate-emit-po = Legacy behavior: also write the .po artifact for import-po/build-mod
 translate-extracted = Extracted { $count } source strings from { $path }
 translate-dryrun = Dry run: { $units } units, ~{ $batches } batches; no provider calls. Output would be { $path }
+translate-project-created = Canonical project { $id } created
+translate-applied = Applied { $applied } intents, refused { $refused }
+translate-json-saved = Canonical results saved to { $path }
 translate-po-saved = Translated PO saved to { $path }
 translate-summary = Translated={ $translated }, failed={ $failed }, already-done={ $skipped }
 

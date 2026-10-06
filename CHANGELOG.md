@@ -9,8 +9,12 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [cli] `export-po --game-version` on LoadFolders mods: the version view now uses the modview effective view (Gate H semantics, root dir first), so root-hosted `Languages/Keyed` are no longer lost when a version folder has no Languages of its own (HugsLib: 1 → 76 msgid). Regression test `export_po_game_version_loadfolders_keeps_root_keyed`.
 - [cli] `scan` on plain version-folder mods (native `1.0`–`1.6` dirs, no LoadFolders): entries defined in several versions now resolve to the NEWEST defining version (per-key newest-wins, game-version request takes priority); default scan no longer loses root-hosted `Languages/Keyed` (VE Framework: 143 → 736 entries, 0 stale values).
 - [cli] `build-mod --skip-empty`: untranslated keys (empty msgstr / empty source) are omitted from the built translation instead of being written as empty elements. Default behavior is unchanged.
+- [parsers-xml] Keyed values are now the exact file text minus its indentation: leading whitespace, trailing whitespace and the common indent of continuation lines are trimmed, so export → import round-trips no longer shift inline formatting or inject phantom line breaks (edge-trim).
+- [gui] UI-language honesty pass: command-palette labels resolve through i18n (previously hardcoded Russian literals), LM errors surface as codes mapped via i18n, visible locales follow the target locale instead of a hardcoded ru/Russian pair, focus returns to the opener when the palette closes, and the dead workspace version selector is removed. Language-folder calls send a strict `Languages/<folder>` form (`folderForm`) so builtin pack names survive contract calls (`project_export`/`project_build_mod`/`project_import_existing`).
 
 ### Added
+- [cli] Canonical `translate` apply path: a session applies translations through the canonical seam with no PO intermediate — `--out-json` writes a structured apply report, `--emit-po`/`--managed-root` remain for PO interop. Batch provenance rides the apply contract (`ApplyOrigin`, CLI translates claim `Origin::Llm`), so machine-written batches never land as human work in the durable canonical state.
+- [gui] Live version-compare screen: two mod roots are diffed read-only through the same services scan pipeline as the CLI (`contract_version_diff`, capability `VersionDiff`), classified new / missing / changed / unchanged with the carrying file per side; counts are exact and the entry list is capped at 200 with an honest truncation flag.
 - [gui] Agent automation layer (owner mandate): `RIMLOC_AUTOMATION=1` opts the app out of App Nap and deterministically activates the macOS accessibility server in any build profile, so an external System Events driver can drive the app; `RIMLOC_TRACE=1` appends a JSONL action trace of contract commands (name, duration, ok/error) to the app-data logs. Both default to off with zero behavior change.
 - [testlab] `auto_install.py`: agent-grade install/run/stop of the app into /Applications without DMG or Finder dialogs (atomic staging swap, one updated copy, quarantine stripped, trash-safe uninstall).
 - [gui] Home redesign (designer-system variant from the five-lens skill jury), recents meta `v/r/#id`, live-transport chip, and a wizard-tour entry button; UI bugfix waves 1-2 (3 high, 11 medium, low-pack) from the autonomous 21-screen AX audit.
@@ -136,6 +140,11 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ### Internal
 - [gui/i18n] Build-time JSON bridge for the self-localization foundation: `npm run export:catalog` deterministically exports the UI catalog (`src/i18n/{en,ru}.ts`) into committed versioned JSON (`src/i18n/generated/catalog.{en,ru,meta}.json`, schema_version 1, git-revision provenance, `{name}` placeholder contract); drift-guard tests keep TS as the single hand-edited authority. See `docs/development/SELFLOC_BRIDGE.md`.
+
+### Security
+- [import-po] Hostile `#:` location references in PO files (absolute paths or `..` components, e.g. `Languages/Russian/../../../evil.xml`) are refused as typed errors on import instead of writing outside the mod tree; adversarial coverage in `write_guard_adversarial`.
+- [deps] `lru` bumped 0.12.5 → 0.18.5 (GHSA-rhfx-m35p-ff5j).
+- [build] Removed the dead nested `gui/tauri-app/src-tauri/Cargo.lock` (a stale duplicate lockfile could shadow the workspace lock).
 
 ## [0.1.0-alpha.1] - 2025-09-25
 ### Added
