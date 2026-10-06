@@ -4387,6 +4387,7 @@ dependencies = [
  "chrono",
  "clap",
  "color-eyre",
+ "dirs",
  "i18n-embed",
  "i18n-embed-fl",
  "insta",

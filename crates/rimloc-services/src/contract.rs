@@ -209,6 +209,26 @@ pub enum IntentAction {
     ClearTranslation,
 }
 
+/// Provenance class the CALLER claims for an apply batch. The session
+/// stamps it onto every applied translation, so the durable canonical
+/// state never has to guess: a mass machine-written batch (the CLI
+/// `translate` canonical path) must not land as [`ApplyOrigin::Human`]
+/// work. Closed enum by contract — no free-form provenance rides the
+/// wire; the session maps it onto the domain `Origin` vocabulary
+/// (`Import` → `Origin::Imported`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ApplyOrigin {
+    /// A person wrote/edited the text (the GUI intent path).
+    Human,
+    /// Machine translation (CLI `translate`).
+    Llm,
+    /// From translation memory.
+    Tm,
+    /// Imported from an existing pack.
+    Import,
+}
+
 /// Apply typed intents with lost-update protection.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ApplyIntentsRequest {
@@ -218,6 +238,12 @@ pub struct ApplyIntentsRequest {
     /// Stale-session guard: the epoch of the caller's open session.
     pub session_epoch: u64,
     pub intents: Vec<TranslationIntent>,
+    /// Provenance stamped onto EVERY applied translation of this batch.
+    /// Absent field (the serde default — older clients, the GUI adapter)
+    /// means [`ApplyOrigin::Human`]: additive and behavior-preserving,
+    /// the GUI apply path is unchanged.
+    #[serde(default)]
+    pub origin: Option<ApplyOrigin>,
 }
 
 /// One intent the service refused. The rest of the batch still applies
@@ -803,6 +829,48 @@ mod tests {
         assert_eq!(v["existing_dir"]["path"], "/mods/MyMod/Languages/Russian");
         let back: ApplyExistingRequest = serde_json::from_value(v).unwrap();
         assert_eq!(back, req);
+    }
+
+    /// Apply-batch provenance (review MAJOR): the absent field defaults to
+    /// no claim (session → Human — older clients stay legal), `llm`
+    /// round-trips as the closed enum, and the wire values are lowercase.
+    /// No free-form provenance can cross the seam.
+    #[test]
+    fn apply_origin_defaults_unset_and_round_trips() {
+        let bare: ApplyIntentsRequest = serde_json::from_value(serde_json::json!({
+            "project_id": "proj-x",
+            "expected_revision": 1,
+            "session_epoch": 1,
+            "intents": []
+        }))
+        .unwrap();
+        assert_eq!(bare.origin, None);
+
+        let req: ApplyIntentsRequest = serde_json::from_value(serde_json::json!({
+            "project_id": "proj-x",
+            "expected_revision": 1,
+            "session_epoch": 1,
+            "intents": [],
+            "origin": "llm"
+        }))
+        .unwrap();
+        assert_eq!(req.origin, Some(ApplyOrigin::Llm));
+
+        let v = serde_json::to_value(&req).unwrap();
+        assert_eq!(v["origin"], "llm");
+        // The full closed vocabulary, lowercase on the wire.
+        assert_eq!(
+            serde_json::to_value(ApplyOrigin::Human).unwrap(),
+            serde_json::json!("human")
+        );
+        assert_eq!(
+            serde_json::to_value(ApplyOrigin::Tm).unwrap(),
+            serde_json::json!("tm")
+        );
+        assert_eq!(
+            serde_json::to_value(ApplyOrigin::Import).unwrap(),
+            serde_json::json!("import")
+        );
     }
 
     /// Intents round-trip with the full structural identity.
