@@ -65,6 +65,10 @@ Uploads use **GitHub OIDC**. RimLoc does not need a repository `CODECOV_TOKEN`.
 
 For same-repository PRs and pushes, Codecov receives the GitHub OIDC identity. Fork PRs never receive repository secrets; the workflow allows Codecov's public/tokenless path without making an external contributor's PR fail solely because upload authentication is unavailable.
 
+## Configuration trust
+
+Codecov reads repository policy only from the default branch: `codecov.strict_yaml_branch: main` is enabled after the first successful `main` Rust and desktop coverage uploads. A pull request can change coverage-producing code, but it cannot weaken the Codecov policy used to judge that same pull request.
+
 ## Pre-beta coverage policy
 
 Coverage statuses are initially **informational**.
