@@ -2,75 +2,80 @@
 title: CLI команды
 ---
 
-# Обзор CLI-команд
+# CLI-команды
 
-RimLoc CLI объединяет инструменты для сбора, проверки и обмена переводами RimWorld. Команды выводят единообразные сообщения и коды возврата, поэтому их легко скриптовать и запускать в CI.
+RimLoc CLI — детерминированный/headless интерфейс того же Rust toolchain, который используется desktop-приложением.
 
-## Перед началом
+!!! important "PO — опционально"
+    PO — формат обмена. Это **не** каноническая модель проекта RimLoc. Desktop workflow редактирует project state напрямую, а CLI умеет собирать мод и из готового Languages-дерева.
 
-- Установите CLI: `cargo install rimloc-cli`.
-- Работайте с чистой копией мода — команды читают и пишут внутри `Languages/`.
-- Потренируйтесь на фикстуре `test/TestMod`, прежде чем запускать команды на реальных данных.
+## Типовые сценарии
 
-## Типовой рабочий цикл
+### Scan и validate
 
-1. **Scan** — извлекает строки из мода.
-2. **Validate** — ловит дубликаты, пустоты и несоответствия плейсхолдеров.
-3. **Export PO** — готовит пакет для переводчиков или CAT-инструментов.
-4. **Validate PO** — сверяет плейсхолдеры в переведённых PO-файлах.
-5. **Import PO** — возвращает переводы в XML и позволяет снова прогнать `validate` перед релизом.
-6. *(Опционально)* **Build Mod** — собирает автономный мод-перевод из итогового `.po` файла.
+~~~bash
+rimloc-cli scan --root ./Mods/MyMod --format json
+rimloc-cli validate --root ./Mods/MyMod
+~~~
 
-## Сводная таблица
+### Внешний CAT / PO handoff
 
-| Команда | Назначение | Частые опции |
-|---------|------------|--------------|
-| [`scan`](scan.md) | Собирает единицы перевода из XML. | `--lang`, `--format`, `--out-csv`, `--out-json`, `--game-version`, `--include-all-versions` |
-| [`validate`](validate.md) | Проверяет XML на дубликаты, пустоты и плейсхолдеры. | `--format`, `--source-lang`, `--source-lang-dir`, `--game-version`, `--include-all-versions` |
-| [`validate-po`](validate_po.md) | Сравнивает плейсхолдеры в PO-файлах. | `--po`, `--strict`, `--format` |
-| [`export-po`](export_import.md#export-po) | Формирует единый PO-файл для переводчиков. | `--root`, `--out-po`, `--lang`, `--game-version`, `--include-all-versions` |
-| [`import-po`](export_import.md#import-po) | Применяет изменения из PO к XML. | `--mod-root`, `--out-xml`, `--dry-run`, `--single-file`, `--game-version` |
-| [`build-mod`](build_mod.md) | Собирает самостоятельный мод-перевод. | `--out-mod`, `--package-id`, `--dry-run` |
-| [`diff-xml`](diff_xml.md) | Diff исходник↔перевод; поиск изменившихся исходных строк с baseline PO. | `--baseline-po`, `--format`, `--out-dir`, `--strict` |
-| [`annotate`](annotate.md) | Добавить/удалить комментарии с оригиналом в XML. | `--dry-run`, `--backup`, `--strip` |
-| [`xml-health`](xml_health.md) | Проверить XML под Languages/. | `--format`, `--lang-dir`, `--strict`, `--only`, `--except` |
-| [`morph`](morph.md) | Сгенерировать Case/Plural/Gender с провайдером морфологии. | `--provider`, `--timeout-ms`, `--cache-size`, `--pymorphy-url` |
-| [`init`](init.md) | Создать заготовку перевода `Languages/<lang>`. | `--overwrite`, `--dry-run` |
+~~~bash
+rimloc-cli export-po --root ./Mods/MyMod --out-po ./work/MyMod.po --lang ru
+rimloc-cli validate-po --po ./work/MyMod.po --strict
+rimloc-cli import-po --po ./work/MyMod.po --mod-root ./work/MyMod-copy --lang ru --dry-run
+~~~
 
-## Глобальные опции
+### Build без PO
 
-- `--ui-lang <LANG>` — язык сообщений (например, `en`, `ru`).
-- `--no-color` — отключить ANSI‑цвета в терминале.
-- `--quiet` — скрыть стартовый баннер и несущ. сообщения в stdout (алиас: `--no-banner`). Рекомендуется для JSON‑конвейеров.
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-## Полезные паттерны
+Это напрямую упаковывает уже существующее переведённое Languages-дерево.
 
-```bash
-# Запустить проверку в CI и упасть только при ошибках
-rimloc-cli validate --root ./path/to/mod --format text
+## Основные команды
 
-# Получить машинно-читаемую диагностику
-rimloc-cli validate --root ./path/to/mod --format json | jq '.[] | select(.level=="error")'
+| Команда | Назначение |
+| --- | --- |
+| [scan](scan.md) | найти translation units |
+| [validate](validate.md) | проверить XML/translation state |
+| [validate-po](validate_po.md) | проверить PO handoff |
+| [export-po / import-po](export_import.md) | опциональный PO interoperability |
+| [build-mod](build_mod.md) | собрать translation-only мод из PO или Languages |
+| [diff-xml](diff_xml.md) | source/translation diff и source changes |
+| [annotate](annotate.md) | комментарии с source text |
+| [xml-health](xml_health.md) | проверки XML |
+| [morph](morph.md) | morphology providers |
+| [init](init.md) | translation skeleton |
+| [lang-update](lang_update.md) | update language workflow |
 
-# Экспортировать и тут же проверить плейсхолдеры в PO
-rimloc-cli export-po --root ./path/to/mod --out-po ./out/mymod.po --lang ru
-rimloc-cli validate-po --po ./out/mymod.po --strict
+В binary есть и дополнительные advanced/developer команды (compare/doctor/schema/translate/wordinfo/version-diff/learning helpers). Отдельные страницы для них дополняются; текущая executable truth — <code>rimloc-cli --help</code> и <code>rimloc-cli &lt;command&gt; --help</code>.
 
-# Посмотреть, каким будет готовый мод-перевод
-rimloc-cli build-mod --po ./out/mymod.po --out-mod ./ReleaseMod --lang ru --dry-run
-```
+## Общие опции
 
-## Решение проблем
+Часто используются:
 
-- **В примерах появляются префиксы `/RimLoc/`** — очистите `SITE_URL` локально; задавайте его только в CI перед `mkdocs build`.
-- **Сообщения `placeholder-check`** — сравните плейсхолдеры в исходных и переведённых строках; флаг `--format json` подсветит проблемный ключ.
-- **Экспорт/импорт ничего не делает** — убедитесь, что каталог `Languages/<lang>/` существует и код языка совпадает с переданным флагом.
+- <code>--ui-lang &lt;LANG&gt;</code> — язык CLI;
+- <code>--no-color</code> — plain output;
+- <code>--quiet</code> — меньше служебного stdout.
 
-Нужны детали по конкретной команде? На отдельных страницах приведены таблицы опций, примеры и советы по устранению ошибок.
+## Безопасность
+
+Часть старых CLI-команд появилась до новой canonical project model. Для write-команд:
+
+- используйте копию или отдельный output;
+- сначала запускайте <code>--dry-run</code>, если он поддерживается;
+- держите game/Workshop source read-only;
+- проверяйте command-specific help.
 
 ## См. также
 
-- Начало работы: ../getting-started.md
-- Туториалы: ../tutorials/translate_mod.md · ../tutorials/export_po.md · ../tutorials/update_translations.md
-- Словарь: ../glossary.md
-- Советы и лайфхаки: ../tips.md
+- [Начало работы](../getting-started.md)
+- [Гайд переводчика](../guide/translators.md)
+- [Build Mod](build_mod.md)
+- [Экспорт/импорт](export_import.md)

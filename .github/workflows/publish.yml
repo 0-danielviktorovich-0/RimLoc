@@ -15,6 +15,10 @@ on:
         description: "Dry run (no publish); false = publish for real"
         required: false
         default: "true"
+      confirm_publish:
+        description: "When dry_run=false, type PUBLISH exactly"
+        required: false
+        default: ""
 
 permissions: {}
 
@@ -27,6 +31,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     permissions:
       contents: read
     steps:
@@ -36,18 +41,24 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
           DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM_PUBLISH: ${{ inputs.confirm_publish }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$DRY_RUN" != "true" && -z "${CARGO_REGISTRY_TOKEN:-}" ]]; then
-            echo "Refusing to publish: secret CARGO_REGISTRY_TOKEN is not configured." >&2
-            echo "Set it in repo Settings > Secrets, or run with dry_run=true." >&2
-            exit 1
+          if [[ "$DRY_RUN" != "true" ]]; then
+            if [[ "$CONFIRM_PUBLISH" != "PUBLISH" ]]; then
+              echo "Refusing to publish: set confirm_publish=PUBLISH." >&2
+              exit 1
+            fi
+            if [[ -z "${CARGO_REGISTRY_TOKEN:-}" ]]; then
+              echo "Refusing to publish: secret CARGO_REGISTRY_TOKEN is not configured." >&2
+              exit 1
+            fi
           fi
           publish_with_retry() {
             local pkg="$1"
-            local tries=0 max_tries=12
-            local delay=60 # base delay secs between attempts
+            local tries=0 max_tries=6
+            local delay=30 # bounded backoff base seconds
             while (( tries < max_tries )); do
               echo "::group::Publishing $pkg (attempt $((tries+1))/$max_tries)"
               if [[ "$DRY_RUN" == "true" ]]; then

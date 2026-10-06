@@ -1,5 +1,5 @@
 site_name: RimLoc Docs
-site_description: Toolkit for working with RimWorld translations
+site_description: RimWorld-first localization workstation and adapter-ready localization toolkit
 site_url: !ENV [SITE_URL, ""]
 repo_url: https://github.com/0-danielviktorovich-0/RimLoc
 repo_name: 0-danielviktorovich-0/RimLoc
@@ -57,18 +57,22 @@ nav:
       - Run Downloaded Build: install_run.md
       - Tutorials:
           - Translate a Mod: tutorials/translate_mod.md
-          - Export to PO: tutorials/export_po.md
+          - Export to PO (optional CAT handoff): tutorials/export_po.md
           - Update Translations: tutorials/update_translations.md
       - Tips & Tricks: tips.md
       - FAQ: faq.md
       - Troubleshooting: troubleshooting.md
       - Glossary: glossary.md
+  - Desktop:
+      - GUI Overview: guide/gui.md
+      - For Translators: guide/translators.md
+      - Preview & Edit: guide/gui-preview.md
   - CLI:
       - Overview: cli/index.md
       - Scan: cli/scan.md
       - Validate: cli/validate.md
       - Validate PO: cli/validate_po.md
-      - Export/Import: cli/export_import.md
+      - PO Export/Import: cli/export_import.md
       - Build Mod: cli/build_mod.md
       - Diff XML: cli/diff_xml.md
       - Annotate: cli/annotate.md
@@ -76,16 +80,16 @@ nav:
       - Morph: cli/morph.md
       - Init: cli/init.md
       - Lang Update: cli/lang_update.md
-  - GUI:
-      - Overview: guide/gui.md
-      - Preview & Edit: guide/gui-preview.md
   - Formats & Concepts:
       - Configuration: guide/configuration.md
       - Placeholders: guide/placeholders.md
-      - PO Files 101: guide/po_files.md
+      - PO Files (interchange): guide/po_files.md
       - Learn (Defs/Keyed): learn.md
   - Developers:
       - Overview: dev/index.md
+      - Adapter Authoring: dev/adapters.md
+      - Coverage & Codecov: dev/coverage.md
+      - Legacy Scan Plugins: dev/plugins.md
       - Docs Style Guide: dev/docs_style.md
       - Testing: testing.md
   - Community:
@@ -95,9 +99,17 @@ nav:
       - Localization: community/localization.md
       - Support RimLoc: community/support.md
 
+# Internal campaign/evidence documents remain in the repository but are not
+# published as end-user documentation. This prevents old checkpoints from
+# becoming a second, stale product truth in search results.
 exclude_docs: |
   readme/**
-  development/COMMUNITY_TESTING_HANDOFF.md
+  campaign/**
+  competitive/**
+  design/**
+  development/**
+  integration/**
+  security/**
 
 extra:
   edit_uri: edit/main/docs/
@@ -108,6 +120,8 @@ extra:
       link: https://crates.io/crates/rimloc-cli
     - icon: fontawesome/solid/book
       link: https://0-danielviktorovich-0.github.io/RimLoc/
+    - icon: fontawesome/solid/heart
+      link: https://github.com/sponsors/0-danielviktorovich-0
 
 markdown_extensions:
   - admonition
@@ -119,6 +133,5 @@ markdown_extensions:
   - toc:
       permalink: true
   - pymdownx.emoji:
-      # Логика эмодзи переехала в mkdocs-material (materialx.* deprecated).
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg

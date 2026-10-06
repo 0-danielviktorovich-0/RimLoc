@@ -1,133 +1,96 @@
-# Install RimLoc CLI
+---
+title: Install
+---
 
-This page lists all supported installation methods and how to verify downloads.
+# Install RimLoc
 
-## Option 1: Cargo (crates.io)
+RimLoc is currently **pre-beta**. The CLI has historical published artifacts, but the newest desktop/React work lives in active development and should not be mistaken for a stable release.
 
-Fastest if you already have Rust installed.
+## What should I use?
 
-```bash
-cargo install rimloc-cli
-```
+| Goal | Recommended path |
+| --- | --- |
+| Try the newest desktop UI | build the React candidate from current source or use an explicitly provided owner/test artifact |
+| Use CLI automation | build current source; crates.io can be used if an older alpha is sufficient |
+| Install a stable public desktop release | not available yet |
 
-Notes:
-- Install Rust via https://rustup.rs if needed (Windows: run rustup‑init.exe).
-- Ensure `~/.cargo/bin` is on PATH (open a new terminal after install). On Windows, restart PowerShell or add `%USERPROFILE%\.cargo\bin` to PATH.
+## Build current CLI from source
 
-## Option 2: GitHub Releases (binaries)
+Install Rust from <https://rustup.rs>, then:
 
-Releases page: https://github.com/0-danielviktorovich-0/RimLoc/releases
-
-### Stable releases
-
-Download the asset named `rimloc-cli-<tag>-<target>.<ext>` for your platform (choose the latest release that is NOT marked “Pre-release”):
-- Linux (x86_64 GNU): `rimloc-cli-<tag>-x86_64-unknown-linux-gnu.tar.gz`
-- Linux (x86_64 musl): `rimloc-cli-<tag>-x86_64-unknown-linux-musl.tar.gz`
-- Linux (aarch64 GNU): `rimloc-cli-<tag>-aarch64-unknown-linux-gnu.tar.gz`
-- Linux (aarch64 musl): `rimloc-cli-<tag>-aarch64-unknown-linux-musl.tar.gz`
-- macOS (x86_64): `rimloc-cli-<tag>-x86_64-apple-darwin.tar.gz`
-- macOS (arm64): `rimloc-cli-<tag>-aarch64-apple-darwin.tar.gz`
-- Windows (x86_64): `rimloc-cli-<tag>-x86_64-pc-windows-msvc.zip`
-- Windows (arm64): `rimloc-cli-<tag>-aarch64-pc-windows-msvc.zip`
-
-### Dev pre-releases (nightly)
-
-Download the asset named `rimloc-cli-dev-latest-<target>.<ext>` (attached to the latest dev pre-release):
-- Linux (x86_64 GNU): `rimloc-cli-dev-latest-x86_64-unknown-linux-gnu.tar.gz`
-- Linux (x86_64 musl): `rimloc-cli-dev-latest-x86_64-unknown-linux-musl.tar.gz`
-- Linux (aarch64 GNU): `rimloc-cli-dev-latest-aarch64-unknown-linux-gnu.tar.gz`
-- Linux (aarch64 musl): `rimloc-cli-dev-latest-aarch64-unknown-linux-musl.tar.gz`
-- macOS (x86_64): use the tagged asset `rimloc-cli-<tag>-x86_64-apple-darwin.tar.gz` if no dev‑latest copy is present
-- macOS (arm64): use the tagged asset `rimloc-cli-<tag>-aarch64-apple-darwin.tar.gz` if no dev‑latest copy is present
-- Windows (x86_64): `rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip`
-- Windows (arm64): `rimloc-cli-dev-latest-aarch64-pc-windows-msvc.zip`
-
-Tip: if your platform has no `dev-latest` alias, use the matching tagged asset (same name without the `dev-latest` prefix).
-
-## Verify Checksum
-
-For each asset there is a `.sha256` file. Example on Linux/macOS:
-
-```bash
-cd ~/Downloads
-sha256sum -c rimloc-cli-dev-latest-x86_64-unknown-linux-gnu.tar.gz.sha256
-```
-
-On Windows (PowerShell):
-
-```powershell
-Get-FileHash .\rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip -Algorithm SHA256
-Get-Content .\rimloc-cli-dev-latest-x86_64-pc-windows-msvc.zip.sha256
-```
-
-## Verify Signature (optional)
-
-Advanced users can verify signatures using `cosign` and the attached `.sig`/`.pem` files (available for Linux/macOS; Windows signature availability may depend on CI).
-
-```bash
-cosign verify-blob \
-  --cert rimloc-cli-<tag>-<target>.<ext>.pem \
-  --signature rimloc-cli-<tag>-<target>.<ext>.sig \
-  rimloc-cli-<tag>-<target>.<ext>
-```
-
-## Unpack and Run
-
-- Linux/macOS:
-
-```bash
-tar -xzf rimloc-cli-*.tar.gz -C /tmp
-/tmp/rimloc-cli --help
-```
-
-- Windows:
-
-```powershell
-Expand-Archive -Path .\rimloc-cli-*.zip -DestinationPath .\rimloc
-.\rimloc\rimloc-cli --help
-```
-
-For detailed step‑by‑step instructions on running the downloaded build on Windows/macOS/Linux (opening a terminal, common issues, etc.), see [Run Downloaded Build](install_run.md).
-
-## Option 3: Build from source (all OS)
-
-Use this if you prefer building from Git or want the very latest changes.
-
-1) Install Rust toolchain (via rustup): https://rustup.rs
-2) Clone the repo and build the CLI:
-
-```bash
+~~~bash
 git clone https://github.com/0-danielviktorovich-0/RimLoc.git
 cd RimLoc
 cargo build -p rimloc-cli --release
-```
-
-3) Run the built binary:
-
-- Linux/macOS:
-
-```bash
 ./target/release/rimloc-cli --version
-# Optional: install to ~/.local/bin
-install -Dm755 ./target/release/rimloc-cli ~/.local/bin/rimloc-cli
-```
+~~~
 
-- Windows (PowerShell):
+On Windows, run:
 
-```powershell
-.\u005ctarget\release\rimloc-cli.exe --version
-# Optional: copy somewhere on PATH, e.g. %USERPROFILE%\bin
-Copy-Item .\target\release\rimloc-cli.exe "$env:USERPROFILE\bin\rimloc-cli.exe"
-```
+~~~powershell
+.\target\release\rimloc-cli.exe --version
+~~~
 
-## Fetch via gh (advanced)
+## crates.io CLI
 
-If you have GitHub CLI installed and authenticated, you can fetch the latest dev pre-release programmatically:
+If you specifically want the published CLI package:
 
-```bash
-REPO=0-danielviktorovich-0/RimLoc
-TARGET=x86_64-unknown-linux-gnu   # change to your target triple
-TAG=$(gh release list -R "$REPO" --limit 20 --json tagName,isPrerelease,createdAt \
-  --jq '[.[] | select(.isPrerelease==true and (.tagName|test("-dev\\.")))] | sort_by(.createdAt) | last.tagName')
-gh release download -R "$REPO" --tag "$TAG" --pattern "rimloc-cli-dev-latest-$TARGET.*" -D .
-```
+~~~bash
+cargo install rimloc-cli
+~~~
+
+!!! note
+    crates.io may lag far behind the active development branch. Check the version before relying on new pre-beta functionality.
+
+## Build the React desktop candidate
+
+Requirements:
+
+- Rust toolchain;
+- Node.js 20+;
+- platform prerequisites for Tauri 2.
+
+~~~bash
+git clone https://github.com/0-danielviktorovich-0/RimLoc.git
+cd RimLoc/gui/tauri-app/frontend-react
+npm ci
+npm run build
+
+cd ../src-tauri
+cargo tauri build --config tauri.react.conf.json
+~~~
+
+The default Tauri config still references the frozen Svelte fallback during migration. Use <code>tauri.react.conf.json</code> when your goal is to test React R1.
+
+## GitHub Releases
+
+The repository contains historical alpha/dev pre-releases. They are useful as history, not as proof that you have the newest React/Rust product.
+
+Until a new beta release is published:
+
+- prefer current source for development/testing;
+- verify the commit/build identity of any artifact someone sends you;
+- do not assume a file named RimLoc GUI.app is the newest React frontend.
+
+## macOS Gatekeeper
+
+Development builds may be unsigned/not notarized during pre-beta. Follow normal macOS security prompts only for artifacts you built yourself or received from the project owner and verified by hash.
+
+Signed/notarized distribution belongs to the release-candidate phase.
+
+## Verify a supplied test artifact
+
+When an owner/test packet includes a SHA-256:
+
+~~~bash
+shasum -a 256 "RimLoc GUI.app/Contents/MacOS/RimLoc GUI"
+~~~
+
+Compare against the identity file supplied with that exact artifact.
+
+## Next
+
+- [Getting started](getting-started.md)
+- [Desktop GUI](guide/gui.md)
+- [CLI](cli/index.md)
+- [Security](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/SECURITY.md)

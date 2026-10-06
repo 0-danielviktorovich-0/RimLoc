@@ -1,46 +1,82 @@
 ---
-title: GUI (Tauri)
+title: Desktop GUI
 ---
 
-# Графический интерфейс RimLoc (Tauri)
+# Графический интерфейс RimLoc
 
-> **Устаревшая страница (v1).** Документ описывает интерфейс первого поколения
-> (vanilla JS-оболочка в `gui/tauri-app/frontend/`). Поставляемое приложение
-> теперь использует фронтенд v2 (`gui/tauri-app/frontend-v2`, Svelte), который
-> Tauri загружает по умолчанию, поэтому вкладки и горячие клавиши из списка
-> ниже могут не совпадать с тем, что вы видите. Страница будет переписана,
-> когда интерфейс v2 стабилизируется.
+Desktop-приложение построено на **Tauri 2** и использует общий Rust service layer.
 
-RimLoc содержит необязательную десктоп‑оболочку на Tauri, которая оборачивает типовые сценарии CLI.
+## Текущее состояние фронтендов
 
-## Возможности (MVP)
-- Start: сканирование и экспорт PO (с несколькими TM‑источниками).
-- Validate: проверки XML и «здоровье» XML.
-- Diff: сравнение исходник↔перевод + изменившиеся исходные строки (baseline — через CLI).
-- Import / Build: DRY‑RUN и кнопки Apply (с подтверждением/бэкапами).
-- Lang Update: DRY‑RUN и Apply (резервное копирование существующей папки).
-- Annotate: DRY‑RUN и Apply (добавить/удалить комментарии с оригиналом).
-- Morph: запуск провайдеров морфологии с фильтрами/лимитами.
-- Tools: выгрузка JSON‑схем, открытие последнего пути.
-- Logs: просмотр «хвоста» логов rimloc, авто‑обновление.
+- **React 19 / frontend-react** — будущий production UI и текущая R1-линия.
+- **Svelte / frontend-v2** — замороженный legacy fallback/reference на время миграции.
+- **frontend/** — старый исторический shell, не продуктовая цель.
 
-## Запуск локально
+Не считайте любой локальный <code>.app</code> React-сборкой автоматически. Во время разработки уже были stale-bundle коллизии, поэтому owner/test artifact должен иметь явную build identity.
 
-Требования:
-- Установленный Rust
-- Tauri CLI: `cargo install tauri-cli`
+## Для чего нужен React workspace
 
-Запуск:
+Текущий product workflow включает:
 
-```bash
-cd gui/tauri-app
-cargo tauri dev
-```
+- Home / recent projects;
+- новый перевод;
+- открыть/обновить существующий;
+- workspace/editor;
+- переключение target locale;
+- Checks/validation;
+- glossary;
+- Translation Memory по мере включения в pre-beta;
+- build/export;
+- diagnostics;
+- settings и language management.
 
-Приложение использует `rimloc-services` напрямую; отдельный бинарник не нужен.
+Рабоче выглядящий control должен появляться только тогда, когда соответствующая backend/adapter capability действительно доступна.
 
-## Заметки
-- Операции записи сопровождаются подтверждением и бэкапами где это уместно.
-- Используйте контекстное меню (правый клик) по «План (DRY)» для загрузки c прогресс‑баром.
-- Горячие клавиши: Alt+1..9 — переключение вкладок.
-- Указывайте пути в полях формы и жмите кнопки; результаты появятся в панели ниже.
+## Обычный workflow переводчика
+
+1. Создать/открыть проект.
+2. Выбрать источник и target locale.
+3. Переводить прямо в редакторе.
+4. Смотреть контекст/source.
+5. Запустить validation.
+6. Собрать/экспортировать результат в отдельный output-каталог.
+
+**PO для этого не нужен.** PO остаётся опциональным interchange-форматом для внешних CAT-инструментов.
+
+## Сборка React-candidate
+
+Нужны Rust, Node.js 20+ и системные зависимости Tauri.
+
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npm run build
+
+cd ../src-tauri
+cargo tauri build --config tauri.react.conf.json
+~~~
+
+Development-запуск:
+
+~~~bash
+cd gui/tauri-app/src-tauri
+cargo tauri dev --config tauri.react.conf.json
+~~~
+
+## Безопасность
+
+- Game/Workshop/source каталоги считаются read-only.
+- Generated output должен идти в отдельный каталог.
+- Автотесты используют изолированный RimLoc data/profile, чтобы фикстуры не попадали в Recent Projects владельца.
+- Production artifact не должен содержать automation/test bridges.
+
+## Визуальный статус
+
+React R1 следует утверждённому Lovable-derived design direction. Старые screenshots в документации могут показывать Svelte до замены на owner-approved React-набор.
+
+## См. также
+
+- [Начало работы](../getting-started.md)
+- [Гайд переводчика](translators.md)
+- [Решение проблем](../troubleshooting.md)
+- [Frontend boundary](../../architecture/FRONTEND_UI_BOUNDARY.md)

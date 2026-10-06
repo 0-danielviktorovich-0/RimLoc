@@ -2,54 +2,61 @@
 title: Translate a Mod
 ---
 
-# 🧭 Translate a Mod from Scratch
+# Translate a RimWorld mod from scratch
 
-This tutorial covers exporting a `.po`, translating it, validating, and importing back.
+For most users, the intended path is the desktop project workflow. PO is optional.
 
-## 1) Prep
+## Desktop workflow
 
-- Install RimLoc: `cargo install rimloc-cli`
-- Find your mod root (folder with `About/`, `Defs/`, sometimes `Languages/`). Example: `./Mods/MyMod`.
+1. Open RimLoc and choose **New translation**.
+2. Select the RimWorld mod/source.
+3. Choose target locale(s).
+4. Translate directly in the workspace.
+5. Review source/context and glossary/TM suggestions where available.
+6. Run validation.
+7. Build/export to an isolated output directory.
+8. Test the translation in RimWorld.
 
-## 2) Scan and validate
+The original source should remain read-only.
 
-```bash
-rimloc-cli scan --root ./Mods/MyMod --format json > scan.json
-rimloc-cli validate --root ./Mods/MyMod --format text
-```
+## CLI workflow
 
-## 3) Export PO
+If you prefer automation:
 
-```bash
-rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru
-```
+~~~bash
+rimloc-cli scan --root ./Mods/MyMod --format json
+rimloc-cli validate --root ./Mods/MyMod
+~~~
 
-Open the `.po` in Poedit and translate.
+### Optional PO handoff
 
-## 4) Validate PO
+~~~bash
+rimloc-cli export-po \
+  --root ./Mods/MyMod \
+  --out-po ./work/MyMod.ru.po \
+  --lang ru
+~~~
 
-```bash
-rimloc-cli validate-po --po ./MyMod.ru.po --strict
-```
+Translate externally, then validate/import on a **working copy**.
 
-## 5) Import back
+### No-PO build
 
-One file (review‑friendly):
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --out-xml ./Mods/MyMod/_Imported.xml --dry-run
-rimloc-cli import-po --po ./MyMod.ru.po --out-xml ./Mods/MyMod/_Imported.xml
-```
+If you already have translated <code>Languages</code> XML:
 
-Or structured import:
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report
-```
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-## 6) Build a translation‑only mod (optional)
+## Before publishing
 
-```bash
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru --dry-run
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru
-```
+- validate placeholders/tags;
+- inspect changed-source entries;
+- run a real game check;
+- keep the source mod untouched;
+- save diagnostics if something behaves unexpectedly.
 
+See [Getting started](../getting-started.md) and [Translator guide](../guide/translators.md).

@@ -1,155 +1,78 @@
 ---
-title: Экспорт и импорт
+title: PO: экспорт и импорт
 ---
 
-# Экспорт и импорт
+# PO export/import
 
-Используйте эти команды, когда нужно поделиться переводами или собрать изменения обратно в XML.
+Эти команды нужны для **обмена с PO/CAT workflow**. PO не является канонической моделью RimLoc-проекта и не нужен, если перевод выполняется прямо в desktop-приложении.
 
-## Export-po
+## Export PO
 
-`export-po` сохраняет единый `.po` файл из исходного языка мода. Передайте его переводчикам или CAT-инструментам после `scan` и `validate`.
+Используйте <code>export-po</code>, когда нужен единый handoff для Poedit, другого CAT или внешнего переводчика.
 
-**Использование**
-
-```bash
-rimloc-cli export-po --root <MOD> --out-po <FILE> [--lang <CODE>] [--source-lang <CODE>] [--source-lang-dir <DIR>]
-```
-
-**Опции**
-
-| Опция | Описание | Обязательно |
-|-------|----------|-------------|
-| `-r, --root <MOD>` | Путь к моду RimWorld или каталогу `Languages/<locale>`, из которого экспортируем строки. | Да |
-| `--out-po <FILE>` | Итоговый `.po` файл. Существующий файл будет перезаписан. | Да |
-| `--lang <CODE>` | Целевой язык перевода для заголовка PO (например, `ru`, `ja`). | Нет |
-| `--source-lang <CODE>` | ISO-код исходного языка (по умолчанию `en`). | Нет |
-| `--source-lang-dir <DIR>` | Явное имя папки исходного языка (например, `English`). Перекрывает `--source-lang`. | Нет |
-
-**Примеры**
-
-Экспортировать тестовый мод на русский (с `--quiet`, чтобы stdout оставался чистым):
-
-```bash
-rimloc-cli --quiet export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-```
-
-Получить японскую локализацию из `Languages/Japanese`:
-
-```bash
+~~~bash
 rimloc-cli export-po \
   --root ./Mods/MyMod \
-  --out-po ./build/MyMod.ja.po \
-  --lang ja \
-  --source-lang ja
-```
+  --out-po ./work/MyMod.ru.po \
+  --lang ru
+~~~
 
-Использовать свою папку исходного языка (если вместо `English` другое имя):
+В актуальных сборках полезны:
 
-```bash
-rimloc-cli export-po --root ./Mods/MyMod --source-lang-dir Original --out-po ./out/mymod.po
-```
+- <code>--source-lang</code> / <code>--source-lang-dir</code>;
+- повторяемый <code>--tm-root</code> для старого root-based reuse;
+- <code>--game-version</code>;
+- <code>--include-all-versions</code>.
 
-**Советы**
+Перед handoff:
 
-- Без `--lang` в заголовке останется значение по умолчанию (`ru`). Передайте нужный язык сразу.
-- `--source-lang` преобразует ISO-коды в rimworld-папки (`ru` → `Russian`). Для нестандартных названий используйте `--source-lang-dir`.
-- Перед экспортом запустите `validate`, чтобы не отдавать переводчикам битые ключи.
+~~~bash
+rimloc-cli validate --root ./Mods/MyMod
+~~~
 
----
+## Validate PO
 
-## Import-po
+~~~bash
+rimloc-cli validate-po --po ./work/MyMod.ru.po --strict
+~~~
 
-`import-po` читает `.po` файл и возвращает переводы в XML. Команда умеет работать с одним XML, обновлять структуру мода и выполнять «сухой» запуск.
+Это проверяет проблемы именно handoff-формата, например placeholders.
 
-**Использование**
+## Import PO
 
-```bash
-rimloc-cli import-po --po <FILE> [--out-xml <XML> | --mod-root <MOD>] [--game-version <VER>] [опции]
-```
+Импортируйте в отдельную рабочую копию/выходное дерево.
 
-**Опции**
+Сначала dry-run:
 
-| Опция | Описание | Обязательно |
-|-------|----------|-------------|
-| `--po <FILE>` | Путь к PO-файлу для импорта. | Да |
-| `--out-xml <XML>` | Записать всё в один XML-файл (взаимоисключает `--mod-root`). | Нет |
-| `--mod-root <MOD>` | Обновить файлы внутри мода согласно ссылкам из PO. | Нет |
-| `--lang <CODE>` | Код целевого языка (по умолчанию `ru`). Нужен для сопоставления `Languages/<lang>`. | Нет |
-| `--lang-dir <DIR>` | Явное имя папки языка (перекрывает `--lang`). | Нет |
-| `--keep-empty` | Не отбрасывать пустые строки. | Нет |
-| `--dry-run` | Показать план записи, ничего не создавая. | Нет |
-| `--backup` | Делать `.bak` копии перед перезаписью файлов. | Нет |
-| `--single-file` | Вместе с `--mod-root` складывает всё в `Keyed/_Imported.xml`. | Нет |
-| `--game-version <VER>` | При `--mod-root` указывает подпапку версии (например, `1.4`). | Нет |
-| `--format text|json` | Формат вывода для dry-run и отчётов (по умолчанию `text`). | Нет |
-| `--report` | После импорта вывести сводку (создано/обновлено/пропущено, всего ключей). | Нет |
-| `--incremental` | Пропускать запись файлов, если содержимое не изменится (побайтно). | Нет |
-| `--only-diff` | Для существующих файлов записывать только изменённые/новые ключи; неизменённые пропускать. | Нет |
-
-**Примеры**
-
-Посмотреть, какие файлы изменятся в моде:
-
-```bash
-rimloc-cli --quiet import-po \
-  --po ./build/MyMod.ja.po \
-  --mod-root ./Mods/MyMod \
-  --lang ja \
-  --dry-run
-```
-
-Записать переводы в один XML для ручной проверки (тихий режим для минимального stdout):
-
-```bash
-rimloc-cli --quiet import-po --po ./logs/TestMod.po --out-xml ./out/TestMod.ru.xml --keep-empty
-```
-
-Обновить мод на месте и сохранить резервные копии:
-
-```bash
-rimloc-cli --quiet import-po \
-  --po ./build/MyMod.ja.po \
-  --mod-root ./Mods/MyMod \
-  --lang ja \
-  --backup --report --format json
-```
-
-Сложить всё в `_Imported.xml` (полезно, если нет исходных файлов):
-
-```bash
-rimloc-cli --quiet import-po --po ./logs/TestMod.po --mod-root ./Mods/MyMod --single-file
-
-Импортировать только изменения для уже существующих файлов:
-
-```bash
+~~~bash
 rimloc-cli import-po \
-  --po ./build/MyMod.ja.po \
-  --mod-root ./Mods/MyMod \
-  --only-diff --report --format json | jq .
-```
-```
+  --po ./work/MyMod.ru.po \
+  --mod-root ./work/MyMod-copy \
+  --lang ru \
+  --dry-run \
+  --report
+~~~
 
-**Советы**
+Только после проверки плана запускайте запись без <code>--dry-run</code>.
 
-- `--dry-run` выводит таблицу путей и количества ключей — удобно для CI и ревью.
-- Включайте `--backup`, если правите рабочую копию, которую сложно восстановить.
-- `--lang-dir` помогает, когда папка называется нестандартно, например `German (Formal)`.
-- Пустые строки по умолчанию отбрасываются; используйте `--keep-empty`, если нужны заглушки.
-- `--incremental` пропустит файлы без реальных изменений содержимого.
-- `--only-diff` обновит только изменившиеся/новые ключи внутри каждого файла.
+Частые опции:
 
----
+- <code>--backup</code>;
+- <code>--incremental</code>;
+- <code>--only-diff</code>;
+- <code>--single-file</code>;
+- <code>--format text|json</code>.
 
-## См. также
+## Не импортируйте в оригинальный Workshop source
 
-- **[Сканирование](scan.md)** — извлечение Keyed-записей.
-- **[Проверка](validate.md)** — дубликаты, пустоты и плейсхолдеры в XML.
-- **[Проверка PO](validate_po.md)** — сверка плейсхолдеров перед импортом.
-- **[Сборка мода](build_mod.md)** — упаковать итоговый `.po` в отдельный мод.
+Новая product-модель считает game/Workshop/source read-only. Для CLI-экспериментов используйте working copy или отдельное output-дерево.
 
-## Решение проблем
+## Не используете PO?
 
-- **Отсутствуют ключи при импорте** – выполните `scan` и убедитесь, что PO сгенерирован из той же структуры.
-- **Импорт ничего не записал** – проверьте наличие папки `Languages/<lang>` и ссылки в PO.
-- **Проблемы с кодировкой** – PO должен быть в UTF-8; при необходимости прогоните `msgconv --output=utf-8`.
+Это нормально.
+
+- Desktop project editing не требует PO.
+- <code>build-mod --from-root</code> собирает готовое translated Languages-дерево.
+- Другие interchange formats должны оставаться адаптерами вокруг той же canonical project model.
+
+См. [Build Mod](build_mod.md) и [Начало работы](../getting-started.md).

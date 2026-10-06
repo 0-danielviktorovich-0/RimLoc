@@ -1,0 +1,122 @@
+codecov:
+  require_ci_to_pass: false
+  max_report_age: "12h"
+
+coverage:
+  precision: 2
+  round: down
+  range: "60...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+        only_pulls: true
+    patch:
+      default:
+        target: auto
+        threshold: 0%
+        informational: true
+        only_pulls: true
+
+# Components slice the uploaded reports by product subsystem without rerunning
+# the suite per crate. Keep these informational until a stable beta baseline is
+# established; after that, high-value components can become targeted gates.
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+        informational: true
+      - type: patch
+        target: auto
+        threshold: 0%
+        informational: true
+  individual_components:
+    - component_id: domain_core
+      name: Domain & Core
+      paths:
+        - "crates/rimloc-domain/**"
+        - "crates/rimloc-core/**"
+    - component_id: services
+      name: Services
+      paths:
+        - "crates/rimloc-services/**"
+    - component_id: rimworld_semantics
+      name: RimWorld parsers & validation
+      paths:
+        - "crates/rimloc-parsers-xml/**"
+        - "crates/rimloc-validate/**"
+    - component_id: formats
+      name: Import / Export formats
+      paths:
+        - "crates/rimloc-export-csv/**"
+        - "crates/rimloc-export-po/**"
+        - "crates/rimloc-export-xliff/**"
+        - "crates/rimloc-import-po/**"
+        - "crates/rimloc-import-xliff/**"
+    - component_id: cli
+      name: CLI
+      paths:
+        - "crates/rimloc-cli/**"
+    - component_id: providers_config
+      name: Providers & Config
+      paths:
+        - "crates/rimloc-llm/**"
+        - "crates/rimloc-config/**"
+    - component_id: plugins
+      name: Plugin compatibility layer
+      paths:
+        - "crates/rimloc-plugin-api/**"
+        - "crates/rimloc-plugin-jsonftl/**"
+    - component_id: desktop_rust
+      name: Desktop Rust / Tauri
+      paths:
+        - "gui/tauri-app/src-tauri/src/**"
+
+# Flags describe independently uploaded test families. Components above then
+# provide the architectural/product view over those uploads.
+flag_management:
+  default_rules:
+    carryforward: false
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+        informational: true
+      - type: patch
+        target: auto
+        threshold: 0%
+        informational: true
+  individual_flags:
+    - name: rust
+      paths:
+        - "crates/**"
+    - name: gui-rust
+      paths:
+        - "gui/tauri-app/src-tauri/src/**"
+
+comment:
+  layout: "condensed_header, diff, flags, components, condensed_files, condensed_footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  hide_project_coverage: false
+
+# GitHub line annotations are deprecated by Codecov and do not compose well
+# with Components/Flags. Keep checks/statuses and use the PR comment + Codecov
+# UI for drill-down.
+github_checks:
+  annotations: false
+
+ignore:
+  - "gui/tauri-app/src-tauri/vendor"
+  - "gui/tauri-app/frontend-v2"
+  - "gui/tauri-app/frontend"
+  - "test"
+  - "testlab"
+  - "docs"
+  - "site"

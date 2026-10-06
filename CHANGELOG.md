@@ -117,6 +117,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
  - [gui/frontend] Use backend `open_path` to avoid plugin-shell URL regex warnings; fix save-report wrappers (#PR)
 
 ### Docs
+- Repository docs and quality infrastructure refreshed for the current pre-beta architecture: canonical EN/RU MkDocs guidance, hardened CI/release workflows, Codecov baseline, dependency review, CodeQL/Dependabot path fixes, and contributor/security policies (#70).
 - Release-candidate docs: RELEASE_READINESS_REPORT (gate matrix, honest limitations, owner gates), BETA_TEST_CHECKLIST for testers, REVIEW_SCREEN_MAP for GUI review.
 - README: honest project status, screenshots section and a GUI build guide; real GUI screenshots added.
 - AGENTS: add rule to reply in Russian when addressed in Russian (#PR)

@@ -2,50 +2,66 @@
 title: Troubleshooting
 ---
 
-# 🛠️ Troubleshooting (если что-то не работает)
+# Если что-то не работает
 
-Подборка симптомов и быстрых решений.
+## Запустился старый интерфейс
 
-## «Command not found» / «Не является внутренней или внешней командой»
+В pre-beta одновременно существуют React и замороженный Svelte fallback.
 
-- Проверьте PATH: `~/.cargo/bin` (Linux/macOS) или `%USERPROFILE%\.cargo\bin` (Windows).
-- На macOS дайте разрешение на запуск бинарника (если скачивали архив):
-  ```bash
-  chmod +x ./rimloc-cli
-  ./rimloc-cli --help
-  ```
+Проверьте artifact identity:
 
-## Ошибки плейсхолдеров после импорта
+- frontend flavor должен соответствовать нужной сборке;
+- owner/production candidate не должен включать automation;
+- имя файла <code>.app</code> само по себе не доказывает frontend.
 
-- Запустите проверку `.po` до импорта:
-  ```bash
-  rimloc-cli validate-po --po ./MyMod.ru.po --strict
-  ```
-- Сверьте проблемные строки: плейсхолдеры должны совпадать с оригиналом (регистр и форма: `%s`, `%d`, `{0}`, `{NAME}` и т. п.). См. glossary.md#плейсхолдер
+Если вам выдали owner-test packet, запускайте app именно из него.
 
-## Пустые или дублирующиеся ключи
+## В Recent Projects появились test/demo проекты
 
-- Проверьте исходные XML:
-  ```bash
-  rimloc-cli validate --root ./Mods/MyMod --format text
-  ```
-- Если это «ожидаемые пустоты» — используйте соответствующие флаги/исключения.
+Automation должна использовать отдельный data/profile. Synthetic projects в обычном owner profile — баг. Приложите build identity и screenshot.
 
-## Неправильная кодировка символов
+## Не открывается/не создаётся проект
 
-- Убедитесь, что редактор сохраняет файлы в UTF‑8 без BOM.
-- Проверьте `xml-health`: ../cli/xml_health.md
+В багрепорт добавьте:
 
-## Импорт ничего не меняет
+- build/commit identity;
+- source type (mod/Core/DLC/existing и т.д.);
+- RimWorld version;
+- diagnostics/support bundle после проверки на private data.
 
-- В `.po` нет непустых `msgstr`.
-- Ключи/пути не совпадают с исходными XML.
-- Запустите с `--report --dry-run`, чтобы увидеть сопоставление ключей.
+Не правьте Workshop originals как workaround.
 
-## Сборка RU‑мода содержит лишнее
+## Validation ругается на placeholders/tags
 
-- Уточните флаги `build-mod` — например, `--lang` и метаданные пакета.
-- Для точной настройки см. cli/build_mod.md
+Сравните target со source и сохраните обязательные placeholders/markup.
 
-Если проблема не решилась — загляните в Discord (страница Community → Discord) и приложите команды + вывод.
+Для PO-handoff:
 
+~~~bash
+rimloc-cli validate-po --po ./work/MyMod.po --strict
+~~~
+
+## CLI не находится
+
+При Cargo install проверьте Cargo bin в PATH. Standalone binary запускайте из папки как <code>./rimloc-cli</code> (macOS/Linux) или <code>.\rimloc-cli.exe</code> (Windows).
+
+## Write-команда ничего не делает / пишет не туда
+
+- используйте <code>--dry-run</code>;
+- выбирайте отдельные/absolute output paths, где это требуется;
+- не направляйте запись в original game/Workshop source;
+- смотрите актуальный help: <code>rimloc-cli &lt;command&gt; --help</code>.
+
+## PO import ничего не меняет
+
+Это относится только к выбранному PO-workflow:
+
+- проверьте непустые <code>msgstr</code>;
+- source/context должны относиться к тому же проекту;
+- используйте <code>--report --dry-run</code>.
+
+PO опционален; desktop translation его не требует.
+
+## Нужна помощь
+
+Создайте issue через [GitHub form](https://github.com/0-danielviktorovich-0/RimLoc/issues/new/choose), приложите маленькую fixture и sanitized diagnostics.
