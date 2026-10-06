@@ -64,7 +64,9 @@ async function deleteLang(localeId: string): Promise<void> {
   await pause(500)
 }
 
-const QA_ID = `qa-${Date.now()}`
+// Сабтаг ≤8 символов (registry.ts валидатор) — Date.now() даёт 13 цифр и
+// честно отклоняется приложением (rel20-находка). Base36-хвост уникален.
+const QA_ID = `qa-${(Date.now() % 1e8).toString(36)}`
 
 before(async () => {
   await waitExisting('.app-sidebar', 30000)
