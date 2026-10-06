@@ -16,3 +16,14 @@
 - Dependabot: #65/#74 влиты; major (#51/#53/#54/#64) — post-beta с причинами; grouped #73/#75 — GitHub считает.
 - Найден и исправлен PO-#:-traversal (write-guard + 3 теста); lru 0.18.5; мёртвый lock удалён.
 - MCP: ADR вариант B (CLI = agent-API, revisit-условия в ADR-MCP.md).
+
+## 2026-10-07 (3) — rel21-rc: ФИНАЛЬНЫЙ ЦИКЛ
+- **rel21-rc**: artifact-rel21-rc/ (main@2ccdbd1, бинарь 1a70c4d5…, identity fail-closed PASS с --repo, WDIO palette 33/33, LM 13/15 ×2 — 2 красных = спек-дефекты i18n-волны, не артефакт), OWNER_TEST_PACKET 9 шагов.
+- **Issue #2**: практический цикл (75 reusable → apply → edit → validate → build, 0 расхождений), ответ опубликован (issuecomment-6024184727), issue открыт — решение за owner.
+- **RELEASE_GATE.md**: 18 RELEASE_READY / 5 OWNER_GATE / 1 EXTERNAL_BLOCKER (CodeQL rescan на candidate) / 1 REJECTED_NOT_SCOPE (MCP ADR).
+- CodeQL: candidate SHA 2ccdbd1, последний анализ 2083253 (предок) — финальный triage+dismiss на свежем анализе candidate = единственный оставшийся engineering-гейт.
+
+### rel21-rc детали (LEVEL7_REPORT, WDIO-логи, ISSUE2)
+- Level-7 visual: ожидает владельца по ACCEPTANCE_CHECKLIST.md (уровень 6.5 proven).
+- LM-spec ревизия: 2 красных = EN-литералы/селектор .form-error в спеке vs локализованные коды в rel21 — спек-дефект, не артефакт.
+- Pipeline деталь: build-mod --po формально обязателен даже при --from-root — шероховатость CLI, отмечена в Issue#2 ответе.
