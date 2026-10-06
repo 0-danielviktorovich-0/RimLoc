@@ -57,5 +57,5 @@ tempfile = "3"
 # unconditional NSApplication::activate() at webview creation — the only
 # path to truly background launches. Upstream PR pending.
 [patch.crates-io]
-wry = { path = "gui/tauri-app/vendor/wry-0.55.1-noactivate" }
-tao = { path = "gui/tauri-app/vendor/tao-0.35.3-noactivate" }
+wry = { path = "gui/tauri-app/vendor/wry-0.57.0-noactivate" }
+tao = { path = "gui/tauri-app/vendor/tao-0.37.1-noactivate" }
