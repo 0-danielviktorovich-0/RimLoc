@@ -73,7 +73,7 @@ jobs:
         with:
           tool: cargo-llvm-cov@0.9.1
 
-      - name: Generate LCOV report
+      - name: Generate Codecov-native report
         run: |
           cargo llvm-cov \
             --workspace \
@@ -155,7 +155,7 @@ jobs:
         with:
           tool: cargo-llvm-cov@0.9.1
 
-      - name: Generate desktop Rust LCOV report
+      - name: Generate desktop Rust Codecov-native report
         run: |
           cargo llvm-cov \
             --manifest-path gui/tauri-app/src-tauri/Cargo.toml \
