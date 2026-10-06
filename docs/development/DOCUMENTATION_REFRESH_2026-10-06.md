@@ -163,19 +163,16 @@ At that point:
 - publish final beta installation/release pages;
 - update capability tables against the exact beta artifact.
 
-## Documentation PR
+## Integration history
 
-Documentation work is isolated in:
+The documentation refresh originated in:
 
-\`docs/pre-beta-documentation-refresh\`
+- PR #61 — `docs: refresh pre-beta product and developer truth`, merged into
+  `feature/ui-r1-convergence`;
+- PR #62 — `ci: add production-grade Codecov baseline`, merged into the same
+  convergence line;
+- PR #70 — selective default-branch sync for public docs and repository-quality
+  infrastructure, intentionally excluding unrelated in-progress product code.
 
-Draft PR:
-
-#61 — docs: refresh pre-beta product and developer truth
-
-Base:
-
-\`feature/ui-r1-convergence\`
-
-This avoids blocking the active GLM implementation lane while keeping the
-documentation changes reviewable and mergeable.
+The split keeps documentation/CI changes independently reviewable while the
+active product implementation lane continues in parallel.
