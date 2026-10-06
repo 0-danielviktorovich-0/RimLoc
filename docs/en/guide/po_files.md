@@ -1,85 +1,91 @@
 ---
-title: PO Files 101
+title: PO Files (optional interchange)
 ---
 
-# PO Files 101
+# PO files in RimLoc
 
-!!! info "Terminology"
-    New to `.po`? Start with the Glossary: ../glossary.md#po-portable-object
+PO (Portable Object) is one **interchange format** supported by RimLoc. It is useful with Poedit and many CAT tools, but it is **not the canonical RimLoc project format** and it is not required for normal desktop translation.
 
-This page explains what `.po` files are, why RimLoc uses them, and how to edit them comfortably.
+## When PO is useful
 
-## What is a PO file?
+Use PO when you want to:
 
-PO (Portable Object) is a simple text format from the GNU gettext ecosystem. Each entry contains:
+- hand a translation to an external translator/CAT tool;
+- review a single text-oriented file in Git;
+- import work produced by an existing gettext-oriented workflow;
+- keep compatibility with established translation tooling.
 
-```
-#: <reference to source file>
-msgctxt "<optional context>"
-msgid "<source text>"
-msgstr "<translated text>"
-```
+If you translate directly in the RimLoc desktop project, you can skip PO entirely.
 
-RimLoc adds helpful `#: path:line` comments and a unique `msgctxt` that combines the key and a relative path to keep entries stable across changes.
+## Basic structure
 
-## Why PO with RimLoc?
-
-- Friendly for translators — many desktop tools support PO.
-- Keeps context, references, and keys in one place.
-- Easy to diff and review in PRs.
-
-## Typical RimLoc entry
-
-```
-#: Mods/MyMod/Languages/English/Keyed/Gameplay.xml:42
-msgctxt "Greeting|Keyed/Gameplay.xml:42"
+~~~text
+#: path/to/source.xml:42
+msgctxt "stable-context"
 msgid "Hello, {PAWN_label}!"
-msgstr ""
-```
+msgstr "Привет, {PAWN_label}!"
+~~~
 
-Translate by filling `msgstr` but keep placeholders (like `{PAWN_label}`) unchanged.
+Keep placeholders/tags intact.
 
-## Workflow with RimLoc
+## Export
 
-- Export:
+~~~bash
+rimloc-cli export-po \
+  --root ./Mods/MyMod \
+  --out-po ./work/MyMod.ru.po \
+  --lang ru
+~~~
 
-```bash
-rimloc-cli --quiet export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --lang ru
-```
+## Validate
 
-- Edit in your favorite PO editor (see below).
+~~~bash
+rimloc-cli validate-po --po ./work/MyMod.ru.po --strict
+~~~
 
-- Validate placeholders (strict for CI):
+## Import
 
-```bash
-rimloc-cli --quiet validate-po --po ./out/MyMod.po --strict --format json | jq .
-```
+Always prefer a working copy / isolated output rather than the original Workshop source:
 
-- Import back to XML (single file or full structure):
+~~~bash
+rimloc-cli import-po \
+  --po ./work/MyMod.ru.po \
+  --mod-root ./work/MyMod-copy \
+  --lang ru \
+  --dry-run
+~~~
 
-```bash
-# Single XML for review
-rimloc-cli --quiet import-po --po ./out/MyMod.po --out-xml ./out/MyMod.ru.xml
+## Build without PO
 
-# Update a mod’s structure (with backups)
-rimloc-cli --quiet import-po --po ./out/MyMod.po --mod-root ./Mods/MyMod --backup
-```
+If translated XML already exists:
 
-## Recommended editors
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-- Poedit — popular, cross‑platform editor tailored for PO files.
-- Gtranslator (GNOME), Lokalize (KDE) — native Linux apps.
-- VS Code — “gettext/PO” extensions exist for syntax highlight and basic editing.
-- CLI utilities: `msgfmt`, `msgcat`, `msgconv` from gettext (advanced users).
+So the mental model is:
 
-Tip: PO files must be UTF‑8. If a tool saved another encoding, convert it:
+~~~text
+canonical RimLoc project
+        ↕
+   import/export adapters
+   PO · CSV · XLIFF · XML · ...
+~~~
 
-```bash
-msgconv --to-code=utf-8 ./in.po > ./out.po
-```
+not “RimLoc project = PO”.
 
-## Placeholders
+## Editors
 
-Don’t change placeholders (e.g., `{count}`, `%s`). See Guides → Placeholders for details.
+If you choose the PO path:
 
-See also: ../cli/export_import.md · ../cli/validate_po.md
+- Poedit;
+- Lokalize;
+- Gtranslator;
+- gettext CLI tools;
+- editors with PO extensions.
+
+See also [PO export/import](../cli/export_import.md) and [placeholders](placeholders.md).

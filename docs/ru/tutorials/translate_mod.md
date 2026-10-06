@@ -2,83 +2,61 @@
 title: Как перевести мод
 ---
 
-# 🧭 Как перевести мод с нуля
+# Как перевести RimWorld-мод с нуля
 
-Этот гайд — для ситуации «есть мод без перевода, хочу быстро сделать хороший RU». Делаем по шагам, с примерами команд.
+Для большинства пользователей основной путь — desktop project workflow. PO опционален.
 
-📌 Не знакомы с терминами? Откройте [Словарь RimLoc](../glossary.md).
+## Desktop workflow
 
-## Шаг 1. Подготовка
+1. Откройте RimLoc → **Новый перевод**.
+2. Выберите RimWorld mod/source.
+3. Выберите target locale.
+4. Переводите прямо в workspace.
+5. Проверяйте source/context, glossary/TM suggestions.
+6. Запустите validation.
+7. Build/export в отдельный output-каталог.
+8. Проверьте перевод в RimWorld.
 
-- Установите RimLoc: `cargo install rimloc-cli`
-- Найдите корень мода (папка, где есть `About/`, `Defs/`, иногда `Languages/`). Допустим: `./Mods/MyMod`.
+Оригинальный source должен оставаться read-only.
 
-## Шаг 2. Скан и проверка
+## CLI
 
-```bash
-rimloc-cli scan --root ./Mods/MyMod --format json > scan.json
-rimloc-cli validate --root ./Mods/MyMod --format text
-```
+Для автоматизации:
 
-Зачем? Сразу видим дубликаты, пустые строки и потенциальные проблемы [плейсхолдеров](../glossary.md#плейсхолдер). Это экономит часы на ревью.
+~~~bash
+rimloc-cli scan --root ./Mods/MyMod --format json
+rimloc-cli validate --root ./Mods/MyMod
+~~~
 
-📌 Подробнее: ../cli/scan.md · ../cli/validate.md
+### Опциональный PO handoff
 
-## Шаг 3. Экспорт PO
+~~~bash
+rimloc-cli export-po \
+  --root ./Mods/MyMod \
+  --out-po ./work/MyMod.ru.po \
+  --lang ru
+~~~
 
-```bash
-rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru
-```
+Внешний перевод импортируйте в **working copy**, не поверх Workshop source.
 
-- Получится один удобный `.po` с оригиналами (`msgid`) и местом для перевода (`msgstr`).
-- Открывайте в Poedit/веб‑редакторе и переводите.
+### Build без PO
 
-📌 Подробнее: ../cli/export_import.md
+Если translated <code>Languages</code> XML уже готов:
 
-## Шаг 4. Проверка PO
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-```bash
-rimloc-cli validate-po --po ./MyMod.ru.po --strict
-```
+## Перед публикацией
 
-Ловим несоответствия [плейсхолдеров](../glossary.md#плейсхолдер) заранее.
+- проверьте placeholders/tags;
+- review source-changed entries;
+- протестируйте в игре;
+- не меняйте original source;
+- сохраните diagnostics, если что-то пошло не так.
 
-📌 Подробнее: ../cli/validate_po.md
-
-## Шаг 5. Импорт перевода в мод
-
-Быстрый один файл (для ревью):
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --out-xml ./Mods/MyMod/_Imported.xml --dry-run
-rimloc-cli import-po --po ./MyMod.ru.po --out-xml ./Mods/MyMod/_Imported.xml
-```
-
-Или правильная разкладка по структуре:
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report
-```
-
-## Шаг 6. Собрать отдельный мод‑перевод (опционально)
-
-```bash
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru --dry-run
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru
-```
-
-Проверьте готовый `MyMod_RU` в игре (включите мод и выберите язык Russian).
-
-## Типичные ошибки и как их избежать
-
-- Испортили плейсхолдеры (`%d`, `{0}`, `{PAWN_name}`)?
-  - Перепроверьте `validate-po` и верните точное соответствие исходнику.
-- Нечего импортировать?
-  - Убедитесь, что в `.po` есть непустые `msgstr`. Для заглушек используйте флаг `--keep-empty` у импорта.
-- Сломали XML‑теги в тексте?
-  - RimLoc подскажет валидацией. Старайтесь не убирать техтеги (`<br/>`, `</i>` и т.п.) из оригинала.
-
-## Куда дальше
-
-- Если переводили старую версию — посмотрите обновление: [Как обновлять переводы](update_translations.md)
-- Хотите подсказок и приёмов? Загляните в [Советы и лайфхаки](../tips.md)
-
+См. [Начало работы](../getting-started.md) и [Гайд переводчика](../guide/translators.md).

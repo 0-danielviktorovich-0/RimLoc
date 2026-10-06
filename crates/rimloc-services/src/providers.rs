@@ -1060,8 +1060,9 @@ mod tests {
 
     /// The keychain-backed sink over the TEST namespace obeys the same
     /// trait contract end-to-end (feature-gated; skipped without the
-    /// `keychain` feature).
-    #[cfg(feature = "keychain")]
+    /// `keychain` feature). Реальный бэкенд есть только на macOS/windows —
+    /// на linux CI keyring остаётся моком (см. blockers keychain-лейна).
+    #[cfg(all(feature = "keychain", any(target_os = "macos", target_os = "windows")))]
     #[test]
     fn provider_keychain_sink_roundtrip_through_contract() {
         let dir = tempfile::tempdir().unwrap();

@@ -1,101 +1,71 @@
 ---
-title: Перевод RimLoc (i18n)
+title: Перевод RimLoc
 ---
 
-# Перевод RimLoc (i18n)
+# Перевод самого RimLoc
 
-CLI‑сообщения RimLoc локализуются через Fluent (FTL) и встраиваются на этапе сборки. Ниже — как добавить или обновить перевод.
+RimLoc постепенно переходит к **self-localization через ту же каноническую project model**, что используется для других источников.
 
-## Быстрый старт — без кода
+Долгосрочный contributor workflow:
 
-Перевод можно сделать прямо в GitHub:
+1. открыть application catalog RimLoc как localization project;
+2. выбрать target locale;
+3. переводить/review в обычном editor;
+4. проверить placeholders/select/plural rules;
+5. собрать contribution bundle;
+6. отправить перевод на review.
 
-1) Откройте `crates/rimloc-cli/i18n/en/` (английская версия).
-2) Создайте рядом папку `crates/rimloc-cli/i18n/<lang>/` (например, `es`, `de`, `fr`).
-3) Скопируйте в неё `rimloc.ftl` и `rimloc-tests.ftl` из `en/`.
-4) Переведите только значения — ключи и плейсхолдеры не меняйте.
-5) Закоммитьте и откройте Pull Request. Укажите код языка и (по возможности) приложите скрин `--help`.
+Это второй реальный adapter direction после RimWorld и важная проверка, что core не RimWorld-only.
 
-Предпочитаете локально? Ниже есть команды для запуска тестов.
+## Текущий pre-beta статус
 
-## Структура
+Self-localization ещё интегрируется в React product workflow. Если текущая сборка показывает **Translate RimLoc**, используйте этот путь.
 
-- `crates/rimloc-cli/i18n/en/rimloc.ftl` — английский источник истины.
-- `crates/rimloc-cli/i18n/<lang>/rimloc.ftl` — другие локали зеркалируют ключи EN.
-- `crates/rimloc-cli/i18n/<lang>/rimloc-tests.ftl` — тестовые сообщения.
+Если UI-путь в конкретной сборке недоступен, repository sources остаются developer fallback, а не финальным UX.
 
-Для `<lang>` используйте IETF/ISO коды (`ru`, `de`, `fr`). RimLoc подбирает языки по языковому коду; региональные теги игнорируются.
+## CLI messages
 
-## Добавление новой локали
+Rust CLI использует Fluent (FTL). English — source locale CLI message catalogs.
 
-1) Скопируйте английские файлы:
+~~~text
+crates/rimloc-cli/i18n/en/
+crates/rimloc-cli/i18n/ru/
+...
+~~~
 
-```
-crates/rimloc-cli/i18n/en/rimloc.ftl → crates/rimloc-cli/i18n/<lang>/rimloc.ftl
-crates/rimloc-cli/i18n/en/rimloc-tests.ftl → crates/rimloc-cli/i18n/<lang>/rimloc-tests.ftl
-```
+При ручной правке FTL:
 
-2) Переведите значения, ключи и плейсхолдеры оставьте как в EN.
-   - Ключи: строчные с дефисами.
-   - Плейсхолдеры: `{name}`, `{0}`, `%s`, `%d` — не менять.
+- переводите values, не keys;
+- сохраняйте placeholders;
+- держите одинаковый набор keys;
+- запускайте i18n tests.
 
-3) Запустите тесты:
-
-```bash
+~~~bash
 cargo test --package rimloc-cli -- tests_i18n
-cargo test --workspace
-```
+~~~
 
-4) Проверьте локализованный help:
+## UI/application catalog
 
-```bash
-rimloc-cli --ui-lang <lang> --help
-```
+Application UI catalog имеет отдельный canonical bridge/project path. Не считайте CLI FTL единственным источником строк React UI.
 
-Если всё прошло — язык подключится автоматически (доп. регистрации не требуется).
+Для implementation details смотрите текущую self-localization architecture в repository docs.
 
-## Обновление строк
+## Перевод документации
 
-- Сначала правьте EN (добавление/удаление ключей), затем синхронизируйте другие локали.
-- Набор ключей во всех локалях должен совпадать — это проверяется тестами.
-- Для координации изменений можно завести issue (см. «Issue Guidelines»).
+Публичные docs сейчас поддерживают EN/RU деревья <code>docs/en</code> и <code>docs/ru</code>.
 
-## Плейсхолдеры
+Для новой locale:
 
-Смотрите раздел [Плейсхолдеры](../guide/placeholders.md). Несовпадающие или испорченные плейсхолдеры будут ловиться `validate-po --strict`.
+- зеркально создайте структуру страниц;
+- переводите текст, не меняя technical identifiers/commands;
+- добавьте locale в MkDocs i18n;
+- запустите <code>mkdocs build --strict</code>.
 
-Примеры (токены не меняем):
+## Checklist
 
-```
-EN: Found {count} files
-RU: Найдено {count} файлов
-
-EN: Invalid value: %s
-RU: Неверное значение: %s
-```
-
-## Полезные редакторы
-
-- PO: Poedit (Windows/macOS/Linux), Gtranslator (GNOME), Lokalize (KDE), VS Code с расширениями для gettext.
-- FTL (Fluent): расширения VS Code для “Fluent/FTL” дают подсветку и базовые проверки. Подойдёт любой редактор.
-
-## Чек‑лист
-
-- [ ] Ключи без изменений (переводим только значения)
-- [ ] Плейсхолдеры сохранены (`{…}`, `%…`)
-- [ ] На месте оба файла: `rimloc.ftl` и `rimloc-tests.ftl`
-- [ ] В PR указан код языка и, по возможности, скрин `--help`
-
-## Перевод документации (опционально)
-
-- Скопируйте страницы из `docs/en/...` в `docs/<lang>/...`, сохраняя структуру.
-- Держите разделы синхронизированными между языками (одинаковые заголовки/порядок).
-- Предпросмотр локально:
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements-docs.txt
-mkdocs serve
-```
-
-- Для новой локали сайта нужно добавить язык в `mkdocs.yml` (плагин `i18n`). Создайте issue или упомяните это в PR.
+- target locale указан;
+- placeholders/select/plural syntax сохранены;
+- source IDs не изменены;
+- validation зелёный;
+- bundle не содержит secrets/private paths;
+- при изменении поведения EN/RU docs обновлены вместе.

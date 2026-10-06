@@ -4,138 +4,127 @@ title: Тестирование и отчёты
 
 # Тестирование и отчёты
 
-На этой странице — как протестировать RimLoc локально и как оформлять полезные багрепорты с нужной диагностикой.
+В RimLoc есть несколько уровней доказательств. Зелёные unit tests не равны доказанному desktop workflow или результату в игре.
 
-## Быстрый старт (для разработчиков)
+## Уровни доказательств
 
-```bash
-# Собрать весь workspace
+Используйте самый сильный реально полученный уровень:
+
+1. source/code inspection;
+2. unit tests;
+3. integration tests;
+4. built desktop/CLI E2E;
+5. same-corpus differential;
+6. in-game/runtime proof.
+
+Наличие красивого UI-экрана само по себе ничего не доказывает.
+
+## Rust workspace
+
+~~~bash
 cargo build --workspace
+cargo test --workspace
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+~~~
 
-# Запустить все тесты (unit + integration)
-cargo test --workspace -- --nocapture
+GUI crate имеет platform/frontend prerequisites; CI проверяет его отдельным job.
 
-# Форматирование и линт без предупреждений
-cargo fmt && cargo clippy --workspace --all-targets -- -D warnings
-```
+## React frontend
 
-Полезные флаги:
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npx tsc --noEmit
+npm run build
+~~~
 
-- `-- --nocapture` показывает stdout тестов (удобно для локализации help).
-- Запуск одного интеграционного теста: `cargo test -p rimloc-cli scan_picks_latest_version_by_default_and_flags_work`.
+Semantic/WDIO acceptance React R1 идёт отдельно от обычного build/typecheck.
 
-## Логи и диагностика
+## Svelte fallback
 
-RimLoc пишет диагностику в stderr и в лог-файл с ротацией.
+Только если меняется замороженный fallback:
 
-- `RUST_LOG=info|debug|trace` — уровень подробности в консоли (по умолчанию `info`).
-- `RIMLOC_LOG_DIR=./logs` — директория для ежедневных логов (по умолчанию `./logs`).
-- `RIMLOC_LOG_FORMAT=json` — переключить файловый лог в структурированный JSON (по умолчанию `text`).
-- Для чистого копипаста можно отключить украшения UI:
-  - `NO_COLOR=1` — без ANSI-цветов,
-  - `NO_ICONS=1` — без символов ✔/⚠/✖.
+~~~bash
+cd gui/tauri-app/frontend-v2
+npm ci
+npm run check
+npm test
+npm run build
+~~~
 
-При старте RimLoc печатает баннер с версией, `RIMLOC_LOG_DIR` и текущим `RUST_LOG` — это сразу даёт контекст в отчётах.
+## CLI smoke
 
-Совет для автоматизации: используйте `--quiet` вместе с `--format json`, чтобы stdout оставался машинно‑читаемым, а диагностические сообщения шли в stderr/лог.
+Используйте встроенную fixture или изолированную копию реального мода:
 
-### Потоки и уровни
+~~~bash
+rimloc-cli scan --root ./test/TestMod --format json
+rimloc-cli validate --root ./test/TestMod
+~~~
 
-- stdout — основная полезная нагрузка (CSV/JSON). Для JSON‑потоков используйте `--quiet`.
-- stderr — сообщения для человека и стартовый баннер.
-- Файловый лог — подробные трассировки в `RIMLOC_LOG_DIR` (ежедневная ротация), уровень DEBUG.
+PO-тесты проверяют interoperability, а не весь продукт:
 
-Часто используемые уровни: `error`, `warn`, `info`, `debug`. Для расширенной диагностики — `RUST_LOG=debug`.
-
-### Поля JSON‑лога
-
-При `RIMLOC_LOG_FORMAT=json` лог в файле будет структурированным. Типичные поля:
-
-- `timestamp`, `level`, `target` — стандартные метаданные tracing
-- `event` — семантическое имя события: `app_started`, `scan_args`, `validate_args`, `export_po_args`, `import_po_args`, `build_mod_args`
-- Дополнительные поля в зависимости от события: `cmd`, `root`, `out_po`, `lang`, `game_version` и т.д.
-
-Пример (сокращённо):
-
-```json
-{"timestamp":"...","level":"INFO","event":"app_started","version":"0.2.0","logdir":"logs","rustlog":"debug"}
-{"timestamp":"...","level":"DEBUG","event":"scan_args","root":"./Mods/MyMod","format":"json","game_version":"1.4"}
-```
-
-## Сквозные проверки CLI
-
-Для быстрых прогонов используйте фикстуру `test/TestMod`:
-
-```bash
-# Сканировать в JSON и сохранить копию на диск
-rimloc-cli scan --root ./test/TestMod --format json --out-json ./logs/scan.json
-
-# Валидация в текстовом формате
-rimloc-cli validate --root ./test/TestMod --format text
-
-# Строгая проверка плейсхолдеров в PO
-rimloc-cli validate-po --po ./test/test-en.po --strict
-
-# Экспорт в PO и обратный импорт в XML в режиме dry-run
+~~~bash
 rimloc-cli export-po --root ./test/TestMod --out-po ./logs/TestMod.po --lang ru
-rimloc-cli import-po --po ./logs/TestMod.po --mod-root ./test/TestMod --dry-run
+rimloc-cli validate-po --po ./logs/TestMod.po --strict
+~~~
 
-# Сборка мода-перевода (dry run)
-rimloc-cli build-mod --po ./logs/TestMod.po --out-mod ./logs/TestMod-ru --lang ru --dry-run
-```
+Есть и no-PO build:
 
-### Версионные моды
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-Если мод использует папки версий (`1.4`, `1.5`, `v1.6`):
+## Desktop acceptance
 
-```bash
-rimloc-cli scan --root ./Mods/MyMod --game-version 1.4
-rimloc-cli validate --root ./Mods/MyMod --include-all-versions
-rimloc-cli export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --game-version v1.6
-```
+При owner/user тесте проверяйте exact artifact identity:
 
-## JSON для автоматизации
+- source SHA;
+- frontend flavor;
+- automation flag;
+- app/binary SHA, если дан.
 
-- `scan --format json [--out-json <FILE>]` — массив юнитов; удобно класть в артефакты CI.
-- `validate --format json` — структурированные проблемы (kind, key, path, line, message).
-- `validate-po --format json [--strict]` — несоответствия плейсхолдеров между msgid/msgstr.
+Не тестируйте stale/automation build как production candidate.
 
-Пример:
+Автоматизация должна использовать отдельный data/profile, чтобы synthetic projects не попадали в Recent Projects владельца.
 
-```bash
-rimloc-cli validate --root ./test/TestMod --format json | jq '.[] | select(.kind=="duplicate")'
-```
+## Security checks
 
-## Шаблон багрепорта
+Для security-sensitive изменений нужны релевантные проверки:
 
-Пожалуйста, указывайте следующее — это ускорит разбор:
+- cargo-deny/advisories;
+- JS dependencies;
+- CodeQL;
+- secret scan;
+- Tauri capabilities/IPC;
+- path traversal/symlink containment;
+- отсутствие automation bridge в production artifact.
 
-1) Команда и полный вызов
+Внутренние audit-артефакты — в <code>docs/security/</code>, публичная политика — [SECURITY.md](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/SECURITY.md).
 
-```
-rimloc-cli <command> <args>
-```
+## Документация
 
-2) Версии и окружение
-
-- `rimloc-cli --version`
-- ОС и shell
-- `RUST_LOG`, `RIMLOC_LOG_DIR`, `NO_COLOR`, `NO_ICONS`
-
-3) Ожидаемое и фактическое поведение (по 1–2 предложения)
-
-4) Вложения
-
-- `logs/rimloc.log` и вывод консоли (по возможности с `--ui-lang en`)
-- Минимально воспроизводимый пример: маленький фрагмент мода или пара XML в `Languages/...`
-- Для проблем с PO: небольшой `.po`, на котором воспроизводится баг
-
-## Превью документации
-
-Чтобы посмотреть сайт локально:
-
-```bash
-python -m venv .venv && source .venv/bin/activate
+~~~bash
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements-docs.txt
-mkdocs serve
-```
+mkdocs build --strict
+~~~
+
+## Багрепорт
+
+Укажите:
+
+- exact build/version/commit;
+- ОС;
+- область (React desktop, CLI, adapter, build/export и т.д.);
+- шаги;
+- expected/actual;
+- sanitized logs;
+- маленькую fixture/project, если возможно.
+
+Никогда не публикуйте API keys, tokens, private paths или непроверенный diagnostics bundle.

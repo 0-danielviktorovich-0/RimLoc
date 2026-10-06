@@ -1,45 +1,86 @@
 ---
-title: GUI (Tauri)
+title: Desktop GUI
 ---
 
-# RimLoc GUI (Tauri)
+# RimLoc desktop GUI
 
-> **Legacy v1 page.** This document describes the first-generation interface
-> (the vanilla JS shell in `gui/tauri-app/frontend/`). The shipped app now uses
-> the v2 front end (`gui/tauri-app/frontend-v2`, Svelte), which the Tauri shell
-> loads by default, so tabs and shortcuts listed below may not match what you
-> see. The page will be rewritten once the v2 interface stabilizes.
+The desktop application is built with **Tauri 2** over the shared Rust service layer.
 
-RimLoc ships an optional desktop shell built with Tauri that wraps common CLI workflows.
+## Current frontend status
 
-## Features (MVP)
-- Start: scan and export PO (with multiple TM roots).
-- Validate: XML checks and XML health.
-- Diff: source vs translation + changed source (baseline via CLI).
-- Import / Build: dry-run previews and Apply actions with backups.
-- Lang Update: dry-run plan and Apply action (backup existing folder).
-- Annotate: dry-run plan and Apply (add/strip comments with source text).
-- Morph: run morphology providers with filters/limits.
-- Tools: dump JSON schemas; open last path.
-- Logs: view tail of rimloc logs; auto-refresh.
+- **React 19 / frontend-react** — intended production UI and current R1 convergence target.
+- **Svelte / frontend-v2** — frozen legacy fallback/reference during migration.
+- **frontend/** — older historical shell; not the product direction.
 
-## Run locally
+Do not assume a random local <code>.app</code> is the React build. Development/automation builds have had stale-bundle collisions in the past, so owner/test artifacts should carry an explicit build identity.
+
+## What the React workspace is for
+
+The current product direction exposes the normal localization lifecycle:
+
+- Home / recent projects;
+- new translation;
+- open/update existing translation;
+- workspace/editor;
+- target-locale switching;
+- validation/checks;
+- glossary;
+- Translation Memory as it is enabled during pre-beta;
+- build/export;
+- diagnostics;
+- settings and language management.
+
+A control should only appear as usable when the backend/adapter capability is actually live.
+
+## Normal translator workflow
+
+1. Create/open a project.
+2. Choose a source and target locale(s).
+3. Translate directly in the editor.
+4. Review context/source information.
+5. Validate.
+6. Build/export to an isolated output directory.
+
+**PO is not required** for this workflow. PO is an optional interchange format for external CAT tools.
+
+## Build the React candidate
 
 Requirements:
-- Rust toolchain
-- Tauri CLI: `cargo install tauri-cli`
 
-Run:
+- Rust toolchain;
+- Node.js 20+;
+- Tauri platform prerequisites.
 
-```bash
-cd gui/tauri-app
-cargo tauri dev
-```
+~~~bash
+cd gui/tauri-app/frontend-react
+npm ci
+npm run build
 
-The app uses `rimloc-services` directly; no external binary is required.
+cd ../src-tauri
+cargo tauri build --config tauri.react.conf.json
+~~~
 
-## Notes
-- Write operations have confirmation prompts and backups where applicable.
-- Use the context-menu (right-click) on “Plan Update (DRY)” to download with a progress bar.
-- Hotkeys: Alt+1..9 to switch tabs.
-- Set paths in the form fields and press the action buttons; results appear in the panel below.
+For development:
+
+~~~bash
+cd gui/tauri-app/src-tauri
+cargo tauri dev --config tauri.react.conf.json
+~~~
+
+## Safety
+
+- Game/Workshop/source directories are treated as read-only inputs.
+- Use a separate output directory for generated translation artifacts.
+- Automated tests should use an isolated RimLoc data/profile directory so fixtures do not pollute Recent Projects.
+- Production artifacts must not include automation/test bridges.
+
+## Visual status
+
+The React R1 interface uses the approved Lovable-derived design direction as the visual/interaction baseline. Screenshots in older docs may still show the frozen Svelte UI until the new owner-approved screenshot set replaces them.
+
+## See also
+
+- [Getting started](../getting-started.md)
+- [Translator guide](translators.md)
+- [Troubleshooting](../troubleshooting.md)
+- [Frontend boundary](../../architecture/FRONTEND_UI_BOUNDARY.md)

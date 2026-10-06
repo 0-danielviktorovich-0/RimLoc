@@ -1,85 +1,81 @@
 ---
-title: Всё про PO‑файлы
+title: PO-файлы (опциональный обмен)
 ---
 
-# Всё про PO‑файлы
+# PO-файлы в RimLoc
 
-!!! info "Термины"
-    Впервые видите `.po`? Начните со Словаря: ../glossary.md#po-portable-object
+PO (Portable Object) — один из **interchange formats** RimLoc. Он удобен для Poedit/CAT, но **не является каноническим форматом проекта RimLoc** и не обязателен для обычного desktop-перевода.
 
-Коротко о том, что такое `.po`, зачем RimLoc его использует и как удобно редактировать.
+## Когда PO полезен
 
-## Что такое PO?
+Используйте PO, если нужно:
 
-PO (Portable Object) — текстовый формат из экосистемы GNU gettext. Каждая запись включает:
+- отдать перевод во внешний CAT;
+- ревьюить один текстовый файл в Git;
+- импортировать существующий gettext-oriented workflow;
+- сохранить совместимость с привычными translator tools.
 
-```
-#: <ссылка на исходный файл>
-msgctxt "<опциональный контекст>"
-msgid "<исходный текст>"
-msgstr "<перевод>"
-```
+Если переводите прямо в RimLoc desktop project, PO можно вообще не использовать.
 
-RimLoc добавляет комментарий `#: path:line` и уникальный `msgctxt`, который сочетает ключ и относительный путь — так записи стабильнее при изменениях.
+## Структура
 
-## Почему PO в RimLoc?
-
-- Удобно для переводчиков — много редакторов поддерживают PO.
-- Хранит контекст, ссылки и ключи в одном месте.
-- Легко смотреть diff и делать ревью в PR.
-
-## Пример записи RimLoc
-
-```
-#: Mods/MyMod/Languages/English/Keyed/Gameplay.xml:42
-msgctxt "Greeting|Keyed/Gameplay.xml:42"
+~~~text
+#: path/to/source.xml:42
+msgctxt "stable-context"
 msgid "Hello, {PAWN_label}!"
-msgstr ""
-```
+msgstr "Привет, {PAWN_label}!"
+~~~
 
-Переводим, заполняя `msgstr`, но плейсхолдеры (например, `{PAWN_label}`) не меняем.
+Плейсхолдеры/tags не меняйте.
 
-## Рабочий процесс с RimLoc
+## Экспорт
 
-- Экспорт:
+~~~bash
+rimloc-cli export-po \
+  --root ./Mods/MyMod \
+  --out-po ./work/MyMod.ru.po \
+  --lang ru
+~~~
 
-```bash
-rimloc-cli --quiet export-po --root ./Mods/MyMod --out-po ./out/MyMod.po --lang ru
-```
+## Проверка
 
-- Редактирование в удобном редакторе (см. ниже).
+~~~bash
+rimloc-cli validate-po --po ./work/MyMod.ru.po --strict
+~~~
 
-- Проверка плейсхолдеров (строгий режим для CI):
+## Импорт
 
-```bash
-rimloc-cli --quiet validate-po --po ./out/MyMod.po --strict --format json | jq .
-```
+Используйте working copy / отдельный output, а не оригинальный Workshop source:
 
-- Импорт обратно в XML (в один файл или в структуру мода):
+~~~bash
+rimloc-cli import-po \
+  --po ./work/MyMod.ru.po \
+  --mod-root ./work/MyMod-copy \
+  --lang ru \
+  --dry-run
+~~~
 
-```bash
-# Один XML для ревью
-rimloc-cli --quiet import-po --po ./out/MyMod.po --out-xml ./out/MyMod.ru.xml
+## Сборка без PO
 
-# Обновить структуру мода (с бэкапами)
-rimloc-cli --quiet import-po --po ./out/MyMod.po --mod-root ./Mods/MyMod --backup
-```
+Если translated XML уже есть:
 
-## Рекомендуемые редакторы
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-- Poedit — популярный кроссплатформенный редактор для PO.
-- Gtranslator (GNOME), Lokalize (KDE) — нативные приложения под Linux.
-- VS Code — есть расширения для “gettext/PO” (подсветка и базовое редактирование).
-- CLI‑утилиты: `msgfmt`, `msgcat`, `msgconv` из gettext (для продвинутых).
+Правильная модель:
 
-Совет: PO должны быть в UTF‑8. Если инструмент сохранил другую кодировку, конвертируйте:
+~~~text
+canonical RimLoc project
+        ↕
+   import/export adapters
+   PO · CSV · XLIFF · XML · ...
+~~~
 
-```bash
-msgconv --to-code=utf-8 ./in.po > ./out.po
-```
+а не “RimLoc project = PO”.
 
-## Плейсхолдеры
-
-Не меняйте плейсхолдеры (например, `{count}`, `%s`). Подробности — в разделах «Гайды → Плейсхолдеры».
-
-См. также: ../cli/export_import.md · ../cli/validate_po.md
+См. [PO export/import](../cli/export_import.md) и [плейсхолдеры](placeholders.md).
