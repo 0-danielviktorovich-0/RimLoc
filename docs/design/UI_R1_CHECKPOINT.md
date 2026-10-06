@@ -285,3 +285,22 @@ level7-hugslib/ (install/restore/launch_verify + ACCEPTANCE_CHECKLIST.md — в�
 ломается); Prepatcher сам перезапускает игру при смене модлиста; user data = ~/Library/
 Application Support/RimWorld/ (НЕ ludeon.rimworld — пустой leftover); моды GOG-инсталла
 лежат ВНУТРИ бандла /Applications/RimWorld.app/Mods/ (290 папок).
+
+### §91. Волна 5 (7 feasible конкурентов) + коррекция находки §90
+
+**Tier A финализирован**: 24 строки, **15 PRACTICALLY_RUN** (семёрка Remis/Grabber GUI/
+RimTransAI/RimTrans_PY/rimwt/TokcDK/rtl-tools доведена, ev.4-6), same-corpus диффов 14,
+NOT DONE 9 — все с причинами (BLOCKED_PLATFORM/DEPENDENCY/не-тул). Отчёты в
+docs/competitive/differential/ (PR волны 5). Матчи: RimTransAI Mono.Cecil = ROADMAP;
+TokcDK словарь = dict-gap кандидаты; Remis stale-версии = подтверждён ниже.
+
+**Коррекция §90-находки №1**: export-po --game-version на LoadFolders-модах — НЕ регрессия
+недавних мержей (бисект-«зелёные» f3bf643/ca2cedc оказались stale-fingerprint таргета).
+Латентный дефект: export-po сужал LoadFolders-мод до v1.x/ без Gate H-семантики
+(Languages/Keyed живут в корне, «/»-ветка) → пустой PO. **Фикс: PR #77** (b046b69) —
+modview::effective_view + languages_dirs() (рут первым), регресс-тест
+export_po_game_version_loadfolders_keeps_root_keyed; A/B 1→76 msgid, ключи 1:1 с эталоном
++2 <b>-разметки (entity-фикс). Урок: последовательные чекауты в один CARGO_TARGET_DIR без
+пересборки дают stale-бинарники (cargo не всегда инвалидирует) — бисект только со свежим
+таргетом на коммит; tgbench-«эталон» для gv-кейсов не эталон (держался на numeric-баге
+резолвера, исправленном осознанно в f3bf643).

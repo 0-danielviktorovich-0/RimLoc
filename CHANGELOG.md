@@ -5,6 +5,9 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+- [cli] `export-po --game-version` on LoadFolders mods: the version view now uses the modview effective view (Gate H semantics, root dir first), so root-hosted `Languages/Keyed` are no longer lost when a version folder has no Languages of its own (HugsLib: 1 → 76 msgid). Regression test `export_po_game_version_loadfolders_keeps_root_keyed`.
+
 ### Added
 - [gui] Agent automation layer (owner mandate): `RIMLOC_AUTOMATION=1` opts the app out of App Nap and deterministically activates the macOS accessibility server in any build profile, so an external System Events driver can drive the app; `RIMLOC_TRACE=1` appends a JSONL action trace of contract commands (name, duration, ok/error) to the app-data logs. Both default to off with zero behavior change.
 - [testlab] `auto_install.py`: agent-grade install/run/stop of the app into /Applications without DMG or Finder dialogs (atomic staging swap, one updated copy, quarantine stripped, trash-safe uninstall).
