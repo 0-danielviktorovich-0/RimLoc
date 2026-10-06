@@ -3,6 +3,64 @@ use rimloc_services::scan::scan_patches_as_units;
 use std::collections::{BTreeSet, HashMap};
 use std::io::IsTerminal;
 
+/// Loud `--game-version` validation for classic (LoadFolders-less) mods:
+/// exact version folder → ok; the game fallback (largest ≤ requested) → ok
+/// with a warning; nothing at or below the request → refused. Flat mods fall
+/// through to `resolve_game_version_root` (About/supportedVersions check,
+/// same refusal as before the effective-view rework).
+fn validate_requested_game_version(
+    root: &std::path::Path,
+    requested: &str,
+) -> color_eyre::Result<()> {
+    let want = {
+        let r = requested.trim();
+        r.strip_prefix('v')
+            .or_else(|| r.strip_prefix('V'))
+            .unwrap_or(r)
+            .to_lowercase()
+    };
+    let want_parts: Vec<u64> = want.split('.').filter_map(|p| p.parse().ok()).collect();
+    let tiers = rimloc_services::classic_version_dirs(root);
+    if tiers.is_empty() {
+        // Flat mod: the historical loud path (declared-versions check).
+        resolve_game_version_root(root, Some(requested))?;
+        return Ok(());
+    }
+    if tiers.iter().any(|(v, _)| *v == want) {
+        return Ok(());
+    }
+    let fallback = tiers
+        .iter()
+        .filter(|(v, _)| {
+            let parts: Vec<u64> = v.split('.').filter_map(|p| p.parse().ok()).collect();
+            parts <= want_parts
+        })
+        .max_by_key(|(v, _)| {
+            v.split('.')
+                .filter_map(|p| p.parse::<u64>().ok())
+                .collect::<Vec<_>>()
+        });
+    match fallback {
+        Some((v, _)) => {
+            tracing::warn!(
+                event = "scan_version_fallback",
+                requested = requested,
+                resolved = v
+            );
+            Ok(())
+        }
+        None => {
+            let available: Vec<&str> = tiers.iter().map(|(v, _)| v.as_str()).collect();
+            color_eyre::eyre::bail!(
+                "Requested version '{}' not found under {} (available: {})",
+                requested,
+                root.display(),
+                available.join(", ")
+            )
+        }
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 #[allow(dead_code)]
 pub fn run_scan(
@@ -52,22 +110,37 @@ pub fn run_scan(
         );
     }
     let is_loadfolders_mod = root.join("LoadFolders.xml").is_file();
-    let (scan_root, selected_version) = if include_all_versions || is_loadfolders_mod {
-        (root.clone(), None)
-    } else {
-        resolve_game_version_root(&root, game_version.as_deref())?
-    };
-    if let Some(ver) = selected_version.as_deref() {
-        tracing::info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
+    // M1 continuity (wave-5 MUST_FIX): the effective-view pipeline resolves
+    // versions silently, but a typo'd `--game-version` must stay a LOUD
+    // refusal, never a quiet wrong-view scan. Classic mods validate against
+    // their plain version folders: exact match passes, the game fallback
+    // (largest ≤ requested) passes with a warning, anything else is an
+    // error. Flat mods keep the About/supportedVersions check.
+    if let Some(gv) = game_version.as_deref() {
+        if !is_loadfolders_mod {
+            validate_requested_game_version(&root, gv)?;
+        }
     }
-
     let defs_abs = defs_dir.as_ref().map(|p| {
         if p.is_absolute() {
             p.clone()
         } else {
-            scan_root.join(p)
+            root.join(p)
         }
     });
+    // A user-supplied --defs-dir keeps the manual single-root pipeline:
+    // the override IS the explicit scope, per-key version resolution does
+    // not apply to it (LoadFolders mods already ignore the flag in the
+    // effective-view pipeline — documented offline-superset policy).
+    let legacy_defs_override = defs_abs.is_some() && !is_loadfolders_mod;
+    let (scan_root, selected_version) = if legacy_defs_override && !include_all_versions {
+        resolve_game_version_root(&root, game_version.as_deref())?
+    } else {
+        (root.clone(), None)
+    };
+    if let Some(ver) = selected_version.as_deref() {
+        tracing::info!(event = "scan_version_resolved", version = ver, path = %scan_root.display());
+    }
     let auto = rimloc_services::autodiscover_defs_context(&scan_root)?;
     let cfg = rimloc_config::load_config().unwrap_or_default();
 
@@ -165,10 +238,22 @@ pub fn run_scan(
         std::env::set_var("RIMLOC_FUZZY", "1");
     }
 
-    // Gate H: a LoadFolders mod is scanned as its EFFECTIVE view for the
-    // requested version (version-scoped Defs roots, never the cross-version
-    // union). Classic mods keep the single-root pipeline.
-    let mut units = if !include_all_versions && scan_root.join("LoadFolders.xml").is_file() {
+    // Gate H: a mod is scanned as its EFFECTIVE view for the requested
+    // version — version-scoped Defs roots, never the cross-version union —
+    // for BOTH layouts: LoadFolders.xml tags and plain version folders
+    // (game rule: the newest folder ≤ the version, plus Common, plus the
+    // root; GAME_SOURCE_FINDINGS §1.3). Wave-5 MUST_FIX: the legacy
+    // whole-root union on plain version folders let a 1.3 value win per key
+    // where the disk ships 1.6 (`--include-all-versions` keeps the union
+    // coverage but now resolves every key to its NEWEST defining version).
+    let mut units = if include_all_versions && !is_loadfolders_mod && !legacy_defs_override {
+        rimloc_services::scan_units_all_versions(
+            &scan_root,
+            game_version.as_deref(),
+            &merged,
+            &extra_fields,
+        )?
+    } else if !legacy_defs_override && !include_all_versions {
         rimloc_services::scan_units_effective(
             &scan_root,
             game_version.as_deref(),
