@@ -71,9 +71,7 @@ fn latest_version_tag(tags: &[String]) -> Option<String> {
 /// (`--game-version 1.6 | v1.6`); the LoadFolders resolver used to build
 /// `vv1.6` from the prefixed form and silently fell back to the root view.
 pub fn normalize_version_str(raw: &str) -> String {
-    raw.trim()
-        .trim_start_matches(['v', 'V'])
-        .to_lowercase()
+    raw.trim().trim_start_matches(['v', 'V']).to_lowercase()
 }
 
 /// Component-wise version key for ordering (`"1.6.1"` → `[1, 6, 1]`).
