@@ -250,3 +250,10 @@ Runtime-проба: frontmost при запуске GUI остаётся на ч
 
 Урок: bump семейства tauri требует проверки `[patch.unused]` в lock (release gate —
 добавить в soak-preflight: cargo metadata | grep "patch.*unused" = FAIL).
+
+**§89 финал**: PR #67 СМЕРЖЕН (d964dff) — форки wry 0.57.0/tao 0.37.1 noactivate в main,
+runtime-проба фокуса PASS ×2, в soak-preflight новый гейт `--repo` (cargo metadata
+[[patch.unused]] = FAIL; проверен живьём: сломанный main FAIL, фикс PASS). §56/#57/#45/#39/#36/#47
+Dependabot закрыты по классификации reconciliation; #56 — stale-closed (rebase не состоялся,
+Dependabot переоткроет). MUST-FIX palette/LM волна смержена PR #63 (f4bf02f). rel20-конвейер
+возобновлён от d964dff: сборка+identity+живой WDIO переведённых спек.
