@@ -1,0 +1,27 @@
+{
+  "campaign": "release-convergence",
+  "status": "ACTIVE",
+  "updated": "2026-10-07",
+  "main": "719d09d",
+  "candidate": "rel20 (358e17a) — устаревает относительно main, пересборка после интеграции волн",
+  "lanes": {
+    "architecture": { "wave": "A", "status": "running", "focus": "PO dependency audit → seam removal plan" },
+    "security": { "wave": "A", "status": "running", "focus": "live inventory 92 CS + 72 DA + 13 PR" },
+    "ui": { "wave": "A", "status": "running", "focus": "route reality audit" },
+    "parity": { "wave": "A", "status": "running", "focus": "reconcile wave1-5 research vs main" },
+    "api": { "wave": "B", "status": "pending", "focus": "CLI/contract/MCP/providers" },
+    "release": { "wave": "A", "status": "running", "focus": "repo/docs/branch audit (read-only)" }
+  },
+  "gates": {
+    "zero_open_security": "FAIL — 92 CS + 72 DA open",
+    "no_mandatory_po_seams": "PENDING audit",
+    "ui_no_placeholder": "PENDING audit",
+    "parity_superior_parity_only": "PENDING",
+    "real_rimworld": "level 6.5 proven; level 7 visual = OWNER_GATE",
+    "cross_platform_artifacts": "PENDING"
+  },
+  "ownerGates": [
+    "level-7 visual confirmation (ACCEPTANCE_CHECKLIST.md)",
+    "final publish approval (ADDENDUM §27)"
+  ]
+}
