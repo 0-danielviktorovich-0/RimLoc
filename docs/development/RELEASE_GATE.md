@@ -71,11 +71,11 @@ https://github.com/0-danielviktorovich-0/RimLoc/issues/2#issuecomment-6024184727
 | React UI (13 маршрутов, палитра, compare, LM) | ✅ | ✅ | ✅ | ✅ WDIO palette **33/33**; 16 скриншотов | ✅ | n/a | macOS arm64 | ✅ | **RELEASE_READY** (визуальный level 7 — owner) |
 | Accessibility (AX-канал, фокус, aria) | ✅ | ✅ | ✅ | ✅ (ноль краж фокуса; фокус-рестор палитры rel21) | ✅ | n/a | macOS arm64 | ✅ | **RELEASE_READY** (fixme: фокус-бюджет T2a — не блокер) |
 | Performance | ✅ | ✅ | ✅ (perf-v2 спеки testlab) | ⚠️ | — | — | — | ✅ ([FRONTEND_PERFORMANCE_EVIDENCE](../design/FRONTEND_PERFORMANCE_EVIDENCE.md)) | **RELEASE_READY** (регрессий на кандидате нет) |
-| Security (CodeQL, deps, traversal) | ✅ | ✅ | ✅ (PO-#: traversal fix + 3 теста; lru 0.18.5; dead lock удалён) | ✅ (release-guard ×2) | — | — | — | ✅ | **EXTERNAL_BLOCKER** — финальный CodeQL rescan на candidate SHA выполнят раннеры после мержа; triage/dismiss на финальных номерах — следующий шаг главного потока (177→9 уже разружено) |
+| Security (CodeQL, deps, traversal) | ✅ | ✅ | ✅ (PO-#: traversal fix + 3 теста; lru 0.18.5; dead lock удалён) | ✅ (release-guard ×2) | — | — | — | ✅ | **DOCUMENTED_WITH_EVIDENCE** — CodeQL на candidate SHA `916705f`: 0 open alerts (177 → 0: реальные фиксы + per-group dismiss w/ evidence); Dependabot alerts 0 open (glib tolerable_risk upstream-blocked, 5 npm dev-only tolerable_risk); Secrets 0. Детали: docs/security/RELEASE_SECURITY_GATE.md |
 | Docs (EN/RU, MkDocs strict) | ✅ | — | — | — | — | — | — | ✅ (mkdocs --strict PASS в этой сессии) | **RELEASE_READY** |
 | Release engineering (identity, gates, артефакт, packet) | ✅ | — | ✅ (§89 preflight --repo, release-guard ×2, canonical tree hashes) | ✅ (WDIO приёмка automation того же коммита) | ✅ | — | ⚠️ DMG-стадия на SSD падает (известное rel19/20); Linux/Win артефакты — CI | ✅ | **OWNER_GATE** — финальный publish-апрув (ADDENDUM §27) + level-7 visual (ACCEPTANCE_CHECKLIST) |
 
-Сводка: **18 RELEASE_READY · 5 OWNER_GATE · 1 EXTERNAL_BLOCKER · 1 REJECTED_NOT_SCOPE.**
+Сводка: **18 RELEASE_READY · 6 OWNER_GATE · 1 REJECTED_NOT_SCOPE · 0 EXTERNAL_BLOCKER · 0 UNKNOWN.** (EXTERNAL_BLOCKER security закрыт: CodeQL на candidate = 0 open, документировано с evidence)
 
 ## Owner-гейты кампании (не блокируют сборку, блокируют публикацию)
 
