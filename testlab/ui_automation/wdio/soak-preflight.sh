@@ -7,13 +7,18 @@
 # Usage:
 #   soak-preflight.sh --bin <binary> --class automation|production \
 #                     [--expect-sha256 <sha>] [--expect-commit <sha>] [--gate]
+#                     [--repo <path>]
 #   soak-preflight.sh --selftest
 #
 # --gate: STRICT release-gate mode — --bin and --expect-sha256 are REQUIRED
 # (a gate run may not fall back to any historical default artifact).
+# --repo: vendor-patch liveness (P0 noactivate incident 2026-10-06, §89):
+#   `cargo metadata` must NOT report "[patch …] was not used" — a bump that
+#   version-skips [patch.crates-io] forks silently builds registry crates
+#   (the focus-stealing activation regression). Gate mode SHOULD pass --repo.
 # Output: preflight.json next to the run dir (caller passes --out <file>).
 set -u
-BIN=""; CLASS=""; EXPECT_SHA=""; EXPECT_COMMIT=""; GATE=0; OUT=""; SELFTEST=0
+BIN=""; CLASS=""; EXPECT_SHA=""; EXPECT_COMMIT=""; GATE=0; OUT=""; SELFTEST=0; REPO=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --bin) BIN="$2"; shift 2;;
@@ -22,6 +27,7 @@ while [ $# -gt 0 ]; do
     --expect-commit) EXPECT_COMMIT="$2"; shift 2;;
     --gate) GATE=1; shift;;
     --out) OUT="$2"; shift 2;;
+    --repo) REPO="$2"; shift 2;;
     --selftest) SELFTEST=1; shift;;
     *) echo "unknown arg: $1" >&2; exit 2;;
   esac
@@ -89,6 +95,16 @@ fi
 if [ "$CLASS" = "production" ] && [ "$SURFACE" = "automation" ]; then
   fail "automation surface in a production-class artifact: $BIN (soak/E2E must never target production, §C)"
 fi
+# Vendor-patch liveness (§89): [[patch.unused]] in the resolution = the forks
+# were version-skipped by a dep bump and the graph silently builds registry
+# crates. Offline metadata over the committed lock — no network, no build.
+if [ -n "$REPO" ]; then
+  [ -f "$REPO/Cargo.toml" ] || fail "--repo has no Cargo.toml: $REPO"
+  UNUSED_LOG=$(CARGO_TARGET_DIR="${TMPDIR:-/tmp}/soak-preflight-metadata" cargo metadata --offline --manifest-path "$REPO/Cargo.toml" --format-version 1 2>&1 >/dev/null || true)
+  UNUSED_N=$(printf '%s' "$UNUSED_LOG" | grep -c "was not used in the crate graph" || true)
+  [ "$UNUSED_N" -eq 0 ] || fail "vendor patches UNUSED in the crate graph ($UNUSED_N warnings) — a dep bump version-skipped [patch.crates-io] (see §89)"
+fi
+
 if [ "$CLASS" = "automation" ] && [ "$SURFACE" != "automation" ]; then
   fail "no automation surface in an automation-class artifact: $BIN (bridge missing — WDIO cannot drive it)"
 fi
