@@ -113,6 +113,7 @@ github_checks:
 # Coverage measures production/source code, not fixtures, docs, generated output,
 # vendored dependencies, test bodies, or the frozen UI fallback.
 ignore:
+  - "gui/tauri-app/frontend-react"
   - "gui/tauri-app/src-tauri/vendor/**"
   - "gui/tauri-app/src-tauri/gen/**"
   - "gui/tauri-app/frontend-v2/**"
