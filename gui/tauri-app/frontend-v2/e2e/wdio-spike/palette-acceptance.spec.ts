@@ -176,7 +176,7 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
   { label: 'Проверки', hash: '#/checks', marker: '[data-testid="checks.findings"], [data-testid="checks.rerun"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Импорт существующего перевода', hash: '#/existing', marker: '[data-testid="ex.dir"], [data-testid="ex.error"], .narrow-page .btn-primary[href="#/home"]' },
-  { label: 'Сравнение версий', hash: '#/compare', marker: '[data-testid="wizard.open"]' }, // React-lane fallback: общий Home-лейаут, отдельный экран — parity-бэклог
+  { label: 'Сравнение версий', hash: '#/compare', marker: '.section-heading' }, // React-lane: placeholder REPRESENTATIVE LANE (отдельный экран — parity-бэклог)
   { label: 'Глоссарий', hash: '#/glossary', marker: '[data-testid="gl.table"], [data-testid="gl.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Память переводов', hash: '#/tm', marker: '[data-testid="tm.count"], [data-testid="tm.filter-query"], [data-testid="tm.filter-status"], [data-testid="tm.error"]' },
   { label: 'Сборка и экспорт', hash: '#/export', marker: '[data-testid="be.outdir"], .narrow-page .btn-primary[href="#/home"]' },
@@ -184,7 +184,7 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Диагностика', hash: '#/diagnostics', marker: '[data-testid="diag.outdir"], [data-testid="diag.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'AI-провайдеры', hash: '#/providers', marker: '[data-testid="prov.catalog"], [data-testid="prov.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Языки', hash: '#/lm', marker: '[data-testid="lm.table"]' },
-  { label: 'Инструменты', hash: '#/tools', marker: '[data-testid="wizard.open"]' }, // React-lane fallback: общий Home-лейаут
+  { label: 'Инструменты', hash: '#/tools', marker: '.section-heading' }, // React-lane: placeholder (parity-бэклог)
   { label: 'Настройки', hash: '#/settings', marker: '[data-testid="settings.theme"]' },
 ]
 
