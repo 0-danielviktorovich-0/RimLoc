@@ -288,3 +288,7 @@ Review checklist for contributors:
 - [ ] Mock-экраны capability-gated или явно помечены как demo
 - [ ] Логи/прогресс-события подключены к progress panel
 - [ ] Frontend-проверки: React — `npm run build`; при трогании fallback — `npm run check` + `npm test` в `frontend-v2`; затем `npm run build` + `cargo tauri dev` чисто
+
+## ZCode orchestration policy
+
+Для задачи RimLoc, которая: затрагивает ≥2 подсистемы; имеет ≥3 независимых deliverable; требует release/security/architecture работы; или явно параллелится — основной агент ОБЯЗАН: (1) сначала план (DAG, lanes, hotspots, merge order); (2) использовать методологию release-orchestration (скилл `rimloc-release-orchestrator`, пакет tools/zcode/rimloc-orchestrator/); (3) выделить независимые лейны; (4) worktree на параллельного writer'а; (5) сабагентов на bounded задачи; (6) независимую верификацию каждой доставки; (7) durable state (RELEASE_CONVERGENCE_STATE.md + .rimloc-release-state.json); (8) работать до цели или честного owner/external гейта. Детальная методология — в скилле/плагине, не здесь. Мастер-мандат кампании: docs/development/ (RELEASE_CONVERGENCE_STATE.md — точка входа).
