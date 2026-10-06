@@ -233,3 +233,20 @@ Dependabot: #58 tauri-build, #55 markdown, #56→rebase pymdown, #59→rebase di
 Дальше: rel19 артефакт от 4249ba8+ (identity + palette WDIO приёмка стрелок) →
 OWNER_TEST_PACKET v2. Backlog: PO-optional (docs/development/BACKLOG_PO_OPTIONAL_ARCHITECTURE.md),
 7 feasible конкурентов, palette MUST-FIX хвосты.
+
+### §89. P0-инцидент: bump tauri 2.12.1 убил noactivate-патч (2026-10-06)
+
+**Обнаружено rel20-конвейером** (остановлен на блокере сознательно — артефакт без форков
+маскировал бы регресс). Bump `6ccedaf` (parallel session, tauri 2.11.6→2.12.1) оставил
+`[patch.crates-io]` неиспользуемым: `tauri-runtime-wry 2.12.1` пиннит wry = "0.57.0"
+(→ tao 0.37.1), форки 0.55.1/0.35.3 несовместимы. Cargo.lock нёс `[[patch.unused]]` —
+main собирал артефакты с безусловной `activateIgnoringOtherApps` (регресс «кражи фокуса»).
+
+**Фикс: PR #67** (fix/noactivate-0.57, a688996): форки пересажены — vendor/
+{wry-0.57.0-noactivate, tao-0.37.1-noactivate}, диффы восстановлены ТОЧНО (апстримы
+нашлись в registry-кэше, семантика 1-в-1, места отмечены комментариями noactivate).
+Runtime-проба: frontmost при запуске GUI остаётся на чужом приложении (PASS ×2).
+После мержа #67 старые форки 0.55.1/0.35.3 — кандидат на удаление.
+
+Урок: bump семейства tauri требует проверки `[patch.unused]` в lock (release gate —
+добавить в soak-preflight: cargo metadata | grep "patch.*unused" = FAIL).
