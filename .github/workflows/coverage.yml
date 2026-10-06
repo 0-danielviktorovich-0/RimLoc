@@ -138,7 +138,7 @@ jobs:
       # The Tauri base config still embeds the frozen fallback during the
       # convergence period. Build its dist only as a compile/test prerequisite;
       # this does not make it the production frontend.
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
