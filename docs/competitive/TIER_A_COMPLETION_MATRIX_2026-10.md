@@ -286,6 +286,21 @@
 
 ## 4. Кросс-матричный синтез: что делать RimLoc (после wave 6, 2026-10-06)
 
+### ФИНАЛЬНЫЕ ВЕРДИКТЫ по MUST_FIX (закрыты в main, 2026-10-06, wave 7)
+
+| § | MUST_FIX | Статус | Фикс |
+|---|---|---|---|
+| 4.1 | msgid-разметка + тримминг | **FIXED** | entity-фикс Keyed-ридера (829273d, PR #63-линия): GeneralRef декодируется, trim на значение; w6-лейны гоняли до-фиксные бинари (tgbench 72259e0b / stale-сборки) — на текущем main HugsLib msgid `<b>…</b>` верифицирован export-po Gate H-агентом и рераном спек |
+| 4.2 | Слияние версионных папок дефолтом (stale-значения) | **FIXED** | PR #78: scan classic-модов через effective view (новейшая версия побеждает per-key, --game-version приоритетен); дефолт более не теряет корневой Keyed (VE 143→736 записей, 0 stale, `weapon range factor` из 1.6 верифицирован) |
+| 4.3 | IfModActive при извлечении | **HIGH_VALUE остаётся** (over-включение, не потеря; референс RimTransAI GameLoadOrderPlanner) |
+| 4.4 | «Регрессия 6465813 vs 72259e0b» | **ПЕРЕКЛАССИФИЦИРОВАНО**: это не регрессия мержей — латентный дефект export-po (gv-сужение без Gate H), вскрытый осознанным фиксом резолвера f3bf643. **FIXED** PR #77 (modview effective_view, регресс-тест export_po_game_version_loadfolders_keeps_root_keyed; A/B 1→76 msgid). Бисект-«зелёные» f3bf643/ca2cedc — артефакт stale-fingerprint таргета (урок §91) |
+| 4.5 | Патч-слой | **CLOSED** (54/54, RimTrans_PY 26 ⊂ 54 1:1 — подтверждено волной 5) |
+
+### Урок верификации (§91)
+Бисект-прогоны в один CARGO_TARGET_DIR при последовательных чекаутах дают stale-бинарники
+(cargo не всегда инвалидирует по mtime) — «зелёный» родитель красного коммита мог просто
+не пересобраться. Свежий таргет на коммит; контроль self-report версии бинаря.
+
 ### MUST_FIX_BEFORE_BETA
 1. **Разметка и тримминг в msgid — единственный живой MUST_FIX extraction-ядра.** `<b>X</b>` → `bX/b`; standalone `>` выброшен (`Mod Options > All` → `Mod OptionsAll`); хвостовой пробел триммится (`Search: ` → `Search:` — в RimWorld значим для конкатенации). Подтверждено теперь **шестью лейнами / восемью инструментами**: tg (w2), RimTranslate (w3-py), RWAT+RimTrans-zh (w3-cs), Remis + Grabber + RimTransAI (w6-grabber-rtai), rimwt (w6-pysmall) — во всех случаях конкурент хранит сырой текст. Ломает PO-раундтрип и доверие к экспорту.
 2. **Слияние версионных папок дефолтом (w6-remis).** На plain versioned-модах (VE) эталон 72259e0b сливает 1.0–1.6: 81 юнит из файлов, которых в 1.6 нет; stale-значения вместо актуальных (`verb range factor` из 1.3/1.4 против `weapon range factor` 1.6 — по диску прав конкурент); `--game-version 1.3`, `--game-version 1.6`, auto и `--include-all-versions` дают побайтово одинаковый вывод. Родственно tg-находке w2 (union first-file-wins берёт старейшую версию). Классификация лейна: MUST_FIX.
