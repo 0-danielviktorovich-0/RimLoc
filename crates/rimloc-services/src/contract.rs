@@ -414,9 +414,15 @@ pub enum Capability {
     /// `provider_instance_validate`). Instance metadata persists in the
     /// settings file next to the managed projects; the API key NEVER does —
     /// it lives in the OS keychain and the contract surface only ever
-    /// reports the `has_key` boolean. Wire name appends (never renames)
-    /// per the contract rule.
+    /// reports the `has_key` boolean. Wire name appends (never renames) per
+    /// the contract rule.
     ProviderInstances,
+    /// Cross-version diff (`contract_version_diff`): read-only comparison of
+    /// the translatable source inventories of two mod roots —
+    /// new / missing / changed / unchanged classification per key with the
+    /// carrying file per side. Stateless: no project session involved.
+    /// Wire name appends (never renames) per the contract rule.
+    VersionDiff,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -458,6 +464,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::ProjectGlossary,
             Capability::TranslationMemory,
             Capability::ProviderInstances,
+            Capability::VersionDiff,
         ],
         unsupported: vec![
             UnsupportedCapability {
@@ -665,6 +672,119 @@ pub struct ApplyExistingResponse {
     pub unmatched: usize,
     /// Ambiguous pack lines (not applied — a human decides).
     pub ambiguous: usize,
+}
+
+// ---------------------------------------------------------------------------
+// Cross-version diff (compare screen): two mod roots → source inventory diff
+// ---------------------------------------------------------------------------
+
+/// Size cap for the entry table in [`VersionDiffResponse`] (the same
+/// sample-vs-exact rule as [`EXISTING_LIST_LIMIT`]): counts are always
+/// exact, the list is capped and pre-ordered changed → new → missing →
+/// unchanged (the review queue), so a cap only ever trims the tail.
+pub const VERSION_DIFF_LIST_LIMIT: usize = 200;
+
+/// Request `contract_version_diff`: read-only diff of the translatable
+/// source inventories of two mod roots. STATELESS — no project session,
+/// no epoch/revision guards; both trees are only ever read.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct VersionDiffRequest {
+    /// Old mod root (absolute directory; the adapter enforces the form
+    /// guards BEFORE any filesystem access).
+    pub old_root: PathBufDto,
+    /// New mod root (absolute directory).
+    pub new_root: PathBufDto,
+    /// Source language folder name treated as the source set
+    /// (`English` when absent — Defs always count as English source).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_lang: Option<String>,
+}
+
+/// Diff category on the wire (snake_case). `missing` = the key exists only
+/// in the OLD root (its translation would be obsolete).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum VersionDiffCategory {
+    Unchanged,
+    Changed,
+    New,
+    Missing,
+}
+
+/// One diff entry with the carrying file per side (absent on the side
+/// where the key does not exist).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct VersionDiffEntryDto {
+    pub key: String,
+    pub category: VersionDiffCategory,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub old_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub old_source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_source: Option<String>,
+}
+
+/// Result of `contract_version_diff`. Counts are exact; `entries` is the
+/// capped, review-ordered sample ([`VERSION_DIFF_LIST_LIMIT`]) with an
+/// honest truncation flag.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct VersionDiffResponse {
+    /// Display labels (roots' folder names unless the caller overrode).
+    pub old_label: String,
+    pub new_label: String,
+    pub unchanged: usize,
+    pub changed: usize,
+    pub new: usize,
+    pub missing: usize,
+    pub entries: Vec<VersionDiffEntryDto>,
+    /// True when `entries` was cut at [`VERSION_DIFF_LIST_LIMIT`] —
+    /// counts above stay the source of truth.
+    pub entries_truncated: bool,
+}
+
+impl VersionDiffResponse {
+    /// Typed conversion from the services diff report (one scan pipeline,
+    /// one diff semantic — CLI and GUI never diverge).
+    pub fn from_report(report: crate::extras::version_diff::VersionDiffReport) -> Self {
+        use crate::extras::version_diff::DiffCategory as Cat;
+        let total = report.entries.len();
+        let entries = report
+            .entries
+            .into_iter()
+            .take(VERSION_DIFF_LIST_LIMIT)
+            .map(|e| {
+                let category = match e.category {
+                    Cat::Unchanged => VersionDiffCategory::Unchanged,
+                    Cat::Changed => VersionDiffCategory::Changed,
+                    Cat::New => VersionDiffCategory::New,
+                    // CLI JSON says "Removed"; the GUI wire vocabulary is
+                    // `missing` — same fact, per-surface naming.
+                    Cat::Removed => VersionDiffCategory::Missing,
+                };
+                VersionDiffEntryDto {
+                    key: e.key,
+                    category,
+                    old_path: e.path_a,
+                    new_path: e.path_b,
+                    old_source: e.source_a,
+                    new_source: e.source_b,
+                }
+            })
+            .collect();
+        Self {
+            old_label: report.from_version,
+            new_label: report.to_version,
+            unchanged: report.unchanged,
+            changed: report.changed,
+            new: report.new,
+            missing: report.removed,
+            entries,
+            entries_truncated: total > VERSION_DIFF_LIST_LIMIT,
+        }
+    }
 }
 
 #[cfg(test)]
