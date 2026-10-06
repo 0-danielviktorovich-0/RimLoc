@@ -47,11 +47,17 @@ export function useCommandPalette(commands: PaletteCommand[]): CommandPalette {
     setActiveIndex(0)
   }, [filtered])
 
-  // Fresh cursor on every open. NOTE: the query intentionally PERSISTS
-  // across opens in the React lane — a documented acceptance bug whose
-  // spec test asserts it stays (fixing it here would flip that test).
+  // Fresh cursor and CLEAN query on every open (acceptance MUST-FIX «запрос
+  // переживает закрытие»: палитра открывалась предотфильтрованной — повторный
+  // запуск команды вслепую рисковал выбрать не ту). Закрытие (Escape/toggle/
+  // запуск команды) всегда возвращает палитру в исходное состояние.
   useEffect(() => {
-    if (open) setActiveIndex(0)
+    if (open) {
+      setActiveIndex(0)
+    } else {
+      setQuery('')
+      setActiveIndex(0)
+    }
   }, [open])
 
   // Latest list/cursor/open for the stable window handler below.

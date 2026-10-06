@@ -180,6 +180,16 @@ export const SOURCE_LANGUAGE: LanguageDefinition = BUILTIN_BY_ID.get('en')!;
 /** localStorage key for user-defined languages. */
 const CUSTOM_KEY = 'rimloc.languages.custom.v1';
 
+/**
+ * Locale-id shape check (port of the Svelte registry's isValidLocaleId,
+ * registry.ts:246 — acceptance MUST-FIX: «1плохо код!» принимался, потому
+ * что React-лейн валидатор не вызывал вовсе). BCP-47-ish: 2-3 буквенных
+ * базовых сегмента, дальше любые алфавитно-цифровые subtag'и через дефис.
+ */
+export function isValidLocaleId(id: string): boolean {
+  return /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(id);
+}
+
 /** Fallback label for unknown locales shown in UI ("Language xq-42"). */
 export function genericDisplayName(localeId: string): string {
   return `Language ${localeId}`;

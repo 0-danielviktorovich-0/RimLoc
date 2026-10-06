@@ -88,16 +88,16 @@ before(async () => {
 })
 
 describe('LM §10: доступность и состав', () => {
-  it('Менеджер языков НЕ доступен из UI: нет ни ссылки, ни команды — только прямой #/lm', async () => {
+  it('Менеджер языков ДОСТУПЕН из UI: ссылка в сайдбаре есть (MUST-FIX #1 закрыт)', async () => {
     const links = await browser.execute(() => ({
       lmLinks: document.querySelectorAll('a[href="#/lm"]').length,
       allHashes: [...document.querySelectorAll('a[href^="#/"]')].map((a) => a.getAttribute('href')),
     }))
     console.log(`[lm-acc] LINKS_TO_LM=${links.lmLinks} ALL=${JSON.stringify(links.allHashes)}`)
-    if (links.lmLinks !== 0) throw new Error('ожидалось 0 ссылок — измени вывод')
-    console.log('[lm-acc] MUST-FIX: Language Manager недостижим из интерфейса (нет ссылки в сайдбаре, нет команды в палитре)')
+    if (links.lmLinks < 1) throw new Error('ссылки на #/lm в сайдбаре нет — MUST-FIX не закрыт')
+    // Команда «Языки» в палитре проверяется в palette-acceptance.spec.ts.
     await openLM()
-    await shot('lm-opened-direct-hash')
+    await shot('lm-opened-via-nav')
   })
 
   it('8 встроенных языков; удаляющей кнопки у встроенных нет', async () => {
@@ -203,18 +203,31 @@ describe('LM §10: CRUD пользовательского языка', () => {
     if ((await lmRows()).includes('qa-stale-err')) throw new Error('qa-stale-err не удалился')
   })
 
-  it('БАГ: битый locale-код («1плохо код!») принимается — валидации формата нет', async () => {
+  it('валидация формата: битый locale-код («1плохо код!») отклоняется через isValidLocaleId (MUST-FIX закрыт)', async () => {
     const before = await lmRows()
     await submitLang('1плохо код!', 'Битый', 'Битый')
     const after = await lmRows()
-    console.log(`[lm-acc] BROKEN_ID rows=${after.length} (было ${before.length})`)
-    if (!after.includes('1плохо код!')) {
-      throw new Error('битый id отклонён — валидация формата появилась, обнови вывод')
+    const err = await browser.execute(() => {
+      const e = document.querySelector('.form-error, [data-testid="lm.error"]')
+      return e ? e.textContent : document.body.innerText.match(/invalid locale id format/)?.[0] ?? '<нет>'
+    })
+    console.log(`[lm-acc] BROKEN_ID rows=${after.length} (было ${before.length}) err=${JSON.stringify(err)}`)
+    if (after.includes('1плохо код!')) {
+      throw new Error('битый id ПРИНЯТ — валидация isValidLocaleId не работает')
     }
-    console.log('[lm-acc] BUG-CONFIRMED: менеджер принимает «1плохо код!» — isValidLocaleId из реестра не вызывается (manager.ts:34-38)')
-    await shot('BUG-lm-broken-id-accepted')
-    await deleteLang('1плохо код!')
-    if (!(await lmRows()).includes('qa-dup')) throw new Error('qa-dup пропал — cleanup задел чужое')
+    if (before.length !== after.length) throw new Error('список вырос на отклонённом вводе')
+    if (!String(err).includes('invalid locale id')) throw new Error(`сообщение о формате не показано: ${JSON.stringify(err)}`)
+    await shot('lm-broken-id-rejected')
+  })
+
+  it('валидация формата: корректные составные id (zh-Hans, en-US-x-私有) проходят', async () => {
+    const before = await lmRows()
+    await submitLang('zz-Test-Lang', 'Тестовый составной', 'Тестовый')
+    const after = await lmRows()
+    if (!after.includes('zz-Test-Lang')) throw new Error('корректный составной id отклонён — валидатор слишком строг')
+    await shot('lm-composite-id-ok')
+    await deleteLang('zz-Test-Lang')
+    if ((await lmRows()).length !== before.length) throw new Error('cleanup не сработал')
   })
 
   it('поиск по списку языков: НЕ реализован (3 input — только форма добавления)', async () => {
@@ -244,18 +257,17 @@ describe('LM §10: связь с target и мульти-таргет изоля�
     await shot('lm-project-opened')
   })
 
-  it('пользовательский язык НЕ появляется в переключателе цели (связи с target нет)', async () => {
+  it('пользовательский язык появляется в переключателе цели (MUST-FIX #2 закрыт)', async () => {
     const opts = await browser.execute(() => {
       const sel = document.querySelector('[data-testid="ws.target-locale"]') as HTMLSelectElement | null
       return sel ? [...sel.options].map((o) => o.value) : '<нет селекта>'
     })
     console.log(`[lm-acc] TARGET_OPTIONS=${JSON.stringify(opts)} custom=${QA_ID}`)
     if (!Array.isArray(opts)) throw new Error('селекта цели нет в воркспейсе')
-    if (opts.includes(QA_ID)) {
-      throw new Error('пользовательский язык ДОБАВИЛСЯ в переключатель — обнови вывод')
+    if (!opts.includes(QA_ID)) {
+      throw new Error(`созданный в LM язык не попал в переключатель цели (opts=${JSON.stringify(opts)}) — MUST-FIX не закрыт`)
     }
-    console.log('[lm-acc] BUG-CONFIRMED: созданный в LM язык недоступен как target (App.tsx:8 берёт только BUILTIN_LANGUAGES)')
-    await shot('BUG-lm-not-in-target-select')
+    await shot('lm-custom-in-target-select')
   })
 
   it('изоляция: правка в ru не видна в uk; возврат в ru сохраняет правку', async () => {
@@ -297,7 +309,7 @@ describe('LM §10: связь с target и мульти-таргет изоля�
     console.log('[lm-acc] ISOLATION ru→uk→ru: ок')
   })
 
-  it('БАГ: коммит в uk перерисовывает список переводами ru (hardcoded ru в commit)', async () => {
+  it('коммит в uk перерисовывает список В АКТИВНОЙ цели (MUST-FIX hardcoded ru закрыт)', async () => {
     await browser.execute(() => {
       const sel = document.querySelector('[data-testid="ws.target-locale"]') as HTMLSelectElement
       sel.value = 'uk'
@@ -308,8 +320,9 @@ describe('LM §10: связь с target и мульти-таргет изоля�
     await waitExisting('[data-testid="ws.editor-textarea"]', 10000)
     await browser.$('[data-testid="ws.editor-textarea"]').setValue('[LM-ACC uk] изоляция')
     await browser.$('[data-testid="ws.editor-save-next"]').click()
-    // IPC в фоновой карте задерживается — снимаем временную шкалу 8с × 500мс
-    // и ищем фазу «select=uk, а в списке тексты ru».
+    // Фаза «select=uk, а в списке тексты ru» больше невозможна: перерисовка
+    // после акка маппит снапшот в активную цель (project.ts). Снимаем ту же
+    // временную шкалу и требуем её отсутствие.
     const timeline: string[] = []
     let bugSeen = false
     for (let i = 0; i < 16; i++) {
@@ -327,10 +340,9 @@ describe('LM §10: связь с target и мульти-таргет изоля�
     }
     console.log(`[lm-acc] COMMIT_UK_TIMELINE=${JSON.stringify(timeline)}`)
     if (bugSeen) {
-      console.log('[lm-acc] BUG-CONFIRMED: после коммита в uk список показывал ru-переводы при активном uk (project.ts:231 mapSnapshot(fresh, "ru"))')
-    } else {
-      console.log('[lm-acc] фаза ru-перерисовки в этой сессии не поймана (IPC отложен) — баг кода остаётся, см. проект project.ts:231')
+      throw new Error('фаза ru-перерисовки ПОЙМАНА при активном uk — hardcoded ru вернулся')
     }
+    console.log('[lm-acc] MUST-FIX закрыт: ru-фаза не обнаружена ни в одном сэмпле')
     // Правка тем не менее сохранилась серверно: переключение ru → uk её показывает.
     await browser.execute(() => {
       const sel = document.querySelector('[data-testid="ws.target-locale"]') as HTMLSelectElement
