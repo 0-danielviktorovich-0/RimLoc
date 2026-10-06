@@ -251,7 +251,7 @@ morph-summary = Сгенерировано форм: { $processed } для { $la
 morph-provider-morpher-stub = Провайдер Morpher API пока не реализован; применяется dummy-логика
 
 # translate
-help-translate-about = Перевести мод через LLM-провайдера (результат: .po для import-po/build-mod)
+help-translate-about = Перевести мод через LLM-провайдера в каноническое состояние проекта (JSON-отчёт; --emit-po сохраняет прежний .po-артефакт)
 help-translate-root = Путь к корню мода RimWorld
 help-translate-provider = Провайдер: mock | anthropic | openai | zai | ollama
 help-translate-model = Имя модели (иначе берётся пресет провайдера)
@@ -260,13 +260,19 @@ help-translate-source-lang = Код исходного языка
 help-translate-target-lang = Код целевого языка
 help-translate-glossary = JSON-файл глоссария поверх встроенного
 help-translate-checkpoint = Файл чекпоинта для продолжения прерванного перевода
-help-translate-out-po = Куда сохранить итоговый .po
+help-translate-out-po = Путь прежнего .po-артефакта (пишется только с --emit-po)
+help-translate-out-json = Путь канонического JSON-отчёта (схема версии 1)
+help-translate-managed-root = Хранилище управляемых проектов (по умолчанию общий каталог данных RimLoc)
 help-translate-batch-budget = Символьный бюджет одного батча
 help-translate-dry-run = Только оценка объёма, без вызовов провайдера
 help-translate-no-strict-placeholders = Отключить строгую проверку плейсхолдеров
 help-translate-key-env = Имя переменной окружения с API-ключом (иначе keychain/auto)
+help-translate-emit-po = Прежнее поведение: дополнительно записать .po для import-po/build-mod
 translate-extracted = Извлечено строк источника: { $count } из { $path }
 translate-dryrun = Сухой прогон: юнитов { $units }, ~{ $batches } батчей; вызовов провайдера нет. Результат был бы в { $path }
+translate-project-created = Создан канонический проект { $id }
+translate-applied = Применено интентов: { $applied }, отклонено: { $refused }
+translate-json-saved = Канонический отчёт сохранён в { $path }
 translate-po-saved = Переведённый PO сохранён в { $path }
 translate-summary = Переведено={ $translated }, с ошибками={ $failed }, уже готово={ $skipped }
 

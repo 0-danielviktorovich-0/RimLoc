@@ -294,6 +294,33 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("pymorphy_url", |a| a.help(tr!("help-morph-pym-url")));
                 *sc = owned;
             }
+            "translate" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-translate-about"));
+                owned = owned.mut_arg("root", |a| a.help(tr!("help-translate-root")));
+                owned = owned.mut_arg("provider", |a| a.help(tr!("help-translate-provider")));
+                owned = owned.mut_arg("model", |a| a.help(tr!("help-translate-model")));
+                owned = owned.mut_arg("base_url", |a| a.help(tr!("help-translate-base-url")));
+                owned = owned.mut_arg("source_lang", |a| a.help(tr!("help-translate-source-lang")));
+                owned = owned.mut_arg("target_lang", |a| a.help(tr!("help-translate-target-lang")));
+                owned = owned.mut_arg("glossary", |a| a.help(tr!("help-translate-glossary")));
+                owned = owned.mut_arg("checkpoint", |a| a.help(tr!("help-translate-checkpoint")));
+                owned = owned.mut_arg("out_po", |a| a.help(tr!("help-translate-out-po")));
+                owned = owned.mut_arg("out_json", |a| a.help(tr!("help-translate-out-json")));
+                owned = owned.mut_arg("managed_root", |a| {
+                    a.help(tr!("help-translate-managed-root"))
+                });
+                owned = owned.mut_arg("batch_budget", |a| {
+                    a.help(tr!("help-translate-batch-budget"))
+                });
+                owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-translate-dry-run")));
+                owned = owned.mut_arg("no_strict_placeholders", |a| {
+                    a.help(tr!("help-translate-no-strict-placeholders"))
+                });
+                owned = owned.mut_arg("key_env", |a| a.help(tr!("help-translate-key-env")));
+                owned = owned.mut_arg("emit_po", |a| a.help(tr!("help-translate-emit-po")));
+                *sc = owned;
+            }
             "init" => {
                 let mut owned = std::mem::take(sc);
                 owned = owned.about(tr!("help-init-about"));
@@ -1109,7 +1136,7 @@ enum Analyze {
         #[arg(long, default_value = "text")]
         format: String,
     },
-    /// Translate a mod via an LLM provider into a .po (help via FTL).
+    /// Translate a mod via an LLM provider into canonical project state (help via FTL).
     Translate {
         /// Path to the RimWorld mod root
         #[arg(long, short = 'r')]
@@ -1135,9 +1162,15 @@ enum Analyze {
         /// Checkpoint file to resume interrupted translations
         #[arg(long)]
         checkpoint: Option<PathBuf>,
-        /// Output .po path
+        /// Legacy .po artifact path (written only with --emit-po)
         #[arg(long, default_value = "rimloc-translated.po")]
         out_po: PathBuf,
+        /// Canonical JSON results path (schema version 1)
+        #[arg(long, default_value = "rimloc-translated.json")]
+        out_json: PathBuf,
+        /// Managed projects store (default: the shared RimLoc data dir)
+        #[arg(long)]
+        managed_root: Option<PathBuf>,
         /// Approximate character budget per batch
         #[arg(long, default_value_t = 6000)]
         batch_budget: usize,
@@ -1150,6 +1183,9 @@ enum Analyze {
         /// Env var name holding the API key (otherwise keychain/auto)
         #[arg(long)]
         key_env: Option<String>,
+        /// Legacy behavior: also write the .po artifact for import-po/build-mod
+        #[arg(long, default_value_t = false)]
+        emit_po: bool,
     },
 }
 
@@ -1911,10 +1947,13 @@ impl Runnable for Analyze {
                 glossary,
                 checkpoint,
                 out_po,
+                out_json,
+                managed_root,
                 batch_budget,
                 dry_run,
                 no_strict_placeholders,
                 key_env,
+                emit_po,
             } => commands::translate::run_translate(
                 root,
                 provider,
@@ -1925,10 +1964,13 @@ impl Runnable for Analyze {
                 glossary,
                 checkpoint,
                 out_po,
+                out_json,
+                managed_root,
                 batch_budget,
                 dry_run,
                 no_strict_placeholders,
                 key_env,
+                emit_po,
             ),
         }
     }
