@@ -65,6 +65,10 @@ Upload использует **GitHub OIDC**, поэтому repository secret `C
 
 Same-repo PR/push получают OIDC identity. Fork PR не получает repository secrets; workflow допускает public/tokenless путь Codecov и не должен ломать внешний PR только из-за отсутствия upload-auth.
 
+## Доверие к конфигурации
+
+Codecov читает repository policy только из default branch: после первых успешных Rust и desktop coverage upload на `main` включён `codecov.strict_yaml_branch: main`. Pull request может менять код, который генерирует coverage, но не может ослабить Codecov policy, которой оценивается этот же PR.
+
 ## Политика pre-beta
 
 Statuses сначала **informational**.
