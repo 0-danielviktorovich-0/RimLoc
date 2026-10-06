@@ -550,6 +550,161 @@ fn export_into_source_mod_dir_refused_and_source_unchanged() {
 }
 
 // ---------------------------------------------------------------------------
+// 6. PO `#:` reference traversal into the import writer
+// ---------------------------------------------------------------------------
+
+/// The PO file is a SHARED artifact and its `#:` references decide WHERE an
+/// import writes (`rel` is captured from the reference and joined into
+/// `Languages/<lang>/<rel>`). A reference carrying `..` or an absolute path
+/// must die as a typed refusal BEFORE any filesystem access — in the dry
+/// run as well — and a well-formed reference keeps importing as before.
+#[test]
+fn import_po_refuses_hostile_references_and_writes_nothing() {
+    let tmp = tempfile::tempdir().expect("tmp");
+    let mod_root = tmp.path().join("mod");
+    std::fs::create_dir_all(&mod_root).expect("mod root");
+    let sibling = tmp.path().join("sibling");
+    std::fs::create_dir_all(&sibling).expect("sibling");
+
+    // One hostile PO carrying BOTH shapes: a `..` escape out of the mod
+    // tree (lands beside `mod/`) and an absolute spelling pointing at a
+    // /tmp-local sibling (the reachable stand-in for `/abs/evil.xml`).
+    let po = tmp.path().join("hostile.po");
+    std::fs::write(
+        &po,
+        format!(
+            "#: Languages/Russian/../../../evil.xml\nmsgctxt \"KeyA\"\nmsgstr \"a\"\n\n#: Languages/Russian//{}\nmsgctxt \"KeyB\"\nmsgstr \"b\"\n",
+            sibling.join("evil-abs.xml").display(),
+        ),
+    )
+    .expect("write hostile po");
+
+    let refuse = |err: color_eyre::Report, why: &'static str| {
+        assert!(
+            err.to_string()
+                .contains("malformed relative path in PO reference"),
+            "{why}: {err}"
+        );
+    };
+
+    // Apply mode: typed refusal.
+    refuse(
+        rimloc_services::import_po_to_mod_tree(
+            &po, &mod_root, "Russian", true, false, false, false, false, false, false,
+        )
+        .expect_err("traversing reference refused on apply"),
+        "apply",
+    );
+
+    // Dry-run plans nothing either — the refusal precedes planning.
+    refuse(
+        rimloc_services::import_po_to_mod_tree(
+            &po, &mod_root, "Russian", true, true, false, false, false, false, false,
+        )
+        .expect_err("traversing reference refused on dry-run"),
+        "dry-run",
+    );
+
+    // The progress-carrying twin shares the grouping code path and refuses
+    // with the same verdict.
+    let err = rimloc_services::import_po_to_mod_tree_with_progress(
+        &po,
+        &mod_root,
+        "Russian",
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        |_cur, _total, _p| {},
+    )
+    .expect_err("progress variant refused too");
+    assert!(
+        format!("{err}").contains("malformed relative path in PO reference"),
+        "{err}"
+    );
+
+    // NOTHING was written anywhere: not the language tree, not the escape
+    // targets the two references pointed at.
+    assert!(
+        !mod_root.join("Languages").exists(),
+        "no Languages tree created by a refused import"
+    );
+    assert!(!tmp.path().join("evil.xml").exists(), "no `..` escape file");
+    assert!(
+        !sibling.join("evil-abs.xml").exists(),
+        "no absolute-target file"
+    );
+}
+
+/// Positive control for the guard above: a well-formed `#:` reference keeps
+/// importing exactly as before — the refusal is the hostile SHAPE, not the
+/// reference mechanism itself.
+#[test]
+fn import_po_with_valid_reference_still_writes_the_tree() {
+    let tmp = tempfile::tempdir().expect("tmp");
+    let mod_root = tmp.path().join("mod");
+    std::fs::create_dir_all(&mod_root).expect("mod root");
+
+    let po = tmp.path().join("good.po");
+    std::fs::write(
+        &po,
+        "#: Languages/Russian/Keyed/Good.xml\nmsgctxt \"KeyGood\"\nmsgstr \"хорошо\"\n",
+    )
+    .expect("write good po");
+
+    let (_plan, summary) = rimloc_services::import_po_to_mod_tree(
+        &po, &mod_root, "Russian", true, false, false, false, false, false, false,
+    )
+    .expect("valid reference imports");
+    let summary = summary.expect("apply summary");
+    assert_eq!(summary.created, 1, "{summary:?}");
+
+    let written = mod_root.join("Languages/Russian/Keyed/Good.xml");
+    let body = std::fs::read_to_string(&written).expect("imported file readable");
+    assert!(body.contains("KeyGood"), "{body}");
+    assert!(body.contains("хорошо"), "{body}");
+}
+
+/// Defense in depth, second layer: rel validation passes for a reference
+/// whose path is spelled inside the language folder, but a symlink planted
+/// there redirects the canonical view OUT of it — the containment check
+/// before `write_atomic` refuses with its own verdict and the jump target
+/// stays untouched.
+#[test]
+#[cfg(unix)]
+fn import_po_containment_guard_catches_symlink_jump() {
+    let tmp = tempfile::tempdir().expect("tmp");
+    let mod_root = tmp.path().join("mod");
+    let lang_dir = mod_root.join("Languages/Russian");
+    let outside = tmp.path().join("outside");
+    std::fs::create_dir_all(&lang_dir).expect("lang dir");
+    std::fs::create_dir_all(&outside).expect("outside dir");
+    std::os::unix::fs::symlink(&outside, lang_dir.join("Keyed")).expect("symlink");
+
+    let po = tmp.path().join("jump.po");
+    std::fs::write(
+        &po,
+        "#: Languages/Russian/Keyed/Jump.xml\nmsgctxt \"KeyJump\"\nmsgstr \"прыжок\"\n",
+    )
+    .expect("write jump po");
+
+    let err = rimloc_services::import_po_to_mod_tree(
+        &po, &mod_root, "Russian", true, false, false, false, false, false, false,
+    )
+    .expect_err("symlink jump refused");
+    assert!(
+        format!("{err}").contains("resolves outside the language folder"),
+        "{err}"
+    );
+    assert!(
+        !outside.join("Jump.xml").exists(),
+        "the jump target was never written"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // CLI resolution flavor: relative paths become explicit, once
 // ---------------------------------------------------------------------------
 
