@@ -123,6 +123,7 @@ fn no_po_1_scan_project_apply_validate_build() {
             project_id: snap.project_id.clone(),
             expected_revision: snap.revision,
             session_epoch: snap.session_epoch,
+            origin: None,
             intents,
         })
         .unwrap();

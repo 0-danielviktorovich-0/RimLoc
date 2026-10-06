@@ -10,7 +10,9 @@ use rimloc_llm::{
     glossary::Glossary, mock::MockProvider, provider::ProviderPreset, EngineOptions, KeySource,
     TranslationEngine,
 };
-use rimloc_services::contract::{ApplyIntentsRequest, IntentAction, TranslationIntent};
+use rimloc_services::contract::{
+    ApplyIntentsRequest, ApplyOrigin, IntentAction, TranslationIntent,
+};
 use rimloc_services::ProjectSessionManager;
 use std::collections::BTreeMap;
 
@@ -331,6 +333,11 @@ pub fn run_translate(
             expected_revision: snapshot.revision,
             session_epoch: snapshot.session_epoch,
             intents,
+            // Machine-written text claims its origin on the SAME seam the
+            // report does: the durable canonical state gets Llm
+            // provenance, no longer diverging from the report's
+            // origin:"llm".
+            origin: Some(ApplyOrigin::Llm),
         })
         .map_err(|e| color_eyre::eyre::eyre!("canonical apply: {e}"))?;
     ui_info!(

@@ -63,6 +63,8 @@ export interface ApplyIntentsRequestDto {
   /** Stale-session guard: the epoch of the caller's open session. */
   session_epoch: number;
   intents: TranslationIntentDto[];
+  /** Provenance of the batch; absent = human (older clients, the GUI). */
+  origin?: 'human' | 'llm' | 'tm' | 'import';
 }
 
 export interface ApplyIntentsResponseDto {

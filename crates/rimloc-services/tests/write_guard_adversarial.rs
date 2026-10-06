@@ -480,6 +480,7 @@ fn export_into_source_mod_dir_refused_and_source_unchanged() {
         project_id: snap.project_id.clone(),
         expected_revision: 1,
         session_epoch: snap.session_epoch,
+        origin: None,
         intents: vec![rimloc_services::contract::TranslationIntent {
             entry: rimloc_domain::canonical::SourceEntryId {
                 kind: rimloc_domain::canonical::EntryKind::DefInjected,

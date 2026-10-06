@@ -608,6 +608,7 @@ mod tests {
                     project_id: snap.project_id.clone(),
                     expected_revision: snap.revision,
                     session_epoch: snap.session_epoch,
+                    origin: None,
                     intents,
                 })
                 .expect("apply");
@@ -864,6 +865,7 @@ mod tests {
                 project_id: snap.project_id.clone(),
                 expected_revision: snap.revision,
                 session_epoch: snap.session_epoch,
+                origin: None,
                 intents: vec![set_intent("common.close", "Закрыть")],
             })
             .unwrap();
@@ -945,6 +947,7 @@ mod tests {
             project_id: snap.project_id.clone(),
             expected_revision: snap.revision,
             session_epoch: snap.session_epoch,
+            origin: None,
             intents: vec![TranslationIntent {
                 entry: SourceEntryId {
                     kind: EntryKind::Keyed,
