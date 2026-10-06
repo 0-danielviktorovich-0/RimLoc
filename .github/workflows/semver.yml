@@ -62,6 +62,10 @@ jobs:
 
   public-api:
     name: public-api inventory (informational)
+    # This inventory is useful evidence, but cargo-semver-checks above is the
+    # actual compatibility gate. Toolchain/public-api tooling failures must not
+    # turn an informational inventory into a release blocker.
+    continue-on-error: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
