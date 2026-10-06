@@ -3,14 +3,16 @@
 import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { t } from '../lib/i18n'
-import { useLanguageManager } from '../lib/languages/manager'
+import { useLanguageManager, type LMAddError } from '../lib/languages/manager'
 
 export function LanguageManager() {
   const { allLanguages, addUser, removeUser } = useLanguageManager()
   const [newId, setNewId] = useState('')
   const [newDisplay, setNewDisplay] = useState('')
   const [newNative, setNewNative] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  // Хранится КОД отказа (не готовый текст): manager не несёт user-facing
+  // строк (EN-литералы в RU-UI — находка аудита), текст строится через t().
+  const [error, setError] = useState<LMAddError | null>(null)
 
   return (
     <div className="page-content narrow-page">
@@ -24,7 +26,7 @@ export function LanguageManager() {
 
       {error && (
         <div className="inline-warning" role="alert">
-          <span>{error}</span>
+          <span>{t(`lm.err.${error}`)}</span>
         </div>
       )}
 
@@ -59,7 +61,8 @@ export function LanguageManager() {
           e.preventDefault()
           const err = addUser(newId, newDisplay, newNative)
           if (err) setError(err)
-          else { setNewId(''); setNewDisplay(''); setNewNative('') }
+          // Успех гасит предыдущую ошибку (аудит: stale error после успеха).
+          else { setError(null); setNewId(''); setNewDisplay(''); setNewNative('') }
         }}
       >
         <input

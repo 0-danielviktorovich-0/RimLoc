@@ -51,12 +51,26 @@ export function useCommandPalette(commands: PaletteCommand[]): CommandPalette {
   // переживает закрытие»: палитра открывалась предотфильтрованной — повторный
   // запуск команды вслепую рисковал выбрать не ту). Закрытие (Escape/toggle/
   // запуск команды) всегда возвращает палитру в исходное состояние.
+  // Focus contract (acceptance finding): при открытии запоминаем элемент,
+  // вызвавший палитру; при закрытии возвращаем ему фокус через
+  // requestAnimationFrame — размонтирование оверлея успевает пройти, а
+  // synthetic WebDriver-события получают детерминированный тайминг.
+  const restoreFocusRef = useRef<HTMLElement | null>(null)
   useEffect(() => {
     if (open) {
       setActiveIndex(0)
+      restoreFocusRef.current =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null
     } else {
       setQuery('')
       setActiveIndex(0)
+      const prev = restoreFocusRef.current
+      restoreFocusRef.current = null
+      if (prev) {
+        requestAnimationFrame(() => {
+          prev.focus()
+        })
+      }
     }
   }, [open])
 

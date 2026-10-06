@@ -28,17 +28,22 @@ export function saveUserLanguages(list: UserLanguage[]): void {
   localStorage.setItem(LM_KEY, JSON.stringify(list))
 }
 
+/** Refusal codes returned by addUser — the manager never carries user-facing
+ *  text (EN literals rendered raw in the RU UI was an audit finding); the
+ *  component maps a code through t() (`lm.err.<code>`). */
+export type LMAddError = 'empty' | 'invalid' | 'duplicate-builtin' | 'duplicate-user'
+
 export function useLanguageManager() {
   const [user, setUser] = useState<UserLanguage[]>(loadUserLanguages)
 
-  const addUser = useCallback((localeId: string, displayName: string, nativeName: string): string | null => {
+  const addUser = useCallback((localeId: string, displayName: string, nativeName: string): LMAddError | null => {
     const trimmed = localeId.trim()
-    if (!trimmed) return 'localeId must not be empty'
+    if (!trimmed) return 'empty'
     // Acceptance MUST-FIX: «1пробел плохой код!» принимался — валидатор формы
     // в React-лейне не вызывался (порт из Svelte registry.ts:246).
-    if (!isValidLocaleId(trimmed)) return 'invalid locale id format'
-    if (BUILTIN_LANGUAGES.some((l) => l.localeId === trimmed)) return 'localeId conflicts with builtin'
-    if (user.some((l) => l.localeId === trimmed)) return 'localeId already exists'
+    if (!isValidLocaleId(trimmed)) return 'invalid'
+    if (BUILTIN_LANGUAGES.some((l) => l.localeId === trimmed)) return 'duplicate-builtin'
+    if (user.some((l) => l.localeId === trimmed)) return 'duplicate-user'
     const entry: UserLanguage = {
       localeId: trimmed,
       displayName: displayName.trim() || genericDisplayName(trimmed),
