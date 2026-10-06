@@ -1,6 +1,6 @@
 # TIER A — финальная матрица завершённости конкурентной очереди
 
-Дата: 2026-10-05 · Лейн: tierA-reconcile (мандат §8) · Реконсиляция входов: wave 1 (source-инспекция, `COMPETITOR_DEEP_DIVE_2026-10.md` + `competitors.json`), wave 2 (same-corpus прогоны Text Grabber и RimLangKit), wave 3 (practical прогоны Python- и C#/PowerShell/Node-конкурентов), свежий discovery 2026-10-05.
+Дата: 2026-10-05 · **Финальная реконсиляция: 2026-10-06 (wave 6, lane reconcile)** · Реконсиляция входов: wave 1 (source-инспекция, `COMPETITOR_DEEP_DIVE_2026-10.md` + `competitors.json`), wave 2 (same-corpus прогоны Text Grabber и RimLangKit), wave 3 (practical прогоны Python- и C#/PowerShell/Node-конкурентов), свежий discovery 2026-10-05, **wave 6 (practical прогоны остатка семёрки: Remis, Grabber GUI, RimTransAI, RimTrans_PY, etejasdgjjjj532, TokcDK, rtl-tools — `/tmp/w6-*/`, отчёты в `differential/`)**.
 
 **Статусный словарь**: PRACTICALLY_RUN / SOURCE_CONFIRMED_ONLY / DOC_ONLY / BLOCKED_PLATFORM / BLOCKED_DEPENDENCY / OBSOLETE_BUT_RELEVANT / IDENTITY_UNRESOLVED / NOT_MATERIALLY_RELEVANT.
 **Шкала evidence**: 0 NOT_IMPLEMENTED · 1 DOC_ONLY · 2 SOURCE_CONFIRMED · 3 UNIT_TESTED · 4 INTEGRATION_TESTED · 5 BUILT_APP_E2E · 6 SAME_CORPUS_DIFFERENTIAL · 7 IN_GAME_PROVEN.
@@ -15,6 +15,9 @@
 - Единственный крейс-файл, менявшийся `da2fc77→72259e0b` из затронутых прогонами, — `learn_patches.rs`, и дельта **только про пути записи** (write-guard `resolve_cli_out_path`/`ensure_free_output_path`), экстракция `scan_patches_texts` не тронута → вывод «learn-patches = 0 текстовых записей на корпусе» валиден, а побочное наблюдение w3-py про относительный out-dir на текущем HEAD уже починено.
 - Расхождение лейнов разрешено: w3-cs рапортовал «бинарь отсутствует», потому что искал файл `rimloc` (без суффикса `-cli`); файл называется `rimloc-cli` и существовал с 20:09. w3-cs собрал собственный бинарь из `72259e0b` (`/Volumes/Portable-SSD/caches/targets/w3-cs/release/rimloc-cli`, 7m29s) — базовые числа совпали с tgbench (159/75EN·815/764/40), что дополнительно подтверждает идентичность.
 - Корпус (только чтение): `~/Developing/rimloc-test-corpus/.../294100/{3170653412, 818773962, 2023507013, 3242000764}`.
+- **Добавлено реконсиляцией 2026-10-06 (wave 6).** Эталон жив: `ls /Volumes/Portable-SSD/caches/targets/rimloc-tgbench/release/` → `rimloc-cli` (14 282 640 байт, 2026-10-05 20:09), версия 0.1.0-alpha.1. **Все same-corpus диффы wave 2/3/6 считались от этого бинаря — внутренне согласованы.**
+- **⚠️ «scan-поведение идентично текущему» больше НЕ действует для свежего HEAD.** Верифицировано реконсиляцией прогоном обоих бинарей на корпусе (эталон 72259e0b vs сборка HEAD-линии `64658131` из `/Volumes/Portable-SSD/caches/targets/w6-pysmall/release/rimloc-cli`, источник `646581311dbbc143`; текущий main `bb402cb` — docs-only поверх `6465813`, `crates/` не трогает, так что код идентичен): scan VE `2023507013` — **764 → 143** юнитов, причём сборка 6465813 приписывает записи путям `1.6/Languages/English/...`, из которых на диске существуют **3 из 143** (`1.6/` содержит только Assemblies/Defs/Patches), эталон — реальным `Languages/...` (**593 из 764** существуют); export-po VE — **765 → 141** msgid, HugsLib `818773962` — **76 → 1** msgid (сходимо с наблюдением py-small: 163→3 на 317, 41→40 на 324 — реконсилятором не перепрогонялось). Диапазон `72259e0b..6465813` содержит патч-слой (`31bed4f feat(parsers): extract игроку-видимых значений из PatchOperations`) и рефактор сепараторов путей (`db3c346 fix(parsers): пути со смешанными / и \ — `has_path_marker` заменил `contains("/Languages/")`-проверки в scan-коллекторах parsers-xml/cli). Классификация: **регрессия атрибуции путей/версий, не редизайн** → передано RimLoc-лейну (MUST_FIX §4.4); в ворктree уже идёт bisect диапазона (stash «wip-during-bisect», reflog 19:15). До фикса конкурентные диффы валидны относительно эталона, патч-слой валиден в 6465813.
+- **Патч-слой HEAD подтверждён прогоном реконсиляции**: `learn-patches --mod-root /tmp/w6-pysmall/mods/3170653412 --game-version 1.5_1.6` (бинарь 6465813) → **54 записи** (tag_path: description 26, title 11, baseDesc 6, titleShort 5, titleShortFemale 4, titleFemale 2; 51 `PatchOperationReplace` + 3 `PatchOperationAdd`) — состав в точности равен игроку-видимому набору NicoriciN89 (wave 3), шума 0. JSON: `/tmp/w6-reconcile/lp-head.json`.
 
 ---
 
@@ -33,30 +36,32 @@
 | 9 | RimWorldModTranslator | NicoriciN89 | Python | Apache-2.0 | 2026-07-22 | PRACTICALLY_RUN (scanner+patches; Argos-MT не запускался) | 5 | DONE (фокус-дифф патчей) | **главный дифференциатор** |
 | 10 | RimWorld AI Translator | chance496 | C# net8 (Core+WinForms) | MIT | 2026-07-17 (v1.1.0) | PRACTICALLY_RUN (ядро + их тест-сьют; GUI/native=BLOCKED_PLATFORM) | 6 | DONE | TM-инженерия |
 | 11 | Mod Translation Toolkit | DrizztGaming | PowerShell 13.8k строк | MIT | 2026-09-11 (v0.10.26) | BLOCKED_PLATFORM (+MT-стадии DOC_ONLY / BLOCKED_DEPENDENCY) | 2 | NOT DONE (pwsh+WPF отсутствуют) | статический разбор |
-| 12 | Remis | Drlinglong | Python PySide + FastAPI-слой | AGPL-3.0 | 2026-09-26 (v3.2.1) | SOURCE_CONFIRMED_ONLY | 2 | NOT DONE (вне объёма wave 3) | **стратегический компаратор** |
-| 13 | RW Translator Grabber GUI | doktorravlik-svg | Python 3.14 | MIT (файл LICENSE, проверен) | 2026-09-23 (активен) | DOC_ONLY | 1 | NOT DONE | кандидат на py-лейн |
-| 14 | RimTransAI | mmjio-xy | C# / Avalonia | GPL-3.0 (файл LICENSE, проверен) | 2026-09-02 (активен) | DOC_ONLY | 1 | NOT DONE | кандидат на cs-лейн |
-| 15 | RimWorldModTranslator (JP) | etejasdgjjjj532 | Python | MIT | 2026-08-17 | SOURCE_CONFIRMED_ONLY | 2 | NOT DONE | non-goal (JP-XLSX) |
-| 16 | RimworldModTranslator | TokcDK | C# WPF | GPL-3.0 | 2025-04-27 (спит) | SOURCE_CONFIRMED_ONLY | 2 | NOT DONE | non-goal (редактор) |
+| 12 | Remis | Drlinglong | Python PySide + FastAPI-слой | AGPL-3.0 | 2026-10-05 (v3.2.2) | PRACTICALLY_RUN (ядро-адаптер headless; GUI не запускался) | 6 | DONE (4 мода) | **стратегический компаратор** (подтверждён) |
+| 13 | RW Translator Grabber GUI | doktorravlik-svg | Python 3 + ttkbootstrap | MIT (файл LICENSE, проверен) | 2026-09-23 (активен) | PRACTICALLY_RUN (ядро headless; GUI не запускался; MT=BLOCKED_DEPENDENCY) | 6 | DONE (4 мода) | ParentName-резолв взять; морфология non-goal |
+| 14 | RimTransAI | mmjio-xy | C# net9.0 Avalonia + Mono.Cecil | GPL-3.0 (файл LICENSE, проверен) | 2026-09-02 (v2.0.0) | PRACTICALLY_RUN (сборка + extraction-ядро; LLM=BLOCKED_DEPENDENCY; GUI-запуск не проверен) | 6 | DONE (4 мода) | reflection-анализ — уникален, ROADMAP |
+| 15 | RimWorldModTranslator (JP) | etejasdgjjjj532 | Python | MIT | 2026-08-18 | PRACTICALLY_RUN (ядро) | 6 | DONE (Keyed/Defs-слой) | non-goal подтверждён (заглушки+баги) |
+| 16 | RimworldModTranslator | TokcDK | C# WPF | GPL-3.0 | 2025-04-27 (спит) | PRACTICALLY_RUN (ядро reflection-харнессом; GUI=BLOCKED_PLATFORM) | 6 | DONE (4 мода + roundtrip записи) | non-goal как редактор; dict-gap донор |
 | 17 | rimworld-mod-llm-auto-translator | JalapenoLabs | TypeScript | MIT | 2025-08-05 (заброшен) | BLOCKED_DEPENDENCY (OpenAI-ключ — единственная функция) | 2 | NOT DONE | non-goal |
 | 18 | Rimworld-Mod-Translator | kelvinauta | JS/Node | **нет** | 2024-06-25 (1 день жизни) | NOT_MATERIALLY_RELEVANT | 2 | NOT DONE (не за чем: 97 строк DeepL-only) | non-goal |
 | 19 | rimworld-autonomous-translator | AutonomoAI | — (кода нет) | — | 2026-01-14 | DOC_ONLY | 1 | NOT DONE (нечего запускать) | маркетинг-репо; нарратив |
-| 20 | RimTrans_PY | masakitenchi (Manifold Paradox) | Python | MIT (файл LICENSE, прочитан) | 2024-08-22 | SOURCE_CONFIRMED_ONLY | 2 | NOT DONE | **третье подтверждение патч-линии** — NEW |
-| 21 | rimworld-rtl-translation-tools | mtimoustafa | Ruby | **нет** | 2024-05-05 | DOC_ONLY | 1 | NOT DONE | RTL-заметка — NEW |
+| 20 | RimTrans_PY | masakitenchi (Manifold Paradox) | Python | MIT (файл LICENSE, прочитан) | 2024-08-22 | PRACTICALLY_RUN (ядро headless; GUI tkinter недоступен) | 6 | DONE (фокус-дифф патч-линии) | перекрыт новым патч-слоем RimLoc |
+| 21 | rimworld-rtl-translation-tools | mtimoustafa | Ruby | **нет** | 2024-05-05 | PRACTICALLY_RUN (оба скрипта исполнены) | 4 | N/A (в корпусе 0 RTL-строк; прогон на родном тесте + LanguageData с ключами корпуса) | RTL-публикация — ROADMAP |
 | 22 | RimWorldTranslationTool | lenhare | Python | нет (API) | 2024-07-02 (1 день) | NOT_MATERIALLY_RELEVANT | 1 | NOT DONE | анти-паттерн секретов — NEW |
 | 23 | rwmt (Multiplayer) | rwmt org | C# | MIT | 2026-08-03 | NOT_MATERIALLY_RELEVANT | 2 | NOT DONE | ложное срабатывание |
 | 24 | Ludeon official workflow | Ludeon | данные+PR | — | активны | NOT_MATERIALLY_RELEVANT (как тул) | 1 | NOT DONE | контекст-ниша RimLoc |
 
-### 2. Сводка завершённости
+### 2. Сводка завершённости (после wave 6, 2026-10-06)
 
 - **Строк в матрице: 24** (16 wave-1 записей − rwmt-омонимы и Ludeon-контекст оставлены строками, + RimLangKit/Text Grabber из wave 2, + 4 разбиения RimTrans-линии, + 3 новых discovery).
-- **PRACTICALLY_RUN: 8** — Text Grabber, RimLangKit, RimTrans-zh, RimTranslate, Translation Forge, laskinss27, NicoriciN89, RimWorldAiTranslator.
-- **SAME-CORPUS дифф получен для 8 из 24**; NOT DONE: 16, из них:
-  - **7 feasible** (кандидаты следующего practical-wave): Remis, Grabber GUI, RimTransAI, RimTrans_PY, etejasdgjjjj532, TokcDK, rtl-tools;
-  - **3 BLOCKED_PLATFORM**: Aironsoft (net461+DLL игры с Windows-путём), inkitter (net45 WinForms), MTT (pwsh+WPF отсутствуют на macOS);
-  - **1 BLOCKED_DEPENDENCY**: JalapenoLabs (OpenAI-ключ — вся суть тулза; ограничение №3);
-  - **5 не за чем / нечего запускать**: kelvinauta, rwmt, lenhare, AutonomoAI (кода нет), Ludeon workflow (не тул).
+- **PRACTICALLY_RUN: 15** — Text Grabber, RimLangKit, RimTrans-zh, RimTranslate, Translation Forge, laskinss27, NicoriciN89, RimWorldAiTranslator (wave 2–3) + **Remis, Grabber GUI, RimTransAI, RimTrans_PY, etejasdgjjjj532, TokcDK, rtl-tools (wave 6)**.
+- **SAME-CORPUS дифф получен для 14 из 24**; rtl-tools — прогон есть, same-corpus **N/A по природе** (в корпусе 0 RTL-строк, проверено сканом; инструмент — пост-процессор готовых переводов, не экстрактор).
+- **NOT DONE: 9** — feasible-остаток семёрки исчерпан; всё оставшееся — блокировки или отсутствие материи:
+  - **3 BLOCKED_PLATFORM**: Aironsoft (net461+WinForms + Assembly-CSharp.dll по Windows-пути), inkitter (net45 WinForms), MTT (pwsh+WPF отсутствуют на macOS);
+  - **1 BLOCKED_DEPENDENCY**: JalapenoLabs (OpenAI-ключ — вся суть тулза; ограничение №3); сюда же MT-стадии wave 6: Grabber (deep-translator/googletrans) и RimTransAI (OpenAI/LLamaSharp);
+  - **1 DOC_ONLY без кода**: AutonomoAI (маркетинг-репо, нечего запускать);
+  - **4 не за чем / не тул**: kelvinauta, lenhare, rwmt, Ludeon workflow.
 - **IDENTITY_UNRESOLVED: 0** — все линии идентифицированы, включая третий «RimTrans» (inkitter — независимый однофамилец) и Aironsoft (форк старой C#-линии duduluu, а не самостоятельный наследник).
+- **Открытый пункт по самому RimLoc (не конкурентный)**: регрессия линии `6465813` относительно эталона `72259e0b` вне патч-слоя (scan/export-po, §0 и §4.4) — передана RimLoc-лейну, bisect уже идёт.
 
 ---
 
@@ -165,48 +170,48 @@
 
 ### 3.12 Remis — Drlinglong/Remis
 
-- **IDENTITY**: Drlinglong/Remis, Python (PySide-десктоп + SQLite + агент-слой), AGPL-3.0, 26★, последний коммит 2026-09-26, релизы v3.x, 2295 файлов. Мультиигровая платформа (Paradox — фокус; RimWorld в preview).
-- **SOURCE REVIEW**: ev. **2** — `scripts/core/game_adapters/rimworld.py` (439 строк, полностью), `api_handler.py`, `translation_reuse.py` + дерево (wave 1). Статус: **SOURCE_CONFIRMED_ONLY**.
-- **PRACTICAL RUN**: НЕ ЗАПУСКАЛСЯ. Причина: не входил в объём wave 3 (оба лейна закрывали Python-CLI и C#/PS/Node-инструменты; Remis — тяжёлый PySide-десктоп с мультиигровым ядром ~2295 файлов, требует отдельного лейна с собственным харнессом). **Feasible** — кандидат на следующий practical-wave (ядро headless-драйвером, как Text Grabber).
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND (RimLoc)**: по исходникам — у конкурента есть то, чего у RimLoc нет продуктово: MT-роутер 7+ провайдеров + локальные LLM + model arena; консервативное переиспользование переводов с диска; чекпойнты `.remis_checkpoint_*`; glossary health review; встроенные агенты (Codex/Copilot) и MCP-адаптер; publication identity. Патчи: честная диагностика «offline extraction cannot resolve» — НЕ извлекает (наша ниша).
-- **VERDICT**: **стратегический компаратор (threat HIGH)**. Перенять: модель чекпойнтов и модель-арену (сравнение провайдеров) — в ROADMAP суперсета; переиспользование с диска — сверить с нашим TM. AGPL-3.0 защищает код, не идеи. RimLoc сильнее: патчи (у них 0), PO/XLIFF, Rust-кроссплатформенность, сфокусированность.
+- **IDENTITY**: Drlinglong/Remis, Python (PySide-десктоп + SQLite + агент-слой), AGPL-3.0, 26★, frozen HEAD `5440918` (v3.2.2, 2026-10-05 — свежее, чем видела волна 1: тогда v3.2.1/2026-09-26), 2295 файлов. Мультиигровая платформа (Paradox — фокус; RimWorld в preview). Отчёт: `differential/REMIS_PRACTICAL_2026-10-06.md`.
+- **SOURCE REVIEW**: ev. **6** SAME_CORPUS_DIFFERENTIAL — RimWorld-адаптер `scripts/core/game_adapters/rimworld.py` (439 строк; `FORMAT_RULES_VERSION = "rimworld-1.6-v1"`, жёсткий каталог `_V16_DEF_FIELDS`, `rimworld.py:13-23`), контракт `GameAdapter` из 7 методов (`contracts.py:63-82`), реестр — два структурных адаптера (`registry.py:6-9`). Статус: **PRACTICALLY_RUN** (ядро — чистая библиотека, GUI не нужен и не запускался).
+- **PRACTICAL RUN**: DONE — headless-драйвер (`run_adapter.py`: discover→parse напрямую; SHA и команды в `/tmp/w6-remis/NOTES.md`) на всех 4 модах, версии 1.6 и auto (инференс версии, `rimworld.py:406-418`; результаты идентичны). Ресурсы/строки: 2/40 · 3/82 · 67/859 · 1/40; in-process 2.2–37.8 мс (RimLoc 0.07–0.26 с wall — уровни измерения разные, сравнивать порядок). MT-стадии для извлечения не требовались.
+- **SAME-CORPUS RUN**: DONE (4 корзины, нормализация {key, source}). Суммарно: **BOTH 839 · SEMANTIC 13 · RIMLOC_ONLY 186 · REMIS_ONLY 160** (по модам: BOTH 40/71/688/40; SEM 0/4/9/0; R_ONLY 119/0/67/0; M_ONLY 0/7/153/0). JSON: `differential/remis-diff-<id>.json` ×4.
+- **GAPS FOUND (RimLoc)**: (а) **слияние версионных папок дефолтом** — на plain versioned-модах (VE) RimLoc сливает 1.0–1.6: 81 юнит из файлов, которых в 1.6 нет; stale-значения вместо актуальных (`VEF_VerbRangeFactor.label`: RimLoc `verb range factor` из 1.3/1.4, в 1.6 — `weapon range factor`, по диску прав Remis); `--game-version 1.3`, `--game-version 1.6`, auto, `--include-all-versions` — побайтово одинаковые 764 юнита (флаг не влияет); (б) **IfModActive игнорируется** — Royalty-контент 3170653412 (36 строк) включён безусловно (Remis резолвит по `active_mods`, RimTransAI — по ActivePackageIds); (в) `--with-patches` на эталоне — молча 0 на моде с 53 переводимыми тегами патчей, включая однозначный `PatchOperationReplace` с xpath-литералом defName (`BackstoriesDef.xml:44-51`) — в линии 6465813 закрыто learn-patches=54 (§0); (г) **деградация источника в Keyed**: `<b>X</b>` → `bX/b`, standalone `>` выброшен, хвостовой пробел триммится (`Search: ` → `Search:` — значим для конкатенации; SEMANTIC 4 на HugsLib — span-сохраняющий парс Remis точнее); (д) REMIS_ONLY 153 на VE — gerund/verb WorkGiverDef (22), rulesStrings-индексы (~75), stages/gizmo (~56): добирается нашими `--defs-field/--defs-dict`, но дефолт уже; +7 KeyBindingDef.label HugsLib.
+- **VERDICT**: **стратегический компаратор (threat HIGH), прогон подтвердил статус**: аккуратный span-сохраняющий движок с контрактом 7 методов, верифицируемой записью (обратный парс рендера + атомарная запись с rollback + manifest provenance, `workflow_bridge.py:104-203`), честной диагностикой неумеек (Patches: «offline extraction cannot resolve», `rimworld.py:243-244`; dll: `assembly_strings_unavailable`). Слабости конкурента: зашитый каталог полей (теряет `title*`×119 и `reportString`/`deathMessage`×67 — наш словарь шире), патчи 0, симлинк-баг LoadFolders на macOS (`.resolve()` в `_effective_roots` `rimworld.py:424` против нерезолвнутого root `:385-386` → ValueError, воспроизведён), `IfModActive` без списка активных модов валит scan целиком (`workflow_bridge.py:23-25`). Перенять: **пофайловый атомарный чекпойнт перевода** (schema v3: identity+config_fingerprint+source_snapshot_hash, resume с проверкой совместимости) — HIGH_VALUE; **glossary-health score + advisory AI** — ROADMAP; одномодальный auto-reuse переводов — не TM (наш TM шире). Классификации лейна: «жёсткий выбор одной версии» → наш MUST_FIX (§4.2); «статическая резолвка однозначных PatchOperationReplace/Add» → HIGH_VALUE, **уже закрыто в линии 6465813** (learn-patches); «зашитый каталог» → INTENTIONAL_NON_GOAL (наши словари гибче).
 
-### 3.13 RW Translator Grabber GUI — doktorravlik-svg/RimWorld-Translator-Grabber-GUI — NEW подтверждение
+### 3.13 RW Translator Grabber GUI — doktorravlik-svg/RimWorld-Translator-Grabber-GUI
 
-- **IDENTITY**: Python 3.14, **MIT** (файл LICENSE прочитан сегодня: «MIT License, Copyright (c) 2026 RimWorld Translator Team»; API-детект GitHub отдаёт null — расхождение разрешено в пользу файла), создан 2026-04-14, push 2026-09-23, активен. Русский проект.
-- **SOURCE REVIEW**: ev. **1** — заявленные фичи мастер-листа wave 1 (8+ MT-движков от Google до Argos, PyMorphy3-морфология, SQLite-кеш) не перепроверены построчно в этом заходе; сегодня подтверждены метаданные и дерево (`collectors/`, `core/`, `gui.py`, `filters_config.json`, `analyze_locales.py`). Статус: **DOC_ONLY** (до чтения исходников).
-- **PRACTICAL RUN**: NOT DONE (не входил в wave 3). **Feasible**: чистый Python — кандидат на py-лейн тем же способом, что Text Grabber.
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND**: заявленная MT-fallback-цепочка — прямой аналог планируемого PROVIDER-слоя RimLoc; PyMorphy3 — русский морфологический слот (у RimLoc Russian morphology = LEVEL 0).
-- **VERDICT**: приоритет №1 следующего practical-wave: единственный активный русскоязычный инструмент с MT-цепочкой. Verdict отложен до прогона.
+- **IDENTITY**: Python 3 + ttkbootstrap (Tk) + lxml + loguru + rapidfuzz + **pymorphy3** (морфология ru/uk) + deep-translator/googletrans (MT-fallback-цепочка подтверждена requirements.txt), **MIT** («Copyright (c) 2026 RimWorld Translator Team»; API-детект GitHub отдаёт null — разрешено в пользу файла), SHA `35b56bb`, push 2026-09-23, активен, русскоязычный. В репо закоммичены рабочие артефакты (debug.log 1.5 МБ, `translation_anchors.db`, Windows-venv `env/`). Отчёт: `differential/TIERA_GRABBER_RTAI_PRACTICAL.md` §1.
+- **SOURCE REVIEW**: ev. **6** — ядро прочитано и исполнено: `collect_defs_full` — рекурсивный поиск всех элементов с `defName` + резолв наследования ParentName/Name (`utils/parent_resolver.py`) + применение патчей в индекс строк (`utils/patch_processor.py`: Add/Replace/Remove/Name/sequence); поле-модель — whitelist 60 тегов ∪ partial-матчи (Message/Label/Title/gerund…) ∪ **space-fallback** / blacklist 20 тегов + 14 паттернов (regex-подобные ищутся как подстроки и не срабатывают никогда — мёртвый код; `collectors.py:125-220`, `rimworld_xml.py:90-276`); `loadfolders_parser.py` — universal-скан глубины 2 + рекурсивный fallback, **IfModActive не разбирается**, `_detect_version` на `1.5_1.6` возвращает 1.4. Статус: **PRACTICALLY_RUN**.
+- **PRACTICAL RUN**: DONE — GUI-независимое ядро headless-драйвером `grabber_run.py` (venv: lxml/loguru/pymorphy3 + словари ru/uk) на всех 4 модах: Defs-поля ALL/NEWEST 213/5 · 7/7 · 306/264 · 0/0; Keyed EN 0/75/593/40. MT-стадии (deep-translator/googletrans) — **BLOCKED_DEPENDENCY**, не запускались. GUI не запускался — Tk кроссплатформенен, BLOCKED_PLATFORM неприменим; честное «не прогонялся».
+- **SAME-CORPUS RUN**: DONE. Keyed HugsLib: **BOTH 75 / SEM 7** — полный паритет. Keyed VE: BOTH 593 / RIMLOC_ONLY 171 (существующие DefInjected-папки — конкурент читает только Keyed+Defs). Defs HugsLib: BOTH 7 — тройной паритет RimLoc learn-defs = Grabber = RimTransAI. Defs 3170653412: BOTH 126 / R_ONLY 36 (IfModActive-папка `Mods/Royalty` не активируется) / C_ONLY 87 (titleFemale/gerund… за счёт partial-матчей). Defs VE 1.6: BOTH 171 / **C_ONLY 62 — строгий суперсет словаря RimLoc на 1.6**. SEMANTIC 32, из них 25 — корректное PO-экранирование RimLoc, 1 — реальная порча разметки msgid (воспроизведена на tgbench-бинарнике), остальные — различия текстов 1.5/1.6 у Anomaly. JSON: `differential/tiera-grabber-rtai-diff.json`.
+- **GAPS FOUND (RimLoc)**: независимое подтверждение дефекта msgid-разметки; PO-экранирование `\n`/`\"` — не дефект (корректный PO). От конкурента: **ParentName/Name-резолв при Defs-извлечении** (у learn-defs RimLoc нет; в основном извлечении RimLoc наследование есть — см. 3.16).
+- **VERDICT**: жизнеспособный русскоязычный инструмент сопровождения переводов с MT-цепочкой; extraction-ядро — не competitor нашему. Перенять: ParentName-резолв в learn-defs (**HIGH_VALUE_AFTER_BETA**); расширение словаря из C_ONLY 62 (gerund/verb/inspectString — ROADMAP); pymorphy3 — **INTENTIONAL_NON_GOAL** (у RimLoc `morph`/pymorphy2); скан всех версий сразу — non-goal (`--include-all-versions` есть). Его критичные дыры: авто-версия ломается на `1.5_1.6` («newest» = 1.4 → 5 полей вместо 213 — молча устаревший контент), IfModActive не поддержан, дубль-политика без дедупликации текстов между версиями, DLL-извлечения нет, мёртвый blacklist-код. Anchors/TM-база — NOT_MATERIALLY_RELEVANT для extraction-лейна (TM — волна 3).
 
-### 3.14 RimTransAI — mmjio-xy/RimTransAI — NEW подтверждение
+### 3.14 RimTransAI — mmjio-xy/RimTransAI
 
-- **IDENTITY**: C# / Avalonia, **GPL-3.0** (файл LICENSE прочитан сегодня: «GNU GENERAL PUBLIC LICENSE Version 3»), создан 2026-01-09, push 2026-09-02, активен. Китайский сегмент.
-- **SOURCE REVIEW**: ev. **1** — заявленное (Mono.Cecil-рефлексия типов из DLL + LLM-батч) не перепроверено построчно; подтверждены метаданные, дерево (`RimTransAI/`, `RimTransAI.LocalTranslator/`, `tests/`, `Version.props`), лицензия. Статус: **DOC_ONLY**.
-- **PRACTICAL RUN**: NOT DONE. **Feasible** частично: Avalonia кроссплатформенна — кандидат на cs-лейн.
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND**: Mono.Cecil-подход (строки из скомпилированных DLL) — единственный в выборке кандидат на закрытие C#-TKey-пробела без запуска игры (у RimLoc C# TKey = LEVEL 4 только через собственный Runtime Bridge).
-- **VERDICT**: приоритет №2 cs-лейна. Verdict отложен до прогона.
+- **IDENTITY**: C# **net9.0-generic** (не `net9.0-windows`!) + Avalonia 12.1 (Semi.Avalonia) + Mono.Cecil 0.11.6 + OpenAI SDK + MiniExcel + Serilog; сателлит `RimTransAI.LocalTranslator` — LLamaSharp 0.27 (CPU), **GPL-3.0**, SHA `fb5d0d08` (v2.0.0, 2026-09-02), активен, китайский сегмент. Уточнение identity: канонический репо — `mmjio-xy/RimTransAI` (мастер-лист wave 1 ждал `RimTransAI/RimTransAI`); `global.json` пинит SDK 9.0.315 (на машине 10.0.401). Отчёт: `differential/TIERA_GRABBER_RTAI_PRACTICAL.md` §2.
+- **SOURCE REVIEW**: ev. **6** — сборка `dotnet build -c Release` из внешнего cwd (обход global.json; `DOTNET_ROLL_FORWARD` не влияет) → **0 ошибок, 0 предупреждений**. Заявление «Avalonia → BLOCKED_PLATFORM» **не подтвердилось**: проект generic-net9.0 и компилируется на macOS; запуск GUI не проверялся. Статус: **PRACTICALLY_RUN**.
+- **PRACTICAL RUN**: DONE — extraction-ядро через **продуктовый путь** `ModParserService.ScanModFolder` (тот же, что `MainWindowViewModel.cs:82-88`) харнессом net10.0 с ProjectReference (`/tmp/w6-grabber-rtai/rtai-harness/`) на всех 4 модах. Items: 82 · **2209** · 53 · 40; Mono.Cecil-типы из модовых DLL: +1 (`HugsLib.UpdateFeatureDef`) / **+192** (`VFECore.*`, `KCSG.*`) / 0 / 0. Причины извлечения в данных (VE): Whitelist 678, **ReflectionField 712**, SmartSuffix 76, ListItem 150; LoadFolders=8. LLM/MT (OpenAI-совместимый, LLamaSharp) — **BLOCKED_DEPENDENCY**. Оговорка: жёсткий входной барьер `Assembly-CSharp.dll` (`ModParserService.cs:249-253` — без него return null, не сканируется ничего); LoadCore шёл по референсной копии `/Users/danielviktorovich/Developing/compare/RimTrans/Reflection/References/` (только чтение; DLL чужой сборки RimTrans, влияние на состав core-типов не оценивалось).
+- **SAME-CORPUS RUN**: DONE. Keyed HugsLib: BOTH 75 / SEM 7. Keyed VE: BOTH 593 / R_ONLY 171 (DefInjected не читает: DefInj=0 во всех сканах). Keyed Anomaly: BOTH 40 / SEM 7 — дедуп версий first-wins: 32 ключа канонизировали **текст 1.5** при наличии 1.6 (приоритета «новейшей» нет). Defs HugsLib: BOTH 7. Defs 3170653412: BOTH 53 / R_ONLY 109 (наш словарь BackstoryDef шире: titleFemale/titleShort…). Defs VE 1.6: BOTH 166 / R_ONLY 5 (`stages.N.label` — не извлекает подписи стадий, только [TranslationCanChangeCount]-списки) / C_ONLY 52 (reflection-поля: gerund/verb/inspectString).
+- **GAPS FOUND (RimLoc)**: дефект msgid-разметки подтверждён вторым инструментом лейна независимо; DefInjected-как-источник и дефолт «новейшая версия» — подтверждённые преимущества RimLoc (у RTAI first-wins 1.5).
+- **VERDICT**: **Reflection-extraction из C#-сборок — единственный структурный дифференциатор волны: 712 ReflectionField на VE — поля, которых нет ни в одном статическом словаре. Классификация: ROADMAP** (тяжело: DLL игры, резолвер зависимостей, обфускация; ядро закрывают словарь + learn-defs + `--defs-dict`). **IfModActive-резолв в GameLoadOrderPlanner (IfModActive/IfModActiveAll/IfModNotActive по ActivePackageIds) — образцовый среди всех конкурентов**, референс для нашего IfModActive (HIGH_VALUE §4.9). Его дыры: без Assembly-CSharp.dll не сканирует вообще (RimLoc сканирует без игры); папки `v1.6/Assemblies` пропускает (regex `^\d+\.\d+$` не матчит `v`-префикс — у HugsLib спасает root `Assemblies/`); версии first-wins; DefInjected-источники не читает. GUI-запуск Avalonia на macOS — не проверен (сборка проверена).
 
 ### 3.15 RimWorldModTranslator — etejasdgjjjj532 (JP)
 
-- **IDENTITY**: Python (translator.py 180 строк + gui.py), MIT, 2026-08-17, 1★.
-- **SOURCE REVIEW**: ev. **2** (wave 1, translator.py прочитан). Статус: **SOURCE_CONFIRMED_ONLY**.
-- **PRACTICAL RUN**: NOT DONE — микропроект: Defs/Keyed/Patches → XLSX для японского, merge существующих JP-переводов. Не за чем: способность дублируется нашими export-форматами (PO/CSV/XLIFF).
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND**: заявляет патч-извлечение — по исходникам это чтение Patches в таблицу, без xpath-резолва (не competitor-находка).
-- **VERDICT**: **non-goal** (JP-XLSX-ниша, микро).
+- **IDENTITY**: Python (`translator.py` 180 строк + `gui.py`), MIT, SHA `7432f47d` (2026-08-18), 1★. Отчёт: `differential/TIERA_PYSMALL_PRACTICAL.md` §2.
+- **SOURCE REVIEW**: ev. **6** SAME_CORPUS_DIFFERENTIAL — ядро `extract_all()` исполнено на всех 4 модах (GUI-обёртка не запускалась, tqdm не влияет). Статус: **PRACTICALLY_RUN**.
+- **PRACTICAL RUN**: DONE — Defs/Keyed/Patches по модам: **0/0/0 · 7/75/0 · 0/593/0 · 0/0/0** (команда воспроизведения в отчёте лейна).
+- **SAME-CORPUS RUN**: DONE (Keyed-слой HugsLib, знаменатель export-po 76): **BOTH 75 · COMPETITOR_ONLY 0 · RIMLOC_ONLY 0 · SEMANTIC 7** — все 7 семантических это дефекты экспорта **RimLoc**, не конкурента (он хранит сырой текст).
+- **GAPS FOUND (RimLoc)**: очередное независимое подтверждение порчи msgid-разметки: `<b>The HugsLib mod</b>` → `bThe HugsLib mod/b`, ` > ` схлопнут (`Mod Options > All` → `Mod OptionsAll`), литеральный `\\n`; 7 ключей HugsLib.
+- **VERDICT**: wave-3 deep-dive завышал возможности, прогон всё исправил: `extract_patches()` — **заглушка**, возвращает `[]` (`translator.py:138-140`, «simplified»), патч-линии нет вопреки README; `export_to_xlsx()` **падает на живом прогоне** (`to_sheet` не существует в pandas 3.0.6 → AttributeError, затем пустая книга → IndexError) — «RimWaldo format XLSX» не производит файла; читает только корневые `mod/Defs`, `Languages/English/Keyed`, `Languages/Japanese` — версионные папки не резолвит (на VE 172 строки RimLoc мимо него), DefInjected-источники не читает вовсе. **INTENTIONAL_NON_GOAL подтверждён прогоном**; ценность строки — независимый голос за MUST_FIX msgid (третий лейн волны 6).
 
 ### 3.16 RimworldModTranslator — TokcDK
 
-- **IDENTITY**: C# WPF, GPL-3.0, 51 .cs, последний коммит 2025-04-27 (спит), 0★, README RU+EN.
-- **SOURCE REVIEW**: ev. **2** (wave 1: ModHelper.cs + дерево). Статус: **SOURCE_CONFIRMED_ONLY** (BLOCKED_PLATFORM вероятен, но попытки не было — честнее SOURCE_CONFIRMED_ONLY).
-- **PRACTICAL RUN**: NOT DONE — WPF-редактор таблицы переводов с автосейвом; не конвейер.
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND**: нет (редактор дублирует наш React-workspace LEVEL 5).
-- **VERDICT**: **non-goal**.
+- **IDENTITY**: C# WPF net8.0-windows (`UseWPF`, `csproj:3-10`), GPL-3.0, 51 .cs, SHA `7752a0d6` (2025-04-27, спит), README RU+EN. Отчёт: `differential/TOKCDK_PRACTICAL.md`.
+- **SOURCE REVIEW**: ev. **6** — компиляция всего WPF-проекта на macOS удалась (`EnableWindowsTargeting=true`, `csproj:6`; 0 ошибок / 61 warning, SDK 10.0.401 arm64); ядро изолировано в `Helpers/EditorHelper.cs` (1722 строки), WPF-типы только в DataGrid-методах (`:1277-1339`), которые headless не вызывает. Статус: **PRACTICALLY_RUN** (ядро); GUI-рантайм — **BLOCKED_PLATFORM** (WPF на macOS не стартует; компиляция ≠ запуск).
+- **PRACTICAL RUN**: DONE — reflection-харнесс (`/tmp/w6-tocdk/harness/`, net10.0, кастомный AssemblyLoadContext) поверх скомпилированной DLL: `GetTranslatableFolders` → `LoadDefKeyedStringsFromTheDir` → `ExtractStrings` → `CreateTranslationsTable`→`FillTranslationsData`→`WriteFiles` на всех 4 модах (обход GUI-инварианта «первая папка — заглушка `*`», `TranslationEditorViewModel.cs:368` + `EditorHelper.cs:735`). Команда: `DOTNET_ROLL_FORWARD=Major ./harness <корпус> <out> load|write`.
+- **SAME-CORPUS RUN**: DONE. Готовые переводы (DefInjected/Keyed-XML + Strings/*.txt, фильтр `XmlReaderBase.cs:19-24`): HugsLib **815==815, обе корзины пусты**; Anomaly 40==40 (+32 дубля v1.5); VE 592==592 (rim_only_ready 1); 317 — 0 (Languages нет). **Roundtrip load→write** (HugsLib): 26 файлов, ключи круговые (Keyed 47/47, DefInjected 3/3), порядок сохранён; отличия косметические (BOM, отступы, комментарии); XML пишется плоскими dot-тегами (`EditorHelper.cs:1007`). Defs-слой: 317 — BOTH 106 / C_ONLY 2 / **R_ONLY 53** (всё семейство titleShort — его case-bug); VE — BOTH 162 / **C_ONLY 75** (JobDef/WorkGiverDef label/verb/labelNoun/baseInspectLine) / R_ONLY 9. Единственная потеря на готовых: многострочный Keyed `VEF.HiringDesc` — построчный regex (`EditorHelper.cs:586`) теряет молча, RimLoc собирает полностью. JSON: `differential/w6-tocdk-diff.json`.
+- **GAPS FOUND (RimLoc)**: C_ONLY 75+2 — **dict-gap кандидаты** в `defs_fields.json` (49 типов): WorkGiverDef/JobDef `label`/`verb`/`labelNoun`/`baseInspectLine`, `structureLabel`, `stuffAdjective`, `adjective`, `summary`, `ideoName`, `pawnsPlural`. Словарное сравнение: THEIR-ONLY 26 плоских имён / OUR-ONLY 19 (наш typed-словарь структурно шире). Уроки-гейты (его дефекты, у нас покрыто прогоном): словарь в точном регистре RimWorld-XML (его `titleshort`/`titleshortFemale`, `EditorHelper.cs:97-99` → 53 потери), многострочные значения, ParentName/Abstract-резолв (его пропуск `Mote_*.label`, `Motes.xml:33-35`).
+- **VERDICT**: **non-goal как редактор** (таблица переводов с автосейвом дублирует наш React-workspace), но строка обогатилась прогоном: единственный конкурент, читающий **tar-архивы языков** (SharpCompress, `TarXmlReader`/`TarTxtReader`) — ROADMAP-источник готовых переводов (на корпусе tar нет — ветка не исполнена, честно); читает и **пишет** ModsConfig.xml, генерирует перевод-мод (`<mod>_Translated` + About.xml + LoadFolders.xml, `EditorHelper.cs:1086-1275`). Его дыры: IfModActive игнорирует (`1.5_1.6/Mods/Royalty` ушёл в папки безусловным), Patches не читает вовсе, дубли по версиям в одной таблице (VE ~1300 ключей против наших 764 уникальных), нотация `stages.0.label` против нашего `stages.li.label` (SEMANTIC схемы, содержимое одинаково).
 
 ### 3.17 rimworld-mod-llm-auto-translator — JalapenoLabs
 
@@ -235,23 +240,23 @@
 - **GAPS FOUND**: как инструмент — ничего; как маркер рынка — готовый маркетинговый нарратив «полная локализация с нуля за копейки», который стоит перехватить с честными цифрами.
 - **VERDICT**: **non-goal** как тул; ориентир по амбиции качества и маркетингу.
 
-### 3.20 RimTrans_PY — masakitenchi — NEW (discovery 2026-10-05)
+### 3.20 RimTrans_PY — masakitenchi
 
-- **IDENTITY**: masakitenchi/RimTrans_PY, Python (lxml + regex), **MIT** (LICENSE прочитан сегодня: «Copyright (c) 2023-24 Manifold Paradox»), создан 2024-03-18, последний push **2024-08-22** (спит ~2 года), 3★, китайский сегмент (README-zh_cn).
-- **SOURCE REVIEW**: ev. **2** — сегодня прочитаны: `src/Rimtrans_py/TranslationExtractor.py` и `src/Rimtrans_py/ModLoadFolder.py`. Ключевое: xpath-regex `Defs/<defType>[defName="X"]/<field>`; извлечение **полных дефов из PatchOperationAdd** через `anomaly_xpath` (`//*[@Class="PatchOperationAdd"]/xpath[text()="Defs"]/../value/*[not(@Abstract)]`) с фильтром абстрактных; теги label/labelNoun/description/jobString/labelShort; list-контейнеры stages/lifeStages/tools/degreeDatas; `ModLoadFolder.py` — dataclass Loadfolders с **IfActive/IfNotActive** и версиями 1.0–1.5; XmlInheritanceResolver.py. Статус: **SOURCE_CONFIRMED_ONLY**.
-- **PRACTICAL RUN**: NOT DONE (мёртв 2 года; не входил в wave 3). **Feasible** (чистый Python) — низкий приоритет.
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND**: независимое (третье после NicoriciN89 и Text Grabber) подтверждение, что патч-линия — канонический класс задачи, и что **IfModActive должен жить в нашем LoadFolders-слое** (у нас IfModActive = LEVEL 3, у них — в модели папок).
-- **VERDICT**: не конкурент (спит, GUI WIP), но дизайн-референс для MUST_FIX патч-слоя: «полные `<value>`-дефы из PatchOperationAdd с фильтром abstract» — та же семантика, что у TG/N89.
+- **IDENTITY**: masakitenchi/RimTrans_PY, Python (lxml + regex), **MIT** («Copyright (c) 2023-24 Manifold Paradox»), SHA `81cca257` (2024-08-22, спит ~2 года), 3★, китайский сегмент. Отчёт: `differential/TIERA_PYSMALL_PRACTICAL.md` §1.
+- **SOURCE REVIEW**: ev. **6** SAME_CORPUS_DIFFERENTIAL — ядро исполнено headless-драйвером `rtp_driver.py`, воспроизводящим GUI-метод `Patch_Extract_Tab.do_extract` (`main.py:275-355`) в дефолтном split-режиме (GUI tkinter недоступен: в python@3.14 нет `_tkinter`; прецедент Text Grabber-лейна). Статус: **PRACTICALLY_RUN**.
+- **PRACTICAL RUN**: DONE — Defs/патчи по модам: **51/26 · 7/0 · 196/0 (540 сырых по 7 версиям) · 0/0**. Live-проверка `ModLoadFolder.py` на живом LoadFolders.xml: v1.4/v1.5/v1.6 парсятся, `IfModActive="Ludeon.RimWorld.Royalty"` попадает в `Loadfolders.IfActive` (`ModLoadFolder.py:94-101`).
+- **SAME-CORPUS RUN**: DONE — фокус-дифф патч-линии на 3170653412 против нового learn-patches (линия 6465813): **1.5_1.6: RimLoc 54 vs RTP 26 — BOTH 26 / COMPETITOR_ONLY 0 / RIMLOC_ONLY 28 / SEMANTIC 0** (все 26 — `BackstoryDef.description`, значения идентичны посимвольно после NFC+пробелов); **1.4: RIMLOC_ONLY 66**. Его 26 ⊂ наших 54. JSON: `differential/TIERA_PYSMALL_DIFF.json`.
+- **GAPS FOUND (RimLoc)**: новых нет — **новый патч-слой RimLoc строго перекрывает конкурента** (wave-3 MUST_FIX «патч-слой пуст» закрыт; IfModActive в модели `modview.rs:20,70`, learn-patches берёт файлы условных папок — 4 из 66 на 1.4). Остаток — расхождение HEAD/эталон вне патч-слоя (§0, §4.4).
+- **VERDICT**: подтверждён и закрыт — wave-3 дизайн-референс «полные `<value>`-дефы из PatchOperationAdd с фильтром abstract» реализован в линии 6465813 с более широким словарём полей. Дефекты оригинала, найденные прогоном (не ревью): non-split `extract()` теряет всё, кроме последнего файла (`TranslationExtractor.py:272,275` — живое доказательство: 364 файла VE → 1 запись; GUI дефолтно split, поэтому пользователи не бьют); конкатенация дублей ключей `+=` (`:232-244`, латентная порча данных, на корпусе дублей не было); xpath-словарь только `label|description` (`:18-20`) и нет dotall у regex — `PatchOperationAdd` с xpath, разорванным переносами, не берётся (поэтому 0 на 1.4-патчах). **Классификация патч-слоя RimLoc: MUST_FIX_BEFORE_BETA → ВЫПОЛНЕНО.**
 
-### 3.21 rimworld-rtl-translation-tools — mtimoustafa — NEW (discovery 2026-10-05)
+### 3.21 rimworld-rtl-translation-tools — mtimoustafa
 
-- **IDENTITY**: Ruby, лицензии нет (файла LICENSE в дереве не видно; API license:null), создан 2019-01-26, последний push 2024-05-05, 3★. Скрипты `contextualize_arabic_letters.rb`, `reverse_rtl_text.rb`, `build_arabic.sh`.
-- **SOURCE REVIEW**: ev. **1** (дерево + имена скриптов; тела не читались). Статус: **DOC_ONLY**.
-- **PRACTICAL RUN**: NOT DONE (ниша узкая, без лицензии).
-- **SAME-CORPUS RUN**: NOT DONE.
-- **GAPS FOUND**: закрывает чужой пробел, не наш пробел extraction: пост-обработка RTL (контекстуализация арабских букв, реверс). У RimLoc Arabic/RTL = LEVEL 1 (locale metadata, не shaping) — при заходе в RTL нишу вернуться к этому классу задач.
-- **VERDICT**: **non-goal** сейчас; заметка в RTL-роадмап.
+- **IDENTITY**: Ruby (nokogiri ~> 1.16), лицензии нет (файла LICENSE нет; API license:null), SHA `962a1053` (2024-05-05), 3★. Скрипты `reverse_rtl_text.rb`, `contextualize_arabic_letters.rb`, `build_arabic.sh`. Отчёт: `differential/TIERA_PYSMALL_PRACTICAL.md` §3.
+- **SOURCE REVIEW**: ev. **4** INTEGRATION_TESTED — оба скрипта **исполнены** (ruby 2.6.10 системный + nokogiri 1.13.8; `.ruby-version`=3.2.4 не потребовался). Wave-3 DOC_ONLY снят. Статус: **PRACTICALLY_RUN** (CLI-скрипты — и есть их интерфейс).
+- **PRACTICAL RUN**: DONE — на родном TestFile.xml репо (15 узлов изменено) и на сконструированном LanguageData с реальными ключами RimLoc-патчей (`VengefulNomad67.title` арабский, baseDesc с `[PAWN_nameDef]` и `{0}`, ивритский title): реверс слов корректен, плейсхолдеры `{0}`/`[PAWN_possessive]` сохранены на местах (офсетный scan/sub/insert, `reverse_rtl_text.rb:29-44`), арабские буквы переведены в контекстные формы презентации, иврит реверсируется. Скрипт перезаписывает вход на месте — только в копиях лейна.
+- **SAME-CORPUS RUN**: **N/A по природе** — python-скан всех XML корпуса нашёл **0 файлов** с арабскими/ивритскими символами (U+0600–06FF, U+0590–05FF); инструмент к тому же не экстрактор, а **пост-процессор готовых переводов** (слот «публикация», не «извлечение») — корзины BOTH/RIMLOC_ONLY неприменимы.
+- **GAPS FOUND**: нет — с extraction-конвейером не пересекается.
+- **VERDICT**: **ROADMAP** — единственный в выборке инструмент с обработкой RTL: реверс + контекстуализация арабского/иврита как опциональный шаг экспорта (после build); защита плейсхолдеров по офсетам — референс реализации для будущего RTL-шага. Без лицензии код копировать нельзя — только дизайн-референс.
 
 ### 3.22 RimWorldTranslationTool — lenhare — NEW (discovery 2026-10-05)
 
@@ -279,31 +284,55 @@
 
 ---
 
-## 4. Кросс-матричный синтез: что делать RimLoc
+## 4. Кросс-матричный синтез: что делать RimLoc (после wave 6, 2026-10-06)
 
-### MUST_FIX_BEFORE_BETA (подтверждено ≥2 независимыми прогонами)
-1. **Патч-слой пуст.** На 3170653412 RimLoc извлекает из 25 патч-файлов **ноль** (learn-patches=0; scan --with-patches Δ=0 — w3-py, воспроизведено эталоном w3-cs), при том что NicoriciN89 достаёт 100 refs (54 игроку-видимых), Text Grabber — 163 полных дефа, RimTrans_PY демонстрирует ту же семантику. Брать: полные значения PatchOperationAdd/Replace/Insert + **обязательный полевой blacklist** (bodyType*, spawnCategories, requiredWorkTags, backstoryFilters* — урок 46% шума N89).
-2. **Разметка в msgid.** `&lt;b&gt;{0}&lt;/b&gt;…` → RimLoc отдаёт `b{0}/b…` (4 ключа HugsLib). Найдено независимо тремя лейнами: tg (wave 2), RimTranslate (w3-py), RWAT+RimTrans-zh (w3-cs, где оба конкурента возвращают корректный текст). Ломает PO-раундтрип и доверие к экспорту.
+### ФИНАЛЬНЫЕ ВЕРДИКТЫ по MUST_FIX (закрыты в main, 2026-10-06, wave 7)
+
+| § | MUST_FIX | Статус | Фикс |
+|---|---|---|---|
+| 4.1 | msgid-разметка + тримминг | **FIXED** | entity-фикс Keyed-ридера (829273d, PR #63-линия): GeneralRef декодируется, trim на значение; w6-лейны гоняли до-фиксные бинари (tgbench 72259e0b / stale-сборки) — на текущем main HugsLib msgid `<b>…</b>` верифицирован export-po Gate H-агентом и рераном спек |
+| 4.2 | Слияние версионных папок дефолтом (stale-значения) | **FIXED** | PR #78: scan classic-модов через effective view (новейшая версия побеждает per-key, --game-version приоритетен); дефолт более не теряет корневой Keyed (VE 143→736 записей, 0 stale, `weapon range factor` из 1.6 верифицирован) |
+| 4.3 | IfModActive при извлечении | **HIGH_VALUE остаётся** (over-включение, не потеря; референс RimTransAI GameLoadOrderPlanner) |
+| 4.4 | «Регрессия 6465813 vs 72259e0b» | **ПЕРЕКЛАССИФИЦИРОВАНО**: это не регрессия мержей — латентный дефект export-po (gv-сужение без Gate H), вскрытый осознанным фиксом резолвера f3bf643. **FIXED** PR #77 (modview effective_view, регресс-тест export_po_game_version_loadfolders_keeps_root_keyed; A/B 1→76 msgid). Бисект-«зелёные» f3bf643/ca2cedc — артефакт stale-fingerprint таргета (урок §91) |
+| 4.5 | Патч-слой | **CLOSED** (54/54, RimTrans_PY 26 ⊂ 54 1:1 — подтверждено волной 5) |
+
+### Урок верификации (§91)
+Бисект-прогоны в один CARGO_TARGET_DIR при последовательных чекаутах дают stale-бинарники
+(cargo не всегда инвалидирует по mtime) — «зелёный» родитель красного коммита мог просто
+не пересобраться. Свежий таргет на коммит; контроль self-report версии бинаря.
+
+### MUST_FIX_BEFORE_BETA
+1. **Разметка и тримминг в msgid — единственный живой MUST_FIX extraction-ядра.** `<b>X</b>` → `bX/b`; standalone `>` выброшен (`Mod Options > All` → `Mod OptionsAll`); хвостовой пробел триммится (`Search: ` → `Search:` — в RimWorld значим для конкатенации). Подтверждено теперь **шестью лейнами / восемью инструментами**: tg (w2), RimTranslate (w3-py), RWAT+RimTrans-zh (w3-cs), Remis + Grabber + RimTransAI (w6-grabber-rtai), rimwt (w6-pysmall) — во всех случаях конкурент хранит сырой текст. Ломает PO-раундтрип и доверие к экспорту.
+2. **Слияние версионных папок дефолтом (w6-remis).** На plain versioned-модах (VE) эталон 72259e0b сливает 1.0–1.6: 81 юнит из файлов, которых в 1.6 нет; stale-значения вместо актуальных (`verb range factor` из 1.3/1.4 против `weapon range factor` 1.6 — по диску прав конкурент); `--game-version 1.3`, `--game-version 1.6`, auto и `--include-all-versions` дают побайтово одинаковый вывод. Родственно tg-находке w2 (union first-file-wins берёт старейшую версию). Классификация лейна: MUST_FIX.
+3. **IfModActive при извлечении игнорируется (w6-remis; референс решения — RimTransAI).** DLC-контент включается безусловно (Royalty-папка 3170653412: +36 строк); RimTransAI корректно не активирует условные папки без ActivePackageIds. Классификация лейна: HIGH_VALUE (over-включение, не потеря), с п.2 — одна версия-семантика.
+4. **Регрессия линии `6465813` vs эталона `72259e0b` вне патч-слоя — верифицировано реконсиляцией 2026-10-06.** scan VE 764→143 (сборка 6465813 приписывает записи `1.6/Languages/...`, на диске существуют 3 из 143; эталон — реальные `Languages/...`, 593 из 764); export-po VE 765→141, HugsLib 76→1 msgid (прогон обоих бинарей реконсиляцией; py-small дополнительно: 163→3 на 317, 41→40 на 324 — не перепрогонялось). Кандидаты в диапазоне: `31bed4f` (патч-слой), `db3c346` (`has_path_marker` заменил сепараторные проверки в scan-коллекторах). До фикса «scan идентичен» не действует; → RimLoc-лейн (bisect уже идёт в ворктree).
+5. **Патч-слой — ЗАКРЫТ в линии `6465813` (был MUST_FIX w2/w3).** learn-patches даёт **54/54 игроку-видимых** на 3170653412@1.5_1.6 (состав 26/11/6/5/4/2 == набор N89, 51 Replace + 3 Add, шум 0 — верифицировано реконсиляцией), +66 на 1.4, RimTrans_PY 26 ⊂ 54 значения 1:1, SEMANTIC 0. Остатки: выкатить семантику патчей в основной scan-конвейер (на эталоне `--with-patches` = 0 — w6-remis) и починить п.4.
 
 ### HIGH_VALUE_AFTER_BETA
-3. **Defs вне version-папок и дыры словаря**: дефолтный промах KeyBinding-Defs HugsLib (чинится `--defs-dir`, проверено 61 записью — w3-cs); `all_fields`/DEFAULT_FIELDS построены, но не используются (`crates/rimloc-parsers-xml/src/lib.rs:1501-1505` — RimLangKit-лейн); словарь добить данными из TG-списка (~90 строк: WorkGiverDef gerund/verb, TrainableDef, MentalStateDef beginLetter/recoveryMessage, StatDef formatString…) и MTT-списка 38 полей.
-4. **Мост learn-defs → export-po**: KeyBindingDef.label (+7 HugsLib), HediffDef.labelNoun (+2 VE) доходят до PO у конкурентов, у нас — только отчёт (w3-py).
-5. **Индексированные стадии** `stages.0/1/2.label` вместо схлопнутого `stages.li.label` (tg: 19 строк на VE).
-6. **Фильтр мусор-кандидатов**: `'-1'`, `'{0}: {1}'` и RGB-цвета в union/fuzzy-выдаче (6 + ~24 записей; RWAT и laskinss27 показывают фильтры — w3-cs/w3-py).
-7. **Баги RimLoc**: `is_version_directory` считает числовой workshop-id версией (`version.rs:8-30`, probe-подтверждено); first-file-wins в union-режиме берёт текст старейшей версии вместо актуальной (1.4 против 1.6, tg).
+6. **Defs-словарь в основном экспортном потоке / мост learn-defs→export-po**: KeyBindingDef.label ×7 HugsLib берут в основной конвейер четверо конкурентов w6 (RimTrans_PY, rimwt, RimTransAI, Grabber), у RimLoc — только learn-defs; REMIS_ONLY 153 на VE (gerund/verb WorkGiverDef 22, rulesStrings-индексы ~75, stages/gizmo ~56) — дефолт уже, добор флагами `--defs-field/--defs-dict`.
+7. **Dict-gap словаря по данным корпуса**: TokcDK C_ONLY 75 на VE (JobDef/WorkGiverDef `label`/`verb`/`labelNoun`/`baseInspectLine`), Grabber C_ONLY 62 на VE 1.6 (gerund/verb/inspectString), THEIR-ONLY 26 имён TokcDK — сверить с `defs_fields.json` (49 типов) и дозаполнить обоснованно.
+8. **Индексированные стадии/списки**: `stages.0/1/2.label` вместо схлопнутого `stages.li.label` (tg w2: 19 строк на VE; RimTransAI не извлекает подписи стадий вовсе — наш learn-defs отдаёт), rulesStrings-индексы (remis w6: ~75).
+9. **IfModActive-резолвка по списку активных модов** — референс RimTransAI GameLoadOrderPlanner (образцовый среди конкурентов) и Remis `active_mods`.
+10. **ParentName/Name-резолв в learn-defs** (Grabber имеет; в основном извлечении RimLoc наследование есть — TokcDK Mote_* подтвердил).
+11. **Пофайловый атомарный чекпойнт перевода** (Remis: schema v3, identity+config_fingerprint+source_snapshot_hash, resume с проверкой совместимости) — практически подтверждён w6; нашей ProjectSession-модели в таком виде нет.
+12. **Фильтр мусор-кандидатов**: `'-1'`, `'{0}: {1}'`, RGB-цвета в union/fuzzy-выдаче (w3; остаётся).
 
 ### ROADMAP (не бета)
-8. Workflow сопровождения языкового пакета — check/stale/import (Translation Forge).
-9. TM-транзакционность: multi-target snapshot-журнал, ConcurrentPaths-детекция, recovery-сессия (RWAT `FileTransaction`/`FileSnapshotJournal`).
-10. MT-роутер + model arena + чекпойнты проекта (Remis) — рамка суперсета; слот «оффлайн-провайдер» (Argos/Ollama) подтверждён N89.
-11. Слоистый глоссарий Mod > RimWorld > General с запрещёнными вариантами (MTT).
-12. Маркетинговый нарратив «полная локализация за копейки» — перехватить с честными цифрами (AutonomoAI: $8.86 / 125k слов).
+13. **Reflection-extraction из C#-сборок** (RimTransAI: ReflectionField 712 на VE, +192 типа из модовых DLL — единственный структурный дифференциатор волны; закрывает класс «полей, которых нет в словаре»).
+14. **Glossary-health score + advisory AI** (Remis: детерминированный score/100 + suggestions-only AI, никогда не мутирует данные).
+15. **RTL-публикация** (rtl-tools): реверс + контекстуализация арабского/иврита шагом экспорта; защита плейсхолдеров по офсетам — референс.
+16. **Tar-архивы языков как источник готовых переводов** (TokcDK, единственный; на корпусе ветка не исполнена).
+17. Workflow сопровождения языкового пакета — check/stale/import (Translation Forge, w3).
+18. TM-транзакционность: multi-target snapshot-журнал, ConcurrentPaths-детекция, recovery-сессия (RWAT w3).
+19. MT-роутер + model arena + оффлайн-провайдер (Remis w3/w6, N89 w3) — рамка суперсета PROVIDER-слоя.
+20. Слоистый глоссарий Mod > RimWorld > General с запрещёнными вариантами (MTT w3).
+21. Маркетинговый нарратив «полная локализация за копейки» — перехватить с честными цифрами (AutonomoAI w3: $8.86 / 125k слов).
 
 ### INTENTIONAL_NON_GOAL
-CSV/Sheets-конвейер (laskinss27), спящий PO-скрипт как конвейер (RimTranslate), WPF/Avalonia-редакторы таблиц (TokcDK), JP-XLSX (etejasdgjjjj532), DeepL-скрипты (kelvinauta, lenhare), LLM-промпт-путевание (JalapenoLabs), маркетинг-репо (AutonomoAI), rwmt, корейская ниша RWAT/RMK, EN→PL-ниша MTT, морфология через внешний платный сервис (RimLangKit/Morpher).
+CSV/Sheets-конвейер (laskinss27), спящий PO-скрипт как конвейер (RimTranslate), WPF/Avalonia-редакторы таблиц (TokcDK), JP-XLSX (etejasdgjjjj532 — подтверждено прогоном: заглушка патчей, сломанный XLSX), DeepL-скрипты (kelvinauta, lenhare), LLM-промпт-путевание (JalapenoLabs), маркетинг-репо (AutonomoAI), rwmt, корейская ниша RWAT/RMK, EN→PL-ниша MTT, морфология через внешний платный сервис (RimLangKit/Morpher) и через pymorphy3 (Grabber — у RimLoc `morph`/pymorphy2), скан всех версий в дефолте (Grabber/RimTransAI/Remis тащат все версии; `--include-all-versions` есть флагом), зашитый каталог полей без расширения пользователем (Remis — наши словари гибче).
 
-### RimLoc уже сильнее (подтверждено прогонами)
-CLI/JSON/schema_version-детерминизм · LoadFolders+IfModActive effective-view · все языки/версии флагами · существующий English-DefInjected как источник · ParentName-наследование · отсутствие фабрикаций и substring-FP · PO/XLIFF для CAT · Rust-кроссплатформенность · Runtime Bridge (единственный IN_GAME_PROVEN=7 в выборке).
+### RimLoc уже сильнее (после волны 6)
+CLI/JSON/schema_version-детерминизм · словарь полей шире зашитых каталогов (Remis теряет `title*`×119 + `reportString`/`deathMessage`×67 на двух модах) · существующий English-DefInjected как источник (+171 на VE мимо Grabber и RimTransAI) · ParentName-наследование в извлечении · scan без установленной игры (RimTransAI без Assembly-CSharp.dll не сканирует ничего) · дефолт «новейшая версия» на LoadFolders-ветках (но НЕ на plain versioned-модах — MUST_FIX 2) · отсутствие фабрикаций и substring-FP · PO/XLIFF для CAT · персистентная TM с fuzzy (против одномодального auto-reuse Remis) · Rust-кроссплатформенность · Runtime Bridge (единственный IN_GAME_PROVEN=7 в выборке). Патч-слой в линии 6465813 закрыт (MUST_FIX 5); актуальный баланс блокирует регрессия 6465813/эталон (MUST_FIX 4).
 
 ---
 
@@ -317,19 +346,24 @@ CLI/JSON/schema_version-детерминизм · LoadFolders+IfModActive effect
 
 ---
 
-## 6. Ограничения реконсиляции (честные)
+## 6. Ограничения реконсиляции (честные, после wave 6)
 
-1. MT-стадии нигде не прогонялись: их нет в forge/RimTranslate/laskinss27 (ручной шаг пользователя); Argos (N89) — вне объёма ask; DeepL/Google/OpenAI — BLOCKED_DEPENDENCY по ограничению №3; LibreTranslate-сервер не поднимался.
-2. Same-corpus NOT DONE для 7 feasible-тулов (Remis, Grabber GUI, RimTransAI, RimTrans_PY, etejasdgjjjj532, TokcDK, rtl-tools) — из-за границ wave 3, не из-за блокировок; это главный остаток очереди.
-3. GUI-продукты (WinForms/Avalonia/WPF/PySide) не запускались штатно нигде — везде ядро через харнесс/драйвер или статический разбор; оценки покрытия относятся к ядрам.
+1. MT-стадии нигде не прогонялись: их нет в forge/RimTranslate/laskinss27 (ручной шаг пользователя); Argos (N89) — вне объёма ask; DeepL/Google/OpenAI — BLOCKED_DEPENDENCY (ограничение №3); в wave 6 — deep-translator/googletrans Grabber и OpenAI/LLamaSharp RimTransAI; LibreTranslate-сервер не поднимался.
+2. **Same-corpus NOT DONE сжался с 7 feasible до нуля**: все семь остатка прогнаны wave 6 (шесть — полные same-corpus диффы; rtl-tools — прогон скриптов, same-corpus N/A по природе: 0 RTL-строк в корпусе, проверено сканом; инструмент — пост-процессор). Остаток NOT DONE = 9 строк по причинам платформы/зависимостей/отсутствия материи, не по границам волн.
+3. GUI-продукты штатно не запускались нигде: TokcDK WPF — BLOCKED_PLATFORM (компиляция OK, запуск нет); RimTransAI Avalonia — сборка OK (0 ошибок), запуск GUI не проверен; Grabber GUI (Tk) и Remis (PySide) — не запускались без платформенной причины (честное «не прогонялся»); RimTrans_PY — tkinter отсутствует в python@3.14. Все оценки покрытия — по ядрам.
 4. Полнота 7 (IN_GAME_PROVEN) никому из конкурентов не присвоена и присвоена быть не может в этом стенде; Runtime Bridge RimLoc остаётся единственным уровнем 7 в сравнении.
-5. Диффы считались на нормализованных (ключ, значение) с NFC+схлопыванием пробелов; RimLoc-сторона фильтровалась до English-подмножества в w3-cs и до export-po-знаменателя в w3-py — знаменатели в строках указаны.
-6. Реконсиляция не запускала новых прогонов конкурентов — валидировала реквизит эталона (SHA, scan-идентичность, наличие бинаря) и свела уже выполненные прогоны; все числа цитируются из wave-отчётов с путями к JSON.
+5. Диффы считались на нормализованных (ключ, значение) с NFC+схлопыванием пробелов; знаменатели (scan / export-po / learn-defs / learn-patches) указаны в строках. Замечание w6-grabber-rtai: описание корпуса волны 3 («Languages/English/DefInjected на корне» у 3170653412) расходилось с фактическим состоянием (Languages нет, Defs виртуализируются в DefInjected-пути) — числа совпали, исправлено описание, не корпус.
+6. Реконсиляция wave 6 не перезапускала конкурентные прогоны лейнов — свела их отчёты, скопировала артефакты и **сама исполнила только сверку эталон/HEAD** (§0): scan/export-po на VE и HugsLib + learn-patches на 317 (бинари tgbench и w6-pysmall). Числа py-small по 317 (163→3) и 324 (41→40) реконсилятором не перепрогонялись.
+7. Влияние референсной Assembly-CSharp.dll чужой сборки (RimTrans-Reflection) на состав core-типов RimTransAI не оценивалось; версия DLL не сверялась.
+8. Дефект `+=`-конкатенации RimTrans_PY заявлен по коду (`TranslationExtractor.py:232-244`) — на корпусе дублей внутри файла не было; non-split overwrite-баг воспроизведён живым вызовом.
+9. Во время реконсиляции в ворктtree шёл чужой bisect (stash «wip-during-bisect», reflog 19:15): первый заход правок матрицы был стёрт внешним `git checkout` main и восстановлен реконсилятором; в репо ничего не закоммичено.
 
 ## 7. Артефакты
 
 - Wave 1: `COMPETITOR_DEEP_DIVE_2026-10.md`, `competitors.json` (ev.0-2, source-инспекция).
 - Wave 2: `TEXT_GRABBER_VS_RIMLOC.md` (ev.5), `RIMLANGKIT_VS_RIMLOC.md` (ev.6), `differential/tgdiff-*.json`, `differential/text-grabber-diff-summary.json`, `differential/rlk-diff-*.json`.
 - Wave 3 (скопировано в `differential/`): `TIERA_PYTHON_PRACTICAL.md` + `tiera-python-diff.json`; `TIERA_CS_PRACTICAL.md` + `diff-rwat.json` + `diff-rimtrans-zh.json`.
+- **Wave 6 (скопировано в `differential/`, 2026-10-06)**: `REMIS_PRACTICAL_2026-10-06.md` + `remis-diff-<id>.json` ×4; `TIERA_GRABBER_RTAI_PRACTICAL.md` + `tiera-grabber-rtai-diff.json`; `TIERA_PYSMALL_PRACTICAL.md` + `TIERA_PYSMALL_DIFF.json`; `TOKCDK_PRACTICAL.md` + `w6-tocdk-diff.json`. Рабочие данные лейнов: `/tmp/w6-{remis,grabber-rtai,pysmall,tocdk}/`.
+- **Реконсиляция wave 6**: сверка эталон/HEAD исполнена в `/tmp/w6-reconcile/` (`scan-ve-ref.json`/`scan-ve-head.json`, `ve-ref.po`/`ve-head.po`, `hugs-ref.po`/`hugs-head.po`, `lp-head.json`) — команды и вывод в §0.
 - Мастер-лист: `COMPETITOR_MASTER_LIST_2026-10.md` (секция «Реконсиляция 2026-10-05»).
-- Эталон: `/Volumes/Portable-SSD/caches/targets/rimloc-tgbench/release/rimloc-cli` (da2fc77-линия; scan-путь идентичен HEAD `70fa342`).
+- Эталон: `/Volumes/Portable-SSD/caches/targets/rimloc-tgbench/release/rimloc-cli` (линия 72259e0b; **для линии `6465813` scan/export-po НЕ идентичны — см. §0/§4.4**); сборка 6465813: `/Volumes/Portable-SSD/caches/targets/w6-pysmall/release/rimloc-cli` (текущий main `bb402cb` — docs-only поверх, crates идентичны).

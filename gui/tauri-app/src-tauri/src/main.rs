@@ -2334,6 +2334,8 @@ fn build_mod(
         let root = PathBuf::from(from_root);
         let versions = request.from_game_versions.as_deref();
         if request.dry_run {
+            // GUI contract unchanged: skip_empty stays a CLI-only flag
+            // (wave-5 MUST_FIX №2) — the GUI keeps the previous output.
             let (files, total) = rimloc_services::build_from_root(
                 &root,
                 &out,
@@ -2341,10 +2343,12 @@ fn build_mod(
                 versions,
                 false,
                 request.dedupe,
+                false,
             )?;
             files_count = files.len();
             total_keys = total;
         } else {
+            // GUI contract unchanged: skip_empty stays a CLI-only flag.
             let (files, total) = rimloc_services::build_from_root_with_progress(
                 &root,
                 &out,
@@ -2352,6 +2356,7 @@ fn build_mod(
                 versions,
                 true,
                 request.dedupe,
+                false,
                 |cur, total, path| {
                     emit_progress(
                         &window,
@@ -2368,6 +2373,7 @@ fn build_mod(
         }
     } else if request.dry_run {
         let po = PathBuf::from(&request.po_path);
+        // GUI contract unchanged: skip_empty stays a CLI-only flag.
         let plan = rimloc_services::build_from_po_dry_run(
             &po,
             &out,
@@ -2376,11 +2382,13 @@ fn build_mod(
             &request.package_id,
             &request.rw_version,
             request.dedupe,
+            false,
         )?;
         files_count = plan.files.len();
         total_keys = plan.total_keys;
     } else {
         let po = PathBuf::from(&request.po_path);
+        // GUI contract unchanged: skip_empty stays a CLI-only flag.
         build_from_po_with_progress(
             &po,
             &out,
@@ -2389,6 +2397,7 @@ fn build_mod(
             &request.package_id,
             &request.rw_version,
             request.dedupe,
+            false,
             |cur, total, path| {
                 files_count = total;
                 emit_progress(

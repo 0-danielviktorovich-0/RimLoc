@@ -35,10 +35,40 @@ pub fn run_export_po(
     let cfg = rimloc_config::load_config().unwrap_or_default();
 
     let effective_version = game_version.or(cfg.game_version.clone());
-    let (scan_root, selected_version) = if include_all_versions {
-        (root.clone(), None)
+    // Gate H parity (2026-10-06): a LoadFolders mod is exported as its
+    // EFFECTIVE view — Keyed comes from the version's languages dirs (mod
+    // root plus the content folders the game would actually read), never
+    // from the single narrowed version folder. `resolve_game_version_root`
+    // returns `vN`, which has no `Languages/` at all when Keyed lives at the
+    // root `<li>/</li>` — the PO silently collapsed to a bare header
+    // (HugsLib 818773962: 76 msgid → 1). Defs context stays on the mod root
+    // (documented offline-superset policy, same as the scan command).
+    let loadfolders_mod = !include_all_versions && root.join("LoadFolders.xml").is_file();
+    let (scan_root, selected_version, keyed_units) = if loadfolders_mod {
+        let view = rimloc_services::modview::effective_view(&root, effective_version.as_deref())?;
+        let mut units: Vec<rimloc_core::TransUnit> = Vec::new();
+        let mut seen: std::collections::HashSet<(String, String)> =
+            std::collections::HashSet::new();
+        // View order (root first, then version folders) decides ownership —
+        // same first-registration rule as scan_units_effective_view.
+        for lang_dir in view.languages_dirs() {
+            if let Ok(mut scoped) = rimloc_parsers_xml::scan_keyed_xml(&lang_dir) {
+                for u in scoped.drain(..) {
+                    let k = (u.path.to_string_lossy().to_string(), u.key.clone());
+                    if seen.insert(k) {
+                        units.push(u);
+                    }
+                }
+            }
+        }
+        (root.clone(), view.version.clone(), Some(units))
     } else {
-        resolve_game_version_root(&root, effective_version.as_deref())?
+        let (scan_root, selected_version) = if include_all_versions {
+            (root.clone(), None)
+        } else {
+            resolve_game_version_root(&root, effective_version.as_deref())?
+        };
+        (scan_root, selected_version, None)
     };
     if let Some(ver) = selected_version.as_deref() {
         tracing::info!(event = "export_version_resolved", version = ver, path = %scan_root.display());
@@ -58,18 +88,30 @@ pub fn run_export_po(
     let auto = rimloc_services::autodiscover_defs_context(&scan_root)?;
 
     let effective_source_lang = source_lang.clone().or(cfg.source_lang.clone());
-    let stats = rimloc_services::export_po_with_tm(
-        &scan_root,
-        &out_po,
-        lang.as_deref(),
-        effective_source_lang.as_deref(),
-        source_lang_dir.as_deref(),
-        if tm_roots.is_empty() {
-            None
-        } else {
-            Some(&tm_roots)
-        },
-    )?;
+    let tm_arg: Option<&[std::path::PathBuf]> = if tm_roots.is_empty() {
+        None
+    } else {
+        Some(&tm_roots)
+    };
+    let stats = match keyed_units {
+        Some(units) => rimloc_services::export_po_from_units(
+            &scan_root,
+            &out_po,
+            lang.as_deref(),
+            effective_source_lang.as_deref(),
+            source_lang_dir.as_deref(),
+            tm_arg,
+            units,
+        )?,
+        None => rimloc_services::export_po_with_tm(
+            &scan_root,
+            &out_po,
+            lang.as_deref(),
+            effective_source_lang.as_deref(),
+            source_lang_dir.as_deref(),
+            tm_arg,
+        )?,
+    };
     ui_ok!("export-po-saved", path = out_po.display().to_string());
     if !tm_roots.is_empty() {
         let pct: u32 = if stats.total == 0 {

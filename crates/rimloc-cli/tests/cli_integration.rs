@@ -250,6 +250,378 @@ fn export_po_preserves_entity_markup_in_msgid() {
 }
 
 #[test]
+fn export_po_game_version_loadfolders_keeps_root_keyed() {
+    // Regression (HugsLib 818773962, 2026-10-06): `export-po --game-version`
+    // narrowed a LoadFolders mod to its vN folder via
+    // resolve_game_version_root; Keyed lives at the mod root
+    // (LoadFolders `<li>/</li>`), the version folder carries no `Languages/`
+    // at all, so the PO silently collapsed to a bare header (76 msgid → 1).
+    // The export must follow the EFFECTIVE view (root + version content
+    // folders) — same rule as the scan command (Gate H).
+    let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
+    fs::write(
+        tmp.path().join("LoadFolders.xml"),
+        r#"<loadFolders>
+	<v1.6>
+		<li>/</li>
+		<li>v1.6</li>
+	</v1.6>
+</loadFolders>
+"#,
+    )
+    .unwrap();
+    let keyed = tmp.path().join("Languages").join("English").join("Keyed");
+    fs::create_dir_all(&keyed).unwrap();
+    fs::write(
+        keyed.join("NewKeys.xml"),
+        r#"<LanguageData>
+	<RootKey1>значение корневого ключа</RootKey1>
+	<RootKey2>&lt;b&gt;разметка&lt;/b&gt; работает</RootKey2>
+	<RootKey3>третий ключ</RootKey3>
+</LanguageData>
+"#,
+    )
+    .unwrap();
+    // Version folder with NO Languages — the exact HugsLib shape (DLL/Defs
+    // bump only). Without the fix the narrowed scan sees nothing here.
+    fs::create_dir_all(tmp.path().join("v1.6")).unwrap();
+    let out_po = tmp.path().join("out.po");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["export-po", "--root"])
+        .arg(tmp.path())
+        .args(["--out-po"])
+        .arg(&out_po)
+        .args(["--game-version", "1.6"]);
+    cmd.assert().success();
+
+    let po = fs::read_to_string(&out_po).unwrap();
+    for marker in [
+        "значение корневого ключа",
+        "msgid \"<b>разметка</b> работает\"",
+        "третий ключ",
+    ] {
+        assert!(
+            po.contains(marker),
+            "root Keyed entry `{marker}` missing from:\n{po}"
+        );
+    }
+    let msgid_count = po
+        .lines()
+        .filter(|l| l.starts_with("msgid \"") && !l.starts_with("msgid \"\""))
+        .count();
+    assert!(
+        msgid_count >= 3,
+        "expected ≥3 msgid from the root Keyed file, got {msgid_count}:\n{po}"
+    );
+}
+
+#[test]
+fn scan_plain_version_dirs_pick_newest_version_per_key() {
+    // Wave-5 MUST_FIX (VE Framework 2023507013): a mod with NATIVE version
+    // folders (1.0–1.6, no LoadFolders.xml) must resolve every key to its
+    // NEWEST defining version. The old whole-root union let a lexicographic
+    // path accident (`Stats.xml` sorts after `Stats_Pawns.xml`) surface the
+    // stale 1.3 value `verb range factor` where the disk ships 1.6
+    // `weapon range factor` — and the default re-root scan silently lost the
+    // root Keyed files the game always loads (GAME_SOURCE_FINDINGS §1.3).
+    let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
+    let root = tmp.path();
+    // Shared identity, different values per version (the StatDef case).
+    let defs_16 = root.join("1.6/Defs");
+    fs::create_dir_all(&defs_16).unwrap();
+    fs::write(
+        defs_16.join("RangeDefs.xml"),
+        r#"<Defs>
+	<StatDef>
+		<defName>Wave5VerbRange</defName>
+		<label>weapon range factor</label>
+	</StatDef>
+</Defs>
+"#,
+    )
+    .unwrap();
+    let defs_14 = root.join("1.4/Defs");
+    fs::create_dir_all(&defs_14).unwrap();
+    fs::write(
+        defs_14.join("RangeDefs.xml"),
+        r#"<Defs>
+	<StatDef>
+		<defName>Wave5VerbRange</defName>
+		<label>verb range factor</label>
+	</StatDef>
+</Defs>
+"#,
+    )
+    .unwrap();
+    // A key only the OLD version defines: union coverage must keep it,
+    // the effective single-version view must not invent it.
+    let defs_13 = root.join("1.3/Defs");
+    fs::create_dir_all(&defs_13).unwrap();
+    fs::write(
+        defs_13.join("Legacy.xml"),
+        r#"<Defs>
+	<StatDef>
+		<defName>Wave5LegacyOnly</defName>
+		<label>только в 1.3</label>
+	</StatDef>
+</Defs>
+"#,
+    )
+    .unwrap();
+    // Root Keyed: the game loads the root ALWAYS (§1.3) — the default scan
+    // must not lose it to re-rooting.
+    let keyed = root.join("Languages/English/Keyed");
+    fs::create_dir_all(&keyed).unwrap();
+    fs::write(
+        keyed.join("Root.xml"),
+        r#"<LanguageData>
+	<Wave5RootKey>корневой ключ</Wave5RootKey>
+</LanguageData>
+"#,
+    )
+    .unwrap();
+
+    // Default scan = effective view of the newest version: 1.6 value, root
+    // Keyed present, no 1.4 value, no 1.3-only key.
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "scan", "--root"])
+        .arg(root)
+        .args(["--format", "json"]);
+    let out =
+        String::from_utf8_lossy(cmd.assert().success().get_output().stdout.as_ref()).to_string();
+    assert!(
+        out.contains("weapon range factor"),
+        "auto scan must take the 1.6 value:\n{out}"
+    );
+    assert!(
+        out.contains("корневой ключ"),
+        "root Keyed must be scanned with the version folder (game loads both):\n{out}"
+    );
+    assert!(
+        !out.contains("verb range factor"),
+        "stale 1.4 value must not leak into the 1.6 view:\n{out}"
+    );
+    assert!(
+        !out.contains("только в 1.3"),
+        "the single-version view must not union older folders:\n{out}"
+    );
+
+    // --game-version 1.4 → the 1.4 value is the requested-version priority.
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "scan", "--root"]).arg(root).args([
+        "--format",
+        "json",
+        "--game-version",
+        "1.4",
+    ]);
+    let out =
+        String::from_utf8_lossy(cmd.assert().success().get_output().stdout.as_ref()).to_string();
+    assert!(
+        out.contains("verb range factor"),
+        "--game-version 1.4 must take the 1.4 value:\n{out}"
+    );
+    assert!(
+        !out.contains("weapon range factor"),
+        "a 1.4 request must not see 1.6 content:\n{out}"
+    );
+
+    // --include-all-versions keeps the union COVERAGE but every shared key
+    // resolves to its newest defining version (the MUST_FIX semantics).
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "scan", "--root"]).arg(root).args([
+        "--format",
+        "json",
+        "--include-all-versions",
+    ]);
+    let out =
+        String::from_utf8_lossy(cmd.assert().success().get_output().stdout.as_ref()).to_string();
+    assert!(
+        out.contains("weapon range factor"),
+        "union must resolve the shared key to the newest (1.6) value:\n{out}"
+    );
+    assert!(
+        out.contains("только в 1.3"),
+        "union coverage must keep the 1.3-only key:\n{out}"
+    );
+    assert!(
+        out.contains("корневой ключ"),
+        "union must keep root Keyed:\n{out}"
+    );
+    assert!(
+        !out.contains("verb range factor"),
+        "the stale 1.4 value must never shadow the 1.6 value (wave-5 MUST_FIX):\n{out}"
+    );
+
+    // Version validation follows the game fallback (§1.3, same as
+    // LoadFolders): a request ABOVE every folder resolves DOWN with a
+    // warning (9.9 → 1.6), a request BELOW everything is a loud refusal.
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "scan", "--root"]).arg(root).args([
+        "--format",
+        "json",
+        "--game-version",
+        "9.9",
+    ]);
+    let out =
+        String::from_utf8_lossy(cmd.assert().success().get_output().stdout.as_ref()).to_string();
+    assert!(
+        out.contains("weapon range factor"),
+        "a above-everything request falls back to the newest folder:\n{out}"
+    );
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "scan", "--root"]).arg(root).args([
+        "--format",
+        "json",
+        "--game-version",
+        "1.0",
+    ]);
+    cmd.assert()
+        .failure()
+        .stderr(predicates::str::contains("not found under"));
+}
+
+#[test]
+fn build_mod_from_root_newest_version_wins_per_key() {
+    // Wave-5 MUST_FIX parity for build: the same key in 1.4 and 1.6
+    // Languages trees must not be written twice with a scan-order-dependent
+    // winner — the newest version owns the key.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src = tmp.path();
+    let write = |rel: &str, body: &str| {
+        let p = src.join(rel);
+        fs::create_dir_all(p.parent().unwrap()).unwrap();
+        fs::write(p, body).unwrap();
+    };
+    write(
+        "1.4/Languages/Russian/Keyed/Robots.xml",
+        "<LanguageData><Wave5Bot>старый робот</Wave5Bot><Wave5OldOnly>только 1.4</Wave5OldOnly></LanguageData>",
+    );
+    write(
+        "1.6/Languages/Russian/Keyed/Robots.xml",
+        "<LanguageData><Wave5Bot>новый робот</Wave5Bot></LanguageData>",
+    );
+    let out = tempfile::tempdir().expect("out");
+    let out_dir = out.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po", "./test/ok.po"])
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"])
+        .args(["--from-root"])
+        .arg(src);
+    cmd.current_dir(workspace_root());
+    cmd.assert().success();
+
+    let built = fs::read_to_string(out_dir.join("Languages/Russian/Keyed/Robots.xml")).unwrap();
+    assert!(
+        built.contains("новый робот"),
+        "the 1.6 value must own the shared key:\n{built}"
+    );
+    assert!(
+        !built.contains("старый робот"),
+        "the 1.4 value must not shadow the 1.6 value:\n{built}"
+    );
+    assert!(
+        built.contains("только 1.4"),
+        "keys only the older version defines stay in the union:\n{built}"
+    );
+    // Exactly one element per key: no duplicate `<Wave5Bot>` entries.
+    assert_eq!(
+        built.matches("<Wave5Bot>").count(),
+        1,
+        "the shared key must be written once:\n{built}"
+    );
+}
+
+#[test]
+fn build_mod_skip_empty_drops_untranslated_keys() {
+    // Wave-5 MUST_FIX №2 (HugsLib LEVEL7, finding №2): untranslated PO
+    // entries used to be written as empty `<Key></Key>` elements — the game
+    // may render them as a MISSING UI string instead of falling back to
+    // English. Default keeps the old output; `--skip-empty` drops them.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let po = tmp.path().join("in.po");
+    fs::write(
+        &po,
+        r#"msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: Languages/Russian/Keyed/Gear.xml:2
+msgctxt "HelmetName"
+msgid "Combat helmet"
+msgstr "Боевой шлем"
+
+#: Languages/Russian/Keyed/Gear.xml:3
+msgctxt "VestName"
+msgid "Armored vest"
+msgstr ""
+
+#: Languages/Russian/Keyed/Gear.xml:4
+msgctxt "PackName"
+msgid "Field pack"
+msgstr "   "
+"#,
+    )
+    .unwrap();
+    let out = tempfile::tempdir().expect("out");
+    let out_dir = out.path().join("RimLoc_RU");
+    let cwd = workspace_root();
+
+    // Default: both translated and untranslated keys are present (old
+    // behaviour, backwards compatible).
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po"])
+        .arg(&po)
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"]);
+    cmd.current_dir(&cwd);
+    cmd.assert().success();
+    let default_xml = fs::read_to_string(out_dir.join("Languages/Russian/Keyed/Gear.xml")).unwrap();
+    assert!(
+        default_xml.contains("<HelmetName>Боевой шлем</HelmetName>"),
+        "translated key present by default:\n{default_xml}"
+    );
+    assert!(
+        default_xml.contains("<VestName></VestName>"),
+        "empty element still written by default (backwards compat):\n{default_xml}"
+    );
+
+    // --skip-empty: only translated keys survive; a whitespace-only msgstr
+    // counts as untranslated too.
+    let out2 = tempfile::tempdir().expect("out2");
+    let out_dir2 = out2.path().join("RimLoc_RU");
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po"])
+        .arg(&po)
+        .args(["--out-mod"])
+        .arg(&out_dir2)
+        .args(["--lang", "ru", "--skip-empty"]);
+    cmd.current_dir(&cwd);
+    cmd.assert().success();
+    let skipped_xml =
+        fs::read_to_string(out_dir2.join("Languages/Russian/Keyed/Gear.xml")).unwrap();
+    assert!(
+        skipped_xml.contains("<HelmetName>Боевой шлем</HelmetName>"),
+        "translated keys survive --skip-empty:\n{skipped_xml}"
+    );
+    assert!(
+        !skipped_xml.contains("VestName"),
+        "empty msgstr must not produce an empty element:\n{skipped_xml}"
+    );
+    assert!(
+        !skipped_xml.contains("PackName"),
+        "whitespace-only msgstr counts as untranslated:\n{skipped_xml}"
+    );
+}
+
+#[test]
 fn validate_json_emits_structured_issues() {
     use serde::Deserialize;
 

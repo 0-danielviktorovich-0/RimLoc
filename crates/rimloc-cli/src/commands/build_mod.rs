@@ -17,8 +17,9 @@ pub fn run_build_mod(
     dry_run: bool,
     dedupe: bool,
     merge: bool,
+    skip_empty: bool,
 ) -> color_eyre::Result<()> {
-    tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run, merge = merge);
+    tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run, merge = merge, skip_empty = skip_empty);
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let cfg_build = cfg.build.unwrap_or_default();
     let lang_folder = lang_dir
@@ -77,6 +78,7 @@ pub fn run_build_mod(
             from_game_version.as_deref(),
             !dry_run,
             dedupe,
+            skip_empty,
         )?;
         if dry_run {
             for (path, n) in files {
@@ -113,6 +115,7 @@ pub fn run_build_mod(
             &package_id,
             &rw_version,
             dedupe,
+            skip_empty,
         )?;
         ui_out!("build-dry-run-header");
         ui_out!("build-name", value = plan.mod_name);
@@ -142,6 +145,7 @@ pub fn run_build_mod(
             &package_id,
             &rw_version,
             dedupe,
+            skip_empty,
         )?;
         ui_ok!("build-done", out = out_mod.display().to_string());
     }

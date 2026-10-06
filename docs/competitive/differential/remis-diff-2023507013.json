@@ -1,0 +1,2824 @@
+{
+ "summary": {
+  "mod": "2023507013",
+  "remis_entries": 854,
+  "rimloc_entries": 764,
+  "both_keys": 688,
+  "semantic_keys": 9,
+  "rimloc_only_keys": 67,
+  "competitor_only_keys": 153
+ },
+ "both": {
+  "AskForPopUp": [
+   "Add faction(s)"
+  ],
+  "AskForPopUpExplained": [
+   "Click this to be asked for each faction if you want it to be added to your game"
+  ],
+  "CSGTitle": [
+   "Custom structure generation:"
+  ],
+  "CanAddXFaction": [
+   "{0} faction(s) can be added to your current save"
+  ],
+  "FDTitle": [
+   "Faction Discovery"
+  ],
+  "IP_BringIngredients": [
+   "Bring Ingredients"
+  ],
+  "IP_BringIngredientsDesc": [
+   "Bring ingredients to start the process"
+  ],
+  "IP_CancelIngredients": [
+   "Cancel Bringing Ingredients"
+  ],
+  "IP_CancelIngredientsDesc": [
+   "Cancel Bringing Ingredients to this building"
+  ],
+  "IP_CantFindThing": [
+   "No items of that kind ({0}) found in this map"
+  ],
+  "IP_ChooseIngredient": [
+   "Choose Ingredient"
+  ],
+  "IP_ChooseIngredientFourth": [
+   "Choose Fourth Ingredient"
+  ],
+  "IP_ChooseIngredientSecond": [
+   "Choose Second Ingredient"
+  ],
+  "IP_ChooseIngredientThird": [
+   "Choose Third Ingredient"
+  ],
+  "IP_ChooseOutput": [
+   "Choose Output"
+  ],
+  "IP_ChooseQualityAuto": [
+   "Choose Auto Quality"
+  ],
+  "IP_FilledWith": [
+   "{0} is filled with {1}"
+  ],
+  "IP_FilledWithFourth": [
+   "{0}'s 4th slot is filled with {1}"
+  ],
+  "IP_FilledWithSecond": [
+   "{0}'s 2nd slot is filled with {1}"
+  ],
+  "IP_FilledWithThird": [
+   "{0}'s 3rd slot is filled with {1}"
+  ],
+  "IP_GenericProductFinished": [
+   "A product has finished processing and is waiting for pickup"
+  ],
+  "IP_IngredientImproperlyDefined": [
+   "One of the ingredients has been improperly defined to work with the item processor, contact the mod's author"
+  ],
+  "IP_InsertFirstItemDesc": [
+   "Insert"
+  ],
+  "IP_InsertFourthItemDesc": [
+   "Insert"
+  ],
+  "IP_InsertSecondItemDesc": [
+   "Insert"
+  ],
+  "IP_InsertThirdItemDesc": [
+   "Insert"
+  ],
+  "IP_InsertVariable": [
+   "Insert {0}"
+  ],
+  "IP_InsertVariableSecond": [
+   "Insert {0} in 2nd slot"
+  ],
+  "IP_InsertVariableThird": [
+   "Insert {0} in 3rd slot"
+  ],
+  "IP_IsEmpty": [
+   "{0} is empty"
+  ],
+  "IP_ItRains": [
+   "The process in this machine is being interrupted due to inclement weather and will be spoiled soon"
+  ],
+  "IP_LightDestroysWarning": [
+   "{0} needs to have an adequate light level to start working"
+  ],
+  "IP_NoCombination": [
+   "No combination found for these ingredients"
+  ],
+  "IP_NoFuelDestroysWarning": [
+   "{0} needs to be fueled to start working"
+  ],
+  "IP_NoIngredientFound": [
+   "No ingredient found on map"
+  ],
+  "IP_NoPowerDestroysInitialWarning": [
+   "The result is spoiling due to a power failure in the item processor"
+  ],
+  "IP_NoPowerDestroysMessage": [
+   "The result has spoiled due to a power failure in the item processor"
+  ],
+  "IP_NoPowerDestroysWarning": [
+   "{0} needs to be powered to start working"
+  ],
+  "IP_NoRecipesHere": [
+   "No modded recipes found for this factory"
+  ],
+  "IP_Output": [
+   "Output {0}"
+  ],
+  "IP_OutputDesc": [
+   "Processor will output {0}. It needs to be fed {1}"
+  ],
+  "IP_OutputVariable": [
+   "Output {0} from {1}"
+  ],
+  "IP_OutsideLightRange": [
+   "The process in this machine is being interrupted due to an inadequate level of light and will be spoiled soon"
+  ],
+  "IP_ProcessingInProgress": [
+   "{0} is processing {1}. {2} will be ready with {3} quality in {4}"
+  ],
+  "IP_ProcessingInProgressNoQuality": [
+   "{0} is processing {1}. {2} will be ready in {3}"
+  ],
+  "IP_ProductWaiting": [
+   "Waiting for pickup"
+  ],
+  "IP_QualityAutoEstablished": [
+   "Auto Quality, product will be extracted at quality level: {0}"
+  ],
+  "IP_QualityAutoIs": [
+   "Auto Quality: {0}"
+  ],
+  "IP_QualityAutoNot": [
+   "Disable Auto Quality"
+  ],
+  "IP_RainDestroysWarning": [
+   "{0} needs to not be raining to start working"
+  ],
+  "IP_RemoveProduct": [
+   "Remove {0} ({1})"
+  ],
+  "IP_RemoveProductDesc": [
+   "Remove {0} from the {1}. The product will be ready at the present quality level ({2})"
+  ],
+  "IP_ResetFullAuto": [
+   "Reset Machine"
+  ],
+  "IP_ResetFullAutoDesc": [
+   "Fully resets the machine and makes it stop. Warning, it will destroy the process and the input items"
+  ],
+  "IP_ResetSemiautomatic": [
+   "Reset Recipes"
+  ],
+  "IP_ResetSemiautomaticDesc": [
+   "This will reset the building after the current product is finished, so a new input ingredient can be chosen"
+  ],
+  "IP_SetAutoQuality": [
+   "Set quality for product extraction. When the product reaches this quality, a colonist will automatically retrieve it and carry it to an stockpile if available. If not set, products will be extracted manually, or at Legendary quality."
+  ],
+  "IP_SpoiledDueToLight": [
+   "The product in this machine has spoiled due to an inadequate level of light"
+  ],
+  "IP_SpoiledDueToRain": [
+   "The product in this machine has spoiled due to inclement weather"
+  ],
+  "IP_SpoiledDueToWrongTemp": [
+   "The product has spoiled due to an unsuitable temperature. Needs between {0} and {1} ºC"
+  ],
+  "IP_TempRangeInThisMachine": [
+   "Current process needs a temperature between {0} and {1} ºC"
+  ],
+  "IP_TemperatureDestroysWarning": [
+   "{0} needs to have an adequate temperature ({1} - {2}) to start working"
+  ],
+  "IP_ToggleAuto": [
+   "Auto Ingredient Acquiring"
+  ],
+  "IP_ToggleAutoDesc": [
+   "If set to active, this building will automatically grab ingredients from adjacent hoppers, and automatically start working again once the product is removed. If not, colonists will haul the ingredients to the building, and it will need to be activated manually once refilled"
+  ],
+  "IP_TogglePause": [
+   "Pause / Restart"
+  ],
+  "IP_TogglePauseDesc": [
+   "Pause / Restart this machine's processing"
+  ],
+  "IP_WrongTemp": [
+   "The process in this machine is being interrupted due to an unsuitable temperature and will be spoiled soon"
+  ],
+  "KCSG.Add": [
+   "Add"
+  ],
+  "KCSG.AllowFoggedPosition": [
+   "Allow fogged position"
+  ],
+  "KCSG.CantEnter": [
+   "Cannot enter {0}"
+  ],
+  "KCSG.Enter": [
+   "Enter {0}"
+  ],
+  "KCSG.Mapcontains": [
+   "Map contains"
+  ],
+  "KCSG.Remove": [
+   "Remove"
+  ],
+  "KCSG.SpawnNearCenter": [
+   "Spawn near center"
+  ],
+  "KCSG.SpawnPartOfEnnemyFaction": [
+   "Spawn part of ennemy faction"
+  ],
+  "KCSG_EnnemiesPresence.description": [
+   "Enemies are present in this place."
+  ],
+  "KCSG_EnnemiesPresence.label": [
+   "enemies present"
+  ],
+  "KCSG_PowerConduit.description": [
+   "A burried bundle of electrical cables for moving power around."
+  ],
+  "KCSG_PowerConduit.label": [
+   "power conduit"
+  ],
+  "KCSG_UndergroundRoom.description": [
+   "An underground room."
+  ],
+  "KCSG_UndergroundRoom.label": [
+   "underground room"
+  ],
+  "MVCF.Cooldown": [
+   "Still on cooldown. {0} left."
+  ],
+  "MVCF.Setting": [
+   "Multi-Verb Combat Framework"
+  ],
+  "MVCF.Settings.Debug": [
+   "Developer Mode"
+  ],
+  "MVCF.Settings.LogLevel": [
+   "Log level:"
+  ],
+  "MVCF.Settings.LogLevel.Important": [
+   "Important"
+  ],
+  "MVCF.Settings.LogLevel.Info": [
+   "Info"
+  ],
+  "MVCF.Settings.LogLevel.None": [
+   "None"
+  ],
+  "MVCF.Settings.LogLevel.Silly": [
+   "Silly"
+  ],
+  "MVCF.Settings.LogLevel.Tick": [
+   "Tick"
+  ],
+  "MVCF.Settings.LogLevel.Verbose": [
+   "Verbose"
+  ],
+  "MVCF.Toggle": [
+   "Toggle {0}"
+  ],
+  "MVCF.ToggleAuto": [
+   "Toggle automatic usage"
+  ],
+  "MVCF.ToggleAutoReload": [
+   "Toggle automatic reloading while drafted"
+  ],
+  "MVCF.ToggleUsing": [
+   "Toggle using {0} automatically"
+  ],
+  "NeedRestart": [
+   "All settings need a restart to be applied"
+  ],
+  "NeedToBeInGame": [
+   "You first need to load a save"
+  ],
+  "NocturnalAnimals.BodyClock": [
+   "Body clock"
+  ],
+  "NocturnalAnimals.BodyClock_Crepuscular": [
+   "Crepuscular"
+  ],
+  "NocturnalAnimals.BodyClock_Description": [
+   "Determines when the animal sleeps and when it is awake.\\n\\nDiurnal animals sleep during the night and are awake during the day, while nocturnal animals sleep during the day and are awake during the night. Crepuscular animals are mainly active during dusk."
+  ],
+  "NocturnalAnimals.BodyClock_Diurnal": [
+   "Diurnal"
+  ],
+  "NocturnalAnimals.BodyClock_Nocturnal": [
+   "Nocturnal"
+  ],
+  "Outposts.Abandoned": [
+   "Outpost abandoned"
+  ],
+  "Outposts.Abandoned.Desc": [
+   "{0} has been abonded due to having no one inside to run it. It will very quickly be looted and taken over by nature, leaving no trace it was ever there."
+  ],
+  "Outposts.AddTo": [
+   "Add to outpost"
+  ],
+  "Outposts.AddedFromTransportPods": [
+   "Your transport pods have arrived. {0} has been added to {1}."
+  ],
+  "Outposts.AllowedBiomes": [
+   "Must be in one of the following biomes:"
+  ],
+  "Outposts.AlreadyPacking": [
+   "Already packing"
+  ],
+  "Outposts.CannotBeMade": [
+   "Cannot be made in {0}"
+  ],
+  "Outposts.Command.Remove.Only1": [
+   "Cannot remove pawns: Only 1 inhabitant. If you want to remove this outpost, select \"Pack\"."
+  ],
+  "Outposts.Commands.AddPawn.Desc": [
+   "Transfer a pawn from this caravan to the outpost"
+  ],
+  "Outposts.Commands.AddPawn.Label": [
+   "Add pawn"
+  ],
+  "Outposts.Commands.Create.Desc": [
+   "Create a new outpost using this caravan."
+  ],
+  "Outposts.Commands.Create.Label": [
+   "Create outpost"
+  ],
+  "Outposts.Commands.DeliveryColony.Desc": [
+   "Select which colony will recieve the goods. Currently: {0}"
+  ],
+  "Outposts.Commands.DeliveryColony.Label": [
+   "Delivery destination"
+  ],
+  "Outposts.Commands.GiveItems.Desc": [
+   "Take items from {0} and add them to the outpost"
+  ],
+  "Outposts.Commands.GiveItems.Label": [
+   "Give items"
+  ],
+  "Outposts.Commands.Pack.Desc": [
+   "Begin packing this outpost back into a caravan"
+  ],
+  "Outposts.Commands.Pack.Label": [
+   "Pack"
+  ],
+  "Outposts.Commands.Remove.Desc": [
+   "Remove a pawn from this outpost into a new caravan"
+  ],
+  "Outposts.Commands.Remove.Label": [
+   "Remove pawn"
+  ],
+  "Outposts.Commands.StopPack.Desc": [
+   "Cancel packing this outpost into a caravan"
+  ],
+  "Outposts.Commands.StopPack.Label": [
+   "Stop packing"
+  ],
+  "Outposts.Commands.TakeItems.Desc": [
+   "Take items from {0} and add them to the caravan"
+  ],
+  "Outposts.Commands.TakeItems.Label": [
+   "Take items"
+  ],
+  "Outposts.Contains": [
+   "Contains {0} pawns"
+  ],
+  "Outposts.Dialog.Create": [
+   "Create"
+  ],
+  "Outposts.DisallowedBiomes": [
+   "Cannot be in any of the following biomes:"
+  ],
+  "Outposts.Give": [
+   "Give"
+  ],
+  "Outposts.GrowingRequired": [
+   "Must have ability to grow plants"
+  ],
+  "Outposts.Letters.BattleWon.Captured": [
+   "We have managed to capture {0} in the aftermath"
+  ],
+  "Outposts.Letters.BattleWon.Label": [
+   "Outpost battle won"
+  ],
+  "Outposts.Letters.BattleWon.Rescued": [
+   "We have managed to recover {0}'s body"
+  ],
+  "Outposts.Letters.BattleWon.Secured": [
+   "We have secured: {0} worth of goods and weapons from the raiders"
+  ],
+  "Outposts.Letters.BattleWon.Text": [
+   "We have successfully won the battle for {0}.{1}"
+  ],
+  "Outposts.Letters.Items.Label": [
+   "Items From {0}"
+  ],
+  "Outposts.Letters.Items.Text": [
+   "You have received the follow items from the outpost {0}:"
+  ],
+  "Outposts.Letters.Lost.Label": [
+   "Outpost lost"
+  ],
+  "Outposts.Letters.Lost.Text": [
+   "Regretfully, due to the deaths of all inhabitants, the outpost of {0} has been lost to us."
+  ],
+  "Outposts.MustHaveInCaravan": [
+   "Must have {0} in caravan"
+  ],
+  "Outposts.NoValidPawns": [
+   "No valid pawns to add to outpost"
+  ],
+  "Outposts.NotEnoughPawns": [
+   "Not enough pawns in caravan, need at least {0}"
+  ],
+  "Outposts.NotSkilledEnough": [
+   "Pawns are not skilled enough, need a cumulative {0} skill of at least {1}"
+  ],
+  "Outposts.NumPawns": [
+   "Must have at least {0} pawns willing to join the outpost"
+  ],
+  "Outposts.Packing": [
+   "Packing into caravan. Done in {0}"
+  ],
+  "Outposts.RequiredSkill": [
+   "Cumulative {0} skill must be at least {1}"
+  ],
+  "Outposts.RestingAt": [
+   "Resting at outpost {0}"
+  ],
+  "Outposts.SendNonPawns": [
+   "Confirm sending items to the outpost? They will be permanently lost."
+  ],
+  "Outposts.Setting.MinimumPawns": [
+   "Minimum Pawns to Create"
+  ],
+  "Outposts.Setting.PackTime": [
+   "Pack Time"
+  ],
+  "Outposts.Setting.ProductionTime": [
+   "Production Time"
+  ],
+  "Outposts.Setting.Range": [
+   "Range"
+  ],
+  "Outposts.Settings.DeliveryMethod": [
+   "Delivery method"
+  ],
+  "Outposts.Settings.DeliveryMethod.ForcePods": [
+   "Always send drop pods"
+  ],
+  "Outposts.Settings.DeliveryMethod.PackAnimal": [
+   "Send pack animal carrying items to colony"
+  ],
+  "Outposts.Settings.DeliveryMethod.PackOrPods": [
+   "Pods if available, otherwise pack animal"
+  ],
+  "Outposts.Settings.DeliveryMethod.Store": [
+   "Store items at outpost"
+  ],
+  "Outposts.Settings.DeliveryMethod.Teleport": [
+   "Teleport items to colony"
+  ],
+  "Outposts.Settings.DoRaids": [
+   "Enable Outpost Raids?"
+  ],
+  "Outposts.Settings.Multiplier.Production": [
+   "Gloabal Production Multiplier: {0}"
+  ],
+  "Outposts.Settings.Multiplier.Time": [
+   "Global Time Multiplier: {0}"
+  ],
+  "Outposts.Settings.Production": [
+   "Production Multiplier"
+  ],
+  "Outposts.Settings.RaidDifficulty": [
+   "Global Raid Difficulty Multiplier: {0}"
+  ],
+  "Outposts.Settings.RaidFrequency": [
+   "Raid Frequency Range"
+  ],
+  "Outposts.Settings.Title": [
+   "VE Framework - Outposts"
+  ],
+  "Outposts.SkillChange": [
+   "Due to changes in skill level, {0} can no longer produce {1}"
+  ],
+  "Outposts.Take": [
+   "Take"
+  ],
+  "Outposts.TooClose": [
+   "Too close to settlement or other outpost, must have at least 1 tile between them."
+  ],
+  "Outposts.TotalSkill": [
+   "Cumulative {0} skill: {1}"
+  ],
+  "Outposts.WillProduce.0": [
+   "Will produce some items in {0}"
+  ],
+  "Outposts.WillProduce.1": [
+   "Will produce {0} {1} in {2}"
+  ],
+  "Outposts.WillProduce.2": [
+   "Will produce {0} {1} and {2} {3} in {4}"
+  ],
+  "Outposts.WillProduce.N": [
+   "Will produce the following in {0}:\\n{1}"
+  ],
+  "PS_BringToProcessor.label": [
+   "bring ingredient to processor"
+  ],
+  "PS_DrainOutOfStorage.label": [
+   "drain out of storage"
+  ],
+  "PS_FillStorage.label": [
+   "fill storage"
+  ],
+  "PS_PickUpProcessor.label": [
+   "pick up result from processor"
+  ],
+  "PipeSystem_AddProcess": [
+   "Add process"
+  ],
+  "PipeSystem_AllowManualRefill": [
+   "Allow manual refill"
+  ],
+  "PipeSystem_AllowManualRefillDesc": [
+   "Allow pawns to directly refill storage"
+  ],
+  "PipeSystem_AmountOut": [
+   "Maximum amount stored here: {0}"
+  ],
+  "PipeSystem_AugmentStack": [
+   "+1"
+  ],
+  "PipeSystem_AugmentStackB": [
+   "+10"
+  ],
+  "PipeSystem_AugmentStackDesc": [
+   "Augment output maximum stack size by 1."
+  ],
+  "PipeSystem_AugmentStackDescB": [
+   "Augment output maximum stack size by 10."
+  ],
+  "PipeSystem_CancelCurrentProcess": [
+   "Cancel current process"
+  ],
+  "PipeSystem_CantExtract": [
+   "Can't extract: Tanks are full"
+  ],
+  "PipeSystem_CantPlaceHere": [
+   "{0} can only be placed on the {1} deposit. Use ground-penetrating scanner to find the deposits."
+  ],
+  "PipeSystem_ChooseResult": [
+   "Choose result"
+  ],
+  "PipeSystem_ChooseResultDesc": [
+   "Choose processor result."
+  ],
+  "PipeSystem_Consumption": [
+   "{0} consumption"
+  ],
+  "PipeSystem_ConsumptionExplained": [
+   "The amount per day of {0} this building will draw from the {1} grid."
+  ],
+  "PipeSystem_ContentWillRot": [
+   "Content will rot in {0} due to a lack of power."
+  ],
+  "PipeSystem_CopyProcesses": [
+   "Copy processes"
+  ],
+  "PipeSystem_CurrentNotReachedAwful": [
+   "Process hasn't reached Awful quality yet"
+  ],
+  "PipeSystem_CurrentQuality": [
+   "Current quality: {0}"
+  ],
+  "PipeSystem_DeconstructDesc": [
+   "Only deconstruct pipes part of the {0} network."
+  ],
+  "PipeSystem_DeconstructLabel": [
+   "Deconstruct {0} pipes"
+  ],
+  "PipeSystem_DecreaseStack": [
+   "-1"
+  ],
+  "PipeSystem_DecreaseStackB": [
+   "-10"
+  ],
+  "PipeSystem_DecreaseStackDesc": [
+   "Decrease output maximum stack size by 1."
+  ],
+  "PipeSystem_DecreaseStackDescB": [
+   "Decrease output maximum stack size by 10."
+  ],
+  "PipeSystem_ExcessStored": [
+   "{0} net excess/stored in network: {1} {3}/d / {2} {3}"
+  ],
+  "PipeSystem_ExtractAtCurrentQuality": [
+   "Extract at current quality"
+  ],
+  "PipeSystem_ExtractAtCurrentQuality_Desc": [
+   "Extract the product at the current quality."
+  ],
+  "PipeSystem_ExtractingAtCurrent": [
+   "Extracting product at current quality"
+  ],
+  "PipeSystem_IdleConsumption": [
+   "{0} idle consumption"
+  ],
+  "PipeSystem_IdleConsumptionExplained": [
+   "The amount of {0} this building will draw from the {1} grid when idle."
+  ],
+  "PipeSystem_InterruptedByGillRot": [
+   "Can’t breed fish due to gill rot"
+  ],
+  "PipeSystem_MakeProcess": [
+   "Make {0}"
+  ],
+  "PipeSystem_MarkedToTransferContent": [
+   "Transfering content to other available storages..."
+  ],
+  "PipeSystem_MissingInputIngredients": [
+   "Missing inputs: {0}"
+  ],
+  "PipeSystem_NoProcess": [
+   "No current process"
+  ],
+  "PipeSystem_NoProcessAvailable": [
+   "No process available"
+  ],
+  "PipeSystem_NoStorageInNet": [
+   "No storage connected"
+  ],
+  "PipeSystem_NoStorageInNetDesc": [
+   "The following networks are not connected to any storage building, but need one:"
+  ],
+  "PipeSystem_NotConnected": [
+   "Not connected to {0}."
+  ],
+  "PipeSystem_NotInRoomExplanation": [
+   "This processor is not situated in a room that counts as a {0}, and will receive a {1} penalty to its work speed. This will be recalculated once a process has started."
+  ],
+  "PipeSystem_NothingToPickUp": [
+   "Nothing to pick-up"
+  ],
+  "PipeSystem_NothingToRefill": [
+   "No thing to refill {0}"
+  ],
+  "PipeSystem_OrNet": [
+   "or {0} net"
+  ],
+  "PipeSystem_OutputFactoryHopperFull": [
+   "Output factory hopper too full (max {0} units)"
+  ],
+  "PipeSystem_OutputFactoryHopperIncorrect": [
+   "Output factory hopper absent or not accepting item due to storage configuration."
+  ],
+  "PipeSystem_OutputOnGround": [
+   "Can output on ground"
+  ],
+  "PipeSystem_OutputToNet": [
+   "{0} to net"
+  ],
+  "PipeSystem_PasteAllRecipes": [
+   "Paste all processes"
+  ],
+  "PipeSystem_PasteAllRecipes_Desc": [
+   "Paste all copied processes into this processor. You can select multiple and the processes will be pasted to all of them."
+  ],
+  "PipeSystem_PasteProcesses": [
+   "Paste processes"
+  ],
+  "PipeSystem_ProcessNeedsAwfulAtLeast": [
+   "Process needs to advance at least until the Awful quality time, which is {0}"
+  ],
+  "PipeSystem_Processes": [
+   "Processes"
+  ],
+  "PipeSystem_ProcessorBuffer": [
+   "Buffer: {0}"
+  ],
+  "PipeSystem_Produce": [
+   "Produce {0} {1} from {2} {3}."
+  ],
+  "PipeSystem_ProduceLabel": [
+   "Produce {0} {1} using:"
+  ],
+  "PipeSystem_Producing": [
+   "Producing {0} {1}. Cycle progress: {2}."
+  ],
+  "PipeSystem_Product": [
+   "Product"
+  ],
+  "PipeSystem_Production": [
+   "{0} production"
+  ],
+  "PipeSystem_ProductionExplained": [
+   "The amount per day of {0} this building will produce for the {1} grid."
+  ],
+  "PipeSystem_ProgressInInfobox": [
+   "{0}: {1}"
+  ],
+  "PipeSystem_QualitySelector": [
+   "Select the quality at which this process will stop"
+  ],
+  "PipeSystem_ResourceLeft": [
+   "Amount left in deposit: {0}."
+  ],
+  "PipeSystem_ResourceNeeded": [
+   "{0} needed:"
+  ],
+  "PipeSystem_ResourceOutput": [
+   "{0} output:"
+  ],
+  "PipeSystem_ResourceStored": [
+   "{0} stored:"
+  ],
+  "PipeSystem_StorageContentRotted": [
+   "{0} content rotted away due to a lack of power."
+  ],
+  "PipeSystem_Stored": [
+   "{0} stored in network:"
+  ],
+  "PipeSystem_TransferContent": [
+   "Transfer storage content"
+  ],
+  "PipeSystem_TransferContentDesc": [
+   "Transfer storage content to other available storages."
+  ],
+  "PipeSystem_ValveClosed": [
+   "Valve closed."
+  ],
+  "PipeSystem_ValveOpened": [
+   "Valve opened."
+  ],
+  "PipeSystem_WorkSpeed": [
+   "work speed"
+  ],
+  "PipeSystem_XFromNet": [
+   "{0} from net"
+  ],
+  "Reloading.Ammo": [
+   "Ammo: {0} / {1}"
+  ],
+  "Reloading.NoAmmo": [
+   "No Ammo"
+  ],
+  "Reloading.Reload": [
+   "Reload {GEAR} with {AMMO_label}"
+  ],
+  "Reloading.Unload": [
+   "Unload {GEAR_labelShort}"
+  ],
+  "TerrainTagVFEI2_Creep": [
+   "insect creep"
+  ],
+  "TerrainTagVFEI2_JellyFloor": [
+   "jellyfloor"
+  ],
+  "TerrainTagVFEI2_RoyalJellyFloor": [
+   "royal jellyfloor"
+  ],
+  "VCE_AffectsAllAnimalMods": [
+   "These animal behaviours options will affect all animal mods that share code from the Vanilla Expanded Framework"
+  ],
+  "VCE_AllowConditions": [
+   "Allow chronic health conditions in food (Diabetes, Cholesterol and High Blood Pressure)"
+  ],
+  "VCE_AnimalParticlesOption": [
+   "Allow animal particles (gas and filth)"
+  ],
+  "VCE_AsexualReproductionOption": [
+   "Allow asexual reproduction"
+  ],
+  "VCE_BlinkMechanicsOption": [
+   "Allow \"blink\" mechanics (for example, Skiphounds)"
+  ],
+  "VCE_BuildPeriodicallyOption": [
+   "Allow animals building things (for example, beavers building dams)"
+  ],
+  "VCE_ChargeBatteriesOption": [
+   "Allow animals recharging nearby batteries or refueling"
+  ],
+  "VCE_CorpseDecayingEffectOption": [
+   "Allow corpse decaying mechanics (for example, Helixien slug's effect)"
+  ],
+  "VCE_DigPeriodicallyOption": [
+   "Allows animals digging for things periodically"
+  ],
+  "VCE_DigWhenHungryOption": [
+   "Allow digging when hungry mechanics (for example, Frostmites digging corpses)"
+  ],
+  "VCE_EffecterOption": [
+   "Allows animals causing hediffs, mental states or thoughts"
+  ],
+  "VCE_ExplodingEggsOption": [
+   "Allow animals' eggs that explode (such as dragons')"
+  ],
+  "VCE_GraphicChangingOption": [
+   "Allow animals changing graphics (for example, Chameleon Yak)"
+  ],
+  "VCE_HoveringOption": [
+   "Allow animals \"hovering\", ignoring terrain movement costs and waterstriding"
+  ],
+  "VCE_InEquator": [
+   "In equatorial region, growing 30% faster."
+  ],
+  "VCE_MustBeInstalled": [
+   "Vanilla Cooking Expanded must be installed for these options to have any effect"
+  ],
+  "VCE_NeedsShade": [
+   "This plant needs to grow in shade: outside, but under a roof."
+  ],
+  "VCE_NoSeaTilesNearby": [
+   "Too far away from the sea, no extra growth bonus"
+  ],
+  "VCE_NoWaterNearby": [
+   "Lack of a body of water nearby is impeding this plant's growth"
+  ],
+  "VCE_NotInEquator": [
+   "Not in equatorial region (in this planet, below {0} latitude). Growing normally."
+  ],
+  "VCE_NotPollinated": [
+   "No apiary found in a 6 tiles radius (calculated on sowing)"
+  ],
+  "VCE_Pollinated": [
+   "Apiary found nearby"
+  ],
+  "VCE_RegenerationOption": [
+   "Allow health regeneration (active and passive)"
+  ],
+  "VCE_ResurrectionOption": [
+   "Allow animals to auto-resurrect (for example Phoenix Owlcat)"
+  ],
+  "VCE_SeaTilesNearby": [
+   "{0} sea tiles nearby, providing {0}% growth bonus"
+  ],
+  "VCE_StoppedGrowthFertility": [
+   "Growth impossible due to too fertile terrain"
+  ],
+  "VCE_StuntedGrowthFertility": [
+   "Growth reduced due to non-rocky terrain"
+  ],
+  "VCE_UntameableOption": [
+   "Allow some animals to be untameable"
+  ],
+  "VCE_WaterNearby": [
+   "A body of water nearby is impeding this plant's growth"
+  ],
+  "VEF.AvailableContracts": [
+   "Available contracts: {0}"
+  ],
+  "VEF.AvailableSilver": [
+   "Available Silver: {0}"
+  ],
+  "VEF.Breakdown": [
+   "Breakdown"
+  ],
+  "VEF.Cancel": [
+   "Cancel"
+  ],
+  "VEF.CancelContract": [
+   "Cancel Contract"
+  ],
+  "VEF.ChooseNumberOfUnits": [
+   "How many of that unit do you want to have?"
+  ],
+  "VEF.CommandAttackMovingBaseDesc": [
+   "Attack this {0}."
+  ],
+  "VEF.ContractInfo": [
+   "View contract with {0}"
+  ],
+  "VEF.ContractTitle": [
+   "Contract with {0}"
+  ],
+  "VEF.Cost": [
+   "Cost to hire"
+  ],
+  "VEF.CustomizationTitle": [
+   "{0} Customization"
+  ],
+  "VEF.Customize": [
+   "Customize {0}"
+  ],
+  "VEF.DayAmount": [
+   "Amount of Days"
+  ],
+  "VEF.DisableModSourceReport": [
+   "Disable mod source reports"
+  ],
+  "VEF.DoorLockDefault": [
+   "Default"
+  ],
+  "VEF.DoorLockEveryone": [
+   "Everyone"
+  ],
+  "VEF.DoorLockOnlyColonistsAndAnimals": [
+   "Only colonists and animals"
+  ],
+  "VEF.DoorLockOnlyColonistsAndAnimalsAndFriendlies": [
+   "Only colonists, animals and friendlies"
+  ],
+  "VEF.DoorLockOnlyDrafted": [
+   "Only drafted"
+  ],
+  "VEF.DoorLockState": [
+   "Current door lock policy \"{0}\""
+  ],
+  "VEF.DoorLockStateDesc": [
+   "Click to change current door lock policy."
+  ],
+  "VEF.DoorLockStatePowerOff": [
+   "Power is off. Impossible to change door lock policy."
+  ],
+  "VEF.DraftHuntLabel": [
+   "Hunt"
+  ],
+  "VEF.EnableWeatherDamage": [
+   "{0}"
+  ],
+  "VEF.Factions.Contraband_Booze_GiftIllegalWarning": [
+   "Gifting {ILLEGALTHING_label} to {ILLEGALFACTION_name} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+  ],
+  "VEF.Factions.Contraband_Booze_GiftWarning": [
+   "Gifting {ILLEGALTHING_label} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+  ],
+  "VEF.Factions.Contraband_Booze_LetterDescGift": [
+   "{FACTION_name} caught wind that you have been gifting {ILLEGALTHING_label} behind their back. They consider it to be against the law, and your relations have degraded"
+  ],
+  "VEF.Factions.Contraband_Booze_LetterDescIllegalGift": [
+   "{FACTION_name} caught wind that you have been gifting {ILLEGALTHING_label} to {ILLEGALFACTION_name} behind their back. They consider it to be against the law, and your relations have degraded"
+  ],
+  "VEF.Factions.Contraband_Booze_LetterDescIllegalSold": [
+   "{FACTION_name} caught wind that you have been selling {ILLEGALTHING_label} to {ILLEGALFACTION_name} behind their back. They consider it to be against the law, and your relations have degraded"
+  ],
+  "VEF.Factions.Contraband_Booze_LetterDescSold": [
+   "{FACTION_name} caught wind that you have been selling {ILLEGALTHING_label} behind their back. They consider it to be against the law, and your relations have degraded"
+  ],
+  "VEF.Factions.Contraband_Booze_LetterLabel": [
+   "{FACTION_name} angered"
+  ],
+  "VEF.Factions.Contraband_Booze_RelationInfo": [
+   "Goodwill with {FACTION_name} is now {1}. (Changed by {2})"
+  ],
+  "VEF.Factions.Contraband_Booze_SellIllegalWarning": [
+   "Selling {ILLEGALTHING_label} to {ILLEGALFACTION_name} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+  ],
+  "VEF.Factions.Contraband_Booze_SellWarning": [
+   "Selling {ILLEGALTHING_label} is against {FACTION_name} law. This may or may not affect your relations with them in the future"
+  ],
+  "VEF.Factions.FactionDef_Description_Contraband": [
+   "Trading details"
+  ],
+  "VEF.Factions.FactionDef_Description_Negatives": [
+   "Negative goodwill from trading {0}"
+  ],
+  "VEF.Factions.FactionDef_Description_Positives": [
+   "Positive goodwill from trading {0}"
+  ],
+  "VEF.Hire": [
+   "Hire {0}"
+  ],
+  "VEF.HireDesc": [
+   "Hire some {0} to help around the colony, for example with defense."
+  ],
+  "VEF.HiringDesc": [
+   "You can hire {0} for any period of time.You can only have one contract active at a time, and you cannot mix and match the factions from which you hire.\nIf hired {0} die on duty, you will incur an additional 5% increase to contract price per dead pirate on all future contracts for a full year."
+  ],
+  "VEF.HuntDescription": [
+   "While this is on characters will automatically move to engage nearby targets.\\n\\nYou can right-click this button to toggle autofire for ALL abilities on the selected pawn."
+  ],
+  "VEF.LongTerm": [
+   "Long term contracts are significantly more expensive"
+  ],
+  "VEF.MechsSection": [
+   "Mechanoids"
+  ],
+  "VEF.MinCapacityLevel": [
+   "min {MIN}%"
+  ],
+  "VEF.Name": [
+   "Name"
+  ],
+  "VEF.NoRefund": [
+   "Cancelling your contract will not refund the silver you spent on it."
+  ],
+  "VEF.PawnsList": [
+   "Contracted:"
+  ],
+  "VEF.QuestChainTooltip": [
+   "This quest is a part of a quest chain. Completing it may trigger continuation quests.\\n\\n{0}\\n\\n{1}"
+  ],
+  "VEF.RangedDodge.ShotReportReadout": [
+   "Dodge"
+  ],
+  "VEF.RiskMult": [
+   "Risk multiplier"
+  ],
+  "VEF.Shields.ExplanationTitle": [
+   "Set weapons to be usable or not usable with shields."
+  ],
+  "VEF.Shields.ResetModSettingsToDefault": [
+   "Reset mod settings to default"
+  ],
+  "VEF.Shields.ShowMeleeWeapons": [
+   "Show melee weapons"
+  ],
+  "VEF.Shields.ShowRangeWeapons": [
+   "Show range weapons"
+  ],
+  "VEF.Spent": [
+   "Silver spent:"
+  ],
+  "VEF.TeleportTo": [
+   "Teleport to {0}"
+  ],
+  "VEF.TimeLeft": [
+   "Time remaining:"
+  ],
+  "VEF.TotalMarketValueRange": [
+   "Market value range (base)"
+  ],
+  "VEF.TotalMarketValueRange_Desc": [
+   "Total market value range (minimum and maximum) of the objects that can be found by opening this loot box."
+  ],
+  "VEF.TotalMarketValueRange_Quality": [
+   "Market value range (by quality)"
+  ],
+  "VEF.TotalMarketValueRange_Quality_Desc": [
+   "Total market value range (minimum and maximum) of the objects that can be found by opening this loot box. Box quality has modified the base value by a factor of {0}"
+  ],
+  "VEF.TotalPrice": [
+   "Total Price"
+  ],
+  "VEF.Value": [
+   "Value"
+  ],
+  "VEF.Weapons.Stat_Thing_MaterialPerCharge": [
+   "Ammo per charge"
+  ],
+  "VEF.Weapons.Stat_Thing_MaterialPerCharge_Desc": [
+   "The amount of {0} per charge this ability needs to be recharged."
+  ],
+  "VEF.Weapons.Stat_Thing_MaterialPerCharge_Value": [
+   "{0} {1} per charge (total {2} charges)"
+  ],
+  "VEF.WeatherDamages": [
+   "Weather damages"
+  ],
+  "VEF_Always": [
+   "Always"
+  ],
+  "VEF_AlwaysDesc": [
+   "Ores mined by pawns are always unforbidden"
+  ],
+  "VEF_AnimalProductIntervalFactor.description": [
+   "A multiplier on the interval of time needed for this animal to produce special animal products."
+  ],
+  "VEF_AnimalProductIntervalFactor.label": [
+   "animal product interval factor"
+  ],
+  "VEF_AnimalProductIntervalFactorDetails": [
+   "Base special animal products interval for this animal is {0} days. Adjusted by its animal products interval factor this will result in {1} days instead. This value is capped at a minimum of 1 day."
+  ],
+  "VEF_AnimalProductYieldFactor.description": [
+   "A multiplier on the amount of special animal products produced by this animal."
+  ],
+  "VEF_AnimalProductYieldFactor.label": [
+   "animal product yield factor"
+  ],
+  "VEF_AnimalProductYieldFactorDetails": [
+   "Base special animal products production for this animal is {0} {1}. Adjusted by its animal product yield factor this will result in {2} {1} instead."
+  ],
+  "VEF_AnimalProductYieldFactorDetails_Random": [
+   "Base special animal products production for this animal is {0} of a selection of randomized or terrain dependent items. Adjusted by its animal product yield factor this will result in {1} units instead."
+  ],
+  "VEF_AnimalResource.label": [
+   "gather animal resource"
+  ],
+  "VEF_AnimalsSearch": [
+   "Search:"
+  ],
+  "VEF_Art_ConstructDeliverResourcesToBlueprints.label": [
+   "deliver resources to blueprints"
+  ],
+  "VEF_Art_ConstructDeliverResourcesToFrames.label": [
+   "deliver resources to frames"
+  ],
+  "VEF_Art_ConstructFinishFrames.label": [
+   "construct placed frames"
+  ],
+  "VEF_AsexualCloning": [
+   "{0} has cloned itself."
+  ],
+  "VEF_AsexualHatched": [
+   "{0} has reproduced asexually."
+  ],
+  "VEF_AsexualHatchedEgg": [
+   "{0} has sporulated."
+  ],
+  "VEF_BillRequiresMass": [
+   "Requires {0} Kg total mass"
+  ],
+  "VEF_BodySize_Multiplier.description": [
+   "Increases the size of the pawn by a multiple of their current size"
+  ],
+  "VEF_BodySize_Multiplier.label": [
+   "body size multiplier"
+  ],
+  "VEF_BodySize_Offset.description": [
+   "Increases the size of the pawn relative to their current size"
+  ],
+  "VEF_BodySize_Offset.label": [
+   "body size offset"
+  ],
+  "VEF_BuildingBreakdownFactor.description": [
+   "A multiplier on how often this building breaks down."
+  ],
+  "VEF_BuildingBreakdownFactor.label": [
+   "breakdown factor"
+  ],
+  "VEF_BuildingLearningRateOffset.description": [
+   "A multiplier on how quickly children learn during lessons which are assisted by this."
+  ],
+  "VEF_BuildingLearningRateOffset.label": [
+   "learning rate"
+  ],
+  "VEF_BuildingMaxOverclockFactor.description": [
+   "A multiplier on the maximum possible overclock of a factory."
+  ],
+  "VEF_BuildingMaxOverclockFactor.label": [
+   "maximum overclock factor"
+  ],
+  "VEF_ControlledBlinking.description": [
+   "Override the creature's usual erratic blinking, allowing a directed way to blink to a chosen location within range."
+  ],
+  "VEF_ControlledBlinking.label": [
+   "controlled blinking"
+  ],
+  "VEF_ControlledDetonation.description": [
+   "Willingly trigger a powerful self-destructive explosion, sacrificing this animal in a final act that unleashes all stored volatile compounds in a devastating blast."
+  ],
+  "VEF_ControlledDetonation.label": [
+   "controlled detonation"
+  ],
+  "VEF_ControlledInvisibility.description": [
+   "Shroud the animal in a veil of controlled invisibility, vanishing from sight while retaining full awareness and precision."
+  ],
+  "VEF_ControlledInvisibility.label": [
+   "controlled invisibility"
+  ],
+  "VEF_CosmeticBodySize_Multiplier.description": [
+   "Increases the size of the pawn by a multiple of their current size"
+  ],
+  "VEF_CosmeticBodySize_Multiplier.label": [
+   "cosmetic body size multiplier"
+  ],
+  "VEF_CosmeticBodySize_Offset.description": [
+   "Increases the size of the pawn relative to their current size"
+  ],
+  "VEF_CosmeticBodySize_Offset.label": [
+   "cosmetic body size offset"
+  ],
+  "VEF_CustomStructureGeneration": [
+   "Custom Structure Generation:"
+  ],
+  "VEF_DestroyItems.label": [
+   "destroy items"
+  ],
+  "VEF_DigestionTime": [
+   "Will be consumed in {0}"
+  ],
+  "VEF_DisableAnimal": [
+   "Disable {0}"
+  ],
+  "VEF_DisableCorpseDecaying": [
+   "Disable corpse decaying"
+  ],
+  "VEF_DisableCorpseDecayingDesc": [
+   "Disable the constant corpse decaying ability of this animal."
+  ],
+  "VEF_DisableDigging": [
+   "Disable digging for food"
+  ],
+  "VEF_DisableDiggingDesc": [
+   "Disable the ability to dig the terrain for food of this animal."
+  ],
+  "VEF_DisableGas": [
+   "Disable gas production"
+  ],
+  "VEF_DisableGasDesc": [
+   "Disable the ability to produce gas of this animal."
+  ],
+  "VEF_DisableTextureCaching": [
+   "Disable Texture Caching"
+  ],
+  "VEF_EnableCorpseDecaying": [
+   "Enable corpse decaying"
+  ],
+  "VEF_EnableCorpseDecayingDesc": [
+   "Enable the constant corpse decaying ability of this animal."
+  ],
+  "VEF_EnableDigging": [
+   "Enable digging for food"
+  ],
+  "VEF_EnableDiggingDesc": [
+   "Enable the ability to dig the terrain for food of this animal."
+  ],
+  "VEF_EnableGas": [
+   "Enable gas production"
+  ],
+  "VEF_EnableGasDesc": [
+   "Enable the ability to produce gas of this animal."
+  ],
+  "VEF_EnablePipeSystemNoStorageAlert": [
+   "Enable PipeSystem no storage alert"
+  ],
+  "VEF_EnergyShieldEnergyMaxBuilding.description": [
+   "The maximum energy the shield can have. More energy allows the shield to absorb more damage."
+  ],
+  "VEF_EnergyShieldEnergyMaxBuilding.label": [
+   "shield max energy"
+  ],
+  "VEF_EnergyShieldEnergyMaxFactor.description": [
+   "Factor of the maximum shield energy that the user can boost through various means."
+  ],
+  "VEF_EnergyShieldEnergyMaxFactor.label": [
+   "Shield max energy factor"
+  ],
+  "VEF_EnergyShieldEnergyMaxOffset.description": [
+   "Offset of the maximum shield energy that the user can boost through various means."
+  ],
+  "VEF_EnergyShieldEnergyMaxOffset.label": [
+   "Shield max energy offset"
+  ],
+  "VEF_EnergyShieldRadiusApparel.description": [
+   "The area covered when the energy shield is active."
+  ],
+  "VEF_EnergyShieldRadiusApparel.label": [
+   "shield radius"
+  ],
+  "VEF_EnergyShieldRadiusBuilding.description": [
+   "The radius of the energy shield protection."
+  ],
+  "VEF_EnergyShieldRadiusBuilding.label": [
+   "shield radius"
+  ],
+  "VEF_EnergyShieldRechargeRateBuilding.description": [
+   "The rate at which the shield recharges energy per second, as long as it is not broken."
+  ],
+  "VEF_EnergyShieldRechargeRateBuilding.label": [
+   "shield recharge rate"
+  ],
+  "VEF_ExtractFlower.label": [
+   "extract flower"
+  ],
+  "VEF_FactionDiscovery": [
+   "Faction Discovery"
+  ],
+  "VEF_FactoryHeatPerSecondFactor.description": [
+   "A multiplier on the heat per second produced by a factory."
+  ],
+  "VEF_FactoryHeatPerSecondFactor.label": [
+   "heat per second factor"
+  ],
+  "VEF_FoodCapacityMultiplier.description": [
+   "Increases the size of the pawn's hunger bar. This does not affect hunger"
+  ],
+  "VEF_FoodCapacityMultiplier.label": [
+   "body food capacity multiplier"
+  ],
+  "VEF_GaussProjectileDamageModifier.description": [
+   "How much the damage dealt is modified (as a percentage of the base damage) for each previously hit target."
+  ],
+  "VEF_GaussProjectileDamageModifier.label": [
+   "piercing damage modifier"
+  ],
+  "VEF_GeneralTitle": [
+   "General"
+  ],
+  "VEF_GrowthPointMultiplier.description": [
+   "Increases the amount of growth points accumulated by children when learning"
+  ],
+  "VEF_GrowthPointMultiplier.label": [
+   "growth point multiplier"
+  ],
+  "VEF_HeadSize_Cosmetic.label": [
+   "head size multiplier"
+  ],
+  "VEF_HeatstrokeBuildupMultiplier.description": [
+   "A factor on how fast heatstroke will be gained."
+  ],
+  "VEF_HeatstrokeBuildupMultiplier.label": [
+   "Heatstroke buildup multiplier"
+  ],
+  "VEF_HomeArea": [
+   "Home Area"
+  ],
+  "VEF_HomeAreaDesc": [
+   "Ores mined by pawns are only unforbidden if mined in the home area"
+  ],
+  "VEF_LetterLabelWeeds": [
+   "Weeds: {PLANTDEF_labelPlural}"
+  ],
+  "VEF_LetterWeeds": [
+   "Weeds have spread across your {PLANTDEF_labelPlural}, as well as other nearby blooming flowers, greatly affecting their beauty.\\n\\nYou can order your colonists to remove the weeds, though it is a time consuming process."
+  ],
+  "VEF_MTBLovinFactor.description": [
+   "A factor of the mean time between (MTB) this person looking for some lovin'."
+  ],
+  "VEF_MTBLovinFactor.label": [
+   "MTB Lovin Factor"
+  ],
+  "VEF_MassCarryCapacity.description": [
+   "Total mass carrying capacity of the pawn in caravans."
+  ],
+  "VEF_MassCarryCapacity.label": [
+   "Mass carry capacity"
+  ],
+  "VEF_MeleeAttackDamageFactor.description": [
+   "A multiplier on melee attack damage."
+  ],
+  "VEF_MeleeAttackDamageFactor.label": [
+   "melee attack damage factor"
+  ],
+  "VEF_MeleeWeaponRange.description": [
+   "The range of this melee weapon."
+  ],
+  "VEF_MeleeWeaponRange.label": [
+   "melee weapon range"
+  ],
+  "VEF_NegativeThoughtDurationFactor.description": [
+   "The duration of negative thoughts is multiplied by this value."
+  ],
+  "VEF_NegativeThoughtDurationFactor.label": [
+   "thought duration factor - negative"
+  ],
+  "VEF_NeutralThoughtDurationFactor.description": [
+   "The duration of neutral thoughts is multiplied by this value."
+  ],
+  "VEF_NeutralThoughtDurationFactor.label": [
+   "thought duration factor - neutral"
+  ],
+  "VEF_Never": [
+   "Never"
+  ],
+  "VEF_NeverDesc": [
+   "Never unforbid mined ores (this is how the base game works for non-human pawns, such as animals and mechs)"
+  ],
+  "VEF_NotTameable": [
+   "This creature is untameable"
+  ],
+  "VEF_NullTerrain.label": [
+   "null terrain"
+  ],
+  "VEF_OutpostDeliverySpot.description": [
+   "Designates a spot for items from outposts to be delivered to."
+  ],
+  "VEF_OutpostDeliverySpot.label": [
+   "outpost delivery spot"
+  ],
+  "VEF_PawnRenderPosOffset.description": [
+   "Modifies the pawn's rendered position in y-axis."
+  ],
+  "VEF_PawnRenderPosOffset.label": [
+   "pawn render offset"
+  ],
+  "VEF_PermanentBurn.label": [
+   "permanent burn"
+  ],
+  "VEF_PositiveThoughtDurationFactor.description": [
+   "The duration of positive thoughts is multiplied by this value."
+  ],
+  "VEF_PositiveThoughtDurationFactor.label": [
+   "thought duration factor - positive"
+  ],
+  "VEF_PrefabBorderBlue.label": [
+   "prefab border (blue)"
+  ],
+  "VEF_PrefabBorderGreen.label": [
+   "prefab border (green)"
+  ],
+  "VEF_PrefabBorderRed.label": [
+   "prefab border (red)"
+  ],
+  "VEF_PrefabBorderWhite.label": [
+   "prefab border (white)"
+  ],
+  "VEF_PrefabBorderYellow.label": [
+   "prefab border (yellow)"
+  ],
+  "VEF_RangeAttackDamageFactor.description": [
+   "A multiplier on range attack damage."
+  ],
+  "VEF_RangeAttackDamageFactor.label": [
+   "range attack damage factor"
+  ],
+  "VEF_RangeAttackSpeedFactor": [
+   "Range Attack Speed Factor"
+  ],
+  "VEF_RangedCooldownFactor.description": [
+   "The cooldown on ranged weapons of the wearer is multiplied by this value."
+  ],
+  "VEF_RangedCooldownFactor.label": [
+   "ranged cooldown factor"
+  ],
+  "VEF_RangedDodgeChance.description": [
+   "Chance to dodge a ranged attack that would've otherwise hit, or (if negative) get hit by a ranged attack that was meant for a different target."
+  ],
+  "VEF_RangedDodgeChance.label": [
+   "ranged dodge chance"
+  ],
+  "VEF_RefuelSecondary.label": [
+   "refuel ammunition"
+  ],
+  "VEF_RemoveWeeds.label": [
+   "remove weeds"
+  ],
+  "VEF_SecondaryAcidBurn.label": [
+   "acid burn"
+  ],
+  "VEF_TPTitle": [
+   "Toggleable patches"
+  ],
+  "VEF_TerrainsNeedsDiggable": [
+   "The terrain needs to be diggable to do this"
+  ],
+  "VEF_TextureVariations": [
+   "Texture Variations:"
+  ],
+  "VEF_TimeToDie": [
+   "Animal expires in: {0}"
+  ],
+  "VEF_TimeToMetamorphosis": [
+   "Time to metamorphosis: {0}"
+  ],
+  "VEF_UnforbidMinedOres": [
+   "Unforbid mined ores"
+  ],
+  "VEF_VerbRangeFactor.description": [
+   "The range on weapons is multiplied by this value."
+  ],
+  "VEF_VerboseLogging": [
+   "Verbose logging"
+  ],
+  "VEF_WarningEggExplodes": [
+   "Warning, this egg explodes when hatching!"
+  ],
+  "VEF_XenophobicRage.label": [
+   "xenophobic rage"
+  ],
+  "VFE.ChangeColorTo": [
+   "Change color to {0}"
+  ],
+  "VFE.ChangeVisualDesc": [
+   "Set a specific visual for the building or item."
+  ],
+  "VFE.ChangeVisualLabel": [
+   "Change visual"
+  ],
+  "VFE.ColorSwitchPowerOff": [
+   "Power is off. Impossible to switch color."
+  ],
+  "VFE.SwitchLightColor": [
+   "Switch light color"
+  ],
+  "VFE.SwitchLightColorDesc": [
+   "Change current light colour."
+  ],
+  "VFEA.AbilityDisableReasonCooldown": [
+   "{0} is on cooldown for {1}"
+  ],
+  "VFEA.AbilityDisableReasonGeneral": [
+   "{0} doesn't meet the requirements"
+  ],
+  "VFEA.AbilityStatsDuration": [
+   "Duration"
+  ],
+  "VFEA.AbilityStatsPower": [
+   "Power"
+  ],
+  "VFEA.MinRadius": [
+   "Minimum radius"
+  ],
+  "VFEA.RClickToAuto": [
+   "Right-click to enable autocasting."
+  ],
+  "VFEA.RClickToNoAuto": [
+   "Right-click to disable autocasting."
+  ],
+  "VFEA.TargetMustBeHostile": [
+   "Target must be hostile"
+  ],
+  "VFEC_Shields.label": [
+   "shields"
+  ],
+  "VFECore.Advanced": [
+   "advanced"
+  ],
+  "VFECore.IsToo": [
+   "is too"
+  ],
+  "VFECore.Primitive": [
+   "primitive"
+  ],
+  "VFECore.StatsReport_Powered": [
+   "Powered"
+  ],
+  "VFECore.StatsReport_Unpowered": [
+   "Unpowered"
+  ],
+  "VFEM.CaravanMachineRanOutPower": [
+   "{MACHINE_nameDef} ran out of power, and was left behind."
+  ],
+  "VFEM.DroneGainsName": [
+   "The drone's name is now {0}."
+  ],
+  "VFEMRideableMachineTip": [
+   "This droid is rideable. People in a caravan will ride the fastest available animals/droids, improving the speed of the caravan as a whole."
+  ],
+  "VFEMechAttachTurret": [
+   "Attach Turret"
+  ],
+  "VFEMechAttachTurretDesc": [
+   "Construct a turret atop this mobile platform. This will require a colonist to deliver resources equal to that turret's normal construction cost."
+  ],
+  "VFEMechForceRecharge": [
+   "Force Recharge"
+  ],
+  "VFEMechForceRechargeDesc": [
+   "Order the associated machine to return to this platform for charging, regardless of its current battery level."
+  ],
+  "VFEMechLowerRange": [
+   "Reduce range"
+  ],
+  "VFEMechLowerRangeDesc": [
+   "Reduce the number of tiles this machine will travel."
+  ],
+  "VFEMechMachineDied": [
+   "Machine destroyed"
+  ],
+  "VFEMechMachineDiedDesc": [
+   "One of your machines has been destroyed! You can dismantle its remains at a machining table. In order to construct a replacement, one of your colonists will need to deliver the following parts to its platform:\\n\\n{0}"
+  ],
+  "VFEMechMachineHitObstacle": [
+   "Machine has run into an obstacle!"
+  ],
+  "VFEMechNoResources": [
+   "Not enough resources"
+  ],
+  "VFEMechNoTurret": [
+   "No active mobile turret"
+  ],
+  "VFEMechRaiseRange": [
+   "Increase range"
+  ],
+  "VFEMechRaiseRangeDesc": [
+   "Increase the number of tiles this machine will travel."
+  ],
+  "VFEMechReconstruct": [
+   "Needed to rebuild machine:"
+  ],
+  "VFEMechSetArea": [
+   "Set area"
+  ],
+  "VFEMechSetAreaDesc": [
+   "Set the allowed area for all of this platform's associated machines."
+  ],
+  "VFEMechStartMachine": [
+   "Start machine"
+  ],
+  "VFEMechStartMachineDesc": [
+   "Start this machine."
+  ],
+  "VFEMechStopMachine": [
+   "Stop machine"
+  ],
+  "VFEMechStopMachineDesc": [
+   "Stop this machine's progress and force it to return to base."
+  ],
+  "VFEMechTurretResources": [
+   "Needed to construct turret:"
+  ],
+  "VFE_AsexualReproductionDisabled": [
+   "Asexual reproduction disabled via mod options"
+  ],
+  "VFE_ChangeGraphic": [
+   "Random Graphic"
+  ],
+  "VFE_ChangeGraphicDesc": [
+   "Change Graphic of this building randomly between those available"
+  ],
+  "VFE_ChooseGraphic": [
+   "Choose Graphic"
+  ],
+  "VFE_ChooseGraphicDesc": [
+   "Choose Graphic of this building via a menu with all available options"
+  ],
+  "VFE_ChooseMine": [
+   "Choose chunk type to drill"
+  ],
+  "VFE_ChooseMineDesc": [
+   "Choose chunk type to drill. You can choose any of the map's rock types, or random"
+  ],
+  "VFE_ChunkRandomMine": [
+   "Drill for Random Chunks"
+  ],
+  "VFE_ChunkToMine": [
+   "Drill for {0}"
+  ],
+  "VFE_DeepDrillNo": [
+   "Deep drill cannot be used with {0}."
+  ],
+  "VFE_HideRandomizeButton": [
+   "Hide the \"Random Graphic\" and \"Choose Graphic\" buttons"
+  ],
+  "VFE_Loot.label": [
+   "loot objects"
+  ],
+  "VFE_NeedsSand": [
+   "This building must be placed on sand"
+  ],
+  "VFE_NeedsWater": [
+   "This building must be placed on water"
+  ],
+  "VFE_NoGraphics": [
+   "This building doesn't have extra random graphics to choose from. Some modder added the comp class to the building without alternative graphics, which is weird"
+  ],
+  "VFE_PleaseSelectOutput": [
+   "Select machine output"
+  ],
+  "VFE_RandomBuildingsDontStartRandom": [
+   "Make random graphics buildings NOT start randomized"
+  ],
+  "VFE_RandomRock": [
+   "Random chunk"
+  ],
+  "VFE_StudyBuilding.label": [
+   "study a building"
+  ],
+  "VGE_EggHatched": [
+   "{0} has hatched from an egg!"
+  ],
+  "VGE_EggHatchedLabel": [
+   "{0} hatched!"
+  ],
+  "VGE_EggLaid": [
+   "{0} has laid an egg! Keep it warm and protected."
+  ],
+  "VGE_EggLaidLabel": [
+   "{0} laid an egg!"
+  ],
+  "VGE_EggPregnancy": [
+   "{0}'s eggs have been fertilized! The egglaying process will continue until a fertile egg is laid."
+  ],
+  "VGE_EggPregnancyLabel": [
+   "{0} fertilized!"
+  ],
+  "VGE_ForGenderOnly": [
+   "{0} only gene."
+  ],
+  "VGE_Male_Egg": [
+   "Males don't lay eggs"
+  ],
+  "VGE_PregnancyFactor": [
+   "Pregnancy factor gene: {0} gestation speed"
+  ],
+  "VGE_StatsReport_AnyLightSensitivity": [
+   "light sensitivity"
+  ],
+  "VGE_StatsReport_Armoured": [
+   "armoured"
+  ],
+  "VGE_StatsReport_Below0": [
+   "below 0ºC"
+  ],
+  "VGE_StatsReport_ColonyMap": [
+   "on colony map"
+  ],
+  "VGE_StatsReport_InDarkness": [
+   "below 50% lit"
+  ],
+  "VGE_StatsReport_InGreatPain": [
+   "in great pain (>20%)"
+  ],
+  "VGE_StatsReport_InLight": [
+   "above 50% lit"
+  ],
+  "VGE_StatsReport_InPain": [
+   "in pain"
+  ],
+  "VGE_StatsReport_InPlanet": [
+   "in the planet"
+  ],
+  "VGE_StatsReport_InPollution": [
+   "in polluted terrain"
+  ],
+  "VGE_StatsReport_InSpace": [
+   "in Space"
+  ],
+  "VGE_StatsReport_InVacuum": [
+   "in vacuum"
+  ],
+  "VGE_StatsReport_Inside": [
+   "indoors"
+  ],
+  "VGE_StatsReport_NoSunlight": [
+   "no sunlight"
+  ],
+  "VGE_StatsReport_NotWater": [
+   "on dry land"
+  ],
+  "VGE_StatsReport_Outside": [
+   "outdoors"
+  ],
+  "VGE_StatsReport_OutsideColonyMap": [
+   "outside colony map"
+  ],
+  "VGE_StatsReport_Over40": [
+   "over 40ºC"
+  ],
+  "VGE_StatsReport_Water": [
+   "on water"
+  ],
+  "VME_MessageNeedsThePairedMeme": [
+   "{0} needs one of the following memes to be chosen too to work: {1}"
+  ],
+  "VPEF_MinifiedFlower.label": [
+   "minified flower"
+  ],
+  "VPE_AgeBeautyModifier": [
+   "Age beauty modifier"
+  ],
+  "VPE_AgeBeautyModifier_Desc": [
+   "The beauty of this plant will increase by this amount for every year it is kept alive, up to a maximum of +{0}."
+  ],
+  "VPE_BeautyByAge": [
+   "Beauty by age: +{0}"
+  ],
+  "VPE_BeautyByBloming": [
+   "Beauty by blooming: x{0}"
+  ],
+  "VPE_BeautyByLeafless": [
+   "Leafless beauty: {0}"
+  ],
+  "VPE_BeautyByWeeds": [
+   "Beauty because of weeds: {0}"
+  ],
+  "VPE_BloomBeautyModifier": [
+   "Bloom beauty modifier"
+  ],
+  "VPE_BloomBeautyModifier_Desc": [
+   "The beauty of this plant will be multiplied by this amount when in its blooming stage."
+  ],
+  "VPE_BloomTemperatureMax": [
+   "Maximum bloom temperature"
+  ],
+  "VPE_BloomTemperatureMax_Desc": [
+   "The maximum temperature the plant will need to be below to enter a blooming stage.\\n\\n{0}"
+  ],
+  "VPE_BloomTemperatureMin": [
+   "Minimum bloom temperature"
+  ],
+  "VPE_BloomTemperatureMin_Desc": [
+   "The minimum temperature the plant will need to enter a blooming stage.\\n\\n{0}"
+  ],
+  "VPE_BloomingPeriod": [
+   "Blooming period"
+  ],
+  "VPE_BloomingPeriod_Desc": [
+   "This flower will enter a blooming stage in this period, or the equivalent in days of the year in permanent summer / winter."
+  ],
+  "VPE_CanBloom": [
+   "If the blooming stops due to low temperature, this flower can enter a blooming stage again if the conditions improve."
+  ],
+  "VPE_CancelExtractFlower": [
+   "Cancel extraction"
+  ],
+  "VPE_CancelExtractFlower_Desc": [
+   "Cancel extracting this flower."
+  ],
+  "VPE_CancelWeedRemoval": [
+   "Cancel weed removal"
+  ],
+  "VPE_CancelWeedRemoval_Desc": [
+   "Cancel removing the weeds from this flower."
+  ],
+  "VPE_CantBloom": [
+   "If the blooming stops due to low temperature, this flower won't be able to bloom again until next year!"
+  ],
+  "VPE_DeadlyColdTemperature": [
+   "Deadly cold temperature"
+  ],
+  "VPE_DeadlyColdTemperature_Desc": [
+   "Below this temperature, the plant will start dying."
+  ],
+  "VPE_ExtractFlower": [
+   "Extract flower"
+  ],
+  "VPE_ExtractFlower_Desc": [
+   "Extract this flower while keeping it alive, so that it can be replanted elsewhere."
+  ],
+  "VPE_FlowerIsBlooming": [
+   "Flower is blooming"
+  ],
+  "VPE_LeaflessBeauty": [
+   "Leafless beauty"
+  ],
+  "VPE_LeaflessBeauty_Desc": [
+   "Blooming flowers are pretty ugly when leafless due to cold. They won't die just for being leafless, but their beauty will be greatly affected."
+  ],
+  "VPE_MinifiedFlowerWillDieIn": [
+   "Extracted flower will die in {time} unless replanted."
+  ],
+  "VPE_MustBeGrown": [
+   "Plant must be fully grown before you can add age to it"
+  ],
+  "VPE_RealAge": [
+   "Age: {0}"
+  ],
+  "VPE_RemoveWeeds": [
+   "Remove weeds"
+  ],
+  "VPE_RemoveWeeds_Desc": [
+   "Remove the weeds that are negatively impacting this flower's beauty."
+  ],
+  "VPE_ReplantFlower": [
+   "Replant"
+  ],
+  "VPE_ReplantFlower_Desc": [
+   "The flower is currently packaged up for storage and transport. Use this command to replant it in the new location."
+  ],
+  "VPE_TempTooHighForBlooming": [
+   "Temperature too high for blooming"
+  ],
+  "VPE_TempTooLowForBlooming": [
+   "Temperature too low for blooming"
+  ],
+  "VRE_AllowedPartners": [
+   "Allowed partners"
+  ],
+  "VRE_AllowedPartnersDesc": [
+   "A list of all feratypes belonging to the {0} feratype family that this animal can make offspring with."
+  ],
+  "VRE_AnimalGenes": [
+   "Animal genes"
+  ],
+  "VRE_AnimalGenesDesc": [
+   "Genes present in this animal"
+  ],
+  "VRE_AnimalGenesFeratypeDesc": [
+   "The genes associated with this feratype."
+  ],
+  "VRE_AnimalIllness": [
+   "Animal illness MTB"
+  ],
+  "VRE_AnimalTantrum": [
+   "Animal tantrum MTB"
+  ],
+  "VRE_Days": [
+   "days"
+  ],
+  "VRE_FamilyTag": [
+   "Gene family"
+  ],
+  "VRE_Feratype": [
+   "Feratype"
+  ],
+  "VRE_FeratypeFamily": [
+   "feratype family"
+  ],
+  "VRE_FeratypeFamilyDesc": [
+   "This feratype belongs to the {0} feratype family:\\n\\n{1}"
+  ],
+  "VRE_LifespanFactor": [
+   "Lifespan"
+  ],
+  "VRE_LifespanFactorDesc": [
+   "Lifespan factor of this animal according to its genetic stability"
+  ],
+  "VRE_MoreInfoInInfoScreen": [
+   "More information is available on this feratype's information screen."
+  ],
+  "VRE_NotPregnant": [
+   "This animal is not pregnant"
+  ],
+  "VRE_SpecializedGene": [
+   "Specialized gene"
+  ],
+  "VRE_SpecializedGeneDesc": [
+   "This gene is only inherited by offspring whose feratype contains a gene from this family."
+  ],
+  "VRE_Stability": [
+   "Stability"
+  ],
+  "VRE_StabilityDesc": [
+   "Stability represents the complexity of an animal's genetic code and affecting predictability of gene inheritance.\\n\\nHigh stability ensures offspring typically inherit the average of their parents' genes, whereas low stability increases the likelihood that offspring will deviate from parental traits towards the natural median."
+  ],
+  "VRE_StatsReport_Genes": [
+   "Relevant animal genes"
+  ],
+  "VRE_StillbornDesc": [
+   "Your {0}, {1} gave birth to a stillborn offspring."
+  ],
+  "VRE_StillbornLabel": [
+   "Stillborn {0}"
+  ],
+  "VRE_TabAnimalGenes": [
+   "Genes"
+  ],
+  "VRE_Trainability": [
+   "Trainability set to"
+  ],
+  "VSE.CostGoodwill": [
+   "cost: {0} goodwill"
+  ],
+  "VSE.Reinforcements": [
+   "Reinforcements"
+  ],
+  "VSE.ReinforcementsDesc": [
+   "Seeing that your forces suffered losses, {FACTION_name} has decided to reinforce their raiding force"
+  ],
+  "VWE.CannotEquipHeavy": [
+   "Weapon requires powered armor"
+  ],
+  "VWEL_ToggleHotshotDesc": [
+   "Shots fired when standing still warm-up the weapon allowing for increased firing speed. Overheating can lead to detonation."
+  ],
+  "VWEL_ToggleHotshotLabel": [
+   "Weapon warm-up"
+  ],
+  "VanillaFactionsExpanded.AffectHiddenFactions": [
+   "Affect hidden"
+  ],
+  "VanillaFactionsExpanded.AllFactions": [
+   "All factions"
+  ],
+  "VanillaFactionsExpanded.AllFactionsIncludingHidden": [
+   "All factions including hidden"
+  ],
+  "VanillaFactionsExpanded.AlwaysHostile": [
+   "Always hostile"
+  ],
+  "VanillaFactionsExpanded.AnUnknownMod": [
+   "an unknown mod"
+  ],
+  "VanillaFactionsExpanded.EquipShield": [
+   "Equip {0} as shield"
+  ],
+  "VanillaFactionsExpanded.EquipWarningShieldUnusable": [
+   "(unusable with {0})"
+  ],
+  "VanillaFactionsExpanded.EquipWarningShieldUnusableWithWeapon": [
+   "({0} will be unusable)"
+  ],
+  "VanillaFactionsExpanded.FactionButtonAdd": [
+   "Add the faction"
+  ],
+  "VanillaFactionsExpanded.FactionButtonAddFull": [
+   "Add the faction with settlements"
+  ],
+  "VanillaFactionsExpanded.FactionButtonCancel": [
+   "Cancel"
+  ],
+  "VanillaFactionsExpanded.FactionButtonIgnore": [
+   "Don't ask for this faction again"
+  ],
+  "VanillaFactionsExpanded.FactionButtonSkip": [
+   "Do nothing"
+  ],
+  "VanillaFactionsExpanded.FactionButtonSpawn": [
+   "Spawn"
+  ],
+  "VanillaFactionsExpanded.FactionDiscoveryRequired": [
+   "It is marked as required, and you must add it to the game."
+  ],
+  "VanillaFactionsExpanded.FactionFailedMessage": [
+   "Failed to generate this faction. It is recommended to try again, but you can now skip adding this faction. Skipping may cause issues."
+  ],
+  "VanillaFactionsExpanded.FactionMessageFailed": [
+   "Failed to add the faction."
+  ],
+  "VanillaFactionsExpanded.FactionMessageFailedFull": [
+   "Failed to create a faction with settlements."
+  ],
+  "VanillaFactionsExpanded.FactionMessageSuccess": [
+   "Added {FactionName}."
+  ],
+  "VanillaFactionsExpanded.FactionMessageSuccessFull": [
+   "Added {FactionName} with {Amount} settlements."
+  ],
+  "VanillaFactionsExpanded.FactionMinDistance": [
+   "The minimum distance from player bases (recommended are {0}): {1}"
+  ],
+  "VanillaFactionsExpanded.FactionRecommended": [
+   "{REQUIRED_multiple ? It is recommended to have at least {REQUIRED} factions of {FACTION} type, but currently there's only {COUNT}. : It is recommended to enable {FACTION}.}"
+  ],
+  "VanillaFactionsExpanded.FactionRequired": [
+   "{FACTION} cannot be disabled{REQUIRED_multiple ? , you need at least {REQUIRED} factions of that type. : .}"
+  ],
+  "VanillaFactionsExpanded.FactionSelectOption": [
+   "Please select how to proceed:"
+  ],
+  "VanillaFactionsExpanded.FactionSettlementsToSpawn": [
+   "Settlements to spawn (recommended are {0}): {1}"
+  ],
+  "VanillaFactionsExpanded.FactionTitle": [
+   "New faction: {FactionName}"
+  ],
+  "VanillaFactionsExpanded.HiddenFactionInfo": [
+   "This is a hidden faction and won't show up in your faction list."
+  ],
+  "VanillaFactionsExpanded.ModInfo": [
+   "This faction is added by {ModName} and not currently present in your game."
+  ],
+  "VanillaFactionsExpanded.NaturalGoodwill": [
+   "Natural"
+  ],
+  "VanillaFactionsExpanded.NonSpawningFactionInfo": [
+   "This faction is marked as non-spawning and you should probably just ignore it."
+  ],
+  "VanillaFactionsExpanded.NumberRange": [
+   "{0} to {1}"
+  ],
+  "VanillaFactionsExpanded.Protects": [
+   "Protects"
+  ],
+  "VanillaFactionsExpanded.Protects_Desc": [
+   "What body parts the shield protects."
+  ],
+  "VanillaFactionsExpanded.RequiredFactionInfo": [
+   "It is marked as required by {ModName}."
+  ],
+  "VanillaFactionsExpanded.ScenPart_ForcedFactionRelations": [
+   "Faction relation modifiers"
+  ],
+  "VanillaFactionsExpanded.StartingGoodwill": [
+   "Starting"
+  ],
+  "VanillaFactionsExpanded.UsableWithShield": [
+   "Usable with shields"
+  ],
+  "VanillaFactionsExpanded.UsableWithShield_Desc": [
+   "Whether or not this weapon can be used if the character also has a shield equipped."
+  ],
+  "XPatchFound": [
+   "{0} patches found"
+  ]
+ },
+ "semantic": {
+  "CSGLog": {
+   "remis": [
+    "Enable structure generation debugging log: "
+   ],
+   "rimloc": [
+    "Enable structure generation debugging log:"
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "IP_IngredientPercentage": {
+   "remis": [
+    " (filled at {0} of {1})"
+   ],
+   "rimloc": [
+    "(filled at {0} of {1})"
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "IP_OverThreshold": {
+   "remis": [
+    " Waiting for output to clear. Output limit is {0}"
+   ],
+   "rimloc": [
+    "Waiting for output to clear. Output limit is {0}"
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "IP_ProcessorPaused": {
+   "remis": [
+    "{0} is paused: "
+   ],
+   "rimloc": [
+    "{0} is paused:"
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "IP_ProcessorWorking": {
+   "remis": [
+    "{0} is working: "
+   ],
+   "rimloc": [
+    "{0} is working:"
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "VEF.Shields.Search": {
+   "remis": [
+    "Search: "
+   ],
+   "rimloc": [
+    "Search:"
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "VEF_StomachContents": {
+   "remis": [
+    "{0} creatures swallowed whole. "
+   ],
+   "rimloc": [
+    "{0} creatures swallowed whole."
+   ],
+   "note": "differs only by whitespace/prefix"
+  },
+  "VEF_VerbRangeFactor.label": {
+   "remis": [
+    "weapon range factor"
+   ],
+   "rimloc": [
+    "verb range factor"
+   ],
+   "note": "same key, different source text"
+  },
+  "VEF_WhileCaravaning": {
+   "remis": [
+    "While caravaning, produces {0} {1} every: "
+   ],
+   "rimloc": [
+    "While caravaning, produces {0} {1} every:"
+   ],
+   "note": "differs only by whitespace/prefix"
+  }
+ },
+ "rimloc_only": {
+  "BetterReload.reportString": [
+   "reloading TargetA."
+  ],
+  "IP_InsertFirstIngredient.label": [
+   "bringing ingredient"
+  ],
+  "IP_InsertFirstIngredient.reportString": [
+   "inserting ingredient."
+  ],
+  "IP_InsertSecondIngredient.label": [
+   "bringing ingredient"
+  ],
+  "IP_InsertSecondIngredient.reportString": [
+   "inserting ingredient."
+  ],
+  "IP_InsertThirdIngredient.label": [
+   "bringing ingredient"
+  ],
+  "IP_InsertThirdIngredient.reportString": [
+   "inserting ingredient."
+  ],
+  "IP_RemoveProduct.label": [
+   "removing finished product"
+  ],
+  "IP_RemoveProduct.reportString": [
+   "removing finished product."
+  ],
+  "KCSG_GoToPassage.reportString": [
+   "entering TargetA."
+  ],
+  "MVCF_Dummy.description": [
+   "no"
+  ],
+  "MVCF_Dummy.label": [
+   "dummy"
+  ],
+  "Mote_FTSmoketrail.label": [
+   "Mote"
+  ],
+  "Mote_Firetrail.label": [
+   "Mote"
+  ],
+  "Mote_GreenSmoketrail.label": [
+   "Mote"
+  ],
+  "Mote_Smoketrail.label": [
+   "Mote"
+  ],
+  "PS_BringToProcessor.reportString": [
+   "bringing TargetB to TargetA."
+  ],
+  "PS_DrainFromMarkedStorage.reportString": [
+   "draining out of TargetA."
+  ],
+  "PS_FillStorage.reportString": [
+   "filling TargetA."
+  ],
+  "PS_PickUpProcessor.reportString": [
+   "picking up from TargetA."
+  ],
+  "ReloadFromInventory.reportString": [
+   "reloading TargetA."
+  ],
+  "Unload.reportString": [
+   "unloading TargetA."
+  ],
+  "VEF_AcidBuildup.stages.li.label": [
+   "minor, receiving burns"
+  ],
+  "VEF_AnimalResource.reportString": [
+   "gathering animal resource from TargetA."
+  ],
+  "VEF_AutoNutrition.reportString": [
+   "eating."
+  ],
+  "VEF_CustomizeItem.reportString": [
+   "customizing TargetA."
+  ],
+  "VEF_DestroyItem.reportString": [
+   "destroying an item."
+  ],
+  "VEF_EnergyShieldEnergyMaxApparel.description": [
+   "The maximum energy a shield generator can have at one time. More energy absorbs more damage."
+  ],
+  "VEF_EnergyShieldEnergyMaxApparel.label": [
+   "shield max energy"
+  ],
+  "VEF_EnergyShieldEnergyMaxPawn.description": [
+   "The maximum energy a shield generator can have at one time. More energy absorbs more damage."
+  ],
+  "VEF_EnergyShieldEnergyMaxPawn.label": [
+   "shield max energy"
+  ],
+  "VEF_EnergyShieldRadiusPawn.description": [
+   "The area covered when the energy shield is active."
+  ],
+  "VEF_EnergyShieldRadiusPawn.label": [
+   "shield radius"
+  ],
+  "VEF_EnergyShieldRechargeRateApparel.description": [
+   "The rate at which a shield gains energy as long as it is not broken."
+  ],
+  "VEF_EnergyShieldRechargeRateApparel.label": [
+   "shield recharge rate"
+  ],
+  "VEF_EnergyShieldRechargeRatePawn.description": [
+   "The rate at which a shield gains energy as long as it is not broken."
+  ],
+  "VEF_EnergyShieldRechargeRatePawn.label": [
+   "shield recharge rate"
+  ],
+  "VEF_ExtractFlower.reportString": [
+   "extracting a flower."
+  ],
+  "VEF_FleeAndCowerShort.reportString": [
+   "fleeing."
+  ],
+  "VEF_IngestWeird.reportString": [
+   "consuming TargetA."
+  ],
+  "VEF_Kamikaze.stages.li.label": [
+   "initial-hidden"
+  ],
+  "VEF_LayExplodingEgg.reportString": [
+   "laying egg."
+  ],
+  "VEF_LightSustenance.stages.li.label": [
+   "adequate light"
+  ],
+  "VEF_MeleeAttackSpeedFactor.description": [
+   "A multiplier on melee attack speed."
+  ],
+  "VEF_MeleeAttackSpeedFactor.label": [
+   "melee attack speed factor"
+  ],
+  "VEF_PermanentBurn.deathMessage": [
+   "{0} has been killed by burning."
+  ],
+  "VEF_RangeAttackSpeedFactor.description": [
+   "A multiplier on range attack speed."
+  ],
+  "VEF_RangeAttackSpeedFactor.label": [
+   "range attack speed factor"
+  ],
+  "VEF_RefuelSecondary.reportString": [
+   "refueling TargetA with ammunition."
+  ],
+  "VEF_ReloadWeaponTrait.reportString": [
+   "reloading TargetA."
+  ],
+  "VEF_RemoveWeeds.reportString": [
+   "removing weeds."
+  ],
+  "VEF_SecondaryAcidBurn.deathMessage": [
+   "{0} has been corroded to death."
+  ],
+  "VEF_ToxicBuildup.stages.li.label": [
+   "initial"
+  ],
+  "VEF_UseDoorTeleporter.reportString": [
+   "using TargetA to teleport to TargetB"
+  ],
+  "VEF_VerbCooldownFactor.description": [
+   "The cooldown on weapons is multiplied by this value."
+  ],
+  "VEF_VerbCooldownFactor.label": [
+   "verb cooldown factor"
+  ],
+  "VFEA_StandAndFaceTarget.reportString": [
+   "standing."
+  ],
+  "VFEC_EquipShield.reportString": [
+   "equipping TargetA."
+  ],
+  "VFEC_LeaveMap.reportString": [
+   "leaving."
+  ],
+  "VFEP_HypothermicSlowdown.stages.li.label": [
+   "minor"
+  ],
+  "VFE_Loot.reportString": [
+   "looting TargetA."
+  ],
+  "VFE_Mechanoids_AttachTurret.reportString": [
+   "attaching turret."
+  ],
+  "VFE_Mechanoids_Power.description": [
+   "Power represents the state of a machine's internal battery. If it gets too low, the machine will stop performing tasks and return to its station to recharge."
+  ],
+  "VFE_Mechanoids_Power.label": [
+   "power"
+  ],
+  "VFE_Mechanoids_Recharge.reportString": [
+   "recharging."
+  ],
+  "VFE_Mechanoids_RepairMachine.reportString": [
+   "rebuilding machine."
+  ],
+  "VFE_StudyBuilding.reportString": [
+   "studying TargetA."
+  ]
+ },
+ "competitor_only": {
+  "PS_BringToProcessor.gerund": [
+   "bringing ingredients to"
+  ],
+  "PS_BringToProcessor.verb": [
+   "bring ingredients to"
+  ],
+  "PS_DrainOutOfStorage.gerund": [
+   "draining out of storage"
+  ],
+  "PS_DrainOutOfStorage.verb": [
+   "drain out of storage"
+  ],
+  "PS_FillStorage.gerund": [
+   "filling storage"
+  ],
+  "PS_FillStorage.verb": [
+   "fill storage"
+  ],
+  "PS_PickUpProcessor.gerund": [
+   "picking up result from"
+  ],
+  "PS_PickUpProcessor.verb": [
+   "pick up result from"
+  ],
+  "VEF.OptionalFeatures.OptionalFeaturesDef::VFE_IdeoFloatMenuPlus.description": [
+   "This optional feature extends the menus in the Ideo creation screen, allowing search and scroll bars. Used by VE Memes and Alpha Memes."
+  ],
+  "VEF.OptionalFeatures.OptionalFeaturesDef::VFE_TileMutatorMechanics.description": [
+   "This optional feature adds a Def extension, TileMutatorExtension, to add new tile mutator mechanics for Odyssey."
+  ],
+  "VEF.OptionalFeatures.OptionalFeaturesDef::VFE_WeaponTraitDefMechanics.description": [
+   "This optional feature adds a Def extension to WeaponTraitDefs to allow for new unique weapon behaviours."
+  ],
+  "VEF_AcidBuildup.description": [
+   "A splash of acid that continues to cause burn wounds for quite some time after the initial attack."
+  ],
+  "VEF_AcidBuildup.label": [
+   "acid burn"
+  ],
+  "VEF_AcidBuildup.stages.0.label": [
+   "minor, receiving burns"
+  ],
+  "VEF_AcidBuildup.stages.1.label": [
+   "moderate, receiving burns"
+  ],
+  "VEF_AcidBuildup.stages.2.label": [
+   "serious, receiving burns"
+  ],
+  "VEF_AcidBurn.description": [
+   "An acid burn."
+  ],
+  "VEF_AcidBurn.label": [
+   "acid burn"
+  ],
+  "VEF_AnimalResource.gerund": [
+   "gathering animal resource from"
+  ],
+  "VEF_AnimalResource.verb": [
+   "gather animal resource from"
+  ],
+  "VEF_Beastmastery.description": [
+   "Train and attune this animal to your will, granting direct control over their movements and actions through a powerful bond of dominance and trust."
+  ],
+  "VEF_Beastmastery.label": [
+   "beastmastery"
+  ],
+  "VEF_ControlledCorpseDecay.description": [
+   "Teach the animal to control its corpse decaying abilities."
+  ],
+  "VEF_ControlledCorpseDecay.label": [
+   "controlled corpse decay"
+  ],
+  "VEF_CycleSeverance.description": [
+   "Suppress the natural reproduction cycle, preventing the release of offspring and completely negating the creature’s asexual reproduction."
+  ],
+  "VEF_CycleSeverance.label": [
+   "cycle severance"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.0": [
+   "innovation's path"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.1": [
+   "unveiled simple truths behind complex phenomena"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.10": [
+   "seeds of tomorrow"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.11": [
+   "planted ideas that would grow into transformative solutions"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.12": [
+   "cultivated a garden of knowledge, ripe with potential"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.13": [
+   "nurtured the roots of change with care and foresight"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.14": [
+   "sowing the future with today’s discoveries"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.15": [
+   "the ripple of curiosity"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.16": [
+   "set forth waves of inquiry that echoed through time"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.17": [
+   "dropped pebbles of innovation into the pond of knowledge"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.18": [
+   "watched as one question led to another, expanding the circle of understanding"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.19": [
+   "casting stones to create waves of progress"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.2": [
+   "simplified the intricate to make way for practical applications"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.20": [
+   "the alchemy of progress"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.21": [
+   "merged disparate disciplines to unlock new realms of possibility"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.22": [
+   "turned the impossible into the inevitable through sheer ingenuity"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.23": [
+   "crafted solutions that reshaped the understanding of what's achievable"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.24": [
+   "blending science and magic into the fabric of reality"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.25": [
+   "the tapestry of discovery"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.26": [
+   "wove together threads of knowledge from the four corners of the world"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.27": [
+   "revealed patterns in the chaos, charting paths to untold innovations"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.28": [
+   "embroidered the annals of history with tales of serendipitous breakthroughs"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.29": [
+   "weaving the future from the loom of the present"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.3": [
+   "harnessed basic principles to achieve remarkable feats"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.30": [
+   "the crucible of creation"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.31": [
+   "fused raw elements into the building blocks of tomorrow"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.32": [
+   "tempered the fires of creativity to forge unprecedented technologies"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.33": [
+   "quenched the thirst for knowledge with the elixir of invention"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.34": [
+   "molding the raw materials of today into the artifacts of the future"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.35": [
+   "the beacon of enlightenment"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.36": [
+   "illuminated the dark corners of ignorance, guiding the way forward"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.37": [
+   "cast light on the unknown, making the unseen visible to curious minds"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.38": [
+   "ignited the flames of curiosity, kindling a worldwide pursuit of understanding"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.39": [
+   "lighting the torches of progress and knowledge"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.4": [
+   "streamlining the essence of discovery"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.40": [
+   "the frontier of knowledge"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.41": [
+   "crossed new horizons in the pursuit of understanding"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.42": [
+   "challenged the status quo with groundbreaking theories"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.43": [
+   "merged ancient wisdom with modern technology for innovative solutions"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.44": [
+   "pushing the boundaries of science and art"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.45": [
+   "the essence of innovation"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.46": [
+   "transformed everyday materials into extraordinary tools"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.47": [
+   "paved the way for future generations with sustainable practices"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.48": [
+   "harnessed the power of nature to fuel new advancements"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.49": [
+   "fostering an ecosystem of creativity and progress"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.5": [
+   "building blocks of progress"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.50": [
+   "the architects of tomorrow"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.51": [
+   "built the foundations for a utopia where technology serves all"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.52": [
+   "envisioned a future where harmony between technology and nature thrives"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.53": [
+   "crafted tools that empower humanity to reach its fullest potential"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.54": [
+   "laying the keystones for future landscapes"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.55": [
+   "exploratory leaps"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.56": [
+   "stepped boldly into uncharted territories of knowledge"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.57": [
+   "bridged the gap between the known and the unknown"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.58": [
+   "ventured where curiosity dared to lead"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.59": [
+   "embarking on journeys of discovery"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.6": [
+   "laid the groundwork for monumental leaps forward"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.60": [
+   "the essence of ingenuity"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.61": [
+   "transformed challenges into opportunities for growth"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.62": [
+   "applied creative thinking to overcome traditional obstacles"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.63": [
+   "crafted elegant solutions with a blend of art and science"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.64": [
+   "unlocking potential through innovation"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.65": [
+   "knowledge’s harvest"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.66": [
+   "gathered insights as one reaps the fields at harvest"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.67": [
+   "cultivated a bounty of understanding from the seeds of inquiry"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.68": [
+   "shared the fruits of research with the world"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.69": [
+   "reaping the rewards of relentless curiosity"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.7": [
+   "connected dots across disciplines to reveal new insights"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.70": [
+   "the puzzle of progress"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.71": [
+   "assembled the pieces of mystery to reveal the big picture"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.72": [
+   "matched theory with practice to solve longstanding puzzles"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.73": [
+   "uncovered hidden connections that unlocked new possibilities"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.74": [
+   "piecing together the elements of advancement"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.8": [
+   "crafted the foundation upon which future innovations stand"
+  ],
+  "VEF_Description_Schematic_Defaults.rulePack.rulesStrings.9": [
+   "laying down the keystones of advancement"
+  ],
+  "VEF_DestroyItems.gerund": [
+   "destroying items"
+  ],
+  "VEF_DestroyItems.verb": [
+   "destroy items"
+  ],
+  "VEF_DiggingDiscipline.description": [
+   "Teach the animal to control its terrain digging abilities."
+  ],
+  "VEF_DiggingDiscipline.label": [
+   "digging discipline"
+  ],
+  "VEF_ExtractFlower.gerund": [
+   "extracting"
+  ],
+  "VEF_ExtractFlower.verb": [
+   "extract"
+  ],
+  "VEF_FumeRegulation.description": [
+   "Teach the animal to control its gas production abilities."
+  ],
+  "VEF_FumeRegulation.label": [
+   "fume regulation"
+  ],
+  "VEF_Kamikaze.description": [
+   "Boom."
+  ],
+  "VEF_Kamikaze.label": [
+   "sudden detonation"
+  ],
+  "VEF_Kamikaze.stages.0.label": [
+   "initial-hidden"
+  ],
+  "VEF_Kamikaze.stages.1.label": [
+   "critical"
+  ],
+  "VEF_LightSustenance.description": [
+   "This creature feeds on sunlight. Inadequate levels of light will kill it."
+  ],
+  "VEF_LightSustenance.label": [
+   "level of sunlight"
+  ],
+  "VEF_LightSustenance.stages.0.label": [
+   "adequate light"
+  ],
+  "VEF_LightSustenance.stages.1.label": [
+   "poor light levels"
+  ],
+  "VEF_LightSustenance.stages.2.label": [
+   "very low light levels"
+  ],
+  "VEF_LightSustenance.stages.3.label": [
+   "lack of sunlight"
+  ],
+  "VEF_LightSustenance.stages.4.label": [
+   "extreme lack of sustenance"
+  ],
+  "VEF_PermanentBurn.description": [
+   "A permanent burn scar that cannot be treated."
+  ],
+  "VEF_RefuelSecondary.gerund": [
+   "refueling"
+  ],
+  "VEF_RefuelSecondary.verb": [
+   "refuel"
+  ],
+  "VEF_RemoveWeeds.gerund": [
+   "removing weeds"
+  ],
+  "VEF_RemoveWeeds.verb": [
+   "remove weeds"
+  ],
+  "VEF_StillbornAnimal.description": [
+   "This animal died due to non-specific complications during pregnancy."
+  ],
+  "VEF_StillbornAnimal.label": [
+   "stillborn animal"
+  ],
+  "VEF_ToxicBuildup.description": [
+   "Toxins in the bloodstream. This can come from various sources, including environmental toxins, venomous bites, or poisoned weapons.\n\\nAt high doses, toxic buildup is lethal. Even at low doses, it can generate cancers.\n\\nContrary to base game toxic buildup, creatures who die with this toxic damage can be eaten."
+  ],
+  "VEF_ToxicBuildup.label": [
+   "toxic buildup"
+  ],
+  "VEF_ToxicBuildup.stages.0.label": [
+   "initial"
+  ],
+  "VEF_ToxicBuildup.stages.1.label": [
+   "initial"
+  ],
+  "VEF_ToxicBuildup.stages.2.label": [
+   "minor"
+  ],
+  "VEF_ToxicBuildup.stages.3.label": [
+   "moderate"
+  ],
+  "VEF_ToxicBuildup.stages.4.label": [
+   "serious"
+  ],
+  "VEF_ToxicBuildup.stages.5.label": [
+   "extreme"
+  ],
+  "VFEC_AddStartingStructure.label": [
+   "add custom structure to starting map"
+  ],
+  "VFEC_ForcedFactionGoodwill.label": [
+   "forced faction relations"
+  ],
+  "VFEC_OuterShell.label": [
+   "on top"
+  ],
+  "VFEC_PlayerPawnsArriveMethodEdge.label": [
+   "pawn arrive method"
+  ],
+  "VFEP_HypothermicSlowdown.description": [
+   "Dangerously low core body temperature. Unless re-warmed, hypothermic slowdown gets worse and ends in death. Recovery is quick once the victim is re-warmed."
+  ],
+  "VFEP_HypothermicSlowdown.label": [
+   "hypothermic slowdown"
+  ],
+  "VFEP_HypothermicSlowdown.stages.0.label": [
+   "minor"
+  ],
+  "VFEP_HypothermicSlowdown.stages.1.label": [
+   "minor"
+  ],
+  "VFEP_HypothermicSlowdown.stages.2.label": [
+   "moderate"
+  ],
+  "VFEP_HypothermicSlowdown.stages.3.label": [
+   "serious"
+  ],
+  "VFEP_HypothermicSlowdown.stages.4.label": [
+   "extreme"
+  ],
+  "VFE_Dev_Restart.label": [
+   "restart game"
+  ],
+  "VFE_EquippedStatFactors.label": [
+   "Factors when equipped"
+  ],
+  "VFE_Loot.gerund": [
+   "looting"
+  ],
+  "VFE_Loot.verb": [
+   "loot"
+  ],
+  "VFE_StudyBuilding.gerund": [
+   "studying"
+  ],
+  "VFE_StudyBuilding.verb": [
+   "study"
+  ],
+  "VSE_Reinforcements.label": [
+   "reinforcements"
+  ]
+ }
+}

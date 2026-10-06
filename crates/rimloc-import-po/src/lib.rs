@@ -359,7 +359,12 @@ pub fn build_translation_mod_with_langdir(
     Ok(())
 }
 
-/// Build translation mod with options
+/// Build translation mod with options. `skip_empty` (wave-5 MUST_FIX №2)
+/// drops untranslated entries — empty `msgstr` — instead of writing them as
+/// empty `<Key></Key>` elements, which the game may render as a MISSING UI
+/// string rather than fall back to English. The default (`false`) keeps the
+/// previous output.
+#[allow(clippy::too_many_arguments)]
 pub fn build_translation_mod_with_langdir_opts(
     po_path: &Path,
     out_mod: &Path,
@@ -368,8 +373,12 @@ pub fn build_translation_mod_with_langdir_opts(
     package_id: &str,
     rw_version: &str,
     dedupe: bool,
+    skip_empty: bool,
 ) -> Result<()> {
-    let entries = read_po_entries(po_path)?;
+    let mut entries = read_po_entries(po_path)?;
+    if skip_empty {
+        entries.retain(|e| !e.value.trim().is_empty());
+    }
     let mut grouped = group_entries_by_rel_path(entries);
 
     let about_dir = out_mod.join("About");
@@ -437,7 +446,9 @@ pub fn build_translation_mod_dry_run(
     })
 }
 
-/// Dry-run variant with options
+/// Dry-run variant with options (`skip_empty` mirrors the writer: untranslated
+/// entries are excluded from the plan, not counted as files-to-be).
+#[allow(clippy::too_many_arguments)]
 pub fn build_translation_mod_dry_run_opts(
     po_path: &Path,
     out_mod: &Path,
@@ -446,8 +457,12 @@ pub fn build_translation_mod_dry_run_opts(
     package_id: &str,
     rw_version: &str,
     dedupe: bool,
+    skip_empty: bool,
 ) -> Result<DryRunPlan> {
-    let entries = read_po_entries(po_path)?;
+    let mut entries = read_po_entries(po_path)?;
+    if skip_empty {
+        entries.retain(|e| !e.value.trim().is_empty());
+    }
     let grouped = group_entries_by_rel_path(entries);
 
     let mut total_keys = 0usize;

@@ -864,6 +864,10 @@ pub fn scan_units_effective_view(
     for dir in view.content_dirs.iter().chain(view.conditional_dirs.iter()) {
         patch_dirs.push(dir.join("Patches"));
     }
+    // The root is a content dir for the classic layout (and for LoadFolders
+    // `<li>/</li>`), so its Patches would be applied twice — dedup.
+    patch_dirs.sort();
+    patch_dirs.dedup();
     let mut merged = crate::patches_effect::PatchReport::default();
     for pd in patch_dirs.drain(..) {
         if pd.is_dir() {
@@ -890,6 +894,166 @@ pub fn scan_units_effective_view(
         patch: merged,
         view: Some(view),
     })
+}
+
+/// Union scan across a classic mod's PLAIN version folders
+/// (`--include-all-versions`, wave-5 MUST_FIX). Each version tier is scanned
+/// as its own effective view — the version folder plus Common plus the root,
+/// exactly what the game would load on that version — and the tiers merge
+/// NEWEST FIRST: a key is owned by the NEWEST version that defines it, and a
+/// requested version excludes every folder above it (the game never loads
+/// those). This is the documented "hard pick of one version per key": the
+/// legacy whole-root union let a lexicographic path accident
+/// (`Stats.xml` sorts after `Stats_Pawns.xml`) surface a 1.3 value where the
+/// disk ships 1.6 (VE Framework 2023507013: `verb` vs `weapon range factor`).
+///
+/// The returned `view`/`patch` describe the NEWEST tier — the effective view
+/// of the running game version.
+pub fn scan_units_all_versions_full(
+    root: &Path,
+    requested_version: Option<&str>,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> Result<EffectiveScan> {
+    let requested = requested_version.map(crate::modview::normalize_version_str);
+    let requested = requested.as_deref();
+    let req_parts: Option<Vec<u64>> = requested.map(|r| {
+        r.split('.')
+            .filter_map(|p| p.parse().ok())
+            .collect::<Vec<_>>()
+    });
+    let mut tiers: Vec<String> = crate::modview::classic_version_dirs(root)
+        .into_iter()
+        .filter(|(v, _)| match &req_parts {
+            Some(req) => {
+                let v_parts: Vec<u64> = v.split('.').filter_map(|p| p.parse().ok()).collect();
+                v_parts <= *req
+            }
+            None => true,
+        })
+        .map(|(v, _)| v)
+        .collect();
+    if tiers.is_empty() {
+        // No plain version folders (or none at/below the request): the
+        // effective view already covers the flat / LoadFolders shapes.
+        return scan_units_effective_full(root, requested_version, dict, extra_fields);
+    }
+    // Descending version order = priority order (newest claims keys first).
+    tiers.sort_by(|a, b| {
+        let pa: Vec<u64> = a.split('.').filter_map(|p| p.parse().ok()).collect();
+        let pb: Vec<u64> = b.split('.').filter_map(|p| p.parse().ok()).collect();
+        pb.cmp(&pa)
+    });
+    let mut scans: Vec<EffectiveScan> = Vec::with_capacity(tiers.len());
+    for tier in &tiers {
+        let view = crate::modview::effective_view(root, Some(tier))?;
+        scans.push(scan_units_effective_view(root, view, dict, extra_fields)?);
+    }
+    Ok(merge_version_tiers(scans))
+}
+
+/// Merge tier scans into one inventory: per `(language, family scope, key)`
+/// the FIRST tier that defines the key owns it (tiers arrive newest first).
+/// Family scopes mirror [`apply_effective_precedence`]; units outside the
+/// Keyed/DefInjected families (TKey over Defs files) dedupe by their typed
+/// identity, everything else by plain key. The newest tier's patch report
+/// and view describe the effective view of the running game version, so
+/// they win over older tiers' reports.
+fn merge_version_tiers(mut scans: Vec<EffectiveScan>) -> EffectiveScan {
+    let newest = scans.first_mut();
+    let (patch, view) = match newest {
+        Some(EffectiveScan { patch, view, .. }) => (patch.clone(), view.clone()),
+        None => (crate::patches_effect::PatchReport::default(), None),
+    };
+    let definj_scope = |p: &Path| -> String {
+        let s = p.to_string_lossy().replace('\\', "/");
+        match s.find("/DefInjected/") {
+            Some(i) => s[i + "/DefInjected/".len()..]
+                .split('/')
+                .next()
+                .unwrap_or_default()
+                .to_ascii_lowercase(),
+            None => String::new(),
+        }
+    };
+    let lang_of = |p: &Path| -> String {
+        let s = p.to_string_lossy().replace('\\', "/");
+        match s.find("/Languages/") {
+            Some(i) => {
+                let rest = &s[i + "/Languages/".len()..];
+                rest.split('/').next().unwrap_or_default().to_string()
+            }
+            None => String::new(),
+        }
+    };
+    let scope_key = |u: &TransUnit| -> Option<(String, String, String)> {
+        let s = u.path.to_string_lossy();
+        if rimloc_core::path_text::has_path_marker(&s, "Keyed") {
+            return Some((lang_of(&u.path), "keyed".into(), u.key.clone()));
+        }
+        if rimloc_core::path_text::has_path_marker(&s, "DefInjected") {
+            return Some((
+                lang_of(&u.path),
+                format!("definj:{}", definj_scope(&u.path)),
+                u.key.clone(),
+            ));
+        }
+        None
+    };
+    let tkey_identity = |u: &TransUnit| -> Option<(String, String)> {
+        u.tkey.as_ref().map(|m| (m.def_type.clone(), u.key.clone()))
+    };
+
+    let mut units: Vec<TransUnit> = Vec::new();
+    let mut claimed: HashSet<(String, String, String)> = HashSet::new();
+    let mut claimed_tkey: HashSet<(String, String)> = HashSet::new();
+    let mut claimed_plain: HashSet<String> = HashSet::new();
+    for scan in scans {
+        let EffectiveScan { units: tier, .. } = scan;
+        // Within one tier, a key may legitimately repeat (in-file keyed
+        // duplicates are Gate H diagnostics): the tier's own units never
+        // block each other — only earlier (newer) tiers do.
+        let mut tier_claimed: HashSet<(String, String, String)> = HashSet::new();
+        let mut tier_tkey: HashSet<(String, String)> = HashSet::new();
+        let mut tier_plain: HashSet<String> = HashSet::new();
+        for u in tier {
+            if let Some(k) = scope_key(&u) {
+                if claimed.contains(&k) {
+                    continue;
+                }
+                tier_claimed.insert(k);
+                units.push(u);
+                continue;
+            }
+            if let Some(id) = tkey_identity(&u) {
+                if claimed_tkey.contains(&id) {
+                    continue;
+                }
+                tier_tkey.insert(id);
+                units.push(u);
+                continue;
+            }
+            if claimed_plain.contains(&u.key) {
+                continue;
+            }
+            tier_plain.insert(u.key.clone());
+            units.push(u);
+        }
+        claimed.extend(tier_claimed);
+        claimed_tkey.extend(tier_tkey);
+        claimed_plain.extend(tier_plain);
+    }
+    EffectiveScan { units, patch, view }
+}
+
+/// Units-only variant of [`scan_units_all_versions_full`].
+pub fn scan_units_all_versions(
+    root: &Path,
+    requested_version: Option<&str>,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+) -> Result<Vec<TransUnit>> {
+    Ok(scan_units_all_versions_full(root, requested_version, dict, extra_fields)?.units)
 }
 
 /// Stable fingerprint of the source content a project inventory was built
@@ -966,6 +1130,117 @@ pub fn source_fingerprint(root: &Path, target_version: Option<&str>) -> Result<S
         }
     }
     Ok(crate::observability::sha256_hex(acc.as_bytes()))
+}
+
+#[cfg(test)]
+mod classic_version_union_tests {
+    //! Wave-5 MUST_FIX (VE Framework 2023507013): the plain version-folder
+    //! union resolves every key to its NEWEST defining version; the
+    //! effective view of one version never unions other folders.
+
+    use super::*;
+    use std::fs;
+    use tempfile::tempdir;
+
+    fn write(path: &Path, body: &str) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, body).unwrap();
+    }
+
+    fn versioned_mod(root: &Path) {
+        write(
+            &root.join("1.6/Defs/Range.xml"),
+            r#"<Defs><StatDef><defName>Range</defName><label>weapon range factor</label></StatDef></Defs>"#,
+        );
+        write(
+            &root.join("1.4/Defs/Range.xml"),
+            r#"<Defs><StatDef><defName>Range</defName><label>verb range factor</label></StatDef></Defs>"#,
+        );
+        write(
+            &root.join("1.3/Defs/Legacy.xml"),
+            r#"<Defs><StatDef><defName>Legacy</defName><label>legacy only</label></StatDef></Defs>"#,
+        );
+        write(
+            &root.join("Languages/English/Keyed/Root.xml"),
+            "<LanguageData><RootKey>root value</RootKey></LanguageData>",
+        );
+    }
+
+    #[test]
+    fn union_resolves_shared_key_to_newest_version() {
+        let dir = tempdir().unwrap();
+        versioned_mod(dir.path());
+        let auto = autodiscover_defs_context(dir.path()).unwrap();
+        let scan =
+            scan_units_all_versions_full(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+        let find = |needle: &str| {
+            scan.units
+                .iter()
+                .find(|u| u.source.as_deref() == Some(needle))
+        };
+        // Shared identity: the 1.6 value owns the key; the 1.4 value never
+        // survives (the old union let the lexicographic file-name accident
+        // pick `Stats.xml` over `Stats_Pawns.xml`).
+        let shared = find("weapon range factor").expect("1.6 value present");
+        assert!(shared.key.contains("Range"), "{shared:?}");
+        assert!(
+            find("verb range factor").is_none(),
+            "stale 1.4 value must not survive: {:#?}",
+            scan.units
+        );
+        // Union coverage: keys only an older version defines are kept.
+        assert!(find("legacy only").is_some());
+        // Root content loads with every tier (game rule §1.3).
+        assert!(find("root value").is_some());
+        // The reported view is the newest tier.
+        assert_eq!(
+            scan.view.as_ref().and_then(|v| v.version.clone()),
+            Some("1.6".to_string())
+        );
+    }
+
+    #[test]
+    fn requested_version_excludes_newer_folders_from_union() {
+        let dir = tempdir().unwrap();
+        versioned_mod(dir.path());
+        let auto = autodiscover_defs_context(dir.path()).unwrap();
+        let scan =
+            scan_units_all_versions_full(dir.path(), Some("1.4"), &auto.dict, &auto.extra_fields)
+                .unwrap();
+        let sources: Vec<_> = scan.units.iter().filter_map(|u| u.source.clone()).collect();
+        assert!(
+            sources.contains(&"verb range factor".to_string()),
+            "1.4 owns the shared key: {sources:?}"
+        );
+        assert!(
+            !sources.contains(&"weapon range factor".to_string()),
+            "a 1.4 request never sees 1.6 content: {sources:?}"
+        );
+        assert!(
+            sources.contains(&"legacy only".to_string()),
+            "1.3-only keys survive under a 1.4 request: {sources:?}"
+        );
+    }
+
+    #[test]
+    fn single_version_effective_view_stays_single() {
+        let dir = tempdir().unwrap();
+        versioned_mod(dir.path());
+        let auto = autodiscover_defs_context(dir.path()).unwrap();
+        let scan =
+            scan_units_effective_full(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+        let sources: Vec<_> = scan.units.iter().filter_map(|u| u.source.clone()).collect();
+        assert!(sources.contains(&"weapon range factor".to_string()));
+        assert!(sources.contains(&"root value".to_string()));
+        assert!(
+            !sources.contains(&"verb range factor".to_string()),
+            "the newest-version view never unions older folders: {sources:?}"
+        );
+        assert!(
+            !sources.contains(&"legacy only".to_string()),
+            "the newest-version view never unions older folders: {sources:?}"
+        );
+    }
 }
 
 #[cfg(test)]
