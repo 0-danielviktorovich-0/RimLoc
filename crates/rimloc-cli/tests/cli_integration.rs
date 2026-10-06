@@ -250,6 +250,73 @@ fn export_po_preserves_entity_markup_in_msgid() {
 }
 
 #[test]
+fn export_po_game_version_loadfolders_keeps_root_keyed() {
+    // Regression (HugsLib 818773962, 2026-10-06): `export-po --game-version`
+    // narrowed a LoadFolders mod to its vN folder via
+    // resolve_game_version_root; Keyed lives at the mod root
+    // (LoadFolders `<li>/</li>`), the version folder carries no `Languages/`
+    // at all, so the PO silently collapsed to a bare header (76 msgid → 1).
+    // The export must follow the EFFECTIVE view (root + version content
+    // folders) — same rule as the scan command (Gate H).
+    let tmp = tempfile::tempdir().expect(&ti18n!("test-tempdir"));
+    fs::write(
+        tmp.path().join("LoadFolders.xml"),
+        r#"<loadFolders>
+	<v1.6>
+		<li>/</li>
+		<li>v1.6</li>
+	</v1.6>
+</loadFolders>
+"#,
+    )
+    .unwrap();
+    let keyed = tmp.path().join("Languages").join("English").join("Keyed");
+    fs::create_dir_all(&keyed).unwrap();
+    fs::write(
+        keyed.join("NewKeys.xml"),
+        r#"<LanguageData>
+	<RootKey1>значение корневого ключа</RootKey1>
+	<RootKey2>&lt;b&gt;разметка&lt;/b&gt; работает</RootKey2>
+	<RootKey3>третий ключ</RootKey3>
+</LanguageData>
+"#,
+    )
+    .unwrap();
+    // Version folder with NO Languages — the exact HugsLib shape (DLL/Defs
+    // bump only). Without the fix the narrowed scan sees nothing here.
+    fs::create_dir_all(tmp.path().join("v1.6")).unwrap();
+    let out_po = tmp.path().join("out.po");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["export-po", "--root"])
+        .arg(tmp.path())
+        .args(["--out-po"])
+        .arg(&out_po)
+        .args(["--game-version", "1.6"]);
+    cmd.assert().success();
+
+    let po = fs::read_to_string(&out_po).unwrap();
+    for marker in [
+        "значение корневого ключа",
+        "msgid \"<b>разметка</b> работает\"",
+        "третий ключ",
+    ] {
+        assert!(
+            po.contains(marker),
+            "root Keyed entry `{marker}` missing from:\n{po}"
+        );
+    }
+    let msgid_count = po
+        .lines()
+        .filter(|l| l.starts_with("msgid \"") && !l.starts_with("msgid \"\""))
+        .count();
+    assert!(
+        msgid_count >= 3,
+        "expected ≥3 msgid from the root Keyed file, got {msgid_count}:\n{po}"
+    );
+}
+
+#[test]
 fn validate_json_emits_structured_issues() {
     use serde::Deserialize;
 

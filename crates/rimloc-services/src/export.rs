@@ -18,6 +18,37 @@ pub fn export_po_with_tm(
     tm_roots: Option<&[std::path::PathBuf]>,
 ) -> Result<ExportPoStats> {
     let units = rimloc_parsers_xml::scan_keyed_xml(scan_root)?;
+    export_po_from_units(
+        scan_root,
+        out_po,
+        lang,
+        source_lang,
+        source_lang_dir,
+        tm_roots,
+        units,
+    )
+}
+
+/// Same pipeline over ALREADY-SCANNED Keyed units (Gate H parity, 2026-10-06):
+/// a LoadFolders mod exports the EFFECTIVE view's languages dirs — root plus
+/// the version folders the game would actually read — instead of the single
+/// narrowed version folder produced by `resolve_game_version_root`. That
+/// narrowing silently emptied `export-po --game-version` on LoadFolders mods
+/// whose Keyed lives at the root (`<li>/</li>`): the vN folder has no
+/// `Languages/` at all, and the PO collapsed to a bare header (HugsLib
+/// regression: 76 msgid → 1). `scan_root` stays the MOD ROOT: it drives the
+/// Defs context (autodiscover + DefInjected targets), which follows the
+/// documented offline-superset policy.
+#[allow(clippy::too_many_arguments)]
+pub fn export_po_from_units(
+    scan_root: &Path,
+    out_po: &Path,
+    lang: Option<&str>,
+    source_lang: Option<&str>,
+    source_lang_dir: Option<&str>,
+    tm_roots: Option<&[std::path::PathBuf]>,
+    units: Vec<rimloc_core::TransUnit>,
+) -> Result<ExportPoStats> {
     let auto = autodiscover_defs_context(scan_root)?;
 
     let src_dir: String = if let Some(dir) = source_lang_dir {

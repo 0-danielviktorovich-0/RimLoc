@@ -46,7 +46,7 @@ pub use contract::{
     UnsupportedCapability, EXISTING_LIST_LIMIT, UI_CONTRACT_VERSION,
 };
 pub use eligibility_engine::{builtin_seed_rules, load_rule_pack, EligibilityEngine};
-pub use export::export_po_with_tm;
+pub use export::{export_po_from_units, export_po_with_tm};
 pub use extras::annotate::{
     annotate as annotate_apply, annotate_dry_run_plan, AnnotateFilePlan, AnnotatePlan,
     AnnotateSummary,
