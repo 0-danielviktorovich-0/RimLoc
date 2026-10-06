@@ -18,6 +18,7 @@ fn group_root_language_items(
     from_root: &Path,
     lang_folder: &str,
     versions: Option<&[String]>,
+    skip_empty: bool,
 ) -> Result<BTreeMap<PathBuf, Vec<(String, String)>>> {
     use std::collections::HashSet;
 
@@ -111,7 +112,11 @@ fn group_root_language_items(
     });
 
     for u in filtered {
-        let Some(src) = u.source.as_deref() else {
+        let Some(src) = u
+            .source
+            .as_deref()
+            .filter(|s| !skip_empty || !s.trim().is_empty())
+        else {
             continue;
         };
         let lossy = u.path.to_string_lossy();
@@ -144,6 +149,9 @@ fn group_root_language_items(
 
 /// Build translation mod from an existing Languages/<lang> tree under `from_root`.
 /// Returns a list of files to write with number of keys; optionally writes when `write=true`.
+/// `skip_empty` drops untranslated (empty source) keys instead of writing
+/// empty `<Key></Key>` elements (wave-5 MUST_FIX №2; default keeps the
+/// previous output).
 #[allow(clippy::too_many_arguments)]
 pub fn build_from_root(
     from_root: &Path,
@@ -152,6 +160,7 @@ pub fn build_from_root(
     versions: Option<&[String]>,
     write: bool,
     dedupe: bool,
+    skip_empty: bool,
 ) -> Result<(Vec<(PathBuf, usize)>, usize)> {
     build_from_root_with_progress(
         from_root,
@@ -160,11 +169,14 @@ pub fn build_from_root(
         versions,
         write,
         dedupe,
+        skip_empty,
         |_idx, _total, _path| {},
     )
 }
 
-/// Progress variant of [`build_from_root`].
+/// Progress variant of [`build_from_root`]; `skip_empty` drops untranslated
+/// (empty source) keys instead of writing empty `<Key></Key>` elements
+/// (wave-5 MUST_FIX №2; the default keeps the previous output).
 #[allow(clippy::too_many_arguments)]
 pub fn build_from_root_with_progress(
     from_root: &Path,
@@ -173,13 +185,14 @@ pub fn build_from_root_with_progress(
     versions: Option<&[String]>,
     write: bool,
     dedupe: bool,
+    skip_empty: bool,
     mut progress: impl FnMut(usize, usize, &Path),
 ) -> Result<(Vec<(PathBuf, usize)>, usize)> {
     // H1: strict form + containment before anything is planned or written.
     crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
     use std::collections::HashSet;
 
-    let grouped = group_root_language_items(from_root, lang_folder, versions)?;
+    let grouped = group_root_language_items(from_root, lang_folder, versions, skip_empty)?;
 
     let total_files = grouped.len();
     let mut idx = 0usize;
@@ -231,6 +244,7 @@ pub fn build_from_po_dry_run(
     package_id: &str,
     rw_version: &str,
     dedupe: bool,
+    skip_empty: bool,
 ) -> Result<BuildPlan> {
     // H1: strict form + containment before anything is planned or written.
     crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
@@ -242,6 +256,7 @@ pub fn build_from_po_dry_run(
         package_id,
         rw_version,
         dedupe,
+        skip_empty,
     )?;
     Ok(BuildPlan {
         mod_name: plan.mod_name,
@@ -263,6 +278,7 @@ pub fn build_from_po_execute(
     package_id: &str,
     rw_version: &str,
     dedupe: bool,
+    skip_empty: bool,
 ) -> Result<()> {
     // H1: strict form + containment before anything is planned or written.
     crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
@@ -274,6 +290,7 @@ pub fn build_from_po_execute(
         package_id,
         rw_version,
         dedupe,
+        skip_empty,
     )
 }
 
@@ -287,12 +304,16 @@ pub fn build_from_po_with_progress(
     package_id: &str,
     rw_version: &str,
     dedupe: bool,
+    skip_empty: bool,
     mut progress: impl FnMut(usize, usize, &Path),
 ) -> Result<()> {
     // H1: strict form + containment before anything is planned or written.
     crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
     // Read entries and group by relative path under Languages/
-    let entries = rimloc_import_po::read_po_entries(po)?;
+    let mut entries = rimloc_import_po::read_po_entries(po)?;
+    if skip_empty {
+        entries.retain(|e| !e.value.trim().is_empty());
+    }
     let re =
         regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](?P<rel>.+?)(?::\d+)?$").unwrap();
     use std::collections::{BTreeMap, HashSet};

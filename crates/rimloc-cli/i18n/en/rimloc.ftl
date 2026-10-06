@@ -203,6 +203,7 @@ help-buildmod-rw-version = Target RimWorld version
 help-buildmod-lang-dir = Language folder name inside the mod (optional)
 help-buildmod-dry-run = Do not write files; only print the build plan
 help-buildmod-dedupe = Remove duplicate keys within one XML (last wins)
+help-buildmod-skip-empty = Skip untranslated keys (empty msgstr / empty source) instead of writing empty <Key></Key> elements
 
 # diff-xml
 help-diffxml-about = Diff source vs translation presence and detect changed source strings using a baseline PO

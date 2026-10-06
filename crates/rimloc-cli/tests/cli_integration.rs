@@ -537,6 +537,91 @@ fn build_mod_from_root_newest_version_wins_per_key() {
 }
 
 #[test]
+fn build_mod_skip_empty_drops_untranslated_keys() {
+    // Wave-5 MUST_FIX №2 (HugsLib LEVEL7, finding №2): untranslated PO
+    // entries used to be written as empty `<Key></Key>` elements — the game
+    // may render them as a MISSING UI string instead of falling back to
+    // English. Default keeps the old output; `--skip-empty` drops them.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let po = tmp.path().join("in.po");
+    fs::write(
+        &po,
+        r#"msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: Languages/Russian/Keyed/Gear.xml:2
+msgctxt "HelmetName"
+msgid "Combat helmet"
+msgstr "Боевой шлем"
+
+#: Languages/Russian/Keyed/Gear.xml:3
+msgctxt "VestName"
+msgid "Armored vest"
+msgstr ""
+
+#: Languages/Russian/Keyed/Gear.xml:4
+msgctxt "PackName"
+msgid "Field pack"
+msgstr "   "
+"#,
+    )
+    .unwrap();
+    let out = tempfile::tempdir().expect("out");
+    let out_dir = out.path().join("RimLoc_RU");
+    let cwd = workspace_root();
+
+    // Default: both translated and untranslated keys are present (old
+    // behaviour, backwards compatible).
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po"])
+        .arg(&po)
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"]);
+    cmd.current_dir(&cwd);
+    cmd.assert().success();
+    let default_xml = fs::read_to_string(out_dir.join("Languages/Russian/Keyed/Gear.xml")).unwrap();
+    assert!(
+        default_xml.contains("<HelmetName>Боевой шлем</HelmetName>"),
+        "translated key present by default:\n{default_xml}"
+    );
+    assert!(
+        default_xml.contains("<VestName></VestName>"),
+        "empty element still written by default (backwards compat):\n{default_xml}"
+    );
+
+    // --skip-empty: only translated keys survive; a whitespace-only msgstr
+    // counts as untranslated too.
+    let out2 = tempfile::tempdir().expect("out2");
+    let out_dir2 = out2.path().join("RimLoc_RU");
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po"])
+        .arg(&po)
+        .args(["--out-mod"])
+        .arg(&out_dir2)
+        .args(["--lang", "ru", "--skip-empty"]);
+    cmd.current_dir(&cwd);
+    cmd.assert().success();
+    let skipped_xml =
+        fs::read_to_string(out_dir2.join("Languages/Russian/Keyed/Gear.xml")).unwrap();
+    assert!(
+        skipped_xml.contains("<HelmetName>Боевой шлем</HelmetName>"),
+        "translated keys survive --skip-empty:\n{skipped_xml}"
+    );
+    assert!(
+        !skipped_xml.contains("VestName"),
+        "empty msgstr must not produce an empty element:\n{skipped_xml}"
+    );
+    assert!(
+        !skipped_xml.contains("PackName"),
+        "whitespace-only msgstr counts as untranslated:\n{skipped_xml}"
+    );
+}
+
+#[test]
 fn validate_json_emits_structured_issues() {
     use serde::Deserialize;
 

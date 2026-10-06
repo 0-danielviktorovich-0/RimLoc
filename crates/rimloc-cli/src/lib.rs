@@ -247,6 +247,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("lang_dir", |a| a.help(tr!("help-buildmod-lang-dir")));
                 owned = owned.mut_arg("dry_run", |a| a.help(tr!("help-buildmod-dry-run")));
                 owned = owned.mut_arg("dedupe", |a| a.help(tr!("help-buildmod-dedupe")));
+                owned = owned.mut_arg("skip_empty", |a| a.help(tr!("help-buildmod-skip-empty")));
                 *sc = owned;
             }
             "annotate" => {
@@ -1184,6 +1185,9 @@ enum Build {
         /// Allow building into an existing non-empty out dir (merge keeps stale files — no cleanup)
         #[arg(long, default_value_t = false)]
         merge: bool,
+        /// Skip untranslated keys (empty msgstr / empty source) instead of writing empty <Key></Key> elements
+        #[arg(long, default_value_t = false)]
+        skip_empty: bool,
     },
     /// Environment diagnostics: RW install, version, mod dirs, provider
     /// config (presence only) and output writability. Always exits 0.
@@ -1947,6 +1951,7 @@ impl Runnable for Build {
                 dry_run,
                 dedupe,
                 merge,
+                skip_empty,
             } => commands::build_mod::run_build_mod(
                 po,
                 out_mod,
@@ -1960,6 +1965,7 @@ impl Runnable for Build {
                 dry_run,
                 dedupe,
                 merge,
+                skip_empty,
             ),
             Self::Doctor {
                 game_root,
