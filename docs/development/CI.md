@@ -44,11 +44,11 @@
 | `workflow-lint.yml` | workflow-file PR→main/convergence + dispatch | `actionlint` | быстрый синтаксис/semantics-гейт GitHub Actions отдельно от тяжёлого CI |
 | `dependency-review.yml` | dependency-file PR→main/convergence | `review` | блокирует новые High/Critical runtime dependency vulnerabilities; показывает OpenSSF Scorecard/patch info |
 | `docs.yml` | docs PR→main + docs push→main + dispatch | `build`, `deploy-prod`, optional `deploy-preview` | strict MkDocs + Pages; docs-only PR не гоняет тяжёлый Rust matrix |
-| `coverage.yml` | relevant code PR→main/convergence + push→main + dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov + Codecov OIDC, два coverage-family report; Components делят один отчёт по подсистемам |
+| `coverage.yml` | relevant code PR→main/convergence + push→main + dispatch | `config`, `rust`, `gui-rust` | cargo-llvm-cov → Codecov-native JSON + OIDC; Flags разделяют test families, Components — подсистемы |
 | `publish.yml` | dispatch | `publish` | recovery-публикация crates.io |
 | `release-plz.yml` | dispatch | `release_pr`, `release` | версионирование и релизы |
 
-Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; React typecheck/build — `ci.frontend-react`; frozen Svelte regression — `ci.frontend`; dependency/security audit — `ci.deny` + PR-diff `dependency-review.yml`; coverage — отдельный `coverage.yml` (Rust workspace + Tauri Rust, Codecov Components/Flags, OIDC); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория с path-конфигом; mkdocs — strict `docs.build`.
+Покрытие мандата: rustfmt/clippy/tests — `ci.lint/test`; React typecheck/build — `ci.frontend-react`; frozen Svelte regression — `ci.frontend`; dependency/security audit — `ci.deny` + PR-diff `dependency-review.yml`; coverage — отдельный `coverage.yml` (Rust workspace + Tauri Rust, Codecov-native region-aware reports, Components/Flags, OIDC); actionlint — `ci.workflows-lint`; CodeQL — default setup репозитория с path-конфигом; mkdocs — strict `docs.build`.
 
 ## 5. Правила безопасности, общие для всех workflow
 
@@ -81,7 +81,7 @@
 
 ## 6. Осознанно отложенное (позже, по решению владельца)
 
-- **React coverage.** Rust coverage уже имплементирован отдельным `coverage.yml` и реально загружается в Codecov (PR #62; validator + workspace + Tauri Rust jobs прошли). React R1 пока не имеет стабильного unit/component coverage runner в `package.json`, поэтому фальшивый 0% не публикуется. Контракт на будущее: `npm run test:coverage` → `frontend-react/coverage/lcov.info` → отдельный Codecov flag/component.
+- **React coverage.** Rust coverage уже имплементирован отдельным `coverage.yml` и реально загружается в Codecov (PR #62; validator + workspace + Tauri Rust jobs прошли). React R1 пока не имеет стабильного unit/component coverage runner в `package.json`, поэтому фальшивый 0% не публикуется. Контракт на будущее: `npm run test:coverage` → Codecov-supported frontend report → отдельный `react` flag/component. Test Analytics добавляется только когда существующий runner умеет выдавать JUnit без второго прогона suite.
 - **cargo-audit не добавлен**: `cargo-deny` (job `deny`, конфиг `deny.toml`) уже проверяет RustSec-advизории по всем lockfile'ам (включая `gui/tauri-app/src-tauri`), плюс лицензии и bans. Второй сканер тех же advisory-DB — дубль без новой гарантии.
 - **CodeQL** работает через default setup репозитория («dynamic») с конфигом `.github/codeql/codeql-config.yml` (`security-extended`). Workflow-файл `codeql.yml` НЕ добавлять: GitHub запрещает default setup и workflow одновременно. При переходе на advanced setup — мигрировать явно, не дублировать.
 - **Schedule-прогон** (еженедельная проверка дрейфа зависимостей/clippy) снят вместе с push-триггерами. Вернуть можно сниппетом в `ci.yml`:
