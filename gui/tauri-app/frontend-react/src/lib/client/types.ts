@@ -268,6 +268,39 @@ export interface ApplyExistingResponseDto {
   ambiguous: number;
 }
 
+// --- version diff (compare screen, read-only, stateless) ---
+export type VersionDiffCategoryDto = 'unchanged' | 'changed' | 'new' | 'missing';
+
+export interface VersionDiffEntryDto {
+  key: string;
+  category: VersionDiffCategoryDto;
+  /** Carrying file per side (absent where the key does not exist). */
+  old_path?: string;
+  new_path?: string;
+  old_source?: string;
+  new_source?: string;
+}
+
+export interface VersionDiffRequestDto {
+  old_root: { path: string };
+  new_root: { path: string };
+  /** Source language folder ("English" when omitted). */
+  source_lang?: string;
+}
+
+export interface VersionDiffResponseDto {
+  old_label: string;
+  new_label: string;
+  unchanged: number;
+  changed: number;
+  new: number;
+  missing: number;
+  /** Capped, review-ordered sample (changed → new → missing → unchanged). */
+  entries: VersionDiffEntryDto[];
+  /** True when `entries` was cut — the counts stay the source of truth. */
+  entries_truncated: boolean;
+}
+
 // --- handshake / capabilities ---
 export interface UnsupportedCapabilityDto {
   capability: string;
@@ -335,6 +368,9 @@ export type ContractMethod =
   | 'contract_provider_instance_upsert'
   | 'contract_provider_instance_delete'
   | 'contract_provider_instance_validate'
+  // Compare screen (version diff): read-only source-inventory diff of two
+  // mod roots — stateless, no project session involved.
+  | 'contract_version_diff'
   // Build identity of the RUNNING binary (soak-hardening §1): long-running
   // acceptance runs verify the artifact they drive independently of any
   // wrapper path. Refused honestly in mock — no running binary there.

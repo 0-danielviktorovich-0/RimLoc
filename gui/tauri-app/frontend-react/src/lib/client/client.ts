@@ -46,6 +46,8 @@ import type {
   TmUpsertResponseDto,
   TranslationIntentDto,
   ValidateProjectResponseDto,
+  VersionDiffRequestDto,
+  VersionDiffResponseDto,
   ProviderInstanceDeleteRequestDto,
   ProviderInstanceDeleteResponseDto,
   ProviderInstanceListResponseDto,
@@ -240,6 +242,13 @@ export class RimLocClient {
    *  ambiguous lines are never auto-applied. */
   async applyExisting(request: ApplyExistingRequestDto): Promise<ApplyExistingResponseDto> {
     return this.call('project_apply_existing', { request });
+  }
+
+  /** Read-only cross-version diff of two mod roots (compare screen):
+   *  new/missing/changed/unchanged classification per key with the
+   *  carrying file per side. Stateless — no project session involved. */
+  async versionDiff(request: VersionDiffRequestDto): Promise<VersionDiffResponseDto> {
+    return this.call('contract_version_diff', { request });
   }
 
   /** Project glossary: the project's terms (wave 13, read-only). */
