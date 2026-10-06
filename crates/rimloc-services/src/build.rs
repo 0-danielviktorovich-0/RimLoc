@@ -1,9 +1,150 @@
 use crate::Result;
 use rimloc_core::path_text::has_path_marker;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+
+/// Group the `Languages/<lang_folder>` tree of a mod root for `build-mod
+/// --from-root`. Wave-5 MUST_FIX parity with scan: without an explicit
+/// version filter each key resolves to its NEWEST defining version — the
+/// plain version folders are tiers in the game's load priority (newest
+/// folder first, then Common, then the root; GAME_SOURCE_FINDINGS §1.4) and
+/// a key claimed by a higher tier is never repeated by a lower one. The
+/// previous whole-root grouping let the same key enter the output twice with
+/// a scan-order-dependent winner. `--from-game-version` keeps its strict
+/// filter semantics (only paths carrying one of the markers) — explicit
+/// selection wins over inference.
+#[allow(clippy::too_many_arguments)]
+fn group_root_language_items(
+    from_root: &Path,
+    lang_folder: &str,
+    versions: Option<&[String]>,
+) -> Result<BTreeMap<PathBuf, Vec<(String, String)>>> {
+    use std::collections::HashSet;
+
+    let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](.+)$").unwrap();
+    let lang_marker_slash = format!("Languages/{lang_folder}");
+    let lang_marker_back = format!("Languages\\{lang_folder}");
+
+    let family_of = |p: &Path| -> &'static str {
+        let s = p.to_string_lossy();
+        if has_path_marker(&s, "DefInjected") {
+            "definj"
+        } else if has_path_marker(&s, "Keyed") {
+            "keyed"
+        } else {
+            "other"
+        }
+    };
+
+    // Priority tiers when no explicit filter is given: newest version folder
+    // first, then Common, then the root.
+    let mut tiers: Vec<PathBuf> = crate::modview::classic_version_dirs(from_root)
+        .into_iter()
+        .map(|(_, dir)| dir)
+        .collect();
+    tiers.reverse();
+    let common = from_root.join("Common");
+    if common.is_dir() {
+        tiers.push(common);
+    }
+    tiers.push(from_root.to_path_buf());
+    let tier_of = |p: &Path| -> usize {
+        tiers
+            .iter()
+            .position(|t| p.starts_with(t))
+            .unwrap_or_else(|| tiers.len() - 1)
+    };
+
+    let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
+    let mut claimed: HashSet<(&'static str, String)> = HashSet::new();
+    let mut tier_claimed: HashSet<(&'static str, String)> = HashSet::new();
+    let mut current_tier: Option<usize> = None;
+    let mut grouped: BTreeMap<PathBuf, Vec<(String, String)>> = BTreeMap::new();
+
+    // Deterministic input order: (tier priority) then (path, key). Within a
+    // tier the order only affects duplicate retention, never the winner.
+    let mut filtered: Vec<rimloc_core::TransUnit> = units
+        .into_iter()
+        .filter(|u| {
+            let path_str = u.path.to_string_lossy();
+            if !has_path_marker(&path_str, "Languages") {
+                return false;
+            }
+            if !(has_path_marker(&path_str, &lang_marker_slash)
+                || has_path_marker(&path_str, &lang_marker_back))
+            {
+                return false;
+            }
+            if let Some(vers) = versions {
+                let mut matched = false;
+                for ver in vers {
+                    if has_path_marker(&path_str, ver)
+                        || has_path_marker(&path_str, &format!("v{ver}"))
+                    {
+                        matched = true;
+                        break;
+                    }
+                }
+                if !matched {
+                    return false;
+                }
+            }
+            true
+        })
+        .collect();
+    filtered.sort_by(|a, b| {
+        let ta = if versions.is_some() {
+            0
+        } else {
+            tier_of(&a.path)
+        };
+        let tb = if versions.is_some() {
+            0
+        } else {
+            tier_of(&b.path)
+        };
+        (ta, a.path.to_string_lossy(), a.key.as_str()).cmp(&(
+            tb,
+            b.path.to_string_lossy(),
+            b.key.as_str(),
+        ))
+    });
+
+    for u in filtered {
+        let Some(src) = u.source.as_deref() else {
+            continue;
+        };
+        let lossy = u.path.to_string_lossy();
+        let Some(caps) = re.captures(&lossy) else {
+            continue;
+        };
+        let rel = PathBuf::from(&caps[1]);
+        // Cross-tier claiming: a key owned by a higher tier never repeats in
+        // a lower one. Within one tier duplicates pass (the caller's
+        // `--dedupe` handles in-file duplicates; behaviour is unchanged).
+        if versions.is_none() {
+            let tier = tier_of(&u.path);
+            if current_tier != Some(tier) {
+                claimed.extend(tier_claimed.drain());
+                current_tier = Some(tier);
+            }
+            let identity = (family_of(&u.path), u.key.clone());
+            if claimed.contains(&identity) {
+                continue;
+            }
+            tier_claimed.insert(identity);
+        }
+        grouped
+            .entry(rel)
+            .or_default()
+            .push((u.key, src.to_string()));
+    }
+    Ok(grouped)
+}
 
 /// Build translation mod from an existing Languages/<lang> tree under `from_root`.
 /// Returns a list of files to write with number of keys; optionally writes when `write=true`.
+#[allow(clippy::too_many_arguments)]
 pub fn build_from_root(
     from_root: &Path,
     out_mod: &Path,
@@ -12,81 +153,19 @@ pub fn build_from_root(
     write: bool,
     dedupe: bool,
 ) -> Result<(Vec<(PathBuf, usize)>, usize)> {
-    use std::collections::{BTreeMap, HashSet};
-
-    // H1: strict form + containment before anything is planned or written.
-    crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
-
-    let mut grouped: BTreeMap<PathBuf, Vec<(String, String)>> = BTreeMap::new();
-    let re = regex::Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](.+)$").unwrap();
-    let mut total_keys = 0usize;
-    let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
-    for u in units {
-        let path_str = u.path.to_string_lossy();
-        if !rimloc_core::path_text::has_path_marker(&path_str, "Languages") {
-            continue;
-        }
-        let lang_marker_slash = format!("Languages/{lang_folder}");
-        let lang_marker_back = format!("Languages\\{lang_folder}");
-        if !(has_path_marker(&path_str, &lang_marker_slash)
-            || has_path_marker(&path_str, &lang_marker_back))
-        {
-            continue;
-        }
-        if let Some(vers) = versions {
-            let mut matched = false;
-            for ver in vers {
-                if has_path_marker(&path_str, ver) || has_path_marker(&path_str, &format!("v{ver}"))
-                {
-                    matched = true;
-                    break;
-                }
-            }
-            if !matched {
-                continue;
-            }
-        }
-        if let Some(src) = u.source.as_deref() {
-            if let Some(caps) = re.captures(&path_str) {
-                let rel = PathBuf::from(&caps[1]);
-                grouped
-                    .entry(rel)
-                    .or_default()
-                    .push((u.key, src.to_string()));
-                total_keys += 1;
-            }
-        }
-    }
-
-    let mut files: Vec<(PathBuf, usize)> = Vec::new();
-    for (rel, mut items) in grouped.into_iter() {
-        if dedupe {
-            let mut seen: HashSet<String> = HashSet::new();
-            let mut outv: Vec<(String, String)> = Vec::new();
-            for (k, v) in items.into_iter().rev() {
-                if seen.insert(k.clone()) {
-                    outv.push((k, v));
-                }
-            }
-            outv.reverse();
-            items = outv;
-        }
-
-        let full = out_mod.join("Languages").join(lang_folder).join(&rel);
-        if write {
-            rimloc_import_po::write_language_data_xml(&full, &items)?;
-        }
-        files.push((full, items.len()));
-    }
-
-    if write {
-        // Ensure About/ exists but leave content generation to caller
-        let _ = std::fs::create_dir_all(out_mod.join("About"));
-    }
-
-    Ok((files, total_keys))
+    build_from_root_with_progress(
+        from_root,
+        out_mod,
+        lang_folder,
+        versions,
+        write,
+        dedupe,
+        |_idx, _total, _path| {},
+    )
 }
 
+/// Progress variant of [`build_from_root`].
+#[allow(clippy::too_many_arguments)]
 pub fn build_from_root_with_progress(
     from_root: &Path,
     out_mod: &Path,
@@ -96,57 +175,16 @@ pub fn build_from_root_with_progress(
     dedupe: bool,
     mut progress: impl FnMut(usize, usize, &Path),
 ) -> Result<(Vec<(PathBuf, usize)>, usize)> {
-    use regex::Regex;
-
     // H1: strict form + containment before anything is planned or written.
     crate::util::ensure_lang_write_target(out_mod, lang_folder)?;
-    use std::collections::{BTreeMap, HashSet};
-    let re = Regex::new(r"(?:^|[/\\])Languages[/\\][^/\\]+[/\\](?P<rel>.+)$").unwrap();
-    let mut grouped: BTreeMap<PathBuf, Vec<(String, String)>> = BTreeMap::new();
-    let mut total_keys = 0usize;
+    use std::collections::HashSet;
 
-    let units = rimloc_parsers_xml::scan_keyed_xml(from_root)?;
-    for u in units {
-        let path_str = u.path.to_string_lossy();
-        if !rimloc_core::path_text::has_path_marker(&path_str, "Languages") {
-            continue;
-        }
-        let lang_marker_slash = format!("Languages/{lang_folder}");
-        let lang_marker_back = format!("Languages\\{lang_folder}");
-        if !(has_path_marker(&path_str, &lang_marker_slash)
-            || has_path_marker(&path_str, &lang_marker_back))
-        {
-            continue;
-        }
-        if let Some(vers) = versions {
-            let mut matched = false;
-            for ver in vers {
-                if has_path_marker(&path_str, ver) || has_path_marker(&path_str, &format!("v{ver}"))
-                {
-                    matched = true;
-                    break;
-                }
-            }
-            if !matched {
-                continue;
-            }
-        }
-        if let Some(src) = u.source.as_deref() {
-            if let Some(caps) = re.captures(&path_str) {
-                let rel = PathBuf::from(&caps[1]);
-                grouped
-                    .entry(rel)
-                    .or_default()
-                    .push((u.key, src.to_string()));
-                total_keys += 1;
-            }
-        }
-    }
+    let grouped = group_root_language_items(from_root, lang_folder, versions)?;
 
     let total_files = grouped.len();
     let mut idx = 0usize;
     let mut files: Vec<(PathBuf, usize)> = Vec::new();
-    for (rel, mut items) in grouped.into_iter() {
+    for (rel, mut items) in grouped {
         if dedupe {
             let mut seen: HashSet<String> = HashSet::new();
             let mut outv: Vec<(String, String)> = Vec::new();
@@ -169,6 +207,7 @@ pub fn build_from_root_with_progress(
     if write {
         let _ = std::fs::create_dir_all(out_mod.join("About"));
     }
+    let total_keys = files.iter().map(|(_, n)| *n).sum();
     Ok((files, total_keys))
 }
 
@@ -183,6 +222,7 @@ pub struct BuildPlan {
     pub total_keys: usize,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_from_po_dry_run(
     po: &Path,
     out_mod: &Path,
@@ -214,6 +254,7 @@ pub fn build_from_po_dry_run(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_from_po_execute(
     po: &Path,
     out_mod: &Path,

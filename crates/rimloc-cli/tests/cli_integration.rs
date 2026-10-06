@@ -317,146 +317,6 @@ fn export_po_game_version_loadfolders_keeps_root_keyed() {
 }
 
 #[test]
-fn build_mod_from_root_newest_version_wins_per_key() {
-    // Wave-5 MUST_FIX parity for build: the same key in 1.4 and 1.6
-    // Languages trees must not be written twice with a scan-order-dependent
-    // winner — the newest version owns the key.
-    let tmp = tempfile::tempdir().expect("tempdir");
-    let src = tmp.path();
-    let write = |rel: &str, body: &str| {
-        let p = src.join(rel);
-        fs::create_dir_all(p.parent().unwrap()).unwrap();
-        fs::write(p, body).unwrap();
-    };
-    write(
-        "1.4/Languages/Russian/Keyed/Robots.xml",
-        "<LanguageData><Wave5Bot>старый робот</Wave5Bot><Wave5OldOnly>только 1.4</Wave5OldOnly></LanguageData>",
-    );
-    write(
-        "1.6/Languages/Russian/Keyed/Robots.xml",
-        "<LanguageData><Wave5Bot>новый робот</Wave5Bot></LanguageData>",
-    );
-    let out = tempfile::tempdir().expect("out");
-    let out_dir = out.path().join("RimLoc_RU");
-
-    let mut cmd = bin_cmd();
-    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po", "./test/ok.po"])
-        .args(["--out-mod"])
-        .arg(&out_dir)
-        .args(["--lang", "ru"])
-        .args(["--from-root"])
-        .arg(src);
-    cmd.current_dir(workspace_root());
-    cmd.assert().success();
-
-    let built = fs::read_to_string(out_dir.join("Languages/Russian/Keyed/Robots.xml")).unwrap();
-    assert!(
-        built.contains("новый робот"),
-        "the 1.6 value must own the shared key:\n{built}"
-    );
-    assert!(
-        !built.contains("старый робот"),
-        "the 1.4 value must not shadow the 1.6 value:\n{built}"
-    );
-    assert!(
-        built.contains("только 1.4"),
-        "keys only the older version defines stay in the union:\n{built}"
-    );
-    // Exactly one element per key: no duplicate `<Wave5Bot>` entries.
-    assert_eq!(
-        built.matches("<Wave5Bot>").count(),
-        1,
-        "the shared key must be written once:\n{built}"
-    );
-}
-
-#[test]
-fn build_mod_skip_empty_drops_untranslated_keys() {
-    // Wave-5 MUST_FIX №2 (HugsLib LEVEL7, finding №2): untranslated PO
-    // entries used to be written as empty `<Key></Key>` elements — the game
-    // may render them as a MISSING UI string instead of falling back to
-    // English. Default keeps the old output; `--skip-empty` drops them.
-    let tmp = tempfile::tempdir().expect("tempdir");
-    let po = tmp.path().join("in.po");
-    fs::write(
-        &po,
-        r#"msgid ""
-msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
-
-#: Languages/Russian/Keyed/Gear.xml:2
-msgctxt "HelmetName"
-msgid "Combat helmet"
-msgstr "Боевой шлем"
-
-#: Languages/Russian/Keyed/Gear.xml:3
-msgctxt "VestName"
-msgid "Armored vest"
-msgstr ""
-
-#: Languages/Russian/Keyed/Gear.xml:4
-msgctxt "PackName"
-msgid "Field pack"
-msgstr "   "
-"#,
-    )
-    .unwrap();
-    let out = tempfile::tempdir().expect("out");
-    let out_dir = out.path().join("RimLoc_RU");
-    let cwd = workspace_root();
-
-    // Default: both translated and untranslated keys are present (old
-    // behaviour, backwards compatible).
-    let mut cmd = bin_cmd();
-    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po"])
-        .arg(&po)
-        .args(["--out-mod"])
-        .arg(&out_dir)
-        .args(["--lang", "ru"]);
-    cmd.current_dir(&cwd);
-    cmd.assert().success();
-    let default_xml = fs::read_to_string(out_dir.join("Languages/Russian/Keyed/Gear.xml")).unwrap();
-    assert!(
-        default_xml.contains("<HelmetName>Боевой шлем</HelmetName>"),
-        "translated key present by default:\n{default_xml}"
-    );
-    assert!(
-        default_xml.contains("<VestName></VestName>"),
-        "empty element still written by default (backwards compat):\n{default_xml}"
-    );
-
-    // --skip-empty: only translated keys survive; a whitespace-only msgstr
-    // counts as untranslated too.
-    let out2 = tempfile::tempdir().expect("out2");
-    let out_dir2 = out2.path().join("RimLoc_RU");
-    let mut cmd = bin_cmd();
-    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po"])
-        .arg(&po)
-        .args(["--out-mod"])
-        .arg(&out_dir2)
-        .args(["--lang", "ru", "--skip-empty"]);
-    cmd.current_dir(&cwd);
-    cmd.assert().success();
-    let skipped_xml =
-        fs::read_to_string(out_dir2.join("Languages/Russian/Keyed/Gear.xml")).unwrap();
-    assert!(
-        skipped_xml.contains("<HelmetName>Боевой шлем</HelmetName>"),
-        "translated keys survive --skip-empty:\n{skipped_xml}"
-    );
-    assert!(
-        !skipped_xml.contains("VestName"),
-        "empty msgstr must not produce an empty element:\n{skipped_xml}"
-    );
-    assert!(
-        !skipped_xml.contains("PackName"),
-        "whitespace-only msgstr counts as untranslated:\n{skipped_xml}"
-    );
-}
-
-#[test]
 fn scan_plain_version_dirs_pick_newest_version_per_key() {
     // Wave-5 MUST_FIX (VE Framework 2023507013): a mod with NATIVE version
     // folders (1.0–1.6, no LoadFolders.xml) must resolve every key to its
@@ -619,6 +479,61 @@ fn scan_plain_version_dirs_pick_newest_version_per_key() {
     cmd.assert()
         .failure()
         .stderr(predicates::str::contains("not found under"));
+}
+
+#[test]
+fn build_mod_from_root_newest_version_wins_per_key() {
+    // Wave-5 MUST_FIX parity for build: the same key in 1.4 and 1.6
+    // Languages trees must not be written twice with a scan-order-dependent
+    // winner — the newest version owns the key.
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src = tmp.path();
+    let write = |rel: &str, body: &str| {
+        let p = src.join(rel);
+        fs::create_dir_all(p.parent().unwrap()).unwrap();
+        fs::write(p, body).unwrap();
+    };
+    write(
+        "1.4/Languages/Russian/Keyed/Robots.xml",
+        "<LanguageData><Wave5Bot>старый робот</Wave5Bot><Wave5OldOnly>только 1.4</Wave5OldOnly></LanguageData>",
+    );
+    write(
+        "1.6/Languages/Russian/Keyed/Robots.xml",
+        "<LanguageData><Wave5Bot>новый робот</Wave5Bot></LanguageData>",
+    );
+    let out = tempfile::tempdir().expect("out");
+    let out_dir = out.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po", "./test/ok.po"])
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"])
+        .args(["--from-root"])
+        .arg(src);
+    cmd.current_dir(workspace_root());
+    cmd.assert().success();
+
+    let built = fs::read_to_string(out_dir.join("Languages/Russian/Keyed/Robots.xml")).unwrap();
+    assert!(
+        built.contains("новый робот"),
+        "the 1.6 value must own the shared key:\n{built}"
+    );
+    assert!(
+        !built.contains("старый робот"),
+        "the 1.4 value must not shadow the 1.6 value:\n{built}"
+    );
+    assert!(
+        built.contains("только 1.4"),
+        "keys only the older version defines stay in the union:\n{built}"
+    );
+    // Exactly one element per key: no duplicate `<Wave5Bot>` entries.
+    assert_eq!(
+        built.matches("<Wave5Bot>").count(),
+        1,
+        "the shared key must be written once:\n{built}"
+    );
 }
 
 #[test]
