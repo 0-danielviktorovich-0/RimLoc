@@ -1,0 +1,32 @@
+# Lightweight validation for GitHub Actions definitions.
+# Kept separate from the expensive Rust/GUI matrix so workflow-only PRs get
+# immediate feedback even when targeting the convergence branch.
+name: workflow lint
+
+on:
+  pull_request:
+    branches: [main, feature/ui-r1-convergence]
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - name: Install actionlint
+        run: |
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - name: Validate workflows
+        run: actionlint -color .github/workflows/*.yml

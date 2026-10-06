@@ -2,79 +2,93 @@
 title: Getting Started
 ---
 
-# 🚀 Getting Started with RimLoc
+# Getting started with RimLoc
 
-RimLoc helps you inventory, validate, and ship translations for RimWorld mods. This guide is a simple step‑by‑step path for newcomers.
+RimLoc has a desktop project workflow and a CLI. For most translators, the desktop workflow is the intended path. The CLI is useful for automation, debugging, CI, and external CAT-tool handoffs.
 
-See also the glossary: glossary.md
+!!! warning "Pre-beta"
+    The React desktop UI is still being hardened. If you are testing a development build, make sure the artifact explicitly says React/REACT_PROD rather than the legacy fallback.
 
-## 1) Install (1–2 minutes)
+## Path A — Desktop workflow
 
-- Via Cargo:
-  ```bash
-  cargo install rimloc-cli
-  ```
-- Or download a prebuilt binary from Releases and run it directly.
+### 1. Create or open a project
 
-More: install.md · install_run.md
+From Home:
 
-## 2) First run — scan and validate
+- choose **New translation** for a new source;
+- choose **Open/update existing** when you already have a translation to preserve and refresh.
 
-Assume your mod lives in `./Mods/MyMod`.
+For RimWorld, the adapter can represent different source kinds (for example a mod, Core/DLC source, language pack, or an existing translation) when that capability is available in the current build.
 
-```bash
-rimloc-cli scan --root ./Mods/MyMod --format json > scan.json
-rimloc-cli validate --root ./Mods/MyMod
-```
+### 2. Choose the target locale
 
-- `scan` inventories strings and saves them (for a quick look).
-- `validate` catches duplicates, empties, and placeholder issues.
+A RimLoc project can carry multiple target locales. The source inventory stays shared; translations are isolated per target locale.
 
-## 3) Export a `.po` for translators
+### 3. Translate directly in RimLoc
 
-```bash
-rimloc-cli export-po --root ./Mods/MyMod --out-po ./MyMod.ru.po --lang ru
-```
+Edit the target text in the workspace. PO is not required.
 
-Open it in Poedit or your preferred CAT tool and translate.
+The project workflow keeps translation state/revisions in the RimLoc project model.
 
-More: cli/export_import.md
+### 4. Validate and review
 
-## 4) Check your `.po` (recommended)
+Use Checks/validation before building. Fix placeholder, structural, source-drift or other findings surfaced by the current adapter.
 
-```bash
-rimloc-cli validate-po --po ./MyMod.ru.po --strict --format text
-```
+### 5. Build/export
 
-This ensures placeholders in `msgid/msgstr` match exactly.
+Choose an isolated output directory. The source mod/game tree is treated as read-only.
 
-More: cli/validate_po.md
+The exact output/build controls depend on the adapter capabilities.
 
-## 5) Import translations back into the mod
+## Path B — CLI workflow
 
-Single file for review:
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --out-xml ./Mods/MyMod/_Imported.xml --dry-run
-rimloc-cli import-po --po ./MyMod.ru.po --out-xml ./Mods/MyMod/_Imported.xml
-```
+If you prefer terminal automation, start with a bundled fixture:
 
-Structured import (release‑ready):
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report
-```
+~~~bash
+cargo build -p rimloc-cli
+cargo run -p rimloc-cli -- scan --root ./test/TestMod --format json
+cargo run -p rimloc-cli -- validate --root ./test/TestMod
+~~~
 
-## 6) Build a translation‑only mod (optional)
+### PO is optional
 
-```bash
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru --dry-run
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru
-```
+PO is useful when you want Poedit or another CAT tool:
 
-## 7) Next steps
+~~~bash
+cargo run -p rimloc-cli -- export-po \
+  --root ./test/TestMod \
+  --out-po ./logs/TestMod.po \
+  --lang ru
+~~~
 
-- From scratch: tutorials/translate_mod.md
-- Updating an existing translation: tutorials/update_translations.md
-- FAQ: faq.md
-- Troubleshooting: troubleshooting.md
+Importing it back is a separate interoperability workflow:
 
+~~~bash
+cargo run -p rimloc-cli -- import-po \
+  --po ./logs/TestMod.po \
+  --mod-root ./test/TestMod \
+  --lang ru \
+  --dry-run
+~~~
+
+### Build without PO
+
+If you already have a translated RimWorld <code>Languages/&lt;locale&gt;</code> tree:
+
+~~~bash
+cargo run -p rimloc-cli -- build-mod \
+  --from-root ./Mods/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
+  --lang ru \
+  --dry-run
+~~~
+
+This is why PO should be thought of as an interchange adapter, not the canonical RimLoc storage format.
+
+## Next steps
+
+- [Desktop GUI](guide/gui.md)
+- [Translator workflow](guide/translators.md)
+- [CLI overview](cli/index.md)
+- [Update an existing translation](tutorials/update_translations.md)
+- [Troubleshooting](troubleshooting.md)

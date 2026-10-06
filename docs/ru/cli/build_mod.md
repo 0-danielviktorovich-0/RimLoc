@@ -1,66 +1,67 @@
 ---
-title: Команда Build Mod
+title: Build Mod
 ---
 
-# Команда Build Mod
+# Сборка translation-only мода
 
-`build-mod` превращает переведённый `.po` файл в самостоятельный мод-перевод для RimWorld. Это удобно, если вы хотите распространять только локализацию без исходных XML.
+<code>build-mod</code> упаковывает переведённые RimWorld language data в отдельный мод-перевод.
 
-## Использование
+**PO не обязателен.** Есть два source mode:
 
-```bash
-rimloc-cli build-mod --po <FILE> --out-mod <DIR> --lang <CODE> [опции]
-```
+1. внешний PO handoff;
+2. уже готовое дерево <code>Languages/&lt;язык&gt;</code>.
 
-## Опции
+## Сборка из готового Languages-дерева
 
-| Опция | Описание | Обязательно |
-|-------|----------|-------------|
-| `--po <FILE>` | Исходный PO-файл для упаковки. | Да |
-| `--out-mod <DIR>` | Каталог, куда будет собран мод (создаётся при необходимости). | Да |
-| `--lang <CODE>` | Код целевого языка (например, `ru`, `ja`). Определяет папку `Languages/<lang_dir>`. | Да |
-| `--name <NAME>` | Отображаемое имя мода (по умолчанию `RimLoc Translation`). | Нет |
-| `--package-id <ID>` | RimWorld `PackageId` для готового мода (по умолчанию `yourname.rimloc.translation`). | Нет |
-| `--rw-version <VERSION>` | Целевая версия RimWorld в `About.xml` (по умолчанию `1.5`). | Нет |
-| `--lang-dir <DIR>` | Явное имя папки языка внутри мода (перекрывает значение, вычисленное по коду). | Нет |
-| `--dry-run` | Показать план сборки и не создавать файлы. | Нет |
-| `--dedupe` | Удалять дублирующиеся ключи в одном XML (последний имеет приоритет). | Нет |
-| `--from-root <DIR>` | Собрать из уже существующей структуры `Languages/<язык>` в этом корне вместо PO. | Нет |
-| `--from-game-version <CSV>` | При `--from-root` учитывать только подпапки версий из списка (через запятую). | Нет |
+Используйте этот вариант, если translated XML уже существует — в том числе как результат RimLoc project workflow:
 
-## Примеры
-
-Предварительный просмотр без записи на диск:
-
-```bash
+~~~bash
 rimloc-cli build-mod \
-  --po ./logs/TestMod.po \
-  --out-mod ./dist/TestMod-ru \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyTranslatedMod-RU \
   --lang ru \
   --dry-run
-```
+~~~
 
-Сборка готового русского перевода с кастомными метаданными (и удалением дубликатов):
+После проверки плана повторите команду без <code>--dry-run</code>.
 
-```bash
+Полезные опции:
+
+- <code>--from-root &lt;DIR&gt;</code> — дерево с translated Languages;
+- <code>--from-game-version &lt;CSV&gt;</code> — version subfolders;
+- <code>--out-mod &lt;DIR&gt;</code> — отдельный destination;
+- <code>--lang</code> / <code>--lang-dir</code>;
+- <code>--name</code>, <code>--package-id</code>, <code>--rw-version</code>;
+- <code>--dedupe</code>;
+- <code>--dry-run</code>.
+
+## Сборка из PO
+
+Если команда/переводчик работает через Poedit/CAT:
+
+~~~bash
 rimloc-cli build-mod \
-  --po ./logs/TestMod.po \
-  --out-mod ./dist/TestMod-ru \
+  --po ./work/MyMod.ru.po \
+  --out-mod ./dist/MyMod-RU \
   --lang ru \
-  --name "TestMod — Русский" \
-  --package-id author.testmod.ru \
-  --rw-version 1.5 \
-  --dedupe
-```
+  --dry-run
+~~~
 
-## Результат
+Это удобный interoperability workflow, но не обязательный project path RimLoc.
 
-- Создаётся (или обновляется) `About/About.xml` с переданными именем, `PackageId` и версией RimWorld.
-- В `Languages/<lang_dir>/Keyed/_Imported.xml` попадают строки из PO.
-- Параметр `--lang-dir` позволяет явно задать папку языка; без него RimLoc преобразует ISO-код (`ru` → `Russian`).
+## Безопасность output
 
-## Советы
+Реальная сборка не должна молча смешиваться с непустым старым output без явно выбранной merge-семантики текущего CLI.
 
-- Используйте `--dry-run` в CI, чтобы посмотреть план сборки до коммита.
-- После создания мода можно прогнать `rimloc-cli validate --root <out-mod>`, если планируете редактировать XML вручную.
-- Свяжите команду с `rimloc-cli export-po`, чтобы автоматизировать цепочку «экспорт → упаковка → публикация».
+Всегда:
+
+- сначала <code>--dry-run</code>;
+- пишите в output, а не в game/Workshop source;
+- валидируйте результат;
+- тестируйте его в RimWorld.
+
+## Почему в CLI всё ещё есть PO
+
+CLI появился раньше полной canonical project model и сохраняет стабильные форматные команды ради внешних CAT-процессов. Это совместимость и удобство, а не требование хранить RimLoc-проект в PO.
+
+Точные опции вашей сборки: <code>rimloc-cli build-mod --help</code>.

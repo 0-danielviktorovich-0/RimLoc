@@ -2,46 +2,65 @@
 title: FAQ
 ---
 
-# ❓ Часто задаваемые вопросы
+# Часто задаваемые вопросы
 
-## RimLoc не находится в терминале
+## PO обязателен?
 
-- Если ставили через Cargo — откройте новый терминал или проверьте, что `~/.cargo/bin` (Windows: `%USERPROFILE%\.cargo\bin`) есть в PATH.
-- Если скачали бинарник — запускайте из папки с ним: `./rimloc-cli` (macOS/Linux) или `.\rimloc-cli.exe` (Windows), либо добавьте папку в PATH.
+Нет.
 
-## Чем `scan` отличается от `validate`?
+Desktop project workflow RimLoc использует каноническую project model, а не PO. Можно переводить прямо в RimLoc, там же проходить validation/review и затем собирать/экспортировать результат.
 
-- `scan` просто собирает переводимые строки.
-- `validate` проверяет качество (пустые/дубликаты/плейсхолдеры) и возвращает код `1`, если нашёл ошибки.
+PO нужен, когда удобен Poedit/CAT или внешний обмен.
 
-## Что такое «плейсхолдер» и почему он ломается?
+## Почему в CLI всё ещё есть export-po/import-po?
 
-Это «дырки» в строке, куда игра подставляет числа/имена и т. п. Если вы их удалите или измените, строка станет нерабочей. Подробнее в [Словаре](glossary.md#плейсхолдер) и в руководстве по проверке: cli/validate_po.md
+Потому что это полезные и уже стабильные interoperability-команды. Их наличие не делает PO внутренним форматом проекта.
 
-## Как собрать отдельный мод‑перевод?
+## Можно собрать translation mod без PO?
 
-```bash
-rimloc-cli build-mod --po ./MyMod.ru.po --out-mod ./MyMod_RU --lang ru
-```
+Да, если translated RimWorld XML уже существует:
 
-Или из структуры `Languages/Russian` оригинального мода: cli/build_mod.md
+~~~bash
+rimloc-cli build-mod \
+  --from-root ./work/MyTranslatedMod \
+  --out-mod ./dist/MyMod-RU \
+  --lang ru \
+  --dry-run
+~~~
 
-## Можно ли сначала посмотреть, что изменится?
+## Какой GUI сейчас основной?
 
-Да. Почти везде есть `--dry-run`. Например:
-```bash
-rimloc-cli import-po --po ./MyMod.ru.po --mod-root ./Mods/MyMod --lang ru --report --dry-run
-```
+React R1 — будущий production UI. Предыдущий Svelte временно остаётся frozen fallback.
 
-## Как понять, что именно поменялось между версиями мода?
+При тестировании packaged app смотрите artifact/build identity, а не только имя <code>.app</code>.
 
-Используйте diff:
-```bash
+## RimLoc навсегда только для RimWorld?
+
+Первая production-цель и первая beta — RimWorld-first.
+
+Core проектируется через adapters, чтобы позже можно было добавлять другие игры/приложения без переписывания editor/TM/glossary/project model. Другие игры пока не заявляются как поддерживаемые.
+
+## Уже есть стабильный desktop release?
+
+Пока нет. RimLoc — pre-beta. Исторические alpha/dev релизы существуют, но активная React/Rust линия новее.
+
+## scan и validate — в чём разница?
+
+- <code>scan</code> собирает translation units.
+- <code>validate</code> запускает QA и показывает findings/errors.
+
+## Можно сначала посмотреть, что будет записано?
+
+Используйте <code>--dry-run</code>, где он поддерживается, и отдельные working/output каталоги.
+
+## Как посмотреть изменения source между версиями мода?
+
+Основной путь — existing/update workflow в desktop UI. Для низкоуровневой диагностики:
+
+~~~bash
 rimloc-cli diff-xml --root ./Mods/MyMod --format text
-```
-Подробнее: cli/diff_xml.md
+~~~
 
-## Где живёт конфигурация проекта?
+## Куда сообщать об уязвимости?
 
-В `rimloc.toml` — так можно один раз задать `source_lang`, `target_lang`, пути и упрощать команды. См. guide/configuration.md
-
+Не публикуйте exploit в обычном issue. Следуйте [SECURITY.md](https://github.com/0-danielviktorovich-0/RimLoc/blob/main/SECURITY.md).
