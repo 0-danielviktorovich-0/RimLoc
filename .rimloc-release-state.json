@@ -1,35 +1,42 @@
 {
-  "campaign": "release-convergence",
+  "campaign": "full-release-convergence (workflow-native)",
   "status": "ACTIVE",
-  "updated": "2026-10-07T4",
+  "updated": "2026-10-07T5",
   "main": "26af13b (integration merged)",
   "candidate": "rel21 — пересборка от 26af13b после CodeQL rescan",
   "lanes": {
-    "architecture": {
-      "wave": "A+B done",
-      "status": "PO audit: 1 seam (translate.rs); canonical no-PO impl (313a56f-линия); NO-PO-1/2+PO-INTEROP тесты; review REQUEST_CHANGES → MAJOR provenance fix (ApplyOrigin, 11fcce4-линия)"
+    "parity": {
+      "status": "running",
+      "workflow": "WF-PARITY-RECONCILE",
+      "focus": "RELEASE_PARITY_MATRIX + release-parity.json, IfModActive, defs gaps, inheritance, reflection, TM/glossary/validation/AI catalog"
     },
-    "security": {
-      "wave": "A done + Wave B",
-      "status": "inventory 177→dismissed/triaged; lru 0.18.5 fix; dead lock removed; PO-#: traversal FIXED",
-      "remaining": "final rescan on candidate SHA → единственный triage+dismiss на финальных номерах"
+    "po": {
+      "status": "running",
+      "workflow": "WF-PO-RECONCILE",
+      "focus": "translate.rs canonical (done), build-mod --po removal, remaining seams, NO-PO E2E"
     },
     "ui": {
-      "wave": "A audit + Wave B fixes done",
-      "status": "9 LIVE/4 PARTIAL/2→1 PLACEHOLDER (compare=реальный экран, tools убран); hardcoded-ru батч закрыт; фокус-рестор палитры; compare=WDIO-pending"
+      "status": "running",
+      "workflow": "WF-UI-RECONCILE",
+      "focus": "15 routes LIVE/PARTIAL/PLACEHOLDER, LM search/edit, hardcoded-ru v2, focus-restore"
     },
-    "parity": {
-      "wave": "A reconcile done",
-      "status": "SUPERIOR 9 / PARITY 7 / IMPLEMENT_NOW 1 (edge-trim — fix в интеграции) / REJECT 18"
+    "provider": {
+      "status": "running",
+      "workflow": "WF-PROVIDER-RECONCILE",
+      "focus": "llm crates capabilities, chat-batch, checkpoint/resume, keychain"
     },
-    "api": {
-      "wave": "B",
-      "status": "pending",
-      "focus": "CLI/contract/MCP/providers"
+    "xplatform": {
+      "status": "running",
+      "workflow": "WF-XPLAT-RECONCILE",
+      "focus": "CI platforms, DMG failure root cause, .app.zip decision"
     },
-    "release": {
-      "wave": "A audit done",
-      "status": "branch-карта, release-инфра (no-publish подтверждён), docs-инвентарь, Issue#2 GUI-путь полный"
+    "security": {
+      "status": "DONE",
+      "focus": "ZERO-OPEN verified on 3477a37; refinal cycle after implementation merges"
+    },
+    "mcp": {
+      "status": "DONE",
+      "focus": "ADR-MCP вариант B"
     }
   },
   "gates": {
