@@ -169,14 +169,15 @@ async function activeElementInfo(): Promise<string> {
 }
 
 // The ARTIFACT palette (commit 53bd1aa) had 6 commands; the palette-nav lane
-// brought 7; the palette/LM MUST-FIX lane (this spec) brings the FULL route
-// coverage (14) — the composition test below expects exactly this list.
+// brought 7; the palette/LM MUST-FIX lane brought the FULL route coverage
+// (14); the wave integration dropped «Инструменты» (W0: dead nav point) —
+// the composition test below expects exactly this list (13).
 const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Строки перевода', hash: '#/home', marker: '[data-testid="wizard.open"]' },
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
   { label: 'Проверки', hash: '#/checks', marker: '[data-testid="checks.findings"], [data-testid="checks.rerun"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Импорт существующего перевода', hash: '#/existing', marker: '[data-testid="ex.dir"], [data-testid="ex.error"], .narrow-page .btn-primary[href="#/home"]' },
-  { label: 'Сравнение версий', hash: '#/compare', marker: '.section-heading' }, // React-lane: placeholder REPRESENTATIVE LANE (отдельный экран — parity-бэклог)
+  { label: 'Сравнение версий', hash: '#/compare', marker: '[data-testid="cmp.old-dir"]' }, // Compare-экран ЖИВОЙ (wave-integration): форма diff двух корней модов
   { label: 'Глоссарий', hash: '#/glossary', marker: '[data-testid="gl.table"], [data-testid="gl.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Память переводов', hash: '#/tm', marker: '[data-testid="tm.count"], [data-testid="tm.filter-query"], [data-testid="tm.filter-status"], [data-testid="tm.error"]' },
   { label: 'Сборка и экспорт', hash: '#/export', marker: '[data-testid="be.outdir"], .narrow-page .btn-primary[href="#/home"]' },
@@ -184,7 +185,6 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Диагностика', hash: '#/diagnostics', marker: '[data-testid="diag.outdir"], [data-testid="diag.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'AI-провайдеры', hash: '#/providers', marker: '[data-testid="prov.catalog"], [data-testid="prov.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Языки', hash: '#/lm', marker: '[data-testid="lm.table"]' },
-  { label: 'Инструменты', hash: '#/tools', marker: '.section-heading' }, // React-lane: placeholder (parity-бэклог)
   { label: 'Настройки', hash: '#/settings', marker: '[data-testid="settings.theme"]' },
 ]
 
@@ -269,7 +269,7 @@ describe('Palette §9: открытие и закрытие', () => {
 })
 
 describe('Palette §9: состав команд и поиск', () => {
-  it('состав: ровно 14 команд (полное покрытие маршрутов, MUST-FIX #5)', async () => {
+  it('состав: ровно 13 команд (tools удалён, полное покрытие маршрутов)', async () => {
     await openPalette('list')
     const items = await paletteItems()
     console.log(`[palette-acc] ITEMS=${JSON.stringify(items)}`)
@@ -289,7 +289,8 @@ describe('Palette §9: состав команд и поиск', () => {
     await pause(400)
     const items = await paletteItems()
     console.log(`[palette-acc] FILTER перьев=${JSON.stringify(items)}`)
-    // Полный состав 14 команд: «перев» матчит 4 (доказано rel20-прогоном).
+    // Полный состав 13 команд: «перев» матчит 4 (метки палитры через t(),
+    // значения при дефолтной локали ru — те же литералы).
     const EXPECT_PEREV = ['Строки перевода', 'Импорт существующего перевода', 'Память переводов', 'Самоперевод RimLoc']
     if (items.length !== EXPECT_PEREV.length || !EXPECT_PEREV.every((e) => items.some((i) => i.includes(e)))) {
       throw new Error(`фильтр «перев» дал ${JSON.stringify(items)}, ждали ${JSON.stringify(EXPECT_PEREV)}`)
