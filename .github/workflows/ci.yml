@@ -52,6 +52,24 @@ jobs:
       # вендорного tao; на этом раннере их нет — glib-2.0.pc, лог PR #60).
       - run: cargo clippy --workspace --all-targets --all-features --exclude rimloc-gui -- -D warnings
 
+  llm-feature-matrix:
+    name: rimloc-llm feature matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+      # Provider code has orthogonal HTTP and OS-keychain features. Check the
+      # combinations separately so cfg-gated enum variants cannot regress only
+      # in Tauri/coverage builds while the all-features workspace stays green.
+      - run: cargo check -p rimloc-llm --no-default-features
+      - run: cargo check -p rimloc-llm --no-default-features --features http
+      - run: cargo check -p rimloc-llm --no-default-features --features keychain
+      - run: cargo check -p rimloc-llm --no-default-features --features http,keychain
+
   test:
     name: cargo test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -175,4 +193,3 @@ jobs:
             git diff --cached
             exit 1
           fi
-
