@@ -1,6 +1,8 @@
 # npm audit exemptions — frontend-v2
 
-Статус: **принятые exemption'ы владельца** (frontend-v2 — замороженный legacy fallback ТОЛЬКО для WDIO-спек `e2e/wdio-spike/`; production = `frontend-react`). Новые фичи и мажорные апгрейды сюда не заносить.
+Статус: **documented dev-only risk — ожидает явного подтверждения владельца** (frontend-v2 — замороженный legacy fallback ТОЛЬКО для WDIO-спек `e2e/wdio-spike/`; production = `frontend-react`). Новые фичи и мажорные апгрейды сюда не заносить.
+
+> Формулировка для release-документации: «0 known production/runtime npm vulnerabilities; 16 documented high-severity dev-tool advisories remain under explicit exemption (pending owner confirmation)». Владелец либо принимает эти 16 как non-shipping test-tool risk, либо заказывает миграцию tooling (WDIO 10) — до решения нельзя писать «принятые владельцем».
 
 - Дата аудита: 2026-10-07
 - Инструменты: node 26.10.0, npm 11.19.1, `npm audit --json`

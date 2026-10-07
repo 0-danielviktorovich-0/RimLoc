@@ -69,13 +69,13 @@
     "code_scanning_open": 0,
     "dependabot_alerts_open": 0,
     "locale_form_seam": "FIXED: mapSnapshot matches both forms; commit() persists folderForm; caught by chatbatch E2E",
-    "codeql_extraction": "298/298 files, 0 errors (dist committed, C5)"
+    "codeql_extraction": "323 extracted clean / 1 vendor-only error (tauri-utils fork platform.rs, upstream macros) — documented limitation; Tool Status: job success, CS 0 open",
+    "npm_audit": "0 known production/runtime npm vulnerabilities; 16 documented high dev-tool advisories under explicit exemption (pending owner confirmation)"
   },
   "ownerGates": [
     "level-7 visual (checklist ready)",
     "publish approval",
-    "AI provider live E2E (paid calls)",
-    "Source Inspector live scope"
+    "AI provider live E2E (paid calls)"
   ],
   "specChanges": {
     "palette_acceptance": "13->14 commands + self-seed before() + composition invariant (all-14-routes) instead of equality: action commands (Wave B) are legitimate with open project",

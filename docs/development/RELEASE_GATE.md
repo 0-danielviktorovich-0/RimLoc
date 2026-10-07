@@ -11,11 +11,12 @@ related:
   - "[[ADR-MCP]]"
 ---
 
-# RELEASE GATE — rel22-rc (main @ `af06a4e`)
+# RELEASE GATE — rel23-final (main @ `857b0d2`, product source финального RC)
 
-Дата: 2026-10-07. Кандидат: `rel22-rc` — production-артефакт
-`RimLoc-evidence/artifact-rel22-rc/` (binary sha256 `32dcdf8b…`, source
-af06a4e = main == origin/main; идентичность: IDENTITY.md рядом с артефактом;
+Дата: 2026-10-07. Кандидат: `rel23-final` — production-артефакт
+`RimLoc-evidence/artifact-rel23-final/` (binary sha256 `7781dd39…`, appzip
+`2d0f1652…`, source 857b0d2 = main на момент сборки; идентичность:
+FINAL_IDENTITY.md + IDENTITY.md артефакта;
 soak-preflight `--gate --repo .` exit 0; release-guard static + runtime PASS).
 Публикация — parked по решению владельца (ADDENDUM §27); этот документ —
 вердикты по областям, не команда к публикации.
