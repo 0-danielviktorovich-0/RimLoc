@@ -7,6 +7,8 @@ import type {
   ProjectSnapshotDto,
   ProjectSummaryDto,
   SourceEntryIdDto,
+  SourceProvenanceDto,
+  TKeyMetaDto,
   TranslationIntentDto,
 } from '../client/types'
 import { clientInstance } from '../client/instance'
@@ -27,6 +29,11 @@ export interface WorkspaceEntry {
   sourceFile?: string
   sourceLine?: number
   selectedBy?: string
+  /** View-selection facts behind the entry (additive Source Inspector):
+   *  version, conditional LoadFolders branch, patch stage, winner reason. */
+  provenance?: SourceProvenanceDto
+  /** TKey serialization metadata with primary + other-usages locations. */
+  tkey?: TKeyMetaDto
 }
 
 export interface PerfMarks {
@@ -106,6 +113,8 @@ function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[]
       sourceFile: e.source_ref?.file,
       sourceLine: e.source_ref?.line,
       selectedBy: e.source_ref?.selected_by,
+      provenance: e.provenance,
+      tkey: e.tkey,
     })
   }
   for (const tr of snap.project.translations) {

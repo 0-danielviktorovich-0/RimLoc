@@ -76,12 +76,75 @@ export interface ApplyIntentsResponseDto {
 }
 
 // --- project state (read-only DTO of the canonical domain Project) ---
+
+/** Additive typed mirror of the domain SourceContext (rimloc-domain
+ *  canonical.rs) that rides the wire inside SourceEntryDto.contexts. One
+ *  source occurrence of a logical identity. */
+export interface SourceContextDto {
+  file: string;
+  line?: number;
+  /** Owning def type when known (e.g. "QuestScriptDef"). */
+  def_type?: string;
+  /** 'effective' = the value RimWorld actually uses; 'overridden' =
+   *  a losing occurrence (diagnostic evidence only). */
+  role: 'effective' | 'overridden';
+}
+
+/** Additive typed mirror of the domain SourceProvenance (rimloc-domain
+ *  canonical.rs) that rides the wire inside SourceEntryDto.provenance.
+ *  Absent fields = unknown (legacy payloads), never fabricated. */
+export interface SourceProvenanceDto {
+  /** Content root selected via version/LoadFolders resolution. */
+  version_selected?: string;
+  /** Reached through a conditional LoadFolders branch (IfModActive etc.). */
+  conditional_branch?: boolean;
+  /** Domain PatchStage (serde snake_case): 'none' | 'applied' | 'partial'. */
+  patch_stage?: 'none' | 'applied' | 'partial';
+  /** Why the effective occurrence won (rimloc winner_reason vocabulary);
+   *  same strings as EntrySourceRefDto.selected_by. */
+  selected_by?: string;
+}
+
+/** Additive typed mirror of the domain SourceRef (rimloc-core) — a real
+ *  per-node source location; `line` is absent when the parser recorded
+ *  none (never fabricated). */
+export interface SourceRefDto {
+  file: string;
+  line?: number;
+}
+
+/** Additive typed mirror of the domain TKeyMeta (rimloc-core) that rides
+ *  the wire inside SourceEntryDto.tkey. `locations` are the real per-node
+ *  source locations of the shared identity in document order — the LAST
+ *  entry is the effective one (last field assignment wins), earlier
+ *  entries are other usages whose text was overwritten. */
+export interface TKeyMetaDto {
+  strategy: string;
+  suffix: string;
+  /** Owning Def type (e.g. "QuestScriptDef"). */
+  def_type: string;
+  /** Count of source nodes sharing this identity. */
+  contexts?: number;
+  /** Primary location + other usages, document order (last = effective). */
+  locations?: SourceRefDto[];
+}
+
 /** Canonical source entry: source fields are read-only by contract. */
 export interface SourceEntryDto {
   id: SourceEntryIdDto;
   text: string;
   source_locale: string;
-  tkey?: unknown;
+  /** TKey serialization metadata when kind == 'tkey' (typed additive
+   *  mirror of rimloc-core TKeyMeta — was `unknown` before the Source
+   *  Inspector lane; wire shape unchanged). */
+  tkey?: TKeyMetaDto;
+  /** Additive typed mirror of the domain SourceEntry.contexts — every
+   *  recorded source occurrence with its role. */
+  contexts?: SourceContextDto[];
+  /** Additive typed mirror of the domain SourceEntry.provenance — the
+   *  view-selection facts (version, conditional branch, patch stage)
+   *  behind this entry. */
+  provenance?: SourceProvenanceDto;
   /** Additive (contract, wave 12): live Source Inspector projection — the
    *  EFFECTIVE context's file RELATIVE to the project root, the
    *  parser-guaranteed line (absent = unknown, never faked) and the winner

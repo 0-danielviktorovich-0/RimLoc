@@ -85,6 +85,11 @@ html, body { height: 100%; }
 /* Inspector: long paths truncate, never blow the pane. */
 .context-content code { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
 
+/* Source Inspector: TKey meta row (def type + strategy) stacks its values. */
+.src-tkey-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 8px; color: var(--muted-foreground); }
+[data-testid="src.tkey-other"] { display: block; }
+[data-testid="src.tkey-other"] code { margin-top: 4px; }
+
 /* Sidebar progress block (canon): live percent of translated strings. */
 .sidebar-progress { margin: auto 20px 0; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
 .sidebar-progress strong { font-size: 20px; font-family: var(--font-display); }

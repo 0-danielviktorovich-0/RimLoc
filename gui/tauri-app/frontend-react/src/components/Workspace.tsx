@@ -7,7 +7,7 @@ import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panel
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, FileCode2, FolderOpen, ListFilter, RotateCcw, Save, Search } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
-import { projectStore } from '../lib/state/project'
+import { projectStore, type WorkspaceEntry } from '../lib/state/project'
 import { clientInstance } from '../lib/client/instance'
 import { SOURCE_LOCALE } from '../lib/languages/registry'
 import { folderForm } from '../lib/languages/folderForm'
@@ -161,6 +161,9 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             sourceFile={selected.sourceFile}
             sourceLine={selected.sourceLine}
             selectedBy={selected.selectedBy}
+            provenance={selected.provenance}
+            tkey={selected.tkey}
+            sourceRoot={snap.source_root?.path}
             sourceLabel={folderForm(SOURCE_LOCALE)}
             targetLabel={folderForm(st.targetLocale)}
             onDraft={(v) => projectStore.setDraft(selected.key, v)}
@@ -246,6 +249,12 @@ function EntryEditor(props: {
   sourceFile?: string
   sourceLine?: number
   selectedBy?: string
+  // Source Inspector (live): view-selection facts + TKey locations.
+  provenance?: WorkspaceEntry['provenance']
+  tkey?: WorkspaceEntry['tkey']
+  /** Read-only mod root the snapshot was built from — anchors the
+   *  project-relative source file (M-7: honest unknown, no placeholders). */
+  sourceRoot?: string
   // Локали-бейджи из состояния проекта (audit v2 #3): folder-форма реестра
   // вместо жёстких EN/RU-литералов.
   sourceLabel: string
@@ -256,6 +265,13 @@ function EntryEditor(props: {
 }) {
   const copied = useState(false)
   const dirty = props.draft !== props.target
+  const patchStage = props.provenance?.patch_stage
+  const tkeyLocs = props.tkey?.locations ?? []
+  // Document order: the LAST location is the effective one (last field
+  // assignment wins); earlier entries are other usages.
+  const tkeyPrimary = tkeyLocs.length > 0 ? tkeyLocs[tkeyLocs.length - 1] : undefined
+  const tkeyOther = tkeyLocs.slice(0, -1)
+  const fmtLoc = (l: { file: string; line?: number }) => (l.line != null ? `${l.file}:${l.line}` : l.file)
   return (
     <aside className="detail-pane" data-testid="ws.editor">
       <div className="detail-header">
@@ -323,22 +339,76 @@ function EntryEditor(props: {
             <RotateCcw />
           </button>
         </div>
+        {/* SOURCE block (Source Inspector, live): every row is backed by the
+            contract snapshot — file+line (source_ref), winner reason
+            (selected_by), view-selection facts (provenance) and the TKey
+            primary + other-usages locations. Absent data renders an honest
+            '—', never a fabricated value. */}
         <div className="context-tabs">
           <button className="active">{t('ws.tabSource')}</button>
         </div>
-        <div className="context-content">
-          <div>
+        <div className="context-content" data-testid="src.block">
+          <div data-testid="src.file">
             <span>{t('ws.file')}</span>
-            <code>{props.sourceFile ?? '—'}</code>
+            <code title={props.sourceFile}>{props.sourceFile ?? '—'}</code>
           </div>
-          <div>
+          <div data-testid="src.line">
             <span>{t('ws.line')}</span>
             <strong>{props.sourceLine ?? '—'}</strong>
           </div>
-          <div>
+          <div data-testid="src.selected-by">
             <span>{t('ws.whyThisSource')}</span>
             <strong>{tEnum('ws.why', props.selectedBy)}</strong>
           </div>
+          {props.provenance?.version_selected && (
+            <div data-testid="src.version">
+              <span>{t('ws.src.version')}</span>
+              <strong>{props.provenance.version_selected}</strong>
+            </div>
+          )}
+          {props.provenance?.conditional_branch && (
+            <div data-testid="src.conditional">
+              <span>{t('ws.src.conditional')}</span>
+              <strong>{t('ws.src.conditionalValue')}</strong>
+            </div>
+          )}
+          {patchStage && patchStage !== 'none' && (
+            <div data-testid="src.patch">
+              <span>{t('ws.src.patch')}</span>
+              <strong>{tEnum('ws.src.patchStage', patchStage)}</strong>
+            </div>
+          )}
+          {props.tkey && (
+            <div className="related-string" data-testid="src.tkey">
+              <span>{t('ws.src.tkey')}</span>
+              <div className="src-tkey-meta" data-testid="src.tkey-meta">
+                <code>{props.tkey.def_type}</code>
+                <span>{props.tkey.strategy}</span>
+              </div>
+              {tkeyPrimary && (
+                <div data-testid="src.tkey-primary">
+                  <span>{t('ws.src.tkeyPrimary')}</span>
+                  <code title={fmtLoc(tkeyPrimary)}>{fmtLoc(tkeyPrimary)}</code>
+                </div>
+              )}
+              {tkeyOther.length > 0 && (
+                <div data-testid="src.tkey-other">
+                  <span>{t('ws.src.tkeyOther', { count: tkeyOther.length })}</span>
+                  {tkeyOther.map((loc, i) => (
+                    <code key={`${loc.file}:${loc.line ?? 'x'}:${i}`} title={fmtLoc(loc)}>
+                      {fmtLoc(loc)}
+                    </code>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {props.sourceRoot && (
+            <div data-testid="src.root">
+              <span>{t('ws.src.root')}</span>
+              <code title={props.sourceRoot}>{props.sourceRoot}</code>
+            </div>
+          )}
         </div>
         {copied[0] && <span hidden />}
       </div>
