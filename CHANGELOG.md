@@ -6,7 +6,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Internal
-- [vendor/codeql] Remove the unused vendored GLib patch and stale disabled-workflow injection that polluted Rust CodeQL extraction; active wry/tao patches are unchanged (#84)
+- [repo] Public Git metadata now enforces English engineering-language commit subjects, pull-request and release titles, branch names, and changelog additions before merge.\n- [vendor/codeql] Remove the unused vendored GLib patch and stale disabled-workflow injection that polluted Rust CodeQL extraction; active wry/tao patches are unchanged (#84)
 - [ci/llm] Harden provider feature-matrix builds and CodeQL vendor scoping so keychain-only Tauri coverage compiles and patched upstream dependencies are not treated as RimLoc-owned sources (#83)
 
 ### Fixed
