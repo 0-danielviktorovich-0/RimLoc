@@ -248,7 +248,14 @@ fn batch_by_budget(units: &mut Vec<&TranslateUnit>, budget: usize) -> Vec<Vec<Tr
 /// payloads) are deterministic — a retry hits the same wall, so they are
 /// retried without backoff.
 fn is_transient(e: &LlmError) -> bool {
-    matches!(e, LlmError::Http(_) | LlmError::ServerError { .. })
+    if matches!(e, LlmError::ServerError { .. }) {
+        return true;
+    }
+    #[cfg(feature = "http")]
+    if matches!(e, LlmError::Http(_)) {
+        return true;
+    }
+    false
 }
 
 /// Exponential backoff before retry `attempt` (1-based): 0.5s, 1s, 2s, …
