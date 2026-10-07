@@ -136,6 +136,12 @@ impl<'a> TranslationEngine<'a> {
                         if attempt > self.opts.max_retries {
                             break Err(e);
                         }
+                        // Transient failures (server 5xx, network) back off
+                        // exponentially before the next attempt; deterministic
+                        // client errors (4xx and the like) retry immediately.
+                        if is_transient(&e) {
+                            std::thread::sleep(retry_backoff(attempt));
+                        }
                     }
                 }
             };
@@ -237,11 +243,29 @@ fn batch_by_budget(units: &mut Vec<&TranslateUnit>, budget: usize) -> Vec<Vec<Tr
     batches
 }
 
+/// Failures worth sleeping over before the next attempt: transport/network
+/// errors and provider-side 5xx. Client errors (4xx, auth, malformed
+/// payloads) are deterministic — a retry hits the same wall, so they are
+/// retried without backoff.
+fn is_transient(e: &LlmError) -> bool {
+    matches!(e, LlmError::Http(_) | LlmError::ServerError { .. })
+}
+
+/// Exponential backoff before retry `attempt` (1-based): 0.5s, 1s, 2s, …
+/// capped at 8s so a stalled provider never freezes a batch for minutes.
+fn retry_backoff(attempt: u32) -> Duration {
+    let exp = attempt.saturating_sub(1).min(4);
+    Duration::from_millis(500)
+        .saturating_mul(2u32.saturating_pow(exp))
+        .min(Duration::from_secs(8))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::mock::MockProvider;
     use crate::provider::{Provider, ProviderInfo, TranslateResponse, TranslateUnitResult};
+    use std::sync::atomic::AtomicUsize;
 
     fn unit(id: &str, source: &str) -> TranslateUnit {
         TranslateUnit {
@@ -272,6 +296,126 @@ mod tests {
         let summary = engine.translate(&[unit("a", "Hello")], |_| {}).unwrap();
         assert_eq!(summary.translated, 1);
         assert_eq!(summary.retries, 2);
+    }
+
+    /// Fails the first N calls with a provider-side 5xx, then succeeds —
+    /// drives the transient-error backoff path deterministically.
+    struct FlakyServer {
+        fail_first: usize,
+        calls: AtomicUsize,
+    }
+    impl Provider for FlakyServer {
+        fn id(&self) -> &str {
+            "flaky"
+        }
+        fn model(&self) -> &str {
+            "flaky-1"
+        }
+        fn info(&self) -> ProviderInfo {
+            ProviderInfo {
+                id: self.id().into(),
+                model: self.model().into(),
+                endpoint: "x".into(),
+            }
+        }
+        fn translate_batch(&self, req: &TranslateRequest) -> Result<TranslateResponse, LlmError> {
+            let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if n < self.fail_first {
+                return Err(LlmError::ServerError {
+                    provider: self.id().into(),
+                    status: 503,
+                    message: "upstream unavailable".into(),
+                });
+            }
+            Ok(TranslateResponse {
+                results: req
+                    .units
+                    .iter()
+                    .map(|u| TranslateUnitResult {
+                        id: u.id.clone(),
+                        translation: format!("ru: {}", u.source),
+                    })
+                    .collect(),
+                usage: None,
+            })
+        }
+        fn test_connection(&self) -> Result<ProviderInfo, LlmError> {
+            Ok(self.info())
+        }
+    }
+
+    #[test]
+    fn server_error_is_backed_off_then_retried_to_success() {
+        let p = FlakyServer {
+            fail_first: 2,
+            calls: AtomicUsize::new(0),
+        };
+        let engine = TranslationEngine::new(&p, EngineOptions::default(), Glossary::default());
+        let summary = engine.translate(&[unit("a", "Hello")], |_| {}).unwrap();
+        assert_eq!(summary.translated, 1);
+        assert_eq!(summary.failed, 0);
+        assert_eq!(summary.retries, 2);
+    }
+
+    #[test]
+    fn server_error_exhausts_retries_and_fails_the_batch() {
+        let p = FlakyServer {
+            fail_first: usize::MAX,
+            calls: AtomicUsize::new(0),
+        };
+        let engine = TranslationEngine::new(&p, EngineOptions::default(), Glossary::default());
+        let summary = engine.translate(&[unit("a", "Hello")], |_| {}).unwrap();
+        assert_eq!(summary.translated, 0);
+        assert_eq!(summary.failed, 1);
+        // Contract preserved: max_retries=3 → exactly 4 provider calls
+        // (initial + 3 retries). summary.retries counts every failed
+        // attempt, including the terminal one.
+        assert_eq!(summary.retries, 4);
+        assert_eq!(
+            p.calls.load(std::sync::atomic::Ordering::SeqCst),
+            4,
+            "max 3 retries as before"
+        );
+    }
+
+    #[test]
+    fn only_transport_and_server_errors_are_transient() {
+        // Transport errors exist only with the `http` feature.
+        #[cfg(feature = "http")]
+        {
+            // A real reqwest connect error, produced offline: loopback port 9
+            // (discard) refuses immediately on any dev/CI machine.
+            let http_err = reqwest::blocking::Client::new()
+                .get("http://127.0.0.1:9/")
+                .timeout(Duration::from_secs(2))
+                .send()
+                .expect_err("loopback port 9 must refuse connections");
+            let http = LlmError::Http(http_err);
+            assert!(is_transient(&http));
+        }
+        let server = LlmError::ServerError {
+            provider: "p".into(),
+            status: 502,
+            message: "bad gateway".into(),
+        };
+        assert!(is_transient(&server));
+        // 4xx-class provider errors and malformed payloads: no backoff.
+        assert!(!is_transient(&LlmError::Provider(
+            "p".into(),
+            "HTTP 401 unauthorized".into()
+        )));
+        assert!(!is_transient(&LlmError::InvalidResponse("bad json".into())));
+        assert!(!is_transient(&LlmError::MissingKey("p".into())));
+    }
+
+    #[test]
+    fn backoff_grows_exponentially_and_is_capped() {
+        assert_eq!(retry_backoff(1), Duration::from_millis(500));
+        assert_eq!(retry_backoff(2), Duration::from_secs(1));
+        assert_eq!(retry_backoff(3), Duration::from_secs(2));
+        // Cap: long retry chains never sleep longer than 8s.
+        assert_eq!(retry_backoff(10), Duration::from_secs(8));
+        assert_eq!(retry_backoff(u32::MAX), Duration::from_secs(8));
     }
 
     #[test]

@@ -53,6 +53,16 @@ impl AnthropicProvider {
                 .unwrap_or(std::time::Duration::from_secs(10));
             return Err(LlmError::RateLimited("anthropic".into(), after));
         }
+        // 5xx is a provider-side transient: classified before the JSON parse
+        // (error bodies here are often HTML from gateways, not JSON).
+        if status.is_server_error() {
+            let body = resp.text().unwrap_or_default();
+            return Err(LlmError::ServerError {
+                provider: "anthropic".into(),
+                status: status.as_u16(),
+                message: crate::summarize_body(&body),
+            });
+        }
         let json: serde_json::Value = resp.json().map_err(LlmError::Http)?;
         if !status.is_success() {
             let msg = json["error"]["message"]

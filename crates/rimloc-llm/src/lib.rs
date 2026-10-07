@@ -40,6 +40,14 @@ pub enum LlmError {
     RateLimited(String, std::time::Duration),
     #[error("provider `{0}` error: {1}")]
     Provider(String, String),
+    /// Provider-side 5xx: transient by nature, so the engine backs off
+    /// exponentially before retrying (client 4xx stays on `Provider`).
+    #[error("provider `{provider}` server error (HTTP {status}): {message}")]
+    ServerError {
+        provider: String,
+        status: u16,
+        message: String,
+    },
     #[error("invalid provider response: {0}")]
     InvalidResponse(String),
     #[error("checkpoint io: {0}")]
@@ -103,4 +111,38 @@ pub fn env_key(provider: &str) -> String {
         "RIMLOC_{}_API_KEY",
         provider.to_uppercase().replace(['-', ' '], "_")
     )
+}
+
+/// Short, single-line summary of an HTTP error body for error reports.
+/// Error bodies can be HTML from proxies or arbitrarily large; only the
+/// first line, truncated, ever reaches an [`LlmError`].
+pub(crate) fn summarize_body(body: &str) -> String {
+    let first_line = body.lines().map(str::trim).find(|l| !l.is_empty());
+    let line = first_line.unwrap_or("(empty body)");
+    const MAX: usize = 200;
+    if line.chars().count() <= MAX {
+        line.to_string()
+    } else {
+        let cut: String = line.chars().take(MAX).collect();
+        format!("{cut}…")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn summarize_body_takes_first_line_and_truncates() {
+        assert_eq!(summarize_body(""), "(empty body)");
+        assert_eq!(summarize_body("\n\n  \n"), "(empty body)");
+        assert_eq!(
+            summarize_body("  upstream timeout  \nsecond line"),
+            "upstream timeout"
+        );
+        let long = "x".repeat(500);
+        let s = summarize_body(&long);
+        assert_eq!(s.chars().count(), 201); // 200 + ellipsis
+        assert!(s.ends_with('…'));
+    }
 }

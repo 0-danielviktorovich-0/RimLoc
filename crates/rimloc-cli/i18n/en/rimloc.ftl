@@ -347,6 +347,16 @@ translate-json-saved = Canonical results saved to { $path }
 translate-po-saved = Translated PO saved to { $path }
 translate-summary = Translated={ $translated }, failed={ $failed }, already-done={ $skipped }
 
+# provider-test
+help-providertest-about = Probe a provider connection with one tiny request: endpoint, auth and model (mock is offline)
+help-providertest-provider = Provider: mock | anthropic | openai | zai | ollama
+help-providertest-model = Model name (defaults to the provider preset; auto-detected for OpenAI-compatible endpoints when supported)
+help-providertest-base-url = Base URL for OpenAI-compatible providers
+help-providertest-key-env = Env var name holding the API key (otherwise keychain/auto)
+provider-test-probing = Probing provider { $provider } (real request; mock is offline)…
+provider-test-ok = Provider { $provider } OK — model { $model }, endpoint { $endpoint }
+provider-test-failed = Provider { $provider } connection FAILED: { $error }
+
 # compare
 help-compare-about = Compare translations against the source and each other
 help-compare-root = Path to the RimWorld mod root

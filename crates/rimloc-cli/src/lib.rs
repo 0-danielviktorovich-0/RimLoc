@@ -321,6 +321,15 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 owned = owned.mut_arg("emit_po", |a| a.help(tr!("help-translate-emit-po")));
                 *sc = owned;
             }
+            "provider-test" => {
+                let mut owned = std::mem::take(sc);
+                owned = owned.about(tr!("help-providertest-about"));
+                owned = owned.mut_arg("provider", |a| a.help(tr!("help-providertest-provider")));
+                owned = owned.mut_arg("model", |a| a.help(tr!("help-providertest-model")));
+                owned = owned.mut_arg("base_url", |a| a.help(tr!("help-providertest-base-url")));
+                owned = owned.mut_arg("key_env", |a| a.help(tr!("help-providertest-key-env")));
+                *sc = owned;
+            }
             "init" => {
                 let mut owned = std::mem::take(sc);
                 owned = owned.about(tr!("help-init-about"));
@@ -485,9 +494,13 @@ enum Commands {
     /// Word info, version diff, compare and translate commands.
     #[command(flatten)]
     Analyze(Analyze),
-    /// Build-mod and doctor commands.
+    /// Build-mod, doctor and provider diagnostics commands.
+    ///
+    /// The group is named `BuildDiag`, not `Build`: clippy
+    /// `enum_variant_names` flags a variant whose name starts with the
+    /// enum's own name once the group grew to three variants.
     #[command(flatten)]
-    Build(Build),
+    BuildDiag(BuildDiag),
 }
 
 #[derive(Subcommand, Debug)]
@@ -1190,7 +1203,7 @@ enum Analyze {
 }
 
 #[derive(Subcommand, Debug)]
-enum Build {
+enum BuildDiag {
     /// Build a standalone translation mod from a .po file (help via FTL).
     BuildMod {
         #[arg(long)]
@@ -1241,6 +1254,21 @@ enum Build {
         #[arg(long, default_value = "text", value_parser = ["text", "json"])]
         format: String,
     },
+    /// Probe a provider connection with one tiny request (help localized via FTL).
+    ProviderTest {
+        /// Provider: mock | anthropic | openai | zai | ollama
+        #[arg(long)]
+        provider: String,
+        /// Model name (defaults to the provider preset; auto-detected for OpenAI-compatible when supported)
+        #[arg(long)]
+        model: Option<String>,
+        /// Base URL for OpenAI-compatible providers
+        #[arg(long)]
+        base_url: Option<String>,
+        /// Env var name holding the API key (otherwise keychain/auto)
+        #[arg(long)]
+        key_env: Option<String>,
+    },
 }
 
 #[allow(dead_code)]
@@ -1281,7 +1309,7 @@ impl Runnable for Commands {
             Commands::Maintain(g) => Runnable::run(g, use_color),
             Commands::Transfer(g) => Runnable::run(g, use_color),
             Commands::Analyze(g) => Runnable::run(g, use_color),
-            Commands::Build(g) => Runnable::run(g, use_color),
+            Commands::BuildDiag(g) => Runnable::run(g, use_color),
         };
 
         match &result {
@@ -1976,7 +2004,7 @@ impl Runnable for Analyze {
     }
 }
 
-impl Runnable for Build {
+impl Runnable for BuildDiag {
     fn run(self, use_color: bool) -> Result<()> {
         let _ = use_color;
         match self {
@@ -2015,6 +2043,12 @@ impl Runnable for Build {
                 out_dir,
                 format,
             } => commands::doctor::run_doctor(game_root, root, out_dir, format),
+            Self::ProviderTest {
+                provider,
+                model,
+                base_url,
+                key_env,
+            } => commands::provider_test::run_provider_test(provider, model, base_url, key_env),
         }
     }
 }

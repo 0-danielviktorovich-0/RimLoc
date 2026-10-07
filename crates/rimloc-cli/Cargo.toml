@@ -60,6 +60,15 @@ dirs = "7"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+[features]
+default = ["keychain"]
+# OS-keychain resolution for provider API keys (keyring v3 via rimloc-llm).
+# On by default so the CLI build matches what `doctor` advises ("store a key
+# in the OS keychain") and what the GUI build already includes; opt out with
+# --no-default-features. On Linux keyring compiles without a real backend by
+# design (see rimloc-llm/Cargo.toml) — Auto then resolves from env only.
+keychain = ["rimloc-llm/keychain"]
+
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.1"
