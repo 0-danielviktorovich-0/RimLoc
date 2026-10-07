@@ -120,8 +120,23 @@ https://github.com/0-danielviktorovich-0/RimLoc/issues/2#issuecomment-6024184727
   triage/dismiss на финальных номерах (главный поток).
 - **Кросс-платформенные артефакты** (Linux/Windows) — CI-раннеры; сам Rust
   платформо-нейтрален, но артефактов этих платформ в этой сессии нет.
-- **DMG-дистрибуция** — bundle_dmg падает на внешнем SSD-таргете (воспроизводится
-  с rel19); поставка RC — `.app`.
+- **DMG-дистрибуция** — ЗАКРЫТО 2026-10-07 (ветка `fix/dmg-stage`): DMG-стадия
+  отключена, контракт macOS-артефакта = **`.app` + `.app.zip`**. Диагноз: том
+  `/Volumes/Portable-SSD` — NFS-маунт (`disk4s1.local:/mnt/Portable-SSD`, btrfs
+  за NFS); `hdiutil create -format UDRW` не работает на NFS — создаёт 0-байтный
+  целевой файл и падает с «create failed - Файл существует» (errno 17 EEXIST);
+  на локальном APFS та же команда проходит. Точная точка: `bundle_dmg.sh`
+  (форк create-dmg 1.2.1, tauri-bundler), строки 382–383; `set -e` роняет
+  стадию, cargo-tauri отдаёт exit 1 при уже собранном `.app`. Тот же том даёт
+  AppleDouble `._*`-мусор для файлов из user-сессий (backing xattr
+  `com.apple.provenance`) — это роняло ещё и компиляцию (panic
+  `tauri-2.12.1/build.rs:424` на `._default.toml`); закрыто vendor-патчем
+  `tauri-utils-2.10.1-nfs-appledouble` (фильтр `._` в ACL-гло́бе) + префлайт-
+  чисткой в `build-production.sh`. Решение: `testlab/build/build-production.sh`
+  собирает `cargo tauri build --bundles app` и последним шагом —
+  `scripts/build-make-appzip.sh` (ditto .app → zip + sha256). Возврат DMG
+  возможен только при таргете на локальном томе либо перемонтировании NFS с
+  `noappledouble` — решение владельца.
 
 ## Evidence-указатель
 
