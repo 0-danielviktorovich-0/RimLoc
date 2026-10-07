@@ -24,7 +24,6 @@ members = [
 exclude = [
     "gui/tauri-app/vendor/wry-0.57.0-noactivate",
     "gui/tauri-app/vendor/tao-0.37.1-noactivate",
-    "gui/tauri-app/src-tauri/vendor/glib-patched/glib-0.18.5",
 ]
 
 
