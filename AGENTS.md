@@ -236,6 +236,31 @@ scripts/agent-commit.sh  # Mandatory finish step
 - Новая локаль: `crates/rimloc-cli/i18n/<lang>/` — `build.rs` находит автоматически.
 
 ## Commit & Pull Request Guidelines
+
+### Public Git history hygiene
+
+Public Git metadata describes RimLoc, not the private automation process.
+Commit subjects, branch names, PR titles, release titles and user-facing
+CHANGELOG additions must be concise English engineering outcomes.
+
+Do **not** expose private orchestration vocabulary in those public surfaces:
+requirement-document shorthand, workflow/lane/wave names, private review
+statuses, owner-gate tokens, prompt section numbers or agent-runtime names.
+Translate the task before writing Git metadata, for example:
+
+- internal task: source-inspector work assigned through automation
+- public subject: `feat(gui): show live source provenance in workspace`
+- internal task: provider build integration
+- public subject: `fix(llm): compile keychain-only provider builds`
+
+Detailed process terminology may remain in local state/evidence and internal
+engineering notes, but the commit that changes those files still uses a public
+engineering subject. Existing history is not rewritten.
+
+Enforcement: `scripts/check-public-git-language.py` is called by the commit
+hook and by the trusted-base `Public history hygiene` PR workflow. See
+`docs/development/PUBLIC_GIT_HISTORY_POLICY.md`.
+
 Шаблон — `.gitmessage.txt`: `type(scope): summary` ≤72 символов (`feat`, `fix`, `docs`, `chore`, …).
 Для нетривиальных изменений — тело буллетами `- ` (что/почему/влияние). Без голых subjects вида
 `tests: update snapshot`. Коммит-сообщения на английском; русский референс —
