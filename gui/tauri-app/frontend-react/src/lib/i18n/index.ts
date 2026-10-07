@@ -36,6 +36,11 @@ const ru: Record<string, string> = {
   'lm.err.invalid': 'Неверный формат Locale ID (например: fr, pt-BR).',
   'lm.err.duplicate-builtin': 'Этот Locale ID занят встроенным языком.',
   'lm.err.duplicate-user': 'Такой пользовательский язык уже есть.',
+  'lm.searchPlaceholder': 'Фильтр по ID или названию…',
+  'lm.edit': 'Изменить',
+  'lm.save': 'Сохранить',
+  'lm.cancel': 'Отмена',
+  'lm.noMatch': 'Ни один язык не подходит под фильтр.',
   'prov.eyebrow': 'AI-ПРОВАЙДЕРЫ',
   'prov.title': 'Модели и подключения',
   'prov.subtitle': 'Шаблоны провайдеров с статусами — клиентская конфигурация.',
@@ -71,8 +76,6 @@ const ru: Record<string, string> = {
   'settings.light': 'Светлая',
   'settings.dark': 'Тёмная',
   'settings.uiLanguage': 'Язык интерфейса',
-  'settings.projectDefaults': 'Проектные дефолты',
-  'settings.defaultTarget': 'Язык перевода по умолчанию',
   'settings.capabilities': 'Возможности этой сборки',
   'settings.capabilitiesCount': 'Поддерживается операций контракта',
   'settings.capabilitiesLoading': 'Запрашиваю handshake…',
@@ -333,6 +336,12 @@ const ru: Record<string, string> = {
   'palette.cmd.providers': 'AI-провайдеры',
   'palette.cmd.lm': 'Языки',
   'palette.cmd.settings': 'Настройки',
+  // Команды действий (audit v2 #7): появляются в палитре ТОЛЬКО при открытом
+  // проекте — состав из 13 навигационных команд без проекта зафиксирован
+  // palette-acceptance (WDIO). Метки без «перев», чтобы не задевать
+  // зафиксированный фильтр-тест.
+  'palette.cmd.openProject': 'Открыть проект',
+  'palette.cmd.target': 'Цель:',
 }
 
 const en: Record<string, string> = {
@@ -366,6 +375,11 @@ const en: Record<string, string> = {
   'lm.err.invalid': 'Invalid locale id format (e.g. fr, pt-BR).',
   'lm.err.duplicate-builtin': 'This locale id conflicts with a builtin language.',
   'lm.err.duplicate-user': 'This user language already exists.',
+  'lm.searchPlaceholder': 'Filter by ID or name…',
+  'lm.edit': 'Edit',
+  'lm.save': 'Save',
+  'lm.cancel': 'Cancel',
+  'lm.noMatch': 'No language matches the filter.',
   'prov.eyebrow': 'AI PROVIDERS',
   'prov.title': 'Models and connections',
   'prov.subtitle': 'Provider templates with statuses — client-side configuration.',
@@ -401,8 +415,6 @@ const en: Record<string, string> = {
   'settings.light': 'Light',
   'settings.dark': 'Dark',
   'settings.uiLanguage': 'Interface language',
-  'settings.projectDefaults': 'Project defaults',
-  'settings.defaultTarget': 'Default target language',
   'settings.capabilities': 'Capabilities of this build',
   'settings.capabilitiesCount': 'Contract operations supported',
   'settings.capabilitiesLoading': 'Requesting handshake…',
@@ -661,6 +673,8 @@ const en: Record<string, string> = {
   'palette.cmd.providers': 'AI providers',
   'palette.cmd.lm': 'Languages',
   'palette.cmd.settings': 'Settings',
+  'palette.cmd.openProject': 'Open project',
+  'palette.cmd.target': 'Target:',
 }
 
 let locale: Locale = 'ru'
