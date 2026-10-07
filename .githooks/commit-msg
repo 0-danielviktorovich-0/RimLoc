@@ -37,7 +37,13 @@ if ! echo "$body" | grep -Eq '^- '; then
   exit 1
 fi
 
-# 4) Release-specific nudge
+# 4) Public Git history language: describe software outcomes, not agent orchestration.
+repo_root=$(git rev-parse --show-toplevel)
+python3 "$repo_root/scripts/check-public-git-language.py" \
+  --surface commit-subject --text "$subject" \
+  --staged-changelog
+
+# 5) Release-specific nudge
 if echo "$subject" | grep -q '^chore(release):'; then
   if ! echo "$body" | grep -q 'Run publish in order:'; then
     echo "✖ Release commits must include the publish order line" >&2
