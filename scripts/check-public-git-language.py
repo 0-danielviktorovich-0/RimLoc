@@ -46,7 +46,7 @@ PUBLIC_TEXT_SURFACES = {"commit", "pr", "release", "branch", "changelog"}
 
 def violations(text: str, surface: str) -> list[str]:
     found: list[str] = []
-    if surface != "branch" and CYRILLIC_RE.search(text):
+    if CYRILLIC_RE.search(text):
         found.append("Cyrillic text (public Git metadata must be English)")
     for rule in RULES:
         match = rule.pattern.search(text)
