@@ -72,3 +72,16 @@
   .rimloc-release-state.json = RC_READY
 - Owner-only остатки: level-7 visual (чек-лист в OWNER_TEST_PACKET.md),
   publish-апрув, AI-провайдеры live, Source Inspector live
+
+## 2026-10-07 (7) — РЕСПИН: ШОВ ЛОКАЛЕЙ ПОЙМАН НОВЫМ ГЕЙТОМ
+- chatbatch-acceptance (полный UI-цикл, новый гейт) поймал: mapSnapshot сравнивал
+  'ru' наивно, а контрактные записи пишут folder-форму 'Russian' (P1-2) →
+  применённые переводы не показывались в workspace на свежей сессии (файл и TM —
+  корректны). Классический UX-дефект, маскировавшийся ручным переключением цели.
+- Фикс f99fc19: чтение — обе формы, commit() — folderForm. Бинарная дельта
+  против af06a4e — только project.ts (crates/src-tauri diff пуст).
+- Респин 2: прод 2305d564, automation 884baa33; все гейты заново (preflight,
+  release-guard static+runtime, WDIO 54 зелёных: palette 34 + LM 15 +
+  chatbatch 4 + multitarget 1 самодостаточный); скриншоты пересняты (18).
+- multitarget-спека переписана самодостаточно (commit→показ→uk-изоляция→
+  round-trip) — старая держалась на утраченном [R1-smoke] фикстуре старого профиля.

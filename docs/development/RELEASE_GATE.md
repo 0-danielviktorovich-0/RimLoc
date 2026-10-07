@@ -28,10 +28,10 @@ soak-preflight `--gate --repo .` exit 0; release-guard static + runtime PASS).
 | Область | rel21 | rel22 | Доказательства rel22 |
 |---|---|---|---|
 | Chat batch (no-API) | OWNER_GATE (каркас) | **RELEASE_READY** | chat_batch.rs (7 Rust-тестов: полный цикл, rejection-матрица, stale+recovery, restart-persistence, BOM, drift-гейт); GUI `#/chatbatch` живой (WDIO route + экран в палитре 14-й командой); ApplyOrigin::Import через канонический apply; 2 кадра в screens/ |
-| React UI | 33/33 WDIO, 16 скриншотов | **RELEASE_READY** | WDIO palette **34/34** + LM **15/15** = 49/49 (rel21 46/48); спека self-seeded и выровнена по Wave B (состав 14 + экшены, LM-инвариант вместо EN-литерала); 18 скриншотов light/dark |
+| React UI | 33/33 WDIO, 16 скриншотов | **RELEASE_READY** | WDIO **54 зелёных**: palette 34/34 + LM 15/15 + chatbatch 4/4 (новый полный UI-цикл) + multitarget 1/1 (самодостаточный); спека self-seeded и выровнена по Wave B (состав 14 + экшены, LM-инвариант вместо EN-литерала); 18 скриншотов light/dark |
 | Release engineering | OWNER_GATE | **OWNER_GATE** (не изменилось) | rel22: preflight --gate exit 0, release-guard static+runtime PASS, canonical tree hashes, MANIFEST; security: CI full matrix SUCCESS на af06a4e (workflow_dispatch), CodeQL af06a4e → 6 новых High разобраны (§9 CODE_SCANNING_RECONCILIATION.md) → **CS 0 open / DA 0 open**; Dependabot 6 PR post-beta по мандату. Остаток — только publish-апрув + level-7 visual |
 
-Интеграционные гейты на af06a4e: cargo test services+cli **385/0**, parsers+services
+Х trailing: **респин 2 артефакта** — E2E chat-batch поймал шов локалей (mapSnapshot 'ru' vs folder 'Russian': применённые переводы не показывались в workspace до переключения цели); фикс f99fc19 (mapSnapshot обе формы + commit() folderForm), прод 2305d564. Интеграционные гейты на af06a4e: cargo test services+cli **385/0**, parsers+services
 **311/0**, clippy по канону CI (workspace excl gui + gui all-features) clean,
 fmt clean, tsc+vite clean. Артефактные гейты и честные оговорки (DMG на SSD,
 self-report `-dirty` = production-ACL) — IDENTITY.md артефакта. Хвост e23f6d0
