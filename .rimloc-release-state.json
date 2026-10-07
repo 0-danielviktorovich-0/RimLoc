@@ -1,66 +1,82 @@
 {
   "campaign": "release-convergence-r2",
-  "status": "ACTIVE",
-  "updated": "2026-10-07T8",
-  "main": "2147c4e",
-  "candidate": null,
+  "status": "RC_READY",
+  "updated": "2026-10-07T18:35+09:00",
+  "main": "e23f6d0",
+  "artifactSha": "af06a4e",
+  "note": "e23f6d0 = af06a4e + testlab/docs only; products code identical to artifact",
+  "candidate": {
+    "name": "rel22-rc",
+    "evidence": "RimLoc-evidence/artifact-rel22-rc/",
+    "binarySha256": "32dcdf8b399057a2e4d114deefeffc0431f7f996ec86465ccf529548deb207ce",
+    "automationSha256": "4363f7cf76159dc15cd59526941c7e2b8a5a50168c3084c4b9900b4104f95a98",
+    "gates": "preflight --gate exit0; release-guard static+runtime PASS; canonical tree hashes; MANIFEST.sha256"
+  },
   "lanes": {
     "chat_batch": {
-      "status": "pending",
-      "priority": "P0",
-      "focus": "canonical→batch→import→apply, NOT mock, Tauri E2E"
+      "status": "VERIFIED",
+      "commit": "273a79c",
+      "evidence": "chat_batch.rs 7 tests (full cycle, rejection matrix, stale+recovery, restart, BOM, drift); GUI #/chatbatch live; WDIO route; screens 07-chatbatch light+dark"
     },
     "ifmodactive": {
-      "status": "pending",
-      "priority": "P0",
-      "focus": "active-mod context → conditional effective view"
+      "status": "VERIFIED",
+      "commit": "42fbfc0",
+      "evidence": "ActiveModContext resolution; corpus A/B 3170653412: 123->159 units w/ Royalty, unresolved->POTENTIAL w/o context; ifmodactive_corpus.rs"
     },
     "defs_gaps": {
-      "status": "pending",
-      "priority": "P0",
-      "focus": "gerund/verb/labelNoun/etc in defs_fields.json"
+      "status": "VERIFIED",
+      "commit": "d712ba8",
+      "evidence": "dict 126->139 pairs, +KeyBindingDef; duplicate-key bug fixed; VEF A/B 625->672 units (+47/0 removed)"
     },
     "reflection": {
-      "status": "pending",
-      "priority": "P1",
-      "focus": "bounded prototype: Mono.Cecil static metadata"
+      "status": "VERDICT_B",
+      "evidence": "Mono.Cecil adapter rejected on evidence: corpus holds no DLL-only translatable units; revisit condition documented in TRANSLATION_ELIGIBILITY.md"
     },
     "parentname": {
-      "status": "pending",
-      "priority": "P1",
-      "focus": "close same-mod inheritance in learn-defs"
+      "status": "NOT_REQUIRED_RC",
+      "evidence": "learn-defs enhancement; not a release blocker, stays backlog"
     },
     "provider_e2e": {
-      "status": "pending",
-      "priority": "P1",
-      "focus": "Z.AI bounded real E2E"
+      "status": "SURFACE_DONE",
+      "evidence": "provider-test command + retry/backoff + keychain merged (7de84cc); live paid E2E = owner-gated"
     },
     "ui_native": {
-      "status": "pending",
-      "priority": "P1",
-      "focus": "Source Inspector live, file picker torture, action→effect"
+      "status": "VERIFIED",
+      "evidence": "palette 34/34, LM 15/15 (49/49), screens 18/18 incl chatbatch"
     },
     "xplat": {
-      "status": "pending",
-      "priority": "P1",
-      "focus": "cross-platform artifacts, DMG fix or .app.zip"
+      "status": "CI_MATRIX_SUCCESS",
+      "evidence": "CI run 37596486274 (workflow_dispatch, push-trigger off by owner b102f3e): 3-OS cargo test + GUI SUCCESS on af06a4e; DMG-on-SSD known rel19-22, .app is deliverable"
     },
     "level7": {
-      "status": "pending",
-      "priority": "P0",
-      "focus": "rebuild from FINAL code (skip-empty, no stale keys)"
+      "status": "OWNER_GATE",
+      "evidence": "checklist in OWNER_TEST_PACKET.md (Options -> Mod Settings -> HugsLib)"
     },
     "security_final": {
-      "status": "pending",
-      "priority": "P0",
-      "focus": "final cycle on exact FINAL SHA"
+      "status": "VERIFIED",
+      "evidence": "CI matrix SUCCESS; CodeQL af06a4e 4 analyses -> 6 new High dismissed individually w/ evidence (reconciliation §9); CS open=0, DA open=0; Dependabot 6 PR post-beta per mandate"
     }
   },
-  "gates": {},
+  "gates": {
+    "cargo_test": "385/0 services+cli, 311/0 parsers+services",
+    "clippy": "canonical CI invocation clean (workspace excl gui; gui all-features)",
+    "fmt": "clean",
+    "frontend": "tsc -b && vite build clean",
+    "wdio": "49/49 (palette 34, lm 15)",
+    "ci_matrix": "SUCCESS run 37596486274 @ af06a4e",
+    "code_scanning_open": 0,
+    "dependabot_alerts_open": 0
+  },
   "ownerGates": [
-    "level-7 visual",
-    "publish approval"
+    "level-7 visual (checklist ready)",
+    "publish approval",
+    "AI provider live E2E (paid calls)",
+    "Source Inspector live scope"
   ],
+  "specChanges": {
+    "palette_acceptance": "13->14 commands + self-seed before() + composition invariant (all-14-routes) instead of equality: action commands (Wave B) are legitimate with open project",
+    "lm_acceptance": "EN literal 'already exists' replaced by surfaced-error + list-not-grown invariant"
+  },
   "superseded": [
     "BACKLOG_PO_OPTIONAL_ARCHITECTURE.md bounded constraint"
   ]

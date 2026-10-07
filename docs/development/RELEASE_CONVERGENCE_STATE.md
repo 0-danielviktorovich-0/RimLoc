@@ -47,3 +47,28 @@
 - Level-7 visual: ожидает владельца (ACCEPTANCE_CHECKLIST.md)
 - Issue #2: отвечен с практическим proof (issuecomment-6024184727)
 - Оставшиеся owner-gates: level-7 visual, RC-тест, publish approval
+
+## 2026-10-07 (6) — R2-ВОНА СХОДИТСЯ: rel22-rc ГОТОВ
+- R2-лейны влиты: chat-batch 273a79c, ifmodactive 42fbfc0, defs-gaps d712ba8
+  (merge-коммиты f7e1d5c/ca52d39/8b6d85a); гейты: 385/0 + 311/0, clippy по
+  канону CI, fmt, tsc+vite — чисто
+- CHANGELOG дополнен честно: 5 пропущенных октябрьских записей (b3789dd) +
+  R2-записи (af06a4e); palette-acceptance спека выровнена по Wave B (13→14,
+  self-seed, инвариант состава)
+- **rel22-rc**: evidence/artifact-rel22-rc/, прод sha256 32dcdf8b…, automation
+  4363f7cf…, гейты PASS (preflight --gate, release-guard static+runtime,
+  canonical tree hashes); DMG-грабля rel19-22 повторилась (задокументирована),
+  поставка = .app
+- **WDIO 49/49** (palette 34/34 + LM 15/15; rel21 был 46/48); скриншоты 18/18
+  через browser.takeScreenshot() — desktop-захват снял бы окна владельца
+  (окно приложения на скрытом Space; две пробные region-съёмки удалены
+  немедленно, в артефакт не вошли)
+- **Security cycle на af06a4e**: CI full matrix SUCCESS (37596486274,
+  workflow_dispatch — push-триггер выключен владельцем); CodeQL дал 6 новых
+  High на R2-коде → все разобраны в §9 CODE_SCANNING_RECONCILIATION.md и
+  закрыты по одному с evidence → **CS 0 open / DA 0 open**; Dependabot 6 PR
+  post-beta по мандату (проверено: TS7/vite8/lucide1 — мажоры)
+- RELEASE_GATE.md: rel22-дельта (chat-batch → RELEASE_READY; итог 19/5/1/0/0);
+  .rimloc-release-state.json = RC_READY
+- Owner-only остатки: level-7 visual (чек-лист в OWNER_TEST_PACKET.md),
+  publish-апрув, AI-провайдеры live, Source Inspector live

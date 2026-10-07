@@ -11,7 +11,35 @@ related:
   - "[[ADR-MCP]]"
 ---
 
-# RELEASE GATE — rel21-rc (main @ `2ccdbd16`)
+# RELEASE GATE — rel22-rc (main @ `af06a4e`)
+
+Дата: 2026-10-07. Кандидат: `rel22-rc` — production-артефакт
+`RimLoc-evidence/artifact-rel22-rc/` (binary sha256 `32dcdf8b…`, source
+af06a4e = main == origin/main; идентичность: IDENTITY.md рядом с артефактом;
+soak-preflight `--gate --repo .` exit 0; release-guard static + runtime PASS).
+Публикация — parked по решению владельца (ADDENDUM §27); этот документ —
+вердикты по областям, не команда к публикации.
+
+## rel22-rc: дельты против rel21 (R2-волна)
+
+Базовая матрица ниже — вердикты rel21; rel22 изменяет три строки и
+подтверждает остальные теми же или новыми доказательствами:
+
+| Область | rel21 | rel22 | Доказательства rel22 |
+|---|---|---|---|
+| Chat batch (no-API) | OWNER_GATE (каркас) | **RELEASE_READY** | chat_batch.rs (7 Rust-тестов: полный цикл, rejection-матрица, stale+recovery, restart-persistence, BOM, drift-гейт); GUI `#/chatbatch` живой (WDIO route + экран в палитре 14-й командой); ApplyOrigin::Import через канонический apply; 2 кадра в screens/ |
+| React UI | 33/33 WDIO, 16 скриншотов | **RELEASE_READY** | WDIO palette **34/34** + LM **15/15** = 49/49 (rel21 46/48); спека self-seeded и выровнена по Wave B (состав 14 + экшены, LM-инвариант вместо EN-литерала); 18 скриншотов light/dark |
+| Release engineering | OWNER_GATE | **OWNER_GATE** (не изменилось) | rel22: preflight --gate exit 0, release-guard static+runtime PASS, canonical tree hashes, MANIFEST; security: CI full matrix SUCCESS на af06a4e (workflow_dispatch), CodeQL af06a4e → 6 новых High разобраны (§9 CODE_SCANNING_RECONCILIATION.md) → **CS 0 open / DA 0 open**; Dependabot 6 PR post-beta по мандату. Остаток — только publish-апрув + level-7 visual |
+
+Интеграционные гейты на af06a4e: cargo test services+cli **385/0**, parsers+services
+**311/0**, clippy по канону CI (workspace excl gui + gui all-features) clean,
+fmt clean, tsc+vite clean. Артефактные гейты и честные оговорки (DMG на SSD,
+self-report `-dirty` = production-ACL) — IDENTITY.md артефакта. Хвост e23f6d0
+после af06a4e — только testlab-спеки и security-док, продуктовый код не менял.
+
+---
+
+# Архив: rel21-rc (main @ `2ccdbd16`)
 
 Дата: 2026-10-07. Кандидат: `rel21-rc` — production-артефакт
 `RimLoc-evidence/artifact-rel21-rc/` (binary sha256 `1a70c4d5…`), собран с
@@ -112,3 +140,10 @@ https://github.com/0-danielviktorovich-0/RimLoc/issues/2#issuecomment-6024184727
   `.rimloc-release-state.json` (машинный authority).
 - Предыдущая точка: `RimLoc-evidence/artifact-rel20-palette-mustfix/` (rel20,
   358e17a — устарел).
+
+## rel22-сводка
+
+**19 RELEASE_READY · 5 OWNER_GATE · 1 REJECTED_NOT_SCOPE · 0 EXTERNAL_BLOCKER · 0 UNKNOWN**
+(chat-batch перешёл в RELEASE_READY против rel21-сводки 18/6; security cycle
+закрыт на af06a4e: 6 новых High → 6 evidence-dismiss, zero-open; остача
+owner-gates: AI-провайдеры, Source Inspector live, publish-апрув + level-7 visual)
