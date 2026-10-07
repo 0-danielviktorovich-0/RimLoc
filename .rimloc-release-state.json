@@ -1,17 +1,18 @@
 {
   "campaign": "release-convergence-r2",
   "status": "RC_READY",
-  "updated": "2026-10-07T22:10+09:00",
-  "main": "7a7c34b",
+  "updated": "2026-10-07T23:05+09:00",
+  "main": "857b0d2",
   "artifactSha": "af06a4e",
   "note": "e23f6d0 = af06a4e + testlab/docs only; products code identical to artifact",
   "candidate": {
-    "name": "rel22-rc",
-    "evidence": "RimLoc-evidence/artifact-rel22-rc/",
-    "binarySha256": "2305d564a76c2691f0f112cb336110dabdcf68634bd2506e84ea3f7d60ed7bb5",
-    "automationSha256": "884baa33b19807e1ac8742ce774fecd46ac2b161feb81c02924526f5026131ea",
-    "gates": "preflight --gate exit0; release-guard static+runtime PASS; canonical tree hashes; MANIFEST.sha256",
-    "note": "respin 2: af06a4e + locale-form seam fix (f99fc19, frontend-only); crates/src-tauri diff vs af06a4e empty"
+    "name": "rel23-final",
+    "evidence": "RimLoc-evidence/artifact-rel23-final/",
+    "product_source_sha": "857b0d2a51b97e6e541cdf8f61d00683b966bd04",
+    "binarySha256": "7781dd395b8e7c83332da9590a92972e6e93c285cef717200c9c3117471ae4bf",
+    "appzipSha256": "2d0f165213f700b66c58c75cfbe3c8110f9e0e1f05af623fcda887c4fa0cee20",
+    "gates": "preflight --gate exit0 (sha+commit сверены); release-guard static PASS; runtime PORT_CLOSED; DMG stage не запускается (контракт C6)",
+    "identity": "docs/development/FINAL_IDENTITY.md (C7): точные sha, без «практически идентичен»"
   },
   "lanes": {
     "chat_batch": {
@@ -63,11 +64,12 @@
     "clippy": "canonical CI invocation clean (workspace excl gui; gui all-features)",
     "fmt": "clean",
     "frontend": "tsc -b && vite build clean",
-    "wdio": "54 green (palette 34, lm 15, chatbatch 4 NEW full UI cycle, multitarget 1 rewritten self-contained)",
+    "wdio": "59 green (palette 34, lm 15, chatbatch 4, source-inspector 5 NEW, multitarget 1)",
     "ci_matrix": "SUCCESS run 37596486274 @ af06a4e",
     "code_scanning_open": 0,
     "dependabot_alerts_open": 0,
-    "locale_form_seam": "FIXED: mapSnapshot matches both forms; commit() persists folderForm; caught by chatbatch E2E"
+    "locale_form_seam": "FIXED: mapSnapshot matches both forms; commit() persists folderForm; caught by chatbatch E2E",
+    "codeql_extraction": "298/298 files, 0 errors (dist committed, C5)"
   },
   "ownerGates": [
     "level-7 visual (checklist ready)",
