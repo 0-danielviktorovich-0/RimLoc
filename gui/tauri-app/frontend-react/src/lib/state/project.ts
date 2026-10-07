@@ -11,6 +11,7 @@ import type {
   TKeyMetaDto,
   TranslationIntentDto,
   ValidateProjectResponseDto,
+  ValidationFindingDto,
 } from '../client/types'
 import { clientInstance } from '../client/instance'
 import { folderForm } from '../languages/folderForm'
@@ -51,12 +52,22 @@ export type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
 
-/** §10 nav badge state: the LAST live validate report for the open project.
- *  `report: null` = stale/unknown — the shell honestly hides the badge
- *  instead of showing a count it cannot back. */
+/** §9 Issues-фильтр / §17 inline-warning: кэш живой валидации проекта.
+ *  Отчёт отдаёт client.validateProject(projectId, epoch); `stale`
+ *  поднимается на open/commit/adoptExternal (состояние проекта уехало
+ *  вперёд отчёта) — воркспейс пере-гоняет валидацию по stale-флагу. */
 export interface ValidationState {
   report: ValidateProjectResponseDto | null
+  stale: boolean
   busy: boolean
+  error: string | null
+}
+
+const initialValidation: ValidationState = {
+  report: null,
+  stale: false,
+  busy: false,
+  error: null,
 }
 
 export interface ProjectState {
@@ -85,7 +96,7 @@ let state: ProjectState = {
   busy: false,
   load: { kind: 'idle' },
   lastError: null,
-  validation: { report: null, busy: false },
+  validation: initialValidation,
   perfMarks: {},
 }
 
@@ -93,7 +104,6 @@ const listeners = new Set<() => void>()
 
 /** §10: the validation report describes ONE snapshot — every mutation that
  *  adopts a different snapshot makes the previous report stale. */
-const VALIDATION_STALE: ValidationState = { report: null, busy: false }
 
 function set(patch: Partial<ProjectState>): void {
   state = { ...state, ...patch }
@@ -150,6 +160,41 @@ function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[]
   return [...byKey.values()]
 }
 
+// --- §9/§17: чистые проекции отчёта валидатора на инвентарь. ---
+
+/** Ключ инвентаря, к которому относится находка: `id` несёт ПОЛНУЮ
+ *  структурную идентичность (бэкенд резолвит её через (key, path), не по
+ *  сериализационному ключу); находки без `id` — проектного уровня
+ *  (case-collision, source-drift), их `key` — сырой текст валидатора.
+ *  Маппинг по контракту задачи: f.id?.key / f.key. */
+export function findingEntryKey(f: ValidationFindingDto): string {
+  return f.id?.key ?? f.key
+}
+
+/** «С замечаниями»: множество ключей строк, присутствующих в находках. */
+export function findingEntryKeys(report: ValidateProjectResponseDto | null): Set<string> {
+  const keys = new Set<string>()
+  if (!report) return keys
+  for (const f of report.findings) keys.add(findingEntryKey(f))
+  return keys
+}
+
+/** Находки по ключу строки (порядок отчёта сохранён) — «первая находка»
+ *  для inline-warning редактора это первый элемент списка. */
+export function findingsByEntryKey(
+  report: ValidateProjectResponseDto | null,
+): Map<string, ValidationFindingDto[]> {
+  const byKey = new Map<string, ValidationFindingDto[]>()
+  if (!report) return byKey
+  for (const f of report.findings) {
+    const k = findingEntryKey(f)
+    const list = byKey.get(k)
+    if (list) list.push(f)
+    else byKey.set(k, [f])
+  }
+  return byKey
+}
+
 export const projectStore = {
   /** J1: real create (the Rust scan IS the preview) → adopted snapshot. */
   async createContractProject(modRoot: string, targetVersion?: string): Promise<boolean> {
@@ -162,7 +207,8 @@ export const projectStore = {
         selectedKey: null,
         drafts: {},
         busy: false,
-        validation: VALIDATION_STALE,
+        // Новый проект — прежний отчёт валидации неприменим.
+        validation: { ...initialValidation, stale: true },
         perfMarks: { ...state.perfMarks, T3_stateReceived: performance.now(), T4_entriesMapped: performance.now() },
       })
       void projectStore.refreshValidation()
@@ -204,7 +250,9 @@ export const projectStore = {
         selectedKey: null,
         drafts: {},
         busy: false,
-        validation: VALIDATION_STALE,
+        // Открытие — прежний отчёт валидации устарел (§9): новый проект или
+        // свежая сессия; воркспейс пере-гоняет валидацию по stale-флагу.
+        validation: { ...initialValidation, stale: true },
       })
       void projectStore.refreshValidation()
       return true
@@ -272,7 +320,9 @@ export const projectStore = {
         entries: mapSnapshot(fresh, state.targetLocale),
         drafts,
         busy: false,
-        validation: VALIDATION_STALE,
+        // Регрессия-логика (§9): фикс уехал в durable-состояние — отчёт
+        // устарел, revalidate уберёт строку из «С замечаниями».
+        validation: { ...state.validation, stale: true, error: null },
       })
       void projectStore.refreshValidation()
       if (next) {
@@ -297,34 +347,45 @@ export const projectStore = {
       const fresh = await clientInstance.getClient().snapshot(snap.project_id)
       // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
       // захардкоженная 'ru' игнорировала targetLocale).
-      set({ snapshot: fresh, entries: mapSnapshot(fresh, state.targetLocale), drafts: {}, validation: VALIDATION_STALE })
-      void projectStore.refreshValidation()
+      set({
+        snapshot: fresh,
+        entries: mapSnapshot(fresh, state.targetLocale),
+        drafts: {},
+        // §9: внешняя мутация (existing-import, chat-batch apply) — отчёт
+        // валидации устарел так же, как после commit().
+        validation: { ...state.validation, stale: true, error: null },
+      })
     } catch {
       /* refresh failures surface via the next contract call */
     }
   },
 
-  /** §10: live validation over the open project's trusted session state.
-   *  Failure or a mid-flight epoch/project change lands as `report: null`
-   *  (honest unknown) — never as a fabricated clean report. */
+  /** §9/§17: живая валидация открытого проекта (read-only, epoch-guarded).
+   *  Вызывается воркспейсом, когда `validation.stale`; успешный отчёт
+   *  гасит stale, ошибка остаётся видимой и НЕ ретраится молча. */
+  /** Shell-facing alias (nav badge §10): same live validation run. */
   async refreshValidation(): Promise<void> {
+    await projectStore.revalidate()
+  },
+
+  async revalidate(): Promise<void> {
     const snap = state.snapshot
-    if (!snap) {
-      set({ validation: VALIDATION_STALE })
-      return
-    }
-    set({ validation: { report: state.validation.report, busy: true } })
+    if (!snap || state.validation.busy) return
+    set({ validation: { ...state.validation, busy: true, error: null } })
     try {
       const report = await clientInstance.getClient().validateProject(snap.project_id, snap.session_epoch)
-      const cur = state.snapshot
-      // The session moved on while the request was in flight — drop it.
-      if (cur && cur.project_id === snap.project_id && cur.session_epoch === snap.session_epoch) {
-        set({ validation: { report, busy: false } })
-      } else {
-        set({ validation: VALIDATION_STALE })
-      }
-    } catch {
-      set({ validation: VALIDATION_STALE })
+      set({ validation: { report, stale: false, busy: false, error: null } })
+    } catch (e) {
+      // Отчёт не обновлён: прежний (если был) помечен stale и остаётся
+      // честным «прошлым срезом»; ошибка видима, авто-ретрая нет.
+      set({
+        validation: {
+          ...state.validation,
+          busy: false,
+          stale: true,
+          error: e instanceof Error ? e.message : String(e),
+        },
+      })
     }
   },
 
@@ -338,7 +399,7 @@ export const projectStore = {
       busy: false,
       load: { kind: 'idle' },
       lastError: null,
-      validation: VALIDATION_STALE,
+      validation: initialValidation,
     })
   },
 }

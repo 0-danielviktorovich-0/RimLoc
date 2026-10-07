@@ -400,6 +400,21 @@ const ru: Record<string, string> = {
   'cb.status.imported': 'Импортирован',
   'cb.status.stale': 'Устарел',
   'cb.status.done': 'Применён',
+  // Workspace R4: честные табы контекста, находки валидатора, Related, AI entry.
+  'ws.tabTerms': 'Термины',
+  'ws.tabTerms.empty': 'Совпадений с глоссарием в этой строке нет.',
+  'ws.tabTerms.loading': 'Загружаю глоссарий проекта…',
+  'ws.tabTerms.note': 'Термины, входящие в исходник (без учёта регистра).',
+  'ws.related': 'Связанные строки',
+  'ws.sev.error': 'Ошибка',
+  'ws.sev.warning': 'Предупреждение',
+  'ws.sev.info': 'Инфо',
+  'ws.finding.more': 'и ещё {count}',
+  'ws.toChatbatch': 'В чат-перевод',
+  'ws.toChatbatchHint':
+    'Строка будет предотмечена в чат-переводе (без API, без автоматических вызовов провайдера).',
+  'ws.mtTitle': 'Машинный перевод',
+  'ws.mtHint': 'тот же поток без API — чат-перевод',
 }
 
 const en: Record<string, string> = {
@@ -791,6 +806,21 @@ const en: Record<string, string> = {
   'cb.status.imported': 'Imported',
   'cb.status.stale': 'Stale',
   'cb.status.done': 'Applied',
+  // Workspace R4: honest context tabs, validator findings, Related, AI entry.
+  'ws.tabTerms': 'Terms',
+  'ws.tabTerms.empty': 'No glossary terms match this string.',
+  'ws.tabTerms.loading': 'Loading the project glossary…',
+  'ws.tabTerms.note': 'Terms contained in the source (case-insensitive).',
+  'ws.related': 'Related strings',
+  'ws.sev.error': 'Error',
+  'ws.sev.warning': 'Warning',
+  'ws.sev.info': 'Info',
+  'ws.finding.more': 'and {count} more',
+  'ws.toChatbatch': 'To chat translation',
+  'ws.toChatbatchHint':
+    'The string will be pre-selected in chat translation (no API, no automatic provider calls).',
+  'ws.mtTitle': 'Machine translation',
+  'ws.mtHint': 'same no-API flow — chat translation',
 }
 
 let locale: Locale = 'ru'
