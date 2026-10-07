@@ -170,8 +170,9 @@ async function activeElementInfo(): Promise<string> {
 
 // The ARTIFACT palette (commit 53bd1aa) had 6 commands; the palette-nav lane
 // brought 7; the palette/LM MUST-FIX lane brought the FULL route coverage
-// (14); the wave integration dropped «Инструменты» (W0: dead nav point) —
-// the composition test below expects exactly this list (13).
+// (14); the wave integration dropped «Инструменты» (W0: dead nav point);
+// the R2 chat-batch lane added «Чат-перевод (без API)» — the composition
+// test below expects exactly this list (14).
 const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Строки перевода', hash: '#/home', marker: '[data-testid="wizard.open"]' },
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
@@ -180,6 +181,7 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
   { label: 'Сравнение версий', hash: '#/compare', marker: '[data-testid="cmp.old-dir"]' }, // Compare-экран ЖИВОЙ (wave-integration): форма diff двух корней модов
   { label: 'Глоссарий', hash: '#/glossary', marker: '[data-testid="gl.table"], [data-testid="gl.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Память переводов', hash: '#/tm', marker: '[data-testid="tm.count"], [data-testid="tm.filter-query"], [data-testid="tm.filter-status"], [data-testid="tm.error"]' },
+  { label: 'Чат-перевод (без API)', hash: '#/chatbatch', marker: '[data-testid="cb.status-badge"], [data-testid="cb.create"], [data-testid="cb.error"]' }, // R2 chat-batch: внешний AI без API-ключа
   { label: 'Сборка и экспорт', hash: '#/export', marker: '[data-testid="be.outdir"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Самоперевод RimLoc', hash: '#/selfloc', marker: '[data-testid="selfloc.open"], [data-testid="selfloc.error"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Диагностика', hash: '#/diagnostics', marker: '[data-testid="diag.outdir"], [data-testid="diag.error"], .narrow-page .btn-primary[href="#/home"]' },
@@ -269,7 +271,7 @@ describe('Palette §9: открытие и закрытие', () => {
 })
 
 describe('Palette §9: состав команд и поиск', () => {
-  it('состав: ровно 13 команд (tools удалён, полное покрытие маршрутов)', async () => {
+  it('состав: ровно 14 команд (tools удалён, +чат-перевод, полное покрытие маршрутов)', async () => {
     await openPalette('list')
     const items = await paletteItems()
     console.log(`[palette-acc] ITEMS=${JSON.stringify(items)}`)
@@ -289,9 +291,10 @@ describe('Palette §9: состав команд и поиск', () => {
     await pause(400)
     const items = await paletteItems()
     console.log(`[palette-acc] FILTER перьев=${JSON.stringify(items)}`)
-    // Полный состав 13 команд: «перев» матчит 4 (метки палитры через t(),
-    // значения при дефолтной локали ru — те же литералы).
-    const EXPECT_PEREV = ['Строки перевода', 'Импорт существующего перевода', 'Память переводов', 'Самоперевод RimLoc']
+    // Полный состав 14 команд: «перев» матчит 5 (метки палитры через t(),
+    // значения при дефолтной локали ru — те же литералы; «Чат-перевод»
+    // добавлен R2 chat-batch лейном).
+    const EXPECT_PEREV = ['Строки перевода', 'Импорт существующего перевода', 'Память переводов', 'Самоперевод RimLoc', 'Чат-перевод (без API)']
     if (items.length !== EXPECT_PEREV.length || !EXPECT_PEREV.every((e) => items.some((i) => i.includes(e)))) {
       throw new Error(`фильтр «перев» дал ${JSON.stringify(items)}, ждали ${JSON.stringify(EXPECT_PEREV)}`)
     }
@@ -469,7 +472,7 @@ describe('Palette §9: клавиатура, фокус, конфликты', ()
     const items = await paletteItems()
     a = await activeOption()
     console.log(`[palette-acc] NAV_FILTER_RESET items=${JSON.stringify(items)} active=#${a.index} ariaAD=${a.ad}`)
-    if (items.length !== 4) throw new Error(`фильтр «перев» дал ${items.length} команд (в HEAD их 4)`)
+    if (items.length !== 5) throw new Error(`фильтр «перев» дал ${items.length} команд (в HEAD их 5)`)
     if (a.index !== 0) throw new Error(`после фильтра активен #${a.index}, ожидается #0`)
     if (a.ad !== 'palette-opt-0') throw new Error(`aria-activedescendant=${a.ad}, ожидается palette-opt-0`)
     await shot('palette-nav-filter-reset')
