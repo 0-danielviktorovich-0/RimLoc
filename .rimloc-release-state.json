@@ -1,8 +1,8 @@
 {
   "campaign": "full-release-convergence (workflow-native)",
   "status": "ACTIVE",
-  "updated": "2026-10-07T5",
-  "main": "26af13b (integration merged)",
+  "updated": "2026-10-07T6",
+  "main": "release/wave-integration-2 (bd1cb60+): 3 верифицированные ветки integrated",
   "candidate": "rel21 — пересборка от 26af13b после CodeQL rescan",
   "lanes": {
     "parity": {
@@ -21,9 +21,8 @@
       "focus": "15 routes LIVE/PARTIAL/PLACEHOLDER, LM search/edit, hardcoded-ru v2, focus-restore"
     },
     "provider": {
-      "status": "running",
-      "workflow": "WF-PROVIDER-RECONCILE",
-      "focus": "llm crates capabilities, chat-batch, checkpoint/resume, keychain"
+      "status": "done",
+      "focus": "provider-test CLI, keychain CLI feature, exponential backoff, model discovery"
     },
     "xplatform": {
       "status": "running",
@@ -37,6 +36,18 @@
     "mcp": {
       "status": "DONE",
       "focus": "ADR-MCP вариант B"
+    },
+    "buildmod": {
+      "status": "done",
+      "focus": "--po optional with --from-root (mutually exclusive, clap + runtime guard)"
+    },
+    "ui2": {
+      "status": "done",
+      "focus": "LM search/edit, Settings cleanup, unified theme, immediate locale, dynamic labels, palette target cmds"
+    },
+    "edge_trim": {
+      "status": "done",
+      "focus": "edge-trim + inline round-trip (PR #80)"
     }
   },
   "gates": {
