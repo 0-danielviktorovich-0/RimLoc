@@ -85,3 +85,34 @@
   chatbatch 4 + multitarget 1 самодостаточный); скриншоты пересняты (18).
 - multitarget-спека переписана самодостаточно (commit→показ→uk-изоляция→
   round-trip) — старая держалась на утраченном [R1-smoke] фикстуре старого профиля.
+
+## 2026-10-07 (8) — C-ГЕЙТЫ ЗАКРЫТЫ (reviewer-мандат)
+- **C1 provider**: точная граница доказана живыми прогонами — OAuth/api-key/DevPack
+  отвергнуты api.z.ai (6 комбинаций, evidence C1_PROVIDER_BOUNDARY.md);
+  ZCode-сессия живёт за собственным шлюзом. Поверхность provider-test доказана;
+  live-E2E ждёт только owner-ключ (1 минута в консоли Z.AI); массовые прогоны —
+  mock по мандату.
+- **C2 Source Inspector**: ЖИВОЙ в production React — SOURCE-блок (file+line,
+  selected_by, version, conditional, patch stage, TKey primary+other), бэкенд
+  не тронут (данные уже реальные), WDIO 5/5 с доказательными значениями,
+  сверенными с CLI-scan.
+- **C3 Dependabot**: все 6 PR разрешены (4 миграции: sha2 0.11, toml 1.1,
+  ico 0.5, thiserror 2; supersede: svelte-мажоры, TS7 — ignore-правила с
+  причинами и датами); новые патчи #86/#87 влиты. Открытых PR: 0.
+- **C4 npm audit**: react 0 vulns; v2 23→16 high — все 16 задокументированы
+  (dev-only WDIO-цепочка, upstream-фиксов нет, npm-audit-exemptions.md).
+- **C5 CodeQL**: default setup здоров — 298/298 файлов (было 297+1 error):
+  frontend-v2/dist закоммичен (generate_context! требует его на свежем
+  чекауте); advanced-путь невозможен (default enabled + токен без
+  security_events) — вариант 1 по мандату. Продакшн-инвариант сохранён:
+  каждый tauri build пересобирает dist, prod собирается react-конфигом с
+  tree-hash верификацией.
+- **C6 DMG**: root-cause — Portable-SSD это NFS (hdiutil EEXIST, AppleDouble
+  «._*.toml» паниковал tauri-utils acl; bash -x + дифф-тест NFS/APFS).
+  Формальное решение: macOS artifact = .app + .app.zip (build-production.sh
+  --bundles app, exit 0), vendor-патч фильтра по прецеденту wry/tao,
+  условие возврата DMG — в RELEASE_GATE.
+- **Интеграция**: 4 ветки R3 влиты без конфликтов; semantic-конфликт panels
+  v4×SOURCE-блок пойман локальным tsc и исправлен (v4 props = числа-проценты);
+  CI-матрица SUCCESS на 41c63e0; CodeQL §10 (10 новых — 7 vendor + 3
+  dev-tool, dismissed по одному) → CS 0 / DA 0.

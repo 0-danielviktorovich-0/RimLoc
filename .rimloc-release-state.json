@@ -1,8 +1,8 @@
 {
   "campaign": "release-convergence-r2",
   "status": "RC_READY",
-  "updated": "2026-10-07T19:20+09:00",
-  "main": "f99fc19",
+  "updated": "2026-10-07T22:10+09:00",
+  "main": "7a7c34b",
   "artifactSha": "af06a4e",
   "note": "e23f6d0 = af06a4e + testlab/docs only; products code identical to artifact",
   "candidate": {
@@ -81,5 +81,14 @@
   },
   "superseded": [
     "BACKLOG_PO_OPTIONAL_ARCHITECTURE.md bounded constraint"
-  ]
+  ],
+  "c_gates": {
+    "C1_provider": "BOUNDARY_PROVEN (6 live rejections, C1_PROVIDER_BOUNDARY.md); live-E2E = owner creates Z.AI key",
+    "C2_source_inspector": "LIVE in React prod; WDIO 5/5 real provenance; contract untouched",
+    "C3_dependabot": "0 open PRs; 4 migrations merged; supersede ignores documented with review dates",
+    "C4_npm_audit": "react 0; v2 16 high documented dev-only exemptions (npm-audit-exemptions.md)",
+    "C5_codeql": "healthy: 298/298 extraction (dist committed); analyses success; config not attachable w/o security_events scope",
+    "C6_dmg": "CLOSED: NFS root-cause proven; artifact = .app + .app.zip; vendor patch tauri-utils",
+    "C7_identity": "FINAL_IDENTITY.md — после финального ребилда"
+  }
 }
