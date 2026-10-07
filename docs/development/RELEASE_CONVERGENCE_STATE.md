@@ -137,3 +137,20 @@
 - Owner-контур (по reviewer): запустить rel23-final и пройти
   пользовательский сценарий; level-7 RimWorld (HugsLib); UI/UX замечания;
   решение по 16 dev-only npm high; опционально Z.AI key, signing, publish.
+
+## 2026-10-08 — R4 ВОЛНА: UI/PRODUCT TRUTH CLOSURE → rel24-candidate
+- Автономная система обновлена ПЕРВОЙ: AUTONOMOUS_FAILURE_PATTERNS.md (12
+  классов), owner-gate admission enum + machine ledger (fail-closed поймал
+  2 записи), правила в skill.
+- Аудит: 5 лейнов, 44 IMPLEMENT_NOW findings с файл:строка evidence
+  (UI_R1_FINAL_PARITY / CONTROLS_AUDIT / S7+S8 / WORKSPACE_DESIGN).
+- Имплементация: 5 лейнов по непересекающимся файлам; dogfood-редteam
+  (16 шагов) нашёл 6 дефектов — все исправлены (включая high: zai-шаблон
+  на anthropic-эндпоинте → auth_failed недостижим).
+- CI-фича-матрица поймала cfg-баг Http-руки (79dfa09) — exact-SHA правило
+  работает. Финальный CI SUCCESS на 2c50dcb.
+- **rel24-candidate**: прод 33457117 (self-report fcb82d7 чисто), appzip
+  e99b750a; гейты PASS; WDIO 59/59; скриншоты 18; §21 visual parity:
+  0 fixes required.
+- Owner-only: level-7, субъективный UI pass, решение по 16 dev-only
+  advisories, опционально Z.AI key и signing, publish approval.
