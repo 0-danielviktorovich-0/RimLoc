@@ -37,5 +37,10 @@
     "vite": "^7.0.0",
     "vitest": "^5.0.1",
     "webdriverio": "^9.32.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "^8.0.2",
+    "serialize-javascript": "^7.0.5",
+    "basic-ftp": "^6.2.2"
   }
 }
