@@ -22,13 +22,16 @@
 
 use rimloc_services::contract::{
     capability_report, ui_contract_version, ApplyIntentsRequest, ApplyIntentsResponse,
-    CapabilityReport, CreateProjectRequest, ProjectGlossaryDeleteRequest,
-    ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest, ProjectGlossaryUpsertResponse,
-    ProjectSnapshot, ProjectSummary, ProviderInstanceDeleteRequest, ProviderInstanceDeleteResponse,
-    ProviderInstanceListResponse, ProviderInstanceUpsertRequest, ProviderInstanceUpsertResponse,
-    ProviderInstanceValidateRequest, ProviderInstanceValidateResponse, TmDeleteRequest,
-    TmDeleteResponse, TmImportRequest, TmImportResponse, TmListRequest, TmListResponse,
-    TmLookupRequest, TmLookupResponse, TmUpsertRequest, TmUpsertResponse,
+    CapabilityReport, ChatBatchApplyRequest, ChatBatchApplyResponse, ChatBatchCreateRequest,
+    ChatBatchExportRequest, ChatBatchExportResponse, ChatBatchImportRequest,
+    ChatBatchImportResponse, ChatBatchStatusRequest, ChatBatchStatusResponse, CreateProjectRequest,
+    ProjectGlossaryDeleteRequest, ProjectGlossaryDeleteResponse, ProjectGlossaryUpsertRequest,
+    ProjectGlossaryUpsertResponse, ProjectSnapshot, ProjectSummary, ProviderInstanceDeleteRequest,
+    ProviderInstanceDeleteResponse, ProviderInstanceListResponse, ProviderInstanceUpsertRequest,
+    ProviderInstanceUpsertResponse, ProviderInstanceValidateRequest,
+    ProviderInstanceValidateResponse, TmDeleteRequest, TmDeleteResponse, TmImportRequest,
+    TmImportResponse, TmListRequest, TmListResponse, TmLookupRequest, TmLookupResponse,
+    TmUpsertRequest, TmUpsertResponse,
 };
 use rimloc_services::session::ProjectSessionManager;
 use serde::Serialize;
@@ -76,6 +79,14 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // Compare screen (version diff): read-only source-inventory diff of two
     // mod roots — stateless, no project session involved.
     "contract_version_diff",
+    // Chat batch (external-AI workflow WITHOUT an API): select → export
+    // prompt → paste response → strict parse → preview → guarded apply
+    // (origin=import). Batch state persists in the managed store.
+    "contract_chat_batch_create",
+    "contract_chat_batch_export",
+    "contract_chat_batch_import",
+    "contract_chat_batch_status",
+    "contract_chat_batch_apply",
 ];
 
 /// Default managed-projects root: `<app-data>/managed`
@@ -576,6 +587,92 @@ pub fn project_apply_existing(
         .expect("contract session registry poisoned");
     traced_simple("project_apply_existing", || {
         manager.apply_existing(&request)
+    })
+}
+
+// Chat batch (external-AI workflow WITHOUT an API): the TM chain again —
+// pass-through into the session manager, typed errors, trace. The parser,
+// gates and persistence live in `rimloc-services::chat_batch`; the apply
+// goes through `session.apply` (origin=import, persist-before-ack).
+
+/// `contract_chat_batch_create` — pin a selection into a fresh batch.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_chat_batch_create(
+    state: State<'_, ContractState>,
+    request: ChatBatchCreateRequest,
+) -> Result<rimloc_services::contract::ChatBatch, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_chat_batch_create", || {
+        manager.chat_batch_create(&request)
+    })
+}
+
+/// `contract_chat_batch_export` — build the structured prompt; records the
+/// revision + source hash gates and persists the batch `exported`.
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_chat_batch_export(
+    state: State<'_, ContractState>,
+    request: ChatBatchExportRequest,
+) -> Result<ChatBatchExportResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_chat_batch_export", || {
+        manager.chat_batch_export(&request)
+    })
+}
+
+/// `contract_chat_batch_import` — strict-parse the pasted response into the
+/// pending preview (identity/revision/source-hash gates; whole-import
+/// refusals, never partial).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_chat_batch_import(
+    state: State<'_, ContractState>,
+    request: ChatBatchImportRequest,
+) -> Result<ChatBatchImportResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_chat_batch_import", || {
+        manager.chat_batch_import(&request)
+    })
+}
+
+/// `contract_chat_batch_status` — the durable batch + the live drift
+/// verdict (pure read).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_chat_batch_status(
+    state: State<'_, ContractState>,
+    request: ChatBatchStatusRequest,
+) -> Result<ChatBatchStatusResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_chat_batch_status", || {
+        manager.chat_batch_status(&request)
+    })
+}
+
+/// `contract_chat_batch_apply` — the human-confirmed apply: the stored
+/// preview becomes `ApplyIntentsRequest` with `origin=import` through
+/// `session.apply` (persist-before-ack).
+#[tauri::command(rename_all = "snake_case")]
+pub fn contract_chat_batch_apply(
+    state: State<'_, ContractState>,
+    request: ChatBatchApplyRequest,
+) -> Result<ChatBatchApplyResponse, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("contract_chat_batch_apply", || {
+        manager.chat_batch_apply(&request)
     })
 }
 

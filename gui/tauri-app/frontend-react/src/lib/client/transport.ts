@@ -10,6 +10,16 @@ import type {
   BuildIdentityDto,
   ApplyIntentsResponseDto,
   BuildModProjectResponseDto,
+  ChatBatchApplyRequestDto,
+  ChatBatchApplyResponseDto,
+  ChatBatchCreateRequestDto,
+  ChatBatchDto,
+  ChatBatchExportRequestDto,
+  ChatBatchExportResponseDto,
+  ChatBatchImportRequestDto,
+  ChatBatchImportResponseDto,
+  ChatBatchStatusRequestDto,
+  ChatBatchStatusResponseDto,
   ContractHandshakeDto,
   ContractMethod,
   CreateProjectRequestDto,
@@ -158,6 +168,28 @@ export interface ContractMethodMap {
   contract_version_diff: {
     params: { request: VersionDiffRequestDto };
     result: VersionDiffResponseDto;
+  };
+  // Chat batch (external-AI workflow WITHOUT an API): the strict parser,
+  // gates and preview live on the backend; apply rides session.apply.
+  contract_chat_batch_create: {
+    params: { request: ChatBatchCreateRequestDto };
+    result: ChatBatchDto;
+  };
+  contract_chat_batch_export: {
+    params: { request: ChatBatchExportRequestDto };
+    result: ChatBatchExportResponseDto;
+  };
+  contract_chat_batch_import: {
+    params: { request: ChatBatchImportRequestDto };
+    result: ChatBatchImportResponseDto;
+  };
+  contract_chat_batch_status: {
+    params: { request: ChatBatchStatusRequestDto };
+    result: ChatBatchStatusResponseDto;
+  };
+  contract_chat_batch_apply: {
+    params: { request: ChatBatchApplyRequestDto };
+    result: ChatBatchApplyResponseDto;
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }

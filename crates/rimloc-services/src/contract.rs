@@ -449,6 +449,13 @@ pub enum Capability {
     /// carrying file per side. Stateless: no project session involved.
     /// Wire name appends (never renames) per the contract rule.
     VersionDiff,
+    /// Chat batch (external-AI workflow WITHOUT an API): select entries →
+    /// export a structured prompt → the user pastes an LLM chat response →
+    /// strict parse + identity/revision/source-hash gates → preview →
+    /// guarded apply (`origin=import`). Batch state persists in the managed
+    /// store (`<batch-id>.chatbatch.json`). Wire name appends (never
+    /// renames) per the contract rule.
+    ChatBatch,
 }
 
 /// Mandated operations that are honestly NOT in this slice. Each carries
@@ -491,6 +498,7 @@ pub fn capability_report() -> CapabilityReport {
             Capability::TranslationMemory,
             Capability::ProviderInstances,
             Capability::VersionDiff,
+            Capability::ChatBatch,
         ],
         unsupported: vec![
             UnsupportedCapability {
@@ -1451,4 +1459,202 @@ pub struct ProviderInstanceValidateResponse {
     pub job_id: JobId,
     pub ok: bool,
     pub problems: Vec<String>,
+}
+
+// ---------------------------------------------------------------------------
+// Chat batch (external-AI workflow WITHOUT an API). The user selects
+// entries, exports a structured prompt, pastes the LLM-chat response back,
+// and the strict parser + gates turn it into a guarded apply
+// (`origin=import`). Batch state persists as `<batch-id>.chatbatch.json`
+// inside the managed store. NOTHING here calls a network: the "transport"
+// is the user's clipboard.
+// ---------------------------------------------------------------------------
+
+/// Container version of the persisted `<batch-id>.chatbatch.json`. Bump on
+/// any breaking [`ChatBatch`] change; loads of other versions refuse with
+/// the typed `schema_version` code.
+pub const CHAT_BATCH_FILE_VERSION: u32 = 1;
+
+/// Lifecycle of one chat batch (the mandate's canonical path):
+/// - `not_started` — created from a selection, prompt not exported yet;
+/// - `exported` — the prompt was built (revision + source hash recorded);
+/// - `imported` — a response parsed clean and sits as a PREVIEW (nothing
+///   durable yet — the human still confirms the apply);
+/// - `stale` — the project moved under the batch (revision and/or source
+///   hash mismatch) and an operation was refused; re-export is the
+///   recovery path (or recreate);
+/// - `done` — the preview was applied through `session.apply`
+///   (persist-before-ack); terminal for this batch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ChatBatchStatus {
+    NotStarted,
+    Exported,
+    Imported,
+    Stale,
+    Done,
+}
+
+/// One pinned batch line: the serialization key exactly as it appears in
+/// the prompt (`SourceEntryId::display_identity()` — unique per inventory),
+/// the SOURCE text at pin time, and the FULL structural identity the
+/// eventual apply addresses. The string key is a serialization concern of
+/// ONE batch only — the structured identity is the only thing the apply
+/// ever trusts.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchItem {
+    pub key: String,
+    pub source: String,
+    pub entry: SourceEntryId,
+}
+
+/// Parsed response lines kept as a PREVIEW between import and apply: the
+/// human reads exactly what WOULD land, per key, before anything durable.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchPreviewItem {
+    pub key: String,
+    pub text: String,
+}
+
+/// The whole parsed preview (status `imported`): one row per batch key, in
+/// batch order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchPreview {
+    pub items: Vec<ChatBatchPreviewItem>,
+    pub imported_at_ms: u64,
+}
+
+/// Durable chat batch. Persisted AS-IS (serde JSON) in the managed store;
+/// the apply NEVER re-resolves identities from the string keys — they were
+/// resolved and pinned once at create.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatch {
+    /// See [`CHAT_BATCH_FILE_VERSION`].
+    pub schema_version: u32,
+    /// Minted opaque id (`batch-<a-z0-9->`), also the managed file stem.
+    pub batch_id: String,
+    /// Owning project — every op re-checks it (wrong-project refusal).
+    pub project_id: ProjectId,
+    /// Target locale of the batch (strict language-folder form).
+    pub locale: String,
+    /// Project revision the EXPORT was based on (the stale gate).
+    pub revision_at_export: Revision,
+    /// sha256 over the pinned (key, source) lines at export — the source
+    /// hash gate (mandate: import re-verifies it).
+    pub source_hash: String,
+    /// Pinned lines in selection order (deterministic batching).
+    pub items: Vec<ChatBatchItem>,
+    pub status: ChatBatchStatus,
+    /// Present exactly in status `imported` (the pending preview).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview: Option<ChatBatchPreview>,
+    pub created_at_ms: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exported_at_ms: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub applied_at_ms: Option<u64>,
+    /// The durable revision the apply produced (`done` batches only).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub applied_revision: Option<Revision>,
+}
+
+/// `contract_chat_batch_create`: pin a selection of inventory entries into a
+/// fresh batch. Keys are the FULL `display_identity()` forms; unknown,
+/// duplicate or non-translatable keys refuse the whole create (strict
+/// selection — the batch is the contract of what the prompt will contain).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchCreateRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Target locale (strict language-folder form, e.g. `Russian`).
+    pub locale: String,
+    /// `SourceEntryId::display_identity()` strings, exactly as the
+    /// workspace selection reports them.
+    pub entry_keys: Vec<String>,
+}
+
+/// `contract_chat_batch_export`: build the structured chat prompt from the
+/// CURRENT project state and record `revision_at_export` + `source_hash`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchExportRequest {
+    pub batch_id: String,
+    pub session_epoch: SessionEpoch,
+}
+
+/// Export ack: the persisted batch (now `exported`) plus the prompt text to
+/// copy into the LLM chat.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchExportResponse {
+    pub job_id: JobId,
+    pub batch: ChatBatch,
+    pub prompt: String,
+}
+
+/// `contract_chat_batch_import`: strict-parse the pasted chat response
+/// against the batch. Gates: batch↔project identity, status must be
+/// `exported`/`imported`, project revision and source hash must still match
+/// the export (else the batch flips `stale` and the import refuses). Whole
+/// payload refusals: malformed line, unknown key, duplicate key, missing
+/// key, empty translation — a partial import is never persisted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchImportRequest {
+    pub batch_id: String,
+    pub session_epoch: SessionEpoch,
+    /// The pasted response text (verbatim — the parser owns the format).
+    pub response_text: String,
+}
+
+/// Import ack: the persisted batch (now `imported`) plus the parsed preview
+/// the UI renders for the human gate.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchImportResponse {
+    pub job_id: JobId,
+    pub batch: ChatBatch,
+    pub preview: ChatBatchPreview,
+}
+
+/// `contract_chat_batch_status`: read the durable batch. `stale` is
+/// computed against the LIVE project state (pure read — never mutates the
+/// persisted status): a `not_started/exported/imported` batch whose project
+/// revision or source hash moved renders the STALE badge without waiting
+/// for a refused operation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchStatusRequest {
+    pub batch_id: String,
+}
+
+/// Status response.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchStatusResponse {
+    pub batch: ChatBatch,
+    /// Live drift verdict (see [`ChatBatchStatusRequest`]).
+    pub stale: bool,
+    /// The project's current revision at read time.
+    pub revision_now: Revision,
+}
+
+/// `contract_chat_batch_apply`: turn the stored preview into an
+/// [`ApplyIntentsRequest`] with `origin = Some(ApplyOrigin::Import)` and run
+/// it through the ONE mutating seam (`session.apply`) — persist-before-ack,
+/// epoch + revision guards, per-intent accounting. A
+/// `stale_revision`/`project_changed_on_disk` refusal flips the batch
+/// `stale` (persisted) before the error returns.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchApplyRequest {
+    pub batch_id: String,
+    /// Lost-update guard (the revision the preview was confirmed against).
+    pub expected_revision: Revision,
+    pub session_epoch: SessionEpoch,
+}
+
+/// Apply ack: the session response plus the persisted batch (`done` when
+/// anything applied).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchApplyResponse {
+    pub job_id: JobId,
+    pub batch: ChatBatch,
+    pub revision: Revision,
+    pub applied: usize,
+    pub skipped: Vec<SkippedIntent>,
+    pub cancelled: bool,
 }

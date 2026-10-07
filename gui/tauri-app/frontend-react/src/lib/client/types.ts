@@ -373,6 +373,13 @@ export type ContractMethod =
   // Compare screen (version diff): read-only source-inventory diff of two
   // mod roots — stateless, no project session involved.
   | 'contract_version_diff'
+  // Chat batch (external-AI workflow WITHOUT an API): select → export
+  // prompt → paste response → strict parse → preview → guarded apply.
+  | 'contract_chat_batch_create'
+  | 'contract_chat_batch_export'
+  | 'contract_chat_batch_import'
+  | 'contract_chat_batch_status'
+  | 'contract_chat_batch_apply'
   // Build identity of the RUNNING binary (soak-hardening §1): long-running
   // acceptance runs verify the artifact they drive independently of any
   // wrapper path. Refused honestly in mock — no running binary there.
@@ -626,4 +633,107 @@ export interface ProviderInstanceValidateResponseDto {
   job_id: string;
   ok: boolean;
   problems: string[];
+}
+
+// --- chat batch (external-AI workflow WITHOUT an API; mirrors contract.rs
+// ChatBatch* DTOs). The user selects entries → exports a structured prompt →
+// pastes the LLM-chat response → strict parse + identity/revision/source-hash
+// gates → preview → human-confirmed apply (origin=import, persist-before-ack
+// through session.apply). Batch state persists in the managed store. ---
+export type ChatBatchStatusDto = 'not_started' | 'exported' | 'imported' | 'stale' | 'done';
+
+export interface ChatBatchItemDto {
+  /** `SourceEntryId.display_identity()` — the exact prompt key. */
+  key: string;
+  source: string;
+  entry: SourceEntryIdDto;
+}
+
+export interface ChatBatchPreviewItemDto {
+  key: string;
+  text: string;
+}
+
+export interface ChatBatchPreviewDto {
+  items: ChatBatchPreviewItemDto[];
+  imported_at_ms: number;
+}
+
+export interface ChatBatchDto {
+  schema_version: number;
+  batch_id: string;
+  project_id: string;
+  locale: string;
+  /** Project revision the EXPORT was based on (the stale gate). */
+  revision_at_export: number;
+  /** sha256 over the pinned (key, source) lines (the source-hash gate). */
+  source_hash: string;
+  items: ChatBatchItemDto[];
+  status: ChatBatchStatusDto;
+  /** Pending preview (status `imported` only). */
+  preview?: ChatBatchPreviewDto;
+  created_at_ms: number;
+  exported_at_ms?: number;
+  applied_at_ms?: number;
+  applied_revision?: number;
+}
+
+export interface ChatBatchCreateRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Target locale, folder contract ("Russian"). */
+  locale: string;
+  /** `display_identity()` strings of the workspace selection. */
+  entry_keys: string[];
+}
+
+export interface ChatBatchExportRequestDto {
+  batch_id: string;
+  session_epoch: number;
+}
+
+export interface ChatBatchExportResponseDto {
+  job_id: string;
+  batch: ChatBatchDto;
+  /** The prompt text to copy into the LLM chat. */
+  prompt: string;
+}
+
+export interface ChatBatchImportRequestDto {
+  batch_id: string;
+  session_epoch: number;
+  /** The pasted response text (verbatim). */
+  response_text: string;
+}
+
+export interface ChatBatchImportResponseDto {
+  job_id: string;
+  batch: ChatBatchDto;
+  preview: ChatBatchPreviewDto;
+}
+
+export interface ChatBatchStatusRequestDto {
+  batch_id: string;
+}
+
+export interface ChatBatchStatusResponseDto {
+  batch: ChatBatchDto;
+  /** Live drift verdict (pure read — never mutates the batch). */
+  stale: boolean;
+  revision_now: number;
+}
+
+export interface ChatBatchApplyRequestDto {
+  batch_id: string;
+  expected_revision: number;
+  session_epoch: number;
+}
+
+export interface ChatBatchApplyResponseDto {
+  job_id: string;
+  batch: ChatBatchDto;
+  revision: number;
+  applied: number;
+  skipped: SkippedIntentDto[];
+  cancelled: boolean;
 }

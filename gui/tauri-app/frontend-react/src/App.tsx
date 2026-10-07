@@ -2,7 +2,7 @@
 // Hash router + the R1 visual shell (mandate §9/§47: Lovable R1 is the
 // visual contract; the shell composition is ADOPT, data is LIVE-only).
 import { useEffect, useMemo, useState } from 'react'
-import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight, Globe } from 'lucide-react'
+import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight, Globe, MessagesSquare } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
 import { BUILTIN_LANGUAGES as LANGUAGES, SOURCE_LOCALE } from './lib/languages/registry'
@@ -14,6 +14,7 @@ import { Workspace } from './components/Workspace'
 import { Checks } from './components/Checks'
 import { Glossary } from './components/Glossary'
 import { Tm } from './components/Tm'
+import { ChatBatch } from './components/ChatBatch'
 import { BuildExport } from './components/BuildExport'
 import { Existing } from './components/Existing'
 import { Compare } from './components/Compare'
@@ -48,6 +49,7 @@ function buildPaletteCommands(extra: {
     { id: 'compare', label: t('palette.cmd.compare'), action: () => { window.location.hash = '#/compare' } },
     { id: 'glossary', label: t('palette.cmd.glossary'), action: () => { window.location.hash = '#/glossary' } },
     { id: 'tm', label: t('palette.cmd.tm'), action: () => { window.location.hash = '#/tm' } },
+    { id: 'chatbatch', label: t('palette.cmd.chatbatch'), action: () => { window.location.hash = '#/chatbatch' } },
     { id: 'export', label: t('palette.cmd.export'), action: () => { window.location.hash = '#/export' } },
     { id: 'selfloc', label: t('palette.cmd.selfloc'), action: () => { window.location.hash = '#/selfloc' } },
     { id: 'diagnostics', label: t('palette.cmd.diagnostics'), action: () => { window.location.hash = '#/diagnostics' } },
@@ -74,6 +76,7 @@ type Route =
   | 'compare'
   | 'glossary'
   | 'tm'
+  | 'chatbatch'
   | 'export'
   | 'tools'
   | 'settings'
@@ -92,6 +95,7 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
   { to: 'compare', label: t('nav.compare'), icon: GitCompareArrows },
   { to: 'glossary', label: t('nav.glossary'), icon: Package },
   { to: 'tm', label: t('nav.tm'), icon: Package },
+  { to: 'chatbatch', label: t('nav.chatbatch'), icon: MessagesSquare },
   { to: 'export', label: t('nav.export'), icon: Wrench },
   // Acceptance MUST-FIX #1: LM был недостижим из UI (только ручной #/lm).
   { to: 'lm', label: t('nav.lm'), icon: Globe },
@@ -101,7 +105,7 @@ const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
 
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'tm', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics', 'providers', 'lm']
+  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'tm', 'chatbatch', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics', 'providers', 'lm']
   return (known.find((r) => r === h) ?? 'home') as Route
 }
 
@@ -354,6 +358,8 @@ export function App() {
             <Glossary />
           ) : route === 'tm' ? (
             <Tm />
+          ) : route === 'chatbatch' ? (
+            <ChatBatch />
           ) : route === 'home' || route === 'projects' ? (
           // Home falls through to the shared layout below
             <Home

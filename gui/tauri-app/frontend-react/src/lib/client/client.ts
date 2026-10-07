@@ -20,6 +20,16 @@ import type {
   ApplyIntentsRequestDto,
   ApplyIntentsResponseDto,
   BuildModProjectResponseDto,
+  ChatBatchApplyRequestDto,
+  ChatBatchApplyResponseDto,
+  ChatBatchCreateRequestDto,
+  ChatBatchDto,
+  ChatBatchExportRequestDto,
+  ChatBatchExportResponseDto,
+  ChatBatchImportRequestDto,
+  ChatBatchImportResponseDto,
+  ChatBatchStatusRequestDto,
+  ChatBatchStatusResponseDto,
   ContractErrorCode,
   ContractHandshakeDto,
   DiagnoseResponseDto,
@@ -334,6 +344,51 @@ export class RimLocClient {
     request: ProviderInstanceValidateRequestDto
   ): Promise<ProviderInstanceValidateResponseDto> {
     return this.call('contract_provider_instance_validate', { request });
+  }
+
+  // --- chat batch (external-AI workflow WITHOUT an API) — the TM chain
+  // once more: typed requests, gates on the backend, apply through
+  // session.apply with origin=import and persist-before-ack. ---
+
+  /** Pin a selection of entries into a fresh batch (strict: unknown,
+   *  duplicate and non-translatable keys refuse the whole create). */
+  async chatBatchCreate(
+    request: ChatBatchCreateRequestDto
+  ): Promise<ChatBatchDto> {
+    return this.call('contract_chat_batch_create', { request });
+  }
+
+  /** Build the structured chat prompt; records the revision + source-hash
+   *  gates and persists the batch `exported`. */
+  async chatBatchExport(
+    request: ChatBatchExportRequestDto
+  ): Promise<ChatBatchExportResponseDto> {
+    return this.call('contract_chat_batch_export', { request });
+  }
+
+  /** Strict-parse the pasted response into the pending preview. Malformed
+   *  / unknown / duplicate / empty / missing keys and stale gates refuse
+   *  the WHOLE import — a partial import is never persisted. */
+  async chatBatchImport(
+    request: ChatBatchImportRequestDto
+  ): Promise<ChatBatchImportResponseDto> {
+    return this.call('contract_chat_batch_import', { request });
+  }
+
+  /** The durable batch + the live drift verdict (pure read). */
+  async chatBatchStatus(
+    request: ChatBatchStatusRequestDto
+  ): Promise<ChatBatchStatusResponseDto> {
+    return this.call('contract_chat_batch_status', { request });
+  }
+
+  /** The human-confirmed apply: the stored preview becomes an
+   *  ApplyIntentsRequest with origin=import through session.apply
+   *  (persist-before-ack). */
+  async chatBatchApply(
+    request: ChatBatchApplyRequestDto
+  ): Promise<ChatBatchApplyResponseDto> {
+    return this.call('contract_chat_batch_apply', { request });
   }
 
   /** Identity of the RUNNING binary (soak-hardening §1): acceptance
