@@ -81,9 +81,6 @@ const ru: Record<string, string> = {
   'settings.capabilitiesLoading': 'Запрашиваю handshake…',
   'settings.unsupported': 'не входит в эту сборку',
   'shell.safetyNote': 'Только переводы. Оригинальный мод в безопасности.',
-  'shell.placeholderTitle': 'React-лайна R1 живёт',
-  'shell.placeholderBody':
-    'Представительский экран собирается на реальном контракте: визуальная система Lovable R1 + RimLocClient.',
   'a11y.openNav': 'Открыть навигацию',
   'a11y.closeNav': 'Закрыть навигацию',
   'a11y.lightTheme': 'Светлая тема',
@@ -282,6 +279,18 @@ const ru: Record<string, string> = {
   'nav.tm': 'Память переводов',
   'nav.lm': 'Языки',
   'nav.chatbatch': 'Чат-перевод (без API)',
+  // §18: честные лейблы маршрутов без слота в primary-nav (breadcrumb).
+  'nav.selfloc': 'Самоперевод RimLoc',
+  'nav.diagnostics': 'Диагностика',
+  // §11: dirty-индикатор topbar (shell.save-state).
+  'shell.saveState.saved': 'Сохранено',
+  'shell.saveState.unsaved': 'Есть несохранённые изменения',
+  'shell.saveState.saving': 'Сохранение…',
+  'shell.saveState.error': 'Ошибка сохранения',
+  // §43: onboarding-strip для первого запуска.
+  'onboarding.label': 'НАЧАЛО РАБОТЫ',
+  'onboarding.step1': 'Создать первый проект',
+  'onboarding.dismiss': 'Скрыть подсказку',
   'tm.eyebrow': 'ПАМЯТЬ ПЕРЕВОДОВ',
   'tm.title': 'Память переводов проекта',
   'tm.subtitle': 'Накопленные переводы: авто-приём принятых строк, импорт и ручные записи. Локали изолированы.',
@@ -469,9 +478,6 @@ const en: Record<string, string> = {
   'settings.capabilitiesLoading': 'Requesting handshake…',
   'settings.unsupported': 'not part of this build',
   'shell.safetyNote': 'Translations only. The original mod stays safe.',
-  'shell.placeholderTitle': 'The React R1 lane is alive',
-  'shell.placeholderBody':
-    'The representative screen is being built on the real contract: the Lovable R1 visual system + RimLocClient.',
   'a11y.openNav': 'Open navigation',
   'a11y.closeNav': 'Close navigation',
   'a11y.lightTheme': 'Light theme',
@@ -670,6 +676,18 @@ const en: Record<string, string> = {
   'nav.tm': 'Translation memory',
   'nav.lm': 'Languages',
   'nav.chatbatch': 'Chat translation (no API)',
+  // §18: honest route labels for routes without a primary-nav slot (breadcrumb).
+  'nav.selfloc': 'RimLoc self-translation',
+  'nav.diagnostics': 'Diagnostics',
+  // §11: topbar dirty indicator (shell.save-state).
+  'shell.saveState.saved': 'Saved',
+  'shell.saveState.unsaved': 'Unsaved changes',
+  'shell.saveState.saving': 'Saving…',
+  'shell.saveState.error': 'Save error',
+  // §43: onboarding-strip for the first launch.
+  'onboarding.label': 'GETTING STARTED',
+  'onboarding.step1': 'Create your first project',
+  'onboarding.dismiss': 'Dismiss the hint',
   'tm.eyebrow': 'TRANSLATION MEMORY',
   'tm.title': 'Project translation memory',
   'tm.subtitle': 'Accumulated translations: accepted lines land automatically, plus import and manual records. Locales are isolated.',

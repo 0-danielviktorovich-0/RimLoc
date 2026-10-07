@@ -1,14 +1,17 @@
 // RimLoc React lane — application root (UI R1).
 // Hash router + the R1 visual shell (mandate §9/§47: Lovable R1 is the
 // visual contract; the shell composition is ADOPT, data is LIVE-only).
+// Route metadata (sidebar, palette, breadcrumb, currentRoute whitelist)
+// lives in lib/routes.ts (§18) — this file owns no route literals.
 import { useEffect, useMemo, useState } from 'react'
-import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight, Globe, MessagesSquare } from 'lucide-react'
+import { Languages, FolderOpen, Sun, Moon, Plus, ChevronDown, ChevronRight, X, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
 import { BUILTIN_LANGUAGES as LANGUAGES, SOURCE_LOCALE } from './lib/languages/registry'
 import { folderForm } from './lib/languages/folderForm'
 import { loadUserLanguages, type UserLanguage } from './lib/languages/manager'
 import { useProjectState } from './lib/state/useProjectState'
+import { ROUTES, ROUTE_IDS, routeMeta, type Route } from './lib/routes'
 import { Home } from './components/Home'
 import { Workspace } from './components/Workspace'
 import { Checks } from './components/Checks'
@@ -26,37 +29,44 @@ import { LanguageManager } from './components/LanguageManager'
 import { t, getLocale, setLocale, type Locale } from './lib/i18n'
 import { useCommandPalette, type PaletteCommand } from './lib/palette'
 
-// Palette commands: 13 hash navigations (always present — their exact
-// composition without an open project is pinned by palette-acceptance WDIO)
-// plus ACTION commands that appear ONLY with an open project (audit v2 #7,
-// mandate §9): one target-switch command per language from targetLangs and
-// «Open project» (jumps to the workspace of the open project). Labels
-// resolve through t() (audit: RU-литералы не менялись с UI-языком); массив
-// строится фабрикой и держит СТАБИЛЬНУЮ идентичность между рендерами при
-// тех же зависимостях — фильтр-мемо хука и эффект курсора зависят от
-// идентичности списка, пересоздание на каждый рендер сбрасывало бы
-// activeIndex стрелками.
+// §18 projections from ROUTES (order preserved):
+//  - primary-nav: every sidebar route except settings (settings renders in
+//    the sidebar-bottom slot, as in the Lovable canon), sorted by the
+//    historical nav rank (sidebarOrder) — «Проекты» first, «Строки
+//    перевода» second;
+//  - palette: the 14 nav commands in ROUTES array order — composition,
+//    order and labels are pinned by palette-acceptance (WDIO); labels
+//    resolve through t() per render so the UI-language switch reaches the
+//    shell too (audit v2 #4/#5).
+const SIDEBAR_NAV = ROUTES.filter((m) => m.visibleInSidebar && m.route !== 'settings' && m.sidebarOrder !== undefined).sort((a, b) => a.sidebarOrder! - b.sidebarOrder!)
+const SETTINGS_META = routeMeta('settings')!
+
+// Palette commands (§18) plus ACTION commands that appear ONLY with an open
+// project (audit v2 #7, mandate §9): one target-switch command per language
+// from targetLangs and «Open project» (jumps to the workspace of the open
+// project). Labels resolve through t(); массив строится фабрикой и держит
+// СТАБИЛЬНУЮ идентичность между рендерами при тех же зависимостях —
+// фильтр-мемо хука и эффект курсора зависят от идентичности списка,
+// пересоздание на каждый рендер сбрасывало бы activeIndex стрелками.
 function buildPaletteCommands(extra: {
   projectOpen: boolean
   targetLangs: { localeId: string; nativeName: string }[]
   targetLocale: string
 }): PaletteCommand[] {
-  const nav: PaletteCommand[] = [
-    { id: 'entries', label: t('palette.cmd.entries'), action: () => { window.location.hash = '#/home' } },
-    { id: 'projects', label: t('palette.cmd.projects'), action: () => { window.location.hash = '#/projects' } },
-    { id: 'checks', label: t('palette.cmd.checks'), action: () => { window.location.hash = '#/checks' } },
-    { id: 'existing', label: t('palette.cmd.existing'), action: () => { window.location.hash = '#/existing' } },
-    { id: 'compare', label: t('palette.cmd.compare'), action: () => { window.location.hash = '#/compare' } },
-    { id: 'glossary', label: t('palette.cmd.glossary'), action: () => { window.location.hash = '#/glossary' } },
-    { id: 'tm', label: t('palette.cmd.tm'), action: () => { window.location.hash = '#/tm' } },
-    { id: 'chatbatch', label: t('palette.cmd.chatbatch'), action: () => { window.location.hash = '#/chatbatch' } },
-    { id: 'export', label: t('palette.cmd.export'), action: () => { window.location.hash = '#/export' } },
-    { id: 'selfloc', label: t('palette.cmd.selfloc'), action: () => { window.location.hash = '#/selfloc' } },
-    { id: 'diagnostics', label: t('palette.cmd.diagnostics'), action: () => { window.location.hash = '#/diagnostics' } },
-    { id: 'providers', label: t('palette.cmd.providers'), action: () => { window.location.hash = '#/providers' } },
-    { id: 'lm', label: t('palette.cmd.lm'), action: () => { window.location.hash = '#/lm' } },
-    { id: 'settings', label: t('palette.cmd.settings'), action: () => { window.location.hash = '#/settings' } },
-  ]
+  const nav: PaletteCommand[] = ROUTES.filter((m) => m.visibleInPalette).map((m) => ({
+    id: m.route,
+    label: t(m.paletteKey ?? m.labelKey),
+    action:
+      m.route === 'home'
+        ? // §6: «Строки перевода» ведёт в открытый workspace (лейбл
+          // зафиксирован palette-acceptance — меняется только цель).
+          () => {
+            window.location.hash = extra.projectOpen ? '#/workspace' : '#/home'
+          }
+        : () => {
+            window.location.hash = `#/${m.route}`
+          },
+  }))
   if (!extra.projectOpen) return nav
   return [
     ...nav,
@@ -69,45 +79,15 @@ function buildPaletteCommands(extra: {
   ]
 }
 
-type Route =
-  | 'home'
-  | 'projects'
-  | 'checks'
-  | 'compare'
-  | 'glossary'
-  | 'tm'
-  | 'chatbatch'
-  | 'export'
-  | 'tools'
-  | 'settings'
-  | 'workspace'
-  | 'existing'
-  | 'selfloc'
-  | 'diagnostics'
-  | 'providers'
-  | 'lm'
-
-const NAV: { to: Route; label: string; icon: typeof FolderOpen }[] = [
-  { to: 'projects', label: t('nav.projects'), icon: FolderOpen },
-  { to: 'home', label: t('nav.entries'), icon: Languages },
-  { to: 'checks', label: t('nav.checks'), icon: ShieldCheck },
-  { to: 'existing', label: t('nav.existing'), icon: GitCompareArrows },
-  { to: 'compare', label: t('nav.compare'), icon: GitCompareArrows },
-  { to: 'glossary', label: t('nav.glossary'), icon: Package },
-  { to: 'tm', label: t('nav.tm'), icon: Package },
-  { to: 'chatbatch', label: t('nav.chatbatch'), icon: MessagesSquare },
-  { to: 'export', label: t('nav.export'), icon: Wrench },
-  // Acceptance MUST-FIX #1: LM был недостижим из UI (только ручной #/lm).
-  { to: 'lm', label: t('nav.lm'), icon: Globe },
-  // tools удалён из навигации (W0): не было продуктового определения.
-  // Route 'tools' жив — внешний hash #/tools честно падает в fallback.
-]
-
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  const known: Route[] = ['home', 'projects', 'checks', 'compare', 'glossary', 'tm', 'chatbatch', 'export', 'tools', 'settings', 'workspace', 'existing', 'selfloc', 'diagnostics', 'providers', 'lm']
-  return (known.find((r) => r === h) ?? 'home') as Route
+  return ROUTE_IDS.find((r) => r === h) ?? 'home'
 }
+
+// §43: onboarding-strip живёт до первого явного закрытия (localStorage-флаг).
+// Wizard-тур открывает настоящий клик по карточке wizard.open: состояние
+// мастера принадлежит Home, а лейн-владение запрещает править Home/Wizard.
+const ONBOARDING_KEY = 'rimloc.onboarding.dismissed'
 
 export function App() {
   const st = useProjectState()
@@ -127,6 +107,38 @@ export function App() {
   useEffect(() => {
     setUserLangs(loadUserLanguages())
   }, [route])
+  // §43: полоса показывается на Home, пока пользователь не закрыл её (флаг
+  // в localStorage) и у него нет открытого проекта; перечитываем флаг при
+  // входе на Home — другой фон окна мог его выставить.
+  const [onboardingDismissed, setOnboardingDismissed] = useState(
+    () => localStorage.getItem(ONBOARDING_KEY) !== null,
+  )
+  useEffect(() => {
+    if (route === 'home') setOnboardingDismissed(localStorage.getItem(ONBOARDING_KEY) !== null)
+  }, [route])
+  const dismissOnboarding = (): void => {
+    localStorage.setItem(ONBOARDING_KEY, '1')
+    setOnboardingDismissed(true)
+  }
+  const startWizardTour = (): void => {
+    document.querySelector<HTMLButtonElement>('[data-testid="wizard.open"]')?.click()
+  }
+  // §11: dirty-индикатор — производная от store (drafts + snapshot.dirty +
+  // busy), без таймеров. Приоритет: активная запись → ошибка → грязно → чисто.
+  const saveState = !st.snapshot
+    ? null
+    : st.busy
+      ? { label: t('shell.saveState.saving'), dot: 'dot primary' }
+      : st.lastError !== null
+        ? { label: t('shell.saveState.error'), dot: 'dot destructive' }
+        : Object.keys(st.drafts).length > 0 || st.snapshot.dirty === true
+          ? { label: t('shell.saveState.unsaved'), dot: 'dot warning' }
+          : { label: t('shell.saveState.saved'), dot: 'dot success' }
+  // §10: красная пилюля на «Проверки» — только РЕАЛЬНЫЙ error_count из
+  // живой валидации; null-отчёт (stale/unknown) честно скрывает бейдж.
+  const checksErrorCount =
+    st.validation.report && st.validation.report.error_count > 0 ? st.validation.report.error_count : 0
+  const SettingsIcon = SETTINGS_META.icon
   const targetLangs = [
     ...LANGUAGES.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
     ...userLangs.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
@@ -198,9 +210,10 @@ export function App() {
 
   // Honest client resolution (mirrors the frozen Svelte instance store):
   // tauri bridge → live; otherwise a configuration error, never a mock.
-  let client: ReturnType<typeof clientInstance.getClient> | null = null
+  // (The resolved client is consumed by screens/store — the shell only
+  // surfaces the resolution failure.)
   try {
-    client = clientInstance.getClient()
+    clientInstance.getClient()
   } catch (e) {
     if (!clientError) setClientError(e instanceof Error ? e.message : String(e))
   }
@@ -227,10 +240,15 @@ export function App() {
           <ChevronDown size={14} />
         </div>
         <nav className="primary-nav">
-          {NAV.map(({ to, label, icon: Icon }) => (
+          {SIDEBAR_NAV.map(({ route: to, labelKey, icon: Icon }) => (
             <a key={to} href={`#/${to}`} className={(route === to || (to === 'home' && route === 'workspace')) ? 'active' : ''} onClick={() => setNavOpen(false)}>
               <Icon />
-              <span>{label}</span>
+              <span>{t(labelKey)}</span>
+              {to === 'checks' && checksErrorCount > 0 && (
+                <span className="nav-count" data-testid="nav.checks-count">
+                  {checksErrorCount}
+                </span>
+              )}
             </a>
           ))}
         </nav>
@@ -247,8 +265,8 @@ export function App() {
           </div>
         )}
         <div className="sidebar-bottom">
-          <a href="#/settings" className={route === 'settings' ? 'active' : ''}>
-            <Settings2 /> {t('nav.settings')}
+          <a href={`#/${SETTINGS_META.route}`} className={route === SETTINGS_META.route ? 'active' : ''}>
+            <SettingsIcon /> {t(SETTINGS_META.labelKey)}
           </a>
           <div className="sidebar-foot">
             <span>RimLoc · React R1</span>
@@ -270,9 +288,22 @@ export function App() {
             <FolderOpen size={15} />
             <span>{projectLabel()}</span>
             <ChevronRight size={13} />
-            <strong>{route === 'workspace' ? t('nav.entries') : NAV.find((n) => n.to === route)?.label ?? t('nav.settings')}</strong>
+            {/* §18: честный лейбл маршрута из routes.ts — providers/selfloc/
+              diagnostics несут свои имена, никакого fallback на «Настройки».
+              workspace несёт nav.entries (мета-лейбл маршрута). */}
+            <strong>{t(routeMeta(route)?.labelKey ?? 'nav.entries')}</strong>
           </div>
           <div className="topbar-actions">
+            {/* §11: Saved / Unsaved / Saving… / Error — только с открытым
+              проектом: без него сохранять нечего, честно скрыто. Класс
+              status-label (не demo-badge: тот скрыт <1150px и перекрашивает
+              все dot в warning). */}
+            {saveState && (
+              <span className="status-label" data-testid="shell.save-state">
+                <span className={saveState.dot} />
+                {saveState.label}
+              </span>
+            )}
             <button className="icon-btn" data-testid="theme-toggle" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => setDark(!dark)}>
               {dark ? <Sun /> : <Moon />}
             </button>
@@ -284,6 +315,22 @@ export function App() {
         </header>
 
         <main className="route-content">
+          {/* §43: тонкая полоса первого запуска — только на Home, до закрытия
+            (localStorage-флаг) и до открытого проекта. */}
+          {route === 'home' && !clientError && !onboardingDismissed && !st.snapshot && (
+            <div className="onboarding-strip" data-testid="onboarding.strip">
+              <span className="onboarding-label">{t('onboarding.label')}</span>
+              <div className="onboarding-steps">
+                <button onClick={startWizardTour} data-testid="onboarding.start">
+                  <span className="step-number current">1</span>
+                  {t('onboarding.step1')}
+                </button>
+              </div>
+              <button className="icon-btn" aria-label={t('onboarding.dismiss')} data-testid="onboarding.dismiss" onClick={dismissOnboarding}>
+                <X size={14} />
+              </button>
+            </div>
+          )}
           {clientError ? (
             <div className="page-content narrow-page">
               <div className="inline-warning">
@@ -360,8 +407,11 @@ export function App() {
             <Tm />
           ) : route === 'chatbatch' ? (
             <ChatBatch />
-          ) : route === 'home' || route === 'projects' ? (
-          // Home falls through to the shared layout below
+          ) : (
+            // §16: placeholder-маршрут удалён — Route больше не содержит
+            // 'tools' (INTENTIONALLY_REJECTED: продуктового определения не
+            // было), финальная ветка честно покрывает home/projects.
+            // Home falls through to the shared layout below.
             <Home
               onOpen={(projectId) => {
                 const after =
@@ -373,22 +423,6 @@ export function App() {
                 })
               }}
             />
-          ) : (
-            <div className="page-content narrow-page">
-              <div className="section-heading">
-                <div>
-                  <span className="eyebrow">
-                    <span className="dot primary" /> REACT R1 · REPRESENTATIVE LANE
-                  </span>
-                  <h2>{t('shell.placeholderTitle')}</h2>
-                  <p>{t('shell.placeholderBody')}</p>
-                </div>
-              </div>
-              <p className="page-note">
-                <Check size={15} /> client: {client ? 'resolved' : 'pending'} · contract surface ready
-                <ArrowUpRight size={12} />
-              </p>
-            </div>
           )}
         </main>
 

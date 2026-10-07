@@ -10,6 +10,7 @@ import type {
   SourceProvenanceDto,
   TKeyMetaDto,
   TranslationIntentDto,
+  ValidateProjectResponseDto,
 } from '../client/types'
 import { clientInstance } from '../client/instance'
 import { folderForm } from '../languages/folderForm'
@@ -50,6 +51,14 @@ export type LoadState =
   | { kind: 'loading' }
   | { kind: 'error'; message: string }
 
+/** §10 nav badge state: the LAST live validate report for the open project.
+ *  `report: null` = stale/unknown — the shell honestly hides the badge
+ *  instead of showing a count it cannot back. */
+export interface ValidationState {
+  report: ValidateProjectResponseDto | null
+  busy: boolean
+}
+
 export interface ProjectState {
   /** Target locale the workspace edits (multi-target §32): picks which
    *  Project.translations slice the editor shows; switching re-maps. */
@@ -62,6 +71,7 @@ export interface ProjectState {
   busy: boolean
   load: LoadState
   lastError: string | null
+  validation: ValidationState
   perfMarks: PerfMarks
 }
 
@@ -75,10 +85,15 @@ let state: ProjectState = {
   busy: false,
   load: { kind: 'idle' },
   lastError: null,
+  validation: { report: null, busy: false },
   perfMarks: {},
 }
 
 const listeners = new Set<() => void>()
+
+/** §10: the validation report describes ONE snapshot — every mutation that
+ *  adopts a different snapshot makes the previous report stale. */
+const VALIDATION_STALE: ValidationState = { report: null, busy: false }
 
 function set(patch: Partial<ProjectState>): void {
   state = { ...state, ...patch }
@@ -147,8 +162,10 @@ export const projectStore = {
         selectedKey: null,
         drafts: {},
         busy: false,
+        validation: VALIDATION_STALE,
         perfMarks: { ...state.perfMarks, T3_stateReceived: performance.now(), T4_entriesMapped: performance.now() },
       })
+      void projectStore.refreshValidation()
       return true
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
@@ -187,7 +204,9 @@ export const projectStore = {
         selectedKey: null,
         drafts: {},
         busy: false,
+        validation: VALIDATION_STALE,
       })
+      void projectStore.refreshValidation()
       return true
     } catch (e) {
       set({ busy: false, lastError: e instanceof Error ? e.message : String(e) })
@@ -253,7 +272,9 @@ export const projectStore = {
         entries: mapSnapshot(fresh, state.targetLocale),
         drafts,
         busy: false,
+        validation: VALIDATION_STALE,
       })
+      void projectStore.refreshValidation()
       if (next) {
         const idx = state.entries.findIndex((e) => e.key === key)
         const nx = state.entries[idx + 1]
@@ -276,9 +297,34 @@ export const projectStore = {
       const fresh = await clientInstance.getClient().snapshot(snap.project_id)
       // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
       // захардкоженная 'ru' игнорировала targetLocale).
-      set({ snapshot: fresh, entries: mapSnapshot(fresh, state.targetLocale), drafts: {} })
+      set({ snapshot: fresh, entries: mapSnapshot(fresh, state.targetLocale), drafts: {}, validation: VALIDATION_STALE })
+      void projectStore.refreshValidation()
     } catch {
       /* refresh failures surface via the next contract call */
+    }
+  },
+
+  /** §10: live validation over the open project's trusted session state.
+   *  Failure or a mid-flight epoch/project change lands as `report: null`
+   *  (honest unknown) — never as a fabricated clean report. */
+  async refreshValidation(): Promise<void> {
+    const snap = state.snapshot
+    if (!snap) {
+      set({ validation: VALIDATION_STALE })
+      return
+    }
+    set({ validation: { report: state.validation.report, busy: true } })
+    try {
+      const report = await clientInstance.getClient().validateProject(snap.project_id, snap.session_epoch)
+      const cur = state.snapshot
+      // The session moved on while the request was in flight — drop it.
+      if (cur && cur.project_id === snap.project_id && cur.session_epoch === snap.session_epoch) {
+        set({ validation: { report, busy: false } })
+      } else {
+        set({ validation: VALIDATION_STALE })
+      }
+    } catch {
+      set({ validation: VALIDATION_STALE })
     }
   },
 
@@ -292,6 +338,7 @@ export const projectStore = {
       busy: false,
       load: { kind: 'idle' },
       lastError: null,
+      validation: VALIDATION_STALE,
     })
   },
 }
