@@ -1,0 +1,37 @@
+name: Public Git history hygiene
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  public-history:
+    name: public Git language
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Run checker tests
+        run: python3 scripts/tests/test_public_git_language.py
+
+      - name: Check PR title and branch
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_HEAD: ${{ github.head_ref }}
+        run: |
+          python3 scripts/check-public-git-language.py --surface pr-title --text "$PR_TITLE"
+          python3 scripts/check-public-git-language.py --surface branch-name --text "$PR_HEAD"
+
+      - name: Check new commit subjects and changelog lines
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags origin "$BASE_REF"
+          python3 scripts/check-public-git-language.py --git-range "origin/$BASE_REF..HEAD"
+          python3 scripts/check-public-git-language.py --changelog-range "origin/$BASE_REF...HEAD"
