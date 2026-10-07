@@ -49,11 +49,14 @@ pub const PROJECT_DIR_NAME: &str = "RimLoc UI (en)";
 /// (src/tests.rs partition arithmetic): the selfloc entry joins pick_directory
 /// in the read-only safe class; the contribution builder (wave 7) writes ONLY
 /// through the services guard partition (absolute out dir, source-tree /
-/// managed-root denies) — the same class as the contract `project_export`.
+/// managed-root denies) — the same class as the contract `project_export`;
+/// the reveal opener (§8 F8.4) is fenced by the session allow-list of
+/// acked output dirs (rimloc_gui_lib::reveal) — never the open_path class.
 pub const POST_ORIGINAL_LIVE_EXTRAS: &[&str] = &[
     "selfloc_catalog_dir",
     "selfloc_build_contribution",
     "build_identity",
+    "reveal_path",
 ];
 
 /// The meta field the idempotency decision reads (SELFLOC_BRIDGE.md:

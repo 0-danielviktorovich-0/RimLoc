@@ -102,6 +102,11 @@ export interface ContractMethodMap {
     params: { project_id: string; session_epoch: number; out_dir: string; locale: string };
     result: SelflocBuildContributionResponseDto;
   };
+  // Reveal output (§8 F8.4, shell-level like pick_directory): open the
+  // output directory of the last SUCCESSFUL build/export of this session.
+  // The shell blesses ONLY acked out dirs (session allow-list, canonical
+  // containment) — refused honestly in mock (no session output there).
+  reveal_path: { params: { path: string }; result: null };
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   project_import_existing: {

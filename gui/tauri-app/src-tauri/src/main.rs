@@ -3162,6 +3162,10 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // open UI-catalog session into a caller-chosen dir — the services layer
     // owns the §6 gate and the export_project guard partition.
     "selfloc_build_contribution",
+    // §8 F8.4: reveal the session's successful output dir in the OS file
+    // manager — guarded shell extra (session allow-list + canonical
+    // containment, see rimloc_gui_lib::reveal), NOT the open_path surface.
+    "reveal_path",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3965,7 +3969,10 @@ fn main() {
             build_identity,
             // selfloc contribution (beta, wave 7): build the offline bundle
             // from the open UI-catalog session — services-guarded write.
-            selfloc_build_contribution
+            selfloc_build_contribution,
+            // §8 F8.4: reveal the session's successful output dir — guarded
+            // shell extra (session allow-list, canonical containment).
+            reveal_path
         ])
     } else {
         builder.invoke_handler(tauri::generate_handler![
@@ -4029,7 +4036,10 @@ fn main() {
             build_identity,
             // selfloc contribution (beta, wave 7): build the offline bundle
             // from the open UI-catalog session — services-guarded write.
-            selfloc_build_contribution
+            selfloc_build_contribution,
+            // §8 F8.4: reveal the session's successful output dir — guarded
+            // shell extra (session allow-list, canonical containment).
+            reveal_path
         ])
     };
     builder
@@ -4056,6 +4066,9 @@ fn main() {
             app.manage(LogState {
                 path: log_path.clone(),
             });
+            // §8 F8.4: session reveal allow-list — starts EMPTY (nothing is
+            // revealable before a successful build/export of THIS process).
+            app.manage(rimloc_gui_lib::reveal::RevealState::default());
             let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
                 // Agent automation (RIMLOC_AUTOMATION=1): AXManualAccessibility
@@ -4274,6 +4287,45 @@ fn selfloc_catalog_dir(app: tauri::AppHandle) -> Result<String, ApiError> {
     });
     rimloc_gui_lib::selfloc_catalog::resolve_catalog_dir(resource_dir, &app_data)
         .map_err(|e| ApiError { message: e })
+}
+
+/// §8 F8.4: reveal the output directory of the last successful build/export
+/// in the OS file manager. Thin shell over the session allow-list in
+/// [`rimloc_gui_lib::reveal::RevealState`] (the contract adapter blesses an
+/// ack's out_dir; nothing else is ever revealable) — NOT a general opener:
+/// arbitrary paths stay the privileged legacy `open_path`. The absolute form
+/// and existence checks run BEFORE the containment verdict so the refusal
+/// names the actual problem.
+#[tauri::command]
+fn reveal_path(
+    path: String,
+    reveal: State<'_, rimloc_gui_lib::reveal::RevealState>,
+) -> Result<(), ApiError> {
+    let p = PathBuf::from(&path);
+    if !p.is_absolute() {
+        return Err(ApiError {
+            message: format!("reveal_path: the path must be absolute: {path}"),
+        });
+    }
+    // Same probing guard as open_path: never open blind.
+    if !p.exists() {
+        return Err(ApiError {
+            message: format!("Path does not exist: {path}"),
+        });
+    }
+    if !reveal.may_reveal(&p) {
+        return Err(ApiError {
+            message: format!(
+                "reveal_path refused: the path is not a successful output of this session: {path}"
+            ),
+        });
+    }
+    // LaunchServices/ShellExecute/xdg-open directly (same inert-metacharacter
+    // property open_path relies on) — never a shell interpreter.
+    open::that_detached(&p).map_err(|e| ApiError {
+        message: format!("Failed to open path: {e}"),
+    })?;
+    Ok(())
 }
 
 /// Self-localization contribution (beta, wave 7): build the offline

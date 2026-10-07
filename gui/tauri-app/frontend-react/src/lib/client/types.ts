@@ -412,6 +412,14 @@ export type ContractMethod =
   // caller-chosen directory. The mock transport refuses it honestly —
   // no backend session exists there.
   | 'selfloc_build_contribution'
+  // Reveal output (§8 F8.4, shell-level like pick_directory): open the
+  // output directory of the last SUCCESSFUL build/export of this session
+  // in the OS file manager. The shell keeps a session allow-list of acked
+  // out dirs (canonical containment, write-guard orientation) — anything
+  // else is a typed refusal; arbitrary paths stay the privileged legacy
+  // open_path. The mock refuses it honestly — no session output exists
+  // there.
+  | 'reveal_path'
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   | 'project_import_existing'

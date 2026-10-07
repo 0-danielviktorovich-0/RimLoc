@@ -440,6 +440,15 @@ export class RimLocClient {
     return this.call('pick_directory', initial ? { initial } : {});
   }
 
+  /** Reveal output (§8 F8.4): open the output directory of the last
+   *  SUCCESSFUL build/export of this session in the OS file manager. The
+   *  shell keeps a session allow-list of acked out dirs (canonical
+   *  containment, write-guard orientation) and refuses everything else —
+   *  arbitrary paths stay the privileged legacy open_path, never this. */
+  async revealPath(path: string): Promise<void> {
+    await this.call('reveal_path', { path });
+  }
+
   /** Self-localization entry (mandate D): absolute path of the app-bundled
    * RimLoc UI catalog, prepared as an ORDINARY project source directory —
    * feed it straight into createProject() and the existing ui_catalog

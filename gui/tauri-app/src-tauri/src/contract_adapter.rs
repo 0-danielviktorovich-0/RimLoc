@@ -486,6 +486,7 @@ pub fn project_validate(
 #[tauri::command(rename_all = "snake_case")]
 pub fn project_export(
     state: State<'_, ContractState>,
+    reveal: State<'_, crate::reveal::RevealState>,
     project_id: String,
     session_epoch: u64,
     out_dir: String,
@@ -498,14 +499,19 @@ pub fn project_export(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("project_export", || {
+    let ack = traced_simple("project_export", || {
         manager.export_project(
             &project_id,
             session_epoch,
             std::path::Path::new(&out_dir),
             &locale,
         )
-    })
+    })?;
+    // §8 F8.4: ONLY a successful ack blesses its out_dir for this session's
+    // `reveal_path` shell command — the services guard + reparse check have
+    // already validated the real location by the time this line runs.
+    reveal.allow(std::path::Path::new(&ack.out_dir.path));
+    Ok(ack)
 }
 
 /// `project_build_mod` — the FULL drop-in mod package (`About/About.xml` in
@@ -516,6 +522,7 @@ pub fn project_export(
 #[tauri::command(rename_all = "snake_case")]
 pub fn project_build_mod(
     state: State<'_, ContractState>,
+    reveal: State<'_, crate::reveal::RevealState>,
     project_id: String,
     session_epoch: u64,
     out_dir: String,
@@ -528,14 +535,17 @@ pub fn project_build_mod(
         .manager
         .lock()
         .expect("contract session registry poisoned");
-    traced_simple("project_build_mod", || {
+    let ack = traced_simple("project_build_mod", || {
         manager.build_mod_project(
             &project_id,
             session_epoch,
             std::path::Path::new(&out_dir),
             &locale,
         )
-    })
+    })?;
+    // §8 F8.4: same session reveal blessing as project_export.
+    reveal.allow(std::path::Path::new(&ack.out_dir.path));
+    Ok(ack)
 }
 
 /// `project_diagnose` — sanitized support bundle over the project's last
