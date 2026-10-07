@@ -2330,16 +2330,6 @@ dependencies = [
 
 [[package]]
 name = "ico"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3804960be0bb5e4edb1e1ad67afd321a9ecfd875c3e65c099468fd2717d7cae"
-dependencies = [
- "byteorder",
- "png 0.17.16",
-]
-
-[[package]]
-name = "ico"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e795dff5605e0f04bff85ca41b51a96b83e80b281e96231bcaaf1ac35103371"
@@ -4430,8 +4420,8 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "serde",
- "thiserror 1.0.69",
- "toml 0.8.2",
+ "thiserror 2.0.20",
+ "toml 1.1.6+spec-1.1.0",
 ]
 
 [[package]]
@@ -4444,7 +4434,7 @@ dependencies = [
  "regex",
  "schemars 1.2.2",
  "serde",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -4490,7 +4480,7 @@ dependencies = [
  "chrono",
  "color-eyre",
  "dirs",
- "ico 0.3.0",
+ "ico",
  "image",
  "once_cell",
  "open",
@@ -4514,7 +4504,7 @@ dependencies = [
  "tauri-plugin-wdio-webdriver",
  "tauri-plugin-window-state",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
  "walkdir",
 ]
 
@@ -4549,7 +4539,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.20",
 ]
 
 [[package]]
@@ -4611,7 +4601,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sha2 0.10.9",
+ "sha2 0.11.0",
  "tempfile",
  "urlencoding",
  "walkdir",
@@ -5620,7 +5610,7 @@ checksum = "e50213e463086ecc283d7e9f51c30cc0fd304ad457425158018be26dbf0d0a80"
 dependencies = [
  "base64 0.22.1",
  "brotli",
- "ico 0.5.0",
+ "ico",
  "json-patch",
  "plist",
  "png 0.18.1",
