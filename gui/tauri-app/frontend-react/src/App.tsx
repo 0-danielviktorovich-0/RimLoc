@@ -21,7 +21,7 @@ import { Diagnostics } from './components/Diagnostics'
 import { Settings } from './components/Settings'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
-import { t, getLocale } from './lib/i18n'
+import { t, getLocale, setLocale, type Locale } from './lib/i18n'
 import { useCommandPalette, type PaletteCommand } from './lib/palette'
 
 // Palette commands are pure hash navigations. Labels resolve through t()
@@ -95,11 +95,12 @@ export function App() {
   const [route, setRoute] = useState<Route>(currentRoute)
   const [dark, setDark] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
-  // UI-локаль читается на рендер: смена языка в Settings применяется «на
-  // следующий рендер» (роут-Change) — новый ключ useMemo пересобирает
-  // команды с метками активного языка, идентичность между рендерами
-  // сохраняется.
-  const uiLocale = getLocale()
+  // UI-локаль — ЕДИНЫЙ источник в состоянии App (audit v2 #4/#5): смена
+  // языка в Settings вызывает setLocale + сеттинг стейта → немедленный
+  // ререндер всего дерева (t() читает модульную локаль на рендере), а не
+  // «на следующий роут». Мемо-ключ пересобирает команды палитры с метками
+  // активного языка, идентичность между рендерами сохраняется.
+  const [uiLocale, setUiLocaleState] = useState<Locale>(getLocale())
   const paletteCommands = useMemo(buildPaletteCommands, [uiLocale])
   // Palette state (open/query/activeIndex) lives in the hook — one source of
   // truth for the window keydown contract (Cmd+K, Escape, arrows, Enter).
@@ -310,7 +311,15 @@ export function App() {
           ) : route === 'diagnostics' ? (
             <Diagnostics />
           ) : route === 'settings' ? (
-            <Settings />
+            <Settings
+              dark={dark}
+              onDarkChange={setDark}
+              locale={uiLocale}
+              onLocaleChange={(v) => {
+                setLocale(v)
+                setUiLocaleState(v)
+              }}
+            />
           ) : route === 'providers' ? (
             <ProvidersScreen />
           ) : route === 'lm' ? (
