@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Wizard Fixture</name>
+  <author>rimloc-testlab</author>
+  <packageId>rimloc.test.wizardfixture</packageId>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <description>Minimal RimLoc test fixture for the GUI wizard acceptance runs.</description>
+</ModMetaData>

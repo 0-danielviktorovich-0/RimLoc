@@ -193,6 +193,37 @@ const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
 before(async () => {
   await waitExisting('.app-sidebar', 30000)
   await installKeylog()
+  // Self-contained project setup: route navigation (TM/ChatBatch) and the
+  // live-screen section need an OPEN project. The app does not auto-reopen
+  // the last project on relaunch, and rel19-21 profiles only passed this
+  // suite through accumulated state — a virgin data dir shows honest
+  // no-project stubs. Create the fixture project once per session unless
+  // one is already open (idempotent re-runs).
+  const needProject = await browser.execute(async () => {
+    window.location.hash = '#/workspace'
+    await new Promise((r) => setTimeout(r, 800))
+    return !document.querySelector('[data-testid="ws.root"]')
+  })
+  if (needProject) {
+    await browser.execute(() => { window.location.hash = '#/projects' })
+    await waitExisting('[data-testid="wizard.open"]')
+    await browser.$('[data-testid="wizard.open"]').click()
+    await waitExisting('[data-testid="wizard.path-input"]')
+    await browser.$('[data-testid="wizard.path-input"]').setValue('/tmp/rimloc-wizard-mod')
+    await browser.$('[data-testid="wizard.next"]').click()
+    await waitExisting('[data-testid="wizard.version"]')
+    await browser.$('[data-testid="wizard.version"]').selectByVisibleText('1.6')
+    await browser.$('[data-testid="wizard.next"]').click()
+    await browser.$('[data-testid="wizard.next"]').click()
+    await browser.waitUntil(
+      async () => (await browser.execute(() => window.location.hash)) === '#/workspace',
+      { timeout: 60000, interval: 250 },
+    )
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    console.log('[palette-acc] project seeded from /tmp/rimloc-wizard-mod')
+  } else {
+    console.log('[palette-acc] project already open — seed skipped')
+  }
 })
 
 afterEach(async function () {
@@ -271,7 +302,11 @@ describe('Palette §9: открытие и закрытие', () => {
 })
 
 describe('Palette §9: состав команд и поиск', () => {
-  it('состав: ровно 14 команд (tools удалён, +чат-перевод, полное покрытие маршрутов)', async () => {
+  it('состав: все 14 маршрутных команд (tools удалён, +чат-перевод), экшены допустимы', async () => {
+    // Сьют идёт с ОТКРЫТЫМ проектом (self-seed в before): при нём палитра
+    // легитимно показывает экшен-команды (переключение цели, «Открыть
+    // проект») — жёсткое равенство было верно только для проекта-less UI
+    // до Wave B. Пиним полный состав МАРШРУТОВ; экшены — надстройка.
     await openPalette('list')
     const items = await paletteItems()
     console.log(`[palette-acc] ITEMS=${JSON.stringify(items)}`)
@@ -279,9 +314,11 @@ describe('Palette §9: состав команд и поиск', () => {
     for (const e of expected) {
       if (!items.includes(e)) throw new Error(`нет команды «${e}»`)
     }
-    if (items.length !== expected.length) {
-      throw new Error(`лишние команды: ${JSON.stringify(items)}`)
+    if (items.length < expected.length) {
+      throw new Error(`маршрутов меньше ожидаемого: ${items.length} < ${expected.length}`)
     }
+    const actions = items.filter((i) => !expected.includes(i))
+    console.log(`[palette-acc] ACTIONS=${JSON.stringify(actions)}`)
     await shot('palette-full-list')
   })
 
@@ -317,8 +354,11 @@ describe('Palette §9: состав команд и поиск', () => {
     const items = await paletteItems()
     console.log(`[palette-acc] QUERY_RESET q1=${JSON.stringify(q1)} q2=${JSON.stringify(q2)} items=${items.length}`)
     if (q2 !== '') throw new Error(`запрос пережил закрытие: ${JSON.stringify(q2)} — MUST-FIX не закрыт`)
-    if (items.length !== COMMANDS.length) {
-      throw new Error(`палитра открылась предотфильтрованной: ${items.length} вместо ${COMMANDS.length}`)
+    // «Не предотфильтрована» = виден полный состав (все маршрутные команды,
+    // а не их подмножество); экшен-команды при открытом проекте допустимы.
+    const missing = COMMANDS.map((c) => c.label).filter((l) => !items.includes(l))
+    if (missing.length > 0) {
+      throw new Error(`палитра открылась предотфильтрованной: нет ${JSON.stringify(missing)} из ${items.length} показанных`)
     }
     await shot('palette-query-reset')
   })

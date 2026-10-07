@@ -1,0 +1,10 @@
+<LanguageData>
+	<Fixture_Greet>Hello world</Fixture_Greet>
+	<Fixture_Farewell>Goodbye friend</Fixture_Farewell>
+	<Fixture_Settings_Header>Fixture settings</Fixture_Settings_Header>
+	<Fixture_Settings_Note>Adjust the dial</Fixture_Settings_Note>
+	<Fixture_Action_Open>Open the hatch</Fixture_Action_Open>
+	<Fixture_Action_Close>Close the hatch</Fixture_Action_Close>
+	<Fixture_Report_Colonies>Colonies founded: {0}</Fixture_Report_Colonies>
+	<Fixture_Letter_Title>A letter from the fixture</Fixture_Letter_Title>
+</LanguageData>

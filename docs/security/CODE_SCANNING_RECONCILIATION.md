@@ -183,3 +183,26 @@ Sink'и — `p.is_dir()` / `languages_root.is_dir()` в `autodiscover_learn_dirs
 - Повторный прогон CodeQL на `feature/ui-r1-convergence` не запускался — классификации верифицированы статической сверкой строк и diff-анализом, а не новым сканированием. Прогнозы §6 проверить после мержа PR #60 по факту нового анализа.
 - Расхождение с брифом: в задаче указано «279 коммитов позади», фактический `git rev-list 9591f4f..HEAD --count` = **280**.
 - dismiss'ы в GitHub UI не ставились (вне полномочий ревизии: код и настройки не трогаем, коммитит главный поток).
+
+## 9. R2-волна (2026-10-07, SHA af06a4e): 6 новых High, все DISMISSED_WITH_EVIDENCE
+
+Первый полный CodeQL-анализ, включивший R2-код (chat-batch 273a79c, IfModActive
+42fbfc0, defs d712ba8). Все шесть — `rust/path-injection`, high, источник —
+значения LoadFolders.xml / файловой записи мода; правило и класс совпадают с
+разобранными в §4 (FP-фон прод-крейсов). Прогресс-гейт §7 сохраняется: 0 open
+после dismiss'ов (CS и DA).
+
+| # | Место | Класс | Обоснование |
+|---|-------|-------|-------------|
+| 312 | modview.rs:381 | FP | `root.join("LoadFolders.xml")` — константный join доверенного root (выбор оператора CLI/GUI); идентично группе `src-tauri/commands/*` из §4 |
+| 313 | modview.rs:214 | FP | `classic_version_dirs`: имя из `read_dir` самого root, однокомпонентный join (сепараторы в имени невозможны); внешний resolution отсутствует |
+| 314 | modview.rs:426 | FP | ветка PLAIN LoadFolders: join уже пропущен через `is_within(&dir, root)` с typed bail (H2-гейт, строки 417–424); sink — read-only скан содержимого |
+| 315 | modview.rs:462 | FP | ветка CONDITIONAL IfModActive: тот же H2-гейт `is_within` + typed bail (строки 452–460), срабатывает только при резолвленном true; без контекста путь не строится вовсе (unresolved → POTENTIAL) |
+| 316 | modview.rs:511 | FP | `root.join("Common")` — константный join классического лейаута; идентично #312 |
+| 317 | tests/ifmodactive_corpus.rs:35 | used_in_tests | корпусный путь из `RIMLOC_IFMOD_CORPUS_MOD` (env), тест skipped без env; класс TEST_ONLY из §4 |
+
+Сопутствующее: Write-guard кампания (canonical_view fail-closed,
+ensure_writable_output_path, PO-# refusal) покрывает синки; H2-гейты
+верифицированы adversarial-тестами (`write_guard_adversarial`,
+`ifmodactive_corpus`). Дисми́ссы по одному через API с сылкой на этот раздел,
+не bulk.

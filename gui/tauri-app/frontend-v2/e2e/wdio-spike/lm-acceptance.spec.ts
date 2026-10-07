@@ -155,7 +155,9 @@ describe('LM §10: CRUD пользовательского языка', () => {
     const err = await errorText()
     const after = await lmRows()
     console.log(`[lm-acc] DUP_USER err=${JSON.stringify(err)} rows=${after.length} (было ${before.length})`)
-    if (!/already exists/i.test(err)) throw new Error(`ожидалось «already exists», получено: ${err}`)
+    // Инвариант, не литерал: ошибка surfaced (i18n-локализована — EN-пин
+    // «already exists» врал после i18n-волны), список не вырос.
+    if (err === '<нет ошибки>') throw new Error('дубликат пользователя принят без ошибки')
     if (after.length !== before.length) throw new Error('дубликат пользователя ДОБАВИЛСЯ')
     await shot('lm-error-dup-user')
   })
