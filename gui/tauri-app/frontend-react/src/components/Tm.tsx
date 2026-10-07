@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2, Search, Check } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
+import { projectStore } from '../lib/state/project'
 import { contractErrorText } from '../lib/client/messagesError'
 import { t, tEnum } from '../lib/i18n'
 import type {
@@ -109,8 +110,10 @@ export function Tm() {
     const res = await filtered()
     setEntries(res.entries)
     setTotal(res.total)
-    // A mutation moved the durable revision — adopt it.
-    await clientInstance.getClient().snapshot(projectId).catch(() => undefined)
+    // A mutation moved the durable revision — adopt it into the store
+    // (Existing.tsx pattern: a raw snapshot() call here was discarded and
+    // the workspace kept a stale revision until the next full open).
+    await projectStore.adoptExternal()
   }
 
   const run = async (fn: () => Promise<void>): Promise<void> => {

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react'
 import { ShieldCheck, CircleAlert, ArrowRight, Download } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
+import { projectStore } from '../lib/state/project'
 import { contractErrorText } from '../lib/client/messagesError'
 import { t } from '../lib/i18n'
-import type { ValidateProjectResponseDto } from '../lib/client/types'
+import type { ValidateProjectResponseDto, ValidationFindingDto } from '../lib/client/types'
 
 type Filter = 'all' | 'error' | 'warning' | 'info'
 
@@ -71,6 +72,21 @@ export function Checks() {
   const errors = findings.filter((f) => f.severity === 'error').length
   const warnings = findings.filter((f) => f.severity === 'warning').length
   const total = st.entries.length || 1
+
+  // §35: a finding opens in the editor — Workspace + select by the finding's
+  // key (§9 mapping: the full identity key when present, the raw key
+  // otherwise). Only findings whose key resolves to a workspace entry are
+  // actionable; project-level findings stay non-clickable — a navigation to
+  // nothing would be a dead affordance of the kind this wave removes.
+  const resolveFinding = (f: ValidationFindingDto): string | null => {
+    const key = f.id?.key ?? f.key
+    if (!key) return null
+    return st.entries.some((e) => e.key === key) ? key : null
+  }
+  const openFinding = (key: string): void => {
+    projectStore.select(key)
+    window.location.hash = '#/workspace'
+  }
 
   return (
     <div className="page-content">
@@ -138,8 +154,11 @@ export function Checks() {
         ))}
         <button
           className="ml-auto"
+          disabled={!report}
+          data-testid="checks.report"
           onClick={() => {
-            const blob = JSON.stringify(report ?? {}, null, 2)
+            if (!report) return
+            const blob = JSON.stringify(report, null, 2)
             const a = document.createElement('a')
             a.href = URL.createObjectURL(new Blob([blob], { type: 'application/json' }))
             a.download = 'rimloc-validation.json'
@@ -151,16 +170,49 @@ export function Checks() {
       </div>
 
       <div className="finding-list" data-testid="checks.findings">
-        {shown.map((f, i) => (
-          <div key={`${f.id?.key ?? 'root'}-${i}`} className="finding-row">
-            <CircleAlert className={f.severity === 'error' ? 'text-destructive' : 'text-warning'} size={19} />
-            <div>
-              <strong>{f.kind}</strong>
-              <code>{f.id?.key ?? f.key}</code>
+        {shown.map((f, i) => {
+          const fixKey = resolveFinding(f)
+          const row = (
+            <>
+              <CircleAlert className={f.severity === 'error' ? 'text-destructive' : 'text-warning'} size={19} />
+              <div>
+                <strong>{f.kind}</strong>
+                <code>{f.id?.key ?? f.key}</code>
+              </div>
+              <p>{f.message}</p>
+              {fixKey && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 9,
+                    color: 'var(--primary)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  <ArrowRight size={12} /> {t('checks.fix')}
+                </span>
+              )}
+            </>
+          )
+          return fixKey ? (
+            <button
+              key={`${f.id?.key ?? 'root'}-${i}`}
+              type="button"
+              className="finding-row"
+              data-testid="checks.finding-fix"
+              onClick={() => openFinding(fixKey)}
+              style={{ width: '100%', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', background: 'transparent', border: 0, borderBottom: '1px solid var(--border)' }}
+            >
+              {row}
+            </button>
+          ) : (
+            <div key={`${f.id?.key ?? 'root'}-${i}`} className="finding-row">
+              {row}
             </div>
-            <p>{f.message}</p>
-          </div>
-        ))}
+          )
+        })}
         {shown.length === 0 && report && (
           <div className="passed-state">
             <ShieldCheck size={45} />

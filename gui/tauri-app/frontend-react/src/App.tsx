@@ -4,7 +4,7 @@
 // Route metadata (sidebar, palette, breadcrumb, currentRoute whitelist)
 // lives in lib/routes.ts (§18) — this file owns no route literals.
 import { useEffect, useMemo, useState } from 'react'
-import { Languages, FolderOpen, Sun, Moon, Plus, ChevronDown, ChevronRight, X, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
+import { Languages, FolderOpen, Sun, Moon, Plus, ChevronRight, X, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
 import { BUILTIN_LANGUAGES as LANGUAGES, SOURCE_LOCALE } from './lib/languages/registry'
@@ -26,6 +26,7 @@ import { Diagnostics } from './components/Diagnostics'
 import { Settings } from './components/Settings'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
+import { ProjectSwitcher } from './components/ProjectSwitcher'
 import { t, getLocale, setLocale, type Locale } from './lib/i18n'
 import { useCommandPalette, type PaletteCommand } from './lib/palette'
 
@@ -92,7 +93,24 @@ const ONBOARDING_KEY = 'rimloc.onboarding.dismissed'
 export function App() {
   const st = useProjectState()
   const [route, setRoute] = useState<Route>(currentRoute)
-  const [dark, setDark] = useState(false)
+  // §6/§17 Theme persistence: 'rimloc.theme' ('dark'|'light') read once at
+  // first mount; every write goes through changeDark so the topbar toggle and
+  // the Settings select share ONE storage key.
+  const [dark, setDark] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('rimloc.theme') === 'dark'
+    } catch {
+      return false
+    }
+  })
+  const changeDark = (v: boolean): void => {
+    setDark(v)
+    try {
+      localStorage.setItem('rimloc.theme', v ? 'dark' : 'light')
+    } catch {
+      /* storage unavailable — session-only theme */
+    }
+  }
   const [navOpen, setNavOpen] = useState(false)
   // UI-локаль — ЕДИНЫЙ источник в состоянии App (audit v2 #4/#5): смена
   // языка в Settings вызывает setLocale + сеттинг стейта → немедленный
@@ -230,15 +248,9 @@ export function App() {
           </span>
           <small>R1</small>
         </a>
-        <div className="sidebar-project">
-          <div>
-            <strong>{projectLabel()}</strong>
-            <span>
-              {st.snapshot ? t('shell.projectOpen') : t('shell.localProject')} <span className="dot success" />
-            </span>
-          </div>
-          <ChevronDown size={14} />
-        </div>
+        {/* §6/§19: the project card is a real switcher now (recent projects →
+            projectStore.open); the dead ChevronDown affordance is gone. */}
+        <ProjectSwitcher />
         <nav className="primary-nav">
           {SIDEBAR_NAV.map(({ route: to, labelKey, icon: Icon }) => (
             <a key={to} href={`#/${to}`} className={(route === to || (to === 'home' && route === 'workspace')) ? 'active' : ''} onClick={() => setNavOpen(false)}>
@@ -295,16 +307,14 @@ export function App() {
           </div>
           <div className="topbar-actions">
             {/* §11: Saved / Unsaved / Saving… / Error — только с открытым
-              проектом: без него сохранять нечего, честно скрыто. Класс
-              status-label (не demo-badge: тот скрыт <1150px и перекрашивает
-              все dot в warning). */}
+              проектом: без него сохранять нечего, честно скрыто. */}
             {saveState && (
               <span className="status-label" data-testid="shell.save-state">
                 <span className={saveState.dot} />
                 {saveState.label}
               </span>
             )}
-            <button className="icon-btn" data-testid="theme-toggle" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => setDark(!dark)}>
+            <button className="icon-btn" data-testid="theme-toggle" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => changeDark(!dark)}>
               {dark ? <Sun /> : <Moon />}
             </button>
             <div className="topbar-divider" />
@@ -388,7 +398,7 @@ export function App() {
           ) : route === 'settings' ? (
             <Settings
               dark={dark}
-              onDarkChange={setDark}
+              onDarkChange={changeDark}
               locale={uiLocale}
               onLocaleChange={(v) => {
                 setLocale(v)

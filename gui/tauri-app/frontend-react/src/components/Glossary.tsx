@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
+import { projectStore } from '../lib/state/project'
 import { contractErrorText } from '../lib/client/messagesError'
 import { t } from '../lib/i18n'
 import type { GlossaryTermDto } from '../lib/client/types'
@@ -56,8 +57,10 @@ export function Glossary() {
 
   const reload = async (): Promise<void> => {
     setTerms(await clientInstance.getClient().glossaryList(projectId, epoch))
-    // A mutation moved the durable revision — adopt it.
-    await clientInstance.getClient().snapshot(projectId).catch(() => undefined)
+    // A mutation moved the durable revision — adopt it into the store
+    // (Existing.tsx pattern: a raw snapshot() call here was discarded and
+    // the workspace kept a stale revision until the next full open).
+    await projectStore.adoptExternal()
   }
 
   const run = async (fn: () => Promise<void>): Promise<void> => {

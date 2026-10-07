@@ -21,6 +21,9 @@ const ru: Record<string, string> = {
   'shell.projectOpen': 'Проект открыт',
   'shell.project': 'Проект',
   'shell.yourTranslation': 'Ваш перевод',
+  'shell.switchProject': 'Сменить проект',
+  'shell.switcherHeading': 'Недавние проекты',
+  'shell.noOtherProjects': 'Других управляемых проектов нет.',
   'lm.eyebrow': 'ЯЗЫКИ',
   'lm.title': 'Менеджер языков',
   'lm.subtitle': 'Builtin языки read-only; пользовательские — добавляйте и удаляйте.',
@@ -107,6 +110,8 @@ const ru: Record<string, string> = {
   'home.newTranslationHint': 'Из папки мода или примера',
   'home.emptyNote': 'Управляемых проектов пока нет — создайте первый.',
   'home.openExistingNote': 'Открыть/обновить существующий перевод — через карточку проекта или мастер.',
+  'home.selflocTitle': 'Помочь перевести RimLoc',
+  'home.selflocHint': 'Тот же редактор — приложение переводит само себя.',
   'ws.noSnapshot': 'Проект ещё не открыт.',
   'ws.backHome': 'На главную',
   'ws.search': 'Поиск строк',
@@ -292,6 +297,7 @@ const ru: Record<string, string> = {
   'checks.allCleanBody': 'Замечаний в этой категории нет.',
   'checks.running': 'Запускаю живую валидацию…',
   'checks.fixHint': 'Находки открываются в редакторе — правки возвращаются в валидацию.',
+  'checks.fix': 'Исправить',
   'gl.eyebrow': 'ОДИН МИР. ОДИН ЯЗЫК.',
   'gl.title': 'Глоссарий проекта',
   'gl.subtitle': 'Термины проекта — единообразие перевода от строки к строке.',
@@ -461,6 +467,9 @@ const en: Record<string, string> = {
   'shell.projectOpen': 'Project open',
   'shell.project': 'Project',
   'shell.yourTranslation': 'Your translation',
+  'shell.switchProject': 'Switch project',
+  'shell.switcherHeading': 'Recent projects',
+  'shell.noOtherProjects': 'No other managed projects.',
   'lm.eyebrow': 'LANGUAGES',
   'lm.title': 'Language manager',
   'lm.subtitle': 'Builtin languages are read-only; user languages — add and remove.',
@@ -547,6 +556,8 @@ const en: Record<string, string> = {
   'home.newTranslationHint': 'From a mod folder or the sample',
   'home.emptyNote': 'No managed projects yet — create the first one.',
   'home.openExistingNote': 'Open/update an existing translation via a project card or the wizard.',
+  'home.selflocTitle': 'Help translate RimLoc',
+  'home.selflocHint': 'The same editor — the app translates itself.',
   'ws.noSnapshot': 'No project open yet.',
   'ws.backHome': 'Back home',
   'ws.search': 'Search strings',
@@ -732,6 +743,7 @@ const en: Record<string, string> = {
   'checks.allCleanBody': 'No findings in this category.',
   'checks.running': 'Running live validation…',
   'checks.fixHint': 'Findings open in the editor — edits flow back into validation.',
+  'checks.fix': 'Fix',
   'gl.eyebrow': 'ONE WORLD. ONE LANGUAGE.',
   'gl.title': 'Project glossary',
   'gl.subtitle': 'Project terms — consistent translation string after string.',
@@ -882,15 +894,41 @@ const en: Record<string, string> = {
 let locale: Locale = 'ru'
 const dicts: Record<Locale, Record<string, string>> = { ru, en }
 
+// §6/§17 Locale persistence: 'rimloc.locale' carries the UI language across
+// restarts. Read happens lazily on the FIRST t()/tEnum()/getLocale() call —
+// module-scope label builders (e.g. App's NAV) evaluate before any component
+// mounts, so a mount-time-only read would leave them on the default. Unknown
+// stored values fall back to 'ru'; unavailable storage degrades silently.
+const LOCALE_STORAGE_KEY = 'rimloc.locale'
+let localeLoaded = false
+
+function loadLocale(): void {
+  if (localeLoaded) return
+  localeLoaded = true
+  try {
+    const raw = localStorage.getItem(LOCALE_STORAGE_KEY)
+    if (raw === 'en' || raw === 'ru') locale = raw
+  } catch {
+    /* storage unavailable — default locale stands */
+  }
+}
+
 export function setLocale(l: Locale): void {
   locale = l
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, l)
+  } catch {
+    /* storage unavailable — session-only locale */
+  }
 }
 export function getLocale(): Locale {
+  loadLocale()
   return locale
 }
 /** Localized vocabulary for backend enums (winner_reason etc.) — raw wire
  *  tokens never render as user text (finding of the first visual critique). */
 export function tEnum(prefix: string, value: string | undefined): string {
+  loadLocale()
   if (!value) return '—'
   const key = `${prefix}.${value}`
   const localized = dicts[locale][key] ?? dicts.en[key]
@@ -898,6 +936,7 @@ export function tEnum(prefix: string, value: string | undefined): string {
 }
 
 export function t(key: string, params?: Record<string, string | number>): string {
+  loadLocale()
   const raw = dicts[locale][key] ?? dicts.en[key] ?? key
   if (!params) return raw
   return Object.entries(params).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), raw)

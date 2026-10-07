@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { ArrowRight, Check, FolderOpen, LoaderCircle, Plus } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { projectStore } from '../lib/state/project'
+import { BUILTIN_LANGUAGES } from '../lib/languages/registry'
 import { t } from '../lib/i18n'
 
 export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
@@ -13,8 +14,15 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
   const [step, setStep] = useState(0)
   const [modRoot, setModRoot] = useState('')
   const [version, setVersion] = useState('1.6')
+  // §22: the target language is chosen in the wizard, not silently 'ru'.
+  // The project_create contract carries no target-locale param (translations
+  // start empty); the chosen locale designates the editing target through
+  // the store's §32 multi-target state right after the live scan snapshot
+  // is adopted — the same switcher the workspace uses.
+  const [target, setTarget] = useState('ru')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const targetName = BUILTIN_LANGUAGES.find((l) => l.localeId === target)?.nativeName ?? target
 
   const pick = async (): Promise<void> => {
     setError(null)
@@ -35,6 +43,9 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
     try {
       const ok = await projectStore.createContractProject(modRoot, version)
       if (!ok) throw new Error(projectStore.lastErrorText ?? 'create failed')
+      // §22: the wizard's target choice becomes the workspace editing target
+      // (no-op when it equals the current one; the snapshot already exists).
+      projectStore.setTargetLocale(target)
       setBusy(false)
       setOpen(false)
       onCreated()
@@ -105,8 +116,12 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
             </label>
             <label className="field">
               <span>{t('wizard.targetLang')}</span>
-              <select defaultValue="ru" disabled>
-                <option value="ru">Русский</option>
+              <select value={target} onChange={(e) => setTarget(e.target.value)} data-testid="wizard.target-locale">
+                {BUILTIN_LANGUAGES.map((l) => (
+                  <option key={l.localeId} value={l.localeId}>
+                    {l.nativeName}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="field">
@@ -126,7 +141,7 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
             </div>
             <h3>{modRoot.split('/').filter(Boolean).at(-1) ?? t('wizard.newProject')}</h3>
             <p>
-              English → Русский · RimWorld {version}
+              English → {targetName} · RimWorld {version}
             </p>
             <code>{modRoot}</code>
             <small>{t('wizard.summaryNote')}</small>
@@ -140,7 +155,7 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
             </button>
           ) : (
             <button onClick={() => setOpen(false)} disabled={busy}>
-              {t('gl.confirmDelete') === '' ? '' : t('wizard.cancel')}
+              {t('wizard.cancel')}
             </button>
           )}
           <button
