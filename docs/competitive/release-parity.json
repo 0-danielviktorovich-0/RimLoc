@@ -1,0 +1,126 @@
+{
+  "generated": "2026-10-07",
+  "lane": "parity",
+  "workflow": "WF-PARITY-RECONCILE",
+  "base": {
+    "worktree": "/Users/danielviktorovich/Developing/_rimloc-worktrees/ba-main",
+    "branch": "main",
+    "head": "49a9eb8de4ebfabeba22391cd373ae37139af388",
+    "head_short": "49a9eb8",
+    "head_at_delivery": "897eedc (docs-only: .rimloc-release-state.json; code identical to 49a9eb8)",
+    "prev_matrix_base": "28ae9c1",
+    "commits_since_prev_matrix": 37
+  },
+  "sources": {
+    "tier_a_matrix": "docs/competitive/TIER_A_COMPLETION_MATRIX_2026-10.md",
+    "wave_reports": [
+      "docs/competitive/differential/TIERA_PYTHON_PRACTICAL.md",
+      "docs/competitive/differential/TIERA_CS_PRACTICAL.md",
+      "docs/competitive/differential/REMIS_PRACTICAL_2026-10-06.md",
+      "docs/competitive/differential/TIERA_GRABBER_RTAI_PRACTICAL.md",
+      "docs/competitive/differential/TIERA_PYSMALL_PRACTICAL.md",
+      "docs/competitive/differential/TOKCDK_PRACTICAL.md"
+    ],
+    "tier_b": "docs/competitive/roadmap/TIERB_ADAPTER_REQUIREMENTS_2026-10.md",
+    "tier_cde": "docs/competitive/roadmap/TIERCDE_REFERENCE_2026-10.md",
+    "prior_matrix": "/tmp/wf-comp/RELEASE_PARITY_MATRIX.md (base 28ae9c1)"
+  },
+  "recent_fixes_verified": [
+    {
+      "pr": "#80 (edge-trim, I1)",
+      "commit": "9dc9a7c",
+      "evidence": "crates/rimloc-parsers-xml/src/lib.rs:81 ws_run_is_formatting, :151 close_value_buffer (emit sites :374/:406/:460), inline markup serialize; tests edge_trim_tests lib.rs:3279",
+      "verified": "cargo test -p rimloc-parsers-xml edge_trim → 7 passed"
+    },
+    {
+      "pr": "#77 (Gate H)",
+      "commit": "b046b69 (carried)",
+      "evidence": "crates/rimloc-cli/src/commands/export_po.rs:44-60 effective_view in export-po; test cli_integration.rs:253",
+      "verified": "cargo test -p rimloc-cli --test cli_integration export_po_game_version_loadfolders_keeps_root_keyed → 1 passed"
+    },
+    {
+      "pr": "#78 (newest-wins)",
+      "commit": "c135502/1c880a4/5f1c4a6 (carried)",
+      "evidence": "crates/rimloc-services/src/modview.rs:209 effective_view; tests cli_integration.rs:320, :485",
+      "verified": "cargo test -p rimloc-cli --test cli_integration scan_plain_version_dirs_pick_newest_version_per_key build_mod_from_root_newest_version_wins_per_key → 2 passed"
+    },
+    {
+      "pr": "#80 (canonical no-PO translate)",
+      "commit": "313a56f + 9612b59",
+      "evidence": "crates/rimloc-cli/src/commands/translate.rs:1-9 canonical apply path, :118-124 --out-json/--managed-root/--emit-po",
+      "verified": "cargo test -p rimloc-cli --test canonical_no_po → 3 passed (no_po_1_scan_project_apply_validate_build, no_po_2_mock_translate_review_build_without_po, po_interop_canonical_export_import_keeps_identity)"
+    },
+    {
+      "pr": "#80 (Compare screen)",
+      "commit": "dc2e181/3906044/2c6555b/fdaf83e/8f09bcf",
+      "evidence": "crates/rimloc-services/src/extras/version_diff.rs; contract_version_diff capability; CHANGELOG [gui] live version-compare screen",
+      "verified": "code read + commit log; GUI runtime not exercised this session"
+    }
+  ],
+  "tests_run_this_session": [
+    "cargo test -p rimloc-parsers-xml → 28 lib + 2 patch_extract passed, incl. 7 edge_trim_tests",
+    "cargo test -p rimloc-cli --test cli_integration export_po_game_version_loadfolders_keeps_root_keyed → ok",
+    "cargo test -p rimloc-cli --test cli_integration scan_plain_version_dirs_pick_newest_version_per_key → ok",
+    "cargo test -p rimloc-cli --test cli_integration build_mod_from_root_newest_version_wins_per_key → ok",
+    "cargo test -p rimloc-cli --test canonical_no_po → 3 passed"
+  ],
+  "verdict_counts": {
+    "SUPERIOR": 9,
+    "PARITY": 7,
+    "IMPLEMENT_NOW": 1,
+    "REJECT_NOT_PRODUCT_RELEVANT": 20,
+    "EXTERNAL_BLOCKER": 0,
+    "total_rows": 37
+  },
+  "gate": {
+    "name": "parity_superior_parity_only",
+    "state_after_I1_close": "all materially relevant competitor rows are SUPERIOR/PARITY; gate passes on data",
+    "note": "release-state lists gate PENDING; sole previous blocker (I1 edge-trim) closed by 9dc9a7c and test-verified this session. The single IMPLEMENT_NOW row (chat-batch manager) is a RimLoc-mandate workflow with no competitor analog — no competitor parity gap remains."
+  },
+  "rows": [
+    {"id": "S1", "competitor": "Remis", "capability": "Defs field coverage", "competitor_evidence": "w5-remis §4.2: catalog rimworld-1.6-v1 loses title*×119 + reportString/deathMessage×67 on two mods", "rimloc_current": "crates/rimloc-parsers-xml/assets/defs_fields.json (49 def types, 35+ distinct fields incl. title/titleFemale/titleShort/titleShortFemale/baseDesc/reportString/deathMessage/pawnSingular/leaderTitle); embedded lib.rs:952; user extensible --defs-field/--defs-dict (scan.rs:74-76)", "rimloc_evidence": "dict dumped this session via python3 json load; embedded at crates/rimloc-parsers-xml/src/lib.rs:952", "verdict": "SUPERIOR"},
+    {"id": "S2", "competitor": "Grabber GUI, RimTransAI, RimTrans-zh", "capability": "Existing English DefInjected as source", "competitor_evidence": "w5: RIMLOC_ONLY 171 on VE (DefInj=0 both); w3-cs: RIMLOC_ONLY 370 vs RimTrans-zh", "rimloc_current": "export-po/scan include existing DefInjected dirs by default", "rimloc_evidence": "CHANGELOG Added (DefInjected machinery, scan_keyed_nested_definj_drops_def_type test in parsers lib)", "verdict": "SUPERIOR"},
+    {"id": "S3", "competitor": "RimTransAI", "capability": "Scan without installed game", "competitor_evidence": "w5 §2: ModParserService.cs:249-253 — without Assembly-CSharp.dll returns null, nothing scanned", "rimloc_current": "RimLoc scans XML only, no game DLL dependency (all wave runs ran without RimWorld)", "rimloc_evidence": "no Assembly-CSharp/Mono.Cecil reference anywhere in crates/ (grep this session → empty)", "verdict": "SUPERIOR"},
+    {"id": "S4", "competitor": "RimWorldModTranslator (N89), RimTrans_PY, Remis, Grabber", "capability": "Patch layer extraction", "competitor_evidence": "w3 §3: N89 100 refs = 54 visible + 46 noise; w5 pysmall: RimTrans_PY 26 ⊂ RimLoc 54, SEMANTIC 0; Remis 0 with honest diagnostics; Grabber version bug", "rimloc_current": "learn-patches whitelist 54/54 noise 0 (crates/rimloc-parsers-xml/src/patches_extract.rs:82-89 per prior recon, tests patch_extract.rs 2 passed this session); scan --with-patches → units (crates/rimloc-cli/src/commands/scan.rs:85, :294-307)", "rimloc_evidence": "scan.rs:2 use scan_patches_as_units; :294 if with_patches; :306 call", "verdict": "SUPERIOR"},
+    {"id": "S5", "competitor": "Grabber, RimTransAI, laskinss27, TokcDK", "capability": "Version semantics (newest-wins, game-version priority)", "competitor_evidence": "w5: Grabber _detect_version on 1.5_1.6 silently takes 1.4 (5 vs 213 fields); RTAI first-wins canonizes 1.5 text (32 keys); laskinss27/TokcDK mix all versions (~1300 vs 764)", "rimloc_current": "per-key newest-wins + --game-version priority + Gate H effective view (PR #78/#77)", "rimloc_evidence": "modview.rs:209 effective_view; tests cli_integration.rs:320 and :485 executed and passed this session", "verdict": "SUPERIOR"},
+    {"id": "S6", "competitor": "entire direct set", "capability": "CAT stack (PO/XLIFF round-trip, TM, glossary, validate)", "competitor_evidence": "w3/w5: PO round-trip only in dormant RimTranslate; Remis glossary without TM; RWAT project-store on ns|key; nobody has full analog", "rimloc_current": "export-po/import-po, export-xliff/import-xliff crates, TM (domain/tm.rs:26-46 key (source_text,target_locale), rank :59, levenshtein :181, threshold :219; session.rs:939-1187 CRUD+import CSV/JSON, :1193 lookup, :2693-2738 ranked matches), canonical glossary (canonical.rs:307-310, session.rs:727/751/819), validate catalog", "rimloc_evidence": "all files read this session", "verdict": "SUPERIOR"},
+    {"id": "S7", "competitor": "entire direct set", "capability": "In-game verification", "competitor_evidence": "matrix §6.4: level 7 IN_GAME_PROVEN not awarded to any competitor", "rimloc_current": "Runtime Bridge level 6.5 proven per release-state; level 7 visual = owner gate", "rimloc_evidence": ".rimloc-release-state.json gates.real_rimworld (read this session)", "verdict": "SUPERIOR"},
+    {"id": "S8", "competitor": "Remis, Text Grabber", "capability": "Write safety", "competitor_evidence": "w5-remis §6.1: symlink bug LoadFolders _effective_roots .resolve() vs unresolved root → ValueError reproduced; TG writes inside mod folder (os.chdir/rmtree)", "rimloc_current": "canonical write-guard (e9d3680), symlink-safe atomic writes, adversarial tests", "rimloc_evidence": "CHANGELOG Fixed/Added: write guards + write_guard_adversarial.rs (prior recon); carried", "verdict": "SUPERIOR"},
+    {"id": "S9", "competitor": "lenhare, Remis", "capability": "Secret storage", "competitor_evidence": "w6 matrix 3.22: lenhare committed google_credentials.json; Remis keeps provider keys in own config", "rimloc_current": "OS keychain via keyring v3 apple/windows-native behind feature `keychain` (crates/rimloc-llm/Cargo.toml:27, secrets.rs:36-83)", "rimloc_evidence": "grep + Cargo.toml read this session; caveat: CLI default build without the feature", "verdict": "SUPERIOR"},
+    {"id": "P1", "competitor": "all w3/w5 lanes", "capability": "Keyed extraction", "competitor_evidence": "BOTH 75/593/40 (HugsLib/VE/Anomaly) across all tools", "rimloc_current": "full core Keyed coverage; no Keyed-layer bucket lost after PR #77/#78", "rimloc_evidence": "Gate H + newest-wins tests passed this session", "verdict": "PARITY"},
+    {"id": "P2", "competitor": "Remis", "capability": "LoadFolders v1.x branch resolution", "competitor_evidence": "w5 §4.4: Remis correctly excludes 1.4 on v1.6 branch", "rimloc_current": "same semantics + Gate H after PR #77; view order root-first (export_po.rs:51-60 comment)", "rimloc_evidence": "export_po.rs:44-60 read; Gate H test passed", "verdict": "PARITY"},
+    {"id": "P3", "competitor": "Remis, RimTranslate, RWAT, rimwt", "capability": "Raw text preservation (markup, entities, edge whitespace)", "competitor_evidence": "all competitors store raw text; w5-remis SEMANTIC 8/13 edge-trim; w6 pysmall 7 keys", "rimloc_current": "edge-trim closed by 9dc9a7c: value = exact text minus newline-carrying indent runs (lib.rs:81 ws_run_is_formatting, :151 close_value_buffer); inline elements round-trip with attributes; CDATA untouched", "rimloc_evidence": "7 edge_trim_tests passed this session (cargo test -p rimloc-parsers-xml edge_trim)", "verdict": "PARITY"},
+    {"id": "P4", "competitor": "RimTransAI (reference), Remis", "capability": "IfModActive / conditional folders", "competitor_evidence": "w5: RTAI resolves by ActivePackageIds (exemplary); Remis errors whole scan without active_mods (workflow_bridge.py:23-25)", "rimloc_current": "conditional included unconditionally, marked in provenance: modview.rs:161-165 parse IfModActive/IfModActiveAll/IfModNotActive, conditional_dirs :22; canonical.rs:105 conditional_branch; campaign classification HIGH_VALUE over-inclusion", "rimloc_evidence": "modview.rs + canonical.rs read this session", "verdict": "PARITY"},
+    {"id": "P5", "competitor": "Grabber, RTAI, RimTrans_PY, rimwt, Remis", "capability": "Defs layer in main pipeline", "competitor_evidence": "w5/w6: four competitors take KeyBindingDef.label ×7 in main pipeline", "rimloc_current": "available today via learn-defs + --defs-dir/--defs-field/--defs-dict/--fuzzy (scan.rs:74-76,149-190); default export-po keeps Defs on mod root (export_po.rs:44); campaign classification HIGH_VALUE_AFTER_BETA", "rimloc_evidence": "flags verified in scan.rs this session", "verdict": "PARITY"},
+    {"id": "P6", "competitor": "Remis (12+ MT router), N89 (Argos offline)", "capability": "MT/provider layer breadth", "competitor_evidence": "w5/w6: competitor MT stages BLOCKED_DEPENDENCY, not run", "rimloc_current": "providers anthropic/openai-compat/mock, engine batching+retry (engine.rs:112-131), keychain, prompt-injection defense; no multi-provider router / offline provider", "rimloc_evidence": "engine.rs + provider trait read this session", "verdict": "PARITY"},
+    {"id": "P7", "competitor": "RWAT, Remis", "capability": "QA validation of translations", "competitor_evidence": "RWAT Alias/structural checks; Remis token validation {0}/tags (parity per w5 §5)", "rimloc_current": "8 validation kinds verified in code: empty(error) validate/lib.rs:119, placeholder-check(error/info) :141-232, invisible-char(warning) :47-108, duplicate(error) :262-275, duplicate-global(warning) :279-313, placeholder_set_mismatch :320+, plus services: non-translatable-flagged(error) services/validate.rs:44, cross-lang placeholder-check :229, ambiguous-key(warning) :242/:343/:398, list-mismatch(error) :329, orphan(warning) :410; + severity/SARIF-path/support-bundle", "rimloc_evidence": "validate crate + services/validate.rs read this session; deep behavioral comparison vs competitor validators not run", "verdict": "PARITY"},
+    {"id": "I1", "competitor": "— (no Tier A analog; RimLoc owner mandate G5)", "capability": "Chat-batch manager (no-API AI chat workflow): batch identity, per-batch states, [Copy next batch], AI_CHAT provenance, stale-batch gate", "competitor_evidence": "none of Tier A/B has a no-API chat workflow; mandate docs/development/CHAT_BATCH_MANDATE.md (665 lines, G5-W3, 2026-09-24)", "rimloc_current": "pipeline halves exist and are E2E-tested: canonical entries→selection→apply (translate.rs:1-60, ApplyIntents contract.rs:234, ApplyOrigin Llm :221-230; canonical_no_po.rs 3 tests passed); export/import ride PO interop (--emit-po/import-po). Missing per mandate: batch manager states (NOT STARTED/…/DONE), stable batch identity, AI_CHAT provenance class, sourceChanged→STALE_BATCH auto-gate on import, [Copy next batch] UX", "rimloc_evidence": "grep ChatBatch/chat_batch/batch states in crates/ + gui → no implementation; CHAT_BATCH_MANDATE.md §4/§5/§13/§16 read", "verdict": "IMPLEMENT_NOW"},
+    {"id": "R1", "competitor": "RimTransAI", "capability": "Reflection-extraction from C# assemblies (Mono.Cecil, 712 ReflectionField + 192 DLL types on VE)", "competitor_evidence": "w5 TIERA_GRABBER_RTAI §143, §153", "rimloc_current": "no Mono.Cecil/reflection code anywhere in crates/ (grep this session → empty); research only", "rimloc_evidence": "grep -rni 'mono.cecil|cecil|reflection' crates/ → 0 code hits", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP post-release; requires game DLL, contradicts S3 advantage"},
+    {"id": "R2", "competitor": "Remis", "capability": "Glossary-health score + advisory AI", "competitor_evidence": "w5 §5", "rimloc_current": "canonical glossary exists (CRUD + prompt enforcement), no health score", "rimloc_evidence": "session.rs:727-819 read", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP («приятно, не барьер»)"},
+    {"id": "R3", "competitor": "Remis", "capability": "Per-file atomic translate checkpoint (schema v3, resume with fingerprint)", "competitor_evidence": "w5-remis, w6 practically confirmed", "rimloc_current": "append-only JSONL checkpoint in LLM translate (crates/rimloc-llm/src/checkpoint.rs:1-40, one record per accepted unit, load_completed replay) + atomic project envelope — different slice, one-mod translation not blocked", "rimloc_evidence": "checkpoint.rs read this session", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "HIGH_VALUE post-release"},
+    {"id": "R4", "competitor": "rtl-tools", "capability": "RTL publication (reverse + contextualization)", "competitor_evidence": "w3", "rimloc_current": "absent", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP; 0 RTL strings in corpus"},
+    {"id": "R5", "competitor": "TokcDK", "capability": "tar language archives as source", "competitor_evidence": "w6", "rimloc_current": "absent; branch not even executed on corpus", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP"},
+    {"id": "R6", "competitor": "RWAT", "capability": "TM transactionality (multi-target snapshot, ConcurrentPaths, recovery)", "competitor_evidence": "w3", "rimloc_current": "atomicity on envelope file + symlink-safe writes close the corruption class", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP 18"},
+    {"id": "R7", "competitor": "Remis, TG, MTT", "capability": "Indexed stages.N.label / rulesStrings indices", "competitor_evidence": "w3/w5/w6", "rimloc_current": "content reachable via learn-defs (stages.li.label in defs_fields.json HediffDef/ThoughtDef); notation is SEMANTIC of schema not data", "rimloc_evidence": "defs_fields.json dump this session", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "HIGH_VALUE post-release"},
+    {"id": "R8", "competitor": "Grabber", "capability": "ParentName/Name resolution in learn-defs", "competitor_evidence": "w3", "rimloc_current": "main extraction HAS inheritance (lib.rs:824-875 same-file chain, :1393-1448 cross-file helper); learn-defs has none (grep ParentName crates/rimloc-services/src/learn/ → empty)", "rimloc_evidence": "grep run this session", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "HIGH_VALUE post-release"},
+    {"id": "R9", "competitor": "RWAT", "capability": "Garbage-candidate filter ('-1', '{0}: {1}', RGB)", "competitor_evidence": "w3", "rimloc_current": "absent (~6 entries/mod, translators skip)", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "HIGH_VALUE post-release; not data corruption"},
+    {"id": "R10", "competitor": "Translation Forge", "capability": "Language-pack maintenance workflow (check/stale/import)", "competitor_evidence": "w3", "rimloc_current": "diff-xml/annotate/xml-health/init/lang_update commands exist as slices", "rimloc_evidence": "ls crates/rimloc-cli/src/commands/ this session", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP 17; separate product slice"},
+    {"id": "R11", "competitor": "TokcDK (75/26 names), Grabber (62), MTT (~38)", "capability": "Dict-gap fill: verb/labelNoun/baseInspectLine/structureLabel/stuffAdjective/adjective/summary/ideoName/pawnsPlural/KeyBindingDef.label/WorkTypeDef.gerundLabel", "competitor_evidence": "w6 TokcDK §5.5, w5 Grabber", "rimloc_current": "VERIFIED ABSENT from defs_fields.json this session (python3 dump: none of the gap terms; KeyBindingDef and IdeoDef types missing entirely; FactionDef has pawnSingular but not pawnsPlural; WorkTypeDef only label/description; ThingDef HAS gerundLabel/verbs.li.label); reachable today via --defs-field/--defs-dict/--fuzzy", "rimloc_evidence": "defs_fields.json dumped via python3 this session; flags scan.rs:74-76", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "HIGH_VALUE_AFTER_BETA; justified list extension after release"},
+    {"id": "R12", "competitor": "TokcDK", "capability": "WPF table editor, ModsConfig management, RMT.DB cache", "competitor_evidence": "w3", "rimloc_current": "React workspace exists", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL (duplicate editor)"},
+    {"id": "R13", "competitor": "laskinss27", "capability": "CSV→Google Sheets pipeline", "competitor_evidence": "w3", "rimloc_current": "—", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL; skips patches/DefInjected/versions"},
+    {"id": "R14", "competitor": "etejasdgjjjj532 (rimwt)", "capability": "JP-XLSX export", "competitor_evidence": "w6: broken (to_sheet AttributeError, empty book)", "rimloc_current": "—", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL — broken in competitor"},
+    {"id": "R15", "competitor": "kelvinauta, lenhare", "capability": "DeepL-only scripts", "competitor_evidence": "w3/w6", "rimloc_current": "—", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL; lenhare anti-pattern secrets (see S9)"},
+    {"id": "R16", "competitor": "JalapenoLabs", "capability": "LLM prompt path flooding", "competitor_evidence": "w3", "rimloc_current": "structured prompt with numbered rules (prompt.rs:16 glossary rule)", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL anti-pattern"},
+    {"id": "R17", "competitor": "AutonomoAI", "capability": "'Full localization for pennies' ($8.86/125k words)", "competitor_evidence": "w3", "rimloc_current": "no code in competitor either", "rimloc_evidence": "—", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL as tool; marketing narrative capture is roadmap 21"},
+    {"id": "R18", "competitor": "RimLangKit, Grabber, MTT, RWAT-RMK", "capability": "Morpher/pymorphy3 morphology, RMK Korean niche, EN→PL niche, all-versions scan default", "competitor_evidence": "w3/w5", "rimloc_current": "morph with pymorphy2 + MorpherApi + dummy providers (commands/morph.rs:6-18, extras/morph.rs:166-266 Case/Plural/Gender); --include-all-versions flag exists; WordInfo capability-aware (extras/wordinfo.rs:19-35, scaffold_case :150)", "rimloc_evidence": "morph/wordinfo read this session", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "NON_GOAL: niches outside positioning; our dicts/flags cover"},
+    {"id": "R19", "competitor": "Remis (Tier B)", "capability": "Full stateless read/render GameAdapter contract + render round-trip gate + output manifest/capability manifest (R1-R6)", "competitor_evidence": "TIERB_ADAPTER_REQUIREMENTS §5.2 R1-R6", "rimloc_current": "plugin-api covers scan only (rimloc-plugin-api/src/lib.rs:5-19); core has AdapterIdentity/SourceEntryId/provenance (canonical.rs:266-294)", "rimloc_evidence": "Tier B doc §5.1 already confirms core coverage", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP Tier B — matters at second game adapter, not this release"},
+    {"id": "R20", "competitor": "MTT (layered glossary), Remis", "capability": "Post-hoc terminology consistency validation of provider output against glossary", "competitor_evidence": "roadmap 20; MTT w3", "rimloc_current": "glossary is prompt-enforced (prompt.rs:16 'apply the provided glossary strictly', injection :101/:117); LLM output validator checks placeholders only (crates/rimloc-llm/src/validator.rs:1-50); deterministic glossary violation check of target absent", "rimloc_evidence": "validator.rs + prompt.rs read this session", "verdict": "REJECT_NOT_PRODUCT_RELEVANT", "reason": "ROADMAP for this release; glossary CRUD/keyword injection shipped"}
+  ],
+  "limitations": [
+    "Competitor binaries were NOT re-run (mandat): all competitor numbers are doc-sourced from wave reports; RimLoc side verified by code reading + executed tests this session",
+    "Edge-trim game semantics (does RimWorld keep InnerText untrimmed) still unverified by running the game — evidence is parser tests + 2 lanes + 4 competitors storing raw text",
+    "GUI surfaces (Compare screen, Source Inspector tabs) verified by code/commit reading, not by launching the app",
+    "Keychain: live behind feature `keychain` (Cargo.toml:27); CLI default build excludes it — release-build feature decision outside this lane",
+    "Chat-batch: implemented halves verified by canonical_no_po E2E tests; batch manager verified absent by grep + mandate reading"
+  ]
+}
