@@ -36,8 +36,9 @@ fn build_mod_filters_multiple_versions_from_root() {
     let out_dir = out.path().join("RimLoc_RU");
 
     let mut cmd = bin_cmd();
+    // --from-root mode: --po is NOT required and NOT allowed (PO-optional
+    // build-mod); the file content was always ignored in this mode.
     cmd.args(["--quiet", "build-mod"]) // simple run, not dry-run
-        .args(["--po", "./test/ok.po"]) // required arg; content ignored when --from-root used
         .args(["--out-mod"])
         .arg(&out_dir)
         .args(["--lang", "ru"]) // lang folder name resolution
@@ -94,7 +95,6 @@ fn build_mod_refuses_nonempty_out_without_merge_flag() {
     let mut cmd = bin_cmd();
     // --ui-lang en: the M6 messages under assertion are localized.
     cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po", "./test/ok.po"])
         .args(["--out-mod"])
         .arg(&out_dir)
         .args(["--lang", "ru"])
@@ -115,7 +115,6 @@ fn build_mod_refuses_nonempty_out_without_merge_flag() {
     let mut cmd = bin_cmd();
     // --ui-lang en: the M6 messages under assertion are localized.
     cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po", "./test/ok.po"])
         .args(["--out-mod"])
         .arg(&out_dir)
         .args(["--lang", "ru"])
@@ -129,7 +128,6 @@ fn build_mod_refuses_nonempty_out_without_merge_flag() {
     let mut cmd = bin_cmd();
     // --ui-lang en: the M6 messages under assertion are localized.
     cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po", "./test/ok.po"])
         .args(["--out-mod"])
         .arg(&out_dir)
         .args(["--lang", "ru"])
@@ -147,4 +145,109 @@ fn build_mod_refuses_nonempty_out_without_merge_flag() {
         out_dir.join("Languages/Russian/Keyed/A.xml").exists(),
         "merge must keep stale files, never clean up"
     );
+}
+
+// ---------------------------------------------------------------------------
+// PO-optional build-mod (mandate §6): exactly one of `--po` / `--from-root`.
+// `--po` used to be a mandatory arg even though its content is ignored in
+// --from-root mode — a fictitious requirement.
+// ---------------------------------------------------------------------------
+
+fn workspace_root() -> PathBuf {
+    // crates/rimloc-cli -> <workspace root>
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_path_buf()
+}
+
+/// Regression: `build-mod --from-root` WITHOUT `--po` must work — the .po
+/// path was never read in root mode, so demanding it was fictitious.
+#[test]
+fn build_mod_from_root_without_po_succeeds() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src = tmp.path().join("src");
+    write_rel(
+        &src,
+        "Languages/Russian/Keyed/A.xml",
+        "<LanguageData><Key>значение</Key></LanguageData>",
+    );
+    let out_dir = tmp.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"])
+        .args(["--from-root"])
+        .arg(&src);
+    cmd.current_dir(workspace_root());
+    cmd.assert().success();
+    assert!(
+        out_dir.join("Languages/Russian/Keyed/A.xml").exists(),
+        "root-mode build must produce the translation XML"
+    );
+}
+
+/// Regression: the PO mode keeps working with `--po` and no `--from-root`.
+#[test]
+fn build_mod_po_without_from_root_succeeds() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let out_dir = tmp.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po", "test/ok.po"])
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"])
+        .arg("--dry-run");
+    cmd.current_dir(workspace_root());
+    cmd.assert().success();
+}
+
+/// `--po` and `--from-root` are mutually exclusive: both is a parse error.
+#[test]
+fn build_mod_po_and_from_root_conflict_is_rejected() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let src = tmp.path().join("src");
+    write_rel(
+        &src,
+        "Languages/Russian/Keyed/A.xml",
+        "<LanguageData><Key>значение</Key></LanguageData>",
+    );
+    let out_dir = tmp.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--po", "test/ok.po"])
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"])
+        .args(["--from-root"])
+        .arg(&src);
+    cmd.current_dir(workspace_root());
+    cmd.assert()
+        .failure()
+        .stderr(predicates::str::contains("cannot be used with"));
+}
+
+/// Neither `--po` nor `--from-root` is a parse error: the source must be
+/// stated explicitly.
+#[test]
+fn build_mod_without_po_and_from_root_is_rejected() {
+    let tmp = tempfile::tempdir().expect("tempdir");
+    let out_dir = tmp.path().join("RimLoc_RU");
+
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
+        .args(["--out-mod"])
+        .arg(&out_dir)
+        .args(["--lang", "ru"]);
+    cmd.current_dir(workspace_root());
+    cmd.assert().failure().stderr(predicates::str::contains(
+        "required arguments were not provided",
+    ));
 }

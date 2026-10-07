@@ -55,6 +55,8 @@ build-done = Мод перевода собран в { $out }
 
 build-out-not-empty = Сборка в непустую папку { $out } отклонена: молчаливое слияние оставило бы устаревшие файлы прошлой сборки, и мёртвые ключи уехали бы в релиз. Удалите папку или передайте --merge, чтобы слить осознанно.
 build-merge-warning = Слияние в непустую папку { $out }: файлы, не созданные этой сборкой, остаются как есть — устаревшие ключи НЕ вычищаются.
+build-po-xor-from-root = build-mod: --po и --from-root взаимоисключающие — укажите ровно один из них.
+build-source-required = build-mod: нужен источник — укажите ровно один из --po или --from-root.
 test-app-started = rimloc app_started маркер
 test-dry-run-marker = DRY-RUN
 validate-po-ok = ✔ Плейсхолдеры в порядке ({ $count } строк)
@@ -142,8 +144,8 @@ import-report-summary = Сводка импорта: создано={ $created }
 help-importpo-only-diff = Записывать только изменённые/новые ключи по файлам (пропускать неизменённые)
 export-xlf-saved = XLIFF сохранён в
 import-xlf-wrote = Записан XML
-help-buildmod-about = Собрать отдельный мод‑перевод из .po файла
-help-buildmod-po = Путь к .po файлу для сборки
+help-buildmod-about = Собрать отдельный мод‑перевод из .po файла или готового дерева Languages (--from-root)
+help-buildmod-po = Путь к .po файлу для сборки (нельзя сочетать с --from-root)
 help-buildmod-out-mod = Путь выходной папки мода
 help-buildmod-lang = Код языка перевода
 help-buildmod-from-root = Собрать из уже существующей структуры Languages/<язык> в этом корне вместо .po

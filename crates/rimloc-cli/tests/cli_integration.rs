@@ -505,8 +505,8 @@ fn build_mod_from_root_newest_version_wins_per_key() {
     let out_dir = out.path().join("RimLoc_RU");
 
     let mut cmd = bin_cmd();
+    // PO-optional build-mod: --from-root mode neither requires nor accepts --po.
     cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po", "./test/ok.po"])
         .args(["--out-mod"])
         .arg(&out_dir)
         .args(["--lang", "ru"])

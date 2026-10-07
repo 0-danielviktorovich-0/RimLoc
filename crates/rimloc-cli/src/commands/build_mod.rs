@@ -5,7 +5,7 @@ use std::io::IsTerminal as _;
 #[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
 pub fn run_build_mod(
-    po: std::path::PathBuf,
+    po: Option<std::path::PathBuf>,
     out_mod: std::path::PathBuf,
     lang: String,
     from_root: Option<std::path::PathBuf>,
@@ -19,6 +19,15 @@ pub fn run_build_mod(
     merge: bool,
     skip_empty: bool,
 ) -> color_eyre::Result<()> {
+    // build-mod source contract: exactly one of `--po` / `--from-root` (both
+    // feed the same `--out-mod`). clap enforces this at parse time; the guard
+    // below keeps direct callers of this API honest too.
+    if from_root.is_some() && po.is_some() {
+        color_eyre::eyre::bail!("{}", crate::tr!("build-po-xor-from-root"));
+    }
+    if from_root.is_none() && po.is_none() {
+        color_eyre::eyre::bail!("{}", crate::tr!("build-source-required"));
+    }
     tracing::debug!(event = "build_mod_args", po = ?po, out_mod = ?out_mod, lang = %lang, from_root = ?from_root, from_game_version = ?from_game_version, name = %name, package_id = %package_id, rw_version = %rw_version, lang_dir = ?lang_dir, dry_run = dry_run, merge = merge, skip_empty = skip_empty);
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let cfg_build = cfg.build.unwrap_or_default();
@@ -105,6 +114,10 @@ pub fn run_build_mod(
         }
         return Ok(());
     }
+
+    // Root mode returned above; here the contract validated at the top
+    // guarantees `--po` is present.
+    let po = po.expect("--po is required when --from-root is absent");
 
     if dry_run {
         let plan = rimloc_services::build_from_po_dry_run(

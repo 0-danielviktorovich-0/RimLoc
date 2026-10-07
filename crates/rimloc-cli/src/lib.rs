@@ -1191,16 +1191,21 @@ enum Analyze {
 
 #[derive(Subcommand, Debug)]
 enum Build {
-    /// Build a standalone translation mod from a .po file (help via FTL).
+    /// Build a standalone translation mod from a .po file or an existing Languages tree (help via FTL).
     BuildMod {
-        #[arg(long)]
-        po: PathBuf,
+        /// Path to the .po file to build from; exactly one of --po / --from-root
+        #[arg(
+            long,
+            required_unless_present = "from_root",
+            conflicts_with = "from_root"
+        )]
+        po: Option<PathBuf>,
         #[arg(long)]
         out_mod: PathBuf,
         #[arg(long)]
         lang: String,
-        /// Optional: build from existing Languages/<lang> under this root instead of a .po
-        #[arg(long)]
+        /// Build from existing Languages/<lang> under this root instead of a .po; exactly one of --po / --from-root
+        #[arg(long, required_unless_present = "po", conflicts_with = "po")]
         from_root: Option<PathBuf>,
         /// Optional filter for --from-root: only include files under these game version subfolders (comma-separated)
         #[arg(long, value_delimiter = ',')]
