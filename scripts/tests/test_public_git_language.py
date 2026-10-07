@@ -30,6 +30,10 @@ class PublicGitLanguageTests(unittest.TestCase):
         self.assertClean("docs(ui): document the UI R1 product contract")
         self.assertClean("fix(parser): preserve wave-shaped source text")
 
+    def test_non_conventional_subjects_fail(self) -> None:
+        self.assertRejected("Update source inspector")
+        self.assertRejected("gui: add source inspector")
+
     def test_internal_protocol_subjects_fail(self) -> None:
         self.assertRejected("docs(review): DO_NOW iteration 1 evidence fixes")
         self.assertRejected("docs(release): close owner-gates")
