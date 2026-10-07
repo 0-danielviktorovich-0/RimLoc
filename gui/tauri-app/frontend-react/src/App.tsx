@@ -25,18 +25,22 @@ import { LanguageManager } from './components/LanguageManager'
 import { t, getLocale, setLocale, type Locale } from './lib/i18n'
 import { useCommandPalette, type PaletteCommand } from './lib/palette'
 
-// Palette commands are pure hash navigations. Labels resolve through t()
-// (audit: RU-литералы не менялись с UI-языком); массив строится фабрикой и
-// держит СТАБИЛЬНУЮ идентичность на смену UI-локали — фильтр-мемо хука и
-// эффект курсора зависят от идентичности списка, пересоздание на каждый
-// рендер сбрасывало бы activeIndex стрелками.
-// Acceptance §3 MUST-FIX #5: маршруты existing/compare/selfloc/diagnostics/
-// providers/lm не были покрыты командами — теперь полный набор.
-// tools УДАЛЁН (W0-решение: нет продуктового определения — LIVE или удалён
-// из навигации; маршрут в Route type остаётся, hash #/tools рендерит
-// fallback как раньше).
-function buildPaletteCommands(): PaletteCommand[] {
-  return [
+// Palette commands: 13 hash navigations (always present — their exact
+// composition without an open project is pinned by palette-acceptance WDIO)
+// plus ACTION commands that appear ONLY with an open project (audit v2 #7,
+// mandate §9): one target-switch command per language from targetLangs and
+// «Open project» (jumps to the workspace of the open project). Labels
+// resolve through t() (audit: RU-литералы не менялись с UI-языком); массив
+// строится фабрикой и держит СТАБИЛЬНУЮ идентичность между рендерами при
+// тех же зависимостях — фильтр-мемо хука и эффект курсора зависят от
+// идентичности списка, пересоздание на каждый рендер сбрасывало бы
+// activeIndex стрелками.
+function buildPaletteCommands(extra: {
+  projectOpen: boolean
+  targetLangs: { localeId: string; nativeName: string }[]
+  targetLocale: string
+}): PaletteCommand[] {
+  const nav: PaletteCommand[] = [
     { id: 'entries', label: t('palette.cmd.entries'), action: () => { window.location.hash = '#/home' } },
     { id: 'projects', label: t('palette.cmd.projects'), action: () => { window.location.hash = '#/projects' } },
     { id: 'checks', label: t('palette.cmd.checks'), action: () => { window.location.hash = '#/checks' } },
@@ -50,6 +54,16 @@ function buildPaletteCommands(): PaletteCommand[] {
     { id: 'providers', label: t('palette.cmd.providers'), action: () => { window.location.hash = '#/providers' } },
     { id: 'lm', label: t('palette.cmd.lm'), action: () => { window.location.hash = '#/lm' } },
     { id: 'settings', label: t('palette.cmd.settings'), action: () => { window.location.hash = '#/settings' } },
+  ]
+  if (!extra.projectOpen) return nav
+  return [
+    ...nav,
+    { id: 'open-project', label: t('palette.cmd.openProject'), action: () => { window.location.hash = '#/workspace' } },
+    ...extra.targetLangs.map((l) => ({
+      id: `target-${l.localeId}`,
+      label: `${t('palette.cmd.target')} ${l.nativeName}`,
+      action: () => projectStore.setTargetLocale(l.localeId),
+    })),
   ]
 }
 
@@ -102,7 +116,25 @@ export function App() {
   // «на следующий роут». Мемо-ключ пересобирает команды палитры с метками
   // активного языка, идентичность между рендерами сохраняется.
   const [uiLocale, setUiLocaleState] = useState<Locale>(getLocale())
-  const paletteCommands = useMemo(buildPaletteCommands, [uiLocale])
+  // Acceptance MUST-FIX #2 (LM↔target): пользовательские языки жили только в
+  // localStorage LM-экрана и не попадали в переключатель цели воркспейса.
+  // Перечитываем при входе на маршрут — LM на своём маршруте мог их изменить.
+  const [userLangs, setUserLangs] = useState<UserLanguage[]>(() => loadUserLanguages())
+  useEffect(() => {
+    setUserLangs(loadUserLanguages())
+  }, [route])
+  const targetLangs = [
+    ...LANGUAGES.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
+    ...userLangs.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
+  ]
+  // Зависимости мемо команд палитры — стабильные между рендерами величины:
+  // локаль UI, факт открытого проекта, активная цель и реестр
+  // пользовательских языков (targetLangs выводится из LANGUAGES + userLangs,
+  // сам массив каждый рендер новый — в депсы не попадает).
+  const paletteCommands = useMemo(
+    () => buildPaletteCommands({ projectOpen: st.snapshot !== null, targetLangs, targetLocale: st.targetLocale }),
+    [uiLocale, st.snapshot !== null, st.targetLocale, userLangs],
+  )
   // Palette state (open/query/activeIndex) lives in the hook — one source of
   // truth for the window keydown contract (Cmd+K, Escape, arrows, Enter).
   const {
@@ -123,18 +155,6 @@ export function App() {
     if (!paletteOpen) return
     document.getElementById(`palette-opt-${activeIndex}`)?.scrollIntoView({ block: 'nearest' })
   }, [paletteOpen, activeIndex])
-
-  // Acceptance MUST-FIX #2 (LM↔target): пользовательские языки жили только в
-  // localStorage LM-экрана и не попадали в переключатель цели воркспейса.
-  // Перечитываем при входе на маршрут — LM на своём маршруте мог их изменить.
-  const [userLangs, setUserLangs] = useState<UserLanguage[]>(() => loadUserLanguages())
-  useEffect(() => {
-    setUserLangs(loadUserLanguages())
-  }, [route])
-  const targetLangs = [
-    ...LANGUAGES.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
-    ...userLangs.map((l) => ({ localeId: l.localeId, nativeName: l.nativeName })),
-  ]
 
   /** Human project label: display name → trimmed id hint. Raw managed ids
    *  never render as user-facing labels (visual critique round 1/2). */

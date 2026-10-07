@@ -336,6 +336,12 @@ const ru: Record<string, string> = {
   'palette.cmd.providers': 'AI-провайдеры',
   'palette.cmd.lm': 'Языки',
   'palette.cmd.settings': 'Настройки',
+  // Команды действий (audit v2 #7): появляются в палитре ТОЛЬКО при открытом
+  // проекте — состав из 13 навигационных команд без проекта зафиксирован
+  // palette-acceptance (WDIO). Метки без «перев», чтобы не задевать
+  // зафиксированный фильтр-тест.
+  'palette.cmd.openProject': 'Открыть проект',
+  'palette.cmd.target': 'Цель:',
 }
 
 const en: Record<string, string> = {
@@ -667,6 +673,8 @@ const en: Record<string, string> = {
   'palette.cmd.providers': 'AI providers',
   'palette.cmd.lm': 'Languages',
   'palette.cmd.settings': 'Settings',
+  'palette.cmd.openProject': 'Open project',
+  'palette.cmd.target': 'Target:',
 }
 
 let locale: Locale = 'ru'
