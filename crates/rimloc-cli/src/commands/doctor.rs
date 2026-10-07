@@ -2,9 +2,9 @@
 //! NOT CHECKED statuses and remediation hints (gate L observability).
 //!
 //! Checks are deliberately secret-free: provider configuration is reported
-//! as presence only (env var set or not), never values. The CLI build does
-//! not compile the keychain feature, so the doctor probes env vars and
-//! points at the keychain as a remediation instead of reading it.
+//! as presence only (env var set or not), never values. The keychain is not
+//! enumerated: the doctor probes env vars and points at the keychain as a
+//! remediation instead of reading it.
 //!
 //! The output-writability probe refuses destinations inside the game or mod
 //! trees (canonicalized, so symlink aliases are caught) BEFORE any mkdir or
@@ -222,7 +222,7 @@ fn provider_config_status(env_lookup: &dyn Fn(&str) -> Option<String>) -> Check 
         Check::ok(
             "provider_config",
             format!(
-                "configured via env (presence only): {}; keychain entries (service `rimloc-llm`) are not probed by the CLI build",
+                "configured via env (presence only): {}; keychain entries (service `rimloc-llm`) are not enumerated by this check",
                 configured.join(", ")
             ),
         )

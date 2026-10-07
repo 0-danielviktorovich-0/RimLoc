@@ -55,6 +55,8 @@ build-done = Мод перевода собран в { $out }
 
 build-out-not-empty = Сборка в непустую папку { $out } отклонена: молчаливое слияние оставило бы устаревшие файлы прошлой сборки, и мёртвые ключи уехали бы в релиз. Удалите папку или передайте --merge, чтобы слить осознанно.
 build-merge-warning = Слияние в непустую папку { $out }: файлы, не созданные этой сборкой, остаются как есть — устаревшие ключи НЕ вычищаются.
+build-po-xor-from-root = build-mod: --po и --from-root взаимоисключающие — укажите ровно один из них.
+build-source-required = build-mod: нужен источник — укажите ровно один из --po или --from-root.
 test-app-started = rimloc app_started маркер
 test-dry-run-marker = DRY-RUN
 validate-po-ok = ✔ Плейсхолдеры в порядке ({ $count } строк)
@@ -142,8 +144,8 @@ import-report-summary = Сводка импорта: создано={ $created }
 help-importpo-only-diff = Записывать только изменённые/новые ключи по файлам (пропускать неизменённые)
 export-xlf-saved = XLIFF сохранён в
 import-xlf-wrote = Записан XML
-help-buildmod-about = Собрать отдельный мод‑перевод из .po файла
-help-buildmod-po = Путь к .po файлу для сборки
+help-buildmod-about = Собрать отдельный мод‑перевод из .po файла или готового дерева Languages (--from-root)
+help-buildmod-po = Путь к .po файлу для сборки (нельзя сочетать с --from-root)
 help-buildmod-out-mod = Путь выходной папки мода
 help-buildmod-lang = Код языка перевода
 help-buildmod-from-root = Собрать из уже существующей структуры Languages/<язык> в этом корне вместо .po
@@ -275,6 +277,16 @@ translate-applied = Применено интентов: { $applied }, откл�
 translate-json-saved = Канонический отчёт сохранён в { $path }
 translate-po-saved = Переведённый PO сохранён в { $path }
 translate-summary = Переведено={ $translated }, с ошибками={ $failed }, уже готово={ $skipped }
+
+# provider-test
+help-providertest-about = Проверка соединения с провайдером одним крошечным запросом: эндпоинт, ключ и модель (mock работает офлайн)
+help-providertest-provider = Провайдер: mock | anthropic | openai | zai | ollama
+help-providertest-model = Имя модели (иначе берётся пресет провайдера; для OpenAI-совместимых определяется автоматически, если сервер отдаёт список)
+help-providertest-base-url = Базовый URL для OpenAI-совместимого провайдера
+help-providertest-key-env = Имя переменной окружения с API-ключом (иначе keychain/auto)
+provider-test-probing = Проверяю провайдера { $provider } (реальный запрос; mock работает офлайн)…
+provider-test-ok = Провайдер { $provider } в порядке — модель { $model }, эндпоинт { $endpoint }
+provider-test-failed = Проверка провайдера { $provider } ПРОВАЛЕНА: { $error }
 
 # compare
 help-compare-about = Сравнить переводы с источником и между собой

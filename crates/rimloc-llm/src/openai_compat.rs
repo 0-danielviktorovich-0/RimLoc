@@ -15,19 +15,24 @@ pub struct OpenAiCompatProvider {
     client: reqwest::blocking::Client,
 }
 
-/// Ask a local OpenAI-compatible server for its first installed model id
-/// (used so `--provider ollama` works without knowing model names).
-pub fn first_installed_model(base_url: &str) -> Option<String> {
+/// Ask an OpenAI-compatible server for its first installed model id
+/// (used so `--provider ollama` — and any OpenAI-compatible preset — works
+/// without knowing model names). Bounded and best-effort: an unreachable
+/// endpoint or an unexpected payload just yields `None`.
+pub fn first_installed_model(base_url: &str, key: Option<&str>) -> Option<String> {
     let url = format!("{}/models", base_url.trim_end_matches('/'));
-    let v: serde_json::Value = reqwest::blocking::Client::builder()
+    let mut rb = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
         .ok()?
-        .get(url)
-        .send()
-        .ok()?
-        .json()
-        .ok()?;
+        .get(url);
+    // Some hosted endpoints (e.g. api.openai.com/v1/models) require auth
+    // even for listing; pass the resolved key when there is one. It is only
+    // sent as a bearer header — never logged.
+    if let Some(k) = key {
+        rb = rb.bearer_auth(k);
+    }
+    let v: serde_json::Value = rb.send().ok()?.json().ok()?;
     v["data"]
         .as_array()?
         .iter()
@@ -85,6 +90,16 @@ impl OpenAiCompatProvider {
                 .map(std::time::Duration::from_secs)
                 .unwrap_or(std::time::Duration::from_secs(10));
             return Err(LlmError::RateLimited(self.id.clone(), after));
+        }
+        // 5xx is a provider-side transient: classified before the JSON parse
+        // (error bodies here are often HTML from gateways, not JSON).
+        if status.is_server_error() {
+            let body = resp.text().unwrap_or_default();
+            return Err(LlmError::ServerError {
+                provider: self.id.clone(),
+                status: status.as_u16(),
+                message: crate::summarize_body(&body),
+            });
         }
         let json: serde_json::Value = resp.json().map_err(LlmError::Http)?;
         if !status.is_success() {

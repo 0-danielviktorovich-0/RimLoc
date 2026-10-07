@@ -10,6 +10,7 @@ pub mod lang_update;
 pub mod learn_defs;
 pub mod learn_patches;
 pub mod morph;
+pub mod provider_test;
 pub mod scan;
 pub mod schema;
 pub mod translate;

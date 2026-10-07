@@ -62,6 +62,23 @@ export function useLanguageManager() {
     saveUserLanguages(next)
   }, [user])
 
+  /** U in CRUD (audit v2): rename a user language's display/native names.
+   *  localeId and rimworldFolder are identity — immutable here. An empty
+   *  input keeps the previous value (never blanks a stored name). */
+  const updateUser = useCallback((localeId: string, displayName: string, nativeName: string): void => {
+    const next = user.map((l) =>
+      l.localeId === localeId
+        ? {
+            ...l,
+            displayName: displayName.trim() || l.displayName,
+            nativeName: nativeName.trim() || l.nativeName,
+          }
+        : l,
+    )
+    setUser(next)
+    saveUserLanguages(next)
+  }, [user])
+
   const allLanguages = useMemo(
     () => [
       ...BUILTIN_LANGUAGES.map((l) => ({
@@ -80,5 +97,5 @@ export function useLanguageManager() {
     [user],
   )
 
-  return { user, allLanguages, addUser, removeUser }
+  return { user, allLanguages, addUser, updateUser, removeUser }
 }

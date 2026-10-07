@@ -9,6 +9,7 @@ import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, FileCode2, Folder
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
 import { clientInstance } from '../lib/client/instance'
+import { SOURCE_LOCALE } from '../lib/languages/registry'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
 
@@ -154,6 +155,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             sourceFile={selected.sourceFile}
             sourceLine={selected.sourceLine}
             selectedBy={selected.selectedBy}
+            sourceLabel={folderForm(SOURCE_LOCALE)}
+            targetLabel={folderForm(st.targetLocale)}
             onDraft={(v) => projectStore.setDraft(selected.key, v)}
             onCommit={(next) => void projectStore.commit(selected.key, next)}
             onMove={(d) => {
@@ -237,6 +240,10 @@ function EntryEditor(props: {
   sourceFile?: string
   sourceLine?: number
   selectedBy?: string
+  // Локали-бейджи из состояния проекта (audit v2 #3): folder-форма реестра
+  // вместо жёстких EN/RU-литералов.
+  sourceLabel: string
+  targetLabel: string
   onDraft: (v: string) => void
   onCommit: (next: boolean) => void
   onMove: (d: number) => void
@@ -269,12 +276,12 @@ function EntryEditor(props: {
         </div>
         <div className="label-line">
           <span>{t('ws.source')}</span>
-          <span className="locale">EN</span>
+          <span className="locale">{props.sourceLabel}</span>
         </div>
         <div className="source-block">{props.source}</div>
         <div className="label-line">
           <label htmlFor="translation">{t('ws.translation')}</label>
-          <span className="locale">RU</span>
+          <span className="locale">{props.targetLabel}</span>
         </div>
         <textarea
           id="translation"

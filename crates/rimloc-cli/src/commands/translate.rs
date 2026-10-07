@@ -6,6 +6,7 @@
 //! command output is a versioned canonical JSON report. `--emit-po` keeps
 //! the legacy adapter artifact for old pipelines (import-po/build-mod).
 
+use rimloc_llm::provider::Provider;
 use rimloc_llm::{
     glossary::Glossary, mock::MockProvider, provider::ProviderPreset, EngineOptions, KeySource,
     TranslationEngine,
@@ -123,8 +124,6 @@ pub fn run_translate(
     key_env: Option<String>,
     emit_po: bool,
 ) -> color_eyre::Result<()> {
-    use rimloc_llm::provider::Provider;
-
     let cfg = rimloc_config::load_config().unwrap_or_default();
     let effective_version = cfg.game_version.clone();
 
@@ -186,42 +185,7 @@ pub fn run_translate(
 
     // 3) Provider. `mock` needs no key; real providers resolve keys from
     //    keychain/env at call time and never log them.
-    let key_source = match &key_env {
-        Some(name) => KeySource::Env(name.clone()),
-        None => KeySource::Auto,
-    };
-    let presets = rimloc_llm::provider::builtin_presets();
-    let engine_provider: Box<dyn Provider> = match provider.as_str() {
-        "mock" => Box::new(MockProvider::new()),
-        "anthropic" => Box::new(rimloc_llm::anthropic::AnthropicProvider::new(
-            model.unwrap_or_else(|| presets["anthropic"].model.clone()),
-            key_source,
-        )),
-        id @ ("openai" | "zai" | "ollama") => {
-            let mut preset: ProviderPreset = presets[id].clone();
-            if let Some(m) = model {
-                preset.model = m;
-            } else if id == "ollama" {
-                // Local server: auto-detect the first installed model.
-                if let Some(u) = preset.base_url.as_deref() {
-                    if let Some(detected) = rimloc_llm::openai_compat::first_installed_model(u) {
-                        preset.model = detected;
-                    }
-                }
-            }
-            if let Some(u) = base_url {
-                preset.base_url = Some(u);
-            }
-            Box::new(
-                rimloc_llm::openai_compat::OpenAiCompatProvider::from_preset(&preset, key_source),
-            )
-        }
-        other => {
-            return Err(color_eyre::eyre::eyre!(
-                "unknown provider `{other}` (expected: mock, anthropic, openai, zai, ollama)"
-            ))
-        }
-    };
+    let engine_provider = build_provider(&provider, model, base_url, key_env)?;
 
     // The target locale in the RimWorld folder contract — the form the
     // canonical session (and every export path) requires.
@@ -461,6 +425,63 @@ pub fn run_translate(
         std::process::exit(2);
     }
     Ok(())
+}
+
+/// Provider construction shared by `translate` and `provider-test`:
+/// preset lookup, model override, bounded best-effort model discovery for
+/// EVERY OpenAI-compatible endpoint (`GET /models` — the run falls back to
+/// the preset model when the server does not expose it), `--base-url`
+/// override applied BEFORE discovery (so the probe hits the URL the run
+/// will actually call), and key-source selection. Never logs or embeds the
+/// API key.
+pub(crate) fn build_provider(
+    provider: &str,
+    model: Option<String>,
+    base_url: Option<String>,
+    key_env: Option<String>,
+) -> color_eyre::Result<Box<dyn Provider>> {
+    let key_source = match &key_env {
+        Some(name) => KeySource::Env(name.clone()),
+        None => KeySource::Auto,
+    };
+    let presets = rimloc_llm::provider::builtin_presets();
+    let p: Box<dyn Provider> = match provider {
+        "mock" => Box::new(MockProvider::new()),
+        "anthropic" => Box::new(rimloc_llm::anthropic::AnthropicProvider::new(
+            model.unwrap_or_else(|| presets["anthropic"].model.clone()),
+            key_source,
+        )),
+        id @ ("openai" | "zai" | "ollama") => {
+            let mut preset: ProviderPreset = presets[id].clone();
+            if let Some(u) = base_url {
+                preset.base_url = Some(u);
+            }
+            if let Some(m) = model {
+                preset.model = m;
+            } else if let Some(u) = preset.base_url.clone() {
+                // No explicit model: ask the server (bounded 10s probe). The
+                // resolved key is passed so auth-gated /models endpoints work.
+                let key = rimloc_llm::provider::resolve_key(&key_source, id).unwrap_or(None);
+                match rimloc_llm::openai_compat::first_installed_model(&u, key.as_deref()) {
+                    Some(detected) => preset.model = detected,
+                    None => tracing::debug!(
+                        provider = id,
+                        base_url = %u,
+                        "model discovery via GET /models unavailable; using preset model"
+                    ),
+                }
+            }
+            Box::new(
+                rimloc_llm::openai_compat::OpenAiCompatProvider::from_preset(&preset, key_source),
+            )
+        }
+        other => {
+            return Err(color_eyre::eyre::eyre!(
+                "unknown provider `{other}` (expected: mock, anthropic, openai, zai, ollama)"
+            ))
+        }
+    };
+    Ok(p)
 }
 
 /// The shared canonical managed-projects store: the SAME default the GUI

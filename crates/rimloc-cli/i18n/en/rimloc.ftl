@@ -62,6 +62,8 @@ build-done = Translation mod built at { $out }
 
 build-out-not-empty = Refusing to build into the non-empty directory { $out }: a silent merge would keep stale files from a previous build and ship dead keys. Remove the directory, or pass --merge to consciously merge into it.
 build-merge-warning = Merging into the non-empty directory { $out }: files not produced by this build are kept as-is — stale keys are NOT cleaned up.
+build-po-xor-from-root = build-mod: --po and --from-root are mutually exclusive — pass exactly one of them.
+build-source-required = build-mod: a source is required — pass exactly one of --po or --from-root.
 
 # === test-only markers (for integration tests) ===
 test-app-started = rimloc app_started marker
@@ -191,8 +193,8 @@ export-xlf-saved = XLIFF saved to
 import-xlf-wrote = Wrote XML
 
 # build-mod
-help-buildmod-about = Build a standalone translation mod from a .po file
-help-buildmod-po = Path to .po file to build from
+help-buildmod-about = Build a standalone translation mod from a .po file or an existing Languages tree (--from-root)
+help-buildmod-po = Path to the .po file to build from (cannot be combined with --from-root)
 help-buildmod-out-mod = Output mod folder path
 help-buildmod-lang = Language code of the translation
 help-buildmod-from-root = Build from existing Languages/<lang> under this root instead of a .po
@@ -346,6 +348,16 @@ translate-applied = Applied { $applied } intents, refused { $refused }
 translate-json-saved = Canonical results saved to { $path }
 translate-po-saved = Translated PO saved to { $path }
 translate-summary = Translated={ $translated }, failed={ $failed }, already-done={ $skipped }
+
+# provider-test
+help-providertest-about = Probe a provider connection with one tiny request: endpoint, auth and model (mock is offline)
+help-providertest-provider = Provider: mock | anthropic | openai | zai | ollama
+help-providertest-model = Model name (defaults to the provider preset; auto-detected for OpenAI-compatible endpoints when supported)
+help-providertest-base-url = Base URL for OpenAI-compatible providers
+help-providertest-key-env = Env var name holding the API key (otherwise keychain/auto)
+provider-test-probing = Probing provider { $provider } (real request; mock is offline)…
+provider-test-ok = Provider { $provider } OK — model { $model }, endpoint { $endpoint }
+provider-test-failed = Provider { $provider } connection FAILED: { $error }
 
 # compare
 help-compare-about = Compare translations against the source and each other

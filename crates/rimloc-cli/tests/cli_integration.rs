@@ -505,8 +505,8 @@ fn build_mod_from_root_newest_version_wins_per_key() {
     let out_dir = out.path().join("RimLoc_RU");
 
     let mut cmd = bin_cmd();
+    // PO-optional build-mod: --from-root mode neither requires nor accepts --po.
     cmd.args(["--quiet", "--ui-lang", "en", "build-mod"])
-        .args(["--po", "./test/ok.po"])
         .args(["--out-mod"])
         .arg(&out_dir)
         .args(["--lang", "ru"])
@@ -2813,5 +2813,49 @@ fn scan_honors_game_version_under_numeric_workshop_id_root() {
     assert!(
         !out.contains("From16"),
         "1.6 content must not leak into a --game-version 1.5 scan, got: {out}"
+    );
+}
+
+#[test]
+fn provider_test_mock_succeeds_offline() {
+    // The previously dead Provider::test_connection is now reachable from
+    // the CLI; `mock` exercises the full command path without network/keys.
+    // The model id is locale-independent, so the assertion survives any
+    // system UI language.
+    let mut cmd = bin_cmd();
+    cmd.args(["--quiet", "provider-test", "--provider", "mock"]);
+    let assert = cmd.assert().success();
+    let stdout = String::from_utf8_lossy(assert.get_output().stdout.as_ref()).to_string();
+    assert!(
+        stdout.contains("mock-1"),
+        "provider-test must report the model, got: {stdout}"
+    );
+}
+
+#[test]
+fn provider_test_unreachable_endpoint_exits_nonzero() {
+    // Loopback port 9: connection refused immediately — deterministic and
+    // network-free. --model skips discovery; --key-env points at a var that
+    // is never set so the probe never touches the real OS keychain. The
+    // failure line names the provider regardless of UI locale.
+    let mut cmd = bin_cmd();
+    cmd.args([
+        "--quiet",
+        "provider-test",
+        "--provider",
+        "ollama",
+        "--base-url",
+        "http://127.0.0.1:9/v1",
+        "--model",
+        "qwen3",
+        "--key-env",
+        "RIMLOC_PROVIDER_TEST_NO_SUCH_KEY",
+    ])
+    .env_remove("RIMLOC_PROVIDER_TEST_NO_SUCH_KEY");
+    let assert = cmd.assert().failure();
+    let stderr = String::from_utf8_lossy(assert.get_output().stderr.as_ref()).to_string();
+    assert!(
+        stderr.contains("ollama"),
+        "failure must name the provider, got: {stderr}"
     );
 }
