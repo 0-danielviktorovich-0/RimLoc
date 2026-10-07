@@ -25,7 +25,8 @@
   ],
   "StatDef": [
     "label",
-    "description"
+    "description",
+    "formatString"
   ],
   "RecordDef": [
     "label",
@@ -72,7 +73,9 @@
   "HediffDef": [
     "label",
     "labelNoun",
-    "description"
+    "description",
+    "stages.li.label",
+    "stages.li.description"
   ],
   "TraitDef": [
     "label",
@@ -96,25 +99,25 @@
     "description"
   ],
   "JobDef": [
+    "label",
+    "description",
     "reportString",
     "gerundLabel"
   ],
   "ThoughtDef": [
     "label",
-    "description"
+    "description",
+    "stages.li.label",
+    "stages.li.description"
   ],
   "IncidentDef": [
     "letterLabel",
-    "letterText"
+    "letterText",
+    "label"
   ],
   "ResearchProjectDef": [
     "label",
     "description"
-  ],
-  "JobDef": [
-    "label",
-    "description",
-    "reportString"
   ],
   "TerrainDef": [
     "label",
@@ -122,16 +125,6 @@
   ],
   "RulePackDef": [
     "rulesStrings.li"
-  ],
-  "HediffDef": [
-    "stages.li.label",
-    "stages.li.description"
-  ],
-  "ThoughtDef": [
-    "label",
-    "description",
-    "stages.li.label",
-    "stages.li.description"
   ],
   "BackstoryDef": [
     "title",
@@ -184,7 +177,11 @@
   ],
   "MentalStateDef": [
     "label",
-    "description"
+    "description",
+    "baseInspectLine",
+    "beginLetter",
+    "beginLetterLabel",
+    "recoveryMessage"
   ],
   "RoyalTitleDef": [
     "label",
@@ -194,7 +191,9 @@
   ],
   "WorkGiverDef": [
     "label",
-    "description"
+    "description",
+    "verb",
+    "gerund"
   ],
   "ThingCategoryDef": [
     "label",
@@ -235,5 +234,8 @@
   "PawnRelationDef": [
     "label",
     "description"
+  ],
+  "KeyBindingDef": [
+    "label"
   ]
 }
