@@ -29,6 +29,14 @@ updates:
       react-frontend:
         patterns:
           - "*"
+    # TypeScript 7 — переписанный компилятор (tsgo): миграция всего фронтенда
+    # на RC-пороге = риск без выгоды. Остальные мажоры группы #75 (lucide 1.x,
+    # react-resizable-panels 4, vite 8, plugin-react 6) мигрированы вручную
+    # на ветке chore/dep-resolution (2026-10-07).
+    # Пересмотр: после stable-релиза TS 7 (не RC), ориентир — 2026-12-01.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     labels: [dependencies, gui, react]
     commit-message:
       prefix: deps
@@ -43,6 +51,13 @@ updates:
       svelte-fallback:
         patterns:
           - "*"
+    # frontend-v2 — замороженный legacy fallback ТОЛЬКО для WDIO (решение
+    # владельца, 2026-10-07): security-миноры/патчи принимает, мажоры — нет.
+    # Группа #73 (vite-plugin-svelte 7, typescript 7, vite 8) — supersede.
+    # Пересмотр политики: 2027-01-07 (квартальный) либо при снятии заморозки.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     labels: [dependencies, gui]
     commit-message:
       prefix: deps

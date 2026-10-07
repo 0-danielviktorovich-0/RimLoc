@@ -3,7 +3,7 @@
 // list is virtualized from day one (mandate §24/§27 — the prototype had
 // neither panes nor virtualization).
 import { useMemo, useRef, useState } from 'react'
-import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels'
+import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, Braces, Check, ChevronDown, Copy, FileCode2, FolderOpen, ListFilter, RotateCcw, Save, Search } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
@@ -21,6 +21,12 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const [filter, setFilter] = useState<'all' | 'empty' | 'issues'>('all')
   const [kindFilter, setKindFilter] = useState<string>('all')
   const [treeOpen, setTreeOpen] = useState(true)
+  // react-resizable-panels v4: `autoSaveId` replaced by the useDefaultLayout
+  // hook — same localStorage persistence for the pane split, new API shape.
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({
+    id: 'rimloc-ws-panes',
+    storage: window.localStorage,
+  })
 
   const kindGroups = useMemo(() => {
     const m = new Map<string, number>()
@@ -66,8 +72,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         {st.lastError}
       </div>
       <div className="ws-panes">
-        <PanelGroup direction="horizontal" autoSaveId="rimloc-ws-panes">
-        <Panel minSize={30} defaultSize={66}>
+        <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
+        <Panel id="ws-left" minSize="30%" defaultSize="66%">
         <div className="ws-center">
         <aside className="file-tree" data-testid="ws.tree">
           <div className="pane-title">
@@ -141,8 +147,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         </section>
         </div>
         </Panel>
-        <PanelResizeHandle className="ws-handle" aria-label={t('ws.resize')} />
-        <Panel minSize={22} defaultSize={34}>
+        <Separator className="ws-handle" aria-label={t('ws.resize')} />
+        <Panel id="ws-right" minSize="22%" defaultSize="34%">
         {/* RIGHT — editor */}
         {selected && (
           <EntryEditor
@@ -167,7 +173,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
           />
         )}
         </Panel>
-        </PanelGroup>
+        </Group>
       </div>
       <div className="ws-footer">
         <button onClick={onBack}>{t('ws.backHome')}</button>
