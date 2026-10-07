@@ -174,7 +174,7 @@ async function activeElementInfo(): Promise<string> {
 // the R2 chat-batch lane added «Чат-перевод (без API)» — the composition
 // test below expects exactly this list (14).
 const COMMANDS: Array<{ label: string; hash: string; marker?: string }> = [
-  { label: 'Строки перевода', hash: '#/home', marker: '[data-testid="wizard.open"]' },
+  { label: 'Строки перевода', hash: '#/workspace', marker: '[data-testid="ws.root"]' }, // с открытым проектом ведёт в строки (честный label), без — на home
   { label: 'Проекты', hash: '#/projects', marker: '[data-testid="wizard.open"]' },
   { label: 'Проверки', hash: '#/checks', marker: '[data-testid="checks.findings"], [data-testid="checks.rerun"], .narrow-page .btn-primary[href="#/home"]' },
   { label: 'Импорт существующего перевода', hash: '#/existing', marker: '[data-testid="ex.dir"], [data-testid="ex.error"], .narrow-page .btn-primary[href="#/home"]' },
