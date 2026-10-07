@@ -206,3 +206,20 @@ ensure_writable_output_path, PO-# refusal) покрывает синки; H2-г�
 верифицированы adversarial-тестами (`write_guard_adversarial`,
 `ifmodactive_corpus`). Дисми́ссы по одному через API с сылкой на этот раздел,
 не bulk.
+
+## 10. R3-интеграция (2026-10-07, SHA 41c63e0): 10 новых High, все DISMISSED_WITH_EVIDENCE
+
+Контекст: default setup CodeQL работает БЕЗ привязанного репо-конфига
+(default-setup API: `config_file_path: null`; привязка требует скоупа
+security_events, которого у токена нет) — поэтому paths-ignore
+`gui/tauri-app/vendor/**` не отсекают вендорный код, и в скан попал новый
+vendor-форк tauri-utils (C6) и dev-тулинг.
+
+| # | Место | Класс | Обоснование |
+|---|-------|-------|-------------|
+| 321-327 | vendor/tauri-utils-2.10.1-nfs-appledouble/{acl/build.rs:143,199,427, config/parse.rs:281,394, resources.rs:369,370} | VENDOR | Скопированный upstream tauri-utils 2.10.1 (один функциональный фильтр `._` в define_permissions, файлы байт-в-байт upstream); пути строятся из конфига приложения, выбираемого оператором; идентично классу «patched upstream — не RimLoc-owned» (решение #83). Отсюда же: при привязке конфига к default setup эти пути уходят в paths-ignore автоматически |
+| 318-320 | testlab/reviewer/sanitize-packet.py:87-93 | DEV_TOOL | `sys.argv[1]`/rglob → read_text: путь выбирает оператор на своей машине, недоверенного источника нет; testlab вне shipping (paths-ignore testlab/** в конфиге — там же причина) |
+
+Санитайзер-фейл-клозд и вендорный фильтр верифицированы живьём (пакет
+2305d56: 16 файлов PASS; сборка C6: exit 0 без DMG-стадии). Дисми́ссы по
+одному, не bulk.
