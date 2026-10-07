@@ -147,6 +147,26 @@ impl ProjectSessionManager {
         &self.managed_root
     }
 
+    /// Crate-internal read seam for sibling feature modules (chat_batch):
+    /// run `f` against the LIVE trusted state of one open project under its
+    /// session lock. Read-only by construction — every mutation still goes
+    /// through the public mutating seams (`apply` and friends), never here.
+    pub(crate) fn with_live_project<R>(
+        &self,
+        project_id: &str,
+        f: impl FnOnce(SessionEpoch, Revision, &Project) -> Result<R, ContractError>,
+    ) -> Result<R, ContractError> {
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        f(st.epoch, st.revision, &st.project)
+    }
+
     /// The managed file for a project id. FAIL-CLOSED: the id must match
     /// the mint form (`proj-<a-z0-9->`) — client-supplied strings with `/`,
     /// `..`, dots or absolute prefixes are rejected as a typed contract

@@ -309,3 +309,25 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .cmp-table > div > span { min-width: 0; overflow-wrap: anywhere; }
 .cmp-table .cmp-path { font-size: 8px; color: var(--muted-foreground); overflow-wrap: anywhere; }
 .cmp-table .cmp-source-line { display: block; margin-top: 5px; font-size: 9px; color: var(--muted-foreground); }
+
+/* Chat batch (external-AI workflow WITHOUT an API): selection checkboxes /
+   status badge / prompt + response affordances. Glossary-table chrome for
+   the entry and preview tables; the badge colors carry the status. */
+.cb-status { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 10px; border-radius: 999px; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid var(--border); color: var(--muted-foreground); white-space: nowrap; }
+.cb-status-exported { border-color: color-mix(in oklch, var(--accent) 55%, transparent); color: var(--accent); }
+.cb-status-imported { border-color: color-mix(in oklch, var(--accent) 55%, transparent); color: var(--accent); }
+.cb-status-stale { border-color: color-mix(in oklch, var(--destructive) 55%, transparent); color: var(--destructive); }
+.cb-status-done { border-color: var(--color-success, #2e7d32); color: var(--color-success, #2e7d32); }
+.cb-selection { margin-bottom: 20px; }
+.cb-selection .entry-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.cb-selection .entry-filters button { font-size: 10px; height: 30px; }
+.cb-selection .entry-filters .btn-primary { margin-left: auto; }
+.cb-entry-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.cb-entry-row > span { min-width: 0; overflow-wrap: anywhere; font-size: 11px; }
+.cb-entry-row > code { min-width: 0; overflow-wrap: anywhere; font-size: 9px; color: var(--muted-foreground); }
+.cb-entry-row:hover { background: color-mix(in oklch, var(--accent) 8%, transparent); }
+.cb-step { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+.cb-step .import-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cb-step .import-actions button { font-size: 10px; height: 33px; }
+.cb-step textarea { width: 100%; min-height: 110px; font-size: 11px; font-family: var(--font-mono); }
+.cb-preview-table > div { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }

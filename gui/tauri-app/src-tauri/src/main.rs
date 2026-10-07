@@ -3131,6 +3131,13 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "contract_provider_instance_validate",
     // Compare screen (version diff): read-only diff of two mod roots.
     "contract_version_diff",
+    // Chat batch (external-AI workflow WITHOUT an API): select → export
+    // prompt → paste response → strict parse → preview → guarded apply.
+    "contract_chat_batch_create",
+    "contract_chat_batch_export",
+    "contract_chat_batch_import",
+    "contract_chat_batch_status",
+    "contract_chat_batch_apply",
     // safe read-only legacy extras
     "get_app_info",
     // build identity of the running binary (soak-hardening §1) — read-only
@@ -3902,6 +3909,12 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
             // Compare screen (version diff): read-only diff of two mod roots.
             rimloc_gui_lib::contract_adapter::contract_version_diff,
+            // Chat batch (external-AI workflow WITHOUT an API).
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_create,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_export,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_import,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_status,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_apply,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -3984,6 +3997,12 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
             // Compare screen (version diff): read-only diff of two mod roots.
             rimloc_gui_lib::contract_adapter::contract_version_diff,
+            // Chat batch (external-AI workflow WITHOUT an API).
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_create,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_export,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_import,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_status,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_apply,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,

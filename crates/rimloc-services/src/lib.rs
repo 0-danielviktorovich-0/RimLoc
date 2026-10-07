@@ -7,6 +7,7 @@ pub use rimloc_validate::ValidationMessage;
 
 pub mod build;
 pub mod canonical_bridge;
+pub mod chat_batch;
 pub mod contract;
 pub mod contribution;
 pub mod eligibility_engine;
@@ -37,6 +38,7 @@ pub use build::{
     build_from_po_dry_run, build_from_po_execute, build_from_po_with_progress, build_from_root,
     build_from_root_with_progress, BuildPlan,
 };
+pub use chat_batch::{build_chat_prompt, chat_batch_source_hash};
 pub use contract::{
     capability_report, ui_contract_version, ApplyExistingRequest, ApplyExistingResponse,
     ApplyIntentsRequest, ApplyIntentsResponse, Capability, CapabilityReport, ContractError,
