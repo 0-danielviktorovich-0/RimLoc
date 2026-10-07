@@ -62,10 +62,10 @@ jobs:
         with:
           languages: rust, javascript-typescript, actions, python
           config-file: .github/codeql/codeql-config.yml
-          build-mode: manual
 
-      # Rust-экстракция идёт из реальной компиляции: workspace целиком, включая gui.
-      - name: Manual build for Rust extraction
+      # Rust-экстрактор (build-mode none) трейсит реальную компиляцию: workspace
+      # целиком, включая gui-крейт — поэтому gtk-депы и dist стоят ДО этого шага.
+      - name: Build workspace for Rust extraction
         run: cargo build --workspace --all-features
 
       - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2 (pinned 2026-10-07)
