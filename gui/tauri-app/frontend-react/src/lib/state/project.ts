@@ -10,6 +10,7 @@ import type {
   TranslationIntentDto,
 } from '../client/types'
 import { clientInstance } from '../client/instance'
+import { folderForm } from '../languages/folderForm'
 
 export interface WorkspaceEntry {
   /** FULL structural identity — intents address entries by exact match. */
@@ -110,7 +111,12 @@ function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[]
   for (const tr of snap.project.translations) {
     const hit = byKey.get(tr.source_id.key)
     if (!hit) continue
-    if (tr.locale === locale) {
+    // Locale forms: the store keeps the registry id ('ru'), while every
+    // contract write path persists the strict folder form ('Russian' —
+    // P1-2). Match both so folder-form applies (chat-batch, existing-import,
+    // provider translate) display on a fresh open; the raw form stays
+    // matched for legacy corpora written before the folder-form wave.
+    if (tr.locale === locale || tr.locale === folderForm(locale)) {
       hit.target = tr.text ?? ''
       hit.completeness = tr.completeness
       hit.review = tr.review
@@ -203,7 +209,11 @@ export const projectStore = {
     if (!snap || !entry || draft === undefined) return false
     const intent: TranslationIntentDto = {
       entry: entry.identity,
-      locale: state.targetLocale,
+      // Folder contract (P1-2): every session.apply write persists the
+      // strict language-folder form ('Russian'), same as chat-batch,
+      // existing-import and the export/build calls — the raw registry id
+      // ('ru') would split the translation corpus into a dead locale.
+      locale: folderForm(state.targetLocale),
       action: 'set_translation',
       text: draft,
     }
