@@ -45,7 +45,11 @@ pub fn run_export_po(
     // (documented offline-superset policy, same as the scan command).
     let loadfolders_mod = !include_all_versions && root.join("LoadFolders.xml").is_file();
     let (scan_root, selected_version, keyed_units) = if loadfolders_mod {
-        let view = rimloc_services::modview::effective_view(&root, effective_version.as_deref())?;
+        // No active-mod context on the export path: conditional (IfModActive*)
+        // languages dirs are NOT guessed into the view — same contract as the
+        // scan pipeline. Plain version/root languages dirs are unaffected.
+        let view =
+            rimloc_services::modview::effective_view(&root, effective_version.as_deref(), None)?;
         let mut units: Vec<rimloc_core::TransUnit> = Vec::new();
         let mut seen: std::collections::HashSet<(String, String)> =
             std::collections::HashSet::new();

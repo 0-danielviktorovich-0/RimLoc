@@ -776,21 +776,25 @@ pub fn scan_units_effective(
     requested_version: Option<&str>,
     dict: &HashMap<String, Vec<String>>,
     extra_fields: &[String],
+    active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<Vec<TransUnit>> {
-    Ok(scan_units_effective_full(root, requested_version, dict, extra_fields)?.units)
+    Ok(scan_units_effective_full(root, requested_version, dict, extra_fields, active_mods)?.units)
 }
 
 /// Full-result variant of [`scan_units_effective`]: the same single pipeline
 /// plus the REAL patch report and the resolved mod view (version + which
 /// dirs came from `IfModActive` branches), so callers can derive honest
-/// provenance and view labels instead of re-deriving them.
+/// provenance and view labels instead of re-deriving them. `active_mods`
+/// resolves the conditional branches (RimTransAI parity); `None` keeps them
+/// out of the view as unresolved POTENTIAL content — never guessed in.
 pub fn scan_units_effective_full(
     root: &Path,
     requested_version: Option<&str>,
     dict: &HashMap<String, Vec<String>>,
     extra_fields: &[String],
+    active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<EffectiveScan> {
-    let view = crate::modview::effective_view(root, requested_version)?;
+    let view = crate::modview::effective_view(root, requested_version, active_mods)?;
     // A genuinely flat mod (no version dirs chosen, everything at root) is
     // exactly the legacy single-root pipeline. Everything else — LoadFolders
     // or a classic version-dir layout — is scanned through the SAME
@@ -842,8 +846,9 @@ pub fn scan_units_effective_view(
             }
         }
     }
-    // Defs strictly from the effective roots (version-scoped; IfModActive
-    // dirs are included per the documented offline superset policy).
+    // Defs strictly from the effective roots (version-scoped; conditional
+    // dirs are included only when their IfModActive* condition resolved
+    // true against the active-mod context — never guessed in without one).
     for defs_root in view.defs_roots() {
         let defs_root = Some(defs_root.as_path());
         let defs_meta =
@@ -878,8 +883,8 @@ pub fn scan_units_effective_view(
     }
     merged.finalize();
     // Per-entry conditional provenance: a unit whose effective source file
-    // (or canonical path) sits under an IfModActive dir is part of the
-    // offline superset only — the game loads it conditionally.
+    // (or canonical path) sits under an IfModActive dir loaded only because
+    // its condition resolved true — the game loads it conditionally.
     if !view.conditional_dirs.is_empty() {
         for u in units.iter_mut() {
             let under = view.conditional_dirs.iter().any(|d| {
@@ -914,6 +919,7 @@ pub fn scan_units_all_versions_full(
     requested_version: Option<&str>,
     dict: &HashMap<String, Vec<String>>,
     extra_fields: &[String],
+    active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<EffectiveScan> {
     let requested = requested_version.map(crate::modview::normalize_version_str);
     let requested = requested.as_deref();
@@ -936,7 +942,7 @@ pub fn scan_units_all_versions_full(
     if tiers.is_empty() {
         // No plain version folders (or none at/below the request): the
         // effective view already covers the flat / LoadFolders shapes.
-        return scan_units_effective_full(root, requested_version, dict, extra_fields);
+        return scan_units_effective_full(root, requested_version, dict, extra_fields, active_mods);
     }
     // Descending version order = priority order (newest claims keys first).
     tiers.sort_by(|a, b| {
@@ -946,7 +952,7 @@ pub fn scan_units_all_versions_full(
     });
     let mut scans: Vec<EffectiveScan> = Vec::with_capacity(tiers.len());
     for tier in &tiers {
-        let view = crate::modview::effective_view(root, Some(tier))?;
+        let view = crate::modview::effective_view(root, Some(tier), active_mods)?;
         scans.push(scan_units_effective_view(root, view, dict, extra_fields)?);
     }
     Ok(merge_version_tiers(scans))
@@ -1052,8 +1058,12 @@ pub fn scan_units_all_versions(
     requested_version: Option<&str>,
     dict: &HashMap<String, Vec<String>>,
     extra_fields: &[String],
+    active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<Vec<TransUnit>> {
-    Ok(scan_units_all_versions_full(root, requested_version, dict, extra_fields)?.units)
+    Ok(
+        scan_units_all_versions_full(root, requested_version, dict, extra_fields, active_mods)?
+            .units,
+    )
 }
 
 /// Stable fingerprint of the source content a project inventory was built
@@ -1085,7 +1095,13 @@ pub fn source_fingerprint(root: &Path, target_version: Option<&str>) -> Result<S
             ));
         }
     }
-    let view = crate::modview::effective_view(root, target_version)?;
+    // Deliberately CONTEXT-FREE: the fingerprint covers the whole POTENTIAL
+    // tree (every conditional dir included) so drift detection never misses a
+    // content change regardless of which mods happen to be active. An
+    // active-mod-resolved scan reads a subset of this tree; a file appearing
+    // in a currently-excluded branch still flips the fingerprint — a
+    // conservative false-positive, never a false in-sync.
+    let view = crate::modview::effective_view(root, target_version, None)?;
     let mut acc = String::new();
     acc.push_str(&format!(
         "version={}\n",
@@ -1172,7 +1188,8 @@ mod classic_version_union_tests {
         versioned_mod(dir.path());
         let auto = autodiscover_defs_context(dir.path()).unwrap();
         let scan =
-            scan_units_all_versions_full(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+            scan_units_all_versions_full(dir.path(), None, &auto.dict, &auto.extra_fields, None)
+                .unwrap();
         let find = |needle: &str| {
             scan.units
                 .iter()
@@ -1204,9 +1221,14 @@ mod classic_version_union_tests {
         let dir = tempdir().unwrap();
         versioned_mod(dir.path());
         let auto = autodiscover_defs_context(dir.path()).unwrap();
-        let scan =
-            scan_units_all_versions_full(dir.path(), Some("1.4"), &auto.dict, &auto.extra_fields)
-                .unwrap();
+        let scan = scan_units_all_versions_full(
+            dir.path(),
+            Some("1.4"),
+            &auto.dict,
+            &auto.extra_fields,
+            None,
+        )
+        .unwrap();
         let sources: Vec<_> = scan.units.iter().filter_map(|u| u.source.clone()).collect();
         assert!(
             sources.contains(&"verb range factor".to_string()),
@@ -1228,7 +1250,8 @@ mod classic_version_union_tests {
         versioned_mod(dir.path());
         let auto = autodiscover_defs_context(dir.path()).unwrap();
         let scan =
-            scan_units_effective_full(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+            scan_units_effective_full(dir.path(), None, &auto.dict, &auto.extra_fields, None)
+                .unwrap();
         let sources: Vec<_> = scan.units.iter().filter_map(|u| u.source.clone()).collect();
         assert!(sources.contains(&"weapon range factor".to_string()));
         assert!(sources.contains(&"root value".to_string()));
@@ -1358,8 +1381,9 @@ mod loadfolders_ru_only_tests {
     //! Corpus G3b regression (real forms: 2927850179 / 2126925929). A
     //! Russian-only translation mod under a versioned LoadFolders layout
     //! must RESOLVE fully (Languages of the root, plain `li` subpackages and
-    //! IfModActive subpackages all scanned) — the empty canonical inventory
-    //! then comes from the EN-source contract, not from a lost scan.
+    //! active IfModActive subpackages all scanned) — the empty canonical
+    //! inventory then comes from the EN-source contract, not from a lost
+    //! scan. Conditional subpackages load only with their dependency active.
     use super::*;
     use rimloc_domain::canonical::ViewLabel;
     use std::fs;
@@ -1388,9 +1412,35 @@ mod loadfolders_ru_only_tests {
             "<LanguageData>\n  <LaserKey>лазер</LaserKey>\n</LanguageData>\n",
         );
         let auto = autodiscover_defs_context(root).unwrap();
-        let scan =
-            scan_units_effective_full(root, Some("1.6"), &auto.dict, &auto.extra_fields).unwrap();
-        // The resolver activated BOTH subpackages: plain and conditional.
+        // Without an active-mod context the IfModActive subpackage is NOT
+        // guessed into the view: only the plain subpackage resolves.
+        let no_ctx =
+            scan_units_effective_full(root, Some("1.6"), &auto.dict, &auto.extra_fields, None)
+                .unwrap();
+        assert!(no_ctx
+            .units
+            .iter()
+            .any(|u| u.key == "Gun.label" && !u.conditional));
+        assert!(!no_ctx.units.iter().any(|u| u.key == "LaserKey"));
+        assert!(no_ctx
+            .view
+            .as_ref()
+            .unwrap()
+            .conditional_state
+            .is_unresolved());
+
+        // With the dependency active (RimTransAI parity) BOTH subpackages
+        // resolve: plain and conditional.
+        let ctx =
+            crate::modview::ActiveModContext::from_package_ids(vec!["VanillaExpanded.VWEL".into()]);
+        let scan = scan_units_effective_full(
+            root,
+            Some("1.6"),
+            &auto.dict,
+            &auto.extra_fields,
+            Some(&ctx),
+        )
+        .unwrap();
         assert!(scan
             .units
             .iter()
@@ -1403,9 +1453,9 @@ mod loadfolders_ru_only_tests {
         // The canonical project honestly has zero EN-source entries: every
         // scanned unit is target-side (Russian), nothing was lost silently
         // by a resolver failure.
-        let p = crate::project::build_project(root, Some("1.6")).unwrap();
+        let p = crate::project::build_project(root, Some("1.6"), Some(&ctx)).unwrap();
         assert!(p.entries.is_empty());
-        assert_eq!(p.context.view, ViewLabel::Potential);
+        assert_eq!(p.context.view, ViewLabel::Exact);
     }
 
     /// 2927850179 shape: `li>/` root + IfModActive subpackages that carry
@@ -1427,12 +1477,21 @@ mod loadfolders_ru_only_tests {
             "<LanguageData>\n  <Root.label>корень</Root.label>\n</LanguageData>\n",
         );
         let auto = autodiscover_defs_context(root).unwrap();
-        let scan =
-            scan_units_effective_full(root, Some("1.6"), &auto.dict, &auto.extra_fields).unwrap();
+        let ctx = crate::modview::ActiveModContext::from_package_ids(vec![
+            "VanillaExpanded.VFECore".into(),
+        ]);
+        let scan = scan_units_effective_full(
+            root,
+            Some("1.6"),
+            &auto.dict,
+            &auto.extra_fields,
+            Some(&ctx),
+        )
+        .unwrap();
         assert!(scan.units.iter().any(|u| u.key == "MainKey"));
         assert!(scan.units.iter().any(|u| u.key == "Root.label"));
         assert_eq!(scan.view.as_ref().unwrap().version.as_deref(), Some("1.6"));
-        let p = crate::project::build_project(root, Some("1.6")).unwrap();
+        let p = crate::project::build_project(root, Some("1.6"), Some(&ctx)).unwrap();
         assert!(p.entries.is_empty());
     }
 }
@@ -1463,7 +1522,8 @@ mod gate_h_tests {
         )
         .unwrap();
         let auto = autodiscover_defs_context(dir.path()).unwrap();
-        let units = scan_units_effective(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+        let units =
+            scan_units_effective(dir.path(), None, &auto.dict, &auto.extra_fields, None).unwrap();
         let dup: Vec<_> = units.iter().filter(|u| u.key == "Dup.label").collect();
         assert_eq!(dup.len(), 1, "{units:?}");
         assert_eq!(dup[0].source.as_deref(), Some("from A"));
@@ -1493,7 +1553,8 @@ mod gate_h_tests {
         )
         .unwrap();
         let auto = autodiscover_defs_context(dir.path()).unwrap();
-        let units = scan_units_effective(dir.path(), None, &auto.dict, &auto.extra_fields).unwrap();
+        let units =
+            scan_units_effective(dir.path(), None, &auto.dict, &auto.extra_fields, None).unwrap();
         let find = |k: &str| units.iter().find(|u| u.key == k);
         assert_eq!(
             find("Greeting").unwrap().source.as_deref(),

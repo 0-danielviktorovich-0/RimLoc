@@ -30,6 +30,7 @@
 app-started = rimloc запущен - версия={ $version } - logdir={ $logdir } - RUST_LOG={ $rustlog }
 scan-csv-stdout = Печать CSV в stdout...
 scan-csv-saved = CSV сохранён в { $path }
+scan-ifmodactive-potential = Условный контент LoadFolders НЕ просканирован ({ $count }): { $conditions }. Укажите --active-mods <packageId,...> для разрешённого view.
 scan-json-stdout = Печать JSON в stdout...
 scan-json-saved = JSON сохранён в { $path }
 scan-patches-summary = PatchOperations: { $records } игроку-видимых записей, { $inferred } с выведенным ключом DefInjected
@@ -104,6 +105,7 @@ help-scan-source-lang = Код исходного языка для перекр
 help-scan-source-lang-dir = Путь к директории исходного языка для перекрёстных проверок
 help-scan-format = Формат вывода: «csv» (по умолчанию) или «json»
 help-scan-game-version = Папка версии игры (например, 1.6 или v1.6); по умолчанию выбирается самая новая под корнем
+help-scan-active-mods = Активные packageId модов (через запятую) для разрешения веток IfModActive в LoadFolders (например, Ludeon.RimWorld.Royalty); без него условный контент НЕ сканируется, view остаётся потенциальным
 help-scan-include-all = Включить все подпапки версий (отключить авто‑выбор последней)
 help-validate-about = Проверить строки на ошибки/предупреждения
 help-validate-root = Путь к корню мода RimWorld для проверки

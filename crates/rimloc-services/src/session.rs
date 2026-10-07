@@ -209,7 +209,7 @@ impl ProjectSessionManager {
                 ),
             ));
         }
-        let project = build_project(mod_root, target_version)
+        let project = build_project(mod_root, target_version, None)
             .map_err(|e| ContractError::new(ContractErrorCode::Internal, e.to_string()))?;
         // M3: the fingerprint is recorded at create so later sessions can
         // tell whether the source still matches the inventory. The view the

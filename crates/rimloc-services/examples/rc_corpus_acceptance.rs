@@ -287,7 +287,7 @@ fn accept_mod(mod_root: &Path, idx: usize, name: &str, mod_artifact: &Path) -> M
     };
 
     // G1 — canonical build through the stable pipeline (never scan_auto).
-    let mut project: Project = match build_project(mod_root, Some(VERSION)) {
+    let mut project: Project = match build_project(mod_root, Some(VERSION), None) {
         Ok(p) => p,
         Err(e) => {
             fail(&mut failures, format!("G1 build_project failed: {e}"));

@@ -143,6 +143,7 @@ fn localize_command(mut cmd: ClapCommand) -> ClapCommand {
                 });
                 owned = owned.mut_arg("format", |a| a.help(tr!("help-scan-format")));
                 owned = owned.mut_arg("game_version", |a| a.help(tr!("help-scan-game-version")));
+                owned = owned.mut_arg("active_mods", |a| a.help(tr!("help-scan-active-mods")));
                 owned = owned.mut_arg("include_all_versions", |a| {
                     a.help(tr!("help-scan-include-all"))
                 });
@@ -543,6 +544,12 @@ enum ScanValidate {
         /// Game version folder to operate on (e.g., 1.6 or v1.6).
         #[arg(long)]
         game_version: Option<String>,
+        /// Active mod packageIds (comma-separated) used to resolve LoadFolders
+        /// IfModActive/IfModActiveAll/IfModNotActive branches (e.g.,
+        /// Ludeon.RimWorld.Royalty). Without it, conditional content is NOT
+        /// scanned: the view stays potential and a warning is emitted.
+        #[arg(long, value_delimiter = ',')]
+        active_mods: Vec<String>,
         /// Include all version subfolders (disable auto-pick of latest).
         #[arg(long, default_value_t = false)]
         include_all_versions: bool,
@@ -1343,6 +1350,7 @@ impl Runnable for ScanValidate {
                 defs_type_schema,
                 format,
                 game_version,
+                active_mods,
                 include_all_versions,
                 keyed_nested,
                 parallel,
@@ -1366,6 +1374,7 @@ impl Runnable for ScanValidate {
                 defs_type_schema,
                 format,
                 game_version,
+                active_mods,
                 include_all_versions,
                 keyed_nested,
                 parallel,

@@ -774,7 +774,7 @@ mod tests {
     fn selfloc_project_carries_rimloc_application_adapter_identity() {
         let dir = tempfile::tempdir().unwrap();
         write_catalog(dir.path(), &small_catalog());
-        let p = crate::project::build_project(dir.path(), None).unwrap();
+        let p = crate::project::build_project(dir.path(), None, None).unwrap();
         assert_eq!(p.adapter.adapter_id, "rimloc-application");
         assert_eq!(p.adapter.adapter_api_version, "1");
         assert_eq!(p.adapter.adapter_project_schema_version, "1");
@@ -784,7 +784,7 @@ mod tests {
     fn build_project_routes_catalog_sources_through_the_adapter() {
         let dir = tempfile::tempdir().unwrap();
         write_catalog(dir.path(), &small_catalog());
-        let p = crate::project::build_project(dir.path(), None).unwrap();
+        let p = crate::project::build_project(dir.path(), None, None).unwrap();
         assert_eq!(p.entries.len(), 2);
         assert!(p.entries.iter().all(|e| e.id.kind == EntryKind::Keyed));
     }
@@ -797,7 +797,7 @@ mod tests {
     fn build_project_refuses_an_invalid_catalog_instead_of_falling_back() {
         let dir = tempfile::tempdir().unwrap();
         write_catalog(dir.path(), "{ not json");
-        let err = crate::project::build_project(dir.path(), None)
+        let err = crate::project::build_project(dir.path(), None, None)
             .expect_err("broken catalog must be a typed refusal");
         let text = format!("{err}");
         // The refusal names the root AND carries the recognition reason.
