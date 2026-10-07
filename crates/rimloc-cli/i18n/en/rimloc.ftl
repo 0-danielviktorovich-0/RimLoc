@@ -99,6 +99,7 @@ build-summary = TOTAL: { $n } key(s) will be written
 schema-dumped = Schemas saved to { $path }
 
 # === warnings / errors ===
+scan-ifmodactive-potential = Conditional LoadFolders content NOT scanned ({ $count }): { $conditions }. Pass --active-mods <packageId,...> for the resolved view.
 ui-lang-unsupported = UI language code is not supported
 err-placeholder-mismatches = placeholder mismatches detected
 validate-po-error = placeholder mismatches detected
@@ -143,6 +144,7 @@ help-scan-source-lang-dir = Path to source language directory for cross-checks
 help-scan-use-en-comments = Use preceding XML comments as source for Keyed (optional prefix; default: "EN:")
 help-scan-format = Output format: "csv" (default) or "json"
 help-scan-game-version = Game version folder to use (e.g., 1.6 or v1.6); defaults to latest available under root
+help-scan-active-mods = Active mod packageIds (comma-separated) used to resolve LoadFolders IfModActive branches (e.g., Ludeon.RimWorld.Royalty); without it conditional content is NOT scanned and the view stays potential
 help-scan-include-all = Include all version subfolders (disable auto-pick of latest)
 
 # validate

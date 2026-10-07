@@ -133,7 +133,10 @@ pub fn run_translate(
     //    source side is the canonical English inventory. Dry-run stays
     //    write-free (in-memory project, no managed record, no provider
     //    call) while producing the exact scope the real run applies.
-    let inventory = rimloc_services::project::build_project(&root, effective_version.as_deref())?;
+    // No active-mod context on this path yet: conditional IfModActive content
+    // is honestly EXCLUDED (potential view), never guessed in.
+    let inventory =
+        rimloc_services::project::build_project(&root, effective_version.as_deref(), None)?;
 
     // Eligibility pre-filter: the session refuses non-translatable intents
     // per-entry as data; excluding them here keeps the provider call volume

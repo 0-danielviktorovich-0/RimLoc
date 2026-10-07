@@ -77,6 +77,7 @@ pub fn run_scan(
     defs_type_schema: Option<std::path::PathBuf>,
     format: String,
     game_version: Option<String>,
+    active_mods: Vec<String>,
     include_all_versions: bool,
     keyed_nested: bool,
     parallel: bool,
@@ -87,6 +88,16 @@ pub fn run_scan(
     patch_strict_xpath: bool,
     fuzzy: bool,
 ) -> color_eyre::Result<()> {
+    // RimTransAI parity: --active-mods is the active-mod context resolving
+    // LoadFolders IfModActive* branches. No flag → no guessing: conditional
+    // content stays out of the scan and the view is reported as POTENTIAL.
+    let active_mod_ctx = if active_mods.iter().all(|s| s.trim().is_empty()) {
+        None
+    } else {
+        Some(rimloc_services::ActiveModContext::from_package_ids(
+            active_mods,
+        ))
+    };
     tracing::debug!(
         event = "scan_args",
         root = ?root,
@@ -95,6 +106,7 @@ pub fn run_scan(
         lang = ?lang,
         format = %format,
         game_version = ?game_version,
+        active_mods = ?active_mod_ctx.as_ref().map(|c| &c.active_package_ids),
         include_all_versions = include_all_versions
     );
 
@@ -246,28 +258,67 @@ pub fn run_scan(
     // whole-root union on plain version folders let a 1.3 value win per key
     // where the disk ships 1.6 (`--include-all-versions` keeps the union
     // coverage but now resolves every key to its NEWEST defining version).
-    let mut units = if include_all_versions && !is_loadfolders_mod && !legacy_defs_override {
-        rimloc_services::scan_units_all_versions(
+    // The FULL pipeline variants: the resolved view rides along so the
+    // conditional-content warning below is grounded in what the resolver
+    // actually did (typed state, not a LoadFolders.xml sniff).
+    let effective_scan = if include_all_versions && !is_loadfolders_mod && !legacy_defs_override {
+        rimloc_services::scan::scan_units_all_versions_full(
             &scan_root,
             game_version.as_deref(),
             &merged,
             &extra_fields,
+            active_mod_ctx.as_ref(),
         )?
     } else if !legacy_defs_override && !include_all_versions {
-        rimloc_services::scan_units_effective(
+        rimloc_services::scan::scan_units_effective_full(
             &scan_root,
             game_version.as_deref(),
             &merged,
             &extra_fields,
+            active_mod_ctx.as_ref(),
         )?
     } else {
-        rimloc_services::scan_units_with_defs_and_dict(
+        let units = rimloc_services::scan_units_with_defs_and_dict(
             &scan_root,
             defs_abs.as_deref(),
             &merged,
             &extra_fields,
-        )?
+        )?;
+        rimloc_services::scan::EffectiveScan {
+            units,
+            patch: Default::default(),
+            view: None,
+        }
     };
+    let mut units = effective_scan.units;
+    // Typed diagnostic (do NOT guess): with IfModActive content present but
+    // no --active-mods, the scan is an honest partial — say so, loudly.
+    if let Some(view) = effective_scan.view.as_ref() {
+        if let Some(entries) = view
+            .conditional_state
+            .is_unresolved()
+            .then_some(&view.unresolved_conditionals)
+        {
+            if !entries.is_empty() {
+                let conditions: Vec<String> = entries
+                    .iter()
+                    .map(|e| e.display_condition())
+                    .collect::<Vec<_>>();
+                tracing::warn!(
+                    event = "ifmodactive_unresolved",
+                    skipped = entries.len(),
+                    conditions = %conditions.join(", "),
+                    "conditional LoadFolders content was NOT scanned: no --active-mods given; \
+                     pass --active-mods <packageId,...> (e.g. Ludeon.RimWorld.Royalty) for the resolved view"
+                );
+                ui_warn!(
+                    "scan-ifmodactive-potential",
+                    count = entries.len(),
+                    conditions = conditions.join(", ")
+                );
+            }
+        }
+    }
 
     // Optionally augment with plugin-derived units (e.g., XmlExtensions Settings/TKey)
     if with_plugins {

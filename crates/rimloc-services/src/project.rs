@@ -13,6 +13,12 @@ use std::path::{Path, PathBuf};
 
 /// Build a canonical project snapshot for a mod (Gate I4 shared entry).
 ///
+/// `active_mods` is the optional active-mod context ([`crate::modview::
+/// ActiveModContext`], RimTransAI parity): when provided, conditional
+/// `IfModActive*` LoadFolders branches resolve against it and satisfied
+/// content joins the inventory; when `None`, conditional content is NOT
+/// guessed — it stays out of the scan and the view is honestly POTENTIAL.
+///
 /// Provenance honesty (pre-freeze, Source Inspector mandate):
 /// - patch coverage comes from the REAL patch report of the scan pipeline,
 ///   not from "a Patches dir exists";
@@ -20,11 +26,16 @@ use std::path::{Path, PathBuf};
 ///   version dir), `None` for a flat mod — the requested game version stays
 ///   in `context.target_version`;
 /// - the view is EXACT only when a version is known, no `IfModActive`
-///   (unresolved) content dirs are included, and patch coverage is not
-///   partial; otherwise it is an honest POTENTIAL/CONDITIONAL superset;
+///   content is left UNRESOLVED (either absent or resolved against the
+///   active-mod context), and patch coverage is not partial; otherwise it is
+///   an honest POTENTIAL/CONDITIONAL view;
 /// - winner reasons are per entry (stamped by the scan pipeline), so no
 ///   batch-level `selected_by` label is passed here.
-pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Project> {
+pub fn build_project(
+    mod_root: &Path,
+    target_version: Option<&str>,
+    active_mods: Option<&crate::modview::ActiveModContext>,
+) -> Result<Project> {
     // Self-localization (wave B4): a directory carrying the app's own
     // generated UI catalog (`catalog.en.json`, schema "1") is its own SOURCE
     // kind. The catalog adapter produces the inventory through this SAME
@@ -55,6 +66,7 @@ pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Pr
         target_version,
         &auto.dict,
         &auto.extra_fields,
+        active_mods,
     )?;
     let mut units = scan.units;
     // The canonical source inventory is the ENGLISH source: units under
@@ -65,10 +77,13 @@ pub fn build_project(mod_root: &Path, target_version: Option<&str>) -> Result<Pr
         Some(crate::patches_effect::PatchCoverage::Partial) => PatchStage::Partial,
         _ => PatchStage::None,
     };
+    // The view stays POTENTIAL while conditional content exists but was not
+    // resolved (no active-mod context). With a context the branches are
+    // evaluated — satisfied content is as real as unconditional content.
     let conditional_roots = scan
         .view
         .as_ref()
-        .is_some_and(|v| !v.conditional_dirs.is_empty());
+        .is_some_and(|v| v.conditional_state.is_unresolved());
     // The version the RESOLUTION selected (LoadFolders tag or version dir);
     // for a flat mod nothing was version-selected.
     let resolved_version = scan.view.as_ref().and_then(|v| v.version.clone());
@@ -850,7 +865,7 @@ mod gate_i4_acceptance {
         let tmp = tempfile::tempdir().unwrap();
 
         // ---------- Workflow A: build + import existing RU + write ----------
-        let mut project = build_project(&root, Some("1.6")).unwrap();
+        let mut project = build_project(&root, Some("1.6"), None).unwrap();
         // The view is EXACT for a known version; patches absent -> stage None.
         assert_eq!(project.context.view, ViewLabel::Exact);
         let ru_dir = root.join("Languages/Russian");
@@ -955,7 +970,7 @@ mod gate_i4_acceptance {
         // ...external-like import into a FRESH project (same source scan),
         // through the SAME scope-aware resolver as pack import — the
         // identity fix has no separate PO matching path...
-        let mut project_b = build_project(&root, Some("1.6")).unwrap();
+        let mut project_b = build_project(&root, Some("1.6"), None).unwrap();
         let entries = rimloc_import_po::read_po_entries(&po_path).unwrap();
         let mut merged = 0;
         for e in &entries {
@@ -1056,7 +1071,7 @@ mod identity_regression {
         let dir = tempfile::tempdir().unwrap();
         let root = dir.path().join("mod");
         collision_mod(&root);
-        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let mut p = build_project(&root, Some("1.6"), None).unwrap();
         let thing = entry_by_type(&p, "Dup.label", "ThingDef").id.clone();
         let ability = entry_by_type(&p, "Dup.label", "AbilityDef").id.clone();
         p.update_translation(thing.clone(), "Russian", Some("вещь".into()), Origin::Human);
@@ -1126,7 +1141,7 @@ mod identity_regression {
             &pack.join("DefInjected/AbilityDef/Dup.xml"),
             "<LanguageData>\n  <Dup.label>способность</Dup.label>\n</LanguageData>\n",
         );
-        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let mut p = build_project(&root, Some("1.6"), None).unwrap();
         let applied = apply_existing_translation(&mut p, &pack, "Russian").unwrap();
         assert_eq!(applied, 3, "Keyed + ThingDef + AbilityDef all scoped-match");
         let thing_t = p
@@ -1173,7 +1188,7 @@ mod identity_regression {
             &pack.join("DefInjected/TipSetDef/Sample.xml"),
             "<LanguageData>\n  <Sample.LetterLabel>подсказка</Sample.LetterLabel>\n</LanguageData>\n",
         );
-        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let mut p = build_project(&root, Some("1.6"), None).unwrap();
         let quest_id = entry_by_type(&p, "Sample.LetterLabel", "QuestScriptDef")
             .id
             .clone();
@@ -1224,7 +1239,7 @@ mod identity_regression {
             &v2.join("Defs/B_Ability.xml"),
             r#"<Defs><AbilityDef><defName>Dup</defName><label>ability v1</label></AbilityDef></Defs>"#,
         );
-        let mut p = build_project(&v1, Some("1.6")).unwrap();
+        let mut p = build_project(&v1, Some("1.6"), None).unwrap();
         let ability_id = entry_by_type(&p, "Dup.label", "AbilityDef").id.clone();
         p.update_translation(
             ability_id.clone(),
@@ -1276,7 +1291,7 @@ mod identity_regression {
             &root.join("Defs/Widget.xml"),
             r#"<Defs><ThingDef><defName>Widget</defName><label>real label</label></ThingDef></Defs>"#,
         );
-        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let mut p = build_project(&root, Some("1.6"), None).unwrap();
         // A legacy entry whose type is genuinely unknown everywhere.
         let unknown = SourceEntryId {
             kind: EntryKind::DefInjected,
@@ -1352,7 +1367,7 @@ mod identity_regression {
             &pack.join("DefInjected/QuestScriptDef/Sample.xml"),
             "<LanguageData>\n  <Sample.LetterLabel>сайдкар</Sample.LetterLabel>\n  <Sample.LetterLabel.slateRef>ткей</Sample.LetterLabel.slateRef>\n</LanguageData>\n",
         );
-        let mut p = build_project(&root, Some("1.6")).unwrap();
+        let mut p = build_project(&root, Some("1.6"), None).unwrap();
         let definj_id = p
             .entries
             .iter()
@@ -1409,7 +1424,7 @@ mod identity_regression {
             r#"<Defs><ThingDef><defName>F</defName><label>v15</label></ThingDef></Defs>"#,
         )
         .unwrap();
-        let mut p = build_project(root, Some("1.6")).unwrap();
+        let mut p = build_project(root, Some("1.6"), None).unwrap();
         // Later rescan with a NEW source entry in the same 1.5 root.
         std::fs::write(
             root.join("1.5/Defs/B.xml"),
@@ -1438,7 +1453,7 @@ pub fn detect_source_changes(
     updated_mod_root: &Path,
     target_version: Option<&str>,
 ) -> Result<SourceChangeReport> {
-    let fresh = build_project(updated_mod_root, target_version)?;
+    let fresh = build_project(updated_mod_root, target_version, None)?;
     let mut report = SourceChangeReport::default();
 
     // FULL STRUCTURAL identity compare (the SourceEntryId itself — never a
@@ -1529,11 +1544,17 @@ mod provenance_regression {
 
     /// Per-entry winner reasons: the effective occurrence must say WHY it won
     /// (family rule that decided it), and Defs entries must carry the REAL
-    /// source file — not the virtual DefInjected output path.
+    /// source file — not the virtual DefInjected output path. The fixture's
+    /// IfModActive dir resolves against an active-mod context naming Odyssey
+    /// (its LoadFolders condition); without that context the content is
+    /// honestly absent — see the exactness test below.
     #[test]
     fn per_entry_winner_reasons_and_real_source_file() {
         let root = fixture_path();
-        let p = build_project(&root, Some("1.6")).unwrap();
+        let odyssey = crate::modview::ActiveModContext::from_package_ids(vec![
+            "ludeon.rimworld.odyssey".into(),
+        ]);
+        let p = build_project(&root, Some("1.6"), Some(&odyssey)).unwrap();
 
         // Defs duplicate identity across content dirs: the FIRST registration
         // wins (LoadFolders li order: root before 1.6) — not last-file.
@@ -1608,26 +1629,34 @@ mod provenance_regression {
         );
     }
 
-    /// Exact is honest: unresolved conditional roots and partial patch
+    /// Exact is honest: UNRESOLVED conditional content and partial patch
     /// coverage downgrade the view; full supported coverage stays Applied
-    /// (not the old "Patches dir exists → Partial" guess).
+    /// (not the old "Patches dir exists → Partial" guess). With an
+    /// active-mod context resolving the fixture's only IfModActive branch,
+    /// the view is Exact; without the context the conditional content is
+    /// never guessed in — it is absent AND the view stays Potential.
     #[test]
-    fn exact_requires_no_conditionals_and_full_patch_coverage() {
+    fn exact_requires_no_unresolved_conditionals_and_full_patch_coverage() {
         let root = fixture_path();
-        let p = build_project(&root, Some("1.6")).unwrap();
+        let odyssey = crate::modview::ActiveModContext::from_package_ids(vec![
+            "ludeon.rimworld.odyssey".into(),
+        ]);
+        let p = build_project(&root, Some("1.6"), Some(&odyssey)).unwrap();
         assert_eq!(p.context.target_version.as_deref(), Some("1.6"));
-        // The IfModActive dir is included in the offline superset — the
-        // inventory is a CONDITIONAL superset, not exact runtime truth.
-        assert_eq!(p.context.view, ViewLabel::Potential);
+        // The branch resolved against the context — exact runtime truth.
+        assert_eq!(p.context.view, ViewLabel::Exact);
         assert_eq!(
             entry(&p, "Patched.label").provenance.patch_stage,
             PatchStage::Applied,
             "the only patch op is supported and hit its target"
         );
+        assert!(entry(&p, "CondD.label").provenance.conditional_branch);
 
-        // Without the conditional dir the same mod would be Exact.
-        let p2 = build_project(&root, None).unwrap();
+        // Without the context the conditional content is NOT included
+        // (no guessing) and the view honestly stays Potential.
+        let p2 = build_project(&root, Some("1.6"), None).unwrap();
         assert_eq!(p2.context.view, ViewLabel::Potential);
+        assert!(!p2.entries.iter().any(|e| e.id.key == "CondD.label"));
     }
 
     /// A foreign target pack (Languages/Russian) is TARGET content, never
@@ -1636,7 +1665,7 @@ mod provenance_regression {
     #[test]
     fn foreign_target_pack_is_not_english_source() {
         let root = fixture_path();
-        let p = build_project(&root, Some("1.6")).unwrap();
+        let p = build_project(&root, Some("1.6"), None).unwrap();
         assert!(
             !p.entries.iter().any(|e| e.text == "Привет"),
             "Russian pack text must not enter the EN source inventory"
@@ -1667,7 +1696,7 @@ mod provenance_regression {
             .join("../../test/TKeyMod")
             .canonicalize()
             .unwrap();
-        let p = build_project(&root, Some("1.6")).unwrap();
+        let p = build_project(&root, Some("1.6"), None).unwrap();
         assert_eq!(p.context.view, ViewLabel::Exact);
         assert!(
             p.entries
@@ -1696,7 +1725,7 @@ mod provenance_regression {
             r#"<Patch><Operation Class="PatchOperationUnknownThing"><xpath>/Defs/ThingDef[defName="Widget"]/label</xpath><value>x</value></Operation></Patch>"#,
         )
         .unwrap();
-        let p = build_project(root, Some("1.6")).unwrap();
+        let p = build_project(root, Some("1.6"), None).unwrap();
         assert_eq!(
             entry(&p, "Widget.label").provenance.patch_stage,
             PatchStage::Partial
@@ -1722,7 +1751,7 @@ mod provenance_regression {
             r#"<Defs><ThingDef><defName>F</defName><label>fallback label</label></ThingDef></Defs>"#,
         )
         .unwrap();
-        let p = build_project(root, Some("1.6")).unwrap();
+        let p = build_project(root, Some("1.6"), None).unwrap();
         assert_eq!(p.context.target_version.as_deref(), Some("1.6"));
         assert_eq!(
             entry(&p, "F.label").provenance.version_selected.as_deref(),
@@ -1754,7 +1783,7 @@ mod provenance_regression {
             r#"<Defs><QuestScriptDef><defName>Sample</defName><label TKey="LetterLabel">version tkey</label></QuestScriptDef></Defs>"#,
         )
         .unwrap();
-        let p = build_project(root, Some("1.6")).unwrap();
+        let p = build_project(root, Some("1.6"), None).unwrap();
         let tk = entry(&p, "Sample.LetterLabel");
         assert_eq!(tk.id.kind, EntryKind::TKey);
         assert_eq!(tk.text, "root tkey");
@@ -1787,7 +1816,7 @@ mod provenance_regression {
 </Defs>"#,
         )
         .unwrap();
-        let p = build_project(root, None).unwrap();
+        let p = build_project(root, None, None).unwrap();
         let tk = entry(&p, "Sample.LetterLabel");
         assert_eq!(tk.id.kind, EntryKind::TKey);
         assert_eq!(tk.text, "second text", "last same-file assignment wins");
@@ -1840,7 +1869,7 @@ mod provenance_regression {
             "<LanguageData>\n  <Greeting>Привет</Greeting>\n</LanguageData>\n",
         )
         .unwrap();
-        let p = build_project(root, Some("1.6")).unwrap();
+        let p = build_project(root, Some("1.6"), None).unwrap();
         assert!(
             p.entries.is_empty(),
             "target-only pack must not become source: {:?}",
@@ -1866,7 +1895,7 @@ mod provenance_regression {
             "<LanguageData>\n  <Greeting>Привет</Greeting>\n</LanguageData>\n",
         )
         .unwrap();
-        let p = build_project(root, None).unwrap();
+        let p = build_project(root, None, None).unwrap();
         assert_eq!(p.entries.len(), 1, "{:?}", p.entries);
         assert_eq!(p.entries[0].id.key, "Sample.LetterLabel");
         assert_eq!(p.entries[0].text, "quest text");
@@ -1897,7 +1926,7 @@ mod provenance_regression {
         )
         .unwrap();
         // Requested 1.5 → only 1.5 content, selected version recorded.
-        let p = build_project(root, Some("1.5")).unwrap();
+        let p = build_project(root, Some("1.5"), None).unwrap();
         assert_eq!(entry(&p, "F.label").text, "v15 label");
         assert!(p.entries.iter().all(|e| e.id.key != "E.label"));
         assert_eq!(
@@ -1906,7 +1935,7 @@ mod provenance_regression {
         );
         assert_eq!(p.context.view, ViewLabel::Exact);
         // No request → the highest version dir is selected.
-        let p = build_project(root, None).unwrap();
+        let p = build_project(root, None, None).unwrap();
         assert_eq!(entry(&p, "E.label").text, "v16 label");
         assert!(p.entries.iter().all(|e| e.id.key != "F.label"));
         assert_eq!(
@@ -1934,7 +1963,7 @@ mod provenance_regression {
             r#"<Defs><AbilityDef><defName>Dup</defName><label>ability label</label></AbilityDef></Defs>"#,
         )
         .unwrap();
-        let p = build_project(root, Some("1.6")).unwrap();
+        let p = build_project(root, Some("1.6"), None).unwrap();
         let mut matches: Vec<_> = p
             .entries
             .iter()

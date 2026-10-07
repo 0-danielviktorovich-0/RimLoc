@@ -65,7 +65,10 @@ pub use import::{
     ImportPlan, ImportSummary,
 };
 pub use matching::{MatchOrigin, Resolution, SourceMatcher, TKeyRegistry};
-pub use modview::{classic_version_dirs, effective_view, EffectiveModView};
+pub use modview::{
+    classic_version_dirs, effective_view, ActiveModContext, ConditionalEntry, ConditionalKind,
+    ConditionalState, EffectiveModView,
+};
 pub use observability::{
     collect_support_bundle_for, generate_operation_id, sha256_hex, BundleFile, ClassifyReport,
     ErrorRecord, FieldDecision, OperationLog, ProjectMeta, Sanitizer, StageRecord, SupportBundle,
