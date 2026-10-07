@@ -278,6 +278,16 @@ translate-json-saved = Канонический отчёт сохранён в {
 translate-po-saved = Переведённый PO сохранён в { $path }
 translate-summary = Переведено={ $translated }, с ошибками={ $failed }, уже готово={ $skipped }
 
+# provider-test
+help-providertest-about = Проверка соединения с провайдером одним крошечным запросом: эндпоинт, ключ и модель (mock работает офлайн)
+help-providertest-provider = Провайдер: mock | anthropic | openai | zai | ollama
+help-providertest-model = Имя модели (иначе берётся пресет провайдера; для OpenAI-совместимых определяется автоматически, если сервер отдаёт список)
+help-providertest-base-url = Базовый URL для OpenAI-совместимого провайдера
+help-providertest-key-env = Имя переменной окружения с API-ключом (иначе keychain/auto)
+provider-test-probing = Проверяю провайдера { $provider } (реальный запрос; mock работает офлайн)…
+provider-test-ok = Провайдер { $provider } в порядке — модель { $model }, эндпоинт { $endpoint }
+provider-test-failed = Проверка провайдера { $provider } ПРОВАЛЕНА: { $error }
+
 # compare
 help-compare-about = Сравнить переводы с источником и между собой
 help-compare-root = Путь к корню мода RimWorld
