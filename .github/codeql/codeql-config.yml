@@ -12,6 +12,7 @@ paths:
   - scripts/**
 
 paths-ignore:
+  - gui/tauri-app/vendor/**
   - gui/tauri-app/src-tauri/vendor/**
   - "**/node_modules/**"
   - "**/target/**"

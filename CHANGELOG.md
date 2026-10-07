@@ -5,6 +5,9 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Internal
+- [ci/llm] Harden provider feature-matrix builds and CodeQL vendor scoping so keychain-only Tauri coverage compiles and patched upstream dependencies are not treated as RimLoc-owned sources (#83)
+
 ### Fixed
 - [cli] `export-po --game-version` on LoadFolders mods: the version view now uses the modview effective view (Gate H semantics, root dir first), so root-hosted `Languages/Keyed` are no longer lost when a version folder has no Languages of its own (HugsLib: 1 → 76 msgid). Regression test `export_po_game_version_loadfolders_keeps_root_keyed`.
 - [cli] `scan` on plain version-folder mods (native `1.0`–`1.6` dirs, no LoadFolders): entries defined in several versions now resolve to the NEWEST defining version (per-key newest-wins, game-version request takes priority); default scan no longer loses root-hosted `Languages/Keyed` (VE Framework: 143 → 736 entries, 0 stale values).
