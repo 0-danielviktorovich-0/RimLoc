@@ -21,6 +21,13 @@ if ! echo "$subject" | grep -Eq '^(feat|fix|docs|chore|refactor|test|ci|build|pe
   exit 1
 fi
 
+# Public history must describe engineering outcomes, not private orchestration.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "✖ python3 is required for the public Git history hygiene check" >&2
+  exit 1
+fi
+python3 scripts/check-public-git-language.py --surface commit --text "$subject"
+
 # 2) Blank line after subject
 second_line=$(sed -n '2p' "$msg_file" | tr -d '\r')
 if [ -n "$second_line" ]; then
