@@ -119,6 +119,12 @@ feat(adapter): add source discovery capability
 
 Keep commits focused. Do not force-push shared history or create releases/tags unless explicitly authorized.
 
+Public Git metadata should describe the engineering outcome, not the development orchestration.
+Do not put internal agent terms such as mandates, waves, lanes, reviewer iterations, workflow ids,
+or reviewer-protocol directives in commit subjects, PR/release titles, or user-facing changelog text.
+Run `python3 scripts/check-public-git-language.py --help` for the repository guard and see
+[Public Git History Policy](docs/development/PUBLIC_GIT_HISTORY_POLICY.md) for examples.
+
 A PR should include:
 
 - summary and motivation;
