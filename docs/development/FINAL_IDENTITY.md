@@ -22,8 +22,9 @@ related:
 product_source_sha   857b0d2a51b97e6e541cdf8f61d00683b966bd04
                      (HEAD main == origin/main; прод-код относительно
                       предыдущего RC отличается и только им)
-evidence/docs_sha    857b0d2a51b97e6e541cdf8f61d00683b966bd04
-                     (доки/гейты в том же коммите; docs-коммитов поверх нет)
+evidence/docs_sha    6c3ae49 (FINAL_IDENTITY/state-доки поверх 857b0d2;
+                     docs-only — бинарная поверхность неизменна:
+                      git diff 857b0d2..6c3ae49 -- crates/ gui/ пуст)
 binary_sha256        7781dd395b8e7c83332da9590a92972e6e93c285cef717200c9c3117471ae4bf
                      (RimLoc GUI.app/Contents/MacOS/rimloc-gui, self-report
                       857b0d2a… без -dirty)
@@ -44,7 +45,8 @@ tree_hashes          app `1ba23156…` · frontend-react/dist `388896b5…`
 | `ac896e6` | docs: гейт-отчёт respin 2 | в составе main |
 | `292d72e` | PR #85: svelte-dist для CodeQL (C5) | в составе main |
 | `41c63e0` | R3-интеграция (C2–C6) + panels-v4 фикс | в составе main |
-| `857b0d2` | **ФИНАЛ**: доки C-гейтов; бинарь собран с него | **ТЕКУЩИЙ** |
+| `857b0d2` | **ФИНАЛ продукта**: доки C-гейтов; бинарь собран с него | **product_source** |
+| `6c3ae49` | docs-only: FINAL_IDENTITY + state (бинарная поверхность та же) | **Текущий main** |
 
 Бинарные отличия 2305d564 → 7781dd39 = исходники `292d72e..857b0d2`
 (C2–C6 гейты + dependencies), проверяемо: `git diff 2305d564-base..857b0d2 -- crates/ gui/`.
