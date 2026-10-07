@@ -73,7 +73,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       </div>
       <div className="ws-panes">
         <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
-        <Panel id="ws-left" minSize="30%" defaultSize="66%">
+        <Panel id="ws-left" minSize={30} defaultSize={66}>
         <div className="ws-center">
         <aside className="file-tree" data-testid="ws.tree">
           <div className="pane-title">
@@ -148,7 +148,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         </div>
         </Panel>
         <Separator className="ws-handle" aria-label={t('ws.resize')} />
-        <Panel id="ws-right" minSize="22%" defaultSize="34%">
+        <Panel id="ws-right" minSize={22} defaultSize={34}>
         {/* RIGHT — editor */}
         {selected && (
           <EntryEditor
