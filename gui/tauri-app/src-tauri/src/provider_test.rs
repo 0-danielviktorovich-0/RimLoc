@@ -168,13 +168,11 @@ fn resolve_probe_key(req: &ProviderInstanceTestRequest) -> Result<KeySource, Con
     {
         #[cfg(feature = "keychain")]
         {
-            let stored = rimloc_llm::secrets::get_secret_in(
-                &rimloc_llm::secrets::effective_service(),
-                id,
-            )
-            .map_err(|e| {
-                ContractError::new(ContractErrorCode::SaveFailed, format!("keychain: {e}"))
-            })?;
+            let stored =
+                rimloc_llm::secrets::get_secret_in(&rimloc_llm::secrets::effective_service(), id)
+                    .map_err(|e| {
+                    ContractError::new(ContractErrorCode::SaveFailed, format!("keychain: {e}"))
+                })?;
             if let Some(secret) = stored {
                 return Ok(KeySource::Inline(secret));
             }
@@ -281,7 +279,9 @@ mod tests {
         assert_eq!(err.code, ContractErrorCode::InvalidConfig);
         // well-formed request passes the gate (no network happened — the
         // probe itself is never called in tests)
-        assert!(validate_probe_request(&req("custom", "m", Some("http://localhost:8080/v1"))).is_ok());
+        assert!(
+            validate_probe_request(&req("custom", "m", Some("http://localhost:8080/v1"))).is_ok()
+        );
     }
 
     #[test]

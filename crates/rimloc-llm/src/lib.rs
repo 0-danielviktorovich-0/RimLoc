@@ -96,7 +96,9 @@ impl LlmError {
     /// failures fall to [`ConnectionVerdict::NetworkFailed`].
     pub fn connection_verdict(&self) -> ConnectionVerdict {
         match self {
-            LlmError::HttpStatus { status, message, .. } => match status {
+            LlmError::HttpStatus {
+                status, message, ..
+            } => match status {
                 401 | 403 => ConnectionVerdict::AuthFailed,
                 429 => ConnectionVerdict::RateLimited,
                 404 => ConnectionVerdict::ModelNotFound,
@@ -256,7 +258,8 @@ mod tests {
     #[test]
     fn connection_verdict_maps_error_kinds() {
         assert_eq!(
-            LlmError::RateLimited("p".into(), std::time::Duration::from_secs(1)).connection_verdict(),
+            LlmError::RateLimited("p".into(), std::time::Duration::from_secs(1))
+                .connection_verdict(),
             ConnectionVerdict::RateLimited
         );
         assert_eq!(
