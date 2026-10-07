@@ -17,6 +17,15 @@
 # - Prefer present tense and keep bullets concise but specific.
 # - Explain the motivation and the impact when not obvious.
 #
+# Public Git history:
+# - Describe the software/repository outcome, never the agent orchestration.
+# - Do not use mandate/wave/lane/reviewer-iteration/owner-gate/DO_NOW-style
+#   protocol language in subjects, PR titles, releases, or CHANGELOG entries.
+# - Internal task names must be translated to normal engineering language.
+# - Good: "feat(gui): show live source provenance in the workspace"
+# - Bad:  "docs(review): DO_NOW R4 wave 2 reviewer mandate"
+# - Full policy: docs/development/PUBLIC_GIT_HISTORY_POLICY.md
+#
 # Example (feature/refactor):
 #
 # refactor(po): centralize simple PO parsing in rimloc-core
