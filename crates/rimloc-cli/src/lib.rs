@@ -1203,13 +1203,8 @@ enum Analyze {
 }
 
 #[derive(Subcommand, Debug)]
-<<<<<<< HEAD
-enum Build {
-    /// Build a standalone translation mod from a .po file or an existing Languages tree (help via FTL).
-=======
 enum BuildDiag {
-    /// Build a standalone translation mod from a .po file (help via FTL).
->>>>>>> fix/provider-surface
+    /// Build a standalone translation mod from a .po file or an existing Languages tree (help via FTL).
     BuildMod {
         /// Path to the .po file to build from; exactly one of --po / --from-root
         #[arg(
