@@ -103,12 +103,19 @@ impl OpenAiCompatProvider {
         }
         let json: serde_json::Value = resp.json().map_err(LlmError::Http)?;
         if !status.is_success() {
+            // Remaining non-success here is 4xx (429/5xx were peeled above):
+            // the status is preserved so a probe can tell auth (401/403)
+            // from a missing model (404) — §7 F7.2.
             let msg = json["error"]["message"]
                 .as_str()
                 .or_else(|| json["error"].as_str())
                 .unwrap_or("unknown provider error")
                 .to_string();
-            return Err(LlmError::Provider(self.id.clone(), msg));
+            return Err(LlmError::HttpStatus {
+                provider: self.id.clone(),
+                status: status.as_u16(),
+                message: msg,
+            });
         }
         let text = json["choices"][0]["message"]["content"]
             .as_str()

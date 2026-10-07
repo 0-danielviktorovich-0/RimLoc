@@ -19,6 +19,10 @@ tauri-plugin-dialog = "2"
 open = "5"
 thiserror = "2"
 rimloc-services = { path = "../../../crates/rimloc-services" }
+# Provider connectivity probe (§7 F7.1/F7.2): the bounded
+# contract_provider_instance_test command reuses the rimloc-llm providers
+# (test_connection) and the раскладка (LlmError::connection_verdict).
+rimloc-llm = { path = "../../../crates/rimloc-llm" }
 rimloc-domain = { path = "../../../crates/rimloc-domain" }
 rimloc-import-po = { path = "../../../crates/rimloc-import-po" }
 rimloc-export-csv = { path = "../../../crates/rimloc-export-csv" }
@@ -44,7 +48,7 @@ custom-protocol = ["tauri/custom-protocol"]
 # shell attaches the OS-keychain sink to the session manager. Building with
 # --no-default-features drops it — the services layer then refuses
 # secret-bearing provider upserts honestly instead of storing plaintext.
-keychain = ["rimloc-services/keychain"]
+keychain = ["rimloc-services/keychain", "rimloc-llm/keychain"]
 # P0 security boundary (owner 2026-10-01, §B): the embedded WDIO bridge is
 # a compile-time opt-in. Production builds never link it; the automation
 # artifact builds with --features automation-bridge. The runtime env

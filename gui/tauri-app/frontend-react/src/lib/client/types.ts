@@ -433,6 +433,9 @@ export type ContractMethod =
   | 'contract_provider_instance_upsert'
   | 'contract_provider_instance_delete'
   | 'contract_provider_instance_validate'
+  // Bounded connectivity probe (§7 F7.1/F7.2): the CLI provider-test logic
+  // with a typed outcome — one tiny prompt, never a batch call.
+  | 'contract_provider_instance_test'
   // Compare screen (version diff): read-only source-inventory diff of two
   // mod roots — stateless, no project session involved.
   | 'contract_version_diff'
@@ -696,6 +699,43 @@ export interface ProviderInstanceValidateResponseDto {
   job_id: string;
   ok: boolean;
   problems: string[];
+}
+
+// --- provider connectivity probe (§7 F7.1/F7.2) — the REAL network check
+// behind «Проверить подключение»: one tiny bounded prompt through
+// Provider::test_connection, typed outcome, no batch call. The probe-only
+// `secret` (typed into the form, not yet saved) crosses ONCE and is never
+// echoed; a saved instance resolves its key from the OS keychain instead. ---
+export interface ProviderInstanceTestRequestDto {
+  preset: string;
+  model: string;
+  base_url?: string;
+  /** Probe-ONLY: used in-memory for this one request, never stored. */
+  secret?: string;
+  /** Saved instance id — keychain key lookup when no `secret` is supplied. */
+  instance_id?: string;
+}
+
+/** Outcome statuses of the probe (§7 F7.1 vocabulary, outcome subset).
+ *  The lifecycle states (`configured`/`connection_unknown`/`testing`) and
+ *  the display fold (`local_offline` = local && network_failed) are
+ *  frontend-side; `server_error` is kept for vocabulary completeness —
+ *  the §7 раскладка currently maps 5xx onto `network_failed`. */
+export type ProviderTestStatusDto =
+  | 'connected'
+  | 'auth_failed'
+  | 'model_not_found'
+  | 'rate_limited'
+  | 'server_error'
+  | 'network_failed';
+
+export interface ProviderInstanceTestResponseDto {
+  status: ProviderTestStatusDto;
+  provider: string;
+  model: string;
+  endpoint: string;
+  /** Sanitized provider/error text (never key material). */
+  detail?: string | null;
 }
 
 // --- chat batch (external-AI workflow WITHOUT an API; mirrors contract.rs

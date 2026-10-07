@@ -65,11 +65,18 @@ impl AnthropicProvider {
         }
         let json: serde_json::Value = resp.json().map_err(LlmError::Http)?;
         if !status.is_success() {
+            // Remaining non-success here is 4xx (429/5xx were peeled above):
+            // the status is preserved so a probe can tell auth (401/403)
+            // from a missing model (404) — §7 F7.2.
             let msg = json["error"]["message"]
                 .as_str()
                 .unwrap_or("unknown provider error")
                 .to_string();
-            return Err(LlmError::Provider("anthropic".into(), msg));
+            return Err(LlmError::HttpStatus {
+                provider: "anthropic".into(),
+                status: status.as_u16(),
+                message: msg,
+            });
         }
         let text = json["content"][0]["text"]
             .as_str()

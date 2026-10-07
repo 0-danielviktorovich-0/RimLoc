@@ -61,6 +61,8 @@ import type {
   ProviderInstanceDeleteRequestDto,
   ProviderInstanceDeleteResponseDto,
   ProviderInstanceListResponseDto,
+  ProviderInstanceTestRequestDto,
+  ProviderInstanceTestResponseDto,
   ProviderInstanceUpsertRequestDto,
   ProviderInstanceUpsertResponseDto,
   ProviderInstanceValidateRequestDto,
@@ -344,6 +346,18 @@ export class RimLocClient {
     request: ProviderInstanceValidateRequestDto
   ): Promise<ProviderInstanceValidateResponseDto> {
     return this.call('contract_provider_instance_validate', { request });
+  }
+
+  /** Bounded connectivity probe (§7 F7.1/F7.2): ONE tiny prompt through the
+   *  provider with a typed outcome. A probe-only `secret` crosses once and
+   *  is never stored nor echoed; a saved `instance_id` resolves the stored
+   *  keychain key instead. Probe failures arrive as RESULTS
+   *  (auth_failed/model_not_found/rate_limited/network_failed), never as
+   *  rejections — rejections are request-shape violations only. */
+  async providerInstanceTest(
+    request: ProviderInstanceTestRequestDto
+  ): Promise<ProviderInstanceTestResponseDto> {
+    return this.call('contract_provider_instance_test', { request });
   }
 
   // --- chat batch (external-AI workflow WITHOUT an API) — the TM chain

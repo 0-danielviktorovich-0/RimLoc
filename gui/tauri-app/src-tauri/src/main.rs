@@ -3129,6 +3129,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "contract_provider_instance_upsert",
     "contract_provider_instance_delete",
     "contract_provider_instance_validate",
+    // Bounded connectivity probe (§7 F7.1/F7.2): the CLI provider-test
+    // logic reused by the GUI — typed outcome, one tiny prompt, no batch.
+    "contract_provider_instance_test",
     // Compare screen (version diff): read-only diff of two mod roots.
     "contract_version_diff",
     // Chat batch (external-AI workflow WITHOUT an API): select → export
@@ -3907,6 +3910,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
+            // Bounded connectivity probe (§7 F7.1/F7.2) — the CLI
+            // provider-test logic, typed outcome, no batch call.
+            rimloc_gui_lib::provider_test::contract_provider_instance_test,
             // Compare screen (version diff): read-only diff of two mod roots.
             rimloc_gui_lib::contract_adapter::contract_version_diff,
             // Chat batch (external-AI workflow WITHOUT an API).
@@ -3995,6 +4001,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_delete,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_validate,
+            // Bounded connectivity probe (§7 F7.1/F7.2) — the CLI
+            // provider-test logic, typed outcome, no batch call.
+            rimloc_gui_lib::provider_test::contract_provider_instance_test,
             // Compare screen (version diff): read-only diff of two mod roots.
             rimloc_gui_lib::contract_adapter::contract_version_diff,
             // Chat batch (external-AI workflow WITHOUT an API).

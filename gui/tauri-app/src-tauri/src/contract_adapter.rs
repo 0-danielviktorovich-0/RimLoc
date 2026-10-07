@@ -76,6 +76,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "contract_provider_instance_upsert",
     "contract_provider_instance_delete",
     "contract_provider_instance_validate",
+    // Bounded connectivity probe (§7 F7.1/F7.2): the CLI `provider-test`
+    // logic reused by the GUI — typed outcome, one tiny prompt, no batch.
+    "contract_provider_instance_test",
     // Compare screen (version diff): read-only source-inventory diff of two
     // mod roots — stateless, no project session involved.
     "contract_version_diff",

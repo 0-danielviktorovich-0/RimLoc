@@ -5,6 +5,11 @@
 //! build the real app against a mock runtime (lead review 029 / binding
 //! wave 2: "built-app evidence beats a source regex").
 pub mod contract_adapter;
+/// Provider connectivity probe (§7 F7.1/F7.2): the bounded
+/// `contract_provider_instance_test` command — the CLI `provider-test`
+/// logic reused by the GUI. Pure logic + the command live here; the
+/// registration joins the contract command lists.
+pub mod provider_test;
 /// Self-localization entry (mandate D): the app-bundled UI catalog exposed
 /// as an ordinary project source. Pure logic lives here; the thin
 /// `#[tauri::command]` wrapper lives in the binary next to pick_directory.

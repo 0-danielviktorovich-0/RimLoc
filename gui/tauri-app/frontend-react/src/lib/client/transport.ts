@@ -51,6 +51,8 @@ import type {
   ProviderInstanceDeleteRequestDto,
   ProviderInstanceDeleteResponseDto,
   ProviderInstanceListResponseDto,
+  ProviderInstanceTestRequestDto,
+  ProviderInstanceTestResponseDto,
   ProviderInstanceUpsertRequestDto,
   ProviderInstanceUpsertResponseDto,
   ProviderInstanceValidateRequestDto,
@@ -162,6 +164,12 @@ export interface ContractMethodMap {
   contract_provider_instance_validate: {
     params: { request: ProviderInstanceValidateRequestDto };
     result: ProviderInstanceValidateResponseDto;
+  };
+  // Bounded connectivity probe (§7 F7.1/F7.2): real network check with a
+  // typed outcome — probe failures are RESULTS, never rejections.
+  contract_provider_instance_test: {
+    params: { request: ProviderInstanceTestRequestDto };
+    result: ProviderInstanceTestResponseDto;
   };
   // Compare screen (version diff): read-only source-inventory diff of two
   // mod roots — stateless, no project session involved.
