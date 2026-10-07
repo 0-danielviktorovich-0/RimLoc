@@ -73,9 +73,26 @@
     "npm_audit": "0 known production/runtime npm vulnerabilities; 16 documented high dev-tool advisories under explicit exemption (pending owner confirmation)"
   },
   "ownerGates": [
-    "level-7 visual (checklist ready)",
-    "publish approval",
-    "AI provider live E2E (paid calls)"
+    {
+      "name": "Level-7 visual",
+      "reason": "PHYSICAL_OR_GAME_VISUAL_CONFIRMATION"
+    },
+    {
+      "name": "Publish approval",
+      "reason": "PUBLISH_AUTHORIZATION"
+    },
+    {
+      "name": "AI provider live E2E",
+      "reason": "OWNER_CREDENTIAL"
+    },
+    {
+      "name": "Signing/notarization (optional)",
+      "reason": "SIGNING_NOTARIZATION"
+    },
+    {
+      "name": "Subjective UI/UX approval",
+      "reason": "SUBJECTIVE_VISUAL"
+    }
   ],
   "specChanges": {
     "palette_acceptance": "13->14 commands + self-seed before() + composition invariant (all-14-routes) instead of equality: action commands (Wave B) are legitimate with open project",
