@@ -17,6 +17,13 @@
 # - Prefer present tense and keep bullets concise but specific.
 # - Explain the motivation and the impact when not obvious.
 #
+# Public history:
+# - Describe the software/repository outcome, not the private automation process.
+# - Do not put workflow/lane/wave ids, private review status tokens, owner-gate
+#   shorthand, prompt section numbers, or agent runtime names in the subject.
+# - Translate internal work into product language before committing.
+# - Example: "feat(gui): show live source provenance in workspace".
+#
 # Example (feature/refactor):
 #
 # refactor(po): centralize simple PO parsing in rimloc-core
