@@ -2,7 +2,7 @@
 // native picker → target version → create → editor. The Rust scan IS the
 // preview (the returned snapshot carries the live inventory); no fake
 // scanning timers. Users never see DefInjected/Keyed unless Advanced (§22).
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowRight, Check, FolderOpen, LoaderCircle, Plus } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { projectStore } from '../lib/state/project'
@@ -23,6 +23,32 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const targetName = BUILTIN_LANGUAGES.find((l) => l.localeId === target)?.nativeName ?? target
+
+  // D4: отмена (и успешное создание) сбрасывают ВСЁ локальное состояние —
+  // иначе следующий запуск визарда открывается на старом пути/шаге, будто
+  // отмена ничего не означала.
+  const resetWizard = (): void => {
+    setOpen(false)
+    setStep(0)
+    setModRoot('')
+    setVersion('1.6')
+    setTarget('ru')
+    setBusy(false)
+    setError(null)
+  }
+
+  // D6: Escape закрывает визард той же логикой отмены, что и кнопка
+  // (полный reset). Во время busy — как кнопка Cancel, заблокирован.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && !busy) resetWizard()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // resetWizard замыкает только stable-сеттеры состояния.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, busy])
 
   const pick = async (): Promise<void> => {
     setError(null)
@@ -47,7 +73,7 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
       // (no-op when it equals the current one; the snapshot already exists).
       projectStore.setTargetLocale(target)
       setBusy(false)
-      setOpen(false)
+      resetWizard()
       onCreated()
     } catch (e) {
       setBusy(false)
@@ -154,7 +180,7 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
               {t('wizard.back')}
             </button>
           ) : (
-            <button onClick={() => setOpen(false)} disabled={busy}>
+            <button onClick={resetWizard} disabled={busy}>
               {t('wizard.cancel')}
             </button>
           )}

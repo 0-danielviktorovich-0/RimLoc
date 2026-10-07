@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
+import { usePersistedInput } from '../lib/state/usePersistedInput'
 import { contractErrorText } from '../lib/client/messagesError'
 import { folderForm } from '../lib/languages/folderForm'
 import type { ValidateProjectResponseDto } from '../lib/client/types'
@@ -65,7 +66,8 @@ export function BuildExport() {
   const st = useProjectState()
   const projectId = st.snapshot?.project_id
   const epoch = st.snapshot?.session_epoch
-  const [outDir, setOutDir] = useState('')
+  // D5: outDir переживает ремоунт экрана — sessionStorage по проекту.
+  const [outDir, setOutDir] = usePersistedInput(projectId ?? '', 'out-dir')
   const [busy, setBusy] = useState(false)
   const [validating, setValidating] = useState(false)
   const [error, setError] = useState<string | null>(null)

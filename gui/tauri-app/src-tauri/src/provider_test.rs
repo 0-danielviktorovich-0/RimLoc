@@ -45,9 +45,9 @@ pub struct ProviderInstanceTestRequest {
 
 /// §7 F7.1 outcome vocabulary of the probe. The lifecycle states
 /// (`configured` / `connection_unknown` / `testing`) and the display fold
-/// (`local_offline`) live on the frontend; `server_error` is kept here for
-/// vocabulary completeness though the §7 раскладка currently maps 5xx onto
-/// `network_failed` — no producer exists yet, and that is honest.
+/// (`local_offline`) live on the frontend; `server_error` is produced by
+/// the `InvalidResponse` verdict — the server answered but its body could
+/// not be used as a response (5xx still folds onto `network_failed`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ProviderTestStatus {
@@ -186,6 +186,7 @@ fn verdict_to_status(verdict: ConnectionVerdict) -> ProviderTestStatus {
         ConnectionVerdict::AuthFailed => ProviderTestStatus::AuthFailed,
         ConnectionVerdict::ModelNotFound => ProviderTestStatus::ModelNotFound,
         ConnectionVerdict::RateLimited => ProviderTestStatus::RateLimited,
+        ConnectionVerdict::ServerError => ProviderTestStatus::ServerError,
         ConnectionVerdict::NetworkFailed => ProviderTestStatus::NetworkFailed,
     }
 }
@@ -299,6 +300,10 @@ mod tests {
             ProviderTestStatus::RateLimited
         );
         assert_eq!(
+            verdict_to_status(ConnectionVerdict::ServerError),
+            ProviderTestStatus::ServerError
+        );
+        assert_eq!(
             verdict_to_status(ConnectionVerdict::NetworkFailed),
             ProviderTestStatus::NetworkFailed
         );
@@ -314,6 +319,8 @@ mod tests {
         assert_eq!(wire, serde_json::json!("model_not_found"));
         let wire = serde_json::to_value(ProviderTestStatus::RateLimited).unwrap();
         assert_eq!(wire, serde_json::json!("rate_limited"));
+        let wire = serde_json::to_value(ProviderTestStatus::ServerError).unwrap();
+        assert_eq!(wire, serde_json::json!("server_error"));
         let wire = serde_json::to_value(ProviderTestStatus::NetworkFailed).unwrap();
         assert_eq!(wire, serde_json::json!("network_failed"));
         let wire = serde_json::to_value(ProviderTestStatus::Connected).unwrap();

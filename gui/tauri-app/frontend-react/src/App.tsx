@@ -149,7 +149,9 @@ export function App() {
       ? { label: t('shell.saveState.saving'), dot: 'dot primary' }
       : st.lastError !== null
         ? { label: t('shell.saveState.error'), dot: 'dot destructive' }
-        : Object.keys(st.drafts).length > 0 || st.snapshot.dirty === true
+        // Пилюля считает только НЕПУСТЫЕ черновики: чистый черновик —
+        // отсутствие записи (revert удаляет ключ, commit тоже).
+        : Object.values(st.drafts).some((v) => v !== '') || st.snapshot.dirty === true
           ? { label: t('shell.saveState.unsaved'), dot: 'dot warning' }
           : { label: t('shell.saveState.saved'), dot: 'dot success' }
   // §10: красная пилюля на «Проверки» — только РЕАЛЬНЫЙ error_count из

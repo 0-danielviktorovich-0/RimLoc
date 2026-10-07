@@ -21,9 +21,9 @@ import type { GlossaryTermDto, SourceEntryIdDto, ValidationFindingDto } from '..
 const ROW_HEIGHT = 63
 
 /** §15/§20 handoff: ключ sessionStorage, по которому экран чат-перевода
- *  (свой лейн) может подхватить предотмеченные строки. Значение — JSON
+ *  (свой лейн) подхватывает предотмеченные строки. Значение — JSON
  *  массив display_identity()-строк; прочитал — удали. */
-const CHATBATCH_HANDOFF_KEY = 'rimloc.chatbatch.preset-keys'
+export const CHATBATCH_HANDOFF_KEY = 'rimloc.chatbatch.preset-keys'
 
 /** Точная сериализация ключа батча (`SourceEntryId::display_identity()`):
  *  kind-токен · defType · key. Зеркало той же формулы, что на экране
@@ -474,7 +474,10 @@ function EntryEditor(props: {
             className="icon-btn"
             aria-label={t('ws.revert')}
             disabled={props.busy}
-            onClick={() => props.onDraft(props.target)}
+            // Revert = «чистый черновик = отсутствие записи» (§11): удаляем
+            // ключ из drafts, а не пишем committed-текст как черновик —
+            // иначе пилюля «Есть несохранённые» считает фантом.
+            onClick={() => projectStore.clearDraft(props.entryKey)}
           >
             <RotateCcw />
           </button>

@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { Check, FolderOpen, GitCompareArrows } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
+import { usePersistedInput } from '../lib/state/usePersistedInput'
 import { contractErrorText } from '../lib/client/messagesError'
 import { t } from '../lib/i18n'
 import type { VersionDiffEntryDto, VersionDiffResponseDto } from '../lib/client/types'
@@ -19,8 +20,10 @@ const catChipClass: Record<VersionDiffEntryDto['category'], string> = {
 }
 
 export function Compare() {
-  const [oldDir, setOldDir] = useState('')
-  const [newDir, setNewDir] = useState('')
+  // D5: каталоги переживают ремоунт экрана (беспроектный экран — scope
+  // по имени экрана, а не по project_id).
+  const [oldDir, setOldDir] = usePersistedInput('compare', 'old-dir')
+  const [newDir, setNewDir] = usePersistedInput('compare', 'new-dir')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [report, setReport] = useState<VersionDiffResponseDto | null>(null)

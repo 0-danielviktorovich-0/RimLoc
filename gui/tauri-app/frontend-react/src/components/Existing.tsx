@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { ArrowRight, Check, FolderOpen, Upload } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
+import { usePersistedInput } from '../lib/state/usePersistedInput'
 import { projectStore } from '../lib/state/project'
 import { contractErrorText } from '../lib/client/messagesError'
 import { folderForm } from '../lib/languages/folderForm'
@@ -17,7 +18,8 @@ export function Existing() {
   const epoch = st.snapshot?.session_epoch
   const acked = st.snapshot?.acked_revision ?? st.snapshot?.revision ?? 0
 
-  const [dir, setDir] = useState('')
+  // D5: каталог переживает ремоунт экрана — sessionStorage по проекту.
+  const [dir, setDir] = usePersistedInput(projectId ?? '', 'existing-dir')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [report, setReport] = useState<ImportExistingResponseDto | null>(null)

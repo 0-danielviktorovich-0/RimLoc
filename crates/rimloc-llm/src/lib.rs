@@ -83,17 +83,23 @@ pub enum ConnectionVerdict {
     ModelNotFound,
     /// 429 — too many requests; retry later.
     RateLimited,
-    /// 5xx, timeouts, DNS/connect failures, unexpected replies — everything
-    /// that is neither credential, model, nor quota.
+    /// The server answered but its reply could not be used — an
+    /// unparseable/unexpected body. Unlike a network failure the path to
+    /// the provider works; the problem is on the provider side.
+    ServerError,
+    /// Timeouts, DNS/connect failures — everything that is neither
+    /// credential, model, quota, nor a server that answered wrongly.
     NetworkFailed,
 }
 
 impl LlmError {
     /// The раскладка (owner spec §7): 401/403 → auth_failed; 404/model →
     /// model_not_found; 429 → rate_limited; 5xx/timeout/network →
-    /// network_failed. `MissingKey` is auth (a probe cannot authenticate
-    /// without a key); legacy [`LlmError::Provider`] and local keychain
-    /// failures fall to [`ConnectionVerdict::NetworkFailed`].
+    /// network_failed; an unparseable reply → server_error (the server
+    /// answered — the path works, the body does not). `MissingKey` is auth
+    /// (a probe cannot authenticate without a key); legacy
+    /// [`LlmError::Provider`] and local keychain failures fall to
+    /// [`ConnectionVerdict::NetworkFailed`].
     pub fn connection_verdict(&self) -> ConnectionVerdict {
         match self {
             LlmError::HttpStatus {
@@ -112,9 +118,14 @@ impl LlmError {
             },
             LlmError::RateLimited(..) => ConnectionVerdict::RateLimited,
             LlmError::MissingKey(_) => ConnectionVerdict::AuthFailed,
-            // 5xx, reqwest timeout/connect/DNS errors, unexpected payloads
-            // and keychain read failures are all "the path to the provider
-            // is broken or unanswerable" — never an auth/model verdict.
+            // The server ANSWERED but the body could not be used as a
+            // response — that is a provider-side failure, not "the network
+            // is unreachable".
+            LlmError::InvalidResponse(_) => ConnectionVerdict::ServerError,
+            // 5xx, reqwest timeout/connect/DNS errors, legacy provider
+            // errors and keychain read failures are all "the path to the
+            // provider is broken or unanswerable" — never an auth/model
+            // verdict.
             LlmError::ServerError { .. }
             | LlmError::InvalidResponse(_)
             | LlmError::Provider(..)
@@ -282,7 +293,7 @@ mod tests {
         );
         assert_eq!(
             LlmError::InvalidResponse("bad json".into()).connection_verdict(),
-            ConnectionVerdict::NetworkFailed
+            ConnectionVerdict::ServerError
         );
         assert_eq!(
             LlmError::CheckpointIo("io".into()).connection_verdict(),

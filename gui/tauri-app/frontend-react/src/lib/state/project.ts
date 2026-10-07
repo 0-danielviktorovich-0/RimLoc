@@ -277,6 +277,17 @@ export const projectStore = {
     set({ drafts: { ...state.drafts, [key]: text } })
   },
 
+  /** Revert (§11): a clean draft is the ABSENCE of the record — editor and
+   *  the shell dirty-pill derive dirtiness from that (same convention as
+   *  commit, which deletes the key on ack). Writing the committed text back
+   *  as a draft would leave a phantom unsaved record. */
+  clearDraft(key: string): void {
+    if (!(key in state.drafts)) return
+    const drafts = { ...state.drafts }
+    delete drafts[key]
+    set({ drafts })
+  },
+
   /** Commit one draft as a set_translation intent (persist-before-ack). */
   async commit(key: string, next = false): Promise<boolean> {
     const snap = state.snapshot

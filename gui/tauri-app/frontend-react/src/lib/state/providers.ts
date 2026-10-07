@@ -70,7 +70,7 @@ export const PROVIDER_TEMPLATES: {
   baseUrl: string
   local: boolean
 }[] = [
-  { preset: 'zai', models: ['glm-4.6', 'glm-4.5-air'], baseUrl: 'https://api.z.ai/api/anthropic', local: false },
+  { preset: 'zai', models: ['glm-4.6', 'glm-4.5-air'], baseUrl: 'https://api.z.ai/api/paas/v4', local: false },
   { preset: 'openai', models: ['gpt-4o', 'gpt-4o-mini'], baseUrl: 'https://api.openai.com/v1', local: false },
   { preset: 'anthropic', models: ['claude-sonnet-4', 'claude-haiku-4'], baseUrl: 'https://api.anthropic.com', local: false },
   { preset: 'ollama', models: ['llama3.1:8b', 'qwen2.5:7b'], baseUrl: 'http://localhost:11434/v1', local: true },

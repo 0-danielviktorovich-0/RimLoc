@@ -13,6 +13,7 @@ import { useProjectState } from '../lib/state/useProjectState'
 import { contractErrorText } from '../lib/client/messagesError'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
+import { CHATBATCH_HANDOFF_KEY } from './Workspace'
 import type {
   ChatBatchDto,
   ChatBatchStatusDto,
@@ -59,6 +60,40 @@ export function ChatBatch() {
       setStale(false)
     }
   }, [snap])
+
+  // §15/§20 handoff: Workspace пишет display_identity()-строки в
+  // sessionStorage перед навигацией сюда. При монте читаем ключ один раз,
+  // предотмечаем совпавшие строки-кандидаты и удаляем ключ (прочитал —
+  // удали). Тултип «Строка будет предотмечена» становится правдой.
+  useEffect(() => {
+    let raw: string | null = null
+    try {
+      raw = sessionStorage.getItem(CHATBATCH_HANDOFF_KEY)
+    } catch {
+      return // приватный режим — подхватывать нечего
+    }
+    if (!raw) return
+    sessionStorage.removeItem(CHATBATCH_HANDOFF_KEY)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return // битый JSON — честно игнорируем, ничего не отмечаем
+    }
+    if (!Array.isArray(parsed)) return
+    const handed = new Set(parsed.filter((x): x is string => typeof x === 'string'))
+    if (handed.size === 0) return
+    setSelected((prev) => {
+      const next = new Set(prev)
+      for (const e of st.entries) {
+        const id = displayIdentity(e.identity)
+        if (handed.has(id)) next.add(id)
+      }
+      return next
+    })
+    // Только при монте: инвентарь уже загружен Workspace до навигации,
+    // а ключ одноразовый (потреблён выше — повторный запуск стал бы no-op).
+  }, [])
 
   // Poll the durable batch status while it can still drift (exported /
   // imported): the badge shows drift without waiting for a refused op.
