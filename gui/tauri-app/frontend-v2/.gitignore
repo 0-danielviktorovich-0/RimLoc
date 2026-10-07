@@ -1,5 +1,9 @@
 node_modules/
-dist/
+# dist/ — коммитится: CodeQL default-setup (tauri::generate_context!) требует
+# валидный frontendDist на свежем чекауте; каждый cargo tauri build
+# пересобирает dist через beforeBuildCommand, так что закоммиченное —
+# это замороженный Svelte-фолбэк, не источник прод-ассетов (C5, 2026-10-07).
+
 *.local
 .DS_Store
 
