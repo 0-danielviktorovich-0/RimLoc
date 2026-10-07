@@ -65,10 +65,10 @@ jobs:
       # Provider code has orthogonal HTTP and OS-keychain features. Check the
       # combinations separately so cfg-gated enum variants cannot regress only
       # in Tauri/coverage builds while the all-features workspace stays green.
-      - run: cargo check -p rimloc-llm --no-default-features
-      - run: cargo check -p rimloc-llm --no-default-features --features http
-      - run: cargo check -p rimloc-llm --no-default-features --features keychain
-      - run: cargo check -p rimloc-llm --no-default-features --features http,keychain
+      - run: RUSTFLAGS="-D warnings" cargo check -p rimloc-llm --no-default-features
+      - run: RUSTFLAGS="-D warnings" cargo check -p rimloc-llm --no-default-features --features http
+      - run: RUSTFLAGS="-D warnings" cargo check -p rimloc-llm --no-default-features --features keychain
+      - run: RUSTFLAGS="-D warnings" cargo check -p rimloc-llm --no-default-features --features http,keychain
 
   test:
     name: cargo test (${{ matrix.os }})
