@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Languages, Settings2, FolderOpen, ShieldCheck, GitCompareArrows, Package, Wrench, Sun, Moon, Plus, ChevronDown, ChevronRight, X, Check, PanelLeftOpen, PanelLeftClose, ArrowUpRight, Globe } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
-import { BUILTIN_LANGUAGES as LANGUAGES } from './lib/languages/registry'
+import { BUILTIN_LANGUAGES as LANGUAGES, SOURCE_LOCALE } from './lib/languages/registry'
+import { folderForm } from './lib/languages/folderForm'
 import { loadUserLanguages, type UserLanguage } from './lib/languages/manager'
 import { useProjectState } from './lib/state/useProjectState'
 import { Home } from './components/Home'
@@ -271,7 +272,10 @@ export function App() {
               <div className="workspace-heading">
                 <div>
                   <div className="heading-eyebrow">
-                    <span className="dot primary" /> ENGLISH <span>→</span> РУССКИЙ
+                    {/* Источник/цель из состояния (audit v2 #3): folderForm
+                      даёт строгую папочную форму реестра; en — канонический
+                      источник (SOURCE_LOCALE). */}
+                    <span className="dot primary" /> {folderForm(SOURCE_LOCALE)} <span>→</span> {folderForm(st.targetLocale)}
                   </div>
                   <h1>{t('ws.headingTitle')}</h1>
                   <p>{t('ws.headingSubtitle')}</p>
