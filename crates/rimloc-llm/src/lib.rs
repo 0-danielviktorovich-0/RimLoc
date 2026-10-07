@@ -126,10 +126,9 @@ impl LlmError {
             // errors and keychain read failures are all "the path to the
             // provider is broken or unanswerable" — never an auth/model
             // verdict.
-            LlmError::ServerError { .. }
-            | LlmError::InvalidResponse(_)
-            | LlmError::Provider(..)
-            | LlmError::CheckpointIo(_) => ConnectionVerdict::NetworkFailed,
+            LlmError::ServerError { .. } | LlmError::Provider(..) | LlmError::CheckpointIo(_) => {
+                ConnectionVerdict::NetworkFailed
+            }
             #[cfg(feature = "http")]
             LlmError::Http(_) => ConnectionVerdict::NetworkFailed,
             #[cfg(feature = "keychain")]
