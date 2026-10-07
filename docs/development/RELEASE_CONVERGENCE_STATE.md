@@ -116,3 +116,24 @@
   v4×SOURCE-блок пойман локальным tsc и исправлен (v4 props = числа-проценты);
   CI-матрица SUCCESS на 41c63e0; CodeQL §10 (10 новых — 7 vendor + 3
   dev-tool, dismissed по одному) → CS 0 / DA 0.
+
+## 2026-10-08 — REVIEWER BRIDGE: 3 ИТЕРАЦИИ → OWNER_ONLY
+- Канал: browser-direct ВСТУПИЛ В СИЛУ (owner авторизовал IAB и открыл
+  RimLoc-чат; attach через DataTransfer-drop, текст через ProseMirror
+  execCommand, send через evaluate-click) — A1-граница пересмотрена.
+- **Итерация 1** (пакет 2305d56): CONDITIONAL_PASS — 7 DO_NOW, среди них
+  смешанный rel22/rel23 пакет, self-entry манифеста, устаревшая parity.
+- **Итерация 2** (пакет 7781dd3 v2, 27 файлов): PRODUCT RC APPROVED;
+  1 blocker = packaging/truth gate (27 ._ записей в доставленном zip,
+  FINAL_IDENTITY с mutable main).
+- **Итерация 3** (mini-proof): OWNER_ONLY подтверждён — reviewer независимо
+  проверил конечный ZIP (0 junk, MANIFEST 26/26 PASS, rel23-final, 59/59,
+  live GitHub SUCCESS, 0 open PR) и подтвердил переход к owner-тестированию.
+- Перманентные фиксы моста: xattr-strip + zip -r -X + внешняя верификация
+  (unzip-recount) + declared ⊆ actual + packet-self-test gate
+  (распаковка и пофайловая сверка манифеста); mutable main убран из
+  FINAL_IDENTITY (repo_head_at_packaging живёт в metadata пакета);
+  урок «gate проверяет конечный артефакт снаружи» — в orchestration skill.
+- Owner-контур (по reviewer): запустить rel23-final и пройти
+  пользовательский сценарий; level-7 RimWorld (HugsLib); UI/UX замечания;
+  решение по 16 dev-only npm high; опционально Z.AI key, signing, publish.

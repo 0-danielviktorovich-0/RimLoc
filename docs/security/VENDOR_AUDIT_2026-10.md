@@ -92,3 +92,17 @@
 3. **Зафиксировать процедуру rebase форков** (при выходе нового wry/tao): извлечь registry-версию → `diff -rq` перенести 5 хунков → `diff -rq` форк vs новый апстрим (должен показать ровно те же 4/2 файла) → обновить пути в `[patch.crates-io]` → cargo check. Следить за tao PR #1210: при мерже регион `window.rs` изменится.
 4. **Периодический cargo-deny advisories** по корневому lock (конфиг уже готов): при каждом Depandabot-пинге или раз в месяц — единственный способ поймать будущий advisory на 0.57.x/0.37.x, если апстрим зарелизит фиксированную версию.
 5. **Опционально**: оформить настоящий upstream PR в wry/tao (в комментарии форка заявлен «pending», фактически не обнаружен) — сокращает lifetime вендор-патча; либо поправить комментарий на честный статус.
+
+## Дополнение 2026-10-07 (C6): tauri-utils-2.10.1-nfs-appledouble
+
+| Поле | Значение |
+|---|---|
+| Объект | `gui/tauri-app/vendor/tauri-utils-2.10.1-nfs-appledouble/` |
+| Upstream | tauri-utils **2.10.1** (crates.io; registry-извлечение `~/.cargo/registry/src/…/tauri-utils-2.10.1/`, чексумма верифицирована cargo); upstream repo: tauri-apps/tauri |
+| Причина форка | NFS-том Portable-SSD держит xattr (`com.apple.provenance`) как AppleDouble «._»-сиблинги; глоб `"**/*.toml"` в `define_permissions` ловил `._default.toml` → panic «stream did not contain valid UTF-8» (`tauri-2.12.1/build.rs:424`). Воспроизводилось только на user-записанных файлах (root-процессы не штампуются) |
+| Функциональный диф | **Один** фильтр в `acl/build.rs:79-90` (после upstream `:78`): `file_name.starts_with("._")` → skip; 12 добавленных строк, 0 удалённых/изменённых upstream-строк; остальные файлы диффа нет (`diff -rq`: 1 differing file) |
+| Подключение | `[patch.crates-io]` в корневом Cargo.toml + `exclude` в форке; версия в Cargo.lock не меняется (2.10.1) |
+| Правило обновления | при любом security advisory на tauri-utils: (1) обновить upstream-версию в Cargo.lock, (2) перепроверить диф `diff -rq` (фильтр «._» либо уже в upstream, либо переносится), (3) обновить дату ниже |
+| Последняя сверка upstream | 2026-10-07 (создание форка; upstream 2.10.1 = текущий стабильный) |
+| Hash/diff guard | `diff -rq <registry-извлечение>/src <fork>/src` → ровно 1 differing file (acl/build.rs); любое другое расхождение = посторонняя правка форка |
+| Известные ограничения | 1 CodeQL extraction error (platform.rs, upstream-макросы) — documented limitation (§10 reconciliation); 7 dismissed vendor alerts (см. §10) |

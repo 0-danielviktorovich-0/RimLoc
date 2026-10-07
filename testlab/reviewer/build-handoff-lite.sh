@@ -86,8 +86,10 @@ cp "$REPO/gui/tauri-app/frontend-v2/npm-audit-exemptions.md" "$PKT/" 2>/dev/null
 cp "$EV/reviewer/npm-audit-react-summary.json"       "$PKT/npm-audit-react-summary.json" 2>/dev/null || true
 cp "$EV/reviewer/npm-audit-v2-summary.json"          "$PKT/npm-audit-v2-summary.json" 2>/dev/null || true
 cp "$EV/artifact-rel23-final/OWNER_TEST_PACKET.md"   "$PKT/" 2>/dev/null || true
-# WDIO evidence
-for f in source-inspector-wdio.log chatbatch-wdio.log multitarget-wdio.log palette-lm-wdio-summary.txt final-wdio-summary.txt; do
+# WDIO evidence + self-test/zip-listing (generate если ещё нет)
+ZIP_PRE="$EV/RimLoc-evidence-handoff-lite-${BIN_SHA:0:7}.zip"
+if [ -f "$ZIP_PRE" ]; then unzip -l "$ZIP_PRE" > "$EV/reviewer/zip-listing.txt" 2>/dev/null || true; fi
+for f in source-inspector-wdio.log chatbatch-wdio.log multitarget-wdio.log palette-lm-wdio-summary.txt final-wdio-summary.txt packet-self-test.txt zip-listing.txt; do
   [ -f "$EV/reviewer/$f" ] && cp "$EV/reviewer/$f" "$PKT/"
 done
 # Tool/CI status (fresh from gh)
@@ -125,14 +127,35 @@ python3 "$REPO/testlab/reviewer/sanitize-packet.py" "$PKT" || {
   exit 1
 }
 
-# --- zip (junk-free) ---
+# --- zip БЕЗ метаданных (урок итерации 2: gate проверяет КОНЕЧНЫЙ артефакт
+# снаружи, тем же способом, каким его увидит следующий потребитель) ---
 ZIP="$EV/RimLoc-evidence-handoff-lite-${BIN_SHA:0:7}.zip"
 rm -f "$ZIP"
-( cd "$PKT/.." && ditto -c -k --noqtn --keepParent "$(basename "$PKT")" "$ZIP" )
-# пост-проверка: в архиве нет мусора
-if unzip -l "$ZIP" | grep -q -E "__MACOSX|\._"; then
-  echo "PACKET REFUSED: junk inside zip"; exit 1
+# xattr-источник AppleDouble: снять со всех файлов пакета
+while IFS= read -r -d '' f; do xattr -c "$f" 2>/dev/null; done < <(find "$PKT" -type f -print0)
+find "$PKT" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
+( cd "$PKT/.." && zip -q -r -X "$ZIP" "$(basename "$PKT")" )
+# ВНЕШНЯЯ верификация: перечитать zip так, как увидит потребитель
+JUNK=$(unzip -l "$ZIP" | grep -c -E "__MACOSX|/\._|\._[^/]*$|\.DS_Store" || true)
+if [ "$JUNK" -ne 0 ]; then
+  echo "PACKET REFUSED: $JUNK junk-записей в zip (внешняя проверка)"; exit 1
 fi
+echo "EXTERNAL CHECK: 0 junk entries in $(basename "$ZIP")"
+# declared contents ⊆ actual zip contents (урок итерации 2: заявленное
+# в сообщении должно физически лежать в пакете)
+unzip -l "$ZIP" | awk '{print $NF}' | grep -E '\.md$|\.txt$|\.json$' | sed 's|.*/||' | LC_ALL=C sort -u > /tmp/declared-zip-contents.$$
+declare -a REQUIRED=(REVIEW_REQUEST.md FINAL_IDENTITY.md RELEASE_GATE.md RELEASE_PARITY_MATRIX.md packet-self-test.txt zip-listing.txt)
+MISSING=0
+for f in "${REQUIRED[@]}"; do
+  if ! grep -qx "$f" /tmp/declared-zip-contents.$$ && [ ! -f "$PKT/$f" ]; then
+    echo "PACKET REFUSED: declared file '$f' отсутствует и в zip, и в пакете"; MISSING=1
+  elif [ -f "$PKT/$f" ] && ! grep -qx "$f" /tmp/declared-zip-contents.$$; then
+    echo "PACKET REFUSED: файл '$f' есть в пакете, но НЕ попал в zip"; MISSING=1
+  fi
+done
+rm -f /tmp/declared-zip-contents.$$
+[ "$MISSING" -eq 0 ] || exit 1
+echo "DECLARED CONTENTS: ⊆ actual zip"
 echo "MANIFEST checksum (out-of-band): $(shasum -a 256 "$PKT/MANIFEST.sha256" | awk '{print $1}')"
 echo "PACKET OK: $ZIP ($(find "$PKT" -type f | wc -l | tr -d ' ') files)"
 
