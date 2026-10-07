@@ -55,7 +55,7 @@ structural_heuristic > ai_proposal
    остаётся победителем, а столкновение диагностируется вместо тихого
    разрешения. Всё детерминировано: одинаковый вход — одинаковый вердикт.
 
-## Встроенный seed-пак: 155 правил
+## Встроенный seed-пак: 168 правил
 
 `builtin_seed_rules()` собирается декларативно из уже существующих дефолтов
 экстракции. Состав зафиксирован тестом
@@ -66,12 +66,42 @@ structural_heuristic > ai_proposal
 |---|---|---|
 | Kind-правила первого лица | 2 | TKey и Keyed/LanguageData существуют, чтобы их переводили |
 | NoTranslate-поля | 5 | `defName`, `packageId`, `texPath`, `workerClass`, `defaultDamage` — семейство `[NoTranslate]`/`[Unsaved]` |
-| Def-type правила | 126 | пары (def_type, поле) из встроенного словаря `rimloc-parsers-xml assets/defs_fields.json` — те же данные, что у сканера, поэтому движок и экстрактор не расходятся |
+| Def-type правила | 139 | пары (def_type, поле) из встроенного словаря `rimloc-parsers-xml assets/defs_fields.json` — те же данные, что у сканера, поэтому движок и экстрактор не расходятся. Аудит 2026-10-07 по корпусу VEF (2023507013): устранены молчаливые дубликаты ключей JSON (HediffDef/JobDef/ThoughtDef — парсер брал последний и терял первый), добавлены корпусно-подтверждённые поля (WorkGiverDef.verb/gerund, HediffDef.label/labelNoun/description-восстановление, MentalStateDef.baseInspectLine/beginLetter/beginLetterLabel/recoveryMessage, IncidentDef.label, StatDef.formatString, KeyBindingDef.label) |
 | Универсальные leaf-паттерны | 22 | `label`, `title`, `description`, `reportString`, `letterText`, … — человеческие поля вне контекста def-типа |
 
 Экстракция Defs — allowlist- driven, поэтому технические поля из Defs в
 инвентарь не попадают; но DefInjected-сайдкары «в дикой природе» их несут, и
 движок обязан такие записи отклонять.
+
+### Аудит словаря 2026-10-07: что НЕ добавлено и почему
+
+Метод: кандидаты конкурентов сверены по трём источникам — корпус VEF
+(2023507013, все версии Defs), статическая выгрузка string-полей из
+Assembly-CSharp.dll (System.Reflection.Metadata, без исполнения кода; DLL —
+референсная копия RimTrans, 1.0-эры, md5 72e1c7d7) и фактический A/B-скан.
+Отказ = 0 вхождений в корпусе и/или поле не является авторуемым текстом:
+
+- `FactionDef.pawnsPlural` — поле реально (есть в DLL, player-visible в игре),
+  но в корпусе 0 фракций → нечего извлекать, корпусного подтверждения нет.
+- `stuffAdjective` — 0 в корпусе; в DLL 1.0 поле на `StuffProperties`, путь для
+  современных версий не верифицирован (новой DLL на машине нет).
+- `adjective` — 0 в корпусе; в DLL 1.0 только на `LifeStageDef` (не def-тип
+  корпуса).
+- `summary` — 0 в корпусе; в DLL 1.0 только `Scenario.summary`;
+  `GeneDef.summary` (современность) неверифицируем по той же причине.
+- `ideoName`, `structureLabel`, `inspectString` — 0 в корпусе, в DLL 1.0
+  отсутствуют; современные дома поля неизвестны.
+- `defName`, `*texture*`/`iconPath`/`texturePath`, `tags` — идентификаторы,
+  ассет-пути и матч-токены, не player-visible текст (правильно отсутствуют).
+- `cachedLabelCap`, `labelNounPretty` — рантайм-кэши, не авторуются XML;
+  reflection-экстракция таких полей (как у RimTransAI) даёт шум, а не юниты.
+
+Вывод по reflection-адаптеру (Mono.Cecil-скан сборок, как у RimTransAI):
+после закрытия словарных дыр на этом корпусе не остаётся ни одного
+непокрытого player-visible текстового поля; остаток DLL-полей — вне-корпусные
+потенциалы, кэши и нетекст. Оценка — не строить сейчас (см.
+`docs/competitive/differential/TIERA_GRABBER_RTAI_PRACTICAL.md`, вердикт
+подтверждён данными).
 
 ## Rule-паки (сообщество / пользователь / проект)
 
