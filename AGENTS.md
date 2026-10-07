@@ -242,9 +242,24 @@ scripts/agent-commit.sh  # Mandatory finish step
 `docs/readme/ru/gitmessage.txt`. PR: краткое summary, скоуп, linked issues, инструкция проверки,
 CLI-вывод/скриншоты при изменении поведения; CI зелёный до ревью.
 
+### Public Git history hygiene (mandatory)
+- Публичная история описывает **результат для продукта/репозитория**, а не внутреннюю оркестрацию агента.
+- В commit subject, PR title, public branch/release title и пользовательских CHANGELOG-добавлениях
+  запрещены внутренние маркеры вроде `mandate/мандат`, `wave/lane`, `WF-*`, `reviewer iteration`,
+  `DO_NOW`, `OWNER_ONLY`, `EVIDENCE_REQUEST`, `IMPLEMENT_NOW`, `owner-gate`, campaign/phase ids.
+- Product/version identifiers допустимы: например, `UI R1` — реальное имя дизайн-контракта, а не
+  orchestration phase. Не блокировать полезный термин только по совпадению цифры.
+- Перед публичным Git write агент ОБЯЗАН перевести внутреннюю задачу в engineering outcome:
+  `R4 / WF-UI / reviewer DO_NOW` → `feat(gui): show live source provenance in the workspace`.
+- Нельзя использовать русский текст или русскую транслитерацию в public subject/title.
+- Проверка: `scripts/check-public-git-language.py`; локальный commit-msg hook + PR workflow повторяют
+  её независимо. `--no-verify` не является обходом: PR gate проверяет новые commit subjects и CHANGELOG.
+- Старую историю НЕ переписывать ради косметики: существующие SHA связаны с evidence, CodeQL и релизами.
+- Полная политика и примеры: `docs/development/PUBLIC_GIT_HISTORY_POLICY.md`.
+
 ### Git hooks
 - `scripts/setup-git-hooks.sh` раз на клон (ставит `core.hooksPath` = `.githooks`).
-- `commit-msg` проверяет паттерн subject, пустую строку, минимум один `- ` буллет в теле.
+- `commit-msg` проверяет паттерн subject, пустую строку, минимум один `- ` буллет в теле и public-history hygiene; PR CI повторно проверяет title/branch/subjects/CHANGELOG.
 
 ### Commit scope policy (mandatory)
 - Коммитить только файлы, правленные сознательно в рамках задачи; никаких `git add -A`/`git add .` —
