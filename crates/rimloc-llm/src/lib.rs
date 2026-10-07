@@ -116,6 +116,7 @@ pub fn env_key(provider: &str) -> String {
 /// Short, single-line summary of an HTTP error body for error reports.
 /// Error bodies can be HTML from proxies or arbitrarily large; only the
 /// first line, truncated, ever reaches an [`LlmError`].
+#[cfg(feature = "http")]
 pub(crate) fn summarize_body(body: &str) -> String {
     let first_line = body.lines().map(str::trim).find(|l| !l.is_empty());
     let line = first_line.unwrap_or("(empty body)");
@@ -132,6 +133,7 @@ pub(crate) fn summarize_body(body: &str) -> String {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "http")]
     #[test]
     fn summarize_body_takes_first_line_and_truncates() {
         assert_eq!(summarize_body(""), "(empty body)");
