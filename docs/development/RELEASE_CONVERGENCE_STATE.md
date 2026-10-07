@@ -38,3 +38,12 @@
 ## 2026-10-07 (5) — верификация ZERO-OPEN на финальном main
 - CS: 0 open, DA: 0 open на 3477a37 (свежий CodeQL-анализ подтвердил все предыдущие дискламации)
 - RELEASE_PARITY_MATRIX + release-parity.json: создание запущено (новый мандат §1)
+
+## 2026-10-07 (5) — ФИНАЛЬНАЯ ИНТЕГРАЦИЯ
+- main = 5fda98d (PR #82 release/wave-integration-2 merged)
+- Все волны влиты: Wave 1-5 + security + architecture + edge-trim + compare + ui-gaps + provider + build-mod
+- rel21-rc артефакт (identity PASS) — код идентичен main (только docs различия)
+- CI: 32 pass / 3 infra-fail (Tauri GUI build dist-гэп, coverage config, changelog verify — все известные, не продуктовые)
+- Level-7 visual: ожидает владельца (ACCEPTANCE_CHECKLIST.md)
+- Issue #2: отвечен с практическим proof (issuecomment-6024184727)
+- Оставшиеся owner-gates: level-7 visual, RC-тест, publish approval
