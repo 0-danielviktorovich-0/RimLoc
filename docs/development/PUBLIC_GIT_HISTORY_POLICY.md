@@ -41,7 +41,7 @@ Local commits are checked by `.githooks/commit-msg`, which delegates the
 public-language check to:
 
 ~~~bash
-python3 scripts/check-public-git-language.py --surface commit --text "feat(gui): ..."
+python3 scripts/check-public-git-language.py --surface commit-subject --text "feat(gui): ..."
 ~~~
 
 Pull requests are checked by the `Public history hygiene` workflow. It runs
@@ -51,7 +51,7 @@ title, branch name, all new commit subjects, and newly added CHANGELOG lines.
 The checker is also available for release tooling:
 
 ~~~bash
-python3 scripts/check-public-git-language.py --surface release --text "RimLoc v0.2.0"
+python3 scripts/check-public-git-language.py --surface release-title --text "RimLoc v0.2.0"
 ~~~
 
 ## Existing history
