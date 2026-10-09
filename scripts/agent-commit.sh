@@ -335,7 +335,7 @@ $no_verify && commit_args+=( --no-verify )
 public_msg_file="${tmp_msg:-$msg_file}"
 [[ -n "$public_msg_file" && -f "$public_msg_file" ]] || die "unable to resolve commit message for public-history validation"
 public_subject=$(head -n1 "$public_msg_file" | tr -d '\r')
-python3 scripts/check-public-git-language.py --surface commit --text "$public_subject"
+python3 scripts/check-public-git-language.py --surface commit-subject --text "$public_subject"
 
 git commit "${commit_args[@]}"
 
