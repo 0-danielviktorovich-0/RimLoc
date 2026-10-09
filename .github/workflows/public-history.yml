@@ -2,6 +2,7 @@ name: Public history hygiene
 
 on:
   pull_request_target:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
     branches: [main]
 
 permissions:
@@ -30,21 +31,21 @@ jobs:
       - name: Validate pull request title
         env:
           PUBLIC_TEXT: ${{ github.event.pull_request.title }}
-        run: python3 scripts/check-public-git-language.py --surface pr --text "$PUBLIC_TEXT"
+        run: python3 scripts/check-public-git-language.py --surface pr-title --text "$PUBLIC_TEXT"
 
       - name: Validate public branch name
         env:
           PUBLIC_TEXT: ${{ github.event.pull_request.head.ref }}
-        run: python3 scripts/check-public-git-language.py --surface branch --text "$PUBLIC_TEXT"
+        run: python3 scripts/check-public-git-language.py --surface branch-name --text "$PUBLIC_TEXT"
 
       - name: Validate new commit subjects
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python3 scripts/check-public-git-language.py --surface commit-range --base "$BASE_SHA" --head "refs/remotes/origin/public-history-pr-${PR_NUMBER}"
+        run: python3 scripts/check-public-git-language.py --git-range "$BASE_SHA..refs/remotes/origin/public-history-pr-${PR_NUMBER}"
 
       - name: Validate new changelog text
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: python3 scripts/check-public-git-language.py --surface changelog-diff --base "$BASE_SHA" --head "refs/remotes/origin/public-history-pr-${PR_NUMBER}"
+        run: python3 scripts/check-public-git-language.py --changelog-range "$BASE_SHA...refs/remotes/origin/public-history-pr-${PR_NUMBER}"
