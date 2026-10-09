@@ -70,7 +70,7 @@ jobs:
       - name: Validate public release title
         env:
           PUBLIC_TEXT: ${{ steps.meta.outputs.name }}
-        run: python3 scripts/check-public-git-language.py --surface release --text "$PUBLIC_TEXT"
+        run: python3 scripts/check-public-git-language.py --surface release-title --text "$PUBLIC_TEXT"
       - name: Create or update pre-release
         uses: softprops/action-gh-release@v3
         with:
