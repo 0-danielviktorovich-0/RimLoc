@@ -30,6 +30,9 @@ fi
 # из frontend-v2. release-gate-frontend.sh после сборки доказывает flavor.
 cargo tauri build --bundles app --config tauri.react.conf.json
 
+# Release gate (R4 §1): prove the React R1 frontend is what shipped.
+"$REPO_ROOT/testlab/release-gate-frontend.sh" "$TARGET_DIR/release/bundle/macos/RimLoc GUI.app/Contents/MacOS/rimloc-gui"
+
 # Дистрибутивный артефакт — последний шаг контракта: .app → .app.zip + sha256.
 "$REPO_ROOT/scripts/build-make-appzip.sh" \
   "$TARGET_DIR/release/bundle/macos/RimLoc GUI.app" \
