@@ -25,7 +25,10 @@ if [[ -d "$TARGET_DIR/release/build" ]]; then
   find "$TARGET_DIR/release/build" -name '._*' -delete 2>/dev/null || true
 fi
 
-cargo tauri build --bundles app
+# Production frontend = React R1 (frontend-react). Явный конфиг обязателен:
+# без него дефолтный tauri.conf.json собрал бы замороженный Svelte-фолбэк
+# из frontend-v2. release-gate-frontend.sh после сборки доказывает flavor.
+cargo tauri build --bundles app --config tauri.react.conf.json
 
 # Дистрибутивный артефакт — последний шаг контракта: .app → .app.zip + sha256.
 "$REPO_ROOT/scripts/build-make-appzip.sh" \
