@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, CircleAlert, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type WorkspaceEntry } from '../lib/state/project'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
@@ -82,6 +82,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
 
   // «С замечаниями» = ключи строк из находок отчёта (не эвристика).
   const issueKeys = useMemo(() => findingEntryKeys(vstate.report), [vstate.report])
+  // D-V1: находки по ключу для статус-колонки списка строк.
+  const findingsByKey = useMemo(() => findingsByEntryKey(vstate.report), [vstate.report])
 
   const kindGroups = useMemo(() => {
     const m = new Map<string, number>()
@@ -217,7 +219,14 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             ))}
             <span>{visible.length} {t('ws.rows')}</span>
           </div>
-          <EntryList entries={visible} selectedKey={selectedKey} onSelect={(k) => projectStore.select(k)} />
+          <EntryList
+            entries={visible}
+            selectedKey={selectedKey}
+            findings={findingsByKey}
+            sourceLabel={folderForm(SOURCE_LOCALE)}
+            targetLabel={folderForm(st.targetLocale)}
+            onSelect={(k) => projectStore.select(k)}
+          />
           <div className="list-footer">
             <span>
               {visible.length} {t('ws.of')} {st.entries.length} {t('ws.rows')}
@@ -282,13 +291,49 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   )
 }
 
+/** D-V1: compact status indicator of the canon third column (22px).
+ *  Priority: a live validator finding (color + title by severity) → an
+ *  empty target («нет перевода») → translated. Everything comes from the
+ *  live validator report and the snapshot — nothing is synthesized. */
+function RowStatus({
+  finding,
+  target,
+}: {
+  finding?: ValidationFindingDto
+  target: string
+}) {
+  const empty = !target.trim()
+  const cls = finding
+    ? finding.severity === 'error'
+      ? 'text-destructive'
+      : finding.severity === 'warning'
+        ? 'text-warning'
+        : 'text-info'
+    : empty
+      ? 'text-warning'
+      : 'text-muted-foreground'
+  const Icon = finding ? CircleAlert : empty ? Clock3 : Circle
+  const title = finding ? finding.message : empty ? t('ws.status.empty') : t('ws.status.translated')
+  return (
+    <span className={`status-label ${cls}`} title={title} data-testid="ws.entry-status">
+      <Icon size={13} />
+    </span>
+  )
+}
+
 function EntryList({
   entries,
   selectedKey,
+  findings,
+  sourceLabel,
+  targetLabel,
   onSelect,
 }: {
   entries: { key: string; source: string; target: string }[]
   selectedKey: string | null
+  findings: Map<string, ValidationFindingDto[]>
+  sourceLabel: string
+  targetLabel: string
   onSelect: (key: string) => void
 }) {
   const parentRef = useRef<HTMLDivElement>(null)
@@ -300,36 +345,50 @@ function EntryList({
   })
 
   return (
-    <div className="entry-list" ref={parentRef} style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
-      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualizer.getVirtualItems().map((vi) => {
-          const e = entries[vi.index]!
-          return (
-            <button
-              key={e.key}
-              className={`entry-row ${selectedKey === e.key ? 'selected' : ''}`}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: ROW_HEIGHT,
-                transform: `translateY(${vi.start}px)`,
-                ...(selectedKey === e.key ? { backgroundColor: 'var(--accent)' } : {}),
-              }}
-              onClick={() => onSelect(e.key)}
-              data-testid={`ws.entry.${vi.index}`}
-            >
-              <div className="row-source">
-                <span>{e.source}</span>
-                <code>{e.key}</code>
-              </div>
-              <div className={`row-target ${!e.target ? 'untranslated' : ''}`}>{e.target || t('ws.addTarget')}</div>
-            </button>
-          )
-        })}
+    <>
+      {/* D-V1: canon table head (ИСХОДНИК/ПЕРЕВОД/СТАТУС) — hidden on
+          narrow panes by CSS, matching the ref layout rule. */}
+      <div className="table-head" data-testid="ws.table-head">
+        <span>
+          {t('ws.headSource')} <small>{sourceLabel}</small>
+        </span>
+        <span>
+          {t('ws.headTarget')} <small>{targetLabel}</small>
+        </span>
+        <span>{t('ws.headStatus')}</span>
       </div>
-    </div>
+      <div className="entry-list" ref={parentRef} style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          {virtualizer.getVirtualItems().map((vi) => {
+            const e = entries[vi.index]!
+            return (
+              <button
+                key={e.key}
+                className={`entry-row ${selectedKey === e.key ? 'selected' : ''}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: ROW_HEIGHT,
+                  transform: `translateY(${vi.start}px)`,
+                  ...(selectedKey === e.key ? { backgroundColor: 'var(--accent)' } : {}),
+                }}
+                onClick={() => onSelect(e.key)}
+                data-testid={`ws.entry.${vi.index}`}
+              >
+                <div className="row-source">
+                  <span>{e.source}</span>
+                  <code>{e.key}</code>
+                </div>
+                <div className={`row-target ${!e.target ? 'untranslated' : ''}`}>{e.target || t('ws.addTarget')}</div>
+                <RowStatus finding={findings.get(e.key)?.[0]} target={e.target} />
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -367,7 +426,23 @@ function EntryEditor(props: {
   onCommit: (next: boolean) => void
   onMove: (d: number) => void
 }) {
-  const copied = useState(false)
+  // D-V5: the copy affordance answers honestly — Check replaces Copy for
+  // 1.5s after a SUCCESSFUL write; a failed clipboard stays silent (no
+  // fabricated success), same contract as the ref's toast.
+  const [copied, setCopied] = useState(false)
+  const copyTimer = useRef<number | null>(null)
+  const copyKey = (): void => {
+    void navigator.clipboard.writeText(props.entryKey).then(
+      () => {
+        setCopied(true)
+        if (copyTimer.current !== null) window.clearTimeout(copyTimer.current)
+        copyTimer.current = window.setTimeout(() => setCopied(false), 1500)
+      },
+      () => {
+        /* clipboard unavailable — honest silence */
+      },
+    )
+  }
   // §13: единственная мёртвая кнопка-таб стала настоящими табами.
   const [tab, setTab] = useState<'source' | 'terms'>('source')
   const dirty = props.draft !== props.target
@@ -408,9 +483,11 @@ function EntryEditor(props: {
           <button
             className="icon-btn"
             aria-label={t('ws.copyKey')}
-            onClick={() => void navigator.clipboard.writeText(props.entryKey)}
+            title={copied ? t('ws.copied') : t('ws.copyKey')}
+            data-testid="ws.copy-key"
+            onClick={copyKey}
           >
-            <Copy />
+            {copied ? <Check /> : <Copy />}
           </button>
         </div>
         <div className="label-line">
@@ -639,7 +716,6 @@ function EntryEditor(props: {
             ))}
           </div>
         )}
-        {copied[0] && <span hidden />}
       </div>
       <div className="detail-foot">
         <FileCode2 size={13} />

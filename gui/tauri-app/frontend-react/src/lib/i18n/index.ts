@@ -449,6 +449,27 @@ const ru: Record<string, string> = {
     'Строка будет предотмечена в чат-переводе (без API, без автоматических вызовов провайдера).',
   'ws.mtTitle': 'Машинный перевод',
   'ws.mtHint': 'тот же поток без API — чат-перевод',
+  // D-V1: canon table head + статус-колонка списка строк.
+  'ws.headSource': 'ИСХОДНИК',
+  'ws.headTarget': 'ПЕРЕВОД',
+  'ws.headStatus': 'СТАТУС',
+  'ws.status.empty': 'Нет перевода',
+  'ws.status.translated': 'Переведено',
+  // D-V5: честный ответ копирования ключа (Check вместо Copy 1.5 c).
+  'ws.copied': 'Ключ скопирован',
+  // D-V3: канон-тулбар глоссария — фильтр + JSON-экспорт/импорт.
+  'gl.search': 'Найти термин',
+  'gl.searchPlaceholder': 'Фильтр по термину или переводу…',
+  'gl.export': 'Экспорт JSON',
+  'gl.import': 'Импорт JSON',
+  'gl.importError': 'Файл не распознан: нужен JSON-массив записей вида {"term":"…","translation":"…"}.',
+  'gl.importDone': 'Импортировано записей: {count}',
+  'gl.noMatch': 'Ни один термин не подходит под фильтр.',
+  // F1: активная целевая локаль на экране сборки + честный zero-keys.
+  'be.targetLocale': 'Целевая локаль (папка сборки)',
+  'be.zeroKeys': '0 ключей перечитано — проверьте целевую локаль.',
+  // D-V4: план сборки из живого инвентаря (canon .archive-tree).
+  'be.planTitle': 'ПЛАН СБОРКИ',
 }
 
 const en: Record<string, string> = {
@@ -889,6 +910,27 @@ const en: Record<string, string> = {
     'The string will be pre-selected in chat translation (no API, no automatic provider calls).',
   'ws.mtTitle': 'Machine translation',
   'ws.mtHint': 'same no-API flow — chat translation',
+  // D-V1: canon table head + entry-list status column.
+  'ws.headSource': 'SOURCE',
+  'ws.headTarget': 'TARGET',
+  'ws.headStatus': 'STATUS',
+  'ws.status.empty': 'No translation',
+  'ws.status.translated': 'Translated',
+  // D-V5: honest key-copy feedback (Check replaces Copy for 1.5s).
+  'ws.copied': 'Key copied',
+  // D-V3: canon glossary toolbar — filter + JSON export/import.
+  'gl.search': 'Find a term',
+  'gl.searchPlaceholder': 'Filter by term or translation…',
+  'gl.export': 'Export JSON',
+  'gl.import': 'Import JSON',
+  'gl.importError': 'File not recognized: expected a JSON array of {"term":"…","translation":"…"} records.',
+  'gl.importDone': 'Records imported: {count}',
+  'gl.noMatch': 'No term matches the filter.',
+  // F1: active target locale on the build screen + the honest zero-keys case.
+  'be.targetLocale': 'Target locale (build folder)',
+  'be.zeroKeys': '0 keys reparsed — check the target locale.',
+  // D-V4: the build plan from the live inventory (canon .archive-tree).
+  'be.planTitle': 'BUILD PLAN',
 }
 
 let locale: Locale = 'ru'

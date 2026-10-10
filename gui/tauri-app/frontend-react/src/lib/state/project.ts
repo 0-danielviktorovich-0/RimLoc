@@ -70,6 +70,31 @@ const initialValidation: ValidationState = {
   error: null,
 }
 
+// F1: the target locale is PER-PROJECT state — it survives restarts in
+// localStorage under `rimloc.target.<project_id>`. Without it, every fresh
+// session opened the project on the default 'ru' while the corpus lived in
+// the locale the user had switched to: the workspace silently showed an
+// empty translation column and a build/export reparsed 0 keys.
+const TARGET_LOCALE_KEY_PREFIX = 'rimloc.target.'
+const DEFAULT_TARGET_LOCALE = 'ru'
+
+function loadTargetLocale(projectId: string): string | null {
+  try {
+    const raw = window.localStorage.getItem(TARGET_LOCALE_KEY_PREFIX + projectId)
+    return raw && raw.trim() !== '' ? raw : null
+  } catch {
+    return null
+  }
+}
+
+function persistTargetLocale(projectId: string, locale: string): void {
+  try {
+    window.localStorage.setItem(TARGET_LOCALE_KEY_PREFIX + projectId, locale)
+  } catch {
+    /* storage unavailable (private mode) — the choice stays session-only */
+  }
+}
+
 export interface ProjectState {
   /** Target locale the workspace edits (multi-target §32): picks which
    *  Project.translations slice the editor shows; switching re-maps. */
@@ -201,9 +226,15 @@ export const projectStore = {
     set({ busy: true, lastError: null })
     try {
       const snap = await clientInstance.getClient().createProject(modRoot, targetVersion)
+      // F1: the fresh project starts on the CURRENT editing locale; the
+      // wizard's own choice lands right after via setTargetLocale. Both
+      // writes persist under rimloc.target.<project_id>.
+      const locale = state.targetLocale
+      persistTargetLocale(snap.project_id, locale)
       set({
         snapshot: snap,
-        entries: mapSnapshot(snap, state.targetLocale),
+        targetLocale: locale,
+        entries: mapSnapshot(snap, locale),
         selectedKey: null,
         drafts: {},
         busy: false,
@@ -240,12 +271,17 @@ export const projectStore = {
     set({ busy: true, lastError: null, perfMarks: { T0_openRequested: T0 } })
     try {
       const snap = await clientInstance.getClient().openProject(projectId)
+      // F1: hydrate the per-project target BEFORE mapping — a fresh session
+      // restores the locale the user last edited this project in; no stored
+      // key falls back to the historical default 'ru'.
+      const locale = loadTargetLocale(projectId) ?? DEFAULT_TARGET_LOCALE
       const T2 = performance.now()
-      const mapped = mapSnapshot(snap, state.targetLocale)
+      const mapped = mapSnapshot(snap, locale)
       const T4 = performance.now()
       set({
         perfMarks: { ...state.perfMarks, T2_ipcComplete: T2, T3_stateReceived: T2, T4_entriesMapped: T4 },
         snapshot: snap,
+        targetLocale: locale,
         entries: mapped,
         selectedKey: null,
         drafts: {},
@@ -267,9 +303,12 @@ export const projectStore = {
   },
 
   /** Multi-target (§32): switch the edited target locale — translations
-   *  re-map from the SAME snapshot (per-locale slices live side by side). */
+   *  re-map from the SAME snapshot (per-locale slices live side by side).
+   *  F1: the choice persists under rimloc.target.<project_id> so the next
+   *  session opens the project on the same corpus slice. */
   setTargetLocale(locale: string): void {
     if (!state.snapshot || state.targetLocale === locale) return
+    persistTargetLocale(state.snapshot.project_id, locale)
     set({ targetLocale: locale, entries: mapSnapshot(state.snapshot, locale), drafts: {} })
   },
 
@@ -356,11 +395,18 @@ export const projectStore = {
     if (!snap) return
     try {
       const fresh = await clientInstance.getClient().snapshot(snap.project_id)
+      // F1: re-hydrate the per-project locale when a stored choice exists
+      // (mid-session adopt must never CLOBBER the in-session edit target —
+      // hence state.targetLocale as the fallback, not the 'ru' default
+      // used on fresh open). Snapshot adoption therefore never resets the
+      // locale (WDIO regression note: locale → adopt keeps it).
+      const locale = loadTargetLocale(snap.project_id) ?? state.targetLocale
       // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
       // захардкоженная 'ru' игнорировала targetLocale).
       set({
         snapshot: fresh,
-        entries: mapSnapshot(fresh, state.targetLocale),
+        targetLocale: locale,
+        entries: mapSnapshot(fresh, locale),
         drafts: {},
         // §9: внешняя мутация (existing-import, chat-batch apply) — отчёт
         // валидации устарел так же, как после commit().

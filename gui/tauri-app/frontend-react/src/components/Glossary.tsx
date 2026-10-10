@@ -1,7 +1,11 @@
 // Glossary (R1): the project glossary over the live contract
 // (project_glossary list/upsert/delete, wave 13) — persist-before-ack.
-import { useEffect, useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+// D-V3: the canon .glossary-toolbar is back — client-side term/translation
+// filter, JSON export (download blob) and JSON import (file → parse →
+// glossaryUpsert per record; a non-JSON file is an inline error, never a
+// silent no-op).
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Download, Plus, Search, Trash2, Upload } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
@@ -20,6 +24,19 @@ export function Glossary() {
   const [term, setTerm] = useState('')
   const [translation, setTranslation] = useState('')
   const [confirmKey, setConfirmKey] = useState<string | null>(null)
+  // D-V3 toolbar state: client-side filter + JSON import/export.
+  const [query, setQuery] = useState('')
+  const [importError, setImportError] = useState<string | null>(null)
+  const [importCount, setImportCount] = useState<number | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  const visibleTerms = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return terms
+    return terms.filter(
+      (g) => g.term.toLowerCase().includes(q) || g.translation.toLowerCase().includes(q),
+    )
+  }, [terms, query])
 
   useEffect(() => {
     if (!projectId || epoch === undefined) return
@@ -108,6 +125,71 @@ export function Glossary() {
       setConfirmKey(null)
     })
 
+  // D-V3: JSON export — download blob of {term, translation} records
+  // (round-trips with the import below).
+  const exportJson = (): void => {
+    const blob = new Blob(
+      [JSON.stringify(terms.map((g) => ({ term: g.term, translation: g.translation })), null, 2)],
+      { type: 'application/json' },
+    )
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `glossary-${projectId}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  // D-V3: JSON import — STRICT: only a JSON array of {term, translation}
+  // records; anything else (broken JSON, wrong shape, no valid records) is
+  // an inline error and nothing is written.
+  const importJson = async (file: File): Promise<void> => {
+    setImportError(null)
+    setImportCount(null)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(await file.text())
+    } catch {
+      setImportError(t('gl.importError'))
+      return
+    }
+    if (!Array.isArray(parsed)) {
+      setImportError(t('gl.importError'))
+      return
+    }
+    const records: { term: string; translation: string }[] = []
+    for (const item of parsed) {
+      const rec = item as Record<string, unknown>
+      if (
+        !rec ||
+        typeof rec !== 'object' ||
+        typeof rec.term !== 'string' ||
+        !rec.term.trim() ||
+        typeof rec.translation !== 'string' ||
+        !rec.translation.trim()
+      ) {
+        setImportError(t('gl.importError'))
+        return
+      }
+      records.push({ term: rec.term.trim(), translation: rec.translation.trim() })
+    }
+    if (records.length === 0) {
+      setImportError(t('gl.importError'))
+      return
+    }
+    await run(async () => {
+      for (const r of records) {
+        await clientInstance.getClient().glossaryUpsert({
+          project_id: projectId,
+          session_epoch: epoch,
+          term: r.term,
+          translation: r.translation,
+        })
+      }
+      setImportCount(records.length)
+    })
+  }
+
   return (
     <div className="page-content narrow-page">
       <div className="section-heading">
@@ -124,13 +206,54 @@ export function Glossary() {
         </div>
       )}
 
+      {/* D-V3: canon toolbar — filter + JSON round-trip. */}
+      <div className="glossary-toolbar" data-testid="gl.toolbar">
+        <div className="search-field">
+          <Search size={16} />
+          <input
+            aria-label={t('gl.search')}
+            placeholder={t('gl.searchPlaceholder')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            data-testid="gl.filter"
+          />
+        </div>
+        <button type="button" onClick={exportJson} disabled={busy || terms.length === 0} data-testid="gl.export">
+          <Download /> {t('gl.export')}
+        </button>
+        <button type="button" onClick={() => fileInput.current?.click()} disabled={busy} data-testid="gl.import">
+          <Upload /> {t('gl.import')}
+        </button>
+        <input
+          hidden
+          ref={fileInput}
+          type="file"
+          accept=".json,application/json"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (f) void importJson(f)
+          }}
+        />
+      </div>
+      {importError && (
+        <div className="inline-warning" role="alert" data-testid="gl.import-error">
+          <span>{importError}</span>
+        </div>
+      )}
+      {importCount !== null && !importError && (
+        <p className="page-note" data-testid="gl.import-done">
+          {t('gl.importDone', { count: importCount })}
+        </p>
+      )}
+
       <div className="glossary-table" data-testid="gl.table">
         <div className="glossary-head">
           <span>{t('gl.term')}</span>
           <span>{t('gl.translation')}</span>
           <span />
         </div>
-        {terms.map((g) => (
+        {visibleTerms.map((g) => (
           <div key={g.id} data-testid={`gl.row.${g.term}`}>
             <span>{g.term}</span>
             <strong>{g.translation}</strong>
@@ -157,6 +280,7 @@ export function Glossary() {
           </div>
         ))}
         {terms.length === 0 && <p className="page-note">{t('gl.empty')}</p>}
+        {terms.length > 0 && visibleTerms.length === 0 && <p className="page-note">{t('gl.noMatch')}</p>}
       </div>
 
       <form

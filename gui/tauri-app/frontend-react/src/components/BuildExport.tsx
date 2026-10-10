@@ -7,7 +7,7 @@
 // skipped_unknown_type from a build/export ack is shown, not dropped.
 // §8 F8.4: after a successful build/export the output folder opens through
 // the guarded reveal_path shell command (session allow-list on the backend).
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   FolderOpen,
   Package,
@@ -225,6 +225,23 @@ export function BuildExport() {
   const previewMore = preview ? Math.max(0, preview.report.findings.length - PREVIEW_FINDINGS_LIMIT) : 0
   const previewOk = preview ? preview.report.status === 'succeeded' && preview.report.error_count === 0 : false
 
+  // D-V4: the planned output structure is DERIVED from the live project
+  // inventory (def-type groups → DefInjected/<Type>, def-less entries →
+  // Keyed) — an honest plan, visible in idle; after a build the aside shows
+  // the actual result instead. Nothing here is fabricated: absent sections
+  // are absent from the plan.
+  const projectName = st.summaries.find((s) => s.project_id === projectId)?.name ?? projectId
+  const defTypes = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const e of st.entries) {
+      if (!e.identity.def_type) continue
+      m.set(e.identity.def_type, (m.get(e.identity.def_type) ?? 0) + 1)
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [st.entries])
+  const keyedCount = useMemo(() => st.entries.filter((e) => !e.identity.def_type).length, [st.entries])
+  const targetFolder = folderForm(st.targetLocale)
+
   return (
     <div className="page-content">
       <div className="section-heading">
@@ -262,6 +279,13 @@ export function BuildExport() {
               </button>
             </div>
           </label>
+          {/* F1: the ACTIVE target locale is always visible on this screen —
+              the user sees WHICH corpus slice the build/export will write
+              (silent empty builds started from a stale default locale). */}
+          <div className="field">
+            <span>{t('be.targetLocale')}</span>
+            <code data-testid="be.target-locale">Languages/{folderForm(st.targetLocale)}</code>
+          </div>
           <div className="build-actions">
             <button disabled={busy || !outDir.trim()} onClick={() => void runExport()} data-testid="be.export">
               <ArrowDownToLine /> {t('be.exportFiles')}
@@ -389,7 +413,47 @@ export function BuildExport() {
               </div>
             </div>
           ) : (
-            !preview && <p className="page-note">{t('be.resultEmpty')}</p>
+            <>
+              {!preview && <p className="page-note">{t('be.resultEmpty')}</p>}
+              {/* D-V4: the canon .archive-tree — the honest BUILD PLAN from
+                  the live inventory, visible in idle (the right column is no
+                  longer an empty aside). After a build this yields to the
+                  actual result above. */}
+              <div className="preview-heading">
+                <Package size={14} />
+                <span>{t('be.planTitle')}</span>
+              </div>
+              <div className="archive-tree" data-testid="be.planTree">
+                <strong>{projectName}/</strong>
+                <p>├─ About/</p>
+                <p className="indent">└─ About.xml</p>
+                <p>└─ Languages/</p>
+                <p className="indent">└─ {targetFolder}/</p>
+                {defTypes.length > 0 && <p className="indent-2">├─ DefInjected/</p>}
+                {defTypes.map(([dt, n], i) => (
+                  <p key={dt} className="indent-3">
+                    {i < defTypes.length - 1 || keyedCount > 0 ? '├─' : '└─'} {dt} ({n})
+                  </p>
+                ))}
+                {defTypes.length > 0 && keyedCount > 0 && (
+                  <p className="indent-2">└─ Keyed/ ({keyedCount})</p>
+                )}
+                {defTypes.length === 0 && keyedCount > 0 && (
+                  <p className="indent-2">└─ Keyed/ ({keyedCount})</p>
+                )}
+                {defTypes.length === 0 && keyedCount === 0 && <p>—</p>}
+              </div>
+              <p className="page-note">{t('be.prevPlanNote')}</p>
+            </>
+          )}
+
+          {/* F1: a build/export that reparsed 0 keys is almost always the
+              corpus living in another locale than the editing target — say
+              so instead of reading the ack as a clean run. */}
+          {result && result.reparsed === 0 && (
+            <div className="inline-warning" role="status" data-testid="be.zero-keys">
+              <span>{t('be.zeroKeys')}</span>
+            </div>
           )}
 
           {/* §8 F8.3: skipped_unknown_type is NEVER dropped — the types the

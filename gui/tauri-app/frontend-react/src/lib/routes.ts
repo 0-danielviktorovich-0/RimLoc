@@ -13,18 +13,20 @@
 //   - the sidebar projection (visibleInSidebar, settings rendered in the
 //     sidebar-bottom slot) keeps the historical NAV order.
 import {
+  ArrowRightLeft,
+  BookOpen,
+  Database,
   FolderOpen,
   GitCompareArrows,
   Globe,
-  LifeBuoy,
   Languages,
+  LifeBuoy,
   MessagesSquare,
   Package,
   PanelsTopLeft,
   Plug,
   ShieldCheck,
   Settings2,
-  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -114,7 +116,9 @@ export const ROUTES: RouteMeta[] = [
     route: 'existing',
     labelKey: 'nav.existing',
     paletteKey: 'palette.cmd.existing',
-    icon: GitCompareArrows,
+    // D-V2: unique icon per route — compare keeps GitCompareArrows; the
+    // existing-import flow is a hand-off (arrow swap), not a diff.
+    icon: ArrowRightLeft,
     visibleInSidebar: true,
     visibleInPalette: true,
     requiresProject: true,
@@ -134,7 +138,9 @@ export const ROUTES: RouteMeta[] = [
     route: 'glossary',
     labelKey: 'nav.glossary',
     paletteKey: 'palette.cmd.glossary',
-    icon: Package,
+    // D-V2: the ref icon language — one distinct icon per route
+    // (Глоссарий=BookOpen, Сборка=Package, TM=Database).
+    icon: BookOpen,
     visibleInSidebar: true,
     visibleInPalette: true,
     requiresProject: true,
@@ -144,7 +150,7 @@ export const ROUTES: RouteMeta[] = [
     route: 'tm',
     labelKey: 'nav.tm',
     paletteKey: 'palette.cmd.tm',
-    icon: Package,
+    icon: Database,
     visibleInSidebar: true,
     visibleInPalette: true,
     requiresProject: true,
@@ -164,7 +170,9 @@ export const ROUTES: RouteMeta[] = [
     route: 'export',
     labelKey: 'nav.export',
     paletteKey: 'palette.cmd.export',
-    icon: Wrench,
+    // D-V2: Сборка=Package (the ref mapping; Wrench duplicated no one but
+    // lost the ship/box metaphor the screen is about).
+    icon: Package,
     visibleInSidebar: true,
     visibleInPalette: true,
     requiresProject: true,
