@@ -119,6 +119,13 @@ feat(adapter): add source discovery capability
 
 Keep commits focused. Do not force-push shared history or create releases/tags unless explicitly authorized.
 
+Public Git metadata must describe the engineering outcome, not private planning
+or automation state. Keep commit subjects, branch names, PR titles, release
+titles and CHANGELOG additions in concise English product/repository language.
+The repository checks this automatically with
+`scripts/check-public-git-language.py`; see
+[Public Git History Policy](docs/development/PUBLIC_GIT_HISTORY_POLICY.md).
+
 A PR should include:
 
 - summary and motivation;

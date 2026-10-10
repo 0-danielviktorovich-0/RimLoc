@@ -28,6 +28,14 @@
 - [ ] ci
 - [ ] release
 
+## Public Git history
+
+- [ ] PR title describes the engineering outcome, not private orchestration
+- [ ] Branch name and commit subjects use public English engineering language
+- [ ] CHANGELOG additions contain no internal workflow/review/status shorthand
+
+The `Public history hygiene` check enforces these rules from the trusted base branch.
+
 ## Evidence / testing
 
 List the exact checks you ran and relevant evidence.

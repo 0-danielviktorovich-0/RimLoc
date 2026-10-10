@@ -6,6 +6,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Internal
+- [repository] Enforce public Git metadata hygiene for commit subjects, branches, pull-request titles, release titles and new changelog entries; private automation terminology stays in engineering notes rather than public history.
 - [vendor/codeql] Remove the unused vendored GLib patch and stale disabled-workflow injection that polluted Rust CodeQL extraction; active wry/tao patches are unchanged (#84)
 - [ci/llm] Harden provider feature-matrix builds and CodeQL vendor scoping so keychain-only Tauri coverage compiles and patched upstream dependencies are not treated as RimLoc-owned sources (#83)
 
