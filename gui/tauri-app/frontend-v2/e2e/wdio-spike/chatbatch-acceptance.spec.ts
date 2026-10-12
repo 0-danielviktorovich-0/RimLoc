@@ -22,7 +22,7 @@ async function pause(ms: number): Promise<void> {
 function respondTo(prompt: string): string {
   const lines = prompt.split('\n')
   const start = lines.findIndex((l) => l.startsWith('Source strings follow'))
-  const end = lines.findIndex((l) => l.startsWith('Respond with'))
+  const end = lines.findIndex((l) => l.startsWith('Respond in EXACTLY this versioned format'))
   if (start < 0 || end < 0 || end <= start) {
     throw new Error('маркеры промпта не найдены')
   }
@@ -32,8 +32,10 @@ function respondTo(prompt: string): string {
     const idx = trimmed.indexOf(': ')
     if (idx <= 0) continue
     const key = trimmed.slice(0, idx)
-    if (/\s/.test(key)) continue // header line, not a pair
-    out.push(`${key}: Перевод ${out.length + 1}`)
+    if (/\s/.test(key)) continue
+    const source = trimmed.slice(idx + 2)
+    const tokens = source.match(/\{\d+\}|%s|<[a-z_]+>/g) ?? []
+    out.push(`${key}: Перевод ${out.length + 1} ${tokens.join(' ')}`.trimEnd())
   }
   if (out.length === 0) throw new Error('не смог распарсить пары из промпта')
   return out.join('\n')
@@ -86,7 +88,7 @@ describe('Chat-batch §R2: полный цикл без API', () => {
     await browser.$('[data-testid="cb.export"]').click()
     await waitExisting('[data-testid="cb.prompt"]')
     const prompt = await browser.$('[data-testid="cb.prompt"]').getValue()
-    if (!prompt || !prompt.includes('Respond with ONLY one line per string')) {
+    if (!prompt || !prompt.includes('Respond in EXACTLY this versioned format')) {
       throw new Error(`промпт не построился: ${String(prompt).slice(0, 120)}`)
     }
     // Ключи фикстуры обязаны быть в промпте — identity resolution сработала.

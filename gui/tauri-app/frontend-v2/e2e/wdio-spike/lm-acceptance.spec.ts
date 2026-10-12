@@ -73,16 +73,19 @@ before(async () => {
   // Уборка мусора прошлых прогонов этого лейна (qa-*), чтобы состав списка
   // был детерминированным.
   await openLM()
-  for (let i = 0; i < 12; i++) {
-    const nextQa = await browser.execute(() => {
-      const row = [...document.querySelectorAll('[data-testid^="lm.row.qa-"]')][0]
+  // Уборка мусора ЛЮБЫХ прошлых прогонов (qa-*, tr из e2e и пр.): удаляем
+  // каждый пользовательский язык, пока список не вернётся к 8 встроенным.
+  for (let i = 0; i < 24; i++) {
+    const removed = await browser.execute(() => {
+      const row = [...document.querySelectorAll('[data-testid^="lm.row."]')].find(
+        (r) => !(r.getAttribute('data-testid') || '').match(/lm\.row\.(en|ru|uk|ja|de|pl|es|zh-Hans)$/),
+      )
       if (!row) return null
-      const id = row.getAttribute('data-testid')!.replace('lm.row.', '')
       const btn = row.querySelector('button') as HTMLElement | null
       btn?.click()
-      return id
+      return row.getAttribute('data-testid')
     })
-    if (!nextQa) break
+    if (!removed) break
     await pause(300)
   }
   const rows = await lmRows()
