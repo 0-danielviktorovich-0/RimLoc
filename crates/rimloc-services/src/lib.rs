@@ -30,6 +30,7 @@ pub mod project_store;
 pub mod providers;
 pub mod scan;
 pub mod session;
+pub mod session_drafts;
 pub mod ui_catalog;
 mod util;
 pub mod validate;
@@ -83,6 +84,11 @@ pub use scan::{
     scan_units_with_defs_and_dict, scan_units_with_defs_and_fields, AutoDefsContext,
 };
 pub use session::ProjectSessionManager;
+pub use session_drafts::{
+    drafts_file_path, load_drafts, quarantine_orphan, save_drafts, DraftEntry, DraftsFile,
+    DraftsLoadOutcome, DraftsRestoreReport, DraftsRestoreStatus, DraftsSaveAck, DraftsStoreError,
+    DRAFTS_MAX_BACKUPS, DRAFTS_SCHEMA_VERSION,
+};
 pub use util::canonical_match_key;
 pub use util::canonical_view;
 pub use util::ensure_free_output_path;

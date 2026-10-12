@@ -33,6 +33,9 @@ import type {
   ContractErrorCode,
   ContractHandshakeDto,
   DiagnoseResponseDto,
+  DraftEntryDto,
+  DraftsRestoreReportDto,
+  DraftsSaveAckDto,
   ExportProjectResponseDto,
   GlossaryTermDto,
   ImportExistingRequestDto,
@@ -410,6 +413,45 @@ export class RimLocClient {
    * cycles — a wrong artifact aborts, never soaks silently. */
   async buildIdentity(): Promise<BuildIdentityDto> {
     return this.call('build_identity', {});
+  }
+
+  // --- durable draft autosave (Data Safety) — the sidecar store of UNSAVED
+  // editor work, separate from confirmed translations: no origin/
+  // completeness/revision writes ride these calls. Every call is
+  // epoch-guarded; the service stamps the LIVE revision on save. ---
+
+  /** Persist the whole drafts map (the debounced autosave write). */
+  async saveDrafts(
+    projectId: string,
+    sessionEpoch: number,
+    entries: Record<string, DraftEntryDto>
+  ): Promise<DraftsSaveAckDto> {
+    return this.call('project_save_drafts', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      entries
+    });
+  }
+
+  /** Raise unsaved work after (re)open: revision-matched stores restore,
+   * mismatched ones are quarantined as `.drafts.orphan.json` and REPORTED —
+   * never silently applied. Unreadable stores report `unavailable` with the
+   * typed detail; opening the project itself never fails because of drafts. */
+  async restoreDrafts(projectId: string, sessionEpoch: number): Promise<DraftsRestoreReportDto> {
+    return this.call('project_restore_drafts', {
+      project_id: projectId,
+      session_epoch: sessionEpoch
+    });
+  }
+
+  /** Remove one key (revert) — or the whole store when `key` is omitted —
+   * from the durable drafts. Removing an absent key is an honest no-op. */
+  async clearDrafts(projectId: string, sessionEpoch: number, key?: string): Promise<DraftsSaveAckDto> {
+    return this.call('project_clear_drafts', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      ...(key !== undefined ? { key } : {})
+    });
   }
 
   /** FULL drop-in mod package (`About/About.xml` in the game-loadable
