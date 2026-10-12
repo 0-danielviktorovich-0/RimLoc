@@ -246,6 +246,20 @@ pub struct InventoryContext {
     /// EXACT only when active-mod context is known and patch coverage full;
     /// otherwise the inventory is an honest POTENTIAL/CONDITIONAL superset.
     pub view: ViewLabel,
+    /// SOURCE LANGUAGE MARKER (additive, source-language wave): the locale id
+    /// the source inventory was built from (`"ja"`), as chosen by the creator
+    /// through the project-create contract. `None`/absent = English — every
+    /// legacy envelope predates the field and IS an English-source project,
+    /// so the fallback is the historical behaviour, never a guess.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_locale: Option<String>,
+    /// RimWorld `Languages/<folder>` the source inventory was scanned from
+    /// (`"Japanese (日本語)"`-style on-disk name). Drives rescan
+    /// (`detect_source_changes` rebuilds the inventory from THIS folder, so a
+    /// non-English source project never flips back to English on refresh).
+    /// `None`/absent = English (same legacy fallback as `source_locale`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

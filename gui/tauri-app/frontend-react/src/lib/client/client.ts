@@ -163,8 +163,24 @@ export class RimLocClient {
     });
   }
 
-  async createProject(modRoot: string, targetVersion?: string): Promise<ProjectSnapshotDto> {
-    const snap = await this.call('project_create', { request: { mod_root: { path: modRoot }, target_version: targetVersion } });
+  /** Create a managed project from a mod root. Additive (source-language
+   *  wave): `source` names the SOURCE language (locale id + RimWorld
+   *  folder); omitted = English — the exact legacy request wire shape. */
+  async createProject(
+    modRoot: string,
+    targetVersion?: string,
+    source?: { locale?: string; dir?: string },
+  ): Promise<ProjectSnapshotDto> {
+    const locale = source?.locale?.trim();
+    const dir = source?.dir?.trim();
+    const snap = await this.call('project_create', {
+      request: {
+        mod_root: { path: modRoot },
+        target_version: targetVersion,
+        ...(locale ? { source_locale: locale } : {}),
+        ...(dir ? { source_dir: dir } : {}),
+      },
+    });
     return snap;
   }
 

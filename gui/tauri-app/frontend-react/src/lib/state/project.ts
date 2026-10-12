@@ -108,6 +108,19 @@ const DRAFT_FLUSH_DELAY_MS = 1500
 const TARGET_LOCALE_KEY_PREFIX = 'rimloc.target.'
 const DEFAULT_TARGET_LOCALE = 'ru'
 
+/** Legacy/default source side: projects without the context marker ARE
+ *  English by contract (backend fallback is the same constant). */
+const DEFAULT_SOURCE_LOCALE = 'en'
+const DEFAULT_SOURCE_DIR = 'English'
+
+/** Read the source marker off an adopted snapshot (additive context fields;
+ *  absent/undefined = English — same fallback the backend applies). */
+function sourceMarkerOf(snap: ProjectSnapshotDto): { locale: string; dir: string } {
+  const locale = snap.project.context.source_locale?.trim() || DEFAULT_SOURCE_LOCALE
+  const dir = snap.project.context.source_dir?.trim() || folderForm(locale)
+  return { locale, dir }
+}
+
 function loadTargetLocale(projectId: string): string | null {
   try {
     const raw = window.localStorage.getItem(TARGET_LOCALE_KEY_PREFIX + projectId)
@@ -129,6 +142,16 @@ export interface ProjectState {
   /** Target locale the workspace edits (multi-target §32): picks which
    *  Project.translations slice the editor shows; switching re-maps. */
   targetLocale: string
+  /** SOURCE language marker (source-language wave): the locale id the
+   *  backend built the inventory from ('ja'), read from the adopted
+   *  snapshot's project.context. Absent on legacy snapshots = English.
+   *  The UI renders THIS — never the app-level SOURCE_LOCALE constant —
+   *  so a Japanese-source project can never display as English while the
+   *  backend treats it as Japanese. */
+  sourceLocale: string
+  /** RimWorld Languages/<folder> of the source side ('Japanese');
+   *  folder-form companion of sourceLocale (context.source_dir). */
+  sourceDir: string
   summaries: ProjectSummaryDto[]
   snapshot: ProjectSnapshotDto | null
   entries: WorkspaceEntry[]
@@ -147,6 +170,8 @@ export interface ProjectState {
 
 let state: ProjectState = {
   targetLocale: 'ru',
+  sourceLocale: DEFAULT_SOURCE_LOCALE,
+  sourceDir: DEFAULT_SOURCE_DIR,
   summaries: [],
   snapshot: null,
   entries: [],
@@ -341,20 +366,30 @@ export function findingsByEntryKey(
 }
 
 export const projectStore = {
-  /** J1: real create (the Rust scan IS the preview) → adopted snapshot. */
-  async createContractProject(modRoot: string, targetVersion?: string): Promise<boolean> {
+  /** J1: real create (the Rust scan IS the preview) → adopted snapshot.
+   *  Additive (source-language wave): `source` names the SOURCE language —
+   *  the wizard's select passes the registry id + folder form; omitted =
+   *  English (the exact legacy call). */
+  async createContractProject(
+    modRoot: string,
+    targetVersion?: string,
+    source?: { locale?: string; dir?: string },
+  ): Promise<boolean> {
     set({ busy: true, lastError: null })
     try {
-      const snap = await clientInstance.getClient().createProject(modRoot, targetVersion)
+      const snap = await clientInstance.getClient().createProject(modRoot, targetVersion, source)
       // F1: the fresh project starts on the CURRENT editing locale; the
       // wizard's own choice lands right after via setTargetLocale. Both
       // writes persist under rimloc.target.<project_id>.
       const locale = state.targetLocale
+      const sourceMarker = sourceMarkerOf(snap)
       persistTargetLocale(snap.project_id, locale)
       cancelScheduledDraftFlush()
       set({
         snapshot: snap,
         targetLocale: locale,
+        sourceLocale: sourceMarker.locale,
+        sourceDir: sourceMarker.dir,
         entries: mapSnapshot(snap, locale),
         selectedKey: null,
         drafts: {},
@@ -408,10 +443,15 @@ export const projectStore = {
       const T2 = performance.now()
       const mapped = mapSnapshot(snap, locale)
       const T4 = performance.now()
+      const sourceMarker = sourceMarkerOf(snap)
       set({
         perfMarks: { ...state.perfMarks, T2_ipcComplete: T2, T3_stateReceived: T2, T4_entriesMapped: T4 },
         snapshot: snap,
         targetLocale: locale,
+        // Source marker rides the snapshot (source-language wave): legacy
+        // snapshots carry no marker and stay English here as well.
+        sourceLocale: sourceMarker.locale,
+        sourceDir: sourceMarker.dir,
         entries: mapped,
         selectedKey: null,
         drafts: {},
@@ -562,9 +602,14 @@ export const projectStore = {
       // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
       // захардкоженная 'ru' игнорировала targetLocale).
       draftsVersion++
+      const sourceMarker = sourceMarkerOf(fresh)
       set({
         snapshot: fresh,
         targetLocale: locale,
+        // Source marker re-read from the fresh snapshot — an external
+        // mutation never flips the displayed source away from the backend's.
+        sourceLocale: sourceMarker.locale,
+        sourceDir: sourceMarker.dir,
         entries: mapSnapshot(fresh, locale),
         drafts: {},
         // §9: внешняя мутация (existing-import, chat-batch apply) — отчёт
@@ -686,6 +731,8 @@ export const projectStore = {
       load: { kind: 'idle' },
       lastError: null,
       validation: initialValidation,
+      sourceLocale: DEFAULT_SOURCE_LOCALE,
+      sourceDir: DEFAULT_SOURCE_DIR,
     })
   },
 }

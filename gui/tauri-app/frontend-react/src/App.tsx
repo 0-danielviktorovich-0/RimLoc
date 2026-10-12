@@ -17,7 +17,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Languages, FolderOpen, Sun, Moon, Plus, ChevronRight, X, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
-import { BUILTIN_LANGUAGES as LANGUAGES, SOURCE_LOCALE } from './lib/languages/registry'
+import { BUILTIN_LANGUAGES as LANGUAGES } from './lib/languages/registry'
 import { folderForm } from './lib/languages/folderForm'
 import { loadUserLanguages, type UserLanguage } from './lib/languages/manager'
 import { useProjectState } from './lib/state/useProjectState'
@@ -375,19 +375,12 @@ export function App() {
                 <div className="workspace-heading">
                   <div>
                     <div className="heading-eyebrow">
-                      {/* Источник/цель из состояния (audit v2 #3): folderForm
-                        даёт строгую папочную форму реестра; en — канонический
-                        источник (SOURCE_LOCALE). */}
-                      <span className="dot primary" /> {folderForm(SOURCE_LOCALE)} <span>→</span> {folderForm(st.targetLocale)}
+                      <span className="dot primary" /> {folderForm(st.sourceLocale)} <span>→</span> {folderForm(st.targetLocale)}
                     </div>
                     <h1>{t('ws.headingTitle')}</h1>
                     <p>{t('ws.headingSubtitle')}</p>
                   </div>
                   <div className="heading-controls">
-                    {/* Мёртвый version-select УБРАН (аудит): селект с
-                      defaultValue без onChange ничего не управлял, а
-                      projectStore.gameVersion не существует — возвращаем,
-                      когда версия появится в состоянии проекта. */}
                     <label className="version-select">
                       <span>→</span>
                       <select

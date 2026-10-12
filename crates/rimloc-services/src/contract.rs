@@ -364,6 +364,20 @@ pub struct CreateProjectRequest {
     pub mod_root: PathBufDto,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target_version: Option<String>,
+    /// Additive (source-language wave): registry locale id of the SOURCE
+    /// language the inventory is built from (`"ja"`). Absent/empty = English
+    /// — legacy clients that never send the field create exactly the
+    /// projects they always did. Travels into the snapshot context
+    /// (`project.context.source_locale`) so export/build/TM/chat-batch and
+    /// the UI all key from the SAME explicit marker, never from a constant.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_locale: Option<String>,
+    /// RimWorld `Languages/<folder>` of the source side (`"Japanese"`);
+    /// wins over `source_locale` when both are sent (user languages have no
+    /// code→folder mapping). Absent = derived from `source_locale`, else
+    /// English.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_dir: Option<String>,
 }
 
 /// Path DTO — keep the wire framework-neutral (no camino/tarexpr leakage).

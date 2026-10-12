@@ -13,7 +13,6 @@ import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
 import { clientInstance } from '../lib/client/instance'
-import { SOURCE_LOCALE } from '../lib/languages/registry'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
 import type { GlossaryTermDto, SourceEntryIdDto, ValidationFindingDto } from '../lib/client/types'
@@ -259,7 +258,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             entries={visible}
             selectedKey={selectedKey}
             findings={findingsByKey}
-            sourceLabel={folderForm(SOURCE_LOCALE)}
+            sourceLabel={folderForm(st.sourceLocale)}
             targetLabel={folderForm(st.targetLocale)}
             onSelect={(k) => projectStore.select(k)}
           />
@@ -291,7 +290,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             provenance={selected.provenance}
             tkey={selected.tkey}
             sourceRoot={snap.source_root?.path}
-            sourceLabel={folderForm(SOURCE_LOCALE)}
+            sourceLabel={folderForm(st.sourceLocale)}
             targetLabel={folderForm(st.targetLocale)}
             // §17: первая находка валидатора для этой строки (+ хвост).
             firstFinding={selectedFindings[0]}

@@ -198,9 +198,11 @@ pub fn project_create(
         .lock()
         .expect("contract session registry poisoned");
     traced_simple("project_create", || {
-        manager.create(
+        manager.create_with_source(
             std::path::Path::new(&request.mod_root.path),
             request.target_version.as_deref(),
+            request.source_locale.as_deref(),
+            request.source_dir.as_deref(),
         )
     })
 }
