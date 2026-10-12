@@ -10,54 +10,43 @@ related:
   - "[[RELEASE_CONVERGENCE_STATE]]"
 ---
 
-# FINAL IDENTITY — rel23-final (2026-10-07)
+# FINAL IDENTITY — rel25-candidate (2026-10-12)
 
-Точная identity финального release-candidate. Никаких формулировок
-«код практически идентичен» — только sha. Полная история артефакта:
-`RimLoc-evidence/artifact-rel23-final/IDENTITY.md`.
+Точная identity финального кандидата финальной бета-готовности
+(волны R4-fix + R5). Пакет: `RimLoc-evidence/artifact-rel25-candidate/`.
 
 ## Канонические идентификаторы
 
 ```text
-product_source_sha   857b0d2a51b97e6e541cdf8f61d00683b966bd04
-                     (HEAD main == origin/main; прод-код относительно
-                      предыдущего RC отличается и только им)
-evidence/docs_sha    (не входит в immutable identity: repo_head_at_packaging
-                      фиксируется в metadata конкретного packet —
-                      RimLoc-evidence/reviewer/*-metadata.json;
-                      immutable identity = product_source_sha + binary +
-                      appzip + tree hashes)
-binary_sha256        7781dd395b8e7c83332da9590a92972e6e93c285cef717200c9c3117471ae4bf
-                     (RimLoc GUI.app/Contents/MacOS/rimloc-gui, self-report
-                      857b0d2a… без -dirty)
-automation_sha256    см. automation-артефакт той же сборочной линии
-                     (feature automation-bridge, 61 wdio-маркер; sha
-                      фиксируется в evidence при каждом пересборe —
-                      текущий прогон WDIO 59/59 в IDENTITY.md)
-appzip_sha256        2d0f165213f700b66c58c75cfbe3c8110f9e0e1f05af623fcda887c4fa0cee20
-tree_hashes          app `1ba23156…` · frontend-react/dist `388896b5…`
+product_source_sha   1b46fd2b79fda6a948c6b6eb4a0e8953e93ea9f7
+                     (HEAD main == origin/main на момент сборки)
+binary_sha256        1d412a728b0fc4bd4e2da61a14ce6c5942bd03dfe251e82c1044ca0c2d3c7973
+appzip_sha256        6ec84906e5c7eecc4322ece46d822f2673bbf3876a06ae6ec286186bc5222d25
+app tree hash        b2a69d811f42c3e54d09799c1fb1ea22720ae2c1f8c0c8595fa122bc247c700a
+dist tree hash       e3b795655f78f62f44be8c1a53bd0b2a50bb78c6bb9e18947a4b57c896ba6513
+automation           internal target-r4-final, 61 wdio-маркер, дерево 1b46fd2
 ```
 
-## Цепочка SHAs этого RC-цикла (хронология, без неоднозначности)
+Mutable состояние (текущий HEAD main) в этом документе НЕ хранится —
+только в metadata конкретного пакета и в release-state.
+
+## Хронология RC-цикла
 
 | SHA | Что это | Статус |
 |---|---|---|
-| `af06a4e` | rel22-rc (respin 1): R2-волна + гейты | УСТАРЕЛ |
-| `f99fc19` | фикс шва локалей (mapSnapshot/commit) | в составе main |
-| `ac896e6` | docs: гейт-отчёт respin 2 | в составе main |
-| `292d72e` | PR #85: svelte-dist для CodeQL (C5) | в составе main |
-| `41c63e0` | R3-интеграция (C2–C6) + panels-v4 фикс | в составе main |
-| `857b0d2` | **ФИНАЛ продукта**: доки C-гейтов; бинарь собран с него | **product_source (immutable)** |
+| `33457117` | rel24-candidate | УСТАРЕЛ |
+| `fcb82d7` | продуктовая поверхность rel24 | в составе main |
+| `7ee92c4` | R5/R4fix продукты (nav split, draft autosave, source lang, chat batch mgr, settings/about, yaml-rust2) | в составе main |
+| `1b46fd2` | **бинарная база rel25** (10 final findings поверх 7ee92c4) | **product_source** |
+| `3219e60` | docs-only поверх | текущий main |
 
-Бинарные отличия 2305d564 → 7781dd39 = исходники `292d72e..857b0d2`
-(C2–C6 гейты + dependencies), проверяемо: `git diff 2305d564-base..857b0d2 -- crates/ gui/`.
+## Верификация identity
 
-## Правило (по ревью Reviewer Bridge)
+- self-report бинаря совпадает с product_source_sha (strings).
+- frontend gate: React R1 встроен, svelte-фолбэк отвергнут.
+- preflight --gate exit 0, release-guard static+runtime PASS.
+- MANIFEST.sha256 покрывает все файлы пакета evidence.
 
-Mutable состояние (текущий HEAD main) НЕ хранится в этом документе —
-только в metadata конкретного handoff-пакета
-(`repo_head_at_packaging`). Immutable identity: product_source_sha,
-binary_sha256, appzip_sha256, tree hashes.
 
 ## Верификация identity
 
