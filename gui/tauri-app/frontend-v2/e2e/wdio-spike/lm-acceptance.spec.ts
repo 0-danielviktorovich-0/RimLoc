@@ -255,10 +255,27 @@ describe('LM §10: CRUD пользовательского языка', () => {
 
 describe('LM §10: связь с target и мульти-таргет изоляция', () => {
   before(async () => {
-    // Открываем проект, созданный palette-прогоном (те же данные лейна).
+    // Nav split: при virgin-профиле сеем проект сами (механика
+    // chatbatch-acceptance); при накопленном — открываем первую карточку.
     await browser.execute(() => { window.location.hash = '#/projects' })
-    await waitExisting('[data-testid="home.project-card"]', 30000)
-    await browser.$('[data-testid="home.project-card"]').click()
+    const hasCard = await browser.$('[data-testid="home.project-card"]').isExisting().catch(() => false)
+    if (!hasCard) {
+      await waitExisting('[data-testid="wizard.open"]')
+      await browser.$('[data-testid="wizard.open"]').click()
+      await waitExisting('[data-testid="wizard.path-input"]')
+      await browser.$('[data-testid="wizard.path-input"]').setValue('/tmp/rimloc-wizard-mod')
+      await browser.$('[data-testid="wizard.next"]').click()
+      await waitExisting('[data-testid="wizard.version"]')
+      await browser.$('[data-testid="wizard.version"]').selectByVisibleText('1.6')
+      await browser.$('[data-testid="wizard.next"]').click()
+      await browser.$('[data-testid="wizard.next"]').click()
+      await browser.waitUntil(
+        async () => (await browser.execute(() => window.location.hash)) === '#/workspace',
+        { timeout: 60000, interval: 250 },
+      )
+    } else {
+      await browser.$('[data-testid="home.project-card"]').click()
+    }
     await waitExisting('[data-testid="ws.root"]', 30000)
     await pause(500)
     await shot('lm-project-opened')
