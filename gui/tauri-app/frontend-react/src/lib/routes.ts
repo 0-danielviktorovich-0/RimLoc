@@ -26,6 +26,7 @@ import {
   FolderOpen,
   GitCompareArrows,
   Globe,
+  Info,
   Languages,
   LifeBuoy,
   MessagesSquare,
@@ -51,6 +52,7 @@ export type Route =
   | 'diagnostics'
   | 'lm'
   | 'settings'
+  | 'about'
 
 export interface RouteMeta {
   route: Route
@@ -224,6 +226,18 @@ export const ROUTES: RouteMeta[] = [
     icon: Settings2,
     visibleInSidebar: true,
     visibleInPalette: true,
+    requiresProject: false,
+  },
+  {
+    // About (Settings zone): reachable from the sidebar bottom slot and the
+    // Settings screen. Deliberately OUT of the palette projection — the
+    // palette composition is pinned by palette-acceptance (WDIO) at 14 nav
+    // commands, and this route is informational, not a workflow destination.
+    route: 'about',
+    labelKey: 'nav.about',
+    icon: Info,
+    visibleInSidebar: false,
+    visibleInPalette: false,
     requiresProject: false,
   },
 ]

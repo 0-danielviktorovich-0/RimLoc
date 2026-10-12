@@ -14,7 +14,7 @@
 // returns the user to the section it was invoked from (the overlay never
 // changes the route; a successful create lands in the new workspace).
 import { useEffect, useMemo, useState } from 'react'
-import { Languages, FolderOpen, Sun, Moon, Plus, ChevronRight, X, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
+import { Languages, FolderOpen, Sun, Moon, Plus, ChevronRight, X, PanelLeftOpen, PanelLeftClose, Command, Globe, Info } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
 import { projectStore } from './lib/state/project'
 import { BUILTIN_LANGUAGES as LANGUAGES } from './lib/languages/registry'
@@ -34,7 +34,8 @@ import { Existing } from './components/Existing'
 import { Compare } from './components/Compare'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
-import { Settings } from './components/Settings'
+import { Settings, type ThemePref } from './components/Settings'
+import { About } from './components/About'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
 import { ProjectSwitcher } from './components/ProjectSwitcher'
@@ -103,29 +104,52 @@ const ONBOARDING_KEY = 'rimloc.onboarding.dismissed'
 export function App() {
   const st = useProjectState()
   const [route, setRoute] = useState<Route>(currentRoute)
-  // Nav split: ONE wizard instance for the whole app. The topbar «Новый
-  // проект» button, the library card and the onboarding strip all set this
-  // flag; the overlay renders in controlled mode, so closing it (cancel,
-  // Escape) returns the user to whatever section opened it.
-  const [wizardOpen, setWizardOpen] = useState(false)
-  // §6/§17 Theme persistence: 'rimloc.theme' ('dark'|'light') read once at
-  // first mount; every write goes through changeDark so the topbar toggle and
-  // the Settings select share ONE storage key.
-  const [dark, setDark] = useState<boolean>(() => {
+  // §6/§17 Theme persistence: 'rimloc.theme' carries 'system'|'light'|'dark'
+  // (legacy 'dark'/'light' values read through; anything else — including no
+  // value — starts as 'system'). Every write goes through changeTheme so the
+  // topbar toggle and the Settings select share ONE storage key.
+  const [theme, setTheme] = useState<ThemePref>(() => {
     try {
-      return localStorage.getItem('rimloc.theme') === 'dark'
+      const raw = localStorage.getItem('rimloc.theme')
+      return raw === 'dark' || raw === 'light' ? raw : 'system'
     } catch {
-      return false
+      return 'system'
     }
   })
-  const changeDark = (v: boolean): void => {
-    setDark(v)
+  const changeTheme = (v: ThemePref): void => {
+    setTheme(v)
     try {
-      localStorage.setItem('rimloc.theme', v ? 'dark' : 'light')
+      localStorage.setItem('rimloc.theme', v)
     } catch {
       /* storage unavailable — session-only theme */
     }
   }
+  // Nav split: ONE wizard instance for the whole app. The topbar new-project
+  // button, the library card and the onboarding strip all set this flag; the
+  // overlay renders in controlled mode, so closing it returns the user to
+  // whatever section opened it.
+  const [wizardOpen, setWizardOpen] = useState(false)
+  // 'system' follows the OS live: matchMedia('(prefers-color-scheme: dark)')
+  // plus a change listener. The effective dark flag derives from the pref.
+  const [systemDark, setSystemDark] = useState<boolean>(() => {
+    try {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+    } catch {
+      return false
+    }
+  })
+  useEffect(() => {
+    let mq: MediaQueryList
+    try {
+      mq = window.matchMedia('(prefers-color-scheme: dark)')
+    } catch {
+      return
+    }
+    const onChange = (e: MediaQueryListEvent): void => setSystemDark(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  const dark = theme === 'system' ? systemDark : theme === 'dark'
   const [navOpen, setNavOpen] = useState(false)
   // UI-локаль — ЕДИНЫЙ источник в состоянии App (audit v2 #4/#5): смена
   // языка в Settings вызывает setLocale + сеттинг стейта → немедленный
@@ -133,6 +157,12 @@ export function App() {
   // «на следующий роут». Мемо-ключ пересобирает команды палитры с метками
   // активного языка, идентичность между рендерами сохраняется.
   const [uiLocale, setUiLocaleState] = useState<Locale>(getLocale())
+  // Единая точка смены UI-языка (topbar-переключатель и Settings-селект):
+  // модульная локаль + состояние App → немедленный ререндер всего дерева.
+  const changeLocale = (v: Locale): void => {
+    setLocale(v)
+    setUiLocaleState(v)
+  }
   // Acceptance MUST-FIX #2 (LM↔target): пользовательские языки жили только в
   // localStorage LM-экрана и не попадали в переключатель цели воркспейса.
   // Перечитываем при входе на маршрут — LM на своём маршруте мог их изменить.
@@ -264,7 +294,6 @@ export function App() {
           <span>
             RimLoc<span className="brand-period">.</span>
           </span>
-          <small>R1</small>
         </a>
         {/* §6/§19: the project card is a real switcher now (recent projects →
             projectStore.open); the dead ChevronDown affordance is gone. */}
@@ -298,8 +327,13 @@ export function App() {
           <a href={`#/${SETTINGS_META.route}`} className={route === SETTINGS_META.route ? 'active' : ''}>
             <SettingsIcon /> {t(SETTINGS_META.labelKey)}
           </a>
+          {/* About живёт в Settings-зоне (нижний слот); техно-метки R1 из
+            футера и бренда убраны в About/диагностику (build_identity). */}
+          <a href="#/about" className={route === 'about' ? 'active' : ''} data-testid="shell.about-link">
+            <Info /> {t('nav.about')}
+          </a>
           <div className="sidebar-foot">
-            <span>RimLoc · React R1</span>
+            <span>RimLoc</span>
             <span className="dot success" />
           </div>
         </div>
@@ -332,7 +366,37 @@ export function App() {
                 {saveState.label}
               </span>
             )}
-            <button className="icon-btn" data-testid="theme-toggle" aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')} onClick={() => changeDark(!dark)}>
+            {/* Palette discoverability: заметная кнопка ⌘K рядом с темой —
+              тот же setOpen, что и у хоткея (Meta/Ctrl+K), никакого второго
+              источника состояния палитры. */}
+            <button
+              className="icon-btn"
+              data-testid="palette.open"
+              aria-label={t('a11y.openPalette')}
+              title={t('a11y.openPalette')}
+              onClick={() => setPaletteOpen(true)}
+            >
+              <Command size={15} />
+              <span className="locale">⌘K</span>
+            </button>
+            {/* Быстрая смена RU/EN в topbar: настоящий переключатель (те же
+              setLocale + состояние), а не декорация. */}
+            <button
+              className="icon-btn"
+              data-testid="locale-toggle"
+              aria-label={t('a11y.switchLocale')}
+              title={t('a11y.switchLocale')}
+              onClick={() => changeLocale(uiLocale === 'ru' ? 'en' : 'ru')}
+            >
+              <Globe size={15} />
+              <span>{uiLocale === 'ru' ? 'RU' : 'EN'}</span>
+            </button>
+            <button
+              className="icon-btn"
+              data-testid="theme-toggle"
+              aria-label={dark ? t('a11y.lightTheme') : t('a11y.darkTheme')}
+              onClick={() => changeTheme(dark ? 'light' : 'dark')}
+            >
               {dark ? <Sun /> : <Moon />}
             </button>
             <div className="topbar-divider" />
@@ -434,14 +498,13 @@ export function App() {
             <Diagnostics />
           ) : route === 'settings' ? (
             <Settings
-              dark={dark}
-              onDarkChange={changeDark}
+              theme={theme}
+              onThemeChange={changeTheme}
               locale={uiLocale}
-              onLocaleChange={(v) => {
-                setLocale(v)
-                setUiLocaleState(v)
-              }}
+              onLocaleChange={changeLocale}
             />
+          ) : route === 'about' ? (
+            <About />
           ) : route === 'providers' ? (
             <ProvidersScreen />
           ) : route === 'lm' ? (

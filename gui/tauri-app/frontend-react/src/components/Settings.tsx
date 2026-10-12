@@ -6,13 +6,18 @@
 // version/target state had no persistence and no consumers — a project is
 // created with its settings in the wizard and its target changes live in
 // the workspace switcher.
+// Theme is a THREE-way preference ('light'|'dark'|'system'): 'system'
+// follows the OS prefers-color-scheme live; the effective dark flag is
+// derived in the app root — this screen only edits the preference.
 import { useEffect, useState } from 'react'
 import { clientInstance } from '../lib/client/instance'
 import { t, type Locale } from '../lib/i18n'
 
+export type ThemePref = 'system' | 'light' | 'dark'
+
 export function Settings(props: {
-  dark: boolean
-  onDarkChange: (v: boolean) => void
+  theme: ThemePref
+  onThemeChange: (v: ThemePref) => void
   locale: Locale
   onLocaleChange: (v: Locale) => void
 }) {
@@ -46,9 +51,10 @@ export function Settings(props: {
         <h3>{t('settings.appearance')}</h3>
         <label className="field">
           <span>{t('settings.theme')}</span>
-          <select value={props.dark ? 'dark' : 'light'} onChange={(e) => props.onDarkChange(e.target.value === 'dark')} data-testid="settings.theme">
+          <select value={props.theme} onChange={(e) => props.onThemeChange(e.target.value as ThemePref)} data-testid="settings.theme">
             <option value="light">{t('settings.light')}</option>
             <option value="dark">{t('settings.dark')}</option>
+            <option value="system">{t('settings.system')}</option>
           </select>
         </label>
         <label className="field">
@@ -78,6 +84,16 @@ export function Settings(props: {
             ))}
           </>
         )}
+      </section>
+
+      <section className="settings-section">
+        <h3>{t('nav.about')}</h3>
+        <div className="capability-row">
+          <span>{t('settings.aboutLink')}</span>
+          <a href="#/about" data-testid="settings.about-link">
+            {t('nav.about')} →
+          </a>
+        </div>
       </section>
     </div>
   )
