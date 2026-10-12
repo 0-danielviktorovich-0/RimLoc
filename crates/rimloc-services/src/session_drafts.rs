@@ -593,7 +593,10 @@ mod tests {
                 assert_eq!(drafts, file);
                 assert_eq!(recovered_from, None);
             }
-            other => panic!("expected Loaded, got {other:?}"),
+            other => assert!(
+                matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                "expected Loaded, got {other:?}"
+            ),
         }
     }
 
@@ -635,14 +638,26 @@ mod tests {
         // .1 holds the previous save (rev 8), .2 the one before (rev 7).
         let prev = match load_drafts(&suffixed(&main, "1")).unwrap() {
             DraftsLoadOutcome::Loaded { drafts, .. } => drafts,
-            other => panic!("expected Loaded, got {other:?}"),
+            other => {
+                assert!(
+                    matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                    "expected Loaded, got {other:?}"
+                );
+                return;
+            }
         };
         assert_eq!(prev.project_revision, 8);
         assert_eq!(prev.entries["K"].text, "v8");
         // The live file holds the newest content.
         let live = match load_drafts(&main).unwrap() {
             DraftsLoadOutcome::Loaded { drafts, .. } => drafts,
-            other => panic!("expected Loaded, got {other:?}"),
+            other => {
+                assert!(
+                    matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                    "expected Loaded, got {other:?}"
+                );
+                return;
+            }
         };
         assert_eq!(live.project_revision, 9);
         assert_eq!(live.entries["K"].text, "v9");
@@ -669,7 +684,10 @@ mod tests {
                     Some(suffixed(&main, "1").as_path())
                 );
             }
-            other => panic!("expected Loaded, got {other:?}"),
+            other => assert!(
+                matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                "expected Loaded, got {other:?}"
+            ),
         }
         // A schema-version mismatch is the same typed failure class. Tested
         // on a LONE file (no recoverable backup): when any backup parses,
@@ -687,7 +705,10 @@ mod tests {
                 assert_eq!(found, 99);
                 assert_eq!(expected, DRAFTS_SCHEMA_VERSION);
             }
-            other => panic!("expected SchemaVersion error, got {other:?}"),
+            other => assert!(
+                matches!(other, Err(DraftsStoreError::SchemaVersion { .. })),
+                "expected SchemaVersion error, got {other:?}"
+            ),
         }
         // The schema-mismatched file WITH backups still recovers newest-first
         // (.1 holds the previous save) — the typed deviation is reported via
@@ -704,7 +725,10 @@ mod tests {
                     "recovery reported honestly"
                 );
             }
-            other => panic!("expected Loaded, got {other:?}"),
+            other => assert!(
+                matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                "expected Loaded, got {other:?}"
+            ),
         }
     }
 
@@ -721,7 +745,13 @@ mod tests {
         assert!(!main.exists(), "live store cleared after quarantine");
         let parsed = match load_drafts(&orphan).unwrap() {
             DraftsLoadOutcome::Loaded { drafts, .. } => drafts,
-            other => panic!("expected Loaded, got {other:?}"),
+            other => {
+                assert!(
+                    matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                    "expected Loaded, got {other:?}"
+                );
+                return;
+            }
         };
         assert_eq!(parsed, file, "orphan is byte-faithful");
         assert!(
@@ -844,7 +874,10 @@ mod tests {
                     );
                 }
             }
-            other => panic!("expected Loaded, got {other:?}"),
+            other => assert!(
+                matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                "expected Loaded, got {other:?}"
+            ),
         }
     }
 
@@ -957,7 +990,10 @@ mod tests {
                 assert_eq!(recovered_from, None);
                 assert_eq!(drafts.entries["Dup.label"].text, "первый черновик");
             }
-            other => panic!("expected Loaded, got {other:?}"),
+            other => assert!(
+                matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                "expected Loaded, got {other:?}"
+            ),
         }
     }
 
@@ -995,7 +1031,10 @@ mod tests {
                 assert!(!drafts.entries.contains_key("Dup.label"));
                 assert!(drafts.entries.contains_key("Dup.description"));
             }
-            other => panic!("expected Loaded, got {other:?}"),
+            other => assert!(
+                matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                "expected Loaded, got {other:?}"
+            ),
         }
         // Unknown key → no-op (the asked-for end state already holds).
         let ack = mgr
