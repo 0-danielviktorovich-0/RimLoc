@@ -1,17 +1,17 @@
 {
   "campaign": "release-convergence-r2",
   "status": "RC_READY",
-  "updated": "2026-10-08T03:30+09:00",
-  "main": "fcb82d7",
+  "updated": "2026-10-12T18:00+09:00",
+  "main": "1b46fd2",
   "artifactSha": "af06a4e",
   "note": "e23f6d0 = af06a4e + testlab/docs only; products code identical to artifact",
   "candidate": {
-    "name": "rel24-candidate",
-    "evidence": "RimLoc-evidence/artifact-rel24-candidate/",
-    "product_source_sha": "fcb82d799bfe9cde675a4a3464a38bb3778d31c9",
-    "binarySha256": "3345711787d2435d1e7403e7cd06abc414ea35cbabec901ee270e913238730d5",
-    "appzipSha256": "e99b750a195f747dca657680c1cd65bce7704ae11feab2f100e6a7e7e3b97da2",
-    "gates": "preflight --gate exit0; release-guard static PASS; runtime PORT_CLOSED; DMG stage не запускалась (--bundles app)"
+    "name": "rel25-candidate",
+    "evidence": "RimLoc-evidence/artifact-rel25-candidate/",
+    "product_source_sha": "1b46fd2b79fda6a948c6b6eb4a0e8953e93ea9f7",
+    "binarySha256": "1d412a728b0fc4bd4e2da61a14ce6c5942bd03dfe251e82c1044ca0c2d3c7973",
+    "appzipSha256": "6ec84906e5c7eecc4322ece46d822f2673bbf3876a06ae6ec286186bc5222d25",
+    "gates": "frontend gate PASS; preflight --gate exit0; release-guard static PASS; runtime PORT_CLOSED; DMG stage not invoked"
   },
   "lanes": {
     "chat_batch": {
@@ -63,23 +63,24 @@
     "clippy": "canonical CI invocation clean (workspace excl gui; gui all-features)",
     "fmt": "clean",
     "frontend": "tsc -b && vite build clean",
-    "wdio": "59 green (palette 34, lm 15, chatbatch 4, source-inspector 5, multitarget 1) + dogfood walkthrough 16 шагов, 6/6 фиксов",
+    "wdio": "59 green on 7ee92c4-automation build (palette 34, lm 15 generalized cleanup, chatbatch 4/4 versioned prompt, source-inspector 5/5, multitarget 1/1)",
     "ci_matrix": "SUCCESS на 2c50dcb (полная совокупность); финальный SHA fcb82d7 = docs-only поверх",
     "code_scanning_open": 0,
     "dependabot_alerts_open": 0,
     "locale_form_seam": "FIXED: mapSnapshot matches both forms; commit() persists folderForm; caught by chatbatch E2E",
     "codeql_extraction": "323 extracted clean / 1 vendor-only error (tauri-utils fork platform.rs, upstream macros) — documented limitation; Tool Status: job success, CS 0 open",
     "npm_audit": "0 known production/runtime npm vulnerabilities; 16 documented high dev-tool advisories under explicit exemption (pending owner confirmation)",
-    "ui_parity": "UI_R1_FINAL_PARITY: IMPLEMENT_NOW=0; visual parity report: 0 fixes required"
+    "ui_parity": "UI_R1_FINAL_PARITY: IMPLEMENT_NOW=0; visual parity report: 0 fixes required",
+    "ci": "SUCCESS 38272445127 @ 7ee92c4 (cargo-deny green after yaml-rust2 swap); HEAD docs-only поверх"
   },
   "ownerGates": [
     {
-      "name": "Level-7 visual",
+      "name": "Level-7 visual (RimWorld HugsLib)",
       "reason": "PHYSICAL_OR_GAME_VISUAL_CONFIRMATION"
     },
     {
-      "name": "Publish approval",
-      "reason": "PUBLISH_AUTHORIZATION"
+      "name": "Subjective UI/UX walkthrough (new nav)",
+      "reason": "SUBJECTIVE_VISUAL"
     },
     {
       "name": "AI provider live E2E",
@@ -90,7 +91,11 @@
       "reason": "SIGNING_NOTARIZATION"
     },
     {
-      "name": "Subjective UI/UX approval",
+      "name": "Publish approval",
+      "reason": "PUBLISH_AUTHORIZATION"
+    },
+    {
+      "name": "16 dev-only npm advisories decision",
       "reason": "SUBJECTIVE_VISUAL"
     }
   ],
@@ -109,5 +114,6 @@
     "C5_codeql": "healthy: 298/298 extraction (dist committed); analyses success; config not attachable w/o security_events scope",
     "C6_dmg": "CLOSED: NFS root-cause proven; artifact = .app + .app.zip; vendor patch tauri-utils",
     "C7_identity": "FINAL_IDENTITY.md — после финального ребилда"
-  }
+  },
+  "openDefects": "0 known product defects; 16 dev-only npm advisories documented (npm-audit-exemptions.md, pending owner decision); CodeQL 323/1 vendor-only documented"
 }

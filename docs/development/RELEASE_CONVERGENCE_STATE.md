@@ -154,3 +154,20 @@
   0 fixes required.
 - Owner-only: level-7, субъективный UI pass, решение по 16 dev-only
   advisories, опционально Z.AI key и signing, publish approval.
+
+## 2026-10-12 — FINAL BETA: rel25-candidate (R4-fix + R5 integrated)
+- Ревью-мандат выполнен: §1 react-pin + frontend gate (постоянный);
+  §2 live-source аудит (6 регрессий); §3 skills 25/25 + роутинг; §4
+  real-mods E2E (10 дефектов); §5 parity practical re-verify; §6
+  PLATFORM_VERIFICATION_MATRIX; §7 reviewer rel24 — в процессе у
+  владельца; §8 PR #88 closed/#89 merged + FINAL_IDENTITY; §9 пакет ниже.
+- R5 реализация: draft autosave (durable sidecar), nav split (projects
+  library), source language selection, chat batch manager (мандат §E:
+  история/разбиение/версионированный формат/problem rows), system theme
+  + About, 10 usability fixed.
+- **rel25-candidate**: прод 1d412a72 @ 1b46fd2, appzip 6ec84906; гейты
+  PASS (frontend gate новый); WDIO 59/59 на automation того же дерева;
+  CI SUCCESS 7ee92c4 (cargo-deny зелёный после yaml-rust2 свапа —
+  unsafe-libyaml покинул дерево).
+- Owner-only: level-7 RimWorld, субъективный UI pass (новая навигация),
+  16 dev-only npm решение, Z.AI key (live E2E), signing, publish approval.
