@@ -3,7 +3,14 @@
 // the topbar breadcrumb all derive from ROUTES below; App.tsx owns no route
 // literals of its own. The Route union carries NO 'tools': the placeholder
 // route was removed as unreachable (§16, variant B — INTENTIONALLY_REJECTED;
-// an external #/tools hash falls back to 'home' like any unknown hash).
+// an external #/tools hash falls back to 'projects' like any unknown hash).
+//
+// Nav split (Проекты / Строки перевода): the two surfaces are now DISTINCT.
+// 'projects' is the library (cards, search, open, create); 'workspace' is
+// «Строки перевода» — the editor over an open project, and an honest
+// «Проект не открыт» empty state without one (no redirect). The old 'home'
+// library route is retired: it rendered the SAME screen as #/projects under
+// a second name. Legacy #/home hashes fall back to the library.
 //
 // Ordering invariant: ROUTES order is chosen so that
 //   - the palette projection (visibleInPalette, in order) keeps the EXACT
@@ -23,7 +30,6 @@ import {
   LifeBuoy,
   MessagesSquare,
   Package,
-  PanelsTopLeft,
   Plug,
   ShieldCheck,
   Settings2,
@@ -31,7 +37,6 @@ import {
 } from 'lucide-react'
 
 export type Route =
-  | 'home'
   | 'projects'
   | 'workspace'
   | 'checks'
@@ -73,7 +78,12 @@ export interface RouteMeta {
 
 export const ROUTES: RouteMeta[] = [
   {
-    route: 'home',
+    // «Строки перевода» — the Workspace section (nav split): with an open
+    // project it is the editor; without one the shell renders the honest
+    // «Проект не открыт» empty state (no redirect to the library). This meta
+    // merged the former hidden 'workspace' route and the old 'home' nav
+    // entry (one screen under two names — retired).
+    route: 'workspace',
     labelKey: 'nav.entries',
     paletteKey: 'palette.cmd.entries',
     icon: Languages,
@@ -91,16 +101,6 @@ export const ROUTES: RouteMeta[] = [
     visibleInPalette: true,
     requiresProject: false,
     sidebarOrder: 1,
-  },
-  {
-    // Reached from Home/Open; the sidebar entry for it IS 'home' (the nav
-    // highlights home while in workspace — App keeps that pairing).
-    route: 'workspace',
-    labelKey: 'nav.entries',
-    icon: PanelsTopLeft,
-    visibleInSidebar: false,
-    visibleInPalette: false,
-    requiresProject: true,
   },
   {
     route: 'checks',
@@ -229,7 +229,8 @@ export const ROUTES: RouteMeta[] = [
 ]
 
 /** All known route ids — the whitelist behind currentRoute(); an unknown
- *  hash resolves to 'home'. */
+ *  hash (including the retired #/home) resolves to 'projects' — the library
+ *  is the landing surface of the nav split. */
 export const ROUTE_IDS: Route[] = ROUTES.map((m) => m.route)
 
 export function routeMeta(route: Route): RouteMeta | undefined {

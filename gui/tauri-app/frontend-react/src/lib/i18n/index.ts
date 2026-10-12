@@ -481,6 +481,17 @@ const ru: Record<string, string> = {
   'be.zeroKeys': '0 ключей перечитано — проверьте целевую локаль.',
   // D-V4: план сборки из живого инвентаря (canon .archive-tree).
   'be.planTitle': 'ПЛАН СБОРКИ',
+  // Nav split (Проекты/Строки перевода): библиотека проектов и честный
+  // пустой state воркспейса без открытого проекта.
+  'projects.search': 'Поиск проектов',
+  'projects.searchPlaceholder': 'Найти проект по названию или id…',
+  'projects.noMatch': 'Ни один проект не подходит под фильтр.',
+  'projects.openBadge': 'Открыт',
+  'projects.found': 'Найдено: {count}',
+  'ws.empty.hint':
+    'Строки перевода редактируются поверх открытого проекта. Откройте проект из библиотеки или создайте новый — исходные файлы мода останутся нетронутыми.',
+  'ws.empty.open': 'Открыть проект',
+  'ws.empty.create': 'Создать',
 }
 
 const en: Record<string, string> = {
@@ -953,6 +964,17 @@ const en: Record<string, string> = {
   'be.zeroKeys': '0 keys reparsed — check the target locale.',
   // D-V4: the build plan from the live inventory (canon .archive-tree).
   'be.planTitle': 'BUILD PLAN',
+  // Nav split (Projects / Translation strings): the project library and the
+  // honest workspace empty state without an open project.
+  'projects.search': 'Search projects',
+  'projects.searchPlaceholder': 'Find a project by name or id…',
+  'projects.noMatch': 'No project matches the filter.',
+  'projects.openBadge': 'Open',
+  'projects.found': 'Found: {count}',
+  'ws.empty.hint':
+    'Translation strings are edited over an open project. Open one from the library or create a new project — the mod source files stay untouched.',
+  'ws.empty.open': 'Open project',
+  'ws.empty.create': 'Create',
 }
 
 let locale: Locale = 'ru'
