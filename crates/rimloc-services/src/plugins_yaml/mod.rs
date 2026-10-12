@@ -76,21 +76,21 @@ impl plugins::ParserPlugin for YamlKeyedPlugin {
                 Ok(s) => s,
                 Err(_) => continue,
             };
-            let val: serde_yaml::Value = match serde_yaml::from_str(&content) {
+            let docs = match yaml_rust2::YamlLoader::load_from_str(&content) {
                 Ok(v) => v,
                 Err(_) => continue,
             };
-            fn flatten(prefix: &str, v: &serde_yaml::Value, out: &mut Vec<(String, String)>) {
+            fn flatten(prefix: &str, v: &yaml_rust2::Yaml, out: &mut Vec<(String, String)>) {
                 match v {
-                    serde_yaml::Value::String(s) => {
+                    yaml_rust2::Yaml::String(s) => {
                         if !prefix.is_empty() {
                             out.push((prefix.to_string(), s.clone()));
                         }
                     }
-                    serde_yaml::Value::Sequence(arr) => {
+                    yaml_rust2::Yaml::Array(arr) => {
                         let mut items: Vec<String> = Vec::new();
                         for it in arr {
-                            if let serde_yaml::Value::String(s) = it {
+                            if let yaml_rust2::Yaml::String(s) = it {
                                 items.push(s.clone());
                             }
                         }
@@ -98,9 +98,9 @@ impl plugins::ParserPlugin for YamlKeyedPlugin {
                             out.push((prefix.to_string(), items.join("\n")));
                         }
                     }
-                    serde_yaml::Value::Mapping(map) => {
+                    yaml_rust2::Yaml::Hash(map) => {
                         for (k, vv) in map {
-                            if let serde_yaml::Value::String(ks) = k {
+                            if let yaml_rust2::Yaml::String(ks) = k {
                                 let key = if prefix.is_empty() {
                                     ks.clone()
                                 } else {
@@ -114,7 +114,9 @@ impl plugins::ParserPlugin for YamlKeyedPlugin {
                 }
             }
             let mut pairs = Vec::new();
-            flatten("", &val, &mut pairs);
+            for doc in &docs {
+                flatten("", doc, &mut pairs);
+            }
             for (k, v) in pairs {
                 out.push(TransUnit {
                     key: k,
