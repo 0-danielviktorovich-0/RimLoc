@@ -505,6 +505,8 @@ export type ContractMethod =
   | 'contract_chat_batch_import'
   | 'contract_chat_batch_status'
   | 'contract_chat_batch_apply'
+  // Batch history (mandate §27): every durable batch of one project.
+  | 'contract_chat_batch_list'
   // Build identity of the RUNNING binary (soak-hardening §1): long-running
   // acceptance runs verify the artifact they drive independently of any
   // wrapper path. Refused honestly in mock — no running binary there.
@@ -812,16 +814,47 @@ export interface ProviderInstanceTestResponseDto {
 // through session.apply). Batch state persists in the managed store. ---
 export type ChatBatchStatusDto = 'not_started' | 'exported' | 'imported' | 'stale' | 'done';
 
+/** Glossary pair baked into the exported prompt (relevance-filtered). */
+export interface ChatGlossaryPairDto {
+  term: string;
+  translation: string;
+}
+
 export interface ChatBatchItemDto {
   /** `SourceEntryId.display_identity()` — the exact prompt key. */
   key: string;
   source: string;
   entry: SourceEntryIdDto;
+  /** Target-locale text at SELECTION time ('' = untranslated; absent =
+   *  v1-era batch file — the conflict gate never claims what it
+   *  cannot know). */
+  translation_at_select?: string;
+  /** Domain origin of that text (`human`/`tm`/`llm`/`imported`/`unknown`). */
+  origin_at_select?: string;
+}
+
+/** Why one preview row conflicts with the live translation state. */
+export interface ChatRowConflictDto {
+  /** 'changed_after_select' | 'human_translation'. */
+  reason: string;
+  /** The live text the stale response would overwrite. */
+  current_text: string;
+  current_origin: string;
 }
 
 export interface ChatBatchPreviewItemDto {
   key: string;
   text: string;
+  /** Model note ("why uncertain") from the structured response format. */
+  note?: string;
+  /** The model flagged this row uncertain. */
+  needs_review?: boolean;
+  /** Live-state conflict detected at import — held back from apply unless
+   *  the human lists the key in `override_keys`. */
+  conflict?: ChatRowConflictDto;
+  /** Deterministic structural finding (placeholder-set mismatch vs the
+   *  pinned source) — a problem row, never applied silently. */
+  structural_problem?: string;
 }
 
 export interface ChatBatchPreviewDto {
@@ -846,6 +879,10 @@ export interface ChatBatchDto {
   exported_at_ms?: number;
   applied_at_ms?: number;
   applied_revision?: number;
+  /** Source-language folder recorded at export (additive). */
+  source_locale?: string;
+  /** Glossary pairs baked into the exported prompt (additive). */
+  glossary_used?: ChatGlossaryPairDto[];
 }
 
 export interface ChatBatchCreateRequestDto {
@@ -897,6 +934,9 @@ export interface ChatBatchApplyRequestDto {
   batch_id: string;
   expected_revision: number;
   session_epoch: number;
+  /** Preview keys the human EXPLICITLY confirmed despite a problem
+   *  (conflict / needs_review); problem rows are never applied silently. */
+  override_keys?: string[];
 }
 
 export interface ChatBatchApplyResponseDto {
@@ -906,4 +946,15 @@ export interface ChatBatchApplyResponseDto {
   applied: number;
   skipped: SkippedIntentDto[];
   cancelled: boolean;
+  /** Preview rows held back (problems without an explicit override). */
+  held_back?: number;
+}
+
+export interface ChatBatchListRequestDto {
+  project_id: string;
+}
+
+export interface ChatBatchListResponseDto {
+  job_id: string;
+  batches: ChatBatchDto[];
 }

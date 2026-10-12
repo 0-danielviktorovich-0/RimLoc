@@ -1509,25 +1509,92 @@ pub enum ChatBatchStatus {
     Done,
 }
 
+/// One glossary pair baked into the exported prompt (mandate §6: glossary
+/// constraints ride the batch context). Snapshot at EXPORT time — the
+/// terms whose source-language form matched at least one batch source
+/// (case-insensitive substring).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatGlossaryPair {
+    pub term: String,
+    pub translation: String,
+}
+
 /// One pinned batch line: the serialization key exactly as it appears in
 /// the prompt (`SourceEntryId::display_identity()` — unique per inventory),
 /// the SOURCE text at pin time, and the FULL structural identity the
 /// eventual apply addresses. The string key is a serialization concern of
 /// ONE batch only — the structured identity is the only thing the apply
 /// ever trusts.
+///
+/// Additive (conflict gate): the TARGET-locale translation state at the
+/// moment the selection was pinned. `translation_at_select` is the live
+/// text (`None`/`Some("")` = untranslated), `origin_at_select` the domain
+/// origin string of that translation. The import gate re-reads the LIVE
+/// state against this snapshot: any drift (a human fix landed after the
+/// selection, through whatever path) turns the row `conflicting` — the
+/// stale response becomes a suggestion, never a silent overwrite, and
+/// re-exports do NOT launder the memory (the snapshot is taken once, at
+/// create).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ChatBatchItem {
     pub key: String,
     pub source: String,
     pub entry: SourceEntryId,
+    /// Live target-locale text at selection time (additive; absent on v1
+    /// batch files = unknown = treated as untranslated).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub translation_at_select: Option<String>,
+    /// Domain origin of that translation at selection time
+    /// (`human`/`tm`/`llm`/`imported`/`unknown`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin_at_select: Option<String>,
 }
 
-/// Parsed response lines kept as a PREVIEW between import and apply: the
+/// Parsed response rows kept as a PREVIEW between import and apply: the
 /// human reads exactly what WOULD land, per key, before anything durable.
+///
+/// Additive (structured response v1 + conflict gate): `note` and
+/// `needs_review` come from the model itself (the structured response
+/// format carries both; the legacy line format never sets them).
+/// `conflict` is computed at IMPORT against the live translation state —
+/// a conflicting row is NEVER applied silently (the apply holds it back
+/// unless the human lists its key in `ChatBatchApplyRequest.override_keys`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ChatBatchPreviewItem {
     pub key: String,
     pub text: String,
+    /// Optional model note ("why uncertain") from the structured format.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    /// The model flagged this row uncertain (structured format).
+    #[serde(default)]
+    pub needs_review: bool,
+    /// Live-state conflict detected at import (human work the stale
+    /// response must not silently overwrite).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub conflict: Option<ChatRowConflict>,
+    /// Deterministic structural finding at import (mandate §14): the
+    /// placeholder set of the response does not match the pinned source
+    /// (lost / renamed / unexpected tokens). A problem row — held back
+    /// from apply unless the human overrides.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structural_problem: Option<String>,
+}
+
+/// Why one preview row conflicts with the LIVE translation state (mandate
+/// §12: on conflict the AI result becomes a SUGGESTION and the current
+/// human text is preserved until an explicit decision).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatRowConflict {
+    /// `changed_after_select` — the live text differs from the
+    /// selection-time snapshot (a fix landed after the batch was pinned);
+    /// `human_translation` — the row already carried a HUMAN translation at
+    /// selection time and the response proposes a different text.
+    pub reason: String,
+    /// The live human text at import time (what would be overwritten).
+    pub current_text: String,
+    /// Domain origin of the live text (`human`/`tm`/`llm`/`imported`).
+    pub current_origin: String,
 }
 
 /// The whole parsed preview (status `imported`): one row per batch key, in
@@ -1570,6 +1637,14 @@ pub struct ChatBatch {
     /// The durable revision the apply produced (`done` batches only).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub applied_revision: Option<Revision>,
+    /// Source-language folder of the pinned entries, recorded at export
+    /// (additive; the prompt states it explicitly — mandate §6/§7).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_locale: Option<String>,
+    /// Glossary pairs baked into the exported prompt (additive snapshot at
+    /// export; empty = no project glossary or no relevant terms).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub glossary_used: Vec<ChatGlossaryPair>,
 }
 
 /// `contract_chat_batch_create`: pin a selection of inventory entries into a
@@ -1659,10 +1734,19 @@ pub struct ChatBatchApplyRequest {
     /// Lost-update guard (the revision the preview was confirmed against).
     pub expected_revision: Revision,
     pub session_epoch: SessionEpoch,
+    /// Additive (conflict gate): preview keys the human EXPLICITLY
+    /// confirmed despite a problem (conflict with newer human work or the
+    /// model's own `needs_review` flag). Problem rows are held back unless
+    /// their key is listed here — an absent/unknown key is never applied
+    /// silently, and listing a clean row's key is a no-op.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub override_keys: Vec<String>,
 }
 
 /// Apply ack: the session response plus the persisted batch (`done` when
-/// anything applied).
+/// anything applied). `held_back` counts preview rows NOT attempted because
+/// they carry a problem (conflict / needs_review) and were not overridden —
+/// the honest "N need review" number (mandate §15).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct ChatBatchApplyResponse {
     pub job_id: JobId,
@@ -1671,4 +1755,24 @@ pub struct ChatBatchApplyResponse {
     pub applied: usize,
     pub skipped: Vec<SkippedIntent>,
     pub cancelled: bool,
+    /// Additive: preview rows held back (problems without an explicit
+    /// override) — never applied silently.
+    #[serde(default)]
+    pub held_back: usize,
+}
+
+/// `contract_chat_batch_list`: every durable batch of ONE project (the
+/// batch history — mandate §27), oldest first. Read-only; corrupt batch
+/// files are skipped here and still surface through `chat_batch_status`
+/// with the typed corruption error.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchListRequest {
+    pub project_id: ProjectId,
+}
+
+/// List ack.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ChatBatchListResponse {
+    pub job_id: JobId,
+    pub batches: Vec<ChatBatch>,
 }

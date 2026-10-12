@@ -28,6 +28,8 @@ import type {
   ChatBatchExportResponseDto,
   ChatBatchImportRequestDto,
   ChatBatchImportResponseDto,
+  ChatBatchListRequestDto,
+  ChatBatchListResponseDto,
   ChatBatchStatusRequestDto,
   ChatBatchStatusResponseDto,
   ContractErrorCode,
@@ -417,11 +419,20 @@ export class RimLocClient {
 
   /** The human-confirmed apply: the stored preview becomes an
    *  ApplyIntentsRequest with origin=import through session.apply
-   *  (persist-before-ack). */
+   *  (persist-before-ack). Problem rows (conflict / needs_review) are held
+   *  back unless their key is listed in `overrideKeys`. */
   async chatBatchApply(
     request: ChatBatchApplyRequestDto
   ): Promise<ChatBatchApplyResponseDto> {
     return this.call('contract_chat_batch_apply', { request });
+  }
+
+  /** The batch history of ONE project (mandate §27): every durable batch,
+   *  oldest first — unfinished batches visible, resume by id. */
+  async chatBatchList(
+    request: ChatBatchListRequestDto
+  ): Promise<ChatBatchListResponseDto> {
+    return this.call('contract_chat_batch_list', { request });
   }
 
   /** Identity of the RUNNING binary (soak-hardening §1): acceptance

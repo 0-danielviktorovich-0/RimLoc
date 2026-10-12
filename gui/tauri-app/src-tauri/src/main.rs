@@ -3141,6 +3141,7 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "contract_chat_batch_import",
     "contract_chat_batch_status",
     "contract_chat_batch_apply",
+    "contract_chat_batch_list",
     // safe read-only legacy extras
     "get_app_info",
     // build identity of the running binary (soak-hardening §1) — read-only
@@ -3925,6 +3926,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_chat_batch_import,
             rimloc_gui_lib::contract_adapter::contract_chat_batch_status,
             rimloc_gui_lib::contract_adapter::contract_chat_batch_apply,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_list,
             // legacy surface (operator opt-in only, RIMLOC_LEGACY_COMMANDS=1)
             get_app_info,
             scan_mod,
@@ -4019,6 +4021,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::contract_chat_batch_import,
             rimloc_gui_lib::contract_adapter::contract_chat_batch_status,
             rimloc_gui_lib::contract_adapter::contract_chat_batch_apply,
+            rimloc_gui_lib::contract_adapter::contract_chat_batch_list,
             // safe read-only legacy extras (until contract analogs land)
             get_app_info,
             scan_mod,
