@@ -18,6 +18,8 @@ import type {
   ChatBatchExportResponseDto,
   ChatBatchImportRequestDto,
   ChatBatchImportResponseDto,
+  ChatBatchListRequestDto,
+  ChatBatchListResponseDto,
   ChatBatchStatusRequestDto,
   ChatBatchStatusResponseDto,
   ContractHandshakeDto,
@@ -203,6 +205,10 @@ export interface ContractMethodMap {
   contract_chat_batch_apply: {
     params: { request: ChatBatchApplyRequestDto };
     result: ChatBatchApplyResponseDto;
+  };
+  contract_chat_batch_list: {
+    params: { request: ChatBatchListRequestDto };
+    result: ChatBatchListResponseDto;
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }
