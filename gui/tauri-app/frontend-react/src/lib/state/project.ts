@@ -4,6 +4,8 @@
 // persist-before-ack (the acked revision is the apply base).
 import type {
   ApplyIntentsRequestDto,
+  DraftEntryDto,
+  DraftsRestoreReportDto,
   ProjectSnapshotDto,
   ProjectSummaryDto,
   SourceEntryIdDto,
@@ -70,6 +72,34 @@ const initialValidation: ValidationState = {
   error: null,
 }
 
+// --- Durable draft autosave (Data Safety, priority #1). setDraft больше не
+//  держит текст только в памяти: через debounce 1.5s вся карта черновиков
+//  уходит контрактной командой project_save_drafts в sidecar-хранилище
+//  `<id>.drafts.json` (epoch-guard, живую ревизию ставит сервис). Ошибка
+//  автосейва — честный статус + Retry, тихой потери работы нет. Черновики
+//  НИКОГДА не становятся подтверждёнными переводами: никакой apply/origin/
+//  completeness через этот конвейер не идёт. ---
+export type DraftsSyncStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+
+export interface DraftsSyncState {
+  status: DraftsSyncStatus
+  error: string | null
+}
+
+/** Восстановление при open(): поднятые черновики и честные уведомления. */
+export interface DraftsNotice {
+  kind: 'restored' | 'orphan' | 'unavailable'
+  /** Для restored — сколько правок поднято; для остальных — путь/деталь. */
+  count?: number
+  fromBackup?: boolean
+  path?: string
+  detail?: string
+}
+
+const initialDraftsSync: DraftsSyncState = { status: 'idle', error: null }
+
+const DRAFT_FLUSH_DELAY_MS = 1500
+
 // F1: the target locale is PER-PROJECT state — it survives restarts in
 // localStorage under `rimloc.target.<project_id>`. Without it, every fresh
 // session opened the project on the default 'ru' while the corpus lived in
@@ -104,6 +134,10 @@ export interface ProjectState {
   entries: WorkspaceEntry[]
   selectedKey: string | null
   drafts: Record<string, string>
+  /** Автосейв черновиков: статус конвейера durable-хранилища (Error + Retry). */
+  draftsSync: DraftsSyncState
+  /** Inline-уведомление восстановления после open() (dismissable). */
+  draftsNotice: DraftsNotice | null
   busy: boolean
   load: LoadState
   lastError: string | null
@@ -118,6 +152,8 @@ let state: ProjectState = {
   entries: [],
   selectedKey: null,
   drafts: {},
+  draftsSync: initialDraftsSync,
+  draftsNotice: null,
   busy: false,
   load: { kind: 'idle' },
   lastError: null,
@@ -133,6 +169,90 @@ const listeners = new Set<() => void>()
 function set(patch: Partial<ProjectState>): void {
   state = { ...state, ...patch }
   listeners.forEach((l) => l())
+}
+
+// --- Автосейв-конвейер черновиков: monotonic версия карты (гонки flush),
+// серийная очередь записей (последняя карта попадает в хранилище последней)
+// и debounce 1.5s на setDraft. Каждая запись уходит epoch-guarded; сервис
+// ставит живую ревизию. ---
+
+let draftsVersion = 0
+let draftFlushTimer: number | null = null
+let draftSyncChain: Promise<void> = Promise.resolve()
+
+function currentDraftEntries(): Record<string, DraftEntryDto> {
+  const now = Date.now()
+  const entries: Record<string, DraftEntryDto> = {}
+  for (const [key, text] of Object.entries(state.drafts)) {
+    entries[key] = { text, updated_at: now }
+  }
+  return entries
+}
+
+/** Немедленная запись всей карты черновиков в durable-хранилище. Записи
+ *  сериализованы цепочкой (запись N+1 стартует после N), статус честно
+ *  отражает исход: saved / error (+ Retry). Flush устаревшей сессии
+ *  (epoch/project сменились) молча отпускается — за состояние отвечает
+ *  уже новая сессия. */
+function flushDraftsNow(): Promise<void> {
+  const snap = state.snapshot
+  if (!snap) return Promise.resolve()
+  const capturedVersion = draftsVersion
+  const capturedPid = snap.project_id
+  const capturedEpoch = snap.session_epoch
+  const entries = currentDraftEntries()
+  draftSyncChain = draftSyncChain.then(async () => {
+    // К моменту старта записи сессия могла смениться — не пишем мимо неё.
+    const live = state.snapshot
+    if (!live || live.project_id !== capturedPid || live.session_epoch !== capturedEpoch) return
+    if (state.draftsSync.status !== 'error') {
+      set({ draftsSync: { status: 'saving', error: null } })
+    }
+    try {
+      await clientInstance.getClient().saveDrafts(capturedPid, capturedEpoch, entries)
+      // Пока шла запись, были новые правки — статус не «saved», в очередь
+      // встанет свежий flush (trailing timer уже поставлен setDraft'ом).
+      if (
+        state.snapshot?.project_id === capturedPid &&
+        state.snapshot?.session_epoch === capturedEpoch &&
+        draftsVersion === capturedVersion
+      ) {
+        set({ draftsSync: { status: 'saved', error: null } })
+      } else if (state.draftsSync.status === 'saving') {
+        set({ draftsSync: { status: 'dirty', error: null } })
+      }
+    } catch (e) {
+      if (
+        state.snapshot?.project_id === capturedPid &&
+        state.snapshot?.session_epoch === capturedEpoch
+      ) {
+        // persist-before-ack в reverse: провал durable-черновика НЕ трогает
+        // карту в памяти — работа не теряется, статус зовёт Retry.
+        set({
+          draftsSync: {
+            status: 'error',
+            error: e instanceof Error ? e.message : String(e),
+          },
+        })
+      }
+    }
+  })
+  return draftSyncChain
+}
+
+function scheduleDraftFlush(delay = DRAFT_FLUSH_DELAY_MS): void {
+  if (draftFlushTimer !== null) window.clearTimeout(draftFlushTimer)
+  draftFlushTimer = window.setTimeout(() => {
+    draftFlushTimer = null
+    void flushDraftsNow()
+  }, delay)
+}
+
+function cancelScheduledDraftFlush(): void {
+  if (draftFlushTimer !== null) {
+    window.clearTimeout(draftFlushTimer)
+    draftFlushTimer = null
+  }
 }
 
 export function subscribe(listener: () => void): () => void {
@@ -231,12 +351,15 @@ export const projectStore = {
       // writes persist under rimloc.target.<project_id>.
       const locale = state.targetLocale
       persistTargetLocale(snap.project_id, locale)
+      cancelScheduledDraftFlush()
       set({
         snapshot: snap,
         targetLocale: locale,
         entries: mapSnapshot(snap, locale),
         selectedKey: null,
         drafts: {},
+        draftsSync: initialDraftsSync,
+        draftsNotice: null,
         busy: false,
         // Новый проект — прежний отчёт валидации неприменим.
         validation: { ...initialValidation, stale: true },
@@ -268,7 +391,14 @@ export const projectStore = {
 
   async open(projectId: string): Promise<boolean> {
     const T0 = performance.now()
-    set({ busy: true, lastError: null, perfMarks: { T0_openRequested: T0 } })
+    cancelScheduledDraftFlush()
+    set({
+      busy: true,
+      lastError: null,
+      draftsSync: initialDraftsSync,
+      draftsNotice: null,
+      perfMarks: { T0_openRequested: T0 },
+    })
     try {
       const snap = await clientInstance.getClient().openProject(projectId)
       // F1: hydrate the per-project target BEFORE mapping — a fresh session
@@ -285,11 +415,17 @@ export const projectStore = {
         entries: mapped,
         selectedKey: null,
         drafts: {},
+        draftsSync: initialDraftsSync,
+        draftsNotice: null,
         busy: false,
         // Открытие — прежний отчёт валидации устарел (§9): новый проект или
         // свежая сессия; воркспейс пере-гоняет валидацию по stale-флагу.
         validation: { ...initialValidation, stale: true },
       })
+      // Data Safety: поднять несохранённую работу из sidecar-хранилища
+      // (ревизионный гард и quarantine — на сервисе). Отдельный async-шаг:
+      // черновики не могут уронить открытие проекта.
+      void projectStore.adoptRestoredDrafts(projectId, snap.session_epoch)
       void projectStore.refreshValidation()
       return true
     } catch (e) {
@@ -305,26 +441,44 @@ export const projectStore = {
   /** Multi-target (§32): switch the edited target locale — translations
    *  re-map from the SAME snapshot (per-locale slices live side by side).
    *  F1: the choice persists under rimloc.target.<project_id> so the next
-   *  session opens the project on the same corpus slice. */
+   *  session opens the project on the same corpus slice. Черновики — часть
+   *  активного локale-среза: смена цели стирает их и из durable-хранилища
+   *  (паритет с прежней in-memory семантикой — иначе чужой срез поднялся
+   *  бы при следующем open). */
   setTargetLocale(locale: string): void {
     if (!state.snapshot || state.targetLocale === locale) return
     persistTargetLocale(state.snapshot.project_id, locale)
-    set({ targetLocale: locale, entries: mapSnapshot(state.snapshot, locale), drafts: {} })
+    draftsVersion++
+    set({
+      targetLocale: locale,
+      entries: mapSnapshot(state.snapshot, locale),
+      drafts: {},
+      draftsSync: { status: 'dirty', error: null },
+    })
+    void flushDraftsNow()
   },
 
   setDraft(key: string, text: string): void {
-    set({ drafts: { ...state.drafts, [key]: text } })
+    draftsVersion++
+    set({
+      drafts: { ...state.drafts, [key]: text },
+      draftsSync: { status: 'dirty', error: state.draftsSync.error },
+    })
+    scheduleDraftFlush()
   },
 
   /** Revert (§11): a clean draft is the ABSENCE of the record — editor and
    *  the shell dirty-pill derive dirtiness from that (same convention as
    *  commit, which deletes the key on ack). Writing the committed text back
-   *  as a draft would leave a phantom unsaved record. */
+   *  as a draft would leave a phantom unsaved record. Удаление уходит и в
+   *  durable-хранилище — сразу, без debounce. */
   clearDraft(key: string): void {
     if (!(key in state.drafts)) return
     const drafts = { ...state.drafts }
     delete drafts[key]
-    set({ drafts })
+    draftsVersion++
+    set({ drafts, draftsSync: { status: 'dirty', error: state.draftsSync.error } })
+    void flushDraftsNow()
   },
 
   /** Commit one draft as a set_translation intent (persist-before-ack). */
@@ -362,6 +516,7 @@ export const projectStore = {
       const fresh = await client.snapshot(req.project_id)
       const drafts = { ...state.drafts }
       delete drafts[key]
+      draftsVersion++
       set({
         snapshot: fresh,
         // Перерисовка в АКТИВНУЮ цель (acceptance MUST-FIX: после коммита в uk
@@ -374,6 +529,9 @@ export const projectStore = {
         // устарел, revalidate уберёт строку из «С замечаниями».
         validation: { ...state.validation, stale: true, error: null },
       })
+      // Подтверждённый ключ уходит и из durable-хранилища черновиков —
+      // немедленная запись полной карты (сервис поставит свежую ревизию).
+      void flushDraftsNow()
       void projectStore.refreshValidation()
       if (next) {
         const idx = state.entries.findIndex((e) => e.key === key)
@@ -403,6 +561,7 @@ export const projectStore = {
       const locale = loadTargetLocale(snap.project_id) ?? state.targetLocale
       // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
       // захардкоженная 'ru' игнорировала targetLocale).
+      draftsVersion++
       set({
         snapshot: fresh,
         targetLocale: locale,
@@ -412,6 +571,9 @@ export const projectStore = {
         // валидации устарел так же, как после commit().
         validation: { ...state.validation, stale: true, error: null },
       })
+      // Черновики — часть прежнего среза: внешняя мутация стирает их и из
+      // durable-хранилища (паритет с in-memory семантикой).
+      void flushDraftsNow()
     } catch {
       /* refresh failures surface via the next contract call */
     }
@@ -446,13 +608,80 @@ export const projectStore = {
     }
   },
 
+  /** Data Safety: поднять несохранённую работу после open(). Решение
+   *  принимает сервис (ревизионный гард, quarantine сироты, восстановление
+   *  из бэкапа) — фронтенд только честно показывает отчёт. Никогда не
+   *  роняет открытие проекта. */
+  async adoptRestoredDrafts(projectId: string, sessionEpoch: number): Promise<void> {
+    let report: DraftsRestoreReportDto
+    try {
+      report = await clientInstance.getClient().restoreDrafts(projectId, sessionEpoch)
+    } catch (e) {
+      // Restore недоступен (например, транспорт ещё не знает команду) —
+      // молча терять работу нельзя: честная заметка, проект открыт.
+      if (state.snapshot?.project_id === projectId) {
+        set({
+          draftsNotice: {
+            kind: 'unavailable',
+            detail: e instanceof Error ? e.message : String(e),
+          },
+        })
+      }
+      return
+    }
+    // Сессия уже уехала вперёд (повторный open) — отчёт устарел.
+    if (state.snapshot?.project_id !== projectId || state.snapshot?.session_epoch !== sessionEpoch) {
+      return
+    }
+    if (
+      report.status === 'restored' &&
+      report.drafts !== undefined &&
+      Object.keys(report.drafts).length > 0
+    ) {
+      const drafts: Record<string, string> = {}
+      for (const [key, entry] of Object.entries(report.drafts)) drafts[key] = entry.text
+      set({
+        drafts,
+        draftsNotice: {
+          kind: 'restored',
+          count: report.restored_count,
+          fromBackup: report.recovered_from_backup !== undefined,
+        },
+      })
+    } else if (report.status === 'orphan_quarantined') {
+      set({
+        draftsNotice: {
+          kind: 'orphan',
+          path: report.orphan_path?.path,
+          detail: report.detail,
+        },
+      })
+    } else if (report.status === 'unavailable') {
+      set({ draftsNotice: { kind: 'unavailable', detail: report.detail } })
+    }
+  },
+
+  /** Retry автосейва после ошибки: немедленный повтор записи хранилища. */
+  retryDraftsSync(): void {
+    void flushDraftsNow()
+  },
+
+  /** Скрыть inline-уведомление восстановления (dismissable). */
+  dismissDraftsNotice(): void {
+    set({ draftsNotice: null })
+  },
+
   reset(): void {
+    cancelScheduledDraftFlush()
+    draftsVersion++
     set({
       summaries: [],
       snapshot: null,
       entries: [],
       selectedKey: null,
       drafts: {},
+      draftsSync: initialDraftsSync,
+      draftsNotice: null,
       busy: false,
       load: { kind: 'idle' },
       lastError: null,

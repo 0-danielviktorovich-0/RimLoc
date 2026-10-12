@@ -24,6 +24,9 @@ import type {
   ContractMethod,
   CreateProjectRequestDto,
   DiagnoseResponseDto,
+  DraftEntryDto,
+  DraftsRestoreReportDto,
+  DraftsSaveAckDto,
   ExportProjectResponseDto,
   GlossaryTermDto,
   ImportExistingRequestDto,
@@ -203,6 +206,23 @@ export interface ContractMethodMap {
   contract_chat_batch_apply: {
     params: { request: ChatBatchApplyRequestDto };
     result: ChatBatchApplyResponseDto;
+  };
+  // Durable draft autosave (Data Safety; mirrors session_drafts.rs):
+  // epoch-guarded sidecar store of UNSAVED editor work — never confirmed
+  // translations. The service stamps the live revision on save; restore
+  // reports honestly (restored / orphan_quarantined / unavailable); clear
+  // removes one key (revert) or the whole store.
+  project_save_drafts: {
+    params: { project_id: string; session_epoch: number; entries: Record<string, DraftEntryDto> };
+    result: DraftsSaveAckDto;
+  };
+  project_restore_drafts: {
+    params: { project_id: string; session_epoch: number };
+    result: DraftsRestoreReportDto;
+  };
+  project_clear_drafts: {
+    params: { project_id: string; session_epoch: number; key?: string };
+    result: DraftsSaveAckDto;
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }

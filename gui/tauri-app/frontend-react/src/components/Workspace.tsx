@@ -10,7 +10,7 @@ import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panel
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
-import { projectStore, findingEntryKeys, findingsByEntryKey, type WorkspaceEntry } from '../lib/state/project'
+import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
 import { clientInstance } from '../lib/client/instance'
 import { SOURCE_LOCALE } from '../lib/languages/registry'
@@ -155,6 +155,38 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       <div className="ws-error" role="alert" hidden={!st.lastError}>
         {st.lastError}
       </div>
+      {/* Data Safety: честный отчёт восстановления черновиков после open()
+          (подняты / сирота от другой ревизии / хранилище недоступно).
+          Inline, dismissable — никогда не молчаливое применение. */}
+      {st.draftsNotice && (
+        <div
+          className={`inline-warning ${st.draftsNotice.kind === 'unavailable' ? 'text-destructive' : ''}`}
+          role={st.draftsNotice.kind === 'restored' ? 'status' : 'alert'}
+          data-testid="ws.drafts-notice"
+        >
+          <CircleAlert size={15} />
+          <span>
+            {st.draftsNotice.kind === 'restored' && (
+              <>
+                {t('ws.drafts.restored', { count: st.draftsNotice.count ?? 0 })}
+                {st.draftsNotice.fromBackup ? ` ${t('ws.drafts.restoredFromBackup')}` : ''}
+              </>
+            )}
+            {st.draftsNotice.kind === 'orphan' &&
+              t('ws.drafts.orphan', { path: st.draftsNotice.path ?? '—' })}
+            {st.draftsNotice.kind === 'unavailable' &&
+              t('ws.drafts.unavailable', { detail: st.draftsNotice.detail ?? '—' })}
+          </span>
+          <button
+            className="icon-btn"
+            aria-label={t('ws.drafts.dismiss')}
+            data-testid="ws.drafts-notice-dismiss"
+            onClick={() => projectStore.dismissDraftsNotice()}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div className="ws-panes">
         <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
         <Panel id="ws-left" minSize={30} defaultSize={66}>
@@ -218,6 +250,10 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               </button>
             ))}
             <span>{visible.length} {t('ws.rows')}</span>
+            {/* Data Safety: статус durable-автосохранения черновиков.
+                Error + Retry — провал записи НЕ теряет работу (карта живёт
+                в памяти), но и не молчит: честный статус и повтор. */}
+            <DraftsSyncIndicator status={st.draftsSync.status} error={st.draftsSync.error} />
           </div>
           <EntryList
             entries={visible}
@@ -288,6 +324,48 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         </span>
       </div>
     </div>
+  )
+}
+
+/** Data Safety: компактный индикатор конвейера durable-автосохранения
+ *  черновиков. idle молчит (чистое состояние — шума нет); error показывает
+ *  честную ошибку и Retry (повтор записи в sidecar-хранилище). */
+function DraftsSyncIndicator({
+  status,
+  error,
+}: {
+  status: DraftsSyncStatus
+  error: string | null
+}) {
+  if (status === 'idle') return null
+  if (status === 'error') {
+    return (
+      <span className="status-label text-destructive" data-testid="ws.drafts-sync" title={error ?? undefined}>
+        <CircleAlert size={13} />
+        {t('ws.drafts.saveError')}
+        <button
+          className="icon-btn"
+          aria-label={t('ws.drafts.retry')}
+          title={t('ws.drafts.retry')}
+          data-testid="ws.drafts-retry"
+          onClick={() => projectStore.retryDraftsSync()}
+        >
+          <RotateCcw size={13} />
+        </button>
+      </span>
+    )
+  }
+  const label =
+    status === 'saving'
+      ? t('ws.drafts.saving')
+      : status === 'saved'
+        ? t('ws.drafts.saved')
+        : t('ws.drafts.dirty')
+  return (
+    <span className="status-label" data-testid="ws.drafts-sync">
+      <Save size={13} />
+      {label}
+    </span>
   )
 }
 

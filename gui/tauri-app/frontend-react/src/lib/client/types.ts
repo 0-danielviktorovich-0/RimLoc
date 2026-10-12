@@ -366,6 +366,44 @@ export interface VersionDiffResponseDto {
   entries_truncated: boolean;
 }
 
+// --- durable draft autosave (Data Safety; mirrors session_drafts.rs).
+// Drafts are UNSAVED editor work in a sidecar `<id>.drafts.json` — never
+// confirmed translations: no origin/completeness/revision writes ride this
+// surface. The service stamps the LIVE revision and guards every call with
+// the session epoch. ---
+export interface DraftEntryDto {
+  text: string;
+  /** Wall-clock stamp of the last autosave (unix ms). */
+  updated_at: number;
+}
+
+export interface DraftsSaveAckDto {
+  /** Entries now durable in the store. */
+  saved: number;
+  /** The LIVE revision the store was stamped with (the service's). */
+  project_revision: number;
+  updated_at: number;
+}
+
+export type DraftsRestoreStatusDto =
+  | 'none'
+  | 'restored'
+  | 'orphan_quarantined'
+  | 'unavailable';
+
+export interface DraftsRestoreReportDto {
+  status: DraftsRestoreStatusDto;
+  /** Restored entries (absent unless status is `restored`). */
+  drafts?: Record<string, DraftEntryDto>;
+  restored_count: number;
+  project_revision?: number;
+  /** Where the mismatched store was preserved (status `orphan_quarantined`). */
+  orphan_path?: { path: string };
+  /** Set when the live file was corrupt and a backup supplied the data. */
+  recovered_from_backup?: string;
+  detail?: string;
+}
+
 // --- handshake / capabilities ---
 export interface UnsupportedCapabilityDto {
   capability: string;
@@ -457,7 +495,15 @@ export type ContractMethod =
   // Build identity of the RUNNING binary (soak-hardening §1): long-running
   // acceptance runs verify the artifact they drive independently of any
   // wrapper path. Refused honestly in mock — no running binary there.
-  | 'build_identity';
+  | 'build_identity'
+  // Durable draft autosave (Data Safety): save the workspace's unsaved
+  // editor texts into the sidecar store (epoch-guarded, revision-stamped by
+  // the service), restore them on open (revision-matched, orphan-quarantined
+  // otherwise) and remove on revert/commit. Never touch confirmed
+  // translations.
+  | 'project_save_drafts'
+  | 'project_restore_drafts'
+  | 'project_clear_drafts';
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
