@@ -512,6 +512,21 @@ impl ProjectSessionManager {
             ContractError::new(ContractErrorCode::ContractViolation, e.message)
                 .with_details(e.details)
         })?;
+        // Structural validation (mandate §14): the deterministic core —
+        // the placeholder set of every response row must match the pinned
+        // source exactly (lost / renamed / unexpected tokens name the row).
+        // A mismatching row becomes a PROBLEM row (held back from apply
+        // unless overridden), never a silent apply.
+        let mut parsed = parsed;
+        for p in &mut parsed {
+            if let Some(item) = batch.items.iter().find(|i| i.key == p.key) {
+                if let Some(mismatch) =
+                    rimloc_validate::placeholder_set_mismatch(&item.source, &p.text)
+                {
+                    p.structural_problem = Some(mismatch);
+                }
+            }
+        }
         let preview_items = attach_conflicts(&batch, parsed, &live);
 
         let preview = ChatBatchPreview {
@@ -642,7 +657,7 @@ impl ProjectSessionManager {
                     format!("preview key `{}` is not pinned in the batch", p.key),
                 )
             })?;
-            let problem = p.needs_review || p.conflict.is_some();
+            let problem = p.needs_review || p.conflict.is_some() || p.structural_problem.is_some();
             if problem && !overrides.contains(p.key.as_str()) {
                 held_back += 1;
                 continue;
@@ -972,6 +987,7 @@ fn parse_legacy_response(
             note: None,
             needs_review: false,
             conflict: None,
+            structural_problem: None,
         });
     }
     if answered.len() != keys.len() {
@@ -1097,6 +1113,7 @@ fn parse_structured_response(
                 note: cur_note.take(),
                 needs_review: cur_review,
                 conflict: None,
+                structural_problem: None,
             });
             cur_review = false;
             cur_text.clear();
@@ -2383,6 +2400,121 @@ mod tests {
         );
         let imported3 = import(&mgr, &batch3.batch_id, fresh.session_epoch, &response3).unwrap();
         assert!(imported3.preview.items[0].conflict.is_none());
+    }
+
+    /// Mandate §14/§30: altered placeholders make a row a PROBLEM row —
+    /// held back from apply with the named mismatch, applied only on the
+    /// explicit override; clean rows in the same response apply normally.
+    #[test]
+    fn chat_batch_placeholder_mismatch_is_a_problem_row_never_silent() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        write(
+            &mod_root.join("Languages/English/Keyed/Tokens.xml"),
+            r#"<RimWorld-Strings><Progress>Progress: {0} of %s</Progress><Plain>Plain text</Plain></RimWorld-Strings>"#,
+        );
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let k_progress = keyed_key("Progress");
+        let k_plain = keyed_key("Plain");
+
+        let batch = mgr
+            .chat_batch_create(&create_req(
+                &snap.project_id,
+                snap.session_epoch,
+                &[k_progress.clone(), k_plain.clone()],
+            ))
+            .unwrap();
+        export(&mgr, &batch.batch_id, snap.session_epoch);
+
+        // The token row LOST {0} and renamed %s → structural problem; the
+        // plain row is clean.
+        let response = structured_response(
+            &batch.batch_id,
+            "Russian",
+            &[
+                (k_progress.as_str(), "Прогресс: {1} из %d"),
+                (k_plain.as_str(), "Обычный текст"),
+            ],
+        );
+        let imported = import(&mgr, &batch.batch_id, snap.session_epoch, &response).unwrap();
+        let problem = imported
+            .preview
+            .items
+            .iter()
+            .find(|p| p.key == k_progress)
+            .unwrap();
+        let detail = problem.structural_problem.as_ref().expect("mismatch named");
+        assert!(detail.contains("{0}"), "{detail}");
+        // Identical sets stay clean.
+        assert!(imported
+            .preview
+            .items
+            .iter()
+            .find(|p| p.key == k_plain)
+            .unwrap()
+            .structural_problem
+            .is_none());
+
+        // Default apply: only the clean row lands; the problem row is held.
+        let applied = mgr
+            .chat_batch_apply(&ChatBatchApplyRequest {
+                batch_id: batch.batch_id.clone(),
+                expected_revision: snap.revision,
+                session_epoch: snap.session_epoch,
+                override_keys: vec![],
+            })
+            .unwrap();
+        assert_eq!(applied.applied, 1);
+        assert_eq!(applied.held_back, 1);
+        let env = load_project_with_meta(&mgr.managed_path(&snap.project_id).unwrap()).unwrap();
+        assert!(env
+            .project
+            .translations
+            .iter()
+            .all(|t| t.source_id.key != "Progress"));
+
+        // The explicit override applies the (human-decided) problem row.
+        let fresh = mgr.open(&snap.project_id).unwrap();
+        let response2 = structured_response(
+            &batch.batch_id,
+            "Russian",
+            &[
+                (k_progress.as_str(), "Прогресс: {1} из %d"),
+                (k_plain.as_str(), "Обычный текст"),
+            ],
+        );
+        let _ = response2;
+        let batch2 = mgr
+            .chat_batch_create(&create_req(
+                &fresh.project_id,
+                fresh.session_epoch,
+                std::slice::from_ref(&k_progress),
+            ))
+            .unwrap();
+        export(&mgr, &batch2.batch_id, fresh.session_epoch);
+        let imported2 = import(
+            &mgr,
+            &batch2.batch_id,
+            fresh.session_epoch,
+            &structured_response(
+                &batch2.batch_id,
+                "Russian",
+                &[(k_progress.as_str(), "Прогресс: {1} из %d")],
+            ),
+        )
+        .unwrap();
+        assert!(imported2.preview.items[0].structural_problem.is_some());
+        let applied2 = mgr
+            .chat_batch_apply(&ChatBatchApplyRequest {
+                batch_id: batch2.batch_id.clone(),
+                expected_revision: fresh.revision,
+                session_epoch: fresh.session_epoch,
+                override_keys: vec![k_progress.clone()],
+            })
+            .unwrap();
+        assert_eq!(applied2.applied, 1);
+        assert_eq!(applied2.held_back, 0);
     }
 
     /// A row that carried a HUMAN translation at selection time conflicts

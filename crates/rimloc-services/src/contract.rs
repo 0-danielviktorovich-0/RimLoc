@@ -1559,6 +1559,12 @@ pub struct ChatBatchPreviewItem {
     /// response must not silently overwrite).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub conflict: Option<ChatRowConflict>,
+    /// Deterministic structural finding at import (mandate §14): the
+    /// placeholder set of the response does not match the pinned source
+    /// (lost / renamed / unexpected tokens). A problem row — held back
+    /// from apply unless the human overrides.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structural_problem: Option<String>,
 }
 
 /// Why one preview row conflicts with the LIVE translation state (mandate

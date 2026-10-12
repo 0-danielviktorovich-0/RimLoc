@@ -452,8 +452,10 @@ export function ChatBatch() {
 
   // Preview partition: safe rows vs problems (never applied silently).
   const preview = batch?.preview?.items ?? []
-  const safeRows = preview.filter((p) => !p.needs_review && !p.conflict)
-  const problemRows = preview.filter((p) => p.needs_review || p.conflict)
+  const isProblem = (p: ChatBatchPreviewItemDto): boolean =>
+    !!p.needs_review || !!p.conflict || !!p.structural_problem
+  const safeRows = preview.filter((p) => !isProblem(p))
+  const problemRows = preview.filter(isProblem)
 
   return (
     <div className="page-content narrow-page">
@@ -755,6 +757,11 @@ export function ChatBatch() {
                       </p>
                     ) : null}
                     {p.needs_review && <p className="page-note">{t('cb.needsReview')}</p>}
+                    {p.structural_problem && (
+                      <p className="page-note">
+                        {t('cb.structuralProblem', { detail: p.structural_problem })}
+                      </p>
+                    )}
                     {p.note && <p className="page-note">{t('cb.modelNote', { note: p.note })}</p>}
                     <p>
                       <strong>{p.text}</strong>

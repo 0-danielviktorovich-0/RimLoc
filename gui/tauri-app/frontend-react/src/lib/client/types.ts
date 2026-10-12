@@ -793,6 +793,9 @@ export interface ChatBatchPreviewItemDto {
   /** Live-state conflict detected at import — held back from apply unless
    *  the human lists the key in `override_keys`. */
   conflict?: ChatRowConflictDto;
+  /** Deterministic structural finding (placeholder-set mismatch vs the
+   *  pinned source) — a problem row, never applied silently. */
+  structural_problem?: string;
 }
 
 export interface ChatBatchPreviewDto {

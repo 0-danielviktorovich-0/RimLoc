@@ -454,6 +454,7 @@ const ru: Record<string, string> = {
   'cb.problems': 'Проблемные строки (молча не применяются)',
   'cb.needsReview': 'Модель пометила строку как неуверенную.',
   'cb.modelNote': 'Заметка модели: {note}',
+  'cb.structuralProblem': 'Структурная проверка: {detail}',
   'cb.override': 'Применить всё равно (я решил(а))',
   'cb.conflictCurrent': 'Сейчас в проекте: «{text}»',
   'cb.conflict.changed_after_select':
@@ -941,6 +942,7 @@ const en: Record<string, string> = {
   'cb.problems': 'Problem strings (never applied silently)',
   'cb.needsReview': 'The model flagged this string as uncertain.',
   'cb.modelNote': 'Model note: {note}',
+  'cb.structuralProblem': 'Structural check: {detail}',
   'cb.override': 'Apply anyway (my decision)',
   'cb.conflictCurrent': 'Currently in the project: "{text}"',
   'cb.conflict.changed_after_select':
