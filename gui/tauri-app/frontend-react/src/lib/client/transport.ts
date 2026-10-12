@@ -209,7 +209,6 @@ export interface ContractMethodMap {
     params: { request: ChatBatchApplyRequestDto };
     result: ChatBatchApplyResponseDto;
   };
-<<<<<<< HEAD
   // Durable draft autosave (Data Safety; mirrors session_drafts.rs):
   // epoch-guarded sidecar store of UNSAVED editor work — never confirmed
   // translations. The service stamps the live revision on save; restore
@@ -226,11 +225,10 @@ export interface ContractMethodMap {
   project_clear_drafts: {
     params: { project_id: string; session_epoch: number; key?: string };
     result: DraftsSaveAckDto;
-=======
+  };
   contract_chat_batch_list: {
     params: { request: ChatBatchListRequestDto };
     result: ChatBatchListResponseDto;
->>>>>>> feat/chatbatch-manager
   };
   build_identity: { params: Record<string, never>; result: BuildIdentityDto };
 }
