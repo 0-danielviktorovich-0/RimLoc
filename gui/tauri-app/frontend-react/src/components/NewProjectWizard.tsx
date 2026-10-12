@@ -6,7 +6,9 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Check, FolderOpen, LoaderCircle, Plus } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { projectStore } from '../lib/state/project'
-import { BUILTIN_LANGUAGES } from '../lib/languages/registry'
+import { BUILTIN_LANGUAGES, SOURCE_LOCALE } from '../lib/languages/registry'
+import { folderForm } from '../lib/languages/folderForm'
+import { useLanguageManager } from '../lib/languages/manager'
 import { t } from '../lib/i18n'
 
 export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
@@ -20,9 +22,20 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
   // the store's §32 multi-target state right after the live scan snapshot
   // is adopted — the same switcher the workspace uses.
   const [target, setTarget] = useState('ru')
+  // Source language (source-language wave): selectable from the SAME option
+  // table the Language Manager renders (builtins + user languages), not a
+  // disabled English-only stub. The choice rides the project_create contract
+  // (source_locale + strict folder form) so the backend scans
+  // Languages/<source_dir> as the source inventory — the UI and the backend
+  // can never disagree about the source side.
+  const [source, setSource] = useState(SOURCE_LOCALE)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Та же опция-таблица, что у Language Manager: builtins + user languages
+  // (manager store). nativeName labels match the manager rows 1:1.
+  const { allLanguages } = useLanguageManager()
   const targetName = BUILTIN_LANGUAGES.find((l) => l.localeId === target)?.nativeName ?? target
+  const sourceName = allLanguages.find((l) => l.localeId === source)?.nativeName ?? source
 
   // D4: отмена (и успешное создание) сбрасывают ВСЁ локальное состояние —
   // иначе следующий запуск визарда открывается на старом пути/шаге, будто
@@ -33,6 +46,7 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
     setModRoot('')
     setVersion('1.6')
     setTarget('ru')
+    setSource(SOURCE_LOCALE)
     setBusy(false)
     setError(null)
   }
@@ -67,7 +81,13 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
     setBusy(true)
     setError(null)
     try {
-      const ok = await projectStore.createContractProject(modRoot, version)
+      // Source rides the CONTRACT explicitly (locale id + strict folder
+      // form): no situation where the UI shows a Japanese source while the
+      // backend scans English.
+      const ok = await projectStore.createContractProject(modRoot, version, {
+        locale: source,
+        dir: folderForm(source),
+      })
       if (!ok) throw new Error(projectStore.lastErrorText ?? 'create failed')
       // §22: the wizard's target choice becomes the workspace editing target
       // (no-op when it equals the current one; the snapshot already exists).
@@ -136,8 +156,16 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
           <div className="form-grid">
             <label className="field">
               <span>{t('wizard.sourceLang')}</span>
-              <select defaultValue="en" disabled>
-                <option value="en">English</option>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                data-testid="wizard.source-locale"
+              >
+                {allLanguages.map((l) => (
+                  <option key={l.localeId} value={l.localeId}>
+                    {l.nativeName}
+                  </option>
+                ))}
               </select>
             </label>
             <label className="field">
@@ -167,7 +195,7 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
             </div>
             <h3>{modRoot.split('/').filter(Boolean).at(-1) ?? t('wizard.newProject')}</h3>
             <p>
-              English → {targetName} · RimWorld {version}
+              {sourceName} → {targetName} · RimWorld {version}
             </p>
             <code>{modRoot}</code>
             <small>{t('wizard.summaryNote')}</small>

@@ -54,6 +54,12 @@ export interface SkippedIntentDto {
 export interface CreateProjectRequestDto {
   mod_root: { path: string };
   target_version?: string;
+  /** Additive (source-language wave): registry locale id of the SOURCE
+   *  language ('ja'); absent/empty = English (legacy clients unchanged). */
+  source_locale?: string;
+  /** RimWorld Languages/<folder> of the source side ('Japanese'); wins over
+   *  source_locale when both are sent. Absent = derived from the locale. */
+  source_dir?: string;
 }
 
 export interface ApplyIntentsRequestDto {
@@ -181,6 +187,13 @@ export interface CanonicalProjectDto {
     active_mods: string[];
     load_order: string[];
     view: string;
+    /** Additive (source-language wave): the SOURCE language marker —
+     *  registry locale id the inventory was built from ('ja').
+     *  Absent/undefined = English (all legacy envelopes). */
+    source_locale?: string | null;
+    /** RimWorld Languages/<folder> the inventory was scanned from
+     *  ('Japanese'); absent/undefined = English. */
+    source_dir?: string | null;
   };
   entries: SourceEntryDto[];
   translations: TranslationDto[];

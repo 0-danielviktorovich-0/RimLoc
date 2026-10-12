@@ -5,7 +5,7 @@ import { FolderOpen, ArrowRight, HardDrive, BookOpen } from 'lucide-react'
 import { NewProjectWizard } from './NewProjectWizard'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
-import { registry, SOURCE_LOCALE } from '../lib/languages/registry'
+import { registry } from '../lib/languages/registry'
 import { t } from '../lib/i18n'
 
 /** Raw managed-project ids are opaque (`proj-<hash>-<n>`) — the card label
@@ -52,7 +52,7 @@ export function Home({ onOpen }: { onOpen: (projectId: string) => void }) {
                   (never-reject registry resolve covers user languages); the
                   summary DTO carries no per-project target. */}
               <span className="project-meta">
-                {p.target_version ? `RIMWORLD ${p.target_version}` : 'PROJECT'} · {SOURCE_LOCALE.toUpperCase()} → {registry.resolve(st.targetLocale).nativeName}
+                {p.target_version ? `RIMWORLD ${p.target_version}` : 'PROJECT'} · {st.sourceLocale.toUpperCase()} → {registry.resolve(st.targetLocale).nativeName}
               </span>
               <h3>{p.name?.trim() ? p.name : shortId(p.project_id)}</h3>
               <p>

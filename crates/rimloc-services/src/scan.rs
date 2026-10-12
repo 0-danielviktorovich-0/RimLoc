@@ -10,7 +10,10 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
-const DEFAULT_SOURCE_LANG_DIR: &str = "English";
+/// The source `Languages/<dir>` for callers that carry no explicit source
+/// (legacy English contract — projects without the source marker ARE
+/// English by definition).
+pub const DEFAULT_SOURCE_LANG_DIR: &str = "English";
 
 fn seen_key(path: &Path, key: &str) -> String {
     let normalized = path.to_string_lossy().replace('\\', "/");
@@ -432,6 +435,20 @@ pub fn scan_units_with_defs_and_dict_full(
     dict: &std::collections::HashMap<String, Vec<String>>,
     extra_fields: &[String],
 ) -> Result<EffectiveScan> {
+    scan_units_with_defs_and_dict_full_for_source(root, defs_root, dict, extra_fields, None)
+}
+
+/// Source-language variant of [`scan_units_with_defs_and_dict_full`]: the
+/// Defs-derived units take their canonical virtual paths under
+/// `Languages/<source_lang_dir>` instead of `Languages/English`
+/// (`None` = unchanged English behaviour).
+pub fn scan_units_with_defs_and_dict_full_for_source(
+    root: &Path,
+    defs_root: Option<&std::path::Path>,
+    dict: &std::collections::HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+    source_lang_dir: Option<&str>,
+) -> Result<EffectiveScan> {
     let mut units = rimloc_parsers_xml::scan_keyed_xml(root)?;
     let mut seen: HashSet<String> = units.iter().map(|u| seen_key(&u.path, &u.key)).collect();
     let defs_meta =
@@ -449,7 +466,7 @@ pub fn scan_units_with_defs_and_dict_full(
         &mut units,
         &mut seen,
         root,
-        DEFAULT_SOURCE_LANG_DIR,
+        source_lang_dir.unwrap_or(DEFAULT_SOURCE_LANG_DIR),
         defs_meta,
         &mut owned_defs,
     );
@@ -654,13 +671,21 @@ pub fn apply_effective_precedence(units: &mut Vec<TransUnit>) {
 
 /// Keep the canonical source inventory on the SOURCE language side: units
 /// under `Languages/<other>` are existing TARGET packs (someone else's
-/// translations), never English source text — the canonical model hard-codes
-/// `source_locale: "en"`, so a foreign pack must not become the source even
-/// when the mod ships no English sidecar at all (a target-only pack or a
-/// TKey-only Defs mod). Units outside Languages/ (Defs, TKey, patch
-/// candidates) are always source-side; this guard runs on the CANONICAL
-/// path only — the legacy scan APIs keep their whole-language behaviour.
-pub fn retain_source_language_units(units: &mut Vec<TransUnit>) {
+/// translations), never source text — a foreign pack must not become the
+/// source even when the mod ships no sidecar for the source language at all
+/// (a target-only pack or a TKey-only Defs mod). Units outside Languages/
+/// (Defs, TKey, patch candidates) are always source-side; this guard runs on
+/// the CANONICAL path only — the legacy scan APIs keep their whole-language
+/// behaviour.
+///
+/// `source_lang_dir` selects WHICH Languages folder is the source side
+/// (source-language wave): the canonical create contract passes the
+/// project's chosen source folder, `None`/legacy callers keep English
+/// ([`DEFAULT_SOURCE_LANG_DIR`]). Defs-derived units carry the SOURCE dir in
+/// their canonical virtual paths (the scan pipeline merged them there), so
+/// one folder test keeps them — the game treats Defs text as part of the
+/// source-language surface.
+pub fn retain_source_language_units_for(units: &mut Vec<TransUnit>, source_lang_dir: &str) {
     let in_any_languages = |p: &std::path::Path| {
         let s = p.to_string_lossy();
         rimloc_core::path_text::has_path_marker(&s, "Languages")
@@ -669,8 +694,13 @@ pub fn retain_source_language_units(units: &mut Vec<TransUnit>) {
         if !in_any_languages(&u.path) {
             return true;
         }
-        is_under_languages_dir(&u.path, DEFAULT_SOURCE_LANG_DIR)
+        is_under_languages_dir(&u.path, source_lang_dir)
     });
+}
+
+/// Legacy English form of [`retain_source_language_units_for`].
+pub fn retain_source_language_units(units: &mut Vec<TransUnit>) {
+    retain_source_language_units_for(units, DEFAULT_SOURCE_LANG_DIR);
 }
 
 pub fn scan_defs_with_meta(
@@ -794,6 +824,30 @@ pub fn scan_units_effective_full(
     extra_fields: &[String],
     active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<EffectiveScan> {
+    scan_units_effective_full_for_source(
+        root,
+        requested_version,
+        dict,
+        extra_fields,
+        active_mods,
+        None,
+    )
+}
+
+/// Source-language variant of [`scan_units_effective_full`]:
+/// `source_lang_dir` (e.g. `Some("Japanese")`) makes the pipeline treat THAT
+/// `Languages/<dir>` as the SOURCE side — Defs-derived units get their
+/// canonical virtual paths under the source folder, so the canonical create
+/// path can retain exactly this folder (source-language wave). `None` keeps
+/// the legacy English behaviour, byte-for-byte.
+pub fn scan_units_effective_full_for_source(
+    root: &Path,
+    requested_version: Option<&str>,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+    active_mods: Option<&crate::modview::ActiveModContext>,
+    source_lang_dir: Option<&str>,
+) -> Result<EffectiveScan> {
     let view = crate::modview::effective_view(root, requested_version, active_mods)?;
     // A genuinely flat mod (no version dirs chosen, everything at root) is
     // exactly the legacy single-root pipeline. Everything else — LoadFolders
@@ -805,23 +859,41 @@ pub fn scan_units_effective_full(
         && view.content_dirs.len() == 1
         && view.content_dirs[0] == root;
     if flat {
-        let mut scan = scan_units_with_defs_and_dict_full(root, None, dict, extra_fields)?;
+        let mut scan = scan_units_with_defs_and_dict_full_for_source(
+            root,
+            None,
+            dict,
+            extra_fields,
+            source_lang_dir,
+        )?;
         scan.view = Some(view);
         return Ok(scan);
     }
-    scan_units_effective_view(root, view, dict, extra_fields)
+    scan_units_effective_view_for_source(root, view, dict, extra_fields, source_lang_dir)
 }
 
-/// View-driven effective scan: the resolved [`EffectiveModView`] decides
-/// which Languages dirs and Defs roots load — reused verbatim by both the
-/// LoadFolders and the classic version-dir layouts (one pipeline, one
-/// resolver, no re-derived precedence anywhere).
+/// Legacy English form of [`scan_units_effective_view_for_source`].
 pub fn scan_units_effective_view(
     root: &Path,
     view: crate::modview::EffectiveModView,
     dict: &HashMap<String, Vec<String>>,
     extra_fields: &[String],
 ) -> Result<EffectiveScan> {
+    scan_units_effective_view_for_source(root, view, dict, extra_fields, None)
+}
+
+/// Source-language variant of [`scan_units_effective_view`]: same resolver,
+/// same precedence — only the Defs-derived virtual paths carry
+/// `Languages/<source_lang_dir>` instead of `Languages/English` (the caller
+/// passes `None` for the unchanged English behaviour).
+pub fn scan_units_effective_view_for_source(
+    root: &Path,
+    view: crate::modview::EffectiveModView,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+    source_lang_dir: Option<&str>,
+) -> Result<EffectiveScan> {
+    let src_dir = source_lang_dir.unwrap_or(DEFAULT_SOURCE_LANG_DIR);
     let mut units: Vec<TransUnit> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     // First-registration books shared ACROSS content dirs: view order
@@ -860,7 +932,7 @@ pub fn scan_units_effective_view(
             &mut units,
             &mut seen,
             root,
-            DEFAULT_SOURCE_LANG_DIR,
+            src_dir,
             defs_meta,
             &mut owned_defs,
         );
@@ -921,6 +993,27 @@ pub fn scan_units_all_versions_full(
     extra_fields: &[String],
     active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<EffectiveScan> {
+    scan_units_all_versions_full_for_source(
+        root,
+        requested_version,
+        dict,
+        extra_fields,
+        active_mods,
+        None,
+    )
+}
+
+/// Source-language variant of [`scan_units_all_versions_full`] — each tier
+/// is scanned against the given source `Languages/<dir>` (see
+/// [`scan_units_effective_full_for_source`]); `None` = English.
+pub fn scan_units_all_versions_full_for_source(
+    root: &Path,
+    requested_version: Option<&str>,
+    dict: &HashMap<String, Vec<String>>,
+    extra_fields: &[String],
+    active_mods: Option<&crate::modview::ActiveModContext>,
+    source_lang_dir: Option<&str>,
+) -> Result<EffectiveScan> {
     let requested = requested_version.map(crate::modview::normalize_version_str);
     let requested = requested.as_deref();
     let req_parts: Option<Vec<u64>> = requested.map(|r| {
@@ -942,7 +1035,14 @@ pub fn scan_units_all_versions_full(
     if tiers.is_empty() {
         // No plain version folders (or none at/below the request): the
         // effective view already covers the flat / LoadFolders shapes.
-        return scan_units_effective_full(root, requested_version, dict, extra_fields, active_mods);
+        return scan_units_effective_full_for_source(
+            root,
+            requested_version,
+            dict,
+            extra_fields,
+            active_mods,
+            source_lang_dir,
+        );
     }
     // Descending version order = priority order (newest claims keys first).
     tiers.sort_by(|a, b| {
@@ -953,7 +1053,13 @@ pub fn scan_units_all_versions_full(
     let mut scans: Vec<EffectiveScan> = Vec::with_capacity(tiers.len());
     for tier in &tiers {
         let view = crate::modview::effective_view(root, Some(tier), active_mods)?;
-        scans.push(scan_units_effective_view(root, view, dict, extra_fields)?);
+        scans.push(scan_units_effective_view_for_source(
+            root,
+            view,
+            dict,
+            extra_fields,
+            source_lang_dir,
+        )?);
     }
     Ok(merge_version_tiers(scans))
 }

@@ -90,11 +90,28 @@ fn context_parts(u: &TransUnit) -> (String, Option<usize>) {
 /// whose winner reason is genuinely uniform (e.g. LoadFolders resolution
 /// chose every root). Pass `None` rather than a label that would be true for
 /// only part of the inventory.
+/// Legacy English form of [`source_entries_with_locale`] (source-language
+/// wave): every entry is stamped `source_locale: "en"` — the historical
+/// behaviour for all pre-marker inventories.
 pub fn source_entries(
     units: &[TransUnit],
     patch_stage: PatchStage,
     version: Option<&str>,
     selected_by: Option<&str>,
+) -> Vec<SourceEntry> {
+    source_entries_with_locale(units, patch_stage, version, selected_by, "en")
+}
+
+/// Source-language variant of [`source_entries`]: entries are stamped with
+/// the GIVEN source locale (`"ja"` for a Japanese-source project). The
+/// locale travels with the inventory (canonical create contract), so the
+/// wire never shows a Japanese source under an `en` stamp.
+pub fn source_entries_with_locale(
+    units: &[TransUnit],
+    patch_stage: PatchStage,
+    version: Option<&str>,
+    selected_by: Option<&str>,
+    source_locale: &str,
 ) -> Vec<SourceEntry> {
     let mut order: Vec<SourceEntryId> = Vec::new();
     let mut by_id: BTreeMap<SourceEntryId, SourceEntry> = BTreeMap::new();
@@ -161,7 +178,7 @@ pub fn source_entries(
                     SourceEntry {
                         id,
                         text,
-                        source_locale: "en".into(),
+                        source_locale: source_locale.to_string(),
                         contexts,
                         provenance: SourceProvenance {
                             version_selected: version.map(String::from),
@@ -189,6 +206,11 @@ pub fn source_entries(
 }
 
 /// Assemble a canonical project snapshot from an effective inventory.
+///
+/// The entry `source_locale` stamp is SINGLE-SOURCED from the context
+/// marker (source-language wave): `context.source_locale` present → entries
+/// carry that locale; absent (legacy) → English. The marker and the stamp
+/// can therefore never disagree within one project.
 pub fn project_from_inventory(
     units: &[TransUnit],
     patch_stage: PatchStage,
@@ -196,12 +218,13 @@ pub fn project_from_inventory(
     selected_by: Option<&str>,
     context: rimloc_domain::canonical::InventoryContext,
 ) -> Project {
+    let src_locale = context.source_locale.clone().unwrap_or_else(|| "en".into());
     let mut p = Project {
         // RimWorld adapter boundary: this builder turns a scanned RimWorld
         // mod into a canonical project (adapter identity default = rimworld).
         adapter: rimloc_domain::canonical::AdapterIdentity::default(),
         context,
-        entries: source_entries(units, patch_stage, version, selected_by),
+        entries: source_entries_with_locale(units, patch_stage, version, selected_by, &src_locale),
         translations: Vec::new(),
         glossary: Vec::new(),
         tm: Vec::new(),

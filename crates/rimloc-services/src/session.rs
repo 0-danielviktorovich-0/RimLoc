@@ -37,7 +37,7 @@ use crate::contract::{
     TmUpsertRequest, TmUpsertResponse, TranslationIntent, UI_CONTRACT_VERSION,
 };
 use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
-use crate::project::build_project;
+use crate::project::build_project_with_source;
 use crate::project_store::{load_project_with_meta, save_project_with_meta, ProjectEnvelopeMeta};
 use crate::providers::{ProviderOps, ProviderSecretSink, ProviderSettingsState};
 use rimloc_domain::canonical::{
@@ -214,11 +214,37 @@ impl ProjectSessionManager {
 
     /// `project_create`: build the canonical project from a READ-ONLY
     /// source mod, mint the opaque id, persist-before-ack, return the
-    /// snapshot.
+    /// snapshot. Legacy English form of [`Self::create_with_source`].
     pub fn create(
         &self,
         mod_root: &Path,
         target_version: Option<&str>,
+    ) -> Result<ProjectSnapshot, ContractError> {
+        self.create_impl(mod_root, target_version, None, None)
+    }
+
+    /// Source-language variant of [`Self::create`] (source-language wave):
+    /// `source_locale` (registry id, `"ja"`) and `source_dir` (RimWorld
+    /// `Languages/<folder>`) select the scanned source folder. Both
+    /// `None`/empty = the legacy English behaviour; the explicit marker
+    /// lands in `project.context` inside the snapshot AND the persisted
+    /// envelope, so reopen/refresh/rescan keep the same source side.
+    pub fn create_with_source(
+        &self,
+        mod_root: &Path,
+        target_version: Option<&str>,
+        source_locale: Option<&str>,
+        source_dir: Option<&str>,
+    ) -> Result<ProjectSnapshot, ContractError> {
+        self.create_impl(mod_root, target_version, source_locale, source_dir)
+    }
+
+    fn create_impl(
+        &self,
+        mod_root: &Path,
+        target_version: Option<&str>,
+        source_locale: Option<&str>,
+        source_dir: Option<&str>,
     ) -> Result<ProjectSnapshot, ContractError> {
         if !mod_root.is_dir() {
             return Err(ContractError::new(
@@ -229,8 +255,9 @@ impl ProjectSessionManager {
                 ),
             ));
         }
-        let project = build_project(mod_root, target_version, None)
-            .map_err(|e| ContractError::new(ContractErrorCode::Internal, e.to_string()))?;
+        let project =
+            build_project_with_source(mod_root, target_version, None, source_locale, source_dir)
+                .map_err(|e| ContractError::new(ContractErrorCode::Internal, e.to_string()))?;
         // M3: the fingerprint is recorded at create so later sessions can
         // tell whether the source still matches the inventory. The view the
         // scanner just resolved successfully, so a fingerprint failure here
@@ -6300,5 +6327,97 @@ mod tests {
         // guards use the published base.
         let after = mgr.snapshot(&snap.project_id).unwrap();
         assert_eq!(after.revision, 2);
+    }
+}
+
+#[cfg(test)]
+mod source_language_contract {
+    //! Source-language wave, contract level: `create_with_source` stamps the
+    //! marker into the snapshot context, the ja inventory keys every
+    //! downstream consumer, and the contract export writes the TARGET
+    //! (Turkish) folder. Companion to the builder-level proof in
+    //! `crate::project::source_language`.
+
+    use super::*;
+    use crate::contract::{ApplyIntentsRequest, IntentAction, TranslationIntent};
+
+    fn write_def(path: &std::path::Path, body: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, body).unwrap();
+    }
+
+    #[test]
+    fn create_with_japanese_source_exports_turkish_through_the_contract() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        write_def(
+            &mod_root.join("Languages/Japanese/Keyed/Keys.xml"),
+            "<LanguageData>\n  <Greeting>こんにちは</Greeting>\n</LanguageData>\n",
+        );
+        write_def(
+            &mod_root.join("Languages/Turkish/Keyed/Keys.xml"),
+            "<LanguageData>\n  <Greeting>Merhaba</Greeting>\n</LanguageData>\n",
+        );
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+
+        // Create through the contract with an explicit non-English source.
+        let snap = mgr
+            .create_with_source(&mod_root, Some("1.6"), Some("ja"), Some("Japanese"))
+            .unwrap();
+        // The marker rides the SNAPSHOT context (wire truth, not a UI guess).
+        assert_eq!(snap.project.context.source_locale.as_deref(), Some("ja"));
+        assert_eq!(snap.project.context.source_dir.as_deref(), Some("Japanese"));
+        // The scan gives the ja string as the SOURCE text; the Turkish pack
+        // never leaks into the inventory.
+        let greeting = snap
+            .project
+            .entries
+            .iter()
+            .find(|e| {
+                e.id.kind == rimloc_domain::canonical::EntryKind::Keyed && e.id.key == "Greeting"
+            })
+            .expect("Greeting entry from the Japanese sidecar");
+        assert_eq!(greeting.text, "こんにちは");
+        assert_eq!(greeting.source_locale, "ja");
+        assert!(!snap
+            .project
+            .entries
+            .iter()
+            .any(|e| e.text.contains("Merhaba")));
+
+        // Translate into Turkish through the public intent path.
+        let resp = mgr
+            .apply(&ApplyIntentsRequest {
+                project_id: snap.project_id.clone(),
+                expected_revision: snap.acked_revision,
+                session_epoch: snap.session_epoch,
+                intents: vec![TranslationIntent {
+                    entry: greeting.id.clone(),
+                    locale: "Turkish".into(),
+                    action: IntentAction::SetTranslation,
+                    text: Some("Merhaba".into()),
+                }],
+                origin: None,
+            })
+            .unwrap();
+        assert_eq!(resp.applied, 1, "{resp:?}");
+
+        // Export through the contract: the Turkish FOLDER is written.
+        let out = dir.path().join("out");
+        mgr.export_project(&snap.project_id, snap.session_epoch, &out, "Turkish")
+            .unwrap();
+        let keyed =
+            std::fs::read_to_string(out.join("Languages/Turkish/Keyed/Translation.xml")).unwrap();
+        assert!(keyed.contains("<Greeting>Merhaba</Greeting>"), "{keyed}");
+        assert!(!out.join("Languages/Japanese").exists());
+        assert!(!out.join("Languages/English").exists());
+
+        // Reopen: the marker survives the persisted envelope, so a fresh
+        // session still knows the source is Japanese (never silently en).
+        let reopened = mgr.open(&snap.project_id).unwrap();
+        assert_eq!(
+            reopened.project.context.source_locale.as_deref(),
+            Some("ja")
+        );
     }
 }

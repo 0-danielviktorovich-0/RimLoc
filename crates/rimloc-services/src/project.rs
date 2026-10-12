@@ -36,6 +36,34 @@ pub fn build_project(
     target_version: Option<&str>,
     active_mods: Option<&crate::modview::ActiveModContext>,
 ) -> Result<Project> {
+    build_project_with_source(mod_root, target_version, active_mods, None, None)
+}
+
+/// Source-language variant of [`build_project`] (source-language wave,
+/// project-create contract): `source_locale` (registry id, `"ja"`) and
+/// `source_dir` (RimWorld `Languages/<folder>`, `"Japanese"`) select WHICH
+/// language folder is scanned as the canonical SOURCE inventory.
+///
+/// - `source_dir` wins when both are given; a locale without a dir resolves
+///   through the RimWorld folder table (`"ja"` → `"Japanese"`).
+/// - An EXPLICIT source stamps the context marker
+///   ([`dom::InventoryContext`] `source_locale`/`source_dir`) AND every
+///   entry's `source_locale` — one source of truth, so a Japanese-source
+///   project never presents itself as English on the wire.
+/// - Both `None`/empty = the legacy [`build_project`] behaviour, byte for
+///   byte: English inventory, no marker fields on the context (projects
+///   without the marker ARE English by contract).
+///
+/// Self-localization catalogs keep their own source contract — a catalog
+/// root ignores the source arguments (its inventory is `catalog.en.json`,
+/// not a mod language folder).
+pub fn build_project_with_source(
+    mod_root: &Path,
+    target_version: Option<&str>,
+    active_mods: Option<&crate::modview::ActiveModContext>,
+    source_locale: Option<&str>,
+    source_dir: Option<&str>,
+) -> Result<Project> {
     // Self-localization (wave B4): a directory carrying the app's own
     // generated UI catalog (`catalog.en.json`, schema "1") is its own SOURCE
     // kind. The catalog adapter produces the inventory through this SAME
@@ -57,21 +85,35 @@ pub fn build_project(
             ));
         }
     }
+    let locale_trim = source_locale.map(str::trim).filter(|l| !l.is_empty());
+    let dir_trim = source_dir.map(str::trim).filter(|d| !d.is_empty());
+    // The source is explicit ONLY when the caller named it — legacy callers
+    // (no arguments) must keep producing marker-free contexts.
+    let explicit = locale_trim.is_some() || dir_trim.is_some();
+    let source_dir = dir_trim
+        .map(crate::util::normalize_lang_dir)
+        .or_else(|| locale_trim.map(rimloc_import_po::rimworld_lang_dir))
+        .unwrap_or_else(|| crate::scan::DEFAULT_SOURCE_LANG_DIR.to_string());
+    let stamp = locale_trim.or(dir_trim).unwrap_or("en");
     let auto = crate::autodiscover_defs_context(mod_root)?;
     // ONE effective pipeline for every layout: the modview resolver decides
     // between flat, classic version dirs and LoadFolders, so a version-only
-    // mod is never scanned as a cross-version union.
-    let scan = crate::scan::scan_units_effective_full(
+    // mod is never scanned as a cross-version union. The source dir rides
+    // INTO the pipeline: Defs-derived units take their canonical virtual
+    // paths under Languages/<source_dir>, so the source sidecar and the
+    // Defs text resolve within ONE language scope (game-parity precedence).
+    let scan = crate::scan::scan_units_effective_full_for_source(
         mod_root,
         target_version,
         &auto.dict,
         &auto.extra_fields,
         active_mods,
+        Some(&source_dir),
     )?;
     let mut units = scan.units;
-    // The canonical source inventory is the ENGLISH source: units under
-    // Languages/<other> are existing target packs, not source text.
-    crate::scan::retain_source_language_units(&mut units);
+    // The canonical source inventory is the SOURCE language side: units
+    // under Languages/<other> are existing target packs, not source text.
+    crate::scan::retain_source_language_units_for(&mut units, &source_dir);
     let stage = match scan.patch.coverage {
         Some(crate::patches_effect::PatchCoverage::Full) => PatchStage::Applied,
         Some(crate::patches_effect::PatchCoverage::Partial) => PatchStage::Partial,
@@ -97,6 +139,10 @@ pub fn build_project(
     let context = InventoryContext {
         target_version: target_version.map(String::from),
         view,
+        // Additive marker: ONLY an explicit source stamps the context —
+        // legacy builds keep the exact pre-marker shape (absent fields).
+        source_locale: explicit.then(|| stamp.to_string()),
+        source_dir: explicit.then(|| source_dir.clone()),
         ..Default::default()
     };
     Ok(crate::canonical_bridge::project_from_inventory(
@@ -1453,7 +1499,18 @@ pub fn detect_source_changes(
     updated_mod_root: &Path,
     target_version: Option<&str>,
 ) -> Result<SourceChangeReport> {
-    let fresh = build_project(updated_mod_root, target_version, None)?;
+    // Source-language wave: the rescan rebuilds the inventory from the
+    // project's OWN source marker — a Japanese-source project must not
+    // flip to an English inventory (and back-end "everything obsolete")
+    // just because the maintenance pipeline re-scanned it. Legacy projects
+    // carry no marker and rescan exactly as before.
+    let fresh = build_project_with_source(
+        updated_mod_root,
+        target_version,
+        None,
+        project.context.source_locale.as_deref(),
+        project.context.source_dir.as_deref(),
+    )?;
     let mut report = SourceChangeReport::default();
 
     // FULL STRUCTURAL identity compare (the SourceEntryId itself — never a
@@ -2101,5 +2158,211 @@ mod gate_k_tests {
         );
         // Old translation text preserved even though source changed.
         assert_eq!(a.text.as_deref(), Some("старый перевод"));
+    }
+}
+
+#[cfg(test)]
+mod source_language {
+    //! Non-English source proof (source-language wave): a tmp mini-mod ships
+    //! `Languages/Japanese` as the SOURCE side and `Languages/Turkish` as an
+    //! existing TARGET pack. THE acceptance: the scan yields the JA strings
+    //! as source text, the explicit marker rides the context + entry stamps,
+    //! the export writes the Turkish folder (never Japanese/English), and a
+    //! legacy marker-free build stays byte-for-byte English-shaped.
+
+    use super::*;
+    use rimloc_domain::canonical::SourceEntry;
+
+    fn write_def(path: &std::path::Path, body: &str) {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, body).unwrap();
+    }
+
+    /// Mini-mod: Defs label + Japanese source sidecar + Turkish target pack.
+    /// The Defs file name sorts BEFORE the sidecar (`A_Thing.xml` <
+    /// `Widget.xml`), so under the game-parity SetOrAdd rule the JA sidecar
+    /// text wins the shared identity deterministically.
+    fn ja_tr_mod(root: &std::path::Path) {
+        write_def(
+            &root.join("Defs/A_Thing.xml"),
+            r#"<Defs><ThingDef><defName>Widget</defName><label>Widget</label></ThingDef></Defs>"#,
+        );
+        write_def(
+            &root.join("Languages/Japanese/Keyed/Keys.xml"),
+            "<LanguageData>\n  <Greeting>こんにちは</Greeting>\n</LanguageData>\n",
+        );
+        write_def(
+            &root.join("Languages/Japanese/DefInjected/ThingDef/Widget.xml"),
+            "<LanguageData>\n  <Widget.label>ウィジェット</Widget.label>\n</LanguageData>\n",
+        );
+        write_def(
+            &root.join("Languages/Turkish/Keyed/Keys.xml"),
+            "<LanguageData>\n  <Greeting>Merhaba</Greeting>\n</LanguageData>\n",
+        );
+    }
+
+    fn keyed<'a>(p: &'a Project, key: &str) -> &'a SourceEntry {
+        p.entries
+            .iter()
+            .find(|e| e.id.kind == EntryKind::Keyed && e.id.key == key)
+            .expect("keyed test-fixture entry is missing")
+    }
+
+    /// THE end-to-end proof: Japanese source inventory → Turkish export.
+    #[test]
+    fn japanese_source_becomes_the_inventory_and_turkish_exports() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        ja_tr_mod(&root);
+
+        // Explicit source through the create-contract builder.
+        let mut p =
+            build_project_with_source(&root, Some("1.6"), None, Some("ja"), Some("Japanese"))
+                .unwrap();
+        // The marker rides the context…
+        assert_eq!(p.context.source_locale.as_deref(), Some("ja"));
+        assert_eq!(p.context.source_dir.as_deref(), Some("Japanese"));
+        // …and EVERY entry stamp follows it — the wire can never show a
+        // Japanese source under an `en` stamp.
+        assert!(
+            p.entries.iter().all(|e| e.source_locale == "ja"),
+            "{:?}",
+            p.entries
+                .iter()
+                .map(|e| (&e.id, &e.source_locale))
+                .collect::<Vec<_>>()
+        );
+        // THE proof: the ja string IS the source text.
+        assert_eq!(keyed(&p, "Greeting").text, "こんにちは");
+        // The Turkish pack (someone else's existing translation) NEVER
+        // becomes source text.
+        assert!(
+            !p.entries.iter().any(|e| e.text.contains("Merhaba")),
+            "Turkish pack leaked into the source inventory"
+        );
+        // The Defs label resolves from the JA sidecar within ONE language
+        // scope (virtual Defs path carries Languages/Japanese).
+        let label = p
+            .entries
+            .iter()
+            .find(|e| e.id.key == "Widget.label")
+            .expect("Widget.label entry");
+        assert_eq!(label.text, "ウィジェット", "{label:?}");
+
+        // Translate into Turkish through the canonical write path and export.
+        let greeting_id = keyed(&p, "Greeting").id.clone();
+        let label_id = label.id.clone();
+        p.update_translation(
+            greeting_id,
+            "Turkish",
+            Some("Merhaba".into()),
+            Origin::Human,
+        );
+        p.update_translation(label_id, "Turkish", Some("Alet".into()), Origin::Human);
+        let out = dir.path().join("out");
+        write_rimworld_translation(&p, &out, "Turkish", "T", "t.srclang", "1.6").unwrap();
+        let keyed_xml =
+            std::fs::read_to_string(out.join("Languages/Turkish/Keyed/Translation.xml")).unwrap();
+        assert!(
+            keyed_xml.contains("<Greeting>Merhaba</Greeting>"),
+            "{keyed_xml}"
+        );
+        let definj =
+            std::fs::read_to_string(out.join("Languages/Turkish/DefInjected/ThingDef/Widget.xml"))
+                .unwrap();
+        assert!(definj.contains("<Widget.label>Alet</"), "{definj}");
+        // The export writes the TARGET folder only — never Japanese/English.
+        assert!(!out.join("Languages/Japanese").exists());
+        assert!(!out.join("Languages/English").exists());
+    }
+
+    /// BC proof: the legacy builder (no source arguments) keeps the exact
+    /// pre-marker shape — no marker fields on the context (ABSENT on the
+    /// wire, not null), English-only inventory (the ja/tr packs stay foreign
+    /// target packs).
+    #[test]
+    fn legacy_build_without_marker_stays_english_and_marker_free() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        ja_tr_mod(&root);
+        let p = build_project(&root, Some("1.6"), None).unwrap();
+        assert!(p.context.source_locale.is_none());
+        assert!(p.context.source_dir.is_none());
+        let json = serde_json::to_value(&p.context).unwrap();
+        assert!(json.get("source_locale").is_none(), "{json}");
+        assert!(json.get("source_dir").is_none(), "{json}");
+        // ja/tr sidecars are not source; the Defs label IS (English).
+        assert!(!p.entries.iter().any(|e| e.text.contains("こんにちは")));
+        assert!(!p.entries.iter().any(|e| e.text.contains("Merhaba")));
+        let label = p
+            .entries
+            .iter()
+            .find(|e| e.id.key == "Widget.label")
+            .expect("Defs label still source-side for English");
+        assert_eq!(label.text, "Widget");
+        assert!(p.entries.iter().all(|e| e.source_locale == "en"));
+    }
+
+    /// The marker survives save/reload, drives the rescan
+    /// (`detect_source_changes` rebuilds from the SAME source folder), and a
+    /// legacy marker-free envelope still deserializes (None = English).
+    #[test]
+    fn marker_survives_reload_and_drives_rescan() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        ja_tr_mod(&root);
+        let p = build_project_with_source(&root, Some("1.6"), None, Some("ja"), None).unwrap();
+        // dir derived from the locale through the RimWorld folder table.
+        assert_eq!(p.context.source_dir.as_deref(), Some("Japanese"));
+        let file = dir.path().join("p.rimloc.json");
+        crate::project_store::save_project(&p, &file).unwrap();
+        let reloaded = crate::project_store::load_project(&file).unwrap();
+        assert_eq!(reloaded.context.source_locale.as_deref(), Some("ja"));
+        assert_eq!(reloaded.context.source_dir.as_deref(), Some("Japanese"));
+        assert!(reloaded.entries.iter().all(|e| e.source_locale == "ja"));
+
+        // New JA source string appears: the rescan builds from the project's
+        // OWN marker — the new entry is ja-stamped, existing work survives.
+        write_def(
+            &root.join("Languages/Japanese/Keyed/More.xml"),
+            "<LanguageData>\n  <Bye>さようなら</Bye>\n</LanguageData>\n",
+        );
+        let mut p = reloaded;
+        let report = detect_source_changes(&mut p, &root, Some("1.6")).unwrap();
+        assert_eq!(report.new_source, 1, "{report:?}");
+        assert_eq!(report.obsolete, 0, "{report:?}");
+        let bye = keyed(&p, "Bye");
+        assert_eq!(bye.text, "さようなら");
+        assert_eq!(bye.source_locale, "ja");
+        assert_eq!(p.context.source_locale.as_deref(), Some("ja"));
+
+        // Legacy envelope without the additive fields loads as English.
+        let legacy: rimloc_domain::canonical::InventoryContext =
+            serde_json::from_str(r#"{"target_version":"1.6","view":"exact"}"#).unwrap();
+        assert!(legacy.source_locale.is_none());
+        assert!(legacy.source_dir.is_none());
+    }
+
+    /// Serialization round-trip of an EXPLICIT marker (additive context
+    /// fields ride the envelope both ways).
+    #[test]
+    fn marker_roundtrips_through_the_envelope() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().join("mod");
+        ja_tr_mod(&root);
+        let p = build_project_with_source(&root, Some("1.6"), None, Some("ja"), Some("Japanese"))
+            .unwrap();
+        let json = serde_json::to_value(&p.context).unwrap();
+        assert_eq!(json["source_locale"], "ja");
+        assert_eq!(json["source_dir"], "Japanese");
+        let back: rimloc_domain::canonical::InventoryContext =
+            serde_json::from_value(json).unwrap();
+        assert_eq!(back, p.context);
+        // Entry stamps round-trip through the full project envelope.
+        let file = dir.path().join("p.rimloc.json");
+        crate::project_store::save_project(&p, &file).unwrap();
+        let reloaded = crate::project_store::load_project(&file).unwrap();
+        assert_eq!(reloaded.entries.len(), p.entries.len());
+        assert_eq!(reloaded.translations.len(), p.translations.len());
     }
 }
