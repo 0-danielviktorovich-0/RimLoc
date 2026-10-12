@@ -2,6 +2,14 @@
 // native picker → target version → create → editor. The Rust scan IS the
 // preview (the returned snapshot carries the live inventory); no fake
 // scanning timers. Users never see DefInjected/Keyed unless Advanced (§22).
+//
+// Nav split: the wizard is invoked GLOBALLY — the topbar «Новый проект»
+// button (any section), the library card and the onboarding strip all open
+// THE SAME instance mounted in App. Pass `open` + `onOpenChange` for that
+// controlled mode: the open state lives in App, closing (cancel/Escape)
+// simply hides the overlay — the user stays in the section they invoked the
+// wizard from (no route change ever happens). Without the props the wizard
+// keeps the legacy self-contained mode (own trigger card + state).
 import { useEffect, useState } from 'react'
 import { ArrowRight, Check, FolderOpen, LoaderCircle, Plus } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
@@ -9,8 +17,23 @@ import { projectStore } from '../lib/state/project'
 import { BUILTIN_LANGUAGES } from '../lib/languages/registry'
 import { t } from '../lib/i18n'
 
-export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
-  const [open, setOpen] = useState(false)
+export function NewProjectWizard({
+  onCreated,
+  open: openProp,
+  onOpenChange,
+}: {
+  onCreated: () => void
+  /** Controlled mode (global invocation): App owns the open state. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [selfOpen, setSelfOpen] = useState(false)
+  const controlled = openProp !== undefined && onOpenChange !== undefined
+  const open = openProp ?? selfOpen
+  const setOpen = (v: boolean): void => {
+    if (openProp !== undefined && onOpenChange !== undefined) onOpenChange(v)
+    else setSelfOpen(v)
+  }
   const [step, setStep] = useState(0)
   const [modRoot, setModRoot] = useState('')
   const [version, setVersion] = useState('1.6')
@@ -26,7 +49,8 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
 
   // D4: отмена (и успешное создание) сбрасывают ВСЁ локальное состояние —
   // иначе следующий запуск визарда открывается на старом пути/шаге, будто
-  // отмена ничего не означала.
+  // отмена ничего не означала. В controlled-режиме закрытие возвращает
+  // пользователя в исходный раздел: оверлей просто скрывается.
   const resetWizard = (): void => {
     setOpen(false)
     setStep(0)
@@ -82,6 +106,9 @@ export function NewProjectWizard({ onCreated }: { onCreated: () => void }) {
   }
 
   if (!open) {
+    // Controlled (global) mode: the trigger cards live in the topbar button
+    // and the library screen — a closed wizard renders nothing.
+    if (controlled) return null
     return (
       <button className="new-project-card" onClick={() => setOpen(true)} data-testid="wizard.open">
         <Plus size={28} /> <strong>{t('wizard.open')}</strong> <span>{t('wizard.openHint')}</span>

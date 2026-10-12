@@ -3,6 +3,16 @@
 // visual contract; the shell composition is ADOPT, data is LIVE-only).
 // Route metadata (sidebar, palette, breadcrumb, currentRoute whitelist)
 // lives in lib/routes.ts (§18) — this file owns no route literals.
+//
+// Nav split (Проекты / Строки перевода): 'projects' is the library
+// (components/Projects.tsx), 'workspace' is «Строки перевода» — the editor
+// over an open project, or the honest «Проект не открыт» empty state
+// WITHOUT one (no redirect; routes.ts retired the old 'home' library route
+// that duplicated #/projects under a second name). The new-project wizard
+// is invoked GLOBALLY from here: one instance, opened by the topbar button
+// (any section), the library card and the onboarding strip; closing it
+// returns the user to the section it was invoked from (the overlay never
+// changes the route; a successful create lands in the new workspace).
 import { useEffect, useMemo, useState } from 'react'
 import { Languages, FolderOpen, Sun, Moon, Plus, ChevronRight, X, PanelLeftOpen, PanelLeftClose } from 'lucide-react'
 import { clientInstance } from './lib/client/instance'
@@ -12,7 +22,8 @@ import { folderForm } from './lib/languages/folderForm'
 import { loadUserLanguages, type UserLanguage } from './lib/languages/manager'
 import { useProjectState } from './lib/state/useProjectState'
 import { ROUTES, ROUTE_IDS, routeMeta, type Route } from './lib/routes'
-import { Home } from './components/Home'
+import { Projects } from './components/Projects'
+import { NewProjectWizard } from './components/NewProjectWizard'
 import { Workspace } from './components/Workspace'
 import { Checks } from './components/Checks'
 import { Glossary } from './components/Glossary'
@@ -57,16 +68,12 @@ function buildPaletteCommands(extra: {
   const nav: PaletteCommand[] = ROUTES.filter((m) => m.visibleInPalette).map((m) => ({
     id: m.route,
     label: t(m.paletteKey ?? m.labelKey),
-    action:
-      m.route === 'home'
-        ? // §6: «Строки перевода» ведёт в открытый workspace (лейбл
-          // зафиксирован palette-acceptance — меняется только цель).
-          () => {
-            window.location.hash = extra.projectOpen ? '#/workspace' : '#/home'
-          }
-        : () => {
-            window.location.hash = `#/${m.route}`
-          },
+    // Nav split: «Строки перевода» IS the workspace route now — it leads to
+    // #/workspace unconditionally (editor with a project, honest empty
+    // state without). No per-route special cases remain.
+    action: () => {
+      window.location.hash = `#/${m.route}`
+    },
   }))
   if (!extra.projectOpen) return nav
   return [
@@ -82,17 +89,25 @@ function buildPaletteCommands(extra: {
 
 function currentRoute(): Route {
   const h = window.location.hash.replace(/^#\/?/, '')
-  return ROUTE_IDS.find((r) => r === h) ?? 'home'
+  // Nav split: the library is the landing surface — an unknown hash
+  // (including the retired #/home) resolves to 'projects'.
+  return ROUTE_IDS.find((r) => r === h) ?? 'projects'
 }
 
-// §43: onboarding-strip живёт до первого явного закрытия (localStorage-флаг).
-// Wizard-тур открывает настоящий клик по карточке wizard.open: состояние
-// мастера принадлежит Home, а лейн-владение запрещает править Home/Wizard.
+// §43: onboarding-strip lives until the first explicit dismissal
+// (localStorage flag). The strip sits on the LIBRARY route and its button
+// opens the GLOBAL wizard directly — the wizard open state belongs to App
+// (nav split), so the old synthetic-click-on-wizard.open detour is gone.
 const ONBOARDING_KEY = 'rimloc.onboarding.dismissed'
 
 export function App() {
   const st = useProjectState()
   const [route, setRoute] = useState<Route>(currentRoute)
+  // Nav split: ONE wizard instance for the whole app. The topbar «Новый
+  // проект» button, the library card and the onboarding strip all set this
+  // flag; the overlay renders in controlled mode, so closing it (cancel,
+  // Escape) returns the user to whatever section opened it.
+  const [wizardOpen, setWizardOpen] = useState(false)
   // §6/§17 Theme persistence: 'rimloc.theme' ('dark'|'light') read once at
   // first mount; every write goes through changeDark so the topbar toggle and
   // the Settings select share ONE storage key.
@@ -125,21 +140,22 @@ export function App() {
   useEffect(() => {
     setUserLangs(loadUserLanguages())
   }, [route])
-  // §43: полоса показывается на Home, пока пользователь не закрыл её (флаг
-  // в localStorage) и у него нет открытого проекта; перечитываем флаг при
-  // входе на Home — другой фон окна мог его выставить.
+  // §43: полоса показывается на библиотеке (projects), пока пользователь не
+  // закрыл её (флаг в localStorage) и у него нет открытого проекта;
+  // перечитываем флаг при входе на маршрут — другой фон окна мог его
+  // выставить.
   const [onboardingDismissed, setOnboardingDismissed] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) !== null,
   )
   useEffect(() => {
-    if (route === 'home') setOnboardingDismissed(localStorage.getItem(ONBOARDING_KEY) !== null)
+    if (route === 'projects') setOnboardingDismissed(localStorage.getItem(ONBOARDING_KEY) !== null)
   }, [route])
   const dismissOnboarding = (): void => {
     localStorage.setItem(ONBOARDING_KEY, '1')
     setOnboardingDismissed(true)
   }
-  const startWizardTour = (): void => {
-    document.querySelector<HTMLButtonElement>('[data-testid="wizard.open"]')?.click()
+  const openNewProjectWizard = (): void => {
+    setWizardOpen(true)
   }
   // §11: dirty-индикатор — производная от store (drafts + snapshot.dirty +
   // busy), без таймеров. Приоритет: активная запись → ошибка → грязно → чисто.
@@ -241,7 +257,7 @@ export function App() {
   return (
     <div className={`rim-app ${navOpen ? 'mobile-nav-open' : ''}`}>
       <aside className="app-sidebar">
-        <a href="#/home" className="brand">
+        <a href="#/projects" className="brand">
           <div className="brand-mark">
             <Languages size={21} />
           </div>
@@ -255,7 +271,7 @@ export function App() {
         <ProjectSwitcher />
         <nav className="primary-nav">
           {SIDEBAR_NAV.map(({ route: to, labelKey, icon: Icon }) => (
-            <a key={to} href={`#/${to}`} className={(route === to || (to === 'home' && route === 'workspace')) ? 'active' : ''} onClick={() => setNavOpen(false)}>
+            <a key={to} href={`#/${to}`} className={route === to ? 'active' : ''} onClick={() => setNavOpen(false)}>
               <Icon />
               <span>{t(labelKey)}</span>
               {to === 'checks' && checksErrorCount > 0 && (
@@ -320,20 +336,23 @@ export function App() {
               {dark ? <Sun /> : <Moon />}
             </button>
             <div className="topbar-divider" />
-            <a className="btn-primary" href="#/projects">
+            {/* Nav split: «Новый проект» opens the GLOBAL wizard from ANY
+                section (the link it replaced only navigated to the library —
+                a button that promised creation and delivered navigation). */}
+            <button className="btn-primary" data-testid="shell.new-project" onClick={() => setWizardOpen(true)}>
               <Plus /> {t('shell.newProject')}
-            </a>
+            </button>
           </div>
         </header>
 
         <main className="route-content">
-          {/* §43: тонкая полоса первого запуска — только на Home, до закрытия
-            (localStorage-флаг) и до открытого проекта. */}
-          {route === 'home' && !clientError && !onboardingDismissed && !st.snapshot && (
+          {/* §43: тонкая полоса первого запуска — только на библиотеке, до
+            закрытия (localStorage-флаг) и до открытого проекта. */}
+          {route === 'projects' && !clientError && !onboardingDismissed && !st.snapshot && (
             <div className="onboarding-strip" data-testid="onboarding.strip">
               <span className="onboarding-label">{t('onboarding.label')}</span>
               <div className="onboarding-steps">
-                <button onClick={startWizardTour} data-testid="onboarding.start">
+                <button onClick={openNewProjectWizard} data-testid="onboarding.start">
                   <span className="step-number current">1</span>
                   {t('onboarding.step1')}
                 </button>
@@ -351,42 +370,65 @@ export function App() {
               </div>
             </div>
           ) : route === 'workspace' ? (
-            <div className="ws-page">
-              <div className="workspace-heading">
-                <div>
-                  <div className="heading-eyebrow">
-                    {/* Источник/цель из состояния (audit v2 #3): folderForm
-                      даёт строгую папочную форму реестра; en — канонический
-                      источник (SOURCE_LOCALE). */}
-                    <span className="dot primary" /> {folderForm(SOURCE_LOCALE)} <span>→</span> {folderForm(st.targetLocale)}
+            st.snapshot ? (
+              <div className="ws-page">
+                <div className="workspace-heading">
+                  <div>
+                    <div className="heading-eyebrow">
+                      {/* Источник/цель из состояния (audit v2 #3): folderForm
+                        даёт строгую папочную форму реестра; en — канонический
+                        источник (SOURCE_LOCALE). */}
+                      <span className="dot primary" /> {folderForm(SOURCE_LOCALE)} <span>→</span> {folderForm(st.targetLocale)}
+                    </div>
+                    <h1>{t('ws.headingTitle')}</h1>
+                    <p>{t('ws.headingSubtitle')}</p>
                   </div>
-                  <h1>{t('ws.headingTitle')}</h1>
-                  <p>{t('ws.headingSubtitle')}</p>
+                  <div className="heading-controls">
+                    {/* Мёртвый version-select УБРАН (аудит): селект с
+                      defaultValue без onChange ничего не управлял, а
+                      projectStore.gameVersion не существует — возвращаем,
+                      когда версия появится в состоянии проекта. */}
+                    <label className="version-select">
+                      <span>→</span>
+                      <select
+                        aria-label={t('ws.targetLang')}
+                        data-testid="ws.target-locale"
+                        value={st.targetLocale}
+                        onChange={(e) => projectStore.setTargetLocale(e.target.value)}
+                      >
+                        {targetLangs.map((l) => (
+                          <option key={l.localeId} value={l.localeId}>
+                            {l.nativeName}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
-                <div className="heading-controls">
-                  {/* Мёртвый version-select УБРАН (аудит): селект с
-                    defaultValue без onChange ничего не управлял, а
-                    projectStore.gameVersion не существует — возвращаем,
-                    когда версия появится в состоянии проекта. */}
-                  <label className="version-select">
-                    <span>→</span>
-                    <select
-                      aria-label={t('ws.targetLang')}
-                      data-testid="ws.target-locale"
-                      value={st.targetLocale}
-                      onChange={(e) => projectStore.setTargetLocale(e.target.value)}
-                    >
-                      {targetLangs.map((l) => (
-                        <option key={l.localeId} value={l.localeId}>
-                          {l.nativeName}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <Workspace onBack={() => { window.location.hash = '#/projects' }} />
+              </div>
+            ) : (
+              // Nav split: «Строки перевода» БЕЗ открытого проекта — честный
+              // пустой state редактора, не редирект: панель «Проект не
+              // открыт» + вход в библиотеку или в мастер создания.
+              <div className="page-content narrow-page" data-testid="ws.empty">
+                <div className="section-heading">
+                  <div>
+                    <span className="eyebrow">{t('nav.entries')}</span>
+                    <h2>{t('shell.noProject')}</h2>
+                    <p>{t('ws.empty.hint')}</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <a className="btn-primary" href="#/projects" data-testid="ws.empty.open">
+                    {t('ws.empty.open')}
+                  </a>
+                  <button data-testid="ws.empty.create" onClick={() => setWizardOpen(true)}>
+                    {t('ws.empty.create')}
+                  </button>
                 </div>
               </div>
-              <Workspace onBack={() => { window.location.hash = '#/home' }} />
-            </div>
+            )
           ) : route === 'existing' ? (
             <Existing />
           ) : route === 'compare' ? (
@@ -422,15 +464,13 @@ export function App() {
           ) : (
             // §16: placeholder-маршрут удалён — Route больше не содержит
             // 'tools' (INTENTIONALLY_REJECTED: продуктового определения не
-            // было), финальная ветка честно покрывает home/projects.
-            // Home falls through to the shared layout below.
-            <Home
+            // было). The library is both the 'projects' route and the
+            // fallback for ANY unknown hash (incl. the retired #/home) —
+            // currentRoute() already maps them to 'projects'.
+            <Projects
+              onCreate={() => setWizardOpen(true)}
               onOpen={(projectId) => {
-                const after =
-                  projectId === '__created__'
-                    ? Promise.resolve(true)
-                    : projectStore.open(projectId)
-                void after.then((ok) => {
+                void projectStore.open(projectId).then((ok) => {
                   if (ok) window.location.hash = '#/workspace'
                 })
               }}
@@ -443,6 +483,17 @@ export function App() {
             <span className="dot success" /> {t('shell.safetyNote')}
           </span>
         </footer>
+
+      {/* Nav split: the ONE global new-project wizard (controlled mode).
+          Cancel/Escape just hide the overlay — the user stays in the section
+          that opened it; a successful create lands in the new workspace. */}
+      <NewProjectWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onCreated={() => {
+          window.location.hash = '#/workspace'
+        }}
+      />
 
       {paletteOpen && (
         <div className="palette-overlay" onClick={() => setPaletteOpen(false)}>
