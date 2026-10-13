@@ -297,15 +297,16 @@ it('edit after a failed revert supersedes the deletion (P0-F)', { timeout: 20000
   expect(project.getState().drafts['keyed·Target']).toBe('NEW_UNCOMMITTED_WORK')
 })
 
-// Review iteration 7 P0-G: a key with an UNACKED clear pending must not
-// reappear as an active draft after a project round trip, and once the
-// clear acks the next edit must not resurrect it.
+// Review iteration 8 P1-B: the round trip is a REAL A → B → A navigation
+// (the previous version opened p-g twice — 'in' on a Map plus the late
+// registration made the second project unreachable).
 it('a pending-clear key does not resurrect across a project round trip (P0-G)', { timeout: 25000 }, async () => {
   vi.resetModules()
   const hub = (await import('../client/instance')).clientInstance as unknown as Hub
   hub.calls.length = 0
   hub.disks.clear()
   hub.snapshots.set('p-g', makeSnap('p-g', [sourceEntry('keyed', 'Shared'), sourceEntry('keyed', 'Other')]))
+  hub.snapshots.set('p-g2', makeSnap('p-g2', [sourceEntry('keyed', 'Other')]))
   const project = await import('./project')
   await project.projectStore.open('p-g')
 
@@ -321,10 +322,14 @@ it('a pending-clear key does not resurrect across a project round trip (P0-G)', 
     interval: 25,
   })
 
-  // Round trip to another project and back: the pending-clear key must
-  // NOT be raised back into the view.
-  await project.projectStore.open('p-g2' in hub.snapshots ? 'p-g2' : 'p-g')
-  hub.snapshots.set('p-g2', makeSnap('p-g2', [sourceEntry('keyed', 'Other')]))
+  // TRUE round trip: A → B → A (distinct project ids).
+  await project.projectStore.open('p-g2')
+  expect(project.getState().snapshot?.project_id).toBe('p-g2')
+  await project.projectStore.open('p-g')
+  expect(project.getState().snapshot?.project_id).toBe('p-g')
+
+  // Retry on A: the deletion acks; the pending-clear key must not
+  // resurrect in memory or on disk.
   hub.failClears = false
   project.projectStore.retryDraftsSync()
   await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('saved'), {
@@ -332,4 +337,20 @@ it('a pending-clear key does not resurrect across a project round trip (P0-G)', 
     interval: 25,
   })
   expect(hub.disks.get('p-g')?.has('ru::keyed·Shared')).toBe(false)
+  expect(project.getState().drafts['keyed·Shared']).toBeUndefined()
+
+  // Editing ANOTHER row (in B) afterwards must not resurrect it.
+  await project.projectStore.open('p-g2')
+  project.projectStore.setDraft('keyed·Other', 'правка в B')
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('saved'), {
+    timeout: 4000,
+    interval: 25,
+  })
+  await project.projectStore.open('p-g')
+  // A clean reopen has nothing to autosave — the sync status honestly
+  // stays idle. The resurrection check is the durable store + the view.
+  await new Promise((r) => setTimeout(r, 1200))
+  expect(hub.disks.get('p-g')?.has('ru::keyed·Shared')).toBe(false)
+  expect(project.getState().drafts['keyed·Shared']).toBeUndefined()
+  expect(hub.disks.get('p-g2')?.get('ru::keyed·Other')?.text).toBe('правка в B')
 })
