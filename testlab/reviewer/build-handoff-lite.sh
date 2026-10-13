@@ -47,7 +47,9 @@ done
 [ ${#BINARY_SHA} -eq 64 ] || { echo "binary sha must be 64 hex" >&2; exit 2; }
 [ ${#APPZIP_SHA} -eq 64 ] || { echo "appzip sha must be 64 hex" >&2; exit 2; }
 
-EVDIR="${EVDIR:-/Users/danielviktorovich/Developing/RimLoc-evidence}"
+# Evidence root is environment-provided — the repo carries no personal
+# absolute paths.
+EVDIR="${EVDIR:?set EVDIR to the local evidence directory}"
 ZIP_PATH="$(cat "$ART/appzip-path.txt" 2>/dev/null || echo "")"
 MAIN_SHA=$(git -C "$REPO" rev-parse HEAD)
 STAMP=$(date +%Y%m%d-%H%M%S)
