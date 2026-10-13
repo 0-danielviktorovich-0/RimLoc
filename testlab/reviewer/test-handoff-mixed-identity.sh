@@ -71,12 +71,22 @@ python3 "$CHECK" "$TMP/missing" --rc "$RC" --product-sha "$PRODUCT" \
   && fail "missing mandatory file was ACCEPTED"
 grep -q "MANDATORY MISSING: OWNER_TEST_PACKET.md" "$TMP/out4" || fail "wrong refusal: $(cat "$TMP/out4")"
 
-# 5. Identity document without the CURRENT release id → FAIL.
+# 5. Identity document without the CURRENT release id → FAIL. RELEASE_GATE
+#    is a status chronology: it MAY name historical candidates, but the
+#    current release id must be present.
 make_clean_packet "$TMP/stale-rc"
-printf '# Release gate — rel23-final\n' > "$TMP/stale-rc/RELEASE_GATE.md"
+printf '# Release gate — rel23-final only\n' > "$TMP/stale-rc/RELEASE_GATE.md"
 python3 "$CHECK" "$TMP/stale-rc" --rc "$RC" --product-sha "$PRODUCT" \
   --binary-sha "$BINARY" --appzip-sha "$APPZIP" --stale "$STALE" > "$TMP/out5" 2>&1 \
-  && fail "stale RELEASE_GATE.md was ACCEPTED"
-grep -q "STALE marker 'rel23-final'" "$TMP/out5" || fail "wrong refusal: $(cat "$TMP/out5")"
+  && fail "RELEASE_GATE without the current rc was ACCEPTED"
+grep -q "current identity '$RC' NOT found" "$TMP/out5" || fail "wrong refusal: $(cat "$TMP/out5")"
 
-echo "REGRESSION OK: clean=PASS, mixed-marker=FAIL, mixed-sha=FAIL, missing=FAIL, stale-rc=FAIL"
+# 6. RELEASE_GATE naming a historical candidate is FINE while the current
+#    rc is present (status chronology; identities live in FINAL_IDENTITY).
+printf '# Release gate — %s\n\nhistory: rel23-final superseded\n' "$RC" \
+  > "$TMP/stale-rc/RELEASE_GATE.md"
+python3 "$CHECK" "$TMP/stale-rc" --rc "$RC" --product-sha "$PRODUCT" \
+  --binary-sha "$BINARY" --appzip-sha "$APPZIP" --stale "$STALE" > "$TMP/out6" 2>&1 \
+  && : || fail "historical mention in RELEASE_GATE was refused: $(cat "$TMP/out6")"
+
+echo "REGRESSION OK: clean=PASS, mixed-marker=FAIL, mixed-sha=FAIL, missing=FAIL, stale-rc=FAIL, history-mention=PASS"

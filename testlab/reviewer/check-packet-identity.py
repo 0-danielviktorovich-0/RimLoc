@@ -39,10 +39,13 @@ REQUIRED_PATTERNS: dict[str, list[str]] = {
 # Documents where a stale release marker is FATAL (identity documents).
 # Evidence logs from older iterations are NOT in this list on purpose —
 # historical logs may mention past releases; identity documents may not.
+# RELEASE_GATE.md is ALSO exempt from the stale scan (but not from the
+# current-rc requirement): after the rel26 rework it is a STATUS
+# chronology that legitimately names historical candidates; exact
+# identities live in FINAL_IDENTITY.md and the artifact files.
 STALE_SCAN_FILES = [
     "REVIEW_REQUEST.md",
     "FINAL_IDENTITY.md",
-    "RELEASE_GATE.md",
     "artifact-IDENTITY.md",
     "OWNER_TEST_PACKET.md",
     "binary.sha256",
