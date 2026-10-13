@@ -277,14 +277,17 @@ describe('review scenario 2 — structural identity collision (P0-2)', () => {
       def_type: 'ThingDef',
     })
     expect(intent.locale).toBe('Russian')
-    // Merge semantics: the committed key leaves the store EXPLICITLY.
-    const clears = hub.calls.filter((c) => c.method === 'clearDrafts')
-    expect(clears.some((c) => c.args[2] === `ru::${thingUid}`)).toBe(true)
+    // Merge semantics: the committed key leaves the store EXPLICITLY (the
+    // clear runs inside the flush chain — poll, don't race the microtask).
+    await settle(() => {
+      const clears = hub.calls.filter((c) => c.method === 'clearDrafts')
+      expect(clears.some((c) => c.args[2] === `ru::${thingUid}`)).toBe(true)
+    })
 
     // The committed draft left the store; the sibling draft survived.
     await settle(() => {
       const last = savePayloads(hub, 'p-collision').at(-1)!
-      expect(last[`ru::${thingUid}`]).toBeUndefined()
+      expect(last[`ru::${thingUid}`], `keys=${JSON.stringify(Object.keys(last))}`).toBeUndefined()
       expect(last[`ru::${hediffUid}`]?.text).toBe('эффект')
     })
     expect(project.getState().drafts[hediffUid]).toBe('эффект')
