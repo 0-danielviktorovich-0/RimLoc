@@ -653,7 +653,7 @@ function EntryEditor(props: {
           >
             <MessagesSquare size={13} /> {t('ws.toChatbatch')}
           </button>
-          <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} onClick={() => props.onCommit(false)}>
+          <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} data-testid="ws.editor-save" onClick={() => props.onCommit(false)}>
             <Save />
           </button>
           <button

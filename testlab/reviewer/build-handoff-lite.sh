@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
-# Build the reviewer handoff-lite packet — v3 (rel25 audit P1 fix).
+# Build the reviewer handoff-lite packet — v3.1 (rel26 audit P1-2 fix).
+# v3.1: the BINARY appzip ships INSIDE the packet; artifact-MANIFEST is
+# generated in-packet from the renamed copies (no self-reference, no
+# stale-name entries); self-test count is computed AFTER the final
+# manifest; the semantic-checker regression output ships as evidence;
+# historical documents are quarantined under historical/.
 #
 # What v3 changes architecturally (the rel25 packet passed every hash check
 # while carrying rel23 evidence — the packer had rel23 identifiers hardcoded):
@@ -43,6 +48,7 @@ done
 [ ${#APPZIP_SHA} -eq 64 ] || { echo "appzip sha must be 64 hex" >&2; exit 2; }
 
 EVDIR="${EVDIR:-/Users/danielviktorovich/Developing/RimLoc-evidence}"
+ZIP_PATH="$(cat "$ART/appzip-path.txt" 2>/dev/null || echo "")"
 MAIN_SHA=$(git -C "$REPO" rev-parse HEAD)
 STAMP=$(date +%Y%m%d-%H%M%S)
 PKT="$EVDIR/reviewer/packet-lite-$STAMP"
@@ -114,11 +120,14 @@ EOF
 copy_mandatory "$REPO/docs/development/FINAL_IDENTITY.md" FINAL_IDENTITY.md
 copy_mandatory "$REPO/docs/development/RELEASE_GATE.md"   RELEASE_GATE.md
 copy_mandatory "$ART/IDENTITY.md"                         artifact-IDENTITY.md
-copy_mandatory "$ART/MANIFEST.sha256"                     artifact-MANIFEST.sha256
+# artifact-MANIFEST is generated from the RENAMED copies in THIS packet —
+# copying the artifact-dir manifest ships stale names and a self-reference
+# (review P1-2 C).
+( cd "$PKT" && shasum -a 256 IDENTITY.md OWNER_TEST_PACKET.md sha256.txt appzip-sha256.txt \
+  | LC_ALL=C sort > artifact-MANIFEST.sha256 )
 copy_mandatory "$ART/sha256.txt"                          binary.sha256
 copy_mandatory "$ART/appzip-sha256.txt"                   appzip.sha256
 copy_mandatory "$ART/OWNER_TEST_PACKET.md"                OWNER_TEST_PACKET.md
-copy_mandatory "$REPO/docs/competitive/RELEASE_PARITY_MATRIX.md" RELEASE_PARITY_MATRIX.md
 copy_mandatory "$REPO/docs/competitive/release-parity.json"      release-parity.json
 copy_mandatory "$REPO/docs/design/LOVABLE_LIVE_SOURCE_AUDIT_2026-10.md" LOVABLE_LIVE_SOURCE_AUDIT_2026-10.md
 copy_mandatory "$REPO/docs/development/PLATFORM_VERIFICATION_MATRIX.md" PLATFORM_VERIFICATION_MATRIX.md
@@ -127,8 +136,24 @@ copy_mandatory "$EVDIR/drafts-backend-tests.txt"          drafts-backend-tests.t
 copy_mandatory "$EVDIR/drafts-native-e2e.txt"             drafts-native-e2e.txt
 copy_mandatory "$EVDIR/structural-identity-e2e.txt"       structural-identity-e2e.txt
 copy_mandatory "$EVDIR/reviewer/final-wdio-summary.txt"   final-wdio-summary.txt
-# release-parity matrix copy under the name the review protocol pins
-cp "$PKT/RELEASE_PARITY_MATRIX.md" "$PKT/current-parity-matrix.md"
+# The BINARY itself ships in the packet — hash manifests prove bytes, the
+# reviewer must be able to run the candidate (review P1: executable absent).
+copy_mandatory "$ZIP_PATH"                                "RimLoc GUI.app.zip"
+# Packer-fix proof: the semantic checker's own regression output.
+copy_mandatory "$EVDIR/packet-identity-regression.txt"    packet-identity-regression.txt
+# CodeQL extraction with the named error files (review P1-3).
+copy_mandatory "$EVDIR/codeql-rust-extraction-latest.txt" codeql-rust-extraction-latest.txt
+
+# --- HISTORICAL evidence (explicitly non-current; must not vouch for
+# this candidate — review P2): quarantined under historical/ ---
+mkdir -p "$PKT/historical"
+copy_mandatory "$REPO/docs/competitive/RELEASE_PARITY_MATRIX.md" historical/RELEASE_PARITY_MATRIX.md
+copy_optional "$REPO/docs/competitive/release-parity.json" historical/release-parity.json
+copy_optional "$EVDIR/reviewer/real-mods-e2e.md"          historical/real-mods-e2e.md
+copy_optional "$REPO/docs/development/PLATFORM_VERIFICATION_MATRIX.md" historical/PLATFORM_VERIFICATION_MATRIX.md
+for f in source-inspector-wdio.log chatbatch-wdio.log multitarget-wdio.log palette-lm-wdio-summary.txt; do
+  copy_optional "$EVDIR/reviewer/$f" "historical/$f"
+done
 
 # --- optional supplementary evidence ---
 copy_optional "$EVDIR/C1_PROVIDER_BOUNDARY.md"            C1_PROVIDER_BOUNDARY.md
@@ -138,9 +163,8 @@ copy_optional "$REPO/docs/security/CODE_SCANNING_RECONCILIATION.md" CODE_SCANNIN
 copy_optional "$REPO/gui/tauri-app/frontend-v2/npm-audit-exemptions.md" npm-audit-exemptions.md
 copy_optional "$EVDIR/reviewer/npm-audit-react-summary.json" npm-audit-react-summary.json
 copy_optional "$EVDIR/reviewer/npm-audit-v2-summary.json"  npm-audit-v2-summary.json
-for f in source-inspector-wdio.log chatbatch-wdio.log multitarget-wdio.log palette-lm-wdio-summary.txt; do
-  copy_optional "$EVDIR/reviewer/$f" "$f"
-done
+# release-parity matrix copy under the name the review protocol pins
+cp "$PKT/historical/RELEASE_PARITY_MATRIX.md" "$PKT/current-parity-matrix.md"
 
 # --- live tool/CI status (fresh from gh; mandatory) ---
 GH=repos/0-danielviktorovich-0/RimLoc
@@ -166,14 +190,20 @@ GH=repos/0-danielviktorovich-0/RimLoc
 find "$PKT" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
 ( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' -exec shasum -a 256 {} \; \
   | sed 's|\./||' | LC_ALL=C sort > MANIFEST.sha256 )
-# self-test: every manifest line must match the packet on disk (recorded)
-( cd "$PKT" && shasum -a 256 -c MANIFEST.sha256 > /dev/null 2>&1 \
-  && echo "packet-self-test: manifest $(wc -l < MANIFEST.sha256 | tr -d ' ') entries VERIFIED" \
-  || echo "packet-self-test: manifest MISMATCH" ) > "$PKT/packet-self-test.txt"
-grep -q VERIFIED "$PKT/packet-self-test.txt" || { echo "PACKET REFUSED: manifest self-test failed" >&2; exit 1; }
-# the self-test file joined after manifesting — re-manifest once, final order
+# (manifest is final below; the self-test is recorded AFTER it so the
+# entry count matches what an external verifier recounts — review P1-2 B)
+
 ( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' -exec shasum -a 256 {} \; \
   | sed 's|\./||' | LC_ALL=C sort > MANIFEST.sha256 )
+( cd "$PKT" && shasum -a 256 -c MANIFEST.sha256 > /dev/null 2>&1 \
+  && echo "packet-self-test: manifest $(wc -l < MANIFEST.sha256 | tr -d ' ') entries VERIFIED (post-final manifest)" \
+  || echo "packet-self-test: manifest MISMATCH" ) > "$PKT/packet-self-test.txt"
+grep -q VERIFIED "$PKT/packet-self-test.txt" || { echo "PACKET REFUSED: manifest self-test failed" >&2; exit 1; }
+# self-test joined late: refresh the manifest one last time and re-verify
+( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' -exec shasum -a 256 {} \; \
+  | sed 's|\./||' | LC_ALL=C sort > MANIFEST.sha256 )
+( cd "$PKT" && shasum -a 256 -c MANIFEST.sha256 > /dev/null 2>&1 ) \
+  || { echo "PACKET REFUSED: final manifest self-test failed" >&2; exit 1; }
 
 # --- SEMANTIC IDENTITY CHECK #1 (packet dir, pre-zip) ---
 python3 "$REPO/testlab/reviewer/check-packet-identity.py" "$PKT" \
