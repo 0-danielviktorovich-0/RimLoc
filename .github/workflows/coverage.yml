@@ -45,11 +45,40 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Validate codecov.yml
+      - name: Validate Codecov policy and coverage boundaries
         run: |
           curl --fail-with-body --silent --show-error \
             --data-binary @codecov.yml \
-            https://api.codecov.io/validate
+            https://api.codecov.io/validate > "$RUNNER_TEMP/codecov-validated.json"
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          config = json.loads((Path(os.environ['RUNNER_TEMP']) / 'codecov-validated.json').read_text())
+          patterns = config.get('ignore', [])
+          must_include = [
+              'crates/rimloc-services/src/session_drafts.rs',
+              'gui/tauri-app/src-tauri/src/contract_adapter.rs',
+              'gui/tauri-app/frontend-react/src/lib/state/project.ts',
+              'gui/tauri-app/frontend-react/src/components/Workspace.tsx',
+          ]
+          for source in must_include:
+              matched = [regex for regex in patterns if re.search(regex, source)]
+              if matched:
+                  raise SystemExit(f'Codecov ignore masks production file {source}: {matched}')
+          legacy = 'gui/tauri-app/frontend/src/main.js'
+          if not any(re.search(regex, legacy) for regex in patterns):
+              raise SystemExit('The legacy frontend exclusion is missing')
+          flags = {item['name'] for item in config['flag_management']['individual_flags']}
+          components = {item['component_id'] for item in config['component_management']['individual_components']}
+          if not {'rust', 'gui-rust', 'frontend-react'} <= flags:
+              raise SystemExit(f'Missing required Codecov flags: {flags}')
+          if 'frontend_react' not in components:
+              raise SystemExit('Missing React frontend Codecov component')
+          print('Codecov config valid; tracked production files are not ignored')
+          PY
 
   rust:
     name: Rust workspace coverage
