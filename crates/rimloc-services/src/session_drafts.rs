@@ -652,15 +652,15 @@ mod tests {
     fn save_refuses_to_overwrite_unreadable_store() {
         let dir = tempfile::tempdir().unwrap();
         let main = dir.path().join("proj-x.drafts.json");
-        write(&main, "{\"schema_version\":1,\"project_revision\":1,\"entries\":{},\"updated_at\":0}");
+        write(
+            &main,
+            "{\"schema_version\":1,\"project_revision\":1,\"entries\":{},\"updated_at\":0}",
+        );
         let mut perms = std::fs::metadata(&main).unwrap().permissions();
         use std::os::unix::fs::PermissionsExt;
         perms.set_mode(0o000);
         std::fs::set_permissions(&main, perms.clone()).unwrap();
-        let result = save_drafts(
-            &main,
-            &DraftsFile::new(2, entries(&[("K", "v")])),
-        );
+        let result = save_drafts(&main, &DraftsFile::new(2, entries(&[("K", "v")])));
         perms.set_mode(0o644);
         std::fs::set_permissions(&main, perms).unwrap();
         match result {
