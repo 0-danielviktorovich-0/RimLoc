@@ -201,11 +201,32 @@ jobs:
         working-directory: gui/tauri-app/frontend-react
         run: npm ci --no-audit --no-fund
 
-      - name: Run store coverage (project.ts, entryUid.ts, state layer)
+      - name: Run full React source coverage
         working-directory: gui/tauri-app/frontend-react
-        run: npx vitest run --coverage
+        run: npm test
 
-      - name: Upload React state coverage to Codecov
+      - name: Verify React report scope and JSON format
+        working-directory: gui/tauri-app/frontend-react
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const report = JSON.parse(fs.readFileSync('coverage/coverage-final.json', 'utf8'))
+          const paths = Object.keys(report)
+          for (const expected of [
+            'src/App.tsx',
+            'src/components/Workspace.tsx',
+            'src/lib/state/project.ts',
+            'src/lib/state/entryUid.ts',
+          ]) {
+            if (!paths.some((p) => p.endsWith('/' + expected) || p === expected)) {
+              throw new Error(`React coverage missing source file: ${expected}`)
+            }
+          }
+          if (paths.length < 4) throw new Error('React coverage report unexpectedly narrow')
+          console.log(`React coverage report: ${paths.length} production files`)
+          NODE
+
+      - name: Upload React production coverage to Codecov
         continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
@@ -215,5 +236,5 @@ jobs:
           disable_telem: true
           cleanup: true
           flags: frontend-react
-          name: frontend-react-state
+          name: frontend-react-full
           fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
