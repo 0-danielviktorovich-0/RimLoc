@@ -96,10 +96,19 @@ describe('unsaved drafts, run 2 — restart raises four drafts on the persisted 
       }
     }
     walk(OUT)
-    const all = xmls.map((p) => fs.readFileSync(p, 'utf8')).join('\n')
-    const texts = (all.match(/uk переклад (речі|ефекту)/g) || []).sort()
-    console.log(`[ds-unsaved2] UK_XML=${JSON.stringify({ files: xmls.length, texts })}`)
-    if (texts.length !== 2) throw new Error(`Ukrainian XML texts wrong: ${texts}`)
+    // STRICT per-file oracle (same class as review iteration 3 P0-2).
+    const thingFile = xmls.find((p) => p.includes('ThingDef'))
+    const hediffFile = xmls.find((p) => p.includes('HediffDef'))
+    if (!thingFile || !hediffFile)
+      throw new Error(`expected per-Def XML files, got ${JSON.stringify(xmls)}`)
+    const thingXml = fs.readFileSync(thingFile, 'utf8')
+    const hediffXml = fs.readFileSync(hediffFile, 'utf8')
+    console.log(`[ds-unsaved2] THING_XML effect=${thingXml.includes('uk переклад ефекту')} thing=${thingXml.includes('uk переклад речі')}`)
+    console.log(`[ds-unsaved2] HEDIFF_XML thing=${hediffXml.includes('uk переклад речі')} effect=${hediffXml.includes('uk переклад ефекту')}`)
+    if (!thingXml.includes('uk переклад ефекту') || thingXml.includes('uk переклад речі'))
+      throw new Error('ThingDef XML must hold ONLY its own Ukrainian translation')
+    if (!hediffXml.includes('uk переклад речі') || hediffXml.includes('uk переклад ефекту'))
+      throw new Error('HediffDef XML must hold ONLY its own Ukrainian translation')
     if (!xmls.some((p) => p.includes('Ukrainian')))
       throw new Error('export did not write under Languages/Ukrainian')
   })

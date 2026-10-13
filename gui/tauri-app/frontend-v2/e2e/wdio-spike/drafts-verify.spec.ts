@@ -56,14 +56,21 @@ describe('draft safety, phase 3 — export XML carries both structural identitie
     }
     walk(OUT)
     console.log(`[ds-verify] XML_FILES=${JSON.stringify(xmls)}`)
-    const all = xmls.map((p) => fs.readFileSync(p, 'utf8')).join('\n')
-    const thingOk = /ThingDef[\s\S]*?Dup\.label[\s\S]*?перевод эффекта/.test(all) ||
-      (all.includes('перевод эффекта') && xmls.some((p) => p.includes('ThingDef')))
-    const hediffOk = all.includes('перевод вещи') && xmls.some((p) => p.includes('HediffDef'))
-    if (!thingOk) throw new Error('ThingDef translation missing from the built XML')
-    if (!hediffOk) throw new Error('HediffDef translation missing from the built XML')
-    const texts = (all.match(/перевод (вещи|эффекта)/g) || []).sort()
-    console.log(`[ds-verify] XML_TEXTS=${JSON.stringify(texts)}`)
-    if (texts.length !== 2) throw new Error(`expected exactly 2 translations in XML, got ${texts}`)
+    // STRICT per-file oracle (review iteration 3 P0-2: a merged-text check
+    // accepted SWAPPED translations — the reviewer's negative test passed
+    // with the texts in the wrong Def structures). Each Def file must
+    // contain ITS OWN text and NOT the sibling's.
+    const thingFile = xmls.find((p) => p.includes('ThingDef'))
+    const hediffFile = xmls.find((p) => p.includes('HediffDef'))
+    if (!thingFile || !hediffFile)
+      throw new Error(`expected per-Def XML files, got ${JSON.stringify(xmls)}`)
+    const thingXml = fs.readFileSync(thingFile, 'utf8')
+    const hediffXml = fs.readFileSync(hediffFile, 'utf8')
+    console.log(`[ds-verify] THING_XML has-effect=${thingXml.includes('перевод эффекта')} has-thing=${thingXml.includes('перевод вещи')}`)
+    console.log(`[ds-verify] HEDIFF_XML has-thing=${hediffXml.includes('перевод вещи')} has-effect=${hediffXml.includes('перевод эффекта')}`)
+    if (!thingXml.includes('перевод эффекта') || thingXml.includes('перевод вещи'))
+      throw new Error('ThingDef XML must hold ONLY its own translation')
+    if (!hediffXml.includes('перевод вещи') || hediffXml.includes('перевод эффекта'))
+      throw new Error('HediffDef XML must hold ONLY its own translation')
   })
 })

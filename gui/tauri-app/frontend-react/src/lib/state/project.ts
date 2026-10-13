@@ -231,6 +231,31 @@ let draftsVersion = 0
 let draftFlushTimer: number | null = null
 let draftSyncChain: Promise<void> = Promise.resolve()
 
+// Restore gate (review iteration 3 P0-3): the autosave flush persists the
+// FULL cross-locale map with REPLACE semantics. If a flush ran before
+// adoptRestoredDrafts had merged the durable store into draftsAll, that
+// write would overwrite unsaved work with an incomplete map. Every flush
+// path therefore waits for the restore gate; adoptRestoredDrafts settles
+// it exactly once per open (including the honest none/orphan outcomes).
+let restoreGate: Promise<void> = Promise.resolve()
+let restoreGateResolve: (() => void) | null = null
+
+function waitForRestoreGate(): Promise<void> {
+  return restoreGate
+}
+
+function closeRestoreGate(): void {
+  restoreGate = new Promise<void>((resolve) => {
+    restoreGateResolve = resolve
+  })
+}
+
+function openRestoreGate(): void {
+  const resolve = restoreGateResolve
+  restoreGateResolve = null
+  resolve?.()
+}
+
 /** The ACTIVE-LOCALE slice of the full map — what the UI sees. */
 function draftsViewOf(all: Record<string, string>, locale: string): Record<string, string> {
   const prefix = `${locale}::`
@@ -261,8 +286,12 @@ function flushDraftsNow(): Promise<void> {
   const capturedVersion = draftsVersion
   const capturedPid = snap.project_id
   const capturedEpoch = snap.session_epoch
-  const entries = currentDraftEntries()
   draftSyncChain = draftSyncChain.then(async () => {
+    // Restore gate first: an early replace-semantics write must never race
+    // the restore merge (review P0-3). The map is captured AFTER the gate —
+    // pre-gate capture would persist a stale, pre-merge snapshot.
+    await waitForRestoreGate()
+    const entries = currentDraftEntries()
     // К моменту старта записи сессия могла смениться — не пишем мимо неё.
     const live = state.snapshot
     if (!live || live.project_id !== capturedPid || live.session_epoch !== capturedEpoch) return
@@ -516,6 +545,9 @@ export const projectStore = {
       const carried = unsavedMemory[projectId]
       delete unsavedMemory[projectId]
       draftsAll = carried ? { ...carried } : {}
+      // The store merge has NOT happened yet — hold every flush until
+      // adoptRestoredDrafts settles (review P0-3).
+      closeRestoreGate()
       set({
         perfMarks: { ...state.perfMarks, T2_ipcComplete: T2, T3_stateReceived: T2, T4_entriesMapped: T4 },
         snapshot: snap,
@@ -745,6 +777,18 @@ export const projectStore = {
    *  unresolvable key survives verbatim, self-healing on a later
    *  inventory. Nothing is destroyed on restore. */
   async adoptRestoredDrafts(projectId: string, sessionEpoch: number): Promise<void> {
+    try {
+      await projectStore.adoptRestoredDraftsInner(projectId, sessionEpoch)
+    } finally {
+      // The gate opens on EVERY outcome (restored / none / orphan /
+      // unavailable / transport failure) — after it, draftsAll is the
+      // complete truth this session knows, and replace-semantics flushes
+      // are safe again.
+      openRestoreGate()
+    }
+  },
+
+  async adoptRestoredDraftsInner(projectId: string, sessionEpoch: number): Promise<void> {
     let report: DraftsRestoreReportDto
     try {
       report = await clientInstance.getClient().restoreDrafts(projectId, sessionEpoch)
