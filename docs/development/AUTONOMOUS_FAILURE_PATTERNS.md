@@ -250,3 +250,43 @@ MISSING GATE → NEW PERMANENT GATE → REGRESSION (как проверяетс�
   сценарии (ru→uk→ru→restart, fast navigation, switch inside save window,
   failed flush).
 - **REGRESSION**: vitest scenarios 1, 3, 4, 5 + memory-guard тест.
+
+## 16. Mock-verified wire gap (feature shipped, transport never wired)
+
+- **DEFECT**: draft autosave существовал на трёх уровнях — services (manager
+  ops + 11 adversarial тестов), contract types (frontend client), mocked
+  transport (vitest 12/12) — но tauri-адаптер не暴露ил команды: в
+  упакованном приложении каждый saveDrafts отклонялся («command not
+  found»), sidecar не появлялся никогда. Полный продукт фичи не было.
+- **WHY PRODUCT FAILED**: новый contract-метод добавлялся в 4 местах
+  (services, типы, клиент, адаптер+диспетчер), а гейт был только на первые
+  три.
+- **WHY AUTONOMY FAILED**: вся верификация черновиков шла на моках
+  транспорт-шва; native-прогон реального пакета для новых команд не был
+  обязателен.
+- **MISSING GATE**: wire-level прогон каждой новой контрактной команды.
+- **NEW PERMANENT GATE**: для каждой новой команды контракта — native
+  WDIO-спек на automation-React сборке (та же поверхность, что у релиза),
+  доказывающий реальный invoke до объявления фичи готовой; реестр
+  «команда → native-спек» держится в тестах (drafts-safety.spec.ts —
+  первый якорь). Mock-сьюты остаются для семантики, не для проводки.
+- **REGRESSION**: нативная фаза 1 упала на отсутствии sidecar до фикса
+  (b301de5), прошла после; фаза 2 (рестарт) зелёная.
+
+## 17. Automation surface framework drift
+
+- **DEFECT**: единственная automation-сборка несла замороженный Svelte
+  fallback, а весь новый код и фиксы жили в React-фронте — WDIO гонял не
+  тот UI (селекторы React-спеков не находились; .app-sidebar отсутствует
+  в Svelte-оболочке).
+- **WHY PRODUCT FAILED**: automation-конфиг был один и наследовал дефолтный
+  (Svelte) frontendDist, тогда как прод-артефакт собирается из React.
+- **WHY AUTONOMY FAILED**: probe DOM-структуры под сессией вместо догадки
+  по селекторам — diagnoses-first, а не retry-blind.
+- **MISSING GATE**: фронтовый флейвор automation-сборки.
+- **NEW PERMANENT GATE**: build-automation-react.sh (automation overlay
+  поверх tauri.react.conf.json) — native-спеки React-фронта гоняются на
+  React-поверхности; при добавлении нового фронтового лейна его
+  automation-вариант обязателен.
+- **REGRESSION**: probe показал svelte-isll26 классы; после пересборки —
+  React testids, обе фазы зелёные.

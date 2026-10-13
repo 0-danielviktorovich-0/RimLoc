@@ -30,8 +30,12 @@ AUTONOMOUS_FAILURE_PATTERNS: никакого дубля идентичност�
   `fix/draft-safety-structural-identity` (locale-scoped durable drafts,
   entryUid key-space, quiesce-переходы; vitest 12/12, services 288/288,
   см. AUTONOMOUS_FAILURE_PATTERNS §13-15).
-- Следующий кандидат — после сборки артефакта из фикс-ветки; тогда же
-  обновляются FINAL_IDENTITY.md и этот список.
+- `rel26-draft-fixes` (fix/draft-safety-structural-identity; binary и
+  appzip — artifact-rel26-draft-fixes/) — react data-safety corrective
+  pass: locale-scoped durable drafts, entryUid key-space, quiesce
+  transitions, tauri-adapter wiring for the drafts commands, native WDIO
+  lane on the automation-React surface (see AUTONOMOUS_FAILURE_PATTERNS
+  §13-17). FINAL_IDENTITY.md обновляется при нарезке.
 Публикация — parked по решению владельца (ADDENDUM §27); этот документ —
 вердикты по областям, не команда к публикации.
 
