@@ -251,7 +251,20 @@ pub fn load_drafts(main: &Path) -> Result<DraftsLoadOutcome, DraftsStoreError> {
 /// live file; a mid-shift failure can at worst duplicate a backup, which the
 /// newest-first recovery tolerates.
 pub fn save_drafts(main: &Path, file: &DraftsFile) -> Result<(), DraftsStoreError> {
-    let previous = std::fs::read(main).ok();
+    // Never overwrite bytes we could not read (review iteration 6 P1): a
+    // PermissionDenied read followed by a directory-writable rename would
+    // destroy the previous store WITHOUT a backup. NotFound is the normal
+    // fresh-store case; any other read error refuses the save.
+    let previous = match std::fs::read(main) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+        Err(source) => {
+            return Err(DraftsStoreError::Io {
+                path: main.to_path_buf(),
+                source,
+            })
+        }
+    };
     let bytes = serde_json::to_vec_pretty(file).map_err(|e| DraftsStoreError::Corrupt {
         path: main.to_path_buf(),
         detail: format!("serialize failed: {e}"),
@@ -630,6 +643,38 @@ mod tests {
         ));
     }
 
+    /// An UNREADABLE sidecar refuses the save (review iteration 6 P1):
+    /// PermissionDenied on read followed by a directory-writable rename
+    /// would destroy the previous store without a backup. The typed IO
+    /// error surfaces instead; the store bytes stay untouched.
+    #[test]
+    fn save_refuses_to_overwrite_unreadable_store() {
+        let dir = tempfile::tempdir().unwrap();
+        let main = dir.path().join("proj-x.drafts.json");
+        write(&main, "{\"schema_version\":1,\"project_revision\":1,\"entries\":{},\"updated_at\":0}");
+        let mut perms = std::fs::metadata(&main).unwrap().permissions();
+        use std::os::unix::fs::PermissionsExt;
+        perms.set_mode(0o000);
+        std::fs::set_permissions(&main, perms.clone()).unwrap();
+        let result = save_drafts(
+            &main,
+            &DraftsFile::new(2, entries(&[("K", "v")])),
+        );
+        perms.set_mode(0o644);
+        std::fs::set_permissions(&main, perms).unwrap();
+        match result {
+            Err(DraftsStoreError::Io { .. }) => {}
+            other => assert!(
+                matches!(other, Err(DraftsStoreError::Io { .. })),
+                "expected a typed IO refusal, got {other:?}"
+            ),
+        }
+        // The store bytes survived the refused save.
+        let body = std::fs::read_to_string(&main).unwrap();
+        assert!(body.contains("proj"), "store content replaced: {body}");
+    }
+
+    /// Locale-scoped composite store keys
     /// Locale-scoped composite store keys (`<locale>::<display_identity()>`,
     /// two Def types sharing one display key included) and legacy v1 bare
     /// display keys coexist in ONE store: the service treats key syntax as

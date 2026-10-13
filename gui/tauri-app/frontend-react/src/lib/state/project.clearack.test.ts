@@ -12,8 +12,9 @@ vi.mock('../client/instance', () => {
     snapshots: new Map<string, Snap>(),
     /** When true, clearDrafts rejects (simulated write failure). */
     failClears: false,
-    /** Durable store mirrored by the mock (the "disk"). */
-    disk: new Map<string, { text: string; updated_at: number }>(),
+    /** Durable stores mirrored by the mock — PER PROJECT (each project
+     *  has its own sidecar file). */
+    disks: new Map<string, Map<string, { text: string; updated_at: number }>>(),
   }
   const instance = Object.assign(hub, {
     getClient: () => ({
@@ -74,23 +75,28 @@ vi.mock('../client/instance', () => {
         entries: Record<string, import('../client/types').DraftEntryDto>,
       ) => {
         hub.calls.push({ method: 'saveDrafts', args: [pid, epoch, entries] })
-        // MERGE semantics: upsert into the mirrored disk.
-        for (const [k, v] of Object.entries(entries)) hub.disk.set(k, v)
+        // MERGE semantics: upsert into THIS project's mirrored disk.
+        const disk = hub.disks.get(pid) ?? new Map()
+        hub.disks.set(pid, disk)
+        for (const [k, v] of Object.entries(entries)) disk.set(k, v)
         return { saved: Object.keys(entries).length, project_revision: 1, updated_at: 0 }
       },
-      restoreDrafts: async (): Promise<import('../client/types').DraftsRestoreReportDto> => {
+      restoreDrafts: async (pid: string): Promise<import('../client/types').DraftsRestoreReportDto> => {
         const drafts: Record<string, import('../client/types').DraftEntryDto> = {}
-        for (const [k, v] of hub.disk) drafts[k] = v
+        for (const [k, v] of hub.disks.get(pid) ?? new Map()) drafts[k] = v
         return Object.keys(drafts).length === 0
           ? { status: 'none', restored_count: 0 }
           : { status: 'restored', drafts, restored_count: Object.keys(drafts).length }
       },
       clearDrafts: async (pid: string, epoch: number, key?: string) => {
         hub.calls.push({ method: 'clearDrafts', args: [pid, epoch, key] })
+        // The disk is PER-PROJECT (each project has its own sidecar) — a
+        // clear addresses only its own project's keys.
+        const disk = hub.disks.get(pid) ?? new Map()
         if (hub.failClears) throw new Error('clear failed: EACCES')
-        if (key) hub.disk.delete(key)
-        else hub.disk.clear()
-        return { saved: hub.disk.size, project_revision: 1, updated_at: 0 }
+        if (key) disk.delete(key)
+        else disk.clear()
+        return { saved: disk.size, project_revision: 1, updated_at: 0 }
       },
     }),
   })
@@ -101,7 +107,8 @@ type Hub = {
   calls: { method: string; args: unknown[] }[]
   snapshots: Map<string, ProjectSnapshotDto>
   failClears: boolean
-  disk: Map<string, { text: string; updated_at: number }>
+  /** Per-project durable mirrors — each project owns its sidecar. */
+  disks: Map<string, Map<string, { text: string; updated_at: number }>>
 }
 
 function sourceEntry(kind: string, key: string): SourceEntryDto {
@@ -134,7 +141,7 @@ describe('acknowledged deletions (review iteration 5 P0-C)', () => {
     vi.resetModules()
     const hub = (await import('../client/instance')).clientInstance as unknown as Hub
     hub.calls.length = 0
-    hub.disk.clear()
+    hub.disks.clear()
     hub.snapshots.set('p-clear', makeSnap('p-clear', [sourceEntry('keyed', 'Target')]))
     const project = await import('./project')
 
@@ -144,7 +151,7 @@ describe('acknowledged deletions (review iteration 5 P0-C)', () => {
       () => expect(project.getState().draftsSync.status).toBe('saved'),
       { timeout: 4000, interval: 25 },
     )
-    expect(hub.disk.get('ru::keyed·Target')?.text).toBe('черновик к удалению')
+    expect(hub.disks.get('p-clear')?.get('ru::keyed·Target')?.text).toBe('черновик к удалению')
 
     // Revert: the clear FAILS — the durable key survives (merge keeps it),
     // and the status must NEVER claim saved.
@@ -155,7 +162,7 @@ describe('acknowledged deletions (review iteration 5 P0-C)', () => {
       { timeout: 4000, interval: 25 },
     )
     expect(project.getState().draftsSync.error ?? '').toContain('delete not acknowledged')
-    expect(hub.disk.get('ru::keyed·Target')?.text).toBe('черновик к удалению')
+    expect(hub.disks.get('p-clear')?.get('ru::keyed·Target')?.text).toBe('черновик к удалению')
 
     // Retry re-issues exactly the failed deletion; then the status is
     // honestly saved and the disk no longer holds the key.
@@ -165,16 +172,65 @@ describe('acknowledged deletions (review iteration 5 P0-C)', () => {
       () => expect(project.getState().draftsSync.status).toBe('saved'),
       { timeout: 4000, interval: 25 },
     )
-    expect(hub.disk.has('ru::keyed·Target')).toBe(false)
+    expect(hub.disks.get('p-clear')?.has('ru::keyed·Target')).toBe(false)
     const clears = hub.calls.filter((c) => c.method === 'clearDrafts' && c.args[2] === 'ru::keyed·Target')
     expect(clears.length).toBe(2) // failed attempt + successful retry
+  })
+
+  it('a pending clear of A is never issued through project B', { timeout: 20000 }, async () => {
+    vi.resetModules()
+    const hub = (await import('../client/instance')).clientInstance as unknown as Hub
+    hub.calls.length = 0
+    hub.disks.clear()
+    hub.snapshots.set('p-a', makeSnap('p-a', [sourceEntry('keyed', 'Shared')]))
+    hub.snapshots.set('p-b', makeSnap('p-b', [sourceEntry('keyed', 'Other')]))
+    const project = await import('./project')
+
+    // A: draft saved, then the delete FAILS (read-only window).
+    await project.projectStore.open('p-a')
+    project.projectStore.setDraft('keyed·Shared', 'черновик A')
+    await vi.waitFor(
+      () => expect(project.getState().draftsSync.status).toBe('saved'),
+      { timeout: 4000, interval: 25 },
+    )
+    hub.failClears = true
+    project.projectStore.clearDraft('keyed·Shared')
+    await vi.waitFor(
+      () => expect(project.getState().draftsSync.status).toBe('error'),
+      { timeout: 4000, interval: 25 },
+    )
+
+    // Switch to B and edit: B's flush must NOT route A's deletion.
+    await project.projectStore.open('p-b')
+    project.projectStore.setDraft('keyed·Other', 'правка в B')
+    await vi.waitFor(
+      () => expect(project.getState().draftsSync.status).toBe('saved'),
+      { timeout: 4000, interval: 25 },
+    )
+    const wrongClears = hub.calls.filter(
+      (c) => c.method === 'clearDrafts' && c.args[0] === 'p-b' && String(c.args[2]).includes('Shared'),
+    )
+    console.log(`[cross] WRONG_CLEARS_ON_B=${wrongClears.length}`)
+    expect(wrongClears).toHaveLength(0)
+
+    // Return to A; recover permissions; retry — the deletion applies to A
+    // only, and B's durable content is untouched.
+    await project.projectStore.open('p-a')
+    hub.failClears = false
+    project.projectStore.retryDraftsSync()
+    await vi.waitFor(
+      () => expect(project.getState().draftsSync.status).toBe('saved'),
+      { timeout: 6000, interval: 25 },
+    )
+    expect(hub.disks.get('p-a')?.has('ru::keyed·Shared')).toBe(false)
+    expect(hub.disks.get('p-b')?.get('ru::keyed·Other')?.text).toBe('правка в B')
   })
 
   it('commit routes its deletion through the same acknowledged path', { timeout: 15000 }, async () => {
     vi.resetModules()
     const hub = (await import('../client/instance')).clientInstance as unknown as Hub
     hub.calls.length = 0
-    hub.disk.clear()
+    hub.disks.clear()
     const snap = makeSnap('p-commit', [sourceEntry('keyed', 'Commit')])
     hub.snapshots.set('p-commit', snap)
     const project = await import('./project')
@@ -193,13 +249,13 @@ describe('acknowledged deletions (review iteration 5 P0-C)', () => {
       () => expect(project.getState().draftsSync.status).toBe('error'),
       { timeout: 6000, interval: 25 },
     )
-    expect(hub.disk.has('ru::keyed·Commit')).toBe(true)
+    expect(hub.disks.get('p-commit')?.has('ru::keyed·Commit')).toBe(true)
     hub.failClears = false
     project.projectStore.retryDraftsSync()
     await vi.waitFor(
       () => expect(project.getState().draftsSync.status).toBe('saved'),
       { timeout: 6000, interval: 25 },
     )
-    expect(hub.disk.has('ru::keyed·Commit')).toBe(false)
+    expect(hub.disks.get('p-commit')?.has('ru::keyed·Commit')).toBe(false)
   })
 })
