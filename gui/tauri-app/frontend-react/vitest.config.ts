@@ -14,4 +14,16 @@ export default defineConfig({
     // need a fresh session call vi.resetModules() in their own setup.
     restoreMocks: true,
   },
+  // Coverage denominator = the review priority files exactly (owner
+  // mandate): project.ts — drafts, restore, autosave, clear, project
+  // switching; entryUid.ts — full structural identity. Third-party code,
+  // generated files and the test files themselves stay out of the
+  // denominator.
+  coverage: {
+    provider: 'v8',
+    include: ['src/lib/state/project.ts', 'src/lib/state/entryUid.ts'],
+    exclude: ['src/**/*.test.ts'],
+    reporter: ['text', 'lcov'],
+    reportsDirectory: 'coverage',
+  },
 })

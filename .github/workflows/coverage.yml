@@ -7,6 +7,7 @@ on:
       - "crates/**"
       - "gui/tauri-app/src-tauri/**"
       - "gui/tauri-app/frontend-v2/**"
+      - "gui/tauri-app/frontend-react/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "codecov.yml"
@@ -17,6 +18,7 @@ on:
       - "crates/**"
       - "gui/tauri-app/src-tauri/**"
       - "gui/tauri-app/frontend-v2/**"
+      - "gui/tauri-app/frontend-react/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "codecov.yml"
@@ -176,4 +178,42 @@ jobs:
           # Fork PRs cannot rely on upstream OIDC permissions. Let Codecov try
           # its public-repository tokenless path, but never fail an external
           # contributor PR only because coverage upload authentication is unavailable.
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+  frontend-react:
+    name: React state coverage
+    needs: config
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+
+      - name: Install dependencies
+        working-directory: gui/tauri-app/frontend-react
+        run: npm ci --no-audit --no-fund
+
+      - name: Run store coverage (project.ts, entryUid.ts, state layer)
+        working-directory: gui/tauri-app/frontend-react
+        run: npx vitest run --coverage
+
+      - name: Upload React state coverage to Codecov
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          files: ./gui/tauri-app/frontend-react/coverage/coverage-final.json
+          disable_search: true
+          disable_telem: true
+          cleanup: true
+          flags: frontend-react
+          name: frontend-react-state
           fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}

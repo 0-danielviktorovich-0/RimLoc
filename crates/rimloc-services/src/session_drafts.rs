@@ -574,6 +574,13 @@ mod tests {
     use crate::contract::{ApplyIntentsRequest, IntentAction};
     use rimloc_domain::canonical::{EntryKind, SourceEntryId};
 
+    // COVERAGE NOTE (review iteration 9): several assertions below use the
+    // `match other => assert!(matches!(..))` fallback-arm pattern instead of
+    // panicking directly. Those fallback arms intentionally show as
+    // uncovered lines (they execute only when the code under test
+    // misbehaves); Codecov's patch report counts them, which is expected
+    // and documented — not a testing gap.
+
     fn write(path: &Path, body: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();

@@ -98,6 +98,9 @@ flag_management:
     - name: gui-rust
       paths:
         - "gui/tauri-app/src-tauri/src/**"
+    - name: frontend-react
+      paths:
+        - "gui/tauri-app/frontend-react/src/**"
 
 comment:
   layout: "condensed_header, diff, flags, components, condensed_files, condensed_footer"
