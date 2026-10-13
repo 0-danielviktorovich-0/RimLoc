@@ -977,9 +977,7 @@ mod ipc_draft_tests {
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
-        app.manage(
-            ContractState::new(dir.path().join("managed")).expect("contract state"),
-        );
+        app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
         let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
             .build()
             .expect("webview");
@@ -1093,9 +1091,7 @@ mod ipc_draft_tests {
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
-        app.manage(
-            ContractState::new(dir.path().join("managed")).expect("contract state"),
-        );
+        app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
         let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
             .build()
             .expect("webview");
