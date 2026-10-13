@@ -38,8 +38,9 @@ EOF
 cat > "$ART/OWNER_TEST_PACKET.md" <<EOF
 # Owner test packet — $RC
 
-Binary: RimLoc GUI.app (zip sha256 ${ZIP_SHA:0:12}…, full digests in
-appzip-sha256.txt / MANIFEST.sha256 — regenerated together by
+Binary: RimLoc GUI.app (zip sha256 ${ZIP_SHA:0:12}…; in the review packet
+the digests ride as appzip.sha256 + MANIFEST.sha256, in this artifact
+directory as appzip-sha256.txt — regenerated together by
 testlab/reviewer/refresh-artifact.sh). Install: unzip and drag to
 /Applications (unsigned build — right-click → Open on first launch).
 

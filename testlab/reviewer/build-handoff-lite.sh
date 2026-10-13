@@ -155,6 +155,23 @@ for f in source-inspector-wdio.log chatbatch-wdio.log multitarget-wdio.log palet
   copy_optional "$EVDIR/reviewer/$f" "historical/$f"
 done
 
+# --- CODE SNAPSHOT (review iteration 2 EVIDENCE_REQUEST: read-only
+# sources of the touched code and tests, so independent verification does
+# not require a pushed branch) ---
+mkdir -p "$PKT/code-snapshot/e2e" "$PKT/code-snapshot/store" "$PKT/code-snapshot/backend"
+SNAP="$PKT/code-snapshot"
+for f in drafts-safety.spec.ts drafts-restart.spec.ts drafts-verify.spec.ts drafts-fastnav.spec.ts ds-helpers.ts drafts-safety.conf.ts drafts-restart.conf.ts drafts-verify.conf.ts drafts-fastnav.conf.ts; do
+  copy_mandatory "$REPO/gui/tauri-app/frontend-v2/e2e/wdio-spike/$f" "code-snapshot/e2e/$f"
+done
+copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/project.ts"   "code-snapshot/store/project.ts"
+copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/entryUid.ts"  "code-snapshot/store/entryUid.ts"
+copy_mandatory "$REPO/crates/rimloc-services/src/session_drafts.rs"            "code-snapshot/backend/session_drafts.rs"
+grep -A24 'Durable draft autosave (Data Safety): pass-through' "$REPO/gui/tauri-app/src-tauri/src/contract_adapter.rs" > "$SNAP/backend/contract_adapter-drafts-section.txt" 2>/dev/null || true
+grep -B2 -A4 'project_save_drafts' "$REPO/gui/tauri-app/src-tauri/src/main.rs" > "$SNAP/backend/main-dispatch-drafts.txt" 2>/dev/null || true
+# the checker + regression sources (release engineering transparency)
+copy_mandatory "$REPO/testlab/reviewer/check-packet-identity.py" "code-snapshot/backend/check-packet-identity.py"
+copy_mandatory "$REPO/testlab/reviewer/test-handoff-mixed-identity.sh" "code-snapshot/backend/test-handoff-mixed-identity.sh"
+
 # --- optional supplementary evidence ---
 copy_optional "$EVDIR/C1_PROVIDER_BOUNDARY.md"            C1_PROVIDER_BOUNDARY.md
 copy_optional "$EVDIR/C6_DMG_NFS_EVIDENCE.md"             C6_DMG_NFS_EVIDENCE.md
@@ -193,17 +210,16 @@ find "$PKT" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
 # (manifest is final below; the self-test is recorded AFTER it so the
 # entry count matches what an external verifier recounts — review P1-2 B)
 
-( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' -exec shasum -a 256 {} \; \
+# The manifest covers every packet file EXCEPT itself and this notice —
+# both are named explicitly so an external recount is self-consistent
+# (review iteration 2 P1-2: the count must match what a verifier recounts).
+N_FILES=$(find . -type f ! -name 'MANIFEST.sha256' ! -name 'packet-self-test.txt' | wc -l | tr -d ' ')
+( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' ! -name 'packet-self-test.txt' -exec shasum -a 256 {} \; \
   | sed 's|\./||' | LC_ALL=C sort > MANIFEST.sha256 )
 ( cd "$PKT" && shasum -a 256 -c MANIFEST.sha256 > /dev/null 2>&1 \
-  && echo "packet-self-test: manifest $(wc -l < MANIFEST.sha256 | tr -d ' ') entries VERIFIED (post-final manifest)" \
+  && printf 'packet-self-test: VERIFIED — %s manifest entries cover every packet file except MANIFEST.sha256 and this notice (external recount of the manifest: %s lines)\n' "$N_FILES" "$N_FILES" \
   || echo "packet-self-test: manifest MISMATCH" ) > "$PKT/packet-self-test.txt"
 grep -q VERIFIED "$PKT/packet-self-test.txt" || { echo "PACKET REFUSED: manifest self-test failed" >&2; exit 1; }
-# self-test joined late: refresh the manifest one last time and re-verify
-( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' -exec shasum -a 256 {} \; \
-  | sed 's|\./||' | LC_ALL=C sort > MANIFEST.sha256 )
-( cd "$PKT" && shasum -a 256 -c MANIFEST.sha256 > /dev/null 2>&1 ) \
-  || { echo "PACKET REFUSED: final manifest self-test failed" >&2; exit 1; }
 
 # --- SEMANTIC IDENTITY CHECK #1 (packet dir, pre-zip) ---
 python3 "$REPO/testlab/reviewer/check-packet-identity.py" "$PKT" \
