@@ -62,8 +62,15 @@ impl DraftEntry {
     }
 }
 
-/// The durable drafts sidecar document. Keys are the workspace display keys
-/// (entry.id.key) — the same identity the frontend `drafts` map uses.
+/// The durable drafts sidecar document. Store keys are FRONTEND-owned and
+/// opaque to this service: the current UI convention scopes every draft to
+/// its target locale and the FULL structural identity —
+/// `<registry-locale>::<display_identity()>` (e.g.
+/// `ru::def_injected·ThingDef·Dup.label`) — so parallel target locales keep
+/// parallel unsaved slices and a locale switch cannot erase another slice.
+/// Legacy v1-era files hold bare display keys; the UI re-anchors them on
+/// restore (never destroys). Save/restore/clear treat key syntax as opaque
+/// strings — the service never parses it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DraftsFile {
     pub schema_version: u32,
@@ -244,7 +251,20 @@ pub fn load_drafts(main: &Path) -> Result<DraftsLoadOutcome, DraftsStoreError> {
 /// live file; a mid-shift failure can at worst duplicate a backup, which the
 /// newest-first recovery tolerates.
 pub fn save_drafts(main: &Path, file: &DraftsFile) -> Result<(), DraftsStoreError> {
-    let previous = std::fs::read(main).ok();
+    // Never overwrite bytes we could not read (review iteration 6 P1): a
+    // PermissionDenied read followed by a directory-writable rename would
+    // destroy the previous store WITHOUT a backup. NotFound is the normal
+    // fresh-store case; any other read error refuses the save.
+    let previous = match std::fs::read(main) {
+        Ok(bytes) => Some(bytes),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
+        Err(source) => {
+            return Err(DraftsStoreError::Io {
+                path: main.to_path_buf(),
+                source,
+            })
+        }
+    };
     let bytes = serde_json::to_vec_pretty(file).map_err(|e| DraftsStoreError::Corrupt {
         path: main.to_path_buf(),
         detail: format!("serialize failed: {e}"),
@@ -400,8 +420,21 @@ impl ProjectSessionManager {
         entries: BTreeMap<String, DraftEntry>,
     ) -> Result<DraftsSaveAck, ContractError> {
         let (path, revision) = self.drafts_guard(project_id, session_epoch)?;
-        let saved = entries.len();
-        let file = DraftsFile::new(revision, entries);
+        // MERGE semantics (review iteration 4 P0-B): the incoming map is
+        // upserted INTO the existing store — a partial or raced write can
+        // never drop keys it does not mention. Removals are EXPLICIT
+        // (`clear_drafts_session` with a key, or the whole store). An
+        // unreadable store starts fresh here; its bytes survive in the
+        // rotation backup this save creates.
+        let mut merged = match load_drafts(&path) {
+            Ok(DraftsLoadOutcome::Loaded { drafts, .. }) => drafts.entries,
+            _ => BTreeMap::new(),
+        };
+        for (key, entry) in entries {
+            merged.insert(key, entry);
+        }
+        let saved = merged.len();
+        let file = DraftsFile::new(revision, merged);
         let updated_at = file.updated_at;
         save_drafts(&path, &file)?;
         Ok(DraftsSaveAck {
@@ -541,6 +574,13 @@ mod tests {
     use crate::contract::{ApplyIntentsRequest, IntentAction};
     use rimloc_domain::canonical::{EntryKind, SourceEntryId};
 
+    // COVERAGE NOTE (review iteration 9): several assertions below use the
+    // `match other => assert!(matches!(..))` fallback-arm pattern instead of
+    // panicking directly. Those fallback arms intentionally show as
+    // uncovered lines (they execute only when the code under test
+    // misbehaves); Codecov's patch report counts them, which is expected
+    // and documented — not a testing gap.
+
     fn write(path: &Path, body: &str) {
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(path, body).unwrap();
@@ -610,6 +650,81 @@ mod tests {
         ));
     }
 
+    #[cfg(unix)]
+    /// An UNREADABLE sidecar refuses the save (review iteration 6 P1):
+    /// PermissionDenied on read followed by a directory-writable rename
+    /// would destroy the previous store without a backup. The typed IO
+    /// error surfaces instead; the store bytes stay untouched.
+    #[test]
+    fn save_refuses_to_overwrite_unreadable_store() {
+        let dir = tempfile::tempdir().unwrap();
+        let main = dir.path().join("proj-x.drafts.json");
+        write(
+            &main,
+            "{\"schema_version\":1,\"project_revision\":1,\"entries\":{},\"updated_at\":0}",
+        );
+        let mut perms = std::fs::metadata(&main).unwrap().permissions();
+        use std::os::unix::fs::PermissionsExt;
+        perms.set_mode(0o000);
+        std::fs::set_permissions(&main, perms.clone()).unwrap();
+        let result = save_drafts(&main, &DraftsFile::new(2, entries(&[("K", "v")])));
+        perms.set_mode(0o644);
+        std::fs::set_permissions(&main, perms).unwrap();
+        match result {
+            Err(DraftsStoreError::Io { .. }) => {}
+            other => assert!(
+                matches!(other, Err(DraftsStoreError::Io { .. })),
+                "expected a typed IO refusal, got {other:?}"
+            ),
+        }
+        // The store bytes survived the refused save.
+        let body = std::fs::read_to_string(&main).unwrap();
+        assert!(body.contains("proj"), "store content replaced: {body}");
+    }
+
+    /// Locale-scoped composite store keys
+    /// Locale-scoped composite store keys (`<locale>::<display_identity()>`,
+    /// two Def types sharing one display key included) and legacy v1 bare
+    /// display keys coexist in ONE store: the service treats key syntax as
+    /// opaque, so a save/restore roundtrip preserves BOTH generations
+    /// byte-faithfully. The v1→v2 re-anchoring itself lives in the UI,
+    /// which owns the key convention — the backend must never reinterpret
+    /// a key it does not understand.
+    #[test]
+    fn locale_scoped_and_legacy_keys_coexist() {
+        let dir = tempfile::tempdir().unwrap();
+        let main = dir.path().join("proj-x.drafts.json");
+        let file = DraftsFile::new(
+            4,
+            entries(&[
+                ("ru::def_injected·ThingDef·Shared.label", "вещь"),
+                ("ru::def_injected·HediffDef·Shared.label", "эффект"),
+                ("uk::keyed·Settings", "украинский черновик"),
+                ("Shared.legacy", "ключ первого поколения"),
+            ]),
+        );
+        save_drafts(&main, &file).unwrap();
+        let loaded = match load_drafts(&main).unwrap() {
+            DraftsLoadOutcome::Loaded { drafts, .. } => drafts,
+            other => {
+                assert!(
+                    matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                    "expected Loaded, got {other:?}"
+                );
+                return;
+            }
+        };
+        assert_eq!(loaded, file, "all key generations roundtrip verbatim");
+        assert_eq!(
+            loaded.entries["ru::def_injected·ThingDef·Shared.label"].text,
+            "вещь"
+        );
+        assert_eq!(
+            loaded.entries["ru::def_injected·HediffDef·Shared.label"].text, "эффект",
+            "same display key, different def types — two independent drafts"
+        );
+    }
+
     /// Rotation: `.drafts.1..3.json` exactly — the chain never grows past
     /// the cap, the oldest is removed only after the new write succeeded,
     /// and `.1` is always the PREVIOUS save (newest-first recovery order).
@@ -663,6 +778,45 @@ mod tests {
         assert_eq!(live.entries["K"].text, "v9");
     }
 
+    /// MERGE semantics (review iteration 4 P0-B): a save that mentions only
+    /// SOME keys upserts exactly those — unmentioned keys survive, so a
+    /// raced or partial write can never erase durable work. Removal is
+    /// explicit only (`clear_drafts_session`).
+    #[test]
+    fn save_merges_and_never_drops_unmentioned_keys() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        draft_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = snap.project_id.clone();
+        let epoch = snap.session_epoch;
+
+        mgr.save_drafts_session(
+            &pid,
+            epoch,
+            entries(&[("ru::keyed·A", "первый"), ("ru::keyed·B", "второй")]),
+        )
+        .unwrap();
+        // A partial save mentioning ONLY A: B must survive.
+        let ack = mgr
+            .save_drafts_session(&pid, epoch, entries(&[("ru::keyed·A", "обновлённый")]))
+            .unwrap();
+        assert_eq!(ack.saved, 2, "merged store holds both keys");
+        let report = mgr.restore_drafts_session(&pid, epoch).unwrap();
+        assert_eq!(report.status, DraftsRestoreStatus::Restored);
+        assert_eq!(report.drafts["ru::keyed·A"].text, "обновлённый");
+        assert_eq!(report.drafts["ru::keyed·B"].text, "второй");
+        // Explicit removal is the only way a key leaves the store.
+        mgr.clear_drafts_session(&pid, epoch, Some("ru::keyed·B"))
+            .unwrap();
+        let report = mgr.restore_drafts_session(&pid, epoch).unwrap();
+        assert!(report.drafts.contains_key("ru::keyed·A"));
+        assert!(!report.drafts.contains_key("ru::keyed·B"));
+    }
+
+    /// A corrupt live file never wins: recovery falls back to the newest
+    /// intact backup and REPORTS the deviation.
     /// A corrupt live file never wins: recovery falls back to the newest
     /// intact backup and REPORTS the deviation.
     #[test]

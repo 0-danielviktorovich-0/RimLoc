@@ -70,6 +70,11 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_tm_delete",
     "project_tm_import",
     "project_tm_lookup",
+    // Durable draft autosave (Data Safety): sidecar store of UNSAVED editor
+    // work — epoch-guarded, revision-stamped, never confirmed translations.
+    "project_save_drafts",
+    "project_restore_drafts",
+    "project_clear_drafts",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key NEVER crosses into a file — it goes to the OS keychain.
     "contract_provider_instance_list",
@@ -311,6 +316,64 @@ pub fn project_glossary_delete(
         .expect("contract session registry poisoned");
     traced_simple("project_glossary_delete", || {
         manager.glossary_delete(&request)
+    })
+}
+
+// Durable draft autosave (Data Safety): pass-through into the session
+// manager's sidecar-store ops — epoch-guarded, revision-stamped, typed
+// errors. Store keys are FRONTEND-owned (`<locale>::<display_identity()>`);
+// the adapter treats them as opaque strings.
+
+/// `project_save_drafts` — persist the whole drafts map (the debounced
+/// autosave write; replace semantics are the store's contract).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_save_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    entries: std::collections::BTreeMap<String, rimloc_services::DraftEntry>,
+) -> Result<rimloc_services::DraftsSaveAck, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_save_drafts", || {
+        manager.save_drafts_session(&project_id, session_epoch, entries)
+    })
+}
+
+/// `project_restore_drafts` — honest restore report after open(): never a
+/// silent apply; a revision mismatch quarantines the store as an orphan.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_restore_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+) -> Result<rimloc_services::DraftsRestoreReport, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_restore_drafts", || {
+        manager.restore_drafts_session(&project_id, session_epoch)
+    })
+}
+
+/// `project_clear_drafts` — remove one key (revert / commit ack) or the
+/// whole store; removing an absent key is an honest no-op.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_clear_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    key: Option<String>,
+) -> Result<rimloc_services::DraftsSaveAck, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_clear_drafts", || {
+        manager.clear_drafts_session(&project_id, session_epoch, key.as_deref())
     })
 }
 
@@ -852,5 +915,195 @@ mod tests {
             m.list()
         };
         assert!(list.is_empty());
+    }
+}
+
+// IPC integration tests (review iteration 9, Codecov gap): the three draft
+// commands are exercised through the REAL tauri invoke routing — mock
+// runtime, JSON body deserialization, handler dispatch, response/error
+// serialization — not by calling private helpers. Services semantics
+// (merge save, revision guard, quarantine) keep their own suites.
+#[cfg(test)]
+mod ipc_draft_tests {
+    use super::*;
+    use serde_json::json;
+    use tauri::Manager;
+
+    fn mod_fixture(root: &std::path::Path) {
+        std::fs::create_dir_all(root.join("About")).unwrap();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("About/About.xml"),
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?><ModMetaData><name>Ipc Fixture</name><author>rimloc-testlab</author><packageId>rimloc.test.ipc</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Defs/A_Thing.xml"),
+            "<Defs><ThingDef><defName>Dup</defName><label>Thing Dup</label></ThingDef></Defs>",
+        )
+        .unwrap();
+    }
+
+    fn invoke<W: AsRef<tauri::Webview<tauri::test::MockRuntime>>>(
+        webview: &W,
+        cmd: &str,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, serde_json::Value> {
+        tauri::test::get_ipc_response(
+            webview,
+            tauri::webview::InvokeRequest {
+                cmd: cmd.to_string(),
+                callback: tauri::ipc::CallbackFn(0),
+                error: tauri::ipc::CallbackFn(1),
+                url: "tauri://localhost".parse().unwrap(),
+                body: tauri::ipc::InvokeBody::Json(body),
+                headers: Default::default(),
+                invoke_key: tauri::test::INVOKE_KEY.to_string(),
+            },
+        )
+        .map(|b| b.deserialize::<serde_json::Value>().expect("json body"))
+    }
+
+    #[test]
+    fn drafts_roundtrip_through_tauri_ipc() {
+        let dir = tempfile::tempdir().unwrap();
+        mod_fixture(&dir.path().join("mod"));
+        let app = tauri::test::mock_builder()
+            .invoke_handler(tauri::generate_handler![
+                project_create,
+                project_save_drafts,
+                project_restore_drafts,
+                project_clear_drafts,
+            ])
+            .build(tauri::generate_context!())
+            .expect("mock app");
+        app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .expect("webview");
+
+        // create → live session coordinates.
+        let created = invoke(
+            &webview,
+            "project_create",
+            json!({"request": {"mod_root": {"path": dir.path().join("mod").to_string_lossy()}, "target_version": "1.6"}}),
+        )
+        .expect("project_create ok");
+        let pid = created["project_id"].as_str().unwrap().to_string();
+        let epoch = created["session_epoch"].as_u64().unwrap();
+        assert!(!pid.is_empty());
+
+        // save → ack carries the merged count.
+        let saved = invoke(
+            &webview,
+            "project_save_drafts",
+            json!({
+                "project_id": pid,
+                "session_epoch": epoch,
+                "entries": {"ru::def_injected·ThingDef·Dup.label": {"text": "черновик", "updated_at": 1}}
+            }),
+        )
+        .expect("save ok");
+        assert_eq!(saved["saved"], 1);
+        assert_eq!(saved["project_revision"], created["revision"]);
+
+        // restore → the sidecar raises the draft verbatim.
+        let report = invoke(
+            &webview,
+            "project_restore_drafts",
+            json!({"project_id": pid, "session_epoch": epoch}),
+        )
+        .expect("restore ok");
+        assert_eq!(report["status"], "restored");
+        assert_eq!(
+            report["drafts"]["ru::def_injected·ThingDef·Dup.label"]["text"],
+            "черновик"
+        );
+
+        // clear → acknowledged removal; restore honestly reports none.
+        let cleared = invoke(
+            &webview,
+            "project_clear_drafts",
+            json!({"project_id": pid, "session_epoch": epoch, "key": "ru::def_injected·ThingDef·Dup.label"}),
+        )
+        .expect("clear ok");
+        assert_eq!(cleared["saved"], 0);
+        let report = invoke(
+            &webview,
+            "project_restore_drafts",
+            json!({"project_id": pid, "session_epoch": epoch}),
+        )
+        .expect("restore ok");
+        assert_eq!(report["status"], "none");
+
+        // Whole-store clear (key omitted) + an absent-key clear that is an
+        // honest no-op — both branches of the clear command.
+        let store_cleared = invoke(
+            &webview,
+            "project_save_drafts",
+            json!({
+                "project_id": pid,
+                "session_epoch": epoch,
+                "entries": {"ru::def_injected·ThingDef·Dup.label": {"text": "снова", "updated_at": 2}}
+            }),
+        )
+        .expect("save ok");
+        assert_eq!(store_cleared["saved"], 1);
+        let cleared_all = invoke(
+            &webview,
+            "project_clear_drafts",
+            json!({"project_id": pid, "session_epoch": epoch}),
+        )
+        .expect("clear-all ok");
+        assert_eq!(cleared_all["saved"], 0);
+        let absent = invoke(
+            &webview,
+            "project_clear_drafts",
+            json!({"project_id": pid, "session_epoch": epoch, "key": "ru::keyed·Absent"}),
+        )
+        .expect("absent clear ok");
+        assert_eq!(absent["saved"], 0);
+
+        // Error path: a stale epoch is a typed refusal through the SAME ipc.
+        let err = invoke(
+            &webview,
+            "project_save_drafts",
+            json!({
+                "project_id": pid,
+                "session_epoch": epoch + 999,
+                "entries": {}
+            }),
+        )
+        .expect_err("stale epoch must refuse");
+        assert_eq!(err["code"], "stale_epoch");
+    }
+
+    #[test]
+    fn drafts_commands_refuse_unknown_project_via_ipc() {
+        let dir = tempfile::tempdir().unwrap();
+        mod_fixture(&dir.path().join("mod"));
+        let app = tauri::test::mock_builder()
+            .invoke_handler(tauri::generate_handler![
+                project_create,
+                project_save_drafts,
+                project_restore_drafts,
+                project_clear_drafts,
+            ])
+            .build(tauri::generate_context!())
+            .expect("mock app");
+        app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .expect("webview");
+
+        for cmd in ["project_save_drafts", "project_restore_drafts"] {
+            let body = if cmd == "project_save_drafts" {
+                json!({"project_id": "proj-unknown", "session_epoch": 1, "entries": {}})
+            } else {
+                json!({"project_id": "proj-unknown", "session_epoch": 1})
+            };
+            let err = invoke(&webview, cmd, body).expect_err("unknown project refuses");
+            assert_eq!(err["code"], "project_not_found", "{cmd}");
+        }
     }
 }
