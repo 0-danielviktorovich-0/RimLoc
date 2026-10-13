@@ -70,6 +70,11 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_tm_delete",
     "project_tm_import",
     "project_tm_lookup",
+    // Durable draft autosave (Data Safety): sidecar store of UNSAVED editor
+    // work — epoch-guarded, revision-stamped, never confirmed translations.
+    "project_save_drafts",
+    "project_restore_drafts",
+    "project_clear_drafts",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key NEVER crosses into a file — it goes to the OS keychain.
     "contract_provider_instance_list",
@@ -311,6 +316,64 @@ pub fn project_glossary_delete(
         .expect("contract session registry poisoned");
     traced_simple("project_glossary_delete", || {
         manager.glossary_delete(&request)
+    })
+}
+
+// Durable draft autosave (Data Safety): pass-through into the session
+// manager's sidecar-store ops — epoch-guarded, revision-stamped, typed
+// errors. Store keys are FRONTEND-owned (`<locale>::<display_identity()>`);
+// the adapter treats them as opaque strings.
+
+/// `project_save_drafts` — persist the whole drafts map (the debounced
+/// autosave write; replace semantics are the store's contract).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_save_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    entries: std::collections::BTreeMap<String, rimloc_services::DraftEntry>,
+) -> Result<rimloc_services::DraftsSaveAck, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_save_drafts", || {
+        manager.save_drafts_session(&project_id, session_epoch, entries)
+    })
+}
+
+/// `project_restore_drafts` — honest restore report after open(): never a
+/// silent apply; a revision mismatch quarantines the store as an orphan.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_restore_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+) -> Result<rimloc_services::DraftsRestoreReport, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_restore_drafts", || {
+        manager.restore_drafts_session(&project_id, session_epoch)
+    })
+}
+
+/// `project_clear_drafts` — remove one key (revert / commit ack) or the
+/// whole store; removing an absent key is an honest no-op.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_clear_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    key: Option<String>,
+) -> Result<rimloc_services::DraftsSaveAck, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_clear_drafts", || {
+        manager.clear_drafts_session(&project_id, session_epoch, key.as_deref())
     })
 }
 
