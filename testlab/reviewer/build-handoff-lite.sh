@@ -120,14 +120,14 @@ EOF
 copy_mandatory "$REPO/docs/development/FINAL_IDENTITY.md" FINAL_IDENTITY.md
 copy_mandatory "$REPO/docs/development/RELEASE_GATE.md"   RELEASE_GATE.md
 copy_mandatory "$ART/IDENTITY.md"                         artifact-IDENTITY.md
-# artifact-MANIFEST is generated from the RENAMED copies in THIS packet —
-# copying the artifact-dir manifest ships stale names and a self-reference
-# (review P1-2 C).
-( cd "$PKT" && shasum -a 256 IDENTITY.md OWNER_TEST_PACKET.md sha256.txt appzip-sha256.txt \
-  | LC_ALL=C sort > artifact-MANIFEST.sha256 )
 copy_mandatory "$ART/sha256.txt"                          binary.sha256
 copy_mandatory "$ART/appzip-sha256.txt"                   appzip.sha256
 copy_mandatory "$ART/OWNER_TEST_PACKET.md"                OWNER_TEST_PACKET.md
+# artifact-MANIFEST is generated from the RENAMED copies in THIS packet —
+# copying the artifact-dir manifest ships stale names and a self-reference
+# (review P1-2 C).
+( cd "$PKT" && shasum -a 256 artifact-IDENTITY.md OWNER_TEST_PACKET.md binary.sha256 appzip.sha256 \
+  | LC_ALL=C sort > artifact-MANIFEST.sha256 )
 copy_mandatory "$REPO/docs/competitive/release-parity.json"      release-parity.json
 copy_mandatory "$REPO/docs/design/LOVABLE_LIVE_SOURCE_AUDIT_2026-10.md" LOVABLE_LIVE_SOURCE_AUDIT_2026-10.md
 copy_mandatory "$REPO/docs/development/PLATFORM_VERIFICATION_MATRIX.md" PLATFORM_VERIFICATION_MATRIX.md

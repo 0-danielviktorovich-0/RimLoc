@@ -19,6 +19,7 @@ BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
 STAMP=$(date -u +%Y-%m-%dT%H:%MZ)
 
 echo "$BIN_SHA" > "$ART/sha256.txt"
+echo "$ZIP" > "$ART/appzip-path.txt"
 echo "$ZIP_SHA" > "$ART/appzip-sha256.txt"
 
 cat > "$ART/IDENTITY.md" <<EOF
