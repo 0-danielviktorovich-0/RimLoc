@@ -56,7 +56,13 @@ jobs:
           import re
           from pathlib import Path
 
-          config = json.loads((Path(os.environ['RUNNER_TEMP']) / 'codecov-validated.json').read_text())
+          # Codecov's /validate response is "Valid!\\n\\n{...json...}",
+          # not pure JSON: skip the success banner before decoding.
+          raw = (Path(os.environ['RUNNER_TEMP']) / 'codecov-validated.json').read_text()
+          start = raw.find('{')
+          if start < 0:
+              raise SystemExit(f'Unexpected Codecov validation response: {raw[:150]!r}')
+          config = json.loads(raw[start:])
           patterns = config.get('ignore', [])
           must_include = [
               'crates/rimloc-services/src/session_drafts.rs',
