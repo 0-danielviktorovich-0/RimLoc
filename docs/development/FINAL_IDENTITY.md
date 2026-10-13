@@ -19,15 +19,18 @@ BLOCKED — DATA-SAFETY FIXES REQUIRED). Пакет:
 ## Канонические идентификаторы
 
 ```text
-product_source_sha   7db89dc (fix/draft-safety-structural-identity @ 7db89dc)
-binary_sha256        631f5c0… (полностью: artifact sha256.txt / appzip-sha256.txt)
-appzip_sha256        015484d… (полностью: artifact appzip-sha256.txt)
-automation           ba-main SSD-зона; automation-React сборка для native WDIO
-                     (testlab/build/build-automation-react.sh)
+release              rel26-draft-fixes
+product_source       HEAD fix/draft-safety-structural-identity на момент
+                     сборки (коммит-лестница ниже); точные SHA артефакта —
+                     ТОЛЬКО в файлах пакета artifact-rel26-draft-fixes/
+                     (IDENTITY.md, sha256.txt, appzip-sha256.txt,
+                     MANIFEST.sha256) — единственный источник правды на
+                     пакет; этот документ не дублирует пер-билд SHA,
+                     чтобы его фиксация не двигала HEAD (урок 13,
+                     расширенный rel26-циклом)
+automation           ba-main SSD-зона; automation-React сборка для native
+                     WDIO (testlab/build/build-automation-react.sh)
 ```
-
-Полные SHA — только в файлах артефакта (один источник правды на пакет;
-урок 13 AUTONOMOUS_FAILURE_PATTERNS: никаких дублей identity).
 
 ## Хронология кандидатов
 
@@ -40,7 +43,8 @@ automation           ba-main SSD-зона; automation-React сборка для 
 | `f5b3d67` | RELEASE_GATE правда + failure patterns 13-15 | в фикс-ветке |
 | `b301de5` | **tauri-адаптер: проводка drafts-команд** (дефект найден native WDIO) | в фикс-ветке |
 | `0e2eec1` | native WDIO lane на automation-React поверхности | в фикс-ветке |
-| `7db89dc` | **бинарная база rel26** (failure patterns 16-17, хронология) | **product_source** |
+| `7db89dc` | failure patterns 16-17, хронология RELEASE_GATE | в фикс-ветке |
+| `0e1f71b` | **бинарная база rel26** (identity-доки финализированы) | **product_source** |
 
 ## Верификация identity
 

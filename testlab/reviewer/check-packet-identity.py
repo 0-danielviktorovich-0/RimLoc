@@ -25,7 +25,12 @@ from pathlib import Path
 # beyond the stale-marker scan.
 REQUIRED_PATTERNS: dict[str, list[str]] = {
     "REVIEW_REQUEST.md": ["{rc}", "{bin7}", "{product7}"],
-    "FINAL_IDENTITY.md": ["{rc}", "{bin7}", "{product7}"],
+    # The COMMITTED identity doc names the release and the ladder history;
+    # per-build exact SHAs live in the artifact files (artifact-IDENTITY.md
+    # carries them — that file is generated per build and is checked
+    # strictly). Requiring per-build SHAs here would move the repo HEAD on
+    # every identity refresh.
+    "FINAL_IDENTITY.md": ["{rc}"],
     "RELEASE_GATE.md": ["{rc}"],
     "artifact-IDENTITY.md": ["{rc}", "{bin7}", "{product7}"],
     "OWNER_TEST_PACKET.md": ["{rc}"],
