@@ -12,9 +12,18 @@ APP="${3:?app bundle path}"
 ZIP="${4:?appzip path}"
 RC="${RC:?RC env, e.g. rel26-draft-fixes}"
 
-BIN_SHA=$(shasum -a 256 "$APP/Contents/MacOS/rimloc-gui" | awk '{print $1}')
+# The BINARY's authoritative sha comes from the DISTRIBUTED appzip — the
+# bundle directory may hold a different build (the automation variant
+# shares the bundle path and clobbered the production app once already).
+TMP=$(mktemp -d)
+unzip -q "$ZIP" -d "$TMP"
+BIN_SHA=$(shasum -a 256 "$TMP/RimLoc GUI.app/Contents/MacOS/rimloc-gui" | awk '{print $1}')
 ZIP_SHA=$(shasum -a 256 "$ZIP" | awk '{print $1}')
-PROD_SHA=$(git -C "$REPO" rev-parse HEAD)
+rm -rf "$TMP"
+# The product sha is the commit the BINARY was built from — the caller
+# pins it (defaulting to HEAD); refresh-time HEAD drifts past the build
+# as docs commits land, which must NOT rewrite the binary's source.
+PROD_SHA="${PRODUCT_SHA:-$(git -C "$REPO" rev-parse HEAD)}"
 BRANCH=$(git -C "$REPO" rev-parse --abbrev-ref HEAD)
 STAMP=$(date -u +%Y-%m-%dT%H:%MZ)
 
