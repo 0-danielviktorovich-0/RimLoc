@@ -1,6 +1,6 @@
 {
  "campaign": "release-convergence-r2",
- "status": "REL26_REVIEW_PENDING",
+ "status": "REL26_CONDITIONAL_PASS_DATA_SAFETY",
  "updated": "2026-10-13",
  "main": "1b46fd2",
  "artifactSha": "af06a4e",
@@ -12,8 +12,8 @@
   "product_source_sha": "3a61cd21841fd0104a52916b5ff4ecc6918ab099",
   "binarySha256": "956de5283226c63d783030c05ecb6f9fe97f035ccdacd0f61971248b37edecd6",
   "appzipSha256": "51e9c3e38ea2a292781af48811b07772b3889f3b2ba99d954c644365adeffc1d",
-  "gates": "frontend gate PASS (React embedded); tsc strict clean; cargo services 288/288; rimloc-gui 33/33; vitest 12/12 (review scenarios verbatim); native WDIO phases 1+2 PASS (collision rows, locale round trip, restart restore); packet v3 semantic identity PASS x2 (dir + unpacked zip); sanitizer PASS; junk 0",
-  "review": "packet RimLoc-evidence-handoff-lite-956de52.zip delivered to the reviewer (new chat, c/6acdad1e); verdict pending"
+  "gates": "frontend gate PASS; tsc clean; cargo services 290/290 (drafts 13/13); rimloc-gui 33/33; vitest 19/19; native WDIO 6/6 phases (collision, restart, strict per-Def XML, fast-nav, write-failure, unsaved restart on non-default locale); packet v3.8 identity PASS x2; sanitizer PASS",
+  "review": "CONDITIONAL_PASS_DATA_SAFETY (iteration 9, chat c/6acdba09): 6/6 independent controlled checks PASS; remaining items OWNER_ONLY (push → exact-SHA CI/CodeQL, macOS .app check, RimWorld smoke, npm advisories, merge/release/Discord)"
  },
  "lanes": {
   "chat_batch": {
