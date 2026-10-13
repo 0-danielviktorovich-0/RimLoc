@@ -407,8 +407,21 @@ impl ProjectSessionManager {
         entries: BTreeMap<String, DraftEntry>,
     ) -> Result<DraftsSaveAck, ContractError> {
         let (path, revision) = self.drafts_guard(project_id, session_epoch)?;
-        let saved = entries.len();
-        let file = DraftsFile::new(revision, entries);
+        // MERGE semantics (review iteration 4 P0-B): the incoming map is
+        // upserted INTO the existing store — a partial or raced write can
+        // never drop keys it does not mention. Removals are EXPLICIT
+        // (`clear_drafts_session` with a key, or the whole store). An
+        // unreadable store starts fresh here; its bytes survive in the
+        // rotation backup this save creates.
+        let mut merged = match load_drafts(&path) {
+            Ok(DraftsLoadOutcome::Loaded { drafts, .. }) => drafts.entries,
+            _ => BTreeMap::new(),
+        };
+        for (key, entry) in entries {
+            merged.insert(key, entry);
+        }
+        let saved = merged.len();
+        let file = DraftsFile::new(revision, merged);
         let updated_at = file.updated_at;
         save_drafts(&path, &file)?;
         Ok(DraftsSaveAck {
@@ -712,6 +725,45 @@ mod tests {
         assert_eq!(live.entries["K"].text, "v9");
     }
 
+    /// MERGE semantics (review iteration 4 P0-B): a save that mentions only
+    /// SOME keys upserts exactly those — unmentioned keys survive, so a
+    /// raced or partial write can never erase durable work. Removal is
+    /// explicit only (`clear_drafts_session`).
+    #[test]
+    fn save_merges_and_never_drops_unmentioned_keys() {
+        let dir = tempfile::tempdir().unwrap();
+        let mod_root = dir.path().join("mod");
+        draft_mod(&mod_root);
+        let mgr = ProjectSessionManager::new(dir.path().join("managed")).unwrap();
+        let snap = mgr.create(&mod_root, Some("1.6")).unwrap();
+        let pid = snap.project_id.clone();
+        let epoch = snap.session_epoch;
+
+        mgr.save_drafts_session(
+            &pid,
+            epoch,
+            entries(&[("ru::keyed·A", "первый"), ("ru::keyed·B", "второй")]),
+        )
+        .unwrap();
+        // A partial save mentioning ONLY A: B must survive.
+        let ack = mgr
+            .save_drafts_session(&pid, epoch, entries(&[("ru::keyed·A", "обновлённый")]))
+            .unwrap();
+        assert_eq!(ack.saved, 2, "merged store holds both keys");
+        let report = mgr.restore_drafts_session(&pid, epoch).unwrap();
+        assert_eq!(report.status, DraftsRestoreStatus::Restored);
+        assert_eq!(report.drafts["ru::keyed·A"].text, "обновлённый");
+        assert_eq!(report.drafts["ru::keyed·B"].text, "второй");
+        // Explicit removal is the only way a key leaves the store.
+        mgr.clear_drafts_session(&pid, epoch, Some("ru::keyed·B"))
+            .unwrap();
+        let report = mgr.restore_drafts_session(&pid, epoch).unwrap();
+        assert!(report.drafts.contains_key("ru::keyed·A"));
+        assert!(!report.drafts.contains_key("ru::keyed·B"));
+    }
+
+    /// A corrupt live file never wins: recovery falls back to the newest
+    /// intact backup and REPORTS the deviation.
     /// A corrupt live file never wins: recovery falls back to the newest
     /// intact backup and REPORTS the deviation.
     #[test]

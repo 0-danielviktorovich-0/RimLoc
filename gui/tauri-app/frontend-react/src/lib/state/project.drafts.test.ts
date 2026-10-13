@@ -106,6 +106,10 @@ vi.mock('../client/instance', () => {
         const report = hub.restoreReports.get(pid)
         return report ?? { status: 'none', restored_count: 0 }
       },
+      clearDrafts: async (pid: string, epoch: number, key?: string) => {
+        hub.calls.push({ method: 'clearDrafts', args: [pid, epoch, key] })
+        return { saved: 0, project_revision: 1, updated_at: 0 }
+      },
     }),
   })
   return { clientInstance: instance }
@@ -273,6 +277,9 @@ describe('review scenario 2 — structural identity collision (P0-2)', () => {
       def_type: 'ThingDef',
     })
     expect(intent.locale).toBe('Russian')
+    // Merge semantics: the committed key leaves the store EXPLICITLY.
+    const clears = hub.calls.filter((c) => c.method === 'clearDrafts')
+    expect(clears.some((c) => c.args[2] === `ru::${thingUid}`)).toBe(true)
 
     // The committed draft left the store; the sibling draft survived.
     await settle(() => {

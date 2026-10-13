@@ -206,6 +206,9 @@ let state: ProjectState = {
 // project transition (open/create/reset) — locale switches keep it whole.
 let draftsAll: Record<string, string> = {}
 
+/** Token of the CURRENT open's restore gate (see closeRestoreGate). */
+let pendingRestoreToken: string | null = null
+
 /** Last-resort in-memory guard (review P0-3): when a project transition
  *  cannot durably flush pending edits, the map is preserved here per
  *  project id — reopening raises it with an honest notice instead of
@@ -231,26 +234,32 @@ let draftsVersion = 0
 let draftFlushTimer: number | null = null
 let draftSyncChain: Promise<void> = Promise.resolve()
 
-// Restore gate (review iteration 3 P0-3): the autosave flush persists the
-// FULL cross-locale map with REPLACE semantics. If a flush ran before
-// adoptRestoredDrafts had merged the durable store into draftsAll, that
-// write would overwrite unsaved work with an incomplete map. Every flush
-// path therefore waits for the restore gate; adoptRestoredDrafts settles
-// it exactly once per open (including the honest none/orphan outcomes).
+// Restore gate (review iteration 3 P0-3, retokened in iteration 4 P0-A):
+// every flush waits until the CURRENT open's restore has settled. The
+// gate is bound to a per-open TOKEN (project + epoch + attempt) — a stale
+// restore settling late must never open another open's gate, and a late
+// flush of a superseded open is released only by its own token. Combined
+// with the service's MERGE semantics (a flush never drops unmentioned
+// keys) this removes the replace-overwrite class entirely.
 let restoreGate: Promise<void> = Promise.resolve()
+let restoreGateToken: string | null = null
 let restoreGateResolve: (() => void) | null = null
+let openAttempt = 0
 
 function waitForRestoreGate(): Promise<void> {
   return restoreGate
 }
 
-function closeRestoreGate(): void {
+function closeRestoreGate(token: string): void {
   restoreGate = new Promise<void>((resolve) => {
     restoreGateResolve = resolve
   })
+  restoreGateToken = token
 }
 
-function openRestoreGate(): void {
+function openRestoreGate(token: string): void {
+  if (restoreGateToken !== token) return // stale restore — not its gate
+  restoreGateToken = null
   const resolve = restoreGateResolve
   restoreGateResolve = null
   resolve?.()
@@ -546,8 +555,10 @@ export const projectStore = {
       delete unsavedMemory[projectId]
       draftsAll = carried ? { ...carried } : {}
       // The store merge has NOT happened yet — hold every flush until
-      // adoptRestoredDrafts settles (review P0-3).
-      closeRestoreGate()
+      // THIS open's adoptRestoredDrafts settles (review P0-3/P0-A).
+      const token = `${projectId}:${snap.session_epoch}:${++openAttempt}`
+      pendingRestoreToken = token
+      closeRestoreGate(token)
       set({
         perfMarks: { ...state.perfMarks, T2_ipcComplete: T2, T3_stateReceived: T2, T4_entriesMapped: T4 },
         snapshot: snap,
@@ -569,7 +580,7 @@ export const projectStore = {
       // Data Safety: поднять несохранённую работу из sidecar-хранилища
       // (ревизионный гард и quarantine — на сервисе). Отдельный async-шаг:
       // черновики не могут уронить открытие проекта.
-      void projectStore.adoptRestoredDrafts(projectId, snap.session_epoch)
+      void projectStore.adoptRestoredDrafts(projectId, snap.session_epoch, pendingRestoreToken)
       void projectStore.refreshValidation()
       return true
     } catch (e) {
@@ -628,6 +639,14 @@ export const projectStore = {
     draftsAll = all
     draftsVersion++
     set({ drafts, draftsSync: { status: 'dirty', error: state.draftsSync.error } })
+    const pid = state.snapshot?.project_id
+    const epoch = state.snapshot?.session_epoch
+    if (pid && epoch !== undefined) {
+      clientInstance
+        .getClient()
+        .clearDrafts(pid, epoch, draftsStoreKey(state.targetLocale, key))
+        .catch(() => undefined)
+    }
     void flushDraftsNow()
   },
 
@@ -682,8 +701,13 @@ export const projectStore = {
         // устарел, revalidate уберёт строку из «С замечаниями».
         validation: { ...state.validation, stale: true, error: null },
       })
-      // Подтверждённый ключ уходит и из durable-хранилища черновиков —
-      // немедленная запись полной карты (сервис поставит свежую ревизию).
+      // Подтверждённый ключ уходит из durable-хранилища ЯВНО (merge-
+      // семантика сервиса не удаляет отсутствующие во flushе ключи) —
+      // затем немедленная запись остальной карты.
+      clientInstance
+        .getClient()
+        .clearDrafts(snap.project_id, snap.session_epoch, draftsStoreKey(state.targetLocale, key))
+        .catch(() => undefined)
       void flushDraftsNow()
       void projectStore.refreshValidation()
       if (next) {
@@ -776,15 +800,17 @@ export const projectStore = {
    *  review-before-commit: over-preserving beats dropping work), and an
    *  unresolvable key survives verbatim, self-healing on a later
    *  inventory. Nothing is destroyed on restore. */
-  async adoptRestoredDrafts(projectId: string, sessionEpoch: number): Promise<void> {
+  async adoptRestoredDrafts(projectId: string, sessionEpoch: number, gateToken: string): Promise<void> {
     try {
       await projectStore.adoptRestoredDraftsInner(projectId, sessionEpoch)
     } finally {
-      // The gate opens on EVERY outcome (restored / none / orphan /
-      // unavailable / transport failure) — after it, draftsAll is the
-      // complete truth this session knows, and replace-semantics flushes
-      // are safe again.
-      openRestoreGate()
+      // The gate opens ONLY for its own token (a stale restore settling
+      // late never releases another open's gate — review iteration 4
+      // P0-A). With the service's MERGE semantics, flushes after the
+      // merge are non-destructive by construction; the unavailable /
+      // failed outcomes are safe the same way (merge never drops keys it
+      // did not read).
+      openRestoreGate(gateToken)
     }
   },
 
