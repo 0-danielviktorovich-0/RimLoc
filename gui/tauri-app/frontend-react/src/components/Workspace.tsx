@@ -11,6 +11,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
+import { entryUid } from '../lib/state/entryUid'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
 import { clientInstance } from '../lib/client/instance'
 import { folderForm } from '../lib/languages/folderForm'
@@ -19,27 +20,35 @@ import type { GlossaryTermDto, SourceEntryIdDto, ValidationFindingDto } from '..
 
 const ROW_HEIGHT = 63
 
+/** Display keys carried by more than one structural entry (review P0-2):
+ *  their rows get a def-type discriminator in the label, so two Def types
+ *  sharing one key never render as two identical lines. */
+function duplicatedDisplayKeys(entries: readonly { key: string }[]): Set<string> {
+  const seen = new Set<string>()
+  const dup = new Set<string>()
+  for (const e of entries) {
+    if (seen.has(e.key)) dup.add(e.key)
+    seen.add(e.key)
+  }
+  return dup
+}
+
 /** §15/§20 handoff: ключ sessionStorage, по которому экран чат-перевода
  *  (свой лейн) подхватывает предотмеченные строки. Значение — JSON
  *  массив display_identity()-строк; прочитал — удали. */
 export const CHATBATCH_HANDOFF_KEY = 'rimloc.chatbatch.preset-keys'
 
-/** Точная сериализация ключа батча (`SourceEntryId::display_identity()`):
- *  kind-токен · defType · key. Зеркало той же формулы, что на экране
- *  ChatBatch — полное структурное тождество, не display-key строки. */
-function displayIdentity(id: SourceEntryIdDto): string {
-  return id.def_type ? `${id.kind}·${id.def_type}·${id.key}` : `${id.kind}·${id.key}`
-}
-
 /** §15: перенос выбранной строки в чат-перевод — sessionStorage + навигация.
- *  Никаких автоматических вызовов провайдера: транспорт решает человек. */
+ *  Никаких автоматических вызовов провайдера: транспорт решает человек.
+ *  Ключ — общий канон полной структурной идентичности (entryUid, зеркало
+ *  `SourceEntryId::display_identity()`): ChatBatch читает тот же формат. */
 function sendToChatBatch(id: SourceEntryIdDto): void {
   try {
     const prev = sessionStorage.getItem(CHATBATCH_HANDOFF_KEY)
     const parsed: unknown = prev ? JSON.parse(prev) : []
     const list = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
     const next = new Set(list)
-    next.add(displayIdentity(id))
+    next.add(entryUid(id))
     sessionStorage.setItem(CHATBATCH_HANDOFF_KEY, JSON.stringify([...next]))
   } catch {
     /* приватный режим/битый JSON — навигация всё равно честная */
@@ -103,18 +112,20 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       if (q && !`${e.key} ${e.source} ${e.target}`.toLowerCase().includes(q)) return false
       if (filter === 'empty') return !e.target.trim()
       // §9: только строка с живой находкой валидатора; фикс → revalidate →
-      // строка исчезает.
-      if (filter === 'issues') return issueKeys.has(e.key)
+      // строка исчезает. Сопоставление в uid-пространстве (review P0-2):
+      // находка с полной идентичностью адресует СВОЮ строку, а не все
+      // строки с тем же display-key.
+      if (filter === 'issues') return issueKeys.has(e.uid)
       return true
     })
   }, [st.entries, search, filter, kindFilter, issueKeys])
 
-  const selectedKey = st.selectedKey ?? visible[0]?.key ?? null
-  const selected = st.entries.find((e) => e.key === selectedKey) ?? null
+  const selectedKey = st.selectedKey ?? visible[0]?.uid ?? null
+  const selected = st.entries.find((e) => e.uid === selectedKey) ?? null
 
   // §17: первая находка для ТЕКУЩЕЙ строки (порядок отчёта валидатора).
   const selectedFindings = useMemo(
-    () => (selected ? findingsByEntryKey(vstate.report).get(selected.key) ?? [] : []),
+    () => (selected ? findingsByEntryKey(vstate.report).get(selected.uid) ?? [] : []),
     [selected, vstate.report],
   )
 
@@ -169,6 +180,11 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               <>
                 {t('ws.drafts.restored', { count: st.draftsNotice.count ?? 0 })}
                 {st.draftsNotice.fromBackup ? ` ${t('ws.drafts.restoredFromBackup')}` : ''}
+                {/* Extra honesty from the restore report (review P0-1/P0-2):
+                    drafts held in OTHER target locales, legacy v1 keys that
+                    were re-anchored, or the in-memory guard of a previous
+                    failed autosave. */}
+                {st.draftsNotice.detail ? ` — ${st.draftsNotice.detail}` : ''}
               </>
             )}
             {st.draftsNotice.kind === 'orphan' &&
@@ -278,11 +294,16 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         {/* RIGHT — editor */}
         {selected && (
           <EntryEditor
-            key={selected.key}
-            entryKey={selected.key}
+            key={selected.uid}
+            entryUid={selected.uid}
+            labelKey={
+              duplicatedDisplayKeys(st.entries).has(selected.key) && selected.identity.def_type
+                ? `${selected.key} · ${selected.identity.def_type}`
+                : selected.key
+            }
             source={selected.source}
             target={selected.target}
-            draft={st.drafts[selected.key] ?? selected.target}
+            draft={st.drafts[selected.uid] ?? selected.target}
             busy={st.busy}
             sourceFile={selected.sourceFile}
             sourceLine={selected.sourceLine}
@@ -303,12 +324,12 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             related={related}
             // §15/§20: AI entry — только навигация, без вызовов провайдера.
             onSendToChatBatch={() => sendToChatBatch(selected.identity)}
-            onDraft={(v) => projectStore.setDraft(selected.key, v)}
-            onCommit={(next) => void projectStore.commit(selected.key, next)}
+            onDraft={(v) => projectStore.setDraft(selected.uid, v)}
+            onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
-              const idx = st.entries.findIndex((e) => e.key === selected.key)
+              const idx = st.entries.findIndex((e) => e.uid === selected.uid)
               const nx = st.entries[idx + d]
-              if (nx) projectStore.select(nx.key)
+              if (nx) projectStore.select(nx.uid)
             }}
           />
         )}
@@ -406,7 +427,7 @@ function EntryList({
   targetLabel,
   onSelect,
 }: {
-  entries: { key: string; source: string; target: string }[]
+  entries: WorkspaceEntry[]
   selectedKey: string | null
   findings: Map<string, ValidationFindingDto[]>
   sourceLabel: string
@@ -438,10 +459,17 @@ function EntryList({
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const e = entries[vi.index]!
+            // Full-identity key-space (review P0-2): selection and findings
+            // match by uid; the LABEL still shows the display key, with the
+            // def-type discriminator when another Def type shares it.
+            const label =
+              duplicatedDisplayKeys(entries).has(e.key) && e.identity.def_type
+                ? `${e.key} · ${e.identity.def_type}`
+                : e.key
             return (
               <button
-                key={e.key}
-                className={`entry-row ${selectedKey === e.key ? 'selected' : ''}`}
+                key={e.uid}
+                className={`entry-row ${selectedKey === e.uid ? 'selected' : ''}`}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -449,17 +477,17 @@ function EntryList({
                   width: '100%',
                   height: ROW_HEIGHT,
                   transform: `translateY(${vi.start}px)`,
-                  ...(selectedKey === e.key ? { backgroundColor: 'var(--accent)' } : {}),
+                  ...(selectedKey === e.uid ? { backgroundColor: 'var(--accent)' } : {}),
                 }}
-                onClick={() => onSelect(e.key)}
+                onClick={() => onSelect(e.uid)}
                 data-testid={`ws.entry.${vi.index}`}
               >
                 <div className="row-source">
                   <span>{e.source}</span>
-                  <code>{e.key}</code>
+                  <code>{label}</code>
                 </div>
                 <div className={`row-target ${!e.target ? 'untranslated' : ''}`}>{e.target || t('ws.addTarget')}</div>
-                <RowStatus finding={findings.get(e.key)?.[0]} target={e.target} />
+                <RowStatus finding={findings.get(e.uid)?.[0]} target={e.target} />
               </button>
             )
           })}
@@ -470,7 +498,11 @@ function EntryList({
 }
 
 function EntryEditor(props: {
-  entryKey: string
+  /** Full-identity key (store space): drafts address THIS. */
+  entryUid: string
+  /** Display key for humans (row/code label + clipboard copy), with the
+   *  def-type discriminator when another Def type shares the key. */
+  labelKey: string
   source: string
   target: string
   draft: string
@@ -509,7 +541,7 @@ function EntryEditor(props: {
   const [copied, setCopied] = useState(false)
   const copyTimer = useRef<number | null>(null)
   const copyKey = (): void => {
-    void navigator.clipboard.writeText(props.entryKey).then(
+    void navigator.clipboard.writeText(props.labelKey).then(
       () => {
         setCopied(true)
         if (copyTimer.current !== null) window.clearTimeout(copyTimer.current)
@@ -556,7 +588,7 @@ function EntryEditor(props: {
       </div>
       <div className="detail-body">
         <div className="detail-key">
-          <code>{props.entryKey}</code>
+          <code>{props.labelKey}</code>
           <button
             className="icon-btn"
             aria-label={t('ws.copyKey')}
@@ -631,7 +663,7 @@ function EntryEditor(props: {
             // Revert = «чистый черновик = отсутствие записи» (§11): удаляем
             // ключ из drafts, а не пишем committed-текст как черновик —
             // иначе пилюля «Есть несохранённые» считает фантом.
-            onClick={() => projectStore.clearDraft(props.entryKey)}
+            onClick={() => projectStore.clearDraft(props.entryUid)}
           >
             <RotateCcw />
           </button>
@@ -783,9 +815,9 @@ function EntryEditor(props: {
             <span>{t('ws.related')}</span>
             {props.related.map((r) => (
               <button
-                key={r.key}
+                key={r.uid}
                 data-testid={`ws.related.${r.key}`}
-                onClick={() => projectStore.select(r.key)}
+                onClick={() => projectStore.select(r.uid)}
               >
                 <code>{r.key}</code>
                 <span>{r.source || '—'}</span>

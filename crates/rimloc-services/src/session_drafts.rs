@@ -62,8 +62,15 @@ impl DraftEntry {
     }
 }
 
-/// The durable drafts sidecar document. Keys are the workspace display keys
-/// (entry.id.key) — the same identity the frontend `drafts` map uses.
+/// The durable drafts sidecar document. Store keys are FRONTEND-owned and
+/// opaque to this service: the current UI convention scopes every draft to
+/// its target locale and the FULL structural identity —
+/// `<registry-locale>::<display_identity()>` (e.g.
+/// `ru::def_injected·ThingDef·Dup.label`) — so parallel target locales keep
+/// parallel unsaved slices and a locale switch cannot erase another slice.
+/// Legacy v1-era files hold bare display keys; the UI re-anchors them on
+/// restore (never destroys). Save/restore/clear treat key syntax as opaque
+/// strings — the service never parses it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DraftsFile {
     pub schema_version: u32,
@@ -608,6 +615,48 @@ mod tests {
             load_drafts(&main).unwrap(),
             DraftsLoadOutcome::Absent
         ));
+    }
+
+    /// Locale-scoped composite store keys (`<locale>::<display_identity()>`,
+    /// two Def types sharing one display key included) and legacy v1 bare
+    /// display keys coexist in ONE store: the service treats key syntax as
+    /// opaque, so a save/restore roundtrip preserves BOTH generations
+    /// byte-faithfully. The v1→v2 re-anchoring itself lives in the UI,
+    /// which owns the key convention — the backend must never reinterpret
+    /// a key it does not understand.
+    #[test]
+    fn locale_scoped_and_legacy_keys_coexist() {
+        let dir = tempfile::tempdir().unwrap();
+        let main = dir.path().join("proj-x.drafts.json");
+        let file = DraftsFile::new(
+            4,
+            entries(&[
+                ("ru::def_injected·ThingDef·Shared.label", "вещь"),
+                ("ru::def_injected·HediffDef·Shared.label", "эффект"),
+                ("uk::keyed·Settings", "украинский черновик"),
+                ("Shared.legacy", "ключ первого поколения"),
+            ]),
+        );
+        save_drafts(&main, &file).unwrap();
+        let loaded = match load_drafts(&main).unwrap() {
+            DraftsLoadOutcome::Loaded { drafts, .. } => drafts,
+            other => {
+                assert!(
+                    matches!(other, DraftsLoadOutcome::Loaded { .. }),
+                    "expected Loaded, got {other:?}"
+                );
+                return;
+            }
+        };
+        assert_eq!(loaded, file, "all key generations roundtrip verbatim");
+        assert_eq!(
+            loaded.entries["ru::def_injected·ThingDef·Shared.label"].text,
+            "вещь"
+        );
+        assert_eq!(
+            loaded.entries["ru::def_injected·HediffDef·Shared.label"].text, "эффект",
+            "same display key, different def types — two independent drafts"
+        );
     }
 
     /// Rotation: `.drafts.1..3.json` exactly — the chain never grows past

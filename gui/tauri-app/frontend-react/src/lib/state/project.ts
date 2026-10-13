@@ -17,10 +17,16 @@ import type {
 } from '../client/types'
 import { clientInstance } from '../client/instance'
 import { folderForm } from '../languages/folderForm'
+import { draftsStoreKey, entryUid, isLocaleScopedStoreKey } from './entryUid'
 
 export interface WorkspaceEntry {
   /** FULL structural identity — intents address entries by exact match. */
   identity: SourceEntryIdDto
+  /** Canonical UI key: the full-identity serialization (`entryUid`). Every
+   *  map here — selection, drafts, validator findings, chat-batch handoff —
+   *  addresses entries by THIS, never by the bare display key (two Def
+   *  types can share one display key; review P0-2). */
+  uid: string
   /** Display key (entry.id wire = key rendering). */
   key: string
   source: string
@@ -79,6 +85,14 @@ const initialValidation: ValidationState = {
 //  автосейва — честный статус + Retry, тихой потери работы нет. Черновики
 //  НИКОГДА не становятся подтверждёнными переводами: никакой apply/origin/
 //  completeness через этот конвейер не идёт. ---
+//
+//  Store-key convention (review P0-1/P0-2 fix): the durable map is keyed by
+//  `<target-locale>::<entryUid>` (draftsStoreKey), so parallel target
+//  locales keep PARALLEL unsaved slices — a locale switch re-points the
+//  view at another slice and never erases the previous one. `state.drafts`
+//  stays the ACTIVE-LOCALE view (uid → text); `draftsAll` below is the
+//  full cross-locale map that every flush persists. Legacy v1 stores held
+//  bare display keys; adoptRestoredDrafts re-anchors them on restore.
 export type DraftsSyncStatus = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 
 export interface DraftsSyncState {
@@ -156,6 +170,8 @@ export interface ProjectState {
   snapshot: ProjectSnapshotDto | null
   entries: WorkspaceEntry[]
   selectedKey: string | null
+  /** ACTIVE-LOCALE draft view (entryUid → text). The cross-locale truth
+   *  lives in the module-level `draftsAll` and rides every flush. */
   drafts: Record<string, string>
   /** Автосейв черновиков: статус конвейера durable-хранилища (Error + Retry). */
   draftsSync: DraftsSyncState
@@ -186,6 +202,16 @@ let state: ProjectState = {
   perfMarks: {},
 }
 
+// Cross-locale draft truth: durable-store key → text. Reset ONLY on a
+// project transition (open/create/reset) — locale switches keep it whole.
+let draftsAll: Record<string, string> = {}
+
+/** Last-resort in-memory guard (review P0-3): when a project transition
+ *  cannot durably flush pending edits, the map is preserved here per
+ *  project id — reopening raises it with an honest notice instead of
+ *  destroying the work. Never consulted while a durable copy exists. */
+let unsavedMemory: Record<string, Record<string, string>> = {}
+
 const listeners = new Set<() => void>()
 
 /** §10: the validation report describes ONE snapshot — every mutation that
@@ -205,11 +231,21 @@ let draftsVersion = 0
 let draftFlushTimer: number | null = null
 let draftSyncChain: Promise<void> = Promise.resolve()
 
+/** The ACTIVE-LOCALE slice of the full map — what the UI sees. */
+function draftsViewOf(all: Record<string, string>, locale: string): Record<string, string> {
+  const prefix = `${locale}::`
+  const view: Record<string, string> = {}
+  for (const [k, v] of Object.entries(all)) {
+    if (k.startsWith(prefix)) view[k.slice(prefix.length)] = v
+  }
+  return view
+}
+
 function currentDraftEntries(): Record<string, DraftEntryDto> {
   const now = Date.now()
   const entries: Record<string, DraftEntryDto> = {}
-  for (const [key, text] of Object.entries(state.drafts)) {
-    entries[key] = { text, updated_at: now }
+  for (const [storeKey, text] of Object.entries(draftsAll)) {
+    entries[storeKey] = { text, updated_at: now }
   }
   return entries
 }
@@ -280,6 +316,27 @@ function cancelScheduledDraftFlush(): void {
   }
 }
 
+/** Project-transition guard (review P0-3): a debounced flush CANCELLED by
+ *  navigation used to silently drop edits younger than the 1.5s debounce.
+ *  Every project transition now QUIESCES first — cancel the timer, run the
+ *  flush to its durable outcome — and a failed write preserves the full
+ *  map in unsavedMemory for the project it belongs to. */
+async function quiesceDraftsForTransition(): Promise<void> {
+  const status = state.draftsSync.status
+  const pending =
+    draftFlushTimer !== null ||
+    status === 'dirty' ||
+    status === 'saving' ||
+    status === 'error'
+  if (!pending) return
+  if (draftFlushTimer !== null) cancelScheduledDraftFlush()
+  const pid = state.snapshot?.project_id
+  await flushDraftsNow()
+  if (state.draftsSync.status === 'error' && pid && Object.keys(draftsAll).length > 0) {
+    unsavedMemory[pid] = { ...unsavedMemory[pid], ...draftsAll }
+  }
+}
+
 export function subscribe(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
@@ -294,10 +351,13 @@ export function getPerfMarks(): PerfMarks {
 }
 
 function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[] {
-  const byKey = new Map<string, WorkspaceEntry>()
+  // Keyed by the FULL structural identity (review P0-2): two Def types
+  // sharing one display key are TWO rows, two drafts, two translations.
+  const byUid = new Map<string, WorkspaceEntry>()
   for (const e of snap.project.entries) {
-    byKey.set(e.id.key, {
+    byUid.set(entryUid(e.id), {
       identity: e.id,
+      uid: entryUid(e.id),
       key: e.id.key,
       source: e.text,
       target: '',
@@ -313,7 +373,7 @@ function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[]
     })
   }
   for (const tr of snap.project.translations) {
-    const hit = byKey.get(tr.source_id.key)
+    const hit = byUid.get(entryUid(tr.source_id))
     if (!hit) continue
     // Locale forms: the store keeps the registry id ('ru'), while every
     // contract write path persists the strict folder form ('Russian' —
@@ -327,18 +387,18 @@ function mapSnapshot(snap: ProjectSnapshotDto, locale: string): WorkspaceEntry[]
       hit.origin = tr.origin
     }
   }
-  return [...byKey.values()]
+  return [...byUid.values()]
 }
 
 // --- §9/§17: чистые проекции отчёта валидатора на инвентарь. ---
 
-/** Ключ инвентаря, к которому относится находка: `id` несёт ПОЛНУЮ
- *  структурную идентичность (бэкенд резолвит её через (key, path), не по
- *  сериализационному ключу); находки без `id` — проектного уровня
- *  (case-collision, source-drift), их `key` — сырой текст валидатора.
- *  Маппинг по контракту задачи: f.id?.key / f.key. */
+/** Ключ инвентаря (entryUid-пространство), к которому относится находка:
+ *  `id` несёт ПОЛНУЮ структурную идентичность — сериализуем её тем же
+ *  каноном, что и весь воркспейс (review P0-2); находки без `id` —
+ *  проектного уровня (case-collision, source-drift), их `key` — сырой
+ *  текст валидатора, до строки воркспейса он не резолвится. */
 export function findingEntryKey(f: ValidationFindingDto): string {
-  return f.id?.key ?? f.key
+  return f.id ? entryUid(f.id) : f.key
 }
 
 /** «С замечаниями»: множество ключей строк, присутствующих в находках. */
@@ -375,6 +435,9 @@ export const projectStore = {
     targetVersion?: string,
     source?: { locale?: string; dir?: string },
   ): Promise<boolean> {
+    // Pending edits of the PREVIOUS project go to storage (or the memory
+    // guard) before the workspace flips — never into the void (review P0-3).
+    await quiesceDraftsForTransition()
     set({ busy: true, lastError: null })
     try {
       const snap = await clientInstance.getClient().createProject(modRoot, targetVersion, source)
@@ -384,7 +447,7 @@ export const projectStore = {
       const locale = state.targetLocale
       const sourceMarker = sourceMarkerOf(snap)
       persistTargetLocale(snap.project_id, locale)
-      cancelScheduledDraftFlush()
+      draftsAll = {}
       set({
         snapshot: snap,
         targetLocale: locale,
@@ -425,8 +488,11 @@ export const projectStore = {
   },
 
   async open(projectId: string): Promise<boolean> {
+    // Review P0-3: quiesce BEFORE the flip — edits younger than the
+    // debounce are flushed to durable storage (or preserved in
+    // unsavedMemory on failure), never cancelled into the void.
+    await quiesceDraftsForTransition()
     const T0 = performance.now()
-    cancelScheduledDraftFlush()
     set({
       busy: true,
       lastError: null,
@@ -444,6 +510,12 @@ export const projectStore = {
       const mapped = mapSnapshot(snap, locale)
       const T4 = performance.now()
       const sourceMarker = sourceMarkerOf(snap)
+      // In-memory guard of a PREVIOUS failed autosave for THIS project:
+      // raise it alongside whatever the durable store still holds (the
+      // guard is the newest generation — it wins per key).
+      const carried = unsavedMemory[projectId]
+      delete unsavedMemory[projectId]
+      draftsAll = carried ? { ...carried } : {}
       set({
         perfMarks: { ...state.perfMarks, T2_ipcComplete: T2, T3_stateReceived: T2, T4_entriesMapped: T4 },
         snapshot: snap,
@@ -454,7 +526,7 @@ export const projectStore = {
         sourceDir: sourceMarker.dir,
         entries: mapped,
         selectedKey: null,
-        drafts: {},
+        drafts: draftsViewOf(draftsAll, locale),
         draftsSync: initialDraftsSync,
         draftsNotice: null,
         busy: false,
@@ -481,25 +553,27 @@ export const projectStore = {
   /** Multi-target (§32): switch the edited target locale — translations
    *  re-map from the SAME snapshot (per-locale slices live side by side).
    *  F1: the choice persists under rimloc.target.<project_id> so the next
-   *  session opens the project on the same corpus slice. Черновики — часть
-   *  активного локale-среза: смена цели стирает их и из durable-хранилища
-   *  (паритет с прежней in-memory семантикой — иначе чужой срез поднялся
-   *  бы при следующем open). */
+   *  session opens the project on the same corpus slice. Review P0-1:
+   *  черновики живут в durable-хранилище ПАРАЛЛЕЛЬНЫМИ locale-срезами —
+   *  смена цели перепригивает вью на другой срез и НЕ стирает предыдущий
+   *  (прежний код обнулял карту и записывал ПУСТОЙ store, уничтожая
+   *  несохранённую работу всех остальных языков). Store не менялся —
+   *  flush не нужен. */
   setTargetLocale(locale: string): void {
     if (!state.snapshot || state.targetLocale === locale) return
     persistTargetLocale(state.snapshot.project_id, locale)
-    draftsVersion++
     set({
       targetLocale: locale,
       entries: mapSnapshot(state.snapshot, locale),
-      drafts: {},
-      draftsSync: { status: 'dirty', error: null },
+      drafts: draftsViewOf(draftsAll, locale),
     })
-    void flushDraftsNow()
   },
 
   setDraft(key: string, text: string): void {
     draftsVersion++
+    // The full cross-locale map is the durable truth; the view gets the
+    // active-locale record under its locale-scoped store key.
+    draftsAll = { ...draftsAll, [draftsStoreKey(state.targetLocale, key)]: text }
     set({
       drafts: { ...state.drafts, [key]: text },
       draftsSync: { status: 'dirty', error: state.draftsSync.error },
@@ -511,11 +585,15 @@ export const projectStore = {
    *  the shell dirty-pill derive dirtiness from that (same convention as
    *  commit, which deletes the key on ack). Writing the committed text back
    *  as a draft would leave a phantom unsaved record. Удаление уходит и в
-   *  durable-хранилище — сразу, без debounce. */
+   *  durable-хранилище — сразу, без debounce (только активный locale-срез
+   *  ключа; чужие языки не трогаются). */
   clearDraft(key: string): void {
     if (!(key in state.drafts)) return
     const drafts = { ...state.drafts }
     delete drafts[key]
+    const all = { ...draftsAll }
+    delete all[draftsStoreKey(state.targetLocale, key)]
+    draftsAll = all
     draftsVersion++
     set({ drafts, draftsSync: { status: 'dirty', error: state.draftsSync.error } })
     void flushDraftsNow()
@@ -524,7 +602,7 @@ export const projectStore = {
   /** Commit one draft as a set_translation intent (persist-before-ack). */
   async commit(key: string, next = false): Promise<boolean> {
     const snap = state.snapshot
-    const entry = state.entries.find((e) => e.key === key)
+    const entry = state.entries.find((e) => e.uid === key)
     const draft = state.drafts[key]
     if (!snap || !entry || draft === undefined) return false
     const intent: TranslationIntentDto = {
@@ -556,6 +634,9 @@ export const projectStore = {
       const fresh = await client.snapshot(req.project_id)
       const drafts = { ...state.drafts }
       delete drafts[key]
+      const all = { ...draftsAll }
+      delete all[draftsStoreKey(state.targetLocale, key)]
+      draftsAll = all
       draftsVersion++
       set({
         snapshot: fresh,
@@ -574,9 +655,9 @@ export const projectStore = {
       void flushDraftsNow()
       void projectStore.refreshValidation()
       if (next) {
-        const idx = state.entries.findIndex((e) => e.key === key)
+        const idx = state.entries.findIndex((e) => e.uid === key)
         const nx = state.entries[idx + 1]
-        if (nx) set({ selectedKey: nx.key })
+        if (nx) set({ selectedKey: nx.uid })
       }
       void resp
       return true
@@ -599,10 +680,11 @@ export const projectStore = {
       // used on fresh open). Snapshot adoption therefore never resets the
       // locale (WDIO regression note: locale → adopt keeps it).
       const locale = loadTargetLocale(snap.project_id) ?? state.targetLocale
-      // Перерисовка в АКТИВНУЮ цель (тот же класс бага, что закрыт в commit():
-      // захардкоженная 'ru' игнорировала targetLocale).
-      draftsVersion++
       const sourceMarker = sourceMarkerOf(fresh)
+      // Review P0-1: внешняя мутация (existing-import, chat-batch apply)
+      // больше НЕ стирает черновики — ни из памяти, ни из durable-хранилища
+      // (locale-скоуп ключей делает их независимыми от принятого снапшота;
+      // реверт вручную, работа не уничтожается молча).
       set({
         snapshot: fresh,
         targetLocale: locale,
@@ -611,14 +693,11 @@ export const projectStore = {
         sourceLocale: sourceMarker.locale,
         sourceDir: sourceMarker.dir,
         entries: mapSnapshot(fresh, locale),
-        drafts: {},
+        drafts: draftsViewOf(draftsAll, locale),
         // §9: внешняя мутация (existing-import, chat-batch apply) — отчёт
         // валидации устарел так же, как после commit().
         validation: { ...state.validation, stale: true, error: null },
       })
-      // Черновики — часть прежнего среза: внешняя мутация стирает их и из
-      // durable-хранилища (паритет с in-memory семантикой).
-      void flushDraftsNow()
     } catch {
       /* refresh failures surface via the next contract call */
     }
@@ -656,7 +735,15 @@ export const projectStore = {
   /** Data Safety: поднять несохранённую работу после open(). Решение
    *  принимает сервис (ревизионный гард, quarantine сироты, восстановление
    *  из бэкапа) — фронтенд только честно показывает отчёт. Никогда не
-   *  роняет открытие проекта. */
+   *  роняет открытие проекта.
+   *
+   *  Review P0-1/P0-2: restored keys are LOCALE-SCOPED composite store
+   *  keys; legacy v1 keys (bare display keys) are re-anchored here —
+   *  unique display-key match migrates into the persisted target locale's
+   *  slice, an ambiguous match replicates to EVERY candidate (a draft is
+   *  review-before-commit: over-preserving beats dropping work), and an
+   *  unresolvable key survives verbatim, self-healing on a later
+   *  inventory. Nothing is destroyed on restore. */
   async adoptRestoredDrafts(projectId: string, sessionEpoch: number): Promise<void> {
     let report: DraftsRestoreReportDto
     try {
@@ -678,22 +765,58 @@ export const projectStore = {
     if (state.snapshot?.project_id !== projectId || state.snapshot?.session_epoch !== sessionEpoch) {
       return
     }
+    const raiseView = (): void =>
+      set({ drafts: draftsViewOf(draftsAll, state.targetLocale) })
     if (
       report.status === 'restored' &&
       report.drafts !== undefined &&
       Object.keys(report.drafts).length > 0
     ) {
-      const drafts: Record<string, string> = {}
-      for (const [key, entry] of Object.entries(report.drafts)) drafts[key] = entry.text
+      const legacyLocale = loadTargetLocale(projectId) ?? DEFAULT_TARGET_LOCALE
+      const migrated: Record<string, string> = {}
+      let legacyReanchored = 0
+      let legacyAmbiguous = 0
+      for (const [storeKey, entry] of Object.entries(report.drafts)) {
+        if (isLocaleScopedStoreKey(storeKey)) {
+          migrated[storeKey] = entry.text
+          continue
+        }
+        const matches = state.entries.filter((e) => e.key === storeKey)
+        if (matches.length === 1) {
+          migrated[draftsStoreKey(legacyLocale, matches[0].uid)] = entry.text
+          legacyReanchored++
+        } else if (matches.length > 1) {
+          for (const m of matches) migrated[draftsStoreKey(legacyLocale, m.uid)] = entry.text
+          legacyAmbiguous++
+        } else {
+          migrated[storeKey] = entry.text
+        }
+      }
+      // The in-memory guard (when present) is the newest generation — it
+      // wins per key; the store fills everything else.
+      draftsAll = { ...migrated, ...draftsAll }
+      raiseView()
+      const viewCount = Object.keys(state.drafts).length
+      const extras: string[] = []
+      if (report.restored_count > viewCount) {
+        extras.push(`+${report.restored_count - viewCount} in other target locales`)
+      }
+      if (legacyReanchored + legacyAmbiguous > 0) {
+        extras.push(
+          `legacy drafts re-anchored: ${legacyReanchored}` +
+            (legacyAmbiguous > 0 ? `, ambiguous replicated: ${legacyAmbiguous}` : ''),
+        )
+      }
       set({
-        drafts,
         draftsNotice: {
           kind: 'restored',
           count: report.restored_count,
           fromBackup: report.recovered_from_backup !== undefined,
+          detail: extras.length > 0 ? extras.join('; ') : undefined,
         },
       })
     } else if (report.status === 'orphan_quarantined') {
+      raiseView()
       set({
         draftsNotice: {
           kind: 'orphan',
@@ -702,7 +825,19 @@ export const projectStore = {
         },
       })
     } else if (report.status === 'unavailable') {
+      raiseView()
       set({ draftsNotice: { kind: 'unavailable', detail: report.detail } })
+    } else if (Object.keys(draftsAll).length > 0) {
+      // The durable store had nothing, but the in-memory guard of a
+      // previous failed autosave did — raise it honestly.
+      raiseView()
+      set({
+        draftsNotice: {
+          kind: 'restored',
+          count: Object.keys(state.drafts).length,
+          detail: 'restored after a failed autosave of the previous session',
+        },
+      })
     }
   },
 
@@ -717,7 +852,14 @@ export const projectStore = {
   },
 
   reset(): void {
-    cancelScheduledDraftFlush()
+    // Teardown keeps the same honesty as a transition: whatever the debounce
+    // had not yet written is preserved in the per-project memory guard.
+    const pid = state.snapshot?.project_id
+    if (pid && Object.keys(draftsAll).length > 0) {
+      unsavedMemory[pid] = { ...unsavedMemory[pid], ...draftsAll }
+    }
+    if (draftFlushTimer !== null) cancelScheduledDraftFlush()
+    draftsAll = {}
     draftsVersion++
     set({
       summaries: [],
@@ -735,4 +877,23 @@ export const projectStore = {
       sourceDir: DEFAULT_SOURCE_DIR,
     })
   },
+}
+
+// Crash/close guard (review P0-3 scenario list): the debounced autosave
+// must not depend on the 1.5s timer surviving a window close or a hidden
+// tab — any pagehide / visibility loss flushes immediately. Best-effort by
+// nature (an async IPC may not complete during teardown); the
+// quiesce-on-transition guard and the sidecar backups remain the durable
+// layers beneath it.
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  const flushOnTeardown = (): void => {
+    const status = state.draftsSync.status
+    if (draftFlushTimer === null && status !== 'dirty' && status !== 'saving') return
+    if (draftFlushTimer !== null) cancelScheduledDraftFlush()
+    void flushDraftsNow()
+  }
+  window.addEventListener('pagehide', flushOnTeardown)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushOnTeardown()
+  })
 }
