@@ -11,13 +11,27 @@ related:
   - "[[ADR-MCP]]"
 ---
 
-# RELEASE GATE — rel23-final (main @ `857b0d2`, product source финального RC)
+# RELEASE GATE — статус гейтов по областям
 
-Дата: 2026-10-07. Кандидат: `rel23-final` — production-артефакт
-`RimLoc-evidence/artifact-rel23-final/` (binary sha256 `7781dd39…`, appzip
-`2d0f1652…`, source 857b0d2 = main на момент сборки; идентичность:
-FINAL_IDENTITY.md + IDENTITY.md артефакта;
-soak-preflight `--gate --repo .` exit 0; release-guard static + runtime PASS).
+Дата ревизии: 2026-10-13. Этот документ — вердикты по областям; имя
+кандидата и SHA живут в FINAL_IDENTITY.md и IDENTITY.md артефакта и
+обновляются при каждой нарезке кандидата (урок 13 из
+AUTONOMOUS_FAILURE_PATTERNS: никакого дубля идентичности в нескольких
+документах без синхронизации).
+
+## Хронология кандидатов
+
+- `rel23-final` (857b0d2 / binary 7781dd39…) — исторический; OWNER_TESTABLE
+  по ревью-итерации 3.
+- `rel25` (1b46fd2 / binary 1d412a72…) — полный бета-кандидат; независимый
+  аудит вернул BLOCKED (data-safety: потеря черновиков при смене локали,
+  коллапс идентичности display-key; evidence-пакет собирался устаревшим
+  сборщиком). Оба класса дефектов исправлены в
+  `fix/draft-safety-structural-identity` (locale-scoped durable drafts,
+  entryUid key-space, quiesce-переходы; vitest 12/12, services 288/288,
+  см. AUTONOMOUS_FAILURE_PATTERNS §13-15).
+- Следующий кандидат — после сборки артефакта из фикс-ветки; тогда же
+  обновляются FINAL_IDENTITY.md и этот список.
 Публикация — parked по решению владельца (ADDENDUM §27); этот документ —
 вердикты по областям, не команда к публикации.
 
