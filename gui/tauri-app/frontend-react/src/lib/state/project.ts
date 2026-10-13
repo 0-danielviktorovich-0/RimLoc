@@ -209,6 +209,13 @@ let draftsAll: Record<string, string> = {}
 /** Token of the CURRENT open's restore gate (see closeRestoreGate). */
 let pendingRestoreToken: string | null = null
 
+/** Deletions the durable store has NOT yet acknowledged (review iteration
+ *  5 P0-C): merge semantics never drop unmentioned keys, so a failed or
+ *  raced clear must stay PENDING and hold the sync status away from
+ *  "saved" until the store confirms the removal. Retry re-issues exactly
+ *  these keys. */
+const pendingClears = new Set<string>()
+
 /** Last-resort in-memory guard (review P0-3): when a project transition
  *  cannot durably flush pending edits, the map is preserved here per
  *  project id — reopening raises it with an honest notice instead of
@@ -300,6 +307,18 @@ function flushDraftsNow(): Promise<void> {
     // the restore merge (review P0-3). The map is captured AFTER the gate —
     // pre-gate capture would persist a stale, pre-merge snapshot.
     await waitForRestoreGate()
+    // Acknowledged deletions first (review iteration 5 P0-C): a clear that
+    // fails keeps its key pending, and the sync status never claims
+    // "saved" while a deletion is unacknowledged.
+    const clearErrors: string[] = []
+    for (const storeKey of [...pendingClears]) {
+      try {
+        await clientInstance.getClient().clearDrafts(capturedPid, capturedEpoch, storeKey)
+        pendingClears.delete(storeKey)
+      } catch (e) {
+        clearErrors.push(`${storeKey}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
     const entries = currentDraftEntries()
     // К моменту старта записи сессия могла смениться — не пишем мимо неё.
     const live = state.snapshot
@@ -316,7 +335,18 @@ function flushDraftsNow(): Promise<void> {
         state.snapshot?.session_epoch === capturedEpoch &&
         draftsVersion === capturedVersion
       ) {
-        set({ draftsSync: { status: 'saved', error: null } })
+        if (pendingClears.size > 0) {
+          // Unacknowledged deletions hold the status away from "saved" —
+          // merge semantics keep those keys durable until their clear acks.
+          set({
+            draftsSync: {
+              status: 'error',
+              error: `delete not acknowledged: ${clearErrors.join('; ') || [...pendingClears].join(', ')} — Retry re-issues it`,
+            },
+          })
+        } else {
+          set({ draftsSync: { status: 'saved', error: null } })
+        }
       } else if (state.draftsSync.status === 'saving') {
         set({ draftsSync: { status: 'dirty', error: null } })
       }
@@ -638,15 +668,8 @@ export const projectStore = {
     delete all[draftsStoreKey(state.targetLocale, key)]
     draftsAll = all
     draftsVersion++
+    pendingClears.add(draftsStoreKey(state.targetLocale, key))
     set({ drafts, draftsSync: { status: 'dirty', error: state.draftsSync.error } })
-    const pid = state.snapshot?.project_id
-    const epoch = state.snapshot?.session_epoch
-    if (pid && epoch !== undefined) {
-      clientInstance
-        .getClient()
-        .clearDrafts(pid, epoch, draftsStoreKey(state.targetLocale, key))
-        .catch(() => undefined)
-    }
     void flushDraftsNow()
   },
 
@@ -702,12 +725,9 @@ export const projectStore = {
         validation: { ...state.validation, stale: true, error: null },
       })
       // Подтверждённый ключ уходит из durable-хранилища ЯВНО (merge-
-      // семантика сервиса не удаляет отсутствующие во flushе ключи) —
-      // затем немедленная запись остальной карты.
-      clientInstance
-        .getClient()
-        .clearDrafts(snap.project_id, snap.session_epoch, draftsStoreKey(state.targetLocale, key))
-        .catch(() => undefined)
+      // семантика сервиса не удаляет отсутствующие во flushе ключи);
+      // flush попытается и подтвердит удаление до статуса «saved».
+      pendingClears.add(draftsStoreKey(state.targetLocale, key))
       void flushDraftsNow()
       void projectStore.refreshValidation()
       if (next) {

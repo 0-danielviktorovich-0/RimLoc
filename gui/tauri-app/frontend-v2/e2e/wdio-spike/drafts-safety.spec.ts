@@ -5,11 +5,8 @@
 // Restart leg: drafts-restart.spec.ts (new WDIO session = new process).
 import { mkdirSync, writeFileSync } from 'node:fs'
 import * as fs from 'node:fs'
-import { switchTargetLocale, commitCurrentRow, pause } from './ds-helpers'
-
-function pause(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms))
-}
+import { switchTargetLocale, commitCurrentRow } from './ds-helpers'
+import { pause } from './ds-helpers'
 
 const MOD = '/tmp/rimloc-ds/mod'
 

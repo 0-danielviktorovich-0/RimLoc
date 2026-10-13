@@ -24,7 +24,10 @@ from pathlib import Path
 # Paths are relative to the packet root; None = no specific requirement
 # beyond the stale-marker scan.
 REQUIRED_PATTERNS: dict[str, list[str]] = {
-    "REVIEW_REQUEST.md": ["{rc}", "{bin7}", "{product7}"],
+    # Full SHAs where the doc carries them — a mutated sha sharing the
+    # 7-char prefix must FAIL (review iteration 5: prefix-only matching
+    # accepted forged digests).
+    "REVIEW_REQUEST.md": ["{rc}", "{bin64}", "{product40}"],
     # The COMMITTED identity doc names the release and the ladder history;
     # per-build exact SHAs live in the artifact files (artifact-IDENTITY.md
     # carries them — that file is generated per build and is checked
@@ -32,8 +35,8 @@ REQUIRED_PATTERNS: dict[str, list[str]] = {
     # every identity refresh.
     "FINAL_IDENTITY.md": ["{rc}"],
     "RELEASE_GATE.md": ["{rc}"],
-    "artifact-IDENTITY.md": ["{rc}", "{bin7}", "{product7}"],
-    "OWNER_TEST_PACKET.md": ["{rc}"],
+    "artifact-IDENTITY.md": ["{rc}", "{bin64}", "{product40}"],
+    "OWNER_TEST_PACKET.md": ["{rc}", "{bin7}"],
 }
 
 # Documents where a stale release marker is FATAL (identity documents).
@@ -112,6 +115,8 @@ def main() -> int:
         "{rc}": args.rc,
         "{bin7}": args.binary_sha[:7],
         "{product7}": args.product_sha[:7],
+        "{bin64}": args.binary_sha,
+        "{product40}": args.product_sha,
     }
     for rel, patterns in REQUIRED_PATTERNS.items():
         body = read(rel)

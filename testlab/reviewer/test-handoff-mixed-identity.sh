@@ -23,7 +23,7 @@ make_clean_packet() {
   cat > "$d/REVIEW_REQUEST.md" <<EOF
 MAIN_SHA: $(printf 'p%.0s' {1..40})
 PRODUCT_SHA: $PRODUCT
-BINARY: ${BINARY:0:7}
+BINARY: ${BINARY:0:7} ($BINARY)
 RC: $RC
 EOF
   cat > "$d/FINAL_IDENTITY.md" <<EOF
@@ -34,7 +34,9 @@ appzip sha256: $APPZIP
 EOF
   printf '# Release gate — %s\n' "$RC" > "$d/RELEASE_GATE.md"
   cat > "$d/artifact-IDENTITY.md" <<EOF
-artifact identity: $RC product $PRODUCT binary ${BINARY:0:7}
+artifact identity: $RC
+product source sha: $PRODUCT
+binary sha256 (rimloc-gui): $BINARY
 EOF
   printf 'owner test packet for %s (binary %s)\n' "$RC" "${BINARY:0:7}" > "$d/OWNER_TEST_PACKET.md"
   echo "$BINARY" > "$d/binary.sha256"

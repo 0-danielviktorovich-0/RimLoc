@@ -133,6 +133,12 @@ copy_mandatory "$REPO/docs/design/LOVABLE_LIVE_SOURCE_AUDIT_2026-10.md" LOVABLE_
 copy_mandatory "$REPO/docs/development/PLATFORM_VERIFICATION_MATRIX.md" PLATFORM_VERIFICATION_MATRIX.md
 copy_mandatory "$EVDIR/reviewer/real-mods-e2e.md"         real-mods-e2e.md
 copy_mandatory "$EVDIR/drafts-backend-tests.txt"          drafts-backend-tests.txt
+copy_mandatory "$EVDIR/drafts-unsaved-restart.txt"        drafts-unsaved-restart.txt
+copy_mandatory "$EVDIR/unsaved-sidecar-before.json"       unsaved-sidecar-before.json
+copy_mandatory "$EVDIR/unsaved-sidecar-after-restart.json" unsaved-sidecar-after-restart.json
+copy_mandatory "$EVDIR/xml-strict-proof.txt"              xml-strict-proof.txt
+mkdir -p "$PKT/xml-proof"
+cp -R "$EVDIR/xml-proof/" "$PKT/xml-proof/"
 copy_mandatory "$EVDIR/drafts-native-e2e.txt"             drafts-native-e2e.txt
 copy_mandatory "$EVDIR/structural-identity-e2e.txt"       structural-identity-e2e.txt
 copy_mandatory "$EVDIR/reviewer/final-wdio-summary.txt"   final-wdio-summary.txt
@@ -160,11 +166,15 @@ done
 # not require a pushed branch) ---
 mkdir -p "$PKT/code-snapshot/e2e" "$PKT/code-snapshot/store" "$PKT/code-snapshot/backend"
 SNAP="$PKT/code-snapshot"
-for f in drafts-safety.spec.ts drafts-restart.spec.ts drafts-verify.spec.ts drafts-fastnav.spec.ts ds-helpers.ts drafts-safety.conf.ts drafts-restart.conf.ts drafts-verify.conf.ts drafts-fastnav.conf.ts; do
+for f in drafts-safety.spec.ts drafts-restart.spec.ts drafts-verify.spec.ts drafts-fastnav.spec.ts drafts-unsaved-setup.spec.ts drafts-unsaved-verify.spec.ts ds-helpers.ts drafts-safety.conf.ts drafts-restart.conf.ts drafts-verify.conf.ts drafts-fastnav.conf.ts drafts-unsaved.conf.ts; do
   copy_mandatory "$REPO/gui/tauri-app/frontend-v2/e2e/wdio-spike/$f" "code-snapshot/e2e/$f"
 done
 copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/project.ts"   "code-snapshot/store/project.ts"
 copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/entryUid.ts"  "code-snapshot/store/entryUid.ts"
+copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/project.race.test.ts"    "code-snapshot/store/project.race.test.ts"
+copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/project.gate.test.ts"    "code-snapshot/store/project.gate.test.ts"
+copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/project.clearack.test.ts" "code-snapshot/store/project.clearack.test.ts"
+copy_mandatory "$REPO/gui/tauri-app/frontend-react/src/lib/state/project.drafts.test.ts"  "code-snapshot/store/project.drafts.test.ts"
 copy_mandatory "$REPO/crates/rimloc-services/src/session_drafts.rs"            "code-snapshot/backend/session_drafts.rs"
 grep -A24 'Durable draft autosave (Data Safety): pass-through' "$REPO/gui/tauri-app/src-tauri/src/contract_adapter.rs" > "$SNAP/backend/contract_adapter-drafts-section.txt" 2>/dev/null || true
 grep -B2 -A4 'project_save_drafts' "$REPO/gui/tauri-app/src-tauri/src/main.rs" > "$SNAP/backend/main-dispatch-drafts.txt" 2>/dev/null || true
@@ -213,9 +223,9 @@ find "$PKT" \( -name '._*' -o -name '.DS_Store' \) -delete 2>/dev/null || true
 # The manifest covers every packet file EXCEPT itself and this notice —
 # both are named explicitly so an external recount is self-consistent
 # (review iteration 2 P1-2: the count must match what a verifier recounts).
-N_FILES=$(find . -type f ! -name 'MANIFEST.sha256' ! -name 'packet-self-test.txt' | wc -l | tr -d ' ')
 ( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' ! -name 'packet-self-test.txt' -exec shasum -a 256 {} \; \
   | sed 's|\./||' | LC_ALL=C sort > MANIFEST.sha256 )
+N_FILES=$( cd "$PKT" && find . -type f ! -name 'MANIFEST.sha256' ! -name 'packet-self-test.txt' | wc -l | tr -d ' ' )
 ( cd "$PKT" && shasum -a 256 -c MANIFEST.sha256 > /dev/null 2>&1 \
   && printf 'packet-self-test: VERIFIED — %s manifest entries cover every packet file except MANIFEST.sha256 and this notice (external recount of the manifest: %s lines)\n' "$N_FILES" "$N_FILES" \
   || echo "packet-self-test: manifest MISMATCH" ) > "$PKT/packet-self-test.txt"
