@@ -1,119 +1,121 @@
 {
-  "campaign": "release-convergence-r2",
-  "status": "RC_READY",
-  "updated": "2026-10-12T18:00+09:00",
-  "main": "1b46fd2",
-  "artifactSha": "af06a4e",
-  "note": "e23f6d0 = af06a4e + testlab/docs only; products code identical to artifact",
-  "candidate": {
-    "name": "rel25-candidate",
-    "evidence": "RimLoc-evidence/artifact-rel25-candidate/",
-    "product_source_sha": "1b46fd2b79fda6a948c6b6eb4a0e8953e93ea9f7",
-    "binarySha256": "1d412a728b0fc4bd4e2da61a14ce6c5942bd03dfe251e82c1044ca0c2d3c7973",
-    "appzipSha256": "6ec84906e5c7eecc4322ece46d822f2673bbf3876a06ae6ec286186bc5222d25",
-    "gates": "frontend gate PASS; preflight --gate exit0; release-guard static PASS; runtime PORT_CLOSED; DMG stage not invoked"
+ "campaign": "release-convergence-r2",
+ "status": "REL26_REVIEW_PENDING",
+ "updated": "2026-10-13",
+ "main": "1b46fd2",
+ "artifactSha": "af06a4e",
+ "note": "e23f6d0 = af06a4e + testlab/docs only; products code identical to artifact",
+ "candidate": {
+  "name": "rel26-draft-fixes",
+  "branch": "fix/draft-safety-structural-identity",
+  "evidence": "RimLoc-evidence/artifact-rel26-draft-fixes/",
+  "product_source_sha": "3a61cd21841fd0104a52916b5ff4ecc6918ab099",
+  "binarySha256": "956de5283226c63d783030c05ecb6f9fe97f035ccdacd0f61971248b37edecd6",
+  "appzipSha256": "51e9c3e38ea2a292781af48811b07772b3889f3b2ba99d954c644365adeffc1d",
+  "gates": "frontend gate PASS (React embedded); tsc strict clean; cargo services 288/288; rimloc-gui 33/33; vitest 12/12 (review scenarios verbatim); native WDIO phases 1+2 PASS (collision rows, locale round trip, restart restore); packet v3 semantic identity PASS x2 (dir + unpacked zip); sanitizer PASS; junk 0",
+  "review": "packet RimLoc-evidence-handoff-lite-956de52.zip delivered to the reviewer (new chat, c/6acdad1e); verdict pending"
+ },
+ "lanes": {
+  "chat_batch": {
+   "status": "VERIFIED",
+   "commit": "273a79c",
+   "evidence": "chat_batch.rs 7 tests (full cycle, rejection matrix, stale+recovery, restart, BOM, drift); GUI #/chatbatch live; WDIO route; screens 07-chatbatch light+dark"
   },
-  "lanes": {
-    "chat_batch": {
-      "status": "VERIFIED",
-      "commit": "273a79c",
-      "evidence": "chat_batch.rs 7 tests (full cycle, rejection matrix, stale+recovery, restart, BOM, drift); GUI #/chatbatch live; WDIO route; screens 07-chatbatch light+dark"
-    },
-    "ifmodactive": {
-      "status": "VERIFIED",
-      "commit": "42fbfc0",
-      "evidence": "ActiveModContext resolution; corpus A/B 3170653412: 123->159 units w/ Royalty, unresolved->POTENTIAL w/o context; ifmodactive_corpus.rs"
-    },
-    "defs_gaps": {
-      "status": "VERIFIED",
-      "commit": "d712ba8",
-      "evidence": "dict 126->139 pairs, +KeyBindingDef; duplicate-key bug fixed; VEF A/B 625->672 units (+47/0 removed)"
-    },
-    "reflection": {
-      "status": "VERDICT_B",
-      "evidence": "Mono.Cecil adapter rejected on evidence: corpus holds no DLL-only translatable units; revisit condition documented in TRANSLATION_ELIGIBILITY.md"
-    },
-    "parentname": {
-      "status": "NOT_REQUIRED_RC",
-      "evidence": "learn-defs enhancement; not a release blocker, stays backlog"
-    },
-    "provider_e2e": {
-      "status": "SURFACE_DONE",
-      "evidence": "provider-test command + retry/backoff + keychain merged (7de84cc); live paid E2E = owner-gated"
-    },
-    "ui_native": {
-      "status": "VERIFIED",
-      "evidence": "palette 34/34, LM 15/15 (49/49), screens 18/18 incl chatbatch"
-    },
-    "xplat": {
-      "status": "CI_MATRIX_SUCCESS",
-      "evidence": "CI run 37596486274 (workflow_dispatch, push-trigger off by owner b102f3e): 3-OS cargo test + GUI SUCCESS on af06a4e; DMG-on-SSD known rel19-22, .app is deliverable"
-    },
-    "level7": {
-      "status": "OWNER_GATE",
-      "evidence": "checklist in OWNER_TEST_PACKET.md (Options -> Mod Settings -> HugsLib)"
-    },
-    "security_final": {
-      "status": "VERIFIED",
-      "evidence": "CI matrix SUCCESS; CodeQL af06a4e 4 analyses -> 6 new High dismissed individually w/ evidence (reconciliation §9); CS open=0, DA open=0; Dependabot 6 PR post-beta per mandate"
-    }
+  "ifmodactive": {
+   "status": "VERIFIED",
+   "commit": "42fbfc0",
+   "evidence": "ActiveModContext resolution; corpus A/B 3170653412: 123->159 units w/ Royalty, unresolved->POTENTIAL w/o context; ifmodactive_corpus.rs"
   },
-  "gates": {
-    "cargo_test": "385/0 services+cli, 311/0 parsers+services",
-    "clippy": "canonical CI invocation clean (workspace excl gui; gui all-features)",
-    "fmt": "clean",
-    "frontend": "tsc -b && vite build clean",
-    "wdio": "59 green on 7ee92c4-automation build (palette 34, lm 15 generalized cleanup, chatbatch 4/4 versioned prompt, source-inspector 5/5, multitarget 1/1)",
-    "ci_matrix": "SUCCESS на 2c50dcb (полная совокупность); финальный SHA fcb82d7 = docs-only поверх",
-    "code_scanning_open": 0,
-    "dependabot_alerts_open": 0,
-    "locale_form_seam": "FIXED: mapSnapshot matches both forms; commit() persists folderForm; caught by chatbatch E2E",
-    "codeql_extraction": "323 extracted clean / 1 vendor-only error (tauri-utils fork platform.rs, upstream macros) — documented limitation; Tool Status: job success, CS 0 open",
-    "npm_audit": "0 known production/runtime npm vulnerabilities; 16 documented high dev-tool advisories under explicit exemption (pending owner confirmation)",
-    "ui_parity": "UI_R1_FINAL_PARITY: IMPLEMENT_NOW=0; visual parity report: 0 fixes required",
-    "ci": "SUCCESS 38272445127 @ 7ee92c4 (cargo-deny green after yaml-rust2 swap); HEAD docs-only поверх"
+  "defs_gaps": {
+   "status": "VERIFIED",
+   "commit": "d712ba8",
+   "evidence": "dict 126->139 pairs, +KeyBindingDef; duplicate-key bug fixed; VEF A/B 625->672 units (+47/0 removed)"
   },
-  "ownerGates": [
-    {
-      "name": "Level-7 visual (RimWorld HugsLib)",
-      "reason": "PHYSICAL_OR_GAME_VISUAL_CONFIRMATION"
-    },
-    {
-      "name": "Subjective UI/UX walkthrough (new nav)",
-      "reason": "SUBJECTIVE_VISUAL"
-    },
-    {
-      "name": "AI provider live E2E",
-      "reason": "OWNER_CREDENTIAL"
-    },
-    {
-      "name": "Signing/notarization (optional)",
-      "reason": "SIGNING_NOTARIZATION"
-    },
-    {
-      "name": "Publish approval",
-      "reason": "PUBLISH_AUTHORIZATION"
-    },
-    {
-      "name": "16 dev-only npm advisories decision",
-      "reason": "SUBJECTIVE_VISUAL"
-    }
-  ],
-  "specChanges": {
-    "palette_acceptance": "13->14 commands + self-seed before() + composition invariant (all-14-routes) instead of equality: action commands (Wave B) are legitimate with open project",
-    "lm_acceptance": "EN literal 'already exists' replaced by surfaced-error + list-not-grown invariant"
+  "reflection": {
+   "status": "VERDICT_B",
+   "evidence": "Mono.Cecil adapter rejected on evidence: corpus holds no DLL-only translatable units; revisit condition documented in TRANSLATION_ELIGIBILITY.md"
   },
-  "superseded": [
-    "BACKLOG_PO_OPTIONAL_ARCHITECTURE.md bounded constraint"
-  ],
-  "c_gates": {
-    "C1_provider": "BOUNDARY_PROVEN (6 live rejections, C1_PROVIDER_BOUNDARY.md); live-E2E = owner creates Z.AI key",
-    "C2_source_inspector": "LIVE in React prod; WDIO 5/5 real provenance; contract untouched",
-    "C3_dependabot": "0 open PRs; 4 migrations merged; supersede ignores documented with review dates",
-    "C4_npm_audit": "react 0; v2 16 high documented dev-only exemptions (npm-audit-exemptions.md)",
-    "C5_codeql": "healthy: 298/298 extraction (dist committed); analyses success; config not attachable w/o security_events scope",
-    "C6_dmg": "CLOSED: NFS root-cause proven; artifact = .app + .app.zip; vendor patch tauri-utils",
-    "C7_identity": "FINAL_IDENTITY.md — после финального ребилда"
+  "parentname": {
+   "status": "NOT_REQUIRED_RC",
+   "evidence": "learn-defs enhancement; not a release blocker, stays backlog"
   },
-  "openDefects": "0 known product defects; 16 dev-only npm advisories documented (npm-audit-exemptions.md, pending owner decision); CodeQL 323/1 vendor-only documented"
+  "provider_e2e": {
+   "status": "SURFACE_DONE",
+   "evidence": "provider-test command + retry/backoff + keychain merged (7de84cc); live paid E2E = owner-gated"
+  },
+  "ui_native": {
+   "status": "VERIFIED",
+   "evidence": "palette 34/34, LM 15/15 (49/49), screens 18/18 incl chatbatch"
+  },
+  "xplat": {
+   "status": "CI_MATRIX_SUCCESS",
+   "evidence": "CI run 37596486274 (workflow_dispatch, push-trigger off by owner b102f3e): 3-OS cargo test + GUI SUCCESS on af06a4e; DMG-on-SSD known rel19-22, .app is deliverable"
+  },
+  "level7": {
+   "status": "OWNER_GATE",
+   "evidence": "checklist in OWNER_TEST_PACKET.md (Options -> Mod Settings -> HugsLib)"
+  },
+  "security_final": {
+   "status": "VERIFIED",
+   "evidence": "CI matrix SUCCESS; CodeQL af06a4e 4 analyses -> 6 new High dismissed individually w/ evidence (reconciliation §9); CS open=0, DA open=0; Dependabot 6 PR post-beta per mandate"
+  }
+ },
+ "gates": {
+  "cargo_test": "385/0 services+cli, 311/0 parsers+services",
+  "clippy": "canonical CI invocation clean (workspace excl gui; gui all-features)",
+  "fmt": "clean",
+  "frontend": "tsc -b && vite build clean",
+  "wdio": "59 green on 7ee92c4-automation build (palette 34, lm 15 generalized cleanup, chatbatch 4/4 versioned prompt, source-inspector 5/5, multitarget 1/1)",
+  "ci_matrix": "SUCCESS на 2c50dcb (полная совокупность); финальный SHA fcb82d7 = docs-only поверх",
+  "code_scanning_open": 0,
+  "dependabot_alerts_open": 0,
+  "locale_form_seam": "FIXED: mapSnapshot matches both forms; commit() persists folderForm; caught by chatbatch E2E",
+  "codeql_extraction": "323 extracted clean / 1 vendor-only error (tauri-utils fork platform.rs, upstream macros) — documented limitation; Tool Status: job success, CS 0 open",
+  "npm_audit": "0 known production/runtime npm vulnerabilities; 16 documented high dev-tool advisories under explicit exemption (pending owner confirmation)",
+  "ui_parity": "UI_R1_FINAL_PARITY: IMPLEMENT_NOW=0; visual parity report: 0 fixes required",
+  "ci": "SUCCESS 38272445127 @ 7ee92c4 (cargo-deny green after yaml-rust2 swap); HEAD docs-only поверх"
+ },
+ "ownerGates": [
+  {
+   "name": "Level-7 visual (RimWorld HugsLib)",
+   "reason": "PHYSICAL_OR_GAME_VISUAL_CONFIRMATION"
+  },
+  {
+   "name": "Subjective UI/UX walkthrough (new nav)",
+   "reason": "SUBJECTIVE_VISUAL"
+  },
+  {
+   "name": "AI provider live E2E",
+   "reason": "OWNER_CREDENTIAL"
+  },
+  {
+   "name": "Signing/notarization (optional)",
+   "reason": "SIGNING_NOTARIZATION"
+  },
+  {
+   "name": "Publish approval",
+   "reason": "PUBLISH_AUTHORIZATION"
+  },
+  {
+   "name": "16 dev-only npm advisories decision",
+   "reason": "SUBJECTIVE_VISUAL"
+  }
+ ],
+ "specChanges": {
+  "palette_acceptance": "13->14 commands + self-seed before() + composition invariant (all-14-routes) instead of equality: action commands (Wave B) are legitimate with open project",
+  "lm_acceptance": "EN literal 'already exists' replaced by surfaced-error + list-not-grown invariant"
+ },
+ "superseded": [
+  "rel25-candidate (BLOCKED by rel25 audit: data-safety; fixes delivered in rel26)"
+ ],
+ "c_gates": {
+  "C1_provider": "BOUNDARY_PROVEN (6 live rejections, C1_PROVIDER_BOUNDARY.md); live-E2E = owner creates Z.AI key",
+  "C2_source_inspector": "LIVE in React prod; WDIO 5/5 real provenance; contract untouched",
+  "C3_dependabot": "0 open PRs; 4 migrations merged; supersede ignores documented with review dates",
+  "C4_npm_audit": "react 0; v2 16 high documented dev-only exemptions (npm-audit-exemptions.md)",
+  "C5_codeql": "healthy: 298/298 extraction (dist committed); analyses success; config not attachable w/o security_events scope",
+  "C6_dmg": "CLOSED: NFS root-cause proven; artifact = .app + .app.zip; vendor patch tauri-utils",
+  "C7_identity": "FINAL_IDENTITY.md — после финального ребилда"
+ },
+ "openDefects": []
 }
