@@ -4,53 +4,49 @@ status: current
 tags:
   - project/rimloc
   - kind/release-identity
-last-reviewed: 2026-10-07
+last-reviewed: 2026-10-13
 related:
   - "[[RELEASE_GATE]]"
   - "[[RELEASE_CONVERGENCE_STATE]]"
 ---
 
-# FINAL IDENTITY — rel25-candidate (2026-10-12)
+# FINAL IDENTITY — rel26-draft-fixes (2026-10-13)
 
-Точная identity финального кандидата финальной бета-готовности
-(волны R4-fix + R5). Пакет: `RimLoc-evidence/artifact-rel25-candidate/`.
+Точная identity data-safety corrective кандидата (ответ на rel25-аудит:
+BLOCKED — DATA-SAFETY FIXES REQUIRED). Пакет:
+`RimLoc-evidence/artifact-rel26-draft-fixes/`.
 
 ## Канонические идентификаторы
 
 ```text
-product_source_sha   1b46fd2b79fda6a948c6b6eb4a0e8953e93ea9f7
-                     (HEAD main == origin/main на момент сборки)
-binary_sha256        1d412a728b0fc4bd4e2da61a14ce6c5942bd03dfe251e82c1044ca0c2d3c7973
-appzip_sha256        6ec84906e5c7eecc4322ece46d822f2673bbf3876a06ae6ec286186bc5222d25
-app tree hash        b2a69d811f42c3e54d09799c1fb1ea22720ae2c1f8c0c8595fa122bc247c700a
-dist tree hash       e3b795655f78f62f44be8c1a53bd0b2a50bb78c6bb9e18947a4b57c896ba6513
-automation           internal target-r4-final, 61 wdio-маркер, дерево 1b46fd2
+product_source_sha   7db89dc (fix/draft-safety-structural-identity @ 7db89dc)
+binary_sha256        631f5c0… (полностью: artifact sha256.txt / appzip-sha256.txt)
+appzip_sha256        015484d… (полностью: artifact appzip-sha256.txt)
+automation           ba-main SSD-зона; automation-React сборка для native WDIO
+                     (testlab/build/build-automation-react.sh)
 ```
 
-Mutable состояние (текущий HEAD main) в этом документе НЕ хранится —
-только в metadata конкретного пакета и в release-state.
+Полные SHA — только в файлах артефакта (один источник правды на пакет;
+урок 13 AUTONOMOUS_FAILURE_PATTERNS: никаких дублей identity).
 
-## Хронология RC-цикла
+## Хронология кандидатов
 
 | SHA | Что это | Статус |
 |---|---|---|
-| `33457117` | rel24-candidate | УСТАРЕЛ |
-| `fcb82d7` | продуктовая поверхность rel24 | в составе main |
-| `7ee92c4` | R5/R4fix продукты (nav split, draft autosave, source lang, chat batch mgr, settings/about, yaml-rust2) | в составе main |
-| `1b46fd2` | **бинарная база rel25** (10 final findings поверх 7ee92c4) | **product_source** |
-| `3219e60` | docs-only поверх | текущий main |
+| `1b46fd2` | бинарная база rel25 | BLOCKED аудитом (data-safety) |
+| `695dff9` | locale-scoped drafts + entryUid key-space + quiesce | в фикс-ветке |
+| `dd1ba95` | vitest-сьют сценариев аудита (12/12) | в фикс-ветке |
+| `4a674ad` | packer v3: параметризация + семантическая identity | в фикс-ветке |
+| `f5b3d67` | RELEASE_GATE правда + failure patterns 13-15 | в фикс-ветке |
+| `b301de5` | **tauri-адаптер: проводка drafts-команд** (дефект найден native WDIO) | в фикс-ветке |
+| `0e2eec1` | native WDIO lane на automation-React поверхности | в фикс-ветке |
+| `7db89dc` | **бинарная база rel26** (failure patterns 16-17, хронология) | **product_source** |
 
 ## Верификация identity
 
-- self-report бинаря совпадает с product_source_sha (strings).
 - frontend gate: React R1 встроен, svelte-фолбэк отвергнут.
-- preflight --gate exit 0, release-guard static+runtime PASS.
-- MANIFEST.sha256 покрывает все файлы пакета evidence.
-
-
-## Верификация identity
-
-- self-report бинаря совпадает с `product_source_sha` (strings).
-- `soak-preflight --gate --expect-sha256 … --expect-commit …` → exit 0.
-- Canonical tree hashes (.app и dist) записаны в IDENTITY.md артефакта.
+- tsc strict чист; cargo services lib 288/288; rimloc-gui 33/33; vitest 12/12.
+- native WDIO (реальный пакет, automation-React): фазы 1+2 PASS — collision
+  rows, независимые черновики, locale round trip, sidecar на диске,
+  рестарт с честным restore-notice (drafts-native-e2e.txt).
 - MANIFEST.sha256 покрывает все файлы пакета evidence.

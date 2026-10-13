@@ -21,21 +21,18 @@ AUTONOMOUS_FAILURE_PATTERNS: никакого дубля идентичност�
 
 ## Хронология кандидатов
 
-- `rel23-final` (857b0d2 / binary 7781dd39…) — исторический; OWNER_TESTABLE
-  по ревью-итерации 3.
-- `rel25` (1b46fd2 / binary 1d412a72…) — полный бета-кандидат; независимый
-  аудит вернул BLOCKED (data-safety: потеря черновиков при смене локали,
-  коллапс идентичности display-key; evidence-пакет собирался устаревшим
-  сборщиком). Оба класса дефектов исправлены в
-  `fix/draft-safety-structural-identity` (locale-scoped durable drafts,
-  entryUid key-space, quiesce-переходы; vitest 12/12, services 288/288,
-  см. AUTONOMOUS_FAILURE_PATTERNS §13-15).
-- `rel26-draft-fixes` (fix/draft-safety-structural-identity; binary и
-  appzip — artifact-rel26-draft-fixes/) — react data-safety corrective
-  pass: locale-scoped durable drafts, entryUid key-space, quiesce
-  transitions, tauri-adapter wiring for the drafts commands, native WDIO
-  lane on the automation-React surface (see AUTONOMOUS_FAILURE_PATTERNS
-  §13-17). FINAL_IDENTITY.md обновляется при нарезке.
+Идентичность кандидатов (SHA) живёт ТОЛЬКО в FINAL_IDENTITY.md и файлах
+артефакта — этот документ держит статусы, не дубли identity.
+
+- `rel23-final` — исторический; owner-testable по третьему ревью-проходу.
+- `rel25` — полный бета-кандидат; независимый аудит вернул BLOCKED
+  (data-safety: потеря черновиков при смене локали, коллапс идентичности
+  display-key; evidence-пакет собирался устаревшим сборщиком). Все классы
+  исправлены в `fix/draft-safety-structural-identity` (patterns 13-17).
+- `rel26-draft-fixes` — ТЕКУЩИЙ кандидат: locale-scoped durable drafts,
+  entryUid key-space, quiesce transitions, tauri-adapter wiring, native
+  WDIO lane на automation-React поверхности. Файлы артефакта:
+  `RimLoc-evidence/artifact-rel26-draft-fixes/`.
 Публикация — parked по решению владельца (ADDENDUM §27); этот документ —
 вердикты по областям, не команда к публикации.
 
