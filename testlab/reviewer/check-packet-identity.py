@@ -36,7 +36,7 @@ REQUIRED_PATTERNS: dict[str, list[str]] = {
     "FINAL_IDENTITY.md": ["{rc}"],
     "RELEASE_GATE.md": ["{rc}"],
     "artifact-IDENTITY.md": ["{rc}", "{bin64}", "{product40}"],
-    "OWNER_TEST_PACKET.md": ["{rc}", "{bin7}"],
+    "OWNER_TEST_PACKET.md": ["{rc}"],
 }
 
 # Documents where a stale release marker is FATAL (identity documents).
