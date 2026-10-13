@@ -259,3 +259,77 @@ describe('acknowledged deletions (review iteration 5 P0-C)', () => {
     expect(hub.disks.get('p-commit')?.has('ru::keyed·Commit')).toBe(false)
   })
 })
+
+// Review iteration 7 P0-F: a re-edit after a FAILED revert SUPERSEDES the
+// pending clear — the newer text must ride the next save and survive.
+it('edit after a failed revert supersedes the deletion (P0-F)', { timeout: 20000 }, async () => {
+  vi.resetModules()
+  const hub = (await import('../client/instance')).clientInstance as unknown as Hub
+  hub.calls.length = 0
+  hub.disks.clear()
+  hub.snapshots.set('p-f', makeSnap('p-f', [sourceEntry('keyed', 'Target')]))
+  const project = await import('./project')
+  await project.projectStore.open('p-f')
+
+  project.projectStore.setDraft('keyed·Target', 'ORIGINAL')
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('saved'), {
+    timeout: 4000,
+    interval: 25,
+  })
+  hub.failClears = true
+  project.projectStore.clearDraft('keyed·Target')
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('error'), {
+    timeout: 4000,
+    interval: 25,
+  })
+
+  // The user re-edits the SAME row: NEW_UNCOMMITTED_WORK.
+  hub.failClears = false
+  project.projectStore.setDraft('keyed·Target', 'NEW_UNCOMMITTED_WORK')
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('saved'), {
+    timeout: 4000,
+    interval: 25,
+  })
+  expect(hub.disks.get('p-f')?.get('ru::keyed·Target')?.text).toBe('NEW_UNCOMMITTED_WORK')
+
+  // Reopen: the newer text is what comes back — nothing lost.
+  await project.projectStore.open('p-f')
+  expect(project.getState().drafts['keyed·Target']).toBe('NEW_UNCOMMITTED_WORK')
+})
+
+// Review iteration 7 P0-G: a key with an UNACKED clear pending must not
+// reappear as an active draft after a project round trip, and once the
+// clear acks the next edit must not resurrect it.
+it('a pending-clear key does not resurrect across a project round trip (P0-G)', { timeout: 25000 }, async () => {
+  vi.resetModules()
+  const hub = (await import('../client/instance')).clientInstance as unknown as Hub
+  hub.calls.length = 0
+  hub.disks.clear()
+  hub.snapshots.set('p-g', makeSnap('p-g', [sourceEntry('keyed', 'Shared'), sourceEntry('keyed', 'Other')]))
+  const project = await import('./project')
+  await project.projectStore.open('p-g')
+
+  project.projectStore.setDraft('keyed·Shared', 'SHOULD_BE_REVERTED')
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('saved'), {
+    timeout: 4000,
+    interval: 25,
+  })
+  hub.failClears = true
+  project.projectStore.clearDraft('keyed·Shared')
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('error'), {
+    timeout: 4000,
+    interval: 25,
+  })
+
+  // Round trip to another project and back: the pending-clear key must
+  // NOT be raised back into the view.
+  await project.projectStore.open('p-g2' in hub.snapshots ? 'p-g2' : 'p-g')
+  hub.snapshots.set('p-g2', makeSnap('p-g2', [sourceEntry('keyed', 'Other')]))
+  hub.failClears = false
+  project.projectStore.retryDraftsSync()
+  await vi.waitFor(() => expect(project.getState().draftsSync.status).toBe('saved'), {
+    timeout: 6000,
+    interval: 25,
+  })
+  expect(hub.disks.get('p-g')?.has('ru::keyed·Shared')).toBe(false)
+})

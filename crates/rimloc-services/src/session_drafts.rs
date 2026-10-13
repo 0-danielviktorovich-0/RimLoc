@@ -643,6 +643,7 @@ mod tests {
         ));
     }
 
+    #[cfg(unix)]
     /// An UNREADABLE sidecar refuses the save (review iteration 6 P1):
     /// PermissionDenied on read followed by a directory-writable rename
     /// would destroy the previous store without a backup. The typed IO

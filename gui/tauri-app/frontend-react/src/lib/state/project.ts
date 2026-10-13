@@ -226,6 +226,24 @@ function addPendingClear(pid: string, storeKey: string): void {
     pendingClears.set(pid, set)
   }
   set.add(storeKey)
+  recordKeyOp(pid, storeKey, 'clear')
+}
+
+// Per-key operation sequence (review iteration 7 P0-F/P0-G): the LAST user
+// operation on a key decides its durable state. A newer save SUPERSEDES a
+// pending clear (the re-edit after a failed revert must survive); a clear
+// whose ack lands after an unexpected re-raise must not resurrect the key
+// when no newer edit exists.
+type KeyOp = { seq: number; kind: 'save' | 'clear' }
+const keyOps = new Map<string, KeyOp>()
+let opCounter = 0
+
+function keyOpId(pid: string, storeKey: string): string {
+  return `${pid}::${storeKey}`
+}
+
+function recordKeyOp(pid: string, storeKey: string, kind: 'save' | 'clear'): void {
+  keyOps.set(keyOpId(pid, storeKey), { seq: ++opCounter, kind })
 }
 
 /** Last-resort in-memory guard (review P0-3): when a project transition
@@ -267,6 +285,10 @@ let openAttempt = 0
 
 function waitForRestoreGate(): Promise<void> {
   return restoreGate
+}
+
+function lastOpKind(pid: string, storeKey: string): 'save' | 'clear' | undefined {
+  return keyOps.get(keyOpId(pid, storeKey))?.kind
 }
 
 function closeRestoreGate(token: string): void {
@@ -342,11 +364,26 @@ function flushDraftsNow(): Promise<void> {
     try {
       await clientInstance.getClient().saveDrafts(capturedPid, capturedEpoch, entries)
       // Clears AFTER the save: a save never re-upserts a key being removed.
+      // A clear whose ack lands after an unexpected re-raise removes the
+      // key from memory ONLY when no newer edit superseded it (review
+      // iteration 7 P0-G).
       const clearErrors: string[] = []
       for (const storeKey of ownPending) {
+        if (lastOpKind(capturedPid, storeKey) === 'save') {
+          pendingClears.get(capturedPid)?.delete(storeKey)
+          continue
+        }
         try {
           await clientInstance.getClient().clearDrafts(capturedPid, capturedEpoch, storeKey)
           pendingClears.get(capturedPid)?.delete(storeKey)
+          if (lastOpKind(capturedPid, storeKey) === 'clear') {
+            delete draftsAll[storeKey]
+            if (storeKey in state.drafts) {
+              const view = { ...state.drafts }
+              delete view[storeKey]
+              set({ drafts: view })
+            }
+          }
         } catch (e) {
           clearErrors.push(`${storeKey}: ${e instanceof Error ? e.message : String(e)}`)
         }
@@ -668,8 +705,12 @@ export const projectStore = {
   setDraft(key: string, text: string): void {
     draftsVersion++
     // The full cross-locale map is the durable truth; the view gets the
-    // active-locale record under its locale-scoped store key.
-    draftsAll = { ...draftsAll, [draftsStoreKey(state.targetLocale, key)]: text }
+    // active-locale record under its locale-scoped store key. A save
+    // SUPERSEDES any pending clear of the same key (review P0-F).
+    const storeKey = draftsStoreKey(state.targetLocale, key)
+    recordKeyOp(state.snapshot?.project_id ?? '', storeKey, 'save')
+    pendingClears.get(state.snapshot?.project_id ?? '')?.delete(storeKey)
+    draftsAll = { ...draftsAll, [storeKey]: text }
     set({
       drafts: { ...state.drafts, [key]: text },
       draftsSync: { status: 'dirty', error: state.draftsSync.error },
@@ -736,6 +777,9 @@ export const projectStore = {
       delete all[draftsStoreKey(state.targetLocale, key)]
       draftsAll = all
       draftsVersion++
+      // Подтверждённый ключ уходит из durable-хранилища ЯВНО (merge-
+      // семантика сервиса не удаляет отсутствующие во flushе ключи).
+      addPendingClear(snap.project_id, draftsStoreKey(state.targetLocale, key))
       set({
         snapshot: fresh,
         // Перерисовка в АКТИВНУЮ цель (acceptance MUST-FIX: после коммита в uk
@@ -743,17 +787,14 @@ export const projectStore = {
         // targetLocale; данные не терялись, но фаза была видна живьём).
         entries: mapSnapshot(fresh, state.targetLocale),
         drafts,
+        // Атомарно с удалением черновика: подписчики не видят промежуточное
+        // { draft: null, status: saved } (review iteration 7 P0-E).
+        draftsSync: { status: 'dirty', error: null },
         busy: false,
         // Регрессия-логика (§9): фикс уехал в durable-состояние — отчёт
         // устарел, revalidate уберёт строку из «С замечаниями».
         validation: { ...state.validation, stale: true, error: null },
       })
-      // Подтверждённый ключ уходит из durable-хранилища ЯВНО (merge-
-      // семантика сервиса не удаляет отсутствующие во flushе ключи);
-      // регистрация удаления сразу переводит статус в dirty — «saved»
-      // возможно только после ack удаления (review iteration 6 P0-E).
-      addPendingClear(snap.project_id, draftsStoreKey(state.targetLocale, key))
-      set({ draftsSync: { status: 'dirty', error: null } })
       void flushDraftsNow()
       void projectStore.refreshValidation()
       if (next) {
@@ -908,6 +949,11 @@ export const projectStore = {
           migrated[storeKey] = entry.text
         }
       }
+      // A key with an UNACKED clear pending must not come back as an
+      // active draft (review iteration 7 P0-G): the deletion intent
+      // outlives the restore raise.
+      const pendingHere = pendingClears.get(projectId)
+      if (pendingHere) for (const k of pendingHere) delete migrated[k]
       // The in-memory guard (when present) is the newest generation — it
       // wins per key; the store fills everything else.
       draftsAll = { ...migrated, ...draftsAll }
