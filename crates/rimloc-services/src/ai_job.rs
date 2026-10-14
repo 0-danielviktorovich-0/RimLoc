@@ -103,11 +103,42 @@ pub struct AiJobStatus {
 
 /// Worker-side shared state: results stream in from `on_unit`, cancel
 /// flags flip between batches (checkpoint/resume makes a mid-batch cancel
-/// resumable, never a data hazard).
+/// resumable, never a data hazard). `cancelled` is an Arc because the SAME
+/// flag instance rides `EngineOptions::cancel` into the translation
+/// engine (review 2026-10-14 P1) — one flip stops the provider loop.
+/// `finished` flips after the worker published its FINAL status, so tests
+/// (and only tests) can await true worker exit before asserting the
+/// terminal state survived it.
 struct JobShared {
-    cancelled: AtomicBool,
+    cancelled: Arc<AtomicBool>,
+    finished: AtomicBool,
     rows: Mutex<BTreeMap<String, AiJobRow>>,
     error: Mutex<Option<String>>,
+}
+
+/// Test seam (review 2026-10-14 P1): provider construction is injectable
+/// so the job service can be driven by blocking/scripted providers in
+/// deterministic regressions. Production uses [`default_provider_factory`].
+pub(crate) type AiProviderFactory = Arc<
+    dyn Fn(&AiJobParams) -> Result<Arc<dyn rimloc_llm::provider::Provider + Send + Sync>, String>
+        + Send
+        + Sync,
+>;
+
+fn default_provider_factory() -> AiProviderFactory {
+    Arc::new(|params: &AiJobParams| {
+        rimloc_llm::build::build_provider(rimloc_llm::build::ProviderBuildArgs {
+            provider: &params.provider_id,
+            model: params.model.as_deref(),
+            base_url: params.base_url.as_deref(),
+            key_env: None,
+        })
+        .map(|p| {
+            let boxed: Box<dyn rimloc_llm::provider::Provider + Send + Sync> = p;
+            Arc::from(boxed)
+        })
+        .map_err(|e| e.to_string())
+    })
 }
 
 pub struct AiJobHandle {
@@ -155,7 +186,26 @@ pub fn start_job(
     registry: &AiJobRegistry,
     manager: &ProjectSessionManager,
     managed_root: &Path,
+    params: AiJobParams,
+) -> Result<AiJobStatus, ContractError> {
+    start_job_with_factory(
+        registry,
+        manager,
+        managed_root,
+        params,
+        default_provider_factory(),
+    )
+}
+
+/// Provider-injectable core of [`start_job`] — the ONLY difference is where
+/// the provider comes from; engine, worker, status transitions and data
+/// safety are byte-identical between production and test drivers.
+pub(crate) fn start_job_with_factory(
+    registry: &AiJobRegistry,
+    manager: &ProjectSessionManager,
+    managed_root: &Path,
     mut params: AiJobParams,
+    factory: AiProviderFactory,
 ) -> Result<AiJobStatus, ContractError> {
     // Epoch guard FIRST (the stronger invariant): superseded sessions never
     // start paid work. (A stale-epoch call with a demo provider must
@@ -273,7 +323,8 @@ pub fn start_job(
     let total = llm_units.len();
 
     let shared = Arc::new(JobShared {
-        cancelled: AtomicBool::new(false),
+        cancelled: Arc::new(AtomicBool::new(false)),
+        finished: AtomicBool::new(false),
         rows: Mutex::new(rows),
         error: Mutex::new(None),
     });
@@ -305,43 +356,54 @@ pub fn start_job(
     // `job_status` and never blocks.
     let params = params.clone();
     let handle_thread = handle.clone();
+    let checkpoint_thread = checkpoint_path.clone();
     std::thread::spawn(move || {
-        let result = run_job_worker(&params, total, &shared, &handle_thread);
+        let result = match factory(&params) {
+            Ok(provider) => run_job_worker(provider.as_ref(), &params, &shared, &checkpoint_thread),
+            Err(e) => Err(LlmShapeError(e)),
+        };
+        // TERMINAL INVARIANT (review 2026-10-14 P1): Cancelled is terminal
+        // for this job execution. A late worker completion — engine loop
+        // finishing right after the user pressed Cancel — must NEVER
+        // resurrect the job into PreviewReady/Applied/Running. Every
+        // transition below is guarded by the live state under the mutex.
         let mut st = handle_thread.status.lock().unwrap();
         match result {
             Ok(()) => {
-                st.state = AiJobState::PreviewReady;
+                if !shared.cancelled.load(Ordering::Relaxed) && st.state == AiJobState::Running {
+                    st.state = AiJobState::PreviewReady;
+                }
             }
             Err(e) => {
                 if shared.cancelled.load(Ordering::Relaxed) {
-                    st.state = AiJobState::Cancelled;
-                } else {
+                    // The engine returns LlmError::Cancelled at its next
+                    // boundary; the state cancel_job already wrote stands.
+                    // No error text: a cancel is a user decision, not a
+                    // failure.
+                    if st.state == AiJobState::Running {
+                        st.state = AiJobState::Cancelled;
+                    }
+                } else if st.state == AiJobState::Running {
                     st.state = AiJobState::Failed;
                     st.error = Some(e.to_string());
                 }
             }
         }
         refresh_status_locked(&mut st, &shared);
+        drop(st);
+        shared.finished.store(true, Ordering::Release);
     });
 
     Ok(status)
 }
 
 fn run_job_worker(
+    provider: &dyn rimloc_llm::provider::Provider,
     params: &AiJobParams,
-    total: usize,
     shared: &Arc<JobShared>,
-    handle: &AiJobHandle,
+    checkpoint_path: &Path,
 ) -> Result<(), LlmShapeError> {
     use rimloc_llm as llm;
-
-    let provider = llm::build::build_provider(llm::build::ProviderBuildArgs {
-        provider: &params.provider_id,
-        model: params.model.as_deref(),
-        base_url: params.base_url.as_deref(),
-        key_env: None,
-    })
-    .map_err(|e| LlmShapeError(e.to_string()))?;
 
     // Entries for the engine: from the shared rows (pending only), id=logical key.
     let mut units: Vec<rimloc_llm::provider::TranslateUnit> = Vec::new();
@@ -371,10 +433,15 @@ fn run_job_worker(
             6000
         },
         strict_placeholders: true,
-        checkpoint_path: Some(handle.checkpoint_path.clone()),
+        checkpoint_path: Some(checkpoint_path.to_path_buf()),
+        // THE cancellation wire (review 2026-10-14 P1): the SAME flag
+        // cancel_job flips now rides into the engine loop, so a cancel
+        // stops provider dispatch at the next batch/request/retry boundary
+        // instead of merely muting UI updates while paid calls continue.
+        cancel: Some(shared.cancelled.clone()),
         ..Default::default()
     };
-    let engine = llm::TranslationEngine::new(provider.as_ref(), opts, glossary);
+    let engine = llm::TranslationEngine::new(provider, opts, glossary);
     let summary = engine
         .translate(units.as_slice(), |outcome| {
             if shared.cancelled.load(Ordering::Relaxed) {
@@ -397,7 +464,6 @@ fn run_job_worker(
             }
         })
         .map_err(|e| LlmShapeError(e.to_string()))?;
-    let _ = total;
     let mut st_error = shared.error.lock().unwrap();
     *st_error = None;
     drop(st_error);
@@ -458,6 +524,15 @@ pub fn accept_job(
                 ),
             ));
         }
+    }
+    // Deterministic inter-thread interleaving point (review 2026-10-14
+    // P1e): tests install a closure here — AFTER the accept pre-check,
+    // BEFORE the atomic apply — so a competing edit can land on another
+    // thread and the under-lock stale guard can be proven against a REAL
+    // race. Production never installs the hook.
+    #[cfg(test)]
+    if let Some(hook) = ACCEPT_PRE_APPLY_HOOK.lock().unwrap().as_ref() {
+        hook();
     }
     let mut intents: Vec<TranslationIntent> = Vec::new();
     for row in &rows {
@@ -543,6 +618,7 @@ pub fn accept_job(
 
 pub fn cancel_job(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus, ContractError> {
     let handle = registry.get(job_id).ok_or_else(|| missing_job(job_id))?;
+    // Flag FIRST (engine observes it at its next boundary), state second.
     handle.shared.cancelled.store(true, Ordering::Relaxed);
     let mut st = handle.status.lock().unwrap();
     if st.state == AiJobState::Running {
@@ -550,6 +626,12 @@ pub fn cancel_job(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus,
     }
     Ok(st.clone())
 }
+
+/// Test-only interleaving point between the accept pre-check and the
+/// atomic apply (see accept_job). Never set outside tests.
+#[cfg(test)]
+static ACCEPT_PRE_APPLY_HOOK: std::sync::Mutex<Option<Box<dyn Fn() + Send + Sync>>> =
+    std::sync::Mutex::new(None);
 
 pub fn job_status(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus, ContractError> {
     let handle = registry.get(job_id).ok_or_else(|| missing_job(job_id))?;
@@ -905,16 +987,14 @@ mod tests {
     }
 
     #[test]
-    fn concurrent_edit_between_check_and_apply_is_refused_by_pinned_revision() {
-        // Review follow-up P0 regression (the TOCTOU interleaving): the
-        // pre-check passes, an edit lands BEFORE the apply, and the apply
-        // must still refuse because expected_revision is the PINNED base —
-        // not a fresh re-snapshot. Simulated deterministically by moving
-        // the project to a new revision right after a successful accept
-        // pre-check would need hooks we do not have; instead: pin base R,
-        // advance to R+1 via a manual apply, then call accept and assert
-        // the stale_revision refusal (the same interleaving outcome — the
-        // apply can never land on a moved revision).
+    fn sequential_stale_edit_is_refused_by_pinned_revision() {
+        // Review follow-up P0 regression (SEQUENTIAL variant): base R is
+        // pinned at start, the project advances to R+1, accept must refuse
+        // with stale_revision. This does NOT interleave threads — the
+        // concurrent variant with a real inter-thread barrier is
+        // `concurrent_edit_between_precheck_and_apply_barriers_and_is_refused`.
+        // (Honest relabeling per review 2026-10-14: the earlier name
+        // claimed concurrency this deterministic test did not have.)
         let _mock = MockGuard::acquire();
         let ctx = setup();
         let registry = AiJobRegistry::new();
@@ -1064,6 +1144,636 @@ mod tests {
         assert_eq!(
             err.code,
             crate::contract::ContractErrorCode::ProjectNotFound
+        );
+    }
+
+    // --- deterministic negative regressions (review 2026-10-14 P1) ---
+    // These run through start_job_with_factory: blocking/scripted providers
+    // replace build_provider, so no paid API and no mock env gate.
+
+    use std::collections::VecDeque;
+    use std::sync::atomic::AtomicUsize;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    enum ScriptedAction {
+        /// Echo "ru: {source}" for every unit.
+        Reply,
+        /// Exact per-id translations; unknown ids fall back to the echo.
+        ReplyMap(BTreeMap<String, String>),
+        RateLimited(Duration),
+        /// Block until the paired sender drops (or 10s guard), then echo.
+        Block(mpsc::Receiver<()>),
+    }
+
+    struct ScriptedProvider {
+        calls: AtomicUsize,
+        started_tx: mpsc::Sender<()>,
+        script: Mutex<VecDeque<ScriptedAction>>,
+    }
+
+    impl ScriptedProvider {
+        fn echo(
+            req: &rimloc_llm::provider::TranslateRequest,
+        ) -> rimloc_llm::provider::TranslateResponse {
+            rimloc_llm::provider::TranslateResponse {
+                results: req
+                    .units
+                    .iter()
+                    .map(|u| rimloc_llm::provider::TranslateUnitResult {
+                        id: u.id.clone(),
+                        translation: format!("ru: {}", u.source),
+                    })
+                    .collect(),
+                usage: None,
+            }
+        }
+    }
+
+    impl rimloc_llm::provider::Provider for ScriptedProvider {
+        fn id(&self) -> &str {
+            "scripted"
+        }
+        fn model(&self) -> &str {
+            "scripted-1"
+        }
+        fn info(&self) -> rimloc_llm::provider::ProviderInfo {
+            rimloc_llm::provider::ProviderInfo {
+                id: self.id().into(),
+                model: self.model().into(),
+                endpoint: "x".into(),
+            }
+        }
+        fn translate_batch(
+            &self,
+            req: &rimloc_llm::provider::TranslateRequest,
+        ) -> Result<rimloc_llm::provider::TranslateResponse, rimloc_llm::LlmError> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            let _ = self.started_tx.send(());
+            let action = self
+                .script
+                .lock()
+                .unwrap()
+                .pop_front()
+                .unwrap_or(ScriptedAction::Reply);
+            match action {
+                ScriptedAction::Reply => Ok(Self::echo(req)),
+                ScriptedAction::ReplyMap(map) => Ok(rimloc_llm::provider::TranslateResponse {
+                    results: req
+                        .units
+                        .iter()
+                        .map(|u| rimloc_llm::provider::TranslateUnitResult {
+                            id: u.id.clone(),
+                            translation: map
+                                .get(&u.id)
+                                .cloned()
+                                .unwrap_or_else(|| format!("ru: {}", u.source)),
+                        })
+                        .collect(),
+                    usage: None,
+                }),
+                ScriptedAction::RateLimited(after) => {
+                    Err(rimloc_llm::LlmError::RateLimited(self.id().into(), after))
+                }
+                ScriptedAction::Block(rx) => {
+                    let _ = rx.recv_timeout(Duration::from_secs(10));
+                    Ok(Self::echo(req))
+                }
+            }
+        }
+        fn test_connection(
+            &self,
+        ) -> Result<rimloc_llm::provider::ProviderInfo, rimloc_llm::LlmError> {
+            Ok(self.info())
+        }
+    }
+
+    fn scripted_factory(p: Arc<ScriptedProvider>) -> AiProviderFactory {
+        Arc::new(move |_| Ok(p.clone() as Arc<dyn rimloc_llm::provider::Provider + Send + Sync>))
+    }
+
+    /// Worker exit is observable: `finished` flips after the FINAL status
+    /// is published, so assertions below test the state AS THE WORKER LEFT
+    /// it, not a transient mid-exit value.
+    fn wait_worker_finished(handle: &AiJobHandle, secs: u64) {
+        let deadline = std::time::Instant::now() + Duration::from_secs(secs);
+        while !handle.shared.finished.load(Ordering::Acquire) {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "worker did not exit within {secs}s"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    fn wait_translated_count(registry: &AiJobRegistry, job_id: &str, n: usize, secs: u64) {
+        let deadline = std::time::Instant::now() + Duration::from_secs(secs);
+        loop {
+            let st = job_status(registry, job_id).unwrap();
+            if st.translated >= n {
+                return;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "translated count never reached {n}: {st:?}"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    /// Six long entries → six single-unit batches at budget 700
+    /// (unit weight ≈ 660+16; two units would exceed the budget).
+    fn setup_long(
+        n: usize,
+    ) -> (
+        tempfile::TempDir,
+        ProjectSessionManager,
+        PathBuf,
+        String,
+        u64,
+    ) {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
+        let mut xml = String::from("<Defs>\n");
+        for i in 0..n {
+            let label = "A very long description sentence about steel walls. ".repeat(10);
+            xml.push_str(&format!(
+                "  <ThingDef>\n    <defName>Long{i}</defName>\n    <label>{label}</label>\n  </ThingDef>\n"
+            ));
+        }
+        xml.push_str("</Defs>\n");
+        std::fs::write(dir.path().join("mod/Defs/Long.xml"), xml).unwrap();
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        (
+            dir,
+            mgr,
+            managed,
+            snap.project_id.clone(),
+            snap.session_epoch,
+        )
+    }
+
+    fn long_job_params(pid: &str, epoch: u64) -> AiJobParams {
+        AiJobParams {
+            project_id: pid.to_string(),
+            session_epoch: epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "scripted".into(),
+            model: None,
+            base_url: None,
+            batch_char_budget: 700,
+        }
+    }
+
+    /// P1(a), the reviewer's literal scenario: multi-batch job, the FIRST
+    /// provider request blocked, cancel flips while it is in flight, then
+    /// release. The worker must exit having dispatched EXACTLY ONE
+    /// request; the job stays Cancelled after worker exit; no PreviewReady;
+    /// canonical translations untouched; checkpoint carries no half records.
+    #[test]
+    fn cancel_between_batches_blocks_further_provider_calls() {
+        let (_dir, mgr, managed, pid, epoch) = setup_long(6);
+        let registry = AiJobRegistry::new();
+        let (started_tx, started_rx) = mpsc::channel();
+        let (rel_tx, rel_rx) = mpsc::channel();
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx,
+            script: Mutex::new(
+                vec![
+                    ScriptedAction::Block(rel_rx),
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                ]
+                .into(),
+            ),
+        });
+        let st = start_job_with_factory(
+            &registry,
+            &mgr,
+            &managed,
+            long_job_params(&pid, epoch),
+            scripted_factory(provider.clone()),
+        )
+        .unwrap();
+        let handle = registry.get(&st.job_id).unwrap();
+        started_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("first provider call must start");
+        let st = cancel_job(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::Cancelled);
+        drop(rel_tx); // release the blocked request
+        wait_worker_finished(&handle, 5);
+        assert_eq!(
+            provider.calls.load(Ordering::SeqCst),
+            1,
+            "no second batch, no retry after cancel"
+        );
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(
+            st.state,
+            AiJobState::Cancelled,
+            "terminal Cancelled must survive worker exit, got {st:?}"
+        );
+        assert!(!st.error.as_deref().unwrap_or("").contains("panic"));
+        // Canonical truth untouched: nothing accepted, nothing applied.
+        let snap = mgr.snapshot(&pid).unwrap();
+        assert!(
+            !snap
+                .project
+                .translations
+                .iter()
+                .any(|t| t.locale == "Russian"),
+            "cancelled job must not write translations: {:?}",
+            snap.project.translations
+        );
+        // Checkpoint valid: the in-flight batch was discarded, so zero records.
+        if let Some(cp) = &st.checkpoint_path {
+            if std::path::Path::new(cp).exists() {
+                let lines = std::fs::read_to_string(cp).unwrap();
+                assert_eq!(
+                    lines.lines().count(),
+                    0,
+                    "no completed batch before the flip → no records"
+                );
+            }
+        }
+    }
+
+    /// P1(a) preservation variant: batch 1 completes BEFORE the cancel, so
+    /// its checkpoint record must survive; the in-flight batch 2 is
+    /// discarded; batch 3 never dispatches; state stays Cancelled.
+    #[test]
+    fn cancel_preserves_completed_batch_and_discards_inflight() {
+        let (_dir, mgr, managed, pid, epoch) = setup_long(6);
+        let registry = AiJobRegistry::new();
+        let (started_tx, _started_rx) = mpsc::channel();
+        let (rel_tx, rel_rx) = mpsc::channel();
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx,
+            script: Mutex::new(
+                vec![
+                    ScriptedAction::Reply,
+                    ScriptedAction::Block(rel_rx),
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                    ScriptedAction::Reply,
+                ]
+                .into(),
+            ),
+        });
+        let st = start_job_with_factory(
+            &registry,
+            &mgr,
+            &managed,
+            long_job_params(&pid, epoch),
+            scripted_factory(provider.clone()),
+        )
+        .unwrap();
+        let handle = registry.get(&st.job_id).unwrap();
+        // Batch 1 fully processed before we flip anything.
+        wait_translated_count(&registry, &st.job_id, 1, 5);
+        cancel_job(&registry, &st.job_id).unwrap();
+        drop(rel_tx);
+        wait_worker_finished(&handle, 5);
+        assert_eq!(
+            provider.calls.load(Ordering::SeqCst),
+            2,
+            "batch 2 was in flight pre-flip; batch 3 must never dispatch"
+        );
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::Cancelled, "{st:?}");
+        assert_eq!(st.translated, 1, "only batch 1's row stays translated");
+        // Completed checkpoint record preserved and parseable.
+        let cp = st.checkpoint_path.clone().expect("checkpoint path");
+        let lines = std::fs::read_to_string(&cp).unwrap();
+        let records: Vec<&str> = lines.lines().collect();
+        assert_eq!(records.len(), 1, "exactly batch 1's record: {records:?}");
+        assert!(records[0].contains("Long0"), "{records:?}");
+        // Resume sanity: the record parses as a checkpoint entry.
+        let entry: rimloc_llm::CheckpointEntry =
+            serde_json::from_str(records[0].trim()).expect("valid checkpoint JSON");
+        assert_eq!(entry.id, "def_injected·ThingDef·Long0.label");
+    }
+
+    /// P1(b): cancel during the rate-limit wait — no retry attempt after
+    /// the flip, bounded cancellation latency, and the state the worker
+    /// leaves behind is Cancelled (never Failed-with-error, never
+    /// PreviewReady).
+    #[test]
+    fn cancel_during_rate_limit_wait_stops_retries_and_stays_cancelled() {
+        let (_dir, mgr, managed, pid, epoch) = setup_long(2);
+        let registry = AiJobRegistry::new();
+        let (started_tx, _started_rx) = mpsc::channel();
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx,
+            script: Mutex::new(vec![ScriptedAction::RateLimited(Duration::from_secs(30))].into()),
+        });
+        let st = start_job_with_factory(
+            &registry,
+            &mgr,
+            &managed,
+            long_job_params(&pid, epoch),
+            scripted_factory(provider.clone()),
+        )
+        .unwrap();
+        let handle = registry.get(&st.job_id).unwrap();
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        while provider.calls.load(Ordering::SeqCst) == 0 {
+            assert!(std::time::Instant::now() < deadline, "call never started");
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        let started = std::time::Instant::now();
+        cancel_job(&registry, &st.job_id).unwrap();
+        wait_worker_finished(&handle, 5);
+        assert!(
+            started.elapsed() < Duration::from_secs(5),
+            "cancel must cut the 5s-capped wait promptly, took {:?}",
+            started.elapsed()
+        );
+        assert_eq!(
+            provider.calls.load(Ordering::SeqCst),
+            1,
+            "no retry attempt after the flip"
+        );
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::Cancelled, "{st:?}");
+        assert!(
+            st.error.is_none(),
+            "a cancel is a user decision, not a failure: {st:?}"
+        );
+    }
+
+    /// P1(c): TRUE all-refused apply through a REAL session — every intent
+    /// the session itself refuses (control character invalid in XML 1.0),
+    /// so manager.apply returns applied=0 with a NON-EMPTY skip list. This
+    /// is the branch the previous "all-refused" test did not reach (it
+    /// exercised the empty-intent no-op instead).
+    #[test]
+    fn all_refused_real_apply_reports_failure_with_reasons() {
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let bad = "ru:\u{0007}apple"; // U+0007 BEL is invalid in XML 1.0
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx: {
+                let (tx, _rx) = mpsc::channel();
+                tx
+            },
+            script: Mutex::new(
+                vec![ScriptedAction::ReplyMap(BTreeMap::from([
+                    (
+                        "def_injected·ThingDef·Apple.label".to_string(),
+                        bad.to_string(),
+                    ),
+                    (
+                        "def_injected·ThingDef·Pear.label".to_string(),
+                        format!("{bad}2"),
+                    ),
+                ]))]
+                .into(),
+            ),
+        });
+        let st = start_job_with_factory(
+            &registry,
+            &ctx.mgr,
+            &ctx.managed,
+            AiJobParams {
+                batch_char_budget: 4000,
+                ..long_job_params(&ctx.pid, ctx.epoch)
+            },
+            scripted_factory(provider.clone()),
+        )
+        .unwrap();
+        wait_worker_finished(&registry.get(&st.job_id).unwrap(), 5);
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::PreviewReady, "{st:?}");
+        assert_eq!(st.translated, 2);
+        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap();
+        assert_eq!(
+            st.state,
+            AiJobState::Failed,
+            "applied=0 with refusals must be Failed, got {st:?}"
+        );
+        let err = st.error.clone().unwrap_or_default();
+        assert!(err.contains("applied 0"), "{err}");
+        assert!(
+            err.contains("invalid in XML 1.0"),
+            "the exact refusal reason must surface: {err}"
+        );
+        // Per-row typed refusals visible to the UI.
+        assert!(
+            st.rows
+                .iter()
+                .all(|r| r.status == "apply_refused" && r.error.is_some()),
+            "{st:?}"
+        );
+        // Canonical truth untouched.
+        let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        assert!(
+            !snap
+                .project
+                .translations
+                .iter()
+                .any(|t| t.locale == "Russian"),
+            "refused apply must not write translations"
+        );
+    }
+
+    /// P1(d): partial apply — one intent lands, one is refused; the
+    /// outcome is Applied with an HONEST "N applied, M refused" summary
+    /// and the refused row carrying its reason.
+    #[test]
+    fn partial_apply_reports_honest_counts_and_refusal_reasons() {
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx: {
+                let (tx, _rx) = mpsc::channel();
+                tx
+            },
+            script: Mutex::new(
+                vec![ScriptedAction::ReplyMap(BTreeMap::from([
+                    (
+                        "def_injected·ThingDef·Apple.label".to_string(),
+                        "Яблоко".to_string(),
+                    ),
+                    (
+                        "def_injected·ThingDef·Pear.label".to_string(),
+                        "ru:\u{0007}pear".to_string(),
+                    ),
+                ]))]
+                .into(),
+            ),
+        });
+        let st = start_job_with_factory(
+            &registry,
+            &ctx.mgr,
+            &ctx.managed,
+            AiJobParams {
+                batch_char_budget: 4000,
+                ..long_job_params(&ctx.pid, ctx.epoch)
+            },
+            scripted_factory(provider.clone()),
+        )
+        .unwrap();
+        wait_worker_finished(&registry.get(&st.job_id).unwrap(), 5);
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::PreviewReady);
+        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap();
+        assert_eq!(
+            st.state,
+            AiJobState::Applied,
+            "1 of 2 landed is an honest partial Applied, got {st:?}"
+        );
+        let err = st.error.clone().unwrap_or_default();
+        assert!(err.contains("partial apply: 1 applied, 1 refused"), "{err}");
+        let refused: Vec<_> = st
+            .rows
+            .iter()
+            .filter(|r| r.status == "apply_refused")
+            .collect();
+        assert_eq!(refused.len(), 1, "{st:?}");
+        assert!(refused[0].identity.contains("Pear"), "{refused:?}");
+        // Canonical truth: exactly the one accepted translation.
+        let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        let rus: Vec<_> = snap
+            .project
+            .translations
+            .iter()
+            .filter(|t| t.locale == "Russian")
+            .collect();
+        assert_eq!(rus.len(), 1, "{rus:?}");
+        assert_eq!(rus[0].text.as_deref(), Some("Яблоко"));
+    }
+
+    /// P1(e): REAL inter-thread interleaving — the competing Human edit
+    /// runs on its OWN thread and deterministically lands BETWEEN the
+    /// accept pre-check and the atomic apply (channel hand-off through the
+    /// test hook). The under-lock stale guard must refuse it.
+    #[test]
+    fn concurrent_edit_between_precheck_and_apply_barriers_and_is_refused() {
+        let _mock = MockGuard::acquire();
+        let dir = tempfile::tempdir().unwrap();
+        fixture_mod(&dir.path().join("mod"));
+        let managed = dir.path().join("managed");
+        let mgr = Arc::new(ProjectSessionManager::new(&managed).unwrap());
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        let registry = AiJobRegistry::new();
+        let st = start_job(
+            &registry,
+            &mgr,
+            &managed,
+            AiJobParams {
+                project_id: snap.project_id.clone(),
+                session_epoch: snap.session_epoch,
+                locale: "Russian".into(),
+                source_locale: "en".into(),
+                provider_id: "mock".into(),
+                model: None,
+                base_url: None,
+                batch_char_budget: 4000,
+            },
+        )
+        .unwrap();
+        let mut st = job_status(&registry, &st.job_id).unwrap();
+        for _ in 0..300 {
+            st = job_status(&registry, &st.job_id).unwrap();
+            if st.state == AiJobState::PreviewReady {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        assert_eq!(st.state, AiJobState::PreviewReady);
+
+        // The competing thread: waits for the hook's signal, applies the
+        // Human edit (revision R → R+1), reports completion.
+        let (go_tx, go_rx) = mpsc::channel::<()>();
+        let (done_tx, done_rx) = mpsc::channel::<()>();
+        let competitor = {
+            let mgr = mgr.clone();
+            let pid = snap.project_id.clone();
+            let epoch = snap.session_epoch;
+            std::thread::spawn(move || {
+                // Sync wrappers: mpsc endpoints are Send-but-not-Sync and
+                // the hook closure must be Sync.
+                let go_rx = Mutex::new(go_rx);
+                let done_tx = Mutex::new(done_tx);
+                go_rx.lock().unwrap().recv().expect("hook signal");
+                let current = mgr.snapshot(&pid).unwrap();
+                mgr.apply(&ApplyIntentsRequest {
+                    project_id: pid.clone(),
+                    expected_revision: current.acked_revision,
+                    session_epoch: epoch,
+                    intents: vec![TranslationIntent {
+                        entry: rimloc_domain::canonical::SourceEntryId {
+                            kind: rimloc_domain::canonical::EntryKind::DefInjected,
+                            key: "Apple.label".into(),
+                            def_type: Some("ThingDef".into()),
+                        },
+                        locale: "Russian".into(),
+                        action: IntentAction::SetTranslation,
+                        text: Some("конкурирующая правка".into()),
+                    }],
+                    origin: Some(ApplyOrigin::Human),
+                })
+                .expect("competing edit must land");
+                done_tx.lock().unwrap().send(()).expect("report done");
+            })
+        };
+        struct HookGuard;
+        impl Drop for HookGuard {
+            fn drop(&mut self) {
+                *ACCEPT_PRE_APPLY_HOOK.lock().unwrap() = None;
+            }
+        }
+        {
+            let _guard = HookGuard;
+            let go_tx = Mutex::new(go_tx);
+            let done_rx = Mutex::new(done_rx);
+            *ACCEPT_PRE_APPLY_HOOK.lock().unwrap() = Some(Box::new(move || {
+                go_tx.lock().unwrap().send(()).expect("signal competitor");
+                done_rx
+                    .lock()
+                    .unwrap()
+                    .recv_timeout(Duration::from_secs(5))
+                    .expect("competing edit must land before the apply");
+            }));
+            // The accept pre-check passes on revision R; the hook lets the
+            // competitor move the project to R+1; the atomic apply must
+            // then refuse under its own lock.
+            let err = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap_err();
+            assert_eq!(
+                err.code,
+                crate::contract::ContractErrorCode::StaleRevision,
+                "{err:?}"
+            );
+        }
+        competitor.join().unwrap();
+        // The newer human edit survives the refused accept.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        assert!(
+            after
+                .project
+                .translations
+                .iter()
+                .any(|t| t.text.as_deref() == Some("конкурирующая правка")),
+            "{:?}",
+            after.project.translations
         );
     }
 }

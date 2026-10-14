@@ -61,6 +61,12 @@ pub enum LlmError {
     },
     #[error("invalid provider response: {0}")]
     InvalidResponse(String),
+    /// Cooperative cancellation (review 2026-10-14 P1): the caller flipped
+    /// the cancel flag between two engine boundaries. No provider request
+    /// starts after the flip; batches that completed BEFORE it keep their
+    /// checkpoint records. Never a connection failure.
+    #[error("translation cancelled")]
+    Cancelled,
     #[error("checkpoint io: {0}")]
     CheckpointIo(String),
     #[error("keychain: {0}")]
@@ -130,6 +136,9 @@ impl LlmError {
             LlmError::ServerError { .. } | LlmError::Provider(..) | LlmError::CheckpointIo(_) => {
                 ConnectionVerdict::NetworkFailed
             }
+            // Cancellation is not a connection outcome (no probe ever
+            // returns it); the arm only completes the exhaustive match.
+            LlmError::Cancelled => ConnectionVerdict::NetworkFailed,
             #[cfg(feature = "http")]
             LlmError::Http(_) => ConnectionVerdict::NetworkFailed,
             #[cfg(feature = "keychain")]
