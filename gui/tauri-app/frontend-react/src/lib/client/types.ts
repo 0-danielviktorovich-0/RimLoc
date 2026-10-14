@@ -526,7 +526,9 @@ export type ContractMethod =
   | 'ai_job_accept'
   // Source Discovery (Stage A): read-only full-project source search
   // reconciled against the canonical inventory.
-  | 'project_source_search';
+  | 'project_source_search'
+  // Source XML preview (rel27).
+  | 'project_source_xml_preview';
 
 // --- ai translation jobs (Stage B) ---
 export type AiJobStateDto =
@@ -577,6 +579,20 @@ export interface AiJobParamsDto {
   batch_char_budget?: number;
 }
 
+// --- source xml preview (rel27) ---
+export interface SourceXmlPreviewLineDto {
+  n: number;
+  text: string;
+}
+
+export interface SourceXmlPreviewDto {
+  file: string;
+  target_line?: number;
+  lines: SourceXmlPreviewLineDto[];
+  truncated_head: boolean;
+  truncated_tail: boolean;
+  total_lines: number;
+}
 // --- source discovery (Stage A; mirrors source_search.rs) ---
 export type SourceSearchScopeDto = 'standard' | 'all_text';
 

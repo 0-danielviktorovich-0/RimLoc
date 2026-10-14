@@ -35,7 +35,7 @@ import { Existing } from './components/Existing'
 import { Compare } from './components/Compare'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
-import { Settings, type ThemePref } from './components/Settings'
+import { Settings, type ThemePref, readUiZoom } from './components/Settings'
 import { About } from './components/About'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
@@ -152,6 +152,13 @@ export function App() {
   }, [])
   const dark = theme === 'system' ? systemDark : theme === 'dark'
   const [navOpen, setNavOpen] = useState(false)
+  // UI zoom (rel27): re-render when Settings changes the persisted value.
+  const [uiZoom, setUiZoom] = useState(readUiZoom)
+  useEffect(() => {
+    const onZoom = (): void => setUiZoom(readUiZoom())
+    window.addEventListener('rimloc.ui.zoom', onZoom)
+    return () => window.removeEventListener('rimloc.ui.zoom', onZoom)
+  }, [])
   // UI-локаль — ЕДИНЫЙ источник в состоянии App (audit v2 #4/#5): смена
   // языка в Settings вызывает setLocale + сеттинг стейта → немедленный
   // ререндер всего дерева (t() читает модульную локаль на рендере), а не
@@ -286,7 +293,7 @@ export function App() {
   }
 
   return (
-    <div className={`rim-app ${navOpen ? 'mobile-nav-open' : ''}`}>
+    <div className={`rim-app ${navOpen ? 'mobile-nav-open' : ''}`} style={{ zoom: uiZoom }}>
       <aside className="app-sidebar">
         <a href="#/projects" className="brand">
           <div className="brand-mark">
