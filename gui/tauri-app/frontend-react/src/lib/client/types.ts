@@ -518,7 +518,49 @@ export type ContractMethod =
   // translations.
   | 'project_save_drafts'
   | 'project_restore_drafts'
-  | 'project_clear_drafts';
+  | 'project_clear_drafts'
+  // Source Discovery (Stage A): read-only full-project source search
+  // reconciled against the canonical inventory.
+  | 'project_source_search';
+
+// --- source discovery (Stage A; mirrors source_search.rs) ---
+export type SourceSearchScopeDto = 'standard' | 'all_text';
+
+export type SourceSearchStatusDto =
+  | 'already_indexed'
+  | 'deliberately_excluded'
+  | 'outside_effective_view'
+  | 'unknown_eligibility'
+  | 'suspected_extraction_omission'
+  | 'unsupported_format'
+  | 'parse_failure';
+
+export interface SourceSearchMatchDto {
+  file: string;
+  line: number;
+  line_text: string;
+  xml_context?: string;
+  status: SourceSearchStatusDto;
+  identity?: SourceEntryIdDto;
+  detail: string;
+}
+
+export interface SourceSearchReportDto {
+  query: string;
+  total_matches: number;
+  offset: number;
+  truncated: boolean;
+  matches: SourceSearchMatchDto[];
+  files_scanned: number;
+  files_skipped_binary: number;
+  parse_failures: { file: string; error: string }[];
+  source_fingerprint?: string;
+  effective_view?: {
+    version?: string;
+    content_dirs: string[];
+    conditional_dirs: number;
+  } | null;
+}
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /

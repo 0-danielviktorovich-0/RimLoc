@@ -14,6 +14,7 @@
 // Store binding is a LATER step (post contract accept); nothing here
 // imports ../mock/* — the mock lives behind MockTransport only.
 import type {
+  SourceSearchReportDto,
   ApplyExistingRequestDto,
   ApplyExistingResponseDto,
   BuildIdentityDto,
@@ -464,6 +465,28 @@ export class RimLocClient {
    * mismatched ones are quarantined as `.drafts.orphan.json` and REPORTED —
    * never silently applied. Unreadable stores report `unavailable` with the
    * typed detail; opening the project itself never fails because of drafts. */
+  /** Source Discovery (Stage A): read-only full-project source search
+   *  reconciled against the canonical inventory. */
+  async sourceSearch(args: {
+    projectId: string;
+    sessionEpoch: number;
+    query: string;
+    scope?: 'standard' | 'all_text';
+    offset?: number;
+    maxResults?: number;
+  }): Promise<SourceSearchReportDto> {
+    return this.call('project_source_search', {
+      request: {
+        project_id: args.projectId,
+        session_epoch: args.sessionEpoch,
+        query: args.query,
+        scope: args.scope ?? 'standard',
+        offset: args.offset ?? 0,
+        max_results: args.maxResults ?? 200
+      }
+    });
+  }
+
   async restoreDrafts(projectId: string, sessionEpoch: number): Promise<DraftsRestoreReportDto> {
     return this.call('project_restore_drafts', {
       project_id: projectId,

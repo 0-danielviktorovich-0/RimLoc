@@ -142,11 +142,13 @@ const MIN_QUERY_LEN: usize = 2;
 pub fn search_sources(
     req: &SourceSearchRequest,
     cancelled: &impl Fn() -> bool,
-) -> crate::Result<SourceSearchReport> {
+) -> Result<SourceSearchReport, crate::contract::ContractError> {
+    use crate::contract::{ContractError, ContractErrorCode};
     let query_lc = req.query.to_lowercase();
     if req.query.trim().chars().count() < MIN_QUERY_LEN {
-        return Err(color_eyre::eyre::eyre!(
-            "query too short (min {MIN_QUERY_LEN} chars)"
+        return Err(ContractError::new(
+            ContractErrorCode::ValidationFailed,
+            format!("query too short (min {MIN_QUERY_LEN} chars)"),
         ));
     }
     let max_results = if req.max_results == 0 {
@@ -157,7 +159,12 @@ pub fn search_sources(
 
     // ONE effective scan — the same pipeline the inventory uses.
     let root = req.mod_root.clone();
-    let auto = autodiscover_defs_context(&req.mod_root)?;
+    let auto = autodiscover_defs_context(&req.mod_root).map_err(|e| {
+        crate::contract::ContractError::new(
+            crate::contract::ContractErrorCode::Internal,
+            format!("source discovery: {e}"),
+        )
+    })?;
     let scan = scan_units_effective_full_for_source(
         &req.mod_root,
         req.target_version.as_deref(),
@@ -165,7 +172,13 @@ pub fn search_sources(
         &auto.extra_fields,
         None,
         req.source_lang_dir.as_deref(),
-    )?;
+    )
+    .map_err(|e| {
+        crate::contract::ContractError::new(
+            crate::contract::ContractErrorCode::Internal,
+            format!("source discovery scan: {e}"),
+        )
+    })?;
     let fingerprint =
         crate::scan::source_fingerprint(&req.mod_root, req.target_version.as_deref()).ok();
 
@@ -212,7 +225,12 @@ pub fn search_sources(
 
     // Walk the mod tree.
     let mut files: Vec<PathBuf> = Vec::new();
-    collect_text_files(&root, &root, 0, &mut files, &cancelled)?;
+    collect_text_files(&root, &root, 0, &mut files, &cancelled).map_err(|source| {
+        crate::contract::ContractError::new(
+            crate::contract::ContractErrorCode::Internal,
+            format!("source discovery walk: {source}"),
+        )
+    })?;
     files.sort();
 
     let view = scan.view.clone();
@@ -316,9 +334,7 @@ pub fn search_sources(
                         .to_string(),
                 )
             } else {
-                classify_candidate(
-                    &engine, &root, path, &rel, &content, line_no, is_xml, &lang_dir,
-                )
+                classify_candidate(&engine, &rel, &content, line_no, is_xml, &lang_dir)
             };
             let _ = col;
             report.matches.push(SourceSearchMatch {
@@ -390,8 +406,6 @@ fn classify_indexed(
 #[allow(clippy::too_many_arguments)]
 fn classify_candidate(
     engine: &EligibilityEngine,
-    root: &Path,
-    path: &Path,
     rel: &str,
     content: &str,
     line_no: usize,
@@ -408,7 +422,6 @@ fn classify_candidate(
         .first()
         .map(|e| e.rule_id.clone())
         .unwrap_or_else(|| "no matching rule".to_string());
-    let _ = root;
     match decision {
         Decision::NonTranslatable => (
             MatchStatus::DeliberatelyExcluded,
