@@ -20,6 +20,7 @@ engineering work — anything coded is marked on its own line.
 | 11 | Lovable visual acceptance | **OWNER_DECISION_REQUIRED** | source audit shipped earlier; practical visual acceptance session with the Lovable lane awaits the owner |
 | 12 | Owner RimWorld UAT | **OWNER_DECISION_REQUIRED** | isolated-profile UAT builds produced; in-game acceptance is the owner's |
 | 13 | CodeQL «Tool Status» configuration banner | **NOT_VERIFIED** | CodeQL workflow runs are green on PR heads; the separate repository-level CodeQL configuration banner state has not been checked against docs — TODO as part of the next security sweep |
+| 14 | Cancellation boundary beyond the translation loop (review round 2, non-blocking note) | **DOCUMENTED_LIMITATION** | the product guarantee is «no NEW translation requests after Cancel»; the provider factory's optional `/models` preflight (before the engine starts) does not take the cancellation token, and cooperative cancellation never aborts an HTTP request already in flight — a provider may still account for that one request |
 
 Honesty note: `IMPLEMENTED` above means deterministic tests prove the behavior
 on the recorded SHA; it does NOT mean the production user journey on a real
