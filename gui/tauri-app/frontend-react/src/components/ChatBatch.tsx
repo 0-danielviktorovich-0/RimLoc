@@ -28,18 +28,18 @@ import { contractErrorText } from '../lib/client/messagesError'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
 import { CHATBATCH_HANDOFF_KEY } from './Workspace'
+import { entryUid } from '../lib/state/entryUid'
 import type {
   ChatBatchDto,
   ChatBatchStatusDto,
   ChatBatchPreviewItemDto,
-  SourceEntryIdDto,
 } from '../lib/client/types'
 
 /** The exact serialization key the backend pins
- *  (`SourceEntryId::display_identity()`): kind token · defType · key. */
-function displayIdentity(id: SourceEntryIdDto): string {
-  return id.def_type ? `${id.kind}·${id.def_type}·${id.key}` : `${id.kind}·${id.key}`
-}
+ *  (`SourceEntryId::display_identity()`): kind token · defType · key.
+ *  ONE shared definition now — entryUid (lib/state/entryUid); the screen
+ *  keeps its historical local name. */
+const displayIdentity = entryUid
 
 // --- local persistence (screen preferences + the selection wave) ---
 

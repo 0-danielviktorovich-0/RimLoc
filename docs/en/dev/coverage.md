@@ -10,27 +10,22 @@ Coverage is a **signal, not a correctness score**. Executing a line does not pro
 
 ## Current coverage families
 
-The workflow uploads two independent Rust reports:
+The workflow uploads three independently generated reports:
 
-- **rust** — the Rust workspace under `crates/`, excluding the desktop Tauri crate;
-- **gui-rust** — the desktop Rust/Tauri crate, which needs its own GTK/WebKit/frontend prerequisites.
+- **rust** — Rust workspace under `crates/`, excluding desktop Tauri;
+- **gui-rust** — the Tauri Rust crate with its own GTK/WebKit/frontend prerequisites;
+- **frontend-react** — full production React source (`src/**/*.{ts,tsx}`), with untested screens included as 0%, not hidden.
 
-Codecov **Components** then slice those reports into product areas without re-running tests per crate:
+Codecov **Components** slice those reports into product areas without re-running tests:
 
-- Domain & Core;
-- Services;
-- RimWorld parsers & validation;
-- import/export formats;
-- CLI;
-- providers/config;
-- plugin compatibility layer;
-- desktop Rust/Tauri.
+- Domain & Core; Services; RimWorld parsers & validation; import/export formats;
+- CLI; providers/config; plugin compatibility; desktop Rust/Tauri; React frontend.
 
-This gives both a test-family view (**Flags**) and an architecture view (**Components**).
+**Flags** identify uploaded test families; **Components** describe architectural areas.
 
 ## Report format
 
-Rust CI uses `cargo-llvm-cov` and emits Codecov's native coverage JSON rather than plain LCOV.
+Rust CI uses `cargo-llvm-cov` and emits Codecov's native coverage JSON rather than plain LCOV. React uses Vitest V8 and uploads Istanbul JSON (`coverage/coverage-final.json`), with text and LCOV generated for local inspection.
 
 Why:
 
@@ -84,18 +79,43 @@ The goal is to prevent regression and expose untested code, not optimize a vanit
 
 ## React coverage
 
-React R1 currently has build/typecheck acceptance but no stable unit/component coverage report in its package scripts.
+The React job in `.github/workflows/coverage.yml` runs `npm test` in
+`gui/tauri-app/frontend-react` (Vitest V8 with `test.coverage`) and uploads
+`coverage/coverage-final.json` under Codecov flag `frontend-react`.
+A job-level guard checks the JSON and the presence of `App.tsx`,
+`Workspace.tsx`, `project.ts`, and `entryUid.ts` in the report.
 
-When the frontend test stack is ready, the intended contract is:
+The report deliberately includes **all production `src/**/*.{ts,tsx}` files**
+rather than only audited state modules. Untested UI components therefore
+appear as 0%; this is an honest baseline, not a release-blocking score.
+Always examine `project.ts` and `entryUid.ts` separately when reviewing
+Data Safety changes. Passing Rust/Tauri tests does not establish frontend
+coverage or native packaged-app behavior.
 
-~~~text
-npm run test:coverage
-→ frontend-react/coverage/lcov.info (or another Codecov-supported report)
-→ Codecov flag: react
-→ Codecov component: frontend-react
-~~~
+## Pull request review: do not stop at green checks
 
-Use the existing frontend test framework; do not introduce a second framework solely to satisfy Codecov.
+- Review the Codecov **bot comment**, patch/project/flag/component statuses,
+  actual missing changed lines, and all other bot/reviewer threads for the
+  **exact PR HEAD**. `informational: true` means a green Codecov status
+  can be below target; upload success only means it was queued.
+- **`strict_yaml_branch: main` is deliberate**: during a PR, Codecov uses
+  the `main` policy, not unmerged PR edits to `codecov.yml`. Confirm
+  the effective `main` `ignore`/component/flag configuration before
+  claiming a newly introduced source area is actually measured.
+- Be careful with path-prefix exclusions: `ignore: "gui/tauri-app/frontend"`
+  also matches `frontend-react`. The legacy `frontend/` exclusion must
+  end in a slash, and the new flag must be observable after Codecov finishes
+  processing; a flag marked "Coverage not affected" requires investigation.
+- Inspect the runner's *per-file* table and the generated file inventory.
+  `coverage.include` belongs under `test.coverage`; an option at the
+  Vite top level is ignored. A passing job with an incorrect denominator is
+  not evidence of the claimed coverage.
+- If the denominator, exclusion policy, or baseline changes, explicitly
+  label percentage comparisons as **non-comparable**. Never hide code,
+  remove an uncovered source file, or relax policy to improve a number.
+  Add behavioral/negative tests for real risk and document justified gaps.
+- Supplement coverage with Tauri IPC integration tests, native WDIO,
+  RimWorld export checks, CodeQL/dependency scanning, and owner UAT.
 
 ## Test Analytics — future
 

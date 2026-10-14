@@ -11,35 +11,49 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
+import { entryUid } from '../lib/state/entryUid'
+import {
+  sourceSearchStore,
+  useSourceSearch,
+  type SourceSearchState,
+} from '../lib/state/source_search_store'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
 import { clientInstance } from '../lib/client/instance'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
-import type { GlossaryTermDto, SourceEntryIdDto, ValidationFindingDto } from '../lib/client/types'
+import type { GlossaryTermDto, SourceEntryIdDto, SourceXmlPreviewDto, SourceXmlPreviewLineDto, ValidationFindingDto } from '../lib/client/types'
 
 const ROW_HEIGHT = 63
+
+/** Display keys carried by more than one structural entry (review P0-2):
+ *  their rows get a def-type discriminator in the label, so two Def types
+ *  sharing one key never render as two identical lines. */
+function duplicatedDisplayKeys(entries: readonly { key: string }[]): Set<string> {
+  const seen = new Set<string>()
+  const dup = new Set<string>()
+  for (const e of entries) {
+    if (seen.has(e.key)) dup.add(e.key)
+    seen.add(e.key)
+  }
+  return dup
+}
 
 /** §15/§20 handoff: ключ sessionStorage, по которому экран чат-перевода
  *  (свой лейн) подхватывает предотмеченные строки. Значение — JSON
  *  массив display_identity()-строк; прочитал — удали. */
 export const CHATBATCH_HANDOFF_KEY = 'rimloc.chatbatch.preset-keys'
 
-/** Точная сериализация ключа батча (`SourceEntryId::display_identity()`):
- *  kind-токен · defType · key. Зеркало той же формулы, что на экране
- *  ChatBatch — полное структурное тождество, не display-key строки. */
-function displayIdentity(id: SourceEntryIdDto): string {
-  return id.def_type ? `${id.kind}·${id.def_type}·${id.key}` : `${id.kind}·${id.key}`
-}
-
 /** §15: перенос выбранной строки в чат-перевод — sessionStorage + навигация.
- *  Никаких автоматических вызовов провайдера: транспорт решает человек. */
+ *  Никаких автоматических вызовов провайдера: транспорт решает человек.
+ *  Ключ — общий канон полной структурной идентичности (entryUid, зеркало
+ *  `SourceEntryId::display_identity()`): ChatBatch читает тот же формат. */
 function sendToChatBatch(id: SourceEntryIdDto): void {
   try {
     const prev = sessionStorage.getItem(CHATBATCH_HANDOFF_KEY)
     const parsed: unknown = prev ? JSON.parse(prev) : []
     const list = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
     const next = new Set(list)
-    next.add(displayIdentity(id))
+    next.add(entryUid(id))
     sessionStorage.setItem(CHATBATCH_HANDOFF_KEY, JSON.stringify([...next]))
   } catch {
     /* приватный режим/битый JSON — навигация всё равно честная */
@@ -61,6 +75,20 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   })
 
   const snapNow = st.snapshot
+  // rel27: XML-предпросмотр — чтение исходного файла через IPC (read-only,
+  // containment по source root).
+  const loadXmlPreview = (
+    file: string,
+    line?: number
+  ): Promise<SourceXmlPreviewDto> =>
+    clientInstance.getClient().sourceXmlPreview({
+      projectId: snapNow!.project_id,
+      sessionEpoch: snapNow!.session_epoch,
+      file,
+      line,
+      before: 6,
+      after: 20
+    })
 
   // §9: живая валидация. Отчёт устарел (open/commit/adoptExternal) →
   // пере-гоняем; ошибка не ретраится молча (гвард в revalidate + эффект).
@@ -103,18 +131,20 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       if (q && !`${e.key} ${e.source} ${e.target}`.toLowerCase().includes(q)) return false
       if (filter === 'empty') return !e.target.trim()
       // §9: только строка с живой находкой валидатора; фикс → revalidate →
-      // строка исчезает.
-      if (filter === 'issues') return issueKeys.has(e.key)
+      // строка исчезает. Сопоставление в uid-пространстве (review P0-2):
+      // находка с полной идентичностью адресует СВОЮ строку, а не все
+      // строки с тем же display-key.
+      if (filter === 'issues') return issueKeys.has(e.uid)
       return true
     })
   }, [st.entries, search, filter, kindFilter, issueKeys])
 
-  const selectedKey = st.selectedKey ?? visible[0]?.key ?? null
-  const selected = st.entries.find((e) => e.key === selectedKey) ?? null
+  const selectedKey = st.selectedKey ?? visible[0]?.uid ?? null
+  const selected = st.entries.find((e) => e.uid === selectedKey) ?? null
 
   // §17: первая находка для ТЕКУЩЕЙ строки (порядок отчёта валидатора).
   const selectedFindings = useMemo(
-    () => (selected ? findingsByEntryKey(vstate.report).get(selected.key) ?? [] : []),
+    () => (selected ? findingsByEntryKey(vstate.report).get(selected.uid) ?? [] : []),
     [selected, vstate.report],
   )
 
@@ -169,6 +199,11 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               <>
                 {t('ws.drafts.restored', { count: st.draftsNotice.count ?? 0 })}
                 {st.draftsNotice.fromBackup ? ` ${t('ws.drafts.restoredFromBackup')}` : ''}
+                {/* Extra honesty from the restore report (review P0-1/P0-2):
+                    drafts held in OTHER target locales, legacy v1 keys that
+                    were re-anchored, or the in-memory guard of a previous
+                    failed autosave. */}
+                {st.draftsNotice.detail ? ` — ${st.draftsNotice.detail}` : ''}
               </>
             )}
             {st.draftsNotice.kind === 'orphan' &&
@@ -262,6 +297,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             targetLabel={folderForm(st.targetLocale)}
             onSelect={(k) => projectStore.select(k)}
           />
+          <SourceSearchPanel snap={snap} />
           <div className="list-footer">
             <span>
               {visible.length} {t('ws.of')} {st.entries.length} {t('ws.rows')}
@@ -278,11 +314,16 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         {/* RIGHT — editor */}
         {selected && (
           <EntryEditor
-            key={selected.key}
-            entryKey={selected.key}
+            key={selected.uid}
+            entryUid={selected.uid}
+            labelKey={
+              duplicatedDisplayKeys(st.entries).has(selected.key) && selected.identity.def_type
+                ? `${selected.key} · ${selected.identity.def_type}`
+                : selected.key
+            }
             source={selected.source}
             target={selected.target}
-            draft={st.drafts[selected.key] ?? selected.target}
+            draft={st.drafts[selected.uid] ?? selected.target}
             busy={st.busy}
             sourceFile={selected.sourceFile}
             sourceLine={selected.sourceLine}
@@ -303,12 +344,13 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             related={related}
             // §15/§20: AI entry — только навигация, без вызовов провайдера.
             onSendToChatBatch={() => sendToChatBatch(selected.identity)}
-            onDraft={(v) => projectStore.setDraft(selected.key, v)}
-            onCommit={(next) => void projectStore.commit(selected.key, next)}
+            onLoadXmlPreview={loadXmlPreview}
+            onDraft={(v) => projectStore.setDraft(selected.uid, v)}
+            onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
-              const idx = st.entries.findIndex((e) => e.key === selected.key)
+              const idx = st.entries.findIndex((e) => e.uid === selected.uid)
               const nx = st.entries[idx + d]
-              if (nx) projectStore.select(nx.key)
+              if (nx) projectStore.select(nx.uid)
             }}
           />
         )}
@@ -406,7 +448,7 @@ function EntryList({
   targetLabel,
   onSelect,
 }: {
-  entries: { key: string; source: string; target: string }[]
+  entries: WorkspaceEntry[]
   selectedKey: string | null
   findings: Map<string, ValidationFindingDto[]>
   sourceLabel: string
@@ -438,10 +480,17 @@ function EntryList({
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const e = entries[vi.index]!
+            // Full-identity key-space (review P0-2): selection and findings
+            // match by uid; the LABEL still shows the display key, with the
+            // def-type discriminator when another Def type shares it.
+            const label =
+              duplicatedDisplayKeys(entries).has(e.key) && e.identity.def_type
+                ? `${e.key} · ${e.identity.def_type}`
+                : e.key
             return (
               <button
-                key={e.key}
-                className={`entry-row ${selectedKey === e.key ? 'selected' : ''}`}
+                key={e.uid}
+                className={`entry-row ${selectedKey === e.uid ? 'selected' : ''}`}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -449,17 +498,17 @@ function EntryList({
                   width: '100%',
                   height: ROW_HEIGHT,
                   transform: `translateY(${vi.start}px)`,
-                  ...(selectedKey === e.key ? { backgroundColor: 'var(--accent)' } : {}),
+                  ...(selectedKey === e.uid ? { backgroundColor: 'var(--accent)' } : {}),
                 }}
-                onClick={() => onSelect(e.key)}
+                onClick={() => onSelect(e.uid)}
                 data-testid={`ws.entry.${vi.index}`}
               >
                 <div className="row-source">
                   <span>{e.source}</span>
-                  <code>{e.key}</code>
+                  <code>{label}</code>
                 </div>
                 <div className={`row-target ${!e.target ? 'untranslated' : ''}`}>{e.target || t('ws.addTarget')}</div>
-                <RowStatus finding={findings.get(e.key)?.[0]} target={e.target} />
+                <RowStatus finding={findings.get(e.uid)?.[0]} target={e.target} />
               </button>
             )
           })}
@@ -470,7 +519,11 @@ function EntryList({
 }
 
 function EntryEditor(props: {
-  entryKey: string
+  /** Full-identity key (store space): drafts address THIS. */
+  entryUid: string
+  /** Display key for humans (row/code label + clipboard copy), with the
+   *  def-type discriminator when another Def type shares the key. */
+  labelKey: string
   source: string
   target: string
   draft: string
@@ -499,6 +552,8 @@ function EntryEditor(props: {
   related: WorkspaceEntry[]
   // §15/§20: перенос строки в чат-перевод (sessionStorage + навигация).
   onSendToChatBatch: () => void
+  // rel27: загрузить XML-предпросмотр исходного файла строки.
+  onLoadXmlPreview?: (file: string, line?: number) => Promise<SourceXmlPreviewDto>
   onDraft: (v: string) => void
   onCommit: (next: boolean) => void
   onMove: (d: number) => void
@@ -509,7 +564,7 @@ function EntryEditor(props: {
   const [copied, setCopied] = useState(false)
   const copyTimer = useRef<number | null>(null)
   const copyKey = (): void => {
-    void navigator.clipboard.writeText(props.entryKey).then(
+    void navigator.clipboard.writeText(props.labelKey).then(
       () => {
         setCopied(true)
         if (copyTimer.current !== null) window.clearTimeout(copyTimer.current)
@@ -521,7 +576,38 @@ function EntryEditor(props: {
     )
   }
   // §13: единственная мёртвая кнопка-таб стала настоящими табами.
-  const [tab, setTab] = useState<'source' | 'terms'>('source')
+  // rel27: третья вкладка — настоящий XML-предпросмотр исходного файла.
+  const [tab, setTab] = useState<'source' | 'terms' | 'xml'>('source')
+  const [xmlPreview, setXmlPreview] = useState<
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | {
+        status: 'done'
+        lines: SourceXmlPreviewLineDto[]
+        target?: number
+        file: string
+        total: number
+        truncated_head: boolean
+        truncated_tail: boolean
+      }
+    | null
+  >(null)
+  const loadXmlPreview = (): void => {
+    if (!props.onLoadXmlPreview) return
+    setXmlPreview({ status: 'loading' })
+    props.onLoadXmlPreview(props.sourceFile ?? '', props.sourceLine)
+      .then((res) =>
+        setXmlPreview({
+          status: 'done',
+          lines: res.lines,
+          target: res.target_line,
+          file: res.file,
+          total: res.total_lines,
+          truncated_head: res.truncated_head,
+          truncated_tail: res.truncated_tail
+        })
+      )
+      .catch((e: unknown) => setXmlPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) }))
+  }
   const dirty = props.draft !== props.target
   const patchStage = props.provenance?.patch_stage
   const tkeyLocs = props.tkey?.locations ?? []
@@ -556,7 +642,7 @@ function EntryEditor(props: {
       </div>
       <div className="detail-body">
         <div className="detail-key">
-          <code>{props.entryKey}</code>
+          <code>{props.labelKey}</code>
           <button
             className="icon-btn"
             aria-label={t('ws.copyKey')}
@@ -621,7 +707,7 @@ function EntryEditor(props: {
           >
             <MessagesSquare size={13} /> {t('ws.toChatbatch')}
           </button>
-          <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} onClick={() => props.onCommit(false)}>
+          <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} data-testid="ws.editor-save" onClick={() => props.onCommit(false)}>
             <Save />
           </button>
           <button
@@ -631,7 +717,7 @@ function EntryEditor(props: {
             // Revert = «чистый черновик = отсутствие записи» (§11): удаляем
             // ключ из drafts, а не пишем committed-текст как черновик —
             // иначе пилюля «Есть несохранённые» считает фантом.
-            onClick={() => projectStore.clearDraft(props.entryKey)}
+            onClick={() => projectStore.clearDraft(props.entryUid)}
           >
             <RotateCcw />
           </button>
@@ -675,6 +761,18 @@ function EntryEditor(props: {
             onClick={() => setTab('terms')}
           >
             <BookOpen size={12} /> {t('ws.tabTerms')}
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'xml'}
+            className={tab === 'xml' ? 'active' : ''}
+            data-testid="ws.tab.xml"
+            onClick={() => {
+              setTab('xml')
+              if (props.sourceFile) loadXmlPreview()
+            }}
+          >
+            <Braces size={12} /> {t('ws.tabXml')}
           </button>
         </div>
         {tab === 'source' ? (
@@ -741,7 +839,7 @@ function EntryEditor(props: {
               </div>
             )}
           </div>
-        ) : (
+        ) : tab === 'terms' ? (
           <div className="context-content" role="tabpanel" data-testid="ws.terms-block">
             {props.termsError && (
               <div className="inline-warning" role="alert" data-testid="ws.terms-error">
@@ -775,6 +873,48 @@ function EntryEditor(props: {
               </>
             )}
           </div>
+        ) : (
+          <div className="context-content" role="tabpanel" data-testid="ws.xml-block">
+            {!props.sourceFile ? (
+              <div data-testid="ws.xml-nosource">
+                <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                  {t('ws.xml.noSource')}
+                </span>
+              </div>
+            ) : xmlPreview?.status === 'error' ? (
+              <div className="inline-warning text-destructive" role="alert" data-testid="ws.xml-error">
+                <CircleAlert size={15} /> {t('ws.xml.error')}: {xmlPreview.error}
+              </div>
+            ) : xmlPreview?.status !== 'done' ? (
+              <div data-testid="ws.xml-loading" style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                {t('ws.xml.loading')}
+              </div>
+            ) : (
+              <>
+                <div data-testid="ws.xml.meta" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                  {xmlPreview.file} · {xmlPreview.total} {t('ws.xml.lines')}
+                  {(xmlPreview.truncated_head || xmlPreview.truncated_tail) ? ' · windowed' : ''}
+                </div>
+                <pre data-testid="ws.xml-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0 }}>
+                  {xmlPreview.lines.map((l) => (
+                    <div
+                      key={l.n}
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        background: xmlPreview.target === l.n ? 'var(--accent)' : 'transparent',
+                      }}
+                    >
+                      <span style={{ color: 'var(--muted-foreground)', userSelect: 'none', minWidth: 28, textAlign: 'right' }}>
+                        {l.n}
+                      </span>
+                      <code style={{ whiteSpace: 'pre-wrap' }}>{l.text}</code>
+                    </div>
+                  ))}
+                </pre>
+              </>
+            )}
+          </div>
         )}
         {/* §14: Related — сиблинги того же Def (label ↔ description …).
             Переход честный: projectStore.select(key). */}
@@ -783,9 +923,9 @@ function EntryEditor(props: {
             <span>{t('ws.related')}</span>
             {props.related.map((r) => (
               <button
-                key={r.key}
+                key={r.uid}
                 data-testid={`ws.related.${r.key}`}
-                onClick={() => projectStore.select(r.key)}
+                onClick={() => projectStore.select(r.uid)}
               >
                 <code>{r.key}</code>
                 <span>{r.source || '—'}</span>
@@ -804,3 +944,119 @@ function EntryEditor(props: {
 
 // Keep the client import referenced for the honest-bridge note in dev builds.
 void clientInstance
+
+
+/** Source Discovery (Stage A): read-only full-project source search,
+ *  reconciled against the canonical inventory. Lives inside the workspace
+ *  left pane; the workspace string search stays untouched. */
+function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof useProjectState>['snapshot']> }) {
+  const ss = useSourceSearch()
+  const [open, setOpen] = useState(false)
+  const epoch = snap.session_epoch
+  const run = (): void => {
+    void sourceSearchStore.run(snap.project_id, epoch)
+  }
+  const loadMore = (): void => {
+    void sourceSearchStore.loadMore(snap.project_id, epoch)
+  }
+  const view = (s: SourceSearchState) => s
+
+  return (
+    <div style={{ margin: '8px 0' }}>
+      {!open && (
+        <button
+          className="icon-btn"
+          style={{ width: 'auto', padding: '0 9px', fontSize: 10 }}
+          data-testid="ss.toggle"
+          onClick={() => setOpen(true)}
+        >
+          <Search size={12} /> {t('ss.toggle')}
+        </button>
+      )}
+      {open && (
+        <div data-testid="ss.panel" style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <strong style={{ fontSize: 11 }}>{t('ss.title')}</strong>
+            <button
+              className="icon-btn"
+              style={{ marginLeft: 'auto' }}
+              aria-label={t('ws.resetFilters')}
+              onClick={() => {
+                setOpen(false)
+                sourceSearchStore.clear()
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '4px 0' }}>
+            {t('ss.hint')}
+          </p>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              data-testid="ss.input"
+              value={view(ss).query}
+              placeholder={t('ss.placeholder')}
+              onChange={(e) => sourceSearchStore.setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') run()
+              }}
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button className="btn-primary" data-testid="ss.run" disabled={view(ss).status === 'running'} onClick={run}>
+              {t('ss.run')}
+            </button>
+          </div>
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 10, marginTop: 4 }}>
+            <input
+              type="checkbox"
+              data-testid="ss.scope"
+              checked={view(ss).scope === 'all_text'}
+              onChange={(e) => sourceSearchStore.setScope(e.target.checked ? 'all_text' : 'standard')}
+            />
+            {t('ss.scope')}
+          </label>
+          {view(ss).status === 'error' && (
+            <div className="inline-warning text-destructive" role="alert" data-testid="ss.error">
+              {t('ss.error')}: {view(ss).error ?? '—'}
+            </div>
+          )}
+          {view(ss).report && (
+            <>
+              <div data-testid="ss.results" style={{ fontSize: 10, margin: '6px 0' }}>
+                {t('ss.results', { total: view(ss).report!.total_matches })}
+              </div>
+              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                {view(ss).report!.matches.map((m, i) => (
+                  <div key={`${m.file}:${m.line}:${i}`} data-testid={`ss.match.${i}`} style={{ borderBottom: '1px solid var(--border)', padding: '4px 0' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                      <code style={{ fontSize: 10 }}>{m.file}:{m.line}</code>
+                      <span className="status-label text-muted-foreground" style={{ fontSize: 9 }}>
+                        {t(`ss.status.${m.status}`)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11 }}>{m.line_text}</div>
+                    {m.xml_context && (
+                      <div style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>{m.xml_context}</div>
+                    )}
+                    <div style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>
+                      {t('ss.detail')}: {m.detail}
+                    </div>
+                  </div>
+                ))}
+                {view(ss).report!.truncated && (
+                  <button className="icon-btn" style={{ width: '100%', marginTop: 4 }} data-testid="ss.more" onClick={loadMore}>
+                    {t('ss.more')}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          {!view(ss).report && view(ss).status !== 'running' && view(ss).status !== 'error' && (
+            <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{t('ss.empty')}</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

@@ -53,6 +53,14 @@ Commands / notes:
 paste commands/results here
 ~~~
 
+## Codecov / automated review (for code changes)
+
+- [ ] Inspected all bot comments (especially Codecov), CodeQL and CI at the **latest HEAD**; a green informational Codecov check is not a coverage pass.
+- [ ] Checked changed uncovered lines, actual patch/project/flag/component metrics, and report-processing status; documented exceptions with reasons.
+- [ ] Verified coverage scope: intended production files included (including untested files), no path-prefix exclusions masking code, no denominator or threshold manipulation.
+- [ ] If `codecov.yml` changed, accounted for `strict_yaml_branch: main` and stated whether the new policy is already effective.
+- [ ] Reported testing/coverage blind spots and any owner-only UAT or release gates.
+
 ## Product / architecture checks
 
 - [ ] Domain behavior lives in Rust/shared services, not duplicated in React/CLI
