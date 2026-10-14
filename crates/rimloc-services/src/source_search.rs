@@ -704,7 +704,14 @@ fn standard_scope_file(path: &Path) -> bool {
         .any(|seg| s.contains(seg))
 }
 
-fn collect_text_files(
+/// Confinement: the walk stays INSIDE the project root. Symlinks are
+/// rejected outright (a link pointing outside the tree would drag foreign
+/// files into the results); every accepted path must canonicalize under
+/// the canonical root — the CodeQL path-injection findings on the previous
+/// unconfined walker.
+fn confined_collect_text_files(
+    root: &Path,
+    canonical_root: &Path,
     dir: &Path,
     depth: usize,
     out: &mut Vec<PathBuf>,
@@ -713,23 +720,47 @@ fn collect_text_files(
     if depth > 12 || cancelled() {
         return Ok(());
     }
+    let _ = root;
     for entry in std::fs::read_dir(dir)? {
         if cancelled() {
             return Ok(());
         }
         let entry = entry?;
-        let p = entry.path();
         let name = entry.file_name().to_string_lossy().into_owned();
         if name.starts_with('.') || name == "node_modules" || name == "About" {
             continue;
         }
-        if p.is_dir() {
-            collect_text_files(&p, depth + 1, out, cancelled)?;
-        } else if p.is_file() {
+        let p = entry.path();
+        let meta = std::fs::symlink_metadata(&p)?;
+        let file_type = meta.file_type();
+        if file_type.is_symlink() {
+            // Never follow links: an outside-the-tree target must not enter
+            // the results (acceptance fixture: symlinks out of the project).
+            continue;
+        }
+        if file_type.is_dir() {
+            confined_collect_text_files(root, canonical_root, &p, depth + 1, out, cancelled)?;
+        } else if file_type.is_file() {
+            // Containment: canonicalize and require the path to stay under
+            // the canonical project root.
+            let canon = p.canonicalize()?;
+            if !canon.starts_with(canonical_root) {
+                continue;
+            }
             out.push(p);
         }
     }
     Ok(())
+}
+
+fn collect_text_files(
+    dir: &Path,
+    depth: usize,
+    out: &mut Vec<PathBuf>,
+    cancelled: &impl Fn() -> bool,
+) -> std::io::Result<()> {
+    let canonical_root = dir.canonicalize()?;
+    confined_collect_text_files(dir, &canonical_root, dir, depth, out, cancelled)
 }
 
 // ---------------------------------------------------------------------------
@@ -914,6 +945,26 @@ mod tests {
         write_mod(dir.path());
         let rep = search_sources(&req(dir.path(), "golden"), &|| true).unwrap();
         assert_eq!(rep.total_matches, 0);
+    }
+
+    #[test]
+    fn symlink_pointing_outside_is_never_walked() {
+        let dir = tempfile::tempdir().unwrap();
+        write_mod(dir.path());
+        // Outside file + symlink inside the mod tree pointing to it.
+        let outside = dir.path().parent().unwrap().join("outside-secret.txt");
+        std::fs::write(&outside, "Golden secret").unwrap();
+        let link = dir.path().join("mod/Defs/link-to-secret.txt");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&outside, &link).unwrap();
+        #[cfg(not(unix))]
+        let _ = &link;
+        let rep = search_sources(&req(dir.path(), "golden secret"), &|| false).unwrap();
+        assert_eq!(
+            rep.total_matches, 0,
+            "a symlink out of the project must never surface content: {:?}",
+            rep.matches
+        );
     }
 
     #[test]
