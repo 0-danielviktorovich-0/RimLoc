@@ -955,6 +955,7 @@ mod tests {
         // Outside the MOD ROOT but inside the (writable) tempdir.
         let outside = dir.path().join("outside-secret.txt");
         std::fs::write(&outside, "Golden secret").unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
         let link = dir.path().join("mod/Defs/link-to-secret.txt");
         #[cfg(unix)]
         std::os::unix::fs::symlink(&outside, &link).unwrap();
