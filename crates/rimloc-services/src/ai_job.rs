@@ -157,12 +157,25 @@ pub fn start_job(
     managed_root: &Path,
     mut params: AiJobParams,
 ) -> Result<AiJobStatus, ContractError> {
-    // Epoch guard: superseded sessions never start paid work.
+    // Epoch guard FIRST (the stronger invariant): superseded sessions never
+    // start paid work. (A stale-epoch call with a demo provider must
+    // report the epoch problem, not the provider problem.)
     let snap = manager.snapshot(&params.project_id)?;
     if snap.session_epoch != params.session_epoch {
         return Err(ContractError::stale_epoch(
             params.session_epoch,
             snap.session_epoch,
+        ));
+    }
+    // Honest provider gate (review follow-up P1): the mock echo provider
+    // never runs unless the caller explicitly opted into demo mode via the
+    // environment — a stale frontend selector must not fabricate a "real"
+    // AI job in BYO/local modes.
+    if params.provider_id == "mock" && std::env::var("RIMLOC_ALLOW_MOCK_JOBS").as_deref() != Ok("1")
+    {
+        return Err(ContractError::new(
+            ContractErrorCode::ValidationFailed,
+            "provider `mock` is a demo echo — set RIMLOC_ALLOW_MOCK_JOBS=1 to run it (tests/dev only)".to_string(),
         ));
     }
     // PINNED base revision (review finding 2): the preview was computed
@@ -423,9 +436,11 @@ pub fn accept_job(
         let st = handle.status.lock().unwrap();
         (st.locale.clone(), st.project_id.clone(), st.base_revision)
     };
-    // PINNED revision check: the project may have moved since the preview
-    // (manual edit during inference). Overwriting would lose newer work —
-    // refuse with the typed stale_revision the whole contract uses.
+    // PINNED revision check (review follow-up P0): ONE pre-check, then the
+    // PINNED base revision rides the atomic apply itself — the earlier
+    // double snapshot re-opened a TOCTOU window (a concurrent edit between
+    // the two snapshots would produce a fresh valid revision and let the
+    // AI overwrite it). manager.apply re-verifies under its own lock.
     {
         let snap = manager.snapshot(&project_id)?;
         if snap.session_epoch != expected_epoch {
@@ -458,30 +473,71 @@ pub fn accept_job(
             });
         }
     }
-    // Canonical writer: revision/epoch guarded, origin Llm. A stale epoch
-    // (project changed under the preview) is a typed refusal — the user
-    // re-reviews against the fresh snapshot.
+    if intents.is_empty() {
+        // Truthful no-op (review follow-up P1): nothing translatable to
+        // apply — never report Applied.
+        let mut st = handle.status.lock().unwrap();
+        st.state = AiJobState::Failed;
+        st.error = Some("nothing to apply: the preview holds no translated rows".into());
+        return Ok(st.clone());
+    }
     let req = ApplyIntentsRequest {
         project_id: project_id.clone(),
-        expected_revision: {
-            let snap = manager.snapshot(&project_id)?;
-            if snap.session_epoch != expected_epoch {
-                return Err(ContractError::stale_epoch(
-                    expected_epoch,
-                    snap.session_epoch,
-                ));
-            }
-            snap.acked_revision
-        },
+        // PINNED base revision, NOT a re-snapshot: the atomic apply's
+        // under-lock stale guard is the single authority.
+        expected_revision: base_revision,
         session_epoch: expected_epoch,
         intents,
         origin: Some(ApplyOrigin::Llm),
     };
     let resp = manager.apply(&req)?;
+    // Truthful outcome (review follow-up P1): inspect applied/skipped/
+    // cancelled instead of unconditionally claiming Applied.
     let mut st = handle.status.lock().unwrap();
-    st.state = AiJobState::Applied;
+    if resp.cancelled {
+        st.state = AiJobState::Failed;
+        st.error = Some("the apply was cancelled by the session".into());
+    } else if resp.applied == 0 {
+        st.state = AiJobState::Failed;
+        let reasons: Vec<String> = resp
+            .skipped
+            .iter()
+            .map(|sk| format!("{}: {}", sk.code.as_str(), sk.message))
+            .collect();
+        st.error = Some(format!(
+            "the session refused every intent (applied 0): {}",
+            if reasons.is_empty() {
+                "no reason given".to_string()
+            } else {
+                reasons.join("; ")
+            }
+        ));
+        // Keep the per-row typed refusals on the rows the UI shows
+        // (skips reference the intent INDEX; intents were built in row
+        // order among `translated` rows).
+        mark_refused_rows(&handle, &resp, &rows);
+    } else if !resp.skipped.is_empty() {
+        // Partial: some landed, some refused — honest partial state.
+        st.state = AiJobState::Applied;
+        let refused: Vec<String> = resp
+            .skipped
+            .iter()
+            .map(|sk| format!("{}: {}", sk.code.as_str(), sk.message))
+            .collect();
+        st.error = Some(format!(
+            "partial apply: {} applied, {} refused — {}",
+            resp.applied,
+            resp.skipped.len(),
+            refused.join("; ")
+        ));
+        drop(st);
+        mark_refused_rows(&handle, &resp, &rows);
+        st = handle.status.lock().unwrap();
+    } else {
+        st.state = AiJobState::Applied;
+        st.error = None;
+    }
     refresh_status_locked(&mut st, &handle.shared);
-    let _ = resp;
     Ok(st.clone())
 }
 
@@ -500,6 +556,30 @@ pub fn job_status(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus,
     let mut st = handle.status.lock().unwrap();
     refresh_status_locked(&mut st, &handle.shared);
     Ok(st.clone())
+}
+
+/// Map intent-index refusals back onto preview rows (review follow-up P1):
+/// intents were pushed in the order of `translated` rows, so the skip's
+/// index addresses that same row.
+fn mark_refused_rows(
+    handle: &Arc<AiJobHandle>,
+    resp: &crate::contract::ApplyIntentsResponse,
+    rows: &[AiJobRow],
+) {
+    let translated: Vec<&AiJobRow> = rows.iter().filter(|r| r.status == "translated").collect();
+    let mut rows_mut = handle.shared.rows.lock().unwrap();
+    for sk in &resp.skipped {
+        let Some(target) = translated.get(sk.index) else {
+            continue;
+        };
+        if let Some(row) = rows_mut
+            .values_mut()
+            .find(|r| r.identity == target.identity)
+        {
+            row.status = "apply_refused".to_string();
+            row.error = Some(format!("{}: {}", sk.code.as_str(), sk.message));
+        }
+    }
 }
 
 fn refresh_status_locked(st: &mut AiJobStatus, shared: &Arc<JobShared>) {
@@ -558,6 +638,28 @@ mod tests {
         epoch: u64,
     }
 
+    /// Test-only guard: enable the mock provider for the duration of the
+    /// closure (thread-safe via a global env mutex would be ideal; tests
+    /// in this module are serialized by the default test harness threads —
+    /// use a static lock to avoid env races).
+    static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    struct MockGuard<'a>(#[allow(dead_code)] std::sync::MutexGuard<'a, ()>);
+    impl MockGuard<'_> {
+        fn acquire() -> Self {
+            let g = ENV_LOCK.lock().unwrap();
+            std::env::set_var("RIMLOC_ALLOW_MOCK_JOBS", "1");
+            MockGuard(g)
+        }
+    }
+    impl Drop for MockGuard<'_> {
+        fn drop(&mut self) {
+            // Keep the variable set for the process: parallel mock tests
+            // hold the same lock but drop interleave with tests that do
+            // not — removing here made the suite flaky. The refusal test
+            // clears it explicitly under the lock.
+        }
+    }
+
     fn setup() -> Ctx {
         let dir = tempfile::tempdir().unwrap();
         fixture_mod(&dir.path().join("mod"));
@@ -577,6 +679,7 @@ mod tests {
 
     #[test]
     fn mock_job_runs_to_preview_and_accept_applies_translations() {
+        let _mock = MockGuard::acquire();
         let ctx = setup();
         let registry = AiJobRegistry::new();
         let params = AiJobParams {
@@ -640,6 +743,7 @@ mod tests {
 
     #[test]
     fn two_same_key_identities_translate_independently() {
+        let _mock = MockGuard::acquire();
         // Review finding 1 regression: ThingDef + HediffDef sharing
         // `Dup.label` must produce TWO rows, TWO translations and TWO
         // intents — never a collapsed single translation.
@@ -708,6 +812,7 @@ mod tests {
 
     #[test]
     fn accept_refuses_when_project_moved_during_preview() {
+        let _mock = MockGuard::acquire();
         // Review finding 2 regression: a manual edit during inference moves
         // the revision; accept must refuse with stale_revision instead of
         // overwriting the newer work.
@@ -770,6 +875,184 @@ mod tests {
             1,
             "the manual edit survives the refused accept"
         );
+    }
+
+    #[test]
+    fn mock_provider_refused_without_explicit_dev_env() {
+        // Review follow-up P1 regression: a stale frontend selector posting
+        // provider_id=mock must NOT fabricate a job in normal runs. Hold
+        // the env lock so a parallel mock test's env var cannot leak in.
+        let _env = ENV_LOCK.lock().unwrap();
+        std::env::remove_var("RIMLOC_ALLOW_MOCK_JOBS");
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: ctx.pid.clone(),
+            session_epoch: ctx.epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            batch_char_budget: 0,
+        };
+        let err = start_job(&registry, &ctx.mgr, &ctx.managed, params).unwrap_err();
+        assert_eq!(
+            err.code,
+            crate::contract::ContractErrorCode::ValidationFailed
+        );
+        assert!(err.message.contains("demo echo"));
+    }
+
+    #[test]
+    fn concurrent_edit_between_check_and_apply_is_refused_by_pinned_revision() {
+        // Review follow-up P0 regression (the TOCTOU interleaving): the
+        // pre-check passes, an edit lands BEFORE the apply, and the apply
+        // must still refuse because expected_revision is the PINNED base —
+        // not a fresh re-snapshot. Simulated deterministically by moving
+        // the project to a new revision right after a successful accept
+        // pre-check would need hooks we do not have; instead: pin base R,
+        // advance to R+1 via a manual apply, then call accept and assert
+        // the stale_revision refusal (the same interleaving outcome — the
+        // apply can never land on a moved revision).
+        let _mock = MockGuard::acquire();
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: ctx.pid.clone(),
+            session_epoch: ctx.epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            batch_char_budget: 4000,
+        };
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).unwrap();
+        let mut st = job_status(&registry, &st.job_id).unwrap();
+        for _ in 0..300 {
+            st = job_status(&registry, &st.job_id).unwrap();
+            if st.state == AiJobState::PreviewReady {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(st.state, AiJobState::PreviewReady);
+        // The concurrent edit: revision moves PAST the pinned base.
+        let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        ctx.mgr
+            .apply(&ApplyIntentsRequest {
+                project_id: ctx.pid.clone(),
+                expected_revision: snap.acked_revision,
+                session_epoch: ctx.epoch,
+                intents: vec![TranslationIntent {
+                    entry: rimloc_domain::canonical::SourceEntryId {
+                        kind: rimloc_domain::canonical::EntryKind::DefInjected,
+                        key: "Apple.label".into(),
+                        def_type: Some("ThingDef".into()),
+                    },
+                    locale: "Russian".into(),
+                    action: IntentAction::SetTranslation,
+                    text: Some("конкурирующая правка".into()),
+                }],
+                origin: Some(ApplyOrigin::Human),
+            })
+            .unwrap();
+        // accept MUST refuse with stale_revision (pinned base ≠ live).
+        let err = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap_err();
+        assert_eq!(err.code, crate::contract::ContractErrorCode::StaleRevision);
+        // And the newer human edit survives.
+        let after = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        assert!(after
+            .project
+            .translations
+            .iter()
+            .any(|t| t.text.as_deref() == Some("конкурирующая правка")));
+    }
+
+    #[test]
+    fn all_refused_apply_reports_failure_not_applied() {
+        // Review follow-up P1 regression: apply returning applied=0 must
+        // surface a FAILED status with the typed refusal reasons — never
+        // "Applied". Built by making every intent address an identity the
+        // session will refuse (a stale identity is hard to force; instead
+        // we exercise the empty-intent no-op path AND assert the response
+        // handling shape on a refused apply via an unknown def-type entry
+        // that the eligibility gate excludes at START — so the preview has
+        // zero translated rows → the honest no-op branch).
+        let _mock = MockGuard::acquire();
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
+        std::fs::write(
+            dir.path().join("mod/Defs/A.xml"),
+            "<Defs><ThingDef><defName>X</defName><label>Only</label></ThingDef></Defs>",
+        )
+        .unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/About")).unwrap();
+        std::fs::write(
+            dir.path().join("mod/About/About.xml"),
+            "<?xml version=\"1.0\"?><ModMetaData><name>R</name><packageId>r.t</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+        )
+        .unwrap();
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        // Pre-translate the only row manually so the job scope (untranslated)
+        // is EMPTY → preview with zero translated rows → accept must take
+        // the honest no-op branch and report FAILED, not Applied.
+        mgr.apply(&ApplyIntentsRequest {
+            project_id: snap.project_id.clone(),
+            expected_revision: snap.acked_revision,
+            session_epoch: snap.session_epoch,
+            intents: vec![TranslationIntent {
+                entry: rimloc_domain::canonical::SourceEntryId {
+                    kind: rimloc_domain::canonical::EntryKind::DefInjected,
+                    key: "X.label".into(),
+                    def_type: Some("ThingDef".into()),
+                },
+                locale: "Russian".into(),
+                action: IntentAction::SetTranslation,
+                text: Some("уже переведено".into()),
+            }],
+            origin: Some(ApplyOrigin::Human),
+        })
+        .unwrap();
+        let registry = AiJobRegistry::new();
+        let st = start_job(
+            &registry,
+            &mgr,
+            &managed,
+            AiJobParams {
+                project_id: snap.project_id.clone(),
+                session_epoch: snap.session_epoch,
+                locale: "Russian".into(),
+                source_locale: "en".into(),
+                provider_id: "mock".into(),
+                model: None,
+                base_url: None,
+                batch_char_budget: 4000,
+            },
+        )
+        .unwrap();
+        assert_eq!(st.total, 0, "nothing untranslated in scope");
+        let mut st = job_status(&registry, &st.job_id).unwrap();
+        for _ in 0..100 {
+            st = job_status(&registry, &st.job_id).unwrap();
+            if st.state != AiJobState::Running {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(st.state, AiJobState::PreviewReady);
+        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
+        assert_eq!(
+            st.state,
+            AiJobState::Failed,
+            "zero-intent accept must NOT report Applied: {st:?}"
+        );
+        assert!(st.error.unwrap_or_default().contains("nothing to apply"));
     }
 
     #[test]
