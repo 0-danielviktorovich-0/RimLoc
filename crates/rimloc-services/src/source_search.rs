@@ -738,15 +738,16 @@ fn confined_collect_text_files(
             // the results (acceptance fixture: symlinks out of the project).
             continue;
         }
+        // Containment BEFORE any use of the path: canonicalize and require
+        // the result to stay under the canonical project root — both for
+        // files and for directories we might descend into.
+        let canon = p.canonicalize()?;
+        if !canon.starts_with(canonical_root) {
+            continue;
+        }
         if file_type.is_dir() {
             confined_collect_text_files(root, canonical_root, &p, depth + 1, out, cancelled)?;
         } else if file_type.is_file() {
-            // Containment: canonicalize and require the path to stay under
-            // the canonical project root.
-            let canon = p.canonicalize()?;
-            if !canon.starts_with(canonical_root) {
-                continue;
-            }
             out.push(p);
         }
     }
