@@ -569,7 +569,7 @@ mod tests {
         Ctx {
             _dir: dir,
             mgr,
-            managed: managed,
+            managed,
             pid: snap.project_id.clone(),
             epoch: snap.session_epoch,
         }

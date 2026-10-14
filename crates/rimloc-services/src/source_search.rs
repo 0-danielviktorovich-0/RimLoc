@@ -696,7 +696,9 @@ fn standard_scope_file(path: &Path) -> bool {
     if !ext_ok {
         return false;
     }
-    let s = path.to_string_lossy();
+    // Windows: the raw path carries '\\' separators, so a forward-slash
+    // segment test would reject every file — normalize first.
+    let s = path.to_string_lossy().replace('\\', "/");
     ["Defs/", "Patches/", "Languages/"]
         .iter()
         .any(|seg| s.contains(seg))
