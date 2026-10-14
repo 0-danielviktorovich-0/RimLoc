@@ -212,13 +212,33 @@ pub fn search_sources(
             let raw = normalize_rel(&c.file);
             let rel = rel_to(&root, Path::new(&c.file));
             coverage_alt.insert(raw.clone(), rel.clone());
+            // Scan contexts can carry canonical VIRTUAL paths (Defs-derived
+            // DefInjected output paths) whose file name differs from the
+            // real source file. Also index the BARE FILE NAME as an alt key
+            // so the real-file lookup still finds the identity.
             let v = coverage.entry(rel).or_default();
             if let Some(line) = c.line {
                 v.push((line, e.id.clone()));
             }
         }
     }
+    // File-name alias index: scan contexts sometimes carry VIRTUAL paths
+    // (Defs-derived DefInjected output paths) whose directory differs from
+    // the real source file; the real file still resolves by name. A name
+    // shared by two real files keeps both entries (the line partition
+    // below disambiguates).
+    let mut coverage_by_name: BTreeMap<String, Vec<(usize, SourceEntryId)>> = BTreeMap::new();
+    for (rel_key, v) in &coverage {
+        if let Some(fname) = Path::new(rel_key).file_name().and_then(|f| f.to_str()) {
+            let e = coverage_by_name.entry(fname.to_string()).or_default();
+            e.extend(v.iter().cloned());
+        }
+    }
     for v in coverage.values_mut() {
+        v.sort_unstable();
+        v.dedup_by(|a, b| a.0 == b.0);
+    }
+    for v in coverage_by_name.values_mut() {
         v.sort_unstable();
         v.dedup_by(|a, b| a.0 == b.0);
     }
@@ -288,9 +308,14 @@ pub fn search_sources(
                 .parse_failures
                 .push((rel.clone(), "malformed XML".to_string()));
         }
+        let rel_fname = Path::new(&rel)
+            .file_name()
+            .and_then(|f| f.to_str())
+            .map(|f| f.to_string());
         let covered = coverage
             .get(&rel)
-            .or_else(|| coverage_alt.get(&rel).and_then(|k| coverage.get(k)));
+            .or_else(|| coverage_alt.get(&rel).and_then(|k| coverage.get(k)))
+            .or_else(|| rel_fname.as_deref().and_then(|f| coverage_by_name.get(f)));
         let lang_dir = format!(
             "Languages/{}",
             req.source_lang_dir.as_deref().unwrap_or("English")
@@ -651,7 +676,10 @@ fn normalize_rel(p: &str) -> String {
 /// inventory identity (the Windows CI failure class).
 fn rel_to(root: &Path, p: &Path) -> String {
     let norm = |x: &Path| x.to_string_lossy().replace('\\', "/");
-    let root_s = norm(root);
+    // The walk yields canonical paths; canonicalize the root so the prefix
+    // strip matches (macos tempdir /var -> /private/var).
+    let root_c = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    let root_s = norm(&root_c);
     let p_s = norm(p);
     if let Some(stripped) = p_s.strip_prefix(&format!("{root_s}/")) {
         return stripped.to_string();
@@ -686,7 +714,15 @@ fn is_effective_file(
     if dirs.is_empty() {
         return true;
     }
-    dirs.iter().any(|dir| path.starts_with(dir.as_path()))
+    // The walk yields CANONICAL paths; the view dirs may be non-canonical
+    // (macos tempdirs resolve /var -> /private/var). Canonicalize both
+    // sides before the prefix test.
+    let canon_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    let result = dirs.iter().any(|dir| {
+        let canon_dir = dir.canonicalize().unwrap_or_else(|_| (*dir).clone());
+        canon_path.starts_with(canon_dir)
+    });
+    result
 }
 
 fn standard_scope_file(path: &Path) -> bool {
@@ -746,9 +782,11 @@ fn confined_collect_text_files(
             continue;
         }
         if file_type.is_dir() {
-            confined_collect_text_files(root, canonical_root, &p, depth + 1, out, cancelled)?;
+            // Descend by the CANONICAL path only (CodeQL path-injection:
+            // no unsanitized read_dir output reaches a filesystem call).
+            confined_collect_text_files(root, canonical_root, &canon, depth + 1, out, cancelled)?;
         } else if file_type.is_file() {
-            out.push(p);
+            out.push(canon);
         }
     }
     Ok(())
@@ -784,9 +822,9 @@ mod tests {
             "<ModMetaData><name>Search Fixture</name><packageId>rimloc.test.search</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
         )
         .unwrap();
-        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::create_dir_all(root.join("1.6/Defs")).unwrap();
         std::fs::write(
-            root.join("Defs/Things.xml"),
+            root.join("1.6/Defs/Things.xml"),
             "<Defs>\n  <ThingDef>\n    <defName>Apple</defName>\n      <label>Golden Apple</label>\n    </ThingDef>\n  <HediffDef>\n    <defName>Glow</defName>\n    <label>Golden Apple</label>\n  </HediffDef>\n  <ThingDef>\n    <defName>Stone</defName>\n    <label mod_note=\"NT\">Untranslatable Stone</label>\n  </ThingDef>\n  <ResearchProjectDef>\n    <defName>Alchemy</defName>\n    <description>Golden studies</description>\n  </ResearchProjectDef>\n</Defs>\n",
         )
         .unwrap();
@@ -811,7 +849,7 @@ mod tests {
         .unwrap();
         // Malformed XML.
         std::fs::write(
-            root.join("Defs/Broken.xml"),
+            root.join("1.6/Defs/Broken.xml"),
             "<Defs><ThingDef><label>Golden broken</Defs>\n",
         )
         .unwrap();
@@ -851,7 +889,7 @@ mod tests {
         // (same text, two structural identities — no other line contains
         // "golden apple").
         assert_eq!(rep.total_matches, 2, "{:?}", rep.matches);
-        let things = statuses_of(&rep, "Defs/Things.xml");
+        let things = statuses_of(&rep, "1.6/Defs/Things.xml");
         let indexed = things
             .iter()
             .filter(|(s, t)| *s == MatchStatus::AlreadyIndexed && t.contains("Golden Apple"))
