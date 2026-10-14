@@ -3127,7 +3127,6 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_save_drafts",
     "project_restore_drafts",
     "project_clear_drafts",
-
     // AI translation jobs (Stage B).
     "ai_job_start",
     "ai_job_status",

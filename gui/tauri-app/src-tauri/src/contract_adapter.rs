@@ -75,7 +75,6 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_save_drafts",
     "project_restore_drafts",
     "project_clear_drafts",
-
     // AI translation jobs (Stage B): start/status/cancel/accept.
     "ai_job_start",
     "ai_job_status",
@@ -442,12 +441,7 @@ pub fn ai_job_accept(
         .lock()
         .expect("contract session registry poisoned");
     traced_simple("ai_job_accept", || {
-        rimloc_services::ai_job::accept_job(
-            &ai.0,
-            &manager,
-            &request.job_id,
-            request.session_epoch,
-        )
+        rimloc_services::ai_job::accept_job(&ai.0, &manager, &request.job_id, request.session_epoch)
     })
 }
 
@@ -1206,8 +1200,8 @@ mod ipc_draft_tests {
 
         let mut final_state = String::new();
         for _ in 0..200 {
-            let st = invoke(&webview, "ai_job_status", json!({"job_id": job_id}))
-                .expect("status ok");
+            let st =
+                invoke(&webview, "ai_job_status", json!({"job_id": job_id})).expect("status ok");
             final_state = st["state"].as_str().unwrap().to_string();
             if final_state != "running" {
                 break;
