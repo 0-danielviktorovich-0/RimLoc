@@ -3129,8 +3129,6 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_clear_drafts",
     // Source XML preview (rel27).
     "project_source_xml_preview",
-    // Source XML preview (rel27).
-    "project_source_xml_preview",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key lives in the OS keychain, never in a file.
     "contract_provider_instance_list",
