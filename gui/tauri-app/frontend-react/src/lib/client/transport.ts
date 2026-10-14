@@ -226,6 +226,19 @@ export interface ContractMethodMap {
     params: { project_id: string; session_epoch: number; key?: string };
     result: DraftsSaveAckDto;
   };
+  project_source_xml_preview: {
+    params: {
+      request: {
+        project_id: string;
+        session_epoch: number;
+        file: string;
+        line?: number;
+        before?: number;
+        after?: number;
+      };
+    };
+    result: import('./types').SourceXmlPreviewDto;
+  };
   contract_chat_batch_list: {
     params: { request: ChatBatchListRequestDto };
     result: ChatBatchListResponseDto;

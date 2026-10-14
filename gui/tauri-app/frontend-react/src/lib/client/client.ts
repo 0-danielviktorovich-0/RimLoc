@@ -14,6 +14,7 @@
 // Store binding is a LATER step (post contract accept); nothing here
 // imports ../mock/* — the mock lives behind MockTransport only.
 import type {
+  SourceXmlPreviewDto,
   ApplyExistingRequestDto,
   ApplyExistingResponseDto,
   BuildIdentityDto,
@@ -464,6 +465,28 @@ export class RimLocClient {
    * mismatched ones are quarantined as `.drafts.orphan.json` and REPORTED —
    * never silently applied. Unreadable stores report `unavailable` with the
    * typed detail; opening the project itself never fails because of drafts. */
+  /** Source XML preview (rel27): bounded read-only window of a project
+   *  source file for the Source Inspector. */
+  async sourceXmlPreview(args: {
+    projectId: string;
+    sessionEpoch: number;
+    file: string;
+    line?: number;
+    before?: number;
+    after?: number;
+  }): Promise<SourceXmlPreviewDto> {
+    return this.call('project_source_xml_preview', {
+      request: {
+        project_id: args.projectId,
+        session_epoch: args.sessionEpoch,
+        file: args.file,
+        line: args.line,
+        before: args.before ?? 6,
+        after: args.after ?? 20
+      }
+    });
+  }
+
   async restoreDrafts(projectId: string, sessionEpoch: number): Promise<DraftsRestoreReportDto> {
     return this.call('project_restore_drafts', {
       project_id: projectId,

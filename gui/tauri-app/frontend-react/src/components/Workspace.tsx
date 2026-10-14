@@ -16,7 +16,7 @@ import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetS
 import { clientInstance } from '../lib/client/instance'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
-import type { GlossaryTermDto, SourceEntryIdDto, ValidationFindingDto } from '../lib/client/types'
+import type { GlossaryTermDto, SourceEntryIdDto, SourceXmlPreviewDto, SourceXmlPreviewLineDto, ValidationFindingDto } from '../lib/client/types'
 
 const ROW_HEIGHT = 63
 
@@ -70,6 +70,20 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   })
 
   const snapNow = st.snapshot
+  // rel27: XML-предпросмотр — чтение исходного файла через IPC (read-only,
+  // containment по source root).
+  const loadXmlPreview = (
+    file: string,
+    line?: number
+  ): Promise<SourceXmlPreviewDto> =>
+    clientInstance.getClient().sourceXmlPreview({
+      projectId: snapNow!.project_id,
+      sessionEpoch: snapNow!.session_epoch,
+      file,
+      line,
+      before: 6,
+      after: 20
+    })
 
   // §9: живая валидация. Отчёт устарел (open/commit/adoptExternal) →
   // пере-гоняем; ошибка не ретраится молча (гвард в revalidate + эффект).
@@ -324,6 +338,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             related={related}
             // §15/§20: AI entry — только навигация, без вызовов провайдера.
             onSendToChatBatch={() => sendToChatBatch(selected.identity)}
+            onLoadXmlPreview={loadXmlPreview}
             onDraft={(v) => projectStore.setDraft(selected.uid, v)}
             onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
@@ -531,6 +546,8 @@ function EntryEditor(props: {
   related: WorkspaceEntry[]
   // §15/§20: перенос строки в чат-перевод (sessionStorage + навигация).
   onSendToChatBatch: () => void
+  // rel27: загрузить XML-предпросмотр исходного файла строки.
+  onLoadXmlPreview?: (file: string, line?: number) => Promise<SourceXmlPreviewDto>
   onDraft: (v: string) => void
   onCommit: (next: boolean) => void
   onMove: (d: number) => void
@@ -553,7 +570,38 @@ function EntryEditor(props: {
     )
   }
   // §13: единственная мёртвая кнопка-таб стала настоящими табами.
-  const [tab, setTab] = useState<'source' | 'terms'>('source')
+  // rel27: третья вкладка — настоящий XML-предпросмотр исходного файла.
+  const [tab, setTab] = useState<'source' | 'terms' | 'xml'>('source')
+  const [xmlPreview, setXmlPreview] = useState<
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | {
+        status: 'done'
+        lines: SourceXmlPreviewLineDto[]
+        target?: number
+        file: string
+        total: number
+        truncated_head: boolean
+        truncated_tail: boolean
+      }
+    | null
+  >(null)
+  const loadXmlPreview = (): void => {
+    if (!props.onLoadXmlPreview) return
+    setXmlPreview({ status: 'loading' })
+    props.onLoadXmlPreview(props.sourceFile ?? '', props.sourceLine)
+      .then((res) =>
+        setXmlPreview({
+          status: 'done',
+          lines: res.lines,
+          target: res.target_line,
+          file: res.file,
+          total: res.total_lines,
+          truncated_head: res.truncated_head,
+          truncated_tail: res.truncated_tail
+        })
+      )
+      .catch((e: unknown) => setXmlPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) }))
+  }
   const dirty = props.draft !== props.target
   const patchStage = props.provenance?.patch_stage
   const tkeyLocs = props.tkey?.locations ?? []
@@ -708,6 +756,18 @@ function EntryEditor(props: {
           >
             <BookOpen size={12} /> {t('ws.tabTerms')}
           </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'xml'}
+            className={tab === 'xml' ? 'active' : ''}
+            data-testid="ws.tab.xml"
+            onClick={() => {
+              setTab('xml')
+              if (props.sourceFile) loadXmlPreview()
+            }}
+          >
+            <Braces size={12} /> {t('ws.tabXml')}
+          </button>
         </div>
         {tab === 'source' ? (
           <div className="context-content" role="tabpanel" data-testid="src.block">
@@ -773,7 +833,7 @@ function EntryEditor(props: {
               </div>
             )}
           </div>
-        ) : (
+        ) : tab === 'terms' ? (
           <div className="context-content" role="tabpanel" data-testid="ws.terms-block">
             {props.termsError && (
               <div className="inline-warning" role="alert" data-testid="ws.terms-error">
@@ -804,6 +864,48 @@ function EntryEditor(props: {
                     </span>
                   </div>
                 )}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="context-content" role="tabpanel" data-testid="ws.xml-block">
+            {!props.sourceFile ? (
+              <div data-testid="ws.xml-nosource">
+                <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                  {t('ws.xml.noSource')}
+                </span>
+              </div>
+            ) : xmlPreview?.status === 'error' ? (
+              <div className="inline-warning text-destructive" role="alert" data-testid="ws.xml-error">
+                <CircleAlert size={15} /> {t('ws.xml.error')}: {xmlPreview.error}
+              </div>
+            ) : xmlPreview?.status !== 'done' ? (
+              <div data-testid="ws.xml-loading" style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                {t('ws.xml.loading')}
+              </div>
+            ) : (
+              <>
+                <div data-testid="ws.xml.meta" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                  {xmlPreview.file} · {xmlPreview.total} {t('ws.xml.lines')}
+                  {(xmlPreview.truncated_head || xmlPreview.truncated_tail) ? ' · windowed' : ''}
+                </div>
+                <pre data-testid="ws.xml-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0 }}>
+                  {xmlPreview.lines.map((l) => (
+                    <div
+                      key={l.n}
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        background: xmlPreview.target === l.n ? 'var(--accent)' : 'transparent',
+                      }}
+                    >
+                      <span style={{ color: 'var(--muted-foreground)', userSelect: 'none', minWidth: 28, textAlign: 'right' }}>
+                        {l.n}
+                      </span>
+                      <code style={{ whiteSpace: 'pre-wrap' }}>{l.text}</code>
+                    </div>
+                  ))}
+                </pre>
               </>
             )}
           </div>

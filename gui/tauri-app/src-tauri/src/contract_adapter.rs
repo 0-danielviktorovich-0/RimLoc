@@ -377,6 +377,125 @@ pub fn project_clear_drafts(
     })
 }
 
+/// `project_source_xml_preview` (rel27) — read-only bounded window of a
+/// project source file for the Source Inspector XML preview. The path is
+/// resolved against the session's source root with containment (no `..`
+/// traversal, absolute paths refused); lines are returned 1-based.
+#[derive(Debug, serde::Deserialize)]
+pub struct SourceXmlPreviewArgs {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub file: String,
+    #[serde(default)]
+    pub line: Option<usize>,
+    #[serde(default)]
+    pub before: usize,
+    #[serde(default)]
+    pub after: usize,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct SourceXmlPreviewLine {
+    pub n: usize,
+    pub text: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct SourceXmlPreview {
+    pub file: String,
+    pub target_line: Option<usize>,
+    pub lines: Vec<SourceXmlPreviewLine>,
+    pub truncated_head: bool,
+    pub truncated_tail: bool,
+    pub total_lines: usize,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_source_xml_preview(
+    state: State<'_, ContractState>,
+    request: SourceXmlPreviewArgs,
+) -> Result<SourceXmlPreview, rimloc_services::contract::ContractError> {
+    use rimloc_services::contract::{ContractError, ContractErrorCode};
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_source_xml_preview", || {
+        let snap = manager.snapshot(&request.project_id)?;
+        if snap.session_epoch != request.session_epoch {
+            return Err(ContractError::stale_epoch(
+                request.session_epoch,
+                snap.session_epoch,
+            ));
+        }
+        let root = snap
+            .source_root
+            .as_ref()
+            .map(|r| std::path::PathBuf::from(&r.path))
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::InvalidConfig,
+                    "project has no source root",
+                )
+            })?;
+        let rel = std::path::Path::new(&request.file);
+        if rel.is_absolute()
+            || rel
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "source preview path escapes the project source root".to_string(),
+            ));
+        }
+        let full = root.join(rel);
+        if !full.starts_with(&root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "source preview path escapes the project source root".to_string(),
+            ));
+        }
+        let bytes = std::fs::read(&full).map_err(|source| {
+            ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                format!("source preview read `{}`: {source}", request.file),
+            )
+        })?;
+        if bytes.iter().take(8192).any(|b| *b == 0) {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                "source preview: file looks binary".to_string(),
+            ));
+        }
+        let content = String::from_utf8_lossy(&bytes);
+        let total = content.lines().count();
+        let target = request.line.unwrap_or(1).min(total.max(1));
+        let before = request.before.min(200);
+        let after = request.after.min(200);
+        let start = target.saturating_sub(before).max(1);
+        let end = (target + after).min(total);
+        let lines = content
+            .lines()
+            .skip(start - 1)
+            .take(end - start + 1)
+            .enumerate()
+            .map(|(i, text)| SourceXmlPreviewLine {
+                n: start + i,
+                text: text.to_string(),
+            })
+            .collect();
+        Ok(SourceXmlPreview {
+            file: request.file,
+            target_line: request.line,
+            lines,
+            truncated_head: start > 1,
+            truncated_tail: end < total,
+            total_lines: total,
+        })
+    })
+}
+
 // TM live (owner decision A+B+C): the glossary command chain, repeated
 // literally — pass-through into the session manager, typed errors, trace.
 

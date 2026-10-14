@@ -15,6 +15,19 @@ import { t, type Locale } from '../lib/i18n'
 
 export type ThemePref = 'system' | 'light' | 'dark'
 
+/** UI zoom (rel27): 0.8–1.4, persisted; applied on the app shell root. */
+export function readUiZoom(): number {
+  const raw = window.localStorage.getItem('rimloc.ui.zoom')
+  const n = raw ? Number(raw) : 1
+  return Number.isFinite(n) && n >= 0.8 && n <= 1.4 ? n : 1
+}
+
+export function writeUiZoom(z: number): void {
+  const clamped = Math.min(1.4, Math.max(0.8, z))
+  window.localStorage.setItem('rimloc.ui.zoom', String(clamped))
+  window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
+}
+
 export function Settings(props: {
   theme: ThemePref
   onThemeChange: (v: ThemePref) => void
@@ -62,6 +75,21 @@ export function Settings(props: {
           <select value={props.locale} onChange={(e) => props.onLocaleChange(e.target.value as Locale)} data-testid="settings.ui-locale">
             <option value="ru">Русский</option>
             <option value="en">English</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.uiZoom')}</span>
+          <select
+            value={String(readUiZoom())}
+            onChange={(e) => writeUiZoom(Number(e.target.value))}
+            data-testid="settings.ui-zoom"
+          >
+            <option value="0.8">80%</option>
+            <option value="0.9">90%</option>
+            <option value="1">100%</option>
+            <option value="1.1">110%</option>
+            <option value="1.2">120%</option>
+            <option value="1.4">140%</option>
           </select>
         </label>
       </section>

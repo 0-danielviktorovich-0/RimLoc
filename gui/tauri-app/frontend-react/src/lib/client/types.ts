@@ -518,7 +518,23 @@ export type ContractMethod =
   // translations.
   | 'project_save_drafts'
   | 'project_restore_drafts'
-  | 'project_clear_drafts';
+  | 'project_clear_drafts'
+  | 'project_source_xml_preview';
+
+// --- source xml preview (rel27) ---
+export interface SourceXmlPreviewLineDto {
+  n: number;
+  text: string;
+}
+
+export interface SourceXmlPreviewDto {
+  file: string;
+  target_line?: number;
+  lines: SourceXmlPreviewLineDto[];
+  truncated_head: boolean;
+  truncated_tail: boolean;
+  total_lines: number;
+}
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
