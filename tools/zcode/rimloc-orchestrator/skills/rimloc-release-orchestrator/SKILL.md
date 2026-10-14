@@ -22,6 +22,24 @@ metadata:
 9. **No auto-publish**: публикации — только явный owner gate.
 10. **Не over-orchestrate тривиальное**: один фикс — один коммит, без церемоний.
 
+## Completion & reviewer discipline (mandatory)
+
+- Multi-system work **cannot** close with only a short transcript or one branch.
+  Capture the Workflow run id or tool-unavailability diagnosis, one bounded
+  owner/worktree per lane, `LaneResult` receipts and independent verifier.
+- Inspect current (not historical) CI runs and every CodeQL/Codecov bot comment
+  at each PR's exact HEAD. Red check or unresolved security report = BLOCKED,
+  not "all gates green". Stop only at a genuine external/owner gate.
+- The private RimLoc-review-handoff repository is the reviewer mailbox.
+  Use the native `local.handoff(reason,prompt)` only if the local harness
+  exposes it; record an actual receipt, never imply a successful handoff
+  without one. Owner manual forwarding is NOT the default workflow.
+- Treat documents such as `.rimloc-release-state.json` as **potentially stale
+  snapshots**: reconcile them against live PR identities before updating.
+  Keep owner UAT, RimWorld playtest, credentials and publication as owner gates.
+- See `docs/development/PRODUCT_CLOSURE_PREFLIGHT.md` for objective-by-objective
+  acceptance and truthful PARTIAL/BLOCKED status rules.
+
 ## Практические уроки (RimLoc 2026-10)
 - Длинные лейны — только через фоновый Workflow-инструмент (переживает прерывания); обычные субагенты гаснут при прерывании хода.
 - Таймбокс в брифе каждого сборочного/WDIO лейна (иначе зависание).

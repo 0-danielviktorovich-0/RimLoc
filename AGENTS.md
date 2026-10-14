@@ -1,5 +1,45 @@
 # Repository Guidelines
 
+## Mandatory multi-agent preflight and evidence gate (2026-10-14)
+
+**Read this BEFORE writing code or claiming any stage finished.** A task touching
+2+ subsystems, having 3+ independent deliverables, involving architecture,
+release/security or explicit parallelism is a **multi-lane campaign**. The lead
+MUST first load `tools/zcode/rimloc-orchestrator/skills/rimloc-release-orchestrator/SKILL.md`
+and `docs/development/ZCODE_WORKFLOW_RUNTIME.md`, inspect actual tool availability
+and the live git/PR/CI status, then publish an executable DAG, lane ownership,
+non-overlapping worktrees, acceptance tests and a blocker/owner-gate register.
+Use ZCode `CreateWorkflow`/named subagents for long independent lanes **when
+actually available**. If the runtime cannot access them, state the exact missing
+capability and use a documented bounded sequential fallback — do not claim
+the workflow ran or substitute an invented tool.
+
+**Completion is evidence-gated:** "DONE", "green", "release-ready" or a checked
+acceptance box requires exact-head CI + CodeQL + Codecov/bot-comment review
+AND behavioral tests/evidence for that deliverable. Any failing job, open
+relevant security alert, unimplemented feature, missing artifact or unverified
+app behavior is `BLOCKED`, `PARTIAL` or `OWNER_ONLY`, not `DONE`.
+A locally built UAT zip can be `EXPERIMENTAL` with accurate SHA while CI is
+red; it cannot be promoted to accepted. Do NOT close parent milestones by
+counting child-stage setup as completed functionality.
+
+**Independent review and handoff are required** for critical cross-subsystem
+changes. If `local.handoff` is exposed by this exact agent runtime, attempt a
+real handoff using `reason` and `prompt` and capture the receipt/response;
+it is NOT automatically present in every session. Otherwise place the
+sanitized REVIEW_REQUEST + evidence in the existing PRIVATE
+`RimLoc-review-handoff` mailbox and mark review `WAITING_EXTERNAL_REVIEW`.
+A GitHub comment alone is not evidence that ChatGPT saw or approved anything;
+never make a fake "reviewer PASS" claim.
+
+Before every final response: reconcile all relevant Draft PR HEADs, CI,
+CodeQL, bot comments, latest evidence, live product files and blockers; update
+a durable campaign ledger with exact SHAs and timestamps. Respect the owner's
+NO merge/release/Discord/paid-provider-calls mandate. Never request a second
+layer of approval where native permissions already grant an operation.
+Canonical operational template: `docs/development/PRODUCT_CLOSURE_PREFLIGHT.md`.
+
+
 Переписан аудитом документации 2026-10-05 под фактическое состояние ветки
 `feature/ui-r1-convergence` (см. `docs/development/REPOSITORY_STATE_2026-10.md`,
 `docs/competitive/RIMLOC_CAPABILITIES_BASELINE.md` — якорь возможностей).
