@@ -31,6 +31,7 @@ pub mod providers;
 pub mod scan;
 pub mod session;
 pub mod session_drafts;
+pub mod source_search;
 pub mod ui_catalog;
 mod util;
 pub mod validate;
