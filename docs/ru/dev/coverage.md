@@ -10,27 +10,22 @@ Coverage — **сигнал, а не оценка корректности**. В
 
 ## Текущие coverage families
 
-Workflow загружает два независимых Rust-отчёта:
+Workflow загружает три независимо сформированных отчёта:
 
-- **rust** — workspace под `crates/`, без Tauri GUI crate;
-- **gui-rust** — desktop Rust/Tauri слой с отдельными GTK/WebKit/frontend prerequisites.
+- **rust** — Rust workspace под `crates/`, без Tauri GUI;
+- **gui-rust** — desktop Rust/Tauri с отдельными GTK/WebKit/frontend prerequisites;
+- **frontend-react** — весь production React source (`src/**/*.{ts,tsx}`), включая непроверенные экраны с 0%, а не скрывая их.
 
-Codecov **Components** режут эти отчёты по архитектурным подсистемам без повторного запуска тестов для каждого crate:
+Codecov **Components** разделяют эти отчёты на области продукта без повторного прогона тестов:
 
-- Domain & Core;
-- Services;
-- RimWorld parsers & validation;
-- import/export formats;
-- CLI;
-- providers/config;
-- plugin compatibility;
-- desktop Rust/Tauri.
+- Domain & Core; Services; RimWorld parsers & validation; import/export formats;
+- CLI; providers/config; plugin compatibility; desktop Rust/Tauri; React frontend.
 
-То есть **Flags** показывают test families, а **Components** — продуктовые подсистемы.
+**Flags** показывают семейства тестов, **Components** — архитектурные области.
 
 ## Формат отчёта
 
-Rust CI использует `cargo-llvm-cov` и отправляет native Codecov coverage JSON вместо обычного LCOV.
+Rust CI использует `cargo-llvm-cov` и отправляет native Codecov coverage JSON вместо обычного LCOV. React использует Vitest V8 и загружает Istanbul JSON (`coverage/coverage-final.json`), одновременно создавая текстовый и LCOV-отчёты для локальной проверки.
 
 Причины:
 
@@ -84,18 +79,44 @@ Statuses сначала **informational**.
 
 ## React coverage
 
-React R1 уже имеет build/typecheck acceptance, но пока нет стабильного unit/component coverage report в package scripts.
+Job `frontend-react` из `.github/workflows/coverage.yml` выполняет
+`npm test` в `gui/tauri-app/frontend-react` (Vitest V8, конфигурация
+`test.coverage`) и загружает `coverage/coverage-final.json` под флагом
+Codecov `frontend-react`. Дополнительная проверка JSON требует наличие
+`App.tsx`, `Workspace.tsx`, `project.ts` и `entryUid.ts` в отчёте.
 
-Когда test stack будет готов:
+Покрытие включает **все production-файлы `src/**/*.{ts,tsx}`**, а не только
+проверенные state-модули. Поэтому непроверенные экраны честно показывают
+0%: это baseline, а не автоматическая оценка готовности к релизу.
+При Data Safety review отдельно анализировать `project.ts` и `entryUid.ts`.
+Зелёные Rust/Tauri-тесты сами по себе не доказывают покрытие React и
+работоспособность настоящего собранного приложения.
 
-~~~text
-npm run test:coverage
-→ frontend-react/coverage/lcov.info (или другой Codecov-supported report)
-→ Codecov flag: react
-→ Codecov component: frontend-react
-~~~
+## Pull Request: зелёные проверки — не конец ревью
 
-Не добавляем второй test framework только ради Codecov.
+- Проверять комментарии **Codecov и других ботов**, все статусы
+  patch/project/flags/components, конкретные непокрытые изменённые строки и
+  review threads на **точном HEAD PR**. `informational: true` позволяет
+  зелёный статус даже ниже цели; успешный upload означает лишь очередь
+  обработки, а не принятый отчёт.
+- **`strict_yaml_branch: main` — намеренная политика**: до merge Codecov
+  применяет YAML из `main`, а не новые настройки из PR. Проверять
+  эффективные `ignore`/components/flags из `main` перед заявлениями,
+  что новая область продукта учитывается.
+- Исключение `ignore: "gui/tauri-app/frontend"` захватывает и
+  `frontend-react`. Для legacy-папки нужно окончание `frontend/`;
+  после обработки Codecov проверить, что React действительно измеряется.
+  Статус "Coverage not affected" у флага требует расследования.
+- Проверять фактическую таблицу **по файлам** и их перечень в JSON.
+  `coverage.include` находится внутри `test.coverage`, а не в корне
+  Vite config. Зелёный workflow с неправильным знаменателем не доказывает
+  заявленные метрики.
+- Если изменился знаменатель, baseline либо политика исключений,
+  проценты «до/после» **нельзя напрямую сравнивать**. Не скрывать файлы,
+  не уменьшать требования ради цифры; добавлять поведенческие и
+  отрицательные тесты реальных рисков, документировать исключения.
+- Покрытие дополняется реальными Tauri IPC-тестами, native WDIO,
+  проверкой экспорта в RimWorld, CodeQL/зависимостей и UAT владельца.
 
 ## Test Analytics — позже
 

@@ -1330,6 +1330,19 @@ impl ProjectSessionManager {
         .validate(req, job_id)
     }
 
+    /// `provider_instance_resolve` — internal launch-target resolution for
+    /// the AI job factory (prov-* wiring, review 2026-10-14): the stored
+    /// metadata plus the key from the secret sink, Debug-masked end to
+    /// end. NOT a wire command — the secret never crosses the process
+    /// boundary toward the GUI.
+    pub fn provider_instance_resolve(
+        &self,
+        instance_id: &str,
+    ) -> Result<crate::providers::ResolvedProviderTarget, ContractError> {
+        let mut st = self.providers.lock().expect("provider settings poisoned");
+        crate::providers::resolve_instance(&mut st, self.secret_sink.as_ref(), instance_id)
+    }
+
     /// `project_validate` — run the EXISTING validator (026 severity) over
     /// the trusted session state. NEVER mutates the project: this is a
     /// read-only operation over the canonical inventory and its

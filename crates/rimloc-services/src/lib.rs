@@ -5,6 +5,7 @@ pub use rimloc_core::{Result, TransUnit};
 pub use rimloc_export_po::PoStats as ExportPoStats;
 pub use rimloc_validate::ValidationMessage;
 
+pub mod ai_job;
 pub mod build;
 pub mod canonical_bridge;
 pub mod chat_batch;
@@ -31,6 +32,7 @@ pub mod providers;
 pub mod scan;
 pub mod session;
 pub mod session_drafts;
+pub mod source_search;
 pub mod ui_catalog;
 mod util;
 pub mod validate;

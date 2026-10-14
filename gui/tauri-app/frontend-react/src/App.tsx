@@ -29,6 +29,7 @@ import { Checks } from './components/Checks'
 import { Glossary } from './components/Glossary'
 import { Tm } from './components/Tm'
 import { ChatBatch } from './components/ChatBatch'
+import { AiTranslate } from './components/AiTranslate'
 import { BuildExport } from './components/BuildExport'
 import { Existing } from './components/Existing'
 import { Compare } from './components/Compare'
@@ -515,6 +516,8 @@ export function App() {
             <Glossary />
           ) : route === 'tm' ? (
             <Tm />
+          ) : route === 'aitranslate' ? (
+            <AiTranslate onBack={() => { window.location.hash = '#/projects' }} />
           ) : route === 'chatbatch' ? (
             <ChatBatch />
           ) : (
