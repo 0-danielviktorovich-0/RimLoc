@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "frontendDist": "../frontend-v2/dist",
+    "beforeBuildCommand": "cd frontend-v2 && npm run build",
+    "beforeDevCommand": "cd frontend-v2 && npm run dev",
+    "devUrl": "http://localhost:5173"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "url": "index.html",
+        "title": "RimLoc GUI",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "devtools": true,
+        "focus": false
+      }
+    ]
+  },
+  "bundle": {
+    "resources": {
+      "../frontend-v2/src/i18n/generated": "selfloc-catalog"
+    }
+  }
+}
