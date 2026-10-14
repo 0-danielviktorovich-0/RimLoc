@@ -32,8 +32,9 @@ Execution/architecture reference:
 
 ## Project Structure & Module Organization
 
-RimLoc — кроссплатформенный инструмент перевода модов RimWorld (и других игр, через
-адаптеры): Rust workspace + Tauri 2 desktop GUI + MkDocs-сайт в `docs/`.
+RimLoc — графическая десктопная студия перевода модов RimWorld: основной продукт —
+Tauri 2 + React GUI; общая реализация возможностей — Rust services; CLI —
+дополнительный доступ для автоматизации; MkDocs — документация.
 
 ### Rust workspace (`Cargo.toml`, 15 крейтов + GUI)
 
@@ -47,7 +48,7 @@ RimLoc — кроссплатформенный инструмент перев�
 | `rimloc-validate` | правила валидации | чистые проверки |
 | `rimloc-services` | оркестрация: scan/validate/import/build, project_store v2, ui_catalog, contract, observability | переиспользуется CLI и GUI, файловый IO разрешён |
 | `rimloc-config` | конфигурация (`rimloc.toml`) | — |
-| `rimloc-llm` | провайдер-шаблоны (UI существует, LLM-вызовы не подключены) | не вызывать платные API без явного разрешения владельца |
+| `rimloc-llm` | действующий LLM backend для CLI; GUI умеет конфигурировать и проверять подключения, прямой AI job ещё не подключён | платные вызовы и OAuth — только с разрешения пользователя |
 | `rimloc-plugin-api` / `rimloc-plugin-jsonftl` | плагины сканирования | — |
 | `rimloc-cli` | тонкий командный слой (`src/main.rs`) | никакой бизнес-логики |
 
@@ -314,7 +315,7 @@ CLI-вывод/скриншоты при изменении поведения; 
 
 ## Product Surfaces and i18n
 
-- **GUI не обязан зеркалить каждую CLI-команду.** CLI — headless/automation + format tooling;
+- **GUI обязан покрывать каждый существенный для переводчика CLI-сценарий.** Отдельные флаги разработчика можно оставить в CLI, но пользовательский workflow должен существовать в GUI; CLI — headless/automation + format tooling;
   React GUI — product workflow поверх того же `rimloc-services`/`RimLocClient`. Общая доменная
   семантика должна совпадать, но UX capability-driven, а не «одна кнопка на каждый флаг».
 - Format-specific CLI (PO/CSV/XLIFF и т.п.) остаются опциональными interoperability tools.
