@@ -253,8 +253,22 @@ describe('AI cancel acceptance — integrated native GUI (review P2)', () => {
     if (await acceptAfter.isExisting()) {
       throw new Error('cancelled job offers Accept — Cancelled was not terminal in the UI')
     }
+    // EXACT state assertion (review round 2, P2-A): the state pill renders
+    // the raw i18n key `ai.state.<state>`, so a Failed job would read
+    // ai.state.failed — only `cancelled` passes this check.
     const st = await browser.$('[data-testid="ai.job-state"]').getText()
-    console.log(`[ai-cancel] UI cancel state pill: ${st}`)
+    if (!st.includes('cancelled')) {
+      throw new Error(`UI cancel must land exactly on cancelled, pill=${st}`)
+    }
+    // Terminal stability: the pill must not drift afterwards.
+    for (let i = 0; i < 6; i++) {
+      await pause(500)
+      const again = await browser.$('[data-testid="ai.job-state"]').getText()
+      if (!again.includes('cancelled')) {
+        throw new Error(`cancelled state drifted to ${again} at t=${i * 500}ms`)
+      }
+    }
+    console.log(`[ai-cancel] UI cancel state pill: ${st} (stable across 3s)`)
   })
 
   it('mock job: start → preview → accept → applied, envelope holds Russian', async () => {

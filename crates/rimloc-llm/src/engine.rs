@@ -218,6 +218,15 @@ impl<'a> TranslationEngine<'a> {
                         .map(|r| (r.id, r.translation))
                         .collect();
                     for unit in batch {
+                        // Boundary 6 (review round 2, P1-B): before EACH
+                        // unit's publication within a batch. The in-flight
+                        // check above covers the response arrival, but a
+                        // flip landing mid-batch must not keep writing
+                        // checkpoints / publishing outcomes that the user
+                        // cancelled after the first results landed.
+                        if self.is_cancelled() {
+                            return Err(LlmError::Cancelled);
+                        }
                         let outcome = match by_id.get(&unit.id) {
                             Some(tr) => {
                                 let issues = check_pair(&unit.id, &unit.source, tr);
@@ -269,6 +278,13 @@ impl<'a> TranslationEngine<'a> {
                 }
                 Err(e) => {
                     for unit in batch {
+                        // Boundary 6, failure branch: a flip landing while
+                        // a failed response is being reported must stop
+                        // the remaining per-unit failures and surface
+                        // Err(Cancelled) instead of a silent Ok.
+                        if self.is_cancelled() {
+                            return Err(LlmError::Cancelled);
+                        }
                         summary.failed += 1;
                         on_unit(&UnitOutcome {
                             id: unit.id.clone(),
@@ -988,5 +1004,84 @@ mod tests {
         let result = engine.translate(&[unit("a", "Hello")], |_| {});
         assert!(matches!(result, Err(LlmError::Cancelled)), "{result:?}");
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    /// Review round 2, P1-B: the flip lands INSIDE the on_unit callback of
+    /// a multi-unit batch. Units not yet published must never reach
+    /// on_unit or the checkpoint, and the engine must surface
+    /// Err(Cancelled) instead of a silent Ok.
+    #[test]
+    fn cancel_from_callback_stops_remaining_publications_of_batch() {
+        let tmp = tempfile::tempdir().unwrap();
+        let cp = tmp.path().join("cp.jsonl");
+        let p = MockProvider::new();
+        let flag = Arc::new(AtomicBool::new(false));
+        let opts = EngineOptions {
+            checkpoint_path: Some(cp.clone()),
+            cancel: Some(flag.clone()),
+            ..Default::default()
+        };
+        let engine = TranslationEngine::new(&p, opts, Glossary::default());
+        let units = vec![unit("a", "Hello"), unit("b", "World"), unit("c", "Again")];
+        let mut seen = 0usize;
+        let result = engine.translate(&units, |o| {
+            if o.status == "translated" {
+                seen += 1;
+                if seen == 1 {
+                    flag.store(true, std::sync::atomic::Ordering::SeqCst);
+                }
+            }
+        });
+        assert!(matches!(result, Err(LlmError::Cancelled)), "{result:?}");
+        assert_eq!(
+            seen, 1,
+            "units after the flip must never be published: {seen}"
+        );
+        let lines = std::fs::read_to_string(&cp).unwrap();
+        let records: Vec<&str> = lines.lines().collect();
+        assert_eq!(
+            records.len(),
+            1,
+            "only the unit processed before the flip is checkpointed: {records:?}"
+        );
+        assert!(records[0].contains("\"a\""), "{records:?}");
+    }
+
+    /// Same mid-batch contract for the FAILURE branch: a flip during the
+    /// failed-response publication stops the remaining per-unit failures
+    /// and turns the overall result into Err(Cancelled), never Ok.
+    #[test]
+    fn cancel_from_callback_stops_failure_publication() {
+        let p = FlakyServer {
+            fail_first: usize::MAX,
+            calls: AtomicUsize::new(0),
+        };
+        let flag = Arc::new(AtomicBool::new(false));
+        let opts = EngineOptions {
+            cancel: Some(flag.clone()),
+            ..Default::default()
+        };
+        let engine = TranslationEngine::new(&p, opts, Glossary::default());
+        let units = vec![unit("a", "Hello"), unit("b", "World"), unit("c", "Again")];
+        let mut seen_failed = 0usize;
+        let result = engine.translate(&units, |o| {
+            if o.status == "failed" {
+                seen_failed += 1;
+                if seen_failed == 1 {
+                    flag.store(true, std::sync::atomic::Ordering::SeqCst);
+                }
+            }
+        });
+        assert!(matches!(result, Err(LlmError::Cancelled)), "{result:?}");
+        assert_eq!(
+            seen_failed, 1,
+            "remaining failures must not be published after the flip"
+        );
+        // The four attempts (initial + max_retries retries) predate the
+        // flip — they happened while the retry loop exhausted on the
+        // always-failing provider. The flip cannot retract them; the
+        // contract under test is that publication stops and the outcome
+        // is Err(Cancelled).
+        assert_eq!(p.calls.load(std::sync::atomic::Ordering::SeqCst), 4);
     }
 }

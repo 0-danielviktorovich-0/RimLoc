@@ -618,7 +618,11 @@ pub fn accept_job(
 
 pub fn cancel_job(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus, ContractError> {
     let handle = registry.get(job_id).ok_or_else(|| missing_job(job_id))?;
-    // Flag FIRST (engine observes it at its next boundary), state second.
+    // Flag FIRST (the engine observes it at its next boundary), state
+    // second, under the status mutex (review round 2): the worker
+    // completion handler evaluates the flag while holding the same mutex,
+    // so the pair {flag store → state check} is atomic against any
+    // terminal transition — a cancel can never be half-applied.
     handle.shared.cancelled.store(true, Ordering::Relaxed);
     let mut st = handle.status.lock().unwrap();
     if st.state == AiJobState::Running {
@@ -671,12 +675,15 @@ fn refresh_status_locked(st: &mut AiJobStatus, shared: &Arc<JobShared>) {
     // Preview copy: bounded to the first 400 rows (UI pages via the full
     // job record file when larger — documented).
     st.rows = rows.values().take(400).cloned().collect();
-    if st.state == AiJobState::Running
-        && st.translated + st.failed + st.excluded_notranslate >= st.total
-        && st.total > 0
-    {
-        st.state = AiJobState::PreviewReady;
-    }
+    // NO automatic terminal transition here (review round 2, P1-A): the
+    // old `translated + failed + excluded >= total` condition mixed two
+    // populations — `total` counts only translatable units while
+    // `excluded_notranslate` counts excluded entries — so a poll could
+    // flip a RUNNING job to PreviewReady while units were still in flight
+    // (0+0+1 >= 1), which in turn made cancel_job a state no-op and let
+    // accept apply an incomplete preview. Terminal states are written by
+    // exactly ONE authority: the worker completion handler in
+    // `start_job_with_factory`.
     if let Some(e) = shared.error.lock().unwrap().clone() {
         st.error = Some(e);
     }
@@ -1657,6 +1664,82 @@ mod tests {
             .collect();
         assert_eq!(rus.len(), 1, "{rus:?}");
         assert_eq!(rus[0].text.as_deref(), Some("Яблоко"));
+    }
+
+    /// Review round 2, P1-A: the poll path must NEVER flip a Running job
+    /// to PreviewReady. Fixture: one translatable label + one excluded
+    /// texPath entry — the old `translated+failed+excluded >= total`
+    /// arithmetic was satisfied (0+0+1 >= 1) while the only translatable
+    /// unit was still blocked in flight, letting job_status publish
+    /// PreviewReady, neutralizing cancel_job and letting accept apply an
+    /// incomplete preview. Only the worker sets terminal states now.
+    #[test]
+    fn poll_never_flips_running_job_to_preview_cancel_stays_effective() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
+        std::fs::create_dir_all(
+            dir.path()
+                .join("mod/Languages/English/DefInjected/ThingDef"),
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("mod/Defs/Mixed.xml"),
+            "<Defs><ThingDef><defName>Mixed</defName><label>Mixed label</label></ThingDef></Defs>",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path()
+                .join("mod/Languages/English/DefInjected/ThingDef/M.xml"),
+            "<LanguageData>\n  <Mixed.texPath>Things/Mixed</Mixed.texPath>\n</LanguageData>\n",
+        )
+        .unwrap();
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        let registry = AiJobRegistry::new();
+        let (rel_tx, rel_rx) = mpsc::channel();
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx: {
+                let (tx, _rx) = mpsc::channel();
+                tx
+            },
+            script: Mutex::new(vec![ScriptedAction::Block(rel_rx)].into()),
+        });
+        let st = start_job_with_factory(
+            &registry,
+            &mgr,
+            &managed,
+            long_job_params(&snap.project_id, snap.session_epoch),
+            scripted_factory(provider.clone()),
+        )
+        .unwrap();
+        let handle = registry.get(&st.job_id).unwrap();
+        assert_eq!(st.excluded_notranslate, 1, "texPath must be excluded");
+        assert_eq!(st.total, 1, "only the label is translatable");
+        // The completion arithmetic IS satisfied while the unit is blocked:
+        // the state must stay Running through every poll.
+        for _ in 0..20 {
+            let polled = job_status(&registry, &st.job_id).unwrap();
+            assert_eq!(
+                polled.state,
+                AiJobState::Running,
+                "premature PreviewReady while a unit is in flight: {polled:?}"
+            );
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        // Cancel stays effective: Running → Cancelled, worker exits, state
+        // survives, accept refuses.
+        let st = cancel_job(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::Cancelled);
+        drop(rel_tx);
+        wait_worker_finished(&handle, 5);
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::Cancelled, "{st:?}");
+        let err = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap_err();
+        assert!(err.message.contains("not in preview state"), "{err:?}");
     }
 
     /// P1(e): REAL inter-thread interleaving — the competing Human edit
