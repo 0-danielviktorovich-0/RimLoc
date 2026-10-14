@@ -203,12 +203,15 @@ pub fn search_sources(
             .unwrap_or(DEFAULT_SOURCE_LANG_DIR),
     );
     let mut coverage: BTreeMap<String, Vec<(usize, SourceEntryId)>> = BTreeMap::new();
+    let mut coverage_alt: BTreeMap<String, String> = BTreeMap::new();
     let mut entry_by_id: BTreeMap<SourceEntryId, rimloc_domain::canonical::SourceEntry> =
         BTreeMap::new();
     for e in &entries {
         entry_by_id.insert(e.id.clone(), e.clone());
         for c in &e.contexts {
+            let raw = normalize_rel(&c.file);
             let rel = rel_to(&root, Path::new(&c.file));
+            coverage_alt.insert(raw.clone(), rel.clone());
             let v = coverage.entry(rel).or_default();
             if let Some(line) = c.line {
                 v.push((line, e.id.clone()));
@@ -285,7 +288,9 @@ pub fn search_sources(
                 .parse_failures
                 .push((rel.clone(), "malformed XML".to_string()));
         }
-        let covered = coverage.get(&rel);
+        let covered = coverage
+            .get(&rel)
+            .or_else(|| coverage_alt.get(&rel).and_then(|k| coverage.get(k)));
         let lang_dir = format!(
             "Languages/{}",
             req.source_lang_dir.as_deref().unwrap_or("English")
@@ -640,10 +645,21 @@ fn normalize_rel(p: &str) -> String {
 }
 
 /// Project-relative, forward-slash path (the coverage map's key space).
+/// Windows-safe: separators normalized BOTH ways before the prefix strip,
+/// and the coverage map additionally indexes the RAW path form so a
+/// case/separator mismatch can never silently disconnect a match from its
+/// inventory identity (the Windows CI failure class).
 fn rel_to(root: &Path, p: &Path) -> String {
-    p.strip_prefix(root)
-        .map(|r| r.to_string_lossy().replace('\\', "/"))
-        .unwrap_or_else(|_| p.to_string_lossy().replace('\\', "/"))
+    let norm = |x: &Path| x.to_string_lossy().replace('\\', "/");
+    let root_s = norm(root);
+    let p_s = norm(p);
+    if let Some(stripped) = p_s.strip_prefix(&format!("{root_s}/")) {
+        return stripped.to_string();
+    }
+    if p_s == root_s {
+        return String::new();
+    }
+    p_s
 }
 
 fn is_effective_file(
