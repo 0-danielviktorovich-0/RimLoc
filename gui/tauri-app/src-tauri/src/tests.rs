@@ -330,14 +330,15 @@ mod legacy_out_containment {
         .expect("FUNDING.yml present");
         assert!(funding.contains("0-danielviktorovich-0"), "sponsors handle");
         assert!(funding.contains("danielviktorovich"), "ko-fi handle");
-        assert!(funding.contains("buymeacoffee.com/danielviktorovich"), "bmc handle");
+        assert!(
+            funding.contains("buymeacoffee.com/danielviktorovich"),
+            "bmc handle"
+        );
 
         // 3) SUPPORT.md links the same three platforms
-        let support = std::fs::read_to_string(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../SUPPORT.md"
-        ))
-        .expect("SUPPORT.md present");
+        let support =
+            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../SUPPORT.md"))
+                .expect("SUPPORT.md present");
         for url in [
             "https://github.com/sponsors/0-danielviktorovich-0",
             "https://buymeacoffee.com/danielviktorovich",
