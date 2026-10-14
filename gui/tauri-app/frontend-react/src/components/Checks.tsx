@@ -5,6 +5,7 @@ import { ShieldCheck, CircleAlert, ArrowRight, Download } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore } from '../lib/state/project'
+import { entryUid } from '../lib/state/entryUid'
 import { contractErrorText } from '../lib/client/messagesError'
 import { t } from '../lib/i18n'
 import type { ValidateProjectResponseDto, ValidationFindingDto } from '../lib/client/types'
@@ -73,15 +74,16 @@ export function Checks() {
   const warnings = findings.filter((f) => f.severity === 'warning').length
   const total = st.entries.length || 1
 
-  // §35: a finding opens in the editor — Workspace + select by the finding's
-  // key (§9 mapping: the full identity key when present, the raw key
-  // otherwise). Only findings whose key resolves to a workspace entry are
-  // actionable; project-level findings stay non-clickable — a navigation to
-  // nothing would be a dead affordance of the kind this wave removes.
+  // §35: a finding opens in the editor — Workspace + select in the
+  // full-identity key-space (review P0-2): a finding with `id` resolves to
+  // the entryUid of THAT structural entry, so two Def types sharing a
+  // display key land on the right row; the raw key fallback only matches
+  // when it resolves. Project-level findings stay non-clickable — a
+  // navigation to nothing would be a dead affordance.
   const resolveFinding = (f: ValidationFindingDto): string | null => {
-    const key = f.id?.key ?? f.key
+    const key = f.id ? entryUid(f.id) : f.key
     if (!key) return null
-    return st.entries.some((e) => e.key === key) ? key : null
+    return st.entries.some((e) => e.uid === key) ? key : null
   }
   const openFinding = (key: string): void => {
     projectStore.select(key)

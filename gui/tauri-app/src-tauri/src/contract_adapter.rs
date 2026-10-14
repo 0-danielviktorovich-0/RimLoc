@@ -70,6 +70,19 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_tm_delete",
     "project_tm_import",
     "project_tm_lookup",
+    // Durable draft autosave (Data Safety): sidecar store of UNSAVED editor
+    // work — epoch-guarded, revision-stamped, never confirmed translations.
+    "project_save_drafts",
+    "project_restore_drafts",
+    "project_clear_drafts",
+    // AI translation jobs (Stage B): start/status/cancel/accept.
+    "ai_job_start",
+    "ai_job_status",
+    "ai_job_cancel",
+    "ai_job_accept",
+    // Source Discovery (Stage A): read-only full-project source search with
+    // canonical-inventory reconciliation.
+    "project_source_search",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key NEVER crosses into a file — it goes to the OS keychain.
     "contract_provider_instance_list",
@@ -312,6 +325,353 @@ pub fn project_glossary_delete(
     traced_simple("project_glossary_delete", || {
         manager.glossary_delete(&request)
     })
+}
+
+// Durable draft autosave (Data Safety): pass-through into the session
+// manager's sidecar-store ops — epoch-guarded, revision-stamped, typed
+// errors. Store keys are FRONTEND-owned (`<locale>::<display_identity()>`);
+// the adapter treats them as opaque strings.
+
+/// `project_save_drafts` — persist the whole drafts map (the debounced
+/// autosave write; replace semantics are the store's contract).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_save_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    entries: std::collections::BTreeMap<String, rimloc_services::DraftEntry>,
+) -> Result<rimloc_services::DraftsSaveAck, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_save_drafts", || {
+        manager.save_drafts_session(&project_id, session_epoch, entries)
+    })
+}
+
+/// `project_restore_drafts` — honest restore report after open(): never a
+/// silent apply; a revision mismatch quarantines the store as an orphan.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_restore_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+) -> Result<rimloc_services::DraftsRestoreReport, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_restore_drafts", || {
+        manager.restore_drafts_session(&project_id, session_epoch)
+    })
+}
+
+/// `project_clear_drafts` — remove one key (revert / commit ack) or the
+/// whole store; removing an absent key is an honest no-op.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_clear_drafts(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    key: Option<String>,
+) -> Result<rimloc_services::DraftsSaveAck, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_clear_drafts", || {
+        manager.clear_drafts_session(&project_id, session_epoch, key.as_deref())
+    })
+}
+
+// AI translation jobs (Stage B) — thin typed adapter over the shared
+// services::ai_job registry (one engine, one canonical writer). State lives
+// per app process; the durable record is the canonical apply + checkpoints.
+
+use rimloc_services::ai_job::{AiJobParams, AiJobRegistry};
+
+/// Managed root shared with the ai job service for checkpoint placement.
+pub struct ManagedRoot(pub PathBuf);
+
+pub struct AiJobs(pub AiJobRegistry);
+
+/// `project_source_search` (Source Discovery, Stage A) — READ-ONLY
+/// full-project source search reconciled against the canonical inventory.
+/// The search context (mod root, versions, source language) comes from the
+/// LIVE session snapshot; the epoch guard protects against superseded
+/// sessions. v1 runs synchronously; UI-level cancellation arrives with the
+/// streaming wiring (documented limitation).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_source_search(
+    state: State<'_, ContractState>,
+    request: SourceSearchArgs,
+) -> Result<
+    rimloc_services::source_search::SourceSearchReport,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_source_search", || {
+        let snap = manager.snapshot(&request.project_id)?;
+        if snap.session_epoch != request.session_epoch {
+            return Err(rimloc_services::contract::ContractError::stale_epoch(
+                request.session_epoch,
+                snap.session_epoch,
+            ));
+        }
+        let root = snap
+            .source_root
+            .as_ref()
+            .map(|r| std::path::PathBuf::from(&r.path))
+            .ok_or_else(|| {
+                rimloc_services::contract::ContractError::new(
+                    rimloc_services::contract::ContractErrorCode::InvalidConfig,
+                    "project has no source root — source search needs the source mod",
+                )
+            })?;
+        let scope = match request.scope.as_deref() {
+            Some("all_text") => rimloc_services::source_search::SearchScope::AllText,
+            _ => rimloc_services::source_search::SearchScope::Standard,
+        };
+        let req = rimloc_services::source_search::SourceSearchRequest {
+            mod_root: root,
+            target_version: snap.project.context.target_version.clone(),
+            source_lang_dir: snap.project.context.source_dir.clone(),
+            query: request.query,
+            scope,
+            offset: request.offset,
+            max_results: request.max_results,
+        };
+        rimloc_services::source_search::search_sources(&req, &|| false)
+    })
+}
+
+/// `project_source_xml_preview` (rel27) — read-only bounded window of a
+/// project source file for the Source Inspector XML preview. The path is
+/// resolved against the session's source root with containment (no `..`
+/// traversal, absolute paths refused); lines are returned 1-based.
+#[derive(Debug, serde::Deserialize)]
+pub struct SourceXmlPreviewArgs {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub file: String,
+    #[serde(default)]
+    pub line: Option<usize>,
+    #[serde(default)]
+    pub before: usize,
+    #[serde(default)]
+    pub after: usize,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct SourceXmlPreviewLine {
+    pub n: usize,
+    pub text: String,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct SourceXmlPreview {
+    pub file: String,
+    pub target_line: Option<usize>,
+    pub lines: Vec<SourceXmlPreviewLine>,
+    pub truncated_head: bool,
+    pub truncated_tail: bool,
+    pub total_lines: usize,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_source_xml_preview(
+    state: State<'_, ContractState>,
+    request: SourceXmlPreviewArgs,
+) -> Result<SourceXmlPreview, rimloc_services::contract::ContractError> {
+    use rimloc_services::contract::{ContractError, ContractErrorCode};
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_source_xml_preview", || {
+        let snap = manager.snapshot(&request.project_id)?;
+        if snap.session_epoch != request.session_epoch {
+            return Err(ContractError::stale_epoch(
+                request.session_epoch,
+                snap.session_epoch,
+            ));
+        }
+        let root = snap
+            .source_root
+            .as_ref()
+            .map(|r| std::path::PathBuf::from(&r.path))
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::InvalidConfig,
+                    "project has no source root",
+                )
+            })?;
+        let rel = std::path::Path::new(&request.file);
+        if rel.is_absolute()
+            || rel
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "source preview path escapes the project source root".to_string(),
+            ));
+        }
+        let full = root.join(rel);
+        if !full.starts_with(&root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "source preview path escapes the project source root".to_string(),
+            ));
+        }
+        let bytes = std::fs::read(&full).map_err(|source| {
+            ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                format!("source preview read `{}`: {source}", request.file),
+            )
+        })?;
+        if bytes.iter().take(8192).any(|b| *b == 0) {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                "source preview: file looks binary".to_string(),
+            ));
+        }
+        let content = String::from_utf8_lossy(&bytes);
+        let total = content.lines().count();
+        let target = request.line.unwrap_or(1).min(total.max(1));
+        let before = request.before.min(200);
+        let after = request.after.min(200);
+        let start = target.saturating_sub(before).max(1);
+        let end = (target + after).min(total);
+        let lines = content
+            .lines()
+            .skip(start - 1)
+            .take(end - start + 1)
+            .enumerate()
+            .map(|(i, text)| SourceXmlPreviewLine {
+                n: start + i,
+                text: text.to_string(),
+            })
+            .collect();
+        Ok(SourceXmlPreview {
+            file: request.file,
+            target_line: request.line,
+            lines,
+            truncated_head: start > 1,
+            truncated_tail: end < total,
+            total_lines: total,
+        })
+    })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_start(
+    state: State<'_, ContractState>,
+    root: State<'_, ManagedRoot>,
+    ai: State<'_, AiJobs>,
+    request: AiJobParamsWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("ai_job_start", || {
+        let mut params = request.into_params();
+        // The project's REAL source locale rides the params (never a
+        // hardcoded "en"): the adapter resolves it from the live snapshot.
+        let snap = manager.snapshot(&params.project_id)?;
+        params.source_locale = snap
+            .project
+            .context
+            .source_locale
+            .clone()
+            .unwrap_or_else(|| "en".to_string());
+        rimloc_services::ai_job::start_job(&ai.0, &manager, &managed_root_of(&root), params)
+    })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_status(
+    ai: State<'_, AiJobs>,
+    job_id: String,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    rimloc_services::ai_job::job_status(&ai.0, &job_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_cancel(
+    ai: State<'_, AiJobs>,
+    job_id: String,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    rimloc_services::ai_job::cancel_job(&ai.0, &job_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_accept(
+    state: State<'_, ContractState>,
+    ai: State<'_, AiJobs>,
+    request: AiJobAcceptWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("ai_job_accept", || {
+        rimloc_services::ai_job::accept_job(&ai.0, &manager, &request.job_id, request.session_epoch)
+    })
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobParamsWire {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub locale: String,
+    pub provider_id: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub base_url: Option<String>,
+    #[serde(default)]
+    pub batch_char_budget: usize,
+}
+
+impl AiJobParamsWire {
+    fn into_params(self) -> AiJobParams {
+        AiJobParams {
+            project_id: self.project_id,
+            source_locale: String::new(),
+            session_epoch: self.session_epoch,
+            locale: self.locale,
+            provider_id: self.provider_id,
+            model: self.model,
+            base_url: self.base_url,
+            batch_char_budget: self.batch_char_budget,
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobAcceptWire {
+    pub job_id: String,
+    pub session_epoch: u64,
+}
+
+/// Wire args of `project_source_search`.
+#[derive(Debug, serde::Deserialize)]
+pub struct SourceSearchArgs {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub query: String,
+    #[serde(default)]
+    pub scope: Option<String>,
+    #[serde(default)]
+    pub offset: usize,
+    #[serde(default)]
+    pub max_results: usize,
 }
 
 // TM live (owner decision A+B+C): the glossary command chain, repeated
@@ -784,8 +1144,16 @@ pub fn attach_contract<C: tauri::Runtime>(
     builder: tauri::Builder<C>,
     managed_root: PathBuf,
 ) -> Result<tauri::Builder<C>, std::io::Error> {
-    let state = ContractState::new(managed_root)?;
-    Ok(builder.manage(state))
+    let state = ContractState::new(managed_root.clone())?;
+    Ok(builder
+        .manage(state)
+        .manage(ManagedRoot(managed_root))
+        .manage(AiJobs(AiJobRegistry::new())))
+}
+
+/// Project-relative path of the managed root (for the ai job service).
+pub fn managed_root_of(state: &State<'_, ManagedRoot>) -> PathBuf {
+    state.0.clone()
 }
 
 #[cfg(test)]
@@ -830,7 +1198,11 @@ mod tests {
     fn contract_commands_all_start_with_contract_or_project_prefix() {
         for name in CONTRACT_COMMANDS {
             assert!(
-                name.starts_with("contract_") || name.starts_with("project_"),
+                name.starts_with("contract_")
+                    || name.starts_with("project_")
+                    // AI translation jobs (Stage B): the ai_job_* family is
+                    // part of the typed command surface by design.
+                    || name.starts_with("ai_job_"),
                 "unexpected contract command name: {name}"
             );
         }
@@ -852,5 +1224,303 @@ mod tests {
             m.list()
         };
         assert!(list.is_empty());
+    }
+}
+
+// IPC integration tests (review iteration 9, Codecov gap): the three draft
+// commands are exercised through the REAL tauri invoke routing — mock
+// runtime, JSON body deserialization, handler dispatch, response/error
+// serialization — not by calling private helpers. Services semantics
+// (merge save, revision guard, quarantine) keep their own suites.
+#[cfg(test)]
+mod ipc_draft_tests {
+    use super::*;
+    use serde_json::json;
+    use tauri::Manager;
+
+    fn mod_fixture(root: &std::path::Path) {
+        std::fs::create_dir_all(root.join("About")).unwrap();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("About/About.xml"),
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?><ModMetaData><name>Ipc Fixture</name><author>rimloc-testlab</author><packageId>rimloc.test.ipc</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("Defs/A_Thing.xml"),
+            "<Defs><ThingDef><defName>Dup</defName><label>Thing Dup</label></ThingDef></Defs>",
+        )
+        .unwrap();
+    }
+
+    fn invoke<W: AsRef<tauri::Webview<tauri::test::MockRuntime>>>(
+        webview: &W,
+        cmd: &str,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, serde_json::Value> {
+        tauri::test::get_ipc_response(
+            webview,
+            tauri::webview::InvokeRequest {
+                cmd: cmd.to_string(),
+                callback: tauri::ipc::CallbackFn(0),
+                error: tauri::ipc::CallbackFn(1),
+                url: "tauri://localhost".parse().unwrap(),
+                body: tauri::ipc::InvokeBody::Json(body),
+                headers: Default::default(),
+                invoke_key: tauri::test::INVOKE_KEY.to_string(),
+            },
+        )
+        .map(|b| b.deserialize::<serde_json::Value>().expect("json body"))
+    }
+
+    #[test]
+    fn drafts_roundtrip_through_tauri_ipc() {
+        let dir = tempfile::tempdir().unwrap();
+        mod_fixture(&dir.path().join("mod"));
+        let app = tauri::test::mock_builder()
+            .invoke_handler(tauri::generate_handler![
+                project_create,
+                project_save_drafts,
+                project_restore_drafts,
+                project_clear_drafts,
+                project_source_xml_preview,
+                ai_job_start,
+                ai_job_status,
+                ai_job_cancel,
+                ai_job_accept,
+                project_source_search,
+            ])
+            .build(tauri::generate_context!())
+            .expect("mock app");
+        app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        app.manage(ManagedRoot(dir.path().join("managed")));
+        app.manage(AiJobs(AiJobRegistry::new()));
+        let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .expect("webview");
+
+        // create → live session coordinates.
+        let created = invoke(
+            &webview,
+            "project_create",
+            json!({"request": {"mod_root": {"path": dir.path().join("mod").to_string_lossy()}, "target_version": "1.6"}}),
+        )
+        .expect("project_create ok");
+        let pid = created["project_id"].as_str().unwrap().to_string();
+        let epoch = created["session_epoch"].as_u64().unwrap();
+        assert!(!pid.is_empty());
+
+        // save → ack carries the merged count.
+        let saved = invoke(
+            &webview,
+            "project_save_drafts",
+            json!({
+                "project_id": pid,
+                "session_epoch": epoch,
+                "entries": {"ru::def_injected·ThingDef·Dup.label": {"text": "черновик", "updated_at": 1}}
+            }),
+        )
+        .expect("save ok");
+        assert_eq!(saved["saved"], 1);
+        assert_eq!(saved["project_revision"], created["revision"]);
+
+        // restore → the sidecar raises the draft verbatim.
+        let report = invoke(
+            &webview,
+            "project_restore_drafts",
+            json!({"project_id": pid, "session_epoch": epoch}),
+        )
+        .expect("restore ok");
+        assert_eq!(report["status"], "restored");
+        assert_eq!(
+            report["drafts"]["ru::def_injected·ThingDef·Dup.label"]["text"],
+            "черновик"
+        );
+
+        // clear → acknowledged removal; restore honestly reports none.
+        let cleared = invoke(
+            &webview,
+            "project_clear_drafts",
+            json!({"project_id": pid, "session_epoch": epoch, "key": "ru::def_injected·ThingDef·Dup.label"}),
+        )
+        .expect("clear ok");
+        assert_eq!(cleared["saved"], 0);
+        let report = invoke(
+            &webview,
+            "project_restore_drafts",
+            json!({"project_id": pid, "session_epoch": epoch}),
+        )
+        .expect("restore ok");
+        assert_eq!(report["status"], "none");
+
+        // Whole-store clear (key omitted) + an absent-key clear that is an
+        // honest no-op — both branches of the clear command.
+        let store_cleared = invoke(
+            &webview,
+            "project_save_drafts",
+            json!({
+                "project_id": pid,
+                "session_epoch": epoch,
+                "entries": {"ru::def_injected·ThingDef·Dup.label": {"text": "снова", "updated_at": 2}}
+            }),
+        )
+        .expect("save ok");
+        assert_eq!(store_cleared["saved"], 1);
+        let cleared_all = invoke(
+            &webview,
+            "project_clear_drafts",
+            json!({"project_id": pid, "session_epoch": epoch}),
+        )
+        .expect("clear-all ok");
+        assert_eq!(cleared_all["saved"], 0);
+        let absent = invoke(
+            &webview,
+            "project_clear_drafts",
+            json!({"project_id": pid, "session_epoch": epoch, "key": "ru::keyed·Absent"}),
+        )
+        .expect("absent clear ok");
+        assert_eq!(absent["saved"], 0);
+
+        // AI job (Stage B) through the SAME ipc: mock provider translates
+        // the fixture labels; the preview stays DRAFT until accepted. The
+        // demo provider needs the explicit dev opt-in (production refuses).
+        std::env::set_var("RIMLOC_ALLOW_MOCK_JOBS", "1");
+        let started = invoke(
+            &webview,
+            "ai_job_start",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch,
+                "locale": "Russian",
+                "provider_id": "mock",
+                "batch_char_budget": 4000
+            }}),
+        )
+        .expect("ai start ok");
+        let job_id = started["job_id"].as_str().unwrap().to_string();
+        assert_eq!(started["state"], "running");
+
+        let mut final_state = String::new();
+        for _ in 0..200 {
+            let st =
+                invoke(&webview, "ai_job_status", json!({"job_id": job_id})).expect("status ok");
+            final_state = st["state"].as_str().unwrap().to_string();
+            if final_state != "running" {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_state, "preview_ready", "job must reach preview");
+
+        // Accept through the ipc: canonical apply, origin Llm.
+        let accepted = invoke(
+            &webview,
+            "ai_job_accept",
+            json!({"request": {"job_id": job_id, "session_epoch": epoch}}),
+        )
+        .expect("accept ok");
+        assert_eq!(accepted["state"], "applied");
+        std::env::remove_var("RIMLOC_ALLOW_MOCK_JOBS");
+        // Source Discovery (Stage A) through the SAME ipc: query a source
+        // text and get reconciled classifications back.
+        let search = invoke(
+            &webview,
+            "project_source_search",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch,
+                "query": "Thing Dup",
+                "scope": "standard",
+                "offset": 0,
+                "max_results": 50
+            }}),
+        )
+        .expect("source search ok");
+        // The fixture Defs file is single-line: one match, reconciled
+        // against the inventory with the FULL canonical identity.
+        assert_eq!(search["total_matches"], 1, "{search}");
+        assert_eq!(
+            search["matches"][0]["status"], "already_indexed",
+            "{search}"
+        );
+        assert_eq!(
+            search["matches"][0]["identity"]["def_type"], "ThingDef",
+            "{search}"
+        );
+        let statuses: Vec<&str> = search["matches"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["status"].as_str().unwrap_or("?"))
+            .collect();
+        assert!(
+            statuses.contains(&"already_indexed"),
+            "DefInjected-origin source region must reconcile as indexed: {statuses:?}"
+        );
+
+        // Stale-epoch guard covers the search command too.
+        let err = invoke(
+            &webview,
+            "project_source_search",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch + 5,
+                "query": "Thing Dup",
+                "offset": 0,
+                "max_results": 10
+            }}),
+        )
+        .expect_err("stale epoch must refuse search");
+        assert_eq!(err["code"], "stale_epoch");
+
+        // Error path: a stale epoch is a typed refusal through the SAME ipc.
+        let err = invoke(
+            &webview,
+            "project_save_drafts",
+            json!({
+                "project_id": pid,
+                "session_epoch": epoch + 999,
+                "entries": {}
+            }),
+        )
+        .expect_err("stale epoch must refuse");
+        assert_eq!(err["code"], "stale_epoch");
+    }
+
+    #[test]
+    fn drafts_commands_refuse_unknown_project_via_ipc() {
+        let dir = tempfile::tempdir().unwrap();
+        mod_fixture(&dir.path().join("mod"));
+        let app = tauri::test::mock_builder()
+            .invoke_handler(tauri::generate_handler![
+                project_create,
+                project_save_drafts,
+                project_restore_drafts,
+                project_clear_drafts,
+                project_source_xml_preview,
+                ai_job_start,
+                ai_job_status,
+                ai_job_cancel,
+                ai_job_accept,
+                project_source_search,
+            ])
+            .build(tauri::generate_context!())
+            .expect("mock app");
+        app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        app.manage(ManagedRoot(dir.path().join("managed")));
+        app.manage(AiJobs(AiJobRegistry::new()));
+        let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .expect("webview");
+
+        for cmd in ["project_save_drafts", "project_restore_drafts"] {
+            let body = if cmd == "project_save_drafts" {
+                json!({"project_id": "proj-unknown", "session_epoch": 1, "entries": {}})
+            } else {
+                json!({"project_id": "proj-unknown", "session_epoch": 1})
+            };
+            let err = invoke(&webview, cmd, body).expect_err("unknown project refuses");
+            assert_eq!(err["code"], "project_not_found", "{cmd}");
+        }
     }
 }

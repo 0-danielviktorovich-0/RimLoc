@@ -7,6 +7,7 @@ on:
       - "crates/**"
       - "gui/tauri-app/src-tauri/**"
       - "gui/tauri-app/frontend-v2/**"
+      - "gui/tauri-app/frontend-react/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "codecov.yml"
@@ -17,6 +18,7 @@ on:
       - "crates/**"
       - "gui/tauri-app/src-tauri/**"
       - "gui/tauri-app/frontend-v2/**"
+      - "gui/tauri-app/frontend-react/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "codecov.yml"
@@ -43,11 +45,46 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Validate codecov.yml
+      - name: Validate Codecov policy and coverage boundaries
         run: |
           curl --fail-with-body --silent --show-error \
             --data-binary @codecov.yml \
-            https://api.codecov.io/validate
+            https://api.codecov.io/validate > "$RUNNER_TEMP/codecov-validated.json"
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          # Codecov's /validate response is "Valid!\\n\\n{...json...}",
+          # not pure JSON: skip the success banner before decoding.
+          raw = (Path(os.environ['RUNNER_TEMP']) / 'codecov-validated.json').read_text()
+          start = raw.find('{')
+          if start < 0:
+              raise SystemExit(f'Unexpected Codecov validation response: {raw[:150]!r}')
+          config = json.loads(raw[start:])
+          patterns = config.get('ignore', [])
+          must_include = [
+              'crates/rimloc-services/src/session_drafts.rs',
+              'gui/tauri-app/src-tauri/src/contract_adapter.rs',
+              'gui/tauri-app/frontend-react/src/lib/state/project.ts',
+              'gui/tauri-app/frontend-react/src/components/Workspace.tsx',
+          ]
+          for source in must_include:
+              matched = [regex for regex in patterns if re.search(regex, source)]
+              if matched:
+                  raise SystemExit(f'Codecov ignore masks production file {source}: {matched}')
+          legacy = 'gui/tauri-app/frontend/src/main.js'
+          if not any(re.search(regex, legacy) for regex in patterns):
+              raise SystemExit('The legacy frontend exclusion is missing')
+          flags = {item['name'] for item in config['flag_management']['individual_flags']}
+          components = {item['component_id'] for item in config['component_management']['individual_components']}
+          if not {'rust', 'gui-rust', 'frontend-react'} <= flags:
+              raise SystemExit(f'Missing required Codecov flags: {flags}')
+          if 'frontend_react' not in components:
+              raise SystemExit('Missing React frontend Codecov component')
+          print('Codecov config valid; tracked production files are not ignored')
+          PY
 
   rust:
     name: Rust workspace coverage
@@ -176,4 +213,63 @@ jobs:
           # Fork PRs cannot rely on upstream OIDC permissions. Let Codecov try
           # its public-repository tokenless path, but never fail an external
           # contributor PR only because coverage upload authentication is unavailable.
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+  frontend-react:
+    name: React state coverage
+    needs: config
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+
+      - name: Install dependencies
+        working-directory: gui/tauri-app/frontend-react
+        run: npm ci --no-audit --no-fund
+
+      - name: Run full React source coverage
+        working-directory: gui/tauri-app/frontend-react
+        run: npm test
+
+      - name: Verify React report scope and JSON format
+        working-directory: gui/tauri-app/frontend-react
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const report = JSON.parse(fs.readFileSync('coverage/coverage-final.json', 'utf8'))
+          const paths = Object.keys(report)
+          for (const expected of [
+            'src/App.tsx',
+            'src/components/Workspace.tsx',
+            'src/lib/state/project.ts',
+            'src/lib/state/entryUid.ts',
+          ]) {
+            if (!paths.some((p) => p.endsWith('/' + expected) || p === expected)) {
+              throw new Error(`React coverage missing source file: ${expected}`)
+            }
+          }
+          if (paths.length < 4) throw new Error('React coverage report unexpectedly narrow')
+          console.log(`React coverage report: ${paths.length} production files`)
+          NODE
+
+      - name: Upload React production coverage to Codecov
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork }}
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          use_oidc: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          files: ./gui/tauri-app/frontend-react/coverage/coverage-final.json
+          disable_search: true
+          disable_telem: true
+          cleanup: true
+          flags: frontend-react
+          name: frontend-react-full
           fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}

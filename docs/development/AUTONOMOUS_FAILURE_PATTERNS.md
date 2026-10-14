@@ -184,3 +184,109 @@ MISSING GATE → NEW PERMANENT GATE → REGRESSION (как проверяетс�
   unzip-recount — все три обязательны на каждый пакет.
 - **REGRESSION**: итерация 3 mini-proof PASS; правило «gate проверяет
   конечный артефакт снаружи» — в multi-workflow-orchestrator skill.
+
+## 13. Stale-evidence packet (hash-clean, identity-wrong)
+
+- **DEFECT**: rel25-пакет прошёл ZIP CRC, 28/28 манифест и junk-проверки,
+  но нёс evidence rel23: REVIEW_REQUEST, OWNER_TEST_PACKET, artifact
+  SHA-файлы, WDIO-сводки — всё предыдущего релиза. Сборщик был захардкожен
+  на `artifact-rel23-final` и старые SHA в шаблоне REVIEW_REQUEST.
+- **WHY PRODUCT FAILED**: identity источника истины (артефакт текущего RC)
+  не был входом сборщика — он был константой.
+- **WHY AUTONOMY FAILED**: все проверки пакета были байтовыми (CRC, sha256,
+  junk); ни одна не спрашивала «эти байты — ТЕКУЩЕГО релиза?».
+- **MISSING GATE**: семантическая идентичность пакета.
+- **NEW PERMANENT GATE**: сборщик без единого идентификатора релиза внутри
+  (всё — параметры: --rc, --artifact-dir, SHA); обязательные evidence —
+  fail-closed (`cp || true` запрещён); чекер семантической идентичности
+  дважды (директория до zip + распакованный zip): текущий RC/SHA обязан
+  присутствовать в identity-документах, известные старые маркеры обязаны
+  отсутствовать; regression — намеренно смешанный пакет обязан отказать.
+  Реализация: `testlab/reviewer/check-packet-identity.py`,
+  `test-handoff-mixed-identity.sh`, build-handoff-lite.sh v3.
+- **REGRESSION**: mixed-identity regression PASS (5/5 исходов);
+  smoke-сборка отказала на отсутствующем evidence, как и задумано.
+
+## 14. Display-key collapse (frontend identity narrowing)
+
+- **DEFECT**: React-воркспейс клал инвентарь в Map по `e.id.key` и держал
+  черновики по display-key, хотя канон идентичности — kind + key + def_type:
+  две записи разных Def-типов с одним ключом схлопывались в одну строку, и
+  черновик одного адресовал обе.
+- **WHY PRODUCT FAILED**: React-слой сузил идентичность до отображаемого
+  ключа, хотя тот же фронт уже использовал полную сериализацию
+  (`display_identity()`) для чат-батча — канон существовал, но не был
+  переиспользован.
+- **WHY AUTONOMY FAILED**: интеграционные сценарии не включали двух
+  записей с совпадающим display-key; ревью кода не сопоставило key-space
+  разных поверхностей (chat-batch vs workspace).
+- **MISSING GATE**: коллизионный тест + единое определение ключа.
+- **NEW PERMANENT GATE**: один модуль `entryUid` — зеркало
+  `SourceEntryId::display_identity()` — как единственное key-space
+  определение (selection/drafts/findings/chat-batch); unit-тест коллизии
+  ThingDef/HediffDef обязателен (две строки, два черновика, независимые
+  коммиты); legacy-ключи мигрируют на restore, неоднозначные —
+  реплицируются на все кандидаты (пере-сохранение лучше потери).
+- **REGRESSION**: vitest scenario 2 + entryUid.test.ts.
+
+## 15. Debounce-cancel data loss (navigation vs background save)
+
+- **DEFECT**: автосейв черновиков дебаунсился на 1.5s; `open()` другого
+  проекта вызывал `cancelScheduledDraftFlush()` — правки младше 1.5s
+  уничтожались; смена целевой локали обнуляла карту черновиков и записывала
+  ПУСТОЙ durable-store, стирая несохранённую работу всех остальных локалей.
+- **WHY PRODUCT FAILED**: переходы сессий не различали «отменить таймер» и
+  «отменить несохранённую работу»; durable-хранилище было одно на проект
+  без локали-скоупа.
+- **WHY AUTONOMY FAILED**: сценарии тестирования не покрывали
+  асинхронные окна (тип → немедленная навигация; сохранение → немедленное
+  переключение локали), а утверждение «автосейв работает» проверялось
+  только в спокойных условиях.
+- **MISSING GATE**: transition-guard + locale-scoped store + race-тесты.
+- **NEW PERMANENT GATE**: все переходы проекта quiesce-ат flush до смены
+  состояния (durable ack); провал записи — per-project memory guard с
+  повторным поднятием; ключи черновиков `<locale>::<uid>` (параллельные
+  срезы); pagehide/visibility — немедленный flush; регрессии — verbatim
+  сценарии (ru→uk→ru→restart, fast navigation, switch inside save window,
+  failed flush).
+- **REGRESSION**: vitest scenarios 1, 3, 4, 5 + memory-guard тест.
+
+## 16. Mock-verified wire gap (feature shipped, transport never wired)
+
+- **DEFECT**: draft autosave существовал на трёх уровнях — services (manager
+  ops + 11 adversarial тестов), contract types (frontend client), mocked
+  transport (vitest 12/12) — но tauri-адаптер не暴露ил команды: в
+  упакованном приложении каждый saveDrafts отклонялся («command not
+  found»), sidecar не появлялся никогда. Полный продукт фичи не было.
+- **WHY PRODUCT FAILED**: новый contract-метод добавлялся в 4 местах
+  (services, типы, клиент, адаптер+диспетчер), а гейт был только на первые
+  три.
+- **WHY AUTONOMY FAILED**: вся верификация черновиков шла на моках
+  транспорт-шва; native-прогон реального пакета для новых команд не был
+  обязателен.
+- **MISSING GATE**: wire-level прогон каждой новой контрактной команды.
+- **NEW PERMANENT GATE**: для каждой новой команды контракта — native
+  WDIO-спек на automation-React сборке (та же поверхность, что у релиза),
+  доказывающий реальный invoke до объявления фичи готовой; реестр
+  «команда → native-спек» держится в тестах (drafts-safety.spec.ts —
+  первый якорь). Mock-сьюты остаются для семантики, не для проводки.
+- **REGRESSION**: нативная фаза 1 упала на отсутствии sidecar до фикса
+  (b301de5), прошла после; фаза 2 (рестарт) зелёная.
+
+## 17. Automation surface framework drift
+
+- **DEFECT**: единственная automation-сборка несла замороженный Svelte
+  fallback, а весь новый код и фиксы жили в React-фронте — WDIO гонял не
+  тот UI (селекторы React-спеков не находились; .app-sidebar отсутствует
+  в Svelte-оболочке).
+- **WHY PRODUCT FAILED**: automation-конфиг был один и наследовал дефолтный
+  (Svelte) frontendDist, тогда как прод-артефакт собирается из React.
+- **WHY AUTONOMY FAILED**: probe DOM-структуры под сессией вместо догадки
+  по селекторам — diagnoses-first, а не retry-blind.
+- **MISSING GATE**: фронтовый флейвор automation-сборки.
+- **NEW PERMANENT GATE**: build-automation-react.sh (automation overlay
+  поверх tauri.react.conf.json) — native-спеки React-фронта гоняются на
+  React-поверхности; при добавлении нового фронтового лейна его
+  automation-вариант обязателен.
+- **REGRESSION**: probe показал svelte-isll26 классы; после пересборки —
+  React testids, обе фазы зелёные.
