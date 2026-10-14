@@ -112,6 +112,9 @@ export interface ContractMethodMap {
   // The shell blesses ONLY acked out dirs (session allow-list, canonical
   // containment) — refused honestly in mock (no session output there).
   reveal_path: { params: { path: string }; result: null };
+  // About/support screens: open a VERIFIED allowlisted https destination
+  // in the OS browser. The backend refuses anything outside the list.
+  open_external_url: { params: { url: string }; result: null };
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   project_import_existing: {

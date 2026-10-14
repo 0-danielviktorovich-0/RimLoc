@@ -471,6 +471,7 @@ export type ContractMethod =
   // open_path. The mock refuses it honestly — no session output exists
   // there.
   | 'reveal_path'
+  | 'open_external_url'
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   | 'project_import_existing'

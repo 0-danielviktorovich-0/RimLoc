@@ -57,6 +57,7 @@ pub const POST_ORIGINAL_LIVE_EXTRAS: &[&str] = &[
     "selfloc_build_contribution",
     "build_identity",
     "reveal_path",
+    "open_external_url",
 ];
 
 /// The meta field the idempotency decision reads (SELFLOC_BRIDGE.md:

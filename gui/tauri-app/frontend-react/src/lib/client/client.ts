@@ -345,6 +345,12 @@ export class RimLocClient {
   // (the API key goes to the OS keychain and NEVER comes back). ---
 
   /** Redacted provider-instance summaries (`has_key`, never the key). */
+  /** Open a VERIFIED allowlisted https destination in the OS browser.
+   *  The backend refuses anything outside the verified prefix list. */
+  openExternalUrl(url: string): Promise<null> {
+    return this.call('open_external_url', { url }) as Promise<null>;
+  }
+
   async providerInstanceList(): Promise<ProviderInstanceListResponseDto> {
     return this.call('contract_provider_instance_list', {});
   }

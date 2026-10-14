@@ -164,6 +164,61 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     await browser.$('[data-testid="ws.clear-filters"]').click()
   })
 
+
+  it('About: hero, four actions, support panel, foldable tech identity', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/about'
+    })
+    await waitExisting('[data-testid="about.hero"]', 30000)
+    for (const id of ['about.action.docs', 'about.action.github', 'about.action.issues', 'about.action.support']) {
+      if (!(await browser.$(`[data-testid="${id}"]`).isExisting())) {
+        throw new Error(`About action missing: ${id}`)
+      }
+    }
+    for (const id of ['about.support.sponsors', 'about.support.bmc', 'about.support.kofi']) {
+      if (!(await browser.$(`[data-testid="${id}"]`).isExisting())) {
+        throw new Error(`Support option missing: ${id}`)
+      }
+    }
+    // The technical identity is FOLDED by default and reveals the honest
+    // build identity when expanded.
+    if (await browser.$('[data-testid="about.version"]').isExisting()) {
+      throw new Error('tech identity must be folded by default')
+    }
+    await browser.$('[data-testid="about.tech-toggle"]').click()
+    await waitExisting('[data-testid="about.version"]', 10000)
+    const commit = await browser.$('[data-testid="about.commit"] code').getText()
+    if (commit.trim().length < 7) throw new Error(`build identity incomplete: ${commit}`)
+  })
+
+  it('About opener: allowlist refuses foreign URLs; verified URL opens in the OS browser', async () => {
+    // (1) The refusal path has NO side effect and returns a typed error.
+    const refusal = await browser.executeAsync((done) => {
+      const bridge = (window as unknown as Bridge).__TAURI__
+      bridge?.core
+        ?.invoke?.('open_external_url', { url: 'https://evil.example.com/steal' })
+        .then((r) => done({ ok: r }))
+        .catch((e: unknown) =>
+          done({ refused: JSON.stringify(e, (_, v) => (typeof v === 'bigint' ? String(v) : v)) }),
+        )
+    })
+    const r = refusal as { refused?: string }
+    if (!r.refused || !r.refused.includes('allowlisted')) {
+      throw new Error(`foreign URL was not refused: ${JSON.stringify(refusal)}`)
+    }
+    // (2) One verified destination REALLY opens in the OS browser (owner
+    // mandated this E2E; no charge is possible on a sponsors profile).
+    const opened = await browser.executeAsync((done) => {
+      const bridge = (window as unknown as Bridge).__TAURI__
+      bridge?.core
+        ?.invoke?.('open_external_url', { url: 'https://github.com/sponsors/0-danielviktorovich-0' })
+        .then((r2) => done({ ok: r2 === null }))
+        .catch((e: unknown) => done({ refused: String(e) }))
+    })
+    const o = opened as { ok?: boolean; refused?: string }
+    if (!o.ok) throw new Error(`verified URL failed to open: ${o.refused}`)
+  })
+
   it('UI-01: the ChatBatch filter row does not clip its wrapped content', async () => {
     await browser.execute(() => {
       window.location.hash = '#/chatbatch'

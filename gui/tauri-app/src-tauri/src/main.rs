@@ -3178,6 +3178,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // manager — guarded shell extra (session allow-list + canonical
     // containment, see rimloc_gui_lib::reveal), NOT the open_path surface.
     "reveal_path",
+    // About/support screens: https-only opener over VERIFIED project
+    // destinations (see open_external_url) — no arbitrary URLs.
+    "open_external_url",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3996,7 +3999,9 @@ fn main() {
             selfloc_build_contribution,
             // §8 F8.4: reveal the session's successful output dir — guarded
             // shell extra (session allow-list, canonical containment).
-            reveal_path
+            reveal_path,
+            // About/support: allowlisted https opener.
+            open_external_url
         ])
     } else {
         builder.invoke_handler(tauri::generate_handler![
@@ -4075,7 +4080,9 @@ fn main() {
             selfloc_build_contribution,
             // §8 F8.4: reveal the session's successful output dir — guarded
             // shell extra (session allow-list, canonical containment).
-            reveal_path
+            reveal_path,
+            // About/support: allowlisted https opener.
+            open_external_url
         ])
     };
     builder
@@ -4360,6 +4367,47 @@ fn reveal_path(
     // property open_path relies on) — never a shell interpreter.
     open::that_detached(&p).map_err(|e| ApiError {
         message: format!("Failed to open path: {e}"),
+    })?;
+    Ok(())
+}
+
+/// Verified external destinations the About/support screens may open in
+/// the OS browser. https only, prefix-scoped to the project's own pages
+/// and the three support platforms — the webview never gets an arbitrary
+/// opener (the privileged `open_path` surface stays legacy-only).
+fn external_url_allowed(url: &str) -> bool {
+    const ALLOWED_PREFIXES: &[&str] = &[
+        "https://github.com/0-danielviktorovich-0/RimLoc",
+        "https://github.com/sponsors/0-danielviktorovich-0",
+        "https://buymeacoffee.com/danielviktorovich",
+        "https://ko-fi.com/danielviktorovich",
+        "https://0-danielviktorovich-0.github.io/RimLoc",
+    ];
+    ALLOWED_PREFIXES.iter().any(|p| {
+        url == *p
+            || (url.starts_with(p)
+                && matches!(
+                    url.as_bytes().get(p.len()),
+                    Some(&b'/') | Some(&b'?') | Some(&b'#')
+                ))
+    })
+}
+
+/// Open an ALLOWLISTED https URL in the OS browser (LaunchServices/
+/// ShellExecute/xdg-open via the `open` crate, same detached property as
+/// reveal_path). Anything not matching the verified prefixes is refused
+/// with a typed error — never silently downgraded.
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), ApiError> {
+    if !external_url_allowed(&url) {
+        return Err(ApiError {
+            message: format!(
+                "open_external_url refused: the destination is not an allowlisted verified URL: {url}"
+            ),
+        });
+    }
+    open::that_detached(&url).map_err(|e| ApiError {
+        message: format!("Failed to open URL: {e}"),
     })?;
     Ok(())
 }

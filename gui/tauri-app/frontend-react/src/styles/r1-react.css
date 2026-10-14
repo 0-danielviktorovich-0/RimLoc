@@ -347,3 +347,21 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 /* UI-13: honest dual-projection tree tabs (by entry type | by source file). */
 .tree-views .tree-view-tab { font-size: 9px; height: 24px; padding: 0 8px; border-radius: 4px; color: var(--muted-foreground); }
 .tree-views .tree-view-tab.active { color: var(--primary); background: var(--accent); }
+
+/* About redesign (owner addendum Oct-15): hero, actions row, support
+   cards, foldable tech toggle — restrained R1 tokens, both themes. */
+.about-hero { display: flex; gap: 18px; align-items: center; padding: 22px 20px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); margin: 18px 0; }
+.about-hero-icon { width: 64px; height: 64px; border-radius: 14px; flex-shrink: 0; }
+.about-hero h2 { font-family: var(--font-display); font-size: 26px; }
+.about-hero p { color: var(--muted-foreground); font-size: 11px; margin-top: 6px; }
+.about-hero .about-hero-note { font-size: 10px; margin-top: 4px; }
+.about-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin: 14px 0; }
+.about-action { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; font-size: 11px; justify-content: flex-start; }
+.about-action .about-action-ext { margin-left: auto; color: var(--muted-foreground); }
+.about-support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 10px 0; }
+.about-support-card { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); text-align: left; }
+.about-support-card:hover { border-color: var(--primary); }
+.about-support-card strong { font-size: 11px; }
+.about-support-card small { font-size: 9px; color: var(--muted-foreground); }
+.about-tech-toggle { font-size: 11px; color: var(--muted-foreground); padding: 6px 0; }
+@media (max-width: 700px) { .about-hero { flex-direction: column; align-items: flex-start; } }
