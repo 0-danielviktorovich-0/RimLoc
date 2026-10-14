@@ -13,6 +13,12 @@ import type { AiJobStatusDto } from '../lib/client/types'
 
 type Mode = 'auto' | 'chatgpt' | 'byo' | 'local' | 'noapi'
 
+/** Demo echo provider: only reachable in dev builds (Vite dev flag) — a
+ *  production build never offers the fake echo as a "real" AI provider
+ *  (review follow-up P1). The backend independently refuses mock without
+ *  RIMLOC_ALLOW_MOCK_JOBS=1. */
+const MOCK_ALLOWED: boolean = import.meta.env?.DEV === true
+
 const MODES: { id: Mode; label: string; labelRu: string }[] = [
   { id: 'auto', label: 'Translate automatically', labelRu: 'Перевести автоматически' },
   { id: 'chatgpt', label: 'ChatGPT plan (no API key)', labelRu: 'Подписка ChatGPT (без ключа)' },
@@ -21,18 +27,23 @@ const MODES: { id: Mode; label: string; labelRu: string }[] = [
   { id: 'noapi', label: 'AI chat without API', labelRu: 'Чат без API' },
 ]
 
-const PROVIDERS_BY_MODE: Record<Mode, string[]> = {
-  auto: ['mock', 'openai', 'anthropic', 'zai'],
-  chatgpt: [],
-  byo: ['openai', 'anthropic', 'zai'],
-  local: ['ollama'],
-  noapi: [],
+function providersForMode(mode: Mode): string[] {
+  switch (mode) {
+    case 'auto':
+      return MOCK_ALLOWED ? ['mock', 'openai', 'anthropic', 'zai'] : ['openai', 'anthropic', 'zai']
+    case 'byo':
+      return ['openai', 'anthropic', 'zai']
+    case 'local':
+      return ['ollama']
+    default:
+      return []
+  }
 }
 
 export function AiTranslate({ onBack }: { onBack: () => void }) {
   const st = useProjectState()
   const [mode, setMode] = useState<Mode>('auto')
-  const [provider, setProvider] = useState('mock')
+  const [provider, setProvider] = useState(() => providersForMode('auto')[0] ?? '')
   const [model, setModel] = useState('')
   const [locale, setLocale] = useState('Russian')
   const [job, setJob] = useState<AiJobStatusDto | null>(null)
@@ -41,7 +52,8 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
 
   const snap = st.snapshot
   const epoch = snap?.session_epoch
-  const canRun = Boolean(snap && epoch !== undefined && !busy)
+  const providerValidForMode = providersForMode(mode).includes(provider)
+  const canRun = Boolean(snap && epoch !== undefined && !busy && providerValidForMode)
 
   // Poll while running.
   useEffect(() => {
@@ -56,6 +68,7 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
 
   const run = (): void => {
     if (!snap || epoch === undefined) return
+    if (!providerValidForMode) return
     setBusy(true)
     setError(null)
     clientInstance.getClient().aiJobStart({
@@ -112,7 +125,13 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
             aria-checked={mode === m.id}
             className={`ai-mode-card ${mode === m.id ? 'active' : ''}`}
             data-testid={`ai.mode.${m.id}`}
-            onClick={() => setMode(m.id)}
+            onClick={() => {
+              setMode(m.id)
+              // Reset on every switch (review follow-up P1): the provider
+              // must be valid for the NEW mode — a stale demo selector
+              // never submits into a real AI job.
+              setProvider(providersForMode(m.id)[0] ?? '')
+            }}
           >
             {m.id === 'auto' && <Sparkles size={14} />}
             {m.id === 'chatgpt' && <Sparkles size={14} />}
@@ -154,7 +173,7 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
           <label className="field">
             <span>{t('ai.provider')}</span>
             <select value={provider} onChange={(e) => setProvider(e.target.value)} data-testid="ai.provider">
-              {PROVIDERS_BY_MODE[mode].map((p) => (
+              {providersForMode(mode).map((p: string) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
