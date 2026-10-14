@@ -226,6 +226,22 @@ export interface ContractMethodMap {
     params: { project_id: string; session_epoch: number; key?: string };
     result: DraftsSaveAckDto;
   };
+  ai_job_start: {
+    params: { request: import('./types').AiJobParamsDto };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_status: {
+    params: { job_id: string };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_cancel: {
+    params: { job_id: string };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_accept: {
+    params: { request: { job_id: string; session_epoch: number } };
+    result: import('./types').AiJobStatusDto;
+  };
   contract_chat_batch_list: {
     params: { request: ChatBatchListRequestDto };
     result: ChatBatchListResponseDto;

@@ -464,6 +464,19 @@ export class RimLocClient {
    * mismatched ones are quarantined as `.drafts.orphan.json` and REPORTED —
    * never silently applied. Unreadable stores report `unavailable` with the
    * typed detail; opening the project itself never fails because of drafts. */
+  async aiJobStart(args: import('./types').AiJobParamsDto): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_start', { request: args });
+  }
+  async aiJobStatus(jobId: string): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_status', { job_id: jobId });
+  }
+  async aiJobCancel(jobId: string): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_cancel', { job_id: jobId });
+  }
+  async aiJobAccept(jobId: string, sessionEpoch: number): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_accept', { request: { job_id: jobId, session_epoch: sessionEpoch } });
+  }
+
   async restoreDrafts(projectId: string, sessionEpoch: number): Promise<DraftsRestoreReportDto> {
     return this.call('project_restore_drafts', {
       project_id: projectId,

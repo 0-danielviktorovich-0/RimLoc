@@ -518,7 +518,56 @@ export type ContractMethod =
   // translations.
   | 'project_save_drafts'
   | 'project_restore_drafts'
-  | 'project_clear_drafts';
+  | 'project_clear_drafts'
+  // AI translation jobs (Stage B): start/status/cancel/accept.
+  | 'ai_job_start'
+  | 'ai_job_status'
+  | 'ai_job_cancel'
+  | 'ai_job_accept';
+
+// --- ai translation jobs (Stage B) ---
+export type AiJobStateDto =
+  | 'running'
+  | 'preview_ready'
+  | 'applied'
+  | 'failed'
+  | 'cancelled';
+
+export interface AiJobRowDto {
+  key: string;
+  identity: string;
+  identity_json: SourceEntryIdDto;
+  source: string;
+  target?: string;
+  status: string;
+  error?: string;
+}
+
+export interface AiJobStatusDto {
+  job_id: string;
+  project_id: string;
+  locale: string;
+  provider_id: string;
+  model: string;
+  state: AiJobStateDto;
+  total: number;
+  translated: number;
+  failed: number;
+  excluded_notranslate: number;
+  rows: AiJobRowDto[];
+  error?: string;
+  checkpoint_path?: string;
+}
+
+export interface AiJobParamsDto {
+  project_id: string;
+  session_epoch: number;
+  locale: string;
+  provider_id: string;
+  model?: string;
+  base_url?: string;
+  batch_char_budget?: number;
+}
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /
