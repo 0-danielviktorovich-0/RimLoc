@@ -331,7 +331,7 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .cb-status-stale { border-color: color-mix(in oklch, var(--destructive) 55%, transparent); color: var(--destructive); }
 .cb-status-done { border-color: var(--color-success, #2e7d32); color: var(--color-success, #2e7d32); }
 .cb-selection { margin-bottom: 20px; }
-.cb-selection .entry-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.cb-selection .entry-filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; /* UI-01: the base rule pins height:43px, which clipped the wrapped second row — the wrapped layout needs an auto height with the original as the floor. */ height: auto; min-height: 43px; }
 .cb-selection .entry-filters button { font-size: 10px; height: 30px; }
 .cb-selection .entry-filters .btn-primary { margin-left: auto; }
 .cb-entry-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
@@ -343,3 +343,7 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .cb-step .import-actions button { font-size: 10px; height: 33px; }
 .cb-step textarea { width: 100%; min-height: 110px; font-size: 11px; font-family: var(--font-mono); }
 .cb-preview-table > div { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+
+/* UI-13: honest dual-projection tree tabs (by entry type | by source file). */
+.tree-views .tree-view-tab { font-size: 9px; height: 24px; padding: 0 8px; border-radius: 4px; color: var(--muted-foreground); }
+.tree-views .tree-view-tab.active { color: var(--primary); background: var(--accent); }

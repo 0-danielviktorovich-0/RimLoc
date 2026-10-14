@@ -66,6 +66,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'empty' | 'issues'>('all')
   const [kindFilter, setKindFilter] = useState<string>('all')
+  const [fileFilter, setFileFilter] = useState<string>('all')
+  const [treeView, setTreeView] = useState<'type' | 'file'>('type')
   const [treeOpen, setTreeOpen] = useState(true)
   // react-resizable-panels v4: `autoSaveId` replaced by the useDefaultLayout
   // hook — same localStorage persistence for the pane split, new API shape.
@@ -121,12 +123,38 @@ export function Workspace({ onBack }: { onBack: () => void }) {
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [st.entries])
 
+  // UI-13 (owner audit Oct-14): the tree previously presented def types as
+  // "project files". Two HONEST projections now: by entry type (def kinds)
+  // and by ACTUAL source file from the canonical provenance
+  // (source_ref.file); entries without provenance land in an explicit
+  // unknown bucket — invented paths are never shown.
+  const UNKNOWN_FILE = '__no_source_file__'
+  const fileGroups = useMemo(() => {
+    const m = new Map<string, number>()
+    let unknown = 0
+    for (const e of st.entries) {
+      const f = e.sourceFile?.trim()
+      if (!f) {
+        unknown += 1
+        continue
+      }
+      m.set(f, (m.get(f) ?? 0) + 1)
+    }
+    const groups = [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+    if (unknown > 0) groups.push([UNKNOWN_FILE, unknown])
+    return groups
+  }, [st.entries])
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
     return st.entries.filter((e) => {
       if (kindFilter !== 'all') {
         const k = e.identity.def_type ? `${e.identity.kind}/${e.identity.def_type}` : e.identity.kind
         if (k !== kindFilter) return false
+      }
+      if (fileFilter !== 'all') {
+        const f = e.sourceFile?.trim() || UNKNOWN_FILE
+        if (f !== fileFilter) return false
       }
       if (q && !`${e.key} ${e.source} ${e.target}`.toLowerCase().includes(q)) return false
       if (filter === 'empty') return !e.target.trim()
@@ -137,9 +165,16 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       if (filter === 'issues') return issueKeys.has(e.uid)
       return true
     })
-  }, [st.entries, search, filter, kindFilter, issueKeys])
+  }, [st.entries, search, filter, kindFilter, fileFilter, issueKeys])
 
-  const selectedKey = st.selectedKey ?? visible[0]?.uid ?? null
+  // UI-14 (owner audit Oct-14): the editor must never sit on an entry the
+  // current filters hide. The stored selection wins ONLY while it stays
+  // visible; otherwise the first visible row is selected instead — the
+  // stored key is NOT overwritten, so clearing the filters restores it.
+  const storedSelectedVisible =
+    st.selectedKey != null && visible.some((e) => e.uid === st.selectedKey)
+  const selectedKey =
+    storedSelectedVisible && st.selectedKey ? st.selectedKey : (visible[0]?.uid ?? null)
   const selected = st.entries.find((e) => e.uid === selectedKey) ?? null
 
   // §17: первая находка для ТЕКУЩЕЙ строки (порядок отчёта валидатора).
@@ -232,19 +267,67 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               <ChevronDown />
             </button>
           </div>
-          <button className={`tree-root ${kindFilter === 'all' ? 'active' : ''}`} onClick={() => setKindFilter('all')}>
+          <div className="tree-views" role="tablist" style={{ display: 'flex', gap: 4, padding: '0 6px 4px' }}>
+            <button
+              role="tab"
+              aria-selected={treeView === 'type'}
+              className={`tree-view-tab ${treeView === 'type' ? 'active' : ''}`}
+              onClick={() => setTreeView('type')}
+              data-testid="ws.tree.view-type"
+            >
+              {t('ws.byType')}
+            </button>
+            <button
+              role="tab"
+              aria-selected={treeView === 'file'}
+              className={`tree-view-tab ${treeView === 'file' ? 'active' : ''}`}
+              onClick={() => setTreeView('file')}
+              data-testid="ws.tree.view-file"
+            >
+              {t('ws.byFile')}
+            </button>
+          </div>
+          <button
+            className={`tree-root ${kindFilter === 'all' && fileFilter === 'all' ? 'active' : ''}`}
+            onClick={() => {
+              setKindFilter('all')
+              setFileFilter('all')
+            }}
+          >
             <FolderOpen /> {t('ws.allStrings')} <span>{st.entries.length}</span>
           </button>
           {treeOpen &&
+            treeView === 'type' &&
             kindGroups.map(([k, n]) => (
               <button
                 key={k}
                 className={`file-item ${kindFilter === k ? 'active' : ''}`}
-                onClick={() => setKindFilter(kindFilter === k ? 'all' : k)}
+                onClick={() => {
+                  setKindFilter(kindFilter === k ? 'all' : k)
+                  setFileFilter('all')
+                }}
                 data-testid={`ws.tree.${k}`}
               >
                 <FileCode2 />
                 <span>{k}</span>
+                <small>{n}</small>
+              </button>
+            ))}
+          {treeOpen &&
+            treeView === 'file' &&
+            fileGroups.map(([f, n]) => (
+              <button
+                key={f}
+                className={`file-item ${fileFilter === f ? 'active' : ''}`}
+                onClick={() => {
+                  setFileFilter(fileFilter === f ? 'all' : f)
+                  setKindFilter('all')
+                }}
+                data-testid={`ws.tree.file.${f}`}
+                title={f === UNKNOWN_FILE ? t('ws.unknownFile') : f}
+              >
+                <FileCode2 />
+                <span>{f === UNKNOWN_FILE ? t('ws.unknownFile') : f}</span>
                 <small>{n}</small>
               </button>
             ))}
@@ -268,11 +351,15 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             </div>
             <button
               className="icon-btn"
-              aria-label={t('ws.resetFilters')}
+              aria-label={t('ws.clearAllFilters')}
+              title={t('ws.clearAllFilters')}
               onClick={() => {
                 setSearch('')
                 setFilter('all')
+                setKindFilter('all')
+                setFileFilter('all')
               }}
+              data-testid="ws.clear-filters"
             >
               <ListFilter />
             </button>
