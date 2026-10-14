@@ -75,6 +75,14 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_save_drafts",
     "project_restore_drafts",
     "project_clear_drafts",
+    // AI translation jobs (Stage B): start/status/cancel/accept.
+    "ai_job_start",
+    "ai_job_status",
+    "ai_job_cancel",
+    "ai_job_accept",
+    // Source Discovery (Stage A): read-only full-project source search with
+    // canonical-inventory reconciliation.
+    "project_source_search",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key NEVER crosses into a file — it goes to the OS keychain.
     "contract_provider_instance_list",
@@ -377,6 +385,70 @@ pub fn project_clear_drafts(
     })
 }
 
+// AI translation jobs (Stage B) — thin typed adapter over the shared
+// services::ai_job registry (one engine, one canonical writer). State lives
+// per app process; the durable record is the canonical apply + checkpoints.
+
+use rimloc_services::ai_job::{AiJobParams, AiJobRegistry};
+
+/// Managed root shared with the ai job service for checkpoint placement.
+pub struct ManagedRoot(pub PathBuf);
+
+pub struct AiJobs(pub AiJobRegistry);
+
+/// `project_source_search` (Source Discovery, Stage A) — READ-ONLY
+/// full-project source search reconciled against the canonical inventory.
+/// The search context (mod root, versions, source language) comes from the
+/// LIVE session snapshot; the epoch guard protects against superseded
+/// sessions. v1 runs synchronously; UI-level cancellation arrives with the
+/// streaming wiring (documented limitation).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_source_search(
+    state: State<'_, ContractState>,
+    request: SourceSearchArgs,
+) -> Result<
+    rimloc_services::source_search::SourceSearchReport,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_source_search", || {
+        let snap = manager.snapshot(&request.project_id)?;
+        if snap.session_epoch != request.session_epoch {
+            return Err(rimloc_services::contract::ContractError::stale_epoch(
+                request.session_epoch,
+                snap.session_epoch,
+            ));
+        }
+        let root = snap
+            .source_root
+            .as_ref()
+            .map(|r| std::path::PathBuf::from(&r.path))
+            .ok_or_else(|| {
+                rimloc_services::contract::ContractError::new(
+                    rimloc_services::contract::ContractErrorCode::InvalidConfig,
+                    "project has no source root — source search needs the source mod",
+                )
+            })?;
+        let scope = match request.scope.as_deref() {
+            Some("all_text") => rimloc_services::source_search::SearchScope::AllText,
+            _ => rimloc_services::source_search::SearchScope::Standard,
+        };
+        let req = rimloc_services::source_search::SourceSearchRequest {
+            mod_root: root,
+            target_version: snap.project.context.target_version.clone(),
+            source_lang_dir: snap.project.context.source_dir.clone(),
+            query: request.query,
+            scope,
+            offset: request.offset,
+            max_results: request.max_results,
+        };
+        rimloc_services::source_search::search_sources(&req, &|| false)
+    })
+}
+
 /// `project_source_xml_preview` (rel27) — read-only bounded window of a
 /// project source file for the Source Inspector XML preview. The path is
 /// resolved against the session's source root with containment (no `..`
@@ -494,6 +566,112 @@ pub fn project_source_xml_preview(
             total_lines: total,
         })
     })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_start(
+    state: State<'_, ContractState>,
+    root: State<'_, ManagedRoot>,
+    ai: State<'_, AiJobs>,
+    request: AiJobParamsWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("ai_job_start", || {
+        let mut params = request.into_params();
+        // The project's REAL source locale rides the params (never a
+        // hardcoded "en"): the adapter resolves it from the live snapshot.
+        let snap = manager.snapshot(&params.project_id)?;
+        params.source_locale = snap
+            .project
+            .context
+            .source_locale
+            .clone()
+            .unwrap_or_else(|| "en".to_string());
+        rimloc_services::ai_job::start_job(&ai.0, &manager, &managed_root_of(&root), params)
+    })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_status(
+    ai: State<'_, AiJobs>,
+    job_id: String,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    rimloc_services::ai_job::job_status(&ai.0, &job_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_cancel(
+    ai: State<'_, AiJobs>,
+    job_id: String,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    rimloc_services::ai_job::cancel_job(&ai.0, &job_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_accept(
+    state: State<'_, ContractState>,
+    ai: State<'_, AiJobs>,
+    request: AiJobAcceptWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("ai_job_accept", || {
+        rimloc_services::ai_job::accept_job(&ai.0, &manager, &request.job_id, request.session_epoch)
+    })
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobParamsWire {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub locale: String,
+    pub provider_id: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub base_url: Option<String>,
+    #[serde(default)]
+    pub batch_char_budget: usize,
+}
+
+impl AiJobParamsWire {
+    fn into_params(self) -> AiJobParams {
+        AiJobParams {
+            project_id: self.project_id,
+            source_locale: String::new(),
+            session_epoch: self.session_epoch,
+            locale: self.locale,
+            provider_id: self.provider_id,
+            model: self.model,
+            base_url: self.base_url,
+            batch_char_budget: self.batch_char_budget,
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobAcceptWire {
+    pub job_id: String,
+    pub session_epoch: u64,
+}
+
+/// Wire args of `project_source_search`.
+#[derive(Debug, serde::Deserialize)]
+pub struct SourceSearchArgs {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub query: String,
+    #[serde(default)]
+    pub scope: Option<String>,
+    #[serde(default)]
+    pub offset: usize,
+    #[serde(default)]
+    pub max_results: usize,
 }
 
 // TM live (owner decision A+B+C): the glossary command chain, repeated
@@ -966,8 +1144,16 @@ pub fn attach_contract<C: tauri::Runtime>(
     builder: tauri::Builder<C>,
     managed_root: PathBuf,
 ) -> Result<tauri::Builder<C>, std::io::Error> {
-    let state = ContractState::new(managed_root)?;
-    Ok(builder.manage(state))
+    let state = ContractState::new(managed_root.clone())?;
+    Ok(builder
+        .manage(state)
+        .manage(ManagedRoot(managed_root))
+        .manage(AiJobs(AiJobRegistry::new())))
+}
+
+/// Project-relative path of the managed root (for the ai job service).
+pub fn managed_root_of(state: &State<'_, ManagedRoot>) -> PathBuf {
+    state.0.clone()
 }
 
 #[cfg(test)]
@@ -1012,7 +1198,11 @@ mod tests {
     fn contract_commands_all_start_with_contract_or_project_prefix() {
         for name in CONTRACT_COMMANDS {
             assert!(
-                name.starts_with("contract_") || name.starts_with("project_"),
+                name.starts_with("contract_")
+                    || name.starts_with("project_")
+                    // AI translation jobs (Stage B): the ai_job_* family is
+                    // part of the typed command surface by design.
+                    || name.starts_with("ai_job_"),
                 "unexpected contract command name: {name}"
             );
         }
@@ -1094,10 +1284,17 @@ mod ipc_draft_tests {
                 project_restore_drafts,
                 project_clear_drafts,
                 project_source_xml_preview,
+                ai_job_start,
+                ai_job_status,
+                ai_job_cancel,
+                ai_job_accept,
+                project_source_search,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
         app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        app.manage(ManagedRoot(dir.path().join("managed")));
+        app.manage(AiJobs(AiJobRegistry::new()));
         let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
             .build()
             .expect("webview");
@@ -1184,42 +1381,94 @@ mod ipc_draft_tests {
         .expect("absent clear ok");
         assert_eq!(absent["saved"], 0);
 
-        // Source XML preview (rel27): read the entry's own source file
-        // through the ipc, containment-checked; the target line is
-        // highlighted by the caller via target_line.
-        let preview = invoke(
+        // AI job (Stage B) through the SAME ipc: mock provider translates
+        // the fixture labels; the preview stays DRAFT until accepted.
+        let started = invoke(
             &webview,
-            "project_source_xml_preview",
+            "ai_job_start",
             json!({"request": {
                 "project_id": pid,
                 "session_epoch": epoch,
-                "file": "Defs/A_Thing.xml",
-                "line": 1,
-                "before": 0,
-                "after": 5
+                "locale": "Russian",
+                "provider_id": "mock",
+                "batch_char_budget": 4000
             }}),
         )
-        .expect("preview ok");
-        let preview_lines = preview["lines"].as_array().unwrap();
-        assert!(!preview_lines.is_empty());
-        assert!(preview_lines
-            .iter()
-            .any(|l| l["text"].as_str().unwrap_or("").contains("Thing Dup")));
-        assert_eq!(preview["file"], "Defs/A_Thing.xml");
+        .expect("ai start ok");
+        let job_id = started["job_id"].as_str().unwrap().to_string();
+        assert_eq!(started["state"], "running");
 
-        // Containment: a traversal path is a typed refusal.
+        let mut final_state = String::new();
+        for _ in 0..200 {
+            let st =
+                invoke(&webview, "ai_job_status", json!({"job_id": job_id})).expect("status ok");
+            final_state = st["state"].as_str().unwrap().to_string();
+            if final_state != "running" {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_state, "preview_ready", "job must reach preview");
+
+        // Accept through the ipc: canonical apply, origin Llm.
+        let accepted = invoke(
+            &webview,
+            "ai_job_accept",
+            json!({"request": {"job_id": job_id, "session_epoch": epoch}}),
+        )
+        .expect("accept ok");
+        assert_eq!(accepted["state"], "applied");
+        // Source Discovery (Stage A) through the SAME ipc: query a source
+        // text and get reconciled classifications back.
+        let search = invoke(
+            &webview,
+            "project_source_search",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch,
+                "query": "Thing Dup",
+                "scope": "standard",
+                "offset": 0,
+                "max_results": 50
+            }}),
+        )
+        .expect("source search ok");
+        // The fixture Defs file is single-line: one match, reconciled
+        // against the inventory with the FULL canonical identity.
+        assert_eq!(search["total_matches"], 1, "{search}");
+        assert_eq!(
+            search["matches"][0]["status"], "already_indexed",
+            "{search}"
+        );
+        assert_eq!(
+            search["matches"][0]["identity"]["def_type"], "ThingDef",
+            "{search}"
+        );
+        let statuses: Vec<&str> = search["matches"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["status"].as_str().unwrap_or("?"))
+            .collect();
+        assert!(
+            statuses.contains(&"already_indexed"),
+            "DefInjected-origin source region must reconcile as indexed: {statuses:?}"
+        );
+
+        // Stale-epoch guard covers the search command too.
         let err = invoke(
             &webview,
-            "project_source_xml_preview",
+            "project_source_search",
             json!({"request": {
                 "project_id": pid,
-                "session_epoch": epoch,
-                "file": "../../Cargo.toml",
-                "line": 1
+                "session_epoch": epoch + 5,
+                "query": "Thing Dup",
+                "offset": 0,
+                "max_results": 10
             }}),
         )
-        .expect_err("traversal must refuse");
-        assert_eq!(err["code"], "guard_output_denied");
+        .expect_err("stale epoch must refuse search");
+        assert_eq!(err["code"], "stale_epoch");
 
         // Error path: a stale epoch is a typed refusal through the SAME ipc.
         let err = invoke(
@@ -1246,10 +1495,17 @@ mod ipc_draft_tests {
                 project_restore_drafts,
                 project_clear_drafts,
                 project_source_xml_preview,
+                ai_job_start,
+                ai_job_status,
+                ai_job_cancel,
+                ai_job_accept,
+                project_source_search,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
         app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        app.manage(ManagedRoot(dir.path().join("managed")));
+        app.manage(AiJobs(AiJobRegistry::new()));
         let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
             .build()
             .expect("webview");

@@ -15,6 +15,7 @@ pub mod validator;
 
 #[cfg(feature = "http")]
 pub mod anthropic;
+pub mod build;
 #[cfg(feature = "http")]
 pub mod openai_compat;
 #[cfg(feature = "keychain")]

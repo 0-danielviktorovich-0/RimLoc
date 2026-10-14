@@ -226,18 +226,34 @@ export interface ContractMethodMap {
     params: { project_id: string; session_epoch: number; key?: string };
     result: DraftsSaveAckDto;
   };
-  project_source_xml_preview: {
+  ai_job_start: {
+    params: { request: import('./types').AiJobParamsDto };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_status: {
+    params: { job_id: string };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_cancel: {
+    params: { job_id: string };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_accept: {
+    params: { request: { job_id: string; session_epoch: number } };
+    result: import('./types').AiJobStatusDto;
+  };
+  project_source_search: {
     params: {
       request: {
         project_id: string;
         session_epoch: number;
-        file: string;
-        line?: number;
-        before?: number;
-        after?: number;
+        query: string;
+        scope?: 'standard' | 'all_text';
+        offset?: number;
+        max_results?: number;
       };
     };
-    result: import('./types').SourceXmlPreviewDto;
+    result: import('./types').SourceSearchReportDto;
   };
   contract_chat_batch_list: {
     params: { request: ChatBatchListRequestDto };

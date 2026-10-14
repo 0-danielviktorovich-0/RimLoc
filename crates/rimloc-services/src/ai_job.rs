@@ -334,7 +334,7 @@ fn run_job_worker(
     let mut units: Vec<rimloc_llm::provider::TranslateUnit> = Vec::new();
     {
         let rows = shared.rows.lock().unwrap();
-        for (_sort_key, row) in rows.iter() {
+        for row in rows.values() {
             if row.status == "pending" {
                 units.push(rimloc_llm::provider::TranslateUnit {
                     id: row.identity.clone(),

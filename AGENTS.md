@@ -112,6 +112,48 @@ Rust — дефолтный rustfmt (4 пробела); модули/функц�
 - Изменил i18n-ключи CLI — `cargo test --package rimloc-cli -- tests_i18n`.
 - Изменил CLI-флаги/поведение — обнови интеграционные тесты и прогони всю сьюту.
 
+### Coverage & Codecov PR review (mandatory for agents)
+
+- **Never equate green CI with sufficient tests.** After each PR push inspect all GitHub
+  Actions/CodeQL/Codecov checks **and bot/reviewer comments on the exact PR HEAD SHA**.
+  In `codecov.yml`, `informational: true` allows a SUCCESS status below target;
+  report the actual patch/project/component/flag coverage, missing lines and risk.
+  An upload "queued for processing" is not yet a Codecov-accepted report.
+- Coverage must measure the **honest changed production surface**. Do not move
+  files out of `coverage.include`, narrow the denominator, lower thresholds, alter
+  `ignore`, or mark a flag informational **to raise a number**. Scope-limited
+  reports are allowed when explicitly labeled and accompanied by an honest
+  full-source baseline; tests/fixtures/generated/vendor files may be excluded
+  only for documented reasons. Preserve Vitest config under
+  `test.coverage` (not the root config), and verify the *printed per-file table*
+  AND uploaded report include the intended files (including untested files).
+- **RimLoc coverage lanes:** `rust` = Rust workspace; `gui-rust` = Tauri Rust;
+  `frontend-react` = full production React source. For UI logic report
+  `project.ts` / `entryUid.ts` separately, but do not present those two
+  files as coverage of all React screens. Real IPC/serialization/error-path
+  tests matter more than command-name/string-presence tests; retain separate
+  native packaged-app and owner UAT evidence.
+- **Effective Codecov policy is `main`:** `strict_yaml_branch: main`.
+  During a PR, the PR's edited `codecov.yml` is not yet the effective policy.
+  Inspect **main** `ignore` and path rules. In particular, path prefixes like
+  `gui/tauri-app/frontend` may also match `frontend-react`; use a directory
+  boundary (`frontend/`) and confirm the parsed validator output. A passing
+  coverage-upload workflow or a flag marked "not affected" does not prove
+  that the product files are counted.
+- On coverage/workflow changes verify locally and in CI: (1) intended file
+  inventory and honest denominator; (2) report exists, parses and is uploaded
+  for the exact commit; (3) Codecov has **finished processing**; (4) the flag,
+  component and PR comment reflect those files; (5) no regression in
+  CodeQL/security or behavioral tests. If the base or denominator changed,
+  do **not** claim before/after percentages are directly comparable.
+- Before requesting review/merge, **triage every bot comment**, including
+  Codecov, even when all checkmarks are green. Record missing changed lines,
+  behavioral tests added or not needed, remaining risks and owner-only gates
+  in the PR. Zero alerts/100% line coverage are not proof of product quality.
+  Do not merge, tag or publish without explicit owner authorization.
+- Canonical procedures and report formats: `docs/en/dev/coverage.md` and
+  `docs/ru/dev/coverage.md` (update them together).
+
 ## Documentation Workflow
 
 - **Канонический публичный источник правды — `docs/` → MkDocs.** README — короткий landing page,

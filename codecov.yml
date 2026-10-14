@@ -76,6 +76,10 @@ component_management:
       name: Desktop Rust / Tauri
       paths:
         - "gui/tauri-app/src-tauri/src/**"
+    - component_id: frontend_react
+      name: React frontend (full production source)
+      paths:
+        - "gui/tauri-app/frontend-react/src/**"
 
 # Flags describe independently uploaded test families. Components above then
 # provide the architectural/product view over those uploads.
@@ -117,9 +121,11 @@ github_checks:
   annotations: false
 
 ignore:
-  - "gui/tauri-app/src-tauri/vendor"
-  - "gui/tauri-app/frontend-v2"
-  - "gui/tauri-app/frontend"
+  - "gui/tauri-app/src-tauri/vendor/"
+  - "gui/tauri-app/frontend-v2/"
+  # The trailing slash is essential: without it, the legacy frontend prefix
+  # also matches frontend-react and silently hides its coverage.
+  - "gui/tauri-app/frontend/"
   - "test"
   - "testlab"
   - "docs"
