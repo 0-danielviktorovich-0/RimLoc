@@ -30,10 +30,16 @@ metadata:
 - Inspect current (not historical) CI runs and every CodeQL/Codecov bot comment
   at each PR's exact HEAD. Red check or unresolved security report = BLOCKED,
   not "all gates green". Stop only at a genuine external/owner gate.
-- The private RimLoc-review-handoff repository is the reviewer mailbox.
-  Use the native `local.handoff(reason,prompt)` only if the local harness
-  exposes it; record an actual receipt, never imply a successful handoff
-  without one. Owner manual forwarding is NOT the default workflow.
+- The owner approved direct browser-mediated communication with ChatGPT.
+  Prefer native `local.handoff(reason,prompt)` if available; otherwise use
+  the authorized ZCode/IAB **WF-REVIEWER-BRIDGE** lane to send AND receive
+  real messages in the existing RimLoc ChatGPT Project. Capture the exact
+  chat URL privately. If context limit is reached, create a new chat inside
+  that SAME Project, transfer a verified state pack and keep URL lineage.
+  Read `docs/development/CHATGPT_BROWSER_REVIEW_BRIDGE.md` before each
+  reviewer handoff. Never claim that a GitHub comment notified ChatGPT;
+  private `RimLoc-review-handoff` is only fallback evidence mailbox.
+  Owner manual forwarding is NOT the default workflow.
 - Treat documents such as `.rimloc-release-state.json` as **potentially stale
   snapshots**: reconcile them against live PR identities before updating.
   Keep owner UAT, RimWorld playtest, credentials and publication as owner gates.

@@ -40,12 +40,16 @@ a new incompatible orchestration framework; discover and reuse the native one.
    stale `.rimloc-release-state.json` / `RELEASE_CONVERGENCE_STATE.md`.
    Write the reconciled state and owner gates into a durable campaign ledger
    **without claiming a private local artifact is on GitHub**.
-5. Before claiming an external review, attempt `local.handoff` only if the
-   exact agent runtime exposes it (`reason`, `prompt`); capture receipt and
-   response. Otherwise deliver sanitized REVIEW_REQUEST/evidence to the
-   **existing private** `0-danielviktorovich-0/RimLoc-review-handoff`
-   mailbox, and set `WAITING_EXTERNAL_REVIEW`. GitHub comments do not
-   automatically trigger a ChatGPT conversation.
+5. For review, use native `local.handoff` if actually available;
+   otherwise **send directly in the authorized ChatGPT browser and read
+   the real response**. Follow
+   `docs/development/CHATGPT_BROWSER_REVIEW_BRIDGE.md`: observe current
+   chat + ChatGPT Project URLs, store privately, and create successor chats
+   in the SAME Project with `RIMLOC_REVIEW_CONTINUATION_V1` when context
+   rollover is necessary. Only if browser/handoff are genuinely
+   unavailable, place sanitized evidence in PRIVATE
+   `0-danielviktorovich-0/RimLoc-review-handoff` and mark
+   `WAITING_EXTERNAL_REVIEW`. GitHub comments are not live chat delivery.
 
 ## Live reality at this snapshot — DO NOT REUSE AS CURRENT WITHOUT POLLING
 

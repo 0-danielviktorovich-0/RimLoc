@@ -24,13 +24,21 @@ red; it cannot be promoted to accepted. Do NOT close parent milestones by
 counting child-stage setup as completed functionality.
 
 **Independent review and handoff are required** for critical cross-subsystem
-changes. If `local.handoff` is exposed by this exact agent runtime, attempt a
-real handoff using `reason` and `prompt` and capture the receipt/response;
-it is NOT automatically present in every session. Otherwise place the
-sanitized REVIEW_REQUEST + evidence in the existing PRIVATE
-`RimLoc-review-handoff` mailbox and mark review `WAITING_EXTERNAL_REVIEW`.
-A GitHub comment alone is not evidence that ChatGPT saw or approved anything;
-never make a fake "reviewer PASS" claim.
+changes. The owner has explicitly authorized **direct communication via the
+existing ChatGPT browser session**. Reuse the authorized ZCode/IAB browser
+bridge when native `local.handoff(reason,prompt)` is unavailable; capture the
+REAL current ChatGPT conversation and existing **RimLoc ChatGPT Project** URL
+in PRIVATE local state, send sanitized evidence, read the actual response.
+When the conversation context is exhausted, create a NEW chat **inside the
+SAME existing ChatGPT Project**, transfer all critical reviewer/project
+context and keep the complete chain of previous URLs. Mandatory SOP:
+`docs/development/CHATGPT_BROWSER_REVIEW_BRIDGE.md`. Never create new chats
+to bypass quota, use the wrong Project, invent a browser receipt, or expose
+chat URLs in public Git. If browser and local handoff both fail, place the
+evidence in PRIVATE `RimLoc-review-handoff` and mark
+`WAITING_EXTERNAL_REVIEW` with a concrete reason. A GitHub comment alone
+DOES NOT send anything to ChatGPT; never claim a real reviewer response
+without observing and reading it.
 
 Before every final response: reconcile all relevant Draft PR HEADs, CI,
 CodeQL, bot comments, latest evidence, live product files and blockers; update
