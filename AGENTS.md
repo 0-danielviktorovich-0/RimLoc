@@ -4,6 +4,32 @@
 `feature/ui-r1-convergence` (см. `docs/development/REPOSITORY_STATE_2026-10.md`,
 `docs/competitive/RIMLOC_CAPABILITIES_BASELINE.md` — якорь возможностей).
 
+## Primary product contract: graphical desktop app
+
+**Owner decision (2026-10-14): RimLoc is GUI-FIRST.** React/Tauri is the
+primary product, target of onboarding, GitHub/README/SEO positioning, user
+documentation and UAT. The CLI is an optional expert/automation interface
+over the same shared Rust services — never the default translation journey.
+Users should not need a terminal, raw XML, PO files or environment variables
+to discover, translate, review, validate and safely build a RimWorld mod.
+
+**AI Translation must become a first-class GUI workflow**, with honest
+transport choices: (1) eligible ChatGPT plan via official OSS Sign in with
+ChatGPT OAuth/consent; (2) user-provided API keys; (3) local inference;
+(4) existing Chat Batch with no API. Today Provider Settings only
+configures/probes connections; the Chat Batch route requires copy/paste.
+Direct in-app jobs and subscription auth are NOT shipped. Never claim them
+as working until typed Tauri/service calls and packaged-app E2E pass.
+
+CLI parity means every **user-relevant capability** should be accessible
+from understandable GUI controls, sharing service logic. A tool only in CLI
+is a documented GUI gap, not a feature-completeness success. Do not replace
+the GUI with arbitrary shell execution. Never bypass human OAuth/paid
+consent or relax rel26 Data Safety guarantees.
+
+Execution/architecture reference:
+`docs/development/DESKTOP_FIRST_AI_TRANSLATION_2026-10-14.md`.
+
 ## Project Structure & Module Organization
 
 RimLoc — кроссплатформенный инструмент перевода модов RimWorld (и других игр, через
