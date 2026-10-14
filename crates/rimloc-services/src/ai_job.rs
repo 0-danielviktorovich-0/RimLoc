@@ -1865,12 +1865,15 @@ mod tests {
         )
         .unwrap();
         // Status reflects the RESOLVED target, not the ignored direct value.
-        assert_eq!(st.provider_id, "openai", "{st:?}");
+        // No Debug formatting of status/manager values here: the test holds
+        // a sink-carrying manager and CodeQL flags any log path from it
+        // (cleartext-logging); the two plain asserts carry the failure info.
+        assert_eq!(st.provider_id, "openai");
         assert_eq!(st.model, "gpt-test");
         let handle = registry.get(&st.job_id).unwrap();
         wait_worker_finished(&handle, 5);
         let st = job_status(&registry, &st.job_id).unwrap();
-        assert_eq!(st.state, AiJobState::PreviewReady, "{st:?}");
+        assert_eq!(st.state, AiJobState::PreviewReady);
         let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
         assert_eq!(st.state, AiJobState::Applied);
         let seen = captured.lock().unwrap();
