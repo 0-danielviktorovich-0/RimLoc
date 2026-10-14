@@ -212,6 +212,19 @@ describe('AI cancel acceptance — integrated native GUI (review P2)', () => {
       if (values.length === 0) {
         throw new Error(`provider select empty, mode=${mode}`)
       }
+      // prov-* wiring (factory priority): the BYO mode renders the REAL
+      // ProvidersScreen instances — in this isolated profile there are
+      // none, so the honest empty state must be visible.
+      if (mode === 'byo') {
+        const instanceSelect = await browser.$('[data-testid="ai.instance"]')
+        if (!(await instanceSelect.isExisting())) {
+          throw new Error('BYO mode does not render the instance select')
+        }
+        await browser.waitUntil(
+          async () => (await browser.$('[data-testid="ai.byo-empty"]')).isExisting(),
+          { timeout: 15000, interval: 300 },
+        )
+      }
     }
   })
 
