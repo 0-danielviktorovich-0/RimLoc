@@ -20,17 +20,24 @@ pub struct ProviderBuildArgs<'a> {
     /// `Some(env_name)` overrides the default key resolution with a named
     /// environment variable (CLI compatibility).
     pub key_env: Option<&'a str>,
+    /// Inline key from a resolved provider instance (prov-* → job factory
+    /// wiring): takes precedence over `key_env`/Auto. The value originates
+    /// from the OS keychain sink and never renders through Debug.
+    pub key_inline: Option<&'a str>,
 }
 
 pub fn build_provider(args: ProviderBuildArgs<'_>) -> Result<Box<dyn Provider>, LlmError> {
     #[cfg(feature = "http")]
-    let key_source = match args.key_env {
-        Some(name) => KeySource::Env(name.to_string()),
-        None => KeySource::Auto,
+    let key_source = match args.key_inline {
+        Some(k) => KeySource::Inline(k.to_string()),
+        None => match args.key_env {
+            Some(name) => KeySource::Env(name.to_string()),
+            None => KeySource::Auto,
+        },
     };
     #[cfg(feature = "http")]
     let presets = builtin_presets();
-    let _ = args.key_env;
+    let _ = (args.key_env, args.key_inline);
     #[cfg(not(feature = "http"))]
     if args.provider != "mock" {
         return Err(LlmError::Provider(

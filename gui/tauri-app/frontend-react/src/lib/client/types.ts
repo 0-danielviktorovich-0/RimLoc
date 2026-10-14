@@ -571,6 +571,9 @@ export interface AiJobParamsDto {
   provider_id: string;
   model?: string;
   base_url?: string;
+  /** ProvidersScreen instance (prov-*): preset/model/base_url/key come
+   *  from the stored instance; the direct fields above are ignored. */
+  provider_instance_id?: string;
   batch_char_budget?: number;
 }
 

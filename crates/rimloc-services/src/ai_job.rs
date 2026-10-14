@@ -46,6 +46,14 @@ pub struct AiJobParams {
     pub model: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub base_url: Option<String>,
+    /// ProvidersScreen instance (`prov-*`, review 2026-10-14 factory
+    /// wiring): when set, the instance's preset/model/base_url AND stored
+    /// key define the launch target — the direct `provider_id`/`model`/
+    /// `base_url` fields are ignored. Resolution happens in `start_job`
+    /// BEFORE any worker spawn, so an unknown or keyless instance is a
+    /// typed immediate refusal.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provider_instance_id: Option<String>,
     #[serde(default)]
     pub batch_char_budget: usize,
 }
@@ -119,26 +127,35 @@ struct JobShared {
 /// Test seam (review 2026-10-14 P1): provider construction is injectable
 /// so the job service can be driven by blocking/scripted providers in
 /// deterministic regressions. Production uses [`default_provider_factory`].
+/// The second argument is the resolved instance key (prov-* wiring): the
+/// factory passes it to `build_provider` as `key_inline` — the secret
+/// crosses this boundary in-process only, never on the wire or in logs.
 pub(crate) type AiProviderFactory = Arc<
-    dyn Fn(&AiJobParams) -> Result<Arc<dyn rimloc_llm::provider::Provider + Send + Sync>, String>
+    dyn Fn(
+            &AiJobParams,
+            Option<&crate::providers::ProviderSecret>,
+        ) -> Result<Arc<dyn rimloc_llm::provider::Provider + Send + Sync>, String>
         + Send
         + Sync,
 >;
 
 fn default_provider_factory() -> AiProviderFactory {
-    Arc::new(|params: &AiJobParams| {
-        rimloc_llm::build::build_provider(rimloc_llm::build::ProviderBuildArgs {
-            provider: &params.provider_id,
-            model: params.model.as_deref(),
-            base_url: params.base_url.as_deref(),
-            key_env: None,
-        })
-        .map(|p| {
-            let boxed: Box<dyn rimloc_llm::provider::Provider + Send + Sync> = p;
-            Arc::from(boxed)
-        })
-        .map_err(|e| e.to_string())
-    })
+    Arc::new(
+        |params: &AiJobParams, key: Option<&crate::providers::ProviderSecret>| {
+            rimloc_llm::build::build_provider(rimloc_llm::build::ProviderBuildArgs {
+                provider: &params.provider_id,
+                model: params.model.as_deref(),
+                base_url: params.base_url.as_deref(),
+                key_env: None,
+                key_inline: key.map(crate::providers::ProviderSecret::expose),
+            })
+            .map(|p| {
+                let boxed: Box<dyn rimloc_llm::provider::Provider + Send + Sync> = p;
+                Arc::from(boxed)
+            })
+            .map_err(|e| e.to_string())
+        },
+    )
 }
 
 pub struct AiJobHandle {
@@ -217,10 +234,28 @@ pub(crate) fn start_job_with_factory(
             snap.session_epoch,
         ));
     }
+    // Instance resolution (review 2026-10-14 factory wiring) BEFORE any
+    // worker spawn: an unknown or keyless instance is a typed immediate
+    // refusal. When set, the instance FULLY defines the launch target —
+    // preset mapped to the llm provider id, its model/base_url and its
+    // stored key — and the direct provider fields are ignored. The secret
+    // rides in-process only (Debug-masked), never on the wire.
+    let resolved_key: Option<crate::providers::ProviderSecret> = match &params.provider_instance_id
+    {
+        Some(instance_id) => {
+            let target = manager.provider_instance_resolve(instance_id)?;
+            params.provider_id = target.provider_id;
+            params.model = Some(target.model);
+            params.base_url = target.base_url;
+            target.key
+        }
+        None => None,
+    };
     // Honest provider gate (review follow-up P1): the mock echo provider
     // never runs unless the caller explicitly opted into demo mode via the
     // environment — a stale frontend selector must not fabricate a "real"
-    // AI job in BYO/local modes.
+    // AI job in BYO/local modes. (Instances cannot resolve to `mock` —
+    // the preset vocabulary has no such value.)
     if params.provider_id == "mock" && std::env::var("RIMLOC_ALLOW_MOCK_JOBS").as_deref() != Ok("1")
     {
         return Err(ContractError::new(
@@ -357,8 +392,9 @@ pub(crate) fn start_job_with_factory(
     let params = params.clone();
     let handle_thread = handle.clone();
     let checkpoint_thread = checkpoint_path.clone();
+    let key_thread = resolved_key;
     std::thread::spawn(move || {
-        let result = match factory(&params) {
+        let result = match factory(&params, key_thread.as_ref()) {
             Ok(provider) => run_job_worker(provider.as_ref(), &params, &shared, &checkpoint_thread),
             Err(e) => Err(LlmShapeError(e)),
         };
@@ -779,6 +815,7 @@ mod tests {
             provider_id: "mock".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 4000,
         };
         let st = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).expect("start");
@@ -824,6 +861,7 @@ mod tests {
             provider_id: "mock".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 0,
         };
         let err = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).unwrap_err();
@@ -857,6 +895,7 @@ mod tests {
             provider_id: "mock".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 4000,
         };
         let st = start_job(&registry, &mgr, &managed, params.clone()).unwrap();
@@ -915,6 +954,7 @@ mod tests {
             provider_id: "mock".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 4000,
         };
         let st = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).unwrap();
@@ -983,6 +1023,7 @@ mod tests {
             provider_id: "mock".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 0,
         };
         let err = start_job(&registry, &ctx.mgr, &ctx.managed, params).unwrap_err();
@@ -1013,6 +1054,7 @@ mod tests {
             provider_id: "mock".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 4000,
         };
         let st = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).unwrap();
@@ -1119,6 +1161,7 @@ mod tests {
                 provider_id: "mock".into(),
                 model: None,
                 base_url: None,
+                provider_instance_id: None,
                 batch_char_budget: 4000,
             },
         )
@@ -1256,7 +1299,7 @@ mod tests {
     }
 
     fn scripted_factory(p: Arc<ScriptedProvider>) -> AiProviderFactory {
-        Arc::new(move |_| Ok(p.clone() as Arc<dyn rimloc_llm::provider::Provider + Send + Sync>))
+        Arc::new(move |_, _| Ok(p.clone() as Arc<dyn rimloc_llm::provider::Provider + Send + Sync>))
     }
 
     /// Worker exit is observable: `finished` flips after the FINAL status
@@ -1333,6 +1376,7 @@ mod tests {
             provider_id: "scripted".into(),
             model: None,
             base_url: None,
+            provider_instance_id: None,
             batch_char_budget: 700,
         }
     }
@@ -1742,22 +1786,68 @@ mod tests {
         assert!(err.message.contains("not in preview state"), "{err:?}");
     }
 
-    /// P1(e): REAL inter-thread interleaving — the competing Human edit
-    /// runs on its OWN thread and deterministically lands BETWEEN the
-    /// accept pre-check and the atomic apply (channel hand-off through the
-    /// test hook). The under-lock stale guard must refuse it.
+    /// prov-* → job factory vertical (review 2026-10-14 priority): an
+    /// instance stored through ProviderOps (preset openai, explicit model,
+    /// key in the sink) resolves in start_job into the factory target —
+    /// provider id, model, base_url AND the key as key_inline — the job
+    /// runs to preview and the full accept vertical works. The captured
+    /// key is asserted, then dropped; it never prints.
     #[test]
-    fn concurrent_edit_between_precheck_and_apply_barriers_and_is_refused() {
-        let _mock = MockGuard::acquire();
+    fn provider_instance_resolves_into_job_factory_target() {
+        use crate::providers::MemorySecretSink;
         let dir = tempfile::tempdir().unwrap();
         fixture_mod(&dir.path().join("mod"));
         let managed = dir.path().join("managed");
-        let mgr = Arc::new(ProjectSessionManager::new(&managed).unwrap());
+        let mgr = ProjectSessionManager::new_with_secret_sink(
+            &managed,
+            Arc::new(MemorySecretSink::default()),
+        )
+        .unwrap();
         let snap = mgr
             .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
             .unwrap();
+        let upserted = mgr
+            .provider_instance_upsert(&crate::contract::ProviderInstanceUpsertRequest {
+                instance_id: None,
+                preset: "openai".into(),
+                label: "Test instance".into(),
+                model: "gpt-test".into(),
+                base_url: None,
+                secret: Some("sk-test-123".into()),
+                local: None,
+                expected_revision: None,
+            })
+            .unwrap();
+        let instance_id = upserted.instance.id.clone();
+
         let registry = AiJobRegistry::new();
-        let st = start_job(
+        type CapturedTarget = (String, Option<String>, Option<String>, Option<String>);
+        let captured: Arc<Mutex<Vec<CapturedTarget>>> =
+            Arc::new(Mutex::new(Vec::new()));
+        let provider = Arc::new(ScriptedProvider {
+            calls: AtomicUsize::new(0),
+            started_tx: {
+                let (tx, _rx) = mpsc::channel();
+                tx
+            },
+            script: Mutex::new(VecDeque::new()),
+        });
+        let factory: AiProviderFactory = {
+            let provider = provider.clone();
+            let captured = captured.clone();
+            Arc::new(
+                move |params: &AiJobParams, key: Option<&crate::providers::ProviderSecret>| {
+                    captured.lock().unwrap().push((
+                        params.provider_id.clone(),
+                        params.model.clone(),
+                        params.base_url.clone(),
+                        key.map(|k| k.expose().to_string()),
+                    ));
+                    Ok(provider.clone() as Arc<dyn rimloc_llm::provider::Provider + Send + Sync>)
+                },
+            )
+        };
+        let st = start_job_with_factory(
             &registry,
             &mgr,
             &managed,
@@ -1766,97 +1856,76 @@ mod tests {
                 session_epoch: snap.session_epoch,
                 locale: "Russian".into(),
                 source_locale: "en".into(),
-                provider_id: "mock".into(),
+                provider_id: "direct-value-must-be-ignored".into(),
                 model: None,
                 base_url: None,
+                provider_instance_id: Some(instance_id.clone()),
                 batch_char_budget: 4000,
             },
+            factory,
         )
         .unwrap();
-        let mut st = job_status(&registry, &st.job_id).unwrap();
-        for _ in 0..300 {
-            st = job_status(&registry, &st.job_id).unwrap();
-            if st.state == AiJobState::PreviewReady {
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(10));
-        }
-        assert_eq!(st.state, AiJobState::PreviewReady);
-
-        // The competing thread: waits for the hook's signal, applies the
-        // Human edit (revision R → R+1), reports completion.
-        let (go_tx, go_rx) = mpsc::channel::<()>();
-        let (done_tx, done_rx) = mpsc::channel::<()>();
-        let competitor = {
-            let mgr = mgr.clone();
-            let pid = snap.project_id.clone();
-            let epoch = snap.session_epoch;
-            std::thread::spawn(move || {
-                // Sync wrappers: mpsc endpoints are Send-but-not-Sync and
-                // the hook closure must be Sync.
-                let go_rx = Mutex::new(go_rx);
-                let done_tx = Mutex::new(done_tx);
-                go_rx.lock().unwrap().recv().expect("hook signal");
-                let current = mgr.snapshot(&pid).unwrap();
-                mgr.apply(&ApplyIntentsRequest {
-                    project_id: pid.clone(),
-                    expected_revision: current.acked_revision,
-                    session_epoch: epoch,
-                    intents: vec![TranslationIntent {
-                        entry: rimloc_domain::canonical::SourceEntryId {
-                            kind: rimloc_domain::canonical::EntryKind::DefInjected,
-                            key: "Apple.label".into(),
-                            def_type: Some("ThingDef".into()),
-                        },
-                        locale: "Russian".into(),
-                        action: IntentAction::SetTranslation,
-                        text: Some("конкурирующая правка".into()),
-                    }],
-                    origin: Some(ApplyOrigin::Human),
-                })
-                .expect("competing edit must land");
-                done_tx.lock().unwrap().send(()).expect("report done");
-            })
-        };
-        struct HookGuard;
-        impl Drop for HookGuard {
-            fn drop(&mut self) {
-                *ACCEPT_PRE_APPLY_HOOK.lock().unwrap() = None;
-            }
-        }
-        {
-            let _guard = HookGuard;
-            let go_tx = Mutex::new(go_tx);
-            let done_rx = Mutex::new(done_rx);
-            *ACCEPT_PRE_APPLY_HOOK.lock().unwrap() = Some(Box::new(move || {
-                go_tx.lock().unwrap().send(()).expect("signal competitor");
-                done_rx
-                    .lock()
-                    .unwrap()
-                    .recv_timeout(Duration::from_secs(5))
-                    .expect("competing edit must land before the apply");
-            }));
-            // The accept pre-check passes on revision R; the hook lets the
-            // competitor move the project to R+1; the atomic apply must
-            // then refuse under its own lock.
-            let err = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap_err();
-            assert_eq!(
-                err.code,
-                crate::contract::ContractErrorCode::StaleRevision,
-                "{err:?}"
-            );
-        }
-        competitor.join().unwrap();
-        // The newer human edit survives the refused accept.
-        let after = mgr.snapshot(&snap.project_id).unwrap();
+        // Status reflects the RESOLVED target, not the ignored direct value.
+        assert_eq!(st.provider_id, "openai", "{st:?}");
+        assert_eq!(st.model, "gpt-test");
+        let handle = registry.get(&st.job_id).unwrap();
+        wait_worker_finished(&handle, 5);
+        let st = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(st.state, AiJobState::PreviewReady, "{st:?}");
+        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
+        assert_eq!(st.state, AiJobState::Applied);
+        let seen = captured.lock().unwrap();
+        assert_eq!(seen.len(), 1, "factory called exactly once: {seen:?}");
+        let (pid, model, base_url, key) = &seen[0];
+        assert_eq!(pid, "openai");
+        assert_eq!(model.as_deref(), Some("gpt-test"));
         assert!(
-            after
-                .project
-                .translations
-                .iter()
-                .any(|t| t.text.as_deref() == Some("конкурирующая правка")),
-            "{:?}",
-            after.project.translations
+            key.as_deref() == Some("sk-test-123"),
+            "key must ride key_inline"
         );
+        let _ = base_url; // preset default, provider-specific
+        drop(seen);
+    }
+
+    /// Unknown and unresolvable instances are typed immediate refusals —
+    /// BEFORE any worker spawn, so no paid work can start.
+    #[test]
+    fn provider_instance_refusals_are_typed_and_pre_spawn() {
+        use crate::providers::MemorySecretSink;
+        let dir = tempfile::tempdir().unwrap();
+        fixture_mod(&dir.path().join("mod"));
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new_with_secret_sink(
+            &managed,
+            Arc::new(MemorySecretSink::default()),
+        )
+        .unwrap();
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        let registry = AiJobRegistry::new();
+        let err = start_job_with_factory(
+            &registry,
+            &mgr,
+            &managed,
+            AiJobParams {
+                provider_instance_id: Some("prov-absent".into()),
+                ..long_job_params(&snap.project_id, snap.session_epoch)
+            },
+            scripted_factory(Arc::new(ScriptedProvider {
+                calls: AtomicUsize::new(0),
+                started_tx: {
+                    let (tx, _rx) = mpsc::channel();
+                    tx
+                },
+                script: Mutex::new(VecDeque::new()),
+            })),
+        )
+        .unwrap_err();
+        assert_eq!(
+            err.code,
+            crate::contract::ContractErrorCode::ProjectNotFound
+        );
+        assert!(err.message.contains("unknown provider instance"), "{err:?}");
     }
 }

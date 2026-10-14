@@ -41,6 +41,9 @@ const ru: Record<string, string> = {
   'about.updatesNote':
     'Автообновление (официальный Tauri-updater) спроектировано, но в этой сборке ещё не включено: проверки обновлений нет, загрузок нет. Приложение обновляется вручную — скачайте релиз на странице Releases и замените приложение. Проекты и переводы не затрагиваются.',
   'shell.noProject': 'Проект не открыт',
+  'ai.byo.pick': 'Выберите настроенного провайдера',
+  'ai.byo.noInstances': 'Нет настроенных провайдеров — добавьте их на экране «Провайдеры» (раздел настроек).',
+  'ai.byo.noKey': 'нет ключа',
   'shell.localProject': 'Локальный проект',
   'shell.newProject': 'Новый проект',
   'shell.projectOpen': 'Проект открыт',
@@ -607,6 +610,9 @@ const en: Record<string, string> = {
   'about.updatesNote':
     'Auto-update (the official Tauri updater) is designed but not enabled in this build yet: there is no update check and no download. The app updates manually — download a release from the Releases page and replace the app. Projects and translations are not touched.',
   'shell.noProject': 'No project open',
+  'ai.byo.pick': 'Pick a configured provider',
+  'ai.byo.noInstances': 'No configured providers yet — add one on the Providers screen (settings).',
+  'ai.byo.noKey': 'no key',
   'shell.localProject': 'Local project',
   'shell.newProject': 'New project',
   'shell.projectOpen': 'Project open',

@@ -635,6 +635,12 @@ pub struct AiJobParamsWire {
     pub model: Option<String>,
     #[serde(default)]
     pub base_url: Option<String>,
+    /// ProvidersScreen instance (`prov-*`): when set, the instance's
+    /// preset/model/base_url/key define the launch target and the direct
+    /// provider fields are ignored. The KEY never rides this wire — it is
+    /// resolved in-process from the OS keychain sink.
+    #[serde(default)]
+    pub provider_instance_id: Option<String>,
     #[serde(default)]
     pub batch_char_budget: usize,
 }
@@ -649,6 +655,7 @@ impl AiJobParamsWire {
             provider_id: self.provider_id,
             model: self.model,
             base_url: self.base_url,
+            provider_instance_id: self.provider_instance_id,
             batch_char_budget: self.batch_char_budget,
         }
     }

@@ -9,7 +9,7 @@ import { Sparkles, KeyRound, Monitor, MessagesSquare, CircleAlert, Play, Check }
 import { useProjectState } from '../lib/state/useProjectState'
 import { clientInstance } from '../lib/client/instance'
 import { t } from '../lib/i18n'
-import type { AiJobStatusDto } from '../lib/client/types'
+import type { AiJobStatusDto, ProviderInstanceSummaryDto } from '../lib/client/types'
 
 type Mode = 'auto' | 'chatgpt' | 'byo' | 'local' | 'noapi'
 
@@ -44,6 +44,8 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
   const st = useProjectState()
   const [mode, setMode] = useState<Mode>('auto')
   const [provider, setProvider] = useState(() => providersForMode('auto')[0] ?? '')
+  const [instances, setInstances] = useState<ProviderInstanceSummaryDto[]>([])
+  const [instanceId, setInstanceId] = useState('')
   const [model, setModel] = useState('')
   const [locale, setLocale] = useState('Russian')
   const [job, setJob] = useState<AiJobStatusDto | null>(null)
@@ -52,7 +54,32 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
 
   const snap = st.snapshot
   const epoch = snap?.session_epoch
-  const providerValidForMode = providersForMode(mode).includes(provider)
+  // BYO runs configured ProvidersScreen instances (prov-*): the screen
+  // lists them and the launch carries provider_instance_id — the backend
+  // resolves preset/model/base_url and the stored key in-process.
+  useEffect(() => {
+    if (mode !== 'byo') return
+    let alive = true
+    clientInstance
+      .getClient()
+      .providerInstanceList()
+      .then((res) => {
+        if (!alive) return
+        setInstances(res.instances)
+        setInstanceId((cur) =>
+          res.instances.some((i) => i.id === cur) ? cur : (res.instances[0]?.id ?? ''),
+        )
+      })
+      .catch(() => {
+        if (alive) setInstances([])
+      })
+    return () => {
+      alive = false
+    }
+  }, [mode])
+
+  const providerValidForMode =
+    mode === 'byo' ? instanceId !== '' : providersForMode(mode).includes(provider)
   const canRun = Boolean(snap && epoch !== undefined && !busy && providerValidForMode)
 
   // Poll while running.
@@ -75,8 +102,9 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
       project_id: snap.project_id,
       session_epoch: epoch,
       locale,
-      provider_id: provider,
-      model: model.trim() === '' ? undefined : model.trim(),
+      provider_id: mode === 'byo' ? '' : provider,
+      provider_instance_id: mode === 'byo' ? instanceId : undefined,
+      model: mode === 'byo' || model.trim() === '' ? undefined : model.trim(),
       batch_char_budget: 6000
     })
       .then(setJob)
@@ -170,23 +198,49 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
 
       {(mode === 'auto' || mode === 'byo' || mode === 'local') && (
         <div className="ai-form" data-testid="ai.form">
-          <label className="field">
-            <span>{t('ai.provider')}</span>
-            <select value={provider} onChange={(e) => setProvider(e.target.value)} data-testid="ai.provider">
-              {providersForMode(mode).map((p: string) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>{t('ai.model')}</span>
-            <input
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder={t('ai.modelAuto')}
-              data-testid="ai.model"
-            />
-          </label>
+          {mode === 'byo' ? (
+            <label className="field">
+              <span>{t('ai.provider')}</span>
+              <select
+                value={instanceId}
+                onChange={(e) => setInstanceId(e.target.value)}
+                data-testid="ai.instance"
+              >
+                <option value="">{t('ai.byo.pick')}</option>
+                {instances.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {i.label} · {i.preset} · {i.model}
+                    {i.has_key ? '' : ` · ${t('ai.byo.noKey')}`}
+                  </option>
+                ))}
+              </select>
+              {instances.length === 0 && (
+                <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }} data-testid="ai.byo-empty">
+                  {t('ai.byo.noInstances')}
+                </span>
+              )}
+            </label>
+          ) : (
+            <>
+              <label className="field">
+                <span>{t('ai.provider')}</span>
+                <select value={provider} onChange={(e) => setProvider(e.target.value)} data-testid="ai.provider">
+                  {providersForMode(mode).map((p: string) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>{t('ai.model')}</span>
+                <input
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder={t('ai.modelAuto')}
+                  data-testid="ai.model"
+                />
+              </label>
+            </>
+          )}
           <label className="field">
             <span>{t('ai.locale')}</span>
             <select value={locale} onChange={(e) => setLocale(e.target.value)} data-testid="ai.locale">
