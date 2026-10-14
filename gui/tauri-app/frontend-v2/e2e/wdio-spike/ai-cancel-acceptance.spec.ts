@@ -202,19 +202,11 @@ describe('AI cancel acceptance — integrated native GUI (review P2)', () => {
     await waitExisting('[data-testid="ai.root"]')
     for (const mode of ['auto', 'byo', 'local']) {
       await browser.$(`[data-testid="ai.mode.${mode}"]`).click()
-      await pause(400)
-      const opts = await browser.$('[data-testid="ai.provider"]').$$('option')
-      const values: string[] = []
-      for (const o of opts) values.push(await o.getValue())
-      if (values.includes('mock')) {
-        throw new Error(`mock provider offered in production build, mode=${mode}: ${values}`)
-      }
-      if (values.length === 0) {
-        throw new Error(`provider select empty, mode=${mode}`)
-      }
-      // prov-* wiring (factory priority): the BYO mode renders the REAL
-      // ProvidersScreen instances — in this isolated profile there are
-      // none, so the honest empty state must be visible.
+      await pause(500)
+      // prov-* wiring (factory priority): BYO no longer renders the static
+      // provider select — it renders the REAL ProvidersScreen instances
+      // (ai.instance). The empty-state hint must be visible in this
+      // isolated profile.
       if (mode === 'byo') {
         const instanceSelect = await browser.$('[data-testid="ai.instance"]')
         if (!(await instanceSelect.isExisting())) {
@@ -224,6 +216,16 @@ describe('AI cancel acceptance — integrated native GUI (review P2)', () => {
           async () => (await browser.$('[data-testid="ai.byo-empty"]')).isExisting(),
           { timeout: 15000, interval: 300 },
         )
+        continue
+      }
+      const opts = await browser.$('[data-testid="ai.provider"]').$$('option')
+      const values: string[] = []
+      for (const o of opts) values.push(await o.getValue())
+      if (values.includes('mock')) {
+        throw new Error(`mock provider offered in production build, mode=${mode}: ${values}`)
+      }
+      if (values.length === 0) {
+        throw new Error(`provider select empty, mode=${mode}`)
       }
     }
   })
