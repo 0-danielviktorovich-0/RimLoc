@@ -767,7 +767,9 @@ fn confined_collect_text_files(
             continue;
         }
         let p = entry.path();
-        let meta = std::fs::symlink_metadata(&p)?;
+        // DirEntry::metadata avoids re-resolving a path string through the
+        // filesystem (CodeQL path-injection: the entry handle owns it).
+        let meta = entry.metadata()?;
         let file_type = meta.file_type();
         if file_type.is_symlink() {
             // Never follow links: an outside-the-tree target must not enter
