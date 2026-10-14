@@ -225,7 +225,7 @@ pub fn search_sources(
 
     // Walk the mod tree.
     let mut files: Vec<PathBuf> = Vec::new();
-    collect_text_files(&root, &root, 0, &mut files, &cancelled).map_err(|source| {
+    collect_text_files(&root, 0, &mut files, &cancelled).map_err(|source| {
         crate::contract::ContractError::new(
             crate::contract::ContractErrorCode::Internal,
             format!("source discovery walk: {source}"),
@@ -255,7 +255,6 @@ pub fn search_sources(
         }),
     };
 
-    let mut skipped = 0usize;
     for path in &files {
         if cancelled() {
             break;
@@ -347,7 +346,6 @@ pub fn search_sources(
                 detail,
             });
         }
-        let _ = skipped;
     }
     report.truncated = report.total_matches > report.offset + report.matches.len();
     Ok(report)
@@ -463,8 +461,7 @@ impl CandidateContext {
                 break;
             }
             let line = raw.trim();
-            let mut chars = line.char_indices();
-            while let Some((i, ch)) = chars.next() {
+            for (i, ch) in line.char_indices() {
                 if ch != '<' {
                     continue;
                 }
@@ -605,8 +602,7 @@ fn xml_context_of(content: &str, line_no: usize) -> String {
             break;
         }
         let line = raw.trim();
-        let mut chars = line.char_indices();
-        while let Some((i, ch)) = chars.next() {
+        for (i, ch) in line.char_indices() {
             if ch != '<' {
                 continue;
             }
@@ -691,7 +687,6 @@ fn standard_scope_file(path: &Path) -> bool {
 }
 
 fn collect_text_files(
-    root: &Path,
     dir: &Path,
     depth: usize,
     out: &mut Vec<PathBuf>,
@@ -711,7 +706,7 @@ fn collect_text_files(
             continue;
         }
         if p.is_dir() {
-            collect_text_files(root, &p, depth + 1, out, cancelled)?;
+            collect_text_files(&p, depth + 1, out, cancelled)?;
         } else if p.is_file() {
             out.push(p);
         }
