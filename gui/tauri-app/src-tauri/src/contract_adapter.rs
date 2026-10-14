@@ -75,6 +75,12 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_save_drafts",
     "project_restore_drafts",
     "project_clear_drafts",
+
+    // AI translation jobs (Stage B): start/status/cancel/accept.
+    "ai_job_start",
+    "ai_job_status",
+    "ai_job_cancel",
+    "ai_job_accept",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key NEVER crosses into a file — it goes to the OS keychain.
     "contract_provider_instance_list",
@@ -375,6 +381,108 @@ pub fn project_clear_drafts(
     traced_simple("project_clear_drafts", || {
         manager.clear_drafts_session(&project_id, session_epoch, key.as_deref())
     })
+}
+
+// AI translation jobs (Stage B) — thin typed adapter over the shared
+// services::ai_job registry (one engine, one canonical writer). State lives
+// per app process; the durable record is the canonical apply + checkpoints.
+
+use rimloc_services::ai_job::{AiJobParams, AiJobRegistry};
+
+/// Managed root shared with the ai job service for checkpoint placement.
+pub struct ManagedRoot(pub PathBuf);
+
+pub struct AiJobs(pub AiJobRegistry);
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_start(
+    state: State<'_, ContractState>,
+    root: State<'_, ManagedRoot>,
+    ai: State<'_, AiJobs>,
+    request: AiJobParamsWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("ai_job_start", || {
+        rimloc_services::ai_job::start_job(
+            &ai.0,
+            &manager,
+            &managed_root_of(&root),
+            &request.into_params(),
+        )
+    })
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_status(
+    ai: State<'_, AiJobs>,
+    job_id: String,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    rimloc_services::ai_job::job_status(&ai.0, &job_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_cancel(
+    ai: State<'_, AiJobs>,
+    job_id: String,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    rimloc_services::ai_job::cancel_job(&ai.0, &job_id)
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_accept(
+    state: State<'_, ContractState>,
+    ai: State<'_, AiJobs>,
+    request: AiJobAcceptWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("ai_job_accept", || {
+        rimloc_services::ai_job::accept_job(
+            &ai.0,
+            &manager,
+            &request.job_id,
+            request.session_epoch,
+        )
+    })
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobParamsWire {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub locale: String,
+    pub provider_id: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub base_url: Option<String>,
+    #[serde(default)]
+    pub batch_char_budget: usize,
+}
+
+impl AiJobParamsWire {
+    fn into_params(self) -> AiJobParams {
+        AiJobParams {
+            project_id: self.project_id,
+            session_epoch: self.session_epoch,
+            locale: self.locale,
+            provider_id: self.provider_id,
+            model: self.model,
+            base_url: self.base_url,
+            batch_char_budget: self.batch_char_budget,
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobAcceptWire {
+    pub job_id: String,
+    pub session_epoch: u64,
 }
 
 // TM live (owner decision A+B+C): the glossary command chain, repeated
@@ -847,8 +955,16 @@ pub fn attach_contract<C: tauri::Runtime>(
     builder: tauri::Builder<C>,
     managed_root: PathBuf,
 ) -> Result<tauri::Builder<C>, std::io::Error> {
-    let state = ContractState::new(managed_root)?;
-    Ok(builder.manage(state))
+    let state = ContractState::new(managed_root.clone())?;
+    Ok(builder
+        .manage(state)
+        .manage(ManagedRoot(managed_root))
+        .manage(AiJobs(AiJobRegistry::new())))
+}
+
+/// Project-relative path of the managed root (for the ai job service).
+pub fn managed_root_of(state: &State<'_, ManagedRoot>) -> PathBuf {
+    state.0.clone()
 }
 
 #[cfg(test)]
