@@ -523,7 +523,10 @@ export type ContractMethod =
   | 'ai_job_start'
   | 'ai_job_status'
   | 'ai_job_cancel'
-  | 'ai_job_accept';
+  | 'ai_job_accept'
+  // Source Discovery (Stage A): read-only full-project source search
+  // reconciled against the canonical inventory.
+  | 'project_source_search';
 
 // --- ai translation jobs (Stage B) ---
 export type AiJobStateDto =
@@ -562,11 +565,52 @@ export interface AiJobStatusDto {
 export interface AiJobParamsDto {
   project_id: string;
   session_epoch: number;
+  /** Registry source locale of the project (adapter-resolved). */
+  source_locale?: string;
   locale: string;
   provider_id: string;
   model?: string;
   base_url?: string;
   batch_char_budget?: number;
+}
+
+// --- source discovery (Stage A; mirrors source_search.rs) ---
+export type SourceSearchScopeDto = 'standard' | 'all_text';
+
+export type SourceSearchStatusDto =
+  | 'already_indexed'
+  | 'deliberately_excluded'
+  | 'outside_effective_view'
+  | 'unknown_eligibility'
+  | 'suspected_extraction_omission'
+  | 'unsupported_format'
+  | 'parse_failure';
+
+export interface SourceSearchMatchDto {
+  file: string;
+  line: number;
+  line_text: string;
+  xml_context?: string;
+  status: SourceSearchStatusDto;
+  identity?: SourceEntryIdDto;
+  detail: string;
+}
+
+export interface SourceSearchReportDto {
+  query: string;
+  total_matches: number;
+  offset: number;
+  truncated: boolean;
+  matches: SourceSearchMatchDto[];
+  files_scanned: number;
+  files_skipped_binary: number;
+  parse_failures: { file: string; error: string }[];
+  source_fingerprint?: string;
+  effective_view?: {
+    version?: string;
+    content_dirs: string[];
+    conditional_dirs: number;
+  } | null;
 }
 
 /** Readiness status of the contribution bundle build (services

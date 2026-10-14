@@ -3132,6 +3132,8 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "ai_job_status",
     "ai_job_cancel",
     "ai_job_accept",
+    // Source Discovery (Stage A).
+    "project_source_search",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key lives in the OS keychain, never in a file.
     "contract_provider_instance_list",
@@ -3928,6 +3930,8 @@ fn main() {
             rimloc_gui_lib::contract_adapter::ai_job_status,
             rimloc_gui_lib::contract_adapter::ai_job_cancel,
             rimloc_gui_lib::contract_adapter::ai_job_accept,
+            // Source Discovery (Stage A).
+            rimloc_gui_lib::contract_adapter::project_source_search,
             // Provider instances (provider/settings parity).
             rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
@@ -4032,6 +4036,8 @@ fn main() {
             rimloc_gui_lib::contract_adapter::ai_job_status,
             rimloc_gui_lib::contract_adapter::ai_job_cancel,
             rimloc_gui_lib::contract_adapter::ai_job_accept,
+            // Source Discovery (Stage A).
+            rimloc_gui_lib::contract_adapter::project_source_search,
             // Provider instances (provider/settings parity).
             rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,

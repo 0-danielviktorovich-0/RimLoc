@@ -12,6 +12,11 @@ import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, Circl
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
 import { entryUid } from '../lib/state/entryUid'
+import {
+  sourceSearchStore,
+  useSourceSearch,
+  type SourceSearchState,
+} from '../lib/state/source_search_store'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
 import { clientInstance } from '../lib/client/instance'
 import { folderForm } from '../lib/languages/folderForm'
@@ -278,6 +283,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             targetLabel={folderForm(st.targetLocale)}
             onSelect={(k) => projectStore.select(k)}
           />
+          <SourceSearchPanel snap={snap} />
           <div className="list-footer">
             <span>
               {visible.length} {t('ws.of')} {st.entries.length} {t('ws.rows')}
@@ -836,3 +842,119 @@ function EntryEditor(props: {
 
 // Keep the client import referenced for the honest-bridge note in dev builds.
 void clientInstance
+
+
+/** Source Discovery (Stage A): read-only full-project source search,
+ *  reconciled against the canonical inventory. Lives inside the workspace
+ *  left pane; the workspace string search stays untouched. */
+function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof useProjectState>['snapshot']> }) {
+  const ss = useSourceSearch()
+  const [open, setOpen] = useState(false)
+  const epoch = snap.session_epoch
+  const run = (): void => {
+    void sourceSearchStore.run(snap.project_id, epoch)
+  }
+  const loadMore = (): void => {
+    void sourceSearchStore.loadMore(snap.project_id, epoch)
+  }
+  const view = (s: SourceSearchState) => s
+
+  return (
+    <div style={{ margin: '8px 0' }}>
+      {!open && (
+        <button
+          className="icon-btn"
+          style={{ width: 'auto', padding: '0 9px', fontSize: 10 }}
+          data-testid="ss.toggle"
+          onClick={() => setOpen(true)}
+        >
+          <Search size={12} /> {t('ss.toggle')}
+        </button>
+      )}
+      {open && (
+        <div data-testid="ss.panel" style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <strong style={{ fontSize: 11 }}>{t('ss.title')}</strong>
+            <button
+              className="icon-btn"
+              style={{ marginLeft: 'auto' }}
+              aria-label={t('ws.resetFilters')}
+              onClick={() => {
+                setOpen(false)
+                sourceSearchStore.clear()
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '4px 0' }}>
+            {t('ss.hint')}
+          </p>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              data-testid="ss.input"
+              value={view(ss).query}
+              placeholder={t('ss.placeholder')}
+              onChange={(e) => sourceSearchStore.setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') run()
+              }}
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button className="btn-primary" data-testid="ss.run" disabled={view(ss).status === 'running'} onClick={run}>
+              {t('ss.run')}
+            </button>
+          </div>
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 10, marginTop: 4 }}>
+            <input
+              type="checkbox"
+              data-testid="ss.scope"
+              checked={view(ss).scope === 'all_text'}
+              onChange={(e) => sourceSearchStore.setScope(e.target.checked ? 'all_text' : 'standard')}
+            />
+            {t('ss.scope')}
+          </label>
+          {view(ss).status === 'error' && (
+            <div className="inline-warning text-destructive" role="alert" data-testid="ss.error">
+              {t('ss.error')}: {view(ss).error ?? '—'}
+            </div>
+          )}
+          {view(ss).report && (
+            <>
+              <div data-testid="ss.results" style={{ fontSize: 10, margin: '6px 0' }}>
+                {t('ss.results', { total: view(ss).report!.total_matches })}
+              </div>
+              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                {view(ss).report!.matches.map((m, i) => (
+                  <div key={`${m.file}:${m.line}:${i}`} data-testid={`ss.match.${i}`} style={{ borderBottom: '1px solid var(--border)', padding: '4px 0' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                      <code style={{ fontSize: 10 }}>{m.file}:{m.line}</code>
+                      <span className="status-label text-muted-foreground" style={{ fontSize: 9 }}>
+                        {t(`ss.status.${m.status}`)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11 }}>{m.line_text}</div>
+                    {m.xml_context && (
+                      <div style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>{m.xml_context}</div>
+                    )}
+                    <div style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>
+                      {t('ss.detail')}: {m.detail}
+                    </div>
+                  </div>
+                ))}
+                {view(ss).report!.truncated && (
+                  <button className="icon-btn" style={{ width: '100%', marginTop: 4 }} data-testid="ss.more" onClick={loadMore}>
+                    {t('ss.more')}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          {!view(ss).report && view(ss).status !== 'running' && view(ss).status !== 'error' && (
+            <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{t('ss.empty')}</div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

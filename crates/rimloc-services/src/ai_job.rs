@@ -155,7 +155,7 @@ pub fn start_job(
     registry: &AiJobRegistry,
     manager: &ProjectSessionManager,
     managed_root: &Path,
-    params: &AiJobParams,
+    mut params: AiJobParams,
 ) -> Result<AiJobStatus, ContractError> {
     // Epoch guard: superseded sessions never start paid work.
     let snap = manager.snapshot(&params.project_id)?;
@@ -171,12 +171,16 @@ pub fn start_job(
     let pinned_revision = snap.acked_revision;
     // The project's ACTUAL source locale (review UX finding): never a
     // hardcoded "en" — a Japanese-source project must prompt ja→target.
-    let source_locale = snap
-        .project
-        .context
-        .source_locale
-        .clone()
-        .unwrap_or_else(|| "en".to_string());
+    // It rides the params the worker consumes (empty = adapter did not
+    // resolve it; the worker falls back to "en" honestly).
+    if params.source_locale.trim().is_empty() {
+        params.source_locale = snap
+            .project
+            .context
+            .source_locale
+            .clone()
+            .unwrap_or_else(|| "en".to_string());
+    }
     // The project's source language entries are the inventory; target locale
     // rides the params (folder contract).
     let _ = &params.locale;
@@ -425,7 +429,10 @@ pub fn accept_job(
     {
         let snap = manager.snapshot(&project_id)?;
         if snap.session_epoch != expected_epoch {
-            return Err(ContractError::stale_epoch(expected_epoch, snap.session_epoch));
+            return Err(ContractError::stale_epoch(
+                expected_epoch,
+                snap.session_epoch,
+            ));
         }
         if snap.acked_revision != base_revision {
             return Err(ContractError::new(
@@ -582,7 +589,7 @@ mod tests {
             base_url: None,
             batch_char_budget: 4000,
         };
-        let st = start_job(&registry, &ctx.mgr, &ctx.managed, &params).expect("start");
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).expect("start");
         assert_eq!(st.state, AiJobState::Running);
         assert!(st.total >= 2, "expected the two labels, total={}", st.total);
 
@@ -627,7 +634,7 @@ mod tests {
             base_url: None,
             batch_char_budget: 0,
         };
-        let err = start_job(&registry, &ctx.mgr, &ctx.managed, &params).unwrap_err();
+        let err = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).unwrap_err();
         assert_eq!(err.code, crate::contract::ContractErrorCode::StaleEpoch);
     }
 
@@ -659,19 +666,27 @@ mod tests {
             base_url: None,
             batch_char_budget: 4000,
         };
-        let st = start_job(&registry, &mgr, &managed, &params).unwrap();
+        let st = start_job(&registry, &mgr, &managed, params.clone()).unwrap();
         assert_eq!(st.total, 2, "two structural identities must be queued");
         let mut st = job_status(&registry, &st.job_id).unwrap();
         for _ in 0..300 {
             st = job_status(&registry, &st.job_id).unwrap();
-            if st.state == AiJobState::PreviewReady { break; }
+            if st.state == AiJobState::PreviewReady {
+                break;
+            }
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         assert_eq!(st.state, AiJobState::PreviewReady);
         assert_eq!(st.translated, 2, "both identities translated: {st:?}");
         let identities: Vec<&str> = st.rows.iter().map(|r| r.identity.as_str()).collect();
-        assert!(identities.contains(&"def_injected·ThingDef·Dup.label"), "{identities:?}");
-        assert!(identities.contains(&"def_injected·HediffDef·Dup.label"), "{identities:?}");
+        assert!(
+            identities.contains(&"def_injected·ThingDef·Dup.label"),
+            "{identities:?}"
+        );
+        assert!(
+            identities.contains(&"def_injected·HediffDef·Dup.label"),
+            "{identities:?}"
+        );
         let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
         assert_eq!(st.state, AiJobState::Applied);
         // Canonical truth: TWO Russian translations with distinct def types.
@@ -683,8 +698,12 @@ mod tests {
             .filter(|t| t.locale == "Russian")
             .collect();
         assert_eq!(rus.len(), 2, "collapsed identity would leave one: {rus:?}");
-        assert!(rus.iter().any(|t| t.source_id.def_type.as_deref() == Some("ThingDef")));
-        assert!(rus.iter().any(|t| t.source_id.def_type.as_deref() == Some("HediffDef")));
+        assert!(rus
+            .iter()
+            .any(|t| t.source_id.def_type.as_deref() == Some("ThingDef")));
+        assert!(rus
+            .iter()
+            .any(|t| t.source_id.def_type.as_deref() == Some("HediffDef")));
     }
 
     #[test]
@@ -704,11 +723,13 @@ mod tests {
             base_url: None,
             batch_char_budget: 4000,
         };
-        let st = start_job(&registry, &ctx.mgr, &ctx.managed, &params).unwrap();
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, params.clone()).unwrap();
         let mut st = job_status(&registry, &st.job_id).unwrap();
         for _ in 0..300 {
             st = job_status(&registry, &st.job_id).unwrap();
-            if st.state == AiJobState::PreviewReady { break; }
+            if st.state == AiJobState::PreviewReady {
+                break;
+            }
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         assert_eq!(st.state, AiJobState::PreviewReady);
@@ -744,7 +765,11 @@ mod tests {
             .iter()
             .filter(|t| t.text.as_deref() == Some("ручная правка"))
             .collect();
-        assert_eq!(manual.len(), 1, "the manual edit survives the refused accept");
+        assert_eq!(
+            manual.len(),
+            1,
+            "the manual edit survives the refused accept"
+        );
     }
 
     #[test]
