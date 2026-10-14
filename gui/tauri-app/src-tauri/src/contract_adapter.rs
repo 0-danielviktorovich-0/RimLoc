@@ -1090,10 +1090,17 @@ mod ipc_draft_tests {
                 project_save_drafts,
                 project_restore_drafts,
                 project_clear_drafts,
+                project_source_xml_preview,
+                ai_job_start,
+                ai_job_status,
+                ai_job_cancel,
+                ai_job_accept,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
         app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        app.manage(ManagedRoot(dir.path().join("managed")));
+        app.manage(AiJobs(AiJobRegistry::new()));
         let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
             .build()
             .expect("webview");
@@ -1180,6 +1187,44 @@ mod ipc_draft_tests {
         .expect("absent clear ok");
         assert_eq!(absent["saved"], 0);
 
+        // AI job (Stage B) through the SAME ipc: mock provider translates
+        // the fixture labels; the preview stays DRAFT until accepted.
+        let started = invoke(
+            &webview,
+            "ai_job_start",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch,
+                "locale": "Russian",
+                "provider_id": "mock",
+                "batch_char_budget": 4000
+            }}),
+        )
+        .expect("ai start ok");
+        let job_id = started["job_id"].as_str().unwrap().to_string();
+        assert_eq!(started["state"], "running");
+
+        let mut final_state = String::new();
+        for _ in 0..200 {
+            let st = invoke(&webview, "ai_job_status", json!({"job_id": job_id}))
+                .expect("status ok");
+            final_state = st["state"].as_str().unwrap().to_string();
+            if final_state != "running" {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_state, "preview_ready", "job must reach preview");
+
+        // Accept through the ipc: canonical apply, origin Llm.
+        let accepted = invoke(
+            &webview,
+            "ai_job_accept",
+            json!({"request": {"job_id": job_id, "session_epoch": epoch}}),
+        )
+        .expect("accept ok");
+        assert_eq!(accepted["state"], "applied");
+
         // Error path: a stale epoch is a typed refusal through the SAME ipc.
         let err = invoke(
             &webview,
@@ -1204,10 +1249,17 @@ mod ipc_draft_tests {
                 project_save_drafts,
                 project_restore_drafts,
                 project_clear_drafts,
+                project_source_xml_preview,
+                ai_job_start,
+                ai_job_status,
+                ai_job_cancel,
+                ai_job_accept,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
         app.manage(ContractState::new(dir.path().join("managed")).expect("contract state"));
+        app.manage(ManagedRoot(dir.path().join("managed")));
+        app.manage(AiJobs(AiJobRegistry::new()));
         let webview = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
             .build()
             .expect("webview");
