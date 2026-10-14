@@ -1382,7 +1382,9 @@ mod ipc_draft_tests {
         assert_eq!(absent["saved"], 0);
 
         // AI job (Stage B) through the SAME ipc: mock provider translates
-        // the fixture labels; the preview stays DRAFT until accepted.
+        // the fixture labels; the preview stays DRAFT until accepted. The
+        // demo provider needs the explicit dev opt-in (production refuses).
+        std::env::set_var("RIMLOC_ALLOW_MOCK_JOBS", "1");
         let started = invoke(
             &webview,
             "ai_job_start",
@@ -1418,6 +1420,7 @@ mod ipc_draft_tests {
         )
         .expect("accept ok");
         assert_eq!(accepted["state"], "applied");
+        std::env::remove_var("RIMLOC_ALLOW_MOCK_JOBS");
         // Source Discovery (Stage A) through the SAME ipc: query a source
         // text and get reconciled classifications back.
         let search = invoke(
