@@ -686,7 +686,14 @@ fn is_effective_file(
     if dirs.is_empty() {
         return true;
     }
-    dirs.iter().any(|dir| path.starts_with(dir.as_path()))
+    // The walk yields CANONICAL paths; the view dirs may be non-canonical
+    // (macos tempdirs resolve /var -> /private/var). Canonicalize both
+    // sides before the prefix test.
+    let canon_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    dirs.iter().any(|dir| {
+        let canon_dir = dir.canonicalize().unwrap_or_else(|_| (*dir).clone());
+        canon_path.starts_with(canon_dir)
+    })
 }
 
 fn standard_scope_file(path: &Path) -> bool {
@@ -746,9 +753,11 @@ fn confined_collect_text_files(
             continue;
         }
         if file_type.is_dir() {
-            confined_collect_text_files(root, canonical_root, &p, depth + 1, out, cancelled)?;
+            // Descend by the CANONICAL path only (CodeQL path-injection:
+            // no unsanitized read_dir output reaches a filesystem call).
+            confined_collect_text_files(root, canonical_root, &canon, depth + 1, out, cancelled)?;
         } else if file_type.is_file() {
-            out.push(p);
+            out.push(canon);
         }
     }
     Ok(())
