@@ -1202,7 +1202,9 @@ mod ipc_draft_tests {
         .expect("preview ok");
         let preview_lines = preview["lines"].as_array().unwrap();
         assert!(!preview_lines.is_empty());
-        assert!(preview_lines.iter().any(|l| l["text"].as_str().unwrap_or("").contains("Thing Dup")));
+        assert!(preview_lines
+            .iter()
+            .any(|l| l["text"].as_str().unwrap_or("").contains("Thing Dup")));
         assert_eq!(preview["file"], "Defs/A_Thing.xml");
 
         // Containment: a traversal path is a typed refusal.
