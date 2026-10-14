@@ -37,6 +37,10 @@ pub struct AiJobParams {
     pub session_epoch: u64,
     /// RimWorld folder contract locale ("Russian"/"Ukrainian"/…).
     pub locale: String,
+    /// Registry source locale of the project ("en"/"ja"/…), resolved from
+    /// the snapshot by the adapter — never hardcoded.
+    #[serde(default)]
+    pub source_locale: String,
     pub provider_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
@@ -77,6 +81,9 @@ pub enum AiJobState {
 pub struct AiJobStatus {
     pub job_id: String,
     pub project_id: String,
+    /// Revision the preview was computed against (pinned base).
+    #[serde(default)]
+    pub base_revision: u64,
     pub locale: String,
     pub provider_id: String,
     pub model: String,
@@ -158,6 +165,18 @@ pub fn start_job(
             snap.session_epoch,
         ));
     }
+    // PINNED base revision (review finding 2): the preview was computed
+    // against THIS revision; accept refuses when the project moved on
+    // (manual edit during inference) instead of overwriting newer work.
+    let pinned_revision = snap.acked_revision;
+    // The project's ACTUAL source locale (review UX finding): never a
+    // hardcoded "en" — a Japanese-source project must prompt ja→target.
+    let source_locale = snap
+        .project
+        .context
+        .source_locale
+        .clone()
+        .unwrap_or_else(|| "en".to_string());
     // The project's source language entries are the inventory; target locale
     // rides the params (folder contract).
     let _ = &params.locale;
@@ -188,14 +207,19 @@ pub fn start_job(
                 continue;
             }
             let verdict = engine_gate.evaluate(e, None);
-            let key = e.id.key.clone();
+            // FULL structural identity (review finding 1): the display key
+            // alone collapses ThingDef/HediffDef sharing Dup.label; every
+            // row and every provider unit id is the complete
+            // display_identity(), so two same-key identities stay two rows,
+            // two translations and two intents.
+            let uid = e.id.display_identity();
             if verdict.decision == Decision::NonTranslatable {
                 excluded += 1;
                 rows.insert(
-                    format!("{:020}{}", u64::MAX, key),
+                    format!("{:020}{}", u64::MAX, uid),
                     AiJobRow {
-                        key: key.clone(),
-                        identity: e.id.display_identity(),
+                        key: e.id.key.clone(),
+                        identity: uid.clone(),
                         identity_json: e.id.clone(),
                         source: e.text.clone(),
                         target: None,
@@ -206,10 +230,10 @@ pub fn start_job(
                 continue;
             }
             rows.insert(
-                format!("{:020}{}", 0, key),
+                format!("{:020}{}", 0, uid),
                 AiJobRow {
-                    key: key.clone(),
-                    identity: e.id.display_identity(),
+                    key: e.id.key.clone(),
+                    identity: uid.clone(),
                     identity_json: e.id.clone(),
                     source: e.text.clone(),
                     target: None,
@@ -218,7 +242,7 @@ pub fn start_job(
                 },
             );
             llm_units.push(rimloc_llm::provider::TranslateUnit {
-                id: key,
+                id: uid,
                 source: e.text.clone(),
                 context: Some(
                     e.contexts
@@ -239,6 +263,7 @@ pub fn start_job(
     let status = AiJobStatus {
         job_id: job_id.clone(),
         project_id: params.project_id.clone(),
+        base_revision: pinned_revision,
         locale: params.locale.clone(),
         provider_id: params.provider_id.clone(),
         model: params.model.clone().unwrap_or_default(),
@@ -308,7 +333,7 @@ fn run_job_worker(
         for (_sort_key, row) in rows.iter() {
             if row.status == "pending" {
                 units.push(rimloc_llm::provider::TranslateUnit {
-                    id: row.key.clone(),
+                    id: row.identity.clone(),
                     source: row.source.clone(),
                     context: None,
                 });
@@ -317,7 +342,11 @@ fn run_job_worker(
     }
     let glossary = llm::Glossary::builtin();
     let opts = llm::EngineOptions {
-        source_lang: "en".to_string(),
+        source_lang: if params.source_locale.is_empty() {
+            "en".to_string()
+        } else {
+            params.source_locale.clone()
+        },
         target_lang: params.locale.clone(),
         batch_char_budget: if params.batch_char_budget > 0 {
             params.batch_char_budget
@@ -337,7 +366,7 @@ fn run_job_worker(
             let mut rows = shared.rows.lock().unwrap();
             // rows keyed by padded sort key + key; find by key (linear scan
             // acceptable at GUI scale).
-            if let Some((_, row)) = rows.iter_mut().find(|(_, r)| r.key == outcome.id) {
+            if let Some((_, row)) = rows.iter_mut().find(|(_, r)| r.identity == outcome.id) {
                 match &outcome.translation {
                     Some(t) => {
                         row.target = Some(t.clone());
@@ -386,10 +415,28 @@ pub fn accept_job(
         let rows = handle.shared.rows.lock().unwrap();
         rows.values().cloned().collect()
     };
-    let (locale, project_id) = {
+    let (locale, project_id, base_revision) = {
         let st = handle.status.lock().unwrap();
-        (st.locale.clone(), st.project_id.clone())
+        (st.locale.clone(), st.project_id.clone(), st.base_revision)
     };
+    // PINNED revision check: the project may have moved since the preview
+    // (manual edit during inference). Overwriting would lose newer work —
+    // refuse with the typed stale_revision the whole contract uses.
+    {
+        let snap = manager.snapshot(&project_id)?;
+        if snap.session_epoch != expected_epoch {
+            return Err(ContractError::stale_epoch(expected_epoch, snap.session_epoch));
+        }
+        if snap.acked_revision != base_revision {
+            return Err(ContractError::new(
+                ContractErrorCode::StaleRevision,
+                format!(
+                    "project moved from revision {base_revision} to {} while the preview was open — re-run the job against the fresh state",
+                    snap.acked_revision
+                ),
+            ));
+        }
+    }
     let mut intents: Vec<TranslationIntent> = Vec::new();
     for row in &rows {
         if row.status != "translated" {
@@ -529,6 +576,7 @@ mod tests {
             project_id: ctx.pid.clone(),
             session_epoch: ctx.epoch,
             locale: "Russian".into(),
+            source_locale: "en".into(),
             provider_id: "mock".into(),
             model: None,
             base_url: None,
@@ -573,6 +621,7 @@ mod tests {
             project_id: ctx.pid.clone(),
             session_epoch: ctx.epoch + 42,
             locale: "Russian".into(),
+            source_locale: "en".into(),
             provider_id: "mock".into(),
             model: None,
             base_url: None,
@@ -580,6 +629,122 @@ mod tests {
         };
         let err = start_job(&registry, &ctx.mgr, &ctx.managed, &params).unwrap_err();
         assert_eq!(err.code, crate::contract::ContractErrorCode::StaleEpoch);
+    }
+
+    #[test]
+    fn two_same_key_identities_translate_independently() {
+        // Review finding 1 regression: ThingDef + HediffDef sharing
+        // `Dup.label` must produce TWO rows, TWO translations and TWO
+        // intents — never a collapsed single translation.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
+        std::fs::write(
+            dir.path().join("mod/Defs/Dup.xml"),
+            "<Defs>\n  <ThingDef>\n    <defName>Dup</defName>\n    <label>Apple</label>\n  </ThingDef>\n  <HediffDef>\n    <defName>Dup</defName>\n    <label>Apple</label>\n  </HediffDef>\n</Defs>\n",
+        )
+        .unwrap();
+        let managed = dir.path().join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: snap.project_id.clone(),
+            session_epoch: snap.session_epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            batch_char_budget: 4000,
+        };
+        let st = start_job(&registry, &mgr, &managed, &params).unwrap();
+        assert_eq!(st.total, 2, "two structural identities must be queued");
+        let mut st = job_status(&registry, &st.job_id).unwrap();
+        for _ in 0..300 {
+            st = job_status(&registry, &st.job_id).unwrap();
+            if st.state == AiJobState::PreviewReady { break; }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(st.state, AiJobState::PreviewReady);
+        assert_eq!(st.translated, 2, "both identities translated: {st:?}");
+        let identities: Vec<&str> = st.rows.iter().map(|r| r.identity.as_str()).collect();
+        assert!(identities.contains(&"def_injected·ThingDef·Dup.label"), "{identities:?}");
+        assert!(identities.contains(&"def_injected·HediffDef·Dup.label"), "{identities:?}");
+        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
+        assert_eq!(st.state, AiJobState::Applied);
+        // Canonical truth: TWO Russian translations with distinct def types.
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        let rus: Vec<_> = after
+            .project
+            .translations
+            .iter()
+            .filter(|t| t.locale == "Russian")
+            .collect();
+        assert_eq!(rus.len(), 2, "collapsed identity would leave one: {rus:?}");
+        assert!(rus.iter().any(|t| t.source_id.def_type.as_deref() == Some("ThingDef")));
+        assert!(rus.iter().any(|t| t.source_id.def_type.as_deref() == Some("HediffDef")));
+    }
+
+    #[test]
+    fn accept_refuses_when_project_moved_during_preview() {
+        // Review finding 2 regression: a manual edit during inference moves
+        // the revision; accept must refuse with stale_revision instead of
+        // overwriting the newer work.
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: ctx.pid.clone(),
+            session_epoch: ctx.epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            batch_char_budget: 4000,
+        };
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, &params).unwrap();
+        let mut st = job_status(&registry, &st.job_id).unwrap();
+        for _ in 0..300 {
+            st = job_status(&registry, &st.job_id).unwrap();
+            if st.state == AiJobState::PreviewReady { break; }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(st.state, AiJobState::PreviewReady);
+        // A manual edit lands through the canonical session: the revision
+        // moves past the pinned base.
+        let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        let intent = TranslationIntent {
+            entry: rimloc_domain::canonical::SourceEntryId {
+                kind: rimloc_domain::canonical::EntryKind::DefInjected,
+                key: "Apple.label".into(),
+                def_type: Some("ThingDef".into()),
+            },
+            locale: "Russian".into(),
+            action: IntentAction::SetTranslation,
+            text: Some("ручная правка".into()),
+        };
+        ctx.mgr
+            .apply(&ApplyIntentsRequest {
+                project_id: ctx.pid.clone(),
+                expected_revision: snap.acked_revision,
+                session_epoch: ctx.epoch,
+                intents: vec![intent],
+                origin: Some(ApplyOrigin::Human),
+            })
+            .unwrap();
+        // Accept now MUST refuse: stale_revision, newer work preserved.
+        let err = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap_err();
+        assert_eq!(err.code, crate::contract::ContractErrorCode::StaleRevision);
+        let after = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        let manual: Vec<_> = after
+            .project
+            .translations
+            .iter()
+            .filter(|t| t.text.as_deref() == Some("ручная правка"))
+            .collect();
+        assert_eq!(manual.len(), 1, "the manual edit survives the refused accept");
     }
 
     #[test]

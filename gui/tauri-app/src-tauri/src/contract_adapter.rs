@@ -405,12 +405,17 @@ pub fn ai_job_start(
         .lock()
         .expect("contract session registry poisoned");
     traced_simple("ai_job_start", || {
-        rimloc_services::ai_job::start_job(
-            &ai.0,
-            &manager,
-            &managed_root_of(&root),
-            &request.into_params(),
-        )
+        let mut params = request.into_params();
+        // The project's REAL source locale rides the params (never a
+        // hardcoded "en"): the adapter resolves it from the live snapshot.
+        let snap = manager.snapshot(&params.project_id)?;
+        params.source_locale = snap
+            .project
+            .context
+            .source_locale
+            .clone()
+            .unwrap_or_else(|| "en".to_string());
+        rimloc_services::ai_job::start_job(&ai.0, &manager, &managed_root_of(&root), &params)
     })
 }
 
@@ -463,6 +468,7 @@ impl AiJobParamsWire {
     fn into_params(self) -> AiJobParams {
         AiJobParams {
             project_id: self.project_id,
+            source_locale: String::new(),
             session_epoch: self.session_epoch,
             locale: self.locale,
             provider_id: self.provider_id,
