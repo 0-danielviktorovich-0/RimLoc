@@ -1822,8 +1822,7 @@ mod tests {
 
         let registry = AiJobRegistry::new();
         type CapturedTarget = (String, Option<String>, Option<String>, Option<String>);
-        let captured: Arc<Mutex<Vec<CapturedTarget>>> =
-            Arc::new(Mutex::new(Vec::new()));
+        let captured: Arc<Mutex<Vec<CapturedTarget>>> = Arc::new(Mutex::new(Vec::new()));
         let provider = Arc::new(ScriptedProvider {
             calls: AtomicUsize::new(0),
             started_tx: {
