@@ -1093,6 +1093,7 @@ mod ipc_draft_tests {
                 project_save_drafts,
                 project_restore_drafts,
                 project_clear_drafts,
+                project_source_xml_preview,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
@@ -1183,6 +1184,41 @@ mod ipc_draft_tests {
         .expect("absent clear ok");
         assert_eq!(absent["saved"], 0);
 
+        // Source XML preview (rel27): read the entry's own source file
+        // through the ipc, containment-checked; the target line is
+        // highlighted by the caller via target_line.
+        let preview = invoke(
+            &webview,
+            "project_source_xml_preview",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch,
+                "file": "Defs/A_Thing.xml",
+                "line": 1,
+                "before": 0,
+                "after": 5
+            }}),
+        )
+        .expect("preview ok");
+        let preview_lines = preview["lines"].as_array().unwrap();
+        assert!(!preview_lines.is_empty());
+        assert!(preview_lines.iter().any(|l| l["text"].as_str().unwrap_or("").contains("Thing Dup")));
+        assert_eq!(preview["file"], "Defs/A_Thing.xml");
+
+        // Containment: a traversal path is a typed refusal.
+        let err = invoke(
+            &webview,
+            "project_source_xml_preview",
+            json!({"request": {
+                "project_id": pid,
+                "session_epoch": epoch,
+                "file": "../../Cargo.toml",
+                "line": 1
+            }}),
+        )
+        .expect_err("traversal must refuse");
+        assert_eq!(err["code"], "guard_output_denied");
+
         // Error path: a stale epoch is a typed refusal through the SAME ipc.
         let err = invoke(
             &webview,
@@ -1207,6 +1243,7 @@ mod ipc_draft_tests {
                 project_save_drafts,
                 project_restore_drafts,
                 project_clear_drafts,
+                project_source_xml_preview,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
