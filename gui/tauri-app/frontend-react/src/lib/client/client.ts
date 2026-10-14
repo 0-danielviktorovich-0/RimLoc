@@ -15,6 +15,7 @@
 // imports ../mock/* — the mock lives behind MockTransport only.
 import type {
   SourceSearchReportDto,
+  SourceXmlPreviewDto,
   ApplyExistingRequestDto,
   ApplyExistingResponseDto,
   BuildIdentityDto,
@@ -496,6 +497,28 @@ export class RimLocClient {
         scope: args.scope ?? 'standard',
         offset: args.offset ?? 0,
         max_results: args.maxResults ?? 200
+      }
+    });
+  }
+
+  /** Source XML preview (rel27): bounded read-only window of a project
+   *  source file for the Source Inspector. */
+  async sourceXmlPreview(args: {
+    projectId: string;
+    sessionEpoch: number;
+    file: string;
+    line?: number;
+    before?: number;
+    after?: number;
+  }): Promise<SourceXmlPreviewDto> {
+    return this.call('project_source_xml_preview', {
+      request: {
+        project_id: args.projectId,
+        session_epoch: args.sessionEpoch,
+        file: args.file,
+        line: args.line,
+        before: args.before ?? 6,
+        after: args.after ?? 20
       }
     });
   }
