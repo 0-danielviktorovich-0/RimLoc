@@ -5,6 +5,10 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Docs
+- [gui] Present RimLoc as a desktop-first visual RimWorld localization studio in English and Russian onboarding, guides and READMEs; describe the Rust CLI as optional automation rather than the main translation workflow (#93)
+- [ai] Document the current no-API Chat Batch and connection-test capabilities separately from the planned direct AI Translation workspace, including official OSS ChatGPT-plan authorization, API keys and local models (#93)
+
 ### Internal
 - [repository] Enforce public Git metadata hygiene for commit subjects, branches, pull-request titles, release titles and new changelog entries; private automation terminology stays in engineering notes rather than public history.
 - [vendor/codeql] Remove the unused vendored GLib patch and stale disabled-workflow injection that polluted Rust CodeQL extraction; active wry/tao patches are unchanged (#84)
