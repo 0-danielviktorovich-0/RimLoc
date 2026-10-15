@@ -572,3 +572,22 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   экспорт несёт msgid=source/msgstr=durable/ссылки каноничного дерева,
   same-project import = reusable 0 / conflicts N / apply disabled.
   validate-po остаётся CLI-first (вне GUI-паритета по решению аудита).
+
+## Кампания 2026-10-16 (вечер): UI-04 density и UI-12 deep visual audit ЗАКРЫТЫ
+
+- **UI-04 density ЗАКРЫТ** (cf47152 + e3bf600): comfortable/compact поверх zoom —
+  `lib/state/density.ts`, data-density на корне, CSS-переменные; канон r1.css владеет
+  `.entry-list .entry-row` на специфичности 0,2,0 — переопределение на 0,3,0;
+  виртуализированный список перечитывает высоту строки и ремерит на смене. Пол мелких
+  шрифтов: 94 вхождения 6-9px в каноне + 18 inline подняты до 10px. Lane 25/25.
+- **UI-12 deep visual audit ЗАКРЫТ** (ebd0611): повторяемая система —
+  visual-audit.conf.ts/spec.ts: 6 поверхностей × 2 темы через настоящий Settings-контрол;
+  все проверки — вычисляемые факты DOM (WCAG-контраст с oklch/color(srgb)/hex-парсером,
+  пол 3.0 + review-зона 4.5, чекбоксы, dividers, выравнивание таблиц, горизонтальный
+  overflow; disabled исключены по WCAG), отчёт — JSON-артефакт. Вердикт: 16/16, 630
+  текстовых элементов, 0 hard issues. Покрывает UI-08 (глубокие проверки контраста/
+  чекбоксов/таблиц в dark+light) и UI-09 (shell/projects/settings/about pass).
+- Урок аудита: первый прогон поймал реальную находку-кандидат (кнопка chatbatch
+  ratio=1.15) — оказалась сериализацией цвета WebKit (`color(srgb ...)` не парсился,
+  bg «уплывал» к белому предку) + disabled-кнопкой (WCAG-исключение) — парсер расширен,
+  исключение добавлено;_lane-система готова к повторным прогонам.
