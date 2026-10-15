@@ -503,6 +503,41 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     }
   })
 
+
+  it('UI-03: the tree and inspector toggles genuinely hide/show their panes', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    // Tree content collapse: file items + projections hide, root stays.
+    await waitExisting('[data-testid="ws.tree-toggle"]', 10000)
+    const beforeItems = await browser.execute(
+      () => document.querySelectorAll('[data-testid="ws.tree"] .file-item').length,
+    )
+    if (beforeItems === 0) throw new Error('tree items missing before collapse')
+    await browser.$('[data-testid="ws.tree-toggle"]').click()
+    await pause(500)
+    const afterItems = await browser.execute(
+      () => document.querySelectorAll('[data-testid="ws.tree"] .file-item').length,
+    )
+    if (afterItems !== 0) throw new Error(`tree items did not hide: ${afterItems}`)
+    await browser.$('[data-testid="ws.tree-toggle"]').click()
+    await pause(500)
+    const restored = await browser.execute(
+      () => document.querySelectorAll('[data-testid="ws.tree"] .file-item').length,
+    )
+    if (restored < beforeItems) throw new Error(`tree items did not restore: ${restored} vs ${beforeItems}`)
+    // Inspector collapse: the editor hides when the toggle fires.
+    await browser.$('[data-testid="ws.inspector-toggle"]').click()
+    await pause(500)
+    const editorHidden = !(await browser.$('[data-testid="ws.editor"]').isDisplayed())
+    if (!editorHidden) throw new Error('inspector toggle did not hide the editor')
+    await browser.$('[data-testid="ws.inspector-toggle"]').click()
+    await pause(500)
+    const editorBack = await browser.$('[data-testid="ws.editor"]').isDisplayed()
+    if (!editorBack) throw new Error('inspector toggle did not restore the editor')
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'

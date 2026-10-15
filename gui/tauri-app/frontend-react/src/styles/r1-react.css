@@ -382,3 +382,9 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .ws-panes.ws-mode-overview .detail-pane { display: none; }
 .ws-panes.ws-mode-overview .file-tree { display: none; }
 .ws-panes.ws-mode-overview .ws-center { max-width: 980px; margin: 0 auto; width: 100%; }
+
+/* UI-03 (owner audit Oct-14): true collapse for tree and inspector.
+   The resizable panel wrappers stay in the DOM (avoiding the group crash)
+   but their content is hidden and the space reclaims via flex-basis: 0. */
+.ws-panes.tree-collapsed .file-tree { display: none; }
+.ws-panes.inspector-collapsed .detail-pane { display: none; }

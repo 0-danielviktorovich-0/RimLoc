@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, PanelRight, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
 import { entryUid } from '../lib/state/entryUid'
@@ -87,6 +87,10 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   // documented as PARTIAL in UI_DEFECTS_MATRIX.md; revisit with the
   // library upgrade.
   const toggleTree = (): void => setTreeOpen(!treeOpen)
+  // UI-03 (owner audit Oct-14): the inspector toggle hides the right panel
+  // via CSS (the panel stays mounted, avoiding the group crash).
+  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const toggleInspector = (): void => setInspectorOpen(!inspectorOpen)
   // react-resizable-panels v4: `autoSaveId` replaced by the useDefaultLayout
   // hook — same localStorage persistence for the pane split, new API shape.
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -339,7 +343,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
           </button>
         ))}
       </div>
-      <div className={`ws-panes ws-mode-${wsMode}`}>
+      <div className={`ws-panes ws-mode-${wsMode}${!treeOpen ? ' tree-collapsed' : ''}${!inspectorOpen ? ' inspector-collapsed' : ''}`}>
         <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
         <Panel id="ws-left" minSize={30} defaultSize={66}>
         <div className="ws-center">
@@ -459,6 +463,26 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             >
               <ListFilter />
             </button>
+            <button
+              className="icon-btn"
+              aria-label={t('ws.toggleInspector')}
+              title={t('ws.toggleInspector')}
+              data-testid="ws.inspector-toggle"
+              onClick={toggleInspector}
+            >
+              <PanelRight size={14} />
+            </button>
+            {!treeOpen && (
+              <button
+                className="icon-btn"
+                aria-label={t('ws.toggleTree')}
+                title={t('ws.toggleTree')}
+                data-testid="ws.tree-reopen"
+                onClick={toggleTree}
+              >
+                <FolderOpen size={14} />
+              </button>
+            )}
           </div>
           <div className="entry-filters">
             {(['all', 'empty', 'issues'] as const).map((f) => (
@@ -539,6 +563,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             onLoadOutputPreview={loadOutputPreview}
             outputPreview={outputPreview}
             projectRevision={snapNow?.revision}
+            onToggleInspector={toggleInspector}
             onDraft={(v) => projectStore.setDraft(selected.uid, v)}
             onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
@@ -767,6 +792,7 @@ function EntryEditor(props: {
   entryDefType?: string
   targetLocale?: string
   onLoadOutputPreview?: (locale: string) => void
+  onToggleInspector?: () => void
   /** Current session revision — the output preview binds its displayed
    *  result to it and flags itself stale on mismatch (P1-C). */
   projectRevision?: number
@@ -863,6 +889,15 @@ function EntryEditor(props: {
           </button>
           <button className="icon-btn" aria-label={t('ws.next')} onClick={() => props.onMove(1)}>
             <ArrowDown />
+          </button>
+          <button
+            className="icon-btn"
+            aria-label={t('ws.toggleInspector')}
+            title={t('ws.toggleInspector')}
+            data-testid="ws.inspector-close"
+            onClick={props.onToggleInspector}
+          >
+            <PanelRight size={13} />
           </button>
         </div>
       </div>
