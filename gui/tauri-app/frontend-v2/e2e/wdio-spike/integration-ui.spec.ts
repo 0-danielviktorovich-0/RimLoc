@@ -12,7 +12,8 @@
 //  - UI-14: when the stored selection is filtered out, the editor follows
 //    the first VISIBLE row (and the stored key is not silently lost — it
 //    returns when the filter clears).
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 
 const MOD = '/tmp/rimloc-int/mod'
 
@@ -28,7 +29,16 @@ async function waitExisting(selector: string, timeout = 30000): Promise<Webdrive
 
 describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () => {
   before(() => {
-    mkdirSync(`${MOD}/Defs`, { recursive: true })
+    // Regenerate the fixture mod from scratch — a stale mod from a previous
+    // lane run would leak root-level Defs files into the search results.
+    rmSync(MOD, { recursive: true, force: true })
+    // The fixture is a WELL-FORMED versioned mod: content under 1.6/Defs
+    // (the wizard's target), an INACTIVE 1.5 leftover for Stage B, About
+    // listing 1.6. A root-level Defs/ next to a 1.5 dir would make the
+    // effective-view resolver pick 1.5 (established scanner semantics) and
+    // flip every beyond-the-view expectation.
+    mkdirSync(`${MOD}/1.6/Defs`, { recursive: true })
+    mkdirSync(`${MOD}/1.5/Defs`, { recursive: true })
     mkdirSync(`${MOD}/About`, { recursive: true })
     writeFileSync(
       `${MOD}/About/About.xml`,
@@ -37,11 +47,11 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     // Two files → the By-file projection must show exactly these two names
     // (from canonical provenance), plus per-type entries.
     writeFileSync(
-      `${MOD}/Defs/Alpha.xml`,
+      `${MOD}/1.6/Defs/Alpha.xml`,
       '<Defs><ThingDef><defName>Alpha</defName><label>Alpha label</label><description>Alpha description text</description></ThingDef></Defs>',
     )
     writeFileSync(
-      `${MOD}/Defs/Beta.xml`,
+      `${MOD}/1.6/Defs/Beta.xml`,
       '<Defs><HediffDef><defName>Beta</defName><label>Beta label</label><description>Beta description text</description></HediffDef></Defs>',
     )
     // Collision pair: ThingDef and HediffDef sharing the display key
@@ -49,13 +59,25 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     // (DefInjected/ThingDef/Dup.xml vs DefInjected/HediffDef/Dup.xml),
     // which is exactly the discrimination UI-05 P1-B requires.
     writeFileSync(
-      `${MOD}/Defs/DupThing.xml`,
+      `${MOD}/1.6/Defs/DupThing.xml`,
       '<Defs><ThingDef><defName>Dup</defName><label>Dup thing label</label></ThingDef></Defs>',
     )
     writeFileSync(
-      `${MOD}/Defs/DupHediff.xml`,
+      `${MOD}/1.6/Defs/DupHediff.xml`,
       '<Defs><HediffDef><defName>Dup</defName><label>Dup hediff label</label></HediffDef></Defs>',
     )
+    // UI-11 Stage B fixture: content the raw-source search must discover
+    // BEYOND the effective view — an inactive 1.5 version dir, a
+    // deterministic NoTranslate field (texPath), and a parse-error file.
+    writeFileSync(
+      `${MOD}/1.5/Defs/Legacy.xml`,
+      '<Defs><ThingDef><defName>Legacy</defName><label>Legacy sleeper label</label></ThingDef></Defs>',
+    )
+    writeFileSync(
+      `${MOD}/1.6/Defs/TexThing.xml`,
+      '<Defs><ThingDef><defName>TexThing</defName><texPath>Things/Sleeper/Tex</texPath></ThingDef></Defs>',
+    )
+    writeFileSync(`${MOD}/1.6/Defs/Broken.xml`, '<Defs><ThingDef><label>Broken sleeper</Defs>')
   })
 
   it('project created through the wizard', async () => {
@@ -118,6 +140,95 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       if (!f.includes('Alpha.xml') && !f.includes('Beta.xml') && !f.includes('Defs/')) {
         // OK — the match may be in a different source file within the mod.
       }
+    }
+    // Close the source search panel.
+    await browser.$('[data-testid="ss.panel"] .icon-btn').click()
+    await pause(300)
+  })
+
+  it('UI-11 Stage B: raw-source search discovers content beyond the effective view with honest per-class counts and a working filter', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    await waitExisting('[data-testid="ss.toggle"]', 15000)
+    await browser.$('[data-testid="ss.toggle"]').click()
+    await pause(400)
+    await waitExisting('[data-testid="ss.input"]', 10000)
+    // "sleeper" hits all three beyond-the-view classes in the fixture:
+    // 1.5/Legacy.xml (outside effective view), TexThing.xml texPath
+    // (NoTranslate → deliberately excluded), Broken.xml (parse failure).
+    await browser.$('[data-testid="ss.input"]').setValue('sleeper')
+    await browser.$('[data-testid="ss.run"]').click()
+    await browser.waitUntil(
+      async () => (await browser.$('[data-testid="ss.results"]')).isExisting(),
+      { timeout: 30000, interval: 500 },
+    )
+    // Per-class counts from the backend: all three beyond-the-view
+    // classes discoverable with a count of at least 1.
+    const chips = await browser.execute(() => {
+      const out: Record<string, string> = {}
+      for (const b of document.querySelectorAll('[data-testid^="ss.filter."]')) {
+        const id = b.getAttribute('data-testid') ?? ''
+        if (id === 'ss.filter.clear') continue
+        out[id.slice('ss.filter.'.length)] = b.textContent ?? ''
+      }
+      return out
+    })
+    for (const cls of ['outside_effective_view', 'deliberately_excluded', 'parse_failure']) {
+      const text = chips[cls]
+      if (!text || !/\((?:[1-9]\d*)\)/.test(text)) {
+        const rows = await browser.execute(() =>
+          Array.from(document.querySelectorAll('[data-testid^="ss.match."]')).map((r) =>
+            r.textContent ?? '',
+          ),
+        )
+        throw new Error(
+          `Stage B chip ${cls} missing or zero-count: ${JSON.stringify(chips)} | rows: ${JSON.stringify(rows)} | counts_raw: ${JSON.stringify(await browser.execute(() => document.querySelector('[data-testid="ss.filters"]')?.textContent ?? ''))}`,
+        )
+      }
+    }
+    // Total matches must cover the three fixture hits.
+    const results = await browser.$('[data-testid="ss.results"]')
+    const resultsText = await results.getText()
+    const totalM = resultsText.match(/\d+/)
+    if (!totalM || parseInt(totalM[0], 10) < 3) {
+      throw new Error(`expected >=3 total matches for "sleeper", got: ${resultsText}`)
+    }
+    // Filtering to outside_effective_view narrows the page: every visible
+    // row carries exactly the chip's classification label.
+    await browser.$('[data-testid="ss.filter.outside_effective_view"]').click()
+    await pause(300)
+    const narrowed = await browser.execute(() => {
+      const chip = document.querySelector(
+        '[data-testid="ss.filter.outside_effective_view"]',
+      )?.textContent
+      const label = (chip ?? '').replace(/\s*\(\d+\)\s*$/, '')
+      const rows = Array.from(document.querySelectorAll('[data-testid^="ss.match."]'))
+      return rows.map((r) => r.querySelector('.status-label')?.textContent ?? '')
+    })
+    if (narrowed.length === 0) throw new Error('outside_effective_view filter produced zero rows')
+    const outsideLabel = (chips['outside_effective_view'] ?? '').replace(/\s*\(\d+\)\s*$/, '')
+    for (const s of narrowed) {
+      if (!s.includes(outsideLabel)) {
+        throw new Error(`filter leaked a foreign class row: "${s}" vs "${outsideLabel}"`)
+      }
+    }
+    // Legacy.xml must be among the outside-view rows (the honest file ref).
+    const firstFile = await browser.execute(
+      () => document.querySelector('[data-testid="ss.match.0"] code')?.textContent ?? '',
+    )
+    if (!String(firstFile).includes('Legacy.xml')) {
+      throw new Error(`expected the 1.5/Legacy.xml hit first, got: ${firstFile}`)
+    }
+    // Clearing the filter restores the mixed-class page.
+    await browser.$('[data-testid="ss.filter.clear"]').click()
+    await pause(300)
+    const restored = await browser.execute(
+      () => document.querySelectorAll('[data-testid^="ss.match."]').length,
+    )
+    if (restored <= narrowed.length) {
+      throw new Error(`clear-filter must restore the mixed page: ${restored} vs ${narrowed.length}`)
     }
     // Close the source search panel.
     await browser.$('[data-testid="ss.panel"] .icon-btn').click()
@@ -842,6 +953,17 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       return el ? el.getBoundingClientRect().width > 0 : false
     })
     if (!restored) throw new Error('nav restore failed after persistence test')
+    // A reload boots an EMPTY in-memory session (the store is
+    // module-scoped; the app never auto-opens). A real user restarts into
+    // the library and REOPENS the project — do exactly that so the
+    // session-needing tests downstream run against a live session, and so
+    // the restart story itself is proven (restart → reopen → workspace).
+    await browser.execute(() => {
+      window.location.hash = '#/projects'
+    })
+    await waitExisting('[data-testid="projects.project-card"]', 30000)
+    await browser.$('[data-testid="projects.project-card"]').click()
+    await waitExisting('[data-testid="ws.root"]', 60000)
   })
 
   it('UI-10: CLI↔GUI parity — all GUI routes exist and respond', async () => {
@@ -888,35 +1010,24 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (commit.trim().length < 7) throw new Error(`build identity incomplete: ${commit}`)
   })
 
-  it('About opener: allowlist refuses foreign URLs; verified URL opens in the OS browser', async () => {
-    // (1) The refusal path has NO side effect and returns a typed error.
-    const refusal = await browser.executeAsync((done) => {
-      const bridge = (window as unknown as Bridge).__TAURI__
-      bridge?.core
-        ?.invoke?.('open_external_url', { url: 'https://evil.example.com/steal' })
-        .then((r) => done({ ok: r }))
-        .catch((e: unknown) =>
-          done({ refused: JSON.stringify(e, (_, v) => (typeof v === 'bigint' ? String(v) : v)) }),
-        )
-    })
-    const r = refusal as { refused?: string }
-    if (!r.refused || !r.refused.includes('allowlisted')) {
-      throw new Error(`foreign URL was not refused: ${JSON.stringify(refusal)}`)
-    }
-    // (2) One verified destination REALLY opens in the OS browser (owner
-    // mandated this E2E; no charge is possible on a sponsors profile).
-    const opened = await browser.executeAsync((done) => {
-      const bridge = (window as unknown as Bridge).__TAURI__
-      bridge?.core
-        ?.invoke?.('open_external_url', { url: 'https://github.com/sponsors/0-danielviktorovich-0' })
-        .then((r2) => done({ ok: r2 === null }))
-        .catch((e: unknown) => done({ refused: String(e) }))
-    })
-    const o = opened as { ok?: boolean; refused?: string }
-    if (!o.ok) throw new Error(`verified URL failed to open: ${o.refused}`)
-  })
-
   it('UI-01: the ChatBatch filter row does not clip at 100% and 125% zoom', async () => {
+    // Navigate FIRST and prove the route renders before any zoom change —
+    // the measure steps then only vary the zoom, never the route.
+    await browser.execute(() => {
+      window.location.hash = '#/chatbatch'
+    })
+    await browser
+      .waitUntil(async () => browser.$('.cb-selection').isExisting(), {
+        timeout: 30000,
+        interval: 500,
+      })
+      .catch(async () => {
+        const diag = (await browser.execute(() => ({
+          hash: window.location.hash,
+          page: document.querySelector('.page-content')?.textContent?.slice(0, 90) ?? '',
+        }))) as { hash: string; page: string }
+        throw new Error(`chatbatch did not render; app state: ${JSON.stringify(diag)}`)
+      })
     const measure = async (zoom: string): Promise<void> => {
       // The app re-reads the persisted zoom on this custom event — no
       // reload (a reload would drop the open project session).
@@ -925,10 +1036,6 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
         window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
       }, zoom)
       await pause(800)
-      await browser.execute(() => {
-        window.location.hash = '#/chatbatch'
-      })
-      await waitExisting('.cb-selection', 30000)
       const m = await browser.execute(() => {
         const row = document.querySelector('.cb-selection .entry-filters') as HTMLElement | null
         if (!row) return { found: false }
@@ -963,5 +1070,49 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
     })
     await pause(500)
+  })
+  it('About opener: allowlist refuses foreign URLs; verified URL opens in the OS browser', async () => {
+    // (1) The refusal path has NO side effect and returns a typed error.
+    const refusal = await browser.executeAsync((done) => {
+      const bridge = (window as unknown as Bridge).__TAURI__
+      bridge?.core
+        ?.invoke?.('open_external_url', { url: 'https://evil.example.com/steal' })
+        .then((r) => done({ ok: r }))
+        .catch((e: unknown) =>
+          done({ refused: JSON.stringify(e, (_, v) => (typeof v === 'bigint' ? String(v) : v)) }),
+        )
+    })
+    const r = refusal as { refused?: string }
+    if (!r.refused || !r.refused.includes('allowlisted')) {
+      throw new Error(`foreign URL was not refused: ${JSON.stringify(refusal)}`)
+    }
+    // (2) One verified destination REALLY opens in the OS browser (owner
+    // mandated this E2E; no charge is possible on a sponsors profile).
+    const opened = await browser.executeAsync((done) => {
+      const bridge = (window as unknown as Bridge).__TAURI__
+      bridge?.core
+        ?.invoke?.('open_external_url', { url: 'https://github.com/sponsors/0-danielviktorovich-0' })
+        .then((r2) => done({ ok: r2 === null }))
+        .catch((e: unknown) => done({ refused: String(e) }))
+    })
+    const o = opened as { ok?: boolean; refused?: string }
+    if (!o.ok) throw new Error(`verified URL failed to open: ${o.refused}`)
+    // macOS put the OS browser OVER the webview; an occluded WKWebView
+    // suspends its JS event loop, so hash-driven navigation silently stops
+    // rendering. Re-activate the app, then prove a route renders again.
+    // The recovery lives HERE — the LAST test of the suite — so a flaw in
+    // it can never poison another scenario.
+    try {
+      execSync(
+        `osascript -e 'tell application "System Events" to set frontmost of (first application process whose bundle identifier is "com.rimloc.gui") to true'`,
+        { timeout: 15000 },
+      )
+    } catch {
+      // headless / permission-denied contexts: fall through to the DOM check
+    }
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
   })
 })
