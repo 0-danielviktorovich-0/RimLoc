@@ -536,3 +536,33 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
 9. **FREEZE lanes независимы**: FREEZE требует L complete + Source-Inspector winner-reason
    contract (✓ 303d726) + прочие pre-freeze контракты. W6/W7 полировка не ждёт фриза, и
    фриз не ждёт GUI.
+
+## Кампания 2026-10-16: UI-11 Source Discovery Stage A+B ЗАКРЫТ; UI-10 PO/XLIFF — в работе
+
+- **UI-11 Stage B ЗАКРЫТ** (c4e9bc1 feat + 9aff9ba test + 6523ebb docs): whole-tree
+  `status_counts` в `SourceSearchReport` (живут сквозь пагинацию), line-ownership
+  дискриминатор в `classify_indexed` (старт-линейная партиция приписывала NoTranslate-поле
+  — texPath после индексированной метки — предыдущему юниту; теперь имя элемента на строке
+  сверяется с суффиксом ключа hit'а, при расхождении — честный candidate-путь),
+  фильтр-чипы по классификации с счётчиками в SourceSearchPanel, i18n-фикс
+  `ss.status.suspected_omission` → `suspected_extraction_omission` (сырой ключ утекал в UI).
+  Нативный lane 23/23 на packaged automation build. Юнит 12/12 в source_search.rs.
+- **Урок lane-фикстуры**: root-level `Defs/` рядом с `1.5/` заставляет резолвер эффективного
+  вида выбрать версию 1.5 (установленная семантика сканера) — фикстура переделана в
+  каноничный версионный мод (весь контент в `1.6/Defs`, 1.5 — legacy-остаток), мод
+  регенерируется с нуля каждый прогон (rmSync).
+- **Урок lane-порядка**: `browser.refresh()` в restart-proxy тесте убивает in-memory
+  сессию проекта (стора модульная, авто-открытия нет) — всё после refresh'а жило без
+  сессии. Фикс: тест reopen'ит проект из библиотеки после reload (рестарт → возврат к
+  работе). About-opener перенесён в хвост сюиты + osascript-реактивация (системный браузер
+  перекрывает webview, hash-навигация перестаёт рендерить).
+- **UI-10 PO/XLIFF GUI — СКОПИРОВАНО, реализация не начата**: аудит (CLI_GUI_PARITY_AUDIT.md)
+  требует import/export PO+XLIFF (+validate-po). Сервисный слой существует:
+  `rimloc-services/src/export.rs` (`export_po_with_tm`, `export_po_from_units`),
+  `rimloc-services/src/import.rs` (`import_po_to_file`, `import_po_to_mod_tree*`),
+  крейты `rimloc-export-po` (`write_po`, msgid/msgstr), `rimloc-import-po`
+  (`read_po_entries` → `write_language_data_xml` / `build_translation_mod*`),
+  `rimloc-export-xliff` (`write_xliff_12`), `rimloc-import-xliff` (`read_xliff_12`).
+  Осталось: project-scoped сервисные функции (PO/XLIFF ↔ переводы проекта), IPC-команды
+  (по образцу `project_source_search`: snapshot + epoch guard), клиентские методы,
+  GUI-поверхность на Existing-экране, lane-тест.
