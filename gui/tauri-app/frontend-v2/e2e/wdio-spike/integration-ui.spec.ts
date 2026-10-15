@@ -54,7 +54,7 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     )
     writeFileSync(
       `${MOD}/Defs/DupHediff.xml`,
-      '<Defs><HediffDef><defName>DupH</defName><label>Dup hediff label</label></HediffDef></Defs>',
+      '<Defs><HediffDef><defName>Dup</defName><label>Dup hediff label</label></HediffDef></Defs>',
     )
   })
 
@@ -450,13 +450,14 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     await pause(600)
     await waitExisting('[data-testid="ws.output.file"]', 20000)
     const fHediff = await browser.$('[data-testid="ws.output.file"] code').getText()
-    // The writer names files by defName (DupH), so assert the def_type
-    // DIRECTORY — the shared display key must resolve to ITS OWN def type.
+    // Both entries share the display key Dup.label (same defName=Dup) but
+    // land in DIFFERENT def_type directories — the def_type directory is
+    // the ONLY discriminator between them.
     if (!fHediff.includes('DefInjected/HediffDef/')) {
-      throw new Error(`HediffDef Dup must show the HediffDef file, got: ${fHediff}`)
+      throw new Error(`HediffDef Dup must show HediffDef/Dup.xml, got: ${fHediff}`)
     }
-    if (!fHediff.includes('DupH.xml')) {
-      throw new Error(`expected DupH.xml, got: ${fHediff}`)
+    if (fThing === fHediff) {
+      throw new Error('the same file was shown for both def types — identity discrimination failed')
     }
     // P1-B: identity discrimination — select the OTHER file's row and
     // verify the tab shows ITS file, not the previous one.

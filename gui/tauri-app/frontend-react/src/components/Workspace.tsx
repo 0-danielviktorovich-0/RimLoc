@@ -101,6 +101,12 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const snapNow = st.snapshot
   // UI-05: output XML preview — the CANONICAL serializer rendered
   // in-memory for the current target locale, loaded lazily and cached.
+  // P1-C freshness fence (review Oct-15): a monotonically increasing
+  // request sequence ensures that only the LATEST async response is
+  // applied to the shared state — late responses from stale requests
+  // (e.g. after a project switch or rapid locale toggle) are silently
+  // discarded.
+  const outputPreviewSeq = useRef(0)
   const [outputPreview, setOutputPreview] = useState<
     | { status: 'idle' | 'loading' | 'error'; error?: string }
     | {
@@ -114,22 +120,29 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   >(null)
   const loadOutputPreview = (locale: string): void => {
     if (!snapNow) return
+    const seq = ++outputPreviewSeq.current
+    const reqProject = snapNow.project_id
     setOutputPreview({ status: 'loading' })
     clientInstance
       .getClient()
       .projectOutputXmlPreview(snapNow.project_id, snapNow.session_epoch, locale)
-      .then((res) =>
+      .then((res) => {
+        // Freshness fence: discard the response if a newer request was
+        // fired or the project switched while the call was in flight.
+        if (seq !== outputPreviewSeq.current) return
+        if (reqProject !== snapNow?.project_id) return
         setOutputPreview({
           status: 'done',
           locale: res.locale,
           revision: res.revision,
           files: res.files,
           truncated: res.truncated,
-        }),
-      )
-      .catch((e: unknown) =>
-        setOutputPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) }),
-      )
+        })
+      })
+      .catch((e: unknown) => {
+        if (seq !== outputPreviewSeq.current) return
+        setOutputPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) })
+      })
   }
   // rel27: XML-предпросмотр — чтение исходного файла через IPC (read-only,
   // containment по source root).
