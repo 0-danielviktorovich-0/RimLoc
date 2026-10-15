@@ -1740,9 +1740,26 @@ impl ProjectSessionManager {
         }
         ensure_locale_form(locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // Explicit taint barrier (CodeQL path-injection): the validated
+        // locale is re-checked character by character — the value that
+        // reaches the scratch path below cannot carry separators or
+        // traversal segments, independent of ensure_locale_form.
+        if locale.is_empty()
+            || !locale
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+        {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!("malformed locale `{locale}`: expected letters, digits, `_`, `-`"),
+            ));
+        }
         let job_id: JobId = generate_operation_id();
 
         let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        // The scratch root is a process-generated constant plus the
+        // operation id (not user input); the locale is the barrier-checked
+        // single component above.
         let scratch = std::env::temp_dir().join(format!(
             "rimloc-xml-preview-{}",
             job_id.trim_start_matches("op-")
