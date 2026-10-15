@@ -6562,4 +6562,131 @@ mod source_language_contract {
             Some("ja")
         );
     }
+
+    // --- UI-05 preview parity (review Oct-15): the preview refuses the
+    // SAME payloads the export refuses, through the SHARED validator. ---
+
+    struct PreviewFixture {
+        _dir: tempfile::TempDir,
+        mgr: ProjectSessionManager,
+        project_id: String,
+        revision: u64,
+        epoch: SessionEpoch,
+    }
+
+    fn preview_fixture(text: &str) -> PreviewFixture {
+        use crate::contract::{ApplyIntentsRequest, ApplyOrigin, IntentAction, TranslationIntent};
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
+        std::fs::write(
+            dir.path().join("mod/Defs/A.xml"),
+            "<Defs><ThingDef><defName>A</defName><label>A label</label></ThingDef></Defs>",
+        )
+        .unwrap();
+        let mgr = ProjectSessionManager::new_with_secret_sink(
+            dir.path().join("managed"),
+            std::sync::Arc::new(crate::providers::MemorySecretSink::default()),
+        )
+        .unwrap();
+        let snap = mgr
+            .create_with_source(&dir.path().join("mod"), Some("1.6"), None, None)
+            .unwrap();
+        mgr.apply(&ApplyIntentsRequest {
+            project_id: snap.project_id.clone(),
+            expected_revision: snap.acked_revision,
+            session_epoch: snap.session_epoch,
+            intents: vec![TranslationIntent {
+                entry: rimloc_domain::canonical::SourceEntryId {
+                    kind: rimloc_domain::canonical::EntryKind::DefInjected,
+                    key: "A.label".into(),
+                    def_type: Some("ThingDef".into()),
+                },
+                locale: "Russian".into(),
+                action: IntentAction::SetTranslation,
+                text: Some(text.into()),
+            }],
+            origin: Some(ApplyOrigin::Human),
+        })
+        .unwrap();
+        let after = mgr.snapshot(&snap.project_id).unwrap();
+        PreviewFixture {
+            _dir: dir,
+            mgr,
+            project_id: snap.project_id.clone(),
+            revision: after.revision,
+            epoch: snap.session_epoch,
+        }
+    }
+
+    #[test]
+    fn preview_refuses_invalid_xml_chars_via_shared_validation() {
+        // The H3 apply gate already refuses control chars via the editor;
+        // to reach the SHARED validator we bypass the apply and inject the
+        // poisoned translation directly into the project state.
+        let fx = preview_fixture("ok text");
+        {
+            let registry = fx.mgr.inner.lock().unwrap();
+            let session = registry.get(&fx.project_id).unwrap();
+            let mut session = session.lock().unwrap();
+            if let Some(t) = session
+                .project
+                .translations
+                .iter_mut()
+                .find(|t| t.locale == "Russian")
+            {
+                t.text = Some("bad \u{0007} control".into());
+            }
+        }
+        let err = fx
+            .mgr
+            .project_output_xml_preview(&fx.project_id, fx.epoch, "Russian")
+            .err()
+            .expect("poisoned preview must be refused");
+        assert!(
+            err.message.contains("invalid in XML 1.0"),
+            "expected XML 1.0 refusal, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn preview_refuses_case_colliding_defnames_via_shared_validation() {
+        use crate::contract::{ApplyIntentsRequest, ApplyOrigin, IntentAction, TranslationIntent};
+        let fx = preview_fixture("ok text");
+        // Inject a case-colliding defName directly into the project
+        // entries list, then add a translation for it so the serializer
+        // encounters it.
+        let snap = fx.mgr.snapshot(&fx.project_id).unwrap();
+        let mut dup = snap.project.entries[0].clone();
+        dup.id.key = "a.LABEL".into();
+        dup.text = "collision label".into();
+        {
+            let registry = fx.mgr.inner.lock().unwrap();
+            let session = registry.get(&fx.project_id).unwrap();
+            session.lock().unwrap().project.entries.push(dup.clone());
+            // Also add a matching translation so the writer visits it.
+            session.lock().unwrap().project.translations.push(
+                rimloc_domain::canonical::Translation {
+                    source_id: dup.id.clone(),
+                    locale: "Russian".into(),
+                    text: Some("коллизия".into()),
+                    completeness: rimloc_domain::canonical::Completeness::Translated,
+                    review: rimloc_domain::canonical::Review::None,
+                    validation: rimloc_domain::canonical::ValidationState::Ok,
+                    lifecycle: rimloc_domain::canonical::Lifecycle::Active,
+                    origin: rimloc_domain::canonical::Origin::Human,
+                    notes: String::new(),
+                    source_changed: None,
+                },
+            );
+        }
+        let err = fx
+            .mgr
+            .project_output_xml_preview(&fx.project_id, fx.epoch, "Russian")
+            .err()
+            .expect("case-colliding preview must be refused");
+        assert!(
+            err.message.contains("differ only in case"),
+            "expected case-collision refusal, got: {err:?}"
+        );
+    }
 }
