@@ -46,6 +46,8 @@ runtime verification for those is queued with the UI-02/03 work.
   follows → clear restores Beta).
 - Scroll effect keys on the selected IDENTITY (not just the index); the
   forced out-of-viewport scenario needs the larger corpus fixture — queued.
+- Dark visual pass: dark class + surfaces verified natively (lane 14/14);
+  deeper contrast/checkbox/table checks queued with UI-09.
 - ID-mapping caveat: the original Oct-14 audit file is absent from the
   local inbox; matrix IDs follow the reviewer's Oct-15 references. If the
   original audit re-surfaces, IDs must be reconciled.
