@@ -60,3 +60,104 @@ pub fn xliff_to_language_data(out_path: &Path, xliff_path: &Path) -> Result<()> 
     let entries: Vec<(String, String)> = map.into_iter().collect();
     rimloc_import_po::write_language_data_xml(out_path, &entries)
 }
+
+/// One parsed XLIFF exchange entry with the raw `<note>` reference kept —
+/// the tree rebuild needs the canonical path, the bare key→text map is
+/// not enough.
+#[derive(Debug, Clone)]
+pub struct XliffEntry {
+    pub id: String,
+    pub source: Option<String>,
+    pub target: String,
+    pub note: Option<String>,
+}
+
+/// Parse an XLIFF 1.2 file keeping id / source / target / note per unit.
+pub fn read_xliff_12_with_notes(path: &Path) -> Result<Vec<XliffEntry>> {
+    let content = std::fs::read_to_string(path)?;
+    let mut reader = Reader::from_str(&content);
+    reader.config_mut().trim_text(true);
+    let mut buf = Vec::new();
+    let mut cur: Option<XliffEntry> = None;
+    let mut in_source = false;
+    let mut in_target = false;
+    let mut in_note = false;
+    let mut text = String::new();
+    let mut out = Vec::new();
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(e)) => {
+                let name = e.name().as_ref().to_owned();
+                match name.as_str() {
+                    "trans-unit" => {
+                        let mut id = String::new();
+                        for a in e.attributes().flatten() {
+                            if a.key.as_ref() == "id" {
+                                id = a.value.to_string();
+                            }
+                        }
+                        cur = Some(XliffEntry {
+                            id,
+                            source: None,
+                            target: String::new(),
+                            note: None,
+                        });
+                    }
+                    "source" => {
+                        in_source = true;
+                        text.clear();
+                    }
+                    "target" => {
+                        in_target = true;
+                        text.clear();
+                    }
+                    "note" => {
+                        in_note = true;
+                        text.clear();
+                    }
+                    _ => {}
+                }
+            }
+            Ok(Event::Text(t)) => {
+                if in_source || in_target || in_note {
+                    text.push_str(t.xml10_content().as_ref());
+                }
+            }
+            Ok(Event::End(e)) => {
+                let name = e.name().as_ref().to_owned();
+                match name.as_str() {
+                    "source" => {
+                        in_source = false;
+                        if let Some(entry) = cur.as_mut() {
+                            entry.source = Some(text.trim().to_string());
+                        }
+                    }
+                    "target" => {
+                        in_target = false;
+                        if let Some(entry) = cur.as_mut() {
+                            entry.target = text.trim().to_string();
+                        }
+                    }
+                    "note" => {
+                        in_note = false;
+                        if let Some(entry) = cur.as_mut() {
+                            entry.note = Some(text.trim().to_string());
+                        }
+                    }
+                    "trans-unit" => {
+                        if let Some(entry) = cur.take() {
+                            out.push(entry);
+                        }
+                    }
+                    _ => {}
+                }
+                text.clear();
+            }
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(eyre!("{e}")),
+            _ => {}
+        }
+        buf.clear();
+    }
+    Ok(out)
+}

@@ -708,6 +708,57 @@ pub struct ExportProjectPoRequest {
     pub locale: String,
 }
 
+/// `project_import_xliff` / `project_apply_xliff` (UI-10): the XLIFF
+/// mirror of the PO pack flow — rebuilt into the canonical tree and fed
+/// through the same analyzer / apply core.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ImportExistingXliffRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .xliff file (form guard: relative refused).
+    pub xliff_path: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ApplyExistingXliffRequest {
+    pub project_id: ProjectId,
+    pub expected_revision: Revision,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .xliff file.
+    pub xliff_path: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_export_xliff` (UI-10): the XLIFF mirror of the exchange PO —
+/// `<target>` carries the durable translations, `<note>` the canonical
+/// tree path for a lossless re-import.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectXliffRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .xliff file to write.
+    pub out_xliff: PathBufDto,
+    /// Locale whose translations to export (strict language-folder form).
+    pub locale: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectXliffResponse {
+    pub job_id: JobId,
+    /// Absolute path of the written .xliff file.
+    pub out_path: String,
+    /// Rows in the file (canonical tree keys).
+    pub keys_total: usize,
+    /// Rows whose target is non-empty.
+    pub keys_translated: usize,
+    /// Serialized-tree units that resolved to no canonical entry —
+    /// reported, never silently dropped.
+    pub keys_unmatched: usize,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct ExportProjectPoResponse {
     pub job_id: JobId,

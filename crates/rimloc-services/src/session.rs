@@ -2449,93 +2449,11 @@ impl ProjectSessionManager {
         }
         ensure_locale_form(locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
-        // Path-FORM guard: a relative path would land wherever the GUI
-        // process was launched from — refused before any IO, same as the
-        // export_project discipline.
-        if !out_po.is_absolute() {
-            return Err(ContractError::new(
-                ContractErrorCode::InvalidOutputPath,
-                format!(
-                    "output PO path `{}` is not absolute; specify an absolute file path",
-                    out_po.display()
-                ),
-            ));
-        }
-        // Read-only source-tree + managed-root guards (fail-closed): the
-        // session must know its source root for the guard to be
-        // establishable at all.
-        if st.mod_root.as_os_str().is_empty() {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
-            ));
-        }
-        if crate::is_within(out_po, &st.mod_root) {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                format!(
-                    "output PO `{}` is inside the read-only source tree `{}`",
-                    out_po.display(),
-                    st.mod_root.display()
-                ),
-            ));
-        }
-        if crate::is_within(out_po, &self.managed_root) {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                format!(
-                    "output PO `{}` is inside the managed projects root `{}`",
-                    out_po.display(),
-                    self.managed_root.display()
-                ),
-            ));
-        }
+        exchange_out_guard(&st, &self.managed_root, out_po)?;
 
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_export_po");
-        log.begin_stage("serialize");
-        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
-        let temp = tempfile::Builder::new()
-            .prefix("rimloc-po-export")
-            .tempdir()
-            .map_err(|e| {
-                log.finish();
-                ContractError::new(
-                    ContractErrorCode::Internal,
-                    format!("po export temp dir: {e}"),
-                )
-            })?;
-        let report = crate::project::write_rimworld_translation(
-            &st.project,
-            temp.path(),
-            locale,
-            &st.display_name,
-            &crate::util::package_id_slug(&st.display_name),
-            &rw_version,
-        )
-        .map_err(|e| {
-            log.error_message("serialize", &e.to_string());
-            log.finish();
-            ContractError::new(
-                ContractErrorCode::Internal,
-                format!("po export serialization failed: {e}"),
-            )
-        })?;
-        log.end_stage("serialize");
-
-        // Reparse the canonical tree BEFORE writing the PO: the exchange
-        // file is built from what the scanner reads back, never from the
-        // writer's private accounting.
-        log.begin_stage("reparse");
-        let units = rimloc_parsers_xml::scan_keyed_xml(&report.out_mod).map_err(|e| {
-            log.error_message("reparse", &e.to_string());
-            log.finish();
-            ContractError::new(
-                ContractErrorCode::Internal,
-                format!("po export reparse failed: {e}"),
-            )
-        })?;
-        log.end_stage("reparse");
+        let (_temp, units) = export_tree_units(&st, locale, "rimloc-po-export", &mut log)?;
 
         log.begin_stage("write");
         let outcome = crate::project::po_exchange_rows(&st.project, &units);
@@ -2586,31 +2504,7 @@ impl ProjectSessionManager {
         ensure_locale_form(&req.locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
         let po_path = PathBuf::from(&req.po_path.path);
-        if !po_path.is_absolute() {
-            return Err(ContractError::new(
-                ContractErrorCode::InvalidOutputPath,
-                format!(
-                    "PO path `{}` is not absolute; specify an absolute file path",
-                    po_path.display()
-                ),
-            ));
-        }
-        if crate::is_within(&po_path, &self.managed_root) {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                format!(
-                    "PO path `{}` is inside the managed projects root `{}`",
-                    po_path.display(),
-                    self.managed_root.display()
-                ),
-            ));
-        }
-        if !po_path.is_file() {
-            return Err(ContractError::new(
-                ContractErrorCode::InvalidConfig,
-                format!("PO file `{}` does not exist", po_path.display()),
-            ));
-        }
+        exchange_in_guard(&self.managed_root, &po_path)?;
 
         let job_id: JobId = generate_operation_id();
         let mut log = OperationLog::new("project_import_po");
@@ -2748,31 +2642,7 @@ impl ProjectSessionManager {
         ensure_locale_form(&req.locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
         let po_path = PathBuf::from(&req.po_path.path);
-        if !po_path.is_absolute() {
-            return Err(ContractError::new(
-                ContractErrorCode::InvalidOutputPath,
-                format!(
-                    "PO path `{}` is not absolute; specify an absolute file path",
-                    po_path.display()
-                ),
-            ));
-        }
-        if crate::is_within(&po_path, &self.managed_root) {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                format!(
-                    "PO path `{}` is inside the managed projects root `{}`",
-                    po_path.display(),
-                    self.managed_root.display()
-                ),
-            ));
-        }
-        if !po_path.is_file() {
-            return Err(ContractError::new(
-                ContractErrorCode::InvalidConfig,
-                format!("PO file `{}` does not exist", po_path.display()),
-            ));
-        }
+        exchange_in_guard(&self.managed_root, &po_path)?;
 
         let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
         let temp = tempfile::Builder::new()
@@ -2809,6 +2679,361 @@ impl ProjectSessionManager {
             "project_apply_po",
         )
     }
+
+    /// `project_export_xliff` (UI-10) — the XLIFF mirror of the exchange
+    /// PO: the canonical tree serialized + reparsed, every unit resolved
+    /// back to its entry, `<target>` carries the durable translation and
+    /// `<note>` the canonical path for a lossless re-import.
+    pub fn export_project_xliff(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        out_xliff: &Path,
+        locale: &str,
+    ) -> Result<crate::contract::ExportProjectXliffResponse, ContractError> {
+        self.managed_path(project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        ensure_locale_form(locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        exchange_out_guard(&st, &self.managed_root, out_xliff)?;
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_export_xliff");
+        let (_temp, units) = export_tree_units(&st, locale, "rimloc-xliff-export", &mut log)?;
+
+        log.begin_stage("write");
+        let outcome = crate::project::po_exchange_rows(&st.project, &units);
+        let src_lang = st.project.context.source_locale.as_deref().unwrap_or("en");
+        let rows: Vec<rimloc_export_xliff::XliffExchangeRow> = outcome
+            .rows
+            .iter()
+            .map(|r| rimloc_export_xliff::XliffExchangeRow {
+                key: r.key.clone(),
+                source: r.source.clone(),
+                translation: r.translation.clone(),
+                reference: r.reference.clone(),
+            })
+            .collect();
+        rimloc_export_xliff::write_xliff_12_translated(out_xliff, &rows, src_lang, locale)
+            .map_err(|e| {
+                log.error_message("write", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("xliff export write failed: {e}"),
+                )
+            })?;
+        log.counter("write", "rows", rows.len() as u64);
+        log.counter("write", "unmatched", outcome.unmatched as u64);
+        log.end_stage("write");
+        log.finish();
+
+        Ok(crate::contract::ExportProjectXliffResponse {
+            job_id,
+            out_path: out_xliff.display().to_string(),
+            keys_total: rows.len(),
+            keys_translated: rows.iter().filter(|r| !r.translation.trim().is_empty()).count(),
+            keys_unmatched: outcome.unmatched,
+        })
+    }
+
+    /// `project_import_xliff` (UI-10) — analyze an existing-translation
+    /// XLIFF FILE: rebuilt into the canonical tree (the same pack shape
+    /// the PO rebuild produces) and fed through the SAME analyzer.
+    pub fn import_existing_xliff(
+        &self,
+        req: &crate::contract::ImportExistingXliffRequest,
+    ) -> Result<crate::contract::ImportExistingResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let xliff_path = PathBuf::from(&req.xliff_path.path);
+        exchange_in_guard(&self.managed_root, &xliff_path)?;
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_import_xliff");
+        log.begin_stage("rebuild");
+        let temp = tempfile::Builder::new()
+            .prefix("rimloc-xliff-import")
+            .tempdir()
+            .map_err(|e| {
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("xliff import temp dir: {e}"),
+                )
+            })?;
+        rebuild_xliff_pack(&xliff_path, temp.path(), &req.locale)?;
+        let pack_root = temp.path().join("Languages").join(&req.locale);
+        log.end_stage("rebuild");
+
+        log.begin_stage("analyze");
+        let analysis =
+            crate::project::analyze_existing_translation(&st.project, &pack_root, &req.locale)
+                .map_err(|e| {
+                log.error_message("analyze", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("xliff import analysis failed: {e}"),
+                )
+            })?;
+        log.counter("analyze", "keys", analysis.scanned_keys as u64);
+        log.end_stage("analyze");
+        log.finish();
+
+        Ok(existing_analysis_to_response(job_id, analysis))
+    }
+
+    /// `project_apply_xliff` (UI-10) — apply the REUSABLE set of an
+    /// analyzed XLIFF pack through the SAME guarded core as the folder
+    /// and PO packs.
+    pub fn apply_existing_xliff(
+        &self,
+        req: &crate::contract::ApplyExistingXliffRequest,
+    ) -> Result<crate::contract::ApplyExistingResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        let base = if st.dirty {
+            st.acked_revision
+        } else {
+            st.revision
+        };
+        if req.expected_revision != base {
+            return Err(ContractError::stale_revision(req.expected_revision, base));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let xliff_path = PathBuf::from(&req.xliff_path.path);
+        exchange_in_guard(&self.managed_root, &xliff_path)?;
+
+        let temp = tempfile::Builder::new()
+            .prefix("rimloc-xliff-apply")
+            .tempdir()
+            .map_err(|e| {
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("xliff apply temp dir: {e}"),
+                )
+            })?;
+        rebuild_xliff_pack(&xliff_path, temp.path(), &req.locale)?;
+        let pack_root = temp.path().join("Languages").join(&req.locale);
+        apply_analyzed_pack(
+            &mut st,
+            &req.project_id,
+            &pack_root,
+            &req.locale,
+            "project_apply_xliff",
+        )
+    }
+}
+
+/// The out-path guard family shared by the exchange exports (PO and
+/// XLIFF): absolute path, never inside the read-only source tree or the
+/// managed root — the session must know its source root for the guard to
+/// be establishable at all.
+fn exchange_out_guard(
+    st: &SessionState,
+    managed_root: &Path,
+    out: &Path,
+) -> Result<(), ContractError> {
+    if !out.is_absolute() {
+        return Err(ContractError::new(
+            ContractErrorCode::InvalidOutputPath,
+            format!(
+                "output path `{}` is not absolute; specify an absolute file path",
+                out.display()
+            ),
+        ));
+    }
+    if st.mod_root.as_os_str().is_empty() {
+        return Err(ContractError::new(
+            ContractErrorCode::GuardOutputDenied,
+            "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
+        ));
+    }
+    if crate::is_within(out, &st.mod_root) {
+        return Err(ContractError::new(
+            ContractErrorCode::GuardOutputDenied,
+            format!(
+                "output path `{}` is inside the read-only source tree `{}`",
+                out.display(),
+                st.mod_root.display()
+            ),
+        ));
+    }
+    if crate::is_within(out, managed_root) {
+        return Err(ContractError::new(
+            ContractErrorCode::GuardOutputDenied,
+            format!(
+                "output path `{}` is inside the managed projects root `{}`",
+                out.display(),
+                managed_root.display()
+            ),
+        ));
+    }
+    Ok(())
+}
+
+/// The in-file guard shared by the exchange imports (PO and XLIFF):
+/// absolute path, never inside the managed root, must exist.
+fn exchange_in_guard(managed_root: &Path, path: &Path) -> Result<(), ContractError> {
+    if !path.is_absolute() {
+        return Err(ContractError::new(
+            ContractErrorCode::InvalidOutputPath,
+            format!(
+                "path `{}` is not absolute; specify an absolute file path",
+                path.display()
+            ),
+        ));
+    }
+    if crate::is_within(path, managed_root) {
+        return Err(ContractError::new(
+            ContractErrorCode::GuardOutputDenied,
+            format!(
+                "path `{}` is inside the managed projects root `{}`",
+                path.display(),
+                managed_root.display()
+            ),
+        ));
+    }
+    if !path.is_file() {
+        return Err(ContractError::new(
+            ContractErrorCode::InvalidConfig,
+            format!("file `{}` does not exist", path.display()),
+        ));
+    }
+    Ok(())
+}
+
+/// Serialize the project's `<locale>` tree into a session-owned temp dir
+/// and reparse it through the existing scanner — the ONE representation
+/// both exchange exports (PO and XLIFF) are built from.
+fn export_tree_units(
+    st: &SessionState,
+    locale: &str,
+    prefix: &str,
+    log: &mut OperationLog,
+) -> Result<(tempfile::TempDir, Vec<rimloc_core::TransUnit>), ContractError> {
+    log.begin_stage("serialize");
+    let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+    let temp = tempfile::Builder::new()
+        .prefix(prefix)
+        .tempdir()
+        .map_err(|e| {
+            log.finish();
+            ContractError::new(ContractErrorCode::Internal, format!("exchange temp dir: {e}"))
+        })?;
+    let report = crate::project::write_rimworld_translation(
+        &st.project,
+        temp.path(),
+        locale,
+        &st.display_name,
+        &crate::util::package_id_slug(&st.display_name),
+        &rw_version,
+    )
+    .map_err(|e| {
+        log.error_message("serialize", &e.to_string());
+        log.finish();
+        ContractError::new(
+            ContractErrorCode::Internal,
+            format!("exchange serialization failed: {e}"),
+        )
+    })?;
+    log.end_stage("serialize");
+    log.begin_stage("reparse");
+    let units = rimloc_parsers_xml::scan_keyed_xml(&report.out_mod).map_err(|e| {
+        log.error_message("reparse", &e.to_string());
+        log.finish();
+        ContractError::new(
+            ContractErrorCode::Internal,
+            format!("exchange reparse failed: {e}"),
+        )
+    })?;
+    log.end_stage("reparse");
+    Ok((temp, units))
+}
+
+/// Rebuild an XLIFF exchange file into the canonical Languages tree
+/// inside `out_mod` — the same pack shape the PO rebuilder produces, so
+/// the analyzer and the apply core consume one contract. Hostile `note`
+/// references are typed refusals (the same path discipline as the PO
+/// rebuild), never silent relocations.
+fn rebuild_xliff_pack(
+    xliff_path: &Path,
+    out_mod: &Path,
+    locale: &str,
+) -> Result<(), ContractError> {
+    let entries = rimloc_import_xliff::read_xliff_12_with_notes(xliff_path)
+        .map_err(|e| {
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("xliff import parse failed: {e}"),
+            )
+        })?;
+    let mut grouped: std::collections::BTreeMap<PathBuf, Vec<(String, String)>> =
+        std::collections::BTreeMap::new();
+    for e in entries {
+        if e.target.trim().is_empty() {
+            continue; // an empty target is not a translation
+        }
+        let rel = match e.note.as_deref() {
+            Some(note) => match rimloc_import_po::rel_from_reference(note) {
+                Ok(Some(rel)) => rel,
+                Ok(None) => PathBuf::from("Keyed/_Imported.xml"),
+                Err(_) => {
+                    return Err(ContractError::new(
+                        ContractErrorCode::InvalidConfig,
+                        format!("hostile XLIFF note reference `{note}` is a typed refusal"),
+                    ))
+                }
+            },
+            None => PathBuf::from("Keyed/_Imported.xml"),
+        };
+        grouped.entry(rel).or_default().push((e.id, e.target));
+    }
+    for (rel, items) in grouped {
+        let out_path = out_mod.join("Languages").join(locale).join(&rel);
+        rimloc_import_po::write_language_data_xml(&out_path, &items).map_err(|e| {
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("xliff import rebuild failed: {e}"),
+            )
+        })?;
+    }
+    Ok(())
 }
 
 /// Shared apply core for the existing-pack flow (folder + PO packs):
@@ -6666,6 +6891,74 @@ mod tests {
             .unwrap();
         assert_eq!(again.applied, 0);
         assert_eq!(again.conflicts, 1);
+    }
+
+    /// The XLIFF mirror of the exchange round trip: export carries the
+    /// durable translation with canonical notes; the rebuilt pack feeds
+    /// the same analyzer (reusable on a fresh project) and the guarded
+    /// apply persists.
+    #[test]
+    fn xliff_exchange_round_trips_and_applies() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let source = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let keyed = crate::contract::TranslationIntent {
+            entry: SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "Greeting".into(),
+                def_type: None,
+            },
+            locale: "Russian".into(),
+            action: IntentAction::SetTranslation,
+            text: Some("привет из xliff".into()),
+        };
+        mgr.apply(&req(&source.project_id, 1, 1, vec![keyed]))
+            .unwrap();
+
+        let out = root.join("exchange.xliff");
+        let resp = mgr
+            .export_project_xliff(&source.project_id, source.session_epoch, &out, "Russian")
+            .unwrap();
+        assert_eq!(resp.keys_total, 1, "{resp:?}");
+        assert_eq!(resp.keys_translated, 1);
+        let text = std::fs::read_to_string(&out).unwrap();
+        assert!(text.contains("<target>привет из xliff</target>"), "{text}");
+        assert!(text.contains("<source>hello</source>"), "{text}");
+        assert!(text.contains("Languages/Russian/"), "{text}");
+
+        // Import (dry-run) against a fresh project: reusable, nothing applied.
+        let fresh = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let import = mgr
+            .import_existing_xliff(&crate::contract::ImportExistingXliffRequest {
+                project_id: fresh.project_id.clone(),
+                session_epoch: fresh.session_epoch,
+                xliff_path: crate::contract::PathBufDto::new(out.display().to_string()),
+                locale: "Russian".into(),
+            })
+            .unwrap();
+        assert_eq!(import.reusable_count, 1, "{import:?}");
+
+        // Apply: persists (reload proves it).
+        let apply = mgr
+            .apply_existing_xliff(&crate::contract::ApplyExistingXliffRequest {
+                project_id: fresh.project_id.clone(),
+                expected_revision: fresh.revision,
+                session_epoch: fresh.session_epoch,
+                xliff_path: crate::contract::PathBufDto::new(out.display().to_string()),
+                locale: "Russian".into(),
+            })
+            .unwrap();
+        assert_eq!(apply.applied, 1, "{apply:?}");
+        let reopened = mgr.open(&fresh.project_id).unwrap();
+        let t = reopened
+            .project
+            .translations
+            .iter()
+            .find(|t| t.source_id.key == "Greeting" && t.locale == "Russian")
+            .expect("applied xliff translation must persist");
+        assert_eq!(t.text.as_deref(), Some("привет из xliff"));
     }
 
     /// The exchange-PO guards are typed: relative out path, output inside
