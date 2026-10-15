@@ -374,3 +374,11 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 @media (min-width: 1500px) {
   .editor-workspace.tree-collapsed { grid-template-columns: 0 minmax(0, 1fr) 355px; }
 }
+
+/* UI-02 (owner audit Oct-14): three real workspace modes. The mode class
+   changes the VIEW via visibility only — components stay mounted, so
+   drafts, selection and locale survive every switch. */
+.ws-panes.ws-mode-focus .file-tree { display: none; }
+.ws-panes.ws-mode-overview .detail-pane { display: none; }
+.ws-panes.ws-mode-overview .file-tree { display: none; }
+.ws-panes.ws-mode-overview .ws-center { max-width: 980px; margin: 0 auto; width: 100%; }

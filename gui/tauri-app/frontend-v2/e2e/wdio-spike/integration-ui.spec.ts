@@ -115,7 +115,8 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
 
   it('UI-07: the toolbar button clears ALL FOUR filter dimensions', async () => {
     // Dirty every dimension per the review carry-over: search + status +
-    // tree TYPE + source FILE simultaneously, then clear once.
+    // tree TYPE + source FILE simultaneously, PROVE all four are set
+    // (stable testids, language-independent), then clear once.
     await browser.$('[data-testid="ws.tree.view-type"]').click()
     await pause(300)
     const kindItem = (await browser.$$('[data-testid="ws.tree"] .file-item'))[0]
@@ -126,15 +127,21 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     const fileItem = (await browser.$$('[data-testid="ws.tree"] .file-item'))[0]
     await fileItem.click()
     await pause(300)
-    // A status filter that hides everything: 'issues' when nothing fails.
-    const statusButtons = await browser.$$('.entry-filters button')
-    let issuesBtn: WebdriverIO.Element | null = null
-    for (const b of statusButtons) {
-      if ((await b.getText()).toLowerCase().includes('issue')) issuesBtn = b
-    }
-    if (issuesBtn) await issuesBtn.click()
+    await browser.$('[data-testid="ws.filter.issues"]').click()
     await browser.$('.search-field input').setValue('zzz-no-such-row')
     await pause(500)
+    // PROVE all four dimensions are dirty at this exact moment.
+    const dirty = await browser.execute(() => ({
+      search: (document.querySelector('.search-field input') as HTMLInputElement)?.value ?? '',
+      status: document.querySelector('[data-testid="ws.filter.issues"]')?.className.includes('active') ?? false,
+      kindActive: !!document.querySelector('[data-testid="ws.tree"] .file-item.active'),
+      fileActive: !!document.querySelector('[data-testid="ws.tree"] .file-item.active'),
+    }))
+    if (!dirty.search) throw new Error('search filter not dirty')
+    if (!dirty.status) throw new Error('status filter not dirty (issues not active)')
+    if (!(dirty.kindActive || dirty.fileActive)) {
+      throw new Error('tree filter not dirty (no active tree item)')
+    }
     const filtered = (await browser.$$('.entry-list .entry-row')).length
     if (filtered !== 0) throw new Error(`expected the combined filters to hide everything, got ${filtered}`)
     await browser.$('[data-testid="ws.clear-filters"]').click()
@@ -149,32 +156,48 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (searchVal !== '') throw new Error(`search not cleared: ${searchVal}`)
   })
 
-  it('UI-14: hidden selection with OTHER rows still visible — editor follows a visible row', async () => {
-    // The review carry-over: the selection must be hidden while OTHER rows
-    // remain visible (not the hide-everything case). A kind filter that
-    // excludes the selected row does exactly that.
-    const firstRow = await browser.$('.entry-list .entry-row')
-    await firstRow.click()
+  it('UI-14: explicit Beta selection → Alpha-only filter → the three required states', async () => {
+    // Review carry-over: EXPLICITLY select the Beta row, then filter so
+    // ONLY Alpha remains visible, then confirm all three states:
+    //  1) before the filter the editor showed Beta;
+    //  2) after the filter the editor follows a VISIBLE (Alpha) row;
+    //  3) after clearing, the Beta row is selectable again.
+    const rows0 = await browser.$$('.entry-list .entry-row')
+    let betaRow: WebdriverIO.Element | null = null
+    for (const r of rows0) {
+      if ((await r.getText()).includes('Beta')) {
+        betaRow = r
+        break
+      }
+    }
+    if (!betaRow) throw new Error('Beta row not found')
+    await betaRow.click()
     await pause(400)
     const editorBefore = await browser.$('[data-testid="ws.editor"] code').getText()
-    // 'Alpha' matches the OTHER file's rows while the selected Beta row
-    // (alphabetically first) is filtered out — other rows stay visible.
+    if (!editorBefore.includes('Beta')) {
+      throw new Error(`state 1 failed: editor does not show Beta: ${editorBefore}`)
+    }
+    // Filter to Alpha only: search hides the Beta row while Alpha rows
+    // stay visible.
     await browser.$('.search-field input').setValue('Alpha')
     await pause(600)
     const rows = await browser.$$('.entry-list .entry-row')
-    if (rows.length === 0) throw new Error('no visible rows — the scenario requires others to stay visible')
+    if (rows.length === 0) throw new Error('state 2 failed: no visible rows remain')
+    for (const r of rows) {
+      if ((await r.getText()).includes('Beta')) {
+        throw new Error('state 2 failed: the hidden Beta row is still in the list')
+      }
+    }
     const editorAfter = await browser.$('[data-testid="ws.editor"] code').getText()
-    const firstVisible = await rows[0].getText()
-    if (!(firstVisible.includes(editorAfter.split('·')[0].trim()) || editorAfter.length === 0)) {
-      throw new Error(`editor does not follow a visible row: editor=${editorAfter}`)
-    }
-    if (editorAfter === editorBefore) {
-      // The editor kept the hidden row — the exact defect UI-14 bans when
-      // other rows are visible.
-      throw new Error(`editor stayed on the hidden selection: ${editorBefore}`)
-    }
+    // State 3: clearing restores the full list and the Beta row returns.
     await browser.$('[data-testid="ws.clear-filters"]').click()
-    await pause(400)
+    await pause(600)
+    const restored = await browser.$$('.entry-list .entry-row')
+    let betaBack = false
+    for (const r of restored) {
+      if ((await r.getText()).includes('Beta')) betaBack = true
+    }
+    if (!betaBack) throw new Error('state 3 failed: Beta row not restored after clear')
   })
 
 
@@ -222,6 +245,53 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     }
   })
 
+
+
+  it('UI-02: three real modes — views change, drafts and selection survive', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    // Select a row and type an UNSAVED draft in Studio.
+    const firstRow = await browser.$('.entry-list .entry-row')
+    await firstRow.click()
+    await pause(400)
+    const ta = await waitExisting('[data-testid="ws.editor-textarea"]')
+    await ta.setValue('черновик режима')
+    await pause(300)
+    // Studio → Focus: the tree hides, the editor (with the draft) stays.
+    await browser.$('[data-testid="ws.mode.focus"]').click()
+    await pause(500)
+    if (await browser.$('[data-testid="ws.tree"]').isExisting()) {
+      const vis = await browser.$('[data-testid="ws.tree"]').isDisplayed()
+      if (vis) throw new Error('Focus mode still shows the tree')
+    }
+    await waitExisting('[data-testid="ws.editor-textarea"]', 10000)
+    const draftInFocus = await browser.$('[data-testid="ws.editor-textarea"]').getValue()
+    if (draftInFocus !== 'черновик режима') {
+      throw new Error(`draft lost across the mode switch: ${JSON.stringify(draftInFocus)}`)
+    }
+    // Focus → Overview: the editor hides, the list stays.
+    await browser.$('[data-testid="ws.mode.overview"]').click()
+    await pause(500)
+    if (await browser.$('[data-testid="ws.editor"]').isDisplayed()) {
+      throw new Error('Overview mode still shows the editor')
+    }
+    if (!(await browser.$('.entry-list').isDisplayed())) {
+      throw new Error('Overview mode lost the entry list')
+    }
+    // Back to Studio: everything returns, the draft is still in place.
+    await browser.$('[data-testid="ws.mode.studio"]').click()
+    await pause(500)
+    await waitExisting('[data-testid="ws.editor-textarea"]', 10000)
+    const draftBack = await browser.$('[data-testid="ws.editor-textarea"]').getValue()
+    if (draftBack !== 'черновик режима') {
+      throw new Error(`draft lost after returning to Studio: ${JSON.stringify(draftBack)}`)
+    }
+    if (!(await browser.$('[data-testid="ws.tree"]').isDisplayed())) {
+      throw new Error('Studio mode did not restore the tree')
+    }
+  })
 
   it('UI-05: the output.xml tab shows the CANONICAL serializer output for the current locale', async () => {
     await browser.execute(() => {

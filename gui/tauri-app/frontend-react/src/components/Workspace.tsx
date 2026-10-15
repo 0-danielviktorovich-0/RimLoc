@@ -69,6 +69,18 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const [fileFilter, setFileFilter] = useState<string>('all')
   const [treeView, setTreeView] = useState<'type' | 'file'>('type')
   const [treeOpen, setTreeOpen] = useState(true)
+  // UI-02 (owner audit Oct-14): three REAL workspace modes. The mode
+  // changes the VIEW only — translations, unsaved drafts (projectStore +
+  // textarea state), selection and target locale live in shared state and
+  // survive every switch. Persisted per app (localStorage).
+  const [wsMode, setWsMode] = useState<'studio' | 'focus' | 'overview'>(() => {
+    const v = window.localStorage.getItem('rimloc.ws.mode')
+    return v === 'focus' || v === 'overview' ? v : 'studio'
+  })
+  const switchMode = (m: 'studio' | 'focus' | 'overview'): void => {
+    setWsMode(m)
+    window.localStorage.setItem('rimloc.ws.mode', m)
+  }
   // UI-03 (owner audit Oct-14): tree toggle hides the CONTENT (items +
   // views). True width-reclaiming panel collapse breaks the current
   // react-resizable-panels group (removing a panel unmounts the route) —
@@ -300,7 +312,27 @@ export function Workspace({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       )}
-      <div className="ws-panes">
+      <div className="layout-switch" style={{ margin: '0 28px 10px' }} role="tablist" data-testid="ws.mode-switch">
+        {(
+          [
+            ['studio', t('ws.mode.studio')],
+            ['focus', t('ws.mode.focus')],
+            ['overview', t('ws.mode.overview')],
+          ] as const
+        ).map(([m, label]) => (
+          <button
+            key={m}
+            role="tab"
+            aria-selected={wsMode === m}
+            className={wsMode === m ? 'active' : ''}
+            onClick={() => switchMode(m)}
+            data-testid={`ws.mode.${m}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className={`ws-panes ws-mode-${wsMode}`}>
         <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
         <Panel id="ws-left" minSize={30} defaultSize={66}>
         <div className="ws-center">
@@ -425,7 +457,12 @@ export function Workspace({ onBack }: { onBack: () => void }) {
           </div>
           <div className="entry-filters">
             {(['all', 'empty', 'issues'] as const).map((f) => (
-              <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+              <button
+                key={f}
+                className={filter === f ? 'active' : ''}
+                onClick={() => setFilter(f)}
+                data-testid={`ws.filter.${f}`}
+              >
                 {t(`ws.filter.${f}`)}
               </button>
             ))}
@@ -616,12 +653,15 @@ function EntryList({
   // selected row must be scrolled INTO the viewport, not hidden above or
   // below the fold. Index-based — fires on selection change only.
   const selectedIndex = selectedKey ? entries.findIndex((e) => e.uid === selectedKey) : -1
+  // UI-08 carry-over (review Oct-15): the effect keys on the selected
+  // IDENTITY — a different entry landing at the same index must scroll
+  // into view just the same.
   useEffect(() => {
     if (selectedIndex >= 0) {
       virtualizer.scrollToIndex(selectedIndex, { align: 'auto' })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- virtualizer is stable per @tanstack/react-virtual contract
-  }, [selectedIndex])
+    // virtualizer is stable per @tanstack/react-virtual contract
+  }, [selectedIndex, selectedKey])
 
   return (
     <>
