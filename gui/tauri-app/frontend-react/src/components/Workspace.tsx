@@ -101,12 +101,13 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const snapNow = st.snapshot
   // UI-05: output XML preview — the CANONICAL serializer rendered
   // in-memory for the current target locale, loaded lazily and cached.
-  // P1-C freshness fence (review Oct-15): a monotonically increasing
-  // request sequence ensures that only the LATEST async response is
-  // applied to the shared state — late responses from stale requests
-  // (e.g. after a project switch or rapid locale toggle) are silently
-  // discarded.
+  // P1-C freshness fence (review Oct-15 + detailed follow-up): a request
+  // sequence + a live context ref ensure that only responses matching the
+  // CURRENT {project_id, locale} are applied. Stale responses from
+  // project switches or locale toggles are silently discarded. The
+  // context ref is updated on every render via useEffect.
   const outputPreviewSeq = useRef(0)
+  const outputPreviewCtx = useRef({ project_id: '', locale: '' })
   const [outputPreview, setOutputPreview] = useState<
     | { status: 'idle' | 'loading' | 'error'; error?: string }
     | {
@@ -118,19 +119,27 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       }
     | null
   >(null)
+  // Keep the context ref synced with the CURRENT render values.
+  const currentProjectId = snapNow?.project_id ?? ''
+  const currentLocale = folderForm(st.targetLocale)
+  useEffect(() => {
+    outputPreviewCtx.current = { project_id: currentProjectId, locale: currentLocale }
+  }, [currentProjectId, currentLocale])
   const loadOutputPreview = (locale: string): void => {
     if (!snapNow) return
     const seq = ++outputPreviewSeq.current
-    const reqProject = snapNow.project_id
+    outputPreviewCtx.current = { project_id: snapNow.project_id, locale }
     setOutputPreview({ status: 'loading' })
     clientInstance
       .getClient()
       .projectOutputXmlPreview(snapNow.project_id, snapNow.session_epoch, locale)
       .then((res) => {
         // Freshness fence: discard the response if a newer request was
-        // fired or the project switched while the call was in flight.
+        // fired, or if the project/locale changed while the call was in
+        // flight (the context ref always reflects the LATEST render).
         if (seq !== outputPreviewSeq.current) return
-        if (reqProject !== snapNow?.project_id) return
+        const ctx = outputPreviewCtx.current
+        if (ctx.project_id !== snapNow.project_id || ctx.locale !== locale) return
         setOutputPreview({
           status: 'done',
           locale: res.locale,
@@ -1186,38 +1195,43 @@ function EntryEditor(props: {
                   {t('ws.output.files')}
                   {props.outputPreview.truncated ? ` · ${t('ws.output.truncated')}` : ''}
                 </div>
-                {(() => {
-                  // P1-B (review Oct-15): match by FULL structural
-                  // identity — the def_type directory segment AND the
-                  // exact element tag. Entries sharing a display key live
-                  // in different DefInjected/<DefType>/ files; no
-                  // first-file fallback — an unmatched entry shows the
-                  // honest empty note.
-                  const elementTag = props.entryKey ? `<${props.entryKey}>` : null
-                  const dirTag = props.entryDefType ? `DefInjected/${props.entryDefType}/` : null
-                  const hit = props.outputPreview.files.find(
-                    (f) =>
-                      (!elementTag || f.xml.includes(elementTag)) &&
-                      (!dirTag || f.path.includes(dirTag)),
-                  )
-                  if (!hit) {
-                    return (
-                      <p className="page-note" data-testid="ws.output-empty">
-                        {t('ws.output.empty')}
-                      </p>
+                {/* P1-C: suppress stale content — when the revision doesn't
+                    match, show only the stale warning, not the XML. */}
+                {props.projectRevision !== undefined &&
+                  props.outputPreview.revision !== props.projectRevision && (
+                    <div className="inline-warning" role="alert" data-testid="ws.output-stale">
+                      {t('ws.output.stale')}
+                    </div>
+                  )}
+                {props.projectRevision === undefined ||
+                  props.outputPreview.revision === props.projectRevision ? (
+                  (() => {
+                    const elementTag = props.entryKey ? `<${props.entryKey}>` : null
+                    const dirTag = props.entryDefType ? `DefInjected/${props.entryDefType}/` : null
+                    const hit = props.outputPreview.files.find(
+                      (f) =>
+                        (!elementTag || f.xml.includes(elementTag)) &&
+                        (!dirTag || f.path.includes(dirTag)),
                     )
-                  }
-                  return (
-                    <>
-                      <div data-testid="ws.output.file" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
-                        <code>{hit.path}</code>
-                      </div>
-                      <pre data-testid="ws.output-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
-                        {hit.xml}
-                      </pre>
-                    </>
-                  )
-                })()}
+                    if (!hit) {
+                      return (
+                        <p className="page-note" data-testid="ws.output-empty">
+                          {t('ws.output.empty')}
+                        </p>
+                      )
+                    }
+                    return (
+                      <>
+                        <div data-testid="ws.output.file" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                          <code>{hit.path}</code>
+                        </div>
+                        <pre data-testid="ws.output-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
+                          {hit.xml}
+                        </pre>
+                      </>
+                    )
+                  })()
+                ) : null}
               </>
             )}
           </div>
