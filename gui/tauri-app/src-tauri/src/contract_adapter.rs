@@ -66,6 +66,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_export_po",
     "project_import_po",
     "project_apply_po",
+    "project_export_xliff",
+    "project_import_xliff",
+    "project_apply_xliff",
     // Wave 13: project glossary — generic project state, persist-before-ack.
     "project_glossary",
     "project_glossary_upsert",
@@ -1065,6 +1068,68 @@ pub fn project_apply_po(
         .lock()
         .expect("contract session registry poisoned");
     traced_simple("project_apply_po", || manager.apply_existing_po(&request))
+}
+
+/// `project_export_xliff` (UI-10) — the XLIFF mirror of the exchange PO.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_export_xliff(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ExportProjectXliffRequest,
+) -> Result<
+    rimloc_services::contract::ExportProjectXliffResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_export_xliff", || {
+        let out = std::path::PathBuf::from(&request.out_xliff.path);
+        manager.export_project_xliff(
+            &request.project_id,
+            request.session_epoch,
+            &out,
+            &request.locale,
+        )
+    })
+}
+
+/// `project_import_xliff` (UI-10) — analyze an XLIFF pack through the
+/// same canonical-tree rebuild + analyzer as the folder and PO packs.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_import_xliff(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ImportExistingXliffRequest,
+) -> Result<
+    rimloc_services::contract::ImportExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_import_xliff", || {
+        manager.import_existing_xliff(&request)
+    })
+}
+
+/// `project_apply_xliff` (UI-10) — apply the REUSABLE set of an analyzed
+/// XLIFF pack; identical safety semantics to the folder and PO applies.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_apply_xliff(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ApplyExistingXliffRequest,
+) -> Result<
+    rimloc_services::contract::ApplyExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_apply_xliff", || {
+        manager.apply_existing_xliff(&request)
+    })
 }
 
 // Chat batch (external-AI workflow WITHOUT an API): the TM chain again —

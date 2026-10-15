@@ -18,7 +18,11 @@ import type {
   SourceXmlPreviewDto,
   ApplyExistingRequestDto,
   ApplyExistingPoRequestDto,
+  ApplyExistingXliffRequestDto,
   ExportProjectPoRequestDto,
+  ExportProjectXliffRequestDto,
+  ExportProjectXliffResponseDto,
+  ImportExistingXliffRequestDto,
   ExportProjectPoResponseDto,
   ImportExistingPoRequestDto,
   ApplyExistingResponseDto,
@@ -300,6 +304,23 @@ export class RimLocClient {
    *  persist-before-ack — identical semantics to applyExisting). */
   async applyExistingPo(request: ApplyExistingPoRequestDto): Promise<ApplyExistingResponseDto> {
     return this.call('project_apply_po', { request });
+  }
+
+  /** UI-10: XLIFF mirrors of the exchange flow. */
+  async exportProjectXliff(
+    request: ExportProjectXliffRequestDto,
+  ): Promise<ExportProjectXliffResponseDto> {
+    return this.call('project_export_xliff', { request });
+  }
+
+  async importExistingXliff(
+    request: ImportExistingXliffRequestDto,
+  ): Promise<ImportExistingResponseDto> {
+    return this.call('project_import_xliff', { request });
+  }
+
+  async applyExistingXliff(request: ApplyExistingXliffRequestDto): Promise<ApplyExistingResponseDto> {
+    return this.call('project_apply_xliff', { request });
   }
 
   /** Read-only cross-version diff of two mod roots (compare screen):

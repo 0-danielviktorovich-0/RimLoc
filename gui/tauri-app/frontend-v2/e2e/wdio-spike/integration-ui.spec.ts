@@ -718,6 +718,41 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (!applyDisabled) {
       throw new Error('apply must stay disabled when the reusable set is empty')
     }
+    // XLIFF mirror: the same exchange in the 1.2 format — export carries
+    // the durable translations, the same-project import classifies the
+    // identical conflict set.
+    const XLIFF = '/tmp/rimloc-int/exchange.xliff'
+    await browser.$('[data-testid="ex.xliff-out"]').setValue(XLIFF)
+    await browser.$('[data-testid="ex.xliff-export"]').click()
+    await waitExisting('[data-testid="ex.xliff-exported"]', 30000)
+    const xliffText = fs.readFileSync(XLIFF, 'utf8')
+    const xliffRows = [
+      ...xliffText.matchAll(
+        /<trans-unit id="([^"]+)">\s*<source>([^<]+)<\/source>\s*<target>([^<]*)<\/target>/g,
+      ),
+    ].map((m) => ({ key: m[1], source: m[2], translation: m[3] }))
+    if (xliffRows.length === 0) {
+      throw new Error(`exported XLIFF has no rows: ${xliffText.slice(0, 400)}`)
+    }
+    if (!xliffRows.every((r) => r.source.trim().length > 0)) {
+      throw new Error(`XLIFF source must carry the canonical text: ${xliffText.slice(0, 400)}`)
+    }
+    if (!xliffRows.some((r) => r.translation === 'Альфа переведена')) {
+      throw new Error(`XLIFF must carry the durable translation: ${JSON.stringify(xliffRows)}`)
+    }
+    await browser.$('[data-testid="ex.xliff-path"]').setValue(XLIFF)
+    await browser.$('[data-testid="ex.xliff-analyze"]').click()
+    await browser.waitUntil(
+      async () => {
+        const cells2 = await browser.execute(() =>
+          Array.from(
+            document.querySelectorAll('[data-testid="ex.metrics"] > div strong'),
+          ).map((n) => n.textContent ?? ''),
+        )
+        return Number(cells2[0]) === 0 && Number(cells2[1]) === xliffRows.length
+      },
+      { timeout: 30000, interval: 500 },
+    )
     // Back to the workspace for the later tests.
     await browser.execute(() => {
       window.location.hash = '#/workspace'

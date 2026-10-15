@@ -25,13 +25,20 @@ export function Existing() {
   const [dir, setDir] = usePersistedInput(projectId ?? '', 'existing-dir')
   const [poPath, setPoPath] = usePersistedInput(projectId ?? '', 'existing-po-path')
   const [poOut, setPoOut] = usePersistedInput(projectId ?? '', 'existing-po-out')
+  const [xliffPath, setXliffPath] = usePersistedInput(projectId ?? '', 'existing-xliff-path')
+  const [xliffOut, setXliffOut] = usePersistedInput(projectId ?? '', 'existing-xliff-out')
+  const [xliffStats, setXliffStats] = useState<{
+    total: number
+    translated: number
+    out: string
+  } | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [report, setReport] = useState<ImportExistingResponseDto | null>(null)
   const [applied, setApplied] = useState<number | null>(null)
   // Which pack source the CURRENT report came from — the apply call must
   // re-read the SAME source the user reviewed (folder dir or PO file).
-  const [reportSource, setReportSource] = useState<'folder' | 'po'>('folder')
+  const [reportSource, setReportSource] = useState<'folder' | 'po' | 'xliff'>('folder')
   const [poStats, setPoStats] = useState<{ total: number; translated: number; out: string } | null>(
     null,
   )
@@ -125,6 +132,53 @@ export function Existing() {
     }
   }
 
+  const analyzeXliff = async (): Promise<void> => {
+    if (!xliffPath.trim()) {
+      setError(t('ex.needDir'))
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setApplied(null)
+    try {
+      setReport(
+        await clientInstance.getClient().importExistingXliff({
+          project_id: projectId,
+          session_epoch: epoch,
+          xliff_path: { path: xliffPath.trim() },
+          locale: folderForm(st.targetLocale),
+        }),
+      )
+      setReportSource('xliff')
+    } catch (e) {
+      setError(contractErrorText((e as { code?: string }).code ?? 'internal', e instanceof Error ? e.message : String(e)))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const exportXliff = async (): Promise<void> => {
+    if (!xliffOut.trim()) {
+      setError(t('ex.needDir'))
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await clientInstance.getClient().exportProjectXliff({
+        project_id: projectId,
+        session_epoch: epoch,
+        out_xliff: { path: xliffOut.trim() },
+        locale: folderForm(st.targetLocale),
+      })
+      setXliffStats({ total: r.keys_total, translated: r.keys_translated, out: r.out_path })
+    } catch (e) {
+      setError(contractErrorText((e as { code?: string }).code ?? 'internal', e instanceof Error ? e.message : String(e)))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const exportPo = async (): Promise<void> => {
     if (!poOut.trim()) {
       setError(t('ex.needDir'))
@@ -158,6 +212,14 @@ export function Existing() {
               expected_revision: acked,
               session_epoch: epoch,
               po_path: { path: poPath.trim() },
+              locale: folderForm(st.targetLocale),
+            })
+          : reportSource === 'xliff'
+          ? await clientInstance.getClient().applyExistingXliff({
+              project_id: projectId,
+              expected_revision: acked,
+              session_epoch: epoch,
+              xliff_path: { path: xliffPath.trim() },
               locale: folderForm(st.targetLocale),
             })
           : await clientInstance.getClient().applyExisting({
@@ -269,6 +331,49 @@ export function Existing() {
         <div className="build-actions">
           <button disabled={busy || !poPath.trim()} onClick={() => void analyzePo()} data-testid="ex.po-analyze">
             <Upload /> {t('ex.poAnalyze')}
+          </button>
+        </div>
+
+        {/* XLIFF 1.2 mirror of the same exchange flow. */}
+        <label className="field">
+          <span>{t('ex.xliffOut')}</span>
+          <div className="out-dir-row">
+            <input
+              value={xliffOut}
+              onChange={(e) => setXliffOut(e.target.value)}
+              placeholder={t('ex.poOutPlaceholder')}
+              disabled={busy}
+              data-testid="ex.xliff-out"
+            />
+          </div>
+        </label>
+        <div className="build-actions">
+          <button disabled={busy || !xliffOut.trim()} onClick={() => void exportXliff()} data-testid="ex.xliff-export">
+            <Download /> {t('ex.xliffExport')}
+          </button>
+        </div>
+        {xliffStats && (
+          <div className="inline-success" role="status" data-testid="ex.xliff-exported">
+            <Check />{' '}
+            {t('ex.poExported', { total: xliffStats.total, translated: xliffStats.translated })}{' '}
+            <code>{xliffStats.out}</code>
+          </div>
+        )}
+        <label className="field">
+          <span>{t('ex.xliffIn')}</span>
+          <div className="out-dir-row">
+            <input
+              value={xliffPath}
+              onChange={(e) => setXliffPath(e.target.value)}
+              placeholder={t('ex.poInPlaceholder')}
+              disabled={busy}
+              data-testid="ex.xliff-path"
+            />
+          </div>
+        </label>
+        <div className="build-actions">
+          <button disabled={busy || !xliffPath.trim()} onClick={() => void analyzeXliff()} data-testid="ex.xliff-analyze">
+            <Upload /> {t('ex.xliffAnalyze')}
           </button>
         </div>
       </div>

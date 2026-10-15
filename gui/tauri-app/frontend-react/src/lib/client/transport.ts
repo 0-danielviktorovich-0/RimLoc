@@ -24,7 +24,11 @@ import type {
   ChatBatchStatusResponseDto,
   ContractHandshakeDto,
   ApplyExistingPoRequestDto,
+  ApplyExistingXliffRequestDto,
   ContractMethod,
+  ExportProjectXliffRequestDto,
+  ExportProjectXliffResponseDto,
+  ImportExistingXliffRequestDto,
   ExportProjectPoRequestDto,
   ExportProjectPoResponseDto,
   ImportExistingPoRequestDto,
@@ -154,6 +158,18 @@ export interface ContractMethodMap {
   };
   project_apply_po: {
     params: { request: ApplyExistingPoRequestDto };
+    result: ApplyExistingResponseDto;
+  };
+  project_export_xliff: {
+    params: { request: ExportProjectXliffRequestDto };
+    result: ExportProjectXliffResponseDto;
+  };
+  project_import_xliff: {
+    params: { request: ImportExistingXliffRequestDto };
+    result: ImportExistingResponseDto;
+  };
+  project_apply_xliff: {
+    params: { request: ApplyExistingXliffRequestDto };
     result: ApplyExistingResponseDto;
   };
   // Project glossary (wave 13): generic project state, persist-before-ack.

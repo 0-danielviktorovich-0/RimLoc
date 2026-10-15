@@ -354,6 +354,42 @@ export interface ExportProjectPoRequestDto {
   locale: string;
 }
 
+export interface ImportExistingXliffRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .xliff file. */
+  xliff_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ApplyExistingXliffRequestDto {
+  project_id: string;
+  expected_revision: number;
+  session_epoch: number;
+  /** Absolute path of the .xliff file. */
+  xliff_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ExportProjectXliffRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .xliff file to write. */
+  out_xliff: { path: string };
+  /** Locale whose translations to export. */
+  locale: string;
+}
+
+export interface ExportProjectXliffResponseDto {
+  job_id: string;
+  out_path: string;
+  keys_total: number;
+  keys_translated: number;
+  keys_unmatched: number;
+}
+
 export interface ApplyExistingPoRequestDto {
   project_id: string;
   expected_revision: number;
@@ -519,6 +555,9 @@ export type ContractMethod =
   | 'project_export_po'
   | 'project_import_po'
   | 'project_apply_po'
+  | 'project_export_xliff'
+  | 'project_import_xliff'
+  | 'project_apply_xliff'
   // Project glossary (wave 13): generic project state, persist-before-ack.
   | 'project_glossary'
   | 'project_glossary_upsert'

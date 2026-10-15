@@ -3118,6 +3118,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_export_po",
     "project_import_po",
     "project_apply_po",
+    "project_export_xliff",
+    "project_import_xliff",
+    "project_apply_xliff",
     // Wave 13: project glossary (generic project state, persist-before-ack).
     "project_glossary",
     "project_glossary_upsert",
@@ -3924,6 +3927,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_export_po,
             rimloc_gui_lib::contract_adapter::project_import_po,
             rimloc_gui_lib::contract_adapter::project_apply_po,
+            rimloc_gui_lib::contract_adapter::project_export_xliff,
+            rimloc_gui_lib::contract_adapter::project_import_xliff,
+            rimloc_gui_lib::contract_adapter::project_apply_xliff,
             // Wave 13: project glossary.
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
@@ -4037,6 +4043,9 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_export_po,
             rimloc_gui_lib::contract_adapter::project_import_po,
             rimloc_gui_lib::contract_adapter::project_apply_po,
+            rimloc_gui_lib::contract_adapter::project_export_xliff,
+            rimloc_gui_lib::contract_adapter::project_import_xliff,
+            rimloc_gui_lib::contract_adapter::project_apply_xliff,
             // Wave 13: project glossary.
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
