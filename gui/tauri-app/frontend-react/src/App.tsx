@@ -152,6 +152,17 @@ export function App() {
   }, [])
   const dark = theme === 'system' ? systemDark : theme === 'dark'
   const [navOpen, setNavOpen] = useState(false)
+  // UI-03 (owner audit Oct-14): the sidebar collapse works on ALL widths.
+  // Persisted per app; the default is visible (collapsed = false).
+  const [navCollapsed, setNavCollapsed] = useState(
+    () => window.localStorage.getItem('rimloc.nav.collapsed') === '1',
+  )
+  const toggleNavCollapsed = (): void => {
+    setNavCollapsed((prev) => {
+      window.localStorage.setItem('rimloc.nav.collapsed', prev ? '0' : '1')
+      return !prev
+    })
+  }
   // UI zoom (rel27): re-render when Settings changes the persisted value.
   const [uiZoom, setUiZoom] = useState(readUiZoom)
   useEffect(() => {
@@ -293,7 +304,7 @@ export function App() {
   }
 
   return (
-    <div className={`rim-app ${navOpen ? 'mobile-nav-open' : ''}`} style={{ zoom: uiZoom }}>
+    <div className={`rim-app${navCollapsed ? ' nav-collapsed' : ''}${navOpen ? ' mobile-nav-open' : ''}`} style={{ zoom: uiZoom }}>
       <aside className="app-sidebar">
         <a href="#/projects" className="brand">
           <div className="brand-mark">
@@ -350,11 +361,12 @@ export function App() {
       <div className="app-main">
         <header className="app-topbar">
           <button
-            className="icon-btn mobile-menu"
-            aria-label={navOpen ? t('a11y.closeNav') : t('a11y.openNav')}
-            onClick={() => setNavOpen(!navOpen)}
+            className="icon-btn nav-toggle"
+            aria-label={navCollapsed ? t('a11y.openNav') : t('a11y.closeNav')}
+            data-testid="shell.nav-toggle"
+            onClick={toggleNavCollapsed}
           >
-            {navOpen ? <PanelLeftClose /> : <PanelLeftOpen />}
+            {navCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
           </button>
           <div className="breadcrumb">
             <FolderOpen size={15} />

@@ -388,3 +388,10 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
    but their content is hidden and the space reclaims via flex-basis: 0. */
 .ws-panes.tree-collapsed .file-tree { display: none; }
 .ws-panes.inspector-collapsed .detail-pane { display: none; }
+
+/* UI-03 (owner audit Oct-14): desktop sidebar collapse. The nav toggle
+   hides the sidebar and reclaims the 222px margin — real collapse, not
+   the mobile slide-in. */
+.rim-app.nav-collapsed .app-sidebar { display: none; }
+.rim-app.nav-collapsed .app-main { margin-left: 0; }
+.rim-app.nav-collapsed .mobile-menu { display: flex; }

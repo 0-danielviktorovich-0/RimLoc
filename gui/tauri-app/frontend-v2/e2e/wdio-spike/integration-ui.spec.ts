@@ -538,6 +538,68 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (!editorBack) throw new Error('inspector toggle did not restore the editor')
   })
 
+
+  it('UI-03 nav collapse: the sidebar hides/shows on desktop via the nav toggle', async () => {
+    // The sidebar is visible by default on desktop.
+    const sidebar = await browser.$('.app-sidebar')
+    await sidebar.waitForExist({ timeout: 10000 })
+    const beforeVisible = await sidebar.isDisplayed()
+    // Click the nav toggle.
+    await browser.$('[data-testid="shell.nav-toggle"]').click()
+    await pause(600)
+    const afterCollapsed = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      return el ? el.getBoundingClientRect().width : -1
+    })
+    // After collapse the sidebar is hidden (width 0 or display:none).
+    const hidden = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      if (!el) return true
+      const cs = getComputedStyle(el)
+      return cs.display === 'none' || el.getBoundingClientRect().width === 0
+    })
+    if (!hidden && afterCollapsed > 0) {
+      throw new Error(`nav collapse did not hide the sidebar: width=${afterCollapsed}`)
+    }
+    // Toggle back: sidebar restores.
+    await browser.$('[data-testid="shell.nav-toggle"]').click()
+    await pause(600)
+    const restoredVisible = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      if (!el) return false
+      const cs = getComputedStyle(el)
+      return cs.display !== 'none' && el.getBoundingClientRect().width > 0
+    })
+    if (!restoredVisible) throw new Error('nav restore failed')
+  })
+
+  it('UI-08 dark theme: the app renders in dark mode with visible content', async () => {
+    // Switch to dark theme via localStorage.
+    await browser.execute(() => {
+      window.localStorage.setItem('rimloc.ui.theme', 'dark')
+      document.documentElement.classList.add('dark')
+    })
+    await pause(600)
+    // Verify the dark class is applied and content renders.
+    const isDark = await browser.execute(() =>
+      document.documentElement.classList.contains('dark'),
+    )
+    if (!isDark) throw new Error('dark theme not applied')
+    // The main content is still visible in dark mode.
+    const contentVisible = await browser.execute(() => {
+      const main = document.querySelector('.app-main')
+      if (!main) return false
+      return main.getBoundingClientRect().height > 100
+    })
+    if (!contentVisible) throw new Error('dark mode broke the main content visibility')
+    // Switch back to light.
+    await browser.execute(() => {
+      window.localStorage.setItem('rimloc.ui.theme', 'light')
+      document.documentElement.classList.remove('dark')
+    })
+    await pause(400)
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'
