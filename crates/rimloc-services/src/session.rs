@@ -6574,7 +6574,7 @@ mod source_language_contract {
     }
 
     fn preview_fixture(text: &str) -> PreviewFixture {
-        use crate::contract::{ApplyIntentsRequest, ApplyOrigin, IntentAction, TranslationIntent};
+        use crate::contract::{ApplyIntentsRequest, IntentAction, TranslationIntent};
         let dir = tempfile::tempdir().unwrap();
         std::fs::create_dir_all(dir.path().join("mod/Defs")).unwrap();
         std::fs::write(
@@ -6607,7 +6607,6 @@ mod source_language_contract {
             origin: Some(crate::contract::ApplyOrigin::Human),
         })
         .unwrap();
-        let after = mgr.snapshot(&snap.project_id).unwrap();
         PreviewFixture {
             _dir: dir,
             mgr,
