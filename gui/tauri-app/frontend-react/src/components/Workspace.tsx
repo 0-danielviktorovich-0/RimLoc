@@ -15,6 +15,7 @@ import { entryUid } from '../lib/state/entryUid'
 import {
   sourceSearchStore,
   useSourceSearch,
+  visibleMatches,
   type SourceSearchState,
 } from '../lib/state/source_search_store'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
@@ -1393,8 +1394,55 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
               <div data-testid="ss.results" style={{ fontSize: 10, margin: '6px 0' }}>
                 {t('ss.results', { total: view(ss).report!.total_matches })}
               </div>
+              {/* Stage B: classification filter — whole-tree counts on every
+                  chip; toggling narrows the page to one honest class. */}
+              <div
+                data-testid="ss.filters"
+                role="group"
+                aria-label={t('ss.filterGroup')}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}
+              >
+                {view(ss).report!.status_counts.map(([status, count]) => {
+                  const active = view(ss).statusFilter.has(status)
+                  return (
+                    <button
+                      key={status}
+                      data-testid={`ss.filter.${status}`}
+                      aria-pressed={active}
+                      onClick={() => sourceSearchStore.toggleStatusFilter(status)}
+                      className="status-label"
+                      style={{
+                        fontSize: 9,
+                        padding: '1px 6px',
+                        borderRadius: 999,
+                        border: '1px solid var(--border)',
+                        cursor: 'pointer',
+                        background: active ? 'var(--accent)' : 'transparent',
+                        color: active ? 'var(--accent-foreground)' : 'var(--muted-foreground)',
+                      }}
+                    >
+                      {t(`ss.status.${status}`)} ({count})
+                    </button>
+                  )
+                })}
+                {view(ss).statusFilter.size > 0 && (
+                  <button
+                    data-testid="ss.filter.clear"
+                    onClick={() => sourceSearchStore.clearStatusFilter()}
+                    className="status-label"
+                    style={{ fontSize: 9, padding: '1px 6px', cursor: 'pointer', border: 'none', background: 'transparent', textDecoration: 'underline' }}
+                  >
+                    {t('ss.filterAll')}
+                  </button>
+                )}
+              </div>
               <div style={{ maxHeight: 260, overflowY: 'auto' }}>
-                {view(ss).report!.matches.map((m, i) => (
+                {visibleMatches(view(ss)).length === 0 ? (
+                  <div data-testid="ss.filtered-empty" style={{ fontSize: 10, color: 'var(--muted-foreground)', padding: '4px 0' }}>
+                    {t('ss.filterEmpty')}
+                  </div>
+                ) : (
+                  visibleMatches(view(ss)).map((m, i) => (
                   <div key={`${m.file}:${m.line}:${i}`} data-testid={`ss.match.${i}`} style={{ borderBottom: '1px solid var(--border)', padding: '4px 0' }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
                       <code style={{ fontSize: 10 }}>{m.file}:{m.line}</code>
@@ -1410,7 +1458,8 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
                       {t('ss.detail')}: {m.detail}
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
                 {view(ss).report!.truncated && (
                   <button className="icon-btn" style={{ width: '100%', marginTop: 4 }} data-testid="ss.more" onClick={loadMore}>
                     {t('ss.more')}
@@ -1418,9 +1467,6 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
                 )}
               </div>
             </>
-          )}
-          {!view(ss).report && view(ss).status !== 'running' && view(ss).status !== 'error' && (
-            <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{t('ss.empty')}</div>
           )}
         </div>
       )}

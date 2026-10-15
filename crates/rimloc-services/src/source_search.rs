@@ -39,7 +39,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// Match classification (see module docs).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum MatchStatus {
     AlreadyIndexed,
@@ -104,6 +104,10 @@ pub struct SourceSearchReport {
     pub query: String,
     /// Total matches found across the scanned tree (before pagination).
     pub total_matches: usize,
+    /// Matches per classification, counted across the ENTIRE tree (before
+    /// pagination) — the honest Stage B summary of what lives outside the
+    /// effective view. Non-zero entries only, sorted by status.
+    pub status_counts: Vec<(MatchStatus, usize)>,
     pub offset: usize,
     /// Whether `total_matches` exceeds offset + returned results.
     pub truncated: bool,
@@ -257,9 +261,13 @@ pub fn search_sources(
     files.sort();
 
     let view = scan.view.clone();
+    // Stage B: per-status counts over the WHOLE tree — every match is
+    // classified even when it falls outside the requested page.
+    let mut counts: BTreeMap<MatchStatus, usize> = BTreeMap::new();
     let mut report = SourceSearchReport {
         query: req.query.clone(),
         total_matches: 0,
+        status_counts: Vec::new(),
         offset: req.offset,
         truncated: false,
         matches: Vec::new(),
@@ -328,11 +336,6 @@ pub fn search_sources(
                 continue;
             };
             report.total_matches += 1;
-            let take =
-                report.total_matches > req.offset && (report.matches.len() as usize) < max_results;
-            if !take {
-                continue;
-            }
             // Covered by the inventory? (unit start-line partition per file)
             let hit = covered.and_then(|v| {
                 v.iter()
@@ -353,7 +356,23 @@ pub fn search_sources(
                     "file failed XML parsing — the scanner cannot index it".to_string(),
                 )
             } else if let Some(id) = hit {
-                classify_indexed(&engine, &entry_by_id, &id, &lang_dir)
+                // Start-line partition honesty check (Stage B): the
+                // partition attributes a line to the last unit STARTING at
+                // or before it, so a line belonging to a FOLLOWING element
+                // (e.g. a NoTranslate field right after an indexed label)
+                // would be misattributed. When the line's own element name
+                // disagrees with the hit's key suffix, re-run the candidate
+                // path so the eligibility engine sees the REAL field.
+                let hit_field = id.key.rsplit('.').next().unwrap_or_default();
+                let owner_mismatch = is_xml
+                    && CandidateContext::probe(&content, line_no)
+                        .last_tag
+                        .is_some_and(|f| f != hit_field);
+                if owner_mismatch {
+                    classify_candidate(&engine, &rel, &content, line_no, is_xml, &lang_dir)
+                } else {
+                    classify_indexed(&engine, &entry_by_id, &id, &lang_dir)
+                }
             } else if !effective_here {
                 (
                     MatchStatus::OutsideEffectiveView,
@@ -365,6 +384,13 @@ pub fn search_sources(
             } else {
                 classify_candidate(&engine, &rel, &content, line_no, is_xml, &lang_dir)
             };
+            // Stage B counts describe the whole tree, not just this page.
+            *counts.entry(status).or_insert(0) += 1;
+            let take =
+                report.total_matches > req.offset && (report.matches.len() as usize) < max_results;
+            if !take {
+                continue;
+            }
             let _ = col;
             report.matches.push(SourceSearchMatch {
                 file: rel.clone(),
@@ -378,6 +404,7 @@ pub fn search_sources(
         }
     }
     report.truncated = report.total_matches > report.offset + report.matches.len();
+    report.status_counts = counts.into_iter().collect();
     Ok(report)
 }
 
@@ -478,6 +505,9 @@ struct CandidateContext {
     def_type: Option<String>,
     def_name: Option<String>,
     field: Option<String>,
+    /// The most recently opened element at the probe line — the element
+    /// owning the matched text (Stage B line-ownership discriminator).
+    last_tag: Option<String>,
 }
 
 impl CandidateContext {
@@ -486,6 +516,7 @@ impl CandidateContext {
         let mut def_type = None;
         let mut def_name = None;
         let mut field = None;
+        let mut last_tag = None;
         for (idx, raw) in content.lines().enumerate() {
             if idx + 1 > line_no {
                 break;
@@ -530,6 +561,7 @@ impl CandidateContext {
                     if !self_closing {
                         stack.push(name.clone());
                     }
+                    last_tag = Some(name.clone());
                 }
             }
         }
@@ -537,6 +569,7 @@ impl CandidateContext {
             def_type,
             def_name,
             field,
+            last_tag,
         }
     }
 
@@ -827,7 +860,7 @@ mod tests {
         std::fs::create_dir_all(root.join("1.6/Defs")).unwrap();
         std::fs::write(
             root.join("1.6/Defs/Things.xml"),
-            "<Defs>\n  <ThingDef>\n    <defName>Apple</defName>\n      <label>Golden Apple</label>\n    </ThingDef>\n  <HediffDef>\n    <defName>Glow</defName>\n    <label>Golden Apple</label>\n  </HediffDef>\n  <ThingDef>\n    <defName>Stone</defName>\n    <label mod_note=\"NT\">Untranslatable Stone</label>\n  </ThingDef>\n  <ResearchProjectDef>\n    <defName>Alchemy</defName>\n    <description>Golden studies</description>\n  </ResearchProjectDef>\n</Defs>\n",
+            "<Defs>\n  <ThingDef>\n    <defName>Apple</defName>\n      <label>Golden Apple</label>\n    </ThingDef>\n  <HediffDef>\n    <defName>Glow</defName>\n    <label>Golden Apple</label>\n  </HediffDef>\n  <ThingDef>\n    <defName>Stone</defName>\n    <label mod_note=\"NT\">Untranslatable Stone</label>\n  </ThingDef>\n  <ThingDef>\n    <defName>TexThing</defName>\n    <texPath>Golden/Tex/Path</texPath>\n  </ThingDef>\n  <ResearchProjectDef>\n    <defName>Alchemy</defName>\n    <description>Golden studies</description>\n  </ResearchProjectDef>\n</Defs>\n",
         )
         .unwrap();
         std::fs::create_dir_all(root.join("Languages/English/Keyed")).unwrap();
@@ -1023,5 +1056,55 @@ mod tests {
         assert!(rep.total_matches >= 1, "{:?}", rep.matches);
         let m = rep.matches.first().unwrap();
         assert!(m.line_text.contains("Золотой Юнит"));
+    }
+
+    // -- Stage B: discovery beyond the effective view ----------------------
+
+    fn count_of(rep: &SourceSearchReport, s: MatchStatus) -> usize {
+        rep.status_counts
+            .iter()
+            .find(|(st, _)| *st == s)
+            .map(|(_, n)| *n)
+            .unwrap_or(0)
+    }
+
+    #[test]
+    fn stage_b_status_counts_cover_the_whole_tree() {
+        let dir = tempfile::tempdir().unwrap();
+        write_mod(dir.path());
+        let rep = search_sources(&req(dir.path(), "golden"), &|| false).unwrap();
+        // Beyond-the-view classes are discoverable with real counts.
+        assert!(
+            count_of(&rep, MatchStatus::OutsideEffectiveView) >= 1,
+            "{:?}",
+            rep.status_counts
+        );
+        assert!(
+            count_of(&rep, MatchStatus::ParseFailure) >= 1,
+            "{:?}",
+            rep.status_counts
+        );
+        // Nothing escapes classification: the counts sum to the total.
+        let sum: usize = rep.status_counts.iter().map(|(_, n)| n).sum();
+        assert_eq!(sum, rep.total_matches, "{:?}", rep.status_counts);
+        // Counts are whole-tree, not per-page: a truncated page keeps them.
+        let mut r = req(dir.path(), "golden");
+        r.max_results = 2;
+        let page = search_sources(&r, &|| false).unwrap();
+        assert!(page.truncated);
+        assert!(page.matches.len() <= 2);
+        assert_eq!(page.status_counts, rep.status_counts);
+    }
+
+    #[test]
+    fn stage_b_notranslate_field_is_deliberately_excluded() {
+        let dir = tempfile::tempdir().unwrap();
+        write_mod(dir.path());
+        // texPath is a deterministic NoTranslate field: the raw text match
+        // must surface as deliberately excluded, never as a scanner defect.
+        let rep = search_sources(&req(dir.path(), "golden/tex"), &|| false).unwrap();
+        assert_eq!(rep.total_matches, 1, "{:?}", rep.matches);
+        assert_eq!(rep.matches[0].status, MatchStatus::DeliberatelyExcluded);
+        assert_eq!(count_of(&rep, MatchStatus::DeliberatelyExcluded), 1);
     }
 }

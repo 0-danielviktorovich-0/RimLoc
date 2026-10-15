@@ -12,6 +12,9 @@ export interface SourceSearchState {
   scope: 'standard' | 'all_text'
   report: SourceSearchReportDto | null
   error: string | null
+  /** Stage B: active classification filter. Empty set = show all — the
+   * counts stay whole-tree regardless (they come from the backend). */
+  statusFilter: ReadonlySet<SourceSearchMatchDto['status']>
 }
 
 let state: SourceSearchState = {
@@ -20,6 +23,7 @@ let state: SourceSearchState = {
   scope: 'standard',
   report: null,
   error: null,
+  statusFilter: new Set(),
 }
 
 const listeners = new Set<() => void>()
@@ -52,7 +56,23 @@ export const sourceSearchStore = {
   },
 
   clear(): void {
-    set({ status: 'idle', report: null, error: null })
+    set({ status: 'idle', report: null, error: null, statusFilter: new Set() })
+  },
+
+  /** Stage B: toggle one classification in the filter (a fresh Set on every
+   * toggle so useSyncExternalStore sees the change). */
+  toggleStatusFilter(s: SourceSearchMatchDto['status']): void {
+    const next = new Set(state.statusFilter)
+    if (next.has(s)) {
+      next.delete(s)
+    } else {
+      next.add(s)
+    }
+    set({ statusFilter: next })
+  },
+
+  clearStatusFilter(): void {
+    set({ statusFilter: new Set() })
   },
 
   async run(projectId: string, sessionEpoch: number): Promise<void> {
@@ -113,4 +133,13 @@ export const sourceSearchStore = {
 /** Status → i18n key suffix for the honest chip labels. */
 export function statusKey(status: SourceSearchMatchDto['status']): string {
   return `ss.status.${status}`
+}
+
+/** Stage B: the visible page of matches under the active classification
+ * filter (empty filter = everything the backend returned for this page). */
+export function visibleMatches(s: SourceSearchState): SourceSearchMatchDto[] {
+  const report = s.report
+  if (!report) return []
+  if (s.statusFilter.size === 0) return report.matches
+  return report.matches.filter((m) => s.statusFilter.has(m.status))
 }

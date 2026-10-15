@@ -620,6 +620,10 @@ export interface SourceSearchMatchDto {
 export interface SourceSearchReportDto {
   query: string;
   total_matches: number;
+  /** Matches per classification across the ENTIRE tree (before
+   * pagination) — the Stage B summary of what lives outside the effective
+   * view. Non-zero entries only, sorted by status. */
+  status_counts: [SourceSearchStatusDto, number][];
   offset: number;
   truncated: boolean;
   matches: SourceSearchMatchDto[];
