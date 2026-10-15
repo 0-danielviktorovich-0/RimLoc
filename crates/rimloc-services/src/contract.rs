@@ -580,6 +580,27 @@ pub struct ExportProjectResponse {
     pub skipped_unknown_type: Vec<String>,
 }
 
+/// One rendered output file of the canonical serializer (UI-05: output XML
+/// preview). `path` is project-relative inside the written Languages tree.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct OutputXmlPreviewFile {
+    pub path: String,
+    pub xml: String,
+}
+
+/// Read-only output XML preview: the CANONICAL serializer
+/// (`project::write_rimworld_translation`) rendered into a scratch
+/// directory and returned in-memory — the exact bytes an export would
+/// write, without touching any user-visible location.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct OutputXmlPreviewResponse {
+    pub job_id: JobId,
+    pub locale: String,
+    pub files: Vec<OutputXmlPreviewFile>,
+    /// True when the cap (file count or total bytes) cut the listing.
+    pub truncated: bool,
+}
+
 /// Result of `project_build_mod`: the FULL drop-in mod package written from
 /// the trusted session state, reparse-verified BEFORE the ack. Same DTO
 /// pattern as [`ExportProjectResponse`] — the differences live in the

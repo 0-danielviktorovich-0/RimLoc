@@ -1715,6 +1715,118 @@ impl ProjectSessionManager {
     /// must NOT sit inside the read-only source tree nor inside the managed
     /// root (guard_output_denied). The result is REPARSED with the existing
     /// scanner before the ack; counters must match.
+    /// `project_output_xml_preview` — UI-05 (owner audit Oct-14): render
+    /// the project through the CANONICAL serializer into a scratch
+    /// directory and return the produced XML files in-memory. Read-only
+    /// toward every user-visible location (the scratch lives in the OS
+    /// temp dir and is removed best-effort); epoch + locale-form guards
+    /// match `export_project`.
+    pub fn project_output_xml_preview(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        locale: &str,
+    ) -> Result<crate::contract::OutputXmlPreviewResponse, ContractError> {
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        ensure_locale_form(locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let job_id: JobId = generate_operation_id();
+
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        let scratch = std::env::temp_dir().join(format!(
+            "rimloc-xml-preview-{}",
+            job_id.trim_start_matches("op-")
+        ));
+        std::fs::create_dir_all(&scratch)
+            .map_err(|e| ContractError::new(ContractErrorCode::SaveFailed, e.to_string()))?;
+        let result = crate::project::write_rimworld_translation(
+            &st.project,
+            &scratch,
+            locale,
+            &st.display_name,
+            &crate::util::package_id_slug(&st.display_name),
+            &rw_version,
+        );
+        // Collect the rendered files FIRST (error or not, cleanup runs after).
+        let mut files: Vec<crate::contract::OutputXmlPreviewFile> = Vec::new();
+        let mut truncated = false;
+        const MAX_FILES: usize = 60;
+        const MAX_BYTES_PER_FILE: usize = 384 * 1024;
+        let lang_root = scratch.join("Languages").join(locale);
+        if result.is_ok() {
+            let mut stack = vec![lang_root.clone()];
+            while let Some(dir) = stack.pop() {
+                let Ok(read) = std::fs::read_dir(&dir) else {
+                    continue;
+                };
+                for entry in read.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        stack.push(path);
+                    } else if path.extension().and_then(|e| e.to_str()) == Some("xml") {
+                        if files.len() >= MAX_FILES {
+                            truncated = true;
+                            break;
+                        }
+                        let bytes = std::fs::read(&path).unwrap_or_default();
+                        let cut = bytes.len() > MAX_BYTES_PER_FILE;
+                        if cut {
+                            truncated = true;
+                        }
+                        let rel = path
+                            .strip_prefix(&scratch)
+                            .map(|p| p.to_string_lossy().replace('\\', "/"))
+                            .unwrap_or_default();
+                        let mut xml =
+                            String::from_utf8_lossy(&bytes[..bytes.len().min(MAX_BYTES_PER_FILE)])
+                                .to_string();
+                        if cut {
+                            xml.push_str("\n<!-- … truncated preview … -->");
+                        }
+                        files.push(crate::contract::OutputXmlPreviewFile { path: rel, xml });
+                    }
+                }
+                if truncated {
+                    break;
+                }
+            }
+            files.sort_by(|a, b| a.path.cmp(&b.path));
+        }
+        // Best-effort scratch cleanup (own temp dir; never user data).
+        let _ = std::fs::remove_dir_all(&scratch);
+        let report = result.map_err(|e| {
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("preview render failed: {e}"),
+            )
+        })?;
+        if files.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::Internal,
+                format!(
+                    "the serializer produced no XML for locale `{locale}` (keys written: {})",
+                    report.keys_written
+                ),
+            ));
+        }
+        Ok(crate::contract::OutputXmlPreviewResponse {
+            job_id,
+            locale: locale.to_string(),
+            files,
+            truncated,
+        })
+    }
+
     pub fn export_project(
         &self,
         project_id: &str,

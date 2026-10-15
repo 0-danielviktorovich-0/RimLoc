@@ -351,6 +351,20 @@ export class RimLocClient {
     return this.call('open_external_url', { url }) as Promise<null>;
   }
 
+  /** UI-05: output XML preview — the canonical serializer rendered
+   *  in-memory for the requested locale (read-only). */
+  projectOutputXmlPreview(
+    projectId: string,
+    sessionEpoch: number,
+    locale: string,
+  ): Promise<{ job_id: string; locale: string; files: { path: string; xml: string }[]; truncated: boolean }> {
+    return this.call('project_output_xml_preview', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      locale,
+    });
+  }
+
   async providerInstanceList(): Promise<ProviderInstanceListResponseDto> {
     return this.call('contract_provider_instance_list', {});
   }

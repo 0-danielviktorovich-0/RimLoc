@@ -472,6 +472,7 @@ export type ContractMethod =
   // there.
   | 'reveal_path'
   | 'open_external_url'
+  | 'project_output_xml_preview'
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   | 'project_import_existing'

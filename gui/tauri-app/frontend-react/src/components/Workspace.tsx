@@ -83,6 +83,31 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   })
 
   const snapNow = st.snapshot
+  // UI-05: output XML preview — the CANONICAL serializer rendered
+  // in-memory for the current target locale, loaded lazily and cached.
+  const [outputPreview, setOutputPreview] = useState<
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | { status: 'done'; locale: string; files: { path: string; xml: string }[]; truncated: boolean }
+    | null
+  >(null)
+  const loadOutputPreview = (locale: string): void => {
+    if (!snapNow) return
+    setOutputPreview({ status: 'loading' })
+    clientInstance
+      .getClient()
+      .projectOutputXmlPreview(snapNow.project_id, snapNow.session_epoch, locale)
+      .then((res) =>
+        setOutputPreview({
+          status: 'done',
+          locale: res.locale,
+          files: res.files,
+          truncated: res.truncated,
+        }),
+      )
+      .catch((e: unknown) =>
+        setOutputPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) }),
+      )
+  }
   // rel27: XML-предпросмотр — чтение исходного файла через IPC (read-only,
   // containment по source root).
   const loadXmlPreview = (
@@ -466,6 +491,10 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             // §15/§20: AI entry — только навигация, без вызовов провайдера.
             onSendToChatBatch={() => sendToChatBatch(selected.identity)}
             onLoadXmlPreview={loadXmlPreview}
+            entryKey={selected.key}
+            targetLocale={folderForm(st.targetLocale)}
+            onLoadOutputPreview={loadOutputPreview}
+            outputPreview={outputPreview}
             onDraft={(v) => projectStore.setDraft(selected.uid, v)}
             onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
@@ -685,6 +714,15 @@ function EntryEditor(props: {
   onSendToChatBatch: () => void
   // rel27: загрузить XML-предпросмотр исходного файла строки.
   onLoadXmlPreview?: (file: string, line?: number) => Promise<SourceXmlPreviewDto>
+  /** UI-05: entry display key (e.g. `Apple.label`) used to locate the
+   *  canonical output element; target locale of the workspace. */
+  entryKey?: string
+  targetLocale?: string
+  onLoadOutputPreview?: (locale: string) => void
+  outputPreview?:
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | { status: 'done'; locale: string; files: { path: string; xml: string }[]; truncated: boolean }
+    | null
   onDraft: (v: string) => void
   onCommit: (next: boolean) => void
   onMove: (d: number) => void
@@ -708,7 +746,7 @@ function EntryEditor(props: {
   }
   // §13: единственная мёртвая кнопка-таб стала настоящими табами.
   // rel27: третья вкладка — настоящий XML-предпросмотр исходного файла.
-  const [tab, setTab] = useState<'source' | 'terms' | 'xml'>('source')
+  const [tab, setTab] = useState<'source' | 'terms' | 'xml' | 'output'>('source')
   const [xmlPreview, setXmlPreview] = useState<
     | { status: 'idle' | 'loading' | 'error'; error?: string }
     | {
@@ -905,6 +943,20 @@ function EntryEditor(props: {
           >
             <Braces size={12} /> {t('ws.tabXml')}
           </button>
+          {/* UI-05: the CANONICAL OUTPUT xml for the current locale — the
+              exact bytes an export writes, rendered in-memory. */}
+          <button
+            role="tab"
+            aria-selected={tab === 'output'}
+            className={tab === 'output' ? 'active' : ''}
+            data-testid="ws.tab.output"
+            onClick={() => {
+              setTab('output')
+              if (props.targetLocale) props.onLoadOutputPreview?.(props.targetLocale)
+            }}
+          >
+            <Braces size={12} /> {t('ws.tabOutput')}
+          </button>
         </div>
         {tab === 'source' ? (
           <div className="context-content" role="tabpanel" data-testid="src.block">
@@ -1001,6 +1053,50 @@ function EntryEditor(props: {
                     </span>
                   </div>
                 )}
+              </>
+            )}
+          </div>
+        ) : tab === 'output' ? (
+          <div className="context-content" role="tabpanel" data-testid="ws.output-block">
+            {props.outputPreview?.status === 'loading' && (
+              <p className="page-note" data-testid="ws.output-loading">{t('about.loading')}</p>
+            )}
+            {props.outputPreview?.status === 'error' && (
+              <div className="inline-warning" role="alert" data-testid="ws.output-error">
+                <CircleAlert size={15} />
+                <span>{props.outputPreview.error}</span>
+              </div>
+            )}
+            {props.outputPreview?.status === 'done' && (
+              <>
+                <div data-testid="ws.output.meta" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                  {t('ws.output.canonical')} · {props.outputPreview.locale} · {props.outputPreview.files.length}{' '}
+                  {t('ws.output.files')}
+                  {props.outputPreview.truncated ? ` · ${t('ws.output.truncated')}` : ''}
+                </div>
+                {(() => {
+                  const elementTag = props.entryKey ? `<${props.entryKey}>` : null
+                  const hit =
+                    (elementTag && props.outputPreview.files.find((f) => f.xml.includes(elementTag))) ||
+                    props.outputPreview.files[0]
+                  if (!hit) {
+                    return (
+                      <p className="page-note" data-testid="ws.output-empty">
+                        {t('ws.output.empty')}
+                      </p>
+                    )
+                  }
+                  return (
+                    <>
+                      <div data-testid="ws.output.file" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                        <code>{hit.path}</code>
+                      </div>
+                      <pre data-testid="ws.output-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
+                        {hit.xml}
+                      </pre>
+                    </>
+                  )
+                })()}
               </>
             )}
           </div>

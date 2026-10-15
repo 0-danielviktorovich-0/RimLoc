@@ -53,6 +53,7 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // (services landed in 47758cb; this registration is the transport).
     "project_validate",
     "project_export",
+    "project_output_xml_preview",
     "project_build_mod",
     "project_diagnose",
     // W2 (existing-pack flow): dry-run analysis + guarded application of an
@@ -883,6 +884,29 @@ pub fn project_export(
     // already validated the real location by the time this line runs.
     reveal.allow(std::path::Path::new(&ack.out_dir.path));
     Ok(ack)
+}
+
+/// `project_output_xml_preview` — UI-05 (owner audit Oct-14): the
+/// CANONICAL serializer rendered in-memory (scratch dir in the OS temp,
+/// removed best-effort). Read-only toward user-visible locations; the
+/// response carries the produced XML files for the requested locale.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_output_xml_preview(
+    state: State<'_, ContractState>,
+    project_id: String,
+    session_epoch: u64,
+    locale: String,
+) -> Result<
+    rimloc_services::contract::OutputXmlPreviewResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_output_xml_preview", || {
+        manager.project_output_xml_preview(&project_id, session_epoch, &locale)
+    })
 }
 
 /// `project_build_mod` — the FULL drop-in mod package (`About/About.xml` in

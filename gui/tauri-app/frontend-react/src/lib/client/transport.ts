@@ -115,6 +115,17 @@ export interface ContractMethodMap {
   // About/support screens: open a VERIFIED allowlisted https destination
   // in the OS browser. The backend refuses anything outside the list.
   open_external_url: { params: { url: string }; result: null };
+  // UI-05: the CANONICAL serializer rendered in-memory for the requested
+  // locale — read-only preview of the exact export bytes.
+  project_output_xml_preview: {
+    params: { project_id: string; session_epoch: number; locale: string };
+    result: {
+      job_id: string;
+      locale: string;
+      files: { path: string; xml: string }[];
+      truncated: boolean;
+    };
+  };
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   project_import_existing: {

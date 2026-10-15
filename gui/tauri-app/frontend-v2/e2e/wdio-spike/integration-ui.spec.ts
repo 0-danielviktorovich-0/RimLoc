@@ -222,6 +222,92 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     }
   })
 
+
+  it('UI-05: the output.xml tab shows the CANONICAL serializer output for the current locale', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    // Translate one row through the REAL editor path so the serializer has
+    // something to write.
+    const rows = await browser.$$('.entry-list .entry-row')
+    let alpha: WebdriverIO.Element | null = null
+    for (const r of rows) {
+      if ((await r.getText()).includes('Alpha')) {
+        alpha = r
+        break
+      }
+    }
+    if (!alpha) throw new Error('Alpha row not found')
+    await alpha.click()
+    await waitExisting('[data-testid="ws.editor-textarea"]')
+    await (await browser.$('[data-testid="ws.editor-textarea"]')).setValue('Альфа переведена')
+    await pause(300)
+    await browser.$('[data-testid="ws.editor-save"]').click()
+    // The DURABLE truth: the managed envelope on disk gains the translation
+    // (persist-before-ack). The output preview request must come after it,
+    // otherwise the serializer legitimately sees zero keys.
+    const fs = await import('node:fs')
+    const mgr = '/tmp/rimloc-int/data/managed'
+    let saved = false
+    for (let i = 0; i < 150 && !saved; i++) {
+      try {
+        for (const f of fs.readdirSync(mgr)) {
+          if (!f.endsWith('.rimloc.json')) continue
+          const env = JSON.parse(fs.readFileSync(`${mgr}/${f}`, 'utf8'))
+          if (
+            (env.translations ?? []).some(
+              (t: { text?: string }) => (t.text ?? '') === 'Альфа переведена',
+            )
+          ) {
+            saved = true
+            break
+          }
+        }
+      } catch {
+        /* mid-write */
+      }
+      if (!saved) await pause(200)
+    }
+    if (!saved) throw new Error('the manual edit never reached the durable envelope')
+    // Open the OUTPUT tab: the canonical serializer runs for the target
+    // locale and the tab shows the Alpha.xml file containing the element.
+    await waitExisting('[data-testid="ws.tab.output"]', 10000)
+    await browser.$('[data-testid="ws.tab.output"]').click()
+    try {
+      await waitExisting('[data-testid="ws.output-pre"]', 30000)
+    } catch {
+      const dump = await browser.execute(() => ({
+        block: document.querySelector('[data-testid="ws.output-block"]')?.textContent?.slice(0, 300) ?? null,
+        editorKey: document.querySelector('[data-testid="ws.editor"] code')?.textContent ?? null,
+        selectedTab: document.querySelector('[role="tab"][aria-selected="true"]')?.getAttribute('data-testid') ?? null,
+        outputBtnSelected: document.querySelector('[data-testid="ws.tab.output"]')?.getAttribute('aria-selected') ?? null,
+      }))
+      try {
+        const fs2 = await import('node:fs')
+        for (const f of fs2.readdirSync('/tmp/rimloc-int/data/managed')) {
+          if (!f.endsWith('.rimloc.json')) continue
+          const env = JSON.parse(
+            fs2.readFileSync(`/tmp/rimloc-int/data/managed/${f}`, 'utf8'),
+          )
+          const trs = (env.translations ?? []).filter(
+            (t: { text?: string }) => (t.text ?? '').includes('Альфа'),
+          )
+          console.log(`[int-ui] envelope-hit=${JSON.stringify(trs)}`)
+        }
+      } catch { /* diagnostics only */ }
+      throw new Error(`output-pre missing: ${JSON.stringify(dump)}`)
+    }
+    const xml = await browser.$('[data-testid="ws.output-pre"]').getText()
+    if (!xml.includes('Альфа переведена')) {
+      throw new Error('canonical output does not contain the saved translation')
+    }
+    if (!xml.includes('Alpha')) throw new Error('output file missing the Alpha identity')
+    const meta = await browser.$('[data-testid="ws.output.meta"]').getText()
+    if (!/canonical|канонический/i.test(meta)) throw new Error(`meta missing: ${meta}`)
+    if (!meta.includes('Russian')) throw new Error(`meta missing the locale: ${meta}`)
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'
