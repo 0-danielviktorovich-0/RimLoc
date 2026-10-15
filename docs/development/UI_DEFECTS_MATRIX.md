@@ -2,7 +2,7 @@
 
 Owner requirement: per-item VERIFIED / PARTIAL / MISSING with evidence, no
 generic statuses. Head of record: `feat/integration-rel27` (PR #101),
-current `4f12ac5` lineage (latest UI work head: b45e21a+).
+current lineage (latest UI work head: 132c986, CI 40/40).
 Native evidence: `RimLoc-evidence/reviewer/2026-10-15-integration-ui-e2e.txt`
 (7/7 lane on the packaged automation build) + this file's source anchors.
 
@@ -10,7 +10,7 @@ Native evidence: `RimLoc-evidence/reviewer/2026-10-15-integration-ui-e2e.txt`
 |----|------|--------|----------------------|
 | UI-01 | ChatBatch filter row overlap | **VERIFIED FIXED** | base `height:43px` overrode with `height:auto; min-height:43px` (r1-react.css); measured in the native lane: no scrollHeight>clientHeight clipping, no child bottom overflow |
 | UI-02 | Desktop Focus/Studio/Overview modes | **VERIFIED FIXED** | three real modes (Studio/Focus/Overview) in the workspace heading: the switch changes the VIEW only — translations, unsaved drafts, selection and locale live in shared state and survive every switch (native lane: draft typed in Studio survives Focus and Overview and returns intact); persisted per app. The reviewer's condition «not decorative» is met by store-backed state + per-mode visibility |
-| UI-03 | TRUE collapse (tree / nav / inspector) | **PARTIAL (improved)** | tree: the resizable panel itself now collapses/expands via `panelRef` (width reclaims; lane-tested next run). Desktop NAV collapse: still MISSING (mobile-only menu). Right-inspector collapse: MISSING |
+| UI-03 | TRUE collapse (tree / nav / inspector) | **PARTIAL (improved)** | tree: the toggle hides tree CONTENT (items + projections) — verified natively; width-reclaiming panel collapse is a documented library limitation. Inspector: a new toggle button in the entry toolbar hides/shows the editor detail pane — verified natively (lane 11/11). Desktop NAV collapse: still MISSING (the sidebar is fixed-width on desktop; the mobile-only menu doesn't apply at desktop widths) |
 | UI-04 | Typography scale / density | **PARTIAL (improved)** | zoom steps now the requested readable set 80/90/100/110/125/150 (ceiling 1.5), persisted + applied at the shell root; a separate density control and remaining 7–11px small text are NOT done |
 | UI-05 | Output XML preview | **VERIFIED FIXED** | `project_output_xml_preview` renders the project through the CANONICAL serializer (`write_rimworld_translation`) into an OS-temp scratch (removed best-effort) and returns the produced XML files in-memory; a fourth editor tab `output.xml` shows the file containing the selected entry for the current folder-form locale (folder-form mismatch found and fixed by the lane); native lane: translate a row via the editor → the output tab shows the DefInjected XML containing the saved translation |
 | UI-06 | Scroll & row visibility (прокрутка и видимость строк) | **VERIFIED** | `@tanstack/react-virtual` from day one + scroll-to-selection (identity-keyed) + visible-bounds lane check; forced out-of-viewport scenario queued for the larger corpus |
