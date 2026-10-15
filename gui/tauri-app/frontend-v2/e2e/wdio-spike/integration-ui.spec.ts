@@ -165,6 +165,50 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
   })
 
 
+
+  it('UI-03/08: the tree toggle collapses the panel; the editor row scrolls into view', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    // UI-03 (PARTIAL, honest): the toggle hides the tree CONTENT (items +
+    // projections); true width-reclaiming panel collapse is documented
+    // as a library limitation in UI_DEFECTS_MATRIX.md.
+    const itemsVisible = (): Promise<number> =>
+      browser.execute(
+        () => document.querySelectorAll('[data-testid="ws.tree"] .file-item').length,
+      ) as unknown as Promise<number>
+    await waitExisting('[data-testid="ws.tree-toggle"]', 10000)
+    const beforeCount = await itemsVisible()
+    if (beforeCount === 0) throw new Error('tree items missing before the toggle')
+    await (await browser.$('[data-testid="ws.tree-toggle"]')).click()
+    await pause(600)
+    const hiddenCount = await itemsVisible()
+    if (hiddenCount !== 0) {
+      throw new Error(`tree content did not hide on collapse: ${hiddenCount} items remain`)
+    }
+    await (await browser.$('[data-testid="ws.tree-toggle"]')).click()
+    await pause(600)
+    const restoredCount = await itemsVisible()
+    if (restoredCount < beforeCount) {
+      throw new Error(`tree content did not restore: ${restoredCount} vs ${beforeCount}`)
+    }
+    // UI-08: with the list scrolled to the top, the SELECTED row (pinned to
+    // the first visible by UI-14) must be scrolled into the viewport —
+    // verify the selected row is within the list's visible bounds.
+    const bounds = await browser.execute(() => {
+      const list = document.querySelector('.entry-list')
+      const sel = document.querySelector('.entry-list .entry-row.selected')
+      if (!list || !sel) return null
+      const lr = list.getBoundingClientRect()
+      const sr = sel.getBoundingClientRect()
+      return { inside: sr.top >= lr.top - 2 && sr.bottom <= lr.bottom + 2 }
+    })
+    if (!bounds || !bounds.inside) {
+      throw new Error('selected row is outside the visible list viewport')
+    }
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'

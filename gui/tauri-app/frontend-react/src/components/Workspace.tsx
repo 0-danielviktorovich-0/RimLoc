@@ -69,6 +69,12 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const [fileFilter, setFileFilter] = useState<string>('all')
   const [treeView, setTreeView] = useState<'type' | 'file'>('type')
   const [treeOpen, setTreeOpen] = useState(true)
+  // UI-03 (owner audit Oct-14): tree toggle hides the CONTENT (items +
+  // views). True width-reclaiming panel collapse breaks the current
+  // react-resizable-panels group (removing a panel unmounts the route) —
+  // documented as PARTIAL in UI_DEFECTS_MATRIX.md; revisit with the
+  // library upgrade.
+  const toggleTree = (): void => setTreeOpen(!treeOpen)
   // react-resizable-panels v4: `autoSaveId` replaced by the useDefaultLayout
   // hook — same localStorage persistence for the pane split, new API shape.
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -263,7 +269,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         <aside className="file-tree" data-testid="ws.tree">
           <div className="pane-title">
             <span>{t('ws.treeTitle')}</span>
-            <button className="icon-btn" aria-label={t('ws.toggleTree')} onClick={() => setTreeOpen(!treeOpen)}>
+            <button className="icon-btn" aria-label={t('ws.toggleTree')} data-testid="ws.tree-toggle" onClick={toggleTree}>
               <ChevronDown />
             </button>
           </div>
@@ -549,6 +555,16 @@ function EntryList({
     estimateSize: () => ROW_HEIGHT,
     overscan: 12,
   })
+  // UI-08 (owner audit Oct-14): after a filter change / keyboard move the
+  // selected row must be scrolled INTO the viewport, not hidden above or
+  // below the fold. Index-based — fires on selection change only.
+  const selectedIndex = selectedKey ? entries.findIndex((e) => e.uid === selectedKey) : -1
+  useEffect(() => {
+    if (selectedIndex >= 0) {
+      virtualizer.scrollToIndex(selectedIndex, { align: 'auto' })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- virtualizer is stable per @tanstack/react-virtual contract
+  }, [selectedIndex])
 
   return (
     <>
