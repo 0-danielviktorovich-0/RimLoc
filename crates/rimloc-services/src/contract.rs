@@ -596,6 +596,10 @@ pub struct OutputXmlPreviewFile {
 pub struct OutputXmlPreviewResponse {
     pub job_id: JobId,
     pub locale: String,
+    /// The session revision the preview was rendered from — the UI binds
+    /// the displayed result to this value and invalidates on change
+    /// (review Oct-15 P1-C).
+    pub revision: Revision,
     pub files: Vec<OutputXmlPreviewFile>,
     /// True when the cap (file count or total bytes) cut the listing.
     pub truncated: bool,

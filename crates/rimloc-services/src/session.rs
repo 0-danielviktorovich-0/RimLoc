@@ -1715,6 +1715,76 @@ impl ProjectSessionManager {
     /// must NOT sit inside the read-only source tree nor inside the managed
     /// root (guard_output_denied). The result is REPARSED with the existing
     /// scanner before the ack; counters must match.
+    /// Shared pre-write payload validation for every path that renders the
+    /// canonical serializer (real export AND the UI-05 output preview, review
+    /// Oct-15 P1-A): XML 1.0-clean texts, clean display name, and no
+    /// case-colliding defNames. A preview must never show bytes a real export
+    /// would refuse.
+    fn validate_export_payload(
+        project: &rimloc_domain::canonical::Project,
+        display_name: &str,
+        locale: &str,
+    ) -> Result<(), ContractError> {
+        let mut poisoned: Vec<String> = Vec::new();
+        for t in &project.translations {
+            if t.locale != locale {
+                continue;
+            }
+            let Some(text) = &t.text else {
+                continue;
+            };
+            let identity = project
+                .entries
+                .iter()
+                .find(|e| e.id == t.source_id)
+                .map(|e| e.id.display_identity())
+                .unwrap_or_else(|| t.source_id.display_identity());
+            let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) else {
+                continue;
+            };
+            if poisoned.len() < 5 {
+                poisoned.push(format!("{identity} (U+{:04X})", bad as u32));
+            } else {
+                poisoned.push("…".to_string());
+            }
+        }
+        if !poisoned.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: translation text contains characters that are invalid in XML 1.0 — the game would drop the whole file. Fix the entries: {}",
+                    poisoned.join(", ")
+                ),
+            ));
+        }
+        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(display_name) {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
+                    bad as u32
+                ),
+            ));
+        }
+        let collisions = case_collision_pairs(project, Some(locale));
+        if !collisions.is_empty() {
+            let shown: Vec<String> = collisions
+                .iter()
+                .take(5)
+                .map(|(dt, a, b)| format!("{dt}: {a} / {b}"))
+                .collect();
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "cannot export: defNames that differ only in case would write into the same file on Windows/macOS — rename the defName in the source mod: {}",
+                    shown.join(", ")
+                ),
+            ));
+        }
+        Ok(())
+    }
+
+
     /// `project_output_xml_preview` — UI-05 (owner audit Oct-14): render
     /// the project through the CANONICAL serializer into a scratch
     /// directory and return the produced XML files in-memory. Read-only
@@ -1835,6 +1905,7 @@ impl ProjectSessionManager {
         Ok(crate::contract::OutputXmlPreviewResponse {
             job_id: _job_id,
             locale: locale.to_string(),
+            revision: st.revision,
             files,
             truncated,
         })
@@ -1913,83 +1984,13 @@ impl ProjectSessionManager {
         }
         log.end_stage("guard");
 
-        // H3 pre-write content check: texts that are about to be written
-        // (target-locale translations + the display name landing in
-        // About.xml) must be XML 1.0-clean — control characters cannot be
-        // escaped, so they are a typed refusal, never a raw write.
-        let mut poisoned: Vec<String> = Vec::new();
-        for t in &st.project.translations {
-            if t.locale != locale {
-                continue;
-            }
-            let Some(text) = t.text.as_deref() else {
-                continue;
-            };
-            let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(text) else {
-                continue;
-            };
-            let identity = st
-                .project
-                .entries
-                .iter()
-                .find(|e| e.id == t.source_id)
-                .map(|e| e.id.display_identity())
-                .unwrap_or_else(|| t.source_id.key.clone());
-            if poisoned.len() < 5 {
-                poisoned.push(format!("{identity} (U+{:04X})", bad as u32));
-            } else {
-                poisoned.push("…".to_string());
-                break;
-            }
-        }
-        if !poisoned.is_empty() {
-            log.error_message("write", "XML-invalid control characters in export content");
-            log.finish();
-            return Err(ContractError::new(
-                ContractErrorCode::ContractViolation,
-                format!(
-                    "cannot export: translation text contains characters that are invalid in XML 1.0 — the game would drop the whole file. Fix the entries: {}",
-                    poisoned.join(", ")
-                ),
-            ));
-        }
-        if let Some(bad) = rimloc_core::xml_chars::find_invalid_xml_char(&st.display_name) {
-            log.error_message("write", "XML-invalid control character in display name");
-            log.finish();
-            return Err(ContractError::new(
-                ContractErrorCode::ContractViolation,
-                format!(
-                    "cannot export: the project display name contains a character that is invalid in XML 1.0 (U+{:04X})",
-                    bad as u32
-                ),
-            ));
-        }
+        // Shared pre-write validation (review Oct-15 P1-A): the output XML
+        // preview runs the SAME checks as the real export, so the preview
+        // can never show bytes a real export would refuse.
+        Self::validate_export_payload(&st.project, &st.display_name, locale)?;
+        log.end_stage("guard");
 
-        // M4 pre-write content check: defNames differing only by case within
-        // one def type materialize into the SAME output file on a
-        // case-insensitive filesystem (macOS/Windows) — the reparse guard
-        // would only catch that on such filesystems, and on a case-sensitive
-        // one the collision would ship to players. Refuse deterministically,
-        // on every filesystem, with the colliding names.
-        let collisions = case_collision_pairs(&st.project, Some(locale));
-        if !collisions.is_empty() {
-            let shown: Vec<String> = collisions
-                .iter()
-                .take(5)
-                .map(|(dt, a, b)| format!("{dt}: {a} / {b}"))
-                .collect();
-            log.error_message("write", "case-colliding defNames in export content");
-            log.finish();
-            return Err(ContractError::new(
-                ContractErrorCode::ContractViolation,
-                format!(
-                    "cannot export: defNames that differ only in case would write into the same file on Windows/macOS — rename the defName in the source mod: {}",
-                    shown.join(", ")
-                ),
-            ));
-        }
-
-        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
         log.begin_stage("write");
         let report = crate::project::write_rimworld_translation(
             &st.project,

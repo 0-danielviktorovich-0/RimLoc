@@ -2,7 +2,7 @@
 
 Owner requirement: per-item VERIFIED / PARTIAL / MISSING with evidence, no
 generic statuses. Head of record: `feat/integration-rel27` (PR #101),
-current `8ea7b96` (UI-05 output XML preview landed; security barrier verified — 0 open code-scanning alerts).
+current `4f12ac5` lineage (latest UI work head: b45e21a+).
 Native evidence: `RimLoc-evidence/reviewer/2026-10-15-integration-ui-e2e.txt`
 (7/7 lane on the packaged automation build) + this file's source anchors.
 
@@ -13,11 +13,11 @@ Native evidence: `RimLoc-evidence/reviewer/2026-10-15-integration-ui-e2e.txt`
 | UI-03 | TRUE collapse (tree / nav / inspector) | **PARTIAL (improved)** | tree: the resizable panel itself now collapses/expands via `panelRef` (width reclaims; lane-tested next run). Desktop NAV collapse: still MISSING (mobile-only menu). Right-inspector collapse: MISSING |
 | UI-04 | Typography scale / density | **PARTIAL (improved)** | zoom steps now the requested readable set 80/90/100/110/125/150 (ceiling 1.5), persisted + applied at the shell root; a separate density control and remaining 7–11px small text are NOT done |
 | UI-05 | Output XML preview | **VERIFIED FIXED** | `project_output_xml_preview` renders the project through the CANONICAL serializer (`write_rimworld_translation`) into an OS-temp scratch (removed best-effort) and returns the produced XML files in-memory; a fourth editor tab `output.xml` shows the file containing the selected entry for the current folder-form locale (folder-form mismatch found and fixed by the lane); native lane: translate a row via the editor → the output tab shows the DefInjected XML containing the saved translation |
-| UI-06 | Virtual scrolling | **VERIFIED (pre-existing)** | `@tanstack/react-virtual` entry list from day one (Workspace.tsx useVirtualizer) |
+| UI-06 | Scroll & row visibility (прокрутка и видимость строк) | **VERIFIED** | `@tanstack/react-virtual` from day one + scroll-to-selection (identity-keyed) + visible-bounds lane check; forced out-of-viewport scenario queued for the larger corpus |
 | UI-07 | Deceptive filter reset | **VERIFIED FIXED** | one explicit clear-all control (search + status + type + file), own label; lane asserts combined-filters → clear → full list restored |
 | UI-08 | Scroll-to-selection after filters | **VERIFIED FIXED** | virtualizer `scrollToIndex(selected, auto)` on selection change; lane-verified inside the visible viewport bounds |
 | UI-09 | Dark-theme checkboxes/dividers | **PARTIAL / UNVERIFIED** | dark token set complete (r1.css .dark); a dedicated visual dark pass has not been run — needs the visual-audit lane |
-| UI-12 | Settings/About polish | **PARTIAL (improved)** | About redesigned + lane-tested (hero/actions/support/folded identity); Settings carries zoom + system theme (#92); full settings visual pass pending |
+| UI-09 | Shell, Projects, Settings, About | **PARTIAL (improved)** | About redesigned + lane-tested; Settings carries zoom + system theme (#92); shell/projects/settings visual pass pending. UI-12 (система глубокого визуального аудита) is the meta-item covering the pending passes |
 | UI-13 | Fake file tree | **VERIFIED FIXED (improved)** | dual honest projections plus two-level directory grouping (real dir prefix → file, root files under `·`); per-file filtering lane-tested; a full hierarchical catalog view beyond two levels remains future work |
 | UI-14 | Invisible selected editor row | **VERIFIED FIXED** | stored selection wins only while visible, otherwise first visible row; stored key restored on clear; lane-tested |
 
@@ -49,3 +49,12 @@ runtime verification for those is queued with the UI-02/03 work.
 - ID-mapping caveat: the original Oct-14 audit file is absent from the
   local inbox; matrix IDs follow the reviewer's Oct-15 references. If the
   original audit re-surfaces, IDs must be reconciled.
+
+## Restored original ID numbering (reviewer, Oct-15)
+
+The Oct-15 verdict restored the ORIGINAL audit numbering; this matrix's IDs
+were corrected to match: **UI-06** = scroll & row visibility, **UI-08** =
+dark theme/checkbox/tables, **UI-09** = Shell/Projects/Settings/About,
+**UI-10** = CLI↔GUI parity, **UI-11** = Source Discovery, **UI-12** = deep
+visual audit system (meta). UI-01..05 match the earlier mapping. My Oct-15
+morning matrix had UI-08/09/12 misnumbered — corrected here.

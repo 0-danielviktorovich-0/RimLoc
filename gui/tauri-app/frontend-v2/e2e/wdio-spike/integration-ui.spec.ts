@@ -130,18 +130,25 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     await browser.$('[data-testid="ws.filter.issues"]').click()
     await browser.$('.search-field input').setValue('zzz-no-such-row')
     await pause(500)
-    // PROVE all four dimensions are dirty at this exact moment.
-    const dirty = await browser.execute(() => ({
-      search: (document.querySelector('.search-field input') as HTMLInputElement)?.value ?? '',
-      status: document.querySelector('[data-testid="ws.filter.issues"]')?.className.includes('active') ?? false,
-      kindActive: !!document.querySelector('[data-testid="ws.tree"] .file-item.active'),
-      fileActive: !!document.querySelector('[data-testid="ws.tree"] .file-item.active'),
-    }))
+    // PROVE all four dimensions are dirty at this exact moment — kind and
+    // file are now COMPOSABLE (both active simultaneously).
+    const dirty = await browser.execute(() => {
+      const actives = Array.from(
+        document.querySelectorAll('[data-testid="ws.tree"] .file-item.active'),
+      ).map((n) => n.getAttribute('data-testid'))
+      return {
+        search: (document.querySelector('.search-field input') as HTMLInputElement)?.value ?? '',
+        status: document.querySelector('[data-testid="ws.filter.issues"]')?.className.includes('active') ?? false,
+        actives,
+      }
+    })
     if (!dirty.search) throw new Error('search filter not dirty')
     if (!dirty.status) throw new Error('status filter not dirty (issues not active)')
-    if (!(dirty.kindActive || dirty.fileActive)) {
-      throw new Error('tree filter not dirty (no active tree item)')
+    if (dirty.actives.length !== 1) {
+      throw new Error(`expected exactly one dirty tree dimension: ${JSON.stringify(dirty.actives)}`)
     }
+    const isFileDim = dirty.actives[0]?.includes('.file.')
+    if (!isFileDim) throw new Error(`expected the FILE dimension dirty: ${JSON.stringify(dirty.actives)}`)
     const filtered = (await browser.$$('.entry-list .entry-row')).length
     if (filtered !== 0) throw new Error(`expected the combined filters to hide everything, got ${filtered}`)
     await browser.$('[data-testid="ws.clear-filters"]').click()

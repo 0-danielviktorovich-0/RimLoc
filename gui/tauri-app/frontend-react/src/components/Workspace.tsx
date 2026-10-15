@@ -380,7 +380,6 @@ export function Workspace({ onBack }: { onBack: () => void }) {
                 className={`file-item ${kindFilter === k ? 'active' : ''}`}
                 onClick={() => {
                   setKindFilter(kindFilter === k ? 'all' : k)
-                  setFileFilter('all')
                 }}
                 data-testid={`ws.tree.${k}`}
               >
@@ -404,7 +403,6 @@ export function Workspace({ onBack }: { onBack: () => void }) {
                     className={`file-item ${fileFilter === file ? 'active' : ''}`}
                     onClick={() => {
                       setFileFilter(fileFilter === file ? 'all' : file)
-                      setKindFilter('all')
                     }}
                     data-testid={`ws.tree.file.${file}`}
                     title={file === UNKNOWN_FILE ? t('ws.unknownFile') : file}
