@@ -113,13 +113,26 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     await browser.$('[data-testid="ws.tree"] .tree-root').click()
   })
 
-  it('UI-07: the toolbar button clears ALL filters', async () => {
-    // Dirty every filter dimension: search, status, tree type.
+  it('UI-07: the toolbar button clears ALL FOUR filter dimensions', async () => {
+    // Dirty every dimension per the review carry-over: search + status +
+    // tree TYPE + source FILE simultaneously, then clear once.
     await browser.$('[data-testid="ws.tree.view-type"]').click()
     await pause(300)
     const kindItem = (await browser.$$('[data-testid="ws.tree"] .file-item'))[0]
     await kindItem.click()
     await pause(300)
+    await browser.$('[data-testid="ws.tree.view-file"]').click()
+    await pause(300)
+    const fileItem = (await browser.$$('[data-testid="ws.tree"] .file-item'))[0]
+    await fileItem.click()
+    await pause(300)
+    // A status filter that hides everything: 'issues' when nothing fails.
+    const statusButtons = await browser.$$('.entry-filters button')
+    let issuesBtn: WebdriverIO.Element | null = null
+    for (const b of statusButtons) {
+      if ((await b.getText()).toLowerCase().includes('issue')) issuesBtn = b
+    }
+    if (issuesBtn) await issuesBtn.click()
     await browser.$('.search-field input').setValue('zzz-no-such-row')
     await pause(500)
     const filtered = (await browser.$$('.entry-list .entry-row')).length
@@ -136,32 +149,32 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (searchVal !== '') throw new Error(`search not cleared: ${searchVal}`)
   })
 
-  it('UI-14: the editor follows a VISIBLE row when filters hide the selection', async () => {
-    // Select the first row, then filter it out by search: the editor must
-    // follow the first VISIBLE row, not sit on the hidden one.
+  it('UI-14: hidden selection with OTHER rows still visible — editor follows a visible row', async () => {
+    // The review carry-over: the selection must be hidden while OTHER rows
+    // remain visible (not the hide-everything case). A kind filter that
+    // excludes the selected row does exactly that.
     const firstRow = await browser.$('.entry-list .entry-row')
     await firstRow.click()
     await pause(400)
-    const keyBefore = await browser.$('[data-testid="ws.editor"] code').getText()
-    await browser.$('.search-field input').setValue(keyBefore.split(' ')[0] + '-no-match')
-    await pause(500)
+    const editorBefore = await browser.$('[data-testid="ws.editor"] code').getText()
+    // 'Alpha' matches the OTHER file's rows while the selected Beta row
+    // (alphabetically first) is filtered out — other rows stay visible.
+    await browser.$('.search-field input').setValue('Alpha')
+    await pause(600)
     const rows = await browser.$$('.entry-list .entry-row')
-    if (rows.length === 0) {
-      // Everything hidden including the selection: clear via the toolbar
-      // and verify the editor recovered to a visible row.
-      await browser.$('[data-testid="ws.clear-filters"]').click()
-      await pause(500)
+    if (rows.length === 0) throw new Error('no visible rows — the scenario requires others to stay visible')
+    const editorAfter = await browser.$('[data-testid="ws.editor"] code').getText()
+    const firstVisible = await rows[0].getText()
+    if (!(firstVisible.includes(editorAfter.split('·')[0].trim()) || editorAfter.length === 0)) {
+      throw new Error(`editor does not follow a visible row: editor=${editorAfter}`)
     }
-    const editorKey = await browser.$('[data-testid="ws.editor"] code').getText()
-    const visibleKeys: string[] = []
-    for (const r of await browser.$$('.entry-list .entry-row')) {
-      visibleKeys.push(await r.getText())
-    }
-    if (visibleKeys.length > 0 && !visibleKeys.some((t) => editorKey && t.includes(editorKey.split('·')[0].trim()))) {
-      // The editor row must be among the visible ones (by its key text).
-      throw new Error(`editor shows a hidden row: editor=${editorKey}`)
+    if (editorAfter === editorBefore) {
+      // The editor kept the hidden row — the exact defect UI-14 bans when
+      // other rows are visible.
+      throw new Error(`editor stayed on the hidden selection: ${editorBefore}`)
     }
     await browser.$('[data-testid="ws.clear-filters"]').click()
+    await pause(400)
   })
 
 
@@ -263,38 +276,52 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (!o.ok) throw new Error(`verified URL failed to open: ${o.refused}`)
   })
 
-  it('UI-01: the ChatBatch filter row does not clip its wrapped content', async () => {
+  it('UI-01: the ChatBatch filter row does not clip at 100% and 125% zoom', async () => {
+    const measure = async (zoom: string): Promise<void> => {
+      // The app re-reads the persisted zoom on this custom event — no
+      // reload (a reload would drop the open project session).
+      await browser.execute((z) => {
+        window.localStorage.setItem('rimloc.ui.zoom', z)
+        window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
+      }, zoom)
+      await pause(800)
+      await browser.execute(() => {
+        window.location.hash = '#/chatbatch'
+      })
+      await waitExisting('.cb-selection', 30000)
+      const m = await browser.execute(() => {
+        const row = document.querySelector('.cb-selection .entry-filters') as HTMLElement | null
+        if (!row) return { found: false }
+        const rowRect = row.getBoundingClientRect()
+        let maxChildBottom = 0
+        for (const child of Array.from(row.children)) {
+          const r = (child as HTMLElement).getBoundingClientRect()
+          if (r.height > 0) maxChildBottom = Math.max(maxChildBottom, r.bottom)
+        }
+        return {
+          found: true,
+          clipped: row.scrollHeight > row.clientHeight + 1,
+          childOverflow: maxChildBottom > rowRect.bottom + 1,
+          scrollH: row.scrollHeight,
+          clientH: row.clientHeight,
+        }
+      })
+      const r = m as { found?: boolean; clipped?: boolean; childOverflow?: boolean; scrollH?: number; clientH?: number }
+      if (!r.found) throw new Error(`zoom=${zoom}: ChatBatch .entry-filters not found`)
+      if (r.clipped) {
+        throw new Error(`zoom=${zoom}: filter row clips content (${r.scrollH} > ${r.clientH})`)
+      }
+      if (r.childOverflow) {
+        throw new Error(`zoom=${zoom}: a filter control extends below the filter row bottom`)
+      }
+    }
+    await measure('1')
+    await measure('1.25')
+    // restore the default zoom for later tests
     await browser.execute(() => {
-      window.location.hash = '#/chatbatch'
+      window.localStorage.setItem('rimloc.ui.zoom', '1')
+      window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
     })
-    await waitExisting('.cb-selection', 30000)
-    // Measure the REAL bounding boxes at the current viewport.
-    const m = await browser.execute(() => {
-      const row = document.querySelector('.cb-selection .entry-filters') as HTMLElement | null
-      if (!row) return { found: false }
-      const cs = getComputedStyle(row)
-      const rowRect = row.getBoundingClientRect()
-      let maxChildBottom = 0
-      for (const child of Array.from(row.children)) {
-        const r = (child as HTMLElement).getBoundingClientRect()
-        if (r.height > 0) maxChildBottom = Math.max(maxChildBottom, r.bottom)
-      }
-      return {
-        found: true,
-        height: cs.height,
-        autoHeight: cs.height === 'auto' || parseFloat(cs.height) >= 43,
-        clipped: row.scrollHeight > row.clientHeight + 1,
-        childOverflow: maxChildBottom > rowRect.bottom + 1,
-        scrollH: row.scrollHeight,
-        clientH: row.clientHeight,
-      }
-    })
-    if (!m.found) throw new Error('ChatBatch .entry-filters not found')
-    if (m.clipped) {
-      throw new Error(`filter row clips content: scrollHeight ${m.scrollH} > clientHeight ${m.clientH}`)
-    }
-    if (m.childOverflow) {
-      throw new Error('a filter control extends below the filter row bottom')
-    }
+    await pause(500)
   })
 })

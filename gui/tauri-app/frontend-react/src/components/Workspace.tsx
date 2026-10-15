@@ -135,6 +135,9 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   // (source_ref.file); entries without provenance land in an explicit
   // unknown bucket — invented paths are never shown.
   const UNKNOWN_FILE = '__no_source_file__'
+  // UI-13 follow-up (review Oct-15): files grouped by their REAL directory
+  // prefix — a two-level honest tree (dir → file) built from provenance
+  // paths only. Root-level files render under '·'.
   const fileGroups = useMemo(() => {
     const m = new Map<string, number>()
     let unknown = 0
@@ -150,6 +153,16 @@ export function Workspace({ onBack }: { onBack: () => void }) {
     if (unknown > 0) groups.push([UNKNOWN_FILE, unknown])
     return groups
   }, [st.entries])
+  const fileDirGroups = useMemo(() => {
+    const dirs = new Map<string, { file: string; n: number }[]>()
+    for (const [file, n] of fileGroups) {
+      const dir = file === UNKNOWN_FILE ? UNKNOWN_FILE : file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '·'
+      const list = dirs.get(dir) ?? []
+      list.push({ file, n })
+      dirs.set(dir, list)
+    }
+    return [...dirs.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [fileGroups])
 
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -321,21 +334,36 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             ))}
           {treeOpen &&
             treeView === 'file' &&
-            fileGroups.map(([f, n]) => (
-              <button
-                key={f}
-                className={`file-item ${fileFilter === f ? 'active' : ''}`}
-                onClick={() => {
-                  setFileFilter(fileFilter === f ? 'all' : f)
-                  setKindFilter('all')
-                }}
-                data-testid={`ws.tree.file.${f}`}
-                title={f === UNKNOWN_FILE ? t('ws.unknownFile') : f}
-              >
-                <FileCode2 />
-                <span>{f === UNKNOWN_FILE ? t('ws.unknownFile') : f}</span>
-                <small>{n}</small>
-              </button>
+            fileDirGroups.map(([dir, files]) => (
+              <div key={dir}>
+                {dir !== '·' && (
+                  <div className="tree-group">
+                    <FolderOpen /> <span>{dir}</span>
+                  </div>
+                )}
+                {files.map(({ file, n }) => (
+                  <button
+                    key={file}
+                    className={`file-item ${fileFilter === file ? 'active' : ''}`}
+                    onClick={() => {
+                      setFileFilter(fileFilter === file ? 'all' : file)
+                      setKindFilter('all')
+                    }}
+                    data-testid={`ws.tree.file.${file}`}
+                    title={file === UNKNOWN_FILE ? t('ws.unknownFile') : file}
+                  >
+                    <FileCode2 />
+                    <span>
+                      {file === UNKNOWN_FILE
+                        ? t('ws.unknownFile')
+                        : dir === '·'
+                          ? file
+                          : file.slice(dir.length + 1)}
+                    </span>
+                    <small>{n}</small>
+                  </button>
+                ))}
+              </div>
             ))}
           <div className="tree-bottom">
             <span className="eyebrow">{t('ws.translationFolder')}</span>

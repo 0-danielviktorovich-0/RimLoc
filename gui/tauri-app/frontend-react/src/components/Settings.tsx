@@ -19,11 +19,11 @@ export type ThemePref = 'system' | 'light' | 'dark'
 export function readUiZoom(): number {
   const raw = window.localStorage.getItem('rimloc.ui.zoom')
   const n = raw ? Number(raw) : 1
-  return Number.isFinite(n) && n >= 0.8 && n <= 1.4 ? n : 1
+  return Number.isFinite(n) && n >= 0.8 && n <= 1.5 ? n : 1
 }
 
 export function writeUiZoom(z: number): void {
-  const clamped = Math.min(1.4, Math.max(0.8, z))
+  const clamped = Math.min(1.5, Math.max(0.8, z))
   window.localStorage.setItem('rimloc.ui.zoom', String(clamped))
   window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
 }
@@ -88,8 +88,8 @@ export function Settings(props: {
             <option value="0.9">90%</option>
             <option value="1">100%</option>
             <option value="1.1">110%</option>
-            <option value="1.2">120%</option>
-            <option value="1.4">140%</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
           </select>
         </label>
       </section>
