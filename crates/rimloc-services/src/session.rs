@@ -1784,7 +1784,6 @@ impl ProjectSessionManager {
         Ok(())
     }
 
-
     /// `project_output_xml_preview` — UI-05 (owner audit Oct-14): render
     /// the project through the CANONICAL serializer into a scratch
     /// directory and return the produced XML files in-memory. Read-only
@@ -1990,7 +1989,7 @@ impl ProjectSessionManager {
         Self::validate_export_payload(&st.project, &st.display_name, locale)?;
         log.end_stage("guard");
 
-let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
         log.begin_stage("write");
         let report = crate::project::write_rimworld_translation(
             &st.project,
