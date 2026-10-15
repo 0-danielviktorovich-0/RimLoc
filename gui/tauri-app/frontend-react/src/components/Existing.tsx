@@ -1,8 +1,11 @@
 // Existing translation (R1, journey J2): dry-run import_existing against
 // the OPEN project → honest classification counts → guarded apply of the
 // reusable set (persist-before-ack, conflicts never overwritten).
+// UI-10: the same screen hosts the project-exchange PO — export the
+// durable translations to a .po file for external CAT tools and analyze/
+// apply a .po pack through the SAME review/apply flow as a folder pack.
 import { useState } from 'react'
-import { ArrowRight, Check, FolderOpen, Upload } from 'lucide-react'
+import { ArrowRight, Check, Download, FileText, FolderOpen, Upload } from 'lucide-react'
 import { clientInstance } from '../lib/client/instance'
 import { useProjectState } from '../lib/state/useProjectState'
 import { usePersistedInput } from '../lib/state/usePersistedInput'
@@ -20,16 +23,34 @@ export function Existing() {
 
   // D5: каталог переживает ремоунт экрана — sessionStorage по проекту.
   const [dir, setDir] = usePersistedInput(projectId ?? '', 'existing-dir')
+  const [poPath, setPoPath] = usePersistedInput(projectId ?? '', 'existing-po-path')
+  const [poOut, setPoOut] = usePersistedInput(projectId ?? '', 'existing-po-out')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [report, setReport] = useState<ImportExistingResponseDto | null>(null)
   const [applied, setApplied] = useState<number | null>(null)
+  // Which pack source the CURRENT report came from — the apply call must
+  // re-read the SAME source the user reviewed (folder dir or PO file).
+  const [reportSource, setReportSource] = useState<'folder' | 'po'>('folder')
+  const [poStats, setPoStats] = useState<{ total: number; translated: number; out: string } | null>(
+    null,
+  )
 
   const pick = async (): Promise<void> => {
     setError(null)
     try {
       const d = await clientInstance.getClient().pickDirectory()
       if (d) setDir(d)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const pickPo = async (): Promise<void> => {
+    setError(null)
+    try {
+      const f = await clientInstance.getClient().pickPoFile()
+      if (f) setPoPath(f)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
@@ -71,6 +92,54 @@ export function Existing() {
           locale: folderForm(st.targetLocale),
         }),
       )
+      setReportSource('folder')
+    } catch (e) {
+      setError(contractErrorText((e as { code?: string }).code ?? 'internal', e instanceof Error ? e.message : String(e)))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const analyzePo = async (): Promise<void> => {
+    if (!poPath.trim()) {
+      setError(t('ex.needDir'))
+      return
+    }
+    setBusy(true)
+    setError(null)
+    setApplied(null)
+    try {
+      setReport(
+        await clientInstance.getClient().importExistingPo({
+          project_id: projectId,
+          session_epoch: epoch,
+          po_path: { path: poPath.trim() },
+          locale: folderForm(st.targetLocale),
+        }),
+      )
+      setReportSource('po')
+    } catch (e) {
+      setError(contractErrorText((e as { code?: string }).code ?? 'internal', e instanceof Error ? e.message : String(e)))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const exportPo = async (): Promise<void> => {
+    if (!poOut.trim()) {
+      setError(t('ex.needDir'))
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await clientInstance.getClient().exportProjectPo({
+        project_id: projectId,
+        session_epoch: epoch,
+        out_po: { path: poOut.trim() },
+        locale: folderForm(st.targetLocale),
+      })
+      setPoStats({ total: r.keys_total, translated: r.keys_translated, out: r.out_po })
     } catch (e) {
       setError(contractErrorText((e as { code?: string }).code ?? 'internal', e instanceof Error ? e.message : String(e)))
     } finally {
@@ -82,13 +151,22 @@ export function Existing() {
     setBusy(true)
     setError(null)
     try {
-      const r = await clientInstance.getClient().applyExisting({
-        project_id: projectId,
-        expected_revision: acked,
-        session_epoch: epoch,
-        existing_dir: { path: dir.trim() },
-        locale: folderForm(st.targetLocale),
-      })
+      const r =
+        reportSource === 'po'
+          ? await clientInstance.getClient().applyExistingPo({
+              project_id: projectId,
+              expected_revision: acked,
+              session_epoch: epoch,
+              po_path: { path: poPath.trim() },
+              locale: folderForm(st.targetLocale),
+            })
+          : await clientInstance.getClient().applyExisting({
+              project_id: projectId,
+              expected_revision: acked,
+              session_epoch: epoch,
+              existing_dir: { path: dir.trim() },
+              locale: folderForm(st.targetLocale),
+            })
       setApplied(r.applied)
       setReport(null)
       await projectStore.adoptExternal()
@@ -142,6 +220,55 @@ export function Existing() {
             data-testid="ex.apply"
           >
             <Check /> {t('ex.apply', { count: report?.reusable_count ?? 0 })}
+          </button>
+        </div>
+      </div>
+
+      {/* UI-10: the project-exchange PO — export the durable translations
+          for external CAT tools; import/apply a .po pack through the SAME
+          review/apply flow as a folder pack. */}
+      <div className="import-form" data-testid="ex.po-block">
+        <label className="field">
+          <span>{t('ex.poOut')}</span>
+          <div className="out-dir-row">
+            <input
+              value={poOut}
+              onChange={(e) => setPoOut(e.target.value)}
+              placeholder={t('ex.poOutPlaceholder')}
+              disabled={busy}
+              data-testid="ex.po-out"
+            />
+          </div>
+        </label>
+        <div className="build-actions">
+          <button disabled={busy || !poOut.trim()} onClick={() => void exportPo()} data-testid="ex.po-export">
+            <Download /> {t('ex.poExport')}
+          </button>
+        </div>
+        {poStats && (
+          <div className="inline-success" role="status" data-testid="ex.po-exported">
+            <Check /> {t('ex.poExported', { total: poStats.total, translated: poStats.translated })}{' '}
+            <code>{poStats.out}</code>
+          </div>
+        )}
+        <label className="field">
+          <span>{t('ex.poIn')}</span>
+          <div className="out-dir-row">
+            <input
+              value={poPath}
+              onChange={(e) => setPoPath(e.target.value)}
+              placeholder={t('ex.poInPlaceholder')}
+              disabled={busy}
+              data-testid="ex.po-path"
+            />
+            <button type="button" onClick={() => void pickPo()} disabled={busy} data-testid="ex.po-pick">
+              <FileText /> {t('be.pick')}
+            </button>
+          </div>
+        </label>
+        <div className="build-actions">
+          <button disabled={busy || !poPath.trim()} onClick={() => void analyzePo()} data-testid="ex.po-analyze">
+            <Upload /> {t('ex.poAnalyze')}
           </button>
         </div>
       </div>

@@ -3114,6 +3114,10 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // W2 (existing-pack flow): dry-run analysis + guarded application.
     "project_import_existing",
     "project_apply_existing",
+    // UI-10: project-exchange PO (export + analyze-through-the-same-flow).
+    "project_export_po",
+    "project_import_po",
+    "project_apply_po",
     // Wave 13: project glossary (generic project state, persist-before-ack).
     "project_glossary",
     "project_glossary_upsert",
@@ -3168,6 +3172,7 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "diff_xml_cmd",
     "get_cli_i18n",
     "pick_directory",
+    "pick_po_file",
     // selfloc entry (mandate D): resolve the app-bundled UI catalog dir —
     // read-only shell extra, same class as pick_directory.
     "selfloc_catalog_dir",
@@ -3916,6 +3921,9 @@ fn main() {
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
             rimloc_gui_lib::contract_adapter::project_apply_existing,
+            rimloc_gui_lib::contract_adapter::project_export_po,
+            rimloc_gui_lib::contract_adapter::project_import_po,
+            rimloc_gui_lib::contract_adapter::project_apply_po,
             // Wave 13: project glossary.
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
@@ -3969,6 +3977,7 @@ fn main() {
             init_lang_cmd,
             get_log_info,
             pick_directory,
+            pick_po_file,
             save_text_via_dialog,
             log_message,
             open_path,
@@ -4025,6 +4034,9 @@ fn main() {
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
             rimloc_gui_lib::contract_adapter::project_apply_existing,
+            rimloc_gui_lib::contract_adapter::project_export_po,
+            rimloc_gui_lib::contract_adapter::project_import_po,
+            rimloc_gui_lib::contract_adapter::project_apply_po,
             // Wave 13: project glossary.
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
@@ -4074,6 +4086,7 @@ fn main() {
             diff_xml_cmd,
             get_cli_i18n,
             pick_directory,
+            pick_po_file,
             // selfloc entry (mandate D): resolve the app-bundled UI catalog
             // dir — read-only shell extra, same class as pick_directory.
             selfloc_catalog_dir,
@@ -4301,6 +4314,20 @@ fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
     Ok(LogInfo {
         log_path: state.path.display().to_string(),
     })
+}
+
+/// UI-10: native OS file dialog restricted to .po files (the
+/// project-exchange import). Resolves the picked ABSOLUTE path, or null
+/// when the user cancelled — null is a normal outcome, never an error.
+#[tauri::command]
+fn pick_po_file(window: Window) -> Result<Option<String>, ApiError> {
+    let picked = window
+        .dialog()
+        .file()
+        .add_filter("PO translation files", &["po"])
+        .blocking_pick_file()
+        .map(|p| p.simplified().to_string());
+    Ok(picked)
 }
 
 #[tauri::command]

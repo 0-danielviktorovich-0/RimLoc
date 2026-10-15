@@ -4519,6 +4519,7 @@ dependencies = [
  "color-eyre",
  "regex",
  "rimloc-core",
+ "rimloc-import-po",
  "tempfile",
 ]
 

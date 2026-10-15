@@ -60,6 +60,12 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // existing translation pack against the open project.
     "project_import_existing",
     "project_apply_existing",
+    // UI-10 (file-format parity): the project-exchange PO — export the
+    // durable translations and analyze a PO pack through the SAME
+    // existing-pack review/apply flow.
+    "project_export_po",
+    "project_import_po",
+    "project_apply_po",
     // Wave 13: project glossary — generic project state, persist-before-ack.
     "project_glossary",
     "project_glossary_upsert",
@@ -996,6 +1002,69 @@ pub fn project_apply_existing(
     traced_simple("project_apply_existing", || {
         manager.apply_existing(&request)
     })
+}
+
+/// `project_export_po` (UI-10) — the project-exchange PO: msgid is the
+/// canonical source text, msgstr the CURRENT durable translation of the
+/// requested locale. The write is guarded like every export (absolute
+/// path, never inside the read-only source tree or the managed root).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_export_po(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ExportProjectPoRequest,
+) -> Result<
+    rimloc_services::contract::ExportProjectPoResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_export_po", || {
+        let out_po = std::path::PathBuf::from(&request.out_po.path);
+        manager.export_project_po(
+            &request.project_id,
+            request.session_epoch,
+            &out_po,
+            &request.locale,
+        )
+    })
+}
+
+/// `project_import_po` (UI-10) — analyze an existing-translation PO FILE
+/// through the same temp-pack rebuild + analyzer as the folder pack, so
+/// the review UI and the guarded apply stay identical.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_import_po(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ImportExistingPoRequest,
+) -> Result<
+    rimloc_services::contract::ImportExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_import_po", || manager.import_existing_po(&request))
+}
+
+/// `project_apply_po` (UI-10) — apply the REUSABLE set of an analyzed PO
+/// pack; persist-before-ack, identical safety semantics to the folder
+/// apply (conflicts never overwritten, ambiguous never auto-applied).
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_apply_po(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::ApplyExistingPoRequest,
+) -> Result<
+    rimloc_services::contract::ApplyExistingResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_apply_po", || manager.apply_existing_po(&request))
 }
 
 // Chat batch (external-AI workflow WITHOUT an API): the TM chain again —

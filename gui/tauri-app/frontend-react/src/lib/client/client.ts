@@ -17,6 +17,10 @@ import type {
   SourceSearchReportDto,
   SourceXmlPreviewDto,
   ApplyExistingRequestDto,
+  ApplyExistingPoRequestDto,
+  ExportProjectPoRequestDto,
+  ExportProjectPoResponseDto,
+  ImportExistingPoRequestDto,
   ApplyExistingResponseDto,
   BuildIdentityDto,
   ApplyIntentsRequestDto,
@@ -277,6 +281,25 @@ export class RimLocClient {
    *  ambiguous lines are never auto-applied. */
   async applyExisting(request: ApplyExistingRequestDto): Promise<ApplyExistingResponseDto> {
     return this.call('project_apply_existing', { request });
+  }
+
+  /** UI-10: analyze an existing-translation PO FILE as a pack source.
+   *  The backend rebuilds it into the canonical tree and runs the SAME
+   *  analyzer as importExisting — the review/apply flow is identical. */
+  async importExistingPo(request: ImportExistingPoRequestDto): Promise<ImportExistingResponseDto> {
+    return this.call('project_import_po', { request });
+  }
+
+  /** UI-10: write the project-exchange PO (msgid = canonical source,
+   *  msgstr = the current durable translation of the locale). */
+  async exportProjectPo(request: ExportProjectPoRequestDto): Promise<ExportProjectPoResponseDto> {
+    return this.call('project_export_po', { request });
+  }
+
+  /** UI-10: apply the REUSABLE set of an analyzed PO pack (guarded,
+   *  persist-before-ack — identical semantics to applyExisting). */
+  async applyExistingPo(request: ApplyExistingPoRequestDto): Promise<ApplyExistingResponseDto> {
+    return this.call('project_apply_po', { request });
   }
 
   /** Read-only cross-version diff of two mod roots (compare screen):
@@ -592,6 +615,12 @@ export class RimLocClient {
    *  without the desktop bridge, and the mock never fakes one. */
   async pickDirectory(initial?: string): Promise<string | null> {
     return this.call('pick_directory', initial ? { initial } : {});
+  }
+
+  /** Native OS file dialog restricted to .po files (UI-10 exchange
+   *  import). Resolves the picked ABSOLUTE path, or null on cancel. */
+  async pickPoFile(): Promise<string | null> {
+    return this.call('pick_po_file', {});
   }
 
   /** Reveal output (§8 F8.4): open the output directory of the last

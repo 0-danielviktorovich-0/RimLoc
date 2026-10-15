@@ -334,6 +334,44 @@ export interface ApplyExistingRequestDto {
   locale: string;
 }
 
+// --- UI-10: the project-exchange PO (mirrors contract.rs) ---
+
+export interface ImportExistingPoRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .po file. */
+  po_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ExportProjectPoRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .po file to write. */
+  out_po: { path: string };
+  /** Locale whose translations to export. */
+  locale: string;
+}
+
+export interface ApplyExistingPoRequestDto {
+  project_id: string;
+  expected_revision: number;
+  session_epoch: number;
+  /** Absolute path of the .po file. */
+  po_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ExportProjectPoResponseDto {
+  job_id: string;
+  out_po: string;
+  keys_total: number;
+  keys_translated: number;
+  keys_unmatched: number;
+}
+
 export interface ApplyExistingResponseDto {
   job_id: string;
   revision: number;
@@ -453,6 +491,7 @@ export type ContractMethod =
   // fills absolute paths from the OS dialog instead of hand-typing them.
   // The mock transport refuses it honestly — no OS dialog exists there.
   | 'pick_directory'
+  | 'pick_po_file'
   // Self-localization entry (mandate D, shell-level like pick_directory):
   // resolves the app-bundled RimLoc UI catalog as an ordinary project
   // source dir (mod_root for the EXISTING contract create flow). The mock
@@ -477,6 +516,9 @@ export type ContractMethod =
   // application against the open project.
   | 'project_import_existing'
   | 'project_apply_existing'
+  | 'project_export_po'
+  | 'project_import_po'
+  | 'project_apply_po'
   // Project glossary (wave 13): generic project state, persist-before-ack.
   | 'project_glossary'
   | 'project_glossary_upsert'

@@ -23,7 +23,11 @@ import type {
   ChatBatchStatusRequestDto,
   ChatBatchStatusResponseDto,
   ContractHandshakeDto,
+  ApplyExistingPoRequestDto,
   ContractMethod,
+  ExportProjectPoRequestDto,
+  ExportProjectPoResponseDto,
+  ImportExistingPoRequestDto,
   CreateProjectRequestDto,
   DiagnoseResponseDto,
   DraftEntryDto,
@@ -95,6 +99,8 @@ export interface ContractMethodMap {
   // dialog's start directory; null result = the user cancelled. No OS
   // dialog exists outside the desktop bridge — the mock refuses honestly.
   pick_directory: { params: { initial?: string }; result: string | null };
+  // Native file dialog restricted to .po files (UI-10 exchange import).
+  pick_po_file: { params: Record<string, never>; result: string | null };
   // Self-localization entry (mandate D): absolute path of the app-managed
   // RimLoc UI catalog project dir (mod_root for project_create). Refused
   // honestly in mock — there is no bundled catalog outside the desktop app.
@@ -135,6 +141,19 @@ export interface ContractMethodMap {
   };
   project_apply_existing: {
     params: { request: ApplyExistingRequestDto };
+    result: ApplyExistingResponseDto;
+  };
+  // UI-10: the project-exchange PO (export / analyze / guarded apply).
+  project_export_po: {
+    params: { request: ExportProjectPoRequestDto };
+    result: ExportProjectPoResponseDto;
+  };
+  project_import_po: {
+    params: { request: ImportExistingPoRequestDto };
+    result: ImportExistingResponseDto;
+  };
+  project_apply_po: {
+    params: { request: ApplyExistingPoRequestDto };
     result: ApplyExistingResponseDto;
   };
   // Project glossary (wave 13): generic project state, persist-before-ack.
