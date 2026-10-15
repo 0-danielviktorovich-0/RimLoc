@@ -1754,21 +1754,19 @@ impl ProjectSessionManager {
                 format!("malformed locale `{locale}`: expected letters, digits, `_`, `-`"),
             ));
         }
-        let job_id: JobId = generate_operation_id();
+        let _job_id: JobId = generate_operation_id();
 
         let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
-        // The scratch root is a process-generated constant plus the
-        // operation id (not user input); the locale is the barrier-checked
-        // single component above.
-        let scratch = std::env::temp_dir().join(format!(
-            "rimloc-xml-preview-{}",
-            job_id.trim_start_matches("op-")
-        ));
-        std::fs::create_dir_all(&scratch)
+        // The scratch directory is CREATED AND NAMED by the tempfile crate
+        // (random name inside the OS temp dir) — no user-controlled bytes
+        // ever enter the path, and the directory is removed on drop even
+        // on the error path (no manual cleanup to forget).
+        let scratch = tempfile::TempDir::new()
             .map_err(|e| ContractError::new(ContractErrorCode::SaveFailed, e.to_string()))?;
+        let scratch_path = scratch.path().to_path_buf();
         let result = crate::project::write_rimworld_translation(
             &st.project,
-            &scratch,
+            &scratch_path,
             locale,
             &st.display_name,
             &crate::util::package_id_slug(&st.display_name),
@@ -1779,9 +1777,9 @@ impl ProjectSessionManager {
         let mut truncated = false;
         const MAX_FILES: usize = 60;
         const MAX_BYTES_PER_FILE: usize = 384 * 1024;
-        let lang_root = scratch.join("Languages").join(locale);
         if result.is_ok() {
-            let mut stack = vec![lang_root.clone()];
+            let lang_root = scratch_path.join("Languages").join(locale);
+            let mut stack = vec![lang_root];
             while let Some(dir) = stack.pop() {
                 let Ok(read) = std::fs::read_dir(&dir) else {
                     continue;
@@ -1801,7 +1799,7 @@ impl ProjectSessionManager {
                             truncated = true;
                         }
                         let rel = path
-                            .strip_prefix(&scratch)
+                            .strip_prefix(&scratch_path)
                             .map(|p| p.to_string_lossy().replace('\\', "/"))
                             .unwrap_or_default();
                         let mut xml =
@@ -1819,8 +1817,6 @@ impl ProjectSessionManager {
             }
             files.sort_by(|a, b| a.path.cmp(&b.path));
         }
-        // Best-effort scratch cleanup (own temp dir; never user data).
-        let _ = std::fs::remove_dir_all(&scratch);
         let report = result.map_err(|e| {
             ContractError::new(
                 ContractErrorCode::Internal,
@@ -1837,7 +1833,7 @@ impl ProjectSessionManager {
             ));
         }
         Ok(crate::contract::OutputXmlPreviewResponse {
-            job_id,
+            job_id: _job_id,
             locale: locale.to_string(),
             files,
             truncated,
