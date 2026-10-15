@@ -6570,7 +6570,6 @@ mod source_language_contract {
         _dir: tempfile::TempDir,
         mgr: ProjectSessionManager,
         project_id: String,
-        revision: u64,
         epoch: SessionEpoch,
     }
 
@@ -6605,7 +6604,7 @@ mod source_language_contract {
                 action: IntentAction::SetTranslation,
                 text: Some(text.into()),
             }],
-            origin: Some(ApplyOrigin::Human),
+            origin: Some(crate::contract::ApplyOrigin::Human),
         })
         .unwrap();
         let after = mgr.snapshot(&snap.project_id).unwrap();
@@ -6613,7 +6612,6 @@ mod source_language_contract {
             _dir: dir,
             mgr,
             project_id: snap.project_id.clone(),
-            revision: after.revision,
             epoch: snap.session_epoch,
         }
     }
@@ -6649,7 +6647,6 @@ mod source_language_contract {
 
     #[test]
     fn preview_refuses_case_colliding_defnames_via_shared_validation() {
-        use crate::contract::{ApplyIntentsRequest, ApplyOrigin, IntentAction, TranslationIntent};
         let fx = preview_fixture("ok text");
         // Inject a case-colliding defName directly into the project
         // entries list, then add a translation for it so the serializer
