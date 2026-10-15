@@ -653,6 +653,52 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (!lightApplied) throw new Error('light theme not restored after second toggle')
   })
 
+
+  it('UI-09: the Settings page renders with all sections and the shell persists', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await waitExisting('[data-testid="settings.ui-zoom"]', 30000)
+    // Key settings sections are present.
+    const sections = await browser.$$('.settings-section')
+    if (sections.length < 2) throw new Error(`expected ≥2 settings sections, got ${sections.length}`)
+    // The zoom selector is present and has the requested steps.
+    const zoomSelect = await browser.$('[data-testid="settings.ui-zoom"]')
+    const opts = await zoomSelect.$$('option')
+    const zoomValues: string[] = []
+    for (const o of opts) zoomValues.push(await o.getValue())
+    for (const expected of ['0.8', '0.9', '1', '1.1', '1.25', '1.5']) {
+      if (!zoomValues.includes(expected)) {
+        throw new Error(`zoom step ${expected} missing from the settings: ${zoomValues}`)
+      }
+    }
+    // The theme toggle is present in the topbar.
+    if (!(await browser.$('[data-testid="theme-toggle"]').isExisting())) {
+      throw new Error('theme toggle missing from the topbar')
+    }
+    // Navigate away and back: the settings still render.
+    await browser.execute(() => {
+      window.location.hash = '#/projects'
+    })
+    await pause(500)
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await waitExisting('[data-testid="settings.ui-zoom"]', 10000)
+  })
+
+  it('UI-09: the Projects page renders and navigates without errors', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/projects'
+    })
+    await waitExisting('[data-testid="wizard.open"]', 15000)
+    // The page renders without a crash.
+    const bodyText = await browser.execute(
+      () => document.querySelector('.page-content')?.textContent?.length ?? 0,
+    )
+    if (bodyText < 10) throw new Error('Projects page has no content')
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'
