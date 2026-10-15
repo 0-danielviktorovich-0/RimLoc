@@ -664,6 +664,64 @@ pub struct ImportExistingRequest {
     pub locale: String,
 }
 
+/// `project_import_po` (UI-10): analyze an existing-translation PO FILE
+/// as a pack source. The PO is rebuilt into the canonical Languages tree
+/// in a session-owned temp dir and fed through the SAME analyzer as
+/// [`ImportExistingRequest`], so the review/apply flow stays identical.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ImportExistingPoRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .po file (form guard: relative refused).
+    pub po_path: PathBufDto,
+    /// Target locale the PO would feed (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_apply_existing_po` (UI-10): apply the REUSABLE set of an
+/// analyzed PO pack — the PO is rebuilt into the canonical tree and
+/// applied through the SAME core as [`ApplyExistingRequest`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ApplyExistingPoRequest {
+    pub project_id: ProjectId,
+    pub expected_revision: Revision,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .po file (form guard: relative refused).
+    pub po_path: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_export_po` (UI-10): write the project-exchange PO — msgid is
+/// the canonical source text, msgstr the CURRENT durable translation of
+/// the requested locale. Both directions go through the canonical
+/// Languages-tree representation, so an exported PO re-imports into the
+/// same inventory losslessly.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectPoRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .po file to write. Guarded like every output
+    /// write: never inside the read-only source tree or the managed root.
+    pub out_po: PathBufDto,
+    /// Locale whose translations to export (strict language-folder form).
+    pub locale: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectPoResponse {
+    pub job_id: JobId,
+    /// Absolute path of the written .po file.
+    pub out_po: String,
+    /// Rows in the file (canonical tree keys).
+    pub keys_total: usize,
+    /// Rows whose msgstr is non-empty.
+    pub keys_translated: usize,
+    /// Serialized-tree units that resolved to no canonical entry —
+    /// reported, never silently dropped.
+    pub keys_unmatched: usize,
+}
+
 /// One analyzed pack line in a capped sample list. `entry` carries the
 /// FULL structural identity the line addresses (reusable / conflicts).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]

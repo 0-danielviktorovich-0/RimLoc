@@ -2418,57 +2418,251 @@ impl ProjectSessionManager {
         log.end_stage("analyze");
         log.finish();
 
-        Ok(crate::contract::ImportExistingResponse {
+        Ok(existing_analysis_to_response(job_id, analysis))
+    }
+
+    /// `project_export_po` (UI-10) — the project-exchange PO: the canonical
+    /// tree for `<locale>` is serialized into a session-owned temp dir,
+    /// REPARSED through the existing scanner (the same acceptance the real
+    /// export uses), and written as a PO whose msgid is the canonical
+    /// source text and msgstr the current durable translation. Guards are
+    /// the export family: absolute out path, never inside the read-only
+    /// source tree or the managed root.
+    pub fn export_project_po(
+        &self,
+        project_id: &str,
+        session_epoch: SessionEpoch,
+        out_po: &Path,
+        locale: &str,
+    ) -> Result<crate::contract::ExportProjectPoResponse, ContractError> {
+        self.managed_path(project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != session_epoch {
+            return Err(ContractError::stale_epoch(session_epoch, st.epoch));
+        }
+        ensure_locale_form(locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // Path-FORM guard: a relative path would land wherever the GUI
+        // process was launched from — refused before any IO, same as the
+        // export_project discipline.
+        if !out_po.is_absolute() {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidOutputPath,
+                format!(
+                    "output PO path `{}` is not absolute; specify an absolute file path",
+                    out_po.display()
+                ),
+            ));
+        }
+        // Read-only source-tree + managed-root guards (fail-closed): the
+        // session must know its source root for the guard to be
+        // establishable at all.
+        if st.mod_root.as_os_str().is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "the session has no source root recorded; the read-only source-tree guard cannot be established — re-create the project from its source mod".to_string(),
+            ));
+        }
+        if crate::is_within(out_po, &st.mod_root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "output PO `{}` is inside the read-only source tree `{}`",
+                    out_po.display(),
+                    st.mod_root.display()
+                ),
+            ));
+        }
+        if crate::is_within(out_po, &self.managed_root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "output PO `{}` is inside the managed projects root `{}`",
+                    out_po.display(),
+                    self.managed_root.display()
+                ),
+            ));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_export_po");
+        log.begin_stage("serialize");
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        let temp = tempfile::Builder::new()
+            .prefix("rimloc-po-export")
+            .tempdir()
+            .map_err(|e| {
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("po export temp dir: {e}"),
+                )
+            })?;
+        let report = crate::project::write_rimworld_translation(
+            &st.project,
+            temp.path(),
+            locale,
+            &st.display_name,
+            &crate::util::package_id_slug(&st.display_name),
+            &rw_version,
+        )
+        .map_err(|e| {
+            log.error_message("serialize", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("po export serialization failed: {e}"),
+            )
+        })?;
+        log.end_stage("serialize");
+
+        // Reparse the canonical tree BEFORE writing the PO: the exchange
+        // file is built from what the scanner reads back, never from the
+        // writer's private accounting.
+        log.begin_stage("reparse");
+        let units = rimloc_parsers_xml::scan_keyed_xml(&report.out_mod).map_err(|e| {
+            log.error_message("reparse", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("po export reparse failed: {e}"),
+            )
+        })?;
+        log.end_stage("reparse");
+
+        log.begin_stage("write");
+        let outcome = crate::project::po_exchange_rows(&st.project, &units);
+        let stats = rimloc_export_po::write_po_translated(out_po, Some(locale), &outcome.rows)
+            .map_err(|e| {
+                log.error_message("write", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("po export write failed: {e}"),
+                )
+            })?;
+        log.counter("write", "rows", stats.total as u64);
+        log.counter("write", "unmatched", outcome.unmatched as u64);
+        log.end_stage("write");
+        log.finish();
+
+        Ok(crate::contract::ExportProjectPoResponse {
             job_id,
-            scanned_files: analysis.scanned_files,
-            scanned_keys: analysis.scanned_keys,
-            reusable_count: analysis.reusable_count,
-            conflict_count: analysis.conflict_count,
-            obsolete_count: analysis.obsolete_count,
-            ambiguous_count: analysis.ambiguous_count,
-            invalid_count: analysis.invalid_count,
-            new_count: analysis.new_uncovered,
-            reusable: analysis
-                .reusable
-                .into_iter()
-                .map(|l| crate::contract::ExistingMatchItem {
-                    key: l.key,
-                    entry: l.target,
-                })
-                .collect(),
-            conflicts: analysis
-                .conflicts
-                .into_iter()
-                .map(|l| crate::contract::ExistingMatchItem {
-                    key: l.key,
-                    entry: l.target,
-                })
-                .collect(),
-            obsolete: analysis
-                .obsolete
-                .into_iter()
-                .map(|l| crate::contract::ExistingMatchItem {
-                    key: l.key,
-                    entry: l.target,
-                })
-                .collect(),
-            ambiguous: analysis
-                .ambiguous
-                .into_iter()
-                .map(|l| crate::contract::ExistingAmbiguousItem {
-                    key: l.key,
-                    candidates: l.candidates,
-                })
-                .collect(),
-            invalid: analysis
-                .invalid
-                .into_iter()
-                .map(|l| crate::contract::ExistingMatchItem {
-                    key: l.key,
-                    entry: l.target,
-                })
-                .collect(),
+            out_po: out_po.display().to_string(),
+            keys_total: stats.total,
+            keys_translated: stats.tm_filled,
+            keys_unmatched: outcome.unmatched,
         })
+    }
+
+    /// `project_import_po` (UI-10) — analyze an existing-translation PO
+    /// FILE: the PO is rebuilt into the canonical Languages tree inside a
+    /// session-owned temp dir (the SAME rebuilder the CLI import uses)
+    /// and fed through the SAME analyzer as `project_import_existing`, so
+    /// the review UI and the guarded apply stay identical.
+    pub fn import_existing_po(
+        &self,
+        req: &crate::contract::ImportExistingPoRequest,
+    ) -> Result<crate::contract::ImportExistingResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let po_path = PathBuf::from(&req.po_path.path);
+        if !po_path.is_absolute() {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidOutputPath,
+                format!(
+                    "PO path `{}` is not absolute; specify an absolute file path",
+                    po_path.display()
+                ),
+            ));
+        }
+        if crate::is_within(&po_path, &self.managed_root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "PO path `{}` is inside the managed projects root `{}`",
+                    po_path.display(),
+                    self.managed_root.display()
+                ),
+            ));
+        }
+        if !po_path.is_file() {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                format!("PO file `{}` does not exist", po_path.display()),
+            ));
+        }
+
+        let job_id: JobId = generate_operation_id();
+        let mut log = OperationLog::new("project_import_po");
+        log.begin_stage("rebuild");
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        let temp = tempfile::Builder::new()
+            .prefix("rimloc-po-import")
+            .tempdir()
+            .map_err(|e| {
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("po import temp dir: {e}"),
+                )
+            })?;
+        rimloc_import_po::build_translation_mod_with_langdir_opts(
+            &po_path,
+            temp.path(),
+            &req.locale,
+            "RimLoc PO Import",
+            "rimloc.po-import",
+            &rw_version,
+            true,  // dedupe: last definition wins, same as the CLI default
+            true,  // skip_empty: an empty msgstr is not a translation
+        )
+        .map_err(|e| {
+            log.error_message("rebuild", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("po import rebuild failed: {e}"),
+            )
+        })?;
+        let pack_root = temp.path().join("Languages").join(&req.locale);
+        log.end_stage("rebuild");
+
+        log.begin_stage("analyze");
+        let analysis =
+            crate::project::analyze_existing_translation(&st.project, &pack_root, &req.locale)
+                .map_err(|e| {
+                log.error_message("analyze", &e.to_string());
+                log.finish();
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("po import analysis failed: {e}"),
+                )
+            })?;
+        log.counter("analyze", "keys", analysis.scanned_keys as u64);
+        log.end_stage("analyze");
+        log.finish();
+
+        Ok(existing_analysis_to_response(job_id, analysis))
     }
 
     /// `project_apply_existing` — apply the REUSABLE set of an existing
@@ -2510,122 +2704,239 @@ impl ProjectSessionManager {
         ensure_locale_form(&req.locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
         let existing_dir = existing_pack_dir(&req.existing_dir, &self.managed_root, &req.locale)?;
+        apply_analyzed_pack(
+            &mut st,
+            &req.project_id,
+            &existing_dir,
+            &req.locale,
+            "project_apply_existing",
+        )
+    }
 
-        let job_id: JobId = generate_operation_id();
-        let mut log = OperationLog::new("project_apply_existing");
-        log.begin_stage("apply");
-        // Pre-apply analysis drives the response's safety accounting; the
-        // application itself is the SAME service call the corpus harness
-        // verifies (matched + empty slots only, origin=Imported).
-        let analysis =
-            crate::project::analyze_existing_translation(&st.project, &existing_dir, &req.locale)
-                .map_err(|e| {
+    /// `project_apply_existing_po` (UI-10) — apply the REUSABLE set of an
+    /// analyzed PO pack. The PO is rebuilt into the canonical Languages
+    /// tree inside a session-owned temp dir and applied through the SAME
+    /// core as the folder pack (guards, revision bump, persist-before-ack
+    /// are byte-identical, so the review/apply contract does not fork).
+    pub fn apply_existing_po(
+        &self,
+        req: &crate::contract::ApplyExistingPoRequest,
+    ) -> Result<crate::contract::ApplyExistingResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+
+        // Stale-session guard (same discipline as `apply`).
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        // Lost-update guard against the last ACKED revision.
+        let base = if st.dirty {
+            st.acked_revision
+        } else {
+            st.revision
+        };
+        if req.expected_revision != base {
+            return Err(ContractError::stale_revision(req.expected_revision, base));
+        }
+        ensure_locale_form(&req.locale)
+            .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        let po_path = PathBuf::from(&req.po_path.path);
+        if !po_path.is_absolute() {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidOutputPath,
+                format!(
+                    "PO path `{}` is not absolute; specify an absolute file path",
+                    po_path.display()
+                ),
+            ));
+        }
+        if crate::is_within(&po_path, &self.managed_root) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!(
+                    "PO path `{}` is inside the managed projects root `{}`",
+                    po_path.display(),
+                    self.managed_root.display()
+                ),
+            ));
+        }
+        if !po_path.is_file() {
+            return Err(ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                format!("PO file `{}` does not exist", po_path.display()),
+            ));
+        }
+
+        let rw_version = st.target_version.clone().unwrap_or_else(|| "1.6".into());
+        let temp = tempfile::Builder::new()
+            .prefix("rimloc-po-apply")
+            .tempdir()
+            .map_err(|e| {
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("po apply temp dir: {e}"),
+                )
+            })?;
+        rimloc_import_po::build_translation_mod_with_langdir_opts(
+            &po_path,
+            temp.path(),
+            &req.locale,
+            "RimLoc PO Import",
+            "rimloc.po-import",
+            &rw_version,
+            true, // dedupe: last definition wins, same as the CLI default
+            true, // skip_empty: an empty msgstr is not a translation
+        )
+        .map_err(|e| {
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("po apply rebuild failed: {e}"),
+            )
+        })?;
+        let pack_root = temp.path().join("Languages").join(&req.locale);
+        apply_analyzed_pack(
+            &mut st,
+            &req.project_id,
+            &pack_root,
+            &req.locale,
+            "project_apply_po",
+        )
+    }
+}
+
+/// Shared apply core for the existing-pack flow (folder + PO packs):
+/// analyze the pack, apply the reusable set, bump the revision and
+/// persist-before-ack. Both callers (`project_apply_existing` and
+/// `project_apply_existing_po`) feed a pack dir whose layout is
+/// `Keyed/…` + `DefInjected/<DefType>/…` — the analyzer's one contract.
+fn apply_analyzed_pack(
+    st: &mut SessionState,
+    project_id: &str,
+    existing_dir: &Path,
+    locale: &str,
+    op: &str,
+) -> Result<crate::contract::ApplyExistingResponse, ContractError> {
+    let job_id: JobId = generate_operation_id();
+    let mut log = OperationLog::new(op);
+    log.begin_stage("apply");
+    // Pre-apply analysis drives the response's safety accounting; the
+    // application itself is the SAME service call the corpus harness
+    // verifies (matched + empty slots only, origin=Imported).
+    let analysis =
+        crate::project::analyze_existing_translation(&st.project, existing_dir, locale)
+            .map_err(|e| {
+            log.error_message("apply", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("existing-pack analysis failed: {e}"),
+            )
+        })?;
+    let applied =
+            crate::project::apply_existing_translation(&mut st.project, existing_dir, locale)
+            .map_err(|e| {
                 log.error_message("apply", &e.to_string());
                 log.finish();
                 ContractError::new(
                     ContractErrorCode::Internal,
-                    format!("existing-pack analysis failed: {e}"),
+                    format!("existing-pack application failed: {e}"),
                 )
             })?;
-        let applied =
-            crate::project::apply_existing_translation(&mut st.project, &existing_dir, &req.locale)
-                .map_err(|e| {
-                    log.error_message("apply", &e.to_string());
-                    log.finish();
-                    ContractError::new(
-                        ContractErrorCode::Internal,
-                        format!("existing-pack application failed: {e}"),
-                    )
-                })?;
-        log.counter("apply", "applied", applied as u64);
-        log.end_stage("apply");
+    log.counter("apply", "applied", applied as u64);
+    log.end_stage("apply");
 
-        // A clean no-op: nothing was reusable AND the session holds no
-        // pending work from a previously failed save — no revision bump, no
-        // save, no dirty state.
-        if applied == 0 && !st.dirty {
-            log.finish();
-            return Ok(crate::contract::ApplyExistingResponse {
-                job_id,
-                revision: st.revision,
-                applied: 0,
-                conflicts: analysis.conflict_count,
-                unmatched: analysis.obsolete_count,
-                ambiguous: analysis.ambiguous_count,
-            });
-        }
-
-        // Revision bump + persist-before-ack (identical to `apply`).
-        //
-        // Dirty-retry completion: a failed save never PUBLISHED its
-        // revision (the bump lives only in memory, `dirty` keeps the acked
-        // base legal for a retry). On such a retry the pack's reusable
-        // lines are already in memory — this pass applies nothing new, but
-        // the pending revision from the failed save is COMPLETED: the same
-        // revision is persisted and acked now, so the caller never receives
-        // an `Ok` revision that is not on disk. (The intents path never
-        // hits this because re-applying intents re-applies; slot-filling is
-        // one-shot, so this is the first operation with a deterministic
-        // zero-new-lines retry.)
-        let new_revision = if applied == 0 {
-            st.revision
-        } else {
-            let bumped = st.revision + 1;
-            st.revision = bumped;
-            bumped
-        };
-        log.begin_stage("persist");
-        let meta = ProjectEnvelopeMeta {
-            project_id: Some(req.project_id.clone()),
-            revision: Some(new_revision),
-            display_name: Some(st.display_name.clone()),
-            source_root: envelope_source_root(&st.mod_root),
-            source_fingerprint: st.source_fingerprint.clone(),
-        };
-        if let Some(expected) = &st.disk_hash {
-            let current = disk_hash(&st.path);
-            if current.is_some_and(|c| &c != expected) {
-                st.dirty = true;
-                log.error_message(
-                    "persist",
-                    "managed file changed outside the session (content hash mismatch)",
-                );
-                log.finish();
-                return Err(ContractError::new(
-                    ContractErrorCode::ProjectChangedOnDisk,
-                    "the managed project file changed outside this session; refresh to adopt \
-                     the on-disk state (in-memory edits are kept until then)"
-                        .to_string(),
-                ));
-            }
-        }
-        match save_project_with_meta(&st.project, &meta, &st.path) {
-            Ok(()) => {
-                st.acked_revision = new_revision;
-                st.disk_hash = disk_hash(&st.path);
-                st.dirty = false;
-            }
-            Err(e) => {
-                st.dirty = true;
-                log.error_message("persist", &e.to_string());
-                log.finish();
-                return Err(ContractError::new(
-                    ContractErrorCode::SaveFailed,
-                    format!("persist failed: {e}"),
-                ));
-            }
-        }
-        log.end_stage("persist");
+    // A clean no-op: nothing was reusable AND the session holds no
+    // pending work from a previously failed save — no revision bump, no
+    // save, no dirty state.
+    if applied == 0 && !st.dirty {
         log.finish();
-        Ok(crate::contract::ApplyExistingResponse {
+        return Ok(crate::contract::ApplyExistingResponse {
             job_id,
-            revision: new_revision,
-            applied,
+            revision: st.revision,
+            applied: 0,
             conflicts: analysis.conflict_count,
             unmatched: analysis.obsolete_count,
             ambiguous: analysis.ambiguous_count,
-        })
+        });
     }
+
+    // Revision bump + persist-before-ack (identical to `apply`).
+    //
+    // Dirty-retry completion: a failed save never PUBLISHED its
+    // revision (the bump lives only in memory, `dirty` keeps the acked
+    // base legal for a retry). On such a retry the pack's reusable
+    // lines are already in memory — this pass applies nothing new, but
+    // the pending revision from the failed save is COMPLETED: the same
+    // revision is persisted and acked now, so the caller never receives
+    // an `Ok` revision that is not on disk. (The intents path never
+    // hits this because re-applying intents re-applies; slot-filling is
+    // one-shot, so this is the first operation with a deterministic
+    // zero-new-lines retry.)
+    let new_revision = if applied == 0 {
+        st.revision
+    } else {
+        let bumped = st.revision + 1;
+        st.revision = bumped;
+        bumped
+    };
+    log.begin_stage("persist");
+    let meta = ProjectEnvelopeMeta {
+        project_id: Some(project_id.to_string()),
+        revision: Some(new_revision),
+        display_name: Some(st.display_name.clone()),
+        source_root: envelope_source_root(&st.mod_root),
+        source_fingerprint: st.source_fingerprint.clone(),
+    };
+    if let Some(expected) = &st.disk_hash {
+        let current = disk_hash(&st.path);
+        if current.is_some_and(|c| &c != expected) {
+            st.dirty = true;
+            log.error_message(
+                "persist",
+                "managed file changed outside the session (content hash mismatch)",
+            );
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::ProjectChangedOnDisk,
+                "the managed project file changed outside this session; refresh to adopt \
+                 the on-disk state (in-memory edits are kept until then)"
+                    .to_string(),
+            ));
+        }
+    }
+    match save_project_with_meta(&st.project, &meta, &st.path) {
+        Ok(()) => {
+            st.acked_revision = new_revision;
+            st.disk_hash = disk_hash(&st.path);
+            st.dirty = false;
+        }
+        Err(e) => {
+            st.dirty = true;
+            log.error_message("persist", &e.to_string());
+            log.finish();
+            return Err(ContractError::new(
+                ContractErrorCode::SaveFailed,
+                format!("persist failed: {e}"),
+            ));
+        }
+    }
+    log.end_stage("persist");
+    log.finish();
+    Ok(crate::contract::ApplyExistingResponse {
+        job_id,
+        revision: new_revision,
+        applied,
+        conflicts: analysis.conflict_count,
+        unmatched: analysis.obsolete_count,
+        ambiguous: analysis.ambiguous_count,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -3040,6 +3351,65 @@ fn existing_pack_dir(
         ));
     }
     Ok(dir)
+}
+
+/// The one analysis→wire mapping, shared by the folder-pack analyzer and
+/// the PO-pack analyzer (UI-10) — the review UI consumes one shape.
+fn existing_analysis_to_response(
+    job_id: JobId,
+    analysis: crate::project::ExistingPackAnalysis,
+) -> crate::contract::ImportExistingResponse {
+    crate::contract::ImportExistingResponse {
+        job_id,
+        scanned_files: analysis.scanned_files,
+        scanned_keys: analysis.scanned_keys,
+        reusable_count: analysis.reusable_count,
+        conflict_count: analysis.conflict_count,
+        obsolete_count: analysis.obsolete_count,
+        ambiguous_count: analysis.ambiguous_count,
+        invalid_count: analysis.invalid_count,
+        new_count: analysis.new_uncovered,
+        reusable: analysis
+            .reusable
+            .into_iter()
+            .map(|l| crate::contract::ExistingMatchItem {
+                key: l.key,
+                entry: l.target,
+            })
+            .collect(),
+        conflicts: analysis
+            .conflicts
+            .into_iter()
+            .map(|l| crate::contract::ExistingMatchItem {
+                key: l.key,
+                entry: l.target,
+            })
+            .collect(),
+        obsolete: analysis
+            .obsolete
+            .into_iter()
+            .map(|l| crate::contract::ExistingMatchItem {
+                key: l.key,
+                entry: l.target,
+            })
+            .collect(),
+        ambiguous: analysis
+            .ambiguous
+            .into_iter()
+            .map(|l| crate::contract::ExistingAmbiguousItem {
+                key: l.key,
+                candidates: l.candidates,
+            })
+            .collect(),
+        invalid: analysis
+            .invalid
+            .into_iter()
+            .map(|l| crate::contract::ExistingMatchItem {
+                key: l.key,
+                entry: l.target,
+            })
+            .collect(),
+    }
 }
 
 /// Virtual validation path for one entry translation, mirroring the REAL
@@ -6158,6 +6528,211 @@ mod tests {
             .iter()
             .find(|t| t.source_id.key == "Farewell" && t.locale == "Russian");
         assert!(farewell.is_none(), "dry-run must not apply anything");
+    }
+
+    // --- UI-10: the project-exchange PO (export → import round trip) ---
+
+    /// Export writes a PO whose msgstr carries the durable translations;
+    /// re-importing that PO through the analyzer classifies the SAME keys
+    /// as reusable on a fresh project over the same mod — the exchange
+    /// format round-trips through the canonical tree.
+    #[test]
+    fn po_exchange_round_trips_through_analyze() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // Two durable translations (one Keyed, one DefInjected) to export.
+        // The shared `intent` helper pins DefInjected; the Keyed intent is
+        // spelled out so the exported tree covers BOTH kinds.
+        let keyed_greeting = crate::contract::TranslationIntent {
+            entry: SourceEntryId {
+                kind: EntryKind::Keyed,
+                key: "Greeting".into(),
+                def_type: None,
+            },
+            locale: "Russian".into(),
+            action: IntentAction::SetTranslation,
+            text: Some("привет из проекта".into()),
+        };
+        let apply = mgr
+            .apply(&req(
+                &snap.project_id,
+                1,
+                1,
+                vec![
+                    keyed_greeting,
+                    set_text("Alpha.label", "ThingDef", "альфа из проекта"),
+                ],
+            ))
+            .unwrap();
+        assert_eq!(apply.applied, 2, "{apply:?}");
+
+        let out_po = root.join("exchange.po");
+        let resp = mgr
+            .export_project_po(&snap.project_id, snap.session_epoch, &out_po, "Russian")
+            .unwrap();
+        assert_eq!(resp.keys_total, 2, "{resp:?}");
+        assert_eq!(resp.keys_translated, 2);
+        assert_eq!(resp.keys_unmatched, 0);
+        let po_text = std::fs::read_to_string(&out_po).unwrap();
+        assert!(po_text.contains("msgctxt \"Greeting\""), "{po_text}");
+        assert!(po_text.contains("msgstr \"привет из проекта\""), "{po_text}");
+        assert!(
+            po_text.contains("Languages/Russian/DefInjected/"),
+            "reference must carry the canonical tree layout: {po_text}"
+        );
+        assert!(po_text.contains("msgid \"hello\""), "msgid must be the SOURCE text");
+
+        // The exported PO feeds the SAME analyzer on a FRESH project over
+        // the same mod: both keys classify reusable, nothing is applied.
+        let fresh = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let import = mgr
+            .import_existing_po(&crate::contract::ImportExistingPoRequest {
+                project_id: fresh.project_id.clone(),
+                session_epoch: fresh.session_epoch,
+                po_path: crate::contract::PathBufDto::new(out_po.display().to_string()),
+                locale: "Russian".into(),
+            })
+            .unwrap();
+        assert_eq!(import.reusable_count, 2, "{import:?}");
+        assert_eq!(import.conflict_count, 0);
+        let keys: Vec<&str> = import.reusable.iter().map(|i| i.key.as_str()).collect();
+        assert!(keys.contains(&"Greeting"));
+        assert!(keys.contains(&"Alpha.label"));
+        // Analyze wrote nothing into the fresh session.
+        let after = mgr.snapshot(&fresh.project_id).unwrap();
+        assert_eq!(after.revision, fresh.revision);
+    }
+
+    /// The exported PO APPLIES through the guarded PO apply: the reusable
+    /// set lands as Imported translations, the revision bumps, and the
+    /// state persists (reload from disk proves it).
+    #[test]
+    fn po_apply_round_trip_persists_and_reloads() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let source = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        // A translation to export (the durable state the exchange carries).
+        mgr.apply(&req(
+            &source.project_id,
+            1,
+            1,
+            vec![set_text("Alpha.label", "ThingDef", "альфа из экспорта")],
+        ))
+        .unwrap();
+        let out_po = root.join("apply.po");
+        mgr.export_project_po(&source.project_id, source.session_epoch, &out_po, "Russian")
+            .unwrap();
+
+        // Fresh project over the same mod: analyze the PO, then APPLY it.
+        let fresh = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+        let apply = mgr
+            .apply_existing_po(&crate::contract::ApplyExistingPoRequest {
+                project_id: fresh.project_id.clone(),
+                expected_revision: fresh.revision,
+                session_epoch: fresh.session_epoch,
+                po_path: crate::contract::PathBufDto::new(out_po.display().to_string()),
+                locale: "Russian".into(),
+            })
+            .unwrap();
+        assert_eq!(apply.applied, 1, "{apply:?}");
+        assert_eq!(apply.revision, fresh.revision + 1);
+
+        // Reload from disk: the applied translation is durable.
+        let reopened = mgr.open(&fresh.project_id).unwrap();
+        let t = reopened
+            .project
+            .translations
+            .iter()
+            .find(|t| t.source_id.key == "Alpha.label" && t.locale == "Russian")
+            .expect("applied translation must persist");
+        assert_eq!(t.text.as_deref(), Some("альфа из экспорта"));
+
+        // Applying AGAIN classifies the same line as a CONFLICT (existing
+        // work wins) and applies nothing.
+        let again = mgr
+            .apply_existing_po(&crate::contract::ApplyExistingPoRequest {
+                project_id: fresh.project_id.clone(),
+                expected_revision: apply.revision,
+                session_epoch: reopened.session_epoch,
+                po_path: crate::contract::PathBufDto::new(out_po.display().to_string()),
+                locale: "Russian".into(),
+            })
+            .unwrap();
+        assert_eq!(again.applied, 0);
+        assert_eq!(again.conflicts, 1);
+    }
+
+    /// The exchange-PO guards are typed: relative out path, output inside
+    /// the managed root, stale epoch, and a missing PO file all refuse
+    /// before any write.
+    #[test]
+    fn po_exchange_guards_are_typed() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        mod_with_partial_pack(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+
+        // Relative out path refused.
+        let err = mgr
+            .export_project_po(
+                &snap.project_id,
+                snap.session_epoch,
+                Path::new("relative/out.po"),
+                "Russian",
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::InvalidOutputPath);
+
+        // Output inside the managed root refused.
+        let err = mgr
+            .export_project_po(
+                &snap.project_id,
+                snap.session_epoch,
+                &root.join("managed/x.po"),
+                "Russian",
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::GuardOutputDenied);
+
+        // Stale epoch refused (both directions).
+        let err = mgr
+            .export_project_po(
+                &snap.project_id,
+                snap.session_epoch + 9,
+                &root.join("out.po"),
+                "Russian",
+            )
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::StaleEpoch);
+        let err = mgr
+            .import_existing_po(&crate::contract::ImportExistingPoRequest {
+                project_id: snap.project_id.clone(),
+                session_epoch: snap.session_epoch + 9,
+                po_path: crate::contract::PathBufDto::new("/tmp/whatever.po"),
+                locale: "Russian".into(),
+            })
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::StaleEpoch);
+
+        // A missing PO file is a typed refusal.
+        let err = mgr
+            .import_existing_po(&crate::contract::ImportExistingPoRequest {
+                project_id: snap.project_id.clone(),
+                session_epoch: snap.session_epoch,
+                po_path: crate::contract::PathBufDto::new(
+                    root.join("no-such.po").display().to_string(),
+                ),
+                locale: "Russian".into(),
+            })
+            .unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::InvalidConfig);
     }
 
     /// Apply moves ONLY the reusable set: conflicts keep the manual text

@@ -50,18 +50,25 @@ pub fn write_po(path: &Path, units: &[TransUnit], lang: Option<&str>) -> Result<
     write_po_with_tm(path, units, lang, None).map(|_| ())
 }
 
-/// Write PO with optional translation memory (key -> translation).
-/// When TM hit is found, we prefill msgstr and mark entry as fuzzy.
-pub fn write_po_with_tm(
-    path: &Path,
-    units: &[TransUnit],
-    lang: Option<&str>,
-    tm: Option<&std::collections::HashMap<String, String>>,
-) -> Result<PoStats> {
-    let file = File::create(path)?;
-    let mut w = BufWriter::new(file);
+/// One project-exchange row: canonical key, source text, current
+/// translation. The exchange PO is the round-trip format for external CAT
+/// tools (Poedit et al.).
+#[derive(Debug, Clone)]
+pub struct PoExchangeRow {
+    /// Canonical key — the import parser keeps the part of msgctxt
+    /// before '|' so a bare key round-trips.
+    pub key: String,
+    /// Source-language text (msgid).
+    pub source: String,
+    /// Current project translation (msgstr).
+    pub translation: String,
+    /// Optional `#: reference` (`path` or `path:line`) — the PO import
+    /// path rebuilder splits the pack back into files from it, so a
+    /// RimLoc-exported PO re-imports losslessly.
+    pub reference: Option<String>,
+}
 
-    // --- Header ---
+fn write_po_header(w: &mut impl Write, lang: Option<&str>) -> Result<()> {
     writeln!(w, "msgid \"\"")?;
     writeln!(w, "msgstr \"\"")?;
     writeln!(w, "\"Project-Id-Version: rimloc 0.1\\n\"")?;
@@ -84,6 +91,22 @@ pub fn write_po_with_tm(
         rimloc_core::RIMLOC_SCHEMA_VERSION
     )?;
     writeln!(w)?; // пустая строка
+    Ok(())
+}
+
+/// Write PO with optional translation memory (key -> translation).
+/// When TM hit is found, we prefill msgstr and mark entry as fuzzy.
+pub fn write_po_with_tm(
+    path: &Path,
+    units: &[TransUnit],
+    lang: Option<&str>,
+    tm: Option<&std::collections::HashMap<String, String>>,
+) -> Result<PoStats> {
+    let file = File::create(path)?;
+    let mut w = BufWriter::new(file);
+
+    // --- Header ---
+    write_po_header(&mut w, lang)?;
 
     let mut stats = PoStats::default();
 
@@ -128,6 +151,38 @@ pub fn write_po_with_tm(
         writeln!(w)?;
     }
 
+    w.flush()?;
+    Ok(stats)
+}
+
+/// Write the PROJECT EXCHANGE PO: msgstr carries the current translations
+/// (never fuzzy — they are the durable project state), msgid carries the
+/// source text. Pairs with `rimloc-import-po`'s tree rebuilder: when
+/// `reference` is set, re-import splits the rows back into the canonical
+/// file layout, so export → external tool → import round-trips.
+pub fn write_po_translated(
+    path: &Path,
+    lang: Option<&str>,
+    rows: &[PoExchangeRow],
+) -> Result<PoStats> {
+    let file = File::create(path)?;
+    let mut w = BufWriter::new(file);
+    write_po_header(&mut w, lang)?;
+    let mut stats = PoStats::default();
+    for row in rows {
+        stats.total += 1;
+        let translated = !row.translation.trim().is_empty();
+        if translated {
+            stats.tm_filled += 1;
+        }
+        if let Some(reference) = &row.reference {
+            writeln!(w, "#: {}", escape_po(reference))?;
+        }
+        writeln!(w, "msgctxt \"{}\"", escape_po(&row.key))?;
+        writeln!(w, "msgid \"{}\"", escape_po(&row.source))?;
+        writeln!(w, "msgstr \"{}\"", escape_po(&row.translation))?;
+        writeln!(w)?;
+    }
     w.flush()?;
     Ok(stats)
 }
@@ -204,5 +259,38 @@ mod tests {
             !s.contains("&lt;") && !s.contains("&amp;"),
             "msgid must not double-escape entities"
         );
+    }
+
+    #[test]
+    fn exchange_po_round_trips_through_the_import_parser() {
+        let tmp = NamedTempFile::new().unwrap();
+        let rows = vec![
+            PoExchangeRow {
+                key: "Greeting".into(),
+                source: "Hello".into(),
+                translation: "Привет".into(),
+                reference: Some("/tmp/export/Languages/ru/Keyed/A.xml:2".into()),
+            },
+            PoExchangeRow {
+                key: "Farewell".into(),
+                source: "Bye".into(),
+                translation: String::new(),
+                reference: None,
+            },
+        ];
+        let stats = write_po_translated(tmp.path(), Some("ru"), &rows).unwrap();
+        assert_eq!(stats.total, 2);
+        assert_eq!(stats.tm_filled, 1, "one translated row");
+
+        let entries = rimloc_import_po::read_po_entries(tmp.path()).unwrap();
+        assert_eq!(entries.len(), 2, "{entries:?}");
+        let greeting = entries.iter().find(|e| e.key == "Greeting").unwrap();
+        assert_eq!(greeting.value, "Привет");
+        assert!(
+            greeting.reference.as_deref().unwrap_or("").contains("Keyed/A.xml:2"),
+            "reference must survive for the tree rebuilder: {greeting:?}"
+        );
+        let farewell = entries.iter().find(|e| e.key == "Farewell").unwrap();
+        assert_eq!(farewell.value, "", "untranslated row stays empty");
     }
 }
