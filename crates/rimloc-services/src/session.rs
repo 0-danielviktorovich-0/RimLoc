@@ -6640,8 +6640,7 @@ mod source_language_contract {
         let err = fx
             .mgr
             .project_output_xml_preview(&fx.project_id, fx.epoch, "Russian")
-            .err()
-            .expect("poisoned preview must be refused");
+            .unwrap_err();
         assert!(
             err.message.contains("invalid in XML 1.0"),
             "expected XML 1.0 refusal, got: {err:?}"
