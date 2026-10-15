@@ -699,6 +699,76 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (bodyText < 10) throw new Error('Projects page has no content')
   })
 
+
+  it('UI-03: nav collapse persists across navigation and Settings/Projects render (UI-09)', async () => {
+    // Navigate away from workspace to verify the shell-level collapse persists.
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await waitExisting('[data-testid="settings.ui-zoom"]', 30000)
+    // Collapse the nav (the topbar toggle).
+    await browser.$('[data-testid="shell.nav-toggle"]').click()
+    await pause(500)
+    // Navigate to Projects and back to Settings: the nav stays collapsed.
+    await browser.execute(() => {
+      window.location.hash = '#/projects'
+    })
+    await pause(600)
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await pause(600)
+    const sidebarHidden = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      if (!el) return true
+      const cs = getComputedStyle(el)
+      return cs.display === 'none' || el.getBoundingClientRect().width === 0
+    })
+    if (!sidebarHidden) throw new Error('nav collapse did not persist across navigation')
+    // Restore the nav.
+    await browser.$('[data-testid="shell.nav-toggle"]').click()
+    await pause(500)
+    const sidebarBack = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      if (!el) return false
+      return el.getBoundingClientRect().width > 0
+    })
+    if (!sidebarBack) throw new Error('nav restore failed')
+  })
+
+  it('UI-09: Settings renders with all requested sections', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await waitExisting('[data-testid="settings.ui-zoom"]', 30000)
+    // Zoom selector with the requested steps.
+    const zoom = await browser.$('[data-testid="settings.ui-zoom"]')
+    const opts = await zoom.$$('option')
+    const values: string[] = []
+    for (const o of opts) values.push(await o.getValue())
+    for (const step of ['0.8', '0.9', '1', '1.1', '1.25', '1.5']) {
+      if (!values.includes(step)) throw new Error(`zoom step ${step} missing: ${values}`)
+    }
+    // The theme toggle is present.
+    if (!(await browser.$('[data-testid="theme-toggle"]').isExisting())) {
+      throw new Error('theme toggle missing')
+    }
+    // Settings sections render.
+    const sections = await browser.$$('.settings-section')
+    if (sections.length < 2) throw new Error(`expected ≥2 settings sections, got ${sections.length}`)
+  })
+
+  it('UI-09: the Projects page renders and navigates', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/projects'
+    })
+    await waitExisting('[data-testid="wizard.open"]', 15000)
+    const contentLen = await browser.execute(
+      () => document.querySelector('.page-content')?.textContent?.length ?? 0,
+    )
+    if (contentLen < 10) throw new Error('Projects page has no content')
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'
