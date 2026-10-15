@@ -769,6 +769,55 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (contentLen < 10) throw new Error('Projects page has no content')
   })
 
+
+  it('UI-03: nav collapse persists across page reload (restart proxy)', async () => {
+    // Navigate to a page and collapse the nav.
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await waitExisting('[data-testid="settings.ui-zoom"]', 15000)
+    await browser.$('[data-testid="shell.nav-toggle"]').click()
+    await pause(500)
+    // Simulate an app restart by reloading the page (localStorage persists).
+    await browser.refresh()
+    await pause(2000)
+    await waitExisting('.app-sidebar', 15000)
+    const collapsedAfterReload = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      if (!el) return 'missing'
+      const cs = getComputedStyle(el)
+      return cs.display === 'none' || el.getBoundingClientRect().width === 0
+    })
+    if (collapsedAfterReload !== true) {
+      throw new Error(`nav collapse did not persist across reload: ${collapsedAfterReload}`)
+    }
+    // Restore for subsequent tests.
+    await browser.$('[data-testid="shell.nav-toggle"]').click()
+    await pause(500)
+    const restored = await browser.execute(() => {
+      const el = document.querySelector('.app-sidebar')
+      return el ? el.getBoundingClientRect().width > 0 : false
+    })
+    if (!restored) throw new Error('nav restore failed after persistence test')
+  })
+
+  it('UI-10: CLI↔GUI parity — all GUI routes exist and respond', async () => {
+    // Enumerate the routes the GUI exposes and verify each renders without
+    // crashing. This is the GUI-side of the parity audit — CLI commands are
+    // audited separately in the parity matrix.
+    const routes = ['#/projects', '#/settings', '#/about', '#/chatbatch']
+    for (const route of routes) {
+      await browser.execute((r) => {
+        window.location.hash = r
+      }, route)
+      await pause(500)
+      const content = await browser.execute(
+        () => document.querySelector('.page-content')?.textContent?.length ?? 0,
+      )
+      if (content < 10) throw new Error(`route ${route} has no content (${content} chars)`)
+    }
+  })
+
   it('About: hero, four actions, support panel, foldable tech identity', async () => {
     await browser.execute(() => {
       window.location.hash = '#/about'
