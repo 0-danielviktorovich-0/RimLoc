@@ -6681,8 +6681,7 @@ mod source_language_contract {
         let err = fx
             .mgr
             .project_output_xml_preview(&fx.project_id, fx.epoch, "Russian")
-            .err()
-            .expect("case-colliding preview must be refused");
+            .unwrap_err();
         assert!(
             err.message.contains("differ only in case"),
             "expected case-collision refusal, got: {err:?}"
