@@ -2,7 +2,7 @@
 
 Owner requirement: per-item VERIFIED / PARTIAL / MISSING with evidence, no
 generic statuses. Head of record: `feat/integration-rel27` (PR #101),
-current `4fcf315` (reviewer carry-overs applied and lane-tested).
+current `8ea7b96` (UI-05 output XML preview landed; security barrier verified — 0 open code-scanning alerts).
 Native evidence: `RimLoc-evidence/reviewer/2026-10-15-integration-ui-e2e.txt`
 (7/7 lane on the packaged automation build) + this file's source anchors.
 
