@@ -35,7 +35,7 @@ import { Existing } from './components/Existing'
 import { Compare } from './components/Compare'
 import { Selfloc } from './components/Selfloc'
 import { Diagnostics } from './components/Diagnostics'
-import { Settings, type ThemePref, readUiZoom } from './components/Settings'
+import { Settings, type ThemePref, readUiZoom, readUiDensity } from './components/Settings'
 import { About } from './components/About'
 import { ProvidersScreen } from './components/ProvidersScreen'
 import { LanguageManager } from './components/LanguageManager'
@@ -169,6 +169,15 @@ export function App() {
     const onZoom = (): void => setUiZoom(readUiZoom())
     window.addEventListener('rimloc.ui.zoom', onZoom)
     return () => window.removeEventListener('rimloc.ui.zoom', onZoom)
+  }, [])
+  // UI-04: density re-tunes row padding / list gaps (data-density on the
+  // shell root) — orthogonal to zoom, persisted, live via the same
+  // custom-event pattern.
+  const [uiDensity, setUiDensity] = useState(readUiDensity)
+  useEffect(() => {
+    const onDensity = (): void => setUiDensity(readUiDensity())
+    window.addEventListener('rimloc.ui.density', onDensity)
+    return () => window.removeEventListener('rimloc.ui.density', onDensity)
   }, [])
   // UI-локаль — ЕДИНЫЙ источник в состоянии App (audit v2 #4/#5): смена
   // языка в Settings вызывает setLocale + сеттинг стейта → немедленный
@@ -304,7 +313,11 @@ export function App() {
   }
 
   return (
-    <div className={`rim-app${navCollapsed ? ' nav-collapsed' : ''}${navOpen ? ' mobile-nav-open' : ''}`} style={{ zoom: uiZoom }}>
+    <div
+      className={`rim-app${navCollapsed ? ' nav-collapsed' : ''}${navOpen ? ' mobile-nav-open' : ''}`}
+      data-density={uiDensity}
+      style={{ zoom: uiZoom }}
+    >
       <aside className="app-sidebar">
         <a href="#/projects" className="brand">
           <div className="brand-mark">

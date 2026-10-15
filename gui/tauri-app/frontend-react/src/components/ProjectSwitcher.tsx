@@ -111,14 +111,14 @@ export function ProjectSwitcher() {
             data-testid="sidebar.switcher-backdrop"
           />
           <div style={listStyle} data-testid="sidebar.switcher-list">
-            <p style={{ fontSize: 8, color: 'var(--muted-foreground)', padding: '4px 6px', textTransform: 'uppercase' }}>
+            <p style={{ fontSize: 10, color: 'var(--muted-foreground)', padding: '4px 6px', textTransform: 'uppercase' }}>
               {t('shell.switcherHeading')}
             </p>
             {st.load.kind === 'error' && (
-              <p style={{ fontSize: 9, color: 'var(--warning)', padding: '4px 6px' }}>{st.load.message}</p>
+              <p style={{ fontSize: 10, color: 'var(--warning)', padding: '4px 6px' }}>{st.load.message}</p>
             )}
             {others.length === 0 && st.load.kind !== 'loading' && (
-              <p style={{ fontSize: 9, color: 'var(--muted-foreground)', padding: '4px 6px' }}>
+              <p style={{ fontSize: 10, color: 'var(--muted-foreground)', padding: '4px 6px' }}>
                 {t('shell.noOtherProjects')}
               </p>
             )}
@@ -133,7 +133,7 @@ export function ProjectSwitcher() {
                 <strong style={{ fontSize: 11, fontWeight: 500 }}>
                   {p.name?.trim() ? p.name : shortId(p.project_id)}
                 </strong>
-                <span style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>
+                <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
                   {t('home.revision')} {p.revision}
                 </span>
               </button>

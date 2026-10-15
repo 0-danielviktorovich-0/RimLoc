@@ -12,6 +12,7 @@ import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, Circl
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
 import { entryUid } from '../lib/state/entryUid'
+import { readUiDensity } from '../lib/state/density'
 import {
   sourceSearchStore,
   useSourceSearch,
@@ -25,6 +26,11 @@ import { t, tEnum } from '../lib/i18n'
 import type { GlossaryTermDto, SourceEntryIdDto, SourceXmlPreviewDto, SourceXmlPreviewLineDto, ValidationFindingDto } from '../lib/client/types'
 
 const ROW_HEIGHT = 63
+// UI-04: compact density shrinks the VIRTUALIZED row too — the
+// virtualizer's fixed size must match the CSS row, so the height is
+// re-read from the persisted density on every render (the shell
+// re-renders on the density event).
+const COMPACT_ROW_HEIGHT = 40
 
 /** Display keys carried by more than one structural entry (review P0-2):
  *  their rows get a def-type discriminator in the label, so two Def types
@@ -703,12 +709,19 @@ function EntryList({
   onSelect: (key: string) => void
 }) {
   const parentRef = useRef<HTMLDivElement>(null)
+  // UI-04: the row size follows the persisted density (comfortable 63 /
+  // compact 40); measure() re-locks the virtualizer when it changes.
+  const rowHeight = readUiDensity() === 'compact' ? COMPACT_ROW_HEIGHT : ROW_HEIGHT
   const virtualizer = useVirtualizer({
     count: entries.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: 12,
   })
+  useEffect(() => {
+    virtualizer.measure()
+    // virtualizer is stable per @tanstack/react-virtual contract
+  }, [rowHeight, virtualizer])
   // UI-08 (owner audit Oct-14): after a filter change / keyboard move the
   // selected row must be scrolled INTO the viewport, not hidden above or
   // below the fold. Index-based — fires on selection change only.
@@ -756,7 +769,7 @@ function EntryList({
                   top: 0,
                   left: 0,
                   width: '100%',
-                  height: ROW_HEIGHT,
+                  height: rowHeight,
                   transform: `translateY(${vi.start}px)`,
                   ...(selectedKey === e.uid ? { backgroundColor: 'var(--accent)' } : {}),
                 }}
@@ -988,7 +1001,7 @@ function EntryEditor(props: {
               (sessionStorage + навигация); никаких вызовов провайдера. */}
           <button
             className="icon-btn"
-            style={{ width: 'auto', padding: '0 9px', fontSize: 9 }}
+            style={{ width: 'auto', padding: '0 9px', fontSize: 10 }}
             aria-label={t('ws.toChatbatchHint')}
             title={t('ws.toChatbatchHint')}
             data-testid="ws.editor-to-chatbatch"
@@ -1025,7 +1038,7 @@ function EntryEditor(props: {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Sparkles size={13} /> {t('ws.mtTitle')}
           </span>
-          <span style={{ fontSize: 8 }}>{t('ws.mtHint')}</span>
+          <span style={{ fontSize: 10 }}>{t('ws.mtHint')}</span>
         </button>
         {/* SOURCE block (Source Inspector, live): every row is backed by the
             contract snapshot — file+line (source_ref), winner reason
@@ -1196,7 +1209,7 @@ function EntryEditor(props: {
               )}
             {props.outputPreview?.status === 'done' && (
               <>
-                <div data-testid="ws.output.meta" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                <div data-testid="ws.output.meta" style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>
                   {t('ws.output.canonical')} · {props.outputPreview.locale} · {props.outputPreview.files.length}{' '}
                   {t('ws.output.files')}
                   {props.outputPreview.truncated ? ` · ${t('ws.output.truncated')}` : ''}
@@ -1228,7 +1241,7 @@ function EntryEditor(props: {
                     }
                     return (
                       <>
-                        <div data-testid="ws.output.file" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                        <div data-testid="ws.output.file" style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>
                           <code>{hit.path}</code>
                         </div>
                         <pre data-testid="ws.output-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
@@ -1259,7 +1272,7 @@ function EntryEditor(props: {
               </div>
             ) : (
               <>
-                <div data-testid="ws.xml.meta" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                <div data-testid="ws.xml.meta" style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>
                   {xmlPreview.file} · {xmlPreview.total} {t('ws.xml.lines')}
                   {(xmlPreview.truncated_head || xmlPreview.truncated_tail) ? ' · windowed' : ''}
                 </div>
@@ -1412,7 +1425,7 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
                       onClick={() => sourceSearchStore.toggleStatusFilter(status)}
                       className="status-label"
                       style={{
-                        fontSize: 9,
+                        fontSize: 10,
                         padding: '1px 6px',
                         borderRadius: 999,
                         border: '1px solid var(--border)',
@@ -1430,7 +1443,7 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
                     data-testid="ss.filter.clear"
                     onClick={() => sourceSearchStore.clearStatusFilter()}
                     className="status-label"
-                    style={{ fontSize: 9, padding: '1px 6px', cursor: 'pointer', border: 'none', background: 'transparent', textDecoration: 'underline' }}
+                    style={{ fontSize: 10, padding: '1px 6px', cursor: 'pointer', border: 'none', background: 'transparent', textDecoration: 'underline' }}
                   >
                     {t('ss.filterAll')}
                   </button>
@@ -1446,15 +1459,15 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
                   <div key={`${m.file}:${m.line}:${i}`} data-testid={`ss.match.${i}`} style={{ borderBottom: '1px solid var(--border)', padding: '4px 0' }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
                       <code style={{ fontSize: 10 }}>{m.file}:{m.line}</code>
-                      <span className="status-label text-muted-foreground" style={{ fontSize: 9 }}>
+                      <span className="status-label text-muted-foreground" style={{ fontSize: 10 }}>
                         {t(`ss.status.${m.status}`)}
                       </span>
                     </div>
                     <div style={{ fontSize: 11 }}>{m.line_text}</div>
                     {m.xml_context && (
-                      <div style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>{m.xml_context}</div>
+                      <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{m.xml_context}</div>
                     )}
-                    <div style={{ fontSize: 9, color: 'var(--muted-foreground)' }}>
+                    <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
                       {t('ss.detail')}: {m.detail}
                     </div>
                   </div>

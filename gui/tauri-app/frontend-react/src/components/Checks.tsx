@@ -188,7 +188,7 @@ export function Checks() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 5,
-                    fontSize: 9,
+                    fontSize: 10,
                     color: 'var(--primary)',
                     whiteSpace: 'nowrap',
                   }}

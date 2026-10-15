@@ -1217,4 +1217,74 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     })
     await waitExisting('[data-testid="ws.root"]', 30000)
   })
+  it('UI-04: the density control re-tunes entry rows independently of zoom and persists', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    await waitExisting('.entry-list .entry-row', 30000)
+    // Comfortable baseline.
+    await browser.execute(() => {
+      window.localStorage.setItem('rimloc.ui.density', 'comfortable')
+      window.dispatchEvent(new CustomEvent('rimloc.ui.density'))
+    })
+    await pause(400)
+    const measure = () =>
+      browser.execute(() => {
+        const row = document.querySelector('.entry-list .entry-row') as HTMLElement | null
+        if (!row) return null
+        const cs = getComputedStyle(row)
+        return { height: row.getBoundingClientRect().height, pad: cs.paddingTop, density: document.querySelector('.rim-app')?.getAttribute('data-density') ?? '' }
+      })
+    const comfortable = (await measure()) as { height: number; pad: string; density: string }
+    if (comfortable.density !== 'comfortable') {
+      throw new Error(`expected data-density=comfortable, got: ${comfortable.density}`)
+    }
+    // Compact must SHRINK the real rendered rows (bounding boxes, not
+    // class reads) while zoom stays untouched.
+    await browser.execute(() => {
+      window.localStorage.setItem('rimloc.ui.density', 'compact')
+      window.dispatchEvent(new CustomEvent('rimloc.ui.density'))
+    })
+    await pause(400)
+    const compact = (await measure()) as { height: number; pad: string; density: string }
+    if (compact.density !== 'compact') {
+      throw new Error(`expected data-density=compact, got: ${compact.density}`)
+    }
+    if (compact.height >= comfortable.height) {
+      throw new Error(`compact rows must be shorter: ${compact.height} vs ${comfortable.height}`)
+    }
+    // The Settings control reflects the persisted value.
+    await browser.execute(() => {
+      window.location.hash = '#/settings'
+    })
+    await waitExisting('[data-testid="settings.ui-density"]', 15000)
+    const value = await browser.$('[data-testid="settings.ui-density"]').getValue()
+    if (value !== 'compact') {
+      throw new Error(`settings density select must show compact, got: ${value}`)
+    }
+    // Small-text floor: the smallest element inside the entry list never
+    // renders below 10px (the audit's 7-9px tier is gone).
+    const smallest = await browser.execute(() => {
+      let min = 999
+      for (const el of Array.from(document.querySelectorAll('.entry-list *'))) {
+        const fs = parseFloat(getComputedStyle(el).fontSize)
+        if (Number.isFinite(fs) && fs > 0) min = Math.min(min, fs)
+      }
+      return min
+    })
+    if (smallest < 9.5) {
+      throw new Error(`small-text floor violated: ${smallest}px inside the entry list`)
+    }
+    // Persisted across a reload (the restart proxy) — LAST in the suite:
+    // a reload boots an empty in-memory session, so nothing may follow.
+    await browser.refresh()
+    await pause(1500)
+    const persisted = await browser.execute(() =>
+      document.querySelector('.rim-app')?.getAttribute('data-density') ?? '',
+    )
+    if (persisted !== 'compact') {
+      throw new Error(`density must persist across reload, got: ${persisted}`)
+    }
+  })
 })

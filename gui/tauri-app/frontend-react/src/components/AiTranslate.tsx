@@ -289,8 +289,8 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
               {job.rows.map((r) => (
                 <div key={r.identity} data-testid="ai.row" style={{ borderBottom: '1px solid var(--border)', padding: '3px 0' }}>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-                    <code style={{ fontSize: 9 }}>{r.identity}</code>
-                    <span className="status-label" style={{ fontSize: 9 }}>{r.status}</span>
+                    <code style={{ fontSize: 10 }}>{r.identity}</code>
+                    <span className="status-label" style={{ fontSize: 10 }}>{r.status}</span>
                   </div>
                   <div style={{ fontSize: 11 }}>
                     {r.source} → {r.target ?? '—'}

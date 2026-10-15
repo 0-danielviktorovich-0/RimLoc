@@ -28,6 +28,12 @@ export function writeUiZoom(z: number): void {
   window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
 }
 
+// UI-04: the density primitive lives in lib/state/density.ts (state
+// consumers import it cycle-free); the Settings control re-exports it.
+export { readUiDensity, writeUiDensity, type UiDensity } from '../lib/state/density'
+import { readUiDensity, writeUiDensity as persistDensity, type UiDensity as Density } from '../lib/state/density'
+
+
 export function Settings(props: {
   theme: ThemePref
   onThemeChange: (v: ThemePref) => void
@@ -90,6 +96,17 @@ export function Settings(props: {
             <option value="1.1">110%</option>
             <option value="1.25">125%</option>
             <option value="1.5">150%</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.uiDensity')}</span>
+          <select
+            value={readUiDensity()}
+            onChange={(e) => persistDensity(e.target.value as Density)}
+            data-testid="settings.ui-density"
+          >
+            <option value="comfortable">{t('settings.densityComfortable')}</option>
+            <option value="compact">{t('settings.densityCompact')}</option>
           </select>
         </label>
       </section>
