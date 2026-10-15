@@ -44,6 +44,18 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       `${MOD}/Defs/Beta.xml`,
       '<Defs><HediffDef><defName>Beta</defName><label>Beta label</label><description>Beta description text</description></HediffDef></Defs>',
     )
+    // Collision pair: ThingDef and HediffDef sharing the display key
+    // Dup.label — their canonical outputs land in DIFFERENT files
+    // (DefInjected/ThingDef/Dup.xml vs DefInjected/HediffDef/Dup.xml),
+    // which is exactly the discrimination UI-05 P1-B requires.
+    writeFileSync(
+      `${MOD}/Defs/DupThing.xml`,
+      '<Defs><ThingDef><defName>Dup</defName><label>Dup thing label</label></ThingDef></Defs>',
+    )
+    writeFileSync(
+      `${MOD}/Defs/DupHediff.xml`,
+      '<Defs><HediffDef><defName>DupH</defName><label>Dup hediff label</label></HediffDef></Defs>',
+    )
   })
 
   it('project created through the wizard', async () => {
@@ -383,6 +395,69 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     const meta = await browser.$('[data-testid="ws.output.meta"]').getText()
     if (!/canonical|канонический/i.test(meta)) throw new Error(`meta missing: ${meta}`)
     if (!meta.includes('Russian')) throw new Error(`meta missing the locale: ${meta}`)
+    const pickRow = async (needle: string): Promise<void> => {
+      const rows = await browser.$$('.entry-list .entry-row')
+      for (const r of rows) {
+        if ((await r.getText()).includes(needle)) {
+          await r.click()
+          return
+        }
+      }
+      throw new Error(`row ${needle} not found`)
+    }
+    // P1-B discrimination: two rows share the display key Dup.label —
+    // select each and verify the tab shows ITS OWN DefInjected file.
+    // The writer outputs only TRANSLATED entries, so save both Dup rows
+    // through the real editor first (durable envelope = the wait oracle).
+    const saveDup = async (needle: string, text: string): Promise<void> => {
+      await pickRow(needle)
+      await pause(400)
+      await waitExisting('[data-testid="ws.editor-textarea"]')
+      await (await browser.$('[data-testid="ws.editor-textarea"]')).setValue(text)
+      await pause(300)
+      await browser.$('[data-testid="ws.editor-save"]').click()
+      let ok = false
+      for (let i = 0; i < 150 && !ok; i++) {
+        try {
+          for (const f of fs.readdirSync(mgr)) {
+            if (!f.endsWith('.rimloc.json')) continue
+            const env = JSON.parse(fs.readFileSync(`${mgr}/${f}`, 'utf8'))
+            if ((env.translations ?? []).some((t: { text?: string }) => (t.text ?? '') === text)) {
+              ok = true
+              break
+            }
+          }
+        } catch {
+          /* mid-write */
+        }
+        if (!ok) await pause(200)
+      }
+      if (!ok) throw new Error(`save of "${text}" never reached the envelope`)
+    }
+    await saveDup('Dup thing', 'Дублированная вещь')
+    await saveDup('Dup hediff', 'Дублированный эффект')
+    await pickRow('Dup thing')
+    await pause(400)
+    await browser.$('[data-testid="ws.tab.output"]').click()
+    await waitExisting('[data-testid="ws.output.file"]', 20000)
+    const fThing = await browser.$('[data-testid="ws.output.file"] code').getText()
+    if (!fThing.includes('DefInjected/ThingDef/Dup.xml')) {
+      throw new Error(`ThingDef Dup must show ThingDef/Dup.xml, got: ${fThing}`)
+    }
+    await pickRow('Dup hediff')
+    await pause(400)
+    await browser.$('[data-testid="ws.tab.output"]').click()
+    await pause(600)
+    await waitExisting('[data-testid="ws.output.file"]', 20000)
+    const fHediff = await browser.$('[data-testid="ws.output.file"] code').getText()
+    // The writer names files by defName (DupH), so assert the def_type
+    // DIRECTORY — the shared display key must resolve to ITS OWN def type.
+    if (!fHediff.includes('DefInjected/HediffDef/')) {
+      throw new Error(`HediffDef Dup must show the HediffDef file, got: ${fHediff}`)
+    }
+    if (!fHediff.includes('DupH.xml')) {
+      throw new Error(`expected DupH.xml, got: ${fHediff}`)
+    }
     // P1-B: identity discrimination — select the OTHER file's row and
     // verify the tab shows ITS file, not the previous one.
     const rowsAll = await browser.$$('.entry-list .entry-row')

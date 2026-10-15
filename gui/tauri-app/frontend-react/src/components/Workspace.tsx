@@ -534,6 +534,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             onSendToChatBatch={() => sendToChatBatch(selected.identity)}
             onLoadXmlPreview={loadXmlPreview}
             entryKey={selected.key}
+            entryDefType={selected.identity.def_type ?? undefined}
             targetLocale={folderForm(st.targetLocale)}
             onLoadOutputPreview={loadOutputPreview}
             outputPreview={outputPreview}
@@ -1123,6 +1124,13 @@ function EntryEditor(props: {
                 <span>{props.outputPreview.error}</span>
               </div>
             )}
+            {props.outputPreview?.status === 'done' &&
+              props.projectRevision !== undefined &&
+              props.outputPreview.revision !== props.projectRevision && (
+                <div className="inline-warning" role="alert" data-testid="ws.output-stale">
+                  {t('ws.output.stale')}
+                </div>
+              )}
             {props.outputPreview?.status === 'done' && (
               <>
                 <div data-testid="ws.output.meta" style={{ fontSize: 9, color: 'var(--muted-foreground)', marginBottom: 4 }}>
