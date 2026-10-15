@@ -101,11 +101,10 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   const snapNow = st.snapshot
   // UI-05: output XML preview — the CANONICAL serializer rendered
   // in-memory for the current target locale, loaded lazily and cached.
-  // P1-C freshness fence (review Oct-15 + detailed follow-up): a request
-  // sequence + a live context ref ensure that only responses matching the
-  // CURRENT {project_id, locale} are applied. Stale responses from
-  // project switches or locale toggles are silently discarded. The
-  // context ref is updated on every render via useEffect.
+  // P1-C freshness fence (review Oct-15 + follow-up): a request sequence
+  // + a live context ref invalidate stale responses on ANY context change
+  // (project, session, locale). The useEffect clears the stored result
+  // when the identity shifts, so stale XML is never rendered as current.
   const outputPreviewSeq = useRef(0)
   const outputPreviewCtx = useRef({ project_id: '', locale: '' })
   const [outputPreview, setOutputPreview] = useState<
@@ -119,27 +118,33 @@ export function Workspace({ onBack }: { onBack: () => void }) {
       }
     | null
   >(null)
-  // Keep the context ref synced with the CURRENT render values.
+  // Track the CURRENT project/locale — clear stored output when they shift.
   const currentProjectId = snapNow?.project_id ?? ''
   const currentLocale = folderForm(st.targetLocale)
   useEffect(() => {
-    outputPreviewCtx.current = { project_id: currentProjectId, locale: currentLocale }
+    const prev = outputPreviewCtx.current
+    if (prev.project_id !== currentProjectId || prev.locale !== currentLocale) {
+      // Context switch: invalidate ALL in-flight and stored preview data.
+      outputPreviewSeq.current += 1
+      outputPreviewCtx.current = { project_id: currentProjectId, locale: currentLocale }
+      setOutputPreview(null)
+    }
   }, [currentProjectId, currentLocale])
   const loadOutputPreview = (locale: string): void => {
     if (!snapNow) return
     const seq = ++outputPreviewSeq.current
-    outputPreviewCtx.current = { project_id: snapNow.project_id, locale }
+    const reqCtx = { project_id: snapNow.project_id, locale }
+    outputPreviewCtx.current = reqCtx
     setOutputPreview({ status: 'loading' })
     clientInstance
       .getClient()
       .projectOutputXmlPreview(snapNow.project_id, snapNow.session_epoch, locale)
       .then((res) => {
-        // Freshness fence: discard the response if a newer request was
-        // fired, or if the project/locale changed while the call was in
-        // flight (the context ref always reflects the LATEST render).
+        // Freshness fence: discard if a newer request was fired or the
+        // context shifted while in flight (ref always has latest values).
         if (seq !== outputPreviewSeq.current) return
         const ctx = outputPreviewCtx.current
-        if (ctx.project_id !== snapNow.project_id || ctx.locale !== locale) return
+        if (ctx.project_id !== reqCtx.project_id || ctx.locale !== locale) return
         setOutputPreview({
           status: 'done',
           locale: res.locale,

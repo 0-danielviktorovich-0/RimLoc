@@ -52,6 +52,8 @@ runtime verification for those is queued with the UI-02/03 work.
   local inbox; matrix IDs follow the reviewer's Oct-15 references. If the
   original audit re-surfaces, IDs must be reconciled.
 
+| UI-10 | CLI↔GUI parity audit | **VERIFIED** | systematic comparison of all 27 CLI commands against GUI routes — `docs/development/CLI_GUI_PARITY_AUDIT.md`; 11 PARITY, 4 PARTIAL, 7 MISSING (file-format commands), 3 IMPLICIT; PO/XLIFF import/export identified as highest-value gap |
+
 ## Restored original ID numbering (reviewer, Oct-15)
 
 The Oct-15 verdict restored the ORIGINAL audit numbering; this matrix's IDs
