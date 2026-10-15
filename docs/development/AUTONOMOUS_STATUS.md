@@ -563,6 +563,12 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   крейты `rimloc-export-po` (`write_po`, msgid/msgstr), `rimloc-import-po`
   (`read_po_entries` → `write_language_data_xml` / `build_translation_mod*`),
   `rimloc-export-xliff` (`write_xliff_12`), `rimloc-import-xliff` (`read_xliff_12`).
-  Осталось: project-scoped сервисные функции (PO/XLIFF ↔ переводы проекта), IPC-команды
-  (по образцу `project_source_search`: snapshot + epoch guard), клиентские методы,
-  GUI-поверхность на Existing-экране, lane-тест.
+  **ЗАКРЫТО 2026-10-16** (9ccfc5e PO-backend + 6a0d638 PO-GUI + 75f909f PO-lane +
+  c2df726 XLIFF-backend + 0d798c2 XLIFF-GUI/lane): обе стороны обмена идут через
+  каноническое Languages-дерево (сериализатор → reparse → scoped-matcher →
+  exchange-строки; rebuild → тот же analyze/apply-корень `apply_analyzed_pack`),
+  так что review/apply-контракт не форкается. Guard-семья `exchange_out_guard` /
+  `exchange_in_guard` общая для PO и XLIFF. Unit 328, нативный lane 24/24:
+  экспорт несёт msgid=source/msgstr=durable/ссылки каноничного дерева,
+  same-project import = reusable 0 / conflicts N / apply disabled.
+  validate-po остаётся CLI-first (вне GUI-паритета по решению аудита).
