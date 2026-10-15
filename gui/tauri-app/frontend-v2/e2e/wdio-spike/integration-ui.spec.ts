@@ -383,6 +383,49 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     const meta = await browser.$('[data-testid="ws.output.meta"]').getText()
     if (!/canonical|канонический/i.test(meta)) throw new Error(`meta missing: ${meta}`)
     if (!meta.includes('Russian')) throw new Error(`meta missing the locale: ${meta}`)
+    // P1-B: identity discrimination — select the OTHER file's row and
+    // verify the tab shows ITS file, not the previous one.
+    const rowsAll = await browser.$$('.entry-list .entry-row')
+    let betaRow: WebdriverIO.Element | null = null
+    for (const r of rowsAll) {
+      if ((await r.getText()).includes('Beta')) {
+        betaRow = r
+        break
+      }
+    }
+    if (!betaRow) throw new Error('Beta row not found for the discrimination check')
+    await betaRow.click()
+    await pause(400)
+    // Translate Beta so it appears in the output too.
+    await waitExisting('[data-testid="ws.editor-textarea"]')
+    await (await browser.$('[data-testid="ws.editor-textarea"]')).setValue('Бета переведена')
+    await pause(300)
+    await browser.$('[data-testid="ws.editor-save"]').click()
+    await pause(800)
+    await browser.$('[data-testid="ws.tab.output"]').click()
+    await waitExisting('[data-testid="ws.output-pre"]', 30000)
+    const xmlBeta = await browser.$('[data-testid="ws.output-pre"]').getText()
+    const fileBeta = await browser.$('[data-testid="ws.output.file"] code').getText()
+    if (!xmlBeta.includes('Бета переведена')) {
+      throw new Error('Beta output missing its translation')
+    }
+    if (!fileBeta.includes('Beta.xml')) {
+      throw new Error(`identity match failed: showing ${fileBeta} for the Beta entry`)
+    }
+    // And switching back to Alpha shows the Alpha file again (no stale mix).
+    for (const r of await browser.$$('.entry-list .entry-row')) {
+      if ((await r.getText()).includes('Alpha')) {
+        await r.click()
+        break
+      }
+    }
+    await pause(500)
+    await browser.$('[data-testid="ws.tab.output"]').click()
+    await waitExisting('[data-testid="ws.output.file"]', 10000)
+    const fileAlpha = await browser.$('[data-testid="ws.output.file"] code').getText()
+    if (!fileAlpha.includes('Alpha.xml')) {
+      throw new Error(`switch-back failed: showing ${fileAlpha} for Alpha`)
+    }
   })
 
   it('About: hero, four actions, support panel, foldable tech identity', async () => {

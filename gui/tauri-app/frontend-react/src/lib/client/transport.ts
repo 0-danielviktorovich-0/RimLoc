@@ -122,6 +122,7 @@ export interface ContractMethodMap {
     result: {
       job_id: string;
       locale: string;
+      revision: number;
       files: { path: string; xml: string }[];
       truncated: boolean;
     };

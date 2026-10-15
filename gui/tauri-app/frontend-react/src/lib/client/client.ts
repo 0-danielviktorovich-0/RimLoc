@@ -357,7 +357,13 @@ export class RimLocClient {
     projectId: string,
     sessionEpoch: number,
     locale: string,
-  ): Promise<{ job_id: string; locale: string; files: { path: string; xml: string }[]; truncated: boolean }> {
+  ): Promise<{
+    job_id: string
+    locale: string
+    revision: number
+    files: { path: string; xml: string }[]
+    truncated: boolean
+  }> {
     return this.call('project_output_xml_preview', {
       project_id: projectId,
       session_epoch: sessionEpoch,

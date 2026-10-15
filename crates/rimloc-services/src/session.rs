@@ -1809,6 +1809,10 @@ impl ProjectSessionManager {
         }
         ensure_locale_form(locale)
             .map_err(|m| ContractError::new(ContractErrorCode::ContractViolation, m))?;
+        // P1-A (review Oct-15): the preview runs the SAME payload checks
+        // as the real export — a preview can never show bytes a real
+        // export would refuse.
+        Self::validate_export_payload(&st.project, &st.display_name, locale)?;
         // Explicit taint barrier (CodeQL path-injection): the validated
         // locale is re-checked character by character — the value that
         // reaches the scratch path below cannot carry separators or

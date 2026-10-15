@@ -99,7 +99,13 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   // in-memory for the current target locale, loaded lazily and cached.
   const [outputPreview, setOutputPreview] = useState<
     | { status: 'idle' | 'loading' | 'error'; error?: string }
-    | { status: 'done'; locale: string; files: { path: string; xml: string }[]; truncated: boolean }
+    | {
+        status: 'done'
+        locale: string
+        revision: number
+        files: { path: string; xml: string }[]
+        truncated: boolean
+      }
     | null
   >(null)
   const loadOutputPreview = (locale: string): void => {
@@ -112,6 +118,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         setOutputPreview({
           status: 'done',
           locale: res.locale,
+          revision: res.revision,
           files: res.files,
           truncated: res.truncated,
         }),
@@ -530,6 +537,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             targetLocale={folderForm(st.targetLocale)}
             onLoadOutputPreview={loadOutputPreview}
             outputPreview={outputPreview}
+            projectRevision={snapNow?.revision}
             onDraft={(v) => projectStore.setDraft(selected.uid, v)}
             onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
@@ -755,11 +763,21 @@ function EntryEditor(props: {
   /** UI-05: entry display key (e.g. `Apple.label`) used to locate the
    *  canonical output element; target locale of the workspace. */
   entryKey?: string
+  entryDefType?: string
   targetLocale?: string
   onLoadOutputPreview?: (locale: string) => void
+  /** Current session revision — the output preview binds its displayed
+   *  result to it and flags itself stale on mismatch (P1-C). */
+  projectRevision?: number
   outputPreview?:
     | { status: 'idle' | 'loading' | 'error'; error?: string }
-    | { status: 'done'; locale: string; files: { path: string; xml: string }[]; truncated: boolean }
+    | {
+        status: 'done'
+        locale: string
+        revision: number
+        files: { path: string; xml: string }[]
+        truncated: boolean
+      }
     | null
   onDraft: (v: string) => void
   onCommit: (next: boolean) => void
@@ -1113,10 +1131,19 @@ function EntryEditor(props: {
                   {props.outputPreview.truncated ? ` · ${t('ws.output.truncated')}` : ''}
                 </div>
                 {(() => {
+                  // P1-B (review Oct-15): match by FULL structural
+                  // identity — the def_type directory segment AND the
+                  // exact element tag. Entries sharing a display key live
+                  // in different DefInjected/<DefType>/ files; no
+                  // first-file fallback — an unmatched entry shows the
+                  // honest empty note.
                   const elementTag = props.entryKey ? `<${props.entryKey}>` : null
-                  const hit =
-                    (elementTag && props.outputPreview.files.find((f) => f.xml.includes(elementTag))) ||
-                    props.outputPreview.files[0]
+                  const dirTag = props.entryDefType ? `DefInjected/${props.entryDefType}/` : null
+                  const hit = props.outputPreview.files.find(
+                    (f) =>
+                      (!elementTag || f.xml.includes(elementTag)) &&
+                      (!dirTag || f.path.includes(dirTag)),
+                  )
                   if (!hit) {
                     return (
                       <p className="page-note" data-testid="ws.output-empty">
