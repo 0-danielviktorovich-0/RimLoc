@@ -374,7 +374,6 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
   })
 
 
-
   it('UI-03/08: the tree toggle collapses the panel; the editor row scrolls into view', async () => {
     await browser.execute(() => {
       window.location.hash = '#/workspace'
@@ -656,6 +655,74 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     if (!fileAlpha.includes('Alpha.xml')) {
       throw new Error(`switch-back failed: showing ${fileAlpha} for Alpha`)
     }
+  })
+
+
+  it('UI-10: the project-exchange PO exports the durable translation and the import flow guards it natively', async () => {
+    // A durable translation exists (UI-05 applied one through the editor).
+    await browser.execute(() => {
+      window.location.hash = '#/existing'
+    })
+    await waitExisting('[data-testid="ex.po-block"]', 30000)
+    // EXPORT: the durable Alpha translation lands in the PO file.
+    const PO = '/tmp/rimloc-int/exchange.po'
+    await browser.$('[data-testid="ex.po-out"]').setValue(PO)
+    await browser.$('[data-testid="ex.po-export"]').click()
+    await waitExisting('[data-testid="ex.po-exported"]', 30000)
+    const fs = await import('node:fs')
+    const poText = fs.readFileSync(PO, 'utf8')
+    // Parse the msgctxt/msgid/msgstr triples: msgid must be the SOURCE
+    // text (never empty), every row carries the canonical-tree reference,
+    // and the durable editor translation is among the msgstrs.
+    const rows = [
+      ...poText.matchAll(/msgctxt "([^"]+)"\nmsgid "([^"]*)"\nmsgstr "([^"]*)"/g),
+    ].map((m) => ({ key: m[1], source: m[2], translation: m[3] }))
+    if (rows.length === 0) {
+      throw new Error(`exported PO has no rows: ${poText.slice(0, 400)}`)
+    }
+    for (const r of rows) {
+      if (!r.source.trim()) {
+        throw new Error(`msgid must be the SOURCE text, empty on ${r.key}: ${poText.slice(0, 400)}`)
+      }
+    }
+    if (!rows.some((r) => r.translation === 'Альфа переведена')) {
+      throw new Error(
+        `exported PO must carry the durable translation, got rows: ${JSON.stringify(rows)}`,
+      )
+    }
+    if (!/Languages\/Russian\//.test(poText)) {
+      throw new Error(`exported PO references must carry the canonical layout: ${poText.slice(0, 400)}`)
+    }
+    // IMPORT (dry-run) against the SAME project: the exported key already
+    // has a translation → the guard classifies it a CONFLICT, reusable 0,
+    // and the apply button stays disabled (existing work wins).
+    await browser.$('[data-testid="ex.po-path"]').setValue(PO)
+    await browser.$('[data-testid="ex.po-analyze"]').click()
+    await waitExisting('[data-testid="ex.metrics"]', 30000)
+    // Structural metric read: the band's cells are ordered
+    // reusable / conflicts / new / obsolete / ambiguous.
+    const cells = await browser.execute(() =>
+      Array.from(
+        document.querySelectorAll('[data-testid="ex.metrics"] > div strong'),
+      ).map((n) => n.textContent ?? ''),
+    )
+    if (Number(cells[0]) !== 0 || Number(cells[1]) !== rows.length) {
+      throw new Error(
+        `expected reusable=0 conflicts=${rows.length} for the same-project PO import, got: ${JSON.stringify(cells)}`,
+      )
+    }
+    const applyDisabled = await browser.execute(() => {
+      const b = document.querySelector('[data-testid="ex.apply"]') as HTMLButtonElement | null
+      return b ? b.disabled : false
+    })
+    if (!applyDisabled) {
+      throw new Error('apply must stay disabled when the reusable set is empty')
+    }
+    // Back to the workspace for the later tests.
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
   })
 
 
