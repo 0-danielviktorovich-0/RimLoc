@@ -578,9 +578,14 @@ pub fn po_exchange_rows(
                     unmatched += 1;
                     continue;
                 };
+                // PO/XLIFF references are cross-platform artifacts: gettext
+                // tooling and the RimLoc importer both speak forward
+                // slashes (the importer's regex accepts both, but the FILE
+                // must not depend on the exporting OS).
+                let path_posix = u.path.to_string_lossy().replace('\\', "/");
                 let reference = match u.line {
-                    Some(line) => format!("{}:{}", u.path.display(), line),
-                    None => u.path.display().to_string(),
+                    Some(line) => format!("{}:{}", path_posix, line),
+                    None => path_posix,
                 };
                 rows.push(rimloc_export_po::PoExchangeRow {
                     key: u.key.clone(),
