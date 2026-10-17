@@ -39,7 +39,9 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 /// Match classification (see module docs).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum MatchStatus {
     AlreadyIndexed,

@@ -287,7 +287,11 @@ mod tests {
         let greeting = entries.iter().find(|e| e.key == "Greeting").unwrap();
         assert_eq!(greeting.value, "Привет");
         assert!(
-            greeting.reference.as_deref().unwrap_or("").contains("Keyed/A.xml:2"),
+            greeting
+                .reference
+                .as_deref()
+                .unwrap_or("")
+                .contains("Keyed/A.xml:2"),
             "reference must survive for the tree rebuilder: {greeting:?}"
         );
         let farewell = entries.iter().find(|e| e.key == "Farewell").unwrap();

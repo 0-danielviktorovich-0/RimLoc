@@ -2527,8 +2527,8 @@ impl ProjectSessionManager {
             "RimLoc PO Import",
             "rimloc.po-import",
             &rw_version,
-            true,  // dedupe: last definition wins, same as the CLI default
-            true,  // skip_empty: an empty msgstr is not a translation
+            true, // dedupe: last definition wins, same as the CLI default
+            true, // skip_empty: an empty msgstr is not a translation
         )
         .map_err(|e| {
             log.error_message("rebuild", &e.to_string());
@@ -2545,13 +2545,13 @@ impl ProjectSessionManager {
         let analysis =
             crate::project::analyze_existing_translation(&st.project, &pack_root, &req.locale)
                 .map_err(|e| {
-                log.error_message("analyze", &e.to_string());
-                log.finish();
-                ContractError::new(
-                    ContractErrorCode::Internal,
-                    format!("po import analysis failed: {e}"),
-                )
-            })?;
+                    log.error_message("analyze", &e.to_string());
+                    log.finish();
+                    ContractError::new(
+                        ContractErrorCode::Internal,
+                        format!("po import analysis failed: {e}"),
+                    )
+                })?;
         log.counter("analyze", "keys", analysis.scanned_keys as u64);
         log.end_stage("analyze");
         log.finish();
@@ -2742,7 +2742,10 @@ impl ProjectSessionManager {
             job_id,
             out_path: out_xliff.display().to_string(),
             keys_total: rows.len(),
-            keys_translated: rows.iter().filter(|r| !r.translation.trim().is_empty()).count(),
+            keys_translated: rows
+                .iter()
+                .filter(|r| !r.translation.trim().is_empty())
+                .count(),
             keys_unmatched: outcome.unmatched,
         })
     }
@@ -2792,13 +2795,13 @@ impl ProjectSessionManager {
         let analysis =
             crate::project::analyze_existing_translation(&st.project, &pack_root, &req.locale)
                 .map_err(|e| {
-                log.error_message("analyze", &e.to_string());
-                log.finish();
-                ContractError::new(
-                    ContractErrorCode::Internal,
-                    format!("xliff import analysis failed: {e}"),
-                )
-            })?;
+                    log.error_message("analyze", &e.to_string());
+                    log.finish();
+                    ContractError::new(
+                        ContractErrorCode::Internal,
+                        format!("xliff import analysis failed: {e}"),
+                    )
+                })?;
         log.counter("analyze", "keys", analysis.scanned_keys as u64);
         log.end_stage("analyze");
         log.finish();
@@ -2954,7 +2957,10 @@ fn export_tree_units(
         .tempdir()
         .map_err(|e| {
             log.finish();
-            ContractError::new(ContractErrorCode::Internal, format!("exchange temp dir: {e}"))
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("exchange temp dir: {e}"),
+            )
         })?;
     let report = crate::project::write_rimworld_translation(
         &st.project,
@@ -2996,13 +3002,12 @@ fn rebuild_xliff_pack(
     out_mod: &Path,
     locale: &str,
 ) -> Result<(), ContractError> {
-    let entries = rimloc_import_xliff::read_xliff_12_with_notes(xliff_path)
-        .map_err(|e| {
-            ContractError::new(
-                ContractErrorCode::Internal,
-                format!("xliff import parse failed: {e}"),
-            )
-        })?;
+    let entries = rimloc_import_xliff::read_xliff_12_with_notes(xliff_path).map_err(|e| {
+        ContractError::new(
+            ContractErrorCode::Internal,
+            format!("xliff import parse failed: {e}"),
+        )
+    })?;
     let mut grouped: std::collections::BTreeMap<PathBuf, Vec<(String, String)>> =
         std::collections::BTreeMap::new();
     for e in entries {
@@ -3054,9 +3059,8 @@ fn apply_analyzed_pack(
     // Pre-apply analysis drives the response's safety accounting; the
     // application itself is the SAME service call the corpus harness
     // verifies (matched + empty slots only, origin=Imported).
-    let analysis =
-        crate::project::analyze_existing_translation(&st.project, existing_dir, locale)
-            .map_err(|e| {
+    let analysis = crate::project::analyze_existing_translation(&st.project, existing_dir, locale)
+        .map_err(|e| {
             log.error_message("apply", &e.to_string());
             log.finish();
             ContractError::new(
@@ -3064,16 +3068,15 @@ fn apply_analyzed_pack(
                 format!("existing-pack analysis failed: {e}"),
             )
         })?;
-    let applied =
-            crate::project::apply_existing_translation(&mut st.project, existing_dir, locale)
-            .map_err(|e| {
-                log.error_message("apply", &e.to_string());
-                log.finish();
-                ContractError::new(
-                    ContractErrorCode::Internal,
-                    format!("existing-pack application failed: {e}"),
-                )
-            })?;
+    let applied = crate::project::apply_existing_translation(&mut st.project, existing_dir, locale)
+        .map_err(|e| {
+            log.error_message("apply", &e.to_string());
+            log.finish();
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("existing-pack application failed: {e}"),
+            )
+        })?;
     log.counter("apply", "applied", applied as u64);
     log.end_stage("apply");
 
@@ -6804,12 +6807,18 @@ mod tests {
         assert_eq!(resp.keys_unmatched, 0);
         let po_text = std::fs::read_to_string(&out_po).unwrap();
         assert!(po_text.contains("msgctxt \"Greeting\""), "{po_text}");
-        assert!(po_text.contains("msgstr \"привет из проекта\""), "{po_text}");
+        assert!(
+            po_text.contains("msgstr \"привет из проекта\""),
+            "{po_text}"
+        );
         assert!(
             po_text.contains("Languages/Russian/DefInjected/"),
             "reference must carry the canonical tree layout: {po_text}"
         );
-        assert!(po_text.contains("msgid \"hello\""), "msgid must be the SOURCE text");
+        assert!(
+            po_text.contains("msgid \"hello\""),
+            "msgid must be the SOURCE text"
+        );
 
         // The exported PO feeds the SAME analyzer on a FRESH project over
         // the same mod: both keys classify reusable, nothing is applied.

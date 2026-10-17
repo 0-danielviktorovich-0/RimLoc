@@ -85,7 +85,11 @@ pub fn write_xliff_12_translated(
     for row in rows {
         writeln!(w, "      <trans-unit id=\"{}\">", xml_escape(&row.key))?;
         writeln!(w, "        <source>{}</source>", xml_escape(&row.source))?;
-        writeln!(w, "        <target>{}</target>", xml_escape(&row.translation))?;
+        writeln!(
+            w,
+            "        <target>{}</target>",
+            xml_escape(&row.translation)
+        )?;
         if let Some(reference) = &row.reference {
             writeln!(w, "        <note>{}</note>", xml_escape(reference))?;
         }
