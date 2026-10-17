@@ -187,7 +187,7 @@ button.danger { color: var(--destructive); border-color: var(--destructive); }
  * and 4.21:1 on sidebar — below 4.5:1 for 13px text. Darkened to .52:
  * ≥4.5 in both themes. Deliberate, recorded in the adaptation doc. */
 :root { --muted-foreground: oklch(.52 .018 40); }
-.dark { --muted-foreground: oklch(.72 .014 60); }
+.dark { --muted-foreground: oklch(.82 .016 60); }
 
 /* Settings sections (canon shapes). */
 .settings-section { margin-bottom: 22px; padding-bottom: 6px; }
@@ -289,7 +289,8 @@ html.dark .entry-row.selected .row-target {
   color: oklch(.80 .05 40) !important;
 }
 html.dark .entry-row.selected code {
-  color: oklch(.72 .02 40) !important;
+  /* AA on the selected-row wine bg oklch(.35 .045 15): needs >= 4.5. */
+  color: oklch(.88 .02 40) !important;
 }
 html.dark .topbar-actions .btn-primary {
   background: oklch(.50 .11 15) !important;

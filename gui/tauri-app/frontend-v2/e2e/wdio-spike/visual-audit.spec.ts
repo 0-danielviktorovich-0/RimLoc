@@ -19,13 +19,25 @@ interface SurfaceIssue {
   detail: string
 }
 
+// The FULL route table (16 routes, routes.ts) — UI-12 Issue #7 requires
+// every screen, not a six-screen tranche.
 const SURFACES: { name: string; hash: string; wait: string }[] = [
   { name: 'workspace', hash: '#/workspace', wait: '[data-testid="ws.root"]' },
   { name: 'projects', hash: '#/projects', wait: '[data-testid="projects.search"]' },
+  { name: 'checks', hash: '#/checks', wait: '.page-content' },
+  { name: 'existing', hash: '#/existing', wait: '.page-content' },
+  { name: 'compare', hash: '#/compare', wait: '.page-content' },
+  { name: 'glossary', hash: '#/glossary', wait: '.page-content' },
+  { name: 'tm', hash: '#/tm', wait: '.page-content' },
+  { name: 'aitranslate', hash: '#/aitranslate', wait: '.page-content' },
+  { name: 'chatbatch', hash: '#/chatbatch', wait: '.page-content' },
+  { name: 'export', hash: '#/export', wait: '.page-content' },
+  { name: 'selfloc', hash: '#/selfloc', wait: '.page-content' },
+  { name: 'diagnostics', hash: '#/diagnostics', wait: '.page-content' },
+  { name: 'providers', hash: '#/providers', wait: '.page-content' },
+  { name: 'lm', hash: '#/lm', wait: '.page-content' },
   { name: 'settings', hash: '#/settings', wait: '[data-testid="settings.theme"]' },
   { name: 'about', hash: '#/about', wait: '[data-testid="about.hero"]' },
-  { name: 'chatbatch', hash: '#/chatbatch', wait: '.page-content' },
-  { name: 'existing', hash: '#/existing', wait: '.page-content' },
 ]
 
 const AUDIT_JS = () => {
@@ -87,6 +99,15 @@ const AUDIT_JS = () => {
       0.2126 * channelLin(rgb[0]) + 0.7152 * channelLin(rgb[1]) + 0.0722 * channelLin(rgb[2])
     )
   }
+  function bgEl(el: Element): Element {
+    let cur: Element | null = el
+    while (cur) {
+      const c = parseColor(getComputedStyle(cur).backgroundColor)
+      if (c && c[3] >= 0.95) return cur
+      cur = cur.parentElement
+    }
+    return document.body
+  }
   function bgOf(el: Element): [number, number, number, number] | null {
     let cur: Element | null = el
     while (cur) {
@@ -120,14 +141,20 @@ const AUDIT_JS = () => {
     const ratio = (hi + 0.05) / (lo + 0.05)
     const px = parseFloat(cs.fontSize)
     texts++
-    if (ratio < 3.0) {
+    // WCAG 2.2 SC 1.4.3: AA = 4.5:1 for normal text; 3.0:1 only for
+    // LARGE text (>=24px, or >=18.66px bold). The threshold is chosen
+    // per element, and the report counts BOTH bands honestly.
+    const large = px >= 24 || (px >= 18.66 && (parseInt(cs.fontWeight, 10) || 400) >= 700)
+    const aaThreshold = large ? 3.0 : 4.5
+    if (ratio < aaThreshold) {
       const text = (el.textContent ?? '').trim().slice(0, 40)
       issues.push({
-        kind: 'contrast',
-        detail: `<${el.tagName.toLowerCase()}> "${text}" ${cs.fontSize} ratio=${ratio.toFixed(2)}`,
+        kind: large ? 'contrast-large' : 'contrast-aa',
+        detail: `<${el.tagName.toLowerCase()}> "${text}" ${cs.fontSize}/${cs.fontWeight} ratio=${ratio.toFixed(2)} (needs ${aaThreshold}) fg=${cs.color} bg=${getComputedStyle(bgEl(el)).backgroundColor}`,
         ratio: Number(ratio.toFixed(2)),
       })
     } else if (ratio < 4.5) {
+      // passes AA only as large text / non-text — recorded for review
       review.push({ text: (el.textContent ?? '').trim().slice(0, 30), ratio: Number(ratio.toFixed(2)), px })
     }
   }
@@ -189,6 +216,8 @@ describe('UI-12 deep visual audit — every surface x both themes', () => {
   }
 
   before(() => {
+    // Screenshots land here BEFORE any audit test runs.
+    mkdirSync('/tmp/rimloc-int/shots', { recursive: true })
     // The same well-formed versioned fixture the integration lane uses —
     // the packaged app already has a persisted project over this mod, the
     // wizard re-opens it through the real path.
@@ -276,6 +305,12 @@ describe('UI-12 deep visual audit — every surface x both themes', () => {
         if (audit.texts < 10) {
           throw new Error(`${surface.name}/${theme}: only ${audit.texts} text elements audited`)
         }
+        // REAL packaged-app screenshot (Issue #7): the review artifact is
+        // the PNG pair per surface/theme, taken from the SAME build the
+        // DOM metrics come from.
+        await browser.saveScreenshot(
+          `/tmp/rimloc-int/shots/${surface.name}-${theme}.png`,
+        )
         report.surfaces.push({ surface: surface.name, theme, ...audit })
         for (const issue of audit.issues) {
           report.hardIssues.push({
@@ -290,15 +325,27 @@ describe('UI-12 deep visual audit — every surface x both themes', () => {
   }
 
   it('audit report: zero hard issues, artifact written', async () => {
-    mkdirSync('/tmp/rimloc-int', { recursive: true })
+    mkdirSync('/tmp/rimloc-int/shots', { recursive: true })
+    const aa = report.hardIssues.filter((i) => i.kind === 'contrast-aa')
+    const aaLarge = report.hardIssues.filter((i) => i.kind === 'contrast-large')
+    const totals = {
+      surfaceThemePairs: report.surfaces.length,
+      textElements: report.surfaces.reduce((a, s) => a + (s as { texts: number }).texts, 0),
+      reviewBandLt45: report.surfaces.reduce(
+        (a, s) => a + (s as { review: unknown[] }).review.length,
+        0,
+      ),
+      aaViolations: aa.length,
+      aaLargeViolations: aaLarge.length,
+    }
     writeFileSync(
       '/tmp/rimloc-int/visual-audit-report.json',
-      JSON.stringify(report, null, 2),
+      JSON.stringify({ totals, ...report }, null, 2),
     )
     if (report.hardIssues.length > 0) {
       throw new Error(
-        `visual audit found ${report.hardIssues.length} hard issues: ${JSON.stringify(
-          report.hardIssues.slice(0, 8),
+        `visual audit found ${report.hardIssues.length} hard issues (${totals.aaViolations} AA <4.5, ${totals.aaLargeViolations} large <3.0, rest structural): ${JSON.stringify(
+          report.hardIssues.slice(0, 10),
         )}`,
       )
     }
