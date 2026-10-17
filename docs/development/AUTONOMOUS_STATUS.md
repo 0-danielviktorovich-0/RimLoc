@@ -591,3 +591,27 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   ratio=1.15) — оказалась сериализацией цвета WebKit (`color(srgb ...)` не парсился,
   bg «уплывал» к белому предку) + disabled-кнопкой (WCAG-исключение) — парсер расширен,
   исключение добавлено;_lane-система готова к повторным прогонам.
+
+## Кампания 2026-10-17: push-разрешение, честный WCAG AA, beta-registry
+
+- **Push-волна (владелец разрешил 2026-10-17)**: 558a727 → 8722863 → b676510 (rustfmt-долг)
+  → 588679f (zip 8→9: RUSTSEC-2026-0367/0368/0369; API name() → Result, undecodable skip)
+  → c72cd4f (dark AA) → 2deb981/c51d178/0cd1b1c (docs/registry) → a693479 (posix- ссылки
+  обмена + арифметика регистраций; оба фикса нашёл CI: Windows-backslash в PO-ссылках,
+  pick_po_file вне post-original extras) → 7c65484 (registry pin). CI на a693479:
+  **40/40 pass, 0 fail, все 5 CodeQL Analyze зелёные**.
+- **Issue #7 (UI-12) пере-аудит по правильным порогам**: AA = 4.5/3.0 (SC 1.4.3) на ВСЁМ
+  маршрутенаборе (16 × 2 темы = 32 пары). Первый честный прогон: **275 нарушений AA**
+  (dark токены 3.1–4.4). Фиксы: muted-foreground .671→.82, primary .749→.78, info
+  .736→.78, success .738→.78, selected-code .72→.88. Вердикт: **36/36, 982 текстовых
+  элемента, 0 AA / 0 large / 0 review<4.5**. Урок: мой прежний «пол 3.0» был занижен —
+  ревьюер прав; DOM-проверки с неверным порогом доказывают неверное.
+- **Скриншоты + vision**: 32 PNG упакованного приложения (по паре на поверхность×тему) —
+  RimLoc-evidence/reviewer/2026-10-17-ui12-aa/ + ZIP владельцу
+  (Desktop/rimloc-ui12-aa-evidence-2026-10-17.zip, sha256 f1a1ab84…). Vision-протокол
+  4 экранов: композиция Lovable-канона, наложений/обрезок нет; per-control
+  ADOPT/IMPROVE/INTENTIONAL_DIFFERENCE записан в матрицу.
+- **BETA_READINESS_REGISTRY.md**: базовая верифицированная таблица возможностей,
+  P0 (открытых нет) / P1 (installed-app smoke на CI-DMG, large-project E2E, UI-11
+  Stage C, beta-README) / P2 / OWNER_GATE (merge/release/теги, real-provider UAT ключи,
+  спонсор-аккаунты). RC = a693479.
