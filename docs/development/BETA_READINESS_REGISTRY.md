@@ -1,7 +1,7 @@
 # RimLoc beta readiness registry — 2026-10-17
 
 Single source of truth for the first limited beta. Head of record:
-`feat/integration-rel27` @ **2deb9818f11f750b806bb3133d6decd5f8f4a314**
+`feat/integration-rel27` @ **c51d1784782548ffe73974e35b373b7ed9cf1cd0**
 (Draft PR #101; merge/release stay owner-gated).
 
 Legend: P0 blocks a safe beta · P1 required for the declared beta scope ·
@@ -67,7 +67,7 @@ any new P0 found by CI/CodeQL/lanes lands here)*
 
 ## Release candidate manifest (first limited beta)
 
-- **Exact SHA:** `2deb9818f11f750b806bb3133d6decd5f8f4a314` (branch
+- **Exact SHA:** `c51d1784782548ffe73974e35b373b7ed9cf1cd0` (branch
   `feat/integration-rel27`, Draft PR #101).
 - **Reproducible builds:** CI `Tauri GUI build` (aarch64 .app + DMG from
   the same SHA) and the local automation bundle (`cargo tauri build
