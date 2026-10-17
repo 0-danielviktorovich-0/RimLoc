@@ -1,7 +1,7 @@
 # RimLoc beta readiness registry — 2026-10-17
 
 Single source of truth for the first limited beta. Head of record:
-`feat/integration-rel27` @ **c51d1784782548ffe73974e35b373b7ed9cf1cd0**
+`feat/integration-rel27` @ **a693479c88486d8452b46b7c07e8a3e50b7ecd2a**
 (Draft PR #101; merge/release stay owner-gated).
 
 Legend: P0 blocks a safe beta · P1 required for the declared beta scope ·
@@ -67,7 +67,7 @@ any new P0 found by CI/CodeQL/lanes lands here)*
 
 ## Release candidate manifest (first limited beta)
 
-- **Exact SHA:** `c51d1784782548ffe73974e35b373b7ed9cf1cd0` (branch
+- **Exact SHA:** `a693479c88486d8452b46b7c07e8a3e50b7ecd2a` (branch
   `feat/integration-rel27`, Draft PR #101).
 - **Reproducible builds:** CI `Tauri GUI build` (aarch64 .app + DMG from
   the same SHA) and the local automation bundle (`cargo tauri build
@@ -75,7 +75,7 @@ any new P0 found by CI/CodeQL/lanes lands here)*
   Portable-SSD). Unit: `cargo test --workspace`; native: integration-ui
   lane 25/25 + visual-audit lane 36/36 at this head.
 - **Security posture:** CodeQL all languages 0 alerts at this head
-  (verified on c72cd4f run; 2deb981 is docs-only), cargo-deny clean
+  (all five Analyze jobs green on a693479), cargo-deny clean
   after the zip 9 bump (RUSTSEC-2026-0367/0368/0369 patched, 588679f).
 - **Supported features:** the baseline table above, verbatim — nothing
   beyond it is claimed.
