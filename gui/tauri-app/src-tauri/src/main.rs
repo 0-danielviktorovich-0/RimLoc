@@ -3108,11 +3108,19 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // final night wave: validate/build/diagnostics over the contract
     "project_validate",
     "project_export",
+    "project_output_xml_preview",
     "project_build_mod",
     "project_diagnose",
     // W2 (existing-pack flow): dry-run analysis + guarded application.
     "project_import_existing",
     "project_apply_existing",
+    // UI-10: project-exchange PO (export + analyze-through-the-same-flow).
+    "project_export_po",
+    "project_import_po",
+    "project_apply_po",
+    "project_export_xliff",
+    "project_import_xliff",
+    "project_apply_xliff",
     // Wave 13: project glossary (generic project state, persist-before-ack).
     "project_glossary",
     "project_glossary_upsert",
@@ -3123,6 +3131,17 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_tm_delete",
     "project_tm_import",
     "project_tm_lookup",
+    // Durable draft autosave (Data Safety).
+    "project_save_drafts",
+    "project_restore_drafts",
+    "project_clear_drafts",
+    // AI translation jobs (Stage B).
+    "ai_job_start",
+    "ai_job_status",
+    "ai_job_cancel",
+    "ai_job_accept",
+    // Source Discovery (Stage A).
+    "project_source_search",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key lives in the OS keychain, never in a file.
     "contract_provider_instance_list",
@@ -3156,6 +3175,7 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "diff_xml_cmd",
     "get_cli_i18n",
     "pick_directory",
+    "pick_po_file",
     // selfloc entry (mandate D): resolve the app-bundled UI catalog dir —
     // read-only shell extra, same class as pick_directory.
     "selfloc_catalog_dir",
@@ -3167,6 +3187,9 @@ pub const LIVE_COMMANDS: &[&str] = &[
     // manager — guarded shell extra (session allow-list + canonical
     // containment, see rimloc_gui_lib::reveal), NOT the open_path surface.
     "reveal_path",
+    // About/support screens: https-only opener over VERIFIED project
+    // destinations (see open_external_url) — no arbitrary URLs.
+    "open_external_url",
 ];
 
 /// PRIVILEGED legacy commands (source-tree writes, arbitrary open, plugin
@@ -3895,11 +3918,18 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_cancel_next,
             rimloc_gui_lib::contract_adapter::project_validate,
             rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_output_xml_preview,
             rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
             rimloc_gui_lib::contract_adapter::project_apply_existing,
+            rimloc_gui_lib::contract_adapter::project_export_po,
+            rimloc_gui_lib::contract_adapter::project_import_po,
+            rimloc_gui_lib::contract_adapter::project_apply_po,
+            rimloc_gui_lib::contract_adapter::project_export_xliff,
+            rimloc_gui_lib::contract_adapter::project_import_xliff,
+            rimloc_gui_lib::contract_adapter::project_apply_xliff,
             // Wave 13: project glossary.
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
@@ -3910,6 +3940,17 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_tm_delete,
             rimloc_gui_lib::contract_adapter::project_tm_import,
             rimloc_gui_lib::contract_adapter::project_tm_lookup,
+            // Durable draft autosave (Data Safety).
+            rimloc_gui_lib::contract_adapter::project_save_drafts,
+            rimloc_gui_lib::contract_adapter::project_restore_drafts,
+            rimloc_gui_lib::contract_adapter::project_clear_drafts,
+            // AI translation jobs (Stage B).
+            rimloc_gui_lib::contract_adapter::ai_job_start,
+            rimloc_gui_lib::contract_adapter::ai_job_status,
+            rimloc_gui_lib::contract_adapter::ai_job_cancel,
+            rimloc_gui_lib::contract_adapter::ai_job_accept,
+            // Source Discovery (Stage A).
+            rimloc_gui_lib::contract_adapter::project_source_search,
             // Provider instances (provider/settings parity).
             rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
@@ -3942,6 +3983,7 @@ fn main() {
             init_lang_cmd,
             get_log_info,
             pick_directory,
+            pick_po_file,
             save_text_via_dialog,
             log_message,
             open_path,
@@ -3974,7 +4016,9 @@ fn main() {
             selfloc_build_contribution,
             // §8 F8.4: reveal the session's successful output dir — guarded
             // shell extra (session allow-list, canonical containment).
-            reveal_path
+            reveal_path,
+            // About/support: allowlisted https opener.
+            open_external_url
         ])
     } else {
         builder.invoke_handler(tauri::generate_handler![
@@ -3990,11 +4034,18 @@ fn main() {
             // final night wave: validate/build/diagnostics over the contract
             rimloc_gui_lib::contract_adapter::project_validate,
             rimloc_gui_lib::contract_adapter::project_export,
+            rimloc_gui_lib::contract_adapter::project_output_xml_preview,
             rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
             // W2 (existing-pack flow): dry-run analysis + guarded application.
             rimloc_gui_lib::contract_adapter::project_import_existing,
             rimloc_gui_lib::contract_adapter::project_apply_existing,
+            rimloc_gui_lib::contract_adapter::project_export_po,
+            rimloc_gui_lib::contract_adapter::project_import_po,
+            rimloc_gui_lib::contract_adapter::project_apply_po,
+            rimloc_gui_lib::contract_adapter::project_export_xliff,
+            rimloc_gui_lib::contract_adapter::project_import_xliff,
+            rimloc_gui_lib::contract_adapter::project_apply_xliff,
             // Wave 13: project glossary.
             rimloc_gui_lib::contract_adapter::project_glossary,
             rimloc_gui_lib::contract_adapter::project_glossary_upsert,
@@ -4005,6 +4056,17 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_tm_delete,
             rimloc_gui_lib::contract_adapter::project_tm_import,
             rimloc_gui_lib::contract_adapter::project_tm_lookup,
+            // Durable draft autosave (Data Safety).
+            rimloc_gui_lib::contract_adapter::project_save_drafts,
+            rimloc_gui_lib::contract_adapter::project_restore_drafts,
+            rimloc_gui_lib::contract_adapter::project_clear_drafts,
+            // AI translation jobs (Stage B).
+            rimloc_gui_lib::contract_adapter::ai_job_start,
+            rimloc_gui_lib::contract_adapter::ai_job_status,
+            rimloc_gui_lib::contract_adapter::ai_job_cancel,
+            rimloc_gui_lib::contract_adapter::ai_job_accept,
+            // Source Discovery (Stage A).
+            rimloc_gui_lib::contract_adapter::project_source_search,
             // Provider instances (provider/settings parity).
             rimloc_gui_lib::contract_adapter::contract_provider_instance_list,
             rimloc_gui_lib::contract_adapter::contract_provider_instance_upsert,
@@ -4033,6 +4095,7 @@ fn main() {
             diff_xml_cmd,
             get_cli_i18n,
             pick_directory,
+            pick_po_file,
             // selfloc entry (mandate D): resolve the app-bundled UI catalog
             // dir — read-only shell extra, same class as pick_directory.
             selfloc_catalog_dir,
@@ -4042,7 +4105,9 @@ fn main() {
             selfloc_build_contribution,
             // §8 F8.4: reveal the session's successful output dir — guarded
             // shell extra (session allow-list, canonical containment).
-            reveal_path
+            reveal_path,
+            // About/support: allowlisted https opener.
+            open_external_url
         ])
     };
     builder
@@ -4260,6 +4325,20 @@ fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
     })
 }
 
+/// UI-10: native OS file dialog restricted to .po files (the
+/// project-exchange import). Resolves the picked ABSOLUTE path, or null
+/// when the user cancelled — null is a normal outcome, never an error.
+#[tauri::command]
+fn pick_po_file(window: Window) -> Result<Option<String>, ApiError> {
+    let picked = window
+        .dialog()
+        .file()
+        .add_filter("PO translation files", &["po"])
+        .blocking_pick_file()
+        .map(|p| p.simplified().to_string());
+    Ok(picked)
+}
+
 #[tauri::command]
 fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<String>, ApiError> {
     let mut builder = window.dialog().file();
@@ -4327,6 +4406,47 @@ fn reveal_path(
     // property open_path relies on) — never a shell interpreter.
     open::that_detached(&p).map_err(|e| ApiError {
         message: format!("Failed to open path: {e}"),
+    })?;
+    Ok(())
+}
+
+/// Verified external destinations the About/support screens may open in
+/// the OS browser. https only, prefix-scoped to the project's own pages
+/// and the three support platforms — the webview never gets an arbitrary
+/// opener (the privileged `open_path` surface stays legacy-only).
+fn external_url_allowed(url: &str) -> bool {
+    const ALLOWED_PREFIXES: &[&str] = &[
+        "https://github.com/0-danielviktorovich-0/RimLoc",
+        "https://github.com/sponsors/0-danielviktorovich-0",
+        "https://buymeacoffee.com/danielviktorovich",
+        "https://ko-fi.com/danielviktorovich",
+        "https://0-danielviktorovich-0.github.io/RimLoc",
+    ];
+    ALLOWED_PREFIXES.iter().any(|p| {
+        url == *p
+            || (url.starts_with(p)
+                && matches!(
+                    url.as_bytes().get(p.len()),
+                    Some(&b'/') | Some(&b'?') | Some(&b'#')
+                ))
+    })
+}
+
+/// Open an ALLOWLISTED https URL in the OS browser (LaunchServices/
+/// ShellExecute/xdg-open via the `open` crate, same detached property as
+/// reveal_path). Anything not matching the verified prefixes is refused
+/// with a typed error — never silently downgraded.
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), ApiError> {
+    if !external_url_allowed(&url) {
+        return Err(ApiError {
+            message: format!(
+                "open_external_url refused: the destination is not an allowlisted verified URL: {url}"
+            ),
+        });
+    }
+    open::that_detached(&url).map_err(|e| ApiError {
+        message: format!("Failed to open URL: {e}"),
     })?;
     Ok(())
 }

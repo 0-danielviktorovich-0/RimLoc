@@ -115,14 +115,16 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
-      # generate_context! (src-tauri) встраивает frontend-v2/dist — собрать до cargo.
+      # generate_context! (src-tauri) embeds frontend-react/dist since the
+      # React-default cutover (tauri.conf.json); the frozen Svelte fallback
+      # stays available through tauri.legacy.conf.json and its own job.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: gui/tauri-app/frontend-v2/package-lock.json
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
       - run: npm ci && npm run build
-        working-directory: gui/tauri-app/frontend-v2
+        working-directory: gui/tauri-app/frontend-react
       - run: cargo build
         working-directory: gui/tauri-app/src-tauri
       # Линт gui-крейта здесь (единственное место с gtk-системными зависимостями).

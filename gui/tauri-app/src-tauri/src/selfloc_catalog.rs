@@ -57,6 +57,10 @@ pub const POST_ORIGINAL_LIVE_EXTRAS: &[&str] = &[
     "selfloc_build_contribution",
     "build_identity",
     "reveal_path",
+    "open_external_url",
+    // UI-10: read-only native .po file dialog (same class as the shell
+    // pick_directory — a safe post-original extra, not a contract command).
+    "pick_po_file",
 ];
 
 /// The meta field the idempotency decision reads (SELFLOC_BRIDGE.md:

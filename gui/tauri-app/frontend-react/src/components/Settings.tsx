@@ -15,6 +15,25 @@ import { t, type Locale } from '../lib/i18n'
 
 export type ThemePref = 'system' | 'light' | 'dark'
 
+/** UI zoom (rel27): 0.8–1.4, persisted; applied on the app shell root. */
+export function readUiZoom(): number {
+  const raw = window.localStorage.getItem('rimloc.ui.zoom')
+  const n = raw ? Number(raw) : 1
+  return Number.isFinite(n) && n >= 0.8 && n <= 1.5 ? n : 1
+}
+
+export function writeUiZoom(z: number): void {
+  const clamped = Math.min(1.5, Math.max(0.8, z))
+  window.localStorage.setItem('rimloc.ui.zoom', String(clamped))
+  window.dispatchEvent(new CustomEvent('rimloc.ui.zoom'))
+}
+
+// UI-04: the density primitive lives in lib/state/density.ts (state
+// consumers import it cycle-free); the Settings control re-exports it.
+export { readUiDensity, writeUiDensity, type UiDensity } from '../lib/state/density'
+import { readUiDensity, writeUiDensity as persistDensity, type UiDensity as Density } from '../lib/state/density'
+
+
 export function Settings(props: {
   theme: ThemePref
   onThemeChange: (v: ThemePref) => void
@@ -62,6 +81,32 @@ export function Settings(props: {
           <select value={props.locale} onChange={(e) => props.onLocaleChange(e.target.value as Locale)} data-testid="settings.ui-locale">
             <option value="ru">Русский</option>
             <option value="en">English</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.uiZoom')}</span>
+          <select
+            value={String(readUiZoom())}
+            onChange={(e) => writeUiZoom(Number(e.target.value))}
+            data-testid="settings.ui-zoom"
+          >
+            <option value="0.8">80%</option>
+            <option value="0.9">90%</option>
+            <option value="1">100%</option>
+            <option value="1.1">110%</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{t('settings.uiDensity')}</span>
+          <select
+            value={readUiDensity()}
+            onChange={(e) => persistDensity(e.target.value as Density)}
+            data-testid="settings.ui-density"
+          >
+            <option value="comfortable">{t('settings.densityComfortable')}</option>
+            <option value="compact">{t('settings.densityCompact')}</option>
           </select>
         </label>
       </section>

@@ -14,7 +14,17 @@
 // Store binding is a LATER step (post contract accept); nothing here
 // imports ../mock/* — the mock lives behind MockTransport only.
 import type {
+  SourceSearchReportDto,
+  SourceXmlPreviewDto,
   ApplyExistingRequestDto,
+  ApplyExistingPoRequestDto,
+  ApplyExistingXliffRequestDto,
+  ExportProjectPoRequestDto,
+  ExportProjectXliffRequestDto,
+  ExportProjectXliffResponseDto,
+  ImportExistingXliffRequestDto,
+  ExportProjectPoResponseDto,
+  ImportExistingPoRequestDto,
   ApplyExistingResponseDto,
   BuildIdentityDto,
   ApplyIntentsRequestDto,
@@ -277,6 +287,42 @@ export class RimLocClient {
     return this.call('project_apply_existing', { request });
   }
 
+  /** UI-10: analyze an existing-translation PO FILE as a pack source.
+   *  The backend rebuilds it into the canonical tree and runs the SAME
+   *  analyzer as importExisting — the review/apply flow is identical. */
+  async importExistingPo(request: ImportExistingPoRequestDto): Promise<ImportExistingResponseDto> {
+    return this.call('project_import_po', { request });
+  }
+
+  /** UI-10: write the project-exchange PO (msgid = canonical source,
+   *  msgstr = the current durable translation of the locale). */
+  async exportProjectPo(request: ExportProjectPoRequestDto): Promise<ExportProjectPoResponseDto> {
+    return this.call('project_export_po', { request });
+  }
+
+  /** UI-10: apply the REUSABLE set of an analyzed PO pack (guarded,
+   *  persist-before-ack — identical semantics to applyExisting). */
+  async applyExistingPo(request: ApplyExistingPoRequestDto): Promise<ApplyExistingResponseDto> {
+    return this.call('project_apply_po', { request });
+  }
+
+  /** UI-10: XLIFF mirrors of the exchange flow. */
+  async exportProjectXliff(
+    request: ExportProjectXliffRequestDto,
+  ): Promise<ExportProjectXliffResponseDto> {
+    return this.call('project_export_xliff', { request });
+  }
+
+  async importExistingXliff(
+    request: ImportExistingXliffRequestDto,
+  ): Promise<ImportExistingResponseDto> {
+    return this.call('project_import_xliff', { request });
+  }
+
+  async applyExistingXliff(request: ApplyExistingXliffRequestDto): Promise<ApplyExistingResponseDto> {
+    return this.call('project_apply_xliff', { request });
+  }
+
   /** Read-only cross-version diff of two mod roots (compare screen):
    *  new/missing/changed/unchanged classification per key with the
    *  carrying file per side. Stateless — no project session involved. */
@@ -343,6 +389,32 @@ export class RimLocClient {
   // (the API key goes to the OS keychain and NEVER comes back). ---
 
   /** Redacted provider-instance summaries (`has_key`, never the key). */
+  /** Open a VERIFIED allowlisted https destination in the OS browser.
+   *  The backend refuses anything outside the verified prefix list. */
+  openExternalUrl(url: string): Promise<null> {
+    return this.call('open_external_url', { url }) as Promise<null>;
+  }
+
+  /** UI-05: output XML preview — the canonical serializer rendered
+   *  in-memory for the requested locale (read-only). */
+  projectOutputXmlPreview(
+    projectId: string,
+    sessionEpoch: number,
+    locale: string,
+  ): Promise<{
+    job_id: string
+    locale: string
+    revision: number
+    files: { path: string; xml: string }[]
+    truncated: boolean
+  }> {
+    return this.call('project_output_xml_preview', {
+      project_id: projectId,
+      session_epoch: sessionEpoch,
+      locale,
+    });
+  }
+
   async providerInstanceList(): Promise<ProviderInstanceListResponseDto> {
     return this.call('contract_provider_instance_list', {});
   }
@@ -464,6 +536,63 @@ export class RimLocClient {
    * mismatched ones are quarantined as `.drafts.orphan.json` and REPORTED —
    * never silently applied. Unreadable stores report `unavailable` with the
    * typed detail; opening the project itself never fails because of drafts. */
+  async aiJobStart(args: import('./types').AiJobParamsDto): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_start', { request: args });
+  }
+  async aiJobStatus(jobId: string): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_status', { job_id: jobId });
+  }
+  async aiJobCancel(jobId: string): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_cancel', { job_id: jobId });
+  }
+  async aiJobAccept(jobId: string, sessionEpoch: number): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_accept', { request: { job_id: jobId, session_epoch: sessionEpoch } });
+  }
+
+  /** Source Discovery (Stage A): read-only full-project source search
+   *  reconciled against the canonical inventory. */
+  async sourceSearch(args: {
+    projectId: string;
+    sessionEpoch: number;
+    query: string;
+    scope?: 'standard' | 'all_text';
+    offset?: number;
+    maxResults?: number;
+  }): Promise<SourceSearchReportDto> {
+    return this.call('project_source_search', {
+      request: {
+        project_id: args.projectId,
+        session_epoch: args.sessionEpoch,
+        query: args.query,
+        scope: args.scope ?? 'standard',
+        offset: args.offset ?? 0,
+        max_results: args.maxResults ?? 200
+      }
+    });
+  }
+
+  /** Source XML preview (rel27): bounded read-only window of a project
+   *  source file for the Source Inspector. */
+  async sourceXmlPreview(args: {
+    projectId: string;
+    sessionEpoch: number;
+    file: string;
+    line?: number;
+    before?: number;
+    after?: number;
+  }): Promise<SourceXmlPreviewDto> {
+    return this.call('project_source_xml_preview', {
+      request: {
+        project_id: args.projectId,
+        session_epoch: args.sessionEpoch,
+        file: args.file,
+        line: args.line,
+        before: args.before ?? 6,
+        after: args.after ?? 20
+      }
+    });
+  }
+
   async restoreDrafts(projectId: string, sessionEpoch: number): Promise<DraftsRestoreReportDto> {
     return this.call('project_restore_drafts', {
       project_id: projectId,
@@ -507,6 +636,12 @@ export class RimLocClient {
    *  without the desktop bridge, and the mock never fakes one. */
   async pickDirectory(initial?: string): Promise<string | null> {
     return this.call('pick_directory', initial ? { initial } : {});
+  }
+
+  /** Native OS file dialog restricted to .po files (UI-10 exchange
+   *  import). Resolves the picked ABSOLUTE path, or null on cancel. */
+  async pickPoFile(): Promise<string | null> {
+    return this.call('pick_po_file', {});
   }
 
   /** Reveal output (§8 F8.4): open the output directory of the last

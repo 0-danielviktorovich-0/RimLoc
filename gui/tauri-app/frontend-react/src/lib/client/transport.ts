@@ -23,7 +23,15 @@ import type {
   ChatBatchStatusRequestDto,
   ChatBatchStatusResponseDto,
   ContractHandshakeDto,
+  ApplyExistingPoRequestDto,
+  ApplyExistingXliffRequestDto,
   ContractMethod,
+  ExportProjectXliffRequestDto,
+  ExportProjectXliffResponseDto,
+  ImportExistingXliffRequestDto,
+  ExportProjectPoRequestDto,
+  ExportProjectPoResponseDto,
+  ImportExistingPoRequestDto,
   CreateProjectRequestDto,
   DiagnoseResponseDto,
   DraftEntryDto,
@@ -95,6 +103,8 @@ export interface ContractMethodMap {
   // dialog's start directory; null result = the user cancelled. No OS
   // dialog exists outside the desktop bridge — the mock refuses honestly.
   pick_directory: { params: { initial?: string }; result: string | null };
+  // Native file dialog restricted to .po files (UI-10 exchange import).
+  pick_po_file: { params: Record<string, never>; result: string | null };
   // Self-localization entry (mandate D): absolute path of the app-managed
   // RimLoc UI catalog project dir (mod_root for project_create). Refused
   // honestly in mock — there is no bundled catalog outside the desktop app.
@@ -112,6 +122,21 @@ export interface ContractMethodMap {
   // The shell blesses ONLY acked out dirs (session allow-list, canonical
   // containment) — refused honestly in mock (no session output there).
   reveal_path: { params: { path: string }; result: null };
+  // About/support screens: open a VERIFIED allowlisted https destination
+  // in the OS browser. The backend refuses anything outside the list.
+  open_external_url: { params: { url: string }; result: null };
+  // UI-05: the CANONICAL serializer rendered in-memory for the requested
+  // locale — read-only preview of the exact export bytes.
+  project_output_xml_preview: {
+    params: { project_id: string; session_epoch: number; locale: string };
+    result: {
+      job_id: string;
+      locale: string;
+      revision: number;
+      files: { path: string; xml: string }[];
+      truncated: boolean;
+    };
+  };
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   project_import_existing: {
@@ -120,6 +145,31 @@ export interface ContractMethodMap {
   };
   project_apply_existing: {
     params: { request: ApplyExistingRequestDto };
+    result: ApplyExistingResponseDto;
+  };
+  // UI-10: the project-exchange PO (export / analyze / guarded apply).
+  project_export_po: {
+    params: { request: ExportProjectPoRequestDto };
+    result: ExportProjectPoResponseDto;
+  };
+  project_import_po: {
+    params: { request: ImportExistingPoRequestDto };
+    result: ImportExistingResponseDto;
+  };
+  project_apply_po: {
+    params: { request: ApplyExistingPoRequestDto };
+    result: ApplyExistingResponseDto;
+  };
+  project_export_xliff: {
+    params: { request: ExportProjectXliffRequestDto };
+    result: ExportProjectXliffResponseDto;
+  };
+  project_import_xliff: {
+    params: { request: ImportExistingXliffRequestDto };
+    result: ImportExistingResponseDto;
+  };
+  project_apply_xliff: {
+    params: { request: ApplyExistingXliffRequestDto };
     result: ApplyExistingResponseDto;
   };
   // Project glossary (wave 13): generic project state, persist-before-ack.
@@ -225,6 +275,48 @@ export interface ContractMethodMap {
   project_clear_drafts: {
     params: { project_id: string; session_epoch: number; key?: string };
     result: DraftsSaveAckDto;
+  };
+  ai_job_start: {
+    params: { request: import('./types').AiJobParamsDto };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_status: {
+    params: { job_id: string };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_cancel: {
+    params: { job_id: string };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_accept: {
+    params: { request: { job_id: string; session_epoch: number } };
+    result: import('./types').AiJobStatusDto;
+  };
+  project_source_search: {
+    params: {
+      request: {
+        project_id: string;
+        session_epoch: number;
+        query: string;
+        scope?: 'standard' | 'all_text';
+        offset?: number;
+        max_results?: number;
+      };
+    };
+    result: import('./types').SourceSearchReportDto;
+  };
+  project_source_xml_preview: {
+    params: {
+      request: {
+        project_id: string;
+        session_epoch: number;
+        file: string;
+        line?: number;
+        before?: number;
+        after?: number;
+      };
+    };
+    result: import('./types').SourceXmlPreviewDto;
   };
   contract_chat_batch_list: {
     params: { request: ChatBatchListRequestDto };

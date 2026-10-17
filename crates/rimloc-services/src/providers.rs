@@ -663,9 +663,204 @@ pub(crate) fn now_ms() -> u64 {
     chrono::Utc::now().timestamp_millis().max(0) as u64
 }
 
+// ---------------------------------------------------------------------------
+// Instance → AI job launch target (prov-* → job factory wiring)
+// ---------------------------------------------------------------------------
+
+/// The instance's API key as an opaque value: `Debug`-masked so a resolved
+/// target can cross log/trace lines without ever rendering the secret.
+#[derive(Clone)]
+pub struct ProviderSecret(String);
+
+impl ProviderSecret {
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for ProviderSecret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ProviderSecret(***)")
+    }
+}
+
+/// One stored instance resolved into an AI job launch target: the preset
+/// mapped onto the `rimloc-llm` provider id, the explicit model/base_url
+/// and the stored key (cloud presets require one; local ones may not carry
+/// it). The secret never renders through `Debug`.
+#[derive(Debug)]
+pub struct ResolvedProviderTarget {
+    pub provider_id: String,
+    pub model: String,
+    pub base_url: Option<String>,
+    pub key: Option<ProviderSecret>,
+}
+
+/// Resolve one stored instance into a launch target. `custom` presets map
+/// onto the OpenAI-compatible provider with their explicit base_url; the
+/// key comes from the secret sink under the instance id (the same account
+/// `upsert` wrote). A cloud instance whose key is missing is a typed
+/// refusal, never a silent keyless launch.
+pub(crate) fn resolve_instance(
+    state: &mut ProviderSettingsState,
+    sink: Option<&Arc<dyn ProviderSecretSink>>,
+    instance_id: &str,
+) -> Result<ResolvedProviderTarget, ContractError> {
+    state.check_unreadable()?;
+    let record = state
+        .file
+        .instances
+        .iter()
+        .find(|r| r.id == instance_id)
+        .cloned()
+        .ok_or_else(|| {
+            ContractError::new(
+                ContractErrorCode::ProjectNotFound,
+                format!("unknown provider instance `{instance_id}`"),
+            )
+        })?;
+    let provider_id = match record.preset.as_str() {
+        // `custom` is a stored OpenAI-compatible endpoint definition; the
+        // upsert gate already requires its base_url.
+        "custom" => "openai".to_string(),
+        other => other.to_string(), // anthropic | openai | zai | ollama
+    };
+    let key = match sink {
+        Some(sink) => sink
+            .get(&record.id)
+            .map_err(|e| ContractError::new(ContractErrorCode::SaveFailed, e))?
+            .map(ProviderSecret),
+        None => None,
+    };
+    if key.is_none() && !record.local {
+        return Err(ContractError::new(
+            ContractErrorCode::ValidationFailed,
+            format!(
+                "provider instance `{}` ({} {}) has no stored API key — re-enter the key in the providers screen",
+                record.id, record.preset, record.model
+            ),
+        ));
+    }
+    Ok(ResolvedProviderTarget {
+        provider_id,
+        model: record.model.clone(),
+        base_url: record.base_url.clone(),
+        key,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // --- prov-* → job factory resolution (review 2026-10-14 priority) ---
+
+    fn upsert_req_full(
+        preset: &str,
+        model: &str,
+        secret: Option<&str>,
+        base_url: Option<&str>,
+        local: Option<bool>,
+    ) -> crate::contract::ProviderInstanceUpsertRequest {
+        crate::contract::ProviderInstanceUpsertRequest {
+            instance_id: None,
+            preset: preset.into(),
+            label: "Test instance".into(),
+            model: model.into(),
+            base_url: base_url.map(|u| u.into()),
+            secret: secret.map(|s| s.into()),
+            local,
+            expected_revision: None,
+        }
+    }
+
+    #[test]
+    fn resolve_maps_preset_model_and_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut state = ProviderSettingsState::load(dir.path()).unwrap();
+        let sink: Arc<dyn ProviderSecretSink> = Arc::new(MemorySecretSink::default());
+        let resp = ProviderOps {
+            state: &mut state,
+            sink: Some(&sink),
+        }
+        .upsert(
+            &upsert_req_full("openai", "gpt-test", Some("sk-test-123"), None, None),
+            || "prov-test1".into(),
+            "op-1".into(),
+        )
+        .unwrap();
+        let target = resolve_instance(&mut state, Some(&sink), &resp.instance.id).unwrap();
+        assert_eq!(target.provider_id, "openai");
+        assert_eq!(target.model, "gpt-test");
+        assert_eq!(target.key.as_ref().unwrap().expose(), "sk-test-123");
+        // The secret never renders.
+        assert!(!format!("{target:?}").contains("sk-test-123"));
+    }
+
+    #[test]
+    fn resolve_maps_custom_onto_openai_compat_with_base_url() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut state = ProviderSettingsState::load(dir.path()).unwrap();
+        let sink: Arc<dyn ProviderSecretSink> = Arc::new(MemorySecretSink::default());
+        let resp = ProviderOps {
+            state: &mut state,
+            sink: Some(&sink),
+        }
+        .upsert(
+            &upsert_req_full(
+                "custom",
+                "my-model",
+                Some("sk-custom"),
+                Some("http://127.0.0.1:9999/v1"),
+                None,
+            ),
+            || "prov-test2".into(),
+            "op-2".into(),
+        )
+        .unwrap();
+        let target = resolve_instance(&mut state, Some(&sink), &resp.instance.id).unwrap();
+        assert_eq!(target.provider_id, "openai");
+        assert_eq!(target.base_url.as_deref(), Some("http://127.0.0.1:9999/v1"));
+    }
+
+    #[test]
+    fn resolve_allows_local_keyless_and_refuses_cloud_keyless() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut state = ProviderSettingsState::load(dir.path()).unwrap();
+        let sink: Arc<dyn ProviderSecretSink> = Arc::new(MemorySecretSink::default());
+        // Local (ollama-class): no key needed.
+        let resp = ProviderOps {
+            state: &mut state,
+            sink: Some(&sink),
+        }
+        .upsert(
+            &upsert_req_full("ollama", "llama3", None, None, None),
+            || "prov-test3".into(),
+            "op-3".into(),
+        )
+        .unwrap();
+        let target = resolve_instance(&mut state, Some(&sink), &resp.instance.id).unwrap();
+        assert_eq!(target.provider_id, "ollama");
+        assert!(target.key.is_none());
+        // Cloud whose key vanished from the sink: typed refusal.
+        state.file.instances.push(ProviderInstanceRecord {
+            id: "prov-orphan".into(),
+            preset: "anthropic".into(),
+            label: "Orphan".into(),
+            model: "claude-x".into(),
+            base_url: None,
+            local: false,
+            has_key_cache: true,
+            created_at_ms: 0,
+            updated_at_ms: 0,
+        });
+        let err = resolve_instance(&mut state, Some(&sink), "prov-orphan").unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ValidationFailed);
+        assert!(err.message.contains("no stored API key"));
+        // Unknown instance: typed refusal.
+        let err = resolve_instance(&mut state, Some(&sink), "prov-absent").unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ProjectNotFound);
+    }
     use crate::contract::{
         ProviderInstanceDeleteRequest, ProviderInstanceUpsertRequest,
         ProviderInstanceValidateRequest,
@@ -1010,7 +1205,7 @@ mod tests {
 
         // A file unreadable at LOAD time: the fresh session refuses every op.
         std::fs::write(&path, b"{ this is not json").unwrap();
-        let sink = Arc::new(MemorySecretSink::default());
+        let sink: Arc<dyn ProviderSecretSink> = Arc::new(MemorySecretSink::default());
         let manager = ProjectSessionManager::new_with_secret_sink(dir.path(), sink).unwrap();
 
         let err = manager.provider_instance_list().unwrap_err();

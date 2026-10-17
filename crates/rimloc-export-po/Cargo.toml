@@ -22,3 +22,6 @@ color-eyre = { workspace = true }
 rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
 tempfile = "3"
 regex = "1"
+
+[dev-dependencies]
+rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }

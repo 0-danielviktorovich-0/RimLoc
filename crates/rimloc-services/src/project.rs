@@ -549,6 +549,57 @@ pub fn analyze_existing_translation(
     Ok(out)
 }
 
+/// PO-exchange outcome (see [`po_exchange_rows`]).
+pub struct PoExchangeOutcome {
+    pub rows: Vec<rimloc_export_po::PoExchangeRow>,
+    /// Translated-tree units that resolved to NO canonical entry
+    /// (obsolete/ambiguous pack lines) — counted for the report, never
+    /// silently dropped into the exchange file.
+    pub unmatched: usize,
+}
+
+/// Build the project-exchange PO rows from a canonically serialized
+/// translation tree. Every unit resolves back to its canonical entry
+/// through the SAME scoped matcher the existing-pack import uses, so
+/// msgid is the entry's own source text (never the translator's text)
+/// and the `#: reference` carries the canonical tree path — re-importing
+/// the file rebuilds the exact file layout the export came from.
+pub fn po_exchange_rows(
+    project: &Project,
+    translated_units: &[rimloc_core::TransUnit],
+) -> PoExchangeOutcome {
+    let resolver = ScopedPackResolver::new(project);
+    let mut rows = Vec::new();
+    let mut unmatched = 0usize;
+    for u in translated_units {
+        match resolver.resolve_report(&u.path, &u.key) {
+            PackResolution::Matched(id) => {
+                let Some(entry) = project.entries.iter().find(|e| e.id == id) else {
+                    unmatched += 1;
+                    continue;
+                };
+                // PO/XLIFF references are cross-platform artifacts: gettext
+                // tooling and the RimLoc importer both speak forward
+                // slashes (the importer's regex accepts both, but the FILE
+                // must not depend on the exporting OS).
+                let path_posix = u.path.to_string_lossy().replace('\\', "/");
+                let reference = match u.line {
+                    Some(line) => format!("{}:{}", path_posix, line),
+                    None => path_posix,
+                };
+                rows.push(rimloc_export_po::PoExchangeRow {
+                    key: u.key.clone(),
+                    source: entry.text.clone(),
+                    translation: u.source.clone().unwrap_or_default(),
+                    reference: Some(reference),
+                });
+            }
+            _ => unmatched += 1,
+        }
+    }
+    PoExchangeOutcome { rows, unmatched }
+}
+
 /// Workflow A final step: write RimWorld translation output straight from
 /// the canonical project — NO PO intermediate anywhere.
 ///

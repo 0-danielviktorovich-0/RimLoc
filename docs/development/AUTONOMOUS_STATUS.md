@@ -536,3 +536,82 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
 9. **FREEZE lanes независимы**: FREEZE требует L complete + Source-Inspector winner-reason
    contract (✓ 303d726) + прочие pre-freeze контракты. W6/W7 полировка не ждёт фриза, и
    фриз не ждёт GUI.
+
+## Кампания 2026-10-16: UI-11 Source Discovery Stage A+B ЗАКРЫТ; UI-10 PO/XLIFF — в работе
+
+- **UI-11 Stage B ЗАКРЫТ** (c4e9bc1 feat + 9aff9ba test + 6523ebb docs): whole-tree
+  `status_counts` в `SourceSearchReport` (живут сквозь пагинацию), line-ownership
+  дискриминатор в `classify_indexed` (старт-линейная партиция приписывала NoTranslate-поле
+  — texPath после индексированной метки — предыдущему юниту; теперь имя элемента на строке
+  сверяется с суффиксом ключа hit'а, при расхождении — честный candidate-путь),
+  фильтр-чипы по классификации с счётчиками в SourceSearchPanel, i18n-фикс
+  `ss.status.suspected_omission` → `suspected_extraction_omission` (сырой ключ утекал в UI).
+  Нативный lane 23/23 на packaged automation build. Юнит 12/12 в source_search.rs.
+- **Урок lane-фикстуры**: root-level `Defs/` рядом с `1.5/` заставляет резолвер эффективного
+  вида выбрать версию 1.5 (установленная семантика сканера) — фикстура переделана в
+  каноничный версионный мод (весь контент в `1.6/Defs`, 1.5 — legacy-остаток), мод
+  регенерируется с нуля каждый прогон (rmSync).
+- **Урок lane-порядка**: `browser.refresh()` в restart-proxy тесте убивает in-memory
+  сессию проекта (стора модульная, авто-открытия нет) — всё после refresh'а жило без
+  сессии. Фикс: тест reopen'ит проект из библиотеки после reload (рестарт → возврат к
+  работе). About-opener перенесён в хвост сюиты + osascript-реактивация (системный браузер
+  перекрывает webview, hash-навигация перестаёт рендерить).
+- **UI-10 PO/XLIFF GUI — СКОПИРОВАНО, реализация не начата**: аудит (CLI_GUI_PARITY_AUDIT.md)
+  требует import/export PO+XLIFF (+validate-po). Сервисный слой существует:
+  `rimloc-services/src/export.rs` (`export_po_with_tm`, `export_po_from_units`),
+  `rimloc-services/src/import.rs` (`import_po_to_file`, `import_po_to_mod_tree*`),
+  крейты `rimloc-export-po` (`write_po`, msgid/msgstr), `rimloc-import-po`
+  (`read_po_entries` → `write_language_data_xml` / `build_translation_mod*`),
+  `rimloc-export-xliff` (`write_xliff_12`), `rimloc-import-xliff` (`read_xliff_12`).
+  **ЗАКРЫТО 2026-10-16** (9ccfc5e PO-backend + 6a0d638 PO-GUI + 75f909f PO-lane +
+  c2df726 XLIFF-backend + 0d798c2 XLIFF-GUI/lane): обе стороны обмена идут через
+  каноническое Languages-дерево (сериализатор → reparse → scoped-matcher →
+  exchange-строки; rebuild → тот же analyze/apply-корень `apply_analyzed_pack`),
+  так что review/apply-контракт не форкается. Guard-семья `exchange_out_guard` /
+  `exchange_in_guard` общая для PO и XLIFF. Unit 328, нативный lane 24/24:
+  экспорт несёт msgid=source/msgstr=durable/ссылки каноничного дерева,
+  same-project import = reusable 0 / conflicts N / apply disabled.
+  validate-po остаётся CLI-first (вне GUI-паритета по решению аудита).
+
+## Кампания 2026-10-16 (вечер): UI-04 density и UI-12 deep visual audit ЗАКРЫТЫ
+
+- **UI-04 density ЗАКРЫТ** (cf47152 + e3bf600): comfortable/compact поверх zoom —
+  `lib/state/density.ts`, data-density на корне, CSS-переменные; канон r1.css владеет
+  `.entry-list .entry-row` на специфичности 0,2,0 — переопределение на 0,3,0;
+  виртуализированный список перечитывает высоту строки и ремерит на смене. Пол мелких
+  шрифтов: 94 вхождения 6-9px в каноне + 18 inline подняты до 10px. Lane 25/25.
+- **UI-12 deep visual audit ЗАКРЫТ** (ebd0611): повторяемая система —
+  visual-audit.conf.ts/spec.ts: 6 поверхностей × 2 темы через настоящий Settings-контрол;
+  все проверки — вычисляемые факты DOM (WCAG-контраст с oklch/color(srgb)/hex-парсером,
+  пол 3.0 + review-зона 4.5, чекбоксы, dividers, выравнивание таблиц, горизонтальный
+  overflow; disabled исключены по WCAG), отчёт — JSON-артефакт. Вердикт: 16/16, 630
+  текстовых элементов, 0 hard issues. Покрывает UI-08 (глубокие проверки контраста/
+  чекбоксов/таблиц в dark+light) и UI-09 (shell/projects/settings/about pass).
+- Урок аудита: первый прогон поймал реальную находку-кандидат (кнопка chatbatch
+  ratio=1.15) — оказалась сериализацией цвета WebKit (`color(srgb ...)` не парсился,
+  bg «уплывал» к белому предку) + disabled-кнопкой (WCAG-исключение) — парсер расширен,
+  исключение добавлено;_lane-система готова к повторным прогонам.
+
+## Кампания 2026-10-17: push-разрешение, честный WCAG AA, beta-registry
+
+- **Push-волна (владелец разрешил 2026-10-17)**: 558a727 → 8722863 → b676510 (rustfmt-долг)
+  → 588679f (zip 8→9: RUSTSEC-2026-0367/0368/0369; API name() → Result, undecodable skip)
+  → c72cd4f (dark AA) → 2deb981/c51d178/0cd1b1c (docs/registry) → a693479 (posix- ссылки
+  обмена + арифметика регистраций; оба фикса нашёл CI: Windows-backslash в PO-ссылках,
+  pick_po_file вне post-original extras) → 7c65484 (registry pin). CI на a693479:
+  **40/40 pass, 0 fail, все 5 CodeQL Analyze зелёные**.
+- **Issue #7 (UI-12) пере-аудит по правильным порогам**: AA = 4.5/3.0 (SC 1.4.3) на ВСЁМ
+  маршрутенаборе (16 × 2 темы = 32 пары). Первый честный прогон: **275 нарушений AA**
+  (dark токены 3.1–4.4). Фиксы: muted-foreground .671→.82, primary .749→.78, info
+  .736→.78, success .738→.78, selected-code .72→.88. Вердикт: **36/36, 982 текстовых
+  элемента, 0 AA / 0 large / 0 review<4.5**. Урок: мой прежний «пол 3.0» был занижен —
+  ревьюер прав; DOM-проверки с неверным порогом доказывают неверное.
+- **Скриншоты + vision**: 32 PNG упакованного приложения (по паре на поверхность×тему) —
+  RimLoc-evidence/reviewer/2026-10-17-ui12-aa/ + ZIP владельцу
+  (Desktop/rimloc-ui12-aa-evidence-2026-10-17.zip, sha256 f1a1ab84…). Vision-протокол
+  4 экранов: композиция Lovable-канона, наложений/обрезок нет; per-control
+  ADOPT/IMPROVE/INTENTIONAL_DIFFERENCE записан в матрицу.
+- **BETA_READINESS_REGISTRY.md**: базовая верифицированная таблица возможностей,
+  P0 (открытых нет) / P1 (installed-app smoke на CI-DMG, large-project E2E, UI-11
+  Stage C, beta-README) / P2 / OWNER_GATE (merge/release/теги, real-provider UAT ключи,
+  спонсор-аккаунты). RC = a693479.

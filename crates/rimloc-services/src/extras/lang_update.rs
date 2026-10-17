@@ -99,7 +99,11 @@ fn plan_from_zip_bytes(
         if !entry.is_file() {
             continue;
         }
-        let name = entry.name().to_string();
+        // zip 9 API: enclosed-name decoding can fail — such an entry can
+        // never match the RimWorld language layout, skip it.
+        let Ok(name) = entry.name().map(|n| n.into_owned()) else {
+            continue;
+        };
         // zip root prefix: <repo>-<hash>/**
         // we need paths like: <root>/Core/Languages/<source_lang_dir>/...
         let parts: Vec<&str> = name.split('/').collect();
@@ -150,7 +154,9 @@ fn apply_plan(bytes: &[u8], plan: &LangUpdatePlan, backup: bool) -> Result<()> {
         if !entry.is_file() {
             continue;
         }
-        let name = entry.name().to_string();
+        let Ok(name) = entry.name().map(|n| n.into_owned()) else {
+            continue;
+        };
         let parts: Vec<&str> = name.split('/').collect();
         if parts.len() >= 5
             && parts[1] == "Core"

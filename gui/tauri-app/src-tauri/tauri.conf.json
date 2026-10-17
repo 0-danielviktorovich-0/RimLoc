@@ -4,9 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.rimloc.gui",
   "build": {
-    "frontendDist": "../frontend-v2/dist",
-    "beforeBuildCommand": "cd frontend-v2 && npm run build",
-    "beforeDevCommand": "cd frontend-v2 && npm run dev"
+    "frontendDist": "../frontend-react/dist",
+    "beforeBuildCommand": "cd frontend-react && npm run build",
+    "beforeDevCommand": "cd frontend-react && npm run dev",
+    "devUrl": "http://localhost:5175"
   },
   "app": {
     "security": {
@@ -27,9 +28,11 @@
       {
         "label": "main",
         "url": "index.html",
-        "title": "RimLoc GUI",
-        "width": 1200,
-        "height": 800,
+        "title": "RimLoc",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 980,
+        "minHeight": 640,
         "resizable": true,
         "devtools": true,
         "focus": false

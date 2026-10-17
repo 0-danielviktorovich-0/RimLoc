@@ -52,3 +52,52 @@ fn xml_escape(s: &str) -> String {
     }
     out
 }
+
+/// One project-exchange row: canonical key, source text, current
+/// translation, optional `note` reference (path or path:line) — the
+/// XLIFF mirror of the PO exchange rows.
+#[derive(Debug, Clone)]
+pub struct XliffExchangeRow {
+    pub key: String,
+    pub source: String,
+    pub translation: String,
+    pub reference: Option<String>,
+}
+
+/// Write the PROJECT EXCHANGE XLIFF 1.2: `<target>` carries the current
+/// translations, `<source>` the canonical source text, `<note>` the
+/// canonical-tree path — re-importing rebuilds the same file layout.
+pub fn write_xliff_12_translated(
+    path: &Path,
+    rows: &[XliffExchangeRow],
+    src_lang: &str,
+    trg_lang: &str,
+) -> Result<()> {
+    let mut w = BufWriter::new(File::create(path)?);
+    writeln!(w, r#"<?xml version="1.0" encoding="UTF-8"?>"#)?;
+    writeln!(w, r#"<xliff version="1.2">"#)?;
+    writeln!(
+        w,
+        r#"  <file source-language="{}" target-language="{}" datatype="plaintext" original="rimloc">"#,
+        src_lang, trg_lang
+    )?;
+    writeln!(w, "    <body>")?;
+    for row in rows {
+        writeln!(w, "      <trans-unit id=\"{}\">", xml_escape(&row.key))?;
+        writeln!(w, "        <source>{}</source>", xml_escape(&row.source))?;
+        writeln!(
+            w,
+            "        <target>{}</target>",
+            xml_escape(&row.translation)
+        )?;
+        if let Some(reference) = &row.reference {
+            writeln!(w, "        <note>{}</note>", xml_escape(reference))?;
+        }
+        writeln!(w, "      </trans-unit>")?;
+    }
+    writeln!(w, "    </body>")?;
+    writeln!(w, "  </file>")?;
+    writeln!(w, "</xliff>")?;
+    w.flush()?;
+    Ok(())
+}
