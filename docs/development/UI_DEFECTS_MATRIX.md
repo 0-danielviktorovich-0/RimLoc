@@ -56,6 +56,41 @@ runtime verification for those is queued with the UI-02/03 work.
 | UI-10 | PO import/export GUI (highest-value gap) | **VERIFIED (PO)** | the project-exchange PO closed the gap natively (9ccfc5e + 6a0d638 + 75f909f): export writes msgid = canonical source text, msgstr = the durable translation, `#:` references = the canonical Languages layout, so the file re-imports losslessly; import/apply rebuild the PO into the canonical tree and feed the SAME analyzer/apply core as the folder pack (conflicts never overwritten, ambiguous never auto-applied, persist-before-ack shared byte-identically through `apply_analyzed_pack`); the Existing screen hosts export + pick/analyze + the shared guarded apply; unit lane 327 green (round trip, apply persists-and-reloads, re-apply classifies as conflict); native lane 24/24 (export → dry-run import against the same project → reusable 0 / conflicts N / apply disabled). **XLIFF 1.2 closed the same way** (c2df726 + 0d798c2): `write_xliff_12_translated` (target = durable translation, note = canonical path), the canonical-tree rebuild feeds the SAME analyzer/apply core, the Existing screen hosts the mirror block; native lane verifies the source/target triples and the identical conflict classification — 24/24. validate-po stays CLI-first |
 | UI-11 | Source Discovery | **VERIFIED (Stage A+B)** | Stage A (558a727): read-only full-project source search through the ONE effective scan — every match classified (AlreadyIndexed / DeliberatelyExcluded / OutsideEffectiveView / UnknownEligibility / SuspectedExtractionOmission / ParseFailure / UnsupportedFormat); a raw text match alone is never labeled a defect. Stage B (c4e9bc1 + 9aff9ba): whole-tree per-class counts that survive pagination, a line-ownership discriminator (a NoTranslate field line after an indexed label was misattributed by the start-line partition — the line's own element name is now checked against the hit's key suffix), per-class filter chips with honest counts in the workspace panel, i18n key fix (`suspected_omission` never matched the wire value). Native lane 23/23 on the packaged automation build: the Stage B scenario discovers an inactive 1.5 leftover, a NoTranslate texPath and a parse-error file, filters by class and clears. Unit lane: 12/12 in source_search.rs. Stage C (opt-in inclusion/recovery of out-of-view content) remains future work — a write-path decision, owner-gated by design |
 
+## UI-12 independent acceptance (Issue #7, 2026-10-17) — CLOSED at AA
+
+The first full-scope audit re-ran with the CORRECT WCAG AA thresholds
+(4.5:1 normal text, 3.0:1 large text per SC 1.4.3) across the FULL
+16-route table in both themes, and the dark theme FAILED honestly:
+275 AA violations (dark muted-foreground/primary/info/success tokens
+measured 3.1-4.4). Fixed in c72cd4f — tokens raised to measured
+5.0-6.2 (muted-foreground .82, primary/info/success .78) plus the
+selected-row code literal (.88 on the wine background). Verdict after
+the fix: **36/36, 32 surface×theme pairs, 982 text elements, 0 AA
+violations, 0 large-text violations, 0 sub-4.5 review band**.
+
+Real packaged-app screenshots per surface/theme pair (32 PNG) live in
+`RimLoc-evidence/reviewer/2026-10-17-ui12-aa/screenshots` with the full
+JSON report (sha256 8295aebe…); owner copy:
+`~/Desktop/rimloc-ui12-aa-evidence-2026-10-17.zip` (sha256 f1a1ab84…).
+
+Perceptual pass (4 screens vision-reviewed: workspace light/dark,
+projects light, settings dark): the three-pane editor composition
+follows the Lovable canon (file tree / entry list / inspector with the
+source block and the translation field), the project library shows real
+card + new-project card + onboarding strip, Settings carries theme /
+language / zoom / density — no overlays, clipping or unreadable spots.
+Per-control decisions: shell, sidebar, tree, list, inspector and
+library = ADOPT (canon layout, live data); density/zoom controls,
+classification chips, exchange block = IMPROVE (beyond canon, owner
+audit Oct-14); Focus/Overview modes = INTENTIONAL_DIFFERENCE (product
+decision, drafts survive); no FIX-class visual findings at the audited
+states. Interactive states beyond the audited set (hover popovers,
+error banners) stay covered by the DOM lanes, not by this static pass.
+
+Remaining honest residuals (not blocking beta): zoom×density×locale
+combinatorial sweep and >10k-row virtualization stress are queued as
+P2; the per-control table above covers the audited states only.
+
 ## Restored original ID numbering (reviewer, Oct-15)
 
 The Oct-15 verdict restored the ORIGINAL audit numbering; this matrix's IDs
