@@ -58,18 +58,21 @@ jobs:
       # Dependency order derived from the workspace manifests
       # (topological). Keep in sync when crates are added.
       - name: Package & publish (dependency order)
-        env:
-          DRY: ${{ inputs.dry_run && '--dry-run' || '--allow-dirty' }}
         run: |
           set -euo pipefail
           CRATES=(rimloc-core rimloc-parsers-xml rimloc-llm rimloc-export-csv \
             rimloc-import-po rimloc-export-po rimloc-validate rimloc-import-xliff \
             rimloc-export-xliff rimloc-domain rimloc-plugin-api rimloc-config \
             rimloc-services rimloc-cli rimloc-plugin-jsonftl)
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            MODE="--dry-run"
+          else
+            MODE=""
+          fi
           for c in "${CRATES[@]}"; do
             echo "=== $c ==="
             cargo package -p "$c" --list --allow-dirty | head -50
-            cargo publish -p "$c" --locked --allow-dirty $DRY
+            cargo publish -p "$c" --locked --allow-dirty ${MODE:---dry-run}
           done
       - name: Run summary
         if: always()
