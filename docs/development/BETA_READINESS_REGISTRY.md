@@ -34,11 +34,37 @@ work is hidden behind OWNER_GATE.
 any new P0 found by CI/CodeQL/lanes lands here)*
 
 ### P1 — remaining for the declared beta scope
-1. **DMG distribution channel** (packaging note, not a product defect):
+1. **Real RimWorld acceptance — final step is a 30-second owner action**
+   (see `RIMWORLD_ACCEPTANCE_2026-10-19.md`): every component is proven
+   individually (live-mod GUI translation → canonical export → mount →
+   activation → the game's Russian translation channel works on this
+   machine); the single combined run did not land because the game's
+   language preference behaved non-deterministically across background
+   launches. Picking Russian once in the game's options (it persists)
+   closes it with the already-mounted export.
+2. **DMG distribution channel** (packaging note, not a product defect):
    the macOS DMG bundler (AppleScript/Finder) fails on the external-SSD
    build volume — the `.app` bundle is valid and installs by copy; the
    CI gui job builds on Linux where no macOS bundle exists. A dedicated
    macOS bundle job with artifact upload is a CI-cost decision.
+
+### Closed on 2026-10-19 (late evening): P2 parity decisions + live-game acceptance evidence
+- **CLI→capability→IPC→GUI traceability (Issue #5) delivered**:
+  `CLI_PARITY_TRACEABILITY.md` — all 20 command modules mapped with the
+  live IPC registry and GUI routes, the non-CLI product flows
+  summarized. **P2 decisions closed**: validate-po/morph/schema stay
+  CLI-only for the beta with recorded reasons; the Advanced Tools UI is
+  intentionally deferred (its whole candidate set is those three, none
+  beta-blocking).
+- **Live RimWorld acceptance (partial, honest)**: a real string of the
+  owner's LIVE mod (VFE Security `VFES_Turret_AntiAir.label`) went
+  through the real GUI path into the canonical export; the mount and
+  activation mechanics are proven in the game's own log; the game's
+  Russian translation channel is proven in a control run. The single
+  combined run is blocked on the game's non-deterministic language
+  pref (environment, not RimLoc) — full story and the 30-second owner
+  closure path in `RIMWORLD_ACCEPTANCE_2026-10-19.md`; the
+  `rw-acceptance` native lane is in the repo (1 passing).
 
 ### Closed on 2026-10-19 (late): the last two P1 items
 - **UI-11 Stage C — guarded recovery (Issue #6): CLOSED at 472bb43.**
