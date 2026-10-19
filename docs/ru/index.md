@@ -9,11 +9,11 @@ title: RimLoc
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich)
 
-RimLoc — **RimWorld-first рабочая станция локализации** с local-first Rust-ядром, desktop UI и архитектурой адаптеров для будущих игр и приложений.
+RimLoc — **графическая студия перевода модов RimWorld**: работа со строками, проверка и экспорт прямо в приложении, без терминала. Rust CLI остаётся необязательным дополнением.
 
-[:material-play-circle: Начало работы](getting-started.md){ .md-button .md-button--primary }
-[:material-monitor: Desktop GUI](guide/gui.md){ .md-button }
-[:material-console: CLI](cli/index.md){ .md-button }
+[:material-monitor: Графический интерфейс — начать здесь](guide/gui.md){ .md-button .md-button--primary }
+[:material-play-circle: Начало работы](getting-started.md){ .md-button }
+[:material-console: Необязательный CLI](cli/index.md){ .md-button }
 
 !!! warning "Pre-beta"
     Новый десктопный интерфейс ещё доводится на React R1. Стабильных публичных установщиков пока нет; для тестирования используйте актуальную сборку из исходников/owner artifact.
@@ -42,6 +42,15 @@ CLI удобен для автоматизации и внешних CAT-про�
 - диагностика и maintenance-команды.
 
 Используйте PO, когда нужен Poedit/CAT или внешний обмен. Это не обязательный формат проекта.
+
+## ИИ-перевод
+
+Сейчас в GUI работает **Chat Batch без API-ключа**: структурированный
+промпт, копирование в AI-чат, импорт ответа, проверка и применение.
+Настроить и проверить провайдера уже можно, но **прямые автоматические
+переводы внутри GUI ещё не подключены**. Планируются официальный вход
+через ChatGPT для подходящих пользователей open-source версии, свои
+API-ключи, локальные модели и существующий вариант через чат без API.
 
 ## Текущий фокус
 

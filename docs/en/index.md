@@ -9,11 +9,11 @@ title: RimLoc
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich)
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/danielviktorovich)
 
-RimLoc is a **RimWorld-first localization workstation** with a local-first Rust core, a desktop UI, and an adapter-oriented architecture for future games and applications.
+RimLoc is a **visual, desktop-first RimWorld mod translation studio**. Translate, review, validate and export in the GUI without a terminal. Shared Rust services also expose an optional CLI and support future adapters.
 
-[:material-play-circle: Getting started](getting-started.md){ .md-button .md-button--primary }
-[:material-monitor: Desktop GUI](guide/gui.md){ .md-button }
-[:material-console: CLI](cli/index.md){ .md-button }
+[:material-monitor: Desktop GUI — start here](guide/gui.md){ .md-button .md-button--primary }
+[:material-play-circle: Getting started](getting-started.md){ .md-button }
+[:material-console: Optional CLI / automation](cli/index.md){ .md-button }
 
 !!! warning "Pre-beta"
     The current desktop UI is still being converged on React R1. Stable public installers are not available yet; use the current source/build instructions for development testing.
@@ -42,6 +42,15 @@ The CLI remains useful for automation and external CAT workflows:
 - diagnostics and other maintenance commands.
 
 Use PO when it helps you collaborate with Poedit/CAT tooling; do not treat it as mandatory.
+
+## AI translation
+
+Today the GUI offers **Chat Batch without an API key**: export a structured
+prompt, use your favorite AI chat, import, review and safely apply translations.
+Provider connections can be configured and tested, but direct automatic
+AI translation jobs are **not yet shipped**. Planned options include
+official eligible ChatGPT-plan authorization for OSS clients, BYO API keys,
+local models and the existing no-API fallback — all in the graphical app.
 
 ## Current focus
 

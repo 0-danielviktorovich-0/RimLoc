@@ -1,13 +1,88 @@
 # Repository Guidelines
 
+## Mandatory multi-agent preflight and evidence gate (2026-10-14)
+
+**Read this BEFORE writing code or claiming any stage finished.** A task touching
+2+ subsystems, having 3+ independent deliverables, involving architecture,
+release/security or explicit parallelism is a **multi-lane campaign**. The lead
+MUST first load `tools/zcode/rimloc-orchestrator/skills/rimloc-release-orchestrator/SKILL.md`
+and `docs/development/ZCODE_WORKFLOW_RUNTIME.md`, inspect actual tool availability
+and the live git/PR/CI status, then publish an executable DAG, lane ownership,
+non-overlapping worktrees, acceptance tests and a blocker/owner-gate register.
+Use ZCode `CreateWorkflow`/named subagents for long independent lanes **when
+actually available**. If the runtime cannot access them, state the exact missing
+capability and use a documented bounded sequential fallback — do not claim
+the workflow ran or substitute an invented tool.
+
+**Completion is evidence-gated:** "DONE", "green", "release-ready" or a checked
+acceptance box requires exact-head CI + CodeQL + Codecov/bot-comment review
+AND behavioral tests/evidence for that deliverable. Any failing job, open
+relevant security alert, unimplemented feature, missing artifact or unverified
+app behavior is `BLOCKED`, `PARTIAL` or `OWNER_ONLY`, not `DONE`.
+A locally built UAT zip can be `EXPERIMENTAL` with accurate SHA while CI is
+red; it cannot be promoted to accepted. Do NOT close parent milestones by
+counting child-stage setup as completed functionality.
+
+**Independent review and handoff are required** for critical cross-subsystem
+changes. The owner has explicitly authorized **direct communication via the
+existing ChatGPT browser session**. Reuse the authorized ZCode/IAB browser
+bridge when native `local.handoff(reason,prompt)` is unavailable; capture the
+REAL current ChatGPT conversation and existing **RimLoc ChatGPT Project** URL
+in PRIVATE local state, send sanitized evidence, read the actual response.
+When the conversation context is exhausted, create a NEW chat **inside the
+SAME existing ChatGPT Project**, transfer all critical reviewer/project
+context and keep the complete chain of previous URLs. Mandatory SOP:
+`docs/development/CHATGPT_BROWSER_REVIEW_BRIDGE.md`. Never create new chats
+to bypass quota, use the wrong Project, invent a browser receipt, or expose
+chat URLs in public Git. If browser and local handoff both fail, place the
+evidence in PRIVATE `RimLoc-review-handoff` and mark
+`WAITING_EXTERNAL_REVIEW` with a concrete reason. A GitHub comment alone
+DOES NOT send anything to ChatGPT; never claim a real reviewer response
+without observing and reading it.
+
+Before every final response: reconcile all relevant Draft PR HEADs, CI,
+CodeQL, bot comments, latest evidence, live product files and blockers; update
+a durable campaign ledger with exact SHAs and timestamps. Respect the owner's
+NO merge/release/Discord/paid-provider-calls mandate. Never request a second
+layer of approval where native permissions already grant an operation.
+Canonical operational template: `docs/development/PRODUCT_CLOSURE_PREFLIGHT.md`.
+
+
 Переписан аудитом документации 2026-10-05 под фактическое состояние ветки
 `feature/ui-r1-convergence` (см. `docs/development/REPOSITORY_STATE_2026-10.md`,
 `docs/competitive/RIMLOC_CAPABILITIES_BASELINE.md` — якорь возможностей).
 
+## Primary product contract: graphical desktop app
+
+**Owner decision (2026-10-14): RimLoc is GUI-FIRST.** React/Tauri is the
+primary product, target of onboarding, GitHub/README/SEO positioning, user
+documentation and UAT. The CLI is an optional expert/automation interface
+over the same shared Rust services — never the default translation journey.
+Users should not need a terminal, raw XML, PO files or environment variables
+to discover, translate, review, validate and safely build a RimWorld mod.
+
+**AI Translation must become a first-class GUI workflow**, with honest
+transport choices: (1) eligible ChatGPT plan via official OSS Sign in with
+ChatGPT OAuth/consent; (2) user-provided API keys; (3) local inference;
+(4) existing Chat Batch with no API. Today Provider Settings only
+configures/probes connections; the Chat Batch route requires copy/paste.
+Direct in-app jobs and subscription auth are NOT shipped. Never claim them
+as working until typed Tauri/service calls and packaged-app E2E pass.
+
+CLI parity means every **user-relevant capability** should be accessible
+from understandable GUI controls, sharing service logic. A tool only in CLI
+is a documented GUI gap, not a feature-completeness success. Do not replace
+the GUI with arbitrary shell execution. Never bypass human OAuth/paid
+consent or relax rel26 Data Safety guarantees.
+
+Execution/architecture reference:
+`docs/development/DESKTOP_FIRST_AI_TRANSLATION_2026-10-14.md`.
+
 ## Project Structure & Module Organization
 
-RimLoc — кроссплатформенный инструмент перевода модов RimWorld (и других игр, через
-адаптеры): Rust workspace + Tauri 2 desktop GUI + MkDocs-сайт в `docs/`.
+RimLoc — графическая десктопная студия перевода модов RimWorld: основной продукт —
+Tauri 2 + React GUI; общая реализация возможностей — Rust services; CLI —
+дополнительный доступ для автоматизации; MkDocs — документация.
 
 ### Rust workspace (`Cargo.toml`, 15 крейтов + GUI)
 
@@ -21,7 +96,7 @@ RimLoc — кроссплатформенный инструмент перев�
 | `rimloc-validate` | правила валидации | чистые проверки |
 | `rimloc-services` | оркестрация: scan/validate/import/build, project_store v2, ui_catalog, contract, observability | переиспользуется CLI и GUI, файловый IO разрешён |
 | `rimloc-config` | конфигурация (`rimloc.toml`) | — |
-| `rimloc-llm` | провайдер-шаблоны (UI существует, LLM-вызовы не подключены) | не вызывать платные API без явного разрешения владельца |
+| `rimloc-llm` | действующий LLM backend для CLI; GUI умеет конфигурировать и проверять подключения, прямой AI job ещё не подключён | платные вызовы и OAuth — только с разрешения пользователя |
 | `rimloc-plugin-api` / `rimloc-plugin-jsonftl` | плагины сканирования | — |
 | `rimloc-cli` | тонкий командный слой (`src/main.rs`) | никакой бизнес-логики |
 
@@ -330,7 +405,7 @@ CLI-вывод/скриншоты при изменении поведения; 
 
 ## Product Surfaces and i18n
 
-- **GUI не обязан зеркалить каждую CLI-команду.** CLI — headless/automation + format tooling;
+- **GUI обязан покрывать каждый существенный для переводчика CLI-сценарий.** Отдельные флаги разработчика можно оставить в CLI, но пользовательский workflow должен существовать в GUI; CLI — headless/automation + format tooling;
   React GUI — product workflow поверх того же `rimloc-services`/`RimLocClient`. Общая доменная
   семантика должна совпадать, но UX capability-driven, а не «одна кнопка на каждый флаг».
 - Format-specific CLI (PO/CSV/XLIFF и т.п.) остаются опциональными interoperability tools.

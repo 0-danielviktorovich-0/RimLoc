@@ -61,6 +61,15 @@ paste commands/results here
 - [ ] If `codecov.yml` changed, accounted for `strict_yaml_branch: main` and stated whether the new policy is already effective.
 - [ ] Reported testing/coverage blind spots and any owner-only UAT or release gates.
 
+## Multi-lane readiness (only for 2+ subsystems, 3+ deliverables, architecture/security/release)
+
+- [ ] `AGENTS.md` mandatory preflight and the existing orchestration skill were loaded before implementation; DAG/worktree owner/acceptance evidence is linked.
+- [ ] Workflow run ID + lane receipts / subagent evidence linked, OR exact tool-unavailability blocker recorded. A status description alone is not workflow evidence.
+- [ ] Every affected branch's **latest exact SHA** has fully completed CI/CodeQL/Codecov/bot-comment triage; list all failures. No `DONE` claim for a red or unverified gate.
+- [ ] Independent implementation reviewer (different worker), actual `local.handoff` receipt OR private reviewer mailbox request linked; outstanding reviews are labeled waiting.
+- [ ] User UAT, real RimWorld smoke, paid-account authorization, signing, release and merge remain explicit OWNER_ONLY gates.
+- [ ] Stacked/overlapping branches are reconciled and an integrated candidate is tested, not inferred from independently green branch checks.
+
 ## Product / architecture checks
 
 - [ ] Domain behavior lives in Rust/shared services, not duplicated in React/CLI

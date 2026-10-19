@@ -5,6 +5,11 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ## [Unreleased]
 
+### Docs
+- [automation] Document authorized browser-direct ChatGPT reviewer handoffs and context-safe rollover into new conversations of the existing ChatGPT Project.
+- [gui] Present RimLoc as a desktop-first visual RimWorld localization studio in English and Russian onboarding, guides and READMEs; describe the Rust CLI as optional automation rather than the main translation workflow (#93)
+- [ai] Document the current no-API Chat Batch and connection-test capabilities separately from the planned direct AI Translation workspace, including official OSS ChatGPT-plan authorization, API keys and local models (#93)
+
 ### Fixed
 - [gui] Draft autosave is now durable and locale-safe: unsaved editor work survives language switches, project switches inside the autosave debounce, app restarts and restore-vs-save races; a failed deletion holds an honest error instead of a false saved state, and Retry re-issues exactly that deletion. Drafts live in a sidecar store next to the managed project; the deletions and saves are merge-based, so partial writes never drop unrelated keys. The desktop adapter now also exposes the draft commands (they were missing from every packaged build before).
 - [gui] Workspace entries are addressed by the full structural identity (kind + def type + key): two Def types sharing one serialization key no longer collapse into one row, and each keeps its own draft, translation and findings. Rows with a shared key are labelled with their def type.
