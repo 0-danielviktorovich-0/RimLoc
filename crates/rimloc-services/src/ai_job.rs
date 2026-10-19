@@ -200,7 +200,10 @@ fn write_job_record(managed_root: &Path, status: &AiJobStatus) {
         .and_then(|_| std::fs::rename(&tmp, &path))
         .is_err()
     {
-        eprintln!("rimloc: ai job record write failed for {}", status.job_id);
+        // Machine-keyed stderr line: the constant carries the message,
+        // the format literal stays pure-formatter (the repo-wide
+        // no-user-strings invariant).
+        eprintln!("{} {}", AI_JOB_RECORD_WRITE_FAILED, status.job_id);
     }
 }
 
@@ -239,6 +242,8 @@ pub fn recover_interrupted_jobs(managed_root: &Path) -> usize {
 }
 
 static JOB_SEQ: AtomicU64 = AtomicU64::new(1);
+
+const AI_JOB_RECORD_WRITE_FAILED: &str = "ai_job_record_write_failed";
 
 /// The preview copy carried in every status snapshot. The ACCEPT path
 /// refuses to run over hidden rows without an explicit full-scope
