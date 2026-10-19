@@ -4418,7 +4418,7 @@ checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
 
 [[package]]
 name = "rimloc-cli"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4465,7 +4465,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-config"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dirs",
  "serde",
@@ -4475,7 +4475,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "color-eyre",
@@ -4488,7 +4488,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-domain"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rimloc-core",
  "schemars 1.2.2",
@@ -4498,7 +4498,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-export-csv"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "csv",
@@ -4507,7 +4507,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-export-po"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "regex",
@@ -4518,7 +4518,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-export-xliff"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rimloc-core",
 ]
@@ -4561,7 +4561,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-import-po"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "quick-xml",
@@ -4572,7 +4572,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-import-xliff"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "quick-xml",
@@ -4581,7 +4581,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-llm"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "keyring",
  "regex",
@@ -4595,7 +4595,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-parsers-xml"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "quick-xml",
@@ -4611,7 +4611,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-plugin-api"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "rimloc-core",
@@ -4619,7 +4619,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-plugin-jsonftl"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4628,7 +4628,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-services"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "color-eyre",
@@ -4663,7 +4663,7 @@ dependencies = [
 
 [[package]]
 name = "rimloc-validate"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "color-eyre",
  "regex",

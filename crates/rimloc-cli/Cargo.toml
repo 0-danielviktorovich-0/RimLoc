@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-cli"
-version = "0.1.0-alpha.1"
+version = "0.2.0-alpha.1"
 edition = "2021"
 rust-version = "1.89"
 build = "build.rs"
@@ -27,18 +27,18 @@ clap = { workspace = true }
 color-eyre = { version = "0.6", features = ["capture-spantrace"] }
 walkdir = { workspace = true }
 owo-colors = "4"
-rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
-rimloc-parsers-xml = { version = "0.1.0", path = "../rimloc-parsers-xml" }
-rimloc-llm = { path = "../rimloc-llm" }
-rimloc-export-csv = { version = "0.1.0", path = "../rimloc-export-csv" }
-rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
-rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
-rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
-rimloc-services = { version = "0.1.0", path = "../rimloc-services" }
-rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
-rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
-rimloc-export-xliff = { version = "0.1.0", path = "../rimloc-export-xliff" }
-rimloc-import-xliff = { version = "0.1.0", path = "../rimloc-import-xliff" }
+rimloc-core = { version = "0.2.0", path = "../rimloc-core" }
+rimloc-parsers-xml = { version = "0.2.0", path = "../rimloc-parsers-xml" }
+rimloc-llm = { version = "0.2.0", path = "../rimloc-llm" }
+rimloc-export-csv = { version = "0.2.0", path = "../rimloc-export-csv" }
+rimloc-export-po = { version = "0.2.0", path = "../rimloc-export-po" }
+rimloc-validate = { version = "0.2.0", path = "../rimloc-validate" }
+rimloc-import-po = { version = "0.2.0", path = "../rimloc-import-po" }
+rimloc-services = { version = "0.2.0", path = "../rimloc-services" }
+rimloc-config = { version = "0.2.0", path = "../rimloc-config" }
+rimloc-domain = { version = "0.2.0", path = "../rimloc-domain" }
+rimloc-export-xliff = { version = "0.2.0", path = "../rimloc-export-xliff" }
+rimloc-import-xliff = { version = "0.2.0", path = "../rimloc-import-xliff" }
 schemars = { workspace = true }
 regex = "1"
 quick-xml = "0.42"

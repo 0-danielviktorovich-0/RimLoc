@@ -1,0 +1,82 @@
+name: publish-crates
+
+# crates.io publication (Issue #8 directive): Trusted Publishing via
+# GitHub Actions OIDC — NO long-lived tokens in secrets. Authorized in
+# each crate's crates.io settings (owner action, one-time).
+#
+# Deliberately NOT triggered by tags or pushes: publishing is
+# externally permanent (a version can never be overwritten), so the
+# trigger is a manual workflow_dispatch restricted to the owner, with
+# a dry-run default. The run pins itself to the selected SHA and
+# publishes in dependency order derived from the workspace manifests.
+#
+# Never uses pull_request_target / workflow_run for publishing.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (verify packaging only, no upload)"
+        type: boolean
+        default: true
+      version_note:
+        description: "Release note (recorded in the run summary)"
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: publish-crates
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish (dependency order, OIDC)
+    runs-on: ubuntu-latest
+    environment: crates-publish
+    permissions:
+      id-token: write # crates.io trusted publishing
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+        with:
+          # The dispatcher picks the exact SHA; never publish moving heads.
+          ref: ${{ github.ref }}
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+      - uses: actions/setup-node@820762786026740c76336085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+
+      - name: Preflight (workspace builds, versions are publishable)
+        run: |
+          cargo verify-project
+          # Every workspace crate referenced with a version key must carry
+          # one — a path-only dependency breaks cargo publish.
+          python3 .github/scripts/check-publish-deps.py
+
+      # Dependency order derived from the workspace manifests
+      # (topological). Keep in sync when crates are added.
+      - name: Package & publish (dependency order)
+        env:
+          DRY: ${{ inputs.dry_run && '--dry-run' || '--allow-dirty' }}
+        run: |
+          set -euo pipefail
+          CRATES=(rimloc-core rimloc-parsers-xml rimloc-llm rimloc-export-csv \
+            rimloc-import-po rimloc-export-po rimloc-validate rimloc-import-xliff \
+            rimloc-export-xliff rimloc-domain rimloc-plugin-api rimloc-config \
+            rimloc-services rimloc-cli rimloc-plugin-jsonftl)
+          for c in "${CRATES[@]}"; do
+            echo "=== $c ==="
+            cargo package -p "$c" --list --allow-dirty | head -50
+            cargo publish -p "$c" --locked --allow-dirty $DRY
+          done
+      - name: Run summary
+        if: always()
+        run: |
+          {
+            echo "## crates.io publish"
+            echo "- SHA: \`${{ github.sha }}\`"
+            echo "- mode: ${{ inputs.dry_run && 'DRY RUN (no upload)' || 'PUBLISH' }}"
+            echo "- note: ${{ inputs.version_note }}"
+          } >> "$GITHUB_STEP_SUMMARY"

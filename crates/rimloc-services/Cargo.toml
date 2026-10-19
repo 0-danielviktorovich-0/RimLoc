@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-services"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.89"
 license = "GPL-3.0-only"
@@ -8,17 +8,17 @@ license = "GPL-3.0-only"
 [dependencies]
 tempfile = { workspace = true }
 color-eyre = { workspace = true }
-rimloc-core = { version = "0.1.0", path = "../rimloc-core" }
-rimloc-parsers-xml = { version = "0.1.0", path = "../rimloc-parsers-xml" }
-rimloc-validate = { version = "0.1.0", path = "../rimloc-validate" }
-rimloc-export-po = { version = "0.1.0", path = "../rimloc-export-po" }
-rimloc-import-po = { version = "0.1.0", path = "../rimloc-import-po" }
-rimloc-import-xliff = { version = "0.1.0", path = "../rimloc-import-xliff" }
-rimloc-export-xliff = { version = "0.1.0", path = "../rimloc-export-xliff" }
-rimloc-domain = { version = "0.1.0", path = "../rimloc-domain" }
-rimloc-llm = { version = "0.1.0", path = "../rimloc-llm", default-features = false }
-rimloc-plugin-api = { version = "0.1.0", path = "../rimloc-plugin-api" }
-rimloc-config = { version = "0.1.0", path = "../rimloc-config" }
+rimloc-core = { version = "0.2.0", path = "../rimloc-core" }
+rimloc-parsers-xml = { version = "0.2.0", path = "../rimloc-parsers-xml" }
+rimloc-validate = { version = "0.2.0", path = "../rimloc-validate" }
+rimloc-export-po = { version = "0.2.0", path = "../rimloc-export-po" }
+rimloc-import-po = { version = "0.2.0", path = "../rimloc-import-po" }
+rimloc-import-xliff = { version = "0.2.0", path = "../rimloc-import-xliff" }
+rimloc-export-xliff = { version = "0.2.0", path = "../rimloc-export-xliff" }
+rimloc-domain = { version = "0.2.0", path = "../rimloc-domain" }
+rimloc-llm = { version = "0.2.0", path = "../rimloc-llm", default-features = false }
+rimloc-plugin-api = { version = "0.2.0", path = "../rimloc-plugin-api" }
+rimloc-config = { version = "0.2.0", path = "../rimloc-config" }
 regex = "1"
 quick-xml = { workspace = true }
 walkdir = { workspace = true }
