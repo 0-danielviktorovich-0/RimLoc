@@ -309,6 +309,10 @@ export interface ContractMethodMap {
     };
     result: import('./types').SourceSearchReportDto;
   };
+  project_include_candidate: {
+    params: { request: import('./types').IncludeCandidateRequestDto };
+    result: import('./types').IncludeCandidateResponseDto;
+  };
   project_source_xml_preview: {
     params: {
       request: {

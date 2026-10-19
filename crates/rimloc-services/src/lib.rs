@@ -30,6 +30,10 @@ pub mod project;
 pub mod project_store;
 pub mod providers;
 pub mod scan;
+/// Stage C provenance marker (UI-11): a human explicitly approved
+/// including a missed source row into the managed project state.
+pub const WINNER_REASON_HUMAN_RECOVERED: &str = "human_recovered_stage_c";
+
 pub mod session;
 pub mod session_drafts;
 pub mod source_search;

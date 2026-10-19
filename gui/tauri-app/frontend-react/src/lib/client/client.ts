@@ -570,6 +570,13 @@ export class RimLocClient {
 
   /** Source Discovery (Stage A): read-only full-project source search
    *  reconciled against the canonical inventory. */
+  /** UI-11 Stage C: guarded per-candidate inclusion of a missed source
+   *  row into the managed project state (typed refusals for every
+   *  hazard class; the source mod is never written). */
+  async includeCandidate(request: import('./types').IncludeCandidateRequestDto): Promise<import('./types').IncludeCandidateResponseDto> {
+    return this.call('project_include_candidate', { request })
+  }
+
   async sourceSearch(args: {
     projectId: string;
     sessionEpoch: number;

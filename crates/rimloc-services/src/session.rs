@@ -40,6 +40,7 @@ use crate::observability::{generate_operation_id, sha256_hex, OperationLog};
 use crate::project::build_project_with_source;
 use crate::project_store::{load_project_with_meta, save_project_with_meta, ProjectEnvelopeMeta};
 use crate::providers::{ProviderOps, ProviderSecretSink, ProviderSettingsState};
+use rimloc_domain::canonical as dom;
 use rimloc_domain::canonical::{
     Completeness, ContextRole, EntryKind, EntrySourceRef, Lifecycle, Origin, Project, SourceEntry,
     SourceEntryId, Translation, ValidationState,
@@ -2813,6 +2814,295 @@ impl ProjectSessionManager {
         Ok(existing_analysis_to_response(job_id, analysis))
     }
 
+    /// `project_include_candidate` (UI-11 Stage C) — guarded, per-candidate
+    /// human approval to include ONE source row the automated extraction
+    /// missed. Every input from the UI is re-verified server-side:
+    /// containment + effective-view membership of the file, XML validity,
+    /// the row's own element/text at the named line, NoTranslate via the
+    /// eligibility engine, duplicate structural identity, and the source
+    /// fingerprint (a source that changed since the project was built is
+    /// a typed refusal — rescan into a fresh project instead). The new
+    /// entry lands ONLY in the managed project state (persist-before-ack,
+    /// revision bump); the source mod is never written.
+    pub fn include_candidate(
+        &self,
+        req: &crate::contract::IncludeCandidateRequest,
+    ) -> Result<crate::contract::IncludeCandidateResponse, ContractError> {
+        self.managed_path(&req.project_id)?;
+        let arc = self
+            .inner
+            .lock()
+            .expect("session registry poisoned")
+            .get(&req.project_id)
+            .cloned()
+            .ok_or_else(|| ContractError::project_not_found(&req.project_id))?;
+        let mut st = arc.lock().expect("project session poisoned");
+        if st.epoch != req.session_epoch {
+            return Err(ContractError::stale_epoch(req.session_epoch, st.epoch));
+        }
+        let base = if st.dirty {
+            st.acked_revision
+        } else {
+            st.revision
+        };
+        if req.expected_revision != base {
+            return Err(ContractError::stale_revision(req.expected_revision, base));
+        }
+        if st.mod_root.as_os_str().is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                "the session has no source root recorded; re-create the project from its source mod".to_string(),
+            ));
+        }
+
+        // Containment: the candidate file must live under the (canonical)
+        // source root; traversal spellings are refused by construction.
+        let rel = req.file.replace('\\', "/");
+        if rel.split('/').any(|seg| seg == ".." || seg.is_empty()) {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "candidate file `{}` is not a project-relative path",
+                    req.file
+                ),
+            ));
+        }
+        let root_c = st
+            .mod_root
+            .canonicalize()
+            .unwrap_or_else(|_| st.mod_root.clone());
+        let abs = st.mod_root.join(&rel);
+        let abs_c = abs.canonicalize().map_err(|_| {
+            ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "candidate file `{}` does not exist in the source mod",
+                    req.file
+                ),
+            )
+        })?;
+        if !abs_c.starts_with(&root_c) {
+            return Err(ContractError::new(
+                ContractErrorCode::GuardOutputDenied,
+                format!("candidate file `{}` escapes the source root", req.file),
+            ));
+        }
+
+        // Effective view: only ACTIVE rows are includable — an inactive
+        // version dir or unresolved conditional branch never enters the
+        // managed inventory through the side door.
+        let view = crate::modview::effective_view(&st.mod_root, st.target_version.as_deref(), None)
+            .map_err(|e| {
+                ContractError::new(
+                    ContractErrorCode::Internal,
+                    format!("include_candidate: view resolution failed: {e}"),
+                )
+            })?;
+        // Same discipline as the source-search lane: a versioned layout
+        // resolves specific content dirs; the bare root then hosts only
+        // shared folders — a deeper version dir (e.g. a 1.5 leftover)
+        // must NOT slip in through the root prefix.
+        let dirs: Vec<&std::path::PathBuf> = if view.content_dirs.len() > 1 {
+            view.content_dirs
+                .iter()
+                .filter(|d| d.as_path() != st.mod_root.as_path())
+                .collect()
+        } else {
+            view.content_dirs.iter().collect()
+        };
+        let in_view = if dirs.is_empty() {
+            true
+        } else {
+            dirs.iter().any(|d| {
+                let dc = d.canonicalize().unwrap_or_else(|_| (*d).clone());
+                abs_c.starts_with(dc)
+            })
+        };
+        if !in_view {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "candidate file `{}` is OUTSIDE the effective view (inactive version or unresolved conditional branch) — include it only from the active source",
+                    req.file
+                ),
+            ));
+        }
+
+        // Source fingerprint: the row must belong to the SAME source the
+        // project was built from; a changed source is a rescan case.
+        if let Some(recorded) = st.source_fingerprint.as_ref() {
+            let current =
+                crate::scan::source_fingerprint(&st.mod_root, st.target_version.as_deref())
+                    .map_err(|e| {
+                        ContractError::new(
+                            ContractErrorCode::Internal,
+                            format!("include_candidate: fingerprint failed: {e}"),
+                        )
+                    })?;
+            if current != *recorded {
+                return Err(ContractError::new(
+                    ContractErrorCode::ProjectChangedOnDisk,
+                    "the source mod changed since this project was built — include works only on an unchanged source; rescan into a fresh project".to_string(),
+                ));
+            }
+        }
+
+        // Re-read the row: the FILE must parse, and the element at the
+        // named line must be the leaf key the UI classified.
+        let content = std::fs::read_to_string(&abs).map_err(|e| {
+            ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!("candidate file `{}` is unreadable: {e}", req.file),
+            )
+        })?;
+        let is_xml = abs
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("xml"));
+        if is_xml && !crate::source_search::validate_xml(&content) {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "candidate file `{}` does not parse as XML — Stage C includes only parseable rows; fix the source first",
+                    req.file
+                ),
+            ));
+        }
+        let line_text = content
+            .lines()
+            .nth(req.line.saturating_sub(1))
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::ContractViolation,
+                    format!("line {} does not exist in `{}`", req.line, req.file),
+                )
+            })?;
+        let ctx = crate::source_search::CandidateContext::probe(&content, req.line);
+        let leaf = req.key.rsplit('.').next().unwrap_or(&req.key).to_string();
+        let keyed = rel.contains("Languages/") && rel.contains("Keyed/");
+        // The row's own truth: find the `<leaf …>text</leaf>` element ON
+        // THIS LINE (one-line defs carry several elements; the LAST open
+        // tag is not necessarily the classified one).
+        let text = find_element_text(line_text, &leaf).ok_or_else(|| {
+            ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "line {} of `{}` holds no element `{}` — the classified key does not live there; re-run the search",
+                    req.line, req.file, leaf
+                ),
+            )
+        })?;
+        if text.is_empty() {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "line {} of `{}`: element `{}` carries no text to include",
+                    req.line, req.file, leaf
+                ),
+            ));
+        }
+
+        // Structural identity + duplicate guard.
+        let (kind, key, def_type) = if keyed {
+            (dom::EntryKind::Keyed, req.key.clone(), None)
+        } else {
+            (
+                dom::EntryKind::DefInjected,
+                req.key.clone(),
+                ctx.def_type.clone(),
+            )
+        };
+        let id = dom::SourceEntryId {
+            kind,
+            key,
+            def_type,
+        };
+        if st.project.entries.iter().any(|e| e.id == id) {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "identity `{}` is already in the inventory — Stage C never duplicates entries",
+                    id.display_identity()
+                ),
+            ));
+        }
+
+        // NoTranslate: deterministic exclusions stay excluded.
+        let synthetic = dom::SourceEntry {
+            id: id.clone(),
+            text: text.clone(),
+            source_locale: "en".to_string(),
+            contexts: vec![dom::SourceContext {
+                file: rel.clone(),
+                line: Some(req.line),
+                def_type: ctx.def_type.clone(),
+                role: dom::ContextRole::Effective,
+            }],
+            provenance: dom::SourceProvenance::default(),
+            tkey: None,
+            source_ref: None,
+        };
+        let verdict = crate::EligibilityEngine::new().evaluate(&synthetic, None);
+        if verdict.decision == rimloc_domain::eligibility::Decision::NonTranslatable {
+            return Err(ContractError::new(
+                ContractErrorCode::ContractViolation,
+                format!(
+                    "the eligibility engine rules this row NonTranslatable ({}) — technical fields stay excluded by design",
+                    verdict
+                        .evidence
+                        .first()
+                        .map(|e| e.rule_id.clone())
+                        .unwrap_or_else(|| "rule".to_string())
+                ),
+            ));
+        }
+
+        // Include: managed state ONLY, marked as human-recovered.
+        let provenance = dom::SourceProvenance {
+            selected_by: Some(crate::WINNER_REASON_HUMAN_RECOVERED.to_string()),
+            ..Default::default()
+        };
+        let mut entry = synthetic;
+        entry.provenance = provenance;
+        st.project.entries.push(entry);
+        let new_revision = st.revision + 1;
+        st.revision = new_revision;
+        let meta = ProjectEnvelopeMeta {
+            project_id: Some(req.project_id.clone()),
+            revision: Some(new_revision),
+            display_name: Some(st.display_name.clone()),
+            source_root: envelope_source_root(&st.mod_root),
+            source_fingerprint: st.source_fingerprint.clone(),
+        };
+        if let Some(expected) = &st.disk_hash {
+            let current = disk_hash(&st.path);
+            if current.is_some_and(|c| &c != expected) {
+                st.revision -= 1;
+                st.project.entries.pop();
+                return Err(ContractError::new(
+                    ContractErrorCode::ProjectChangedOnDisk,
+                    "the managed project file changed outside this session; refresh to adopt the on-disk state".to_string(),
+                ));
+            }
+        }
+        save_project_with_meta(&st.project, &meta, &st.path).map_err(|e| {
+            st.revision -= 1;
+            st.project.entries.pop();
+            ContractError::new(
+                ContractErrorCode::SaveFailed,
+                format!("persist failed: {e}"),
+            )
+        })?;
+        st.acked_revision = new_revision;
+        st.disk_hash = disk_hash(&st.path);
+        st.dirty = false;
+
+        Ok(crate::contract::IncludeCandidateResponse {
+            job_id: generate_operation_id(),
+            revision: new_revision,
+            entry: id,
+        })
+    }
+
     /// `project_apply_xliff` (UI-10) — apply the REUSABLE set of an
     /// analyzed XLIFF pack through the SAME guarded core as the folder
     /// and PO packs.
@@ -3512,6 +3802,30 @@ fn ensure_out_dir_absolute(out_dir: &Path) -> Result<(), ContractError> {
     } else {
         Err(ContractError::invalid_output_path(out_dir))
     }
+}
+
+/// Inner text of the `<name ...>text</name>` element on this line
+/// (None when the element is absent). Attributes tolerated; escaped
+/// entities stay as-is (same convention as the scanners).
+fn find_element_text(line: &str, name: &str) -> Option<String> {
+    let open = format!("<{name}");
+    let close = format!("</{name}>");
+    let start = line.find(&open)?;
+    let after_open = &line[start + open.len()..];
+    // Must be the exact element name end ('>', ' ', '/>' boundary).
+    if !after_open.starts_with(['>', ' ', '\t', '\n', '/']) {
+        return None;
+    }
+    let gt = after_open.find('>')?;
+    let inner_start = &after_open[gt + 1..];
+    let end = inner_start.find(&close)?;
+    let inner = &inner_start[..end];
+    if inner.contains('<') && !inner.contains("</") {
+        // Nested markup without the closing sequence on this line — not a
+        // simple leaf row.
+        return None;
+    }
+    Some(inner.trim().to_string())
 }
 
 /// Guards for a caller-specified EXISTING translation pack directory
@@ -6635,6 +6949,246 @@ mod tests {
             .export_project(&snap.project_id, 1, &out, "Russian")
             .unwrap();
         assert!(export.files_written >= 3);
+    }
+
+    // --- UI-11 Stage C: guarded candidate inclusion ----------------------
+
+    /// Stage C fixture: a Defs row the extraction really misses (a field
+    /// outside every allowlist leaf), plus the hazard rows the guards
+    /// must refuse (NoTranslate texPath, an inactive version branch).
+    fn stage_c_mod(root: &Path) {
+        std::fs::create_dir_all(root.join("About")).unwrap();
+        std::fs::write(
+            root.join("About/About.xml"),
+            "<ModMetaData><name>C</name><packageId>rimloc.test.stagec</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("1.6/Defs")).unwrap();
+        // line 2 is the missed human-readable row; line 3 is texPath.
+        std::fs::write(
+            root.join("1.6/Defs/Missed.xml"),
+            "<Defs>\n  <ThingDef><defName>Odd</defName><oddTitle>Strange gadget</oddTitle><texPath>Things/Odd</texPath></ThingDef>\n</Defs>\n",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("1.5/Defs")).unwrap();
+        std::fs::write(
+            root.join("1.5/Defs/Legacy.xml"),
+            "<Defs><ThingDef><defName>Old</defName><oddTitle>Legacy row</oddTitle></ThingDef></Defs>",
+        )
+        .unwrap();
+        // A parse-broken file that has been in the source from the start
+        // (creating it mid-session would flip the fingerprint first).
+        std::fs::write(
+            root.join("1.6/Defs/Broken.xml"),
+            "<Defs><ThingDef><label>x</Defs>",
+        )
+        .unwrap();
+    }
+
+    fn include_req(
+        pid: &str,
+        epoch: u64,
+        rev: u64,
+        file: &str,
+        line: usize,
+        key: &str,
+    ) -> crate::contract::IncludeCandidateRequest {
+        crate::contract::IncludeCandidateRequest {
+            project_id: pid.into(),
+            session_epoch: epoch,
+            expected_revision: rev,
+            file: file.into(),
+            line,
+            key: key.into(),
+        }
+    }
+
+    #[test]
+    fn stage_c_includes_a_genuinely_missed_row_into_managed_state_only() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        stage_c_mod(root);
+        let before = std::fs::read(root.join("1.6/Defs/Missed.xml")).unwrap();
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(root, Some("1.6")).unwrap();
+        assert!(
+            !snap
+                .project
+                .entries
+                .iter()
+                .any(|e| e.id.key == "Odd.oddTitle"),
+            "fixture premise: the row is NOT in the inventory"
+        );
+
+        let resp = mgr
+            .include_candidate(&include_req(
+                &snap.project_id,
+                snap.session_epoch,
+                snap.revision,
+                "1.6/Defs/Missed.xml",
+                2,
+                "Odd.oddTitle",
+            ))
+            .unwrap();
+        assert_eq!(resp.revision, snap.revision + 1);
+        assert_eq!(resp.entry.key, "Odd.oddTitle");
+
+        // Durable + reloadable, marked human-recovered, source untouched.
+        let reopened = mgr.open(&snap.project_id).unwrap();
+        let e = reopened
+            .project
+            .entries
+            .iter()
+            .find(|e| e.id.key == "Odd.oddTitle")
+            .expect("recovered entry durable");
+        assert_eq!(e.text, "Strange gadget");
+        assert_eq!(
+            e.provenance.selected_by.as_deref(),
+            Some("human_recovered_stage_c")
+        );
+        let after = std::fs::read(root.join("1.6/Defs/Missed.xml")).unwrap();
+        assert_eq!(before, after, "the source mod must stay byte-identical");
+    }
+
+    #[test]
+    fn stage_c_refuses_notranslate_inactive_mismatch_traversal_dup_stale_and_parse() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        stage_c_mod(root);
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(root, Some("1.6")).unwrap();
+        let pid = snap.project_id.clone();
+        let (epoch, rev) = (snap.session_epoch, snap.revision);
+
+        // NoTranslate (texPath lives on the one-line def, line 2).
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                rev,
+                "1.6/Defs/Missed.xml",
+                2,
+                "Odd.texPath",
+            ))
+            .unwrap_err();
+        assert_eq!(e.code, ContractErrorCode::ContractViolation);
+        assert!(e.message.contains("NonTranslatable"), "{}", e.message);
+
+        // Inactive version branch (the 1.5 leftover).
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                rev,
+                "1.5/Defs/Legacy.xml",
+                1,
+                "Old.oddTitle",
+            ))
+            .unwrap_err();
+        assert_eq!(e.code, ContractErrorCode::ContractViolation);
+        assert!(e.message.contains("effective view"), "{}", e.message);
+
+        // Key/line mismatch: the classified key does not live on that line.
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                rev,
+                "1.6/Defs/Missed.xml",
+                2,
+                "Odd.label",
+            ))
+            .unwrap_err();
+        assert!(e.message.contains("holds no element"), "{}", e.message);
+
+        // Missing line.
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                rev,
+                "1.6/Defs/Missed.xml",
+                99,
+                "Odd.oddTitle",
+            ))
+            .unwrap_err();
+        assert!(e.message.contains("does not exist"), "{}", e.message);
+
+        // Path traversal.
+        let e = mgr
+            .include_candidate(&include_req(&pid, epoch, rev, "../outside.xml", 1, "x"))
+            .unwrap_err();
+        assert_eq!(e.code, ContractErrorCode::ContractViolation);
+
+        // Successful include, then the duplicate guard fires on a retry.
+        mgr.include_candidate(&include_req(
+            &pid,
+            epoch,
+            rev,
+            "1.6/Defs/Missed.xml",
+            2,
+            "Odd.oddTitle",
+        ))
+        .unwrap();
+        let snap2 = mgr.snapshot(&pid).unwrap();
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                snap2.revision,
+                "1.6/Defs/Missed.xml",
+                2,
+                "Odd.oddTitle",
+            ))
+            .unwrap_err();
+        assert!(
+            e.message.contains("already in the inventory"),
+            "{}",
+            e.message
+        );
+
+        // Parse error: a broken file is a typed refusal, never a guess.
+        std::fs::write(
+            root.join("1.6/Defs/Broken.xml"),
+            "<Defs><ThingDef><label>x</Defs>",
+        )
+        .unwrap();
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                snap2.revision,
+                "1.6/Defs/Broken.xml",
+                1,
+                "x.label",
+            ))
+            .unwrap_err();
+        assert!(e.message.contains("parse as XML"), "{}", e.message);
+
+        // Changed source during review: any source edit flips the
+        // fingerprint and the next include is a typed refusal.
+        std::fs::write(
+            root.join("1.6/Defs/Missed.xml"),
+            "<Defs>\n  <ThingDef><defName>Odd</defName><oddTitle>Changed text</oddTitle></ThingDef>\n</Defs>\n",
+        )
+        .unwrap();
+        let snap3 = mgr.snapshot(&pid).unwrap();
+        let e = mgr
+            .include_candidate(&include_req(
+                &pid,
+                epoch,
+                snap3.revision,
+                "1.6/Defs/Missed.xml",
+                2,
+                "Odd2.oddTitle",
+            ))
+            .unwrap_err();
+        assert_eq!(
+            e.code,
+            ContractErrorCode::ProjectChangedOnDisk,
+            "{}",
+            e.message
+        );
     }
 
     /// Regression (2026-10-19, found by the native search lane): ApparelDef

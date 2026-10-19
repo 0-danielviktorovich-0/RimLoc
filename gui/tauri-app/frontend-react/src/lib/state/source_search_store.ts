@@ -7,6 +7,9 @@ import { clientInstance } from '../client/instance'
 import type { SourceSearchMatchDto, SourceSearchReportDto } from '../client/types'
 
 export interface SourceSearchState {
+  /** UI-11 Stage C: identity currently being included (button-level busy). */
+  includeBusyKey: string | null
+  includeError: string | null
   status: 'idle' | 'running' | 'done' | 'error'
   query: string
   scope: 'standard' | 'all_text'
@@ -18,6 +21,8 @@ export interface SourceSearchState {
 }
 
 let state: SourceSearchState = {
+  includeBusyKey: null,
+  includeError: null,
   status: 'idle',
   query: '',
   scope: 'standard',
@@ -56,7 +61,47 @@ export const sourceSearchStore = {
   },
 
   clear(): void {
-    set({ status: 'idle', report: null, error: null, statusFilter: new Set() })
+    set({
+      status: 'idle',
+      report: null,
+      error: null,
+      statusFilter: new Set(),
+      includeBusyKey: null,
+      includeError: null,
+    })
+  },
+
+  /** UI-11 Stage C: guarded inclusion of ONE candidate into the managed
+   *  project state. On success the snapshot is re-adopted (the new row is
+   * live) — the caller re-runs the search to see the classification flip
+   * to AlreadyIndexed. */
+  async includeCandidate(
+    projectId: string,
+    sessionEpoch: number,
+    expectedRevision: number,
+    file: string,
+    line: number,
+    key: string,
+  ): Promise<boolean> {
+    set({ includeBusyKey: `${file}:${line}`, includeError: null })
+    try {
+      await clientInstance.getClient().includeCandidate({
+        project_id: projectId,
+        session_epoch: sessionEpoch,
+        expected_revision: expectedRevision,
+        file,
+        line,
+        key,
+      })
+      set({ includeBusyKey: null })
+      return true
+    } catch (e) {
+      set({
+        includeBusyKey: null,
+        includeError: e instanceof Error ? e.message : String(e),
+      })
+      return false
+    }
   },
 
   /** Stage B: toggle one classification in the filter (a fresh Set on every

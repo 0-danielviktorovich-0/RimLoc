@@ -80,6 +80,12 @@ pub struct SourceSearchRequest {
     pub offset: usize,
     #[serde(default)]
     pub max_results: usize,
+    /// UI-11 Stage C reconciliation: structural identities that live in
+    /// the MANAGED project state but not in the scan output (manually
+    /// recovered rows). A match addressing one of these classifies as
+    /// AlreadyIndexed instead of resurfacing as a candidate.
+    #[serde(default)]
+    pub manual_ids: Vec<rimloc_domain::canonical::SourceEntryId>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -249,6 +255,15 @@ pub fn search_sources(
         v.dedup_by(|a, b| a.0 == b.0);
     }
 
+    // Stage C reconciliation: manually recovered identities are indexed
+    // like scan coverage (both the full id and the bare key, so a raw
+    // text match addresses them too).
+    let manual_keys: BTreeMap<String, ()> = req
+        .manual_ids
+        .iter()
+        .map(|id| (id.key.clone(), ()))
+        .collect();
+
     // Eligibility engine — the SOLE authority for translatability.
     let engine = EligibilityEngine::new();
 
@@ -351,11 +366,31 @@ pub fn search_sources(
             } else {
                 None
             };
+            // Stage C display key (same construction as the synthetic
+            // candidate identity): Defs → defName.field, Keyed → element.
+            let cand_ctx = crate::source_search::CandidateContext::probe(&content, line_no);
+            let is_keyed_file = rel.contains("Languages/") && rel.contains("Keyed/");
+            let display_key = if is_keyed_file {
+                cand_ctx.field.clone().unwrap_or_default()
+            } else {
+                match (&cand_ctx.def_name, &cand_ctx.field) {
+                    (Some(d), Some(f)) => format!("{d}.{f}"),
+                    _ => String::new(),
+                }
+            };
+            let manual_hit = !display_key.is_empty() && manual_keys.contains_key(&display_key);
             let (status, identity, detail) = if !xml_ok && is_xml {
                 (
                     MatchStatus::ParseFailure,
                     None,
                     "file failed XML parsing — the scanner cannot index it".to_string(),
+                )
+            } else if manual_hit {
+                (
+                    MatchStatus::AlreadyIndexed,
+                    None,
+                    "manually recovered into the project (Stage C) — live in the editor"
+                        .to_string(),
                 )
             } else if let Some(id) = hit {
                 // Start-line partition honesty check (Stage B): the
@@ -503,17 +538,17 @@ fn classify_candidate(
 
 /// Minimal raw-context probe: element stack, owning def type, defName,
 /// innermost field — derived from the file text (NOT from the scanner).
-struct CandidateContext {
-    def_type: Option<String>,
-    def_name: Option<String>,
-    field: Option<String>,
+pub(crate) struct CandidateContext {
+    pub(crate) def_type: Option<String>,
+    pub(crate) def_name: Option<String>,
+    pub(crate) field: Option<String>,
     /// The most recently opened element at the probe line — the element
     /// owning the matched text (Stage B line-ownership discriminator).
     last_tag: Option<String>,
 }
 
 impl CandidateContext {
-    fn probe(content: &str, line_no: usize) -> Self {
+    pub(crate) fn probe(content: &str, line_no: usize) -> Self {
         let mut stack: Vec<String> = Vec::new();
         let mut def_type = None;
         let mut def_name = None;
@@ -647,7 +682,7 @@ fn synthetic_entry(
     }
 }
 
-fn validate_xml(content: &str) -> bool {
+pub(crate) fn validate_xml(content: &str) -> bool {
     let mut reader = quick_xml::Reader::from_str(content);
     reader.config_mut().check_end_names = true;
     let mut buf = Vec::new();
@@ -901,6 +936,7 @@ mod tests {
             scope: SearchScope::Standard,
             offset: 0,
             max_results: 200,
+            manual_ids: Vec::new(),
         }
     }
 

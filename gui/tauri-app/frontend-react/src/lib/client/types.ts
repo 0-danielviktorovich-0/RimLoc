@@ -611,6 +611,7 @@ export type ContractMethod =
   // Source Discovery (Stage A): read-only full-project source search
   // reconciled against the canonical inventory.
   | 'project_source_search'
+  | 'project_include_candidate'
   // Source XML preview (rel27).
   | 'project_source_xml_preview';
 
@@ -679,6 +680,26 @@ export interface SourceXmlPreviewDto {
   truncated_tail: boolean;
   total_lines: number;
 }
+// --- UI-11 Stage C: guarded candidate inclusion (mirrors contract.rs) ---
+
+export interface IncludeCandidateRequestDto {
+  project_id: string;
+  session_epoch: number;
+  expected_revision: number;
+  /** Project-relative file path (forward slashes). */
+  file: string;
+  /** 1-based line of the owning element. */
+  line: number;
+  /** Classified leaf key (validated server-side against the row). */
+  key: string;
+}
+
+export interface IncludeCandidateResponseDto {
+  job_id: string;
+  revision: number;
+  entry: SourceEntryIdDto;
+}
+
 // --- source discovery (Stage A; mirrors source_search.rs) ---
 export type SourceSearchScopeDto = 'standard' | 'all_text';
 

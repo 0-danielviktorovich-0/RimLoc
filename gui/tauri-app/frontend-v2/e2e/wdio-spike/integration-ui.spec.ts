@@ -78,6 +78,14 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       '<Defs><ThingDef><defName>TexThing</defName><texPath>Things/Sleeper/Tex</texPath></ThingDef></Defs>',
     )
     writeFileSync(`${MOD}/1.6/Defs/Broken.xml`, '<Defs><ThingDef><label>Broken sleeper</Defs>')
+    // UI-11 Stage C: a row the extraction genuinely misses (oddTitle is
+    // outside every allowlist leaf) — searchable, classified as a
+    // suspected omission, and includable by explicit human approval.
+    mkdirSync(`${MOD}/1.6/Defs`, { recursive: true })
+    writeFileSync(
+      `${MOD}/1.6/Defs/Missed.xml`,
+      '<Defs>\n  <ThingDef><defName>OddOne</defName><oddTitle>Strange sleeper gadget</oddTitle></ThingDef>\n</Defs>\n',
+    )
   })
 
   it('project created through the wizard', async () => {
@@ -235,6 +243,55 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
     await pause(300)
   })
 
+
+  it('UI-11 Stage C: a suspected omission includes into the project and reclassifies', async () => {
+    await browser.execute(() => {
+      window.location.hash = '#/workspace'
+    })
+    await waitExisting('[data-testid="ws.root"]', 30000)
+    await waitExisting('[data-testid="ss.toggle"]', 15000)
+    await browser.$('[data-testid="ss.toggle"]').click()
+    await pause(400)
+    await waitExisting('[data-testid="ss.input"]', 10000)
+    await browser.$('[data-testid="ss.input"]').setValue('Strange sleeper')
+    await browser.$('[data-testid="ss.run"]').click()
+    await browser.waitUntil(
+      async () => (await browser.$('[data-testid="ss.results"]')).isExisting(),
+      { timeout: 30000, interval: 500 },
+    )
+    // The missed row is classified as a suspected omission AND carries
+    // the include affordance.
+    const btn = await browser.$('[data-testid="ss.include.0"]')
+    if (!(await btn.isExisting())) {
+      const rows = await browser.execute(() =>
+        Array.from(document.querySelectorAll('[data-testid^="ss.match."]')).map(
+          (r) => r.textContent ?? '',
+        ),
+      )
+      throw new Error(`no include affordance on the missed row: ${JSON.stringify(rows)}`)
+    }
+    await btn.click()
+    // The include persists and the re-run search reclassifies the row as
+    // AlreadyIndexed (the affordance is gone).
+    await browser.waitUntil(
+      async () => {
+        await browser.$('[data-testid="ss.run"]').click()
+        await pause(700)
+        const still = await browser.$('[data-testid="ss.include.0"]').isExisting()
+        return !still
+      },
+      { timeout: 30000, interval: 1500 },
+    )
+    // Durable: the entry is in the LIVE workspace list now.
+    await browser.$('[data-testid="ss.panel"] .icon-btn').click()
+    await pause(300)
+    const inList = await browser.execute(() =>
+      Array.from(document.querySelectorAll('.entry-list .entry-row')).some((r) =>
+        (r.textContent ?? '').includes('Strange sleeper gadget'),
+      ),
+    )
+    if (!inList) throw new Error('the included row never appeared in the workspace list')
+  })
 
   it('UI-13: the tree projects by entry type AND by real source file', async () => {
     // By-type view (default): def-kind groups present.

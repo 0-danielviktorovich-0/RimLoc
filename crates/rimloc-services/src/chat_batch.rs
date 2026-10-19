@@ -94,6 +94,7 @@ fn origin_str(o: &Origin) -> &'static str {
         Origin::Tm => "tm",
         Origin::Llm => "llm",
         Origin::Imported => "imported",
+        Origin::HumanRecovered => "human_recovered",
     }
 }
 

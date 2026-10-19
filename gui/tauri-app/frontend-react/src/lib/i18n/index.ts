@@ -203,6 +203,8 @@ const ru: Record<string, string> = {
   'ss.filterGroup': 'Фильтр по классификации',
   'ss.filterAll': 'показать все',
   'ss.filterEmpty': 'На этой странице нет совпадений выбранной классификации («Показать ещё» дозагрузит следующие).',
+  'ss.include': 'Включить в проект',
+  'ss.includeHint': 'Включить эту строку в состояние проекта (исходник не изменяется).',
 
   'ws.resetFilters': 'Сбросить фильтры',
   'ws.filter.all': 'Все',
@@ -850,6 +852,8 @@ const en: Record<string, string> = {
   'ss.filterGroup': 'Classification filter',
   'ss.filterAll': 'show all',
   'ss.filterEmpty': 'No matches of the selected classification on this page (“Load more” fetches the next ones).',
+  'ss.include': 'Include into project',
+  'ss.includeHint': 'Include this row into the project state (the source mod is never touched).',
 
   'ws.resetFilters': 'Reset filters',
   'ws.filter.all': 'All',

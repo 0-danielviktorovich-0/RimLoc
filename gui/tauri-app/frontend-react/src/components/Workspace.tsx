@@ -1479,6 +1479,41 @@ function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof usePr
                     <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
                       {t('ss.detail')}: {m.detail}
                     </div>
+                    {(m.status === 'suspected_extraction_omission' ||
+                      m.status === 'unknown_eligibility') && (
+                      <button
+                        className="icon-btn"
+                        style={{ fontSize: 10, padding: '1px 8px', marginTop: 2 }}
+                        data-testid={`ss.include.${i}`}
+                        disabled={
+                          view(ss).includeBusyKey === `${m.file}:${m.line}` ||
+                          view(ss).status === 'running'
+                        }
+                        title={t('ss.includeHint')}
+                        onClick={() => {
+                          void sourceSearchStore
+                            .includeCandidate(
+                              snap.project_id,
+                              snap.session_epoch,
+                              snap.acked_revision ?? snap.revision,
+                              m.file,
+                              m.line,
+                              m.identity?.key ?? m.line_text,
+                            )
+                            .then(async (ok) => {
+                              if (!ok) return
+                              // The include moved the durable revision —
+                              // adopt the fresh snapshot so the workspace
+                              // list and the re-run search both see the
+                              // recovered row.
+                              await projectStore.adoptExternal()
+                              run()
+                            })
+                        }}
+                      >
+                        {t('ss.include')}
+                      </button>
+                    )}
                   </div>
                   ))
                 )}

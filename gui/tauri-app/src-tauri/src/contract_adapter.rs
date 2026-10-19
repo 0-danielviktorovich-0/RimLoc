@@ -94,6 +94,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     // Source Discovery (Stage A): read-only full-project source search with
     // canonical-inventory reconciliation.
     "project_source_search",
+    // UI-11 Stage C: guarded per-candidate inclusion of a missed source
+    // row into the managed project state (never the source mod).
+    "project_include_candidate",
     // Provider instances (provider/settings parity): app-global CRUD; the
     // API key NEVER crosses into a file — it goes to the OS keychain.
     "contract_provider_instance_list",
@@ -407,6 +410,29 @@ pub struct ManagedRoot(pub PathBuf);
 
 pub struct AiJobs(pub AiJobRegistry);
 
+/// `project_include_candidate` (UI-11 Stage C) — guarded per-candidate
+/// human approval: include ONE missed source row into the MANAGED
+/// project state. Every UI input is re-verified server-side (view
+/// membership, XML validity, the row's own element/text, NoTranslate,
+/// duplicate identity, source fingerprint); persist-before-ack with a
+/// revision bump; the source mod is never written.
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_include_candidate(
+    state: State<'_, ContractState>,
+    request: rimloc_services::contract::IncludeCandidateRequest,
+) -> Result<
+    rimloc_services::contract::IncludeCandidateResponse,
+    rimloc_services::contract::ContractError,
+> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_include_candidate", || {
+        manager.include_candidate(&request)
+    })
+}
+
 /// `project_source_search` (Source Discovery, Stage A) — READ-ONLY
 /// full-project source search reconciled against the canonical inventory.
 /// The search context (mod root, versions, source language) comes from the
@@ -455,6 +481,9 @@ pub fn project_source_search(
             scope,
             offset: request.offset,
             max_results: request.max_results,
+            // Stage C reconciliation: rows the human recovered into the
+            // managed state classify as indexed on the next search.
+            manual_ids: snap.project.entries.iter().map(|e| e.id.clone()).collect(),
         };
         rimloc_services::source_search::search_sources(&req, &|| false)
     })
@@ -1508,6 +1537,7 @@ mod ipc_draft_tests {
                 ai_job_accept,
                 ai_job_accept_selected,
                 project_source_search,
+                project_include_candidate,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");
@@ -1723,6 +1753,7 @@ mod ipc_draft_tests {
                 ai_job_accept,
                 ai_job_accept_selected,
                 project_source_search,
+                project_include_candidate,
             ])
             .build(tauri::generate_context!())
             .expect("mock app");

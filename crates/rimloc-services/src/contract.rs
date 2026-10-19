@@ -708,6 +708,33 @@ pub struct ExportProjectPoRequest {
     pub locale: String,
 }
 
+/// `project_include_candidate` (UI-11 Stage C): guarded, per-candidate
+/// human approval to include ONE missed source row into the MANAGED
+/// project state. The server re-reads the row from the source file and
+/// re-verifies every gate — UI-supplied text is never trusted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct IncludeCandidateRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Lost-update guard against the last ACKED revision.
+    pub expected_revision: Revision,
+    /// Project-relative file path (forward slashes).
+    pub file: String,
+    /// 1-based line of the owning element in that file.
+    pub line: usize,
+    /// Leaf key the candidate was classified under (validated against
+    /// the re-read row; a mismatch is a typed refusal).
+    pub key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct IncludeCandidateResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    /// The structural identity the row was included under.
+    pub entry: SourceEntryId,
+}
+
 /// `project_import_xliff` / `project_apply_xliff` (UI-10): the XLIFF
 /// mirror of the PO pack flow — rebuilt into the canonical tree and fed
 /// through the same analyzer / apply core.
