@@ -15,7 +15,7 @@ work is hidden behind OWNER_GATE.
 | Project create/open/switch over a real mod (wizard, 1.5/1.6 views) | VERIFIED | native lanes, wizard test |
 | Canonical inventory (Defs + Keyed + DefInjected + TKey + patches) | VERIFIED | services suite 327 + corpus harness |
 | Editor with durable drafts, recovery, collision-safe keys | VERIFIED | drafts lanes (drafts-*.conf.ts), unit race tests |
-| AI translation jobs: mock-first, cancel at 7 boundaries, per-unit preview/review, accept through canonical intents, checkpoints for resume | VERIFIED | PASS_CANCELLATION (4 independent review rounds); ai_job.rs suite |
+| AI translation jobs: mock-first, cancel at 7 boundaries, preview/review with per-row accept/reject, full-scope acknowledgement over the 400-row preview bound, durable job records + restart-honest `interrupted` recovery | VERIFIED | 50a3cd2 + 588b674; ai_job.rs suite (19 tests incl. the 430-row truncation gate and selected-apply ledger) |
 | prov-* provider factory (BYO keys via OS keychain, masked) | VERIFIED | provider lanes + typed refusals |
 | Chat batch (export→external AI→import→guarded apply) | VERIFIED | chatbatch lanes |
 | Existing-translation import (folder pack): analyze/apply, conflicts never overwritten | VERIFIED | session tests + Existing lane |
@@ -37,19 +37,39 @@ any new P0 found by CI/CodeQL/lanes lands here)*
 1. **Installed-app smoke on the CI-produced DMG/.app** (not the local
    automation build): install → wizard → translate one row → export.
    The automation lane proves the same binary family, but the installer
-   artifact itself has not been walked. Plan: reuse integration-ui lane
-   against the CI bundle path; ~half a day.
+   artifact itself has not been walked. *Blocked on the build window:
+   the external build SSD is unplugged and the internal disk sits below
+   the cargo guard threshold.*
 2. **Large-project acceptance** (UI-12 residual + owner ask): a real
    10k+ string mod through create→translate→export. The 10k virtualizer
    stress lane exists (react-stress.conf.ts); the end-to-end corpus pass
-   over a real large mod remains.
+   over a real large mod remains. *Same build-window blocker.*
 3. **UI-11 Stage C — guarded recovery** (Issue #6): per-candidate human
    approval for including out-of-inventory text into MANAGED project
    state only (epoch/revision/source-hash pinned, atomic stale refusal,
    no source writes). Stage B evidence is in; C is the write path.
-4. **Beta README / honest supported-features list** for the beta bundle
+4. **Run the queued native lanes once the build window returns**: the
+   nine-scenario search/editor lane (committed, c486506) and the Ollama
+   real-provider E2E (local qwen2.5:3b detected; no invented
+   credentials — unattended local-model verification).
+5. **Beta README / honest supported-features list** for the beta bundle
    (this registry is the draft; the shipped artifact needs a user-facing
    cut).
+
+### Closed during the 2026-10-19 review round
+- AI job durability (registry was process-local, records unwritten):
+  closed at 50a3cd2 — atomic `<job_id>.job.json` on every transition,
+  stale `running` relabelled `interrupted` on manager open, status falls
+  back to the durable record after a restart.
+- Reviewer P0 (a 400-row preview could hide rows the full accept
+  applied): closed at 588b674 — `rows_truncated` + refusal naming the
+  true scope until an explicit full-scope acknowledgement; regression
+  with a 430-row job.
+- Reviewer P1 (no per-row accept/reject): closed at 588b674 —
+  `accept_selected` applies only chosen identities, marks rejected rows
+  in the preview ledger; GUI checkboxes + apply-selected + two-step
+  confirmation; the missing ai.* i18n set added (the screen had been
+  rendering raw keys).
 
 ### P2 — fine after beta
 - validate-po / morph / schema as CLI-only by design (audit scoping) —
