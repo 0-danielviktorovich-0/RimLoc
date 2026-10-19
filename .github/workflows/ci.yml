@@ -131,6 +131,42 @@ jobs:
       - run: cargo clippy --all-targets --all-features -- -D warnings
         working-directory: gui/tauri-app/src-tauri
 
+  bundle-macos:
+    name: macOS bundle (app + dmg artifact)
+    runs-on: macos-14
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+        with:
+          workspaces: gui/tauri-app/src-tauri
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+      - run: npm ci
+        working-directory: gui/tauri-app/frontend-react
+      # tauri-cli via npx (no global install): bundles the .app and the
+      # unsigned DMG for the same commit the tests ran on. The beforeBuild
+      # runs the production frontend build itself.
+      - name: Bundle (app + dmg)
+        run: |
+          npx --yes @tauri-apps/cli@2 build --bundles app,dmg
+        working-directory: gui/tauri-app/src-tauri
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-macos-bundle
+          path: |
+            gui/tauri-app/src-tauri/target/release/bundle/macos/*.app
+            gui/tauri-app/src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 14
+
   frontend:
     name: frontend legacy fallback (Svelte)
     runs-on: ubuntu-latest
