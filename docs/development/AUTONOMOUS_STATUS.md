@@ -653,3 +653,21 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   26/26 со сценарием include → переклассификация → строка в редакторе.
 - **CI на 7c61b1c: 40/40 pass** (все CodeQL). Реестр: engineering-фаза P1 исчерпана — остался
   только DMG-packaging note (CI-cost решение) и owner-гейты.
+
+## Волна 2026-10-19 ( ночь): Issue #5 traceability + real RimWorld acceptance
+
+- **Traceability-таблица (Issue #5)**: CLI_PARITY_TRACEABILITY.md — все 20 CLI-модулей →
+  capability → живой IPC → GUI-маршрут + не-CLI продуктовые потоки. P2 закрыты решениями:
+  validate-po / morph / schema — CLI-only for beta с обоснованиями; Advanced Tools UI осознанно
+  отложен (его кандидатский набор — ровно эти три, ни один не блокирует бету).
+- **Real RimWorld acceptance**: GUI-lane 1 passing — живая строка VFE Security
+  (VFES_Turret_AntiAir.label, «anti-air turret») переведена через настоящий редактор,
+  канонический экспорт в /tmp/rw-acceptance (packageId rimloc.1845154007, DefInjected
+  «ПВО турель (RimLoc)»). Монтирование в живой Mods-корень + активация в ModsConfig —
+  подтверждены логом игры (GAGARIN резолвит 1845154007). Контрольный прогон доказал канал
+  русского языка машины (Translation data … Русский, переведённые листинги). Единый сквозной
+  прогон не сошёлся: языковая перф-клавиша игры недетерминирована между фоновыми запусками
+  (2 из 8 активировали язык) — окружение, не код RimLoc. Честный отчёт + 30-секундный
+  owner-путь закрытия: RIMWORLD_ACCEPTANCE_2026-10-19.md. Среда владельца после каждого
+  прогона восстанавливалась байт-в-байт (проверено).
+- Голова d5258a1; CI на кодовой голове 7c61b1c был 40/40; текущий docs-head прогон пошёл.
