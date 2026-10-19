@@ -864,7 +864,14 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       window.location.hash = '#/workspace'
     })
     await waitExisting('[data-testid="ws.root"]', 30000)
-    // Switch to dark theme via the REAL toggle button.
+    // Deterministic baseline: a previous lane (visual-audit) may leave the
+    // PERSISTED theme dark — the toggle would then flip to light and fail.
+    // Seed light through the stored preference, then use the REAL toggle.
+    await browser.execute(() => {
+      window.localStorage.setItem('rimloc.theme', 'light')
+      window.dispatchEvent(new CustomEvent('rimloc.theme'))
+    })
+    await pause(400)
     const themeBtn = await browser.$('[data-testid="theme-toggle"]')
     await themeBtn.click()
     await pause(600)

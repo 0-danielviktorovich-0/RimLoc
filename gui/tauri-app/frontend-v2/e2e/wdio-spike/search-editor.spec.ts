@@ -96,10 +96,10 @@ describe('directive §3 — search and editor verification', () => {
       throw new Error(`exact key search: ${JSON.stringify(rows)}`)
     }
 
-    // Partial key.
+    // Partial key: every PlasmaRifle.* row matches (label + description).
     await search('Plasma')
     rows = await rowTexts()
-    if (rows.length !== 1 || !rows[0].includes('PlasmaRifle')) {
+    if (rows.length !== 2 || !rows.every((t) => t.includes('PlasmaRifle'))) {
       throw new Error(`partial key search: ${JSON.stringify(rows)}`)
     }
 
@@ -116,8 +116,13 @@ describe('directive §3 — search and editor verification', () => {
 
   it('5. def-type and file filters; 6. navigate to a match', async () => {
     // By-file projection → Apparel.xml filters to the apparel rows only.
+    await waitExisting('[data-testid="ws.tree.view-file"]', 15000)
     await browser.$('[data-testid="ws.tree.view-file"]').click()
     await pause(400)
+    await browser.waitUntil(
+      async () => (await browser.$$('[data-testid="ws.tree"] .file-item')).length > 0,
+      { timeout: 15000, interval: 300 },
+    )
     const items = await browser.$$('[data-testid="ws.tree"] .file-item')
     let apparel: WebdriverIO.Element | null = null
     for (const it of items) {
@@ -126,7 +131,11 @@ describe('directive §3 — search and editor verification', () => {
         break
       }
     }
-    if (!apparel) throw new Error('Apparel.xml not in the file tree')
+    if (!apparel) {
+      const names: string[] = []
+      for (const it of items) names.push(await it.getText())
+      throw new Error(`Apparel.xml not in the file tree: ${names.join(' | ')}`)
+    }
     await apparel.click()
     await pause(400)
     let rows = await rowTexts()
@@ -148,7 +157,7 @@ describe('directive §3 — search and editor verification', () => {
 
     // Navigate directly: search narrows to one row; clicking it moves the
     // editor onto THAT entry (the editor key follows the selection).
-    await search('DusterCoat')
+    await search('DusterCoat.description')
     rows = await rowTexts()
     if (rows.length !== 1) throw new Error(`navigate search: ${JSON.stringify(rows)}`)
     await browser.$('.entry-list .entry-row').click()
