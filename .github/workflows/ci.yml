@@ -161,9 +161,11 @@ jobs:
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
         with:
           name: rimloc-macos-bundle
+          # tauri-cli resolves the CARGO WORKSPACE root (the repo root),
+          # so the bundle lands in /target, not src-tauri/target.
           path: |
-            gui/tauri-app/src-tauri/target/release/bundle/macos/*.app
-            gui/tauri-app/src-tauri/target/release/bundle/dmg/*.dmg
+            target/release/bundle/macos/*.app
+            target/release/bundle/dmg/*.dmg
           if-no-files-found: error
           retention-days: 14
 
