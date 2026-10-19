@@ -6637,6 +6637,43 @@ mod tests {
         assert!(export.files_written >= 3);
     }
 
+    /// Regression (2026-10-19, found by the native search lane): ApparelDef
+    /// was missing from the defs allowlist — apparel mods silently lost
+    /// every row. The wizard inventory must carry ApparelDef labels.
+    #[test]
+    fn apparel_def_rows_are_indexed() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        std::fs::create_dir_all(root.join("About")).unwrap();
+        std::fs::write(
+            root.join("About/About.xml"),
+            "<ModMetaData><name>A</name><packageId>rimloc.test.apparel</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+        )
+        .unwrap();
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(
+            root.join("Defs/Apparel.xml"),
+            "<Defs><ApparelDef><defName>Duster</defName><label>duster coat</label><description>A long coat.</description></ApparelDef></Defs>",
+        )
+        .unwrap();
+        let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+        let snap = mgr.create(root, Some("1.6")).unwrap();
+        let keys: Vec<&str> = snap
+            .project
+            .entries
+            .iter()
+            .map(|e| e.id.key.as_str())
+            .collect();
+        assert!(
+            keys.contains(&"Duster.label"),
+            "apparel label missing: {keys:?}"
+        );
+        assert!(
+            keys.contains(&"Duster.description"),
+            "apparel description missing: {keys:?}"
+        );
+    }
+
     // --- W2: existing translation pack (dry-run analyze + guarded apply) ---
 
     /// Synthetic mod + a PARTIALLY overlapping existing RU pack:

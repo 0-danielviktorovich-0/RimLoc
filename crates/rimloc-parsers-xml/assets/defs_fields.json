@@ -1,4 +1,198 @@
 {
+  "AbilityDef": [
+    "label",
+    "description"
+  ],
+  "ApparelDef": [
+    "label",
+    "labelNoun",
+    "description"
+  ],
+  "BackstoryDef": [
+    "title",
+    "titleFemale",
+    "titleShort",
+    "titleShortFemale",
+    "baseDesc",
+    "description"
+  ],
+  "BiomeDef": [
+    "label",
+    "description"
+  ],
+  "BodyPartDef": [
+    "label",
+    "description"
+  ],
+  "DamageDef": [
+    "label",
+    "description",
+    "deathMessage"
+  ],
+  "DesignationCategoryDef": [
+    "label",
+    "description"
+  ],
+  "DesignatorDropdownGroupDef": [
+    "label",
+    "description"
+  ],
+  "FactionDef": [
+    "label",
+    "description",
+    "pawnSingular",
+    "leaderTitle"
+  ],
+  "GeneDef": [
+    "label",
+    "description"
+  ],
+  "HairDef": [
+    "label"
+  ],
+  "HediffDef": [
+    "label",
+    "labelNoun",
+    "description",
+    "stages.li.label",
+    "stages.li.description"
+  ],
+  "IncidentCategoryDef": [
+    "label"
+  ],
+  "IncidentDef": [
+    "letterLabel",
+    "letterText",
+    "label"
+  ],
+  "InspirationDef": [
+    "label",
+    "description"
+  ],
+  "JobDef": [
+    "label",
+    "description",
+    "reportString",
+    "gerundLabel"
+  ],
+  "KeyBindingDef": [
+    "label"
+  ],
+  "MemeDef": [
+    "label",
+    "description"
+  ],
+  "MentalBreakDef": [
+    "label",
+    "description"
+  ],
+  "MentalStateDef": [
+    "label",
+    "description",
+    "baseInspectLine",
+    "beginLetter",
+    "beginLetterLabel",
+    "recoveryMessage"
+  ],
+  "NeedDef": [
+    "label",
+    "description"
+  ],
+  "PawnCapacityDef": [
+    "label",
+    "description"
+  ],
+  "PawnKindDef": [
+    "label",
+    "labelPlural",
+    "lifeStages.li.label"
+  ],
+  "PawnRelationDef": [
+    "label",
+    "description"
+  ],
+  "PreceptDef": [
+    "label",
+    "description"
+  ],
+  "RaidStrategyDef": [
+    "label",
+    "description"
+  ],
+  "RecipeDef": [
+    "label",
+    "description",
+    "jobString",
+    "ingredients.li{h}.label",
+    "ingredients.li.filter.customSummary"
+  ],
+  "RecordDef": [
+    "label",
+    "description"
+  ],
+  "ResearchProjectDef": [
+    "label",
+    "description"
+  ],
+  "RoyalTitleDef": [
+    "label",
+    "labelFemale",
+    "labelMale",
+    "description"
+  ],
+  "RulePackDef": [
+    "rulesStrings.li"
+  ],
+  "ScenarioDef": [
+    "label",
+    "description",
+    "scenario.name",
+    "scenario.description"
+  ],
+  "SiteCoreDef": [
+    "label",
+    "description"
+  ],
+  "SitePartDef": [
+    "label",
+    "description"
+  ],
+  "SkillDef": [
+    "label",
+    "description"
+  ],
+  "SoundDef": [
+    "subSounds.li{h}.name"
+  ],
+  "StatDef": [
+    "label",
+    "description",
+    "formatString"
+  ],
+  "StorytellerDef": [
+    "label",
+    "description"
+  ],
+  "StyleCategoryDef": [
+    "label",
+    "description"
+  ],
+  "StyleItemCategoryDef": [
+    "label",
+    "description"
+  ],
+  "TaleDef": [
+    "label",
+    "description"
+  ],
+  "TerrainDef": [
+    "label",
+    "description"
+  ],
+  "ThingCategoryDef": [
+    "label",
+    "description"
+  ],
   "ThingDef": [
     "label",
     "labelShort",
@@ -16,177 +210,23 @@
     "verbs.li.label",
     "ingestible.ingestCommandString"
   ],
-  "RecipeDef": [
-    "label",
-    "description",
-    "jobString",
-    "ingredients.li{h}.label",
-    "ingredients.li.filter.customSummary"
-  ],
-  "StatDef": [
-    "label",
-    "description",
-    "formatString"
-  ],
-  "RecordDef": [
-    "label",
-    "description"
-  ],
-  "WeatherDef": [
-    "label",
-    "description"
-  ],
-  "WorkTypeDef": [
-    "label",
-    "description"
-  ],
-  "BodyPartDef": [
-    "label",
-    "description"
-  ],
-  "HairDef": [
-    "label"
-  ],
-  "IncidentCategoryDef": [
-    "label"
-  ],
-  "WorldObjectDef": [
-    "label",
-    "description"
-  ],
-  "SitePartDef": [
-    "label",
-    "description"
-  ],
-  "GeneDef": [
-    "label",
-    "description"
-  ],
-  "MemeDef": [
-    "label",
-    "description"
-  ],
-  "PreceptDef": [
-    "label",
-    "description"
-  ],
-  "HediffDef": [
-    "label",
-    "labelNoun",
-    "description",
-    "stages.li.label",
-    "stages.li.description"
-  ],
-  "TraitDef": [
-    "label",
-    "degreeDatas.li{h}.label",
-    "degreeDatas.li{h}.description"
-  ],
-  "SkillDef": [
-    "label",
-    "description"
-  ],
-  "PawnKindDef": [
-    "label",
-    "labelPlural",
-    "lifeStages.li.label"
-  ],
-  "SoundDef": [
-    "subSounds.li{h}.name"
-  ],
-  "BiomeDef": [
-    "label",
-    "description"
-  ],
-  "JobDef": [
-    "label",
-    "description",
-    "reportString",
-    "gerundLabel"
-  ],
   "ThoughtDef": [
     "label",
     "description",
     "stages.li.label",
     "stages.li.description"
   ],
-  "IncidentDef": [
-    "letterLabel",
-    "letterText",
-    "label"
-  ],
-  "ResearchProjectDef": [
+  "TraderKindDef": [
     "label",
     "description"
   ],
-  "TerrainDef": [
+  "TraitDef": [
     "label",
-    "description"
+    "degreeDatas.li{h}.label",
+    "degreeDatas.li{h}.description"
   ],
-  "RulePackDef": [
-    "rulesStrings.li"
-  ],
-  "BackstoryDef": [
-    "title",
-    "titleFemale",
-    "titleShort",
-    "titleShortFemale",
-    "baseDesc",
-    "description"
-  ],
-  "TaleDef": [
+  "WeatherDef": [
     "label",
-    "description"
-  ],
-  "ScenarioDef": [
-    "label",
-    "description",
-    "scenario.name",
-    "scenario.description"
-  ],
-  "DamageDef": [
-    "label",
-    "description",
-    "deathMessage"
-  ],
-  "FactionDef": [
-    "label",
-    "description",
-    "pawnSingular",
-    "leaderTitle"
-  ],
-  "AbilityDef": [
-    "label",
-    "description"
-  ],
-  "PawnCapacityDef": [
-    "label",
-    "description"
-  ],
-  "NeedDef": [
-    "label",
-    "description"
-  ],
-  "InspirationDef": [
-    "label",
-    "description"
-  ],
-  "MentalBreakDef": [
-    "label",
-    "description"
-  ],
-  "MentalStateDef": [
-    "label",
-    "description",
-    "baseInspectLine",
-    "beginLetter",
-    "beginLetterLabel",
-    "recoveryMessage"
-  ],
-  "RoyalTitleDef": [
-    "label",
-    "labelFemale",
-    "labelMale",
     "description"
   ],
   "WorkGiverDef": [
@@ -195,47 +235,12 @@
     "verb",
     "gerund"
   ],
-  "ThingCategoryDef": [
+  "WorkTypeDef": [
     "label",
     "description"
   ],
-  "DesignationCategoryDef": [
+  "WorldObjectDef": [
     "label",
     "description"
-  ],
-  "DesignatorDropdownGroupDef": [
-    "label",
-    "description"
-  ],
-  "TraderKindDef": [
-    "label",
-    "description"
-  ],
-  "RaidStrategyDef": [
-    "label",
-    "description"
-  ],
-  "SiteCoreDef": [
-    "label",
-    "description"
-  ],
-  "StorytellerDef": [
-    "label",
-    "description"
-  ],
-  "StyleCategoryDef": [
-    "label",
-    "description"
-  ],
-  "StyleItemCategoryDef": [
-    "label",
-    "description"
-  ],
-  "PawnRelationDef": [
-    "label",
-    "description"
-  ],
-  "KeyBindingDef": [
-    "label"
   ]
 }

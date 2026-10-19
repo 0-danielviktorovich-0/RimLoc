@@ -55,7 +55,7 @@ structural_heuristic > ai_proposal
    остаётся победителем, а столкновение диагностируется вместо тихого
    разрешения. Всё детерминировано: одинаковый вход — одинаковый вердикт.
 
-## Встроенный seed-пак: 168 правил
+## Встроенный seed-пак: 171 правило
 
 `builtin_seed_rules()` собирается декларативно из уже существующих дефолтов
 экстракции. Состав зафиксирован тестом
@@ -66,7 +66,7 @@ structural_heuristic > ai_proposal
 |---|---|---|
 | Kind-правила первого лица | 2 | TKey и Keyed/LanguageData существуют, чтобы их переводили |
 | NoTranslate-поля | 5 | `defName`, `packageId`, `texPath`, `workerClass`, `defaultDamage` — семейство `[NoTranslate]`/`[Unsaved]` |
-| Def-type правила | 139 | пары (def_type, поле) из встроенного словаря `rimloc-parsers-xml assets/defs_fields.json` — те же данные, что у сканера, поэтому движок и экстрактор не расходятся. Аудит 2026-10-07 по корпусу VEF (2023507013): устранены молчаливые дубликаты ключей JSON (HediffDef/JobDef/ThoughtDef — парсер брал последний и терял первый), добавлены корпусно-подтверждённые поля (WorkGiverDef.verb/gerund, HediffDef.label/labelNoun/description-восстановление, MentalStateDef.baseInspectLine/beginLetter/beginLetterLabel/recoveryMessage, IncidentDef.label, StatDef.formatString, KeyBindingDef.label) |
+| Def-type правила | 142 | пары (def_type, поле) из встроенного словаря `rimloc-parsers-xml assets/defs_fields.json` — те же данные, что у сканера, поэтому движок и экстрактор не расходятся. Аудит 2026-10-07 по корпусу VEF (2023507013): устранены молчаливые дубликаты ключей JSON (HediffDef/JobDef/ThoughtDef — парсер брал последний и терял первый), добавлены корпусно-подтверждённые поля (WorkGiverDef.verb/gerund, HediffDef.label/labelNoun/description-восстановление, MentalStateDef.baseInspectLine/beginLetter/beginLetterLabel/recoveryMessage, IncidentDef.label, StatDef.formatString, KeyBindingDef.label). Добавление 2026-10-19: `ApparelDef` (label, labelNoun, description) — до этого apparel-моды молча теряли все строки: дефект найден нативным search-lane на упакованном приложении (dirity §3) |
 | Универсальные leaf-паттерны | 22 | `label`, `title`, `description`, `reportString`, `letterText`, … — человеческие поля вне контекста def-типа |
 
 Экстракция Defs — allowlist- driven, поэтому технические поля из Defs в
