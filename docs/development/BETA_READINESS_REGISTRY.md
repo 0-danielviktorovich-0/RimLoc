@@ -34,18 +34,26 @@ work is hidden behind OWNER_GATE.
 any new P0 found by CI/CodeQL/lanes lands here)*
 
 ### P1 — remaining for the declared beta scope
-1. **UI-11 Stage C — guarded recovery** (Issue #6): per-candidate human
-   approval for including out-of-inventory text into MANAGED project
-   state only (epoch/revision/source-hash pinned, atomic stale refusal,
-   no source writes). Stage B evidence is in; C is the write path.
-2. **Beta README / honest supported-features list** for the beta bundle
-   (this registry is the draft; the shipped artifact needs a user-facing
-   cut).
-3. **DMG distribution channel** (packaging note, not a product defect):
+1. **DMG distribution channel** (packaging note, not a product defect):
    the macOS DMG bundler (AppleScript/Finder) fails on the external-SSD
    build volume — the `.app` bundle is valid and installs by copy; the
    CI gui job builds on Linux where no macOS bundle exists. A dedicated
    macOS bundle job with artifact upload is a CI-cost decision.
+
+### Closed on 2026-10-19 (late): the last two P1 items
+- **UI-11 Stage C — guarded recovery (Issue #6): CLOSED at 472bb43.**
+  `project_include_candidate` re-verifies every UI input server-side
+  (containment, effective view, XML validity, the row's own
+  element/text, NoTranslate, duplicate identity, source fingerprint),
+  persists into the managed state only (human_recovered marker,
+  revision bump, persist-before-ack) and the source stays
+  byte-identical (asserted). Search reconciliation reclassifies
+  recovered rows as AlreadyIndexed; eight negative regressions per the
+  issue; native lane 26/26 with include → reclassify → row live in the
+  editor.
+- **User-facing beta README: CLOSED** — `docs/beta/README-BETA.md`
+  (verified capabilities, drag-install, local-Ollama walkthrough, honest
+  limitations).
 
 ### Closed on 2026-10-19 (the build window returned)
 - **Search/editor lane (directive §3): 5/5 native** — and it found a
