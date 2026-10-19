@@ -42,11 +42,10 @@ any new P0 found by CI/CodeQL/lanes lands here)*
    language preference behaved non-deterministically across background
    launches. Picking Russian once in the game's options (it persists)
    closes it with the already-mounted export.
-2. **DMG distribution channel** (packaging note, not a product defect):
-   the macOS DMG bundler (AppleScript/Finder) fails on the external-SSD
-   build volume — the `.app` bundle is valid and installs by copy; the
-   CI gui job builds on Linux where no macOS bundle exists. A dedicated
-   macOS bundle job with artifact upload is a CI-cost decision.
+2. **DMG distribution channel — CLOSED (88fccf1)**: a dedicated
+   `bundle-macos` CI job (macos-14) now builds the production `.app`
+   and the unsigned DMG for the exact tested commit and uploads both
+   as a 14-day artifact (`rimloc-macos-bundle`).
 
 ### Closed on 2026-10-19 (late evening): P2 parity decisions + live-game acceptance evidence
 - **CLI→capability→IPC→GUI traceability (Issue #5) delivered**:
@@ -130,6 +129,15 @@ any new P0 found by CI/CodeQL/lanes lands here)*
   publication owner-gated).
 
 ### OWNER_GATE — genuinely the owner's call
+- **Installer signing + notarization + auto-update**: require the
+  owner's Apple Developer certificate / notarytool credentials and a
+  release-update endpoint decision — impossible to close without them
+  (the CI DMG is deliberately unsigned and labeled as such). Target:
+  post-beta hardening.
+- **Real RimWorld acceptance — the final 30-second step** (see
+  `RIMWORLD_ACCEPTANCE_2026-10-19.md`): either pick Russian once in the
+  game's options and re-run the mounting script for the end-to-end
+  proof, or explicitly accept the component-level evidence.
 - Merge PR #101 to main; tag; publish the release; Discord/community.
 - Real-provider UAT (needs owner API keys; mock-path is fully verified).
 - Sponsors/BMC/Ko-fi live account data for the About screen.
