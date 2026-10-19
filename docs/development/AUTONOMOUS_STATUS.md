@@ -638,3 +638,18 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
 - **CI на 0475644: весь зелёный** (cargo 3 ОС, deny, feature matrix, оба фронта, gui,
   policy, schema drift, fmt+clippy). Реестр: P1 осталось UI-11 Stage C + beta-README +
   DMG-канал (CI-cost); вердикт READY для owner-решения.
+
+## Кампания 2026-10-19 (вечер): последние P1 закрыты — UI-11 Stage C и beta-README
+
+- **Beta-README**: docs/beta/README-BETA.md — честная карта (верифицированные возможности,
+  drag-install, локальный-Ollama walkthrough, осознанные ограничения).
+- **UI-11 Stage C (Issue #6) ЗАКРЫТ** (472bb43 + f550243 + 7c61b1c): `project_include_candidate` —
+  сервер перепроверяет ВСЁ: containment+effective-view (неактивная 1.5-ветка — отказ), XML-валидность,
+  элемент/текст именованной строки, NoTranslate, дубликат идентичности, fingerprint исходника
+  (изменился → типизированный «rescan»). Запись ТОЛЬКО в managed-state (маркер human_recovered,
+  bump ревизии, persist-before-ack), исходник байт-в-байт нетронут (ассерт в регрессии).
+  Реконсилиация поиска: восстановленные строки классифицируются AlreadyIndexed (identity
+  сохраняется — поймано IPC-регрессией CI). 8 негативных регрессий по issue; нативный lane
+  26/26 со сценарием include → переклассификация → строка в редакторе.
+- **CI на 7c61b1c: 40/40 pass** (все CodeQL). Реестр: engineering-фаза P1 исчерпана — остался
+  только DMG-packaging note (CI-cost решение) и owner-гейты.
