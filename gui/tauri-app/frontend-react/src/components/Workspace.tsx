@@ -71,6 +71,14 @@ function sendToChatBatch(id: SourceEntryIdDto): void {
 export function Workspace({ onBack }: { onBack: () => void }) {
   const st = useProjectState()
   const [search, setSearch] = useState('')
+  // Large-corpus responsiveness (12k+ E2E): typing stays live while the
+  // FILTER runs debounced — per-keystroke rememo over the whole
+  // inventory measured ~3s at 12k rows.
+  const [searchLive, setSearchLive] = useState('')
+  useEffect(() => {
+    const t = window.setTimeout(() => setSearch(searchLive), 150)
+    return () => window.clearTimeout(t)
+  }, [searchLive])
   const [filter, setFilter] = useState<'all' | 'empty' | 'issues'>('all')
   const [kindFilter, setKindFilter] = useState<string>('all')
   const [fileFilter, setFileFilter] = useState<string>('all')
@@ -479,8 +487,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               <input
                 aria-label={t('ws.search')}
                 placeholder={t('ws.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchLive}
+                onChange={(e) => setSearchLive(e.target.value)}
               />
             </div>
             <button
@@ -488,6 +496,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               aria-label={t('ws.clearAllFilters')}
               title={t('ws.clearAllFilters')}
               onClick={() => {
+                setSearchLive('')
                 setSearch('')
                 setFilter('all')
                 setKindFilter('all')
