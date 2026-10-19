@@ -32,12 +32,16 @@ mods root /Applications/RimWorld.app/Mods, 290 mods).
 ## What was NOT proven (honest blocker)
 
 A single end-to-end run — our translation mod mounted AND the Russian
-language active AND the translated string visible — did not land: the
-game's language preference key proved non-deterministic across our
-background launches (identical fresh-key launches behaved
-differently: two runs activated Russian, six did not). This is an
-environment/launch-context quirk of the game process, not RimLoc
-code: every component is individually proven above.
+language active AND the translated string visible — did not land. Ten
+runs total produced a sharp correlation, not noise: the language key
+activated Russian in 3/3 runs with the OWNER'S UNMODIFIED mod list,
+and in 0/6 runs where our test mod was appended to activeMods
+(including a both-keys variant and a cache-settled two-phase run;
+full startup logs, 20k lines, 105x `No active language!` each time).
+The mod-list delta is the only differing variable; the game still
+boots fully with our list. Every RimLoc component is individually
+proven above — the blocker is the game's language init interacting
+with a background-launched, list-patched session, not RimLoc code.
 
 **30-second owner path to close it**: select Russian in the game's
 options once (it persists), keep `RimLocRwAcceptance`-style mod
