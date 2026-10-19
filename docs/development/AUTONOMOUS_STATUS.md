@@ -615,3 +615,26 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   P0 (открытых нет) / P1 (installed-app smoke на CI-DMG, large-project E2E, UI-11
   Stage C, beta-README) / P2 / OWNER_GATE (merge/release/теги, real-provider UAT ключи,
   спонсор-аккаунты). RC = a693479.
+
+## Кампания 2026-10-19 (окно сборки): все SSD-блокированные lane закрыты
+
+- **Search/editor lane (§3): 5/5 нативно** — и РЕАЛЬНАЯ находка: ApparelDef отсутствовал в
+  defs-allowlist → apparel-моды молча теряли ВСЕ строки (by-file дерево показало только
+  Weapons/CollarThing). Фикс 4b0c375 (+ юнит-гейт apparel_def_rows_are_indexed; seed-pack
+  guard честно 171). Урок: девять «обычных» поисковых сценариев ловят то, что юниты не видят.
+- **Ollama real-provider E2E (§4): 3/3** — провайдер-инстанс через typed IPC, BYO в GUI,
+  реальные вызовы qwen2.5:3b → preview → выбор строки → accept-selected → durable-конверт
+  ровно одной выбранной (4a4e0ee). Урок: webview fetch на http://localhost блокируется
+  WKWebView — преcheck в lane делаем фактом продукта (нативный reqwest), не fetch'ем UI.
+- **Large-mod E2E (§12): 3/3 на 12 000 строках** (6000 дефов, 20 файлов): счётчик дерева
+  честен, поиск интерактивен, правка durable, экспорт с reparse-проверкой. Продукт-фикс:
+  debounce 150мс фильтра поиска — посимвольный rememo на 12k мерился секундами (0475644).
+- **Installed-smoke**: прод-бандл (без automation) установлен копированием, запущен
+  изолированно — процесс жив, managed-root инициализирован. DMG-бандлер на external-SSD
+  падает (AppleScript/Finder) — .app валиден как drag-install; CI gui-job на Linux без
+  macOS-бандла: отдельное CI-решание зафиксировано в реестре.
+- **Deps**: yaml-rust2 0.13, ico 0.6 (direct; 0.5 остаётся транзитивом tauri-codegen),
+  tanstack-patch group (97d1eb2). Регресс integration-ui 25/25 (тема-baseline фикс).
+- **CI на 0475644: весь зелёный** (cargo 3 ОС, deny, feature matrix, оба фронта, gui,
+  policy, schema drift, fmt+clippy). Реестр: P1 осталось UI-11 Stage C + beta-README +
+  DMG-канал (CI-cost); вердикт READY для owner-решения.
