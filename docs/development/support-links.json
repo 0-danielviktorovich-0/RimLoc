@@ -1,7 +1,7 @@
 {
   "kind": "rimloc-support-links",
   "version": 1,
-  "verified_at": "2026-10-15T00:00:00Z",
+  "verified_at": "2026-10-19T22:30:00Z",
   "verified_by": "owner-authorized browser audit (BMC public page live; GitHub Sponsors profile preview authenticated; Ko-fi public page live)",
   "note": "Canonical support-link registry (owner addendum Oct-15). One creator account per platform, contextual project presentation. Any consumer (About screen allowlist, FUNDING.yml, SUPPORT.md, README, MkDocs) must reconcile against THIS file. Adding a destination here WITHOUT the backend allowlist is a review failure.",
   "links": [
@@ -30,7 +30,8 @@
       "scope": "creator",
       "public_payment_status": "enabled (Donate button + membership levels present)",
       "link_health": "live",
-      "project_context": "RimLoc contextual landing; links to project docs and creator channels"
+      "project_context": "creator-wide bio live; membership tiers $5/$10/$15 have NO active members; tier benefit copy cleanup remains (iframe editor unstable via automation; zero contractual risk)",
+      "verified_by": "authenticated browser session 2026-10-19: creator-wide About applied and verified live on the public page; supporters list checked (none active)"
     }
   ],
   "project_docs": {
