@@ -1,7 +1,7 @@
 # RimLoc beta readiness registry — 2026-10-17
 
 Single source of truth for the first limited beta. Head of record:
-`feat/integration-rel27` @ **75d37639efdb3f9981a5def2eaa036015c25f1f6**
+`feat/integration-rel27` @ **0475644af19e2e1cc22e20d42c027c6d9b911889**
 (Draft PR #101; merge/release stay owner-gated).
 
 Legend: P0 blocks a safe beta · P1 required for the declared beta scope ·
@@ -33,28 +33,44 @@ work is hidden behind OWNER_GATE.
 *(none open at 2deb981 — the registry's purpose is to keep it that way;
 any new P0 found by CI/CodeQL/lanes lands here)*
 
-### P1 — required for the declared beta scope
-1. **Installed-app smoke on the CI-produced DMG/.app** (not the local
-   automation build): install → wizard → translate one row → export.
-   The automation lane proves the same binary family, but the installer
-   artifact itself has not been walked. *Blocked on the build window:
-   the external build SSD is unplugged and the internal disk sits below
-   the cargo guard threshold.*
-2. **Large-project acceptance** (UI-12 residual + owner ask): a real
-   10k+ string mod through create→translate→export. The 10k virtualizer
-   stress lane exists (react-stress.conf.ts); the end-to-end corpus pass
-   over a real large mod remains. *Same build-window blocker.*
-3. **UI-11 Stage C — guarded recovery** (Issue #6): per-candidate human
+### P1 — remaining for the declared beta scope
+1. **UI-11 Stage C — guarded recovery** (Issue #6): per-candidate human
    approval for including out-of-inventory text into MANAGED project
    state only (epoch/revision/source-hash pinned, atomic stale refusal,
    no source writes). Stage B evidence is in; C is the write path.
-4. **Run the queued native lanes once the build window returns**: the
-   nine-scenario search/editor lane (committed, c486506) and the Ollama
-   real-provider E2E (local qwen2.5:3b detected; no invented
-   credentials — unattended local-model verification).
-5. **Beta README / honest supported-features list** for the beta bundle
+2. **Beta README / honest supported-features list** for the beta bundle
    (this registry is the draft; the shipped artifact needs a user-facing
    cut).
+3. **DMG distribution channel** (packaging note, not a product defect):
+   the macOS DMG bundler (AppleScript/Finder) fails on the external-SSD
+   build volume — the `.app` bundle is valid and installs by copy; the
+   CI gui job builds on Linux where no macOS bundle exists. A dedicated
+   macOS bundle job with artifact upload is a CI-cost decision.
+
+### Closed on 2026-10-19 (the build window returned)
+- **Search/editor lane (directive §3): 5/5 native** — and it found a
+  REAL product defect: ApparelDef was missing from the defs allowlist,
+  so apparel mods silently lost every row. Fixed (4b0c375) with a unit
+  regression + the seed-pack guard now documents 171 rules.
+- **Real-provider E2E (directive §4): 3/3 native on local Ollama
+  (qwen2.5:3b)** — typed-IPC provider instance, BYO selection, real
+  model round-trips to the preview, per-row selection, accept-selected,
+  durable envelope proving exactly the chosen row (4a4e0ee).
+- **Large-mod E2E (directive §12): 3/3 native on a 12 000-row corpus**
+  (6 000 defs / 20 files): wizard counter honest, search interactive,
+  edit durable, guarded export reparse-checked. Forced a product fix:
+  the workspace search filter now debounces (150ms) — per-keystroke
+  rememo measured seconds at 12k (0475644).
+- **Installed-app smoke**: the production bundle (no automation
+  feature) installed by copy and launched with an isolated data dir —
+  the process stayed alive and initialized its managed root. The
+  DMG-vs-.app note is recorded above.
+- **Dependabot majors**: yaml-rust2 0.13 + direct ico 0.6 applied and
+  verified (tauri-codegen keeps ico 0.5 transitively — upstream);
+  the @tanstack patch group applied (97d1eb2).
+- **Regression sweep**: integration-ui lane 25/25 on the rebuilt head
+  (the theme-toggle step now seeds a deterministic light baseline —
+  a prior lane could leave dark persisted).
 
 ### Closed during the 2026-10-19 review round
 - AI job durability (registry was process-local, records unwritten):
@@ -87,7 +103,7 @@ any new P0 found by CI/CodeQL/lanes lands here)*
 
 ## Release candidate manifest (first limited beta)
 
-- **Exact SHA:** `75d37639efdb3f9981a5def2eaa036015c25f1f6` (branch
+- **Exact SHA:** `0475644af19e2e1cc22e20d42c027c6d9b911889` (branch
   `feat/integration-rel27`, Draft PR #101).
 - **Reproducible builds:** CI `Tauri GUI build` (aarch64 .app + DMG from
   the same SHA) and the local automation bundle (`cargo tauri build
