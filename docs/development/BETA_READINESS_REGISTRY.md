@@ -42,10 +42,11 @@ any new P0 found by CI/CodeQL/lanes lands here)*
    language preference behaved non-deterministically across background
    launches. Picking Russian once in the game's options (it persists)
    closes it with the already-mounted export.
-2. **DMG distribution channel — CLOSED (88fccf1)**: a dedicated
-   `bundle-macos` CI job (macos-14) now builds the production `.app`
-   and the unsigned DMG for the exact tested commit and uploads both
-   as a 14-day artifact (`rimloc-macos-bundle`).
+2. **DMG distribution channel — CLOSED (88fccf1 + 356bad0)**: the
+   `bundle-macos` CI job (macos-14) builds the production `.app` and
+   the unsigned DMG for the exact tested commit and uploads both as a
+   14-day artifact — verified live: `rimloc-macos-bundle`
+   (20.2 MB, artifact 12189082584) on the green run.
 
 ### Closed on 2026-10-19 (late evening): P2 parity decisions + live-game acceptance evidence
 - **CLI→capability→IPC→GUI traceability (Issue #5) delivered**:
