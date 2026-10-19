@@ -90,6 +90,7 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "ai_job_status",
     "ai_job_cancel",
     "ai_job_accept",
+    "ai_job_accept_selected",
     // Source Discovery (Stage A): read-only full-project source search with
     // canonical-inventory reconciliation.
     "project_source_search",
@@ -635,8 +636,38 @@ pub fn ai_job_accept(
         .lock()
         .expect("contract session registry poisoned");
     traced_simple("ai_job_accept", || {
-        rimloc_services::ai_job::accept_job(&ai.0, &manager, &request.job_id, request.session_epoch)
+        rimloc_services::ai_job::accept_job(
+            &ai.0,
+            &manager,
+            &request.job_id,
+            request.session_epoch,
+            request.acknowledge_full_scope,
+        )
     })
+}
+
+/// `ai_job_accept_selected` — per-row review: apply ONLY the selected
+/// preview rows; rejected rows are marked in the preview ledger and the
+/// rest stays reviewable. Same pinned-revision / stale-epoch protections
+/// as the full accept.
+#[tauri::command(rename_all = "snake_case")]
+pub fn ai_job_accept_selected(
+    state: State<'_, ContractState>,
+    ai: State<'_, AiJobs>,
+    request: AiJobAcceptSelectedWire,
+) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    rimloc_services::ai_job::accept_selected(
+        &ai.0,
+        &manager,
+        &request.job_id,
+        request.session_epoch,
+        &request.selected,
+        &request.rejected,
+    )
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -679,6 +710,24 @@ impl AiJobParamsWire {
 pub struct AiJobAcceptWire {
     pub job_id: String,
     pub session_epoch: u64,
+    /// Full-scope acknowledgement for truncated previews (> 400 rows):
+    /// the caller CONFIRMS applying rows the bounded preview did not
+    /// show. Defaults to false — a silent full apply is impossible.
+    #[serde(default)]
+    pub acknowledge_full_scope: bool,
+}
+
+/// Wire args of `ai_job_accept_selected` (per-row review).
+#[derive(Debug, serde::Deserialize)]
+pub struct AiJobAcceptSelectedWire {
+    pub job_id: String,
+    pub session_epoch: u64,
+    /// Identities to apply (row `identity` renderings).
+    #[serde(default)]
+    pub selected: Vec<String>,
+    /// Identities to mark rejected (kept in the preview ledger).
+    #[serde(default)]
+    pub rejected: Vec<String>,
 }
 
 /// Wire args of `project_source_search`.
@@ -1457,6 +1506,7 @@ mod ipc_draft_tests {
                 ai_job_status,
                 ai_job_cancel,
                 ai_job_accept,
+                ai_job_accept_selected,
                 project_source_search,
             ])
             .build(tauri::generate_context!())
@@ -1671,6 +1721,7 @@ mod ipc_draft_tests {
                 ai_job_status,
                 ai_job_cancel,
                 ai_job_accept,
+                ai_job_accept_selected,
                 project_source_search,
             ])
             .build(tauri::generate_context!())

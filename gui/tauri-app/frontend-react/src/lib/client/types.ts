@@ -607,6 +607,7 @@ export type ContractMethod =
   | 'ai_job_status'
   | 'ai_job_cancel'
   | 'ai_job_accept'
+  | 'ai_job_accept_selected'
   // Source Discovery (Stage A): read-only full-project source search
   // reconciled against the canonical inventory.
   | 'project_source_search'
@@ -643,6 +644,8 @@ export interface AiJobStatusDto {
   failed: number;
   excluded_notranslate: number;
   rows: AiJobRowDto[];
+  /** True when the preview copy is bounded (400) and translated rows are hidden. */
+  rows_truncated: boolean;
   error?: string;
   checkpoint_path?: string;
 }

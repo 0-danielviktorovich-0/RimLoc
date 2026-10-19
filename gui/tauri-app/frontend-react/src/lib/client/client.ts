@@ -545,8 +545,27 @@ export class RimLocClient {
   async aiJobCancel(jobId: string): Promise<import('./types').AiJobStatusDto> {
     return this.call('ai_job_cancel', { job_id: jobId });
   }
-  async aiJobAccept(jobId: string, sessionEpoch: number): Promise<import('./types').AiJobStatusDto> {
-    return this.call('ai_job_accept', { request: { job_id: jobId, session_epoch: sessionEpoch } });
+  async aiJobAccept(jobId: string, sessionEpoch: number, acknowledgeFullScope = false): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_accept', {
+      request: {
+        job_id: jobId,
+        session_epoch: sessionEpoch,
+        acknowledge_full_scope: acknowledgeFullScope,
+      },
+    })
+  }
+
+  /** Per-row review: apply ONLY the selected identities; rejected ones
+   *  are marked in the preview ledger. */
+  async aiJobAcceptSelected(
+    jobId: string,
+    sessionEpoch: number,
+    selected: string[],
+    rejected: string[],
+  ): Promise<import('./types').AiJobStatusDto> {
+    return this.call('ai_job_accept_selected', {
+      request: { job_id: jobId, session_epoch: sessionEpoch, selected, rejected },
+    })
   }
 
   /** Source Discovery (Stage A): read-only full-project source search

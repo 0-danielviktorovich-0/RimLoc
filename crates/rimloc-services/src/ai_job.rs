@@ -104,9 +104,12 @@ pub struct AiJobStatus {
     pub translated: usize,
     pub failed: usize,
     pub excluded_notranslate: usize,
-    /// Preview rows (DRAFT translations until accepted). Bounded copy —
-    /// the UI pages through it; the full set lives in the job record file.
+    /// Preview rows (DRAFT translations until accepted). Bounded copy
+    /// (PREVIEW_ROW_LIMIT); `rows_truncated` tells the UI the full set is
+    /// larger and accept needs an explicit full-scope acknowledgement.
     pub rows: Vec<AiJobRow>,
+    #[serde(default)]
+    pub rows_truncated: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -236,6 +239,12 @@ pub fn recover_interrupted_jobs(managed_root: &Path) -> usize {
 }
 
 static JOB_SEQ: AtomicU64 = AtomicU64::new(1);
+
+/// The preview copy carried in every status snapshot. The ACCEPT path
+/// refuses to run over hidden rows without an explicit full-scope
+/// acknowledgement (review 2026-10-17 P0) — the review-before-apply
+/// contract can never silently apply what the user could not see.
+pub const PREVIEW_ROW_LIMIT: usize = 400;
 
 /// Registry of running/finished jobs, owned by the Tauri state (per app
 /// process). Finished jobs keep their preview until a newer job for the
@@ -444,6 +453,7 @@ pub(crate) fn start_job_with_factory(
         failed: 0,
         excluded_notranslate: excluded,
         rows: Vec::new(),
+        rows_truncated: false,
         error: None,
         checkpoint_path: Some(checkpoint_path.display().to_string()),
     };
@@ -585,13 +595,67 @@ fn run_job_worker(
 /// Accept the preview: canonical intents through `ProjectSessionManager`
 /// (origin Llm), epoch/revision guarded. Rows whose target is missing or
 /// whose identity no longer resolves are skipped with reasons.
+/// Apply the WHOLE translated preview. Refuses hidden-row application
+/// when the preview is truncated and the caller has not acknowledged the
+/// full scope (see PREVIEW_ROW_LIMIT).
 pub fn accept_job(
     registry: &AiJobRegistry,
     manager: &ProjectSessionManager,
     job_id: &str,
     expected_epoch: u64,
+    acknowledge_full_scope: bool,
 ) -> Result<AiJobStatus, ContractError> {
-    let _ = manager; // reserved: durable job-record refresh (Stage C)
+    accept_job_core(
+        registry,
+        manager,
+        job_id,
+        expected_epoch,
+        acknowledge_full_scope,
+        None,
+    )
+}
+
+/// Per-row review (review 2026-10-17 P1): apply ONLY the selected
+/// identities from the preview. `rejected` rows are marked in the shared
+/// preview (status `rejected`) so the UI keeps an honest ledger of
+/// reviewed decisions; everything else stays reviewable.
+pub fn accept_selected(
+    registry: &AiJobRegistry,
+    manager: &ProjectSessionManager,
+    job_id: &str,
+    expected_epoch: u64,
+    selected: &[String],
+    rejected: &[String],
+) -> Result<AiJobStatus, ContractError> {
+    if selected.is_empty() {
+        return Err(ContractError::new(
+            ContractErrorCode::ValidationFailed,
+            "accept_selected: the selection is empty — pick rows or use the full accept",
+        ));
+    }
+    let sel: std::collections::BTreeSet<String> = selected.iter().cloned().collect();
+    let rej: std::collections::BTreeSet<String> = rejected.iter().cloned().collect();
+    // Record the rejection ledger before applying (best-effort under the
+    // shared lock; refused rows keep their translation visible).
+    if let Some(handle) = registry.get(job_id) {
+        let mut rows = handle.shared.rows.lock().unwrap();
+        for row in rows.values_mut() {
+            if rej.contains(&row.identity) {
+                row.status = "rejected".into();
+            }
+        }
+    }
+    accept_job_core(registry, manager, job_id, expected_epoch, true, Some(&sel))
+}
+
+fn accept_job_core(
+    registry: &AiJobRegistry,
+    manager: &ProjectSessionManager,
+    job_id: &str,
+    expected_epoch: u64,
+    acknowledge_full_scope: bool,
+    selection: Option<&std::collections::BTreeSet<String>>,
+) -> Result<AiJobStatus, ContractError> {
     let handle = registry.get(job_id).ok_or_else(|| missing_job(job_id))?;
     {
         let st = handle.status.lock().unwrap();
@@ -609,6 +673,19 @@ pub fn accept_job(
         let rows = handle.shared.rows.lock().unwrap();
         rows.values().cloned().collect()
     };
+    // REVIEW-BEFORE-APPLY (review 2026-10-17 P0): the visible preview is
+    // bounded to PREVIEW_ROW_LIMIT rows. Applying hidden translations
+    // without the user explicitly acknowledging the full scope would
+    // break the core contract of the feature.
+    let translated_total = rows.iter().filter(|r| r.status == "translated").count();
+    if translated_total > PREVIEW_ROW_LIMIT && !acknowledge_full_scope {
+        return Err(ContractError::new(
+            ContractErrorCode::ValidationFailed,
+            format!(
+                "the preview shows {PREVIEW_ROW_LIMIT} of {translated_total} translated rows —                  confirm the full scope to apply them all, or apply a selection"
+            ),
+        ));
+    }
     let (locale, project_id, base_revision) = {
         let st = handle.status.lock().unwrap();
         (st.locale.clone(), st.project_id.clone(), st.base_revision)
@@ -649,6 +726,14 @@ pub fn accept_job(
     for row in &rows {
         if row.status != "translated" {
             continue;
+        }
+        // Selection filter (per-row review): when a selection is present
+        // ONLY the chosen identities become intents; the rest of the
+        // preview stays reviewable.
+        if let Some(sel) = selection.as_ref() {
+            if !sel.contains(&row.identity) {
+                continue;
+            }
         }
         if let Some(text) = &row.target {
             intents.push(TranslationIntent {
@@ -813,7 +898,9 @@ fn refresh_status_locked(st: &mut AiJobStatus, shared: &Arc<JobShared>) {
     st.failed = rows.values().filter(|r| r.status == "failed").count();
     // Preview copy: bounded to the first 400 rows (UI pages via the full
     // job record file when larger — documented).
-    st.rows = rows.values().take(400).cloned().collect();
+    let all: Vec<&AiJobRow> = rows.values().collect();
+    st.rows_truncated = all.len() > PREVIEW_ROW_LIMIT;
+    st.rows = all.into_iter().take(PREVIEW_ROW_LIMIT).cloned().collect();
     // NO automatic terminal transition here (review round 2, P1-A): the
     // old `translated + failed + excluded >= total` condition mixed two
     // populations — `total` counts only translatable units while
@@ -905,6 +992,162 @@ mod tests {
         }
     }
 
+    /// A mod with MORE translatable rows than PREVIEW_ROW_LIMIT: the
+    /// preview must truncate honestly and the full accept must REFUSE
+    /// until the caller acknowledges the hidden scope, then apply exactly
+    /// what it acknowledged (totals agree).
+    #[test]
+    fn truncated_preview_refuses_silent_full_apply_then_applies_with_ack() {
+        let _mock = MockGuard::acquire();
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path();
+        // 430 ThingDefs — beyond the 400-row preview bound.
+        let mut xml = String::from("<Defs>\n");
+        for i in 0..430 {
+            xml.push_str(&format!(
+                "  <ThingDef><defName>Row{i}</defName><label>Row {i} label</label></ThingDef>\n"
+            ));
+        }
+        xml.push_str("</Defs>");
+        std::fs::create_dir_all(root.join("Defs")).unwrap();
+        std::fs::write(root.join("Defs/Big.xml"), xml).unwrap();
+        std::fs::create_dir_all(root.join("About")).unwrap();
+        std::fs::write(
+            root.join("About/About.xml"),
+            "<ModMetaData><name>Big</name><packageId>rimloc.test.big</packageId><supportedVersions><li>1.6</li></supportedVersions></ModMetaData>",
+        )
+        .unwrap();
+        let managed = root.join("managed");
+        let mgr = ProjectSessionManager::new(&managed).unwrap();
+        let snap = mgr
+            .create_with_source(root, Some("1.6"), None, None)
+            .unwrap();
+
+        let registry = AiJobRegistry::new();
+        let st = start_job(
+            &registry,
+            &mgr,
+            &managed,
+            AiJobParams {
+                project_id: snap.project_id.clone(),
+                session_epoch: snap.session_epoch,
+                locale: "Russian".into(),
+                source_locale: "en".into(),
+                provider_id: "mock".into(),
+                model: None,
+                base_url: None,
+                provider_instance_id: None,
+                batch_char_budget: 200_000,
+            },
+        )
+        .expect("start");
+        let mut final_st = st.clone();
+        for _ in 0..600 {
+            final_st = job_status(&registry, &st.job_id).unwrap();
+            if final_st.state == AiJobState::PreviewReady {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_st.state, AiJobState::PreviewReady, "{final_st:?}");
+        assert!(
+            final_st.rows_truncated,
+            "430 rows must mark the preview truncated"
+        );
+        assert_eq!(final_st.rows.len(), PREVIEW_ROW_LIMIT);
+        assert_eq!(final_st.translated, 430);
+
+        // SILENT FULL APPLY REFUSED (review P0).
+        let err = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch, false).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ValidationFailed);
+        assert!(
+            err.message.contains("430"),
+            "message must name the scope: {}",
+            err.message
+        );
+
+        // With the explicit acknowledgement the full scope applies — and
+        // the applied count AGREES with the totals the user was told.
+        let applied = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch, true).unwrap();
+        assert_eq!(applied.state, AiJobState::Applied, "{applied:?}");
+        assert_eq!(applied.translated, 430);
+    }
+
+    /// Per-row review: accept_selected applies ONLY the chosen rows,
+    /// marks rejected rows in the ledger, and leaves the rest reviewable.
+    #[test]
+    fn accept_selected_applies_only_chosen_rows_and_marks_rejected() {
+        let _mock = MockGuard::acquire();
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: ctx.pid.clone(),
+            session_epoch: ctx.epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            provider_instance_id: None,
+            batch_char_budget: 4000,
+        };
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, params).expect("start");
+        let mut final_st = st.clone();
+        for _ in 0..300 {
+            final_st = job_status(&registry, &st.job_id).unwrap();
+            if final_st.state == AiJobState::PreviewReady {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_st.state, AiJobState::PreviewReady);
+        let apple = final_st
+            .rows
+            .iter()
+            .find(|r| r.key.contains("Apple"))
+            .expect("apple row");
+        let pear = final_st
+            .rows
+            .iter()
+            .find(|r| r.key.contains("Pear"))
+            .expect("pear row");
+
+        // Apply ONLY Apple; reject Pear.
+        let applied = accept_selected(
+            &registry,
+            &ctx.mgr,
+            &st.job_id,
+            ctx.epoch,
+            std::slice::from_ref(&apple.identity),
+            std::slice::from_ref(&pear.identity),
+        )
+        .expect("selected accept");
+        assert_eq!(applied.state, AiJobState::Applied, "{applied:?}");
+        // Durable truth: only Apple landed in the project.
+        let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        let has = |k: &str| {
+            snap.project
+                .translations
+                .iter()
+                .any(|t| t.source_id.key == k && t.locale == "Russian")
+        };
+        assert!(has("Apple.label"), "selected row must be applied");
+        assert!(!has("Pear.label"), "unselected row must NOT be applied");
+        // The rejected row carries the ledger status in the preview.
+        let pear_now = job_status(&registry, &st.job_id)
+            .unwrap()
+            .rows
+            .into_iter()
+            .find(|r| r.key.contains("Pear"))
+            .unwrap();
+        assert_eq!(pear_now.status, "rejected");
+
+        // An empty selection is a typed refusal, never a silent no-op.
+        let err =
+            accept_selected(&registry, &ctx.mgr, &st.job_id, ctx.epoch, &[], &[]).unwrap_err();
+        assert_eq!(err.code, ContractErrorCode::ValidationFailed);
+    }
+
     // --- durable records + restart honesty -------------------------------
 
     #[test]
@@ -993,7 +1236,7 @@ mod tests {
         assert!(st.translated >= 2, "st={st:?}");
 
         // Accept: canonical apply through the session (origin Llm).
-        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).expect("accept");
+        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch, false).expect("accept");
         assert_eq!(st.state, AiJobState::Applied);
 
         // Durable truth: translations visible in the snapshot under the
@@ -1078,7 +1321,7 @@ mod tests {
             identities.contains(&"def_injected·HediffDef·Dup.label"),
             "{identities:?}"
         );
-        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
+        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch, false).unwrap();
         assert_eq!(st.state, AiJobState::Applied);
         // Canonical truth: TWO Russian translations with distinct def types.
         let after = mgr.snapshot(&snap.project_id).unwrap();
@@ -1149,7 +1392,7 @@ mod tests {
             })
             .unwrap();
         // Accept now MUST refuse: stale_revision, newer work preserved.
-        let err = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap_err();
+        let err = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch, false).unwrap_err();
         assert_eq!(err.code, crate::contract::ContractErrorCode::StaleRevision);
         let after = ctx.mgr.snapshot(&ctx.pid).unwrap();
         let manual: Vec<_> = after
@@ -1247,7 +1490,7 @@ mod tests {
             })
             .unwrap();
         // accept MUST refuse with stale_revision (pinned base ≠ live).
-        let err = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap_err();
+        let err = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch, false).unwrap_err();
         assert_eq!(err.code, crate::contract::ContractErrorCode::StaleRevision);
         // And the newer human edit survives.
         let after = ctx.mgr.snapshot(&ctx.pid).unwrap();
@@ -1335,7 +1578,7 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         assert_eq!(st.state, AiJobState::PreviewReady);
-        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
+        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch, false).unwrap();
         assert_eq!(
             st.state,
             AiJobState::Failed,
@@ -1348,8 +1591,14 @@ mod tests {
     fn accept_unknown_job_is_project_not_found() {
         let ctx = setup();
         let registry = AiJobRegistry::new();
-        let err =
-            accept_job(&registry, &ctx.mgr, "aijob-000000-nonexistent", ctx.epoch).unwrap_err();
+        let err = accept_job(
+            &registry,
+            &ctx.mgr,
+            "aijob-000000-nonexistent",
+            ctx.epoch,
+            false,
+        )
+        .unwrap_err();
         assert_eq!(
             err.code,
             crate::contract::ContractErrorCode::ProjectNotFound
@@ -1770,7 +2019,7 @@ mod tests {
         let st = job_status(&registry, &st.job_id).unwrap();
         assert_eq!(st.state, AiJobState::PreviewReady, "{st:?}");
         assert_eq!(st.translated, 2);
-        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap();
+        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch, false).unwrap();
         assert_eq!(
             st.state,
             AiJobState::Failed,
@@ -1842,7 +2091,7 @@ mod tests {
         wait_worker_finished(&registry.get(&st.job_id).unwrap(), 5);
         let st = job_status(&registry, &st.job_id).unwrap();
         assert_eq!(st.state, AiJobState::PreviewReady);
-        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch).unwrap();
+        let st = accept_job(&registry, &ctx.mgr, &st.job_id, ctx.epoch, false).unwrap();
         assert_eq!(
             st.state,
             AiJobState::Applied,
@@ -1941,7 +2190,7 @@ mod tests {
         wait_worker_finished(&handle, 5);
         let st = job_status(&registry, &st.job_id).unwrap();
         assert_eq!(st.state, AiJobState::Cancelled, "{st:?}");
-        let err = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap_err();
+        let err = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch, false).unwrap_err();
         assert!(err.message.contains("not in preview state"), "{err:?}");
     }
 
@@ -2033,7 +2282,7 @@ mod tests {
         wait_worker_finished(&handle, 5);
         let st = job_status(&registry, &st.job_id).unwrap();
         assert_eq!(st.state, AiJobState::PreviewReady);
-        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch).unwrap();
+        let st = accept_job(&registry, &mgr, &st.job_id, snap.session_epoch, false).unwrap();
         assert_eq!(st.state, AiJobState::Applied);
         let seen = captured.lock().unwrap();
         assert_eq!(seen.len(), 1, "factory called exactly once: {seen:?}");

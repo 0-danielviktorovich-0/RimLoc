@@ -289,7 +289,11 @@ export interface ContractMethodMap {
     result: import('./types').AiJobStatusDto;
   };
   ai_job_accept: {
-    params: { request: { job_id: string; session_epoch: number } };
+    params: { request: { job_id: string; session_epoch: number; acknowledge_full_scope?: boolean } };
+    result: import('./types').AiJobStatusDto;
+  };
+  ai_job_accept_selected: {
+    params: { request: { job_id: string; session_epoch: number; selected: string[]; rejected: string[] } };
     result: import('./types').AiJobStatusDto;
   };
   project_source_search: {

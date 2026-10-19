@@ -49,6 +49,11 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
   const [model, setModel] = useState('')
   const [locale, setLocale] = useState('Russian')
   const [job, setJob] = useState<AiJobStatusDto | null>(null)
+  // Per-row review: identities chosen for apply (starts empty — an
+  // explicit pick, never a silent all-on).
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Full-scope acknowledgement for truncated previews: two-step by design.
+  const [acknowledgeFull, setAcknowledgeFull] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -115,12 +120,36 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
   const accept = (): void => {
     if (!job) return
     setBusy(true)
-    clientInstance.getClient().aiJobAccept(job.job_id, epoch ?? 0)
+    clientInstance.getClient().aiJobAccept(job.job_id, epoch ?? 0, acknowledgeFull)
+      .then((res) => { setJob(res); setBusy(false); setAcknowledgeFull(false) })
+      .catch((e: unknown) => {
+        setError(e instanceof Error ? e.message : String(e))
+        setBusy(false)
+      })
+  }
+
+  const acceptSelected = (): void => {
+    if (!job) return
+    const chosen = [...selected]
+    const rejected = job.rows
+      .filter((r) => r.status === 'translated' && !selected.has(r.identity))
+      .map((r) => r.identity)
+    setBusy(true)
+    clientInstance.getClient().aiJobAcceptSelected(job.job_id, epoch ?? 0, chosen, rejected)
       .then((res) => { setJob(res); setBusy(false) })
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : String(e))
         setBusy(false)
       })
+  }
+
+  const toggleSelected = (identity: string): void => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(identity)) next.delete(identity)
+      else next.add(identity)
+      return next
+    })
   }
 
   const cancel = (): void => {
@@ -266,9 +295,27 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
               </button>
             )}
             {job.state === 'preview_ready' && (
-              <button className="btn-primary" data-testid="ai.accept" disabled={busy} onClick={accept}>
-                <Check size={13} /> {t('ai.accept')}
-              </button>
+              <>
+                {selected.size > 0 && (
+                  <button
+                    className="btn-primary"
+                    data-testid="ai.accept-selected"
+                    disabled={busy}
+                    onClick={acceptSelected}
+                  >
+                    <Check size={13} /> {t('ai.acceptSelected', { count: selected.size })}
+                  </button>
+                )}
+                {job.rows_truncated && !acknowledgeFull ? (
+                  <button data-testid="ai.ack-full" disabled={busy} onClick={() => setAcknowledgeFull(true)}>
+                    {t('ai.ackFull', { shown: job.rows.length, total: job.translated })}
+                  </button>
+                ) : (
+                  <button className="btn-primary" data-testid="ai.accept" disabled={busy} onClick={accept}>
+                    <Check size={13} /> {t('ai.accept')}
+                  </button>
+                )}
+              </>
             )}
           </div>
           <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }} data-testid="ai.counters">
@@ -289,6 +336,14 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
               {job.rows.map((r) => (
                 <div key={r.identity} data-testid="ai.row" style={{ borderBottom: '1px solid var(--border)', padding: '3px 0' }}>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                    {r.status === 'translated' && job.state === 'preview_ready' ? (
+                      <input
+                        type="checkbox"
+                        data-testid={`ai.select.${r.identity}`}
+                        checked={selected.has(r.identity)}
+                        onChange={() => toggleSelected(r.identity)}
+                      />
+                    ) : null}
                     <code style={{ fontSize: 10 }}>{r.identity}</code>
                     <span className="status-label" style={{ fontSize: 10 }}>{r.status}</span>
                   </div>
@@ -297,6 +352,11 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
                   </div>
                 </div>
               ))}
+              {job.rows_truncated && (
+                <div className="inline-warning" role="status" data-testid="ai.truncated">
+                  {t('ai.truncated', { shown: job.rows.length, total: job.translated })}
+                </div>
+              )}
             </div>
           )}
         </div>

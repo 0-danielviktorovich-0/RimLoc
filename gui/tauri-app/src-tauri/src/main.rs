@@ -3140,6 +3140,7 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "ai_job_status",
     "ai_job_cancel",
     "ai_job_accept",
+    "ai_job_accept_selected",
     // Source Discovery (Stage A).
     "project_source_search",
     // Provider instances (provider/settings parity): app-global CRUD; the
@@ -3949,6 +3950,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::ai_job_status,
             rimloc_gui_lib::contract_adapter::ai_job_cancel,
             rimloc_gui_lib::contract_adapter::ai_job_accept,
+            rimloc_gui_lib::contract_adapter::ai_job_accept_selected,
             // Source Discovery (Stage A).
             rimloc_gui_lib::contract_adapter::project_source_search,
             // Provider instances (provider/settings parity).
@@ -4065,6 +4067,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::ai_job_status,
             rimloc_gui_lib::contract_adapter::ai_job_cancel,
             rimloc_gui_lib::contract_adapter::ai_job_accept,
+            rimloc_gui_lib::contract_adapter::ai_job_accept_selected,
             // Source Discovery (Stage A).
             rimloc_gui_lib::contract_adapter::project_source_search,
             // Provider instances (provider/settings parity).
