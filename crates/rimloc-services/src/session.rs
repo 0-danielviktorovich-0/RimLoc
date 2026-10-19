@@ -134,6 +134,10 @@ impl ProjectSessionManager {
         std::fs::create_dir_all(&root)?;
         let managed_root = std::fs::canonicalize(&root)?;
         let providers = ProviderSettingsState::load(&managed_root)?;
+        // Restart honesty (AI jobs): any `running` record on disk belongs
+        // to a worker that died with the previous process — re-label it
+        // `interrupted` before this process can start new jobs.
+        crate::ai_job::recover_interrupted_jobs(&managed_root);
         Ok(Self {
             managed_root,
             inner: Arc::new(Mutex::new(HashMap::new())),

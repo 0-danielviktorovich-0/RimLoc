@@ -83,6 +83,10 @@ pub enum AiJobState {
     Applied,
     Failed,
     Cancelled,
+    /// A durable record survived an app restart mid-run. The worker is
+    /// gone by definition; drafts were never touched, so the honest UX is
+    /// "re-run the job", never silent auto-resume (billing safety).
+    Interrupted,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -164,6 +168,71 @@ pub struct AiJobHandle {
     shared: Arc<JobShared>,
     /// Managed-root checkpoint path for resume.
     pub checkpoint_path: PathBuf,
+}
+
+// ---------------------------------------------------------------------------
+// Durable job records (restart honesty): every state transition lands in
+// `<managed_root>/<job_id>.job.json` (atomic tmp+rename). After a restart
+// `recover_interrupted_jobs` re-labels stale Running records as
+// Interrupted; `job_status_from_record` lets the UI ask about a job whose
+// in-memory registry is gone and get the durable truth instead of a fake
+// "unknown project".
+// ---------------------------------------------------------------------------
+
+fn job_record_path(managed_root: &Path, job_id: &str) -> PathBuf {
+    managed_root.join(format!("{job_id}.job.json"))
+}
+
+/// Persist the status snapshot atomically. Best-effort by design: a record
+/// write failure must never fail the translation itself — it surfaces in
+/// stderr only.
+fn write_job_record(managed_root: &Path, status: &AiJobStatus) {
+    let path = job_record_path(managed_root, &status.job_id);
+    let tmp = path.with_extension("job.json.tmp");
+    let payload = match serde_json::to_vec_pretty(status) {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+    if std::fs::write(&tmp, payload)
+        .and_then(|_| std::fs::rename(&tmp, &path))
+        .is_err()
+    {
+        eprintln!("rimloc: ai job record write failed for {}", status.job_id);
+    }
+}
+
+/// Read one durable record (None when absent or unreadable).
+pub fn job_status_from_record(managed_root: &Path, job_id: &str) -> Option<AiJobStatus> {
+    let bytes = std::fs::read(job_record_path(managed_root, job_id)).ok()?;
+    serde_json::from_slice(&bytes).ok()
+}
+
+/// Re-label stale `running` records as `interrupted`. Call once when the
+/// app (re)opens a managed root — before any new job starts. Returns how
+/// many records were re-labelled (0 on a clean start).
+pub fn recover_interrupted_jobs(managed_root: &Path) -> usize {
+    let Ok(entries) = std::fs::read_dir(managed_root) else {
+        return 0;
+    };
+    let mut recovered = 0usize;
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if !name.ends_with(".job.json") {
+            continue;
+        }
+        let Ok(bytes) = std::fs::read(entry.path()) else {
+            continue;
+        };
+        let Ok(mut status) = serde_json::from_slice::<AiJobStatus>(&bytes) else {
+            continue;
+        };
+        if status.state == AiJobState::Running {
+            status.state = AiJobState::Interrupted;
+            write_job_record(managed_root, &status);
+            recovered += 1;
+        }
+    }
+    recovered
 }
 
 static JOB_SEQ: AtomicU64 = AtomicU64::new(1);
@@ -288,9 +357,8 @@ pub(crate) fn start_job_with_factory(
         &params.project_id[..params.project_id.len().min(12)]
     );
     let checkpoint_path = managed_root.join(format!("{job_id}.checkpoint.jsonl"));
-    // Durable job record: the JSON snapshot lands with the checkpoint for
-    // cross-restart history (Stage C wiring).
-    let _record_path = managed_root.join(format!("{job_id}.job.json"));
+    // Durable job record: written at creation and at every terminal
+    // transition (see write_job_record / recover_interrupted_jobs).
 
     // Scope: untranslated + non-empty + eligibility-prefiltered (never
     // billed for entries the canonical gate would refuse).
@@ -386,6 +454,9 @@ pub(crate) fn start_job_with_factory(
         checkpoint_path: checkpoint_path.clone(),
     });
     registry.insert(handle.clone());
+    // The record outlives the process: restart honesty starts here.
+    let record_root = managed_root.to_path_buf();
+    write_job_record(&record_root, &status);
 
     // Worker thread: provider calls are blocking by design; the GUI polls
     // `job_status` and never blocks.
@@ -393,6 +464,7 @@ pub(crate) fn start_job_with_factory(
     let handle_thread = handle.clone();
     let checkpoint_thread = checkpoint_path.clone();
     let key_thread = resolved_key;
+    let record_root_thread = record_root.clone();
     std::thread::spawn(move || {
         let result = match factory(&params, key_thread.as_ref()) {
             Ok(provider) => run_job_worker(provider.as_ref(), &params, &shared, &checkpoint_thread),
@@ -426,6 +498,9 @@ pub(crate) fn start_job_with_factory(
             }
         }
         refresh_status_locked(&mut st, &shared);
+        if st.state != AiJobState::Interrupted {
+            write_job_record(&record_root_thread, &st);
+        }
         drop(st);
         shared.finished.store(true, Ordering::Release);
     });
@@ -649,6 +724,9 @@ pub fn accept_job(
         st.error = None;
     }
     refresh_status_locked(&mut st, &handle.shared);
+    if let Some(root) = handle.checkpoint_path.parent() {
+        write_job_record(root, &st);
+    }
     Ok(st.clone())
 }
 
@@ -663,6 +741,9 @@ pub fn cancel_job(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus,
     let mut st = handle.status.lock().unwrap();
     if st.state == AiJobState::Running {
         st.state = AiJobState::Cancelled;
+        if let Some(root) = handle.checkpoint_path.parent() {
+            write_job_record(root, &st);
+        }
     }
     Ok(st.clone())
 }
@@ -678,6 +759,28 @@ pub fn job_status(registry: &AiJobRegistry, job_id: &str) -> Result<AiJobStatus,
     let mut st = handle.status.lock().unwrap();
     refresh_status_locked(&mut st, &handle.shared);
     Ok(st.clone())
+}
+
+/// Restart-honest status: the in-memory registry first, then the durable
+/// record. After an app restart the registry is empty by construction —
+/// the record answers with its last persisted truth (terminal state or
+/// `interrupted` once `recover_interrupted_jobs` ran) instead of a fake
+/// "job not found".
+pub fn job_status_with_record(
+    registry: &AiJobRegistry,
+    managed_root: &Path,
+    job_id: &str,
+) -> Result<AiJobStatus, ContractError> {
+    match job_status(registry, job_id) {
+        Ok(st) => Ok(st),
+        Err(registry_err) => {
+            if let Some(st) = job_status_from_record(managed_root, job_id) {
+                Ok(st)
+            } else {
+                Err(registry_err)
+            }
+        }
+    }
 }
 
 /// Map intent-index refusals back onto preview rows (review follow-up P1):
@@ -800,6 +903,62 @@ mod tests {
             pid: snap.project_id.clone(),
             epoch: snap.session_epoch,
         }
+    }
+
+    // --- durable records + restart honesty -------------------------------
+
+    #[test]
+    fn durable_record_survives_restart_and_interrupted_recovery() {
+        let _mock = MockGuard::acquire();
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: ctx.pid.clone(),
+            session_epoch: ctx.epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            provider_instance_id: None,
+            batch_char_budget: 4000,
+        };
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, params).expect("start");
+        // The RUNNING record exists on disk the moment the job starts.
+        let on_disk = job_status_from_record(&ctx.managed, &st.job_id).expect("record at start");
+        assert_eq!(on_disk.state, AiJobState::Running);
+
+        let mut final_st = on_disk;
+        for _ in 0..300 {
+            final_st = job_status(&registry, &st.job_id).unwrap();
+            if final_st.state == AiJobState::PreviewReady {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_st.state, AiJobState::PreviewReady);
+        // The terminal transition landed in the record too.
+        let persisted = job_status_from_record(&ctx.managed, &st.job_id).expect("record after");
+        assert_eq!(persisted.state, AiJobState::PreviewReady);
+
+        // RESTART SIMULATION: a fresh registry (new process) — the status
+        // answers from the durable record, never "job not found".
+        let fresh_registry = AiJobRegistry::new();
+        let via_record = job_status_with_record(&fresh_registry, &ctx.managed, &st.job_id)
+            .expect("status via record");
+        assert_eq!(via_record.state, AiJobState::PreviewReady);
+        // And with no record at all the typed refusal still holds.
+        assert!(job_status_with_record(&fresh_registry, &ctx.managed, "aijob-nope").is_err());
+
+        // A stale RUNNING record (crash mid-run) is re-labelled Interrupted
+        // the next time a manager opens the root.
+        let mut stale = persisted.clone();
+        stale.state = AiJobState::Running;
+        write_job_record(&ctx.managed, &stale);
+        let _relabeled = ProjectSessionManager::new(&ctx.managed).unwrap();
+        let recovered = job_status_from_record(&ctx.managed, &st.job_id).unwrap();
+        assert_eq!(recovered.state, AiJobState::Interrupted);
+        assert_eq!(recovered.job_id, stale.job_id);
     }
 
     #[test]

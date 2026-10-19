@@ -607,9 +607,13 @@ pub fn ai_job_start(
 #[tauri::command(rename_all = "snake_case")]
 pub fn ai_job_status(
     ai: State<'_, AiJobs>,
+    root: State<'_, ManagedRoot>,
     job_id: String,
 ) -> Result<rimloc_services::ai_job::AiJobStatus, rimloc_services::contract::ContractError> {
-    rimloc_services::ai_job::job_status(&ai.0, &job_id)
+    // Registry first, durable record second: a job asked about after an
+    // app restart answers with its last persisted truth (interrupted /
+    // terminal), never a fake "job not found".
+    rimloc_services::ai_job::job_status_with_record(&ai.0, &root.0, &job_id)
 }
 
 #[tauri::command(rename_all = "snake_case")]
