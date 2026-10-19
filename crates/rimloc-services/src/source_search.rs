@@ -258,11 +258,13 @@ pub fn search_sources(
     // Stage C reconciliation: manually recovered identities are indexed
     // like scan coverage (both the full id and the bare key, so a raw
     // text match addresses them too).
-    let manual_keys: BTreeMap<String, ()> = req
+    let manual_by_key: BTreeMap<String, rimloc_domain::canonical::SourceEntryId> = req
         .manual_ids
         .iter()
-        .map(|id| (id.key.clone(), ()))
+        .map(|id| (id.key.clone(), id.clone()))
         .collect();
+    let manual_keys: BTreeMap<String, ()> =
+        manual_by_key.keys().cloned().map(|k| (k, ())).collect();
 
     // Eligibility engine — the SOLE authority for translatability.
     let engine = EligibilityEngine::new();
@@ -378,17 +380,21 @@ pub fn search_sources(
                     _ => String::new(),
                 }
             };
-            let manual_hit = !display_key.is_empty() && manual_keys.contains_key(&display_key);
+            let manual_hit = if display_key.is_empty() {
+                None
+            } else {
+                manual_by_key.get(&display_key).cloned()
+            };
             let (status, identity, detail) = if !xml_ok && is_xml {
                 (
                     MatchStatus::ParseFailure,
                     None,
                     "file failed XML parsing — the scanner cannot index it".to_string(),
                 )
-            } else if manual_hit {
+            } else if let Some(id) = manual_hit.as_ref() {
                 (
                     MatchStatus::AlreadyIndexed,
-                    None,
+                    Some(id.clone()),
                     "manually recovered into the project (Stage C) — live in the editor"
                         .to_string(),
                 )
