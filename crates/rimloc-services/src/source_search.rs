@@ -263,9 +263,6 @@ pub fn search_sources(
         .iter()
         .map(|id| (id.key.clone(), id.clone()))
         .collect();
-    let manual_keys: BTreeMap<String, ()> =
-        manual_by_key.keys().cloned().map(|k| (k, ())).collect();
-
     // Eligibility engine — the SOLE authority for translatability.
     let engine = EligibilityEngine::new();
 
