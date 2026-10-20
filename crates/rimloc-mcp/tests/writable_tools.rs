@@ -91,7 +91,10 @@ fn snapshot_tree(root: &Path) -> BTreeMap<String, Vec<u8>> {
             } else {
                 let bytes =
                     std::fs::read(&path).unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
-                out.insert(child_rel.to_string_lossy().into_owned(), bytes);
+                // Unix-style keys on every OS: the tree is compared
+                // before/after (separator-agnostic either way) and matched
+                // with slash-bearing substrings below.
+                out.insert(child_rel.to_string_lossy().replace('\\', "/"), bytes);
             }
         }
     }
