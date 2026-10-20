@@ -129,6 +129,9 @@ export class RimLocClient {
   readonly mode: TransportMode;
   private transport: RimLocTransport;
   private handshakeOk = false;
+  // One application-level picker at a time: prevent overlapping native
+  // panels from double clicks or navigation across screens.
+  private nativePickerInFlight = false;
 
   constructor(options: RimLocClientOptions & { transport?: RimLocTransport }) {
     this.mode = options.mode;
@@ -661,13 +664,25 @@ export class RimLocClient {
    *  with the honest `unsupported_capability` refusal: there is no OS dialog
    *  without the desktop bridge, and the mock never fakes one. */
   async pickDirectory(initial?: string): Promise<string | null> {
-    return this.call('pick_directory', initial ? { initial } : {});
+    if (this.nativePickerInFlight) return null;
+    this.nativePickerInFlight = true;
+    try {
+      return await this.call('pick_directory', initial ? { initial } : {});
+    } finally {
+      this.nativePickerInFlight = false;
+    }
   }
 
   /** Native OS file dialog restricted to .po files (UI-10 exchange
    *  import). Resolves the picked ABSOLUTE path, or null on cancel. */
   async pickPoFile(): Promise<string | null> {
-    return this.call('pick_po_file', {});
+    if (this.nativePickerInFlight) return null;
+    this.nativePickerInFlight = true;
+    try {
+      return await this.call('pick_po_file', {});
+    } finally {
+      this.nativePickerInFlight = false;
+    }
   }
 
   /** Reveal output (§8 F8.4): open the output directory of the last
