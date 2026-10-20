@@ -31,4 +31,9 @@
 
 pub mod ops;
 pub mod protocol;
+// The data plane is a unix-socket server by design (Phase 2 scope; the
+// windows named-pipe transport is Phase 3). The crate still compiles on
+// windows so the workspace build and the shared protocol/ops layers stay
+// under test there — the transport module is unix-only.
+#[cfg(unix)]
 pub mod server;

@@ -1,3 +1,5 @@
+#![cfg(unix)] // real Unix-socket transport tests; windows transport is Phase 3
+
 //! Real-server coverage for the broker crate (tempdir profiles, real
 //! Unix sockets, no window): every scenario this phase's ask pins, plus
 //! the bounds the design names.
