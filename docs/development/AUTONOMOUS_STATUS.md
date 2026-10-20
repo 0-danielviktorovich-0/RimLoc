@@ -809,3 +809,21 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
 - Честно: интерактивный 20-итерационный open/cancel-прогон нативных пикеров и thread-сэмплы
   — остаток (требует видимого owner-окна для OS-панели); источник фикса документирован
   (официальное предупреждение tauri-plugin-dialog о blocking_* на главном потоке).
+
+## Волна 2026-10-20 (вечер): #12/#14 влиты, #13 WP0 живой аудит проведён
+
+- **Issue #12** (1fba077e+375a32e): PR #102 влит — workspace-skill + rimloc-workflow-guard
+  (9/9 локально); плагин УСТАНОВЛЕН в живой ZCode (user scope, marketplace rimloc-zcode,
+  registry + кэш-копия). Платформенное ограничение: hooks активны в НОВОЙ сессии — это
+  единственный оставшийся шаг верификации A3 из Issue #12.
+- **Issue #14** (9a40981+00a86e7): PR #103 влит — async pickers (spawn_blocking), portable
+  wizard names, static path-guard (47 файлов PASS) + CI workflow. Компиляция 0 ошибок,
+  packaged .app пересобран, нативная регрессия 26/26. Честно: 20-итерационный интерактивный
+  open/cancel-прогон — owner-window остаток.
+- **Issue #13 WP0** (6ce4b98): первый настоящий head-to-head — оба моста на ОДНОЙ игре
+  и изолированном профиле, swap только в ModsConfig. Upstream: 50/50, p50 8ms, полный
+  доказанный A1-A3 surface. First-party: пересобран против реальных Managed-ссылок,
+  загружен живьём (runInBackground), capabilities/state/keyed живые, RUN_ID_MISMATCH
+  отклонение продемонстрировано, 50/50, p50 265ms (файл-канал); read_def отсутствует
+  в v1 op-set — зафиксировано честно. Три опции владельцу (рекомендован гибрид на бету);
+  код не удалялся, миграций не было. BRIDGE_HEAD_TO_HEAD_2026-10-20.md.
