@@ -9,9 +9,11 @@
 //!   diagnostic goes to stderr. Startup raises the headless runtime: the
 //!   `RIMLOC_DATA_DIR` managed-root profile + the exclusive writer lock
 //!   (`rimloc_mcp::runtime`) — `rimloc.status` can therefore answer the
-//!   lock question honestly from the very first call. A busy lock is NOT
-//!   a startup failure: the server degrades to honest read-only
-//!   diagnostics instead.
+//!   mode question honestly from the very first call. Degradation is
+//!   never a startup failure: a busy lock becomes `other_writer` mode,
+//!   and the default/refused profile becomes `shared_profile` mode —
+//!   both honest read-only diagnostics, fail-closed (writes and
+//!   project-scoped reads refuse typed; disk diagnostics stay up).
 //! - `rimloc-mcp doctor`: an environment report printed to stdout (this is
 //!   a CLI subcommand, not a protocol session — the two modes never mix,
 //!   and doctor stays side-effect free: no lock, no directories).
@@ -43,7 +45,9 @@ fn main() -> ExitCode {
 fn serve() -> ExitCode {
     // Headless runtime: profile resolution + exclusive writer lock. A busy
     // lock degrades to other_writer mode (honest read-only diagnostics),
-    // a real I/O failure aborts before the first protocol byte.
+    // the default/refused profile degrades to shared_profile mode
+    // (fail-closed diagnostics, audit п.2/п.4), a real I/O failure aborts
+    // before the first protocol byte.
     let rt = match runtime::Runtime::from_env() {
         Ok(rt) => Arc::new(rt),
         Err(err) => {
@@ -66,19 +70,27 @@ fn serve() -> ExitCode {
             rt.managed_root().display(),
             owner.pid
         )),
+        runtime::AppMode::SharedProfile { reason } => {
+            let cause = match reason {
+                runtime::SharedProfileReason::DefaultProfile => {
+                    "RIMLOC_DATA_DIR is not set: the default profile is shared with the \
+                     live RimLoc GUI, which never takes rimloc-mcp.lock"
+                }
+                runtime::SharedProfileReason::Refused { requested, cause } => {
+                    &format!("RIMLOC_DATA_DIR `{requested}` was refused: {cause}")
+                }
+            };
+            stderr_log(&format!(
+                "shared_profile mode (fail-closed): {cause}. Write tools and \
+                 project-scoped reads refuse typed `profile_shared`; disk \
+                 diagnostics (`rimloc.status`, `rimloc.capabilities`, \
+                 `rimloc.projects.list`, `rimloc.jobs.status`) stay up on `{}`. \
+                 Set RIMLOC_DATA_DIR to isolate.",
+                rt.managed_root().display()
+            ));
+        }
     }
     let server = protocol::Server::with_runtime(rt);
-    if std::env::var("RIMLOC_DATA_DIR")
-        .map(|v| v.is_empty())
-        .unwrap_or(true)
-    {
-        stderr_log(
-            "RIMLOC_DATA_DIR is not set: the default profile is shared with the RimLoc \
-             GUI. If the GUI is running with this profile, stop it or set \
-             RIMLOC_DATA_DIR to isolate — the writer lock is shared between \
-             rimloc-mcp processes only (GUI broker arrives in Phase 2).",
-        );
-    }
     let stdin = std::io::stdin();
     let mut input = stdin.lock();
     let mut out = std::io::stdout().lock();
@@ -157,14 +169,39 @@ fn doctor() -> ExitCode {
         "supported protocol versions: {}",
         protocol::SUPPORTED_PROTOCOL_VERSIONS.join(", ")
     );
-    match std::env::var("RIMLOC_DATA_DIR") {
-        Ok(dir) if !dir.is_empty() => println!("RIMLOC_DATA_DIR: {dir} (isolated profile)"),
-        _ => println!("RIMLOC_DATA_DIR: not set (default profile)"),
+    // The profile verdict is resolved by the SAME decision serve() enforces
+    // (resolve_profile), so doctor never reports a different truth. Pure
+    // report only: doctor must stay side-effect free (no manager
+    // construction, no lock, no directories).
+    match runtime::resolve_profile() {
+        runtime::ProfileResolution::Isolated {
+            data_dir,
+            managed_root,
+        } => {
+            println!("RIMLOC_DATA_DIR: {} (isolated profile)", data_dir.display());
+            println!("resolved managed root: {}", managed_root.display());
+        }
+        runtime::ProfileResolution::Shared {
+            reason,
+            managed_root,
+        } => {
+            match reason {
+                runtime::SharedProfileReason::DefaultProfile => println!(
+                    "RIMLOC_DATA_DIR: not set (default profile — SHARED with the RimLoc \
+                     GUI; writes and project-scoped reads refuse, diagnostics only)"
+                ),
+                runtime::SharedProfileReason::Refused { requested, cause } => println!(
+                    "RIMLOC_DATA_DIR: {requested} — REFUSED ({cause}); shared-profile \
+                     diagnostics mode, writes and project-scoped reads refuse"
+                ),
+            }
+            println!(
+                "resolved managed root (diagnostics-only): {}",
+                managed_root.display()
+            );
+            println!("remedy: set RIMLOC_DATA_DIR to isolate");
+        }
     }
-    println!(
-        "resolved managed root: {}",
-        runtime::managed_root_for_env().display()
-    );
 
     // Pure services report only: doctor must stay side-effect free (no
     // manager construction, no lock).
@@ -188,7 +225,10 @@ fn doctor() -> ExitCode {
         tools::WIRED_READ_ONLY.len() + tools::WIRED_READ_ONLY_ALIASES.len(),
         tools::WIRED_WRITES.len()
     );
-    println!("serve mode: exclusive writer lock on the managed root at startup");
+    println!(
+        "serve mode: exclusive writer lock on ISOLATED managed roots only; \
+         default/refused profiles are fail-closed shared diagnostics"
+    );
     println!("doctor mode: side-effect free (no lock, no directories created)");
     println!(
         "transport: stdio only; no network listener; no secret access \

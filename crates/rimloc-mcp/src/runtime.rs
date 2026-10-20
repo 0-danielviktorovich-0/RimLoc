@@ -1,28 +1,56 @@
 //! Process runtime behind tool execution (`MCP_SERVER_PHASE1.md`, headless
-//! model v1): the managed-root profile, the exclusive writer lock, and the
-//! typed seams every read-only handler goes through.
+//! model v1): the managed-root profile, the fail-closed profile modes, the
+//! exclusive writer lock, and the typed seams every handler goes through.
 //!
-//! Profile: `RIMLOC_DATA_DIR=<dir>` selects `<dir>/managed` — the SAME
-//! rule the GUI shell uses (`contract_adapter::default_managed_root`), so
-//! an MCP process and a live GUI either share one profile or are fully
-//! isolated together. Without the variable the OS app-data dir of
-//! `com.rimloc.gui` is used. The default branch mirrors `dirs::data_dir()`
-//! without adding the dependency (the Phase 1 proposal prefers zero new
-//! deps for the hand-rolled stdio loop).
+//! # Profile resolution (fail-closed, audit п.2 / п.4)
 //!
-//! Exclusive writer lock: `O_EXCL` (`create_new`) on
-//! `<managed_root>/rimloc-mcp.lock`, holding the file open for the
-//! process lifetime; the file records `pid=` and a per-process boot token.
-//! A busy lock puts the runtime into `other_writer` mode — `rimloc.status`
-//! answers honestly, write tools refuse, and project-scoped reads refuse
-//! too: opening a session means constructing a `ProjectSessionManager`,
-//! whose constructor re-labels stale `running` job records on disk
+//! `RIMLOC_DATA_DIR=<dir>` selects `<dir>/managed` — the SAME rule the GUI
+//! shell uses (`contract_adapter::default_managed_root`), so an MCP process
+//! and a live GUI with the same variable are fully isolated together.
+//! `resolve_profile()` turns the environment into a `ProfileResolution`,
+//! and EVERY other outcome is fail-closed into `AppMode::SharedProfile` —
+//! diagnostics only, no writer:
+//!
+//! - **Variable unset / empty** → the default app-data profile of
+//!   `com.rimloc.gui`. A live GUI owns this profile and never takes
+//!   `rimloc-mcp.lock`, so the lock proves nothing here: the runtime never
+//!   enters `HeadlessWriter` on it. Writes and project-scoped reads refuse
+//!   typed `profile_shared`; lock-free disk diagnostics stay up.
+//! - **Refused variable** → loud stderr refusal + the same shared
+//!   diagnostics mode, never a silent write into the refused tree. The
+//!   sanitization ladder (`refused_profile_cause`): the value must be an
+//!   absolute traversal-free path; it must not exist as a non-directory
+//!   (a regular file is a refusal); and a path that canonicalizes to the
+//!   volume root (`/`) is refused — an isolation request pointing at `/`
+//!   must not quietly materialize `/managed` at the root.
+//! - **Explicit, sane variable** → `Runtime::build` creates
+//!   `<dir>/managed`, canonicalizes it, and takes the exclusive lock. Only
+//!   here does the process become `HeadlessWriter`.
+//!
+//! The default branch mirrors `dirs::data_dir()` without adding the
+//! dependency (the Phase 1 proposal prefers zero new deps for the
+//! hand-rolled stdio loop).
+//!
+//! # Exclusive writer lock (isolated profiles only)
+//!
+//! `Runtime::build` canonicalizes the managed root BEFORE acquiring, so
+//! `rimloc-mcp.lock` always lives on the CANONICAL path: two processes
+//! reaching the same root through different symlink wrappers must contend
+//! for ONE lock file, not two (`WriterLock::acquire`, pinned by
+//! `tests/fs_isolation.rs`). The lock is `O_EXCL` (`create_new`) on
+//! `<managed_root>/rimloc-mcp.lock`, held open for the process lifetime;
+//! the file records `pid=` and a per-process boot token. A busy lock puts
+//! the runtime into `other_writer` mode — `rimloc.status` answers
+//! honestly, write tools refuse, and project-scoped reads refuse too:
+//! opening a session means constructing a `ProjectSessionManager`, whose
+//! constructor re-labels stale `running` job records on disk
 //! (`recover_interrupted_jobs`, called from
 //! `rimloc-services/src/session.rs` `build`) — a WRITE a second writer's
-//! live store must never see. Lock-free diagnostics that read the store
-//! straight from disk (`rimloc.projects.list`, `rimloc.jobs.status`) stay
-//! available, because managed envelopes and job records are written
-//! atomically (tmp+rename).
+//! live store must never see. The shared-profile mode refuses the same
+//! operations for the same reason. Lock-free diagnostics that read the
+//! store straight from disk (`rimloc.projects.list`, `rimloc.jobs.status`)
+//! stay available in both degraded modes, because managed envelopes and
+//! job records are written atomically (tmp+rename).
 //!
 //! Stale-lock honesty: a crashed owner would leave the file behind. The
 //! only provably-dead case detectable in `std` is a recycled pid: when the
@@ -58,25 +86,130 @@ pub const LOCK_FILE_NAME: &str = "rimloc-mcp.lock";
 /// The env value is operator input (the client launching this process owns
 /// the machine), but it is still validated before any filesystem work: an
 /// RIMLOC_DATA_DIR that is relative or carries `..` components is refused
-/// loudly and the default profile is used — a mis-set variable must never
-/// silently point the writer at an unexpected tree.
+/// loudly and the shared diagnostics mode is used — a mis-set variable
+/// must never silently point the writer at an unexpected tree.
 pub fn managed_root_for_env() -> PathBuf {
-    if let Ok(dir) = std::env::var("RIMLOC_DATA_DIR") {
-        if !dir.is_empty() {
-            let candidate = PathBuf::from(&dir);
-            let sane = candidate.is_absolute()
-                && candidate
-                    .components()
-                    .all(|c| !matches!(c, std::path::Component::ParentDir));
-            if sane {
-                return candidate.join("managed");
-            }
-            crate::stderr_log(&format!(
-                "RIMLOC_DATA_DIR `{dir}` is not an absolute traversal-free path; \
-                 refusing it and falling back to the default profile"
-            ));
+    match resolve_profile() {
+        ProfileResolution::Isolated { managed_root, .. } => managed_root,
+        ProfileResolution::Shared { managed_root, .. } => managed_root,
+    }
+}
+
+/// Why a runtime ended up in the shared diagnostics-only profile mode.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SharedProfileReason {
+    /// `RIMLOC_DATA_DIR` is not set: the default app-data profile is the
+    /// live RimLoc GUI's own profile, and the GUI never takes
+    /// `rimloc-mcp.lock` — the writer lock proves nothing on it, so the
+    /// runtime is fail-closed into diagnostics-only (audit п.2).
+    DefaultProfile,
+    /// `RIMLOC_DATA_DIR` was set but refused by the sanitization ladder
+    /// (audit п.4): volume-root path, non-directory path, relative or
+    /// traversal-carrying path. The refusal is loud on stderr; the
+    /// runtime degrades to shared diagnostics instead of writing anywhere
+    /// near the refused tree.
+    Refused { requested: String, cause: String },
+}
+
+/// The startup profile decision (`resolve_profile`): either an explicit,
+/// sanitized `RIMLOC_DATA_DIR` to open exclusively, or the shared
+/// diagnostics-only mode with the reason and the default root the
+/// lock-free disk diagnostics read from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProfileResolution {
+    /// Explicit, sanitized profile: create + canonicalize + lock
+    /// `<managed_root>` (a `HeadlessWriter` is possible).
+    Isolated {
+        data_dir: PathBuf,
+        managed_root: PathBuf,
+    },
+    /// Shared with the live GUI (or the requested profile was refused):
+    /// diagnostics only — no lock, no directory creation, no manager
+    /// construction; writes and project-scoped reads refuse
+    /// `profile_shared`. Disk diagnostics read `<managed_root>`, which is
+    /// always the DEFAULT GUI profile root, never the refused path.
+    Shared {
+        reason: SharedProfileReason,
+        managed_root: PathBuf,
+    },
+}
+
+/// Read the `RIMLOC_DATA_DIR` environment variable and decide the startup
+/// profile. Every input that fails the sanitization ladder is refused
+/// LOUDLY (stderr) and degrades to `ProfileResolution::Shared` — the
+/// variable can downgrade the runtime to diagnostics, never upgrade it
+/// onto an unvalidated tree. `doctor` and `serve` both consult this, so
+/// the reported verdict is exactly the enforced one.
+pub fn resolve_profile() -> ProfileResolution {
+    let explicit = match std::env::var("RIMLOC_DATA_DIR") {
+        Ok(dir) if !dir.is_empty() => Some(dir),
+        _ => None,
+    };
+    let Some(dir) = explicit else {
+        return ProfileResolution::Shared {
+            reason: SharedProfileReason::DefaultProfile,
+            managed_root: default_profile_managed_root(),
+        };
+    };
+    let candidate = PathBuf::from(&dir);
+    if let Some(cause) = refused_profile_cause(&candidate) {
+        crate::stderr_log(&format!(
+            "RIMLOC_DATA_DIR `{dir}` refused: {cause}; falling back to the \
+             shared-profile diagnostics mode (set RIMLOC_DATA_DIR to isolate)"
+        ));
+        return ProfileResolution::Shared {
+            reason: SharedProfileReason::Refused {
+                requested: dir,
+                cause,
+            },
+            managed_root: default_profile_managed_root(),
+        };
+    }
+    ProfileResolution::Isolated {
+        managed_root: candidate.join("managed"),
+        data_dir: candidate,
+    }
+}
+
+/// The sanitization ladder for an explicit profile path (audit п.4).
+/// `None` — the path may be opened as the isolated data dir; `Some(cause)`
+/// — refuse loudly and go shared. Read-only checks only: creation of the
+/// tree stays with `Runtime::build`, which surfaces real I/O failures as
+/// typed errors instead of guesses.
+pub fn refused_profile_cause(candidate: &Path) -> Option<String> {
+    if !candidate.is_absolute()
+        || candidate
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Some("not an absolute traversal-free path".to_string());
+    }
+    match std::fs::metadata(candidate) {
+        Ok(meta) if !meta.is_dir() => {
+            return Some("path exists and is not a directory".to_string());
+        }
+        Ok(_) => {}
+        // Does not exist yet — `Runtime::build` creates it (or fails
+        // honestly on a real I/O error: read-only parent, dangling
+        // symlink, …).
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {}
+        Err(err) => return Some(format!("path is unreadable: {err}")),
+    }
+    // The volume-root rule needs the RESOLVED path: `/`, `//`, `/./` and a
+    // symlink to `/` all canonicalize to `/`. `Path::parent()` is `None`
+    // exactly for filesystem roots.
+    if let Ok(canonical) = candidate.canonicalize() {
+        if canonical.parent().is_none() {
+            return Some("path canonicalizes to the volume root".to_string());
         }
     }
+    None
+}
+
+/// The default profile root the diagnostics read from in shared mode —
+/// the same tree a live GUI uses without `RIMLOC_DATA_DIR`. Never created
+/// by this process: shared mode performs no filesystem writes at all.
+pub fn default_profile_managed_root() -> PathBuf {
     match os_data_dir() {
         Some(base) => base.join("com.rimloc.gui").join("managed"),
         // `dirs::data_dir()` falls back to the temp dir too; keep the same
@@ -225,11 +358,20 @@ impl Drop for WriterLock {
 /// `rimloc.status`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppMode {
-    /// This process holds the exclusive writer lock.
+    /// This process holds the exclusive writer lock on an ISOLATED
+    /// profile (explicit, sanitized `RIMLOC_DATA_DIR`).
     HeadlessWriter,
-    /// Another process holds it. Write tools and project-scoped reads
-    /// refuse; lock-free disk diagnostics stay available.
+    /// Another process holds the lock. Write tools and project-scoped
+    /// reads refuse; lock-free disk diagnostics stay available.
     OtherWriter { owner: LockOwner },
+    /// The profile is shared with the live RimLoc GUI (default profile,
+    /// or the requested one was refused — see `SharedProfileReason`).
+    /// Fail-closed diagnostics-only (audit п.2 / п.4): NO writer lock is
+    /// taken (the GUI does not take one, so holding ours would prove
+    /// nothing and only write into the GUI's tree), writes and
+    /// project-scoped reads refuse typed `profile_shared`; lock-free disk
+    /// diagnostics stay available.
+    SharedProfile { reason: SharedProfileReason },
 }
 
 /// Everything tool handlers need: the resolved managed root, the lock
@@ -261,7 +403,10 @@ impl std::fmt::Debug for AiJobRegistryDebug {
 
 impl Runtime {
     /// Build against an explicit managed root (production resolves the
-    /// profile first, tests inject a tempdir).
+    /// profile first via `from_env`; tests inject a tempdir). The root is
+    /// created, CANONICALIZED, and only then locked — the lock file always
+    /// lives on the canonical path, so two processes reaching one root
+    /// through different symlink wrappers contend for ONE lock.
     pub fn build(managed_root: impl Into<PathBuf>) -> std::io::Result<Self> {
         let managed_root = managed_root.into();
         // The manager would create the root too; doing it here keeps the
@@ -286,8 +431,60 @@ impl Runtime {
     }
 
     /// Production entry: resolve the `RIMLOC_DATA_DIR` profile and build.
+    /// Unset/refused variables degrade to the shared diagnostics-only
+    /// mode — they can never silently become a writer (module docs).
     pub fn from_env() -> std::io::Result<Self> {
-        Self::build(managed_root_for_env())
+        Self::from_profile(resolve_profile())
+    }
+
+    /// Construct the runtime from an explicit profile decision — the
+    /// production `from_env` path minus the environment read. The
+    /// `Isolated` arm re-runs the sanitization ladder (defense in depth:
+    /// nothing can bypass `refused_profile_cause` into `build`), the
+    /// `Shared` arm performs NO filesystem work at all.
+    pub fn from_profile(profile: ProfileResolution) -> std::io::Result<Self> {
+        match profile {
+            ProfileResolution::Shared {
+                reason,
+                managed_root,
+            } => Ok(Self::shared_profile(reason, managed_root)),
+            ProfileResolution::Isolated {
+                data_dir,
+                managed_root,
+            } => {
+                if let Some(cause) = refused_profile_cause(&data_dir) {
+                    crate::stderr_log(&format!(
+                        "RIMLOC_DATA_DIR `{}` refused: {cause}; falling back to the \
+                         shared-profile diagnostics mode (set RIMLOC_DATA_DIR to isolate)",
+                        data_dir.display()
+                    ));
+                    return Ok(Self::shared_profile(
+                        SharedProfileReason::Refused {
+                            requested: data_dir.display().to_string(),
+                            cause,
+                        },
+                        default_profile_managed_root(),
+                    ));
+                }
+                Self::build(managed_root)
+            }
+        }
+    }
+
+    /// Diagnostics-only runtime for a profile the live GUI owns (or a
+    /// refused one): no lock, no directory creation, no manager
+    /// construction — every write and project-scoped read refuses typed
+    /// `profile_shared`; the lock-free disk diagnostics read
+    /// `<managed_root>` straight from disk. Production reaches this
+    /// through `from_profile`/`from_env`; public so tests (and future
+    /// embedders) can build the exact served state.
+    pub fn shared_profile(reason: SharedProfileReason, managed_root: impl Into<PathBuf>) -> Self {
+        Self {
+            managed_root: managed_root.into(),
+            mode: AppMode::SharedProfile { reason },
+            ai_jobs: AiJobRegistryDebug::default(),
+            _lock: None,
+        }
     }
 
     pub fn managed_root(&self) -> &Path {
@@ -298,8 +495,39 @@ impl Runtime {
         &self.mode
     }
 
+    /// This process holds the exclusive writer lock on an isolated
+    /// profile.
+    pub fn is_headless_writer(&self) -> bool {
+        matches!(self.mode, AppMode::HeadlessWriter)
+    }
+
+    /// The runtime is NOT the writer of this root: either another process
+    /// holds the exclusive lock, or the profile is shared with the live
+    /// GUI / was refused (fail-closed). In this state write tools and
+    /// project-scoped reads refuse, and the handlers that CAN answer do
+    /// so lock-free from disk — that is exactly how the tool layer routes
+    /// its diagnostics (`projects.list`, `jobs.status`).
     pub fn is_other_writer(&self) -> bool {
-        matches!(self.mode, AppMode::OtherWriter { .. })
+        !matches!(self.mode, AppMode::HeadlessWriter)
+    }
+
+    /// Precise predicate for the shared-profile mode (default/refused
+    /// profile) as opposed to a contended lock.
+    pub fn is_shared_profile(&self) -> bool {
+        matches!(self.mode, AppMode::SharedProfile { .. })
+    }
+
+    pub fn shared_profile_reason(&self) -> Option<&SharedProfileReason> {
+        match &self.mode {
+            AppMode::SharedProfile { reason } => Some(reason),
+            _ => None,
+        }
+    }
+
+    /// Umbrella for honest status reporting: the runtime answers
+    /// diagnostics only.
+    pub fn is_diagnostics_only(&self) -> bool {
+        self.is_other_writer()
     }
 
     /// The process-owned AI-job registry (`start` inserts here,
@@ -314,6 +542,14 @@ impl Runtime {
 // Typed seams used by every handler
 // ---------------------------------------------------------------------------
 
+/// JSON-RPC server-range code for the shared-profile refusal
+/// (`data.code == "profile_shared"`). Declared here because
+/// `error::codes` is a shared file this change does not touch; the value
+/// stays inside the reserved -32000..-32099 range and distinct from
+/// NOT_IMPLEMENTED (-32001), CONTRACT_ERROR (-32002) and OTHER_WRITER
+/// (-32003) — pinned by the unit test below, mirroring error.rs's test.
+pub const CODE_PROFILE_SHARED: i64 = -32004;
+
 /// Map a services contract refusal onto the JSON-RPC surface: one server
 /// code for "the contract refused the operation", the STABLE snake_case
 /// contract code in `data.code` (the MCP layer never invents contract
@@ -326,11 +562,45 @@ pub fn contract_error(err: ContractError, tool: &str) -> RpcError {
     }))
 }
 
+/// Refuse an operation that needs the writer machinery while the runtime
+/// is not the writer of the managed root. Shared-profile refusals get
+/// their own typed code — the remediation is different (isolate the
+/// profile) from a contended lock (wait for the other process).
+pub fn shared_profile_error(tool: &str, reason: &SharedProfileReason) -> RpcError {
+    let (reason_code, detail) = match reason {
+        SharedProfileReason::DefaultProfile => ("default_profile_shared", String::new()),
+        SharedProfileReason::Refused { requested, cause } => (
+            "profile_refused",
+            format!(" — RIMLOC_DATA_DIR `{requested}` was refused: {cause}"),
+        ),
+    };
+    RpcError::new(
+        CODE_PROFILE_SHARED,
+        format!(
+            "`{tool}` needs an isolated managed root: this process runs on the \
+             profile shared with the live RimLoc GUI, which does not take the \
+             `rimloc-mcp.lock`{detail}; set RIMLOC_DATA_DIR to isolate"
+        ),
+    )
+    .with_data(serde_json::json!({
+        "code": "profile_shared",
+        "tool": tool,
+        "reason": reason_code,
+    }))
+}
+
 /// Refuse an operation that needs the writer machinery while another
 /// process holds the exclusive lock.
 pub fn other_writer_error(tool: &str, rt: &Runtime) -> RpcError {
     let owner = match &rt.mode {
         AppMode::OtherWriter { owner } => owner.clone(),
+        // Unreachable through `require_writer` (shared refusals take the
+        // `profile_shared` path first); kept exhaustive with an honest
+        // "unknown holder".
+        AppMode::SharedProfile { .. } => LockOwner {
+            pid: None,
+            boot: None,
+        },
         AppMode::HeadlessWriter => LockOwner {
             pid: Some(std::process::id()),
             boot: Some(boot_token().to_string()),
@@ -387,14 +657,19 @@ pub fn parse_args<T: serde::de::DeserializeOwned>(
     })
 }
 
-/// Project-scoped reads in `other_writer` mode refuse here, before any
-/// filesystem work: opening a session would run the manager constructor's
-/// recovery write against a live writer's store (module docs).
+/// The writer-machinery gate EVERY write tool and project-scoped read
+/// goes through, before any filesystem work. Two degraded modes refuse
+/// here: another process holds the lock (`other_writer_active`), or the
+/// profile is shared with the live GUI / was refused (`profile_shared`) —
+/// opening a session would run the manager constructor's recovery write
+/// (`recover_interrupted_jobs`) against a store this process must never
+/// mutate (module docs).
 pub fn require_writer(rt: &Runtime, tool: &str) -> Result<(), RpcError> {
-    if rt.is_other_writer() {
-        return Err(other_writer_error(tool, rt));
+    match &rt.mode {
+        AppMode::HeadlessWriter => Ok(()),
+        AppMode::SharedProfile { reason } => Err(shared_profile_error(tool, reason)),
+        AppMode::OtherWriter { .. } => Err(other_writer_error(tool, rt)),
     }
-    Ok(())
 }
 
 /// Statelessness seam: fresh manager per call (`ProjectSessionManager::new`
@@ -475,5 +750,156 @@ pub fn list_from_disk(managed_root: &Path) -> ProjectListReport {
     ProjectListReport {
         projects,
         unloadable,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The shared-profile refusal code mirrors the error.rs discipline:
+    /// inside the JSON-RPC server-defined range and distinct from every
+    /// other server code — clients switch on them.
+    #[test]
+    fn profile_shared_code_is_in_range_and_distinct() {
+        assert!(
+            (-32099..=-32000).contains(&CODE_PROFILE_SHARED),
+            "CODE_PROFILE_SHARED must live in the reserved range"
+        );
+        for code in [
+            codes::NOT_IMPLEMENTED,
+            codes::CONTRACT_ERROR,
+            codes::OTHER_WRITER,
+        ] {
+            assert_ne!(CODE_PROFILE_SHARED, code, "server codes must stay distinct");
+        }
+    }
+
+    #[test]
+    fn shared_profile_error_carries_the_isolation_remedy() {
+        let err = shared_profile_error("rimloc.project.open", &SharedProfileReason::DefaultProfile);
+        assert_eq!(err.code, CODE_PROFILE_SHARED);
+        let data = err.data.as_ref().expect("typed data");
+        assert_eq!(data["code"], "profile_shared");
+        assert_eq!(data["reason"], "default_profile_shared");
+        assert_eq!(data["tool"], "rimloc.project.open");
+        assert!(
+            err.message.contains("set RIMLOC_DATA_DIR to isolate"),
+            "the message must carry the remediation: {err:?}"
+        );
+
+        let refused = SharedProfileReason::Refused {
+            requested: "/".to_string(),
+            cause: "path canonicalizes to the volume root".to_string(),
+        };
+        let err = shared_profile_error("rimloc.export.build", &refused);
+        let data = err.data.as_ref().expect("typed data");
+        assert_eq!(data["reason"], "profile_refused");
+        assert!(
+            err.message.contains("canonicalizes to the volume root"),
+            "the refusal cause rides the message: {err:?}"
+        );
+    }
+
+    #[test]
+    fn sanitization_ladder_refuses_relative_traversal_and_root() {
+        // Pure shape checks first (no filesystem access).
+        assert_eq!(
+            refused_profile_cause(Path::new("relative/dir")).as_deref(),
+            Some("not an absolute traversal-free path")
+        );
+        assert_eq!(
+            refused_profile_cause(Path::new("/a/../escape")).as_deref(),
+            Some("not an absolute traversal-free path")
+        );
+        // The volume root itself — /, // and /./ all canonicalize to /.
+        assert_eq!(
+            refused_profile_cause(Path::new("/")).as_deref(),
+            Some("path canonicalizes to the volume root")
+        );
+        assert_eq!(
+            refused_profile_cause(Path::new("/./")).as_deref(),
+            Some("path canonicalizes to the volume root")
+        );
+    }
+
+    #[test]
+    fn sanitization_ladder_refuses_regular_files_and_passes_dirs() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let file = dir.path().join("regular.file");
+        std::fs::write(&file, b"not a directory").expect("seed file");
+        assert_eq!(
+            refused_profile_cause(&file).as_deref(),
+            Some("path exists and is not a directory")
+        );
+        // A real directory passes; a missing path passes (build creates it).
+        assert_eq!(refused_profile_cause(dir.path()), None);
+        assert_eq!(refused_profile_cause(&dir.path().join("not-yet")), None);
+    }
+
+    #[test]
+    fn from_profile_fails_closed_on_refused_profiles() {
+        // A hand-assembled Isolated cannot bypass the ladder: the volume
+        // root degrades to SharedProfile, and `/managed` is never created.
+        assert!(!Path::new("/managed").exists(), "precondition for the pin");
+        let rt = Runtime::from_profile(ProfileResolution::Isolated {
+            data_dir: PathBuf::from("/"),
+            managed_root: PathBuf::from("/managed"),
+        })
+        .expect("refusal degrades to shared, not an error");
+        assert!(rt.is_shared_profile());
+        assert_eq!(
+            rt.shared_profile_reason(),
+            Some(&SharedProfileReason::Refused {
+                requested: "/".to_string(),
+                cause: "path canonicalizes to the volume root".to_string(),
+            })
+        );
+        assert!(
+            !Path::new("/managed").exists(),
+            "the refused profile must not be created"
+        );
+    }
+
+    #[test]
+    fn from_profile_isolated_still_builds_a_writer() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let data = dir.path().join("profile");
+        let rt = Runtime::from_profile(ProfileResolution::Isolated {
+            managed_root: data.join("managed"),
+            data_dir: data.clone(),
+        })
+        .expect("sane isolated profile builds");
+        assert!(rt.is_headless_writer());
+        assert_eq!(
+            rt.managed_root(),
+            std::fs::canonicalize(data.join("managed"))
+                .expect("canonical")
+                .as_path(),
+            "the runtime root is the canonical managed path"
+        );
+    }
+
+    #[test]
+    fn shared_profile_runtime_never_touches_the_filesystem() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let root = dir.path().join("gui-managed");
+        let rt = Runtime::shared_profile(SharedProfileReason::DefaultProfile, root.clone());
+        assert!(rt.is_shared_profile());
+        assert!(rt.is_diagnostics_only());
+        assert!(rt.is_other_writer(), "disk-diagnostic routing must engage");
+        assert!(!root.exists(), "shared mode creates nothing");
+    }
+
+    #[test]
+    fn require_writer_refuses_shared_typed() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let rt = Runtime::shared_profile(
+            SharedProfileReason::DefaultProfile,
+            dir.path().join("managed"),
+        );
+        let err = require_writer(&rt, "rimloc.translation.apply").expect_err("refused");
+        assert_eq!(err.code, CODE_PROFILE_SHARED);
+        assert_eq!(err.data.expect("data")["code"], "profile_shared");
     }
 }
