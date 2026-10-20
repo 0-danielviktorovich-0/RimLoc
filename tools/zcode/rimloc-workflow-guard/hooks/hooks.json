@@ -1,0 +1,63 @@
+{
+  "description": "RimLoc workflow reminder and observed invocation gate; active only for a RimLoc checkout",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/hooks/workflow-guard.mjs"
+            ],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/hooks/workflow-guard.mjs"
+            ],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "CreateWorkflow|ResumeWorkflowRun|AmendWorkflow",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/hooks/workflow-guard.mjs"
+            ],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/hooks/workflow-guard.mjs"
+            ],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

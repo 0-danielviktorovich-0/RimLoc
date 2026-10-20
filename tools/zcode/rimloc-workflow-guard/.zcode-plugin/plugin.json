@@ -1,0 +1,15 @@
+{
+  "name": "rimloc-workflow-guard",
+  "version": "0.1.0",
+  "description": "Inject RimLoc workflow instructions and audit real CreateWorkflow invocation",
+  "author": "RimLoc contributors",
+  "repository": "https://github.com/0-danielviktorovich-0/RimLoc",
+  "license": "GPL-3.0",
+  "keywords": [
+    "rimloc",
+    "zcode",
+    "workflow",
+    "agent-orchestration"
+  ],
+  "skills": "skills"
+}
