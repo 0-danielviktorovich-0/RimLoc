@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -117,7 +117,6 @@ test('state persists only flags, not user prompt or tool output', () => {
     tool_name: 'CreateWorkflow',
     tool_response: { run_id: 'xyz', sensitive: 'SECRET_TOOL_SENTINEL' }
   });
-  const { readdirSync } = await import('node:fs');
   const files = readdirSync(join(data, 'workflow-guard-state'));
   const contents = files.map(f => readFileSync(join(data, 'workflow-guard-state', f), 'utf8')).join('\n');
   assert.ok(!contents.includes('SECRET_SENTINEL_SHOULD_NOT_PERSIST'));
