@@ -4357,7 +4357,10 @@ async fn pick_po_file(window: Window) -> Result<Option<String>, ApiError> {
 }
 
 #[tauri::command]
-async fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<String>, ApiError> {
+async fn pick_directory(
+    window: Window,
+    initial: Option<String>,
+) -> Result<Option<String>, ApiError> {
     tauri::async_runtime::spawn_blocking(move || {
         let mut builder = window.dialog().file();
         if let Some(init) = initial.as_deref() {
