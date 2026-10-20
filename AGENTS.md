@@ -1,5 +1,10 @@
 # Repository Guidelines
 
+## Agent-facing standards and portable skills (2026-10-20)
+
+**Mandatory entrypoint for any new external MCP API, agent-facing tool, portable Agent Skill, RimWorld game-control bridge, install/setup flow or skill generator:** `docs/development/AGENT_INTEROPERABILITY_QUALITY_STANDARD.md`. It is the authoritative *project policy* mapped to verified public sources (Agent Skills, MCP stable 2026-07-28 and the official Skills extension, RFC 2119/8174, JSON Schema, NIST SSDF, OWASP, SLSA/OpenSSF, SemVer and WCAG). Audit actual supported host/protocol versions before implementation, and record exact conformance/evidence; documentation does not itself establish compliance or a working integration. Read the current private owner directives in `RimLoc-review-handoff` Issues #9 (real-game acceptance) and #10 (external RimLoc MCP), and their eventual skill-delivery follow-up. Reuse `rimloc-services` and the existing `testlab/runtime_bridge` instead of creating independent state or game-control logic. Keep GUI-first usability, native permissions and owner-gated publishing.
+
+
 ## Mandatory multi-agent preflight and evidence gate (2026-10-14)
 
 **Read this BEFORE writing code or claiming any stage finished.** A task touching
