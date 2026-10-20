@@ -194,6 +194,17 @@ fn shared_runtime(managed: PathBuf) -> Runtime {
     .expect("shared mode performs no filesystem work")
 }
 
+/// Platform volume root ("/" on unix, the system drive on windows): on
+/// windows a bare "/" is not absolute and refuses at an earlier branch.
+fn volume_root() -> PathBuf {
+    if cfg!(windows) {
+        let drive = std::env::var("SYSTEMDRIVE").unwrap_or_else(|_| "C:".to_string());
+        PathBuf::from(format!("{drive}\\"))
+    } else {
+        PathBuf::from("/")
+    }
+}
+
 fn fixture_mod() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../../testlab/fixtures/rimloc-wizard-mod")
 }
@@ -407,7 +418,7 @@ fn volume_root_data_dir_refuses_loudly_and_falls_back_to_shared() {
     // is never created.
     let managed_before = Path::new("/managed").exists();
     let rt = Runtime::from_profile(ProfileResolution::Isolated {
-        data_dir: PathBuf::from("/"),
+        data_dir: volume_root(),
         managed_root: PathBuf::from("/managed"),
     })
     .expect("a refused profile degrades to shared mode, not to an error");
@@ -416,7 +427,7 @@ fn volume_root_data_dir_refuses_loudly_and_falls_back_to_shared() {
     assert_eq!(
         rt.shared_profile_reason(),
         Some(&SharedProfileReason::Refused {
-            requested: "/".to_string(),
+            requested: volume_root().to_string_lossy().into_owned(),
             cause: "path canonicalizes to the volume root".to_string(),
         })
     );
@@ -863,7 +874,7 @@ fn serve_with_volume_root_data_dir_refuses_loudly_and_falls_back() {
     let dir = tempfile::tempdir().expect("tempdir");
     let managed_before = Path::new("/managed").exists();
 
-    let mut srv = SpawnedServer::spawn(dir.path(), Some(Path::new("/")));
+    let mut srv = SpawnedServer::spawn(dir.path(), Some(&volume_root()));
     srv.initialize();
 
     let status = srv
