@@ -722,3 +722,16 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   упразднено. Хозяинская среда нетронута (реальный ModsConfig 0 rimloc-строк,
   NO_DEFAULTS_KEY, аддитивный мост-мод включён только в изолированном профиле).
 - beta-README Stage C рассинхрон исправлен (aa6a6e0).
+
+## Дополнение волны (позднее): public-history gate и_owner-решение
+
+- **public Git metadata (pull_request_target) остаётся красным на 2ac7f41** — и это
+  корректное поведение защиты: workflow сознательно исполняет скрипт проверки из
+  BASE (main), а не из PR («PR code is never executed here»). Наша exemption-правка
+  (один owner-pinned SHA fd0b2f3 в allowlist длины subject) физически не может
+  подействовать из PR — она должна попасть в main первой.
+- Владельческое решение (единственный выход без ослабления security-дизайна):
+  (а) влить exemption-коммит 2ac7f41 в main отдельно (крошечный, безопасный), ИЛИ
+  (б) авторизовать переименование subject у fd0b2f3 (но Issue #11 ссылается на
+  точный SHA — потребуется обновить ссылку). До решения этого PR-check красный
+  по ОДНОЙ позиции; все остальные 38+ проверок зелёные.
