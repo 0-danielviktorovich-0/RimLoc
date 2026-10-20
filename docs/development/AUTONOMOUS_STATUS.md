@@ -797,3 +797,15 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   multi-lane запрос должен вызвать настоящий CreateWorkflow; плагин запишет факт.
   Это единственный оставшийся шаг A3 из Issue #12 — он требует перезапуска сессии,
   не настройки.
+
+## Issue #14 (2026-10-20, 9a40981): PR #103 влит и верифицирован
+
+- **Влито**: async `pick_po_file`/`pick_directory` (spawn_blocking, типизированный контракт
+  сохранён), portable wizard folder-name, static guard `check-product-path-portability.py`
+  (47 файлов, self-tests PASS, локально зелёный) + CI-workflow production-path-dialog-guard.
+- **Компиляция**: cargo check 0 ошибок; packaged automation .app пересобран (13:31).
+- **Нативная регрессия**: integration-ui lane 26/26 на новой сборке — wizard/экспорт/поиск
+  работают; путь-политика зелёная.
+- Честно: интерактивный 20-итерационный open/cancel-прогон нативных пикеров и thread-сэмплы
+  — остаток (требует видимого owner-окна для OS-панели); источник фикса документирован
+  (официальное предупреждение tauri-plugin-dialog о blocking_* на главном потоке).
