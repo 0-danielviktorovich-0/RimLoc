@@ -825,15 +825,27 @@ mod tests {
             refused_profile_cause(Path::new("/a/../escape")).as_deref(),
             Some("not an absolute traversal-free path")
         );
-        // The volume root itself — /, // and /./ all canonicalize to /.
-        assert_eq!(
-            refused_profile_cause(Path::new("/")).as_deref(),
-            Some("path canonicalizes to the volume root")
-        );
-        assert_eq!(
-            refused_profile_cause(Path::new("/./")).as_deref(),
-            Some("path canonicalizes to the volume root")
-        );
+        // The volume root itself. On unix /, // and /./ all canonicalize to
+        // the root; on windows the system drive root plays that role (a
+        // bare `/` is not even absolute there and refuses earlier).
+        if cfg!(unix) {
+            assert_eq!(
+                refused_profile_cause(Path::new("/")).as_deref(),
+                Some("path canonicalizes to the volume root")
+            );
+            assert_eq!(
+                refused_profile_cause(Path::new("/./")).as_deref(),
+                Some("path canonicalizes to the volume root")
+            );
+        } else {
+            let root = volume_root();
+            assert_eq!(
+                refused_profile_cause(&root).as_deref(),
+                Some("path canonicalizes to the volume root"),
+                "the windows drive root must hit the volume-root branch: {:?}",
+                root
+            );
+        }
     }
 
     #[test]
@@ -853,25 +865,26 @@ mod tests {
     #[test]
     fn from_profile_fails_closed_on_refused_profiles() {
         // A hand-assembled Isolated cannot bypass the ladder: the volume
-        // root degrades to SharedProfile, and `/managed` is never created.
-        assert!(!Path::new("/managed").exists(), "precondition for the pin");
+        // root degrades to SharedProfile, and its managed dir is never
+        // created. The root is the platform volume root (/ or C:\).
+        let root = volume_root();
+        let managed = root.join("managed");
+        assert!(!managed.exists(), "precondition for the pin");
         let rt = Runtime::from_profile(ProfileResolution::Isolated {
-            data_dir: PathBuf::from("/"),
-            managed_root: PathBuf::from("/managed"),
+            data_dir: root.clone(),
+            managed_root: managed.clone(),
         })
         .expect("refusal degrades to shared, not an error");
         assert!(rt.is_shared_profile());
         assert_eq!(
             rt.shared_profile_reason(),
             Some(&SharedProfileReason::Refused {
-                requested: "/".to_string(),
+                requested: root.to_string_lossy().into_owned(),
                 cause: "path canonicalizes to the volume root".to_string(),
-            })
+            }),
+            "the platform volume root must be refused with the root cause"
         );
-        assert!(
-            !Path::new("/managed").exists(),
-            "the refused profile must not be created"
-        );
+        assert!(!managed.exists(), "the refused profile must not be created");
     }
 
     #[test]
