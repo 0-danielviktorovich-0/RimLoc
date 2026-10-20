@@ -4334,28 +4334,51 @@ fn get_log_info(state: State<LogState>) -> Result<LogInfo, ApiError> {
 /// UI-10: native OS file dialog restricted to .po files (the
 /// project-exchange import). Resolves the picked ABSOLUTE path, or null
 /// when the user cancelled — null is a normal outcome, never an error.
+///
+/// Tauri's non-async commands may execute on the main UI thread. The native
+/// dialog's blocking API MUST run on the dedicated blocking executor instead:
+/// on macOS blocking a main-thread event loop can leave the window unresponsive
+/// while the OS file-picker tries to present. This keeps the typed IPC shape
+/// intact; runtime acceptance still requires native packaged-app evidence.
 #[tauri::command]
-fn pick_po_file(window: Window) -> Result<Option<String>, ApiError> {
-    let picked = window
-        .dialog()
-        .file()
-        .add_filter("PO translation files", &["po"])
-        .blocking_pick_file()
-        .map(|p| p.simplified().to_string());
-    Ok(picked)
+async fn pick_po_file(window: Window) -> Result<Option<String>, ApiError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        window
+            .dialog()
+            .file()
+            .add_filter("PO translation files", &["po"])
+            .blocking_pick_file()
+            .map(|p| p.simplified().to_string())
+    })
+    .await
+    .map_err(|e| ApiError {
+        message: format!("Native PO file dialog task failed: {e}"),
+    })
 }
 
 #[tauri::command]
-fn pick_directory(window: Window, initial: Option<String>) -> Result<Option<String>, ApiError> {
-    let mut builder = window.dialog().file();
-    if let Some(init) = initial.as_deref() {
-        let p = PathBuf::from(init);
-        builder = builder.set_directory(p);
-    }
-    let picked = builder
-        .blocking_pick_folder()
-        .map(|p| p.simplified().to_string());
-    Ok(picked)
+async fn pick_directory(
+    window: Window,
+    initial: Option<String>,
+) -> Result<Option<String>, ApiError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut builder = window.dialog().file();
+        if let Some(init) = initial.as_deref() {
+            let p = PathBuf::from(init);
+            // Invalid/stale paths must not make the picker open on an
+            // inaccessible directory or assume a particular machine layout.
+            if p.is_dir() {
+                builder = builder.set_directory(p);
+            }
+        }
+        builder
+            .blocking_pick_folder()
+            .map(|p| p.simplified().to_string())
+    })
+    .await
+    .map_err(|e| ApiError {
+        message: format!("Native folder dialog task failed: {e}"),
+    })
 }
 
 /// Self-localization entry (mandate D): resolve the app-bundled RimLoc UI
