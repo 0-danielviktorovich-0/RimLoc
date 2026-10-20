@@ -154,9 +154,14 @@ wire-DTO идентичны): handshake с `ui_contract_version`, мутации
 
 ## Build, Test, and Development Commands
 
-Дисковое ограничение рабочей машины владельца: внутренний диск мал, **любые `cargo build/test/check/clippy`
-запускать с `CARGO_TARGET_DIR=/Volumes/Portable-SSD/caches/targets/rimloc` в строке команды**.
-На btrfs-SSD — дополнительно `CARGO_INCREMENTAL=0` (локи не поддерживаются).
+Дисковое ограничение рабочей машины владельца (канон: AI-OS `ER-079`): сборочные кэши —
+**приоритет внешнему диску**, пока он подключён: любые `cargo build/test/check/clippy` запускать
+с `CARGO_TARGET_DIR=/Volumes/Portable-SSD/caches/targets/rimloc` в строке команды — один общий
+target переиспользует dep-деревья между worktree. На btrfs-SSD — дополнительно
+`CARGO_INCREMENTAL=0` (локи не поддерживаются). Fallback на внутренний диск — только когда
+внешний отсутствует: с измеренной оценкой прироста (не шаблонной), последовательными сборками
+и обязательной чисткой `target/` за собой при закрытии ветки. Перед началом работ — дисковый
+чек обоих дисков: свободное место и свои регенерируемые артефакты, которые можно убрать.
 
 - `CARGO_TARGET_DIR=… cargo build --workspace` — все крейты и межкрейтные интерфейсы.
 - `CARGO_TARGET_DIR=… cargo run -p rimloc-cli -- scan --root test/TestMod` — сквозная проверка CLI.
