@@ -1,0 +1,108 @@
+{
+ "kind": "rimloc-standards-matrix",
+ "version": 1,
+ "generated": "2026-10-20",
+ "rows": [
+  {
+   "feature": "skills/rimloc SKILL.md frontmatter",
+   "ref": "Agent Skills spec",
+   "revision": "agentskills.io (2026-10)",
+   "test": "frontmatter fields + description routing",
+   "status": "PASS",
+   "evidence": "skills/rimloc/SKILL.md"
+  },
+  {
+   "feature": "progressive disclosure",
+   "ref": "Agent Skills spec",
+   "revision": "same",
+   "test": "details in references/, main compact",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/*"
+  },
+  {
+   "feature": "capability discovery before use",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "revision": "1.0",
+   "test": "SKILL step 1 mandates rimloc.capabilities",
+   "status": "PASS",
+   "evidence": "skills/rimloc/SKILL.md",
+   "note": "step 1 mandates rimloc.capabilities"
+  },
+  {
+   "feature": "no invented tools / honest unavailability",
+   "ref": "policy §2 + OWASP MCP/Skills Top 10",
+   "revision": "1.0",
+   "test": "troubleshooting table covers absent-adapter path",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/troubleshooting.md"
+  },
+  {
+   "feature": "draft-vs-committed distinction",
+   "ref": "policy §2",
+   "revision": "1.0",
+   "test": "propose/apply split documented",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/translate-review-export.md"
+  },
+  {
+   "feature": "paid-provider consent + key handling",
+   "ref": "policy §2 + OWASP",
+   "revision": "1.0",
+   "test": "ai-modes rules: local default, paid only with explicit consent, keychain",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/ai-modes.md"
+  },
+  {
+   "feature": "RU+EN user-facing examples",
+   "ref": "policy §2",
+   "revision": "1.0",
+   "test": "novice walkthrough bilingual",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/novice-walkthrough.md"
+  },
+  {
+   "feature": "host matrix (tested rows only)",
+   "ref": "policy §5",
+   "revision": "1.0",
+   "test": "single TESTED row dated, no universal claims",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/supported-hosts.md"
+  },
+  {
+   "feature": "community template + author guide",
+   "ref": "policy §3",
+   "revision": "1.0",
+   "test": "templates/community-skill + rimloc-skill-author with spec fields",
+   "status": "PASS",
+   "evidence": "skills/templates/community-skill/SKILL.md",
+   "evidence2": "skills/rimloc-skill-author/SKILL.md"
+  },
+  {
+   "feature": "skills-ref validate runner",
+   "ref": "policy §5",
+   "revision": "tool-dependent",
+   "test": "runner availability on host",
+   "status": "NOT_VERIFIED",
+   "evidence": null,
+   "note": "skills-ref runner not installed on this host; CI lane queued"
+  },
+  {
+   "feature": "real MCP end-to-end through the skill",
+   "ref": "policy §2",
+   "revision": "pending Issue #10 adapter",
+   "test": "live novice path via rimloc MCP server",
+   "status": "NOT_VERIFIED",
+   "evidence": null,
+   "note": "requires the rimloc MCP server (Issue #10)"
+  },
+  {
+   "feature": "MCP Skills extension serving",
+   "ref": "io.modelcontextprotocol/skills SEP-2640",
+   "revision": "Final",
+   "test": "opt-in after base MCP stable",
+   "status": "DEFERRED_BY_POLICY",
+   "evidence": null,
+   "note": "policy §2 ordering: base MCP before Skills extension"
+  }
+ ]
+}
