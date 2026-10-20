@@ -15,7 +15,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    # Staged PRs against the integration branch get the same full gate:
+    # retargeting a PR away from main must not silently drop CI coverage.
+    branches: [main, feat/integration-rel27]
     # Documentation-only changes are validated by docs.yml; do not spend the
     # full Rust + 3-OS + GUI matrix on a README/MkDocs-only PR.
     paths-ignore:
