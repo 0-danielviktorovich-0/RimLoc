@@ -2,6 +2,8 @@
   <ThingDef>
     <defName>RimLocCanaryMachine</defName>
     <label>canary machine</label>
+    <thingClass>Building</thingClass>
+    <category>Building</category>
     <description>A machine whose label and description are translated by RimLoc.</description>
   </ThingDef>
   <ApparelDef>
@@ -18,6 +20,8 @@
   <ThingDef>
     <defName>RimLocCanaryNoTranslate</defName>
     <label>technical canary</label>
+    <thingClass>Thing</thingClass>
+    <category>Item</category>
     <texPath>Things/Canary/NoTranslate</texPath>
   </ThingDef>
 </Defs>
