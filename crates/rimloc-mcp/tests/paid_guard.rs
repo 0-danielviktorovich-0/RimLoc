@@ -136,23 +136,24 @@ fn seed_local_provider_instance(managed: &Path) -> String {
     resp.instance.id
 }
 
-/// Poll the job registry until the job leaves `running` (the loopback
-/// worker fails in milliseconds; the bound only guards a wedged machine).
-fn wait_until_not_running(rt: &Runtime, job_id: &str) -> Value {
+/// Poll the job registry until the job leaves `running` OR the deadline
+/// passes. The loopback worker fails fast on unix (connection refused),
+/// but windows TCP retries against a closed loopback port can hold the
+/// connect open past any honest test bound — a still-`running` job is an
+/// acceptable outcome for THIS guard (the paid-refusal substring is
+/// checked on whatever state we observe). Returns the last status.
+fn wait_until_not_running_or_deadline(rt: &Runtime, job_id: &str) -> Value {
     let deadline = Instant::now() + Duration::from_secs(10);
+    let mut status = json!({});
     loop {
-        let status = call(rt, "rimloc.ai_job.status", json!({ "job_id": job_id }));
+        status = call(rt, "rimloc.ai_job.status", json!({ "job_id": job_id }));
         let state = status["structuredContent"]["state"]
             .as_str()
             .expect("state is a string")
             .to_string();
-        if state != "running" {
+        if state != "running" || Instant::now() >= deadline {
             return status;
         }
-        assert!(
-            Instant::now() < deadline,
-            "job {job_id} never left the running state"
-        );
         std::thread::sleep(Duration::from_millis(25));
     }
 }
@@ -252,7 +253,7 @@ fn local_instance_is_not_paid_refused() {
     // The job may honestly FAIL (the loopback discard port refuses the
     // connection) — that is fine. What must never happen is the paid
     // refusal: no part of the terminal status carries the guard's code.
-    let status = wait_until_not_running(&env.rt, &job_id);
+    let status = wait_until_not_running_or_deadline(&env.rt, &job_id);
     let rendered = serde_json::to_string(&status).expect("status renders");
     assert!(
         !rendered.contains("paid_providers_disabled_via_mcp"),
