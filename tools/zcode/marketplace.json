@@ -1,0 +1,19 @@
+{
+  "name": "rimloc-zcode",
+  "description": "Reviewed project-specific automation guards for RimLoc development",
+  "plugins": [
+    {
+      "name": "rimloc-workflow-guard",
+      "source": "./rimloc-workflow-guard",
+      "description": "RimLoc campaign Workflow lifecycle guard and orchestration skill",
+      "version": "0.1.0",
+      "category": "development",
+      "tags": [
+        "rimloc",
+        "workflow",
+        "zcode"
+      ],
+      "strict": true
+    }
+  ]
+}
