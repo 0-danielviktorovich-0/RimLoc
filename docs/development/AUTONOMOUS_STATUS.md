@@ -766,3 +766,16 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   пара — падает, выключена — quicktest зелёный). Блокер изолирован точно; следующий шаг —
   bisect (Keyed-only сначала). Владельческая среда после всех прогонов чиста
   (NO_DEFAULTS_KEY, реальный ModsConfig 0 rimloc-строк, игра остановлена).
+
+## A3 ЗАКРЫТ ПОЛНОСТЬЮ (c34c985, 2026-10-20)
+
+- **Бисект**: Keyed-only канарейка → quicktest ЗЕЛЁНЫЙ; добавление Defs → красный;
+  стек игры назвал причину точно — ReadingPolicyDatabase.GenerateStartingPolicies вызывает
+  GenTypes.SameOrSubclassOf(thingClass), null у bare ThingDef. <thingClass>+<category>
+  на оба канарей-дефа починили quicktest полностью.
+- **Синтетический in-game acceptance доказан**: перевод-мод (rimloc.rimloclabcanary)
+  включён в изолированном профиле, fresh boot, quicktest, spawn RimLocCanaryMachine (100,100),
+  get_cell_info → things[0].label = «Канарейочная машина (RimLoc)» — игра применила
+  перевод РЕАЛЬНОГО RimLoc-экспорта на синтетическую канарейку. Скриншот снят.
+- Владельческая среда чиста (STOPPED, NO_DEFAULTS_KEY, реальный ModsConfig 0 rimloc-строк).
+- A1+A2+A3 — весь игровой acceptance-мандат Issue #9 закрыт автономно.
