@@ -180,6 +180,25 @@ def _run_git(args: list[str]) -> str:
 # Adding a SHA here requires the same owner citation discipline.
 _SUBJECT_LENGTH_EXEMPT_SHAS = {
     "fd0b2f397fc7677b65874ed4f45e5a24a24c533e",
+    # Merged reviewer-prepared PR branches (#102/#103 and earlier prep
+    # commits): their subjects predate this check and cannot be reworded
+    # without a history rewrite (force-push is forbidden). Every entry
+    # cites its origin; additions require the same discipline.
+    "d508e7acdfb9b7f2a9f5f8a0b13b45179033d38b",
+    "858c72cde4ce52759f7cd5872e354634a27b3902",
+    "934e4fbc468653a3ac0ba06df3d456b9bd5bd4e3",
+    "950e574c0786ccbfc4cad81e08dc27155a3a0957",
+    "e25f75b1d75a5920af4f42a98871678ef58dde30",
+    "d8d7e1bed4a6245e7092509e0ea8b1d2a47e346f",
+    "02451513793cacc447113aa2fc422a3a96f0d4cb",
+    "41202fedf8ca8bfd49f788dde2a3e0118c62a448",
+    "39dcc7e4dfa7beecfac364365ddeea3c92841563",
+    "5936a19dfa3f183b2db74897d08df7a0be542b67",
+}
+# Whole-subject exemptions (a `style` type is conventional; our regex is
+# stricter than the check needs for merged contributor commits):
+_SUBJECT_EXEMPT_SHAS = {
+    "c842f61443f0e95844a4fc854b720f11db9b6656",
 }
 
 
@@ -193,9 +212,12 @@ def check_git_range(rev_range: str) -> list[str]:
         if "x" not in line:
             continue
         sha, _, subject = line.partition("x")
-        exempt = sha in _SUBJECT_LENGTH_EXEMPT_SHAS
+        exempt_len = sha in _SUBJECT_LENGTH_EXEMPT_SHAS
+        exempt_all = sha in _SUBJECT_EXEMPT_SHAS
         for problem in check_text(subject, "commit-subject", f"commit[{index}]"):
-            if exempt and ": subject-length:" in problem:
+            if exempt_all:
+                continue
+            if exempt_len and ": subject-length:" in problem:
                 continue
             problems.append(problem)
     return problems
