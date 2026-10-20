@@ -59,3 +59,7 @@ __pycache__/
 # generated build artifacts (local)
 gui/tauri-app/frontend-react/tsconfig.tsbuildinfo
 testlab/runtime_bridge/bin/
+
+# Game screenshots stay local (proprietary game UI renders);
+# only sanitized summaries are published.
+testlab/rimworld/evidence/
