@@ -44,11 +44,15 @@ stdout — только протокол. `rimloc-mcp doctor` — диагнос
 
 **Headless-модель v1 (одиночный writer):** процесс поднимает собственный
 `ProjectSessionManager` (тот же `RIMLOC_DATA_DIR`-профиль) под эксклюзивным
-file-lock на managed root. Если lock занят (живой GUI с тем же профилем) —
-`rimloc.status` честно отвечает `app: other_writer`, write-инструменты
-отказывают typed-ошибкой; read-only остаётся доступным без lock только если
-данные консистентны на диске (job-записи/конверты атомарны). Live-GUI-брокер
-и event-sync — Phase 2, в v1 не эмулируются.
+file-lock (`rimloc-mcp.lock`, O_EXCL) на managed root. Границы честно:
+лок разделяется **только между процессами rimloc-mcp** — второй процесс
+получает `app: other_writer`, его write-инструменты и project-scoped reads
+отказывают typed-ошибкой (lock-free дисковые диагностики остаются). Живой
+RimLoc GUI этот лок не берёт и не детектируется — изоляция от GUI в v1
+достигается профилем (`RIMLOC_DATA_DIR`, отличный от дефолтного; при
+дефолтном профиле сервер пишет предупреждение в stderr и в
+`rimloc.status.gui_sharing_profile`). GUI-брокер с общим локом и
+event-sync — Phase 2, в v1 не эмулируется.
 
 **Поверхность инструментов v1** (capabilities, не зеркало CLI-флагов;
 JSON Schema 2020-12 на вход, structured output на выход):

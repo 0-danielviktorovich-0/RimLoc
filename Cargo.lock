@@ -4594,6 +4594,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rimloc-mcp"
+version = "0.2.0"
+dependencies = [
+ "rimloc-domain",
+ "rimloc-llm",
+ "rimloc-services",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "rimloc-parsers-xml"
 version = "0.2.0"
 dependencies = [
