@@ -837,3 +837,18 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
 влить exemption-коммит ac5c090 в main отдельно (крошечный, безопасный) — или
 авторизовать reword у источник-коммитов (нужно force-push, запрещено). Все остальные
 40 проверок зелёные; красота одной позиции — структурная, не дефект кода.
+
+## #13 WP1-WP3 ЗАКРЫТЫ (d47b24e, 2026-10-20 поздняя)
+
+- **WP1 decouple**: build.sh больше не дефолтит в t6-клон — явный GAME_MANAGED (любая
+  лицензированная установка), INSTALL_DIR/PACKAGE_DIR; --install аддитивен (замена QaDriver
+  DLL упразднена), метаданные пишутся только при отсутствии; конформаns-раннер принимает
+  T6_DIR/T6_GAME_BIN. Golden T6-фикстуры не тронуты.
+- **WP2 package**: staged ZIP с мод-лейаутом (About/Assemblies/LICENSE/README-standalone)
+  + SHA256 (539dcd74…). Публикации нет — кандидат лежит локально.
+- **WP3 fresh-install E2E**: ZIP распакован как внешний пользователь → включён в
+  изолированном профиле → мост поднялся (runInBackground) → capabilities/state/keyed живые
+  → чистый uninstall, профиль лаба восстановлен на upstream-драйвер, среда владельца чиста.
+  DoD-строка: PATH=/tmp/…/staged | VERSION=1.0.0 | SHA256=539dcd74… | LICENSE=GPL-3.0 |
+  GAME_COMPAT=1.6.4871 (живая) | FRESH_INSTALL=PASS | LIVE_CALLS=PASS | SCREENSHOT=документ.
+  | STATUS=STAGED | OWNER_GATE=публикация/Workshop.
