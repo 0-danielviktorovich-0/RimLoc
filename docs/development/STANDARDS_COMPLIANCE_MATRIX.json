@@ -1,108 +1,137 @@
 {
  "kind": "rimloc-standards-matrix",
- "version": 1,
+ "version": 2,
  "generated": "2026-10-20",
+ "status_vocabulary": "PASS / FAIL / PARTIAL / NOT_TESTED (standard §5)",
+ "owner": "rimloc-maintainers",
  "rows": [
   {
    "feature": "skills/rimloc SKILL.md frontmatter",
    "ref": "Agent Skills spec",
+   "source_url": "https://agentskills.io",
    "revision": "agentskills.io (2026-10)",
    "test": "frontmatter fields + description routing",
    "status": "PASS",
-   "evidence": "skills/rimloc/SKILL.md"
+   "evidence": "skills/rimloc/SKILL.md",
+   "verified": "2026-10-20"
   },
   {
    "feature": "progressive disclosure",
    "ref": "Agent Skills spec",
-   "revision": "same",
+   "source_url": "https://agentskills.io",
+   "revision": "agentskills.io (2026-10)",
    "test": "details in references/, main compact",
    "status": "PASS",
-   "evidence": "skills/rimloc/references/*"
+   "evidence": "skills/rimloc/references/*",
+   "verified": "2026-10-20"
   },
   {
    "feature": "capability discovery before use",
    "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
    "revision": "1.0",
    "test": "SKILL step 1 mandates rimloc.capabilities",
    "status": "PASS",
    "evidence": "skills/rimloc/SKILL.md",
-   "note": "step 1 mandates rimloc.capabilities"
+   "verified": "2026-10-20"
   },
   {
    "feature": "no invented tools / honest unavailability",
-   "ref": "policy §2 + OWASP MCP/Skills Top 10",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2 + OWASP MCP/Skills Top 10",
+   "source_url": "https://genai.owasp.org",
    "revision": "1.0",
-   "test": "troubleshooting table covers absent-adapter path",
+   "test": "adapter status stated up front (SKILL.md note + compatibility); troubleshooting separates 'not shipped' from 'not connected'",
    "status": "PASS",
-   "evidence": "skills/rimloc/references/troubleshooting.md"
+   "evidence": "skills/rimloc/SKILL.md",
+   "verified": "2026-10-20",
+   "note": "fixed after independent review found the adapter implied as existing (v1); review artifact 2026-10-20"
   },
   {
    "feature": "draft-vs-committed distinction",
-   "ref": "policy §2",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
    "revision": "1.0",
    "test": "propose/apply split documented",
    "status": "PASS",
-   "evidence": "skills/rimloc/references/translate-review-export.md"
+   "evidence": "skills/rimloc/references/translate-review-export.md",
+   "verified": "2026-10-20"
   },
   {
    "feature": "paid-provider consent + key handling",
-   "ref": "policy §2 + OWASP",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2 + OWASP",
+   "source_url": "https://genai.owasp.org",
    "revision": "1.0",
    "test": "ai-modes rules: local default, paid only with explicit consent, keychain",
    "status": "PASS",
-   "evidence": "skills/rimloc/references/ai-modes.md"
+   "evidence": "skills/rimloc/references/ai-modes.md",
+   "verified": "2026-10-20",
+   "note": "local-path consent wording aligned with SKILL.md/walkthrough after review"
   },
   {
    "feature": "RU+EN user-facing examples",
-   "ref": "policy §2",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
    "revision": "1.0",
-   "test": "novice walkthrough bilingual",
+   "test": "novice walkthrough bilingual and semantically aligned",
    "status": "PASS",
-   "evidence": "skills/rimloc/references/novice-walkthrough.md"
+   "evidence": "skills/rimloc/references/novice-walkthrough.md",
+   "verified": "2026-10-20"
   },
   {
    "feature": "host matrix (tested rows only)",
-   "ref": "policy §5",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §5",
+   "source_url": null,
    "revision": "1.0",
-   "test": "single TESTED row dated, no universal claims",
-   "status": "PASS",
-   "evidence": "skills/rimloc/references/supported-hosts.md"
+   "test": "only reproducible TESTED rows, dated",
+   "status": "NOT_TESTED",
+   "evidence": "skills/rimloc/references/supported-hosts.md",
+   "verified": "2026-10-20",
+   "note": "v1 carried one TESTED row whose evidence was not reproducible on the machine; removed after review — no host has executed this skill"
   },
   {
    "feature": "community template + author guide",
-   "ref": "policy §3",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §3",
+   "source_url": null,
    "revision": "1.0",
-   "test": "templates/community-skill + rimloc-skill-author with spec fields",
+   "test": "templates/community-skill + rimloc-skill-author cover all §3 MUSTs (inputs/outputs, side effects, tests included)",
    "status": "PASS",
    "evidence": "skills/templates/community-skill/SKILL.md",
-   "evidence2": "skills/rimloc-skill-author/SKILL.md"
+   "evidence2": "skills/rimloc-skill-author/SKILL.md",
+   "verified": "2026-10-20",
+   "note": "inputs/outputs, allowed side effects and tests sections added after review found them missing"
   },
   {
    "feature": "skills-ref validate runner",
-   "ref": "policy §5",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §5",
+   "source_url": null,
    "revision": "tool-dependent",
    "test": "runner availability on host",
-   "status": "NOT_VERIFIED",
+   "status": "NOT_TESTED",
    "evidence": null,
-   "note": "skills-ref runner not installed on this host; CI lane queued"
+   "verified": "2026-10-20",
+   "note": "skills-ref runner not installed on this host; structural fallback checklist documented in rimloc-skill-author step 5; CI lane queued"
   },
   {
    "feature": "real MCP end-to-end through the skill",
-   "ref": "policy §2",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
    "revision": "pending Issue #10 adapter",
    "test": "live novice path via rimloc MCP server",
-   "status": "NOT_VERIFIED",
+   "status": "NOT_TESTED",
    "evidence": null,
-   "note": "requires the rimloc MCP server (Issue #10)"
+   "verified": "2026-10-20",
+   "note": "requires the rimloc MCP server (Issue #10, Phase 1 in progress)"
   },
   {
    "feature": "MCP Skills extension serving",
    "ref": "io.modelcontextprotocol/skills SEP-2640",
+   "source_url": "https://modelcontextprotocol.io/extensions/skills",
    "revision": "Final",
    "test": "opt-in after base MCP stable",
-   "status": "DEFERRED_BY_POLICY",
+   "status": "NOT_TESTED",
    "evidence": null,
-   "note": "policy §2 ordering: base MCP before Skills extension"
+   "verified": "2026-10-20",
+   "note": "deferred by policy ordering: base MCP server (Issue #10 Phase 1) before the Skills extension"
   }
  ]
 }

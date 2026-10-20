@@ -2,7 +2,7 @@
 name: rimloc
 description: Translate, review and export RimWorld mods with the real RimLoc desktop app. Use when the user wants to localize a RimWorld mod (Defs/Keyed/DefInjected/patches), review AI-proposed translations row by row, validate a translation project or build an exportable translation mod while keeping source files untouched. Not for general XML questions, non-RimWorld games, or editing mods by hand in a text editor.
 license: GPL-3.0
-compatibility: Requires RimLoc (GUI or CLI) installed locally and the rimloc MCP adapter connected. Protocol revision discovered at runtime via rimloc.capabilities; do not assume a version.
+compatibility: Requires RimLoc (GUI or CLI) installed locally. The rimloc MCP adapter is NOT yet released (Issue #10, in development); the rimloc.* tool names below are its planned Phase 1 surface. Until it ships, this skill cannot drive RimLoc — do not simulate its tools.
 metadata:
   version: "0.1.0"
   repository: https://github.com/0-danielviktorovich-0/RimLoc
@@ -10,6 +10,14 @@ metadata:
 ---
 
 # RimLoc — mod translation through the real product
+
+> **Adapter status (2026-10-20):** the rimloc MCP server does not exist
+> yet — it is being built as Issue #10 Phase 1
+> (`docs/development/MCP_SERVER_PHASE1.md`). Every `rimloc.*` name in
+> this skill is the planned tool surface, not a callable tool today.
+> Until the adapter ships: state that plainly, do not simulate tool
+> output, and do not send the user hunting for an installer. The skill
+> text below is the contract the adapter will satisfy.
 
 This skill drives the INSTALLED RimLoc application (visual editor + Rust
 services). It never edits a mod's source files: RimLoc copies nothing
@@ -27,9 +35,12 @@ rimloc.capabilities
 
    Record the protocol revision and the tool list. If a tool this skill
    names is NOT in the response, tell the user and use only what exists.
+   If the tool itself is missing (adapter not shipped, see the status
+   note above), stop there — that is an honest unavailability, not an
+   error to work around.
 2. See the projects: `rimloc.projects.list`.
 3. To work on a mod the user names, open or create a project
-   (`rimloc.project.open` / wizard) and read
+   (`rimloc.project.open`) and read
    `rimloc.project.snapshot` for: source locale, target locale,
    revision, session epoch. Quote them back before any write.
 
@@ -44,12 +55,15 @@ See references/novice-walkthrough.md for the full annotated version.
    Drafts are never committed by proposing.
 4. The user reviews: apply exactly the selected identities
    (`rimloc.translation.apply` with the pinned revision/epoch from the
-   snapshot). Nothing else is applied.
-5. Validate (`rimloc.validation.run`), fix findings, then export
-   (`rimloc.export.build`) to a directory the USER chose. The export
-   writes a translation mod; the source mod is untouched.
+   snapshot). **Identities** are the row keys returned by
+   `rimloc.entries.search` / `rimloc.translation.propose` — never
+   invented. Nothing else is applied.
+5. Validate (`rimloc.validation.run`), fix findings by proposing
+   corrected drafts (propose → apply for the affected rows), then
+   export (`rimloc.export.build`) to a directory the USER chose. The
+   export writes a translation mod; the source mod is untouched.
 6. Report the export path and what changed. Do not claim in-game
-   verification unless the in-game lab was actually run.
+   verification unless you actually verified the result in-game.
 
 ## Professional path — existing translations / large mods
 
