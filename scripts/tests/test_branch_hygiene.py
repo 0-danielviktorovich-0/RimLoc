@@ -29,10 +29,11 @@ def make_args(**kw) -> Namespace:
 
 
 class FakeGh:
-    def __init__(self, prs=None, fail=False, runs=None):
+    def __init__(self, prs=None, fail=False, runs=None, runs_none=False):
         self._prs = prs or []
         self._fail = fail
         self._runs = runs or {}
+        self._runs_none = runs_none
 
     def prs(self):
         if self._fail:
@@ -40,6 +41,8 @@ class FakeGh:
         return self._prs
 
     def recent_runs(self, branch):
+        if self._runs_none:
+            return None  # CI state could not be determined
         return self._runs.get(branch, [])
 
 
@@ -119,6 +122,14 @@ class RealRepoTest(unittest.TestCase):
 
     def by(self, rows, name):
         return next(r for r in rows if r.branch == name)
+
+    def pr_for(self, branch, number, state, base="main", merge_oid=None):
+        head = subprocess.run(["git", "-C", self.repo, "rev-parse", branch],
+                              capture_output=True, text=True).stdout.strip()
+        return {"number": number, "headRefName": branch, "baseRefName": base,
+                "state": state, "mergeCommit": (
+                    {"oid": merge_oid} if merge_oid else None),
+                "headRefOid": head}
 
     # -- squash-merge verification ------------------------------------------
 
@@ -286,6 +297,145 @@ class RealRepoTest(unittest.TestCase):
                 self.assertIn(line.split()[-1], marked)
         self.assertEqual(len([r for r in rows if r.delete_safe]),
                          text.count("git push origin --delete"))
+
+
+
+class PostMergeAdvanceTest(unittest.TestCase):
+    """P0 regression: branch advanced past the merged PR head."""
+
+    def setUp(self):
+        self.dir = tempfile.TemporaryDirectory()
+        self.repo = self.dir.name
+        for args in (("init", "-q", "-b", "main"),):
+            subprocess.run(["git", "-C", self.repo, *args], check=True,
+                           capture_output=True)
+        subprocess.run(["git", "-C", self.repo, "config", "user.email",
+                        "t@e.com"], capture_output=True)
+        subprocess.run(["git", "-C", self.repo, "config", "user.name", "T"],
+                       capture_output=True)
+        self.write("base.txt", "base")
+        subprocess.run(["git", "-C", self.repo, "add", "-A"], capture_output=True)
+        subprocess.run(["git", "-C", self.repo, "commit", "-q", "-m", "base"],
+                       capture_output=True)
+        subprocess.run(["git", "-C", self.repo, "update-ref",
+                        "refs/remotes/origin/main", "HEAD"], capture_output=True)
+        subprocess.run(["git", "-C", self.repo, "checkout", "-q", "-b",
+                        "integration"], capture_output=True)
+        subprocess.run(["git", "-C", self.repo, "update-ref",
+                        "refs/remotes/origin/integration", "HEAD"],
+                       capture_output=True)
+        self.git = bh.RealGit(self.repo)
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def write(self, name, text):
+        with open(os.path.join(self.repo, name), "w") as fh:
+            fh.write(text)
+
+    def g(self, *args):
+        return subprocess.run(["git", "-C", self.repo, *args],
+                              capture_output=True, text=True, check=True).stdout
+
+    def manifest(self, gh):
+        return bh.build_manifest(self.git, gh, make_args())
+
+    def by(self, rows, name):
+        return next(r for r in rows if r.branch == name)
+
+    def _lane_pr_merged_into_main(self, branch, pr_no):
+        self.g("checkout", "-q", "-B", branch, "main")
+        self.write(f"{branch}.txt", "lane")
+        self.g("add", "-A"); self.g("commit", "-q", "-m", "lane work")
+        pr_head = self.g("rev-parse", "HEAD").strip()
+        self.g("checkout", "-q", "main")
+        self.g("merge", "--squash", branch)
+        self.g("add", "-A"); self.g("commit", "-q", "-m", f"squash {branch}")
+        squash = self.g("rev-parse", "HEAD").strip()
+        self.g("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.g("checkout", "-q", branch)
+        self.g("update-ref", f"refs/remotes/origin/{branch}", "HEAD")
+        self.g("checkout", "-q", "integration")
+        return pr_head, squash
+
+    def test_branch_advanced_after_merge_goes_to_review(self):
+        pr_head, squash = self._lane_pr_merged_into_main("moved-lane", 7)
+        # the branch gains 3 commits AFTER the PR head (the ui-r1 case)
+        self.g("checkout", "-q", "moved-lane")
+        for i in range(3):
+            self.write(f"post{i}.txt", str(i))
+            self.g("add", "-A"); self.g("commit", "-q", "-m", f"post {i}")
+        self.g("update-ref", "refs/remotes/origin/moved-lane", "HEAD")
+        self.g("checkout", "-q", "integration")
+        gh = FakeGh(prs=[{"number": 7, "headRefName": "moved-lane",
+                          "baseRefName": "main", "state": "MERGED",
+                          "mergeCommit": {"oid": squash},
+                          "headRefOid": pr_head}])
+        row = self.by(self.manifest(gh), "moved-lane")
+        self.assertFalse(row.content_verified, row.content_evidence)
+        self.assertFalse(row.delete_safe)
+        self.assertEqual(row.category, "NEEDS_REVIEW")
+        self.assertIn("3 commit(s)", row.content_evidence)
+
+    def test_post_merge_commits_contained_via_merge_stay_verified(self):
+        pr_head, squash = self._lane_pr_merged_into_main("extra-ok", 8)
+        self.g("checkout", "-q", "extra-ok")
+        self.write("later.txt", "later")
+        self.g("add", "-A"); self.g("commit", "-q", "-m", "later work")
+        self.g("update-ref", "refs/remotes/origin/extra-ok", "HEAD")
+        # a real merge of the branch into main makes the extra commits
+        # ancestors of the target
+        self.g("checkout", "-q", "main")
+        self.g("merge", "-q", "--no-ff", "-m", "merge extra-ok", "extra-ok")
+        self.g("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.g("checkout", "-q", "integration")
+        gh = FakeGh(prs=[{"number": 8, "headRefName": "extra-ok",
+                          "baseRefName": "main", "state": "MERGED",
+                          "mergeCommit": {"oid": squash},
+                          "headRefOid": pr_head}])
+        row = self.by(self.manifest(gh), "extra-ok")
+        self.assertTrue(row.content_verified, row.content_evidence)
+        self.assertEqual(row.category, "SAFE_TO_DELETE")
+
+    def test_revert_after_merge_goes_to_review(self):
+        pr_head, squash = self._lane_pr_merged_into_main("reverted-lane", 9)
+        self.g("checkout", "-q", "main")
+        self.g("revert", "--no-edit", squash)
+        self.g("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.g("checkout", "-q", "integration")
+        gh = FakeGh(prs=[{"number": 9, "headRefName": "reverted-lane",
+                          "baseRefName": "main", "state": "MERGED",
+                          "mergeCommit": {"oid": squash},
+                          "headRefOid": pr_head}])
+        row = self.by(self.manifest(gh), "reverted-lane")
+        self.assertFalse(row.content_verified, row.content_evidence)
+        self.assertEqual(row.category, "NEEDS_REVIEW")
+
+    def test_ci_unknown_blocks_deletion(self):
+        pr_head, squash = self._lane_pr_merged_into_main("ci-unknown", 10)
+        gh = FakeGh(prs=[{"number": 10, "headRefName": "ci-unknown",
+                          "baseRefName": "main", "state": "MERGED",
+                          "mergeCommit": {"oid": squash},
+                          "headRefOid": pr_head}], runs_none=True)
+        row = self.by(self.manifest(gh), "ci-unknown")
+        self.assertEqual(row.ci_state, "unknown")
+        self.assertFalse(row.delete_safe)
+        self.assertEqual(row.category, "NEEDS_REVIEW")
+
+    def test_candidates_use_force_with_lease_with_full_sha(self):
+        pr_head, squash = self._lane_pr_merged_into_main("lease-lane", 11)
+        gh = FakeGh(prs=[{"number": 11, "headRefName": "lease-lane",
+                          "baseRefName": "main", "state": "MERGED",
+                          "mergeCommit": {"oid": squash},
+                          "headRefOid": pr_head}])
+        rows = self.manifest(gh)
+        text = bh.render(rows)
+        row = self.by(rows, "lease-lane")
+        self.assertEqual(len(row.head_sha), 40)
+        self.assertIn(
+            f"--force-with-lease=refs/heads/lease-lane:{row.head_sha} "
+            f":refs/heads/lease-lane", text)
+        self.assertNotIn("git push origin --delete lease-lane", text)
 
 
 if __name__ == "__main__":

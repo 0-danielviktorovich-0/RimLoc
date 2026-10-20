@@ -76,7 +76,7 @@ class RealGh:
         out = subprocess.run(
             ["gh", "pr", "list", "-R", self.slug, "--state", "all",
              "--limit", "300", "--json",
-             "number,headRefName,baseRefName,state,mergeCommit,updatedAt"],
+             "number,headRefName,baseRefName,state,mergeCommit,headRefOid,updatedAt"],
             capture_output=True, text=True, timeout=90,
         )
         if out.returncode != 0 or not out.stdout.strip():
@@ -90,18 +90,20 @@ class RealGh:
             raise GithubUnavailable("gh pr list returned unexpected shape")
         return rows
 
-    def recent_runs(self, branch: str) -> list[dict]:
+    def recent_runs(self, branch: str) -> list[dict] | None:
+        """None = the CI state could NOT be determined (API failure) —
+        the caller must treat that as UNKNOWN and refuse deletion."""
         out = subprocess.run(
             ["gh", "run", "list", "-R", self.slug, "--branch", branch,
              "--limit", "3", "--json", "status,createdAt"],
             capture_output=True, text=True, timeout=60,
         )
         if out.returncode != 0:
-            return []  # informational only; never gates safety alone
+            return None
         try:
             return json.loads(out.stdout) or []
         except json.JSONDecodeError:
-            return []
+            return None
 
 
 def fetch_refs(git: RealGit) -> None:
@@ -167,11 +169,42 @@ class BranchRow:
     worktree_clean: bool
     worktree_note: str
     dependent_prs: str      # open PRs stacked on this branch
-    ci_recent: str
+    ci_state: str           # active / unknown / quiet
+    ci_note: str
+    advanced_past_pr_head: str  # commits the branch gained after its PR head
     unique_commits: int
     category: str           # SAFE_TO_DELETE / NEEDS_REVIEW / KEEP_ACTIVE / PROTECTED
     delete_safe: bool
     reason: str
+
+
+def revert_of_pr_in_targets(git: RealGit, pr_label: str, branch: str,
+                            targets: list[str]) -> str | None:
+    """Detect an explicit GitHub-style revert commit in the targets that
+    names this PR. Reachability of a merge commit alone does not prove the
+    change survived; a later Revert commit is the common counter-evidence."""
+    if not pr_label:
+        return None
+    for target in targets:
+        log = git.run("log", "--format=%s", "-n", "500", target)
+        for line in log.splitlines():
+            if line.startswith("Revert") and (pr_label in line
+                                              or branch in line):
+                return f"revert commit in {target}: {line[:80]}"
+    return None
+
+
+def extra_commits_past_pr_head(git: RealGit, branch_ref: str,
+                               pr_head: str | None) -> list[str]:
+    """Commits the branch gained AFTER the head its PR was last updated to.
+    A merged PR proves only its own head; anything past it needs its own
+    proof (P0 counterexample: branch advanced 3 commits post-merge)."""
+    if not pr_head:
+        return []
+    out = git.run("rev-list", "--count", f"{pr_head}..{branch_ref}").strip()
+    if out == "0" or not out.isdigit():
+        return []
+    return git.run("rev-list", f"{pr_head}..{branch_ref}").split()
 
 
 def verify_content(git: RealGit, ref: str, merge_sha: str | None,
@@ -228,21 +261,50 @@ def build_manifest(git: RealGit, gh: RealGh, args: argparse.Namespace
     rows: list[BranchRow] = []
     for full in sorted(branches):
         name = full[len("origin/"):]
-        head_sha = git.run("rev-parse", "--short=10", full).strip()
+        head_sha = git.run("rev-parse", full).strip()
         unique = int(git.run("rev-list", "--count", f"{base_ref}..{full}").strip() or 0)
 
         if name in args.protected:
             rows.append(BranchRow(name, head_sha, "-", "-", args.base, True,
-                                  "protected branch", True, "n/a", "", "", 0,
-                                  "PROTECTED", False, "protected: never a candidate"))
+                                  "protected branch", True, "n/a", "", "quiet",
+                                  "not checked for protected", "", 0,
+                                  "PROTECTED", False,
+                                  "protected: never a candidate"))
             continue
 
         pr = prs.get(name)
         pr_label = f"#{pr['number']}" if pr else "-"
         pr_state = (pr or {}).get("state", "none")
         merge_sha = ((pr or {}).get("mergeCommit") or {}).get("oid")
+        pr_head = (pr or {}).get("headRefOid")
 
         verified, evidence = verify_content(git, full, merge_sha, targets)
+
+        # P0: a merged PR proves only its own head. If the branch moved on,
+        # each extra commit needs its own containment proof.
+        extra = extra_commits_past_pr_head(git, full, pr_head)
+        advanced = (f"{len(extra)} commit(s) past the PR head"
+                    if extra else "")
+        if extra and pr_state == "MERGED":
+            unproven = [c for c in extra
+                        if all(git.code("merge-base", "--is-ancestor",
+                                        c, tgt) != 0 for tgt in targets)]
+            if unproven:
+                verified = False
+                evidence = (f"PR merge proof covers the PR head only; branch "
+                            f"advanced {len(extra)} commit(s) afterwards and "
+                            f"{len(unproven)} of them are not contained in "
+                            f"any target")
+            else:
+                evidence += f"; {len(extra)} post-merge commit(s) also contained"
+
+        # Revert heuristic: a reachable merge commit can still have been
+        # reverted later in the target.
+        if verified and merge_sha:
+            reverted = revert_of_pr_in_targets(git, pr_label, name, targets)
+            if reverted:
+                verified = False
+                evidence = f"{evidence}; BUT {reverted}"
 
         wt = by_branch_wt.get(name)
         if wt:
@@ -253,79 +315,85 @@ def build_manifest(git: RealGit, gh: RealGh, args: argparse.Namespace
             wt_note = "none"
 
         deps = ",".join(stacked.get(name, []))
-        ci = ""
-        for run in gh.recent_runs(name):
-            if run.get("status") in ("queued", "in_progress"):
-                ci = f"{run['status']} at {run.get('createdAt', '?')}"
-                break
+        runs = gh.recent_runs(name)
+        if runs is None:
+            ci_state, ci_note = "unknown", "CI state could not be determined"
+        else:
+            active = next((r for r in runs
+                           if r.get("status") in ("queued", "in_progress")), None)
+            if active:
+                ci_state = "active"
+                ci_note = f"{active['status']} at {active.get('createdAt', '?')}"
+            else:
+                ci_state, ci_note = "quiet", "no queued/in-progress runs"
 
         if name == args.base:
             # the staging base itself is never a deletion candidate, even
             # when no CI run happens to be active on it
             rows.append(BranchRow(name, head_sha, pr_label, pr_state,
                                   args.base, True, "is the target base itself",
-                                  True, wt_note, deps, ci, unique,
-                                  "KEEP_ACTIVE", False,
+                                  True, wt_note, deps, ci_state, ci_note, "",
+                                  unique, "KEEP_ACTIVE", False,
                                   "integration target branch (staging base)"))
             continue
 
         forced = name in args.active
 
-        if forced or wt or deps or ci or not clean:
+        if forced or wt or deps or ci_state == "active" or not clean:
             why = []
             if wt:
                 why.append(f"worktree {wt_note}")
             if deps:
                 why.append(f"base of stacked PR {deps}")
-            if ci:
-                why.append(f"CI {ci}")
             if forced:
                 why.append("flagged --active")
+            if ci_state == "active":
+                why.append(f"CI {ci_note}")
             rows.append(BranchRow(
                 name, head_sha, pr_label, pr_state, args.base, verified,
-                evidence, clean, wt_note, deps, ci, unique,
-                "KEEP_ACTIVE", False, "; ".join(why)))
+                evidence, clean, wt_note, deps, ci_state, ci_note, advanced,
+                unique, "KEEP_ACTIVE", False, "; ".join(why)))
             continue
 
         if pr_state == "OPEN":
             if verified:
                 rows.append(BranchRow(
                     name, head_sha, pr_label, pr_state, args.base, True,
-                    evidence, True, wt_note, deps, ci, unique,
+                    evidence, True, wt_note, deps, ci_state, ci_note, advanced, unique,
                     "SAFE_TO_DELETE", True,
                     "open PR fully contained in the target — close the PR as "
                     "superseded (keep the PR for review history), then delete"))
             else:
                 rows.append(BranchRow(
                     name, head_sha, pr_label, pr_state, args.base, False,
-                    evidence, True, wt_note, deps, ci, unique,
+                    evidence, True, wt_note, deps, ci_state, ci_note, advanced, unique,
                     "NEEDS_REVIEW", False,
                     f"open PR with {unique} unique commit(s) — normal review"))
         elif pr_state == "MERGED":
             if verified:
                 rows.append(BranchRow(
                     name, head_sha, pr_label, pr_state, args.base, True,
-                    evidence, True, wt_note, deps, ci, unique,
+                    evidence, True, wt_note, deps, ci_state, ci_note, advanced, unique,
                     "SAFE_TO_DELETE", True,
                     "merged and content reachable in the target; review "
                     "history lives in the PR"))
             else:
                 rows.append(BranchRow(
                     name, head_sha, pr_label, pr_state, args.base, False,
-                    evidence, True, wt_note, deps, ci, unique,
+                    evidence, True, wt_note, deps, ci_state, ci_note, advanced, unique,
                     "NEEDS_REVIEW", False,
                     "PR labeled MERGED but content not reachable — investigate"))
         elif pr_state == "CLOSED":
             if verified:
                 rows.append(BranchRow(
                     name, head_sha, pr_label, pr_state, args.base, True,
-                    evidence, True, wt_note, deps, ci, unique,
+                    evidence, True, wt_note, deps, ci_state, ci_note, advanced, unique,
                     "SAFE_TO_DELETE", True,
                     "closed PR, content contained in the target"))
             else:
                 rows.append(BranchRow(
                     name, head_sha, pr_label, pr_state, args.base, False,
-                    evidence, True, wt_note, deps, ci, unique,
+                    evidence, True, wt_note, deps, ci_state, ci_note, advanced, unique,
                     "NEEDS_REVIEW", False,
                     "closed without merge, content not reachable — check for "
                     "a successor PR before deleting"))
@@ -333,7 +401,7 @@ def build_manifest(git: RealGit, gh: RealGh, args: argparse.Namespace
             if verified:
                 rows.append(BranchRow(
                     name, head_sha, "-", "none", args.base, True, evidence,
-                    True, wt_note, "", ci, unique, "SAFE_TO_DELETE", True,
+                    True, wt_note, "", ci_state, ci_note, "", unique, "SAFE_TO_DELETE", True,
                     "no PR, fully contained in the target (legacy/sync branch)"))
             else:
                 try:
@@ -346,9 +414,18 @@ def build_manifest(git: RealGit, gh: RealGh, args: argparse.Namespace
                          else f"no PR, only {age_days:.0f} days old")
                 rows.append(BranchRow(
                     name, head_sha, "-", "none", args.base, False, evidence,
-                    True, wt_note, "", ci, unique, "NEEDS_REVIEW", False,
+                    True, wt_note, "", ci_state, ci_note, "", unique, "NEEDS_REVIEW", False,
                     f"{label} with {unique} unique commit(s) — confirm "
                     "nothing valuable"))
+    # P1: CI state UNKNOWN forbids an automatic deletion recommendation
+    for i, row in enumerate(rows):
+        if (row.ci_state == "unknown" and row.delete_safe
+                and row.category == "SAFE_TO_DELETE"):
+            rows[i] = BranchRow(**{**asdict(row),
+                                   "category": "NEEDS_REVIEW",
+                                   "delete_safe": False,
+                                   "reason": ("CI state unknown (Actions API "
+                                              "unavailable): " + row.reason)})
     return rows
 
 
@@ -370,15 +447,20 @@ def render(rows: list[BranchRow]) -> str:
                 f"| target={r.target} | content_verified={r.content_verified} "
                 f"| worktree_clean={r.worktree_clean} ({r.worktree_note}) "
                 f"| dependent_prs={r.dependent_prs or '-'}"
-                + (f" | ci={r.ci_recent}" if r.ci_recent else "")
+                + (f" | ci={r.ci_state}" if r.ci_state != "quiet" else "")
+                + (f" | advanced={r.advanced_past_pr_head}" if r.advanced_past_pr_head else "")
                 + f" | unique={r.unique_commits}")
             out.append(f"      delete_safe={r.delete_safe} — {r.reason}")
             if r.content_evidence:
                 out.append(f"      evidence: {r.content_evidence}")
     deletable = [r for r in rows if r.delete_safe]
     out.append(f"\n== MANIFEST-DERIVED DELETION CANDIDATES ({len(deletable)}) ==")
+    out.append("  # atomic compare-and-delete: refuses if the remote ref")
+    out.append("  # moved after this audit (force-with-lease on expected SHA)")
     for r in deletable:
-        out.append(f"  git push origin --delete {r.branch}")
+        out.append(f"  git push origin "
+                   f"--force-with-lease=refs/heads/{r.branch}:{r.head_sha} "
+                   f":refs/heads/{r.branch}")
     out.append("\nAnalysis only — nothing is deleted; owner approval required.")
     return "\n".join(out)
 
