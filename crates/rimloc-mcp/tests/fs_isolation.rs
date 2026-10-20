@@ -29,7 +29,40 @@
 //!   `running` — `recover_interrupted_jobs` would relabel it).
 
 use std::io::{BufRead, BufReader, Read, Write as _};
-use std::os::unix::fs::{symlink, PermissionsExt};
+// Cross-platform test seams: the semantics under test (read-only refusal,
+// symlink identity) are POSIX-first; Windows gets an honest readonly
+// emulation and symlink coverage stays unix (CI windows runners cannot be
+// relied upon for symlink privileges).
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+
+fn set_readonly(dir: &std::path::Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o555)).expect("chmod 555");
+    }
+    #[cfg(windows)]
+    {
+        let mut perms = std::fs::metadata(dir).expect("meta").permissions();
+        perms.set_readonly(true);
+        std::fs::set_permissions(dir, perms).expect("set readonly");
+    }
+}
+
+fn set_writable(dir: &std::path::Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o755)).expect("chmod 755");
+    }
+    #[cfg(windows)]
+    {
+        let mut perms = std::fs::metadata(dir).expect("meta").permissions();
+        perms.set_readonly(false);
+        std::fs::set_permissions(dir, perms).expect("clear readonly");
+    }
+}
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 use std::sync::{Arc, Mutex};
@@ -451,14 +484,13 @@ fn read_only_profile_dir_is_an_io_error_not_a_panic() {
     let dir = tempfile::tempdir().expect("tempdir");
     let ro = dir.path().join("ro-profile");
     std::fs::create_dir_all(&ro).expect("ro dir");
-    std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o555)).expect("chmod 555");
+    set_readonly(&ro);
 
     // If permissions are not enforced here (running as root), the
     // io-error refusal cannot be exercised — restore and skip honestly.
     if std::fs::write(ro.join("probe"), b"x").is_ok() {
         let _ = std::fs::remove_file(ro.join("probe"));
-        std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o755))
-            .expect("restore perms");
+        set_writable(&ro);
         return;
     }
 
@@ -492,8 +524,7 @@ fn read_only_profile_dir_is_an_io_error_not_a_panic() {
         "the read-only dir must stay empty: {entries:?}"
     );
 
-    std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o755))
-        .expect("restore perms for tempdir cleanup");
+    set_writable(&ro);
 }
 
 // ---------------------------------------------------------------------------
@@ -501,6 +532,7 @@ fn read_only_profile_dir_is_an_io_error_not_a_panic() {
 // ---------------------------------------------------------------------------
 
 #[test]
+#[cfg(unix)] // symlink privileges are not guaranteed on windows CI
 fn symlink_wrappers_share_one_canonical_lock() {
     let dir = tempfile::tempdir().expect("tempdir");
     let real = dir.path().join("real");
@@ -580,6 +612,7 @@ fn symlink_wrappers_share_one_canonical_lock() {
 }
 
 #[test]
+#[cfg(unix)] // symlink privileges are not guaranteed on windows CI
 fn from_profile_isolated_builds_a_writer_through_a_symlink_profile() {
     // The isolated path still works end-to-end: a symlinked data dir is
     // sanitized (it is a dir, not the root) and canonicalized into a
@@ -919,14 +952,13 @@ fn serve_with_read_only_data_dir_fails_before_any_protocol_byte() {
     let dir = tempfile::tempdir().expect("tempdir");
     let ro = dir.path().join("ro-profile");
     std::fs::create_dir_all(&ro).expect("ro dir");
-    std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o555)).expect("chmod 555");
+    set_readonly(&ro);
 
     if std::fs::write(ro.join("probe"), b"x").is_ok() {
         // Permissions not enforced in this environment (root): the
         // io-error refusal cannot be exercised — restore and skip.
         let _ = std::fs::remove_file(ro.join("probe"));
-        std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o755))
-            .expect("restore perms");
+        set_writable(&ro);
         return;
     }
 
@@ -953,8 +985,7 @@ fn serve_with_read_only_data_dir_fails_before_any_protocol_byte() {
         .read_to_string(&mut stderr)
         .expect("stderr read");
 
-    std::fs::set_permissions(&ro, std::fs::Permissions::from_mode(0o755))
-        .expect("restore perms for tempdir cleanup");
+    set_writable(&ro);
 
     assert!(
         !status.success(),
