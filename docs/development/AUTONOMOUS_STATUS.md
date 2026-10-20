@@ -703,3 +703,22 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   (trusted-publisher авторизация + release approval).
 - **Бейджи**: все три SVG живы (200), слуги Simple Icons корректны; FUNDING.yml кнопки верны.
 - Интеграционная голова b340abc; CI на предыдущей кодовой голове был 41/41.
+
+## Волна Issue #9+#11 (2026-10-20): P0/P1 закрыты, A1 игрового лаба ПРОДОКАН
+
+- **Приняты явно #9 и #11** (+связанные #10 и обязательный стандарт
+  AGENT_INTEROPERABILITY_QUALITY_STANDARD.md, HEAD на момент старта 4652e37).
+- **P0 job-id коллизия ЗАКРЫТА** (fe574d9): boot-stamp (hex millis+pid) + thread-nonce
+  вместо рестарт-сбрасывающегося счётчика; 50 синтетических рестартов — ноль коллизий.
+- **P1 implicit-rejection ЗАКРЫТ** (fe574d9): applied-строки получают ledger-статус,
+  невыбранные остаются reviewable, job держит PreviewReady с честной partial-заметкой
+  пока есть непросмотренные; регрессия unselected_rows_survive_a_partial_apply.
+- **A1 (Issue #9) ПРОДОКАН ЖИВЬЁМ** (f536d72): GABS 1.1.2 + RimBridgeServer 2.3.0
+  (MIT) на живой игре 1.6.4871; изолированный -savedatafolder профиль; MCP-клиент
+  testlab/rimworld/gabs_mcp.py; семантический list_languages → НАСТОЯЩИЙ EN→RU
+  switch_language (queued long event) → ГЛАВНОЕ МЕНЮ НА РУССКОМ (скриншот при
+  чужом frontmost) → чистый выход. КОРЕНЬ старого блокера найден: defaults write
+  менял только преф, а не сам переключатель UI; «30-секундное действие владельца»
+  упразднено. Хозяинская среда нетронута (реальный ModsConfig 0 rimloc-строк,
+  NO_DEFAULTS_KEY, аддитивный мост-мод включён только в изолированном профиле).
+- beta-README Stage C рассинхрон исправлен (aa6a6e0).
