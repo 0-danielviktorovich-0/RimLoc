@@ -54,10 +54,27 @@ pub const LOCK_FILE_NAME: &str = "rimloc-mcp.lock";
 
 /// Managed-root profile resolution — mirrors the GUI shell so both share
 /// one projects universe under the same `RIMLOC_DATA_DIR`.
+///
+/// The env value is operator input (the client launching this process owns
+/// the machine), but it is still validated before any filesystem work: an
+/// RIMLOC_DATA_DIR that is relative or carries `..` components is refused
+/// loudly and the default profile is used — a mis-set variable must never
+/// silently point the writer at an unexpected tree.
 pub fn managed_root_for_env() -> PathBuf {
     if let Ok(dir) = std::env::var("RIMLOC_DATA_DIR") {
         if !dir.is_empty() {
-            return PathBuf::from(dir).join("managed");
+            let candidate = PathBuf::from(&dir);
+            let sane = candidate.is_absolute()
+                && candidate
+                    .components()
+                    .all(|c| !matches!(c, std::path::Component::ParentDir));
+            if sane {
+                return candidate.join("managed");
+            }
+            crate::stderr_log(&format!(
+                "RIMLOC_DATA_DIR `{dir}` is not an absolute traversal-free path; \
+                 refusing it and falling back to the default profile"
+            ));
         }
     }
     match os_data_dir() {
