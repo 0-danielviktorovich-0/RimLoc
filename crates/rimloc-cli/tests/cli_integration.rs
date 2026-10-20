@@ -1879,6 +1879,20 @@ fn scan_for_hardcoded_user_strings_in(dir: &std::path::Path, include_tests: bool
                 continue;
             }
 
+            // Skip the external MCP server's binary entry and stderr seam:
+            // its stdout IS the MCP protocol channel (JSON-RPC frames, not
+            // human UI), its stderr carries machine diagnostics for the
+            // operator running the client, and `doctor` prints a contracted
+            // machine report meant for scripts and support bundles. None of
+            // it is localized product UI — the same rationale as examples/
+            // above. The crate's library modules stay under the scan.
+            let pstr_file = path.to_string_lossy().replace('\\', "/");
+            if pstr_file.ends_with("crates/rimloc-mcp/src/main.rs")
+                || pstr_file.ends_with("crates/rimloc-mcp/src/lib.rs")
+            {
+                continue;
+            }
+
             // If we are scanning tests=false and this is clearly a test file path, skip
             if !include_tests {
                 // Normalized separators: same-separator contains() never

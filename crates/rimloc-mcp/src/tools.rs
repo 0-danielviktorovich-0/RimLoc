@@ -1898,11 +1898,9 @@ mod tests {
                 .iter()
                 .find(|t| t.name == tool)
                 .expect("registered");
-            let epoch = def
-                .args
-                .iter()
-                .find(|a| a.name == "session_epoch")
-                .unwrap_or_else(|| panic!("{tool}: session_epoch arg must exist"));
+            let epoch = def.args.iter().find(|a| a.name == "session_epoch");
+            assert!(epoch.is_some(), "{tool}: session_epoch arg must exist");
+            let epoch = epoch.expect("proven by the assert above");
             assert!(epoch.required, "{tool}: session_epoch must be REQUIRED");
         }
         // And rimloc.project.open carries NO epoch: open mints it.
