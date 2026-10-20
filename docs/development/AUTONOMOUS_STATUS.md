@@ -779,3 +779,21 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
   перевод РЕАЛЬНОГО RimLoc-экспорта на синтетическую канарейку. Скриншот снят.
 - Владельческая среда чиста (STOPPED, NO_DEFAULTS_KEY, реальный ModsConfig 0 rimloc-строк).
 - A1+A2+A3 — весь игровой acceptance-мандат Issue #9 закрыт автономно.
+
+## Issue #12 (2026-10-20): PR #102 влит, плагин установлен в настоящий ZCode
+
+- **PR #102 влит в feat/integration-rel27** (1fba077e): workspace-skill
+  `.zcode/skills/rimloc-release-orchestrator` + плагин `rimloc-workflow-guard`
+  (SessionStart/UserPromptSubmit/PostToolUse/Stop hooks) + marketplace. Оффлайн-набор
+  9/9 зелёный ЛОКАЛЬНО тоже (node --test).
+- **Плагин установлен в живой ZCode** (user scope): marketplace `rimloc-zcode`
+  зарегистрирован (path-source на tools/zcode интеграционного воркстри), плагин в
+  `~/.zcode/cli/plugins/installed_plugins.json` (id rimloc-workflow-guard@rimloc-zcode,
+  кэш-копия 0.1.0 с plugin.json/hooks/skills). Установка — зеркалирование того, что
+  делает UI-флоу Settings→Plugins; чтение/запись только аддитивные, конфиги не перезаписаны.
+- **Ограничение честно**: hooks снимаются в НОВОЙ сессии ZCode (документация платформы;
+  снапшот на старте сессии) — текущая сессия их не подхватит. Проверка живого
+  CreateWorkflow-Receipt требует новую сессию владельца/агента в корне RimLoc: любой
+  multi-lane запрос должен вызвать настоящий CreateWorkflow; плагин запишет факт.
+  Это единственный оставшийся шаг A3 из Issue #12 — он требует перезапуска сессии,
+  не настройки.
