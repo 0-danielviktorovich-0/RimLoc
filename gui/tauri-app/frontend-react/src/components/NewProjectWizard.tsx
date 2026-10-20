@@ -220,7 +220,7 @@ export function NewProjectWizard({
             <div className="success-emblem">
               <Check />
             </div>
-            <h3>{modRoot.split('/').filter(Boolean).at(-1) ?? t('wizard.newProject')}</h3>
+            <h3>{modRoot.replace(/\\/g, '/').split('/').filter(Boolean).at(-1) ?? t('wizard.newProject')}</h3>
             <p>
               {sourceName} → {targetName} · RimWorld {version}
             </p>
