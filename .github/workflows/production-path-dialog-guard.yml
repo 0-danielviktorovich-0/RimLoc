@@ -1,0 +1,40 @@
+name: Production Picker & Path Guard
+
+on:
+  pull_request:
+    branches: [main, feat/integration-rel27]
+    paths:
+      - "gui/tauri-app/src-tauri/src/main.rs"
+      - "gui/tauri-app/frontend-react/src/**"
+      - "testlab/scripts/check-product-path-portability.py"
+      - ".github/workflows/production-path-dialog-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  path-dialog-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: No hardcoded developer absolute paths in shipping code
+        run: python3 testlab/scripts/check-product-path-portability.py
+      - name: Native Rust picker must not block Tauri main event loop
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          src = Path("gui/tauri-app/src-tauri/src/main.rs").read_text()
+          for function, end_marker, blocking_op in [
+              ("pick_directory", "/// Self-localization entry", ".blocking_pick_folder()"),
+              ("pick_po_file", "#[tauri::command]\nasync fn pick_directory", ".blocking_pick_file()")
+          ]:
+              start = src.index(f"async fn {function}(")
+              end = src.index(end_marker, start)
+              segment = src[start:end]
+              assert "#[tauri::command]\nasync fn " + function in src
+              assert "tauri::async_runtime::spawn_blocking(move ||" in segment, function
+              assert blocking_op in segment, function
+          print("Two production file-pickers delegate blocking native dialogs to a worker: PASS")
+          PY
