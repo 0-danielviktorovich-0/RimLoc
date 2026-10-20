@@ -801,6 +801,19 @@ mod tests {
         );
     }
 
+    /// The platform volume root: `/` on unix, the system drive on windows
+    /// (e.g. `C:\`). Ladder tests use it so the "canonicalizes to the
+    /// volume root" branch is exercised on every OS.
+    #[cfg(test)]
+    fn volume_root() -> PathBuf {
+        if cfg!(windows) {
+            let drive = std::env::var("SYSTEMDRIVE").unwrap_or_else(|_| "C:".to_string());
+            PathBuf::from(format!("{drive}\\"))
+        } else {
+            PathBuf::from("/")
+        }
+    }
+
     #[test]
     fn sanitization_ladder_refuses_relative_traversal_and_root() {
         // Pure shape checks first (no filesystem access).
