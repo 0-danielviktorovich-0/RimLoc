@@ -17,6 +17,7 @@ members = [
     "crates/rimloc-export-xliff",
     "crates/rimloc-import-xliff",
     "crates/rimloc-mcp",
+    "crates/rimloc-broker",
     "gui/tauri-app/src-tauri",
 ]
 # Patched upstream crates are dependencies, not RimLoc workspace packages.

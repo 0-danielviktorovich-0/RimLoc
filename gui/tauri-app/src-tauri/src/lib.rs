@@ -4,6 +4,12 @@
 //! exposes ONLY the binding-wave contract adapter so enforcement tests can
 //! build the real app against a mock runtime (lead review 029 / binding
 //! wave 2: "built-app evidence beats a source regex").
+/// Phase 2 GUI-session broker host (`docs/development/MCP_SERVER_PHASE2.md`):
+/// binds the `rimloc-broker` data-plane over the LIVE `ContractState`
+/// manager in the `.setup` hook and forwards broker mutations to the
+/// frontend as the `broker-changed` Tauri event. `RIMLOC_BROKER=0` opts
+/// out; a failed start never takes the shell down. Unix-only by design.
+pub mod broker_host;
 pub mod contract_adapter;
 /// Provider connectivity probe (§7 F7.1/F7.2): the bounded
 /// `contract_provider_instance_test` command — the CLI `provider-test`

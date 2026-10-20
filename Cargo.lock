@@ -4417,6 +4417,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
 
 [[package]]
+name = "rimloc-broker"
+version = "0.2.0"
+dependencies = [
+ "rimloc-services",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "rimloc-cli"
 version = "0.2.0-alpha.1"
 dependencies = [
@@ -4535,6 +4545,7 @@ dependencies = [
  "once_cell",
  "open",
  "regex",
+ "rimloc-broker",
  "rimloc-domain",
  "rimloc-export-csv",
  "rimloc-export-po",

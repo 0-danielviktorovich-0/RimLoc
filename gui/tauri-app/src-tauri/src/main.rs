@@ -4143,6 +4143,14 @@ fn main() {
             // §8 F8.4: session reveal allow-list — starts EMPTY (nothing is
             // revealable before a successful build/export of THIS process).
             app.manage(rimloc_gui_lib::reveal::RevealState::default());
+            // Phase 2 GUI-session broker (docs/development/
+            // MCP_SERVER_PHASE2.md): while this GUI process runs, it is
+            // the ONE authoritative writer — host the rimloc-broker over
+            // the live contract state so external rimloc-mcp clients
+            // execute through it. RIMLOC_BROKER=0 opts out; every failure
+            // is a stderr diagnostic (pre-window channel) and the shell
+            // lives on.
+            rimloc_gui_lib::broker_host::start_broker(app.handle().clone());
             let main_window = app.get_webview_window("main");
             if let Some(window) = main_window {
                 // Agent automation (RIMLOC_AUTOMATION=1): AXManualAccessibility

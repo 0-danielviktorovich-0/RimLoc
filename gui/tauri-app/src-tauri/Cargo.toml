@@ -41,6 +41,13 @@ tauri-plugin-wdio-webdriver = { optional = true, version = "1.4.0" }
 tauri-plugin-wdio = { optional = true, version = "1.4.0" }
 tauri-plugin-window-state = "=2.5.0"
 
+[target.'cfg(unix)'.dependencies]
+# Phase 2 GUI-session broker (docs/development/MCP_SERVER_PHASE2.md): the
+# broker data-plane crate hosted by the shell in setup. Unix-only by design
+# (0600 UDS in the profile; Windows named pipe is Phase 3) — the dep and the
+# host module (src/broker_host.rs) carry the same cfg(unix) gate.
+rimloc-broker = { path = "../../../crates/rimloc-broker" }
+
 [features]
 default = ["custom-protocol", "keychain"]
 custom-protocol = ["tauri/custom-protocol"]

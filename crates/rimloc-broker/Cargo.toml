@@ -1,0 +1,15 @@
+[package]
+name = "rimloc-broker"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.89"
+license = "GPL-3.0-only"
+description = "RimLoc GUI-session broker: line-JSON v1 over a 0600 Unix socket in the profile (Phase 2)"
+
+[dependencies]
+rimloc-services = { version = "0.2.0", path = "../rimloc-services" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
