@@ -131,8 +131,13 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
   const acceptSelected = (): void => {
     if (!job) return
     const chosen = [...selected]
+    // Only EXPLICITLY rejected rows (the service already tracked them as
+    // `rejected` when the user pressed a row's reject control). Rows that
+    // are merely UNSELECTED stay `translated` — pending for a later
+    // review round (Issue #9 P1: implicit rejection destroyed reviewable
+    // previews on every partial apply).
     const rejected = job.rows
-      .filter((r) => r.status === 'translated' && !selected.has(r.identity))
+      .filter((r) => r.status === 'rejected')
       .map((r) => r.identity)
     setBusy(true)
     clientInstance.getClient().aiJobAcceptSelected(job.job_id, epoch ?? 0, chosen, rejected)

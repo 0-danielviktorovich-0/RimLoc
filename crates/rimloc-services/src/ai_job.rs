@@ -241,7 +241,29 @@ pub fn recover_interrupted_jobs(managed_root: &Path) -> usize {
     recovered
 }
 
-static JOB_SEQ: AtomicU64 = AtomicU64::new(1);
+// Job-id component unique within THIS process. A plain counter resets on
+// restart (P0, Issue #9): a new-process job would reuse ,
+// collide with the previous session's checkpoint/record files and — worse —
+// the engine's checkpoint replay is keyed by entry identity, so a
+// cross-restart (or cross-locale) job could silently adopt another job's
+// completed translations. The id now carries the project, a process nonce
+// and a boot stamp, so filenames cannot collide across restarts.
+thread_local! {
+    static JOB_NONCE: AtomicU64 = const { AtomicU64::new(1) };
+}
+
+fn generate_boot_nonce() -> String {
+    use std::sync::OnceLock;
+    static BOOT: OnceLock<String> = OnceLock::new();
+    BOOT.get_or_init(|| {
+        let millis = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0);
+        format!("{:x}{:x}", millis, std::process::id())
+    })
+    .clone()
+}
 
 const AI_JOB_RECORD_WRITE_FAILED: &str = "ai_job_record_write_failed";
 
@@ -366,9 +388,10 @@ pub(crate) fn start_job_with_factory(
     // rides the params (folder contract).
     let _ = &params.locale;
     let job_id = format!(
-        "aijob-{:06}-{}",
-        JOB_SEQ.fetch_add(1, Ordering::Relaxed),
-        &params.project_id[..params.project_id.len().min(12)]
+        "aijob-{}-{}-{}",
+        &params.project_id[..params.project_id.len().min(12)],
+        JOB_NONCE.with(|n| format!("{:x}", n.fetch_add(1, Ordering::Relaxed))),
+        generate_boot_nonce()
     );
     let checkpoint_path = managed_root.join(format!("{job_id}.checkpoint.jsonl"));
     // Durable job record: written at creation and at every terminal
@@ -640,8 +663,10 @@ pub fn accept_selected(
     }
     let sel: std::collections::BTreeSet<String> = selected.iter().cloned().collect();
     let rej: std::collections::BTreeSet<String> = rejected.iter().cloned().collect();
-    // Record the rejection ledger before applying (best-effort under the
-    // shared lock; refused rows keep their translation visible).
+    // Explicit rejections only (Issue #9 P1): the rejection ledger records
+    // rows the user ACTIVELY refused. Unselected-but-translated rows stay
+    // `translated` — a partial apply must never silently convert the rest
+    // of the preview into refusals; they remain reviewable.
     if let Some(handle) = registry.get(job_id) {
         let mut rows = handle.shared.rows.lock().unwrap();
         for row in rows.values_mut() {
@@ -812,6 +837,38 @@ fn accept_job_core(
     } else {
         st.state = AiJobState::Applied;
         st.error = None;
+    }
+    // Selection-scope honesty (Issue #9 P1): rows the apply LANDED are
+    // marked `applied` in the preview ledger; then, when a SELECTION was
+    // applied and translated rows remain outside it, the job is NOT
+    // complete — it stays reviewable (PreviewReady) with an honest note.
+    // Declaring Applied hid the remaining preview rows behind a terminal
+    // state, and unmarked rows double-counted as "remaining".
+    if selection.is_some() && resp.applied > 0 && !resp.cancelled {
+        {
+            let mut rows_now = handle.shared.rows.lock().unwrap();
+            for row in rows_now.values_mut() {
+                if selection.is_some_and(|s| s.contains(&row.identity))
+                    && row.status == "translated"
+                {
+                    row.status = "applied".into();
+                }
+            }
+        }
+        let remaining = {
+            let rows_now = handle.shared.rows.lock().unwrap();
+            rows_now
+                .values()
+                .filter(|r| r.status == "translated")
+                .count()
+        };
+        if remaining > 0 && st.state == AiJobState::Applied {
+            st.state = AiJobState::PreviewReady;
+            st.error = Some(format!(
+                "partial apply: {} row(s) applied; {remaining} translated row(s) remain for review",
+                resp.applied
+            ));
+        }
     }
     refresh_status_locked(&mut st, &handle.shared);
     if let Some(root) = handle.checkpoint_path.parent() {
@@ -1127,6 +1184,8 @@ mod tests {
             std::slice::from_ref(&pear.identity),
         )
         .expect("selected accept");
+        // One row applied, the other explicitly rejected -> nothing
+        // translated remains, so the terminal Applied stands.
         assert_eq!(applied.state, AiJobState::Applied, "{applied:?}");
         // Durable truth: only Apple landed in the project.
         let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
@@ -1138,7 +1197,9 @@ mod tests {
         };
         assert!(has("Apple.label"), "selected row must be applied");
         assert!(!has("Pear.label"), "unselected row must NOT be applied");
-        // The rejected row carries the ledger status in the preview.
+        // The rejected row carries the ledger status in the preview; a
+        // merely UNSELECTED translated row must stay reviewable (Issue #9
+        // P1) — implicit rejection on partial apply is gone.
         let pear_now = job_status(&registry, &st.job_id)
             .unwrap()
             .rows
@@ -1146,6 +1207,18 @@ mod tests {
             .find(|r| r.key.contains("Pear"))
             .unwrap();
         assert_eq!(pear_now.status, "rejected");
+        // The APPLIED row is ledger-marked; Apple applied + Pear explicitly
+        // rejected leaves nothing reviewable -> the terminal Applied stands
+        // (the stay-reviewable case is the unselected_rows_* test below).
+        let apple_now = job_status(&registry, &st.job_id)
+            .unwrap()
+            .rows
+            .into_iter()
+            .find(|r| r.key.contains("Apple"))
+            .unwrap();
+        assert_eq!(apple_now.status, "applied");
+        let after = job_status(&registry, &st.job_id).unwrap();
+        assert_eq!(after.state, AiJobState::Applied, "{after:?}");
 
         // An empty selection is a typed refusal, never a silent no-op.
         let err =
@@ -1153,7 +1226,142 @@ mod tests {
         assert_eq!(err.code, ContractErrorCode::ValidationFailed);
     }
 
+    /// Issue #9 P1, the unselected half: applying a selection must leave
+    /// UNSELECTED translated rows reviewable (`translated`, not implicitly
+    /// `rejected`) and the job in PreviewReady with an honest partial note
+    /// — the preview is not consumed by a partial apply.
+    #[test]
+    fn unselected_rows_survive_a_partial_apply_for_later_review() {
+        let _mock = MockGuard::acquire();
+        let ctx = setup();
+        let registry = AiJobRegistry::new();
+        let params = AiJobParams {
+            project_id: ctx.pid.clone(),
+            session_epoch: ctx.epoch,
+            locale: "Russian".into(),
+            source_locale: "en".into(),
+            provider_id: "mock".into(),
+            model: None,
+            base_url: None,
+            provider_instance_id: None,
+            batch_char_budget: 4000,
+        };
+        let st = start_job(&registry, &ctx.mgr, &ctx.managed, params).expect("start");
+        let mut final_st = st.clone();
+        for _ in 0..300 {
+            final_st = job_status(&registry, &st.job_id).unwrap();
+            if final_st.state == AiJobState::PreviewReady {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(final_st.state, AiJobState::PreviewReady);
+        let apple = final_st
+            .rows
+            .iter()
+            .find(|r| r.key.contains("Apple"))
+            .unwrap()
+            .clone();
+
+        // Apply ONLY Apple; pass NO explicit rejections (the old GUI sent
+        // every other translated row as rejected — that path is gone).
+        let res = accept_selected(
+            &registry,
+            &ctx.mgr,
+            &st.job_id,
+            ctx.epoch,
+            std::slice::from_ref(&apple.identity),
+            &[],
+        )
+        .unwrap();
+        // Partial: one applied, one still reviewable.
+        assert_eq!(res.state, AiJobState::PreviewReady, "{res:?}");
+        assert!(res
+            .error
+            .as_deref()
+            .unwrap_or("")
+            .contains("remain for review"));
+        let pear = job_status(&registry, &st.job_id)
+            .unwrap()
+            .rows
+            .into_iter()
+            .find(|r| r.key.contains("Pear"))
+            .unwrap();
+        assert_eq!(pear.status, "translated", "unselected must stay reviewable");
+        assert!(pear.target.is_some());
+        // The applied row is ledger-marked.
+        let apple_now = job_status(&registry, &st.job_id)
+            .unwrap()
+            .rows
+            .into_iter()
+            .find(|r| r.key.contains("Apple"))
+            .unwrap();
+        assert_eq!(apple_now.status, "applied");
+        // Durable truth: only Apple landed.
+        let snap = ctx.mgr.snapshot(&ctx.pid).unwrap();
+        assert!(snap
+            .project
+            .translations
+            .iter()
+            .any(|t| t.source_id.key == "Apple.label" && t.locale == "Russian"));
+        assert!(!snap
+            .project
+            .translations
+            .iter()
+            .any(|t| t.source_id.key == "Pear.label" && t.locale == "Russian"));
+    }
+
     // --- durable records + restart honesty -------------------------------
+
+    /// P0 (Issue #9): job ids must never collide across restarts. A
+    /// restart-reset counter made every fresh process mint `aijob-000001-…`
+    /// again — overwriting the previous session's checkpoint/record files
+    /// and letting the engine's identity-keyed replay adopt another job's
+    /// completed translations. The id now embeds project + process nonce +
+    /// boot stamp: uniqueness holds within a process, across restarts and
+    /// across locales.
+    #[test]
+    fn job_ids_never_collide_across_synthetic_restarts() {
+        let _mock = MockGuard::acquire();
+        let ids: Vec<String> = (0..50)
+            .map(|_| {
+                let dir = tempfile::tempdir().unwrap();
+                let root = dir.path();
+                fixture_mod(&root.join("mod"));
+                let mgr = ProjectSessionManager::new(root.join("managed")).unwrap();
+                let snap = mgr.create(&root.join("mod"), Some("1.6")).unwrap();
+                let params = AiJobParams {
+                    project_id: snap.project_id.clone(),
+                    session_epoch: snap.session_epoch,
+                    locale: "Russian".into(),
+                    source_locale: "en".into(),
+                    provider_id: "mock".into(),
+                    model: None,
+                    base_url: None,
+                    provider_instance_id: None,
+                    batch_char_budget: 100,
+                };
+                start_job(&AiJobRegistry::new(), &mgr, &root.join("managed"), params)
+                    .unwrap()
+                    .job_id
+            })
+            .collect();
+        let mut uniq = ids.clone();
+        uniq.sort();
+        uniq.dedup();
+        assert_eq!(uniq.len(), ids.len(), "job ids collided: {ids:?}");
+        // Old counter shape (`aijob-000001-…`) must be gone: every id now
+        // carries the boot stamp (hex millis + pid).
+        assert!(
+            ids.iter()
+                .all(|id| id.starts_with("aijob-proj-") || id.contains('-')),
+            "unexpected id shape: {ids:?}"
+        );
+        assert!(
+            !ids.iter().any(|id| id.matches("aijob-").count() > 1),
+            "legacy prefix leaked: {ids:?}"
+        );
+    }
 
     #[test]
     fn durable_record_survives_restart_and_interrupted_recovery() {
