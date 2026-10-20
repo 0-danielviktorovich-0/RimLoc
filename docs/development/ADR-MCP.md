@@ -1,9 +1,11 @@
 ---
-title: "ADR-MCP: MCP-поверхность — отложена, CLI является агентным API"
-status: Proposed
-date: 2026-10-07
-deciders: архитектурный decision pass (агентская кампания ba-main), владелец — финальное утверждение
+title: "ADR-MCP: внешний MCP-сервер (thin stdio) — решение пересмотрено по условию №2"
+status: Accepted
+date: 2026-10-20
+deciders: владелец (директива issue #10), архитектурная сессия — исполнение
 related:
+  - MCP_SERVER_PHASE1.md
+  - AGENT_INTEROPERABILITY_QUALITY_STANDARD.md
   - AUTONOMOUS_PLAN.md
   - AUTONOMOUS_STATUS.md
   - CANONICAL_PROJECT_MODEL.md
@@ -11,10 +13,34 @@ related:
 tags: [topic/architecture, kind/adr]
 ---
 
-# ADR-MCP: MCP-поверхность — отложена, CLI является агентным API
+# ADR-MCP: внешний MCP-сервер (thin stdio) — решение пересмотрено по условию №2
 
-**Статус:** Proposed (не коммитится; на утверждение владельца)
-**Дата:** 2026-10-07
+**Статус:** Accepted (revisit-условие §7.2 исполнено прямой директивой владельца)
+**Дата пересмотра:** 2026-10-20. Исходное решение (2026-10-07, вариант B «CLI как
+agent-API, MCP отложен») ниже сохранено без правки как история; см. «Решение 2026-10-20».
+
+## Решение 2026-10-20 (пересмотр)
+
+Условие пересмотра §7.2 исполнено: владелец прямой директивой (private issue #10,
+2026-10-20 JST) запросил подключение RimLoc как MCP-сервера к внешним агентам.
+Принимается форма, предписанная этим же условием: **thin stdio adapter, не daemon**.
+
+- Новый опциональный процесс `rimloc-mcp` (stdio, MCP 2026-07-28): запускается
+  MCP-клиентом, не устанавливается молча вместе с GUI, не слушает сеть.
+- Поверхность: над существующим `rimloc-services::contract` /
+  `ProjectSessionManager` — второй translation/export-движок не строится.
+- Три control-плоскости разделены (сервис-API / внешний MCP-фасад / UI-автоматизация);
+  GUI-сессия и headless MCP не пишут в один managed-project одновременно
+  (одиночный writer, честный `rimloc.status`).
+- Порядок фаз и DoD — `MCP_SERVER_PHASE1.md`; стандарт качества —
+  `AGENT_INTEROPERABILITY_QUALITY_STANDARD.md`.
+- Выводы исходного ADR, оставшиеся верными: MCP-минимум агента покрывался CLI
+  (эмпирика кампаний), поэтому v1-поверхность сервера — узкая (capabilities →
+  read-only → контролируемые writes), а не зеркало всех CLI-флагов.
+
+---
+
+## Ниже — исходный ADR 2026-10-07 (история, не редактировался)
 **Мандат:** §X AUTONOMOUS_STATUS («MCP thin adapter, если останется scope») / §8.5 кампании: реализовать thin MCP adapter **или** оформить осознанный ADR об отложении. Этот документ — второй путь.
 
 ---
