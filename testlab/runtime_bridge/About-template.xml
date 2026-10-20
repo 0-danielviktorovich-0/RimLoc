@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>RimLoc QA Bridge</name>
+  <author>RimLoc contributors</author>
+  <packageId>rimloc.qabridge</packageId>
+  <supportedVersions><li>1.6</li></supportedVersions>
+  <description>File-channel runtime bridge for automated RimWorld QA. Test tooling, not gameplay content; requires a licensed RimWorld install to build against and never ships proprietary game files. Protocol v1 (JSON file channel under the save-data QA directory).</description>
+</ModMetaData>
