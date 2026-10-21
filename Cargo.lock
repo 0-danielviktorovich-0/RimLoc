@@ -4608,6 +4608,7 @@ dependencies = [
 name = "rimloc-mcp"
 version = "0.2.0"
 dependencies = [
+ "rimloc-broker",
  "rimloc-domain",
  "rimloc-llm",
  "rimloc-services",

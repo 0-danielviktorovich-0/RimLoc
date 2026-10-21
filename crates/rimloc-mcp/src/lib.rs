@@ -3,6 +3,7 @@
 //! (`tests/`) can drive the real tool layer (tempdir profiles, the
 //! testlab fixture mod) exactly the way a served session would.
 
+pub mod broker_client;
 pub mod error;
 pub mod protocol;
 pub mod runtime;

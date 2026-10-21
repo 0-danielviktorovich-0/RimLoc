@@ -145,11 +145,15 @@ pub static REGISTRY: &[ToolDef] = &[
     ToolDef {
         name: "rimloc.status",
         title: "RimLoc status",
-        description: "Protocol + schema versions, headless/other_writer/shared_profile mode, \
-                      lock owner. Source: local runtime state, no service call. \
-                      In the degraded modes (other_writer OR shared_profile — the default \
-                      GUI-shared or refused profile) write tools and project-scoped reads \
-                      refuse; lock-free disk diagnostics (projects.list, jobs.status) stay up.",
+        description: "Protocol + schema versions, mode, lock owner. Source: local runtime state, \
+                      no service call. Modes: headless (self / other_writer / shared_profile) \
+                      or broker_gui — when a live RimLoc GUI hosts the rimloc-broker on the \
+                      profile, this server reports app=broker_gui, writer=gui_process and \
+                      every project-scoped tool and controlled write executes THROUGH the GUI \
+                      (single-writer; this process holds no lock). In the degraded headless \
+                      modes (other_writer OR shared_profile — the default GUI-shared or \
+                      refused profile) write tools and project-scoped reads refuse; lock-free \
+                      disk diagnostics (projects.list, jobs.status) stay up.",
         read_only: true,
         destructive: false,
         idempotent: true,
@@ -171,9 +175,11 @@ pub static REGISTRY: &[ToolDef] = &[
         name: "rimloc.projects.list",
         title: "List managed projects",
         description: "Managed projects with unloadable diagnostics. \
-                      Source: ProjectSessionManager::list_report; in the degraded modes \
-                      (other_writer OR shared_profile) a lock-free disk scan of the atomic \
-                      managed envelopes answers instead.",
+                      Source: ProjectSessionManager::list_report; in broker_gui mode the \
+                      live GUI broker's list answers (the authoritative view of the GUI \
+                      session); in the degraded headless modes (other_writer OR \
+                      shared_profile) a lock-free disk scan of the atomic managed \
+                      envelopes answers instead.",
         read_only: true,
         destructive: false,
         idempotent: true,
@@ -514,8 +520,10 @@ pub static REGISTRY: &[ToolDef] = &[
                       or returns secrets; only identifiers cross the wire. \
                       PAID (non-local) providers are disabled via the external MCP until an \
                       explicit per-run consent mechanism exists: a non-local instance \
-                      refuses typed `paid_providers_disabled_via_mcp` BEFORE any secret \
-                      resolution or worker spawn; local providers (ollama/loopback) launch. \
+                      refuses typed BEFORE any secret resolution or worker spawn; local \
+                      providers (ollama/loopback) launch. In broker_gui mode the call \
+                      proxies to the GUI broker and the SAME guard is enforced broker-side \
+                      (paid_providers_disabled) — duplicated, not weakened. \
                       Source: rimloc_services::ai_job::start_job (worker thread; poll \
                       rimloc.ai_job.status; the durable record outlives the process).",
         read_only: false,
@@ -930,6 +938,11 @@ fn is_within_allow(candidate: &Path, root: &Path) -> bool {
 // ---------------------------------------------------------------------------
 
 fn status(rt: &Runtime) -> Result<Value, RpcError> {
+    // Phase 2 broker mode reports its own honest shape (app=broker_gui,
+    // writer=gui_process, tools_executable real) — see below.
+    if let runtime::AppMode::BrokerClient { peer } = rt.mode() {
+        return status_broker_gui(rt, peer);
+    }
     let report = rimloc_services::contract::capability_report();
     let (app, owner_pid, held_by_us) = match rt.mode() {
         runtime::AppMode::HeadlessWriter => ("self", Some(std::process::id()), true),
@@ -938,6 +951,14 @@ fn status(rt: &Runtime) -> Result<Value, RpcError> {
         // RIMLOC_DATA_DIR): no lock is held, no writer exists — reported
         // verbatim (audit п.2 honesty).
         runtime::AppMode::SharedProfile { .. } => ("shared_profile", None, false),
+        // Unreachable (early return above); kept exhaustive and honest.
+        runtime::AppMode::BrokerClient { .. } => ("broker_gui", None, false),
+    };
+    let writer: &str = match rt.mode() {
+        runtime::AppMode::HeadlessWriter => "self_process",
+        runtime::AppMode::OtherWriter { .. } => "other_process",
+        runtime::AppMode::SharedProfile { .. } => "none",
+        runtime::AppMode::BrokerClient { .. } => "gui_process",
     };
     let profile_source = match std::env::var("RIMLOC_DATA_DIR") {
         Ok(dir) if !dir.is_empty() => "RIMLOC_DATA_DIR",
@@ -988,6 +1009,8 @@ fn status(rt: &Runtime) -> Result<Value, RpcError> {
     let structured = json!({
         "app": app,
         "mode": "headless",
+        "writer": writer,
+        "writer_pid": owner_pid,
         "protocol_version": crate::protocol::PROTOCOL_VERSION,
         "supported_protocol_versions": crate::protocol::SUPPORTED_PROTOCOL_VERSIONS,
         "ui_contract_version": report.contract_version,
@@ -1047,6 +1070,74 @@ fn status(rt: &Runtime) -> Result<Value, RpcError> {
             writes_executable
         )
     };
+    runtime::tool_ok(structured, summary)
+}
+
+/// The Phase 2 broker-mode status (`MCP_SERVER_PHASE2.md` DoD:
+/// «rimloc.status во всех трёх режимах честен»). Honesty rules of the
+/// mode: `app=broker_gui` (the live GUI owns the profile), the writer is
+/// the GUI PROCESS (`writer=gui_process`, `writer_pid` an honest null —
+/// the broker protocol v1 carries no peer identity), NO writer lock is
+/// held by this process, and the tool counts are REAL: every
+/// project-scoped read and write executes through the broker proxy, so
+/// the full surface is genuinely executable.
+fn status_broker_gui(
+    rt: &Runtime,
+    peer: &crate::broker_client::BrokerPeerInfo,
+) -> Result<Value, RpcError> {
+    let report = rimloc_services::contract::capability_report();
+    let profile_source = match std::env::var("RIMLOC_DATA_DIR") {
+        Ok(dir) if !dir.is_empty() => "RIMLOC_DATA_DIR",
+        _ => "default_app_data",
+    };
+    let read_only_executable = WIRED_READ_ONLY.len() + WIRED_READ_ONLY_ALIASES.len();
+    let writes_executable = WIRED_WRITES.len();
+    let structured = json!({
+        "app": "broker_gui",
+        "mode": "broker_client",
+        "writer": "gui_process",
+        "writer_pid": peer.pid,
+        "protocol_version": crate::protocol::PROTOCOL_VERSION,
+        "supported_protocol_versions": crate::protocol::SUPPORTED_PROTOCOL_VERSIONS,
+        "ui_contract_version": report.contract_version,
+        "managed_root": rt.managed_root().display().to_string(),
+        "profile_source": profile_source,
+        "broker_socket": peer.socket_path.display().to_string(),
+        "lock": {
+            "path": rt.managed_root().join(runtime::LOCK_FILE_NAME).display().to_string(),
+            "held_by_us": false,
+            "owner_pid": peer.pid,
+            // Single-writer honesty: the lock proves nothing against the
+            // GUI — the BROKER does. This process holds no lock at all.
+            "isolation": "gui_broker: the live RimLoc GUI process is the single \
+                          writer (rimloc-broker.sock); this process holds no \
+                          rimloc-mcp.lock and mutates nothing locally",
+        },
+        "gui_sharing_profile": format!(
+            "broker_gui: connected to the live RimLoc GUI broker at `{}` — all \
+             project-scoped tools and controlled writes execute through the GUI \
+             (single-writer); unsaved GUI drafts are untouched by this process",
+            peer.socket_path.display()
+        ),
+        "tools": {
+            "declared": REGISTRY.len(),
+            "read_only_executable": read_only_executable,
+            "writes_executable": writes_executable,
+        },
+        "project_scoped_reads": "available_via_gui_broker",
+    });
+    let summary = format!(
+        "broker_gui: executing through the live RimLoc GUI broker at `{}` — the GUI \
+         process is the single writer; protocol {}, ui contract v{}; {}/{} tools \
+         executable ({} read-only + {} controlled writes, all proxied)",
+        peer.socket_path.display(),
+        crate::protocol::PROTOCOL_VERSION,
+        report.contract_version,
+        read_only_executable + writes_executable,
+        REGISTRY.len(),
+        read_only_executable,
+        writes_executable
+    );
     runtime::tool_ok(structured, summary)
 }
 
@@ -1857,11 +1948,41 @@ fn export_build(rt: &Runtime, args: &ExportBuildArgs) -> Result<Value, RpcError>
 /// registered tool is wired (read-only + controlled writes); the fallback
 /// arm stays as a typed safety net for future registry entries whose
 /// handler has not landed.
+///
+/// Phase 2 (`MCP_SERVER_PHASE2.md` «MCP-режим BrokerClient»): when the
+/// runtime is in broker mode, EVERY project-scoped tool and controlled
+/// write PROXIES to the live GUI broker (`crate::broker_client`) — the
+/// GUI process is the single writer, no local session machinery runs and
+/// the writer-lock is not consulted. Only `rimloc.status` and
+/// `rimloc.capabilities` stay local: they report THIS process and the
+/// pure contract report, no profile state. The PAID GUARD in broker mode
+/// is the BROKER's own (`OpsImpl::ai_job_start` refuses paid providers
+/// before any launch) — `rimloc.ai_job.start` proxies as-is; the
+/// module docs of `broker_client.rs` document why the MCP-side guard
+/// cannot run here (no instance-list method on the broker surface, by
+/// design) and why that is duplication, not weakening.
 pub fn call(name: &str, arguments: Value, rt: &Runtime) -> Result<Value, RpcError> {
     let def = REGISTRY
         .iter()
         .find(|tool| tool.name == name)
         .ok_or_else(|| RpcError::invalid_params(format!("unknown tool: {name}")))?;
+    if rt.is_broker_client() {
+        match name {
+            "rimloc.status" | "rimloc.capabilities" => {} // local surfaces, fall through
+            _ => {
+                let client = rt.broker().ok_or_else(|| {
+                    RpcError::internal(format!(
+                        "broker_client mode without a broker seam; `{name}` cannot run"
+                    ))
+                    .with_data(json!({ "code": "broker_seam_missing", "tool": name }))
+                })?;
+                crate::stderr_log(&format!(
+                    "tools/call `{name}` -> proxying to the gui broker"
+                ));
+                return crate::broker_client::proxy_tool_call(name, &arguments, client);
+            }
+        }
+    }
     match name {
         "rimloc.status" => status(rt),
         "rimloc.capabilities" => capabilities(),

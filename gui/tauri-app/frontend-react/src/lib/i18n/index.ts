@@ -213,6 +213,10 @@ const ru: Record<string, string> = {
   'ws.rows': 'строк',
   'ws.of': 'из',
   'ws.sessionChanges': 'Изменения в текущей сессии',
+  // Phase 2b: внешнее изменение через GUI-брокер (событие broker-changed).
+  'ws.externalChange.label': 'Внешнее изменение',
+  'ws.externalChange.hint':
+    'Проект изменён вне текущей сессии (ревизия {revision}); черновики не тронуты.',
   'ws.addTarget': 'Добавить перевод…',
   'ws.editorTitle': 'РЕДАКТОР СТРОКИ',
   'ws.prev': 'Предыдущая строка',
@@ -862,6 +866,10 @@ const en: Record<string, string> = {
   'ws.rows': 'rows',
   'ws.of': 'of',
   'ws.sessionChanges': 'Changes in this session',
+  // Phase 2b: external change via the GUI broker (broker-changed event).
+  'ws.externalChange.label': 'External change',
+  'ws.externalChange.hint':
+    'The project changed outside this session (revision {revision}); drafts are untouched.',
   'ws.addTarget': 'Add translation…',
   'ws.editorTitle': 'STRING EDITOR',
   'ws.prev': 'Previous string',
