@@ -14,6 +14,10 @@
 //!   and the default/refused profile becomes `shared_profile` mode —
 //!   both honest read-only diagnostics, fail-closed (writes and
 //!   project-scoped reads refuse typed; disk diagnostics stay up).
+//!   Phase 2: a LIVE RimLoc GUI broker on the profile upgrades the
+//!   session to `broker_client` mode instead — the GUI process is the
+//!   single writer and every project-scoped tool / controlled write
+//!   proxies to it (`rimloc_mcp::broker_client`).
 //! - `rimloc-mcp doctor`: an environment report printed to stdout (this is
 //!   a CLI subcommand, not a protocol session — the two modes never mix,
 //!   and doctor stays side-effect free: no lock, no directories).
@@ -62,6 +66,15 @@ fn serve() -> ExitCode {
             "headless writer: exclusive lock held on `{}`; protocol {} over stdio \
              (stateless per-request _meta; logs on stderr only)",
             rt.managed_root().display(),
+            protocol::PROTOCOL_VERSION
+        )),
+        runtime::AppMode::BrokerClient { peer } => stderr_log(&format!(
+            "broker_client mode: live RimLoc GUI broker at `{}` ({}; pid unknown — the \
+             broker protocol v1 carries no peer identity); the GUI process is the single \
+             writer, every project-scoped tool and controlled write proxies to it; \
+             protocol {} over stdio (logs on stderr only)",
+            peer.socket_path.display(),
+            peer.label(),
             protocol::PROTOCOL_VERSION
         )),
         runtime::AppMode::OtherWriter { owner } => stderr_log(&format!(
@@ -227,7 +240,9 @@ fn doctor() -> ExitCode {
     );
     println!(
         "serve mode: exclusive writer lock on ISOLATED managed roots only; \
-         default/refused profiles are fail-closed shared diagnostics"
+         default/refused profiles are fail-closed shared diagnostics; a live RimLoc \
+         GUI broker on the profile upgrades the session to broker_client mode \
+         (all project-scoped tools execute through the GUI, single-writer)"
     );
     println!("doctor mode: side-effect free (no lock, no directories created)");
     println!(

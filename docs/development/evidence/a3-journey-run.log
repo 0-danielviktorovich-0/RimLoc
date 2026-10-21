@@ -1,0 +1,144 @@
+
+Execution of 1 workers started at 2026-10-21T04:07:42.620Z
+
+[0-0] RUNNING in undefined - file:///Users/danielviktorovich/Developing/_rimloc-worktrees/mcp-broker/gui/tauri-app/frontend-v2/e2e/wdio-spike/a3-broker.spec.ts
+[0-0] 2026-10-21T04:07:43.212Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.214Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.217Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.218Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] A3 STATUS: "broker_gui"
+[0-0] 2026-10-21T04:07:43.265Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.265Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.267Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.268Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.270Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.271Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.272Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.273Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.273Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.276Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.277Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.281Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.281Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.285Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.285Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.289Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.289Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.290Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.291Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.291Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.293Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.294Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.307Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.307Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.310Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.310Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.312Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.312Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.313Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.313Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.316Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.316Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.318Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.318Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:43.318Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.123Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.123Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.125Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.125Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.127Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.127Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.129Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.129Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.129Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.134Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.134Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.155Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.155Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.164Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.164Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.166Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.166Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.174Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:44.174Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.085Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.086Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.120Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.121Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.121Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.127Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.127Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.129Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.130Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.133Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.133Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.139Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.140Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.141Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.141Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.142Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.362Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:45.363Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.272Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.273Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.279Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.279Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.280Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.283Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.283Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.286Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.286Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.289Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:46.289Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] A3 SNAPSHOT rev: 2 epoch: 1
+[0-0] A3 APPLY RAW: {"jsonrpc":"2.0","id":5,"result":{"content":[{"text":"translation.apply ok via the gui broker; details in structuredContent","type":"text"}],"structuredContent":{"applied":1,"cancelled":false,"job_id":"op-01a15ca4d398-008-97db","revision":3,"skipped":[]}}}
+[0-0] 2026-10-21T04:07:49.199Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:49.200Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.108Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.108Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.110Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.111Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.111Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.119Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.120Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.123Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.123Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.126Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] 2026-10-21T04:07:50.126Z WARN tauri-service:window: Failed to get window states: TypeError: fetch failed
+[0-0] A3 DRAFT AFTER EXTERNAL: "ЧЕРНОВИК-ПОЛЬЗОВАТЕЛЯ"
+[0-0] A3 STALE CODE: stale_revision
+[0-0] 2026-10-21T04:07:50.174Z WARN tauri-service:service: Failed to clear mock store: Error: A sessionId is required for this command
+[0-0]     at FetchRequest.createOptions (file:///Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/webdriver/build/node.js:2222:15)
+[0-0]     at FetchRequest.createOptions (file:///Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/webdriver/build/node.js:2389:49)
+[0-0]     at FetchRequest.makeRequest (file:///Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/webdriver/build/node.js:2194:48)
+[0-0]     at Browser.protocolCommand (file:///Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/webdriver/build/node.js:1721:20)
+[0-0]     at Browser.wrapCommandFn (/Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/@wdio/utils/build/index.js:1100:32)
+[0-0]     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+[0-0]     at async Browser.wrapCommandFn (/Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/@wdio/utils/build/index.js:1100:23)
+[0-0]     at async Object.restoreAllMocks (/Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/@wdio/tauri-service/dist/esm/index.js:3848:5)
+[0-0]     at async TauriWorkerService.afterSession (/Users/danielviktorovich/Developing/_rimloc-worktrees/integration-rel27/gui/tauri-app/frontend-v2/node_modules/@wdio/tauri-service/dist/esm/index.js:4127:17)
+[0-0]     at async Promise.all (index 0)
+[0-0] PASSED in undefined - file:///Users/danielviktorovich/Developing/_rimloc-worktrees/mcp-broker/gui/tauri-app/frontend-v2/e2e/wdio-spike/a3-broker.spec.ts
+
+ "spec" Reporter:
+------------------------------------------------------------------
+[webkit 605.1.15 macos #0-0] Running: webkit (v605.1.15) on macos
+[webkit 605.1.15 macos #0-0] Session ID: a89342f2-1f8c-42f6-bfe9-fdc7f3cfe88a
+[webkit 605.1.15 macos #0-0]
+[webkit 605.1.15 macos #0-0] » Users/danielviktorovich/Developing/_rimloc-worktrees/mcp-broker/gui/tauri-app/frontend-v2/e2e/wdio-spike/a3-broker.spec.ts
+[webkit 605.1.15 macos #0-0] A3 — GUI↔MCP concurrency through the live broker
+[webkit 605.1.15 macos #0-0]    ✓ external client detects the GUI broker (single writer)
+[webkit 605.1.15 macos #0-0]    ✓ user creates the project through the wizard
+[webkit 605.1.15 macos #0-0]    ✓ user translates Hello world like a human
+[webkit 605.1.15 macos #0-0]    ✓ user leaves an UNSAVED draft in another row
+[webkit 605.1.15 macos #0-0]    ✓ external agent applies through the broker; the UI refetches without user action
+[webkit 605.1.15 macos #0-0]    ✓ the unsaved user draft survived the external change
+[webkit 605.1.15 macos #0-0]    ✓ a stale external apply is refused with a typed error
+[webkit 605.1.15 macos #0-0]    ✓ evidence screenshot
+[webkit 605.1.15 macos #0-0]
+[webkit 605.1.15 macos #0-0] 8 passing (6.9s)
+
+
+Spec Files:	 1 passed, 1 total (100% completed) in 00:00:07  
+
+A3 EXIT: 0

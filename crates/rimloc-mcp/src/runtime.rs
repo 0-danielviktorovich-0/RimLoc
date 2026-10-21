@@ -74,6 +74,7 @@ use std::sync::OnceLock;
 
 use rimloc_services::contract::{ContractError, ProjectListReport, ProjectSummary};
 
+use crate::broker_client::{BrokerClient, BrokerPeerInfo};
 use crate::error::{codes, RpcError};
 
 /// Lock file name inside the managed root. Distinct from every managed
@@ -372,6 +373,15 @@ pub enum AppMode {
     /// project-scoped reads refuse typed `profile_shared`; lock-free disk
     /// diagnostics stay available.
     SharedProfile { reason: SharedProfileReason },
+    /// Phase 2 (`MCP_SERVER_PHASE2.md` «MCP-режим BrokerClient»): a LIVE
+    /// RimLoc GUI hosts the broker on this profile's socket, so the GUI
+    /// process is THE single writer and every project-scoped tool /
+    /// controlled write of this process PROXIES to it
+    /// (`crate::broker_client`). No writer lock is taken (the writer is
+    /// the GUI; `peer.pid` is an honest `None` — the broker protocol v1
+    /// carries no peer identity). Headless branches above are untouched:
+    /// a dead broker degrades to exactly the Phase 1 rules.
+    BrokerClient { peer: BrokerPeerInfo },
 }
 
 /// Everything tool handlers need: the resolved managed root, the lock
@@ -387,6 +397,9 @@ pub struct Runtime {
     ai_jobs: AiJobRegistryDebug,
     /// Kept alive for the process lifetime; removal happens on drop.
     _lock: Option<WriterLock>,
+    /// The broker proxy in `AppMode::BrokerClient` (proof-of-life from
+    /// the startup probe); `None` in every headless mode.
+    broker: Option<BrokerClient>,
 }
 
 /// Newtype only so `Runtime` keeps its derived `Debug`: the job registry
@@ -403,12 +416,18 @@ impl std::fmt::Debug for AiJobRegistryDebug {
 
 impl Runtime {
     /// Build against an explicit managed root (production resolves the
-    /// profile first via `from_env`; tests inject a tempdir). The root is
-    /// created, CANONICALIZED, and only then locked — the lock file always
-    /// lives on the canonical path, so two processes reaching one root
-    /// through different symlink wrappers contend for ONE lock.
+    /// profile first via `from_env`; tests inject a tempdir). BEFORE any
+    /// filesystem work a Phase 2 broker probe runs on the profile
+    /// (`<parent>/rimloc-broker.sock`): a live GUI broker upgrades this
+    /// process to `AppMode::BrokerClient` — the GUI is the single
+    /// writer, so NOTHING is created, canonicalized or locked here (the
+    /// GUI already owns the tree). Otherwise the Phase 1 headless logic
+    /// runs unchanged: create, CANONICALIZE, lock.
     pub fn build(managed_root: impl Into<PathBuf>) -> std::io::Result<Self> {
         let managed_root = managed_root.into();
+        if let Some(client) = BrokerClient::connect(&broker_profile_dir(&managed_root)) {
+            return Ok(Self::broker_client_runtime(client, managed_root));
+        }
         // The manager would create the root too; doing it here keeps the
         // lock file path well-defined before the first handler call.
         std::fs::create_dir_all(&managed_root)?;
@@ -419,12 +438,14 @@ impl Runtime {
                 mode: AppMode::HeadlessWriter,
                 ai_jobs: AiJobRegistryDebug::default(),
                 _lock: Some(lock),
+                broker: None,
             }),
             Err(LockError::Busy { owner }) => Ok(Self {
                 managed_root,
                 mode: AppMode::OtherWriter { owner },
                 ai_jobs: AiJobRegistryDebug::default(),
                 _lock: None,
+                broker: None,
             }),
             Err(LockError::Io(err)) => Err(err),
         }
@@ -441,13 +462,29 @@ impl Runtime {
     /// production `from_env` path minus the environment read. The
     /// `Isolated` arm re-runs the sanitization ladder (defense in depth:
     /// nothing can bypass `refused_profile_cause` into `build`), the
-    /// `Shared` arm performs NO filesystem work at all.
+    /// `Shared` arm performs NO filesystem work at all — with one Phase 2
+    /// exception: the DEFAULT-profile arm PROBES the broker socket
+    /// (read-only connect) before degrading to shared diagnostics, per
+    /// `MCP_SERVER_PHASE2.md` («При старте: попытка connect к сокету
+    /// профиля. Жив → режим broker_client»). The REFUSED arm never
+    /// probes: a refused isolation request must not execute anything on
+    /// ANY writer, not even the default profile's GUI broker — that
+    /// would be exactly the «silent write into an unexpected tree» the
+    /// ladder exists to prevent (fail-closed).
     pub fn from_profile(profile: ProfileResolution) -> std::io::Result<Self> {
         match profile {
             ProfileResolution::Shared {
                 reason,
                 managed_root,
-            } => Ok(Self::shared_profile(reason, managed_root)),
+            } => {
+                if let SharedProfileReason::DefaultProfile = reason {
+                    if let Some(client) = BrokerClient::connect(&broker_profile_dir(&managed_root))
+                    {
+                        return Ok(Self::broker_client_runtime(client, managed_root));
+                    }
+                }
+                Ok(Self::shared_profile(reason, managed_root))
+            }
             ProfileResolution::Isolated {
                 data_dir,
                 managed_root,
@@ -484,6 +521,23 @@ impl Runtime {
             mode: AppMode::SharedProfile { reason },
             ai_jobs: AiJobRegistryDebug::default(),
             _lock: None,
+            broker: None,
+        }
+    }
+
+    /// The Phase 2 broker-client runtime: the caller proved a live GUI
+    /// broker on this profile. NO filesystem work happens here — no lock,
+    /// no directory creation, no canonicalization; the managed root is
+    /// reported as given (display only — the GUI owns the tree).
+    fn broker_client_runtime(client: BrokerClient, managed_root: PathBuf) -> Self {
+        Self {
+            managed_root,
+            mode: AppMode::BrokerClient {
+                peer: client.peer_info(),
+            },
+            ai_jobs: AiJobRegistryDebug::default(),
+            _lock: None,
+            broker: Some(client),
         }
     }
 
@@ -501,20 +555,36 @@ impl Runtime {
         matches!(self.mode, AppMode::HeadlessWriter)
     }
 
-    /// The runtime is NOT the writer of this root: either another process
-    /// holds the exclusive lock, or the profile is shared with the live
-    /// GUI / was refused (fail-closed). In this state write tools and
-    /// project-scoped reads refuse, and the handlers that CAN answer do
-    /// so lock-free from disk — that is exactly how the tool layer routes
-    /// its diagnostics (`projects.list`, `jobs.status`).
+    /// The runtime must NOT run local writer machinery on this root:
+    /// either another process holds the exclusive lock, or the profile is
+    /// shared with the live GUI / was refused (fail-closed). In these
+    /// states write tools and project-scoped reads refuse, and the
+    /// handlers that CAN answer do so lock-free from disk. (The Phase 2
+    /// broker mode is deliberately NOT here: it neither refuses nor reads
+    /// disk — it proxies to the GUI writer, see `is_broker_client`.)
     pub fn is_other_writer(&self) -> bool {
-        !matches!(self.mode, AppMode::HeadlessWriter)
+        matches!(
+            self.mode,
+            AppMode::OtherWriter { .. } | AppMode::SharedProfile { .. }
+        )
     }
 
     /// Precise predicate for the shared-profile mode (default/refused
     /// profile) as opposed to a contended lock.
     pub fn is_shared_profile(&self) -> bool {
         matches!(self.mode, AppMode::SharedProfile { .. })
+    }
+
+    /// The Phase 2 broker-client mode: a live GUI broker owns the
+    /// profile, and project-scoped tools / writes PROXY to it
+    /// (`crate::broker_client::proxy_tool_call`).
+    pub fn is_broker_client(&self) -> bool {
+        matches!(self.mode, AppMode::BrokerClient { .. })
+    }
+
+    /// The broker proxy, present exactly in `AppMode::BrokerClient`.
+    pub fn broker(&self) -> Option<&BrokerClient> {
+        self.broker.as_ref()
     }
 
     pub fn shared_profile_reason(&self) -> Option<&SharedProfileReason> {
@@ -535,6 +605,18 @@ impl Runtime {
     /// the restart-honest fallback the job tools already consult).
     pub fn ai_jobs(&self) -> &rimloc_services::ai_job::AiJobRegistry {
         &self.ai_jobs.0
+    }
+}
+
+/// The PROFILE directory of a managed root — where the GUI broker binds
+/// its socket (`<profile>/rimloc-broker.sock`; the broker server binds
+/// `managed_root.parent()`). A bare root with no parent component probes
+/// itself — the socket path then simply will not exist and the probe
+/// answers `None`.
+fn broker_profile_dir(managed_root: &Path) -> PathBuf {
+    match managed_root.parent() {
+        Some(parent) if !parent.as_os_str().is_empty() => parent.to_path_buf(),
+        _ => managed_root.to_path_buf(),
     }
 }
 
@@ -595,9 +677,10 @@ pub fn other_writer_error(tool: &str, rt: &Runtime) -> RpcError {
     let owner = match &rt.mode {
         AppMode::OtherWriter { owner } => owner.clone(),
         // Unreachable through `require_writer` (shared refusals take the
-        // `profile_shared` path first); kept exhaustive with an honest
+        // `profile_shared` path first, broker-mode handlers refuse their
+        // own typed path); kept exhaustive with an honest
         // "unknown holder".
-        AppMode::SharedProfile { .. } => LockOwner {
+        AppMode::SharedProfile { .. } | AppMode::BrokerClient { .. } => LockOwner {
             pid: None,
             boot: None,
         },
@@ -658,17 +741,26 @@ pub fn parse_args<T: serde::de::DeserializeOwned>(
 }
 
 /// The writer-machinery gate EVERY write tool and project-scoped read
-/// goes through, before any filesystem work. Two degraded modes refuse
-/// here: another process holds the lock (`other_writer_active`), or the
-/// profile is shared with the live GUI / was refused (`profile_shared`) —
-/// opening a session would run the manager constructor's recovery write
-/// (`recover_interrupted_jobs`) against a store this process must never
-/// mutate (module docs).
+/// goes through, before any filesystem work. Three degraded modes refuse
+/// here: another process holds the lock (`other_writer_active`), the
+/// profile is shared with the live GUI / was refused (`profile_shared`),
+/// or the runtime is in the Phase 2 broker mode and a handler somehow
+/// REACHED a local writer path past the proxy — a routing bug, refused
+/// fail-closed because local execution would race the GUI writer.
 pub fn require_writer(rt: &Runtime, tool: &str) -> Result<(), RpcError> {
     match &rt.mode {
         AppMode::HeadlessWriter => Ok(()),
         AppMode::SharedProfile { reason } => Err(shared_profile_error(tool, reason)),
         AppMode::OtherWriter { .. } => Err(other_writer_error(tool, rt)),
+        AppMode::BrokerClient { .. } => Err(RpcError::internal(format!(
+            "`{tool}` reached a LOCAL writer path while the runtime executes through \
+             the gui broker; the gui process is the single writer and this handler \
+             must have proxied — refusing instead of racing it"
+        ))
+        .with_data(serde_json::json!({
+            "code": "broker_mode_local_execution_refused",
+            "tool": tool,
+        }))),
     }
 }
 
@@ -927,5 +1019,129 @@ mod tests {
         let err = require_writer(&rt, "rimloc.translation.apply").expect_err("refused");
         assert_eq!(err.code, CODE_PROFILE_SHARED);
         assert_eq!(err.data.expect("data")["code"], "profile_shared");
+    }
+
+    // -- Phase 2 broker probe ------------------------------------------------
+
+    /// Bind a unix socket nobody accepts on: enough to prove "a broker is
+    /// alive" to the connect probe, without hosting a real one.
+    #[cfg(unix)]
+    fn bind_fake_broker(profile: &Path) -> std::os::unix::net::UnixListener {
+        std::fs::create_dir_all(profile).expect("profile dir");
+        std::os::unix::net::UnixListener::bind(profile.join("rimloc-broker.sock"))
+            .expect("bind fake broker socket")
+    }
+
+    /// The DEFAULT-profile arm probes the profile socket: a live GUI
+    /// broker upgrades the runtime to broker_client mode BEFORE the
+    /// fail-closed shared degradation — the headline Phase 2 scenario
+    /// (external MCP + live GUI on the default profile).
+    #[cfg(unix)]
+    #[test]
+    fn default_profile_with_a_live_broker_becomes_broker_client() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let managed = dir.path().join("managed"); // never created by us
+        let _listener = bind_fake_broker(dir.path());
+        let rt = Runtime::from_profile(ProfileResolution::Shared {
+            reason: SharedProfileReason::DefaultProfile,
+            managed_root: managed.clone(),
+        })
+        .expect("live broker upgrades, not errors");
+        assert!(rt.is_broker_client());
+        assert!(
+            !rt.is_other_writer(),
+            "the proxy must not route as diagnostics"
+        );
+        assert!(
+            !rt.is_diagnostics_only(),
+            "tools ARE executable through the broker"
+        );
+        match rt.mode() {
+            AppMode::BrokerClient { peer } => {
+                assert_eq!(
+                    peer.socket_path.file_name().and_then(|n| n.to_str()),
+                    Some("rimloc-broker.sock")
+                );
+                assert_eq!(
+                    peer.pid, None,
+                    "the protocol exposes no peer pid — honest None"
+                );
+                assert_eq!(peer.label(), "gui-broker");
+            }
+            // panic!("{}", format!(…)) — house idiom for test panics with
+            // prose (rimloc-services/src/util.rs); the i18n scan accepts a
+            // pure-formatter first literal, bare prose in panic! it flags.
+            other => panic!("{}", format!("expected broker_client mode, got {other:?}")),
+        }
+        assert!(
+            !managed.exists(),
+            "broker mode must not create the managed root"
+        );
+        assert!(rt.broker().is_some(), "the proxy seam rides the runtime");
+    }
+
+    /// A REFUSED profile NEVER goes broker mode — even with a live socket
+    /// on the (default) tree the diagnostics would read. Executing a
+    /// refused isolation request on ANY other profile's writer would be
+    /// the silent-write the sanitization ladder exists to prevent.
+    #[cfg(unix)]
+    #[test]
+    fn refused_profile_never_probes_the_broker() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let managed = dir.path().join("managed");
+        let _listener = bind_fake_broker(dir.path());
+        let rt = Runtime::from_profile(ProfileResolution::Shared {
+            reason: SharedProfileReason::Refused {
+                requested: "/refused".to_string(),
+                cause: "not an absolute traversal-free path".to_string(),
+            },
+            managed_root: managed,
+        })
+        .expect("refused stays shared");
+        assert!(rt.is_shared_profile());
+        assert!(!rt.is_broker_client());
+    }
+
+    /// `Runtime::build` probes too: a live broker on an ISOLATED profile
+    /// (GUI started with the same RIMLOC_DATA_DIR) makes this process a
+    /// broker CLIENT, not a rival writer — no lock file is taken.
+    #[cfg(unix)]
+    #[test]
+    fn isolated_build_with_a_live_broker_takes_no_lock() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let profile = dir.path().join("profile");
+        let managed = profile.join("managed");
+        let _listener = bind_fake_broker(&profile);
+        let rt = Runtime::build(&managed).expect("broker mode builds");
+        assert!(rt.is_broker_client());
+        assert!(
+            !managed.exists(),
+            "the GUI owns the tree; this process must not create or lock it"
+        );
+        assert!(
+            !managed.join(LOCK_FILE_NAME).exists(),
+            "writer-lock must NOT be taken in broker mode"
+        );
+    }
+
+    /// A STALE socket node (connect → ConnectionRefused) is removed by
+    /// the probe and the Phase 1 headless rules apply unchanged.
+    #[cfg(unix)]
+    #[test]
+    fn stale_broker_socket_falls_back_to_headless_rules() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let profile = dir.path().join("profile");
+        let managed = profile.join("managed");
+        let listener = bind_fake_broker(&profile);
+        let socket_path = profile.join("rimloc-broker.sock");
+        drop(listener); // dead node where the socket was — the crash shape
+
+        let rt = Runtime::build(&managed).expect("headless fallback builds");
+        assert!(rt.is_headless_writer());
+        assert!(!socket_path.exists(), "the stale node is cleaned up");
+        assert!(
+            managed.join(LOCK_FILE_NAME).exists(),
+            "the headless writer lock is taken as in Phase 1"
+        );
     }
 }

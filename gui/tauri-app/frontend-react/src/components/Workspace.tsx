@@ -365,25 +365,43 @@ export function Workspace({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       )}
-      <div className="layout-switch" style={{ margin: '0 28px 10px' }} role="tablist" data-testid="ws.mode-switch">
-        {(
-          [
-            ['studio', t('ws.mode.studio')],
-            ['focus', t('ws.mode.focus')],
-            ['overview', t('ws.mode.overview')],
-          ] as const
-        ).map(([m, label]) => (
-          <button
-            key={m}
-            role="tab"
-            aria-selected={wsMode === m}
-            className={wsMode === m ? 'active' : ''}
-            onClick={() => switchMode(m)}
-            data-testid={`ws.mode.${m}`}
+      <div style={{ margin: '0 28px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div className="layout-switch" role="tablist" data-testid="ws.mode-switch">
+          {(
+            [
+              ['studio', t('ws.mode.studio')],
+              ['focus', t('ws.mode.focus')],
+              ['overview', t('ws.mode.overview')],
+            ] as const
+          ).map(([m, label]) => (
+            <button
+              key={m}
+              role="tab"
+              aria-selected={wsMode === m}
+              className={wsMode === m ? 'active' : ''}
+              onClick={() => switchMode(m)}
+              data-testid={`ws.mode.${m}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {/* Phase 2b (MCP_SERVER_PHASE2.md «React sync»): бейдж внешнего
+            изменения — пришёл broker-changed с ревизией выше локальной.
+            Язык существующих статусов (status-label + .dot.warning из
+            r1.css); гаснет после успешного refetch (adoptExternal), при
+            провале остаётся. Черновики НЕ перерисовываются — ввод
+            пользователя неприкосновенен, обновляется только снапшот. */}
+        {st.externalChange && (
+          <span
+            className="status-label text-warning"
+            data-testid="ws.external-change"
+            title={t('ws.externalChange.hint', { revision: st.externalChange.revision })}
           >
-            {label}
-          </button>
-        ))}
+            <span className="dot warning" />
+            {t('ws.externalChange.label')}
+          </span>
+        )}
       </div>
       <div className={`ws-panes ws-mode-${wsMode}${!treeOpen ? ' tree-collapsed' : ''}${!inspectorOpen ? ' inspector-collapsed' : ''}`}>
         <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>

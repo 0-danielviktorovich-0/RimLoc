@@ -112,6 +112,17 @@ export interface DraftsNotice {
 
 const initialDraftsSync: DraftsSyncState = { status: 'idle', error: null }
 
+/** Phase 2b: фактура внешней мутации — полезная нагрузка события
+ *  'broker-changed' (gui/tauri-app/src-tauri/src/broker_host.rs форвардит
+ *  брокерный `revision_changed`, crates/rimloc-broker/src/protocol.rs
+ *  `RevisionChangedPayload`): {project_id, revision, session_epoch, kind}. */
+export interface ExternalChangeMark {
+  project_id: string
+  revision: number
+  session_epoch: number
+  kind: string
+}
+
 const DRAFT_FLUSH_DELAY_MS = 1500
 
 // F1: the target locale is PER-PROJECT state — it survives restarts in
@@ -177,6 +188,12 @@ export interface ProjectState {
   draftsSync: DraftsSyncState
   /** Inline-уведомление восстановления после open() (dismissable). */
   draftsNotice: DraftsNotice | null
+  /** Phase 2b (MCP_SERVER_PHASE2.md «React sync»): внешняя мутация через
+   *  GUI-брокер, ещё не принятая refetch'ем. non-null = бейдж «внешнее
+   *  изменение» в шапке воркспейса; гаснет после УСПЕШНОГО refetch
+   *  (adoptExternal / commit усыновили свежий снапшот). Черновики это
+   *  поле не трогает — они неприкосновенны (см. adoptExternal). */
+  externalChange: ExternalChangeMark | null
   busy: boolean
   load: LoadState
   lastError: string | null
@@ -195,6 +212,7 @@ let state: ProjectState = {
   drafts: {},
   draftsSync: initialDraftsSync,
   draftsNotice: null,
+  externalChange: null,
   busy: false,
   load: { kind: 'idle' },
   lastError: null,
@@ -589,6 +607,8 @@ export const projectStore = {
         busy: false,
         // Новый проект — прежний отчёт валидации неприменим.
         validation: { ...initialValidation, stale: true },
+        // Переход проекта — чужие факты внешних изменений не переезжают.
+        externalChange: null,
         perfMarks: { ...state.perfMarks, T3_stateReceived: performance.now(), T4_entriesMapped: performance.now() },
       })
       void projectStore.refreshValidation()
@@ -666,6 +686,8 @@ export const projectStore = {
         // Открытие — прежний отчёт валидации устарел (§9): новый проект или
         // свежая сессия; воркспейс пере-гоняет валидацию по stale-флагу.
         validation: { ...initialValidation, stale: true },
+        // Переход проекта — чужие факты внешних изменений не переезжают.
+        externalChange: null,
       })
       // Data Safety: поднять несохранённую работу из sidecar-хранилища
       // (ревизионный гард и quarantine — на сервисе). Отдельный async-шаг:
@@ -794,6 +816,10 @@ export const projectStore = {
         // Регрессия-логика (§9): фикс уехал в durable-состояние — отчёт
         // устарел, revalidate уберёт строку из «С замечаниями».
         validation: { ...state.validation, stale: true, error: null },
+        // Phase 2b: собственный коммит усыновил свежий снапшот — вид
+        // актуален, висящий бейдж внешнего изменения гаснет (его ревизия
+        // уже внутри этой или более новой ревизии).
+        externalChange: null,
       })
       void flushDraftsNow()
       void projectStore.refreshValidation()
@@ -840,10 +866,26 @@ export const projectStore = {
         // §9: внешняя мутация (existing-import, chat-batch apply) — отчёт
         // валидации устарел так же, как после commit().
         validation: { ...state.validation, stale: true, error: null },
+        // Phase 2b: успешный refetch — локальный вид снова актуален,
+        // бейдж внешнего изменения гаснет (дизайн: «badge исчезает после
+        // успешного refetch»; провал fetch оставляет бейдж — fail-closed).
+        externalChange: null,
       })
     } catch {
       /* refresh failures surface via the next contract call */
     }
+  },
+
+  /** Phase 2b (вызывает broker_events.ts): принять факт внешней мутации.
+   *  Гварды: только ОТКРЫТЫЙ проект; только НОВЫЙ факт — ревизия выше
+   *  локальной или смена session_epoch (эхо собственной мутации GUI и
+   *  уже принятые события бейджа не поднимают). Сам refetch делает
+   *  adoptExternal — здесь только честная отметка для UI. */
+  markExternalChange(p: ExternalChangeMark): void {
+    const snap = state.snapshot
+    if (!snap || snap.project_id !== p.project_id) return
+    if (p.revision <= snap.revision && p.session_epoch === snap.session_epoch) return
+    set({ externalChange: p })
   },
 
   /** §9/§17: живая валидация открытого проекта (read-only, epoch-guarded).
@@ -1037,6 +1079,7 @@ export const projectStore = {
       validation: initialValidation,
       sourceLocale: DEFAULT_SOURCE_LOCALE,
       sourceDir: DEFAULT_SOURCE_DIR,
+      externalChange: null,
     })
   },
 }

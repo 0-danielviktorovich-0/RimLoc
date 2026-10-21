@@ -14,6 +14,10 @@ rimloc-services = { version = "0.2.0", path = "../rimloc-services" }
 # the ground (rimloc-services pulls rimloc-llm with default-features=false).
 rimloc-domain = { version = "0.2.0", path = "../rimloc-domain" }
 rimloc-llm = { version = "0.2.0", path = "../rimloc-llm" }
+# Phase 2 broker_client: the protocol v1 wire types + error codes are the
+# broker crate's own (one-directional dependency — rimloc-broker never
+# depends on rimloc-mcp, see its lib.rs).
+rimloc-broker = { version = "0.2.0", path = "../rimloc-broker" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
