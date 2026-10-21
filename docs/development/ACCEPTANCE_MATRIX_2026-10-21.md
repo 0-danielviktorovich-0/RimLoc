@@ -40,8 +40,37 @@ User-path coverage vs the beta checklist: установка (bundle artifact CI
 первый запуск/мастер ✅ · проект/обнаружение ✅ · перевод/редактор ✅ · сохранение
 (durable envelope) ✅ · экспорт/PO-обмен ✅ · повторное открытие ✅ (dark-pass reopen).
 Explicitly NOT verified this round: Windows/Linux packaged runs (no harness host),
-real RimWorld in-game acceptance for the newest head (last proven 2026-10-07 wave;
-re-run queued before any beta invite).
+skill-driven interactive TUI session (ZCode has no non-interactive exec mode).
+
+## RimWorld in-game re-acceptance — BLOCKED (game environment, not RimLoc)
+
+Status 2026-10-21: the export for the in-game run was produced by the NEWEST
+head through the real product path (A2 wizard journey PASS on the packaged
+build, guarded export `a2-export` @ 14:09, DefInjected
+`VFES_Turret_AntiAir.label = ПВО турель (RimLoc)`) and mounted into the
+isolated game profile (`RimLocA2Translation`, packageId `rimloc.1845154007`).
+
+The game launch then hit the ISOLATED PROFILE'S MOD STACK, not RimLoc:
+- first boot: `ReflectionTypeLoadException ... HarmonyLib.CodeInstruction` in
+  VFESecurity — the isolated ModsConfig had Harmony LAST in the load order;
+  fixed to Harmony-first (bridges logs: `[RimBridge] Applied essential
+  Harmony patches`, 58 optional classes) — proves the fix works;
+- second boot: VFESecurity's own defs fail (`VFES_Complex_*` cross-refs,
+  `StatDef Beauty`) — Vanilla Expanded Framework was missing from the
+  isolated list; added `VanillaExpanded.VFECore` before VFESecurity;
+- third boot: the log freezes at 1287 lines with an unresolved-def error
+  list (a mod-error dialog waits for interactive dismissal), and the GABP
+  bridge never binds — so the language switch and screenshot step cannot
+  run autonomously.
+
+RimLoc-attributable log errors in every run: **0** (`RimLocA2Translation`
+never appears in an error line; the frozen state exists with and without
+the translation mounted). The mod stack of the isolated game profile needs
+an interactive repair pass (dismiss the boot dialog, resolve the VFE/VEF
+chain in the owner's mod list) before the in-game rendering proof can run.
+
+Fresh artifacts kept: `a2-export` (newest-head export) remains mounted in
+`RimLocA2Translation`; run logs in the Player.log of the isolated launch.
 
 ## Owner gates (unchanged)
 
