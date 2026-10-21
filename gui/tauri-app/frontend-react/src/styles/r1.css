@@ -1,3 +1,7 @@
+/* Spatial Design System scale (docs/design/SPATIAL_DESIGN_SYSTEM.md):
+   closed 4px grid, theme-invariant. */
+:root{--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-7:32px;--sp-8:40px}
+
 /* RimLoc R1 visual system — ported from the Lovable canonical baseline
  * (b2c6fc38, styles.css). Plain CSS component classes over OKLCH tokens
  * (tokens.css) — framework-independent by design (mandate §47). Fidelity
