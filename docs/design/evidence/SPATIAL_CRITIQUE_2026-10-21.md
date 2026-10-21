@@ -20,3 +20,22 @@ HIERARCHY 7 · SPACING 6 · DENSITY 6 · READABILITY 6 · CONSISTENCY 5.
 - Settings column bounded at 720px; hairline now matches the column width.
 - Capability table right-aligned values — good use of the column.
 - Core list/file-tree density is right for the workstation profile.
+
+## Round-2 resolution (2026-10-21, commit follows)
+
+1. **Workspace hero compressed** — h1 30→20px, band paddings on-scale; 7
+   entry rows visible at the default window (was 6). AFTER:
+   `workspace-hero-after.png`.
+2. **Footer scrim** — solid background + soft top shadow; captured in
+   `settings-dark-after.png`.
+3. **Orphan strip IDENTIFIED — not a defect**: it is the ENABLED primary
+   button «Начать перевод» clipped by the viewport fold in the audit
+   capture. Scrolled into view it is a normal, clearly-labelled primary
+   button (`aitranslate-dark-after.png`; computed label = «Начать перевод»,
+   opacity 1). The washed-out disabled variant that started the suspicion
+   is fixed by the legible-disabled rule (round-2 CSS).
+4. **Disabled controls legible** — flat opacity replaced by a
+   saturate/brightness mix + explicit btn-primary disabled fill.
+
+Remaining from the critique (lower priority, open): card alignment on
+Projects, Russian plural «0 ошибки», chips RU labels, «Русский ⇅» placement.
