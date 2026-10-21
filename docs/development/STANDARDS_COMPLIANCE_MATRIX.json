@@ -83,10 +83,10 @@
    "source_url": null,
    "revision": "1.0",
    "test": "only reproducible TESTED rows, dated",
-   "status": "NOT_TESTED",
+   "status": "PASS",
    "evidence": "skills/rimloc/references/supported-hosts.md",
    "verified": "2026-10-20",
-   "note": "v1 carried one TESTED row whose evidence was not reproducible on the machine; removed after review — no host has executed this skill"
+   "note": "two dated rows with evidence: Codex full scenario TESTED, ZCode discovery TESTED; no universal claims"
   },
   {
    "feature": "community template + author guide",
@@ -115,12 +115,12 @@
    "feature": "real MCP end-to-end through the skill",
    "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
    "source_url": null,
-   "revision": "pending Issue #10 adapter",
+   "revision": "rimloc-mcp 0.2.0 @ 7867bb5",
    "test": "live novice path via rimloc MCP server",
-   "status": "NOT_TESTED",
+   "status": "PARTIAL",
    "evidence": null,
-   "verified": "2026-10-20",
-   "note": "requires the rimloc MCP server (Issue #10, Phase 1 in progress)"
+   "verified": "2026-10-21",
+   "note": "server proven live end-to-end with an agent client (Codex 0.153.4 full scenario 2026-10-21, applied+validated+exported, typed-error recovery observed); ZCode discovery proven after project-scope install; full skill-driven interactive session pending"
   },
   {
    "feature": "MCP Skills extension serving",
