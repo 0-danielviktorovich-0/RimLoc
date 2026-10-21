@@ -173,6 +173,29 @@ target переиспользует dep-деревья между worktree. На
   `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build --strict`.
 - React-лайн: `cd gui/tauri-app/frontend-react && npm ci && npm run build` (tsc strict + Vite).
 
+## Branch & Worktree Hygiene (owner directive 2026-10-20)
+
+Temporary branches are a resource with a lifecycle, not an archive:
+
+- After a PR merges (or a lane's commits fully land in the integration
+  branch), delete its head branch unless another workflow still uses it.
+  Review history lives in the PR, not in the branch — squash-merged lanes
+  leave unique git objects behind, that is expected and not a reason to keep
+  the branch.
+- Staged PRs against the integration branch duplicate any OPEN PR whose
+  commits are already contained in it: close the old PR as superseded
+  (keep the PR — it holds the review evidence), then delete its branch.
+- Never classify a branch as deletable by age or `--merged` alone. Run
+  `python3 scripts/branch-hygiene.py` — it checks PR state, containment
+  in the integration branch, unique commits, worktree usage and stacked-PR
+  bases, and prints candidates; it never deletes. Owner approval is
+  required for any actual deletion.
+- Worktrees: a lane that finished removes its worktree when the disk rule
+  (see Build section, ER-079) requires cleanup; the branch-hygiene report
+  treats a branch checked out in a worktree as ACTIVE.
+- No ad-hoc release branches: versions are preserved with git tags and
+  release artifacts.
+
 ## Coding Style & Naming Conventions
 
 Rust — дефолтный rustfmt (4 пробела); модули/функции `snake_case`, типы `PascalCase`,

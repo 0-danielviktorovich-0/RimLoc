@@ -39,8 +39,9 @@ rimloc.capabilities
    note above), stop there — that is an honest unavailability, not an
    error to work around.
 2. See the projects: `rimloc.projects.list`.
-3. To work on a mod the user names, open or create a project
-   (`rimloc.project.open`) and read
+3. To work on a mod the user names, create its project ONCE in the
+   RimLoc GUI wizard (the MCP surface opens existing projects only),
+   then `rimloc.project.open {project_id}` and read
    `rimloc.project.snapshot` for: source locale, target locale,
    revision, session epoch. Quote them back before any write.
 

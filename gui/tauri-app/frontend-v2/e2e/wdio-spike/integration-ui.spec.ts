@@ -928,6 +928,35 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
       window.localStorage.setItem('rimloc.theme', 'light')
       window.dispatchEvent(new CustomEvent('rimloc.theme'))
     })
+    // The app reads the stored preference ONCE at mount (no storage-event
+    // listener), so the seed takes effect only through a reload — without
+    // it the toggle flips dark→light and the assertion below fails.
+    await browser.refresh()
+    await waitExisting('.app-sidebar', 60000)
+    // The refresh resets the in-memory session; RE-OPEN the persisted
+    // project through the real wizard path (this is also the beta-journey
+    // "reopen" proof), then re-select a row so the editor surface exists
+    // for the dark-mode check below.
+    await browser.execute(() => {
+      window.location.hash = '#/projects'
+    })
+    await waitExisting('[data-testid="wizard.open"]')
+    await browser.$('[data-testid="wizard.open"]').click()
+    await waitExisting('[data-testid="wizard.path-input"]')
+    await browser.$('[data-testid="wizard.path-input"]').setValue(MOD)
+    await browser.$('[data-testid="wizard.next"]').click()
+    await waitExisting('[data-testid="wizard.version"]', 60000)
+    await browser.$('[data-testid="wizard.version"]').selectByVisibleText('1.6')
+    await browser.$('[data-testid="wizard.next"]').click()
+    await browser.pause(800)
+    const overlayAfterReload = await browser.$('[data-testid="wizard.overlay"]')
+    if (await overlayAfterReload.isExisting()) {
+      await browser.$('[data-testid="wizard.next"]').click()
+    }
+    await waitExisting('[data-testid="ws.root"]', 300000)
+    await waitExisting('.entry-list .entry-row', 60000)
+    await browser.$('.entry-list .entry-row').click()
+    await waitExisting('[data-testid="ws.editor"]', 15000)
     await pause(400)
     const themeBtn = await browser.$('[data-testid="theme-toggle"]')
     await themeBtn.click()
