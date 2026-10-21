@@ -325,7 +325,8 @@ jobs:
           sudo apt-get install -y xvfb
           APPIMAGE=$(find target/release/bundle/appimage -name "*.AppImage" | head -1)
           chmod +x "$APPIMAGE"
-          export RIMLOC_DATA_DIR=$(mktemp -d)
+          RIMLOC_DATA_DIR=$(mktemp -d)
+          export RIMLOC_DATA_DIR
           timeout 30s xvfb-run -a "$APPIMAGE" &
           APP_PID=$!
           sleep 20
