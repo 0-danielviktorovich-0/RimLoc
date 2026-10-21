@@ -8,9 +8,12 @@ before starting. If anything below is missing from
 
 Every step names the MCP tool that does the work:
 
-1. `rimloc.projects.list` — see what exists. For a new mod, the user
-   gives the mod folder (a RimWorld mod root, i.e. it has
-   `About/About.xml`); `rimloc.project.open` builds the project.
+1. `rimloc.projects.list` — see what exists. IMPORTANT: the MCP surface
+   OPENS existing managed projects only — creating a project from a mod
+   folder happens once in the RimLoc GUI wizard (New project); after
+   that the agent works through MCP. If `projects.list` is empty, ask
+   the user to create the project in the GUI first, then list again.
+   `rimloc.project.open {project_id}` opens the session.
    Read `rimloc.project.snapshot`: source locale, target locale
    (set to Russian if the user asked), revision, and the session
    epoch (the session's identity stamp — quote both back on every
@@ -45,9 +48,12 @@ Every step names the MCP tool that does the work:
 нижеперечисленного нет в `rimloc.capabilities` — остановись и открой
 references/troubleshooting.md.
 
-1. `rimloc.projects.list` — что уже есть. Новый мод: пользователь
-   называет папку (корень мода RimWorld, т.е. с `About/About.xml`),
-   `rimloc.project.open` создаёт проект. Прочитай
+1. `rimloc.projects.list` — что уже есть. ВАЖНО: через MCP открываются
+   только СУЩЕСТВУЮЩие управляемые проекты — создание проекта из папки
+   мода делается один раз в мастере RimLoc GUI (Новый проект); дальше
+   агент работает через MCP. Если список пуст, попроси пользователя
+   создать проект в GUI, и повтори листинг.
+   `rimloc.project.open {project_id}` открывает сессию. Прочитай
    `rimloc.project.snapshot`: исходный язык, целевой (русский),
    ревизию и эпоху сессии (идентификатор сессии — цитируй оба при
    каждой записи: именно они превращают устаревшую запись в отказ,
