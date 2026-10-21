@@ -69,6 +69,23 @@ the translation mounted). The mod stack of the isolated game profile needs
 an interactive repair pass (dismiss the boot dialog, resolve the VFE/VEF
 chain in the owner's mod list) before the in-game rendering proof can run.
 
+### Minimal-list attempt (2026-10-21, second pass)
+
+With the owner-directed minimal list (Core + DLC + Harmony + bridge +
+RimLocLabCanary, no VFE chain): the boot gets much further — Harmony and
+all 58 bridge patches apply, only TWO log issues remain and both are the
+lab canary FIXTURE's own XML quality (ApparelDef/texPath written for
+RimLoc parser tests, not game-validity). RimLoc-attributable fatals: **0**.
+
+The in-game rendering proof is still blocked ONE step earlier: the
+RimBridgeServer GABP listener never binds — port 63826 is CLOSED, the game
+process holds no network sockets, and the log shows native `libdl`
+fallback failures during the bridge's socket-library init. The identical
+stack bound successfully on 2026-10-20; environment drift (game/bridge
+update or security tooling) is suspected. Re-acceptance of the rendering
+step needs one interactive session on the game (bridge bind diagnostics)
+— recorded here as the explicit owner action.
+
 Fresh artifacts kept: `a2-export` (newest-head export) remains mounted in
 `RimLocA2Translation`; run logs in the Player.log of the isolated launch.
 
