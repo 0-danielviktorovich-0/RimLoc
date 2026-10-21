@@ -69,3 +69,22 @@ database serving the translated string is what the UI renders FROM.
 head: the real product builds the translation, the real game loads it,
 Russian is active, the game serves the translated string, and the source
 mod is untouched.** No GABP/RimBridgeServer needed.
+
+## DefInjected — DIRECT PROOF (bridge evolution, same day)
+
+The bridge's `read_def` was generalized to any def database (the
+`def_type` arg; protocol-v1 `ResearchProjectDef` default preserved for
+backward compatibility). Rebuilt, redeployed, game relaunched:
+
+```json
+{"def":"RimLocCanaryBeacon","def_type":"ThingDef","label":"Канареечный маяк","description":"A game-valid canary building whose label is translated by the RimLoc export."}
+```
+
+**«Канареечный маяк» — the live game's DefDatabase serving the
+DefInjected translation from the RimLoc export.** All three evidence
+forms are now direct and programmatic:
+- state: Russian active
+- keyed: «Привет, канареечный мир» (localization DB)
+- DefInjected: «Канареечный маяк» (DefDatabase, ThingDef.label)
+
+Source integrity re-verified after the full cycle: INTACT.
