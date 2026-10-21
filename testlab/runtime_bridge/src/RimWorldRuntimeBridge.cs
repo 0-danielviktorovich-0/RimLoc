@@ -106,6 +106,7 @@ namespace RimLoc.RuntimeBridge
       public string def;
       public string key;
       public string path;
+      public string def_type;
     }
 
     [Serializable]
@@ -284,6 +285,7 @@ namespace RimLoc.RuntimeBridge
       args.def = ExtractStringArg(json, "def");
       args.key = ExtractStringArg(json, "key");
       args.path = ExtractStringArg(json, "path");
+      args.def_type = ExtractStringArg(json, "def_type");
     }
 
     private static string ExtractStringArg(string json, string name)
@@ -467,16 +469,53 @@ namespace RimLoc.RuntimeBridge
           }
           case "read_def":
           {
+            // Generalized def read: label/description from ANY def database
+            // (ThingDef, ResearchProjectDef, HediffDef, ...). The def_type
+            // arg selects the database; default is ResearchProjectDef for
+            // protocol-v1 compatibility.
             string defName = Arg(req, "def");
-            ResearchProjectDef def = DefDatabase<ResearchProjectDef>.GetNamedSilentFail(defName);
+            string defType = Arg(req, "def_type");
+            Verse.Def def = null;
+            string resolvedType = defType ?? "ResearchProjectDef";
+            try
+            {
+              System.Type dbType = null;
+              switch (resolvedType)
+      {
+        case "ThingDef": dbType = typeof(Verse.ThingDef); break;
+        case "ResearchProjectDef": dbType = typeof(ResearchProjectDef); break;
+        default:
+          // Generic fallback: look up GenTypes by name
+          dbType = Verse.GenTypes.GetTypeInAnyAssembly("Verse." + resolvedType);
+          break;
+      }
+              if (dbType != null)
+              {
+                var dbProp = typeof(DefDatabase<>).MakeGenericType(dbType)
+                    .GetProperty("AllDefs", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                // AllDefs is IEnumerable; find by defName
+                if (dbProp != null)
+                {
+                  var allDefs = dbProp.GetValue(null) as System.Collections.IEnumerable;
+                  if (allDefs != null)
+                    foreach (var d in allDefs)
+                    {
+                      var dd = d as Verse.Def;
+                      if (dd != null && dd.defName == defName) { def = dd; break; }
+                    }
+                }
+              }
+            }
+            catch { /* fall through to not-found */ }
             if (def == null)
             {
               job.ResponseJson = Fail(job, "TARGET_DEF_NOT_FOUND",
-                  "ResearchProjectDef not found: " + defName, null);
+                  resolvedType + " not found: " + defName, null);
               return;
             }
             job.ResponseJson = Ok(job,
-                "{\"def\":" + Esc(defName) + ",\"label\":" + Esc(def.LabelCap.RawText) +
+                "{\"def\":" + Esc(defName) + ",\"def_type\":" + Esc(resolvedType) +
+                ",\"label\":" + Esc(def.LabelCap.RawText) +
                 ",\"description\":" + Esc(def.description) + "}");
             return;
           }
@@ -553,6 +592,7 @@ namespace RimLoc.RuntimeBridge
         case "def": return req.args.def;
         case "key": return req.args.key;
         case "path": return req.args.path;
+        case "def_type": return req.args.def_type;
         default: return null;
       }
     }
