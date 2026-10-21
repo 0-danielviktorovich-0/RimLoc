@@ -6,7 +6,7 @@ yanked = "deny"
 ignore = [
     # lru is pinned to ^0.12 by tauri 2.x; soundness fixes live in 0.16+/0.18+.
     # Not reachable from RimLoc's own code — tauri-internal cache use.
-    # basic-toml comes only through i18n-config -> i18n-embed-fl (the CLI
+    # basic-toml comes only through i18n-config -> i18n-embed/fl (the CLI
     # localization proc-macro stack, build-time only, no runtime path);
     # marked unmaintained upstream with no replacement consumed by
     # i18n-embed yet. Revisit when i18n-embed moves off i18n-config.
