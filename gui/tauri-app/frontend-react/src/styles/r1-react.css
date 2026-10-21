@@ -5,7 +5,7 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: var(--sp-2);
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--foreground);
@@ -16,7 +16,7 @@ button {
 }
 button:hover:not(:disabled) { background: var(--accent); color: var(--primary); }
 button:disabled { opacity: 0.5; cursor: default; }
-.icon-btn { padding: 6px; border: 0; background: transparent; color: var(--muted-foreground); }
+.icon-btn { padding: var(--sp-2); border: 0; background: transparent; color: var(--muted-foreground); }
 .icon-btn:hover { color: var(--primary); background: var(--accent); }
 .btn-primary { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
 .btn-primary:hover { background: var(--primary); color: var(--primary-foreground); filter: brightness(1.1); }
@@ -28,8 +28,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 .ws-panes [data-panel] > .entries-pane, .ws-panes [data-panel] > .detail-pane { flex: 1; min-width: 0; overflow: hidden; display: flex; flex-direction: column; }
 .ws-handle { width: 5px; cursor: col-resize; background: transparent; border-left: 1px solid var(--border); margin: 0 2px; border-radius: 0; padding: 0; min-height: 100%; }
 .ws-handle:hover { background: var(--accent); }
-.ws-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 28px; border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
-.ws-error { padding: 8px 28px; color: var(--destructive); }
+.ws-footer { display: flex; justify-content: space-between; align-items: center; padding: var(--sp-2) var(--sp-7); border-top: 1px solid var(--border); font-size: 11px; color: var(--muted-foreground); }
+.ws-error { padding: var(--sp-2) var(--sp-7); color: var(--destructive); }
 .route-content { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .page-content { overflow-y: auto; }
 .entries-pane .entry-list { border: 0; }
@@ -51,7 +51,7 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-radius: 5px;
   text-decoration: none;
 }
-.primary-nav a { font-size: 11px; padding: 0 8px; }
+.primary-nav a { font-size: 11px; padding: 0 var(--sp-2); }
 .primary-nav a:hover, .sidebar-bottom a:hover { background: var(--accent); color: var(--primary); }
 .primary-nav a.active, .sidebar-bottom a.active { background: var(--accent); color: var(--primary); font-weight: 500; }
 .sidebar-bottom a { margin: 0 12px 10px; }
@@ -85,7 +85,7 @@ html, body { height: 100%; }
 .app-footer { flex-shrink: 0; }
 
 /* Entry rows: workstation density (63px, line-clamp-2 per canon). */
-.entry-row { min-height: 63px; height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; align-content: center; padding: var(--density-row-pad-y) 13px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
+.entry-row { min-height: 63px; height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); text-align: left; align-content: center; padding: var(--density-row-pad-y) var(--sp-3); border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; }
 .entry-row:hover:not(:disabled) { background: var(--secondary); color: var(--foreground); }
 .entry-row.selected { background: var(--accent); color: var(--primary); box-shadow: inset 2px 0 0 var(--primary); }
 .row-source { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -95,7 +95,7 @@ html, body { height: 100%; }
 .row-target.untranslated { color: var(--muted-foreground); font-style: italic; }
 
 /* Workspace heading zone (canon): eyebrow + display h1 + controls. */
-.workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 28px 18px; border-bottom: 1px solid var(--border); }
+.workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; padding: 0 var(--sp-7) var(--sp-5); border-bottom: 1px solid var(--border); }
 .workspace-heading .heading-eyebrow { font-size: 10px; font-weight: 500; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase; }
 .workspace-heading h1 { font-family: var(--font-display); font-size: 30px; font-weight: 400; }
 .workspace-heading p { font-size: 11px; color: var(--muted-foreground); margin-top: 4px; }
@@ -111,7 +111,7 @@ html, body { height: 100%; }
 [data-testid="src.tkey-other"] code { margin-top: 4px; }
 
 /* Sidebar progress block (canon): live percent of translated strings. */
-.sidebar-progress { margin: auto 20px 0; padding-top: 16px; border-top: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
+.sidebar-progress { margin: auto var(--sp-5) 0; padding-top: var(--sp-4); border-top: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px; }
 .sidebar-progress strong { font-size: 20px; font-family: var(--font-display); }
 
 /* Glossary table + confirm row (canon shapes). */
@@ -416,3 +416,40 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 .rim-app.nav-collapsed .app-sidebar { display: none; }
 .rim-app.nav-collapsed .app-main { margin-left: 0; }
 .rim-app.nav-collapsed .mobile-menu { display: flex; }
+
+/* --- Spatial Design System, wave 2 (docs/design/SPATIAL_DESIGN_SYSTEM.md §2).
+   Zone overrides for the bridge layer: settings column, dialogs, empty
+   states. r1.css (canon) stays untouched. --- */
+/* Settings: a calm structured column (Wealthfolio pattern; screenshot
+   finding 2026-10-20: fields stretched to ~900px). */
+.narrow-page { max-width: 720px; }
+.settings-section { margin-bottom: var(--sp-6); padding-bottom: var(--sp-6); }
+.settings-section > .field { max-width: 450px; margin: var(--sp-4) 0; }
+/* Dialogs: scale padding onto the system; actions separated from content. */
+.rim-dialog { padding: var(--sp-6) !important; }
+.dialog-actions { margin-top: var(--sp-5); }
+/* Empty states: first-class breathing room (80px icon circle pattern). */
+.empty-state { padding: var(--sp-8) var(--sp-5); }
+.passed-state { padding: var(--sp-8) var(--sp-5); }
+
+/* --- Critique quick-fixes (SPATIAL_CRITIQUE_2026-10-21, priorities 1). --- */
+/* Primary actions never wrap: the export CTAs broke to two lines. */
+button { white-space: nowrap; }
+/* One form measure across settings AND aitranslate (was 720 vs ~1430). */
+.page-content:not(.workspace-page) .field { max-width: 450px; }
+/* The orphan pink strip the reviewer flagged needs its element identified
+   first — no speculative selector shipped; tracked as a follow-up. */
+
+/* --- Critique fixes, round 2 (SPATIAL_CRITIQUE priorities 1-3). --- */
+/* Disabled controls stay legible: the flat 0.5 opacity turned the primary
+   run button into an unlabelled rose strip on the dark theme. */
+button:disabled { cursor: default; opacity: 1; filter: saturate(.5) brightness(.96); color: color-mix(in oklab, currentColor 78%, var(--muted-foreground)); }
+.btn-primary:disabled { background: color-mix(in oklab, var(--primary) 72%, var(--background)); color: var(--primary-foreground); border-color: transparent; }
+/* Workspace hero works for the working screen: single compact row instead
+   of a ~250px brand band; the display-size hero stays on overview screens. */
+.workspace-heading { padding: 0 var(--sp-7) var(--sp-3); }
+.workspace-heading h1 { font-size: 20px; margin-top: 4px; }
+.workspace-heading p { margin-top: 4px; }
+.heading-eyebrow { margin-bottom: 6px; }
+/* Footer scrim: scrolled content fades out before the status line. */
+.ws-footer { position: relative; z-index: 5; background: var(--background); box-shadow: 0 -10px 14px -10px oklch(0 0 0 / .18); }

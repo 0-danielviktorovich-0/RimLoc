@@ -1,3 +1,7 @@
+/* Spatial Design System scale (docs/design/SPATIAL_DESIGN_SYSTEM.md):
+   closed 4px grid, theme-invariant. */
+:root{--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:20px;--sp-6:24px;--sp-7:32px;--sp-8:40px}
+
 @import "tailwindcss" source(none);
 
 @import "tw-animate-css";
