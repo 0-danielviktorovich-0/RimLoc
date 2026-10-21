@@ -431,3 +431,11 @@ html.dark .topbar-actions .btn-primary:hover:not(:disabled) {
 /* Empty states: first-class breathing room (80px icon circle pattern). */
 .empty-state { padding: var(--sp-8) var(--sp-5); }
 .passed-state { padding: var(--sp-8) var(--sp-5); }
+
+/* --- Critique quick-fixes (SPATIAL_CRITIQUE_2026-10-21, priorities 1). --- */
+/* Primary actions never wrap: the export CTAs broke to two lines. */
+button { white-space: nowrap; }
+/* One form measure across settings AND aitranslate (was 720 vs ~1430). */
+.page-content:not(.workspace-page) .field { max-width: 450px; }
+/* The orphan pink strip the reviewer flagged needs its element identified
+   first — no speculative selector shipped; tracked as a follow-up. */

@@ -14,6 +14,7 @@ const ru: Record<string, string> = {
   'nav.glossary': 'Глоссарий',
   'nav.export': 'Сборка и экспорт',
   'nav.settings': 'Настройки',
+  'nav.aitranslate': 'ИИ-перевод',
   'nav.providers': 'Провайдеры',
   'nav.about': 'О программе',
   // О программе (Settings-зона): честная идентификация сборки — версия и
