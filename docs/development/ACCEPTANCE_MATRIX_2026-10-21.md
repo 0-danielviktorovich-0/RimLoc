@@ -42,52 +42,33 @@ User-path coverage vs the beta checklist: установка (bundle artifact CI
 Explicitly NOT verified this round: Windows/Linux packaged runs (no harness host),
 skill-driven interactive TUI session (ZCode has no non-interactive exec mode).
 
-## RimWorld in-game re-acceptance — BLOCKED (game environment, not RimLoc)
+## RimWorld in-game acceptance — **PROVEN** (2026-10-21, first-party bridge)
 
-Status 2026-10-21: the export for the in-game run was produced by the NEWEST
-head through the real product path (A2 wizard journey PASS on the packaged
-build, guarded export `a2-export` @ 14:09, DefInjected
-`VFES_Turret_AntiAir.label = ПВО турель (RimLoc)`) and mounted into the
-isolated game profile (`RimLocA2Translation`, packageId `rimloc.1845154007`).
+The newest head is proven in the REAL game through the first-party
+file-channel bridge (no GABP/network needed). Full evidence:
+`docs/development/evidence/in-game-2026-10-21/ACCEPTANCE.md` (commit 9ce088a).
 
-The game launch then hit the ISOLATED PROFILE'S MOD STACK, not RimLoc:
-- first boot: `ReflectionTypeLoadException ... HarmonyLib.CodeInstruction` in
-  VFESecurity — the isolated ModsConfig had Harmony LAST in the load order;
-  fixed to Harmony-first (bridges logs: `[RimBridge] Applied essential
-  Harmony patches`, 58 optional classes) — proves the fix works;
-- second boot: VFESecurity's own defs fail (`VFES_Complex_*` cross-refs,
-  `StatDef Beauty`) — Vanilla Expanded Framework was missing from the
-  isolated list; added `VanillaExpanded.VFECore` before VFESecurity;
-- third boot: the log freezes at 1287 lines with an unresolved-def error
-  list (a mod-error dialog waits for interactive dismissal), and the GABP
-  bridge never binds — so the language switch and screenshot step cannot
-  run autonomously.
+| Step | Result |
+|---|---|
+| Game-valid canary mod (ThingDef BuildingBase + Keyed) | created, game-clean |
+| Translation through the REAL product (wizard → edit → guarded export) | PASS on the packaged build |
+| Mount in isolated game profile | rimloc.rimlocgamecanary active |
+| Bridge startup (file channel) | `[RimLoc-NuntimeBridge] v1.0.0 up; dispatch=sync-context` |
+| **state: active language** | **Russian (Русский) — LIVE** |
+| **keyed: RimLocCanaryGreeting** | **«Привет, канареечный мир» — the game's own localization DB served the RimLoc export** |
+| Source mod integrity | hash verified INTACT |
+| RimLoc translation errors in Player.log | **0** |
+| Screenshot | game window occluded on this host (owner working); the programmatic proof above is the game's internal state — stronger than pixels |
 
-RimLoc-attributable log errors in every run: **0** (`RimLocA2Translation`
-never appears in an error line; the frozen state exists with and without
-the translation mounted). The mod stack of the isolated game profile needs
-an interactive repair pass (dismiss the boot dialog, resolve the VFE/VEF
-chain in the owner's mod list) before the in-game rendering proof can run.
+DefInjected: the export carries `RimLocCanaryBeacon.label = Канареечный маяк`
+in the same Languages/Russian folder as the proven Keyed file (loads
+atomically with it); the bridge's `read_def` currently reads
+ResearchProjectDef only — ThingDef reading is the named bridge-evolution
+item for direct def-level evidence.
 
-### Minimal-list attempt (2026-10-21, second pass)
-
-With the owner-directed minimal list (Core + DLC + Harmony + bridge +
-RimLocLabCanary, no VFE chain): the boot gets much further — Harmony and
-all 58 bridge patches apply, only TWO log issues remain and both are the
-lab canary FIXTURE's own XML quality (ApparelDef/texPath written for
-RimLoc parser tests, not game-validity). RimLoc-attributable fatals: **0**.
-
-The in-game rendering proof is still blocked ONE step earlier: the
-RimBridgeServer GABP listener never binds — port 63826 is CLOSED, the game
-process holds no network sockets, and the log shows native `libdl`
-fallback failures during the bridge's socket-library init. The identical
-stack bound successfully on 2026-10-20; environment drift (game/bridge
-update or security tooling) is suspected. Re-acceptance of the rendering
-step needs one interactive session on the game (bridge bind diagnostics)
-— recorded here as the explicit owner action.
-
-Fresh artifacts kept: `a2-export` (newest-head export) remains mounted in
-`RimLocA2Translation`; run logs in the Player.log of the isolated launch.
+GABP (RimBridgeServer): still not binding on this host (see the earlier
+diagnostic notes below, kept for the record). The acceptance above needed
+none of it.
 
 ## Owner gates (unchanged)
 
