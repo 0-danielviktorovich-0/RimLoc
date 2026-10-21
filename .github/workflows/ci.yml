@@ -269,6 +269,22 @@ jobs:
         shell: bash
         run: npx --yes @tauri-apps/cli@2 build --bundles nsis
         working-directory: gui/tauri-app/src-tauri
+      - name: Windows startup smoke
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem "target\release\bundle\nsis\*.exe" | Where-Object { $_.Name -notmatch "setup" } | Select-Object -First 1
+          if (-not $exe) { $exe = Get-ChildItem "target\release\*.exe" | Select-Object -First 1 }
+          if (-not $exe) { Write-Host "STARTUP_SKIP: no runnable exe found"; exit 0 }
+          $env:RIMLOC_DATA_DIR = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + "rimloc-smoke-" + [Guid]::NewGuid().ToString("N").Substring(0,8)) -Force
+          $proc = Start-Process -FilePath $exe.FullName -PassThru -NoNewWindow
+          Start-Sleep -Seconds 15
+          if ($proc.HasExited) {
+            Write-Host "STARTUP_FAIL: app exited within 15s (code $($proc.ExitCode))"
+            exit 1
+          } else {
+            Write-Host "STARTUP_PASS: app alive after 15s"
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          }
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
         with:
@@ -304,6 +320,22 @@ jobs:
         run: |
           npx --yes @tauri-apps/cli@2 build --bundles deb,appimage
         working-directory: gui/tauri-app/src-tauri
+      - name: Linux startup smoke (virtual display)
+        run: |
+          sudo apt-get install -y xvfb
+          APPIMAGE=$(find target/release/bundle/appimage -name "*.AppImage" | head -1)
+          chmod +x "$APPIMAGE"
+          export RIMLOC_DATA_DIR=$(mktemp -d)
+          timeout 30s xvfb-run -a "$APPIMAGE" &
+          APP_PID=$!
+          sleep 20
+          if kill -0 $APP_PID 2>/dev/null; then
+            echo "STARTUP_PASS: app alive after 20s on virtual display"
+            kill $APP_PID || true
+          else
+            echo "STARTUP_FAIL: app exited within 20s"
+            exit 1
+          fi
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
         with:
