@@ -118,8 +118,9 @@ pub static WIRED_READ_ONLY: &[&str] = &[
 
 /// The seven wired controlled-write tools that actually mutate state (the
 /// spec's second layer, minus the read-only job-status alias). Every one
-/// goes through `require_writer` — in other_writer mode they refuse typed
-/// `other_writer_active`.
+/// goes through `require_writer` — in the degraded modes they refuse typed
+/// (`other_writer_active` under a contended lock, `profile_shared` on the
+/// default/refused profile).
 pub static WIRED_WRITES: &[&str] = &[
     "rimloc.project.open",
     "rimloc.translation.propose",
@@ -132,7 +133,7 @@ pub static WIRED_WRITES: &[&str] = &[
 
 /// The spec's write-layer group also names `rimloc.ai_job.status`; it is a
 /// READ-ONLY alias of `rimloc.jobs.status` (annotated and executed as a
-/// read, lock-free in other_writer mode too) — tracked separately so the
+/// read, lock-free in the degraded modes too) — tracked separately so the
 /// executable-counts stay honest.
 pub static WIRED_READ_ONLY_ALIASES: &[&str] = &["rimloc.ai_job.status"];
 
@@ -144,10 +145,11 @@ pub static REGISTRY: &[ToolDef] = &[
     ToolDef {
         name: "rimloc.status",
         title: "RimLoc status",
-        description: "Protocol + schema versions, headless/other_writer mode, lock owner. \
-                      Source: local runtime state, no service call. \
-                      In other_writer mode write tools and project-scoped reads refuse; \
-                      lock-free disk diagnostics (projects.list, jobs.status) stay up.",
+        description: "Protocol + schema versions, headless/other_writer/shared_profile mode, \
+                      lock owner. Source: local runtime state, no service call. \
+                      In the degraded modes (other_writer OR shared_profile — the default \
+                      GUI-shared or refused profile) write tools and project-scoped reads \
+                      refuse; lock-free disk diagnostics (projects.list, jobs.status) stay up.",
         read_only: true,
         destructive: false,
         idempotent: true,
@@ -169,8 +171,9 @@ pub static REGISTRY: &[ToolDef] = &[
         name: "rimloc.projects.list",
         title: "List managed projects",
         description: "Managed projects with unloadable diagnostics. \
-                      Source: ProjectSessionManager::list_report; in other_writer mode a \
-                      lock-free disk scan of the atomic managed envelopes answers instead.",
+                      Source: ProjectSessionManager::list_report; in the degraded modes \
+                      (other_writer OR shared_profile) a lock-free disk scan of the atomic \
+                      managed envelopes answers instead.",
         read_only: true,
         destructive: false,
         idempotent: true,
@@ -508,8 +511,11 @@ pub static REGISTRY: &[ToolDef] = &[
         description: "Start an AI translation job for a target locale. The launch target is \
                       defined SOLELY by an existing provider instance (prov-*): its preset, \
                       model, base_url and keychain key — the server never requests, stores \
-                      or returns secrets; only identifiers cross the wire, and a keyless \
-                      cloud instance is a typed immediate refusal. \
+                      or returns secrets; only identifiers cross the wire. \
+                      PAID (non-local) providers are disabled via the external MCP until an \
+                      explicit per-run consent mechanism exists: a non-local instance \
+                      refuses typed `paid_providers_disabled_via_mcp` BEFORE any secret \
+                      resolution or worker spawn; local providers (ollama/loopback) launch. \
                       Source: rimloc_services::ai_job::start_job (worker thread; poll \
                       rimloc.ai_job.status; the durable record outlives the process).",
         read_only: false,
@@ -541,8 +547,8 @@ pub static REGISTRY: &[ToolDef] = &[
                 ty: "string",
                 required: true,
                 description: "Existing providers-screen instance (prov-*): unknown instance \
-                              or keyless cloud instance refuses typed; the stored key never \
-                              rides the wire",
+                              or any non-local (paid) instance refuses typed; the stored \
+                              key never rides the wire",
             },
             Arg {
                 name: "batch_char_budget",
@@ -928,28 +934,56 @@ fn status(rt: &Runtime) -> Result<Value, RpcError> {
     let (app, owner_pid, held_by_us) = match rt.mode() {
         runtime::AppMode::HeadlessWriter => ("self", Some(std::process::id()), true),
         runtime::AppMode::OtherWriter { owner } => ("other_writer", owner.pid, false),
+        // Fail-closed shared profile (default profile / refused
+        // RIMLOC_DATA_DIR): no lock is held, no writer exists — reported
+        // verbatim (audit п.2 honesty).
+        runtime::AppMode::SharedProfile { .. } => ("shared_profile", None, false),
     };
     let profile_source = match std::env::var("RIMLOC_DATA_DIR") {
         Ok(dir) if !dir.is_empty() => "RIMLOC_DATA_DIR",
         _ => "default_app_data",
     };
-    // All nine wired read-only tools execute under our own lock; in
-    // other_writer mode the five project-scoped ones refuse (session open
-    // would run the manager constructor's recovery write), four disk
-    // diagnostics remain — plus the read-only ai_job.status alias, whose
-    // durable-record read stays lock-free in BOTH modes. The seven
-    // controlled writes ALL need the writer machinery — they refuse in
-    // other_writer mode wholesale.
+    // All nine wired read-only tools execute under our own lock; in the
+    // degraded modes (other_writer OR shared_profile) the five
+    // project-scoped ones refuse (session open would run the manager
+    // constructor's recovery write), four disk diagnostics remain — plus
+    // the read-only ai_job.status alias, whose durable-record read stays
+    // lock-free in EVERY mode. The seven controlled writes ALL need the
+    // writer machinery — they refuse in both degraded modes wholesale.
     const PROJECT_SCOPED_READS: usize = 5;
-    let read_only_executable = if rt.is_other_writer() {
+    let read_only_executable = if rt.is_diagnostics_only() {
         WIRED_READ_ONLY.len() - PROJECT_SCOPED_READS + WIRED_READ_ONLY_ALIASES.len()
     } else {
         WIRED_READ_ONLY.len() + WIRED_READ_ONLY_ALIASES.len()
     };
-    let writes_executable = if rt.is_other_writer() {
+    let writes_executable = if rt.is_diagnostics_only() {
         0
     } else {
         WIRED_WRITES.len()
+    };
+    let gui_sharing = if rt.is_shared_profile() {
+        match rt.shared_profile_reason() {
+            Some(runtime::SharedProfileReason::DefaultProfile) => {
+                "shared_profile (fail-closed): the default profile belongs to the live \
+                 RimLoc GUI and rimloc-mcp.lock does not guard it; writes and \
+                 project-scoped reads refuse; set RIMLOC_DATA_DIR to isolate"
+                    .to_string()
+            }
+            Some(runtime::SharedProfileReason::Refused { requested, cause }) => {
+                format!(
+                    "shared_profile (fail-closed): RIMLOC_DATA_DIR `{requested}` was \
+                     refused ({cause}); writes and project-scoped reads refuse; \
+                     set RIMLOC_DATA_DIR to isolate"
+                )
+            }
+            None => "shared_profile".to_string(),
+        }
+    } else if profile_source == "default_app_data" {
+        "warning: default profile is shared with the RimLoc GUI; if the GUI is \
+         running, stop it or set RIMLOC_DATA_DIR to isolate"
+            .to_string()
+    } else {
+        "isolated".to_string()
     };
     let structured = json!({
         "app": app,
@@ -967,27 +1001,33 @@ fn status(rt: &Runtime) -> Result<Value, RpcError> {
             // PROCESSES only. A live RimLoc GUI on the same profile does
             // not take this lock and is not detected until the Phase 2
             // broker — isolation from the GUI today is by profile
-            // (RIMLOC_DATA_DIR), not by this lock.
+            // (RIMLOC_DATA_DIR), not by this lock; on the default profile
+            // the runtime does not even become the writer (shared_profile).
             "isolation": "mcp_processes_only",
         },
-        "gui_sharing_profile": if profile_source == "default_app_data" {
-            "warning: default profile is shared with the RimLoc GUI; if the GUI is \
-             running, stop it or set RIMLOC_DATA_DIR to isolate"
-        } else {
-            "isolated"
-        },
+        "gui_sharing_profile": gui_sharing,
         "tools": {
             "declared": REGISTRY.len(),
             "read_only_executable": read_only_executable,
             "writes_executable": writes_executable,
         },
-        "project_scoped_reads": if rt.is_other_writer() {
+        "project_scoped_reads": if rt.is_shared_profile() {
+            "refused_profile_shared"
+        } else if rt.is_other_writer() {
             "refused_other_writer"
         } else {
             "available"
         },
     });
-    let summary = if rt.is_other_writer() {
+    let summary = if rt.is_shared_profile() {
+        format!(
+            "shared profile (fail-closed): no writer lock on `{}` — it is shared with \
+             the live RimLoc GUI or the requested profile was refused; write tools and \
+             project-scoped reads refuse (profile_shared); rimloc.status / capabilities / \
+             projects.list / jobs.status answer from disk; set RIMLOC_DATA_DIR to isolate",
+            rt.managed_root().display()
+        )
+    } else if rt.is_other_writer() {
         format!(
             "other_writer: the exclusive lock on `{}` is held by another process (pid {:?}); \
              write tools and project-scoped reads refuse; rimloc.status / capabilities / \
@@ -1037,7 +1077,13 @@ fn projects_list(rt: &Runtime) -> Result<Value, RpcError> {
         "{} managed project(s), {} unloadable{}",
         report.projects.len(),
         report.unloadable.len(),
-        if rt.is_other_writer() {
+        // The degraded modes get distinct honest reasons: in shared_profile
+        // mode NO ONE holds the lock (the GUI never takes it) — claiming
+        // "another writer" would be false.
+        if rt.is_shared_profile() {
+            " (disk-only view: the profile is shared with the live RimLoc \
+             GUI — fail-closed diagnostics)"
+        } else if rt.is_other_writer() {
             " (disk-only view: another writer holds the lock)"
         } else {
             ""
@@ -1585,6 +1631,52 @@ fn ai_job_start(rt: &Runtime, args: &AiJobStartArgs) -> Result<Value, RpcError> 
             session_epoch: Some(args.session_epoch),
         },
     )?;
+    // PAID GUARD (audit 2026-10, fail-closed): the external MCP surface
+    // must not launch paid (non-local) providers until an explicit
+    // per-run consent mechanism exists. The `local` flag is read from the
+    // REDACTED instance metadata (`ProviderInstanceSummary` carries no
+    // secret field) through the SAME manager instance `start_job` below
+    // resolves against, so the guard and the launch see one consistent
+    // state with no TOCTOU window. The refusal fires BEFORE `start_job` —
+    // i.e. before any secret resolution or worker spawn — and in this
+    // sink-less process the metadata list cannot touch the OS keychain
+    // anyway (`has_key` falls back to the stored presence cache). An
+    // unknown instance is not this guard's case: `start_job` refuses it
+    // with its own typed error before any spawn. An unreadable settings
+    // file propagates as a typed failure, so corruption can never look
+    // like "nothing to check" (fail-closed). Ordering note: the stale-
+    // epoch guard in `open_session` stays FIRST on purpose — the services
+    // document that an epoch problem outranks a provider problem.
+    let instances = manager
+        .provider_instance_list()
+        .map_err(|err| runtime::contract_error(err, tool))?;
+    if let Some(instance) = instances
+        .instances
+        .iter()
+        .find(|i| i.id == args.provider_instance_id)
+    {
+        if !instance.local {
+            return Err(RpcError::new(
+                crate::error::codes::CONTRACT_ERROR,
+                format!(
+                    "provider instance `{}` ({} {}) is not local: paid providers are \
+                     disabled via the external MCP until an explicit per-run consent \
+                     mechanism exists; local providers (ollama/mock/loopback) remain \
+                     available",
+                    instance.id, instance.preset, instance.model
+                ),
+            )
+            .with_data(json!({
+                "code": "paid_providers_disabled_via_mcp",
+                "tool": tool,
+                "details": {
+                    "provider_instance_id": instance.id,
+                    "preset": instance.preset,
+                    "local": instance.local,
+                },
+            })));
+        }
+    }
     // The provider instance FULLY defines the launch target (preset →
     // provider id, model, base_url and the keychain key); `provider_id` is
     // a placeholder the service overwrites during instance resolution.
