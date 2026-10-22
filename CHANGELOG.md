@@ -28,6 +28,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 
 ### Internal
 - [test] Native WDIO lane on the automation-React surface (six phases: collision rows, restart restore, strict per-Def XML export, fast navigation, read-only-root error handling, unsaved-draft restart on a non-default locale) and four store-level regression suites (restore race, gate token binding, deletion acknowledgement, cross-project clear routing).
+- [release] The machine-readable release state and the acceptance manifest now describe the current merged candidate, its verified gates and the honestly open product stages; the superseded draft-safety snapshot is kept only as a historical record.
 ### Internal
 - [repository] Enforce public Git metadata hygiene for commit subjects, branches, pull-request titles, release titles and new changelog entries; private automation terminology stays in engineering notes rather than public history.
 - [vendor/codeql] Remove the unused vendored GLib patch and stale disabled-workflow injection that polluted Rust CodeQL extraction; active wry/tao patches are unchanged (#84)
