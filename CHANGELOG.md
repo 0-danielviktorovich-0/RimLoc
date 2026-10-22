@@ -10,6 +10,16 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [gui] Present RimLoc as a desktop-first visual RimWorld localization studio in English and Russian onboarding, guides and READMEs; describe the Rust CLI as optional automation rather than the main translation workflow (#93)
 - [ai] Document the current no-API Chat Batch and connection-test capabilities separately from the planned direct AI Translation workspace, including official OSS ChatGPT-plan authorization, API keys and local models (#93)
 
+### Security
+- [gui] The Source Inspector XML preview resolves source paths through layered containment: absolute paths and `..` traversal are refused, a symlinked final component is rejected without following it, the fully resolved path must stay inside the canonical source root (symlinked ancestor directories pointing outside the tree are refused), and a single file read is capped at 8 MiB before content is pulled into memory. Covered by a negative Rust test matrix (traversal, symlink leaf, symlinked ancestor, missing file, directory, binary sniff, oversize) whose ancestor-escape case is mutation-verified: disabling the canonical containment check turns the test red.
+
+### Fixed
+- [gui] Source Inspector XML preview works in packaged builds again: the `project_source_xml_preview` command adapter was implemented but never registered, so packaged apps answered "Command not found" when the XML source tab was opened.
+- [gui] Workspace layout: the entries pane fills the center column instead of leaving a dead gap to the right of the entry list.
+- [gui] The editor textarea no longer clips long translations while typing (minimum editor height raised).
+- [gui] AI Translate mode labels follow the UI locale again: the locale was read through a dictionary key that always returned its own name, so Russian-language users saw English mode labels.
+- [test] The XML-preview runtime verification spec is portable: the fixture mod is generated in a per-run temp directory, the application under test comes from an environment variable, and cleanup is unconditional.
+
 ### Fixed
 - [gui] Draft autosave is now durable and locale-safe: unsaved editor work survives language switches, project switches inside the autosave debounce, app restarts and restore-vs-save races; a failed deletion holds an honest error instead of a false saved state, and Retry re-issues exactly that deletion. Drafts live in a sidecar store next to the managed project; the deletions and saves are merge-based, so partial writes never drop unrelated keys. The desktop adapter now also exposes the draft commands (they were missing from every packaged build before).
 - [gui] Workspace entries are addressed by the full structural identity (kind + def type + key): two Def types sharing one serialization key no longer collapse into one row, and each keeps its own draft, translation and findings. Rows with a shared key are labelled with their def type.
