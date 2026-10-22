@@ -1,7 +1,39 @@
 # RIMLOC ACCEPTANCE MANIFEST — declarative gate config (persist mandate 04)
 # Source of truth: docs/development/testing/AUTONOMOUS_ACCEPTANCE_ARCHITECTURE.md
-version: 2
-updated: 2026-10-03   # +runtime-bridge v1 hardening (директива POST-PASS HARDENING §1-12)
+version: 3
+updated: 2026-10-22   # merge gate closed: PR #110 merged, security containment + parity gate + portable WDIO
+
+# §Матрица 22.10.2026 — состояние после MAIN_MERGED (19c20f7d).
+# Историческая матрица 03.10 сохранена ниже как matrix_20261003.
+matrix_20261022:
+  MAIN_MERGE: "PASS — PR #110 merged (19c20f7d), 43/43 checks SUCCESS on head 9dae18ac"
+  SOURCE_PREVIEW_SECURITY: "PASS — layered containment (symlink leaf no-follow, canonical root/full,
+    8 MiB take cap); 7-test negative matrix; ancestor-escape MUTATION-VERIFIED
+    (canonical-check mutant turns the test red; /var->/private/var masking eliminated by
+    canonicalizing the root in the test itself)"
+  REGISTRATION_PARITY: "PASS — contract test reads include_str! of the compiled main.rs and requires
+    every CONTRACT_COMMAND in every generate_handler! block; runs in CI via the coverage
+    workflow's GUI-crate test step; bin crate mirrors it for LIVE_COMMANDS"
+  RUNTIME_XML_PREVIEW: "PASS — portable WDIO lane on the automation artifact (--features
+    automation-bridge): XML markup OwnerTestBeacon + owner test beacon asserted, layout gap 0px,
+    RU mode labels; evidence PNG + run log in RimLoc-review-handoff
+    outbox/chatgpt/qa-full-journey/2026-10-22/"
+  PORTABLE_WDIO_LANE: "READY but NOT a required GitHub check yet — needs a second macOS automation
+    build on CI (production bundles deliberately carry no WebDriver bridge); local lane stays the
+    release hard gate until wired"
+  REACT_UNIT_SUITES: "PASS in CI — frontend-react job runs vitest (25 tests) next to tsc and build"
+  CODEQL_SIGNAL: "PASS — high path-injection alert on the test evidence screenshot resolved in code
+    (deterministic OS-temp path, no caller input), not suppressed"
+  PRODUCTION_PACKAGED_SMOKE: "PASS (agent) — merged-main binary d86b2376b837dfc1 launches in an
+    isolated profile, drafts broker serves 0600 socket, AX reports a live window; owner hands-on
+    UAT still required"
+  IN_GAME_RIMWORLD: "PASS on earlier source SHA (file-channel bridge: state=Russian, keyed,
+    DefInjected); rerun required only if the export path changes materially"
+  ISSUE_2_STANDALONE_PACK_MODE: "PENDING — standalone open/edit/export of translation packs without
+    the original mod is NOT proven; must ship tested or be labeled not-in-beta"
+  AI_PROVIDER_UX: "PARTIAL — ChatGPT Plan CTA disabled in main; custom provider setup fragmented;
+    advertise nothing beyond what is tested"
+  PUBLIC_PRE_RELEASE: "NOT AUTHORIZED — requires explicit owner signoff"
 
 # §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
 # и в RimLoc-evidence):
