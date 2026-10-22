@@ -1,8 +1,8 @@
 {
  "campaign": "qa-full-journey-merge-gate",
- "status": "MAIN_MERGED_CORE_PRODUCT_UAT_PENDING",
+ "status": "RC_BUNDLES_READY_OWNER_UAT_PENDING",
  "updated": "2026-10-22",
- "main": "19c20f7d3b8a50d982e16d6cb709e19cc0c7755b",
+ "main": "8610e313c371f3ffe58e5085b2adc4bfc9ecc1e4",
  "pr110": {
   "head": "9dae18ac",
   "mergedAt": "2026-10-22T12:37:39Z",
@@ -21,11 +21,11 @@
  },
  "publicRelease": "NOT AUTHORIZED — GitHub pre-release, Discord and Reddit require explicit owner signoff (FINAL_VERDICT_MAIN_MERGED_PRODUCT_QA_PENDING.md)",
  "stages": [
-  "1 Core Product Acceptance: packaged-app journey create/open -> translate -> save -> reopen -> validate -> XML views -> export; route x state x control inventory",
-  "2 AI & Provider Acceptance: ChatGPT Plan CTA disabled in main; custom provider UX either completed or honestly hidden",
-  "3 Autonomous QA Completion: measurable user-action coverage",
-  "4 Release Candidate: macOS/Windows/Linux builds with exact SHA256",
-  "5 Owner UAT"
+  "1 Core Product Acceptance: PASS (PR #115, 6/6 journey)",
+  "2 AI & Provider Acceptance: PASS (PR #116, 7/7 journey)",
+  "3 Measurable coverage: 62/113 interactive controls activated (54.9%), remainder classified (PR #117)",
+  "4 Release Candidate: bundles of all three platforms hashed and deployed (this change)",
+  "5 Owner UAT: PENDING"
  ],
  "openProductGaps": [
   "Issue #2 standalone translation-pack mode (open/edit/export without original mod) pending or must be labeled not-in-beta",
@@ -48,5 +48,17 @@
   "ui_native": "VERIFIED historical; superseded by portable xml-verify lane + PR #110 gates for the React surface",
   "security_final": "VERIFIED and EXTENDED by PR #110 source-preview containment; CodeQL signal honest on 9dae18ac"
  },
- "openDefects": []
+ "openDefects": [],
+ "rcBundles": {
+  "source": "CI run 39827270446 (PR #117 head 06ec4e9a — tree identical to merged main 8610e313); workflow_dispatch CI run 39833732222 on the exact main SHA is the canonical confirmation (in flight)",
+  "builtFrom": "8610e313c371f3ffe58e5085b2adc4bfc9ecc1e4",
+  "version": "0.1.0-beta.1",
+  "macosDmg": "dadd6fce59794973b9e86d1dccbd922d1ae83da104e3579a080d7f0a02effc5c",
+  "macosAppBinary": "50d7ba209fff0629e4151f42b38ac40a613fd97b674148e22a00ec716a34cdb3",
+  "windowsNsis": "970dc092cc446726efd0526aa75f2e081df345378496183085fe522e3d70ab4d",
+  "linuxDeb": "af60364e0a8df52433c86e187319b5a9494dea22b74be5d1d63c8a93b62f3852",
+  "linuxAppimage": "37fa36fdbcdb3307b1f1331e3106711e80e323c1220cfc2703a2c49725359f07",
+  "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-8610e313/ (installers + SHA256.txt)",
+  "macosSmoke": "PASS — CI bundle app launches in an isolated profile, AX reports the RimLoc window, the drafts broker serves its 0600 socket"
+ }
 }

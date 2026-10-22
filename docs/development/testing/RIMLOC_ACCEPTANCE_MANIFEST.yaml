@@ -44,6 +44,13 @@ matrix_20261022:
     fails closed (0 translated / 1 error / failed row / empty target), ChatGPT plan disabled with
     its honest note, local mode offers the local-model provider, no-API links to chat batch,
     automatic mode shows the key hint (new UI)"
+  STAGE3_COVERAGE: "MEASURED (PR #117) — 16/16 routes, 182 testids / 113 interactive, 62 activated
+    (54.9%); remaining 51 classified: by-design-out-of-scope / state-gated / next-pass (manifest
+    docs/development/testing/ROUTE_CONTROL_MANIFEST.md)"
+  STAGE4_RC_BUNDLES: "READY (2026-10-23) — CI bundles of merged main 8610e313 for macOS (dmg dadd6fce, app
+    binary 50d7ba20), Windows NSIS (970dc092), Linux deb (af60364e) + AppImage (37fa36fd); SHA256.txt
+    deployed to the owner UAT folder; CI macOS bundle smoke PASS; canonical workflow_dispatch run
+    39833732222 in flight"
 
 # §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
 # и в RimLoc-evidence):
