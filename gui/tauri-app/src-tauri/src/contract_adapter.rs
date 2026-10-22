@@ -54,6 +54,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_validate",
     "project_export",
     "project_output_xml_preview",
+    // Source Inspector XML preview (rel27): registered like its output
+    // sibling; keeping it here binds it to every registration check.
+    "project_source_xml_preview",
     "project_build_mod",
     "project_diagnose",
     // W2 (existing-pack flow): dry-run analysis + guarded application of an
@@ -506,6 +509,116 @@ pub struct SourceXmlPreviewArgs {
     pub after: usize,
 }
 
+/// Hard cap for one previewed source file, enforced before the content is
+/// pulled into memory: `std::fs::read` on an unbounded file would let a
+/// huge (or adversarial) source tree exhaust resources for a 200-line view.
+pub(crate) const MAX_SOURCE_PREVIEW_FILE_BYTES: u64 = 8 * 1024 * 1024;
+
+fn source_preview_escape_error() -> rimloc_services::contract::ContractError {
+    rimloc_services::contract::ContractError::new(
+        rimloc_services::contract::ContractErrorCode::GuardOutputDenied,
+        "source preview path escapes the project source root".to_string(),
+    )
+}
+
+/// Secure core of the source XML preview, split from the Tauri command so
+/// the negative security tests can drive it directly.
+///
+/// Containment is layered: lexical refusal of absolute paths and `..`
+/// components; refusal of a symlinked final component (`symlink_metadata`
+/// inspects the leaf without following it); and canonical containment —
+/// the fully resolved path must stay inside the canonical source root,
+/// which also rejects symlinked ancestor directories pointing outside the
+/// tree. The read itself is size-bounded via `take`, so a file that grows
+/// between the metadata check and the read still cannot exceed the cap.
+/// The remaining metadata-check → open window is a single open (no reopen),
+/// the residual race for a local read-only previewer.
+pub(crate) fn read_source_preview_window(
+    root: &std::path::Path,
+    rel_path: &str,
+    line: Option<usize>,
+    before: usize,
+    after: usize,
+) -> Result<SourceXmlPreview, rimloc_services::contract::ContractError> {
+    use rimloc_services::contract::{ContractError, ContractErrorCode};
+    let invalid = |message: String| ContractError::new(ContractErrorCode::InvalidConfig, message);
+    let rel = std::path::Path::new(rel_path);
+    if rel.is_absolute()
+        || rel
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(source_preview_escape_error());
+    }
+    let full = root.join(rel);
+    if !full.starts_with(root) {
+        return Err(source_preview_escape_error());
+    }
+    // Leaf: a regular file, not a symlink and not a directory.
+    let leaf_meta = std::fs::symlink_metadata(&full)
+        .map_err(|source| invalid(format!("source preview read `{rel_path}`: {source}")))?;
+    if leaf_meta.file_type().is_symlink() || !leaf_meta.is_file() {
+        return Err(source_preview_escape_error());
+    }
+    // Resolve symlinked ancestors: the canonical target must remain inside
+    // the canonical source root.
+    let canonical_root = std::fs::canonicalize(root).map_err(|source| {
+        invalid(format!(
+            "source preview root `{}`: {source}",
+            root.display()
+        ))
+    })?;
+    let canonical_full = std::fs::canonicalize(&full)
+        .map_err(|source| invalid(format!("source preview read `{rel_path}`: {source}")))?;
+    if !canonical_full.starts_with(&canonical_root) {
+        return Err(source_preview_escape_error());
+    }
+    if leaf_meta.len() > MAX_SOURCE_PREVIEW_FILE_BYTES {
+        return Err(invalid(format!(
+            "source preview: file exceeds the {}-byte limit ({} bytes)",
+            MAX_SOURCE_PREVIEW_FILE_BYTES,
+            leaf_meta.len()
+        )));
+    }
+    let mut bytes = Vec::with_capacity(leaf_meta.len().min(u32::MAX as u64) as usize);
+    std::fs::File::open(&canonical_full)
+        .and_then(|mut handle| {
+            use std::io::Read;
+            (&mut handle)
+                .take(MAX_SOURCE_PREVIEW_FILE_BYTES)
+                .read_to_end(&mut bytes)
+        })
+        .map_err(|source| invalid(format!("source preview read `{rel_path}`: {source}")))?;
+    if bytes.iter().take(8192).any(|b| *b == 0) {
+        return Err(invalid("source preview: file looks binary".to_string()));
+    }
+    let content = String::from_utf8_lossy(&bytes);
+    let total = content.lines().count();
+    let target = line.unwrap_or(1).min(total.max(1));
+    let before = before.min(200);
+    let after = after.min(200);
+    let start = target.saturating_sub(before).max(1);
+    let end = (target + after).min(total);
+    let lines = content
+        .lines()
+        .skip(start - 1)
+        .take(end - start + 1)
+        .enumerate()
+        .map(|(i, text)| SourceXmlPreviewLine {
+            n: start + i,
+            text: text.to_string(),
+        })
+        .collect();
+    Ok(SourceXmlPreview {
+        file: String::new(),
+        target_line: line,
+        lines,
+        truncated_head: start > 1,
+        truncated_tail: end < total,
+        total_lines: total,
+    })
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct SourceXmlPreviewLine {
     pub n: usize,
@@ -550,61 +663,15 @@ pub fn project_source_xml_preview(
                     "project has no source root",
                 )
             })?;
-        let rel = std::path::Path::new(&request.file);
-        if rel.is_absolute()
-            || rel
-                .components()
-                .any(|c| matches!(c, std::path::Component::ParentDir))
-        {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                "source preview path escapes the project source root".to_string(),
-            ));
-        }
-        let full = root.join(rel);
-        if !full.starts_with(&root) {
-            return Err(ContractError::new(
-                ContractErrorCode::GuardOutputDenied,
-                "source preview path escapes the project source root".to_string(),
-            ));
-        }
-        let bytes = std::fs::read(&full).map_err(|source| {
-            ContractError::new(
-                ContractErrorCode::InvalidConfig,
-                format!("source preview read `{}`: {source}", request.file),
-            )
-        })?;
-        if bytes.iter().take(8192).any(|b| *b == 0) {
-            return Err(ContractError::new(
-                ContractErrorCode::InvalidConfig,
-                "source preview: file looks binary".to_string(),
-            ));
-        }
-        let content = String::from_utf8_lossy(&bytes);
-        let total = content.lines().count();
-        let target = request.line.unwrap_or(1).min(total.max(1));
-        let before = request.before.min(200);
-        let after = request.after.min(200);
-        let start = target.saturating_sub(before).max(1);
-        let end = (target + after).min(total);
-        let lines = content
-            .lines()
-            .skip(start - 1)
-            .take(end - start + 1)
-            .enumerate()
-            .map(|(i, text)| SourceXmlPreviewLine {
-                n: start + i,
-                text: text.to_string(),
-            })
-            .collect();
-        Ok(SourceXmlPreview {
-            file: request.file,
-            target_line: request.line,
-            lines,
-            truncated_head: start > 1,
-            truncated_tail: end < total,
-            total_lines: total,
-        })
+        let mut preview = read_source_preview_window(
+            &root,
+            &request.file,
+            request.line,
+            request.before,
+            request.after,
+        )?;
+        preview.file = request.file;
+        Ok(preview)
     })
 }
 
@@ -1772,6 +1839,194 @@ mod ipc_draft_tests {
             };
             let err = invoke(&webview, cmd, body).expect_err("unknown project refuses");
             assert_eq!(err["code"], "project_not_found", "{cmd}");
+        }
+    }
+
+    // --- source XML preview security (negative matrix + happy path) ---
+
+    fn preview_err(root: &std::path::Path, rel: &str) -> rimloc_services::contract::ContractError {
+        read_source_preview_window(root, rel, None, 0, 0).expect_err(rel)
+    }
+
+    #[test]
+    fn preview_happy_path_returns_window() {
+        let dir = tempfile::tempdir().expect("tmp");
+        let def = dir.path().join("Defs").join("Thing.xml");
+        std::fs::create_dir_all(def.parent().unwrap()).expect("dirs");
+        std::fs::write(
+            &def,
+            (1..=50)
+                .map(|i| format!("<l{i}/>"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+        .expect("write");
+        let out = read_source_preview_window(dir.path(), "Defs/Thing.xml", Some(40), 5, 4)
+            .expect("window");
+        assert_eq!(out.total_lines, 50);
+        assert_eq!(out.target_line, Some(40));
+        assert_eq!(out.lines.len(), 10);
+        assert_eq!(out.lines[0].n, 35);
+        assert_eq!(out.lines[0].text, "<l35/>");
+        assert_eq!(out.lines.last().unwrap().n, 44);
+        assert!(out.truncated_head && out.truncated_tail);
+    }
+
+    #[test]
+    fn preview_refuses_absolute_and_parent_traversal() {
+        let dir = tempfile::tempdir().expect("tmp");
+        for rel in ["/etc/hosts", "../secret.txt", "Defs/../../secret.txt"] {
+            let err = preview_err(dir.path(), rel);
+            assert_eq!(
+                err.code,
+                rimloc_services::contract::ContractErrorCode::GuardOutputDenied,
+                "{rel}"
+            );
+        }
+    }
+
+    #[test]
+    fn preview_refuses_missing_file_directory_and_binary() {
+        let dir = tempfile::tempdir().expect("tmp");
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Nope.xml").code,
+            rimloc_services::contract::ContractErrorCode::InvalidConfig
+        );
+        std::fs::create_dir_all(dir.path().join("Defs").join("Sub")).expect("dir");
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Sub").code,
+            rimloc_services::contract::ContractErrorCode::GuardOutputDenied
+        );
+        let bin = dir.path().join("Defs").join("Bin.xml");
+        std::fs::write(&bin, vec![0u8; 64]).expect("write");
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Bin.xml").code,
+            rimloc_services::contract::ContractErrorCode::InvalidConfig
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn preview_refuses_symlink_leaf_pointing_outside_root() {
+        let dir = tempfile::tempdir().expect("tmp");
+        let outside = tempfile::tempdir().expect("outside");
+        let secret = outside.path().join("secret.xml");
+        std::fs::write(&secret, "<secret/>").expect("write");
+        std::fs::create_dir_all(dir.path().join("Defs")).expect("dirs");
+        std::os::unix::fs::symlink(&secret, dir.path().join("Defs").join("Link.xml"))
+            .expect("symlink");
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Link.xml").code,
+            rimloc_services::contract::ContractErrorCode::GuardOutputDenied
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn preview_refuses_symlinked_ancestor_pointing_outside_root() {
+        let dir = tempfile::tempdir().expect("tmp");
+        let outside = tempfile::tempdir().expect("outside");
+        std::fs::write(outside.path().join("secret.xml"), "<secret/>").expect("write");
+        std::os::unix::fs::symlink(outside.path(), dir.path().join("DefsLink")).expect("symlink");
+        // Pass the ALREADY-canonicalized root: macOS tempdirs live behind the
+        // /var → /private/var symlink, which would make even a lexically
+        // resolved path trip the root canonicalization and mask the actual
+        // ancestor-escape being tested (the mutation test caught exactly
+        // this masking — on plain Linux CI the mutant survives it).
+        let canonical_root = dir.path().canonicalize().expect("canonical root");
+        assert_eq!(
+            preview_err(&canonical_root, "DefsLink/secret.xml").code,
+            rimloc_services::contract::ContractErrorCode::GuardOutputDenied
+        );
+    }
+
+    #[test]
+    fn preview_refuses_oversized_file() {
+        let dir = tempfile::tempdir().expect("tmp");
+        let big = dir.path().join("Defs").join("Big.xml");
+        std::fs::create_dir_all(big.parent().unwrap()).expect("dirs");
+        let f = std::fs::File::create(&big).expect("create");
+        f.set_len(MAX_SOURCE_PREVIEW_FILE_BYTES + 1).expect("size");
+        let err = preview_err(dir.path(), "Defs/Big.xml");
+        let msg = err.to_string();
+        assert!(
+            msg.contains("byte limit"),
+            "message must name the limit: {msg}"
+        );
+    }
+
+    #[test]
+    fn preview_window_respects_slash_forms_and_caps() {
+        let dir = tempfile::tempdir().expect("tmp");
+        let def = dir.path().join("Defs").join("Thing.xml");
+        std::fs::create_dir_all(def.parent().unwrap()).expect("dirs");
+        std::fs::write(
+            &def,
+            (1..=1000)
+                .map(|i| format!("<l{i}/>"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+        .expect("write");
+        // Platform-native separators accepted; window caps still bind (200).
+        let out =
+            read_source_preview_window(dir.path(), "Defs/Thing.xml", Some(500), 10_000, 10_000)
+                .expect("window");
+        assert_eq!(out.lines.len(), 401); // 200 before + target + 200 after, inclusive
+        assert_eq!(out.lines[0].n, 300);
+    }
+
+    /// Registration parity against the REAL handler list: every binding
+    /// contract command must appear in EVERY generate_handler! block of the
+    /// compiled main.rs. The QA escape this kills: an adapter implemented
+    /// here but never entered into a generate_handler! list — packaged
+    /// builds answered "Command not found" while list-based tests stayed
+    /// green. include_str! reads the very source file being compiled, so
+    /// the checked text cannot drift from it. (The bin crate mirrors this
+    /// check for its documented LIVE_COMMANDS list in src/tests.rs.)
+    #[test]
+    fn contract_commands_are_registered_in_each_generate_handler_block() {
+        let main_rs = include_str!("main.rs");
+        let mut blocks: Vec<Vec<String>> = Vec::new();
+        let mut cursor = 0;
+        while let Some(pos) = main_rs[cursor..].find("generate_handler![") {
+            let start = cursor + pos + "generate_handler![".len();
+            let end = start
+                + main_rs[start..]
+                    .find(']')
+                    .expect("generate_handler! block closed");
+            let names: Vec<String> = main_rs[start..end]
+                .lines()
+                .map(|line| line.split("//").next().unwrap_or("").trim())
+                .filter(|line| !line.is_empty())
+                .map(|line| line.trim_end_matches(',').trim())
+                .filter(|line| !line.is_empty())
+                .map(|line| {
+                    line.rsplit("::")
+                        .next()
+                        .expect("non-empty path")
+                        .to_string()
+                })
+                .collect();
+            assert!(
+                !names.is_empty(),
+                "generate_handler! block must list commands"
+            );
+            blocks.push(names);
+            cursor = end;
+        }
+        assert!(
+            blocks.len() >= 2,
+            "expected the legacy and no-legacy handler blocks, found {}",
+            blocks.len()
+        );
+        for block in &blocks {
+            for name in CONTRACT_COMMANDS {
+                assert!(
+                    block.iter().any(|n| n == name),
+                    "contract command `{name}` missing from a generate_handler! block (packaged builds would answer Command not found)"
+                );
+            }
         }
     }
 }

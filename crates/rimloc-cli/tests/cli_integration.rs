@@ -2135,11 +2135,14 @@ fn all_tr_keys_exist_in_en_ftl() {
         }
 
         // Очень простой парсер: ищем tr!("...") и tr!( "...", ..)
+        // Граница идентификатора обязательна: иначе include_str!("…")
+        // матчится как tr!("…") по подстроке s-tr!-(".
         let bytes = s.as_bytes();
         let needle = b"tr!(\"";
+        let ident_byte = |b: u8| b.is_ascii_alphanumeric() || b == b'_';
         let mut i = 0usize;
         while i + needle.len() < bytes.len() {
-            if &bytes[i..i + needle.len()] == needle {
+            if &bytes[i..i + needle.len()] == needle && (i == 0 || !ident_byte(bytes[i - 1])) {
                 let start = i + needle.len();
                 let mut j = start;
                 let mut esc = false;

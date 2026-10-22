@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { Sparkles, KeyRound, Monitor, MessagesSquare, CircleAlert, Play, Check } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { clientInstance } from '../lib/client/instance'
-import { t } from '../lib/i18n'
+import { t, getLocale } from '../lib/i18n'
 import type { AiJobStatusDto, ProviderInstanceSummaryDto } from '../lib/client/types'
 
 type Mode = 'auto' | 'chatgpt' | 'byo' | 'local' | 'noapi'
@@ -200,7 +200,7 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
             {m.id === 'byo' && <KeyRound size={14} />}
             {m.id === 'local' && <Monitor size={14} />}
             {m.id === 'noapi' && <MessagesSquare size={14} />}
-            <span>{t('uiLocale') === 'ru' ? m.labelRu : m.label}</span>
+            <span>{getLocale() === 'ru' ? m.labelRu : m.label}</span>
           </button>
         ))}
       </div>
