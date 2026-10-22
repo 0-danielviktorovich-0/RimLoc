@@ -39,6 +39,11 @@ matrix_20261022:
     persistence, checks screen, output XML with the translated content, and an export whose
     LanguageData tree (About + DefInjected + Keyed) is verified on disk with both translated
     strings; navigation by real sidebar clicks; per-run mkdtemp fixture and export"
+  STAGE2_AI_PROVIDER_JOURNEY: "PASS (2026-10-23) — packaged artifact: provider instance created via the
+    command palette (key -> OS keychain), BYO mode lists it, a run against a dead local endpoint
+    fails closed (0 translated / 1 error / failed row / empty target), ChatGPT plan disabled with
+    its honest note, local mode offers the local-model provider, no-API links to chat batch,
+    automatic mode shows the key hint (new UI)"
 
 # §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
 # и в RimLoc-evidence):
