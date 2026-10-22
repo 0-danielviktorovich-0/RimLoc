@@ -453,3 +453,8 @@ button:disabled { cursor: default; opacity: 1; filter: saturate(.5) brightness(.
 .heading-eyebrow { margin-bottom: 6px; }
 /* Footer scrim: scrolled content fades out before the status line. */
 .ws-footer { position: relative; z-index: 5; background: var(--background); box-shadow: 0 -10px 14px -10px oklch(0 0 0 / .18); }
+
+/* --- Owner finding #2: entries pane must fill available width; textarea
+   needs a usable default editing height. --- */
+.ws-center > .entries-pane { flex: 1; min-width: 0; }
+.detail-body textarea { min-height: 176px; }
