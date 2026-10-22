@@ -330,7 +330,7 @@ jobs:
           xvfb-run -a "$APPIMAGE" &
           WRAPPER_PID=$!
           sleep 15
-          APP_PID=$(pgrep -f "rimloc.*AppImage" | grep -v "$WRAPPER_PID" | head -1)
+          APP_PID=$(pgrep -f "rimloc|AppRun" | grep -v "$WRAPPER_PID" | grep -v xvfb | head -1)
           if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
             echo "STARTUP_PASS: GUI process $APP_PID alive after 15s on virtual display"
             kill "$APP_PID" "$WRAPPER_PID" 2>/dev/null || true
