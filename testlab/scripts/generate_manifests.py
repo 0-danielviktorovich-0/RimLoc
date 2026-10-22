@@ -17,7 +17,19 @@ import json
 import os
 import re
 import sys
-from xml.etree import ElementTree as ET
+
+# Third-party About.xml reaches this generator as-is, so parsing goes
+# through defusedxml unconditionally (the one XML hardening library the
+# CodeQL py/xml-bomb query recognizes). No fallback to plain ElementTree:
+# a missing dependency must fail loudly, never parse unsafely.
+try:
+    from defusedxml.ElementTree import fromstring as _defused_fromstring
+except ImportError as _exc:  # pragma: no cover - environment guard
+    raise SystemExit(
+        "defusedxml is required for safe About.xml parsing: pip install defusedxml"
+    ) from _exc
+
+ET_ParseError = __import__("xml.etree.ElementTree", fromlist=["ParseError"]).ParseError
 
 DEFAULT_MODS_ROOT = "/Applications/RimWorld.app/Mods"
 CURATED = ["1814383360", "2927850179", "2126925929"]
@@ -34,21 +46,21 @@ MAX_ABOUT_BYTES = 1 * 1024 * 1024
 def _load_about_text(about_path):
     size = os.path.getsize(about_path)
     if size > MAX_ABOUT_BYTES:
-        raise ET.ParseError(f"About.xml exceeds {MAX_ABOUT_BYTES} bytes ({size})")
+        raise ET_ParseError(f"About.xml exceeds {MAX_ABOUT_BYTES} bytes ({size})")
     with open(about_path, "rb") as f:
         raw = f.read(MAX_ABOUT_BYTES + 1)
     if len(raw) > MAX_ABOUT_BYTES:
-        raise ET.ParseError("About.xml grew past the size cap while reading")
+        raise ET_ParseError("About.xml grew past the size cap while reading")
     text = raw.decode("utf-8", "strict")
     if re.search(r"<!\s*(DOCTYPE|ENTITY)", text, re.IGNORECASE):
-        raise ET.ParseError("About.xml with a DTD/entity declaration is refused")
+        raise ET_ParseError("About.xml with a DTD/entity declaration is refused")
     return text
 
 
 def parse_about(about_path):
     try:
-        root = ET.fromstring(_load_about_text(about_path))
-    except (ET.ParseError, UnicodeDecodeError, OSError) as e:
+        root = _defused_fromstring(_load_about_text(about_path))
+    except (ET_ParseError, UnicodeDecodeError, OSError) as e:
         return {"name": f"<xml-error: {e}>", "packageId": "", "versions": []}
     return {
         "name": (root.findtext("name") or "").strip(),

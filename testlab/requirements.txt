@@ -1,0 +1,5 @@
+# Tooling dependencies for testlab scripts (evidence generators, checks).
+# generate_manifests.py parses third-party mod About.xml and REQUIRES
+# defusedxml — the guarded parser fails loudly without it, never falling
+# back to unsafe stdlib parsing.
+defusedxml>=0.7
