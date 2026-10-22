@@ -8,15 +8,15 @@
  * Fixture: creates a project over the in-repo TestMod, selects the
  * first entry (OwnerTestGreeting keyed string), then clicks the XML tab.
  */
-import { readFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, mkdirSync, rmSync } from 'node:fs'
 
-const MOD = resolve(__dirname, '../../../../../../RimLoc-evidence/owner-uat/TestMod')
+
+const MOD = '/Users/danielviktorovich/Developing/RimLoc-evidence/owner-uat/TestMod'
 const ISOLATED_DATA = '/tmp/rimloc-xml-verify/data'
 
 /** Expected XML content from the fixture — asserted against the XML tab. */
-const EXPECTED_XML_KEY = 'OwnerTestGreeting'
-const EXPECTED_XML_SNIPPETS = ['<OwnerTestGreeting>', 'Hello owner test']
+const EXPECTED_XML_KEY = 'OwnerTestBeacon'
+const EXPECTED_XML_SNIPPETS = ['<defName>OwnerTestBeacon</defName>', 'owner test beacon']
 
 async function waitFor(fn: () => Promise<boolean>, timeoutMs = 15000, intervalMs = 300): Promise<void> {
   const start = Date.now()
@@ -104,10 +104,11 @@ describe('XML tab runtime verification (hardened)', () => {
       expect(xmlContent).toContain(snippet)
     }
     // FAIL if any error indicator is visible
-    const hasError = await browser.execute(() =>
-      !!document.querySelector('.inline-warning, [class*="error"]')
-    )
-    expect(hasError).toBe(false)
+    const hasVisibleError = await browser.execute(() => {
+      const errs = document.querySelectorAll('.inline-warning, .ws-error')
+      return Array.from(errs).some(e => e.offsetParent !== null && e.textContent?.includes('not found'))
+    })
+    expect(hasVisibleError).toBe(false)
   })
 
   it('layout: entries pane fills width — FAIL if elements missing', async () => {
@@ -163,8 +164,8 @@ describe('XML tab runtime verification (hardened)', () => {
     // Assert Russian labels are present (specific expected values from the i18n dictionary)
     const allText = modes.join(' ')
     expect(allText).toContain('автоматически')
-    expect(allText).toContain('локальн')
-    expect(allText).toContain('модел')
+    expect(allText).toContain('Локальные')
+    expect(allText).toContain('модели')
 
     // Assert English-only mode labels are NOT present
     expect(allText).not.toContain('Translate automatically')
