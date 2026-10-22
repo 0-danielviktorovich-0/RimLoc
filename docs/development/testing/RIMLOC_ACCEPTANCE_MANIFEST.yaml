@@ -51,6 +51,11 @@ matrix_20261022:
     binary 50d7ba20), Windows NSIS (970dc092), Linux deb (af60364e) + AppImage (37fa36fd); SHA256.txt
     deployed to the owner UAT folder; CI macOS bundle smoke PASS; canonical workflow_dispatch run
     39833732222 in flight"
+  IN_GAME_RIMWORLD_RE_ACCEPTANCE: "PASS (2026-10-23) — RC source merged main 8610e313: the real
+    product exports the canary translation (Keyed «Привет, канареечный мир» + DefInjected
+    «Маяк проверки владельца»), the live game (1.6.4871, isolated profile, background) runs in
+    Russian and its active localization DB serves the RC-built string via the first-party file
+    channel; source mod INTACT; 0 translation-mod errors (evidence/in-game-2026-10-23/)"
 
 # §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
 # и в RimLoc-evidence):
