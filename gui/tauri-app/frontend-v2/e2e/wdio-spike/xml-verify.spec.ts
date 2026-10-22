@@ -18,6 +18,10 @@ import { join } from 'node:path'
 const WORK_DIR = mkdtempSync(join(tmpdir(), 'rimloc-xml-verify-'))
 const MOD = join(WORK_DIR, 'TestMod')
 
+/** Visual evidence survives the per-run cleanup; CI can redirect it. */
+const EVIDENCE_DIR =
+  process.env.RIMLOC_XML_VERIFY_EVIDENCE ?? join(tmpdir(), 'rimloc-xml-verify-evidence')
+
 /** Expected XML content from the generated fixture — asserted against the XML tab. */
 const EXPECTED_XML_KEY = 'OwnerTestBeacon'
 const EXPECTED_XML_SNIPPETS = ['<defName>OwnerTestBeacon</defName>', 'owner test beacon']
@@ -162,6 +166,13 @@ describe('XML tab runtime verification (hardened)', () => {
     for (const snippet of EXPECTED_XML_SNIPPETS) {
       expect(xmlContent).toContain(snippet)
     }
+
+    // Visual evidence: capture the XML tab as rendered by the real runtime.
+    mkdirSync(EVIDENCE_DIR, { recursive: true })
+    const shotPath = join(EVIDENCE_DIR, 'xml-tab-evidence.png')
+    await browser.saveScreenshot(shotPath)
+    console.log('XML tab screenshot saved:', shotPath)
+
     // FAIL if any error indicator is visible
     const hasVisibleError = await browser.execute(() => {
       const errs = document.querySelectorAll('.inline-warning, .ws-error')
