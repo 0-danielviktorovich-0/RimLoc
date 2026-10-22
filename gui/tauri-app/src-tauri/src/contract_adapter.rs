@@ -54,6 +54,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_validate",
     "project_export",
     "project_output_xml_preview",
+    // Source Inspector XML preview (rel27): registered like its output
+    // sibling; keeping it here binds it to every registration check.
+    "project_source_xml_preview",
     "project_build_mod",
     "project_diagnose",
     // W2 (existing-pack flow): dry-run analysis + guarded application of an
@@ -552,16 +555,19 @@ pub(crate) fn read_source_preview_window(
         return Err(source_preview_escape_error());
     }
     // Leaf: a regular file, not a symlink and not a directory.
-    let leaf_meta = std::fs::symlink_metadata(&full).map_err(|source| {
-        invalid(format!("source preview read `{rel_path}`: {source}"))
-    })?;
+    let leaf_meta = std::fs::symlink_metadata(&full)
+        .map_err(|source| invalid(format!("source preview read `{rel_path}`: {source}")))?;
     if leaf_meta.file_type().is_symlink() || !leaf_meta.is_file() {
         return Err(source_preview_escape_error());
     }
     // Resolve symlinked ancestors: the canonical target must remain inside
     // the canonical source root.
-    let canonical_root = std::fs::canonicalize(root)
-        .map_err(|source| invalid(format!("source preview root `{}`: {source}", root.display())))?;
+    let canonical_root = std::fs::canonicalize(root).map_err(|source| {
+        invalid(format!(
+            "source preview root `{}`: {source}",
+            root.display()
+        ))
+    })?;
     let canonical_full = std::fs::canonicalize(&full)
         .map_err(|source| invalid(format!("source preview read `{rel_path}`: {source}")))?;
     if !canonical_full.starts_with(&canonical_root) {
@@ -1838,10 +1844,7 @@ mod ipc_draft_tests {
 
     // --- source XML preview security (negative matrix + happy path) ---
 
-    fn preview_err(
-        root: &std::path::Path,
-        rel: &str,
-    ) -> rimloc_services::contract::ContractError {
+    fn preview_err(root: &std::path::Path, rel: &str) -> rimloc_services::contract::ContractError {
         read_source_preview_window(root, rel, None, 0, 0).expect_err(rel)
     }
 
@@ -1850,8 +1853,14 @@ mod ipc_draft_tests {
         let dir = tempfile::tempdir().expect("tmp");
         let def = dir.path().join("Defs").join("Thing.xml");
         std::fs::create_dir_all(def.parent().unwrap()).expect("dirs");
-        std::fs::write(&def, (1..=50).map(|i| format!("<l{i}/>")).collect::<Vec<_>>().join("\n"))
-            .expect("write");
+        std::fs::write(
+            &def,
+            (1..=50)
+                .map(|i| format!("<l{i}/>"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+        .expect("write");
         let out = read_source_preview_window(dir.path(), "Defs/Thing.xml", Some(40), 5, 4)
             .expect("window");
         assert_eq!(out.total_lines, 50);
@@ -1868,22 +1877,32 @@ mod ipc_draft_tests {
         let dir = tempfile::tempdir().expect("tmp");
         for rel in ["/etc/hosts", "../secret.txt", "Defs/../../secret.txt"] {
             let err = preview_err(dir.path(), rel);
-            assert_eq!(err.code, rimloc_services::contract::ContractErrorCode::GuardOutputDenied, "{rel}");
+            assert_eq!(
+                err.code,
+                rimloc_services::contract::ContractErrorCode::GuardOutputDenied,
+                "{rel}"
+            );
         }
     }
 
     #[test]
     fn preview_refuses_missing_file_directory_and_binary() {
         let dir = tempfile::tempdir().expect("tmp");
-        assert_eq!(preview_err(dir.path(), "Defs/Nope.xml").code,
-            rimloc_services::contract::ContractErrorCode::InvalidConfig);
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Nope.xml").code,
+            rimloc_services::contract::ContractErrorCode::InvalidConfig
+        );
         std::fs::create_dir_all(dir.path().join("Defs").join("Sub")).expect("dir");
-        assert_eq!(preview_err(dir.path(), "Defs/Sub").code,
-            rimloc_services::contract::ContractErrorCode::GuardOutputDenied);
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Sub").code,
+            rimloc_services::contract::ContractErrorCode::GuardOutputDenied
+        );
         let bin = dir.path().join("Defs").join("Bin.xml");
         std::fs::write(&bin, vec![0u8; 64]).expect("write");
-        assert_eq!(preview_err(dir.path(), "Defs/Bin.xml").code,
-            rimloc_services::contract::ContractErrorCode::InvalidConfig);
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Bin.xml").code,
+            rimloc_services::contract::ContractErrorCode::InvalidConfig
+        );
     }
 
     #[cfg(unix)]
@@ -1896,8 +1915,10 @@ mod ipc_draft_tests {
         std::fs::create_dir_all(dir.path().join("Defs")).expect("dirs");
         std::os::unix::fs::symlink(&secret, dir.path().join("Defs").join("Link.xml"))
             .expect("symlink");
-        assert_eq!(preview_err(dir.path(), "Defs/Link.xml").code,
-            rimloc_services::contract::ContractErrorCode::GuardOutputDenied);
+        assert_eq!(
+            preview_err(dir.path(), "Defs/Link.xml").code,
+            rimloc_services::contract::ContractErrorCode::GuardOutputDenied
+        );
     }
 
     #[cfg(unix)]
@@ -1928,7 +1949,10 @@ mod ipc_draft_tests {
         f.set_len(MAX_SOURCE_PREVIEW_FILE_BYTES + 1).expect("size");
         let err = preview_err(dir.path(), "Defs/Big.xml");
         let msg = err.to_string();
-        assert!(msg.contains("byte limit"), "message must name the limit: {msg}");
+        assert!(
+            msg.contains("byte limit"),
+            "message must name the limit: {msg}"
+        );
     }
 
     #[test]
@@ -1936,12 +1960,73 @@ mod ipc_draft_tests {
         let dir = tempfile::tempdir().expect("tmp");
         let def = dir.path().join("Defs").join("Thing.xml");
         std::fs::create_dir_all(def.parent().unwrap()).expect("dirs");
-        std::fs::write(&def, (1..=1000).map(|i| format!("<l{i}/>")).collect::<Vec<_>>().join("\n"))
-            .expect("write");
+        std::fs::write(
+            &def,
+            (1..=1000)
+                .map(|i| format!("<l{i}/>"))
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+        .expect("write");
         // Platform-native separators accepted; window caps still bind (200).
-        let out = read_source_preview_window(dir.path(), "Defs/Thing.xml", Some(500), 10_000, 10_000)
-            .expect("window");
+        let out =
+            read_source_preview_window(dir.path(), "Defs/Thing.xml", Some(500), 10_000, 10_000)
+                .expect("window");
         assert_eq!(out.lines.len(), 401); // 200 before + target + 200 after, inclusive
         assert_eq!(out.lines[0].n, 300);
+    }
+
+    /// Registration parity against the REAL handler list: every binding
+    /// contract command must appear in EVERY generate_handler! block of the
+    /// compiled main.rs. The QA escape this kills: an adapter implemented
+    /// here but never entered into a generate_handler! list — packaged
+    /// builds answered "Command not found" while list-based tests stayed
+    /// green. include_str! reads the very source file being compiled, so
+    /// the checked text cannot drift from it. (The bin crate mirrors this
+    /// check for its documented LIVE_COMMANDS list in src/tests.rs.)
+    #[test]
+    fn contract_commands_are_registered_in_each_generate_handler_block() {
+        let main_rs = include_str!("main.rs");
+        let mut blocks: Vec<Vec<String>> = Vec::new();
+        let mut cursor = 0;
+        while let Some(pos) = main_rs[cursor..].find("generate_handler![") {
+            let start = cursor + pos + "generate_handler![".len();
+            let end = start
+                + main_rs[start..]
+                    .find(']')
+                    .expect("generate_handler! block closed");
+            let names: Vec<String> = main_rs[start..end]
+                .lines()
+                .map(|line| line.split("//").next().unwrap_or("").trim())
+                .filter(|line| !line.is_empty())
+                .map(|line| line.trim_end_matches(',').trim())
+                .filter(|line| !line.is_empty())
+                .map(|line| {
+                    line.rsplit("::")
+                        .next()
+                        .expect("non-empty path")
+                        .to_string()
+                })
+                .collect();
+            assert!(
+                !names.is_empty(),
+                "generate_handler! block must list commands"
+            );
+            blocks.push(names);
+            cursor = end;
+        }
+        assert!(
+            blocks.len() >= 2,
+            "expected the legacy and no-legacy handler blocks, found {}",
+            blocks.len()
+        );
+        for block in &blocks {
+            for name in CONTRACT_COMMANDS {
+                assert!(
+                    block.iter().any(|n| n == name),
+                    "contract command `{name}` missing from a generate_handler! block (packaged builds would answer Command not found)"
+                );
+            }
+        }
     }
 }

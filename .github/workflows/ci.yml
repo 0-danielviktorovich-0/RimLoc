@@ -207,10 +207,11 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
-      # Продакшен-фронт: строгий typecheck + сборка. Vitest-сьюиты живут в
-      # Svelte-fallback (frontend-v2); React-прогоны — WDIO-смоуки вне CI.
+      # Продакшен-фронт: строгий typecheck + юнит-сьюиты + сборка.
+      # WDIO-смоуки остаются вне CI (нативная лента на macOS-раннере).
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npx vitest run
       - run: npx vite build
 
   deny:

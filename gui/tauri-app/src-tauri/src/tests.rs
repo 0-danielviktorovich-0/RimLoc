@@ -330,8 +330,9 @@ mod legacy_out_containment {
         .expect("FUNDING.yml present");
         assert!(funding.contains("0-danielviktorovich-0"), "sponsors handle");
         assert!(funding.contains("danielviktorovich"), "ko-fi handle");
+        // PR #109 normalized FUNDING.yml to the GitHub-native key form.
         assert!(
-            funding.contains("buymeacoffee.com/danielviktorovich"),
+            funding.contains("buy_me_a_coffee: danielviktorovich"),
             "bmc handle"
         );
 
@@ -345,6 +346,69 @@ mod legacy_out_containment {
             "https://ko-fi.com/danielviktorovich",
         ] {
             assert!(support.contains(url), "SUPPORT.md must contain {url}");
+        }
+    }
+
+    /// Registration parity against the REAL handler list: every binding
+    /// contract command and every documented live command must appear in
+    /// EVERY generate_handler! block of the compiled main.rs. The QA escape
+    /// this kills: an adapter implemented in contract_adapter but never
+    /// entered into a generate_handler! list — packaged builds answered
+    /// "Command not found" while list-based tests stayed green. The source
+    /// text is read via include_str!, so the checked text is by definition
+    /// the file being compiled and cannot drift from it.
+    #[test]
+    fn every_command_documented_as_live_is_in_each_generate_handler_block() {
+        use crate::LIVE_COMMANDS;
+        let main_rs = include_str!("main.rs");
+        let mut blocks: Vec<Vec<String>> = Vec::new();
+        let mut cursor = 0;
+        while let Some(pos) = main_rs[cursor..].find("generate_handler![") {
+            let start = cursor + pos + "generate_handler![".len();
+            let end = start
+                + main_rs[start..]
+                    .find(']')
+                    .expect("generate_handler! block closed");
+            let body = &main_rs[start..end];
+            let names: Vec<String> = body
+                .lines()
+                .map(|line| line.split("//").next().unwrap_or("").trim())
+                .filter(|line| !line.is_empty())
+                .map(|line| line.trim_end_matches(',').trim())
+                .filter(|line| !line.is_empty())
+                .map(|line| {
+                    line.rsplit("::")
+                        .next()
+                        .expect("non-empty path")
+                        .trim()
+                        .to_string()
+                })
+                .collect();
+            assert!(
+                !names.is_empty(),
+                "generate_handler! block must list commands"
+            );
+            blocks.push(names);
+            cursor = end;
+        }
+        assert!(
+            blocks.len() >= 2,
+            "expected the legacy and no-legacy handler blocks, found {}",
+            blocks.len()
+        );
+        for block in &blocks {
+            for name in rimloc_gui_lib::contract_adapter::CONTRACT_COMMANDS {
+                assert!(
+                    block.iter().any(|n| n == name),
+                    "contract command `{name}` missing from a generate_handler! block (packaged builds would answer Command not found)"
+                );
+            }
+            for name in LIVE_COMMANDS {
+                assert!(
+                    block.iter().any(|n| n == name),
+                    "documented live command `{name}` missing from a generate_handler! block"
+                );
+            }
         }
     }
 }
