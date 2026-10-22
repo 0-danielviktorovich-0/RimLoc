@@ -47,3 +47,20 @@
 1. Чистка зависших веток `codex/*`, чья работа уже влита в main (список в §1) — удалить или оставить как метки истории.
 2. Возвращать ли push-триггеры на main хотя бы для `ci` (быстрая обратная связь на docs/хоз-коммиты) или оставить модель «гейты только на PR + weekly».
 3. Судьба `release-plz` — см. VERSIONING §3 R4 (несовместим с продуктовыми релизами в текущей конфигурации).
+
+## 5. Пост-merge гигиена веток (постоянное правило, волна 2, 22.10.2026)
+
+Накопление мёртвых веток предотвращается на каждом merge — без новых сервисов,
+существующими механизмами GitHub и репозитория:
+
+| Момент | Действие | Инструмент (уже существует) |
+|--------|----------|------------------------------|
+| Merge PR агентом | `gh pr merge <N> --delete-branch` — GitHub сам удаляет head-ветку после влития | gh CLI |
+| Merge PR вручную | включён repo-setting "Automatically delete head branches" (уже активен: Dependabot-ветки #95/#96/#108 удалились сами) | GitHub settings |
+| Завершение волны/релиза | прогон `python3 scripts/branch-hygiene.py` (analysis-only): SAFE_TO_DELETE / NEEDS_REVIEW / KEEP_ACTIVE / PROTECTED с доказательствами; SAFE_TO_DELETE удаляется push --delete с пост-проверкой ls-remote | scripts/branch-hygiene.py + scripts/tests/test_branch_hygiene.py |
+| Перед удалением любой ветки | фиксация SHA в манифесте волны (docs/development/BRANCH_CLEANUP_WAVE*.md + приватный RimLoc-review-handoff) — восстановимо через reflog GitHub и через достижимость из main | практика волн 1–2 |
+
+Инварианты: ветка с уникальными коммитами (не предок main) НЕ удаляется без
+отдельного разрешения владельца; активные worktrees/PR/CI-раны — KEEP_ACTIVE;
+`staging/beta-rc` живёт до закрытия Owner UAT и RC-проверки. Отчёт каждой волны —
+в формате `BRANCHES_BEFORE | MERGED | DELETED | ACTIVE | DIVERGED | OPEN_PRS | AFTER | BLOCKERS`.
