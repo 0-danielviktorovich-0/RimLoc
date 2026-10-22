@@ -274,7 +274,7 @@ jobs:
         run: |
           $exe = Get-ChildItem "target\release\bundle\nsis\*.exe" | Where-Object { $_.Name -notmatch "setup" } | Select-Object -First 1
           if (-not $exe) { $exe = Get-ChildItem "target\release\*.exe" | Select-Object -First 1 }
-          if (-not $exe) { Write-Host "STARTUP_SKIP: no runnable exe found"; exit 0 }
+          if (-not $exe) { Write-Host "STARTUP_FAIL: no runnable exe found after build"; exit 1 }
           $env:RIMLOC_DATA_DIR = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + "rimloc-smoke-" + [Guid]::NewGuid().ToString("N").Substring(0,8)) -Force
           $proc = Start-Process -FilePath $exe.FullName -PassThru -NoNewWindow
           Start-Sleep -Seconds 15
