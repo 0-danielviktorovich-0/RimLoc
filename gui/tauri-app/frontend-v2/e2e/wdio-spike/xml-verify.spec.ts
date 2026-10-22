@@ -18,9 +18,8 @@ import { join } from 'node:path'
 const WORK_DIR = mkdtempSync(join(tmpdir(), 'rimloc-xml-verify-'))
 const MOD = join(WORK_DIR, 'TestMod')
 
-/** Visual evidence survives the per-run cleanup; CI can redirect it. */
-const EVIDENCE_DIR =
-  process.env.RIMLOC_XML_VERIFY_EVIDENCE ?? join(tmpdir(), 'rimloc-xml-verify-evidence')
+/** Visual evidence survives the per-run cleanup (deterministic temp path). */
+const EVIDENCE_DIR = join(tmpdir(), 'rimloc-xml-verify-evidence')
 
 /** Expected XML content from the generated fixture — asserted against the XML tab. */
 const EXPECTED_XML_KEY = 'OwnerTestBeacon'
