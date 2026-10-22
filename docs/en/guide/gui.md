@@ -4,7 +4,7 @@ title: Desktop GUI
 
 # RimLoc desktop GUI
 
-The desktop application is built with **Tauri 2** over the shared Rust service layer.
+**This is the primary way to use RimLoc.** Ordinary translators should not need a terminal. The visual desktop app uses **Tauri 2 + React** and shared Rust services; CLI is optional automation.
 
 ## Current frontend status
 
@@ -42,6 +42,12 @@ A control should only appear as usable when the backend/adapter capability is ac
 6. Build/export to an isolated output directory.
 
 **PO is not required** for this workflow. PO is an optional interchange format for external CAT tools.
+
+## AI translation inside the GUI
+
+**Current:** manual Chat Batch with no API key (prompt → chat → import/preview/apply); Provider Settings supports configuration and real connection probes.
+
+**Planned, not shipped:** full in-app automatic translation with visible provider/model selection, a background job with progress/limits, reviewable validated drafts, cancel/resume, eligible ChatGPT-plan OAuth (official OSS flow), optional user API keys and local models. Browser account authorization and paid billing consent are separate user decisions; neither should be simulated.
 
 ## Build the React candidate
 

@@ -291,4 +291,60 @@ mod legacy_out_containment {
             "guard writes nothing"
         );
     }
+
+    #[test]
+    fn support_link_registry_matches_the_allowlist_and_repo_surfaces() {
+        // The canonical registry (owner addendum Oct-15) is the ONE source
+        // of truth for support destinations: the About allowlist, FUNDING.yml
+        // and SUPPORT.md must reconcile against it — no stale duplicates.
+        let manifest = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../docs/development/support-links.json"
+        ))
+        .expect("support-links.json present");
+        let v: serde_json::Value = serde_json::from_str(&manifest).expect("valid json");
+
+        // 1) every registry link is https and covered by the opener allowlist
+        let links = v["links"].as_array().expect("links array");
+        assert!(links.len() >= 3, "three verified platforms expected");
+        let src = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/main.rs"))
+            .expect("main.rs readable");
+        for link in links {
+            let url = link["verified_https_url"].as_str().expect("url");
+            assert!(url.starts_with("https://"), "https only: {url}");
+            assert!(
+                crate::external_url_allowed(url),
+                "registry url {url} must be allowlisted in open_external_url"
+            );
+            assert!(
+                src.contains(url),
+                "registry url {url} must appear verbatim in the allowlist"
+            );
+        }
+
+        // 2) FUNDING.yml carries the same creator handles
+        let funding = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../.github/FUNDING.yml"
+        ))
+        .expect("FUNDING.yml present");
+        assert!(funding.contains("0-danielviktorovich-0"), "sponsors handle");
+        assert!(funding.contains("danielviktorovich"), "ko-fi handle");
+        assert!(
+            funding.contains("buymeacoffee.com/danielviktorovich"),
+            "bmc handle"
+        );
+
+        // 3) SUPPORT.md links the same three platforms
+        let support =
+            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../SUPPORT.md"))
+                .expect("SUPPORT.md present");
+        for url in [
+            "https://github.com/sponsors/0-danielviktorovich-0",
+            "https://buymeacoffee.com/danielviktorovich",
+            "https://ko-fi.com/danielviktorovich",
+        ] {
+            assert!(support.contains(url), "SUPPORT.md must contain {url}");
+        }
+    }
 }

@@ -15,7 +15,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    # Staged PRs against the integration branch get the same full gate:
+    # retargeting a PR away from main must not silently drop CI coverage.
+    branches: [main, feat/integration-rel27]
     # Documentation-only changes are validated by docs.yml; do not spend the
     # full Rust + 3-OS + GUI matrix on a README/MkDocs-only PR.
     paths-ignore:
@@ -115,19 +117,59 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
-      # generate_context! (src-tauri) встраивает frontend-v2/dist — собрать до cargo.
+      # generate_context! (src-tauri) embeds frontend-react/dist since the
+      # React-default cutover (tauri.conf.json); the frozen Svelte fallback
+      # stays available through tauri.legacy.conf.json and its own job.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: gui/tauri-app/frontend-v2/package-lock.json
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
       - run: npm ci && npm run build
-        working-directory: gui/tauri-app/frontend-v2
+        working-directory: gui/tauri-app/frontend-react
       - run: cargo build
         working-directory: gui/tauri-app/src-tauri
       # Линт gui-крейта здесь (единственное место с gtk-системными зависимостями).
       - run: cargo clippy --all-targets --all-features -- -D warnings
         working-directory: gui/tauri-app/src-tauri
+
+  bundle-macos:
+    name: macOS bundle (app + dmg artifact)
+    runs-on: macos-14
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+        with:
+          workspaces: gui/tauri-app/src-tauri
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+      - run: npm ci
+        working-directory: gui/tauri-app/frontend-react
+      # tauri-cli via npx (no global install): bundles the .app and the
+      # unsigned DMG for the same commit the tests ran on. The beforeBuild
+      # runs the production frontend build itself.
+      - name: Bundle (app + dmg)
+        run: |
+          npx --yes @tauri-apps/cli@2 build --bundles app,dmg
+        working-directory: gui/tauri-app/src-tauri
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-macos-bundle
+          # tauri-cli resolves the CARGO WORKSPACE root (the repo root),
+          # so the bundle lands in /target, not src-tauri/target.
+          path: |
+            target/release/bundle/macos/*.app
+            target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 14
 
   frontend:
     name: frontend legacy fallback (Svelte)
@@ -204,3 +246,107 @@ jobs:
             exit 1
           fi
 
+  bundle-windows:
+    name: Windows bundle (nsis artifact)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+        with:
+          workspaces: gui/tauri-app/src-tauri
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+      - run: npm ci
+        working-directory: gui/tauri-app/frontend-react
+      - name: Bundle (nsis)
+        shell: bash
+        run: npx --yes @tauri-apps/cli@2 build --bundles nsis
+        working-directory: gui/tauri-app/src-tauri
+      - name: Windows startup smoke
+        shell: powershell
+        run: |
+          $exe = Get-ChildItem "target\release\bundle\nsis\*.exe" | Where-Object { $_.Name -notmatch "setup" } | Select-Object -First 1
+          if (-not $exe) { $exe = Get-ChildItem "target\release\*.exe" | Select-Object -First 1 }
+          if (-not $exe) { Write-Host "STARTUP_FAIL: no runnable exe found after build"; exit 1 }
+          $env:RIMLOC_DATA_DIR = New-Item -ItemType Directory -Path ([System.IO.Path]::GetTempPath() + "rimloc-smoke-" + [Guid]::NewGuid().ToString("N").Substring(0,8)) -Force
+          $proc = Start-Process -FilePath $exe.FullName -PassThru -NoNewWindow
+          Start-Sleep -Seconds 15
+          if ($proc.HasExited) {
+            Write-Host "STARTUP_FAIL: app exited within 15s (code $($proc.ExitCode))"
+            exit 1
+          } else {
+            Write-Host "STARTUP_PASS: app alive after 15s"
+            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          }
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-windows-bundle
+          if-no-files-found: error
+          path: |
+            target/release/bundle/nsis/*.exe
+
+  bundle-linux:
+    name: Linux bundle (deb + appimage artifacts)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7 (pinned 2026-09-27)
+      - name: Install Linux GUI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+        with:
+          workspaces: gui/tauri-app/src-tauri
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6 (pinned 2026-09-27)
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
+      - run: npm ci
+        working-directory: gui/tauri-app/frontend-react
+      - name: Bundle (deb + appimage)
+        run: |
+          npx --yes @tauri-apps/cli@2 build --bundles deb,appimage
+        working-directory: gui/tauri-app/src-tauri
+      - name: Linux startup smoke (virtual display)
+        run: |
+          sudo apt-get install -y xvfb
+          APPIMAGE=$(find target/release/bundle/appimage -name "*.AppImage" | head -1)
+          chmod +x "$APPIMAGE"
+          RIMLOC_DATA_DIR=$(mktemp -d)
+          export RIMLOC_DATA_DIR
+          xvfb-run -a "$APPIMAGE" &
+          WRAPPER_PID=$!
+          sleep 15
+          APP_PID=$(pgrep -f "rimloc|AppRun" | grep -v "$WRAPPER_PID" | grep -v xvfb | head -1)
+          if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
+            echo "STARTUP_PASS: GUI process $APP_PID alive after 15s on virtual display"
+            kill "$APP_PID" "$WRAPPER_PID" 2>/dev/null || true
+          elif kill -0 "$WRAPPER_PID" 2>/dev/null; then
+            echo "STARTUP_FAIL: wrapper alive but no GUI process found"
+            kill "$WRAPPER_PID" 2>/dev/null || true
+            exit 1
+          else
+            echo "STARTUP_FAIL: both wrapper and GUI exited"
+            exit 1
+          fi
+      - name: Upload bundle artifacts
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
+        with:
+          name: rimloc-linux-bundle
+          if-no-files-found: error
+          path: |
+            target/release/bundle/deb/*.deb
+            target/release/bundle/appimage/*.AppImage

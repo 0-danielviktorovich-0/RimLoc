@@ -334,6 +334,80 @@ export interface ApplyExistingRequestDto {
   locale: string;
 }
 
+// --- UI-10: the project-exchange PO (mirrors contract.rs) ---
+
+export interface ImportExistingPoRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .po file. */
+  po_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ExportProjectPoRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .po file to write. */
+  out_po: { path: string };
+  /** Locale whose translations to export. */
+  locale: string;
+}
+
+export interface ImportExistingXliffRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .xliff file. */
+  xliff_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ApplyExistingXliffRequestDto {
+  project_id: string;
+  expected_revision: number;
+  session_epoch: number;
+  /** Absolute path of the .xliff file. */
+  xliff_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ExportProjectXliffRequestDto {
+  project_id: string;
+  session_epoch: number;
+  /** Absolute path of the .xliff file to write. */
+  out_xliff: { path: string };
+  /** Locale whose translations to export. */
+  locale: string;
+}
+
+export interface ExportProjectXliffResponseDto {
+  job_id: string;
+  out_path: string;
+  keys_total: number;
+  keys_translated: number;
+  keys_unmatched: number;
+}
+
+export interface ApplyExistingPoRequestDto {
+  project_id: string;
+  expected_revision: number;
+  session_epoch: number;
+  /** Absolute path of the .po file. */
+  po_path: { path: string };
+  /** Target locale, strict language-folder form ("Russian"). */
+  locale: string;
+}
+
+export interface ExportProjectPoResponseDto {
+  job_id: string;
+  out_po: string;
+  keys_total: number;
+  keys_translated: number;
+  keys_unmatched: number;
+}
+
 export interface ApplyExistingResponseDto {
   job_id: string;
   revision: number;
@@ -453,6 +527,7 @@ export type ContractMethod =
   // fills absolute paths from the OS dialog instead of hand-typing them.
   // The mock transport refuses it honestly — no OS dialog exists there.
   | 'pick_directory'
+  | 'pick_po_file'
   // Self-localization entry (mandate D, shell-level like pick_directory):
   // resolves the app-bundled RimLoc UI catalog as an ordinary project
   // source dir (mod_root for the EXISTING contract create flow). The mock
@@ -471,10 +546,18 @@ export type ContractMethod =
   // open_path. The mock refuses it honestly — no session output exists
   // there.
   | 'reveal_path'
+  | 'open_external_url'
+  | 'project_output_xml_preview'
   // Existing translation pack (W2): dry-run analysis + separate guarded
   // application against the open project.
   | 'project_import_existing'
   | 'project_apply_existing'
+  | 'project_export_po'
+  | 'project_import_po'
+  | 'project_apply_po'
+  | 'project_export_xliff'
+  | 'project_import_xliff'
+  | 'project_apply_xliff'
   // Project glossary (wave 13): generic project state, persist-before-ack.
   | 'project_glossary'
   | 'project_glossary_upsert'
@@ -518,7 +601,147 @@ export type ContractMethod =
   // translations.
   | 'project_save_drafts'
   | 'project_restore_drafts'
-  | 'project_clear_drafts';
+  | 'project_clear_drafts'
+  // AI translation jobs (Stage B): start/status/cancel/accept.
+  | 'ai_job_start'
+  | 'ai_job_status'
+  | 'ai_job_cancel'
+  | 'ai_job_accept'
+  | 'ai_job_accept_selected'
+  // Source Discovery (Stage A): read-only full-project source search
+  // reconciled against the canonical inventory.
+  | 'project_source_search'
+  | 'project_include_candidate'
+  // Source XML preview (rel27).
+  | 'project_source_xml_preview';
+
+// --- ai translation jobs (Stage B) ---
+export type AiJobStateDto =
+  | 'running'
+  | 'preview_ready'
+  | 'applied'
+  | 'failed'
+  | 'cancelled';
+
+export interface AiJobRowDto {
+  key: string;
+  identity: string;
+  identity_json: SourceEntryIdDto;
+  source: string;
+  target?: string;
+  status: string;
+  error?: string;
+}
+
+export interface AiJobStatusDto {
+  job_id: string;
+  project_id: string;
+  locale: string;
+  provider_id: string;
+  model: string;
+  state: AiJobStateDto;
+  total: number;
+  translated: number;
+  failed: number;
+  excluded_notranslate: number;
+  rows: AiJobRowDto[];
+  /** True when the preview copy is bounded (400) and translated rows are hidden. */
+  rows_truncated: boolean;
+  error?: string;
+  checkpoint_path?: string;
+}
+
+export interface AiJobParamsDto {
+  project_id: string;
+  session_epoch: number;
+  /** Registry source locale of the project (adapter-resolved). */
+  source_locale?: string;
+  locale: string;
+  provider_id: string;
+  model?: string;
+  base_url?: string;
+  /** ProvidersScreen instance (prov-*): preset/model/base_url/key come
+   *  from the stored instance; the direct fields above are ignored. */
+  provider_instance_id?: string;
+  batch_char_budget?: number;
+}
+
+// --- source xml preview (rel27) ---
+export interface SourceXmlPreviewLineDto {
+  n: number;
+  text: string;
+}
+
+export interface SourceXmlPreviewDto {
+  file: string;
+  target_line?: number;
+  lines: SourceXmlPreviewLineDto[];
+  truncated_head: boolean;
+  truncated_tail: boolean;
+  total_lines: number;
+}
+// --- UI-11 Stage C: guarded candidate inclusion (mirrors contract.rs) ---
+
+export interface IncludeCandidateRequestDto {
+  project_id: string;
+  session_epoch: number;
+  expected_revision: number;
+  /** Project-relative file path (forward slashes). */
+  file: string;
+  /** 1-based line of the owning element. */
+  line: number;
+  /** Classified leaf key (validated server-side against the row). */
+  key: string;
+}
+
+export interface IncludeCandidateResponseDto {
+  job_id: string;
+  revision: number;
+  entry: SourceEntryIdDto;
+}
+
+// --- source discovery (Stage A; mirrors source_search.rs) ---
+export type SourceSearchScopeDto = 'standard' | 'all_text';
+
+export type SourceSearchStatusDto =
+  | 'already_indexed'
+  | 'deliberately_excluded'
+  | 'outside_effective_view'
+  | 'unknown_eligibility'
+  | 'suspected_extraction_omission'
+  | 'unsupported_format'
+  | 'parse_failure';
+
+export interface SourceSearchMatchDto {
+  file: string;
+  line: number;
+  line_text: string;
+  xml_context?: string;
+  status: SourceSearchStatusDto;
+  identity?: SourceEntryIdDto;
+  detail: string;
+}
+
+export interface SourceSearchReportDto {
+  query: string;
+  total_matches: number;
+  /** Matches per classification across the ENTIRE tree (before
+   * pagination) — the Stage B summary of what lives outside the effective
+   * view. Non-zero entries only, sorted by status. */
+  status_counts: [SourceSearchStatusDto, number][];
+  offset: number;
+  truncated: boolean;
+  matches: SourceSearchMatchDto[];
+  files_scanned: number;
+  files_skipped_binary: number;
+  parse_failures: { file: string; error: string }[];
+  source_fingerprint?: string;
+  effective_view?: {
+    version?: string;
+    content_dirs: string[];
+    conditional_dirs: number;
+  } | null;
+}
 
 /** Readiness status of the contribution bundle build (services
  * `rimloc_services::contribution::BundleStatus`): READY (everything valid) /

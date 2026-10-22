@@ -231,6 +231,10 @@ pub enum Origin {
     Tm,
     Llm,
     Imported,
+    /// Source Discovery Stage C: a human explicitly approved including a
+    /// candidate the automated extraction missed (recovered source row;
+    /// lives ONLY in the managed project state, never in the source mod).
+    HumanRecovered,
 }
 
 /// Where the scan context came from (Gate H refinement: exact vs potential).

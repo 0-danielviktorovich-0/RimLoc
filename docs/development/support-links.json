@@ -1,0 +1,41 @@
+{
+  "kind": "rimloc-support-links",
+  "version": 1,
+  "verified_at": "2026-10-19T22:30:00Z",
+  "verified_by": "owner-authorized browser audit (BMC public page live; GitHub Sponsors profile preview authenticated; Ko-fi public page live)",
+  "note": "Canonical support-link registry (owner addendum Oct-15). One creator account per platform, contextual project presentation. Any consumer (About screen allowlist, FUNDING.yml, SUPPORT.md, README, MkDocs) must reconcile against THIS file. Adding a destination here WITHOUT the backend allowlist is a review failure.",
+  "links": [
+    {
+      "platform_id": "github_sponsors",
+      "verified_https_url": "https://github.com/sponsors/0-danielviktorovich-0",
+      "verified_creator": "Daniel Viktorovich (0-danielviktorovich-0)",
+      "scope": "creator",
+      "public_payment_status": "enabled (profile preview authenticated; goal: 10 monthly sponsors)",
+      "link_health": "live",
+      "project_context": "RimLoc primary monthly option"
+    },
+    {
+      "platform_id": "buymeacoffee",
+      "verified_https_url": "https://buymeacoffee.com/danielviktorovich",
+      "verified_creator": "Daniel Viktorovich (Support Daniel Viktorovich)",
+      "scope": "creator",
+      "public_payment_status": "enabled (one-off widget + RimLoc Supporter $5 / Contributor $10 / Patron $15 memberships live)",
+      "link_health": "live",
+      "project_context": "RimLoc contextual landing; membership copy migration to creator-neutral language is PROPOSED and owner-gated (prices and existing member commitments must not change)"
+    },
+    {
+      "platform_id": "ko_fi",
+      "verified_https_url": "https://ko-fi.com/danielviktorovich",
+      "verified_creator": "Daniel Viktorovich (Buy Daniel Viktorovich a Coffee)",
+      "scope": "creator",
+      "public_payment_status": "enabled (Donate button + membership levels present)",
+      "link_health": "live",
+      "project_context": "creator-wide bio live; membership tiers $5/$10/$15 have NO active members; tier benefit copy cleanup remains (iframe editor unstable via automation; zero contractual risk)",
+      "verified_by": "authenticated browser session 2026-10-19: creator-wide About applied and verified live on the public page; supporters list checked (none active)"
+    }
+  ],
+  "project_docs": {
+    "support_page": "https://0-danielviktorovich-0.github.io/RimLoc/community/support/",
+    "crypto_addresses": "present in the live MkDocs support page; ownership and QR/address/network matching are OWNER-verified facts — do NOT copy them into creator-wide surfaces without an explicit owner decision"
+  }
+}

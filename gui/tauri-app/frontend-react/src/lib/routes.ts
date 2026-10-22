@@ -35,6 +35,7 @@ import {
   ShieldCheck,
   Settings2,
   type LucideIcon,
+  Sparkles,
 } from 'lucide-react'
 
 export type Route =
@@ -46,6 +47,7 @@ export type Route =
   | 'glossary'
   | 'tm'
   | 'chatbatch'
+  | 'aitranslate'
   | 'export'
   | 'providers'
   | 'selfloc'
@@ -157,6 +159,16 @@ export const ROUTES: RouteMeta[] = [
     visibleInPalette: true,
     requiresProject: true,
     sidebarOrder: 7,
+  },
+  {
+    route: 'aitranslate',
+    labelKey: 'nav.aitranslate',
+    paletteKey: 'palette.cmd.aitranslate',
+    icon: Sparkles,
+    visibleInSidebar: true,
+    visibleInPalette: true,
+    requiresProject: true,
+    sidebarOrder: 6,
   },
   {
     route: 'chatbatch',

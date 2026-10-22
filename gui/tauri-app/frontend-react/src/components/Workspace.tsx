@@ -8,38 +8,59 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Group, Panel, Separator, useDefaultLayout } from 'react-resizable-panels'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookOpen, Braces, Check, ChevronDown, Circle, CircleAlert, Clock3, Copy, FileCode2, FolderOpen, ListFilter, MessagesSquare, PanelRight, RotateCcw, Save, Search, Sparkles } from 'lucide-react'
 import { useProjectState } from '../lib/state/useProjectState'
 import { projectStore, findingEntryKeys, findingsByEntryKey, type DraftsSyncStatus, type WorkspaceEntry } from '../lib/state/project'
+import { entryUid } from '../lib/state/entryUid'
+import { readUiDensity } from '../lib/state/density'
+import {
+  sourceSearchStore,
+  useSourceSearch,
+  visibleMatches,
+  type SourceSearchState,
+} from '../lib/state/source_search_store'
 import { glossaryStore, subscribe as glossarySubscribe, getState as glossaryGetState } from '../lib/state/glossary'
 import { clientInstance } from '../lib/client/instance'
 import { folderForm } from '../lib/languages/folderForm'
 import { t, tEnum } from '../lib/i18n'
-import type { GlossaryTermDto, SourceEntryIdDto, ValidationFindingDto } from '../lib/client/types'
+import type { GlossaryTermDto, SourceEntryIdDto, SourceXmlPreviewDto, SourceXmlPreviewLineDto, ValidationFindingDto } from '../lib/client/types'
 
 const ROW_HEIGHT = 63
+// UI-04: compact density shrinks the VIRTUALIZED row too — the
+// virtualizer's fixed size must match the CSS row, so the height is
+// re-read from the persisted density on every render (the shell
+// re-renders on the density event).
+const COMPACT_ROW_HEIGHT = 40
+
+/** Display keys carried by more than one structural entry (review P0-2):
+ *  their rows get a def-type discriminator in the label, so two Def types
+ *  sharing one key never render as two identical lines. */
+function duplicatedDisplayKeys(entries: readonly { key: string }[]): Set<string> {
+  const seen = new Set<string>()
+  const dup = new Set<string>()
+  for (const e of entries) {
+    if (seen.has(e.key)) dup.add(e.key)
+    seen.add(e.key)
+  }
+  return dup
+}
 
 /** §15/§20 handoff: ключ sessionStorage, по которому экран чат-перевода
  *  (свой лейн) подхватывает предотмеченные строки. Значение — JSON
  *  массив display_identity()-строк; прочитал — удали. */
 export const CHATBATCH_HANDOFF_KEY = 'rimloc.chatbatch.preset-keys'
 
-/** Точная сериализация ключа батча (`SourceEntryId::display_identity()`):
- *  kind-токен · defType · key. Зеркало той же формулы, что на экране
- *  ChatBatch — полное структурное тождество, не display-key строки. */
-function displayIdentity(id: SourceEntryIdDto): string {
-  return id.def_type ? `${id.kind}·${id.def_type}·${id.key}` : `${id.kind}·${id.key}`
-}
-
 /** §15: перенос выбранной строки в чат-перевод — sessionStorage + навигация.
- *  Никаких автоматических вызовов провайдера: транспорт решает человек. */
+ *  Никаких автоматических вызовов провайдера: транспорт решает человек.
+ *  Ключ — общий канон полной структурной идентичности (entryUid, зеркало
+ *  `SourceEntryId::display_identity()`): ChatBatch читает тот же формат. */
 function sendToChatBatch(id: SourceEntryIdDto): void {
   try {
     const prev = sessionStorage.getItem(CHATBATCH_HANDOFF_KEY)
     const parsed: unknown = prev ? JSON.parse(prev) : []
     const list = Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : []
     const next = new Set(list)
-    next.add(displayIdentity(id))
+    next.add(entryUid(id))
     sessionStorage.setItem(CHATBATCH_HANDOFF_KEY, JSON.stringify([...next]))
   } catch {
     /* приватный режим/битый JSON — навигация всё равно честная */
@@ -50,9 +71,41 @@ function sendToChatBatch(id: SourceEntryIdDto): void {
 export function Workspace({ onBack }: { onBack: () => void }) {
   const st = useProjectState()
   const [search, setSearch] = useState('')
+  // Large-corpus responsiveness (12k+ E2E): typing stays live while the
+  // FILTER runs debounced — per-keystroke rememo over the whole
+  // inventory measured ~3s at 12k rows.
+  const [searchLive, setSearchLive] = useState('')
+  useEffect(() => {
+    const t = window.setTimeout(() => setSearch(searchLive), 150)
+    return () => window.clearTimeout(t)
+  }, [searchLive])
   const [filter, setFilter] = useState<'all' | 'empty' | 'issues'>('all')
   const [kindFilter, setKindFilter] = useState<string>('all')
+  const [fileFilter, setFileFilter] = useState<string>('all')
+  const [treeView, setTreeView] = useState<'type' | 'file'>('type')
   const [treeOpen, setTreeOpen] = useState(true)
+  // UI-02 (owner audit Oct-14): three REAL workspace modes. The mode
+  // changes the VIEW only — translations, unsaved drafts (projectStore +
+  // textarea state), selection and target locale live in shared state and
+  // survive every switch. Persisted per app (localStorage).
+  const [wsMode, setWsMode] = useState<'studio' | 'focus' | 'overview'>(() => {
+    const v = window.localStorage.getItem('rimloc.ws.mode')
+    return v === 'focus' || v === 'overview' ? v : 'studio'
+  })
+  const switchMode = (m: 'studio' | 'focus' | 'overview'): void => {
+    setWsMode(m)
+    window.localStorage.setItem('rimloc.ws.mode', m)
+  }
+  // UI-03 (owner audit Oct-14): tree toggle hides the CONTENT (items +
+  // views). True width-reclaiming panel collapse breaks the current
+  // react-resizable-panels group (removing a panel unmounts the route) —
+  // documented as PARTIAL in UI_DEFECTS_MATRIX.md; revisit with the
+  // library upgrade.
+  const toggleTree = (): void => setTreeOpen(!treeOpen)
+  // UI-03 (owner audit Oct-14): the inspector toggle hides the right panel
+  // via CSS (the panel stays mounted, avoiding the group crash).
+  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const toggleInspector = (): void => setInspectorOpen(!inspectorOpen)
   // react-resizable-panels v4: `autoSaveId` replaced by the useDefaultLayout
   // hook — same localStorage persistence for the pane split, new API shape.
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({
@@ -61,6 +114,79 @@ export function Workspace({ onBack }: { onBack: () => void }) {
   })
 
   const snapNow = st.snapshot
+  // UI-05: output XML preview — the CANONICAL serializer rendered
+  // in-memory for the current target locale, loaded lazily and cached.
+  // P1-C freshness fence (review Oct-15 + follow-up): a request sequence
+  // + a live context ref invalidate stale responses on ANY context change
+  // (project, session, locale). The useEffect clears the stored result
+  // when the identity shifts, so stale XML is never rendered as current.
+  const outputPreviewSeq = useRef(0)
+  const outputPreviewCtx = useRef({ project_id: '', locale: '' })
+  const [outputPreview, setOutputPreview] = useState<
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | {
+        status: 'done'
+        locale: string
+        revision: number
+        files: { path: string; xml: string }[]
+        truncated: boolean
+      }
+    | null
+  >(null)
+  // Track the CURRENT project/locale — clear stored output when they shift.
+  const currentProjectId = snapNow?.project_id ?? ''
+  const currentLocale = folderForm(st.targetLocale)
+  useEffect(() => {
+    const prev = outputPreviewCtx.current
+    if (prev.project_id !== currentProjectId || prev.locale !== currentLocale) {
+      // Context switch: invalidate ALL in-flight and stored preview data.
+      outputPreviewSeq.current += 1
+      outputPreviewCtx.current = { project_id: currentProjectId, locale: currentLocale }
+      setOutputPreview(null)
+    }
+  }, [currentProjectId, currentLocale])
+  const loadOutputPreview = (locale: string): void => {
+    if (!snapNow) return
+    const seq = ++outputPreviewSeq.current
+    const reqCtx = { project_id: snapNow.project_id, locale }
+    outputPreviewCtx.current = reqCtx
+    setOutputPreview({ status: 'loading' })
+    clientInstance
+      .getClient()
+      .projectOutputXmlPreview(snapNow.project_id, snapNow.session_epoch, locale)
+      .then((res) => {
+        // Freshness fence: discard if a newer request was fired or the
+        // context shifted while in flight (ref always has latest values).
+        if (seq !== outputPreviewSeq.current) return
+        const ctx = outputPreviewCtx.current
+        if (ctx.project_id !== reqCtx.project_id || ctx.locale !== locale) return
+        setOutputPreview({
+          status: 'done',
+          locale: res.locale,
+          revision: res.revision,
+          files: res.files,
+          truncated: res.truncated,
+        })
+      })
+      .catch((e: unknown) => {
+        if (seq !== outputPreviewSeq.current) return
+        setOutputPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) })
+      })
+  }
+  // rel27: XML-предпросмотр — чтение исходного файла через IPC (read-only,
+  // containment по source root).
+  const loadXmlPreview = (
+    file: string,
+    line?: number
+  ): Promise<SourceXmlPreviewDto> =>
+    clientInstance.getClient().sourceXmlPreview({
+      projectId: snapNow!.project_id,
+      sessionEpoch: snapNow!.session_epoch,
+      file,
+      line,
+      before: 6,
+      after: 20
+    })
 
   // §9: живая валидация. Отчёт устарел (open/commit/adoptExternal) →
   // пере-гоняем; ошибка не ретраится молча (гвард в revalidate + эффект).
@@ -93,6 +219,41 @@ export function Workspace({ onBack }: { onBack: () => void }) {
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
   }, [st.entries])
 
+  // UI-13 (owner audit Oct-14): the tree previously presented def types as
+  // "project files". Two HONEST projections now: by entry type (def kinds)
+  // and by ACTUAL source file from the canonical provenance
+  // (source_ref.file); entries without provenance land in an explicit
+  // unknown bucket — invented paths are never shown.
+  const UNKNOWN_FILE = '__no_source_file__'
+  // UI-13 follow-up (review Oct-15): files grouped by their REAL directory
+  // prefix — a two-level honest tree (dir → file) built from provenance
+  // paths only. Root-level files render under '·'.
+  const fileGroups = useMemo(() => {
+    const m = new Map<string, number>()
+    let unknown = 0
+    for (const e of st.entries) {
+      const f = e.sourceFile?.trim()
+      if (!f) {
+        unknown += 1
+        continue
+      }
+      m.set(f, (m.get(f) ?? 0) + 1)
+    }
+    const groups = [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+    if (unknown > 0) groups.push([UNKNOWN_FILE, unknown])
+    return groups
+  }, [st.entries])
+  const fileDirGroups = useMemo(() => {
+    const dirs = new Map<string, { file: string; n: number }[]>()
+    for (const [file, n] of fileGroups) {
+      const dir = file === UNKNOWN_FILE ? UNKNOWN_FILE : file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '·'
+      const list = dirs.get(dir) ?? []
+      list.push({ file, n })
+      dirs.set(dir, list)
+    }
+    return [...dirs.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [fileGroups])
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
     return st.entries.filter((e) => {
@@ -100,21 +261,34 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         const k = e.identity.def_type ? `${e.identity.kind}/${e.identity.def_type}` : e.identity.kind
         if (k !== kindFilter) return false
       }
+      if (fileFilter !== 'all') {
+        const f = e.sourceFile?.trim() || UNKNOWN_FILE
+        if (f !== fileFilter) return false
+      }
       if (q && !`${e.key} ${e.source} ${e.target}`.toLowerCase().includes(q)) return false
       if (filter === 'empty') return !e.target.trim()
       // §9: только строка с живой находкой валидатора; фикс → revalidate →
-      // строка исчезает.
-      if (filter === 'issues') return issueKeys.has(e.key)
+      // строка исчезает. Сопоставление в uid-пространстве (review P0-2):
+      // находка с полной идентичностью адресует СВОЮ строку, а не все
+      // строки с тем же display-key.
+      if (filter === 'issues') return issueKeys.has(e.uid)
       return true
     })
-  }, [st.entries, search, filter, kindFilter, issueKeys])
+  }, [st.entries, search, filter, kindFilter, fileFilter, issueKeys])
 
-  const selectedKey = st.selectedKey ?? visible[0]?.key ?? null
-  const selected = st.entries.find((e) => e.key === selectedKey) ?? null
+  // UI-14 (owner audit Oct-14): the editor must never sit on an entry the
+  // current filters hide. The stored selection wins ONLY while it stays
+  // visible; otherwise the first visible row is selected instead — the
+  // stored key is NOT overwritten, so clearing the filters restores it.
+  const storedSelectedVisible =
+    st.selectedKey != null && visible.some((e) => e.uid === st.selectedKey)
+  const selectedKey =
+    storedSelectedVisible && st.selectedKey ? st.selectedKey : (visible[0]?.uid ?? null)
+  const selected = st.entries.find((e) => e.uid === selectedKey) ?? null
 
   // §17: первая находка для ТЕКУЩЕЙ строки (порядок отчёта валидатора).
   const selectedFindings = useMemo(
-    () => (selected ? findingsByEntryKey(vstate.report).get(selected.key) ?? [] : []),
+    () => (selected ? findingsByEntryKey(vstate.report).get(selected.uid) ?? [] : []),
     [selected, vstate.report],
   )
 
@@ -169,6 +343,11 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               <>
                 {t('ws.drafts.restored', { count: st.draftsNotice.count ?? 0 })}
                 {st.draftsNotice.fromBackup ? ` ${t('ws.drafts.restoredFromBackup')}` : ''}
+                {/* Extra honesty from the restore report (review P0-1/P0-2):
+                    drafts held in OTHER target locales, legacy v1 keys that
+                    were re-anchored, or the in-memory guard of a previous
+                    failed autosave. */}
+                {st.draftsNotice.detail ? ` — ${st.draftsNotice.detail}` : ''}
               </>
             )}
             {st.draftsNotice.kind === 'orphan' &&
@@ -186,32 +365,131 @@ export function Workspace({ onBack }: { onBack: () => void }) {
           </button>
         </div>
       )}
-      <div className="ws-panes">
+      <div style={{ margin: '0 28px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div className="layout-switch" role="tablist" data-testid="ws.mode-switch">
+          {(
+            [
+              ['studio', t('ws.mode.studio')],
+              ['focus', t('ws.mode.focus')],
+              ['overview', t('ws.mode.overview')],
+            ] as const
+          ).map(([m, label]) => (
+            <button
+              key={m}
+              role="tab"
+              aria-selected={wsMode === m}
+              className={wsMode === m ? 'active' : ''}
+              onClick={() => switchMode(m)}
+              data-testid={`ws.mode.${m}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {/* Phase 2b (MCP_SERVER_PHASE2.md «React sync»): бейдж внешнего
+            изменения — пришёл broker-changed с ревизией выше локальной.
+            Язык существующих статусов (status-label + .dot.warning из
+            r1.css); гаснет после успешного refetch (adoptExternal), при
+            провале остаётся. Черновики НЕ перерисовываются — ввод
+            пользователя неприкосновенен, обновляется только снапшот. */}
+        {st.externalChange && (
+          <span
+            className="status-label text-warning"
+            data-testid="ws.external-change"
+            title={t('ws.externalChange.hint', { revision: st.externalChange.revision })}
+          >
+            <span className="dot warning" />
+            {t('ws.externalChange.label')}
+          </span>
+        )}
+      </div>
+      <div className={`ws-panes ws-mode-${wsMode}${!treeOpen ? ' tree-collapsed' : ''}${!inspectorOpen ? ' inspector-collapsed' : ''}`}>
         <Group orientation="horizontal" id="rimloc-ws-panes" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged}>
         <Panel id="ws-left" minSize={30} defaultSize={66}>
         <div className="ws-center">
         <aside className="file-tree" data-testid="ws.tree">
           <div className="pane-title">
             <span>{t('ws.treeTitle')}</span>
-            <button className="icon-btn" aria-label={t('ws.toggleTree')} onClick={() => setTreeOpen(!treeOpen)}>
+            <button className="icon-btn" aria-label={t('ws.toggleTree')} data-testid="ws.tree-toggle" onClick={toggleTree}>
               <ChevronDown />
             </button>
           </div>
-          <button className={`tree-root ${kindFilter === 'all' ? 'active' : ''}`} onClick={() => setKindFilter('all')}>
+          <div className="tree-views" role="tablist" style={{ display: 'flex', gap: 4, padding: '0 6px 4px' }}>
+            <button
+              role="tab"
+              aria-selected={treeView === 'type'}
+              className={`tree-view-tab ${treeView === 'type' ? 'active' : ''}`}
+              onClick={() => setTreeView('type')}
+              data-testid="ws.tree.view-type"
+            >
+              {t('ws.byType')}
+            </button>
+            <button
+              role="tab"
+              aria-selected={treeView === 'file'}
+              className={`tree-view-tab ${treeView === 'file' ? 'active' : ''}`}
+              onClick={() => setTreeView('file')}
+              data-testid="ws.tree.view-file"
+            >
+              {t('ws.byFile')}
+            </button>
+          </div>
+          <button
+            className={`tree-root ${kindFilter === 'all' && fileFilter === 'all' ? 'active' : ''}`}
+            onClick={() => {
+              setKindFilter('all')
+              setFileFilter('all')
+            }}
+          >
             <FolderOpen /> {t('ws.allStrings')} <span>{st.entries.length}</span>
           </button>
           {treeOpen &&
+            treeView === 'type' &&
             kindGroups.map(([k, n]) => (
               <button
                 key={k}
                 className={`file-item ${kindFilter === k ? 'active' : ''}`}
-                onClick={() => setKindFilter(kindFilter === k ? 'all' : k)}
+                onClick={() => {
+                  setKindFilter(kindFilter === k ? 'all' : k)
+                }}
                 data-testid={`ws.tree.${k}`}
               >
                 <FileCode2 />
                 <span>{k}</span>
                 <small>{n}</small>
               </button>
+            ))}
+          {treeOpen &&
+            treeView === 'file' &&
+            fileDirGroups.map(([dir, files]) => (
+              <div key={dir}>
+                {dir !== '·' && (
+                  <div className="tree-group">
+                    <FolderOpen /> <span>{dir}</span>
+                  </div>
+                )}
+                {files.map(({ file, n }) => (
+                  <button
+                    key={file}
+                    className={`file-item ${fileFilter === file ? 'active' : ''}`}
+                    onClick={() => {
+                      setFileFilter(fileFilter === file ? 'all' : file)
+                    }}
+                    data-testid={`ws.tree.file.${file}`}
+                    title={file === UNKNOWN_FILE ? t('ws.unknownFile') : file}
+                  >
+                    <FileCode2 />
+                    <span>
+                      {file === UNKNOWN_FILE
+                        ? t('ws.unknownFile')
+                        : dir === '·'
+                          ? file
+                          : file.slice(dir.length + 1)}
+                    </span>
+                    <small>{n}</small>
+                  </button>
+                ))}
+              </div>
             ))}
           <div className="tree-bottom">
             <span className="eyebrow">{t('ws.translationFolder')}</span>
@@ -227,24 +505,54 @@ export function Workspace({ onBack }: { onBack: () => void }) {
               <input
                 aria-label={t('ws.search')}
                 placeholder={t('ws.searchPlaceholder')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchLive}
+                onChange={(e) => setSearchLive(e.target.value)}
               />
             </div>
             <button
               className="icon-btn"
-              aria-label={t('ws.resetFilters')}
+              aria-label={t('ws.clearAllFilters')}
+              title={t('ws.clearAllFilters')}
               onClick={() => {
+                setSearchLive('')
                 setSearch('')
                 setFilter('all')
+                setKindFilter('all')
+                setFileFilter('all')
               }}
+              data-testid="ws.clear-filters"
             >
               <ListFilter />
             </button>
+            <button
+              className="icon-btn"
+              aria-label={t('ws.toggleInspector')}
+              title={t('ws.toggleInspector')}
+              data-testid="ws.inspector-toggle"
+              onClick={toggleInspector}
+            >
+              <PanelRight size={14} />
+            </button>
+            {!treeOpen && (
+              <button
+                className="icon-btn"
+                aria-label={t('ws.toggleTree')}
+                title={t('ws.toggleTree')}
+                data-testid="ws.tree-reopen"
+                onClick={toggleTree}
+              >
+                <FolderOpen size={14} />
+              </button>
+            )}
           </div>
           <div className="entry-filters">
             {(['all', 'empty', 'issues'] as const).map((f) => (
-              <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+              <button
+                key={f}
+                className={filter === f ? 'active' : ''}
+                onClick={() => setFilter(f)}
+                data-testid={`ws.filter.${f}`}
+              >
                 {t(`ws.filter.${f}`)}
               </button>
             ))}
@@ -262,6 +570,7 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             targetLabel={folderForm(st.targetLocale)}
             onSelect={(k) => projectStore.select(k)}
           />
+          <SourceSearchPanel snap={snap} />
           <div className="list-footer">
             <span>
               {visible.length} {t('ws.of')} {st.entries.length} {t('ws.rows')}
@@ -278,11 +587,16 @@ export function Workspace({ onBack }: { onBack: () => void }) {
         {/* RIGHT — editor */}
         {selected && (
           <EntryEditor
-            key={selected.key}
-            entryKey={selected.key}
+            key={selected.uid}
+            entryUid={selected.uid}
+            labelKey={
+              duplicatedDisplayKeys(st.entries).has(selected.key) && selected.identity.def_type
+                ? `${selected.key} · ${selected.identity.def_type}`
+                : selected.key
+            }
             source={selected.source}
             target={selected.target}
-            draft={st.drafts[selected.key] ?? selected.target}
+            draft={st.drafts[selected.uid] ?? selected.target}
             busy={st.busy}
             sourceFile={selected.sourceFile}
             sourceLine={selected.sourceLine}
@@ -303,12 +617,20 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             related={related}
             // §15/§20: AI entry — только навигация, без вызовов провайдера.
             onSendToChatBatch={() => sendToChatBatch(selected.identity)}
-            onDraft={(v) => projectStore.setDraft(selected.key, v)}
-            onCommit={(next) => void projectStore.commit(selected.key, next)}
+            onLoadXmlPreview={loadXmlPreview}
+            entryKey={selected.key}
+            entryDefType={selected.identity.def_type ?? undefined}
+            targetLocale={folderForm(st.targetLocale)}
+            onLoadOutputPreview={loadOutputPreview}
+            outputPreview={outputPreview}
+            projectRevision={snapNow?.revision}
+            onToggleInspector={toggleInspector}
+            onDraft={(v) => projectStore.setDraft(selected.uid, v)}
+            onCommit={(next) => void projectStore.commit(selected.uid, next)}
             onMove={(d) => {
-              const idx = st.entries.findIndex((e) => e.key === selected.key)
+              const idx = st.entries.findIndex((e) => e.uid === selected.uid)
               const nx = st.entries[idx + d]
-              if (nx) projectStore.select(nx.key)
+              if (nx) projectStore.select(nx.uid)
             }}
           />
         )}
@@ -406,7 +728,7 @@ function EntryList({
   targetLabel,
   onSelect,
 }: {
-  entries: { key: string; source: string; target: string }[]
+  entries: WorkspaceEntry[]
   selectedKey: string | null
   findings: Map<string, ValidationFindingDto[]>
   sourceLabel: string
@@ -414,12 +736,32 @@ function EntryList({
   onSelect: (key: string) => void
 }) {
   const parentRef = useRef<HTMLDivElement>(null)
+  // UI-04: the row size follows the persisted density (comfortable 63 /
+  // compact 40); measure() re-locks the virtualizer when it changes.
+  const rowHeight = readUiDensity() === 'compact' ? COMPACT_ROW_HEIGHT : ROW_HEIGHT
   const virtualizer = useVirtualizer({
     count: entries.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: 12,
   })
+  useEffect(() => {
+    virtualizer.measure()
+    // virtualizer is stable per @tanstack/react-virtual contract
+  }, [rowHeight, virtualizer])
+  // UI-08 (owner audit Oct-14): after a filter change / keyboard move the
+  // selected row must be scrolled INTO the viewport, not hidden above or
+  // below the fold. Index-based — fires on selection change only.
+  const selectedIndex = selectedKey ? entries.findIndex((e) => e.uid === selectedKey) : -1
+  // UI-08 carry-over (review Oct-15): the effect keys on the selected
+  // IDENTITY — a different entry landing at the same index must scroll
+  // into view just the same.
+  useEffect(() => {
+    if (selectedIndex >= 0) {
+      virtualizer.scrollToIndex(selectedIndex, { align: 'auto' })
+    }
+    // virtualizer is stable per @tanstack/react-virtual contract
+  }, [selectedIndex, selectedKey])
 
   return (
     <>
@@ -438,28 +780,35 @@ function EntryList({
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((vi) => {
             const e = entries[vi.index]!
+            // Full-identity key-space (review P0-2): selection and findings
+            // match by uid; the LABEL still shows the display key, with the
+            // def-type discriminator when another Def type shares it.
+            const label =
+              duplicatedDisplayKeys(entries).has(e.key) && e.identity.def_type
+                ? `${e.key} · ${e.identity.def_type}`
+                : e.key
             return (
               <button
-                key={e.key}
-                className={`entry-row ${selectedKey === e.key ? 'selected' : ''}`}
+                key={e.uid}
+                className={`entry-row ${selectedKey === e.uid ? 'selected' : ''}`}
                 style={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
                   width: '100%',
-                  height: ROW_HEIGHT,
+                  height: rowHeight,
                   transform: `translateY(${vi.start}px)`,
-                  ...(selectedKey === e.key ? { backgroundColor: 'var(--accent)' } : {}),
+                  ...(selectedKey === e.uid ? { backgroundColor: 'var(--accent)' } : {}),
                 }}
-                onClick={() => onSelect(e.key)}
+                onClick={() => onSelect(e.uid)}
                 data-testid={`ws.entry.${vi.index}`}
               >
                 <div className="row-source">
                   <span>{e.source}</span>
-                  <code>{e.key}</code>
+                  <code>{label}</code>
                 </div>
                 <div className={`row-target ${!e.target ? 'untranslated' : ''}`}>{e.target || t('ws.addTarget')}</div>
-                <RowStatus finding={findings.get(e.key)?.[0]} target={e.target} />
+                <RowStatus finding={findings.get(e.uid)?.[0]} target={e.target} />
               </button>
             )
           })}
@@ -470,7 +819,11 @@ function EntryList({
 }
 
 function EntryEditor(props: {
-  entryKey: string
+  /** Full-identity key (store space): drafts address THIS. */
+  entryUid: string
+  /** Display key for humans (row/code label + clipboard copy), with the
+   *  def-type discriminator when another Def type shares the key. */
+  labelKey: string
   source: string
   target: string
   draft: string
@@ -499,6 +852,28 @@ function EntryEditor(props: {
   related: WorkspaceEntry[]
   // §15/§20: перенос строки в чат-перевод (sessionStorage + навигация).
   onSendToChatBatch: () => void
+  // rel27: загрузить XML-предпросмотр исходного файла строки.
+  onLoadXmlPreview?: (file: string, line?: number) => Promise<SourceXmlPreviewDto>
+  /** UI-05: entry display key (e.g. `Apple.label`) used to locate the
+   *  canonical output element; target locale of the workspace. */
+  entryKey?: string
+  entryDefType?: string
+  targetLocale?: string
+  onLoadOutputPreview?: (locale: string) => void
+  onToggleInspector?: () => void
+  /** Current session revision — the output preview binds its displayed
+   *  result to it and flags itself stale on mismatch (P1-C). */
+  projectRevision?: number
+  outputPreview?:
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | {
+        status: 'done'
+        locale: string
+        revision: number
+        files: { path: string; xml: string }[]
+        truncated: boolean
+      }
+    | null
   onDraft: (v: string) => void
   onCommit: (next: boolean) => void
   onMove: (d: number) => void
@@ -509,7 +884,7 @@ function EntryEditor(props: {
   const [copied, setCopied] = useState(false)
   const copyTimer = useRef<number | null>(null)
   const copyKey = (): void => {
-    void navigator.clipboard.writeText(props.entryKey).then(
+    void navigator.clipboard.writeText(props.labelKey).then(
       () => {
         setCopied(true)
         if (copyTimer.current !== null) window.clearTimeout(copyTimer.current)
@@ -521,7 +896,38 @@ function EntryEditor(props: {
     )
   }
   // §13: единственная мёртвая кнопка-таб стала настоящими табами.
-  const [tab, setTab] = useState<'source' | 'terms'>('source')
+  // rel27: третья вкладка — настоящий XML-предпросмотр исходного файла.
+  const [tab, setTab] = useState<'source' | 'terms' | 'xml' | 'output'>('source')
+  const [xmlPreview, setXmlPreview] = useState<
+    | { status: 'idle' | 'loading' | 'error'; error?: string }
+    | {
+        status: 'done'
+        lines: SourceXmlPreviewLineDto[]
+        target?: number
+        file: string
+        total: number
+        truncated_head: boolean
+        truncated_tail: boolean
+      }
+    | null
+  >(null)
+  const loadXmlPreview = (): void => {
+    if (!props.onLoadXmlPreview) return
+    setXmlPreview({ status: 'loading' })
+    props.onLoadXmlPreview(props.sourceFile ?? '', props.sourceLine)
+      .then((res) =>
+        setXmlPreview({
+          status: 'done',
+          lines: res.lines,
+          target: res.target_line,
+          file: res.file,
+          total: res.total_lines,
+          truncated_head: res.truncated_head,
+          truncated_tail: res.truncated_tail
+        })
+      )
+      .catch((e: unknown) => setXmlPreview({ status: 'error', error: e instanceof Error ? e.message : String(e) }))
+  }
   const dirty = props.draft !== props.target
   const patchStage = props.provenance?.patch_stage
   const tkeyLocs = props.tkey?.locations ?? []
@@ -552,11 +958,20 @@ function EntryEditor(props: {
           <button className="icon-btn" aria-label={t('ws.next')} onClick={() => props.onMove(1)}>
             <ArrowDown />
           </button>
+          <button
+            className="icon-btn"
+            aria-label={t('ws.toggleInspector')}
+            title={t('ws.toggleInspector')}
+            data-testid="ws.inspector-close"
+            onClick={props.onToggleInspector}
+          >
+            <PanelRight size={13} />
+          </button>
         </div>
       </div>
       <div className="detail-body">
         <div className="detail-key">
-          <code>{props.entryKey}</code>
+          <code>{props.labelKey}</code>
           <button
             className="icon-btn"
             aria-label={t('ws.copyKey')}
@@ -613,7 +1028,7 @@ function EntryEditor(props: {
               (sessionStorage + навигация); никаких вызовов провайдера. */}
           <button
             className="icon-btn"
-            style={{ width: 'auto', padding: '0 9px', fontSize: 9 }}
+            style={{ width: 'auto', padding: '0 9px', fontSize: 10 }}
             aria-label={t('ws.toChatbatchHint')}
             title={t('ws.toChatbatchHint')}
             data-testid="ws.editor-to-chatbatch"
@@ -621,7 +1036,7 @@ function EntryEditor(props: {
           >
             <MessagesSquare size={13} /> {t('ws.toChatbatch')}
           </button>
-          <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} onClick={() => props.onCommit(false)}>
+          <button className="icon-btn" aria-label={t('ws.save')} disabled={props.busy || !dirty} data-testid="ws.editor-save" onClick={() => props.onCommit(false)}>
             <Save />
           </button>
           <button
@@ -631,7 +1046,7 @@ function EntryEditor(props: {
             // Revert = «чистый черновик = отсутствие записи» (§11): удаляем
             // ключ из drafts, а не пишем committed-текст как черновик —
             // иначе пилюля «Есть несохранённые» считает фантом.
-            onClick={() => projectStore.clearDraft(props.entryKey)}
+            onClick={() => projectStore.clearDraft(props.entryUid)}
           >
             <RotateCcw />
           </button>
@@ -650,7 +1065,7 @@ function EntryEditor(props: {
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
             <Sparkles size={13} /> {t('ws.mtTitle')}
           </span>
-          <span style={{ fontSize: 8 }}>{t('ws.mtHint')}</span>
+          <span style={{ fontSize: 10 }}>{t('ws.mtHint')}</span>
         </button>
         {/* SOURCE block (Source Inspector, live): every row is backed by the
             contract snapshot — file+line (source_ref), winner reason
@@ -675,6 +1090,32 @@ function EntryEditor(props: {
             onClick={() => setTab('terms')}
           >
             <BookOpen size={12} /> {t('ws.tabTerms')}
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === 'xml'}
+            className={tab === 'xml' ? 'active' : ''}
+            data-testid="ws.tab.xml"
+            onClick={() => {
+              setTab('xml')
+              if (props.sourceFile) loadXmlPreview()
+            }}
+          >
+            <Braces size={12} /> {t('ws.tabXml')}
+          </button>
+          {/* UI-05: the CANONICAL OUTPUT xml for the current locale — the
+              exact bytes an export writes, rendered in-memory. */}
+          <button
+            role="tab"
+            aria-selected={tab === 'output'}
+            className={tab === 'output' ? 'active' : ''}
+            data-testid="ws.tab.output"
+            onClick={() => {
+              setTab('output')
+              if (props.targetLocale) props.onLoadOutputPreview?.(props.targetLocale)
+            }}
+          >
+            <Braces size={12} /> {t('ws.tabOutput')}
           </button>
         </div>
         {tab === 'source' ? (
@@ -741,7 +1182,7 @@ function EntryEditor(props: {
               </div>
             )}
           </div>
-        ) : (
+        ) : tab === 'terms' ? (
           <div className="context-content" role="tabpanel" data-testid="ws.terms-block">
             {props.termsError && (
               <div className="inline-warning" role="alert" data-testid="ws.terms-error">
@@ -775,6 +1216,113 @@ function EntryEditor(props: {
               </>
             )}
           </div>
+        ) : tab === 'output' ? (
+          <div className="context-content" role="tabpanel" data-testid="ws.output-block">
+            {props.outputPreview?.status === 'loading' && (
+              <p className="page-note" data-testid="ws.output-loading">{t('about.loading')}</p>
+            )}
+            {props.outputPreview?.status === 'error' && (
+              <div className="inline-warning" role="alert" data-testid="ws.output-error">
+                <CircleAlert size={15} />
+                <span>{props.outputPreview.error}</span>
+              </div>
+            )}
+            {props.outputPreview?.status === 'done' &&
+              props.projectRevision !== undefined &&
+              props.outputPreview.revision !== props.projectRevision && (
+                <div className="inline-warning" role="alert" data-testid="ws.output-stale">
+                  {t('ws.output.stale')}
+                </div>
+              )}
+            {props.outputPreview?.status === 'done' && (
+              <>
+                <div data-testid="ws.output.meta" style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                  {t('ws.output.canonical')} · {props.outputPreview.locale} · {props.outputPreview.files.length}{' '}
+                  {t('ws.output.files')}
+                  {props.outputPreview.truncated ? ` · ${t('ws.output.truncated')}` : ''}
+                </div>
+                {/* P1-C: suppress stale content — when the revision doesn't
+                    match, show only the stale warning, not the XML. */}
+                {props.projectRevision !== undefined &&
+                  props.outputPreview.revision !== props.projectRevision && (
+                    <div className="inline-warning" role="alert" data-testid="ws.output-stale">
+                      {t('ws.output.stale')}
+                    </div>
+                  )}
+                {props.projectRevision === undefined ||
+                  props.outputPreview.revision === props.projectRevision ? (
+                  (() => {
+                    const elementTag = props.entryKey ? `<${props.entryKey}>` : null
+                    const dirTag = props.entryDefType ? `DefInjected/${props.entryDefType}/` : null
+                    const hit = props.outputPreview.files.find(
+                      (f) =>
+                        (!elementTag || f.xml.includes(elementTag)) &&
+                        (!dirTag || f.path.includes(dirTag)),
+                    )
+                    if (!hit) {
+                      return (
+                        <p className="page-note" data-testid="ws.output-empty">
+                          {t('ws.output.empty')}
+                        </p>
+                      )
+                    }
+                    return (
+                      <>
+                        <div data-testid="ws.output.file" style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                          <code>{hit.path}</code>
+                        </div>
+                        <pre data-testid="ws.output-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0, whiteSpace: 'pre-wrap' }}>
+                          {hit.xml}
+                        </pre>
+                      </>
+                    )
+                  })()
+                ) : null}
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="context-content" role="tabpanel" data-testid="ws.xml-block">
+            {!props.sourceFile ? (
+              <div data-testid="ws.xml-nosource">
+                <span style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                  {t('ws.xml.noSource')}
+                </span>
+              </div>
+            ) : xmlPreview?.status === 'error' ? (
+              <div className="inline-warning text-destructive" role="alert" data-testid="ws.xml-error">
+                <CircleAlert size={15} /> {t('ws.xml.error')}: {xmlPreview.error}
+              </div>
+            ) : xmlPreview?.status !== 'done' ? (
+              <div data-testid="ws.xml-loading" style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                {t('ws.xml.loading')}
+              </div>
+            ) : (
+              <>
+                <div data-testid="ws.xml.meta" style={{ fontSize: 10, color: 'var(--muted-foreground)', marginBottom: 4 }}>
+                  {xmlPreview.file} · {xmlPreview.total} {t('ws.xml.lines')}
+                  {(xmlPreview.truncated_head || xmlPreview.truncated_tail) ? ' · windowed' : ''}
+                </div>
+                <pre data-testid="ws.xml-pre" style={{ fontSize: 10, lineHeight: 1.45, overflowX: 'auto', margin: 0 }}>
+                  {xmlPreview.lines.map((l) => (
+                    <div
+                      key={l.n}
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        background: xmlPreview.target === l.n ? 'var(--accent)' : 'transparent',
+                      }}
+                    >
+                      <span style={{ color: 'var(--muted-foreground)', userSelect: 'none', minWidth: 28, textAlign: 'right' }}>
+                        {l.n}
+                      </span>
+                      <code style={{ whiteSpace: 'pre-wrap' }}>{l.text}</code>
+                    </div>
+                  ))}
+                </pre>
+              </>
+            )}
+          </div>
         )}
         {/* §14: Related — сиблинги того же Def (label ↔ description …).
             Переход честный: projectStore.select(key). */}
@@ -783,9 +1331,9 @@ function EntryEditor(props: {
             <span>{t('ws.related')}</span>
             {props.related.map((r) => (
               <button
-                key={r.key}
+                key={r.uid}
                 data-testid={`ws.related.${r.key}`}
-                onClick={() => projectStore.select(r.key)}
+                onClick={() => projectStore.select(r.uid)}
               >
                 <code>{r.key}</code>
                 <span>{r.source || '—'}</span>
@@ -804,3 +1352,199 @@ function EntryEditor(props: {
 
 // Keep the client import referenced for the honest-bridge note in dev builds.
 void clientInstance
+
+
+/** Source Discovery (Stage A): read-only full-project source search,
+ *  reconciled against the canonical inventory. Lives inside the workspace
+ *  left pane; the workspace string search stays untouched. */
+function SourceSearchPanel({ snap }: { snap: NonNullable<ReturnType<typeof useProjectState>['snapshot']> }) {
+  const ss = useSourceSearch()
+  const [open, setOpen] = useState(false)
+  const epoch = snap.session_epoch
+  const run = (): void => {
+    void sourceSearchStore.run(snap.project_id, epoch)
+  }
+  const loadMore = (): void => {
+    void sourceSearchStore.loadMore(snap.project_id, epoch)
+  }
+  const view = (s: SourceSearchState) => s
+
+  return (
+    <div style={{ margin: '8px 0' }}>
+      {!open && (
+        <button
+          className="icon-btn"
+          style={{ width: 'auto', padding: '0 9px', fontSize: 10 }}
+          data-testid="ss.toggle"
+          onClick={() => setOpen(true)}
+        >
+          <Search size={12} /> {t('ss.toggle')}
+        </button>
+      )}
+      {open && (
+        <div data-testid="ss.panel" style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <strong style={{ fontSize: 11 }}>{t('ss.title')}</strong>
+            <button
+              className="icon-btn"
+              style={{ marginLeft: 'auto' }}
+              aria-label={t('ws.resetFilters')}
+              onClick={() => {
+                setOpen(false)
+                sourceSearchStore.clear()
+              }}
+            >
+              ×
+            </button>
+          </div>
+          <p style={{ fontSize: 10, color: 'var(--muted-foreground)', margin: '4px 0' }}>
+            {t('ss.hint')}
+          </p>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              data-testid="ss.input"
+              value={view(ss).query}
+              placeholder={t('ss.placeholder')}
+              onChange={(e) => sourceSearchStore.setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') run()
+              }}
+              style={{ flex: 1, fontSize: 12 }}
+            />
+            <button className="btn-primary" data-testid="ss.run" disabled={view(ss).status === 'running'} onClick={run}>
+              {t('ss.run')}
+            </button>
+          </div>
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 10, marginTop: 4 }}>
+            <input
+              type="checkbox"
+              data-testid="ss.scope"
+              checked={view(ss).scope === 'all_text'}
+              onChange={(e) => sourceSearchStore.setScope(e.target.checked ? 'all_text' : 'standard')}
+            />
+            {t('ss.scope')}
+          </label>
+          {view(ss).status === 'error' && (
+            <div className="inline-warning text-destructive" role="alert" data-testid="ss.error">
+              {t('ss.error')}: {view(ss).error ?? '—'}
+            </div>
+          )}
+          {view(ss).report && (
+            <>
+              <div data-testid="ss.results" style={{ fontSize: 10, margin: '6px 0' }}>
+                {t('ss.results', { total: view(ss).report!.total_matches })}
+              </div>
+              {/* Stage B: classification filter — whole-tree counts on every
+                  chip; toggling narrows the page to one honest class. */}
+              <div
+                data-testid="ss.filters"
+                role="group"
+                aria-label={t('ss.filterGroup')}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}
+              >
+                {view(ss).report!.status_counts.map(([status, count]) => {
+                  const active = view(ss).statusFilter.has(status)
+                  return (
+                    <button
+                      key={status}
+                      data-testid={`ss.filter.${status}`}
+                      aria-pressed={active}
+                      onClick={() => sourceSearchStore.toggleStatusFilter(status)}
+                      className="status-label"
+                      style={{
+                        fontSize: 10,
+                        padding: '1px 6px',
+                        borderRadius: 999,
+                        border: '1px solid var(--border)',
+                        cursor: 'pointer',
+                        background: active ? 'var(--accent)' : 'transparent',
+                        color: active ? 'var(--accent-foreground)' : 'var(--muted-foreground)',
+                      }}
+                    >
+                      {t(`ss.status.${status}`)} ({count})
+                    </button>
+                  )
+                })}
+                {view(ss).statusFilter.size > 0 && (
+                  <button
+                    data-testid="ss.filter.clear"
+                    onClick={() => sourceSearchStore.clearStatusFilter()}
+                    className="status-label"
+                    style={{ fontSize: 10, padding: '1px 6px', cursor: 'pointer', border: 'none', background: 'transparent', textDecoration: 'underline' }}
+                  >
+                    {t('ss.filterAll')}
+                  </button>
+                )}
+              </div>
+              <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+                {visibleMatches(view(ss)).length === 0 ? (
+                  <div data-testid="ss.filtered-empty" style={{ fontSize: 10, color: 'var(--muted-foreground)', padding: '4px 0' }}>
+                    {t('ss.filterEmpty')}
+                  </div>
+                ) : (
+                  visibleMatches(view(ss)).map((m, i) => (
+                  <div key={`${m.file}:${m.line}:${i}`} data-testid={`ss.match.${i}`} style={{ borderBottom: '1px solid var(--border)', padding: '4px 0' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+                      <code style={{ fontSize: 10 }}>{m.file}:{m.line}</code>
+                      <span className="status-label text-muted-foreground" style={{ fontSize: 10 }}>
+                        {t(`ss.status.${m.status}`)}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11 }}>{m.line_text}</div>
+                    {m.xml_context && (
+                      <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{m.xml_context}</div>
+                    )}
+                    <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
+                      {t('ss.detail')}: {m.detail}
+                    </div>
+                    {(m.status === 'suspected_extraction_omission' ||
+                      m.status === 'unknown_eligibility') && (
+                      <button
+                        className="icon-btn"
+                        style={{ fontSize: 10, padding: '1px 8px', marginTop: 2 }}
+                        data-testid={`ss.include.${i}`}
+                        disabled={
+                          view(ss).includeBusyKey === `${m.file}:${m.line}` ||
+                          view(ss).status === 'running'
+                        }
+                        title={t('ss.includeHint')}
+                        onClick={() => {
+                          void sourceSearchStore
+                            .includeCandidate(
+                              snap.project_id,
+                              snap.session_epoch,
+                              snap.acked_revision ?? snap.revision,
+                              m.file,
+                              m.line,
+                              m.identity?.key ?? m.line_text,
+                            )
+                            .then(async (ok) => {
+                              if (!ok) return
+                              // The include moved the durable revision —
+                              // adopt the fresh snapshot so the workspace
+                              // list and the re-run search both see the
+                              // recovered row.
+                              await projectStore.adoptExternal()
+                              run()
+                            })
+                        }}
+                      >
+                        {t('ss.include')}
+                      </button>
+                    )}
+                  </div>
+                  ))
+                )}
+                {view(ss).report!.truncated && (
+                  <button className="icon-btn" style={{ width: '100%', marginTop: 4 }} data-testid="ss.more" onClick={loadMore}>
+                    {t('ss.more')}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

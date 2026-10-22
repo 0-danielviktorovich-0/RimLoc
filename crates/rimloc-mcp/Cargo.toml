@@ -1,0 +1,25 @@
+[package]
+name = "rimloc-mcp"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.89"
+license = "GPL-3.0-only"
+description = "RimLoc external MCP server: stdio JSON-RPC 2.0 (MCP 2026-07-28), Phase 1 skeleton"
+
+[dependencies]
+rimloc-services = { version = "0.2.0", path = "../rimloc-services" }
+# Structural identities on the propose/apply wire (SourceEntryId) and the
+# real provider factory for ai_job.start: the default features turn the
+# `http` provider backends on — without them a paid launch can never leave
+# the ground (rimloc-services pulls rimloc-llm with default-features=false).
+rimloc-domain = { version = "0.2.0", path = "../rimloc-domain" }
+rimloc-llm = { version = "0.2.0", path = "../rimloc-llm" }
+# Phase 2 broker_client: the protocol v1 wire types + error codes are the
+# broker crate's own (one-directional dependency — rimloc-broker never
+# depends on rimloc-mcp, see its lib.rs).
+rimloc-broker = { version = "0.2.0", path = "../rimloc-broker" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

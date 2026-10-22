@@ -1,0 +1,27 @@
+<Defs>
+  <ThingDef>
+    <defName>RimLocCanaryMachine</defName>
+    <label>canary machine</label>
+    <thingClass>Building</thingClass>
+    <category>Building</category>
+    <description>A machine whose label and description are translated by RimLoc.</description>
+  </ThingDef>
+  <ApparelDef>
+    <defName>RimLocCanaryJacket</defName>
+    <label>canary jacket</label>
+    <description>A jacket whose label is translated by RimLoc.</description>
+    <apparel>
+      <bodyPartGroups><li>Torso</li></bodyPartGroups>
+      <layers><li>Onskin</li></layers>
+      <tags><li>Industrial</li></tags>
+      <defaultOutfitTags><li>Worker</li></defaultOutfitTags>
+    </apparel>
+  </ApparelDef>
+  <ThingDef>
+    <defName>RimLocCanaryNoTranslate</defName>
+    <label>technical canary</label>
+    <thingClass>Thing</thingClass>
+    <category>Item</category>
+    <texPath>Things/Canary/NoTranslate</texPath>
+  </ThingDef>
+</Defs>

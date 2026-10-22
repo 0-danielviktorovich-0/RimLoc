@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-import-xliff"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.89"
 license = "GPL-3.0-only"
@@ -8,5 +8,5 @@ license = "GPL-3.0-only"
 [dependencies]
 color-eyre = "0.6"
 quick-xml = "0.42"
-rimloc-import-po = { path = "../rimloc-import-po" }
+rimloc-import-po = { version = "0.2.0", path = "../rimloc-import-po" }
 

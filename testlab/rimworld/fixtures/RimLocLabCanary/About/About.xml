@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>RimLoc Lab Canary</name>
+  <author>rimloc-testlab</author>
+  <packageId>rimloc.lab.canary</packageId>
+  <supportedVersions><li>1.6</li></supportedVersions>
+  <description>Deterministic in-game canary strings for RimLoc acceptance (Issue #9 lane C).</description>
+</ModMetaData>

@@ -536,3 +536,319 @@ frontend-v2/scripts/w3-hybrid-acceptance.mjs поверх chatbatch-стора (
 9. **FREEZE lanes независимы**: FREEZE требует L complete + Source-Inspector winner-reason
    contract (✓ 303d726) + прочие pre-freeze контракты. W6/W7 полировка не ждёт фриза, и
    фриз не ждёт GUI.
+
+## Кампания 2026-10-16: UI-11 Source Discovery Stage A+B ЗАКРЫТ; UI-10 PO/XLIFF — в работе
+
+- **UI-11 Stage B ЗАКРЫТ** (c4e9bc1 feat + 9aff9ba test + 6523ebb docs): whole-tree
+  `status_counts` в `SourceSearchReport` (живут сквозь пагинацию), line-ownership
+  дискриминатор в `classify_indexed` (старт-линейная партиция приписывала NoTranslate-поле
+  — texPath после индексированной метки — предыдущему юниту; теперь имя элемента на строке
+  сверяется с суффиксом ключа hit'а, при расхождении — честный candidate-путь),
+  фильтр-чипы по классификации с счётчиками в SourceSearchPanel, i18n-фикс
+  `ss.status.suspected_omission` → `suspected_extraction_omission` (сырой ключ утекал в UI).
+  Нативный lane 23/23 на packaged automation build. Юнит 12/12 в source_search.rs.
+- **Урок lane-фикстуры**: root-level `Defs/` рядом с `1.5/` заставляет резолвер эффективного
+  вида выбрать версию 1.5 (установленная семантика сканера) — фикстура переделана в
+  каноничный версионный мод (весь контент в `1.6/Defs`, 1.5 — legacy-остаток), мод
+  регенерируется с нуля каждый прогон (rmSync).
+- **Урок lane-порядка**: `browser.refresh()` в restart-proxy тесте убивает in-memory
+  сессию проекта (стора модульная, авто-открытия нет) — всё после refresh'а жило без
+  сессии. Фикс: тест reopen'ит проект из библиотеки после reload (рестарт → возврат к
+  работе). About-opener перенесён в хвост сюиты + osascript-реактивация (системный браузер
+  перекрывает webview, hash-навигация перестаёт рендерить).
+- **UI-10 PO/XLIFF GUI — СКОПИРОВАНО, реализация не начата**: аудит (CLI_GUI_PARITY_AUDIT.md)
+  требует import/export PO+XLIFF (+validate-po). Сервисный слой существует:
+  `rimloc-services/src/export.rs` (`export_po_with_tm`, `export_po_from_units`),
+  `rimloc-services/src/import.rs` (`import_po_to_file`, `import_po_to_mod_tree*`),
+  крейты `rimloc-export-po` (`write_po`, msgid/msgstr), `rimloc-import-po`
+  (`read_po_entries` → `write_language_data_xml` / `build_translation_mod*`),
+  `rimloc-export-xliff` (`write_xliff_12`), `rimloc-import-xliff` (`read_xliff_12`).
+  **ЗАКРЫТО 2026-10-16** (9ccfc5e PO-backend + 6a0d638 PO-GUI + 75f909f PO-lane +
+  c2df726 XLIFF-backend + 0d798c2 XLIFF-GUI/lane): обе стороны обмена идут через
+  каноническое Languages-дерево (сериализатор → reparse → scoped-matcher →
+  exchange-строки; rebuild → тот же analyze/apply-корень `apply_analyzed_pack`),
+  так что review/apply-контракт не форкается. Guard-семья `exchange_out_guard` /
+  `exchange_in_guard` общая для PO и XLIFF. Unit 328, нативный lane 24/24:
+  экспорт несёт msgid=source/msgstr=durable/ссылки каноничного дерева,
+  same-project import = reusable 0 / conflicts N / apply disabled.
+  validate-po остаётся CLI-first (вне GUI-паритета по решению аудита).
+
+## Кампания 2026-10-16 (вечер): UI-04 density и UI-12 deep visual audit ЗАКРЫТЫ
+
+- **UI-04 density ЗАКРЫТ** (cf47152 + e3bf600): comfortable/compact поверх zoom —
+  `lib/state/density.ts`, data-density на корне, CSS-переменные; канон r1.css владеет
+  `.entry-list .entry-row` на специфичности 0,2,0 — переопределение на 0,3,0;
+  виртуализированный список перечитывает высоту строки и ремерит на смене. Пол мелких
+  шрифтов: 94 вхождения 6-9px в каноне + 18 inline подняты до 10px. Lane 25/25.
+- **UI-12 deep visual audit ЗАКРЫТ** (ebd0611): повторяемая система —
+  visual-audit.conf.ts/spec.ts: 6 поверхностей × 2 темы через настоящий Settings-контрол;
+  все проверки — вычисляемые факты DOM (WCAG-контраст с oklch/color(srgb)/hex-парсером,
+  пол 3.0 + review-зона 4.5, чекбоксы, dividers, выравнивание таблиц, горизонтальный
+  overflow; disabled исключены по WCAG), отчёт — JSON-артефакт. Вердикт: 16/16, 630
+  текстовых элементов, 0 hard issues. Покрывает UI-08 (глубокие проверки контраста/
+  чекбоксов/таблиц в dark+light) и UI-09 (shell/projects/settings/about pass).
+- Урок аудита: первый прогон поймал реальную находку-кандидат (кнопка chatbatch
+  ratio=1.15) — оказалась сериализацией цвета WebKit (`color(srgb ...)` не парсился,
+  bg «уплывал» к белому предку) + disabled-кнопкой (WCAG-исключение) — парсер расширен,
+  исключение добавлено;_lane-система готова к повторным прогонам.
+
+## Кампания 2026-10-17: push-разрешение, честный WCAG AA, beta-registry
+
+- **Push-волна (владелец разрешил 2026-10-17)**: 558a727 → 8722863 → b676510 (rustfmt-долг)
+  → 588679f (zip 8→9: RUSTSEC-2026-0367/0368/0369; API name() → Result, undecodable skip)
+  → c72cd4f (dark AA) → 2deb981/c51d178/0cd1b1c (docs/registry) → a693479 (posix- ссылки
+  обмена + арифметика регистраций; оба фикса нашёл CI: Windows-backslash в PO-ссылках,
+  pick_po_file вне post-original extras) → 7c65484 (registry pin). CI на a693479:
+  **40/40 pass, 0 fail, все 5 CodeQL Analyze зелёные**.
+- **Issue #7 (UI-12) пере-аудит по правильным порогам**: AA = 4.5/3.0 (SC 1.4.3) на ВСЁМ
+  маршрутенаборе (16 × 2 темы = 32 пары). Первый честный прогон: **275 нарушений AA**
+  (dark токены 3.1–4.4). Фиксы: muted-foreground .671→.82, primary .749→.78, info
+  .736→.78, success .738→.78, selected-code .72→.88. Вердикт: **36/36, 982 текстовых
+  элемента, 0 AA / 0 large / 0 review<4.5**. Урок: мой прежний «пол 3.0» был занижен —
+  ревьюер прав; DOM-проверки с неверным порогом доказывают неверное.
+- **Скриншоты + vision**: 32 PNG упакованного приложения (по паре на поверхность×тему) —
+  RimLoc-evidence/reviewer/2026-10-17-ui12-aa/ + ZIP владельцу
+  (Desktop/rimloc-ui12-aa-evidence-2026-10-17.zip, sha256 f1a1ab84…). Vision-протокол
+  4 экранов: композиция Lovable-канона, наложений/обрезок нет; per-control
+  ADOPT/IMPROVE/INTENTIONAL_DIFFERENCE записан в матрицу.
+- **BETA_READINESS_REGISTRY.md**: базовая верифицированная таблица возможностей,
+  P0 (открытых нет) / P1 (installed-app smoke на CI-DMG, large-project E2E, UI-11
+  Stage C, beta-README) / P2 / OWNER_GATE (merge/release/теги, real-provider UAT ключи,
+  спонсор-аккаунты). RC = a693479.
+
+## Кампания 2026-10-19 (окно сборки): все SSD-блокированные lane закрыты
+
+- **Search/editor lane (§3): 5/5 нативно** — и РЕАЛЬНАЯ находка: ApparelDef отсутствовал в
+  defs-allowlist → apparel-моды молча теряли ВСЕ строки (by-file дерево показало только
+  Weapons/CollarThing). Фикс 4b0c375 (+ юнит-гейт apparel_def_rows_are_indexed; seed-pack
+  guard честно 171). Урок: девять «обычных» поисковых сценариев ловят то, что юниты не видят.
+- **Ollama real-provider E2E (§4): 3/3** — провайдер-инстанс через typed IPC, BYO в GUI,
+  реальные вызовы qwen2.5:3b → preview → выбор строки → accept-selected → durable-конверт
+  ровно одной выбранной (4a4e0ee). Урок: webview fetch на http://localhost блокируется
+  WKWebView — преcheck в lane делаем фактом продукта (нативный reqwest), не fetch'ем UI.
+- **Large-mod E2E (§12): 3/3 на 12 000 строках** (6000 дефов, 20 файлов): счётчик дерева
+  честен, поиск интерактивен, правка durable, экспорт с reparse-проверкой. Продукт-фикс:
+  debounce 150мс фильтра поиска — посимвольный rememo на 12k мерился секундами (0475644).
+- **Installed-smoke**: прод-бандл (без automation) установлен копированием, запущен
+  изолированно — процесс жив, managed-root инициализирован. DMG-бандлер на external-SSD
+  падает (AppleScript/Finder) — .app валиден как drag-install; CI gui-job на Linux без
+  macOS-бандла: отдельное CI-решание зафиксировано в реестре.
+- **Deps**: yaml-rust2 0.13, ico 0.6 (direct; 0.5 остаётся транзитивом tauri-codegen),
+  tanstack-patch group (97d1eb2). Регресс integration-ui 25/25 (тема-baseline фикс).
+- **CI на 0475644: весь зелёный** (cargo 3 ОС, deny, feature matrix, оба фронта, gui,
+  policy, schema drift, fmt+clippy). Реестр: P1 осталось UI-11 Stage C + beta-README +
+  DMG-канал (CI-cost); вердикт READY для owner-решения.
+
+## Кампания 2026-10-19 (вечер): последние P1 закрыты — UI-11 Stage C и beta-README
+
+- **Beta-README**: docs/beta/README-BETA.md — честная карта (верифицированные возможности,
+  drag-install, локальный-Ollama walkthrough, осознанные ограничения).
+- **UI-11 Stage C (Issue #6) ЗАКРЫТ** (472bb43 + f550243 + 7c61b1c): `project_include_candidate` —
+  сервер перепроверяет ВСЁ: containment+effective-view (неактивная 1.5-ветка — отказ), XML-валидность,
+  элемент/текст именованной строки, NoTranslate, дубликат идентичности, fingerprint исходника
+  (изменился → типизированный «rescan»). Запись ТОЛЬКО в managed-state (маркер human_recovered,
+  bump ревизии, persist-before-ack), исходник байт-в-байт нетронут (ассерт в регрессии).
+  Реконсилиация поиска: восстановленные строки классифицируются AlreadyIndexed (identity
+  сохраняется — поймано IPC-регрессией CI). 8 негативных регрессий по issue; нативный lane
+  26/26 со сценарием include → переклассификация → строка в редакторе.
+- **CI на 7c61b1c: 40/40 pass** (все CodeQL). Реестр: engineering-фаза P1 исчерпана — остался
+  только DMG-packaging note (CI-cost решение) и owner-гейты.
+
+## Волна 2026-10-19 ( ночь): Issue #5 traceability + real RimWorld acceptance
+
+- **Traceability-таблица (Issue #5)**: CLI_PARITY_TRACEABILITY.md — все 20 CLI-модулей →
+  capability → живой IPC → GUI-маршрут + не-CLI продуктовые потоки. P2 закрыты решениями:
+  validate-po / morph / schema — CLI-only for beta с обоснованиями; Advanced Tools UI осознанно
+  отложен (его кандидатский набор — ровно эти три, ни один не блокирует бету).
+- **Real RimWorld acceptance**: GUI-lane 1 passing — живая строка VFE Security
+  (VFES_Turret_AntiAir.label, «anti-air turret») переведена через настоящий редактор,
+  канонический экспорт в /tmp/rw-acceptance (packageId rimloc.1845154007, DefInjected
+  «ПВО турель (RimLoc)»). Монтирование в живой Mods-корень + активация в ModsConfig —
+  подтверждены логом игры (GAGARIN резолвит 1845154007). Контрольный прогон доказал канал
+  русского языка машины (Translation data … Русский, переведённые листинги). Единый сквозной
+  прогон не сошёлся: языковая перф-клавиша игры недетерминирована между фоновыми запусками
+  (2 из 8 активировали язык) — окружение, не код RimLoc. Честный отчёт + 30-секундный
+  owner-путь закрытия: RIMWORLD_ACCEPTANCE_2026-10-19.md. Среда владельца после каждого
+  прогона восстанавливалась байт-в-байт (проверено).
+- Голова d5258a1; CI на кодовой голове 7c61b1c был 40/40; текущий docs-head прогон пошёл.
+
+## Микро-волна 2026-10-19 (поздняя): DMG-канал закрыт CI-джобой, acceptance-корреляция зачищена
+
+- **bundle-macos CI-джоба** (88fccf1 + фикс пути 356bad0): macos-14 собирает прод-`.app`
+  и неподписанный DMG точного тестируемого коммита и публикует артефакт
+  `rimloc-macos-bundle` — проверен живьём (20.2 MB, id 12189082584). Последний
+  саморазрешимый packaging-гап закрыт; в реестре остались только credentials-гейты
+  (code-signing/notarization/auto-update) и 30-секундный языковой шаг игры.
+- **RW-acceptance корреляция** (bf60d10): десять прогонов дали чёткий сигнал — языковая
+  клавиша игры активирует русский ТОЛЬКО на немодифицированном списке модов владельца
+  (3/3) и никогда при нашем добавленном тест-моде (0/6, включая both-keys и двухфазный
+  прогон с устоявшимся кэшем). Блокер окружения охарактеризован точно; компоненты
+  доказаны по отдельности; среда владельца восстановлена после каждого прогона.
+
+## Параллельная волна Issue #8 (2026-10-19, поздняя): creator-support + crates.io
+
+- **Принято явно** (чат-подтверждение агента + эта запись). Три независимых лейна, интеграционная
+  ветка не тронута до готовности.
+- **Ko-fi (живая авторизованная сессия)**: About переписан creator-wide (независимый OSS-разработчик,
+  RimLoc = главный проект, «beta in preparation», честный CTA) — сохранено через настоящий
+  submit формы (POST /settings/UpdateProfile), проверено на публичной странице с обходом кэша.
+  Спонсоры/участники: 0 на всех площадках → договорных обязательств нет. Tier-редактор живёт в
+  ленивом iframe (нестабилен через IAB-автоматизацию) → точные инструкции в evidence-матрице.
+- **BMC/GitHub Sponsors**: сессий/sudo-гейта нет (passkey = подтверждение безопасности, не обходил);
+  публичные страницы аудированы, готовая честная копа для владельца в матрице.
+- **crates.io lane** (4cd637e, влито в rel27): 4 versionless path-deps починены + префлайт-скрипт;
+  версионный bump 0.1.0→0.2.0 (cli → 0.2.0-alpha.1); assets/ у parsers-xml в include; dry-run
+  листьев PASS; workflow trusted-publishing (OIDC, owner-dispatch, dry-run default, pinned,
+  environment gate, порядок зависимостей). Реальный publish — только после owner-гейтов
+  (trusted-publisher авторизация + release approval).
+- **Бейджи**: все три SVG живы (200), слуги Simple Icons корректны; FUNDING.yml кнопки верны.
+- Интеграционная голова b340abc; CI на предыдущей кодовой голове был 41/41.
+
+## Волна Issue #9+#11 (2026-10-20): P0/P1 закрыты, A1 игрового лаба ПРОДОКАН
+
+- **Приняты явно #9 и #11** (+связанные #10 и обязательный стандарт
+  AGENT_INTEROPERABILITY_QUALITY_STANDARD.md, HEAD на момент старта 4652e37).
+- **P0 job-id коллизия ЗАКРЫТА** (fe574d9): boot-stamp (hex millis+pid) + thread-nonce
+  вместо рестарт-сбрасывающегося счётчика; 50 синтетических рестартов — ноль коллизий.
+- **P1 implicit-rejection ЗАКРЫТ** (fe574d9): applied-строки получают ledger-статус,
+  невыбранные остаются reviewable, job держит PreviewReady с честной partial-заметкой
+  пока есть непросмотренные; регрессия unselected_rows_survive_a_partial_apply.
+- **A1 (Issue #9) ПРОДОКАН ЖИВЬЁМ** (f536d72): GABS 1.1.2 + RimBridgeServer 2.3.0
+  (MIT) на живой игре 1.6.4871; изолированный -savedatafolder профиль; MCP-клиент
+  testlab/rimworld/gabs_mcp.py; семантический list_languages → НАСТОЯЩИЙ EN→RU
+  switch_language (queued long event) → ГЛАВНОЕ МЕНЮ НА РУССКОМ (скриншот при
+  чужом frontmost) → чистый выход. КОРЕНЬ старого блокера найден: defaults write
+  менял только преф, а не сам переключатель UI; «30-секундное действие владельца»
+  упразднено. Хозяинская среда нетронута (реальный ModsConfig 0 rimloc-строк,
+  NO_DEFAULTS_KEY, аддитивный мост-мод включён только в изолированном профиле).
+- beta-README Stage C рассинхрон исправлен (aa6a6e0).
+
+## Дополнение волны (позднее): public-history gate и_owner-решение
+
+- **public Git metadata (pull_request_target) остаётся красным на 2ac7f41** — и это
+  корректное поведение защиты: workflow сознательно исполняет скрипт проверки из
+  BASE (main), а не из PR («PR code is never executed here»). Наша exemption-правка
+  (один owner-pinned SHA fd0b2f3 в allowlist длины subject) физически не может
+  подействовать из PR — она должна попасть в main первой.
+- Владельческое решение (единственный выход без ослабления security-дизайна):
+  (а) влить exemption-коммит 2ac7f41 в main отдельно (крошечный, безопасный), ИЛИ
+  (б) авторизовать переименование subject у fd0b2f3 (но Issue #11 ссылается на
+  точный SHA — потребуется обновить ссылку). До решения этого PR-check красный
+  по ОДНОЙ позиции; все остальные 38+ проверок зелёные.
+
+## A2 ПРОДОКАН ПОЛНОСТЬЮ (d004808, 2026-10-20)
+
+- **GUI-часть**: настоящий редактор, живой VFE Security, изолированный RimLoc data dir,
+  канонический экспорт (rimloc.1845154007 / DefInjected/ThingDef/VFES_Turret_AntiAir.xml,
+  «ПВО турель (RimLoc)»).
+- **Игра-часть**: экспорт смонтирован в изолированный профиль игры (владельческий ModsConfig
+  не тронут — 0 rimloc-строк), VFE+перевод включены, русский активен, quicktest-колония,
+  турель заспавнен (spawn_thing 100,100) и выделен (click_cell). СЕМАНТИКА ИГРЫ:
+  label = «ПВО турель (RimLoc)», inspectLabel русский, скриншот инспект-панели при чужом
+  frontmost. Vanilla-Russian шум (9 ошибок локализации игры) отвалидирован через
+  games_ack_attention — наш перевод не его источник.
+- **Негативный контроль**: перевод-мод выключен (set_mod_enabled) → полная перезагрузка →
+  тот же spawn/select → label = «Anti-air turret» (английский исходник). Причинность
+  доказана в обе стороны; негативная загрузка = детерминированный повтор полного цикла.
+- Восстановление: перевод-мод снова включён в изолированном профиле, игра остановлена,
+  defaults ключей нет, реальный ModsConfig чист.
+- Хвост A2 честно: screenshot инспект-панели снят (game-rendered), но semantic-доказательство
+  — первичный артефакт; A3 (синтетический 1.6 тест-мод с канариями по категориям) — следующий.
+
+## A3-волна (дозакрытие 2026-10-20, 02f811e)
+
+- **A2 детерминированный повтор ПОДТВЕРЖДЁН**: полная перезагрузка в исходном modset →
+  spawn → камера → select → label = «ПВО турель (RimLoc)» (тот же результат, что и в
+  первом прогоне). Харнесс детерминирован.
+- **A3 (synthetic canary) ЧАСТНО**: фикстура 1.6 в репо (ThingDef/ApparelDef-валид/NoTranslate/
+  Keyed-UTF8); GUI-lane переводит и экспортирует канонически. Но монтирование канарейки в
+  изолированную игру валит bridge-quicktest (Root_Play.SetupForQuickTestPlay NRE; включена
+  пара — падает, выключена — quicktest зелёный). Блокер изолирован точно; следующий шаг —
+  bisect (Keyed-only сначала). Владельческая среда после всех прогонов чиста
+  (NO_DEFAULTS_KEY, реальный ModsConfig 0 rimloc-строк, игра остановлена).
+
+## A3 ЗАКРЫТ ПОЛНОСТЬЮ (c34c985, 2026-10-20)
+
+- **Бисект**: Keyed-only канарейка → quicktest ЗЕЛЁНЫЙ; добавление Defs → красный;
+  стек игры назвал причину точно — ReadingPolicyDatabase.GenerateStartingPolicies вызывает
+  GenTypes.SameOrSubclassOf(thingClass), null у bare ThingDef. <thingClass>+<category>
+  на оба канарей-дефа починили quicktest полностью.
+- **Синтетический in-game acceptance доказан**: перевод-мод (rimloc.rimloclabcanary)
+  включён в изолированном профиле, fresh boot, quicktest, spawn RimLocCanaryMachine (100,100),
+  get_cell_info → things[0].label = «Канарейочная машина (RimLoc)» — игра применила
+  перевод РЕАЛЬНОГО RimLoc-экспорта на синтетическую канарейку. Скриншот снят.
+- Владельческая среда чиста (STOPPED, NO_DEFAULTS_KEY, реальный ModsConfig 0 rimloc-строк).
+- A1+A2+A3 — весь игровой acceptance-мандат Issue #9 закрыт автономно.
+
+## Issue #12 (2026-10-20): PR #102 влит, плагин установлен в настоящий ZCode
+
+- **PR #102 влит в feat/integration-rel27** (1fba077e): workspace-skill
+  `.zcode/skills/rimloc-release-orchestrator` + плагин `rimloc-workflow-guard`
+  (SessionStart/UserPromptSubmit/PostToolUse/Stop hooks) + marketplace. Оффлайн-набор
+  9/9 зелёный ЛОКАЛЬНО тоже (node --test).
+- **Плагин установлен в живой ZCode** (user scope): marketplace `rimloc-zcode`
+  зарегистрирован (path-source на tools/zcode интеграционного воркстри), плагин в
+  `~/.zcode/cli/plugins/installed_plugins.json` (id rimloc-workflow-guard@rimloc-zcode,
+  кэш-копия 0.1.0 с plugin.json/hooks/skills). Установка — зеркалирование того, что
+  делает UI-флоу Settings→Plugins; чтение/запись только аддитивные, конфиги не перезаписаны.
+- **Ограничение честно**: hooks снимаются в НОВОЙ сессии ZCode (документация платформы;
+  снапшот на старте сессии) — текущая сессия их не подхватит. Проверка живого
+  CreateWorkflow-Receipt требует новую сессию владельца/агента в корне RimLoc: любой
+  multi-lane запрос должен вызвать настоящий CreateWorkflow; плагин запишет факт.
+  Это единственный оставшийся шаг A3 из Issue #12 — он требует перезапуска сессии,
+  не настройки.
+
+## Issue #14 (2026-10-20, 9a40981): PR #103 влит и верифицирован
+
+- **Влито**: async `pick_po_file`/`pick_directory` (spawn_blocking, типизированный контракт
+  сохранён), portable wizard folder-name, static guard `check-product-path-portability.py`
+  (47 файлов, self-tests PASS, локально зелёный) + CI-workflow production-path-dialog-guard.
+- **Компиляция**: cargo check 0 ошибок; packaged automation .app пересобран (13:31).
+- **Нативная регрессия**: integration-ui lane 26/26 на новой сборке — wizard/экспорт/поиск
+  работают; путь-политика зелёная.
+- Честно: интерактивный 20-итерационный open/cancel-прогон нативных пикеров и thread-сэмплы
+  — остаток (требует видимого owner-окна для OS-панели); источник фикса документирован
+  (официальное предупреждение tauri-plugin-dialog о blocking_* на главном потоке).
+
+## Волна 2026-10-20 (вечер): #12/#14 влиты, #13 WP0 живой аудит проведён
+
+- **Issue #12** (1fba077e+375a32e): PR #102 влит — workspace-skill + rimloc-workflow-guard
+  (9/9 локально); плагин УСТАНОВЛЕН в живой ZCode (user scope, marketplace rimloc-zcode,
+  registry + кэш-копия). Платформенное ограничение: hooks активны в НОВОЙ сессии — это
+  единственный оставшийся шаг верификации A3 из Issue #12.
+- **Issue #14** (9a40981+00a86e7): PR #103 влит — async pickers (spawn_blocking), portable
+  wizard names, static path-guard (47 файлов PASS) + CI workflow. Компиляция 0 ошибок,
+  packaged .app пересобран, нативная регрессия 26/26. Честно: 20-итерационный интерактивный
+  open/cancel-прогон — owner-window остаток.
+- **Issue #13 WP0** (6ce4b98): первый настоящий head-to-head — оба моста на ОДНОЙ игре
+  и изолированном профиле, swap только в ModsConfig. Upstream: 50/50, p50 8ms, полный
+  доказанный A1-A3 surface. First-party: пересобран против реальных Managed-ссылок,
+  загружен живьём (runInBackground), capabilities/state/keyed живые, RUN_ID_MISMATCH
+  отклонение продемонстрировано, 50/50, p50 265ms (файл-канал); read_def отсутствует
+  в v1 op-set — зафиксировано честно. Три опции владельцу (рекомендован гибрид на бету);
+  код не удалялся, миграций не было. BRIDGE_HEAD_TO_HEAD_2026-10-20.md.
+
+## Дополнение: public-history gate — та же базовая сторона (ac5c090)
+
+Расширенный exemption-список (11 SHA влитых PR-коммитов + 1 whole-subject) проверен
+локально (--git-range PASS, --self-test OK), но CI-workflow pull_request_target
+исполняет скрипт из BASE (main) по security-дизайну — PR-сторона физически не может
+подействовать. Единое owner-решение покрывает оба случая (fd0b2f3 + новые 11):
+влить exemption-коммит ac5c090 в main отдельно (крошечный, безопасный) — или
+авторизовать reword у источник-коммитов (нужно force-push, запрещено). Все остальные
+40 проверок зелёные; красота одной позиции — структурная, не дефект кода.
+
+## #13 WP1-WP3 ЗАКРЫТЫ (d47b24e, 2026-10-20 поздняя)
+
+- **WP1 decouple**: build.sh больше не дефолтит в t6-клон — явный GAME_MANAGED (любая
+  лицензированная установка), INSTALL_DIR/PACKAGE_DIR; --install аддитивен (замена QaDriver
+  DLL упразднена), метаданные пишутся только при отсутствии; конформаns-раннер принимает
+  T6_DIR/T6_GAME_BIN. Golden T6-фикстуры не тронуты.
+- **WP2 package**: staged ZIP с мод-лейаутом (About/Assemblies/LICENSE/README-standalone)
+  + SHA256 (539dcd74…). Публикации нет — кандидат лежит локально.
+- **WP3 fresh-install E2E**: ZIP распакован как внешний пользователь → включён в
+  изолированном профиле → мост поднялся (runInBackground) → capabilities/state/keyed живые
+  → чистый uninstall, профиль лаба восстановлен на upstream-драйвер, среда владельца чиста.
+  DoD-строка: PATH=/tmp/…/staged | VERSION=1.0.0 | SHA256=539dcd74… | LICENSE=GPL-3.0 |
+  GAME_COMPAT=1.6.4871 (живая) | FRESH_INSTALL=PASS | LIVE_CALLS=PASS | SCREENSHOT=документ.
+  | STATUS=STAGED | OWNER_GATE=публикация/Workshop.

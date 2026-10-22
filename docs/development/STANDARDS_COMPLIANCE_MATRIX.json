@@ -1,0 +1,137 @@
+{
+ "kind": "rimloc-standards-matrix",
+ "version": 2,
+ "generated": "2026-10-20",
+ "status_vocabulary": "PASS / FAIL / PARTIAL / NOT_TESTED (standard §5)",
+ "owner": "rimloc-maintainers",
+ "rows": [
+  {
+   "feature": "skills/rimloc SKILL.md frontmatter",
+   "ref": "Agent Skills spec",
+   "source_url": "https://agentskills.io",
+   "revision": "agentskills.io (2026-10)",
+   "test": "frontmatter fields + description routing",
+   "status": "PASS",
+   "evidence": "skills/rimloc/SKILL.md",
+   "verified": "2026-10-20"
+  },
+  {
+   "feature": "progressive disclosure",
+   "ref": "Agent Skills spec",
+   "source_url": "https://agentskills.io",
+   "revision": "agentskills.io (2026-10)",
+   "test": "details in references/, main compact",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/*",
+   "verified": "2026-10-20"
+  },
+  {
+   "feature": "capability discovery before use",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
+   "revision": "1.0",
+   "test": "SKILL step 1 mandates rimloc.capabilities",
+   "status": "PASS",
+   "evidence": "skills/rimloc/SKILL.md",
+   "verified": "2026-10-20"
+  },
+  {
+   "feature": "no invented tools / honest unavailability",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2 + OWASP MCP/Skills Top 10",
+   "source_url": "https://genai.owasp.org",
+   "revision": "1.0",
+   "test": "adapter status stated up front (SKILL.md note + compatibility); troubleshooting separates 'not shipped' from 'not connected'",
+   "status": "PASS",
+   "evidence": "skills/rimloc/SKILL.md",
+   "verified": "2026-10-20",
+   "note": "fixed after independent review found the adapter implied as existing (v1); review artifact 2026-10-20"
+  },
+  {
+   "feature": "draft-vs-committed distinction",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
+   "revision": "1.0",
+   "test": "propose/apply split documented",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/translate-review-export.md",
+   "verified": "2026-10-20"
+  },
+  {
+   "feature": "paid-provider consent + key handling",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2 + OWASP",
+   "source_url": "https://genai.owasp.org",
+   "revision": "1.0",
+   "test": "ai-modes rules: local default, paid only with explicit consent, keychain",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/ai-modes.md",
+   "verified": "2026-10-20",
+   "note": "local-path consent wording aligned with SKILL.md/walkthrough after review"
+  },
+  {
+   "feature": "RU+EN user-facing examples",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
+   "revision": "1.0",
+   "test": "novice walkthrough bilingual and semantically aligned",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/novice-walkthrough.md",
+   "verified": "2026-10-20"
+  },
+  {
+   "feature": "host matrix (tested rows only)",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §5",
+   "source_url": null,
+   "revision": "1.0",
+   "test": "only reproducible TESTED rows, dated",
+   "status": "PASS",
+   "evidence": "skills/rimloc/references/supported-hosts.md",
+   "verified": "2026-10-20",
+   "note": "two dated rows with evidence: Codex full scenario TESTED, ZCode discovery TESTED; no universal claims"
+  },
+  {
+   "feature": "community template + author guide",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §3",
+   "source_url": null,
+   "revision": "1.0",
+   "test": "templates/community-skill + rimloc-skill-author cover all §3 MUSTs (inputs/outputs, side effects, tests included)",
+   "status": "PASS",
+   "evidence": "skills/templates/community-skill/SKILL.md",
+   "evidence2": "skills/rimloc-skill-author/SKILL.md",
+   "verified": "2026-10-20",
+   "note": "inputs/outputs, allowed side effects and tests sections added after review found them missing"
+  },
+  {
+   "feature": "skills-ref validate runner",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §5",
+   "source_url": null,
+   "revision": "tool-dependent",
+   "test": "runner availability on host",
+   "status": "NOT_TESTED",
+   "evidence": null,
+   "verified": "2026-10-20",
+   "note": "skills-ref runner not installed on this host; structural fallback checklist documented in rimloc-skill-author step 5; CI lane queued"
+  },
+  {
+   "feature": "real MCP end-to-end through the skill",
+   "ref": "AGENT_INTEROPERABILITY_QUALITY_STANDARD §2",
+   "source_url": null,
+   "revision": "rimloc-mcp 0.2.0 @ 7867bb5",
+   "test": "live novice path via rimloc MCP server",
+   "status": "PARTIAL",
+   "evidence": null,
+   "verified": "2026-10-21",
+   "note": "server proven live end-to-end with an agent client (Codex 0.153.4 full scenario 2026-10-21, applied+validated+exported, typed-error recovery observed); ZCode discovery proven after project-scope install; full skill-driven interactive session pending"
+  },
+  {
+   "feature": "MCP Skills extension serving",
+   "ref": "io.modelcontextprotocol/skills SEP-2640",
+   "source_url": "https://modelcontextprotocol.io/extensions/skills",
+   "revision": "Final",
+   "test": "opt-in after base MCP stable",
+   "status": "NOT_TESTED",
+   "evidence": null,
+   "verified": "2026-10-20",
+   "note": "deferred by policy ordering: base MCP server (Issue #10 Phase 1) before the Skills extension"
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+name: ZCode Workflow Guard
+
+on:
+  pull_request:
+    branches: [main, feat/integration-rel27]
+    paths:
+      - "tools/zcode/**"
+      - ".zcode/skills/**"
+      - ".github/workflows/zcode-workflow-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hook-smoke:
+    name: ZCode workflow hook fixture tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check ZCode plugin manifests and lifecycle hook
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('tools/zcode')
+          market = json.loads((root / 'marketplace.json').read_text())
+          assert market['plugins'][0]['name'] == 'rimloc-workflow-guard'
+          plugin = root / 'rimloc-workflow-guard'
+          manifest = json.loads((plugin / '.zcode-plugin/plugin.json').read_text())
+          hooks = json.loads((plugin / 'hooks/hooks.json').read_text())
+          assert manifest['name'] == 'rimloc-workflow-guard'
+          assert set(hooks['hooks']) == {'SessionStart', 'UserPromptSubmit', 'PostToolUse', 'Stop'}
+          assert (plugin / 'skills/rimloc-workflow/SKILL.md').exists()
+          assert Path('.zcode/skills/rimloc-release-orchestrator/SKILL.md').exists()
+          print('ZCode plugin structure: PASS')
+          PY
+      - name: Run offline Node hook lifecycle regressions
+        run: node --test tools/zcode/rimloc-workflow-guard/tests/workflow-guard.test.mjs

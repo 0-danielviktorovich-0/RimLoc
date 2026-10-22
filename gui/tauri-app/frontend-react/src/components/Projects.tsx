@@ -90,7 +90,7 @@ export function Projects({
                   {isOpen && (
                     <span
                       className="project-meta"
-                      style={{ marginLeft: 8, color: 'var(--primary)', fontSize: 9 }}
+                      style={{ marginLeft: 8, color: 'var(--primary)', fontSize: 10 }}
                       data-testid="projects.open-badge"
                     >
                       {t('projects.openBadge')}

@@ -897,12 +897,14 @@ mod tests {
         let before = ids.len();
         ids.dedup();
         assert_eq!(ids.len(), before, "duplicate seed rule ids");
-        // The documented total (168): 2 kind + 5 NoTranslate + 139 def-type
-        // dict pairs + 22 universal leaf patterns.
+        // The documented total (171): 2 kind + 5 NoTranslate + 142 def-type
+        // dict pairs + 22 universal leaf patterns (2026-10-19: +ApparelDef
+        // label/labelNoun/description — apparel mods were silently losing
+        // every row before it).
         assert_eq!(
             rules.len(),
-            168,
-            "seed pack drifted from the documented 168 rules; update \
+            171,
+            "seed pack drifted from the documented 171 rules; update \
              docs/development/TRANSLATION_ELIGIBILITY.md consciously"
         );
     }

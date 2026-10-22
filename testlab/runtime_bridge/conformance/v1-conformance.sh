@@ -8,8 +8,10 @@
 # This is a FULL live run: launches RimWorld in the isolated clone profile.
 # Golden fixture (RimLocT6-Package markers) is NOT touched.
 set -u
-TD="$(cd "$(dirname "$0")/../../run/t6" && pwd)"
-BIN="$TD/RimWorldTest.app/Contents/MacOS/RimWorld by Ludeon Studios"
+# T6 golden harness path is now EXPLICIT (the bridge no longer assumes a
+# clone layout); the lab profile works too via T6_DIR override.
+TD="${T6_DIR:-$(cd "$(dirname "$0")/../../run/t6" 2>/dev/null && pwd)}"
+BIN="${T6_GAME_BIN:-$TD/RimWorldTest.app/Contents/MacOS/RimWorld by Ludeon Studios}"
 QA="$TD/sandbox/QA"
 CMD="$QA/commands"
 RES="$QA/results"

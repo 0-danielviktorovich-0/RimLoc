@@ -1,6 +1,6 @@
 [package]
 name = "rimloc-gui"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 edition = "2021"
 rust-version = "1.89"
 license = "GPL-3.0-only"
@@ -8,7 +8,7 @@ license = "GPL-3.0-only"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 image = "0.25"
-ico = "0.5"
+ico = "0.6"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -40,6 +40,13 @@ regex = "1"
 tauri-plugin-wdio-webdriver = { optional = true, version = "1.4.0" }
 tauri-plugin-wdio = { optional = true, version = "1.4.0" }
 tauri-plugin-window-state = "=2.5.0"
+
+[target.'cfg(unix)'.dependencies]
+# Phase 2 GUI-session broker (docs/development/MCP_SERVER_PHASE2.md): the
+# broker data-plane crate hosted by the shell in setup. Unix-only by design
+# (0600 UDS in the profile; Windows named pipe is Phase 3) — the dep and the
+# host module (src/broker_host.rs) carry the same cfg(unix) gate.
+rimloc-broker = { path = "../../../crates/rimloc-broker" }
 
 [features]
 default = ["custom-protocol", "keychain"]

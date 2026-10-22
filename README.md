@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>RimWorld-first localization workstation — local-first, open-source, and designed to grow through adapters.</strong>
+  <strong>Visual RimWorld mod translation studio — edit, review and export safely. A terminal is optional, not required.</strong>
 </p>
 
 <p align="center">
@@ -18,9 +18,9 @@
   <a href="https://codecov.io/gh/0-danielviktorovich-0/RimLoc"><img src="https://codecov.io/gh/0-danielviktorovich-0/RimLoc/branch/main/graph/badge.svg" alt="Codecov" /></a>
   <a href="https://0-danielviktorovich-0.github.io/RimLoc/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-blue" alt="Docs" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="GPL-3.0" /></a>
-  <a href="https://github.com/sponsors/0-danielviktorovich-0"><img src="https://img.shields.io/badge/Sponsor-GitHub-%23ea4aaa?logo=github-sponsors" alt="GitHub Sponsors" /></a>
+  <a href="https://github.com/sponsors/0-danielviktorovich-0"><img src="https://img.shields.io/badge/Sponsor-GitHub-%23ea4aaa?logo=githubsponsors" alt="GitHub Sponsors" /></a>
   <a href="https://buymeacoffee.com/danielviktorovich"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" /></a>
-  <a href="https://ko-fi.com/danielviktorovich"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
+  <a href="https://ko-fi.com/danielviktorovich"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Ko-fi" /></a>
 </p>
 
 > **Pre-beta.** RimLoc is under active development. RimWorld is the first production target; the new desktop UI is being converged on React R1. There is no stable public desktop release yet.
@@ -35,14 +35,19 @@
 
 ## What RimLoc is
 
-RimLoc helps you translate and maintain RimWorld content without turning localization into a pile of one-off scripts or editing the original Workshop files in place.
+RimLoc is a **desktop-first, open-source graphical translator for RimWorld mods**. Start in its visual editor: choose a mod, work on strings, review, validate and export without a terminal or editing original Workshop files.
 
-The project has two faces:
-
-- **Desktop workstation (Tauri 2 + React 19)** for day-to-day project work: create/open a project, edit translations, switch target languages, validate, use a glossary, inspect context, build/export, and diagnose problems.
-- **Rust CLI and service layer** for deterministic automation, CI, batch operations, format interchange, and debugging.
+- **Desktop GUI (Tauri 2 + React 19)** is the PRIMARY user product: projects, editor, multiple languages, glossary/TM, source context, checks and safe export.
+- **Optional Rust CLI** gives experts and automation tools access to shared Rust services; regular translation does not require CLI.
+- **AI** today includes **Chat Batch without an API key** and provider setup/connection testing; direct automatic translation jobs in the GUI are a planned capability, not yet shipped.
 
 The core idea is broader than RimWorld: game-specific knowledge belongs in a localization adapter; project state, translations, TM, glossary, validation, revisions and review stay generic. RimWorld is the first production adapter, not the permanent boundary of the product.
+
+## AI translation — current and planned
+
+**Available now:** use ChatGPT/Claude/another AI chat via the no-API Chat Batch workflow: generate a prompt, paste/import the reply, review and safely apply it. Provider Settings can store credentials in the OS Keychain and test connections, but a connection test is NOT an automatic translation job.
+
+**Planned for the same GUI:** a direct **AI Translation** screen with official ChatGPT-plan authorization for eligible open-source users (no copied API key), optional BYO API-key providers, optional local Ollama-compatible models, and the existing manual chat fallback. AI outputs remain reviewable drafts; no purchases, cloud uploads or account permissions happen without the user's consent.
 
 ## PO is optional, not the project format
 

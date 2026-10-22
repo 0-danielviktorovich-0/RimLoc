@@ -22,6 +22,30 @@ metadata:
 9. **No auto-publish**: публикации — только явный owner gate.
 10. **Не over-orchestrate тривиальное**: один фикс — один коммит, без церемоний.
 
+## Completion & reviewer discipline (mandatory)
+
+- Multi-system work **cannot** close with only a short transcript or one branch.
+  Capture the Workflow run id or tool-unavailability diagnosis, one bounded
+  owner/worktree per lane, `LaneResult` receipts and independent verifier.
+- Inspect current (not historical) CI runs and every CodeQL/Codecov bot comment
+  at each PR's exact HEAD. Red check or unresolved security report = BLOCKED,
+  not "all gates green". Stop only at a genuine external/owner gate.
+- The owner approved direct browser-mediated communication with ChatGPT.
+  Prefer native `local.handoff(reason,prompt)` if available; otherwise use
+  the authorized ZCode/IAB **WF-REVIEWER-BRIDGE** lane to send AND receive
+  real messages in the existing RimLoc ChatGPT Project. Capture the exact
+  chat URL privately. If context limit is reached, create a new chat inside
+  that SAME Project, transfer a verified state pack and keep URL lineage.
+  Read `docs/development/CHATGPT_BROWSER_REVIEW_BRIDGE.md` before each
+  reviewer handoff. Never claim that a GitHub comment notified ChatGPT;
+  private `RimLoc-review-handoff` is only fallback evidence mailbox.
+  Owner manual forwarding is NOT the default workflow.
+- Treat documents such as `.rimloc-release-state.json` as **potentially stale
+  snapshots**: reconcile them against live PR identities before updating.
+  Keep owner UAT, RimWorld playtest, credentials and publication as owner gates.
+- See `docs/development/PRODUCT_CLOSURE_PREFLIGHT.md` for objective-by-objective
+  acceptance and truthful PARTIAL/BLOCKED status rules.
+
 ## Практические уроки (RimLoc 2026-10)
 - Длинные лейны — только через фоновый Workflow-инструмент (переживает прерывания); обычные субагенты гаснут при прерывании хода.
 - Таймбокс в брифе каждого сборочного/WDIO лейна (иначе зависание).

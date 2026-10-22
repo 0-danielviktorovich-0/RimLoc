@@ -1,13 +1,93 @@
 # Repository Guidelines
 
+## Agent-facing standards and portable skills (2026-10-20)
+
+**Mandatory entrypoint for any new external MCP API, agent-facing tool, portable Agent Skill, RimWorld game-control bridge, install/setup flow or skill generator:** `docs/development/AGENT_INTEROPERABILITY_QUALITY_STANDARD.md`. It is the authoritative *project policy* mapped to verified public sources (Agent Skills, MCP stable 2026-07-28 and the official Skills extension, RFC 2119/8174, JSON Schema, NIST SSDF, OWASP, SLSA/OpenSSF, SemVer and WCAG). Audit actual supported host/protocol versions before implementation, and record exact conformance/evidence; documentation does not itself establish compliance or a working integration. Read the current private owner directives in `RimLoc-review-handoff` Issues #9 (real-game acceptance) and #10 (external RimLoc MCP), and their eventual skill-delivery follow-up. Reuse `rimloc-services` and the existing `testlab/runtime_bridge` instead of creating independent state or game-control logic. Keep GUI-first usability, native permissions and owner-gated publishing.
+
+
+## Mandatory multi-agent preflight and evidence gate (2026-10-14)
+
+**Read this BEFORE writing code or claiming any stage finished.** A task touching
+2+ subsystems, having 3+ independent deliverables, involving architecture,
+release/security or explicit parallelism is a **multi-lane campaign**. The lead
+MUST first load `tools/zcode/rimloc-orchestrator/skills/rimloc-release-orchestrator/SKILL.md`
+and `docs/development/ZCODE_WORKFLOW_RUNTIME.md`, inspect actual tool availability
+and the live git/PR/CI status, then publish an executable DAG, lane ownership,
+non-overlapping worktrees, acceptance tests and a blocker/owner-gate register.
+Use ZCode `CreateWorkflow`/named subagents for long independent lanes **when
+actually available**. If the runtime cannot access them, state the exact missing
+capability and use a documented bounded sequential fallback — do not claim
+the workflow ran or substitute an invented tool.
+
+**Completion is evidence-gated:** "DONE", "green", "release-ready" or a checked
+acceptance box requires exact-head CI + CodeQL + Codecov/bot-comment review
+AND behavioral tests/evidence for that deliverable. Any failing job, open
+relevant security alert, unimplemented feature, missing artifact or unverified
+app behavior is `BLOCKED`, `PARTIAL` or `OWNER_ONLY`, not `DONE`.
+A locally built UAT zip can be `EXPERIMENTAL` with accurate SHA while CI is
+red; it cannot be promoted to accepted. Do NOT close parent milestones by
+counting child-stage setup as completed functionality.
+
+**Independent review and handoff are required** for critical cross-subsystem
+changes. The owner has explicitly authorized **direct communication via the
+existing ChatGPT browser session**. Reuse the authorized ZCode/IAB browser
+bridge when native `local.handoff(reason,prompt)` is unavailable; capture the
+REAL current ChatGPT conversation and existing **RimLoc ChatGPT Project** URL
+in PRIVATE local state, send sanitized evidence, read the actual response.
+When the conversation context is exhausted, create a NEW chat **inside the
+SAME existing ChatGPT Project**, transfer all critical reviewer/project
+context and keep the complete chain of previous URLs. Mandatory SOP:
+`docs/development/CHATGPT_BROWSER_REVIEW_BRIDGE.md`. Never create new chats
+to bypass quota, use the wrong Project, invent a browser receipt, or expose
+chat URLs in public Git. If browser and local handoff both fail, place the
+evidence in PRIVATE `RimLoc-review-handoff` and mark
+`WAITING_EXTERNAL_REVIEW` with a concrete reason. A GitHub comment alone
+DOES NOT send anything to ChatGPT; never claim a real reviewer response
+without observing and reading it.
+
+Before every final response: reconcile all relevant Draft PR HEADs, CI,
+CodeQL, bot comments, latest evidence, live product files and blockers; update
+a durable campaign ledger with exact SHAs and timestamps. Respect the owner's
+NO merge/release/Discord/paid-provider-calls mandate. Never request a second
+layer of approval where native permissions already grant an operation.
+Canonical operational template: `docs/development/PRODUCT_CLOSURE_PREFLIGHT.md`.
+
+
 Переписан аудитом документации 2026-10-05 под фактическое состояние ветки
 `feature/ui-r1-convergence` (см. `docs/development/REPOSITORY_STATE_2026-10.md`,
 `docs/competitive/RIMLOC_CAPABILITIES_BASELINE.md` — якорь возможностей).
 
+## Primary product contract: graphical desktop app
+
+**Owner decision (2026-10-14): RimLoc is GUI-FIRST.** React/Tauri is the
+primary product, target of onboarding, GitHub/README/SEO positioning, user
+documentation and UAT. The CLI is an optional expert/automation interface
+over the same shared Rust services — never the default translation journey.
+Users should not need a terminal, raw XML, PO files or environment variables
+to discover, translate, review, validate and safely build a RimWorld mod.
+
+**AI Translation must become a first-class GUI workflow**, with honest
+transport choices: (1) eligible ChatGPT plan via official OSS Sign in with
+ChatGPT OAuth/consent; (2) user-provided API keys; (3) local inference;
+(4) existing Chat Batch with no API. Today Provider Settings only
+configures/probes connections; the Chat Batch route requires copy/paste.
+Direct in-app jobs and subscription auth are NOT shipped. Never claim them
+as working until typed Tauri/service calls and packaged-app E2E pass.
+
+CLI parity means every **user-relevant capability** should be accessible
+from understandable GUI controls, sharing service logic. A tool only in CLI
+is a documented GUI gap, not a feature-completeness success. Do not replace
+the GUI with arbitrary shell execution. Never bypass human OAuth/paid
+consent or relax rel26 Data Safety guarantees.
+
+Execution/architecture reference:
+`docs/development/DESKTOP_FIRST_AI_TRANSLATION_2026-10-14.md`.
+
 ## Project Structure & Module Organization
 
-RimLoc — кроссплатформенный инструмент перевода модов RimWorld (и других игр, через
-адаптеры): Rust workspace + Tauri 2 desktop GUI + MkDocs-сайт в `docs/`.
+RimLoc — графическая десктопная студия перевода модов RimWorld: основной продукт —
+Tauri 2 + React GUI; общая реализация возможностей — Rust services; CLI —
+дополнительный доступ для автоматизации; MkDocs — документация.
 
 ### Rust workspace (`Cargo.toml`, 15 крейтов + GUI)
 
@@ -21,7 +101,7 @@ RimLoc — кроссплатформенный инструмент перев�
 | `rimloc-validate` | правила валидации | чистые проверки |
 | `rimloc-services` | оркестрация: scan/validate/import/build, project_store v2, ui_catalog, contract, observability | переиспользуется CLI и GUI, файловый IO разрешён |
 | `rimloc-config` | конфигурация (`rimloc.toml`) | — |
-| `rimloc-llm` | провайдер-шаблоны (UI существует, LLM-вызовы не подключены) | не вызывать платные API без явного разрешения владельца |
+| `rimloc-llm` | действующий LLM backend для CLI; GUI умеет конфигурировать и проверять подключения, прямой AI job ещё не подключён | платные вызовы и OAuth — только с разрешения пользователя |
 | `rimloc-plugin-api` / `rimloc-plugin-jsonftl` | плагины сканирования | — |
 | `rimloc-cli` | тонкий командный слой (`src/main.rs`) | никакой бизнес-логики |
 
@@ -74,9 +154,14 @@ wire-DTO идентичны): handshake с `ui_contract_version`, мутации
 
 ## Build, Test, and Development Commands
 
-Дисковое ограничение рабочей машины владельца: внутренний диск мал, **любые `cargo build/test/check/clippy`
-запускать с `CARGO_TARGET_DIR=/Volumes/Portable-SSD/caches/targets/rimloc` в строке команды**.
-На btrfs-SSD — дополнительно `CARGO_INCREMENTAL=0` (локи не поддерживаются).
+Дисковое ограничение рабочей машины владельца (канон: AI-OS `ER-079`): сборочные кэши —
+**приоритет внешнему диску**, пока он подключён: любые `cargo build/test/check/clippy` запускать
+с `CARGO_TARGET_DIR=/Volumes/Portable-SSD/caches/targets/rimloc` в строке команды — один общий
+target переиспользует dep-деревья между worktree. На btrfs-SSD — дополнительно
+`CARGO_INCREMENTAL=0` (локи не поддерживаются). Fallback на внутренний диск — только когда
+внешний отсутствует: с измеренной оценкой прироста (не шаблонной), последовательными сборками
+и обязательной чисткой `target/` за собой при закрытии ветки. Перед началом работ — дисковый
+чек обоих дисков: свободное место и свои регенерируемые артефакты, которые можно убрать.
 
 - `CARGO_TARGET_DIR=… cargo build --workspace` — все крейты и межкрейтные интерфейсы.
 - `CARGO_TARGET_DIR=… cargo run -p rimloc-cli -- scan --root test/TestMod` — сквозная проверка CLI.
@@ -87,6 +172,29 @@ wire-DTO идентичны): handshake с `ui_contract_version`, мутации
 - `mkdocs serve` (из venv, `requirements-docs.txt`) — превью сайта; строгий гейт:
   `SITE_URL=https://0-danielviktorovich-0.github.io/RimLoc/ mkdocs build --strict`.
 - React-лайн: `cd gui/tauri-app/frontend-react && npm ci && npm run build` (tsc strict + Vite).
+
+## Branch & Worktree Hygiene (owner directive 2026-10-20)
+
+Temporary branches are a resource with a lifecycle, not an archive:
+
+- After a PR merges (or a lane's commits fully land in the integration
+  branch), delete its head branch unless another workflow still uses it.
+  Review history lives in the PR, not in the branch — squash-merged lanes
+  leave unique git objects behind, that is expected and not a reason to keep
+  the branch.
+- Staged PRs against the integration branch duplicate any OPEN PR whose
+  commits are already contained in it: close the old PR as superseded
+  (keep the PR — it holds the review evidence), then delete its branch.
+- Never classify a branch as deletable by age or `--merged` alone. Run
+  `python3 scripts/branch-hygiene.py` — it checks PR state, containment
+  in the integration branch, unique commits, worktree usage and stacked-PR
+  bases, and prints candidates; it never deletes. Owner approval is
+  required for any actual deletion.
+- Worktrees: a lane that finished removes its worktree when the disk rule
+  (see Build section, ER-079) requires cleanup; the branch-hygiene report
+  treats a branch checked out in a worktree as ACTIVE.
+- No ad-hoc release branches: versions are preserved with git tags and
+  release artifacts.
 
 ## Coding Style & Naming Conventions
 
@@ -111,6 +219,48 @@ Rust — дефолтный rustfmt (4 пробела); модули/функц�
   согласованы с `RimLocClient` и `frontend-v2`-оракулом (или осознанно разошлись с пометкой).
 - Изменил i18n-ключи CLI — `cargo test --package rimloc-cli -- tests_i18n`.
 - Изменил CLI-флаги/поведение — обнови интеграционные тесты и прогони всю сьюту.
+
+### Coverage & Codecov PR review (mandatory for agents)
+
+- **Never equate green CI with sufficient tests.** After each PR push inspect all GitHub
+  Actions/CodeQL/Codecov checks **and bot/reviewer comments on the exact PR HEAD SHA**.
+  In `codecov.yml`, `informational: true` allows a SUCCESS status below target;
+  report the actual patch/project/component/flag coverage, missing lines and risk.
+  An upload "queued for processing" is not yet a Codecov-accepted report.
+- Coverage must measure the **honest changed production surface**. Do not move
+  files out of `coverage.include`, narrow the denominator, lower thresholds, alter
+  `ignore`, or mark a flag informational **to raise a number**. Scope-limited
+  reports are allowed when explicitly labeled and accompanied by an honest
+  full-source baseline; tests/fixtures/generated/vendor files may be excluded
+  only for documented reasons. Preserve Vitest config under
+  `test.coverage` (not the root config), and verify the *printed per-file table*
+  AND uploaded report include the intended files (including untested files).
+- **RimLoc coverage lanes:** `rust` = Rust workspace; `gui-rust` = Tauri Rust;
+  `frontend-react` = full production React source. For UI logic report
+  `project.ts` / `entryUid.ts` separately, but do not present those two
+  files as coverage of all React screens. Real IPC/serialization/error-path
+  tests matter more than command-name/string-presence tests; retain separate
+  native packaged-app and owner UAT evidence.
+- **Effective Codecov policy is `main`:** `strict_yaml_branch: main`.
+  During a PR, the PR's edited `codecov.yml` is not yet the effective policy.
+  Inspect **main** `ignore` and path rules. In particular, path prefixes like
+  `gui/tauri-app/frontend` may also match `frontend-react`; use a directory
+  boundary (`frontend/`) and confirm the parsed validator output. A passing
+  coverage-upload workflow or a flag marked "not affected" does not prove
+  that the product files are counted.
+- On coverage/workflow changes verify locally and in CI: (1) intended file
+  inventory and honest denominator; (2) report exists, parses and is uploaded
+  for the exact commit; (3) Codecov has **finished processing**; (4) the flag,
+  component and PR comment reflect those files; (5) no regression in
+  CodeQL/security or behavioral tests. If the base or denominator changed,
+  do **not** claim before/after percentages are directly comparable.
+- Before requesting review/merge, **triage every bot comment**, including
+  Codecov, even when all checkmarks are green. Record missing changed lines,
+  behavioral tests added or not needed, remaining risks and owner-only gates
+  in the PR. Zero alerts/100% line coverage are not proof of product quality.
+  Do not merge, tag or publish without explicit owner authorization.
+- Canonical procedures and report formats: `docs/en/dev/coverage.md` and
+  `docs/ru/dev/coverage.md` (update them together).
 
 ## Documentation Workflow
 
@@ -288,7 +438,7 @@ CLI-вывод/скриншоты при изменении поведения; 
 
 ## Product Surfaces and i18n
 
-- **GUI не обязан зеркалить каждую CLI-команду.** CLI — headless/automation + format tooling;
+- **GUI обязан покрывать каждый существенный для переводчика CLI-сценарий.** Отдельные флаги разработчика можно оставить в CLI, но пользовательский workflow должен существовать в GUI; CLI — headless/automation + format tooling;
   React GUI — product workflow поверх того же `rimloc-services`/`RimLocClient`. Общая доменная
   семантика должна совпадать, но UX capability-driven, а не «одна кнопка на каждый флаг».
 - Format-specific CLI (PO/CSV/XLIFF и т.п.) остаются опциональными interoperability tools.

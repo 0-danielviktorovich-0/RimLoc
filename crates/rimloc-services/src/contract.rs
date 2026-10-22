@@ -580,6 +580,31 @@ pub struct ExportProjectResponse {
     pub skipped_unknown_type: Vec<String>,
 }
 
+/// One rendered output file of the canonical serializer (UI-05: output XML
+/// preview). `path` is project-relative inside the written Languages tree.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct OutputXmlPreviewFile {
+    pub path: String,
+    pub xml: String,
+}
+
+/// Read-only output XML preview: the CANONICAL serializer
+/// (`project::write_rimworld_translation`) rendered into a scratch
+/// directory and returned in-memory — the exact bytes an export would
+/// write, without touching any user-visible location.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+pub struct OutputXmlPreviewResponse {
+    pub job_id: JobId,
+    pub locale: String,
+    /// The session revision the preview was rendered from — the UI binds
+    /// the displayed result to this value and invalidates on change
+    /// (review Oct-15 P1-C).
+    pub revision: Revision,
+    pub files: Vec<OutputXmlPreviewFile>,
+    /// True when the cap (file count or total bytes) cut the listing.
+    pub truncated: bool,
+}
+
 /// Result of `project_build_mod`: the FULL drop-in mod package written from
 /// the trusted session state, reparse-verified BEFORE the ack. Same DTO
 /// pattern as [`ExportProjectResponse`] — the differences live in the
@@ -637,6 +662,142 @@ pub struct ImportExistingRequest {
     pub existing_dir: PathBufDto,
     /// Target locale the pack would feed (strict language-folder form).
     pub locale: String,
+}
+
+/// `project_import_po` (UI-10): analyze an existing-translation PO FILE
+/// as a pack source. The PO is rebuilt into the canonical Languages tree
+/// in a session-owned temp dir and fed through the SAME analyzer as
+/// [`ImportExistingRequest`], so the review/apply flow stays identical.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ImportExistingPoRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .po file (form guard: relative refused).
+    pub po_path: PathBufDto,
+    /// Target locale the PO would feed (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_apply_existing_po` (UI-10): apply the REUSABLE set of an
+/// analyzed PO pack — the PO is rebuilt into the canonical tree and
+/// applied through the SAME core as [`ApplyExistingRequest`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ApplyExistingPoRequest {
+    pub project_id: ProjectId,
+    pub expected_revision: Revision,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .po file (form guard: relative refused).
+    pub po_path: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_export_po` (UI-10): write the project-exchange PO — msgid is
+/// the canonical source text, msgstr the CURRENT durable translation of
+/// the requested locale. Both directions go through the canonical
+/// Languages-tree representation, so an exported PO re-imports into the
+/// same inventory losslessly.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectPoRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .po file to write. Guarded like every output
+    /// write: never inside the read-only source tree or the managed root.
+    pub out_po: PathBufDto,
+    /// Locale whose translations to export (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_include_candidate` (UI-11 Stage C): guarded, per-candidate
+/// human approval to include ONE missed source row into the MANAGED
+/// project state. The server re-reads the row from the source file and
+/// re-verifies every gate — UI-supplied text is never trusted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct IncludeCandidateRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Lost-update guard against the last ACKED revision.
+    pub expected_revision: Revision,
+    /// Project-relative file path (forward slashes).
+    pub file: String,
+    /// 1-based line of the owning element in that file.
+    pub line: usize,
+    /// Leaf key the candidate was classified under (validated against
+    /// the re-read row; a mismatch is a typed refusal).
+    pub key: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct IncludeCandidateResponse {
+    pub job_id: JobId,
+    pub revision: Revision,
+    /// The structural identity the row was included under.
+    pub entry: SourceEntryId,
+}
+
+/// `project_import_xliff` / `project_apply_xliff` (UI-10): the XLIFF
+/// mirror of the PO pack flow — rebuilt into the canonical tree and fed
+/// through the same analyzer / apply core.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ImportExistingXliffRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .xliff file (form guard: relative refused).
+    pub xliff_path: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ApplyExistingXliffRequest {
+    pub project_id: ProjectId,
+    pub expected_revision: Revision,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .xliff file.
+    pub xliff_path: PathBufDto,
+    /// Target locale (strict language-folder form).
+    pub locale: String,
+}
+
+/// `project_export_xliff` (UI-10): the XLIFF mirror of the exchange PO —
+/// `<target>` carries the durable translations, `<note>` the canonical
+/// tree path for a lossless re-import.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectXliffRequest {
+    pub project_id: ProjectId,
+    pub session_epoch: SessionEpoch,
+    /// Absolute path of the .xliff file to write.
+    pub out_xliff: PathBufDto,
+    /// Locale whose translations to export (strict language-folder form).
+    pub locale: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectXliffResponse {
+    pub job_id: JobId,
+    /// Absolute path of the written .xliff file.
+    pub out_path: String,
+    /// Rows in the file (canonical tree keys).
+    pub keys_total: usize,
+    /// Rows whose target is non-empty.
+    pub keys_translated: usize,
+    /// Serialized-tree units that resolved to no canonical entry —
+    /// reported, never silently dropped.
+    pub keys_unmatched: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub struct ExportProjectPoResponse {
+    pub job_id: JobId,
+    /// Absolute path of the written .po file.
+    pub out_po: String,
+    /// Rows in the file (canonical tree keys).
+    pub keys_total: usize,
+    /// Rows whose msgstr is non-empty.
+    pub keys_translated: usize,
+    /// Serialized-tree units that resolved to no canonical entry —
+    /// reported, never silently dropped.
+    pub keys_unmatched: usize,
 }
 
 /// One analyzed pack line in a capped sample list. `entry` carries the
