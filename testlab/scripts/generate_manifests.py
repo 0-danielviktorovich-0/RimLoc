@@ -23,11 +23,32 @@ DEFAULT_MODS_ROOT = "/Applications/RimWorld.app/Mods"
 CURATED = ["1814383360", "2927850179", "2126925929"]
 VANILLA_TAR = "/Applications/RimWorld.app/Data/Core/Languages/Russian (Русский).tar"
 
+# Third-party About.xml files reach this generator as-is, so parsing gets a
+# hard attack-surface cut (CodeQL py/xml-bomb): refuse DTDs/entities
+# outright (billion-laughs needs an entity table) and cap the input size.
+# stdlib entity-expansion limits alone are not a defense at old Expat
+# versions (<2.7.2), and the tool never needs a DTD for RimWorld About.xml.
+MAX_ABOUT_BYTES = 1 * 1024 * 1024
+
+
+def _load_about_text(about_path):
+    size = os.path.getsize(about_path)
+    if size > MAX_ABOUT_BYTES:
+        raise ET.ParseError(f"About.xml exceeds {MAX_ABOUT_BYTES} bytes ({size})")
+    with open(about_path, "rb") as f:
+        raw = f.read(MAX_ABOUT_BYTES + 1)
+    if len(raw) > MAX_ABOUT_BYTES:
+        raise ET.ParseError("About.xml grew past the size cap while reading")
+    text = raw.decode("utf-8", "strict")
+    if re.search(r"<!\s*(DOCTYPE|ENTITY)", text, re.IGNORECASE):
+        raise ET.ParseError("About.xml with a DTD/entity declaration is refused")
+    return text
+
 
 def parse_about(about_path):
     try:
-        root = ET.parse(about_path).getroot()
-    except ET.ParseError as e:
+        root = ET.fromstring(_load_about_text(about_path))
+    except (ET.ParseError, UnicodeDecodeError, OSError) as e:
         return {"name": f"<xml-error: {e}>", "packageId": "", "versions": []}
     return {
         "name": (root.findtext("name") or "").strip(),

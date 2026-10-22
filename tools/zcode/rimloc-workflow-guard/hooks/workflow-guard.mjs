@@ -6,7 +6,7 @@
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 
 const MAX_INPUT = 128 * 1024;
 let raw = '';
@@ -38,9 +38,18 @@ if (!root) process.exit(0);
 
 const event = input.hook_event_name || input.hookEventName;
 const sessionId = String(input.session_id || input.sessionId || '');
-const stateDir = process.env.ZCODE_PLUGIN_DATA
-  ? join(process.env.ZCODE_PLUGIN_DATA, 'workflow-guard-state')
-  : null;
+// Base-path guard (CodeQL path-injection hardening): the state files live
+// under the plugin data directory this hook itself owns. The session id is
+// already reduced to a sha256 hex filename; the BASE must additionally be
+// an absolute traversal-free directory so no composed state path can leave
+// the plugin data area.
+function guardedStateDir() {
+  const base = process.env.ZCODE_PLUGIN_DATA;
+  if (!base) return null;
+  if (!isAbsolute(base) || base.split(sep).includes('..')) return null;
+  return join(base, 'workflow-guard-state');
+}
+const stateDir = guardedStateDir();
 const statePath = stateDir && sessionId
   ? join(stateDir, createHash('sha256').update(sessionId).digest('hex') + '.json')
   : null;
