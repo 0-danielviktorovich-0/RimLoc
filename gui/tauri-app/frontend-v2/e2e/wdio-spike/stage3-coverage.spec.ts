@@ -327,6 +327,151 @@ describe('Stage 3 route×state×control coverage', () => {
     console.log('COVERAGE AFTER ACTIVATION:', activatedTotal.length + '/' + allInteractive.size + ' = ' + pct + '%')
   })
 
+
+  it('state-gated pass: activates the controls that need a selected entry or a form context', async () => {
+    const activatedNow: string[] = []
+    const note: string[] = []
+
+    // --- workspace WITH a selected entry ---
+    const wsLink = await browser.$('.app-sidebar a[href="#/workspace"]')
+    await wsLink.click()
+    await waitExisting('.entry-list .entry-row', 30000)
+    await (await browser.$$('.entry-list .entry-row'))[0].click()
+    await waitExisting('[data-testid="ws.editor-textarea"]', 15000)
+
+    const tryClick = async (id: string): Promise<void> => {
+      try {
+        const el = await browser.$('[data-testid="' + id + '"]')
+        await el.waitForExist({ timeout: 5000 })
+        if (!(await el.isDisplayed())) { note.push(id + ':not-displayed'); return }
+        if (!(await el.isEnabled())) { note.push(id + ':disabled'); return }
+        await el.click()
+        activatedNow.push(id)
+        await new Promise(r => setTimeout(r, 250))
+      } catch { note.push(id + ':absent') }
+    }
+    await tryClick('ws.entry.0')
+    await tryClick('ws.tab.source')
+    await tryClick('ws.tab.terms')
+    await tryClick('ws.tab.xml')
+    await tryClick('ws.copy-key')
+    await tryClick('ws.editor-to-chatbatch')
+    // come back from chatbatch if the control navigated
+    {
+      const back = await browser.$('.app-sidebar a[href="#/workspace"]')
+      await back.click()
+      const rows = await browser.$$('.entry-list .entry-row')
+      if (rows.length > 0) { await rows[0].click(); await waitExisting('[data-testid="ws.editor-textarea"]', 15000) }
+    }
+    await tryClick('ws.inspector-toggle')
+    await tryClick('ws.inspector-close')
+    await tryClick('ws.tree-toggle')
+    await tryClick('ws.tree.view-type')
+    await tryClick('ws.tree.view-file')
+    await tryClick('ws.tree.keyed')
+    // target locale: a select change on the selected entry context
+    try {
+      const sel = await browser.$('[data-testid="ws.target-locale"]')
+      await sel.waitForExist({ timeout: 5000 })
+      if (await sel.isDisplayed()) {
+        await sel.click()
+        await sel.selectByIndex(0)
+        activatedNow.push('ws.target-locale')
+      }
+    } catch { note.push('ws.target-locale:absent') }
+    await tryClick('sidebar.project-switcher')
+
+    // --- checks: rerun then the (now-enabled) report download ---
+    {
+      const cLink = await browser.$('.app-sidebar a[href="#/checks"]')
+      await cLink.click()
+      await waitExisting('[data-testid="checks.rerun"]', 20000)
+      await (await browser.$('[data-testid="checks.rerun"]')).click()
+      await new Promise(r => setTimeout(r, 1200))
+      const rep = await browser.$('[data-testid="checks.report"]')
+      if ((await rep.isExisting()) && (await rep.isEnabled())) {
+        await rep.click()
+        activatedNow.push('checks.report')
+      } else note.push('checks.report:not-ready')
+    }
+
+    // --- diagnostics: outdir + run ---
+    {
+      await (await browser.$('.app-sidebar a[href="#/settings"]')).click()
+      await new Promise(r => setTimeout(r, 300))
+      await (await browser.$('[data-testid="palette.open"]')).click()
+      const pin = await browser.$('[data-testid="palette.input"]')
+      await pin.waitForExist({ timeout: 15000 })
+      await pin.setValue('Диагностика')
+      await waitFor(async () => {
+        const items = await browser.$$('.palette-item')
+        if (items.length === 0) return false
+        await items[0].click()
+        return true
+      }, 8000, 300)
+      const outdir = await browser.$('[data-testid="diag.outdir"]')
+      if ((await outdir.isExisting())) {
+        await outdir.setValue(join(WORK_DIR, 'diag'))
+        activatedNow.push('diag.outdir')
+      }
+      const runBtn = await browser.$('[data-testid="diag.run"]')
+      if ((await runBtn.isExisting()) && (await runBtn.isEnabled())) {
+        await runBtn.click()
+        activatedNow.push('diag.run')
+        await new Promise(r => setTimeout(r, 1500))
+      }
+    }
+
+    // --- providers form context: local flag + probes on the empty new form ---
+    {
+      await (await browser.$('[data-testid="palette.open"]')).click()
+      const pin2 = await browser.$('[data-testid="palette.input"]')
+      await pin2.waitForExist({ timeout: 15000 })
+      await pin2.setValue('Провайдеры')
+      await waitFor(async () => {
+        const items = await browser.$$('.palette-item')
+        if (items.length === 0) return false
+        await items[0].click()
+        return true
+      }, 8000, 300)
+      await (await browser.$('[data-testid="prov.card.new"]')).click()
+      await waitExisting('[data-testid="prov.detail"]', 10000)
+      await tryClick('prov.local')
+      await tryClick('prov.connect.new')
+      await tryClick('prov.test.new')
+    }
+
+    const sidebar = await browser.$('.app-sidebar')
+    if (!(await sidebar.isExisting())) throw new Error('app died during the state-gated pass')
+    console.log('STATE_GATED_ACTIVATED:', JSON.stringify(activatedNow))
+    console.log('STATE_GATED_NOTES:', JSON.stringify(note))
+    // merge into the evidence file
+    mkdirSync(EVIDENCE_DIR, { recursive: true })
+    const base = JSON.parse(readFileSync(join(EVIDENCE_DIR, 'route-control-coverage.json'), 'utf8'))
+    const prev: string[] = base.activationPass?.activatedNow ?? []
+    const pass3 = Array.from(new Set(prev.concat(activatedNow)))
+    const journey: string[] = base.journeyActivated ?? ['wizard.open','wizard.path-input','wizard.next','wizard.version','wizard.overlay','ws.editor-textarea','ws.editor-save','ws.tab.output','ws.output-pre','be.outdir','be.export','projects.project-card','ai.modes','ai.mode.auto','ai.mode.chatgpt','ai.mode.byo','ai.mode.local','ai.mode.noapi','ai.instance','ai.run','ai.chatgpt-signin','ai.provider','ai.open-chatbatch','ai.auto-key-hint','ai.auto-key-link','ai.job','ai.job-state','palette.open','palette.input','prov.card.new','prov.preset','prov.label','prov.model.new','prov.baseurl.new','prov.secret.new','prov.save.new','prov.catalog']
+    const allInteractive = new Set<string>()
+    for (const v of Object.values(base.perRoute) as { uncovered: string[]; activatedHere: string[] }[]) {
+      v.uncovered.forEach(u => allInteractive.add(u))
+      v.activatedHere.forEach(u => allInteractive.add(u))
+    }
+    const coveredSet = new Set<string>([...journey, ...pass3])
+    const covered = [...allInteractive].filter(i => coveredSet.has(i))
+    const pct = allInteractive.size === 0 ? 0 : Math.round((covered.length / allInteractive.size) * 1000) / 10
+    writeFileSync(join(EVIDENCE_DIR, 'route-control-coverage.json'), JSON.stringify({
+      ...base,
+      stateGatedPass: { activatedNow, note },
+      totals: {
+        ...base.totals,
+        activatedTotal: covered.length,
+        coveragePercent: pct,
+        uncovered: [...allInteractive].filter(i => !coveredSet.has(i)).sort(),
+      },
+    }, null, 1))
+    console.log('COVERAGE AFTER STATE-GATED PASS:', covered.length + '/' + allInteractive.size + ' = ' + pct + '%')
+  })
+
   after(() => {
     rmSync(WORK_DIR, { recursive: true, force: true })
   })
