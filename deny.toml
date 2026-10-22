@@ -10,10 +10,8 @@ ignore = [
     # localization proc-macro stack, build-time only, no runtime path);
     # marked unmaintained upstream with no replacement consumed by
     # i18n-embed yet. Revisit when i18n-embed moves off i18n-config.
-    "RUSTSEC-2026-0374",
-    "RUSTSEC-2026-0002",
-    "RUSTSEC-2026-0253",
     # unmaintained transitive deps of the UI/XML stack; no fixed versions exist.
+    "RUSTSEC-2026-0374", # basic-toml unmaintained (see comment above)
     "RUSTSEC-2024-0436", # paste (via der/image stack)
     "RUSTSEC-2024-0370", # proc-macro-error (via tauri macro deps)
     # unic-* family is unmaintained (via tauri/wry text handling); no fork adopted upstream yet.

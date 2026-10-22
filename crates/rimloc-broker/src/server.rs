@@ -61,6 +61,29 @@ pub const MAX_IN_FLIGHT_PER_CLIENT: usize = 8;
 /// delayed by this — only NEW connection admission is.
 const ACCEPT_POLL: Duration = Duration::from_millis(20);
 
+/// Path guard shared with the rimloc-mcp profile ladder (mirrored here so
+/// the broker crate stands alone): `Some(cause)` refuses the managed root
+/// before ANY filesystem effect. Absolute, traversal-free, with a parent
+/// (the socket needs a profile directory), and not a filesystem root.
+pub fn refused_profile_cause(managed_root: &Path) -> Option<String> {
+    if !managed_root.is_absolute() {
+        return Some("not an absolute path".to_string());
+    }
+    if managed_root
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Some("parent-directory traversal".to_string());
+    }
+    if managed_root
+        .parent()
+        .is_none_or(|p| p.as_os_str().is_empty())
+    {
+        return Some("no profile directory (filesystem root)".to_string());
+    }
+    None
+}
+
 /// Startup failure of [`BrokerServer::start`].
 #[derive(Debug)]
 pub enum BrokerStartError {
@@ -175,6 +198,17 @@ impl BrokerServer {
         ops: Arc<dyn BrokerOps>,
         notify: Arc<dyn Fn(BrokerEvent) + Send + Sync>,
     ) -> Result<Self, BrokerStartError> {
+        // Path guard at the fs entry: the broker creates a directory,
+        // unlinks a socket node and binds a fresh one — every one of those
+        // operates on the profile derived from this argument, so the
+        // argument itself is validated here (absolute, traversal-free,
+        // with a real parent) instead of trusting the caller's discipline.
+        if let Some(cause) = refused_profile_cause(managed_root) {
+            return Err(BrokerStartError::Io(std::io::Error::other(format!(
+                "managed root `{}` refused: {cause}",
+                managed_root.display()
+            ))));
+        }
         let profile_dir =
             managed_root
                 .parent()
@@ -482,5 +516,23 @@ fn read_line_bounded<R: Read>(
         if out.len() > cap {
             return Err(LineReadError::TooLong);
         }
+    }
+}
+
+#[cfg(test)]
+mod path_guard_tests {
+    use super::refused_profile_cause;
+    use std::path::Path;
+
+    #[test]
+    fn refuses_relative_and_traversal_roots() {
+        assert!(refused_profile_cause(Path::new("relative/managed")).is_some());
+        assert!(refused_profile_cause(Path::new("/a/../escape")).is_some());
+    }
+
+    #[test]
+    fn refuses_filesystem_root() {
+        assert!(refused_profile_cause(Path::new("/")).is_some());
+        assert!(refused_profile_cause(Path::new("/managed")).is_none());
     }
 }
