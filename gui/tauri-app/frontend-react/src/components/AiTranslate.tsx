@@ -284,6 +284,12 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
             </select>
           </label>
           <p style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>{t('ai.privacyNotice')}</p>
+          {mode === 'auto' && (
+            <p style={{ fontSize: 10, color: 'var(--muted-foreground)' }} data-testid="ai.auto-key-hint">
+              {t('ai.autoKeyHint')}{' '}
+              <a href="#/providers" data-testid="ai.auto-key-link">{t('ai.autoKeyLink')}</a>
+            </p>
+          )}
           <button className="btn-primary" data-testid="ai.run" disabled={!canRun || busy} onClick={run}>
             <Play size={13} /> {t('ai.start')}
           </button>
