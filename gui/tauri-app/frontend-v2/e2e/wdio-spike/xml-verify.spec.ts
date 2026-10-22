@@ -1,22 +1,84 @@
 /**
- * RUNTIME VERIFICATION — hardened per REVIEW_1641:
+ * RUNTIME VERIFICATION — hardened per REVIEW_1641, portable per
+ * REVIEW_180e5344: the fixture mod is GENERATED in a per-run temp dir
+ * (no machine-specific paths) and removed unconditionally. The app-side
+ * profile isolation is the launcher's contract (RIMLOC_DATA_DIR in the
+ * spawn wrapper — see xml-verify.conf.ts); this spec has no other inputs.
+ *
  * 1. Asserts actual XML markup from the fixture (not just no-error)
  * 2. Layout test FAILS if DOM elements are missing (fail-closed)
  * 3. AI RU labels have real expect() assertions
  * 4. Deterministic waitFor (no fixed sleeps for critical assertions)
- *
- * Fixture: creates a project over the in-repo TestMod, selects the
- * first entry (OwnerTestGreeting keyed string), then clicks the XML tab.
  */
-import { existsSync, mkdirSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
+/** Per-run workspace: the fixture mod lives here, removed in after(). */
+const WORK_DIR = mkdtempSync(join(tmpdir(), 'rimloc-xml-verify-'))
+const MOD = join(WORK_DIR, 'TestMod')
 
-const MOD = '/Users/danielviktorovich/Developing/RimLoc-evidence/owner-uat/TestMod'
-const ISOLATED_DATA = '/tmp/rimloc-xml-verify/data'
-
-/** Expected XML content from the fixture — asserted against the XML tab. */
+/** Expected XML content from the generated fixture — asserted against the XML tab. */
 const EXPECTED_XML_KEY = 'OwnerTestBeacon'
 const EXPECTED_XML_SNIPPETS = ['<defName>OwnerTestBeacon</defName>', 'owner test beacon']
+
+function writeFixture(): void {
+  const about = join(MOD, 'About')
+  const defs = join(MOD, '1.6', 'Defs')
+  const keyed = join(MOD, 'Languages', 'English', 'Keyed')
+  mkdirSync(about, { recursive: true })
+  mkdirSync(defs, { recursive: true })
+  mkdirSync(keyed, { recursive: true })
+  writeFileSync(
+    join(about, 'About.xml'),
+    `<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Owner Test Mod</name>
+  <packageId>rimloc.test.owneruat</packageId>
+  <author>RimLoc</author>
+  <supportedVersions><li>1.6</li></supportedVersions>
+  <description>Generated fixture for the XML preview runtime verification.</description>
+</ModMetaData>
+`,
+  )
+  writeFileSync(
+    join(defs, 'TestBuilding.xml'),
+    `<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <ThingDef ParentName="BuildingBase">
+    <defName>${EXPECTED_XML_KEY}</defName>
+    <label>owner test beacon</label>
+    <description>A test building for the owner UAT session.</description>
+    <thingClass>Building</thingClass>
+    <category>Building</category>
+    <graphicData>
+      <texPath>Things/Building/Misc/Cooler</texPath>
+      <graphicClass>Graphic_Single</graphicClass>
+      <drawSize>(1,1)</drawSize>
+    </graphicData>
+    <size>(1,1)</size>
+    <statBases>
+      <MaxHitPoints>100</MaxHitPoints>
+      <WorkToBuild>100</WorkToBuild>
+    </statBases>
+    <passability>Impassable</passability>
+    <fillPercent>1</fillPercent>
+    <designationCategory>Structure</designationCategory>
+  </ThingDef>
+</Defs>
+`,
+  )
+  writeFileSync(
+    join(keyed, 'TestStrings.xml'),
+    `<?xml version="1.0" encoding="utf-8"?>
+<LanguageData>
+  <OwnerTestGreeting>Hello owner test</OwnerTestGreeting>
+  <OwnerTestFarewell>Goodbye owner test</OwnerTestFarewell>
+  <OwnerTestDescription>This is a test string for the owner UAT session</OwnerTestDescription>
+</LanguageData>
+`,
+  )
+}
 
 async function waitFor(fn: () => Promise<boolean>, timeoutMs = 15000, intervalMs = 300): Promise<void> {
   const start = Date.now()
@@ -35,10 +97,7 @@ async function waitExisting(sel: string, timeout = 30000): Promise<WebdriverIO.E
 
 describe('XML tab runtime verification (hardened)', () => {
   before(() => {
-    // Isolated profile: clean slate for every run
-    rmSync(ISOLATED_DATA, { recursive: true, force: true })
-    mkdirSync(ISOLATED_DATA, { recursive: true })
-    if (!existsSync(MOD)) throw new Error(`Test fixture not found: ${MOD}`)
+    writeFixture()
   })
 
   it('wizard → select entry → click XML tab → assert real XML markup', async () => {
@@ -69,7 +128,7 @@ describe('XML tab runtime verification (hardened)', () => {
     await browser.$('.entry-list .entry-row').click()
     await waitExisting('[data-testid="ws.editor-textarea"]', 15000)
 
-    // Click the XML source tab (3rd tab, labeled "XML" or "XML исходника")
+    // Click the XML source tab (labeled "XML" or "XML исходника")
     const tabs = await browser.execute(() =>
       Array.from(document.querySelectorAll('.context-tabs button')).map(b => b.textContent?.trim())
     )
@@ -174,7 +233,7 @@ describe('XML tab runtime verification (hardened)', () => {
   })
 
   after(async () => {
-    // Clean isolated profile
-    rmSync(ISOLATED_DATA, { recursive: true, force: true })
+    // Unconditional per-run cleanup (unique temp dir, safe to remove)
+    rmSync(WORK_DIR, { recursive: true, force: true })
   })
 })
