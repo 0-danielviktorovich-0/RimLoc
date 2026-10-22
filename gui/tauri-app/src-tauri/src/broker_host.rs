@@ -128,6 +128,17 @@ mod host {
     /// leftover is recovered by the recycled-pid rule or manual removal,
     /// and the file is closed by the live writer on clean exit).
     pub(crate) fn live_headless_writer(managed_root: &Path) -> Option<WriterLockOwner> {
+        // Path guard before the read: the lock probe opens a file under
+        // the managed root, so the root is validated first (absolute,
+        // traversal-free). A refused root reads no lock file — from the
+        // broker's perspective no headless writer exists.
+        if !managed_root.is_absolute()
+            || managed_root
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return None;
+        }
         let path = managed_root.join(WRITER_LOCK_FILE_NAME);
         if !path.exists() {
             return None;

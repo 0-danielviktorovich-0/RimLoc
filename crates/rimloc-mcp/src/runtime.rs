@@ -477,6 +477,20 @@ impl Runtime {
                 reason,
                 managed_root,
             } => {
+                // The shared profile is normally the built-in default, but
+                // the broker connect below performs a filesystem probe and
+                // a potential stale-socket cleanup — the same sanitization
+                // ladder as the isolated branch applies here too, so no
+                // profile shape reaches the broker path unvalidated.
+                if let Some(cause) = refused_profile_cause(&managed_root) {
+                    return Ok(Self::shared_profile(
+                        SharedProfileReason::Refused {
+                            requested: managed_root.display().to_string(),
+                            cause,
+                        },
+                        default_profile_managed_root(),
+                    ));
+                }
                 if let SharedProfileReason::DefaultProfile = reason {
                     if let Some(client) = BrokerClient::connect(&broker_profile_dir(&managed_root))
                     {

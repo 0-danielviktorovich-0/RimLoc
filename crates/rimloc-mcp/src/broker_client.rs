@@ -146,6 +146,18 @@ impl BrokerClient {
     /// next GUI start can bind cleanly; any other connect error leaves
     /// the node untouched (only the provably-dead case is cleaned).
     pub fn connect(profile_dir: &Path) -> Option<Self> {
+        // Path guard before any fs effect: the refused case would unlink a
+        // socket node, so the profile directory itself is validated first
+        // (absolute, traversal-free). A refused profile simply has no
+        // broker — the headless fallthrough — never a cleanup attempt on
+        // an unvalidated path.
+        if !profile_dir.is_absolute()
+            || profile_dir
+                .components()
+                .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return None;
+        }
         let socket_path = profile_dir.join(BROKER_SOCKET_FILE_NAME);
         match std::os::unix::net::UnixStream::connect(&socket_path) {
             // Live broker proved; the probe stream is dropped — real calls
@@ -731,5 +743,18 @@ mod tests {
             .expect_err("the broker is gone");
         assert_eq!(err.code, CODE_BROKER_UNAVAILABLE);
         assert_eq!(err.data.expect("data")["code"], "broker_unavailable");
+    }
+}
+
+#[cfg(test)]
+mod path_guard_tests {
+    use super::BrokerClient;
+    use std::path::Path;
+
+    #[cfg(unix)]
+    #[test]
+    fn connect_refuses_unvalidated_profile_dirs() {
+        assert!(BrokerClient::connect(Path::new("relative/profile")).is_none());
+        assert!(BrokerClient::connect(Path::new("/a/../escape")).is_none());
     }
 }
