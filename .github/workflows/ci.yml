@@ -327,14 +327,19 @@ jobs:
           chmod +x "$APPIMAGE"
           RIMLOC_DATA_DIR=$(mktemp -d)
           export RIMLOC_DATA_DIR
-          timeout 30s xvfb-run -a "$APPIMAGE" &
-          APP_PID=$!
-          sleep 20
-          if kill -0 $APP_PID 2>/dev/null; then
-            echo "STARTUP_PASS: app alive after 20s on virtual display"
-            kill $APP_PID || true
+          xvfb-run -a "$APPIMAGE" &
+          WRAPPER_PID=$!
+          sleep 15
+          APP_PID=$(pgrep -f "rimloc.*AppImage" | grep -v $WRAPPER_PID | head -1)
+          if [ -n "$APP_PID" ] && kill -0 $APP_PID 2>/dev/null; then
+            echo "STARTUP_PASS: GUI process $APP_PID alive after 15s on virtual display"
+            kill $APP_PID $WRAPPER_PID 2>/dev/null || true
+          elif kill -0 $WRAPPER_PID 2>/dev/null; then
+            echo "STARTUP_FAIL: wrapper alive but no GUI process found"
+            kill $WRAPPER_PID 2>/dev/null || true
+            exit 1
           else
-            echo "STARTUP_FAIL: app exited within 20s"
+            echo "STARTUP_FAIL: both wrapper and GUI exited"
             exit 1
           fi
       - name: Upload bundle artifacts
