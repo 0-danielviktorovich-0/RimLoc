@@ -50,7 +50,7 @@
  },
  "openDefects": [],
  "rcBundles": {
-  "source": "CI run 39827270446 (PR #117 head 06ec4e9a — tree identical to merged main 8610e313); workflow_dispatch CI run 39833732222 on the exact main SHA is the canonical confirmation (in flight)",
+  "source": "Canonical: workflow_dispatch CI run 39833732222 on the exact merged main SHA 8610e313 — completed/success with all three platform bundle artifacts; hashes recorded here are from CI run 39827270446 (identical source tree, PR #117 head)",
   "builtFrom": "8610e313c371f3ffe58e5085b2adc4bfc9ecc1e4",
   "version": "0.1.0-beta.1",
   "macosDmg": "dadd6fce59794973b9e86d1dccbd922d1ae83da104e3579a080d7f0a02effc5c",
