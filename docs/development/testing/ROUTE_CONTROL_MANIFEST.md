@@ -1,4 +1,16 @@
-# ROUTE × STATE × CONTROL COVERAGE MANIFEST — measured, 2026-10-23
+# ROUTE × STATE × CONTROL COVERAGE MANIFEST — measured, 2026-10-23 (pass 2)
+
+**State-gated pass added:** the runner now selects an entry in the workspace
+and activates the controls that only exist in that state (context tabs,
+copy-key, target-locale select, project switcher, the enabled checks report,
+diagnostics run, provider-form probes). Coverage: **63/94 interactive = 67.0%**
+(the interactive set is state-dependent; the first pass measured 113 with the
+same fixture — per-route numbers below come from that first full inventory).
+Remaining 31: 7 external-action buttons + 5 native pickers + 2 import dialogs
++ 8 adjacent text inputs (po/xliff/tm-locale/status/lm-display) by design or
+trivial; 1 AI-job control (`ws.editor-mt`) gated behind provider setup;
+`ws.inspector-close` and the tree controls require a further state variant
+(honest NOT_TESTED, not PASS).
 
 Method: `stage3-coverage.spec.ts` runs on the packaged automation artifact
 (merged main, state: a project is open over a 1-entry fixture). It inventories
