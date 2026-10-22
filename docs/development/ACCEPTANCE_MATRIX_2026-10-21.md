@@ -13,6 +13,10 @@ tags: [kind/acceptance, topic/campaign]
 
 # Acceptance matrix — 2026-10-21
 
+> **UPDATE 2026-10-22**: PR #101 MERGED to main (SHA `a4193eb53`).
+> All three feature PRs integrated. macOS APP for owner UAT at
+> `~/Developing/RimLoc-evidence/owner-uat/RimLoc.app` (v0.1.0-beta.1).
+
 Supersedes FINAL_ACCEPTANCE.md (2026-09-23, iteration 1) as the CURRENT
 state; the historical doc stays for the record.
 
