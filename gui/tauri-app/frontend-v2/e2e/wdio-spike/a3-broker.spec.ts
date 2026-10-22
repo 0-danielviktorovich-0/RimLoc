@@ -1,11 +1,12 @@
 /**
  * A3 — GUI↔MCP concurrency through the live broker (issue #10).
  *
- * Preconditions (orchestrator): clean profile /tmp/rimloc-a3; the wrapper
- * starts the packaged GUI on RIMLOC_DATA_DIR=/tmp/rimloc-a3/data → the GUI
- * hosts the broker socket. A SECOND rimloc-mcp process connects in
- * broker-client mode (A3_MCP_BIN env) while a human-like WDIO session works
- * in the GUI.
+ * Preconditions (orchestrator): A3_PROFILE env pointing at a FRESH
+ * per-run directory (mkdtemp — no shared predictable /tmp path); the
+ * wrapper starts the packaged GUI on RIMLOC_DATA_DIR=$A3_PROFILE/data →
+ * the GUI hosts the broker socket. A SECOND rimloc-mcp process connects
+ * in broker-client mode (A3_MCP_BIN env) while a human-like WDIO session
+ * works in the GUI.
  *
  * The scenario uses only real product paths: the user creates the project
  * through the wizard and edits like a human; the external agent applies
@@ -14,10 +15,17 @@
  * must be refused typed.
  */
 import { spawn, type ChildProcess } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, accessSync, constants } from 'node:fs'
+import { isAbsolute, join } from 'node:path'
 import { pause } from './search-editor.util'
 
-const MOD = '/tmp/rimloc-a3/mod'
+const PROFILE = process.env.A3_PROFILE ?? ''
+if (!PROFILE || !isAbsolute(PROFILE)) {
+  throw new Error(
+    'A3_PROFILE must name a fresh absolute per-run profile directory (mkdtemp); refusing the shared predictable path',
+  )
+}
+const MOD = join(PROFILE, 'mod')
 const MCP_BIN = process.env.A3_MCP_BIN ?? ''
 
 class McpClient {
@@ -27,11 +35,16 @@ class McpClient {
   private buffer = ''
 
   constructor() {
-    if (!MCP_BIN || !existsSync(MCP_BIN)) {
-      throw new Error(`A3_MCP_BIN not set or missing: ${MCP_BIN}`)
+    if (!MCP_BIN || !isAbsolute(MCP_BIN) || !existsSync(MCP_BIN)) {
+      throw new Error(`A3_MCP_BIN not set, not absolute, or missing: ${MCP_BIN}`)
+    }
+    try {
+      accessSync(MCP_BIN, constants.X_OK)
+    } catch {
+      throw new Error(`A3_MCP_BIN is not executable: ${MCP_BIN}`)
     }
     this.proc = spawn(MCP_BIN, [], {
-      env: { ...process.env, RIMLOC_DATA_DIR: '/tmp/rimloc-a3/data' },
+      env: { ...process.env, RIMLOC_DATA_DIR: join(PROFILE, 'data') },
       stdio: ['pipe', 'pipe', 'pipe'],
     })
     this.proc.stdout!.setEncoding('utf8')
@@ -241,7 +254,7 @@ describe('A3 — GUI↔MCP concurrency through the live broker', () => {
   })
 
   it('evidence screenshot', async () => {
-    await browser.saveScreenshot('/tmp/rimloc-a3/a3-final-evidence.png')
+    await browser.saveScreenshot(join(PROFILE, 'a3-final-evidence.png'))
   })
 
   after(() => {
