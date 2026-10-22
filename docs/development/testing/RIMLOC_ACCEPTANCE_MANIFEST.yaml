@@ -34,6 +34,11 @@ matrix_20261022:
   AI_PROVIDER_UX: "PARTIAL — ChatGPT Plan CTA disabled in main; custom provider setup fragmented;
     advertise nothing beyond what is tested"
   PUBLIC_PRE_RELEASE: "NOT AUTHORIZED — requires explicit owner signoff"
+  STAGE1_CORE_JOURNEY: "PASS (2026-10-23, PR #115) — packaged automation artifact of merged main:
+    wizard project creation, Def-label + Keyed translation with saves, reopen-through-Projects
+    persistence, checks screen, output XML with the translated content, and an export whose
+    LanguageData tree (About + DefInjected + Keyed) is verified on disk with both translated
+    strings; navigation by real sidebar clicks; per-run mkdtemp fixture and export"
 
 # §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
 # и в RimLoc-evidence):
