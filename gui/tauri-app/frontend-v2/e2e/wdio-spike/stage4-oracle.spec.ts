@@ -328,9 +328,10 @@ describe('Stage 4 control oracle', () => {
     await waitExisting('[data-testid="tm.add-source"]', 20000)
     await (await browser.$('[data-testid="tm.add-source"]')).setValue('oracle source')
     await (await browser.$('[data-testid="tm.add-target"]')).setValue('оракул цель')
-    const tvals = await selectOptions('tm.add-locale')
-    const tnext = tvals.find(v => v) ?? ''
-    if (tnext) await setSelect('tm.add-locale', tnext)
+    // tm.add-locale is a FREE-TEXT INPUT (not a select): the oracle's
+    // select-setter silently no-ops on it, which is exactly why the
+    // manual-add flow looked broken. Type the locale like a user.
+    await (await browser.$('[data-testid="tm.add-locale"]')).setValue('ru')
     await browser.$('[data-testid="tm.add-submit"]').click()
     await new Promise(r => setTimeout(r, 900))
     const tmErr = await browser.$('[data-testid="tm.error"]')
@@ -445,8 +446,10 @@ describe('Stage 4 control oracle', () => {
     await pin.setValue('Провайдеры')
     await waitFor(async () => {
       const items = await browser.$$('.palette-item')
-      if (items.length === 0) return false
-      await items[0].click(); return true
+      for (const it of items) {
+        if ((await it.getText()).toLowerCase().includes('провайдер') || it.textContent?.toLowerCase().includes('provider')) { await it.click(); return true }
+      }
+      return false
     }, 8000, 300)
     await waitExisting('[data-testid="prov.catalog"]', 20000)
     await (await browser.$('[data-testid="prov.card.new"]')).click()
@@ -481,8 +484,10 @@ describe('Stage 4 control oracle', () => {
     await pin.setValue('Диагностика')
     await waitFor(async () => {
       const items = await browser.$$('.palette-item')
-      if (items.length === 0) return false
-      await items[0].click(); return true
+      for (const it of items) {
+        if ((await it.getText()).toLowerCase().includes('диагност') || it.textContent?.toLowerCase().includes('diagnostic')) { await it.click(); return true }
+      }
+      return false
     }, 8000, 300)
     const od = await browser.$('[data-testid="diag.outdir"]')
     if (!(await od.isExisting())) { RESULTS['diag.run'] = 'FAIL'; return }
@@ -519,7 +524,9 @@ describe('Stage 4 control oracle', () => {
     console.log('ORACLE:', pass + '/' + rows.length + ' = ' + pct + '% | FAIL=' + fail.length + ' SKIP=' + skip)
     for (const f of fail) console.log('ORACLE-FAIL:', f.id, '—', f.postcondition, '—', DETAILS[f.id] ?? '')
     // Critical actions must not FAIL: the suite fails on any FAIL row
-    expect(fail.length, 'failed postcondition rows: ' + fail.map(f => f.id).join(', ')).toBe(0)
+    if (fail.length > 0) {
+      throw new Error('failed postcondition rows: ' + fail.map(f => f.id).join(', '))
+    }
   })
 
   after(() => { rmSync(WORK_DIR, { recursive: true, force: true }) })
