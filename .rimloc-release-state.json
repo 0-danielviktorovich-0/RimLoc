@@ -2,7 +2,7 @@
  "campaign": "qa-full-journey-merge-gate",
  "status": "RC_BUNDLES_READY_OWNER_UAT_PENDING",
  "updated": "2026-10-22",
- "main": "25b61f718a4e44d86c4e0a5f26f4ab14d72409e2",
+ "main": "1e6c2dfc (a11y fix + AI success/cancel/stale proofs merged via PR #130; final CI bundles built from fe1af7b3 — product-identical, PR #131 docs only)",
  "pr110": {
   "head": "9dae18ac",
   "mergedAt": "2026-10-22T12:37:39Z",
@@ -50,19 +50,19 @@
   "security_final": "VERIFIED and EXTENDED by PR #110 source-preview containment; CodeQL signal honest on 9dae18ac"
  },
  "openDefects": [
-  "a11y: keyboard selection of the AI provider instance leaves Run disabled (recorded in PR #127 lane; mouse users unaffected)",
+  "AI preview does not survive navigation (job state in-memory per screen) — UX observation recorded; stale accept unreachable via GUI (safe)",
   "owner decisions pending: 19 CodeQL records FP annotation, 16 dev-only npm time-box to 2026-11-22, 12 diverged branches, Issue #2 close after B/C proof"
  ],
  "rcBundles": {
-  "source": "CI run 39914744050 (workflow_dispatch on merged main 1194f7e6 — all three platform bundles; PR #128 after it touched only tests/changelog, product code identical)",
+  "source": "CI run 39938138671 (dispatch on fe1af7b3, product-identical to merged main 1e6c2dfc — PR #131 docs only); contains the AI keyboard-selection fix",
   "builtFrom": "1194f7e6 (bundles) == product code of main 25b61f71",
   "version": "0.1.0-beta.1",
-  "macosDmg": "b76f77a0688acb833f8f507c11cc51f16113c27a35e86aace88176e4439c5d0d",
-  "macosAppBinary": "6837c870adc1bb301581dee188eaeb80019597c6e730dc5ab28a0dc914594cce",
-  "windowsNsis": "0859643564a2cda7a5f46d20e268f1b29f5781a421b25faab6e08544d91c9835",
-  "linuxDeb": "6029ae8fe7dc86fd4c695fe1b74ed60a0637ad9ebbc2a28f0b05cb2ab4dca1fb",
-  "linuxAppimage": "bfac62f2494a67c7d47bd21c1bd24da1e26bc567c4abec877e4682936a891d0c",
+  "macosDmg": "009fa72fc34fb67a2234b7765b3a5145af417300c7a6ea0c50746f39dd2bea72",
+  "macosAppBinary": "d029db3472beb69206ae96c759d3e6d9ca33a5edbe9bd996b392c507547a22dd",
+  "windowsNsis": "cb60c8bbe06e7cf106d1cd4cb159c2fb18aebde692f749d35f4208eb4a1f7448",
+  "linuxDeb": "1199ea95bd4b595cf7a9eb3cf2353ca588a53df9846bd2919ff9dd85cd87d5dd",
+  "linuxAppimage": "a855615c7d5e98ee292c280075ebd22248265c06b2eb5ca85621974fa5c716e4",
   "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-1194f7e6/ (installers + SHA256.txt)",
-  "macosSmoke": "PASS — CI bundle app launches in an isolated profile, AX window, 0600 drafts broker socket"
+  "macosSmoke": "PASS — CI bundle from fe1af7b3 (with the AI keyboard-selection fix) launches in an isolated profile, AX window, 0600 broker socket"
  }
 }
