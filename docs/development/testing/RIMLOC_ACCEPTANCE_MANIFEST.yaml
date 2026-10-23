@@ -55,7 +55,15 @@ matrix_20261022:
     product exports the canary translation (Keyed «Привет, канареечный мир» + DefInjected
     «Маяк проверки владельца»), the live game (1.6.4871, isolated profile, background) runs in
     Russian and its active localization DB serves the RC-built string via the first-party file
-    channel; source mod INTACT; 0 translation-mod errors (evidence/in-game-2026-10-23/)"
+    
+  ISSUE2_SCENARIO_B_STANDALONE_PACK: "PASS (2026-10-23) — a translation pack WITHOUT any original
+    mod opens as a project via the wizard with source locale = the pack language (Russian); all
+    pack strings (Keyed + DefInjected) render, an edit persists across reopen, and the guarded
+    export writes the edited Keyed back on disk (stage5-pack.spec, 4/4)"
+  ISSUE2_SCENARIO_C_ATTACH_LATER: "PASS (2026-10-23) — the original mod opens as its own project and
+    imports the pack through the Existing screen (contract: the import path must be the language
+    FOLDER, not the pack root — typed contract_violation otherwise); pack translations land in
+    the original project's workspace and survive (stage5c-attach.spec, 3/3)"
 
 # §12 директивы 03.10 — сводная матрица статусов (источники деталей ниже по файлу
 # и в RimLoc-evidence):
