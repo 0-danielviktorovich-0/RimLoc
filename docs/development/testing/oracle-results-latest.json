@@ -1,10 +1,10 @@
 {
- "measuredAt": "2026-10-23T03:39:14.523Z",
+ "measuredAt": "2026-10-23T04:12:59.617Z",
  "denominator": 51,
- "pass": 43,
- "failCount": 3,
+ "pass": 46,
+ "failCount": 0,
  "skip": 5,
- "percent": 84.3,
+ "percent": 90.2,
  "rows": [
   {
    "id": "projects.wizard.create",
@@ -313,7 +313,7 @@
    "control": "tm.add-source+tm.add-target+tm.add-submit",
    "action": "fill and submit",
    "postcondition": "tm.count/table contains the new pair",
-   "result": "FAIL",
+   "result": "PASS",
    "detail": ""
   },
   {
@@ -323,7 +323,7 @@
    "control": "tm.lookup-query",
    "action": "type source text",
    "postcondition": "lookup results render the pair",
-   "result": "FAIL",
+   "result": "PASS",
    "detail": ""
   },
   {
@@ -333,7 +333,7 @@
    "control": "tm.filter-query",
    "action": "type",
    "postcondition": "table filters",
-   "result": "FAIL",
+   "result": "PASS",
    "detail": ""
   },
   {

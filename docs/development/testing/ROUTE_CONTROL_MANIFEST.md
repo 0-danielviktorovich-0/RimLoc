@@ -48,6 +48,15 @@ chatbatch 12/5 · export 9/3 · lm 13/5 · settings 12/5 · about 15/2 ·
 providers 17/9 · diagnostics 10/1 · selfloc 0/0 (palette entry landed on an
 empty state — route needs a re-measure with its fixture).
 
+
+> **PASS 4 (oracle final, same day): 46/51 = 90.2% verified, 0 FAIL, 5 honest
+> skips.** The TM manual-add "defect" was a TEST bug: `tm.add-locale` is a
+> free-text input, and the runner's select-setter silently no-op'd on it (the
+> product's quiet no-op on an empty locale then masked the real cause). The
+> runner now types the locale like a user; locale-agnostic palette matching
+> keeps the lane stable in both UI locales. The remaining 5 skips stay
+> classified as before.
+
 ## Remaining 51 uncovered — honest classification
 
 **By design out of WDIO scope (19):** native OS pickers `be.pick, cmp.old-pick,
