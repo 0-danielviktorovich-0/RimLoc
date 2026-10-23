@@ -721,7 +721,7 @@ pub fn project_source_reveal(
         // absolute/`..`/symlink-leaf/ancestor-escape and returns the window
         // only after the canonical file is proven inside the root. We then
         // open THAT canonical file — never the caller's spelling.
-        let preview = read_source_preview_window(&root, &request.file, Some(1), 0, 0)?;
+        read_source_preview_window(&root, &request.file, Some(1), 0, 0)?;
         let canonical_full = std::fs::canonicalize(root.join(&request.file)).map_err(|source| {
             ContractError::new(
                 ContractErrorCode::InvalidConfig,
