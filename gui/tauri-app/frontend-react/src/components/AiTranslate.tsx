@@ -27,6 +27,21 @@ const MODES: { id: Mode; label: string; labelRu: string }[] = [
   { id: 'noapi', label: 'AI chat without API', labelRu: 'Чат без API' },
 ]
 
+// A11y (owner usability): WKWebView does not dispatch a React-visible
+// `change` while the user arrows through a CLOSED select, so a keyboard
+// selection never reached the state and Run stayed disabled. Commit the
+// live DOM value on keyup and blur alongside the regular change handler.
+function keyboardCommitable(onCommit: (v: string) => void) {
+  return {
+    onKeyUp: (e: React.KeyboardEvent<HTMLSelectElement>) => {
+      onCommit(e.currentTarget.value)
+    },
+    onBlur: (e: React.FocusEvent<HTMLSelectElement>) => {
+      onCommit(e.currentTarget.value)
+    },
+  }
+}
+
 function providersForMode(mode: Mode): string[] {
   switch (mode) {
     case 'auto':
@@ -238,6 +253,7 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
               <select
                 value={instanceId}
                 onChange={(e) => setInstanceId(e.target.value)}
+                {...keyboardCommitable(setInstanceId)}
                 data-testid="ai.instance"
               >
                 <option value="">{t('ai.byo.pick')}</option>
@@ -258,7 +274,12 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
             <>
               <label className="field">
                 <span>{t('ai.provider')}</span>
-                <select value={provider} onChange={(e) => setProvider(e.target.value)} data-testid="ai.provider">
+                <select
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                  {...keyboardCommitable(setProvider)}
+                  data-testid="ai.provider"
+                >
                   {providersForMode(mode).map((p: string) => (
                     <option key={p} value={p}>{p}</option>
                   ))}
@@ -277,7 +298,12 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
           )}
           <label className="field">
             <span>{t('ai.locale')}</span>
-            <select value={locale} onChange={(e) => setLocale(e.target.value)} data-testid="ai.locale">
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+              {...keyboardCommitable(setLocale)}
+              data-testid="ai.locale"
+            >
               <option value="Russian">Русский</option>
               <option value="Ukrainian">Українська</option>
               <option value="German">Deutsch</option>
