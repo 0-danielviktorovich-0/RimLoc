@@ -54,6 +54,9 @@ pub const CONTRACT_COMMANDS: &[&str] = &[
     "project_validate",
     "project_export",
     "project_output_xml_preview",
+    // Source reveal (owner usability): opens a contained source file
+    // through the same session/path discipline as the XML preview.
+    "project_source_reveal",
     // Source Inspector XML preview (rel27): registered like its output
     // sibling; keeping it here binds it to every registration check.
     "project_source_xml_preview",
@@ -672,6 +675,68 @@ pub fn project_source_xml_preview(
         )?;
         preview.file = request.file;
         Ok(preview)
+    })
+}
+
+/// Args of `project_source_reveal`: reveal/open a project source file in the
+/// OS file manager or default editor. Same session + path discipline as the
+/// preview: the resolved, symlink-free file must live inside THIS session's
+/// source root — the command never becomes a general file opener.
+#[derive(Debug, serde::Deserialize)]
+pub struct SourceRevealArgs {
+    pub project_id: String,
+    pub session_epoch: u64,
+    pub file: String,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn project_source_reveal(
+    state: State<'_, ContractState>,
+    request: SourceRevealArgs,
+) -> Result<String, rimloc_services::contract::ContractError> {
+    use rimloc_services::contract::{ContractError, ContractErrorCode};
+    let manager = state
+        .manager
+        .lock()
+        .expect("contract session registry poisoned");
+    traced_simple("project_source_reveal", || {
+        let snap = manager.snapshot(&request.project_id)?;
+        if snap.session_epoch != request.session_epoch {
+            return Err(ContractError::stale_epoch(
+                request.session_epoch,
+                snap.session_epoch,
+            ));
+        }
+        let root = snap
+            .source_root
+            .as_ref()
+            .map(|r| std::path::PathBuf::from(&r.path))
+            .ok_or_else(|| {
+                ContractError::new(
+                    ContractErrorCode::InvalidConfig,
+                    "project has no source root",
+                )
+            })?;
+        // Reuse the proven layered containment, read-only: it refuses
+        // absolute/`..`/symlink-leaf/ancestor-escape and returns the window
+        // only after the canonical file is proven inside the root. We then
+        // open THAT canonical file — never the caller's spelling.
+        read_source_preview_window(&root, &request.file, Some(1), 0, 0)?;
+        let canonical_full = std::fs::canonicalize(root.join(&request.file)).map_err(|source| {
+            ContractError::new(
+                ContractErrorCode::InvalidConfig,
+                format!("source reveal `{}`: {source}", request.file),
+            )
+        })?;
+        // Inert-metacharacter direct launch (LaunchServices/ShellExecute/
+        // xdg-open), the same property reveal_path relies on — no shell.
+        open::that_detached(&canonical_full).map_err(|source| {
+            ContractError::new(
+                ContractErrorCode::Internal,
+                format!("source reveal failed: {source}"),
+            )
+        })?;
+        Ok(request.file)
     })
 }
 
@@ -1598,6 +1663,7 @@ mod ipc_draft_tests {
                 project_restore_drafts,
                 project_clear_drafts,
                 project_source_xml_preview,
+                project_source_reveal,
                 ai_job_start,
                 ai_job_status,
                 ai_job_cancel,
@@ -1814,6 +1880,7 @@ mod ipc_draft_tests {
                 project_restore_drafts,
                 project_clear_drafts,
                 project_source_xml_preview,
+                project_source_reveal,
                 ai_job_start,
                 ai_job_status,
                 ai_job_cancel,

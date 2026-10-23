@@ -602,6 +602,20 @@ export class RimLocClient {
 
   /** Source XML preview (rel27): bounded read-only window of a project
    *  source file for the Source Inspector. */
+  async sourceReveal(args: {
+    projectId: string;
+    sessionEpoch: number;
+    file: string;
+  }): Promise<string> {
+    return this.call('project_source_reveal', {
+      request: {
+        project_id: args.projectId,
+        session_epoch: args.sessionEpoch,
+        file: args.file
+      }
+    });
+  }
+
   async sourceXmlPreview(args: {
     projectId: string;
     sessionEpoch: number;

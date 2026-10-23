@@ -613,7 +613,8 @@ export type ContractMethod =
   | 'project_source_search'
   | 'project_include_candidate'
   // Source XML preview (rel27).
-  | 'project_source_xml_preview';
+  | 'project_source_xml_preview'
+  | 'project_source_reveal';
 
 // --- ai translation jobs (Stage B) ---
 export type AiJobStateDto =

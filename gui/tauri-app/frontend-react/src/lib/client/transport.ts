@@ -313,6 +313,7 @@ export interface ContractMethodMap {
     params: { request: import('./types').IncludeCandidateRequestDto };
     result: import('./types').IncludeCandidateResponseDto;
   };
+  project_source_reveal: { params: { request: { project_id: string; session_epoch: number; file: string } }; result: string };
   project_source_xml_preview: {
     params: {
       request: {

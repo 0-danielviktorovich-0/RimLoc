@@ -3110,6 +3110,7 @@ pub const LIVE_COMMANDS: &[&str] = &[
     "project_export",
     "project_output_xml_preview",
     "project_source_xml_preview",
+    "project_source_reveal",
     "project_build_mod",
     "project_diagnose",
     // W2 (existing-pack flow): dry-run analysis + guarded application.
@@ -3923,6 +3924,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_export,
             rimloc_gui_lib::contract_adapter::project_output_xml_preview,
             rimloc_gui_lib::contract_adapter::project_source_xml_preview,
+            rimloc_gui_lib::contract_adapter::project_source_reveal,
             rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
             // W2 (existing-pack flow): dry-run analysis + guarded application.
@@ -4042,6 +4044,7 @@ fn main() {
             rimloc_gui_lib::contract_adapter::project_export,
             rimloc_gui_lib::contract_adapter::project_output_xml_preview,
             rimloc_gui_lib::contract_adapter::project_source_xml_preview,
+            rimloc_gui_lib::contract_adapter::project_source_reveal,
             rimloc_gui_lib::contract_adapter::project_build_mod,
             rimloc_gui_lib::contract_adapter::project_diagnose,
             // W2 (existing-pack flow): dry-run analysis + guarded application.
