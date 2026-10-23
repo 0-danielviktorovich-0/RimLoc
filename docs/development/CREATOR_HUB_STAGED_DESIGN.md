@@ -23,7 +23,7 @@ domain is registered, no links anywhere point at unpublished URLs.
 - Support links: `docs/development/support-links.json` (the canonical
   registry; the About allowlist and this hub must reconcile against it).
 - Copy: `RimLoc-evidence/support-assets/COPY.md` (EN primary, RU companion).
-- Visuals: `RimLoc-evidence/support-assets/` (cover 1600×400, Ko-fi 600×300,
+- Visuals: `RimLoc-evidence/support-assets/` (cover 1600×400,
   OG 1200×630; real app icon, R1 oklch brand colors, no fake renders).
 
 ## Technology posture (staged, not built here)

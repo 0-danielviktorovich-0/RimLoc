@@ -31,7 +31,6 @@
 # - Bump all RimLoc crates to 0.1.0-dev.0
 # - Add versioned deps for path crates; add metadata (license, repo, docs)
 # - Exclude logs from CLI package
-# - Normalize Ko-fi badge to ASCII hyphen to avoid % encoding issues
 #
 # Run publish in order: core -> parsers -> exporters/importer -> validate -> cli.
 #

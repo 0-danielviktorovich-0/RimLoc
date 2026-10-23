@@ -6,6 +6,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Docs
+- [support] Hide an unconfigured donation destination from GitHub funding settings, public README and MkDocs pages, and the in-app About screen; align the support-link registry, external URL allowlist and UI tests. Existing active support destinations stay unchanged.
 - [automation] Document authorized browser-direct ChatGPT reviewer handoffs and context-safe rollover into new conversations of the existing ChatGPT Project.
 - [gui] Present RimLoc as a desktop-first visual RimWorld localization studio in English and Russian onboarding, guides and READMEs; describe the Rust CLI as optional automation rather than the main translation workflow (#93)
 - [ai] Document the current no-API Chat Batch and connection-test capabilities separately from the planned direct AI Translation workspace, including official OSS ChatGPT-plan authorization, API keys and local models (#93)
@@ -217,7 +218,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - Dev release automation, artifact signing (cosign) and SBOM (Syft)
 
 ### Docs
-- Install page (EN/RU), Support page with BMC/Ko-fi and crypto addresses
+- Install page (EN/RU), Support page with donation options and crypto addresses
 - Discord invite and badges
 
 ## [0.1.0] - 2025-09-25

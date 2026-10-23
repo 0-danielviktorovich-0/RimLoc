@@ -4462,7 +4462,6 @@ fn external_url_allowed(url: &str) -> bool {
         "https://github.com/0-danielviktorovich-0/RimLoc",
         "https://github.com/sponsors/0-danielviktorovich-0",
         "https://buymeacoffee.com/danielviktorovich",
-        "https://ko-fi.com/danielviktorovich",
         "https://0-danielviktorovich-0.github.io/RimLoc",
     ];
     ALLOWED_PREFIXES.iter().any(|p| {

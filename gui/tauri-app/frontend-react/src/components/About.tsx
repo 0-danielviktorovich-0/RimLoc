@@ -32,7 +32,6 @@ const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`
  *  contextual RimLoc presentation. */
 export const SPONSORS_URL = 'https://github.com/sponsors/0-danielviktorovich-0'
 export const BMC_URL = 'https://buymeacoffee.com/danielviktorovich'
-export const KOFI_URL = 'https://ko-fi.com/danielviktorovich'
 
 export function About() {
   const [identity, setIdentity] = useState<BuildIdentityDto | null>(null)
@@ -72,7 +71,6 @@ export function About() {
   const supportOptions: { url: string; label: string; note: string; testid: string }[] = [
     { url: SPONSORS_URL, label: 'GitHub Sponsors', note: t('about.support.monthly'), testid: 'about.support.sponsors' },
     { url: BMC_URL, label: 'Buy Me a Coffee', note: t('about.support.oneoff'), testid: 'about.support.bmc' },
-    { url: KOFI_URL, label: 'Ko-fi', note: t('about.support.oneoff'), testid: 'about.support.kofi' },
   ]
 
   return (

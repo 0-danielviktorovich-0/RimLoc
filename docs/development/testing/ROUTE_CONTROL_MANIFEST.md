@@ -63,7 +63,7 @@ empty state — route needs a re-measure with its fixture).
 cmp.new-pick, diag.pick, ex.pick, ex.po-pick` + import-file inputs `gl.import,
 tm.import-payload` (system file dialogs); external-action buttons that open the
 browser/documentation `about.action.docs/github/issues/support,
-about.support.bmc/kofi/sponsors` (href-less buttons by design — verified
+about.support.bmc/sponsors` (href-less buttons by design — verified
 present, not clicked to avoid external navigation).
 
 **State-gated — appear only with a selected entry / specific state (10):**

@@ -306,7 +306,11 @@ mod legacy_out_containment {
 
         // 1) every registry link is https and covered by the opener allowlist
         let links = v["links"].as_array().expect("links array");
-        assert!(links.len() >= 3, "three verified platforms expected");
+        assert_eq!(
+            links.len(),
+            2,
+            "two currently published support platforms expected"
+        );
         let src = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/main.rs"))
             .expect("main.rs readable");
         for link in links {
@@ -329,21 +333,19 @@ mod legacy_out_containment {
         ))
         .expect("FUNDING.yml present");
         assert!(funding.contains("0-danielviktorovich-0"), "sponsors handle");
-        assert!(funding.contains("danielviktorovich"), "ko-fi handle");
         // PR #109 normalized FUNDING.yml to the GitHub-native key form.
         assert!(
             funding.contains("buy_me_a_coffee: danielviktorovich"),
             "bmc handle"
         );
 
-        // 3) SUPPORT.md links the same three platforms
+        // 3) SUPPORT.md links the currently enabled platforms
         let support =
             std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../../SUPPORT.md"))
                 .expect("SUPPORT.md present");
         for url in [
             "https://github.com/sponsors/0-danielviktorovich-0",
             "https://buymeacoffee.com/danielviktorovich",
-            "https://ko-fi.com/danielviktorovich",
         ] {
             assert!(support.contains(url), "SUPPORT.md must contain {url}");
         }

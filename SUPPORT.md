@@ -26,7 +26,6 @@ If RimLoc saves you time, you can support development here:
 
 - GitHub Sponsors: <https://github.com/sponsors/0-danielviktorovich-0>
 - Buy Me a Coffee: <https://buymeacoffee.com/danielviktorovich>
-- Ko-fi: <https://ko-fi.com/danielviktorovich>
 - full support page (including optional crypto addresses): <https://0-danielviktorovich-0.github.io/RimLoc/community/support/>
 
 Stars, useful bug reports, translations, docs and real-world test fixtures are equally valuable.
