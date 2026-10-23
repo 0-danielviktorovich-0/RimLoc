@@ -6,6 +6,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Docs
+- [testing] Archive the product acceptance report (P0–P7): route×state×control coverage, pack scenarios B/C, AI success/fail/cancel, in-game Keyed acceptance, honest gaps — with a follow-up addendum marking the a11y fix, AI preview persistence, Gate B status and the refreshed candidate.
 - [support] Hide an unconfigured donation destination from GitHub funding settings, public README and MkDocs pages, and the in-app About screen; align the support-link registry, external URL allowlist and UI tests. Existing active support destinations stay unchanged.
 - [automation] Document authorized browser-direct ChatGPT reviewer handoffs and context-safe rollover into new conversations of the existing ChatGPT Project.
 - [gui] Present RimLoc as a desktop-first visual RimWorld localization studio in English and Russian onboarding, guides and READMEs; describe the Rust CLI as optional automation rather than the main translation workflow (#93)
