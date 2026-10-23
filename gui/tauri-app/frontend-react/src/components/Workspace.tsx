@@ -604,6 +604,8 @@ export function Workspace({ onBack }: { onBack: () => void }) {
             provenance={selected.provenance}
             tkey={selected.tkey}
             sourceRoot={snap.source_root?.path}
+            projectId={snap.project_id}
+            sessionEpoch={snap.session_epoch}
             sourceLabel={folderForm(st.sourceLocale)}
             targetLabel={folderForm(st.targetLocale)}
             // §17: первая находка валидатора для этой строки (+ хвост).
@@ -837,6 +839,10 @@ function EntryEditor(props: {
   /** Read-only mod root the snapshot was built from — anchors the
    *  project-relative source file (M-7: honest unknown, no placeholders). */
   sourceRoot?: string
+  // Source reveal (owner usability): the open-in-OS-editor command rides
+  // the pinned session identity, same as every contract write.
+  projectId: string
+  sessionEpoch: number
   // Локали-бейджи из состояния проекта (audit v2 #3): folder-форма реестра
   // вместо жёстких EN/RU-литералов.
   sourceLabel: string
@@ -897,6 +903,13 @@ function EntryEditor(props: {
   }
   // §13: единственная мёртвая кнопка-таб стала настоящими табами.
   // rel27: третья вкладка — настоящий XML-предпросмотр исходного файла.
+  const [revealBusy, setRevealBusy] = useState(false)
+  const [revealError, setRevealError] = useState<string | null>(null)
+  const fullSourcePath = props.sourceFile
+    ? (props.sourceRoot
+        ? `${props.sourceRoot.replace(/\\/g, '/')}/${props.sourceFile.replace(/\\/g, '/')}`
+        : props.sourceFile)
+    : null
   const [tab, setTab] = useState<'source' | 'terms' | 'xml' | 'output'>('source')
   const [xmlPreview, setXmlPreview] = useState<
     | { status: 'idle' | 'loading' | 'error'; error?: string }
@@ -1123,6 +1136,47 @@ function EntryEditor(props: {
             <div data-testid="src.file">
               <span>{t('ws.file')}</span>
               <code title={props.sourceFile}>{props.sourceFile ?? '—'}</code>
+            </div>
+            <div data-testid="src.fullpath">
+              <span>{t('ws.fullPath')}</span>
+              <code title={fullSourcePath ?? undefined}>{fullSourcePath ?? '—'}</code>
+              {fullSourcePath && (
+                <span style={{ display: 'inline-flex', gap: 4, marginLeft: 6 }}>
+                  <button
+                    className="icon-btn"
+                    style={{ fontSize: 10, padding: '2px 6px' }}
+                    title={t('ws.copyPath')}
+                    data-testid="src.copy-path"
+                    onClick={() => { void navigator.clipboard.writeText(fullSourcePath) }}
+                  >
+                    {t('ws.copyPath')}
+                  </button>
+                  <button
+                    className="icon-btn"
+                    style={{ fontSize: 10, padding: '2px 6px' }}
+                    disabled={revealBusy}
+                    title={t('ws.openSource')}
+                    data-testid="src.open"
+                    onClick={() => {
+                      if (!props.projectId || props.sessionEpoch === undefined || !props.sourceFile) return
+                      setRevealBusy(true)
+                      setRevealError(null)
+                      clientInstance.getClient().sourceReveal({
+                        projectId: props.projectId,
+                        sessionEpoch: props.sessionEpoch,
+                        file: props.sourceFile
+                      }).catch((e: unknown) => setRevealError(e instanceof Error ? e.message : String(e))).finally(() => setRevealBusy(false))
+                    }}
+                  >
+                    {t('ws.openSource')}
+                  </button>
+                </span>
+              )}
+              {revealError && (
+                <span className="inline-warning text-destructive" role="alert" data-testid="src.reveal-error" style={{ display: 'block' }}>
+                  {revealError}
+                </span>
+              )}
             </div>
             <div data-testid="src.line">
               <span>{t('ws.line')}</span>
