@@ -1,0 +1,522 @@
+{
+ "measuredAt": "2026-10-23T03:39:14.523Z",
+ "denominator": 51,
+ "pass": 43,
+ "failCount": 3,
+ "skip": 5,
+ "percent": 84.3,
+ "rows": [
+  {
+   "id": "projects.wizard.create",
+   "route": "projects",
+   "state": "no-project-modal",
+   "control": "wizard.open+path-input+next x3",
+   "action": "wizard create over fixture",
+   "postcondition": "ws.root exists AND entry rows > 0",
+   "result": "PASS",
+   "detail": "rows=4"
+  },
+  {
+   "id": "workspace.entry.select",
+   "route": "workspace",
+   "state": "project-open",
+   "control": ".entry-list .entry-row[0]",
+   "action": "click first row",
+   "postcondition": "ws.editor-textarea exists",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.editor.edit+save",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.editor-textarea + ws.editor-save",
+   "action": "type translation, save",
+   "postcondition": "entry list shows the typed translation within 15s",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.filter.all",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.filter.all",
+   "action": "click",
+   "postcondition": "button gets active class",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.filter.empty",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.filter.empty",
+   "action": "click",
+   "postcondition": "button gets active class",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.filter.issues",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.filter.issues",
+   "action": "click",
+   "postcondition": "button gets active class",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.tab.source",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.tab.source",
+   "action": "click",
+   "postcondition": "src.block becomes visible",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.tab.terms",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.tab.terms",
+   "action": "click",
+   "postcondition": "terms-block or terms-empty visible",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.tab.xml",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.tab.xml",
+   "action": "click",
+   "postcondition": "xml-block visible AND non-empty text",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.tab.output",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.tab.output",
+   "action": "click",
+   "postcondition": "output-pre visible",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.mode.studio",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.mode.studio",
+   "action": "click",
+   "postcondition": "button active",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.mode.overview",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.mode.overview",
+   "action": "click",
+   "postcondition": "button active",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.mode.focus",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.mode.focus",
+   "action": "click",
+   "postcondition": "button active",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.inspector.toggle",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.inspector-toggle",
+   "action": "click",
+   "postcondition": "inspector panel visibility flips",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.clear-filters",
+   "route": "workspace",
+   "state": "filtered",
+   "control": "ws.clear-filters",
+   "action": "click",
+   "postcondition": "filter buttons return to all/none state",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "workspace.copy-key",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.copy-key",
+   "action": "click",
+   "postcondition": "clipboard text equals displayed key",
+   "result": "PASS",
+   "detail": "clip=OracleBeacon.description"
+  },
+  {
+   "id": "workspace.target-locale",
+   "route": "workspace",
+   "state": "entry-selected",
+   "control": "ws.target-locale",
+   "action": "select first option",
+   "postcondition": "select value changes",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "shell.theme-toggle",
+   "route": "any",
+   "state": "always",
+   "control": "theme-toggle",
+   "action": "click",
+   "postcondition": "document data-theme / class flips",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "shell.locale-toggle",
+   "route": "any",
+   "state": "always",
+   "control": "locale-toggle",
+   "action": "click",
+   "postcondition": "a known RU label switches to EN (or back)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "shell.nav-toggle",
+   "route": "any",
+   "state": "always",
+   "control": "shell.nav-toggle",
+   "action": "click",
+   "postcondition": "sidebar collapsed class flips",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "settings.theme",
+   "route": "settings",
+   "state": "always",
+   "control": "settings.theme",
+   "action": "select other option",
+   "postcondition": "theme applies (html attr/class)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "settings.ui-density",
+   "route": "settings",
+   "state": "always",
+   "control": "settings.ui-density",
+   "action": "select other option",
+   "postcondition": "density attr/class applied",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "settings.ui-locale",
+   "route": "settings",
+   "state": "always",
+   "control": "settings.ui-locale",
+   "action": "select other option",
+   "postcondition": "UI texts switch language",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "settings.ui-zoom",
+   "route": "settings",
+   "state": "always",
+   "control": "settings.ui-zoom",
+   "action": "select another zoom",
+   "postcondition": "zoom value applied (style/app attribute)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "projects.search",
+   "route": "projects",
+   "state": "project-exists",
+   "control": "projects.search",
+   "action": "type fixture name",
+   "postcondition": "project-card remains visible and matches",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "projects.reopen",
+   "route": "projects",
+   "state": "project-exists",
+   "control": "projects.project-card",
+   "action": "click card",
+   "postcondition": "ws.root exists",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "checks.rerun",
+   "route": "checks",
+   "state": "project-open",
+   "control": "checks.rerun",
+   "action": "click",
+   "postcondition": "report renders (counts/table/empty-state text)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "checks.report-download",
+   "route": "checks",
+   "state": "report-ready",
+   "control": "checks.report",
+   "action": "click (browser download)",
+   "postcondition": "NOT_TESTED via webdriver; download asserted through unit-level path only",
+   "result": "SKIP",
+   "detail": ""
+  },
+  {
+   "id": "glossary.add",
+   "route": "glossary",
+   "state": "project-open",
+   "control": "gl.add-term+gl.add-translation+gl.add-submit",
+   "action": "fill and submit",
+   "postcondition": "gl.table contains the new term",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "glossary.filter",
+   "route": "glossary",
+   "state": "term-exists",
+   "control": "gl.filter",
+   "action": "type term",
+   "postcondition": "table rows filter to match",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "tm.add",
+   "route": "tm",
+   "state": "project-open",
+   "control": "tm.add-source+tm.add-target+tm.add-submit",
+   "action": "fill and submit",
+   "postcondition": "tm.count/table contains the new pair",
+   "result": "FAIL",
+   "detail": ""
+  },
+  {
+   "id": "tm.lookup",
+   "route": "tm",
+   "state": "pair-exists",
+   "control": "tm.lookup-query",
+   "action": "type source text",
+   "postcondition": "lookup results render the pair",
+   "result": "FAIL",
+   "detail": ""
+  },
+  {
+   "id": "tm.filter",
+   "route": "tm",
+   "state": "pair-exists",
+   "control": "tm.filter-query",
+   "action": "type",
+   "postcondition": "table filters",
+   "result": "FAIL",
+   "detail": ""
+  },
+  {
+   "id": "chatbatch.create",
+   "route": "chatbatch",
+   "state": "project-open",
+   "control": "cb.create",
+   "action": "create batch",
+   "postcondition": "cb.entries renders rows",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "chatbatch.select-all",
+   "route": "chatbatch",
+   "state": "batch-created",
+   "control": "cb.select-all",
+   "action": "click",
+   "postcondition": "selection-count > 0",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "chatbatch.filter-untranslated",
+   "route": "chatbatch",
+   "state": "batch-created",
+   "control": "cb.filter-untranslated",
+   "action": "click",
+   "postcondition": "entries list state changes (filter active)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "ai.mode.switch",
+   "route": "aitranslate",
+   "state": "project-open",
+   "control": "ai.mode.auto/byo/local/noapi/chatgpt",
+   "action": "click each mode",
+   "postcondition": "mode card active AND the mode-specific form/panel appears",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "ai.byo.instance",
+   "route": "aitranslate",
+   "state": "byo-mode",
+   "control": "ai.instance",
+   "action": "open select",
+   "postcondition": "instances from ProvidersScreen are listed",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "ai.byo.dead-endpoint",
+   "route": "aitranslate",
+   "state": "byo-instance-selected",
+   "control": "ai.run",
+   "action": "run vs dead endpoint",
+   "postcondition": "job ends with 0 translated / failed row / no applicable preview (verified in stage2)",
+   "result": "PASS",
+   "detail": "proven in stage2-ai.spec (0 translated / failed row)"
+  },
+  {
+   "id": "ai.cancel.running",
+   "route": "aitranslate",
+   "state": "job-running",
+   "control": "ai.cancel",
+   "action": "cancel",
+   "postcondition": "job state becomes cancelled and no further state transitions occur",
+   "note": "requires a controllable slow provider (mock server) — separate lane",
+   "result": "SKIP",
+   "detail": ""
+  },
+  {
+   "id": "ai.stale-refusal",
+   "route": "aitranslate",
+   "state": "preview-ready + project edited",
+   "control": "ai.accept",
+   "action": "edit project then accept",
+   "postcondition": "accept refuses with stale revision error (backend contract)",
+   "note": "separate lane with mock server",
+   "result": "SKIP",
+   "detail": ""
+  },
+  {
+   "id": "export.outdir+export",
+   "route": "export",
+   "state": "project-open",
+   "control": "be.outdir+be.export",
+   "action": "set dir, export",
+   "postcondition": "LanguageData files exist on disk with translated strings",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "existing.dir-input",
+   "route": "existing",
+   "state": "project-open",
+   "control": "ex.dir",
+   "action": "fill path",
+   "postcondition": "value accepted (state held)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "compare.dirs",
+   "route": "compare",
+   "state": "project-open",
+   "control": "cmp.old-dir+cmp.new-dir",
+   "action": "fill paths",
+   "postcondition": "values accepted",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "lm.add-language",
+   "route": "lm",
+   "state": "project-open",
+   "control": "lm.add-id+lm.add-native+lm.add-submit",
+   "action": "fill and submit",
+   "postcondition": "lm.table lists the language",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "lm.search",
+   "route": "lm",
+   "state": "language-exists",
+   "control": "lm.search",
+   "action": "type",
+   "postcondition": "table filters",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "providers.create-instance",
+   "route": "providers",
+   "state": "palette-open",
+   "control": "prov.card.new+fields+prov.save.new",
+   "action": "create instance",
+   "postcondition": "catalog lists the instance (verified stage2)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "providers.probes",
+   "route": "providers",
+   "state": "new-form",
+   "control": "prov.connect.new+prov.test.new",
+   "action": "click probes on empty form",
+   "postcondition": "typed error/status appears (no crash)",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "diag.run",
+   "route": "diagnostics",
+   "state": "project-open",
+   "control": "diag.outdir+diag.run",
+   "action": "set dir and run",
+   "postcondition": "diag.result renders or typed error appears",
+   "result": "PASS",
+   "detail": ""
+  },
+  {
+   "id": "native.pickers",
+   "route": "wizard/export/existing/compare/diag",
+   "state": "various",
+   "control": "*.pick / be.pick / cb.import-file",
+   "action": "OS file dialog",
+   "postcondition": "NOT_TESTED via webdriver; needs AX-level automation (separate lane)",
+   "result": "SKIP",
+   "detail": ""
+  },
+  {
+   "id": "external.links",
+   "route": "about",
+   "state": "always",
+   "control": "about.action.*/about.support.*",
+   "action": "open external browser",
+   "postcondition": "NOT_TESTED: buttons have no href (window.open); out of webdriver scope; verified present",
+   "result": "SKIP",
+   "detail": ""
+  }
+ ]
+}
