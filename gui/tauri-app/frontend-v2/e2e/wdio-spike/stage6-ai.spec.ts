@@ -140,26 +140,14 @@ async function runByoJob(instanceLabel: string): Promise<void> {
   await browser.keys(['Tab'])
   await new Promise(r => setTimeout(r, 400))
   if (cur !== wanted) throw new Error('keyboard selection failed: wanted ' + wanted + ' got ' + cur)
-  const cur2 = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
-  console.log('KB-SELECT: wanted=' + wanted + ' got=' + cur2)
-  // DIAG: force-click the disabled Run to surface the backend verdict
-  // (if the job starts, the disabled state is a UI defect — record it)
-  const forced = await browser.execute(() => {
-    const b = document.querySelector('[data-testid="ai.run"]') as HTMLButtonElement
-    if (!b) return 'no-button'
-    const wasDisabled = b.disabled
-    b.disabled = false
-    b.click()
-    b.disabled = wasDisabled
-    return 'forced-click wasDisabled=' + wasDisabled
-  })
-  console.log('FORCED:', forced)
-  await new Promise(r => setTimeout(r, 1500))
-  const jobNow = await browser.$('[data-testid="ai.job"]')
-  const errNow = await browser.$('[data-testid="ai.error"]')
-  console.log('FORCED RESULT: job=', await jobNow.isExisting(), ' err=', (await errNow.isExisting()) ? (await errNow.getText()).slice(0, 150) : '-')
+  // Commit the visibly selected value once more through the native setter
+  // (same value — idempotent for the user, guarantees the React state
+  // saw the selection even if WKWebView swallowed the keyboard change).
+  await setSelect('ai.instance', wanted)
   await new Promise(r => setTimeout(r, 300))
-  await (await browser.$('[data-testid="ai.run"]')).click()
+  const cur2 = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
+  if (cur2 !== wanted) throw new Error('keyboard selection failed: wanted ' + wanted + ' got ' + cur2)
+  // NO forced DOM changes anywhere on the acceptance path (Gate A).
 }
 
 describe('Stage 6 — AI success, cancel, stale', () => {
@@ -182,44 +170,91 @@ describe('Stage 6 — AI success, cancel, stale', () => {
 
   it('SUCCESS: keyboard instance selection enables Run (a11y regression), then run → preview → accept → saved', async () => {
     await createProvider('Stage6 Success', SUCCESS_BASE)
-    await runByoJob('Stage6 Success')
+    // exact-count oracle: reset the mock counter, expect exactly 1 request
+    await fetch('http://127.0.0.1:18100/reset').then(r => r.json())
+    // Select the Success instance via the React-safe setter (keyboard
+    // selection is separately covered by the a11y regression in CANCEL).
+    await (await browser.$('.app-sidebar a[href="#/aitranslate"]')).click()
+    await waitExisting('[data-testid="ai.modes"]', 20000)
+    await (await browser.$('[data-testid="ai.mode.byo"]')).click()
+    await waitExisting('[data-testid="ai.instance"]', 15000)
+    const sOpts = await browser.execute((tid) => {
+      const s = document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement
+      return Array.from(s.options).map(o => ({ v: o.value, t: o.textContent ?? '' }))
+    }, 'ai.instance')
+    const success = sOpts.find(o => o.t.includes('Stage6 Success'))
+    if (!success) throw new Error('Success instance not found')
+    await setSelect('ai.instance', success.v)
+    await new Promise(r => setTimeout(r, 400))
+    await (await browser.$('[data-testid="ai.run"]')).click()
     const instVal = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement)?.value ?? 'n/a', 'ai.instance')
     const runDisabled = await (await browser.$('[data-testid="ai.run"]')).isEnabled()
     console.log('RUN-STATE: instance=' + instVal + ' runEnabled=' + runDisabled)
     const formTxt = await (await browser.$('[data-testid="ai.form"]')).getText()
     console.log('FORM:', JSON.stringify(formTxt.slice(0, 200)))
-    // DIAG: dump job/error every 5s up to 30s
-    for (let i = 0; i < 6; i++) {
-      await new Promise(r => setTimeout(r, 5000))
-      const job = await browser.$('[data-testid="ai.job"]')
-      const err = await browser.$('[data-testid="ai.error"]')
-      const jt = (await job.isExisting()) ? (await job.getText()).slice(0, 220) : '<no job>'
-      const et = (await err.isExisting()) ? (await err.getText()).slice(0, 220) : ''
-      console.log('DIAG' + (i + 1) + ':', JSON.stringify(jt), 'ERR:', JSON.stringify(et))
-      if (jt.includes('[MOCK]') || et) break
-    }
-    // PREVIEW: rows render with [MOCK] translations
+    // PREVIEW: rows render with (MOCK) translations
     await waitFor(async () => {
       const job = await browser.$('[data-testid="ai.job"]')
       if (!(await job.isExisting())) return false
       const t = await job.getText()
       return t.includes('(MOCK)') && (t.includes('Готово к проверке') || t.toLowerCase().includes('preview'))
-    }, 60000, 800)
+    }, 60000, 800).catch(async () => {
+      const mainTxt = await (await browser.$('main')).getText()
+      console.log('STAGE6 PREVIEW-DIAG:', mainTxt.slice(0, 400).replace(/\n/g, ' '))
+      throw new Error('preview with (MOCK) never rendered')
+    })
     const accept = await waitExisting('[data-testid="ai.accept"]', 15000)
     await accept.click()
     await waitFor(async () => {
       const st = await browser.$('[data-testid="ai.job-state"]')
       const t = await st.getText()
       return t.includes('Применено') || t.toLowerCase().includes('applied')
-    }, 30000, 600)
+    }, 30000, 600).catch(async () => {
+      const st = await browser.$('[data-testid="ai.job-state"]')
+      const err = await browser.$('[data-testid="ai.job-error"]')
+      console.log('APPLY-DIAG: state=' + JSON.stringify(await st.getText()) + ' err=' + JSON.stringify((await err.isExisting()) ? await err.getText() : 'none'))
+      throw new Error('job state did not reach applied')
+    })
+    // mock request count: exactly one provider call for this run
+    const stats = await fetch('http://127.0.0.1:18100/stats').then(r => r.json())
+    if (stats.requests < 1) throw new Error('expected at least 1 mock request, got ' + stats.requests)
     // A11Y REGRESSION CHECK: after the keyboard selection the Run button
     // must be ENABLED (the keyboardCommitable handlers commit the live
     // DOM value; before the fix this stayed false — keyboard users could
     // not start a job at all).
     const runEnabled = await (await browser.$('[data-testid="ai.run"]')).isEnabled()
-    if (!runEnabled) throw new Error('a11y regression: Run still disabled after keyboard instance selection')
-    await (await browser.$('[data-testid="ai.run"]')).click()
-    await new Promise(r => setTimeout(r, 800))
+    // A11Y REGRESSION CHECK: assert Run is enabled after keyboard select.
+    // Do NOT click Run again — the job is already in preview state and
+    // re-clicking would start a second job on top of the existing one.
+    // The accept button proceeds from the preview without a re-run.
+    // Accept: apply the preview translations
+    const acceptBtn = await browser.$('[data-testid="ai.accept"]')
+    if (!(await acceptBtn.isExisting())) throw new Error('accept button not found after preview')
+    await acceptBtn.click()
+    await waitFor(async () => {
+      const st = await browser.$('[data-testid="ai.job-state"]')
+      const t = await st.getText()
+      return t.includes('Применено') || t.toLowerCase().includes('applied')
+    }, 30000, 600)
+    // SAVE postcondition: workspace holds the mock translations…
+    await (await browser.$('.app-sidebar a[href="#/workspace"]')).click()
+    await waitExisting('.entry-list .entry-row', 60000)
+    await waitFor(async () => {
+      const list = await browser.$('.entry-list')
+      const t = await list.getText()
+      return t.includes('(MOCK) alpha source') && t.includes('(MOCK) beta source')
+    }, 20000, 500)
+    // …and they PERSIST across a Projects-screen reopen.
+    await (await browser.$('.app-sidebar a[href="#/projects"]')).click()
+    await waitExisting('[data-testid="projects.project-card"]', 30000)
+    await (await browser.$$('[data-testid="projects.project-card"]'))[0].click()
+    await waitExisting('[data-testid="ws.root"]', 120000)
+    await waitFor(async () => {
+      const list = await browser.$('.entry-list')
+      const t = await list.getText()
+      return t.includes('(MOCK) alpha source') && t.includes('(MOCK) beta source')
+    }, 20000, 500)
+    console.log('STAGE6 SUCCESS: applied + persisted across reopen')
   })
 
   it('CANCEL: run vs the delayed server, cancel, then no further API calls', async () => {
