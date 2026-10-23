@@ -70,7 +70,7 @@ createServer((req, res) => {
     return
   }
   res.writeHead(404); res.end('{"error":"not found"}')
-}).listen(port, '127.0.0.1', () => {
+}).listen(PORT, '127.0.0.1', () => {
   console.log(`mock-openai listening on 127.0.0.1:${port} delay=${delayMs}ms counter=${counterFile}`)
   persist()
 })
