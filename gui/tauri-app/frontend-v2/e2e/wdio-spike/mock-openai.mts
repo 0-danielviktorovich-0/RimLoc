@@ -10,9 +10,20 @@
 import { createServer } from 'node:http'
 import { writeFileSync } from 'node:fs'
 
-const port = parseInt(process.argv[2] ?? '18100', 10)
-const counterFile = process.argv[3] ?? '/tmp/rimloc-mock/requests.json'
-const delayMs = parseInt(process.env.MOCK_DELAY_MS ?? '0', 10)
+// No caller-supplied configuration at all: the lane profile is a fixed
+// constant table (18100 = instant success, 18101 = delayed for cancel),
+// so no user-provided path or duration ever reaches the server.
+const PORT = parseInt(process.argv[2] ?? '18100', 10)
+const PROFILE: Record<number, { counterFile: string; delayMs: number }> = {
+  18100: { counterFile: '/tmp/rimloc-ai/counter-success.json', delayMs: 0 },
+  18101: { counterFile: '/tmp/rimloc-ai/counter-slow.json', delayMs: 6000 },
+}
+const profile = PROFILE[PORT]
+if (!profile) {
+  throw new Error('mock-openai: unsupported port ' + PORT + ' (use 18100 or 18101)')
+}
+const counterFile = profile.counterFile
+const delayMs = profile.delayMs
 let requests = 0
 
 function persist(): void {
