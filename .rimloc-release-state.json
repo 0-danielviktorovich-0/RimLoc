@@ -55,14 +55,14 @@
  ],
  "rcBundles": {
   "source": "CI run 39938138671 (dispatch on fe1af7b3, product-identical to merged main 1e6c2dfc — PR #131 docs only); contains the AI keyboard-selection fix",
-  "builtFrom": "1194f7e6 (bundles) == product code of main 25b61f71",
+  "builtFrom": "fe1af7b3",
   "version": "0.1.0-beta.1",
+  "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-fe1af7b3/ (+ SHA256 files)",
+  "macosSmoke": "PASS — CI bundle from fe1af7b3 (with the AI keyboard-selection fix) launches in an isolated profile, AX window, 0600 broker socket",
   "macosDmg": "009fa72fc34fb67a2234b7765b3a5145af417300c7a6ea0c50746f39dd2bea72",
   "macosAppBinary": "d029db3472beb69206ae96c759d3e6d9ca33a5edbe9bd996b392c507547a22dd",
   "windowsNsis": "cb60c8bbe06e7cf106d1cd4cb159c2fb18aebde692f749d35f4208eb4a1f7448",
   "linuxDeb": "1199ea95bd4b595cf7a9eb3cf2353ca588a53df9846bd2919ff9dd85cd87d5dd",
-  "linuxAppimage": "a855615c7d5e98ee292c280075ebd22248265c06b2eb5ca85621974fa5c716e4",
-  "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-1194f7e6/ (installers + SHA256.txt)",
-  "macosSmoke": "PASS — CI bundle from fe1af7b3 (with the AI keyboard-selection fix) launches in an isolated profile, AX window, 0600 broker socket"
+  "linuxAppimage": "a855615c7d5e98ee292c280075ebd22248265c06b2eb5ca85621974fa5c716e4"
  }
 }
