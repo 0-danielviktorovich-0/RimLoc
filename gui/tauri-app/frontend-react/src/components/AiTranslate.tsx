@@ -136,7 +136,10 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
     if (!job) return
     setBusy(true)
     clientInstance.getClient().aiJobAccept(job.job_id, epoch ?? 0, acknowledgeFull)
-      .then((res) => { setJob(res); setBusy(false); setAcknowledgeFull(false) })
+      .then((res) => {
+        setJob(res); setBusy(false); setAcknowledgeFull(false)
+        if (snap) sessionStorage.removeItem('rimloc-ai-job-' + snap.project_id)
+      })
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : String(e))
         setBusy(false)
@@ -175,7 +178,10 @@ export function AiTranslate({ onBack }: { onBack: () => void }) {
   const cancel = (): void => {
     if (!job) return
     clientInstance.getClient().aiJobCancel(job.job_id)
-      .then(setJob)
+      .then((res) => {
+        setJob(res)
+        if (snap) sessionStorage.removeItem('rimloc-ai-job-' + snap.project_id)
+      })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
   }
 
