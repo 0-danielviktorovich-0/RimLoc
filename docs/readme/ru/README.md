@@ -22,7 +22,6 @@
 <p align="center">
   <a href="https://github.com/sponsors/0-danielviktorovich-0"><img src="https://img.shields.io/badge/Sponsor-GitHub-%23ea4aaa?logo=github-sponsors" alt="GitHub Sponsors" /></a>
   <a href="https://buymeacoffee.com/danielviktorovich"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee" /></a>
-  <a href="https://ko-fi.com/danielviktorovich"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=ko-fi&logoColor=white" alt="Ko-fi" /></a>
 </p>
 
 > **Статус: pre-beta.** Проект активно развивается. Первый production-фокус — RimWorld; новый десктопный интерфейс переводится на React R1. Стабильный публичный десктопный релиз пока не заявляется.

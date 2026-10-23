@@ -1189,7 +1189,7 @@ describe('integration UI verification — UI-01/07/13/14 (owner addendum)', () =
         throw new Error(`About action missing: ${id}`)
       }
     }
-    for (const id of ['about.support.sponsors', 'about.support.bmc', 'about.support.kofi']) {
+    for (const id of ['about.support.sponsors', 'about.support.bmc']) {
       if (!(await browser.$(`[data-testid="${id}"]`).isExisting())) {
         throw new Error(`Support option missing: ${id}`)
       }

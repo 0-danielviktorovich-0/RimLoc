@@ -8,7 +8,6 @@ RimLoc is an open‑source project. If it saves you time or helps your team, con
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-github-%23ea4aaa?logo=githubsponsors)](https://github.com/sponsors/0-danielviktorovich-0)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-donate-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/danielviktorovich)
-[![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-support-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/danielviktorovich)
 
 ## Ways to support
 
@@ -17,7 +16,6 @@ RimLoc is an open‑source project. If it saves you time or helps your team, con
 - Sponsor development (one‑time or recurring):
   - GitHub Sponsors: [github.com/sponsors/0-danielviktorovich-0](https://github.com/sponsors/0-danielviktorovich-0)
   - Buy Me a Coffee: [buymeacoffee.com/danielviktorovich](https://buymeacoffee.com/danielviktorovich)
-  - Ko‑fi: [ko-fi.com/danielviktorovich](https://ko-fi.com/danielviktorovich)
 
 If you need an invoice or a specific platform, open an issue or contact the maintainer.
 

@@ -292,7 +292,6 @@ describe('Stage 3 route×state×control coverage', () => {
     await hrefSafe('about', 'about.action.issues')
     await hrefSafe('about', 'about.action.support')
     await hrefSafe('about', 'about.support.bmc')
-    await hrefSafe('about', 'about.support.kofi')
     await hrefSafe('about', 'about.support.sponsors')
 
     // The app must still be alive after touching every screen

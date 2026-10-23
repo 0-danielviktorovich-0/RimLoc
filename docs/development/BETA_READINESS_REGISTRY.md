@@ -141,7 +141,7 @@ any new P0 found by CI/CodeQL/lanes lands here)*
   proof, or explicitly accept the component-level evidence.
 - Merge PR #101 to main; tag; publish the release; Discord/community.
 - Real-provider UAT (needs owner API keys; mock-path is fully verified).
-- Sponsors/BMC/Ko-fi live account data for the About screen.
+- Sponsors/BMC live account data for the About screen.
 - Any change to GitHub branch protection / repo policy.
 
 ## Release candidate manifest (first limited beta)
