@@ -26,6 +26,12 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 - [test] A registration-parity test reads the compiled main.rs
 - [gui] The automatic-translation mode now says up front that a direct API provider call needs a key and links straight to the Providers screen, instead of surfacing the fact only as a runtime failure.
 - [release] Release-candidate bundles of all three platforms are hashed and staged from the merged mainline CI: macOS dmg and app, Windows installer, Linux deb and AppImage, each with its SHA256 recorded in the machine-readable release state; the CI-built macOS app passes a launch smoke in an isolated profile.
+- [test] Issue #2 scenarios B and C are proven end to end: a standalone translation pack without any
+  original mod opens as an editable project (wizard with the pack language as source, strings from
+  Keyed and DefInjected render, edits persist across reopen, the guarded export writes the edited
+  pack to disk), and attaching the original mod later works through the Existing screen with the
+  pack translations landing in the original project; the import contract (language folder, not
+  pack root) is exercised through its typed violation.
 - [test] The oracle reached 46/51 = 90.2% verified with zero failures: the TM manual-add "defect" turned out to be a runner bug (the free-text locale input silently ignored a select-style setter; the product's quiet no-op on an empty locale masked it), and the lane now matches palette commands in both UI locales.
 - [test] The coverage ledger becomes an oracle runner: 51 route×state×control rows each require an observed postcondition after the action (a click without its effect is FAIL, never PASS); measured 43/51 = 84.3% verified, 5 honest skips (native pickers, external links, mock-server-gated AI cases) and 3 real FAILs concentrated in the translation-memory manual-add flow, which is now an open defect instead of a hidden one.
 - [test] The coverage runner gained a state-gated pass: with an entry selected in the workspace it activates the context tabs, copy-key, target-locale, the project switcher, the enabled validation report, the diagnostics run and the provider-form probes — coverage rises to 63/94 interactive controls (67%).
