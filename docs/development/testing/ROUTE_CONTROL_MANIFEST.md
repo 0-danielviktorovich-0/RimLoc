@@ -1,5 +1,18 @@
 # ROUTE × STATE × CONTROL COVERAGE MANIFEST — measured, 2026-10-23 (pass 2)
 
+> **PASS 3 (control oracle, 2026-10-23, latest):** the coverage ledger
+> (`control-ledger.json`, 51 route×state×control rows) is now executed by an
+> oracle runner (`stage4-oracle.spec.ts`) that asserts a POSTCONDITION after
+> every action — a click without its asserted effect is FAIL, never PASS.
+> Result: **43/51 PASS (84.3%)**, 5 honest SKIP (native pickers, external
+> links, download, mock-server-gated AI cancel/stale), **3 FAIL — all in the
+> TM manual-add flow** (add does not surface the record in the list; lookup
+> and filter therefore untestable). That TM cluster is a real open defect
+> under investigation; it is NOT hidden by the manifest. The hard-coded
+> ACTIVATED set and the silently-caught failures of the earlier stage-3
+> runner are gone; the denominator is the stable ledger union.
+
+
 **State-gated pass added:** the runner now selects an entry in the workspace
 and activates the controls that only exist in that state (context tabs,
 copy-key, target-locale select, project switcher, the enabled checks report,
