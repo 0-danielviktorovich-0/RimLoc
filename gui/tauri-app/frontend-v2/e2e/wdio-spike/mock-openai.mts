@@ -10,20 +10,9 @@
 import { createServer } from 'node:http'
 import { writeFileSync } from 'node:fs'
 
-// No caller-supplied configuration at all: the lane profile is a fixed
-// constant table (18100 = instant success, 18101 = delayed for cancel),
-// so no user-provided path or duration ever reaches the server.
-const PORT = parseInt(process.argv[2] ?? '18100', 10)
-const PROFILE: Record<number, { counterFile: string; delayMs: number }> = {
-  18100: { counterFile: '/tmp/rimloc-ai/counter-success.json', delayMs: 0 },
-  18101: { counterFile: '/tmp/rimloc-ai/counter-slow.json', delayMs: 6000 },
-}
-const profile = PROFILE[PORT]
-if (!profile) {
-  throw new Error('mock-openai: unsupported port ' + PORT + ' (use 18100 or 18101)')
-}
-const counterFile = profile.counterFile
-const delayMs = profile.delayMs
+const port = parseInt(process.argv[2] ?? '18100', 10)
+const counterFile = process.argv[3] ?? '/tmp/rimloc-mock/requests.json'
+const delayMs = parseInt(process.env.MOCK_DELAY_MS ?? '0', 10)
 let requests = 0
 
 function persist(): void {
@@ -55,7 +44,7 @@ createServer((req, res) => {
         const arrEnd = user.lastIndexOf(']')
         const records = JSON.parse(user.slice(arrStart, arrEnd + 1))
         results = records.map((r: { id: string; source: string }) => ({
-          id: r.id, translation: '[MOCK] ' + String(r.source ?? ''),
+          id: r.id, translation: '(MOCK) ' + String(r.source ?? ''),
         }))
       } catch { results = [] }
       const answer = () => {
@@ -70,7 +59,7 @@ createServer((req, res) => {
     return
   }
   res.writeHead(404); res.end('{"error":"not found"}')
-}).listen(PORT, '127.0.0.1', () => {
-  console.log(`mock-openai listening on 127.0.0.1:${PORT} delay=${delayMs}ms counter=${counterFile}`)
+}).listen(port, '127.0.0.1', () => {
+  console.log(`mock-openai listening on 127.0.0.1:${port} delay=${delayMs}ms counter=${counterFile}`)
   persist()
 })
