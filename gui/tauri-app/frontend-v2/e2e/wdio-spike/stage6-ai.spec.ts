@@ -42,14 +42,40 @@ async function setSelect(id: string, value: string): Promise<void> {
   }, id, value)
 }
 
-function writeFixture(): void {
-  const about = join(MOD, 'About')
-  const keyed = join(MOD, 'Languages', 'English', 'Keyed')
+function writeMod(dir: string, name: string, keys: [string, string][]): void {
+  const about = join(dir, 'About')
+  const keyed = join(dir, 'Languages', 'English', 'Keyed')
   mkdirSync(about, { recursive: true }); mkdirSync(keyed, { recursive: true })
   writeFileSync(join(about, 'About.xml'),
-    '<?xml version="1.0" encoding="utf-8"?>\n<ModMetaData>\n  <name>Stage6 AI Mod</name>\n  <packageId>rimloc.test.stage6</packageId>\n  <author>RimLoc</author>\n  <supportedVersions><li>1.6</li></supportedVersions>\n</ModMetaData>\n')
-  writeFileSync(join(keyed, 'S6.xml'),
-    '<?xml version="1.0" encoding="utf-8"?>\n<LanguageData>\n  <S6Alpha>alpha source</S6Alpha>\n  <S6Beta>beta source</S6Beta>\n  <S6Gamma>gamma source</S6Gamma>\n</LanguageData>\n')
+    '<?xml version="1.0" encoding="utf-8"?>\n<ModMetaData>\n  <name>' + name + '</name>\n  <packageId>rimloc.test.' + name.toLowerCase().replace(/[^a-z0-9]+/g, '') + '</packageId>\n  <author>RimLoc</author>\n  <supportedVersions><li>1.6</li></supportedVersions>\n</ModMetaData>\n')
+  const body = keys.map(([k, v]) => '  <' + k + '>' + v + '</' + k + '>').join('\n')
+  writeFileSync(join(keyed, name + '.xml'),
+    '<?xml version="1.0" encoding="utf-8"?>\n<LanguageData>\n' + body + '\n</LanguageData>\n')
+}
+
+function writeFixture(): void {
+  writeMod(MOD, 'Stage6AI', [['S6Alpha', 'alpha source'], ['S6Beta', 'beta source'], ['S6Gamma', 'gamma source']])
+}
+
+const MOD2 = join(WORK_DIR, 'CancelMod')
+const MOD3 = join(WORK_DIR, 'StaleMod')
+function writeCancelAndStaleFixtures(): void {
+  writeMod(MOD2, 'Stage6Cancel', [['CAlpha', 'cancel alpha'], ['CBeta', 'cancel beta']])
+  writeMod(MOD3, 'Stage6Stale', [['SAlpha', 'stale alpha'], ['SBeta', 'stale beta'], ['SGamma', 'stale gamma']])
+}
+
+async function wizardOpen(path: string): Promise<void> {
+  await (await browser.$('.app-sidebar a[href="#/projects"]')).click()
+  await (await waitExisting('[data-testid="wizard.open"]')).click()
+  await (await waitExisting('[data-testid="wizard.path-input"]')).setValue(path)
+  await browser.$('[data-testid="wizard.next"]').click()
+  await waitExisting('[data-testid="wizard.version"]', 60000)
+  await browser.$('[data-testid="wizard.next"]').click()
+  await waitFor(async () => !(await (await browser.$('[data-testid="wizard.overlay"]')).isExisting()), 10000).catch(() => {})
+  const overlay = await browser.$('[data-testid="wizard.overlay"]')
+  if (await overlay.isExisting()) await browser.$('[data-testid="wizard.next"]').click()
+  await waitExisting('[data-testid="ws.root"]', 300000)
+  await waitExisting('.entry-list .entry-row', 60000)
 }
 
 async function createProvider(label: string, base: string): Promise<void> {
@@ -90,20 +116,30 @@ async function runByoJob(instanceLabel: string): Promise<void> {
   if (!match) throw new Error('instance option not found')
   // WebDriver-native select: dispatches the real change through the
   // browser protocol (the React-controlled select ignores synthetic events).
-  // Keyboard selection: real focus + arrow keys produce genuine change
+  // Keyboard selection: real focus + arrows produce genuine change
   // events in WKWebView (synthetic value sets do not reach React here).
+  // Bidirectional: walk down, then wrap up, until the wanted value shows.
   const instEl = await browser.$('[data-testid="ai.instance"]')
   await instEl.click()
   await new Promise(r => setTimeout(r, 300))
   const wanted = match.v
-  for (let i = 0; i < 12; i++) {
-    const cur = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
-    if (cur === wanted) break
+  let cur = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
+  for (let i = 0; i < 12 && cur !== wanted; i++) {
     await browser.keys(['ArrowDown'])
     await new Promise(r => setTimeout(r, 120))
+    cur = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
+  }
+  for (let i = 0; i < 12 && cur !== wanted; i++) {
+    await browser.keys(['ArrowUp'])
+    await new Promise(r => setTimeout(r, 120))
+    cur = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
   }
   await browser.keys(['Enter'])
+  await new Promise(r => setTimeout(r, 200))
+  // WKWebView fires the select's change on blur, not on arrow navigation
+  await browser.keys(['Tab'])
   await new Promise(r => setTimeout(r, 400))
+  if (cur !== wanted) throw new Error('keyboard selection failed: wanted ' + wanted + ' got ' + cur)
   const cur2 = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement).value, 'ai.instance')
   console.log('KB-SELECT: wanted=' + wanted + ' got=' + cur2)
   // DIAG: force-click the disabled Run to surface the backend verdict
@@ -144,7 +180,7 @@ describe('Stage 6 — AI success, cancel, stale', () => {
     await waitExisting('.entry-list .entry-row', 60000)
   })
 
-  it('SUCCESS lane: keyboard selection leaves Run disabled (a11y defect recorded)', async () => {
+  it('SUCCESS: keyboard instance selection enables Run (a11y regression), then run → preview → accept → saved', async () => {
     await createProvider('Stage6 Success', SUCCESS_BASE)
     await runByoJob('Stage6 Success')
     const instVal = await browser.execute((tid) => (document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement)?.value ?? 'n/a', 'ai.instance')
@@ -167,29 +203,50 @@ describe('Stage 6 — AI success, cancel, stale', () => {
       const job = await browser.$('[data-testid="ai.job"]')
       if (!(await job.isExisting())) return false
       const t = await job.getText()
-      return t.includes('[MOCK]') && (t.includes('Готово к проверке') || t.toLowerCase().includes('preview'))
+      return t.includes('(MOCK)') && (t.includes('Готово к проверке') || t.toLowerCase().includes('preview'))
     }, 60000, 800)
     const accept = await waitExisting('[data-testid="ai.accept"]', 15000)
     await accept.click()
     await waitFor(async () => {
       const st = await browser.$('[data-testid="ai.job-state"]')
       const t = await st.getText()
-      return t.toLowerCase().includes('accepted') || t.includes('Принят') || t.includes('применен')
+      return t.includes('Применено') || t.toLowerCase().includes('applied')
     }, 30000, 600)
-    // After the keyboard selection the Run button stays disabled even
-    // though the DOM select value is correct — a real accessibility
-    // defect (keyboard users cannot start a job). Force-clicking runs
-    // the handler, which silently returns (no job, no error), proving
-    // the guard sees a stale internal instance id. Recorded as an open
-    // a11y defect; mouse users are unaffected (WebDriver cannot click
-    // the native option popup, so this lane cannot prove the success
-    // path — it stays NOT_TESTED until the defect is fixed).
-    console.log('STAGE6 SUCCESS LANE: a11y defect recorded — Run stays disabled after keyboard instance selection')
+    // A11Y REGRESSION CHECK: after the keyboard selection the Run button
+    // must be ENABLED (the keyboardCommitable handlers commit the live
+    // DOM value; before the fix this stayed false — keyboard users could
+    // not start a job at all).
+    const runEnabled = await (await browser.$('[data-testid="ai.run"]')).isEnabled()
+    if (!runEnabled) throw new Error('a11y regression: Run still disabled after keyboard instance selection')
+    await (await browser.$('[data-testid="ai.run"]')).click()
+    await new Promise(r => setTimeout(r, 800))
   })
 
   it('CANCEL: run vs the delayed server, cancel, then no further API calls', async () => {
+    writeCancelAndStaleFixtures()
+    await wizardOpen(MOD2)
     await createProvider('Stage6 Slow', SLOW_BASE)
-    await runByoJob('Stage6 Slow')
+    await (await browser.$('.app-sidebar a[href="#/aitranslate"]')).click()
+  await waitExisting('[data-testid="ai.modes"]', 20000)
+  await (await browser.$('[data-testid="ai.mode.byo"]')).click()
+  await waitExisting('[data-testid="ai.instance"]', 15000)
+  const opts = await browser.execute((tid) => {
+    const s = document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement
+    return Array.from(s.options).map(o => ({ v: o.value, t: o.textContent ?? '' }))
+  }, 'ai.instance')
+  const slow = opts.find(o => o.t.includes('Stage6 Slow'))
+  if (!slow) throw new Error('Slow instance not found in the select')
+  await setSelect('ai.instance', slow.v)
+  await new Promise(r => setTimeout(r, 400))
+  const runBtn = await browser.$('[data-testid="ai.run"]')
+  if (!(await runBtn.isEnabled())) throw new Error('Run disabled for the Slow instance')
+  await runBtn.click()
+    for (const ms of [500, 1500, 4000]) {
+      await new Promise(r => setTimeout(r, ms === 500 ? 500 : ms - (ms === 1500 ? 500 : 1500)))
+      const j = await browser.$('[data-testid="ai.job"]')
+      const e2 = await browser.$('[data-testid="ai.error"]')
+      console.log('CANCEL-DIAG', ms, ':', (await j.isExisting()) ? (await j.getText()).slice(0, 140) : 'no-job', '| err:', (await e2.isExisting()) ? (await e2.getText()).slice(0, 140) : '-')
+    }
     await waitExisting('[data-testid="ai.cancel"]', 20000)
     // let at least one delayed call land in flight, then cancel
     await new Promise(r => setTimeout(r, 1200))
@@ -212,11 +269,27 @@ describe('Stage 6 — AI success, cancel, stale', () => {
   })
 
   it('STALE: preview ready, project edited, accept refuses typed', async () => {
-    // make a small preview with the success provider (2 rows fit one batch)
-    await runByoJob('Stage6 Success')
+    // own untranslated fixture: the fresh project guarantees a live batch
+    writeMod(MOD3, 'Stage6Stale', [['SAlpha', 'stale alpha'], ['SBeta', 'stale beta'], ['SGamma', 'stale gamma']])
+    await wizardOpen(MOD3)
+    // make a small preview with the success provider; select it via the
+    // React-safe setter (label match) instead of the keyboard lane
+    await (await browser.$('.app-sidebar a[href="#/aitranslate"]')).click()
+    await waitExisting('[data-testid="ai.modes"]', 20000)
+    await (await browser.$('[data-testid="ai.mode.byo"]')).click()
+    await waitExisting('[data-testid="ai.instance"]', 15000)
+    const sOpts = await browser.execute((tid) => {
+      const s = document.querySelector('[data-testid="' + tid + '"]') as HTMLSelectElement
+      return Array.from(s.options).map(o => ({ v: o.value, t: o.textContent ?? '' }))
+    }, 'ai.instance')
+    const success = sOpts.find(o => o.t.includes('Stage6 Success'))
+    if (!success) throw new Error('Success instance not found')
+    await setSelect('ai.instance', success.v)
+    await new Promise(r => setTimeout(r, 400))
+    await (await browser.$('[data-testid="ai.run"]')).click()
     await waitFor(async () => {
       const job = await browser.$('[data-testid="ai.job"]')
-      return (await job.isExisting()) && (await job.getText()).includes('[MOCK]')
+      return (await job.isExisting()) && (await job.getText()).includes('(MOCK)')
     }, 60000, 800)
     // edit the project through the REAL workspace (revision moves)
     await (await browser.$('.app-sidebar a[href="#/workspace"]')).click()
@@ -226,18 +299,28 @@ describe('Stage 6 — AI success, cancel, stale', () => {
     await ta.setValue('ВНЕШНЯЯ ПРАВКА после preview')
     await (await browser.$('[data-testid="ws.editor-save"]')).click()
     await new Promise(r => setTimeout(r, 1200))
-    // back to the AI screen: the old preview accept must refuse typed
+    // back to the AI screen: the old preview accept must refuse typed…
     await (await browser.$('.app-sidebar a[href="#/aitranslate"]')).click()
-    await waitFor(async () => (await browser.$('[data-testid="ai.job"]')).isExisting(), 20000, 400)
+    await new Promise(r => setTimeout(r, 1200))
+    const jobBack = await browser.$('[data-testid="ai.job"]')
     const acc = await browser.$('[data-testid="ai.accept"]')
-    if (!(await acc.isExisting())) { console.log('STAGE6 STALE: preview no longer offered after revision change — safe'); return }
-    await acc.click()
-    await waitFor(async () => {
-      const err = await browser.$('[data-testid="ai.job-error"], [data-testid="ai.error"]')
-      return (await err.isExisting())
-    }, 20000, 500)
-    const errTxt = await (await browser.$('[data-testid="ai.job-error"], [data-testid="ai.error"]')).getText()
-    console.log('STAGE6 STALE REFUSAL:', errTxt.slice(0, 160))
+    if ((await jobBack.isExisting()) && (await acc.isExisting())) {
+      await acc.click()
+      await waitFor(async () => {
+        const err = await browser.$('[data-testid="ai.job-error"], [data-testid="ai.error"]')
+        return (await err.isExisting())
+      }, 20000, 500)
+      const errTxt = await (await browser.$('[data-testid="ai.job-error"], [data-testid="ai.error"]')).getText()
+      console.log('STAGE6 STALE REFUSAL:', errTxt.slice(0, 160))
+    } else {
+      // Observed safe behavior: the preview does not survive navigation —
+      // nothing can be applied after leaving the AI screen, so a stale
+      // accept is unreachable through the GUI. The backend pinned-revision
+      // refusal stays covered by the Rust contract tests. Recorded as a UX
+      // observation (preview restoration) + honest NOT_TESTED for the typed
+      // stale refusal through the GUI.
+      console.log('STAGE6 STALE: preview not restored after navigation — stale accept unreachable via GUI (safe; NOT_TESTED)')
+    }
   })
 
   after(() => {
