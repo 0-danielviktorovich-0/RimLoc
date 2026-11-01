@@ -36,7 +36,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2 (pinned 2026-09-27)
       - name: Install cargo-semver-checks
         run: cargo install cargo-semver-checks --locked --version 0.50.0
       - name: Run semver checks for published crates
@@ -75,7 +75,7 @@ jobs:
         with:
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable (pinned 2026-09-27)
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2 (pinned 2026-09-27)
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2 (pinned 2026-09-27)
       - name: Install cargo-public-api
         run: |
           # cargo-public-api строит rustdoc-json через nightly rustc — без
