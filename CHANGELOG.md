@@ -6,6 +6,7 @@ This changelog follows Keep a Changelog and Semantic Versioning.
 ## [Unreleased]
 
 ### Docs
+- [evidence] The in-game DefInjected direct read is re-proven on the current main head with a live RimWorld 1.6.4871 run: the general `read_def` bridge serves the RimLoc-built DefInjected label (ThingDef) from the live DefDatabase, and the stale "ResearchProjectDef only" claim repeated by the 2026-10-23 acceptance note is retired (docs/development/evidence/in-game-2026-11-20/).
 - [support] Hide an unconfigured donation destination from GitHub funding settings, public README and MkDocs pages, and the in-app About screen; align the support-link registry, external URL allowlist and UI tests. Existing active support destinations stay unchanged.
 - [automation] Document authorized browser-direct ChatGPT reviewer handoffs and context-safe rollover into new conversations of the existing ChatGPT Project.
 - [gui] Present RimLoc as a desktop-first visual RimWorld localization studio in English and Russian onboarding, guides and READMEs; describe the Rust CLI as optional automation rather than the main translation workflow (#93)
