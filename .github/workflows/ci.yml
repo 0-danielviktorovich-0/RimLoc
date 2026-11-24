@@ -152,13 +152,30 @@ jobs:
           cache-dependency-path: gui/tauri-app/frontend-react/package-lock.json
       - run: npm ci
         working-directory: gui/tauri-app/frontend-react
-      # tauri-cli via npx (no global install): bundles the .app and the
-      # unsigned DMG for the same commit the tests ran on. The beforeBuild
-      # runs the production frontend build itself.
-      - name: Bundle (app + dmg)
+      # tauri-cli via npx (no global install): bundles the .app for the same
+      # commit the tests ran on. The beforeBuild runs the production frontend
+      # build itself.
+      - name: Bundle (app)
         run: |
-          npx --yes @tauri-apps/cli@2 build --bundles app,dmg
+          npx --yes @tauri-apps/cli@2 build --bundles app
         working-directory: gui/tauri-app/src-tauri
+      # ADR-0001: the beta ships ad-hoc signed. The linker-signed main binary
+      # is NOT a bundle signature — without Contents/_CodeSignature a
+      # quarantined download hits the Gatekeeper "damaged" dialog, and
+      # release-guard 1.5 fails the artifact. Sign the .app BEFORE the DMG is
+      # produced from it, then verify strictly.
+      - name: Ad-hoc sign the bundle (ADR-0001)
+        run: |
+          APP=$(echo target/release/bundle/macos/*.app)
+          codesign --force --sign - "$APP"
+          codesign -v --strict "$APP"
+          bash testlab/release-guard.sh "$APP"
+      - name: DMG from the signed app
+        run: |
+          APP=$(echo target/release/bundle/macos/*.app)
+          mkdir -p target/release/bundle/dmg
+          hdiutil create -volname "RimLoc GUI" -srcfolder "$APP" -ov -format UDZO \
+            "target/release/bundle/dmg/$(basename "$APP" .app).dmg"
       - name: Upload bundle artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5 (pinned 2026-10-19)
         with:
