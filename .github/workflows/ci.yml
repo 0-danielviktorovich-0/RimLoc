@@ -424,31 +424,36 @@ jobs:
           RIMLOC_DATA_DIR=$(mktemp -d)
           export RIMLOC_DATA_DIR
           LOG=target/release/bundle/smoke-linux.log
-          xvfb-run -a "$APPIMAGE" >"$LOG" 2>&1 &
-          WRAPPER_PID=$!
+          # Run Xvfb directly (no xvfb-run wrapper) so $! IS the app PID and
+          # `wait` can capture its true termination status. AppImages run with
+          # --appimage-extract-and-run: no FUSE needed and AppRun exec()s the
+          # binary in the same PID. A crash after SIGTERM (e.g. exit 42) must
+          # NOT count as graceful — only 0 (clean exit) or 143 (our SIGTERM).
+          Xvfb :99 -screen 0 1280x800x24 >/dev/null 2>&1 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          sleep 2
+          "$APPIMAGE" --appimage-extract-and-run >"$LOG" 2>&1 &
+          APP_PID=$!
           sleep 15
-          mapfile -t APP_PIDS < <(pgrep -f "rimloc|AppRun" | grep -v "^${WRAPPER_PID}$" | grep -v xvfb | head -3)
-          if [ "${#APP_PIDS[@]}" -gt 0 ]; then
-            echo "STARTUP_PASS: GUI process(es) alive after 15s on virtual display: ${APP_PIDS[*]}"
-            kill -TERM "${APP_PIDS[@]}" 2>/dev/null || true
-            GRACEFUL=0
+          if kill -0 "$APP_PID" 2>/dev/null; then
+            echo "STARTUP_PASS: GUI process alive after 15s on virtual display (pid $APP_PID)"
+            kill -TERM "$APP_PID" 2>/dev/null || true
+            APP_RC=""
             for _ in $(seq 1 10); do
-              ALIVE=0
-              for p in "${APP_PIDS[@]}"; do
-                if kill -0 "$p" 2>/dev/null; then ALIVE=1; break; fi
-              done
-              if [ "$ALIVE" -eq 0 ]; then GRACEFUL=1; break; fi
+              if ! kill -0 "$APP_PID" 2>/dev/null; then break; fi
               sleep 1
             done
-            if [ "$GRACEFUL" -eq 0 ]; then
-              echo "STARTUP_FAIL: app ignored SIGTERM for 10s (not a graceful exit)"
-              kill -9 "${APP_PIDS[@]}" "$WRAPPER_PID" 2>/dev/null || true
+            # Capture the true termination status: `wait` under `set -e` needs
+            # the guarded pattern, but the guard must not mask the status.
+            wait "$APP_PID" && APP_RC=$? || APP_RC=$?
+            if [ "$APP_RC" -eq 0 ] || [ "$APP_RC" -eq 143 ]; then
+              echo "STARTUP_PASS: app exited gracefully on SIGTERM (wait status $APP_RC)"
+            else
+              echo "STARTUP_FAIL: app terminated with unexpected exit status $APP_RC (crash or nonzero exit on SIGTERM)"
+              kill -9 "$XVFB_PID" 2>/dev/null || true
               exit 1
             fi
-            echo "STARTUP_PASS: app exited on SIGTERM (graceful)"
-            kill -TERM "$WRAPPER_PID" 2>/dev/null || true
-            sleep 1
-            kill -9 "$WRAPPER_PID" 2>/dev/null || true
             # Clean logs: startup must not panic / lose shared libraries / the display.
             if grep -Eq "panicked at|RUST_BACKTRACE|error while loading shared libraries|cannot open display" "$LOG"; then
               echo "STARTUP_FAIL: crash markers in app log:"
@@ -457,16 +462,13 @@ jobs:
             fi
             echo "STARTUP_PASS: app log clean:"
             cat "$LOG"
-          elif kill -0 "$WRAPPER_PID" 2>/dev/null; then
-            echo "STARTUP_FAIL: wrapper alive but no GUI process found"
-            cat "$LOG" || true
-            kill "$WRAPPER_PID" 2>/dev/null || true
-            exit 1
           else
-            echo "STARTUP_FAIL: both wrapper and GUI exited"
+            echo "STARTUP_FAIL: app exited before the 15s alive check"
             cat "$LOG" || true
+            kill -9 "$XVFB_PID" 2>/dev/null || true
             exit 1
           fi
+          kill -9 "$XVFB_PID" 2>/dev/null || true
       # Issue #164: evidence logs ship as artifacts even when the smoke is red.
       - name: Upload smoke evidence (logs + checksums)
         if: always()
