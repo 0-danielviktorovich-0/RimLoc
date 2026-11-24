@@ -26,7 +26,7 @@ members = [
 exclude = [
     "gui/tauri-app/vendor/wry-0.57.0-noactivate",
     "gui/tauri-app/vendor/tao-0.37.1-noactivate",
-    "gui/tauri-app/vendor/tauri-utils-2.10.1-nfs-appledouble",
+    "gui/tauri-app/vendor/tauri-utils-2.10.2-nfs-appledouble",
 ]
 
 
@@ -75,4 +75,4 @@ tempfile = "3"
 [patch.crates-io]
 wry = { path = "gui/tauri-app/vendor/wry-0.57.0-noactivate" }
 tao = { path = "gui/tauri-app/vendor/tao-0.37.1-noactivate" }
-tauri-utils = { path = "gui/tauri-app/vendor/tauri-utils-2.10.1-nfs-appledouble" }
+tauri-utils = { path = "gui/tauri-app/vendor/tauri-utils-2.10.2-nfs-appledouble" }
