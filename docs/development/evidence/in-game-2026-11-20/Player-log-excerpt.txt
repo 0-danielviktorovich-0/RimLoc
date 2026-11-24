@@ -1,0 +1,18 @@
+# Player.log excerpt — in-game run 2026-11-20 (run_id run-20261119-181639)
+
+Full log lives outside the repo (macOS Unity log); this excerpt carries every RimLoc-relevant line.
+
+```
+Could not load Texture2D at 'Things/Building/Misc/Cooler' for def 'RimLocCanaryBeacon' in any active mod or in base resources.
+Could not load Texture2D at 'Things/Building/Misc/Cooler' for def 'Blueprint_RimLocCanaryBeacon' in any active mod or in base resources.
+[RimLoc-RuntimeBridge] v1.0.0 up; run_id=run-20261119-181639; QA dir=/tmp/rimloc-rw-lab/SaveData/QA; evidence_root=/tmp/rimloc-rw-lab/SaveData/QA; dispatch=sync-context; runInBackground=True
+[RimLoc-RuntimeBridge] quit requested; run run-20261119-181639 ending
+```
+
+Error-greps over the full log:
+
+```
+lines mentioning RimLocCanaryTranslation: 0
+lines mentioning RimLocGameCanary: 0
+RimWorld 1.6.4871 rev581
+```
