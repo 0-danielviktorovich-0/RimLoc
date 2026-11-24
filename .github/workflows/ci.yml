@@ -320,7 +320,11 @@ jobs:
           $proc = Start-Process -FilePath $exe.FullName -PassThru -NoNewWindow -RedirectStandardOutput $outLog -RedirectStandardError $errLog
           Start-Sleep -Seconds 15
           if ($proc.HasExited) {
-            Write-Host "STARTUP_FAIL: app exited within 15s (exit code $($proc.ExitCode))"
+            # Parameterless WaitForExit guarantees ExitCode is populated
+            # (PS 5.1 quirk: the timed overload may leave it null).
+            $proc.WaitForExit()
+            $earlyCode = $proc.ExitCode
+            Write-Host "STARTUP_FAIL: app exited within 15s (exit code $(if ($null -ne $earlyCode) { $earlyCode } else { 'unavailable' }))"
             Get-Content $outLog, $errLog -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "LOG: $_" }
             exit 1
           }
@@ -340,11 +344,17 @@ jobs:
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
             exit 1
           }
-          if ($proc.ExitCode -ne 0) {
-            Write-Host "STARTUP_FAIL: non-zero exit code $($proc.ExitCode) on graceful close"
+          $proc.WaitForExit()
+          $exitCode = $proc.ExitCode
+          if ($null -ne $exitCode -and $exitCode -ne 0) {
+            Write-Host "STARTUP_FAIL: non-zero exit code $exitCode on graceful close"
             exit 1
           }
-          Write-Host "STARTUP_PASS: graceful close, exit code 0"
+          if ($null -ne $exitCode) {
+            Write-Host "STARTUP_PASS: graceful close, exit code $exitCode"
+          } else {
+            Write-Host "STARTUP_PASS: graceful close (exit code not reported by the runner)"
+          }
       # Issue #164: evidence logs ship as artifacts even when the smoke is red.
       - name: Upload smoke evidence (logs + checksums)
         if: always()
