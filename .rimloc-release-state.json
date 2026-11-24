@@ -1,68 +1,83 @@
 {
- "campaign": "qa-full-journey-merge-gate",
- "status": "RC_BUNDLES_READY_OWNER_UAT_PENDING",
- "updated": "2026-10-22",
- "main": "1e6c2dfc (a11y fix + AI success/cancel/stale proofs merged via PR #130; final CI bundles built from fe1af7b3 — product-identical, PR #131 docs only)",
- "pr110": {
-  "head": "9dae18ac",
-  "mergedAt": "2026-10-22T12:37:39Z",
-  "checks": "43/43 SUCCESS, 0 failed, 0 pending",
-  "contents": "security containment (symlink leaf no-follow + canonical root/full containment + 8 MiB take cap) with 7-test negative matrix and mutation-verified ancestor escape; registration parity gate (include_str! of compiled main.rs, every generate_handler! block must contain every CONTRACT_COMMAND); portable xml-verify WDIO lane (fixture in mkdtemp, app from RIMLOC_XML_VERIFY_APP); React vitest in CI; tr! scanner word-boundary fix; CONTRACT_COMMANDS + FUNDING.yml test drift fixes; CodeQL path-injection alert fixed in code"
- },
- "candidate": {
-  "name": "merged-main-macos-candidate",
-  "branch": "main",
-  "evidence": "~/Developing/RimLoc-evidence/owner-uat/",
-  "product_source_sha": "19c20f7d3b8a50d982e16d6cb709e19cc0c7755b",
-  "binarySha256": "d86b2376b837dfc19ee10508dbca2a6db4d18abd07acc2f20c7d7585fb925121",
-  "version": "0.1.0-beta.1",
-  "gates": "PR #110 43/43 CI SUCCESS; runtime WDIO 3/3 on automation artifact (XML markup OwnerTestBeacon, layout gap 0px, RU labels) with PNG + log evidence in RimLoc-review-handoff outbox/chatgpt/qa-full-journey/2026-10-22/; production smoke PASS (isolated profile process + 0600 broker socket + AX window)",
-  "review": "ChatGPT 2026-10-22: engineering contour of PR #110 CLOSED (MAIN_MERGE_READY PASS, already merged); full-product beta QA NOT closed"
- },
- "publicRelease": "NOT AUTHORIZED — GitHub pre-release, Discord and Reddit require explicit owner signoff (FINAL_VERDICT_MAIN_MERGED_PRODUCT_QA_PENDING.md)",
- "stages": [
-  "1 Core Product Acceptance: PASS (PR #115, 6/6 journey)",
-  "2 AI & Provider Acceptance: PASS (PR #116, 7/7 journey; dead-endpoint fail-closed)",
-  "3 Measurable coverage: oracle 46/51 = 90.2% verified, 0 FAIL, 5 honest skips (PR #117/#120/#124/#125)",
-  "4 Release Candidate: bundles of all three platforms hashed and staged (this state)",
-  "5 Owner UAT: PENDING",
-  "Post-stages: in-game RimWorld re-acceptance on RC SHA PASS (Keyed via file channel); design pass no P0/P1; Issue #2 scenarios B and C proven (PR #126); cross-platform matrix CROSS_PLATFORM_MATRIX.md"
- ],
- "openProductGaps": [
-  "Issue #2 standalone translation-pack mode (open/edit/export without original mod) pending or must be labeled not-in-beta",
-  "native WDIO lane not yet a required GitHub check (portable lane is the deterministic entry point)",
-  "in-game RimWorld acceptance proven on an earlier source SHA; rerun if export path changes materially"
- ],
- "superseded": [
-  {
-   "name": "rel26-draft-fixes",
-   "status": "REL26_CONDITIONAL_PASS_DATA_SAFETY",
-   "main": "1b46fd2",
-   "binarySha256": "956de5283226c63d783030c05ecb6f9fe97f035ccdacd0f61971248b37edecd6",
-   "note": "superseded by merged main 19c20f7d; historical gates and lanes moved to release-state archive in git history"
+  "campaign": "qa-full-journey-merge-gate",
+  "status": "RC_BUNDLES_READY_OWNER_UAT_PENDING",
+  "updated": "2026-11-25 (refreshed-candidate provenance recorded; ChatGPT P1 resolved)",
+  "main": "1e6c2dfc (a11y fix + AI success/cancel/stale proofs merged via PR #130; final CI bundles built from fe1af7b3 — product-identical, PR #131 docs only)",
+  "pr110": {
+    "head": "9dae18ac",
+    "mergedAt": "2026-10-22T12:37:39Z",
+    "checks": "43/43 SUCCESS, 0 failed, 0 pending",
+    "contents": "security containment (symlink leaf no-follow + canonical root/full containment + 8 MiB take cap) with 7-test negative matrix and mutation-verified ancestor escape; registration parity gate (include_str! of compiled main.rs, every generate_handler! block must contain every CONTRACT_COMMAND); portable xml-verify WDIO lane (fixture in mkdtemp, app from RIMLOC_XML_VERIFY_APP); React vitest in CI; tr! scanner word-boundary fix; CONTRACT_COMMANDS + FUNDING.yml test drift fixes; CodeQL path-injection alert fixed in code"
+  },
+  "candidate": {
+    "name": "merged-main-macos-candidate",
+    "branch": "main",
+    "evidence": "~/Developing/RimLoc-evidence/owner-uat/",
+    "product_source_sha": "019755ba (merged main; product code 3603e08c)",
+    "binarySha256": "8f5712b380b1aa95733c8bf00d693131225be91eca04239c5be34a48cc251a7e",
+    "version": "0.1.0-beta.1",
+    "gates": "PR #110 43/43 CI SUCCESS; runtime WDIO 3/3 on automation artifact (XML markup OwnerTestBeacon, layout gap 0px, RU labels) with PNG + log evidence in RimLoc-review-handoff outbox/chatgpt/qa-full-journey/2026-10-22/; production smoke PASS (isolated profile process + 0600 broker socket + AX window)",
+    "review": "ChatGPT 2026-10-22: engineering contour of PR #110 CLOSED (MAIN_MERGE_READY PASS, already merged); full-product beta QA NOT closed",
+    "refreshedAt": "2026-10-23"
+  },
+  "publicRelease": "NOT AUTHORIZED — GitHub pre-release, Discord and Reddit require explicit owner signoff (FINAL_VERDICT_MAIN_MERGED_PRODUCT_QA_PENDING.md)",
+  "stages": [
+    "1 Core Product Acceptance: PASS (PR #115, 6/6 journey)",
+    "2 AI & Provider Acceptance: PASS (PR #116, 7/7 journey; dead-endpoint fail-closed)",
+    "3 Measurable coverage: oracle 46/51 = 90.2% verified, 0 FAIL, 5 honest skips (PR #117/#120/#124/#125)",
+    "4 Release Candidate: bundles of all three platforms hashed and staged (this state)",
+    "5 Owner UAT: PENDING",
+    "Post-stages: in-game RimWorld re-acceptance on RC SHA PASS (Keyed via file channel); design pass no P0/P1; Issue #2 scenarios B and C proven (PR #126); cross-platform matrix CROSS_PLATFORM_MATRIX.md"
+  ],
+  "openProductGaps": [
+    "Issue #2 standalone translation-pack mode (open/edit/export without original mod) pending or must be labeled not-in-beta",
+    "native WDIO lane not yet a required GitHub check (portable lane is the deterministic entry point)",
+    "in-game RimWorld acceptance proven on an earlier source SHA; rerun if export path changes materially"
+  ],
+  "superseded": [
+    {
+      "name": "rel26-draft-fixes",
+      "status": "REL26_CONDITIONAL_PASS_DATA_SAFETY",
+      "main": "1b46fd2",
+      "binarySha256": "956de5283226c63d783030c05ecb6f9fe97f035ccdacd0f61971248b37edecd6",
+      "note": "superseded by merged main 19c20f7d; historical gates and lanes moved to release-state archive in git history"
+    }
+  ],
+  "lanes": {
+    "chat_batch": "VERIFIED (273a79c, unchanged)",
+    "ifmodactive": "VERIFIED (42fbfc0, unchanged)",
+    "defs_gaps": "VERIFIED (d712ba8, unchanged)",
+    "ui_native": "VERIFIED historical; superseded by portable xml-verify lane + PR #110 gates for the React surface",
+    "security_final": "VERIFIED and EXTENDED by PR #110 source-preview containment; CodeQL signal honest on 9dae18ac"
+  },
+  "openDefects": [
+    "AI preview does not survive navigation (job state in-memory per screen) — UX observation recorded; stale accept unreachable via GUI (safe)",
+    "owner decisions pending: 19 CodeQL records FP annotation, 16 dev-only npm time-box to 2026-11-22, 12 diverged branches, Issue #2 close after B/C proof"
+  ],
+  "rcBundles": {
+    "source": "rebuilt from merged main 019755ba (release lane 2026-10-23); per-file SHA256 computed from the staged artifacts",
+    "builtFrom": "019755ba",
+    "version": "0.1.0-beta.1",
+    "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-019755ba/",
+    "macosSmoke": "PASS — CI bundle from fe1af7b3 (with the AI keyboard-selection fix) launches in an isolated profile, AX window, 0600 broker socket",
+    "macosDmg": "009fa72fc34fb67a2234b7765b3a5145af417300c7a6ea0c50746f39dd2bea72",
+    "macosAppBinary": "d029db3472beb69206ae96c759d3e6d9ca33a5edbe9bd996b392c507547a22dd",
+    "windowsNsis": "cb60c8bbe06e7cf106d1cd4cb159c2fb18aebde692f749d35f4208eb4a1f7448",
+    "linuxDeb": "1199ea95bd4b595cf7a9eb3cf2353ca588a53df9846bd2919ff9dd85cd87d5dd",
+    "linuxAppimage": "a855615c7d5e98ee292c280075ebd22248265c06b2eb5ca85621974fa5c716e4",
+    "previous": {
+      "source": "CI run 39938138671 (dispatch on fe1af7b3, product-identical to merged main 1e6c2dfc — PR #131 docs only); contains the AI keyboard-selection fix",
+      "builtFrom": "fe1af7b3",
+      "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-fe1af7b3/",
+      "note": "superseded by the 019755ba refresh; kept for history"
+    },
+    "hashes": {
+      "macos/dmg": "af73d011c65fa72bdacddfeee6c37fc2ab7f6cbdb2e4b33dff337b6543a6a322",
+      "macos/rimloc-gui-binary": "8f5712b380b1aa95733c8bf00d693131225be91eca04239c5be34a48cc251a7e",
+      "linux/deb": "8d82f4bf597c9a0acd7a1fc32a40f5555f80bb647e91c5dd71c2c34240f41f69",
+      "linux/appimage": "fa38bdb6f0774041be96eea2823e5e531ceec6f246893a10e61a5cdae985dbd8",
+      "windows/setup-exe": "3781f2e683e159afc444c89a6ab1d36e05c68954267696d1168c1d97c10da5b0"
+    },
+    "signature": "staged bundles are UNSIGNED (built before ADR-0001); the release build (T12) is re-cut from signed CI per PR #152"
   }
- ],
- "lanes": {
-  "chat_batch": "VERIFIED (273a79c, unchanged)",
-  "ifmodactive": "VERIFIED (42fbfc0, unchanged)",
-  "defs_gaps": "VERIFIED (d712ba8, unchanged)",
-  "ui_native": "VERIFIED historical; superseded by portable xml-verify lane + PR #110 gates for the React surface",
-  "security_final": "VERIFIED and EXTENDED by PR #110 source-preview containment; CodeQL signal honest on 9dae18ac"
- },
- "openDefects": [
-  "AI preview does not survive navigation (job state in-memory per screen) — UX observation recorded; stale accept unreachable via GUI (safe)",
-  "owner decisions pending: 19 CodeQL records FP annotation, 16 dev-only npm time-box to 2026-11-22, 12 diverged branches, Issue #2 close after B/C proof"
- ],
- "rcBundles": {
-  "source": "CI run 39938138671 (dispatch on fe1af7b3, product-identical to merged main 1e6c2dfc — PR #131 docs only); contains the AI keyboard-selection fix",
-  "builtFrom": "fe1af7b3",
-  "version": "0.1.0-beta.1",
-  "deployed": "~/Developing/RimLoc-evidence/owner-uat/rc-fe1af7b3/ (+ SHA256 files)",
-  "macosSmoke": "PASS — CI bundle from fe1af7b3 (with the AI keyboard-selection fix) launches in an isolated profile, AX window, 0600 broker socket",
-  "macosDmg": "009fa72fc34fb67a2234b7765b3a5145af417300c7a6ea0c50746f39dd2bea72",
-  "macosAppBinary": "d029db3472beb69206ae96c759d3e6d9ca33a5edbe9bd996b392c507547a22dd",
-  "windowsNsis": "cb60c8bbe06e7cf106d1cd4cb159c2fb18aebde692f749d35f4208eb4a1f7448",
-  "linuxDeb": "1199ea95bd4b595cf7a9eb3cf2353ca588a53df9846bd2919ff9dd85cd87d5dd",
-  "linuxAppimage": "a855615c7d5e98ee292c280075ebd22248265c06b2eb5ca85621974fa5c716e4"
- }
 }
